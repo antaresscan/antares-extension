@@ -19,7 +19,6 @@ const riskColors: Record<string, string> = {
   CAUTION: "#eab308",
   DANGER:  "#f97316",
   RUG:     "#dc2626",
-  NEW:     "#6366f1",
 }
 
 const riskLabels: Record<string, string> = {
@@ -30,27 +29,20 @@ const riskLabels: Record<string, string> = {
 }
 
 function extractCA(url: string): string | null {
-  const dex = url.match(/dexscreener\.com\/solana\/([A-Za-z0-9]{32,44})/)
-  if (dex) return dex[1]
-
-  const pump = url.match(/pump\.fun\/coin\/([A-Za-z0-9]{32,44})/)
-  if (pump) return pump[1]
-
-  const birdeye = url.match(/birdeye\.so\/token\/([A-Za-z0-9]{32,44})/)
-  if (birdeye) return birdeye[1]
-
-  const solscan = url.match(/solscan\.io\/token\/([A-Za-z0-9]{32,44})/)
-  if (solscan) return solscan[1]
-
-  const axiom = url.match(/[?&]address=([A-Za-z0-9]{32,44})/)
-  if (axiom) return axiom[1]
-
-  const gmgn = url.match(/gmgn\.ai\/sol\/token\/([A-Za-z0-9]{32,44})/)
-  if (gmgn) return gmgn[1]
-
-  const bullx = url.match(/bullx\.io\/terminal.*[?&]chainId=solana.*[?&]address=([A-Za-z0-9]{32,44})/)
-  if (bullx) return bullx[1]
-
+  const patterns = [
+    /dexscreener\.com\/solana\/([A-Za-z0-9]{32,44})/,
+    /pump\.fun\/coin\/([A-Za-z0-9]{32,44})/,
+    /birdeye\.so\/token\/([A-Za-z0-9]{32,44})/,
+    /solscan\.io\/token\/([A-Za-z0-9]{32,44})/,
+    /gmgn\.ai\/sol\/token\/([A-Za-z0-9]{32,44})/,
+    /[?&]address=([A-Za-z0-9]{32,44})/,
+    /[?&]mint=([A-Za-z0-9]{32,44})/,
+    /[?&]token=([A-Za-z0-9]{32,44})/,
+  ]
+  for (const p of patterns) {
+    const m = url.match(p)
+    if (m) return m[1]
+  }
   return null
 }
 
