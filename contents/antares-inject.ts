@@ -14,10 +14,8 @@ const COLORS: Record<string, string> = {
   RUG: "#dc2626"
 }
 
-// Base58 Solana address pattern (32-44 chars, no 0/O/I/l)
 const SOL_ADDR = /\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/g
 
-// Known non-address strings to ignore
 const IGNORE = new Set([
   "11111111111111111111111111111111",
   "So11111111111111111111111111111112",
@@ -27,20 +25,13 @@ const IGNORE = new Set([
   "SysvarC1ock11111111111111111111111111111111",
 ])
 
-// Scan the entire page DOM + URL for Solana addresses
 function findAddresses(): string[] {
   const found = new Set<string>()
 
-  // 1) Scan URL (path + query)
   const urlMatches = window.location.href.match(SOL_ADDR) || []
   for (const m of urlMatches) found.add(m)
 
-  // 2) Scan visible text on page
-  const walker = document.createTreeWalker(
-    document.body,
-    NodeFilter.SHOW_TEXT,
-    null
-  )
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null)
   let node: Node | null
   while ((node = walker.nextNode())) {
     const text = node.textContent || ""
@@ -49,7 +40,6 @@ function findAddresses(): string[] {
     for (const m of matches) found.add(m)
   }
 
-  // 3) Scan clipboard-copy buttons, data attributes, title, aria-label
   const els = document.querySelectorAll("[data-address],[data-token],[data-mint],[data-ca],[title],[aria-label]")
   for (const el of els) {
     for (const attr of ["data-address","data-token","data-mint","data-ca","title","aria-label"]) {
@@ -59,7 +49,6 @@ function findAddresses(): string[] {
     }
   }
 
-  // 4) Scan <a> href attributes
   const links = document.querySelectorAll("a[href]")
   for (const a of links) {
     const href = a.getAttribute("href") || ""
@@ -67,47 +56,66 @@ function findAddresses(): string[] {
     for (const m of matches) found.add(m)
   }
 
-  // Filter out known system addresses and short/long noise
   return Array.from(found).filter(addr => {
     if (IGNORE.has(addr)) return false
     if (addr.length < 32 || addr.length > 44) return false
-    // Filter short lowercase words, but keep 32+ char lowercase (Solana pair addresses)
     if (/^[a-z]+$/.test(addr) && addr.length < 32) return false
-    if (/^[A-Z]+$/.test(addr)) return false // all uppercase = probably a label
-    if (/^[0-9]+$/.test(addr)) return false // all digits = number
+    if (/^[A-Z]+$/.test(addr)) return false
+    if (/^[0-9]+$/.test(addr)) return false
     return true
   })
 }
 
-// Pick the most likely token address from candidates
 function pickBestAddress(addrs: string[]): string {
   if (addrs.length === 0) return ""
   if (addrs.length === 1) return addrs[0]
 
-  // Prefer addresses ending in "pump" (pump.fun tokens)
   const pump = addrs.find(a => a.endsWith("pump"))
   if (pump) return pump
 
   const url = window.location.href
-
-  // Prefer lowercase/alnum addresses found in URL first:
-  // on DexScreener this can be a pair address — the backend resolves pair -> mint
   const lowerUrl = addrs.find(a => url.includes(a) && /^[a-z0-9]+$/.test(a))
   if (lowerUrl) return lowerUrl
 
-  // Then prefer any address found in URL
   const inUrl = addrs.find(a => url.includes(a))
   if (inUrl) return inUrl
 
-  // Prefer mixed case (real Base58) over generic DOM noise
   const mixedCase = addrs.find(a => /[A-Z]/.test(a) && /[a-z]/.test(a))
   if (mixedCase) return mixedCase
 
   return addrs[0]
 }
 
+// Check if current URL looks like a token page
+function isTokenPage(): boolean {
+  const url = window.location.href
+  // DexScreener token/pair pages
+  if (/dexscreener\.com\/solana\/[a-zA-Z0-9]{32,44}/.test(url)) return true
+  // Pump.fun token page
+  if (/pump\.fun\/[a-zA-Z0-9]{32,44}/.test(url)) return true
+  // Birdeye token page
+  if (/birdeye\.so\/token\/[a-zA-Z0-9]{32,44}/.test(url)) return true
+  // Solscan
+  if (/solscan\.io\/token\/[a-zA-Z0-9]{32,44}/.test(url)) return true
+  // Generic: URL contains a Solana address anywhere in path
+  const pathMatch = url.match(/\/([1-9A-HJ-NP-Za-km-z]{32,44})/)
+  return !!pathMatch
+}
+
 let lastCA = ""
 let box: HTMLDivElement | null = null
+let hideTimeout: ReturnType<typeof setTimeout> | null = null
+let manuallyDismissed = false
+
+function hideBox() {
+  if (!box) return
+  box.style.opacity = "0"
+  box.style.transform = "translateY(8px)"
+  if (hideTimeout) clearTimeout(hideTimeout)
+  hideTimeout = setTimeout(() => {
+    if (box) box.style.display = "none"
+  }, 300)
+}
 
 function ensureBox(): HTMLDivElement {
   if (box && document.body.contains(box)) return box
@@ -118,88 +126,159 @@ function ensureBox(): HTMLDivElement {
     bottom: "20px",
     right: "20px",
     zIndex: "2147483647",
-    background: "#0a0a0a",
+    background: "#0d0d0d",
     border: "1px solid #6b7280",
-    borderRadius: "10px",
+    borderRadius: "12px",
     padding: "12px 16px",
-    fontFamily: "monospace",
+    fontFamily: "'SF Mono', 'Fira Code', monospace",
     fontSize: "13px",
     color: "#fff",
-    minWidth: "210px",
-    maxWidth: "280px",
-    boxShadow: "0 0 24px #6b728044",
+    minWidth: "220px",
+    maxWidth: "290px",
+    boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
     display: "none",
-    transition: "opacity 0.3s ease",
-    opacity: "0"
+    transition: "opacity 0.25s ease, transform 0.25s ease",
+    opacity: "0",
+    transform: "translateY(8px)"
   })
   document.body.appendChild(box)
   return box
 }
 
 function showBox(el: HTMLDivElement) {
+  if (hideTimeout) clearTimeout(hideTimeout)
   el.style.display = "block"
-  requestAnimationFrame(() => { el.style.opacity = "1" })
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      el.style.opacity = "1"
+      el.style.transform = "translateY(0)"
+    })
+  })
+}
+
+function attachCloseBtn() {
+  const btn = document.getElementById("antares-close")
+  if (btn) btn.onclick = () => {
+    manuallyDismissed = true
+    hideBox()
+  }
 }
 
 async function scan(ca: string) {
+  // No token found in page — hide and reset
   if (!ca || ca.length < 32) {
-    if (box) { box.style.opacity = "0"; setTimeout(() => { if (box) box.style.display = "none" }, 300) }
+    hideBox()
+    lastCA = ""
+    manuallyDismissed = false
     return
   }
+
+  // Same token still visible and not dismissed — don't re-render
   if (ca === lastCA && box && box.style.display !== "none") return
-  lastCA = ca
+
+  // New token — reset dismissed flag and scan fresh
+  if (ca !== lastCA) {
+    manuallyDismissed = false
+    lastCA = ca
+  }
+
+  if (manuallyDismissed) return
 
   const el = ensureBox()
   showBox(el)
-  el.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-weight:bold;color:#6b7280">ANTARES</span><span style="cursor:pointer;color:#555;font-size:16px" id="antares-close">&times;</span></div><div style="color:#888">Scanning...</div>'
-
-  const closeBtn = document.getElementById("antares-close")
-  if (closeBtn) closeBtn.onclick = () => { if (box) { box.style.opacity = "0"; setTimeout(() => { if (box) box.style.display = "none" }, 300) } }
+  el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span style="font-weight:700;font-size:12px;letter-spacing:2px;color:#6b7280">ANTARES</span>
+      <span id="antares-close" style="cursor:pointer;color:#555;font-size:18px;line-height:1">&times;</span>
+    </div>
+    <div style="color:#555;font-size:11px;margin-bottom:6px">${ca.slice(0,4)}&hellip;${ca.slice(-4)}</div>
+    <div style="color:#888;font-size:12px;display:flex;align-items:center;gap:6px">
+      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#6b7280;animation:antares-pulse 1s infinite"></span>
+      Scanning&hellip;
+    </div>
+    <style>@keyframes antares-pulse{0%,100%{opacity:1}50%{opacity:.3}}</style>
+  `
+  attachCloseBtn()
 
   try {
-    const res = await fetch(API + "?ca=" + ca)
+    const res = await fetch(`${API}?ca=${ca}`)
     if (!res.ok) throw new Error("API " + res.status)
     const data = await res.json()
+
+    // If URL changed while fetching, discard stale result
+    if (lastCA !== ca) return
+
     const color = COLORS[data.risk] || "#6b7280"
     const flags = (data.flags || []).slice(0, 3).map((f: any) =>
-      '<div style="font-size:11px;color:#888;margin-bottom:2px">' + (f.label || f) + '</div>'
+      `<div style="font-size:11px;color:#666;margin-top:3px;padding-left:8px;border-left:2px solid ${color}44">${f.label || f}</div>`
     ).join("")
 
-    const shortCa = ca.slice(0, 4) + "..." + ca.slice(-4)
-    el.style.border = "1px solid " + color
-    el.style.boxShadow = "0 0 24px " + color + "44"
-    el.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-weight:bold;color:' + color + '">ANTARES</span><span style="cursor:pointer;color:#555;font-size:16px" id="antares-close">&times;</span></div>'
-      + '<div style="font-size:22px;font-weight:bold;color:' + color + ';margin-bottom:4px">' + data.risk + '</div>'
-      + '<div style="color:#aaa;font-size:12px;margin-bottom:4px">Score : <strong style="color:#fff">' + data.score + '/1000</strong></div>'
-      + '<div style="color:#555;font-size:10px;margin-bottom:8px">' + shortCa + '</div>'
-      + flags
-
-    const closeBtn2 = document.getElementById("antares-close")
-    if (closeBtn2) closeBtn2.onclick = () => { if (box) { box.style.opacity = "0"; setTimeout(() => { if (box) box.style.display = "none" }, 300) } }
+    el.style.border = `1px solid ${color}88`
+    el.style.boxShadow = `0 8px 32px rgba(0,0,0,0.6), 0 0 16px ${color}22`
+    el.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-weight:700;font-size:12px;letter-spacing:2px;color:${color}">ANTARES</span>
+        <span id="antares-close" style="cursor:pointer;color:#555;font-size:18px;line-height:1">&times;</span>
+      </div>
+      <div style="font-size:26px;font-weight:800;color:${color};margin-bottom:2px;letter-spacing:1px">${data.risk}</div>
+      <div style="color:#aaa;font-size:12px;margin-bottom:2px">Score <strong style="color:#fff">${data.score}</strong><span style="color:#555">/1000</span></div>
+      <div style="color:#444;font-size:10px;margin-bottom:8px">${ca.slice(0,4)}&hellip;${ca.slice(-4)}</div>
+      ${flags}
+    `
+    attachCloseBtn()
   } catch (e) {
-    el.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-weight:bold;color:#6b7280">ANTARES</span><span style="cursor:pointer;color:#555;font-size:16px" id="antares-close">&times;</span></div><div style="color:#ef4444">API Error</div>'
-    const closeBtn3 = document.getElementById("antares-close")
-    if (closeBtn3) closeBtn3.onclick = () => { if (box) { box.style.opacity = "0"; setTimeout(() => { if (box) box.style.display = "none" }, 300) } }
+    if (lastCA !== ca) return
+    el.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-weight:700;font-size:12px;letter-spacing:2px;color:#6b7280">ANTARES</span>
+        <span id="antares-close" style="cursor:pointer;color:#555;font-size:18px;line-height:1">&times;</span>
+      </div>
+      <div style="color:#ef4444;font-size:12px">API Error — retry in a moment</div>
+    `
+    attachCloseBtn()
   }
 }
 
 function poll() {
   const addrs = findAddresses()
   const best = pickBestAddress(addrs)
+
+  // If no token address found anywhere on current page, hide overlay
+  if (!best) {
+    if (lastCA) {
+      lastCA = ""
+      manuallyDismissed = false
+      hideBox()
+    }
+    return
+  }
+
   scan(best)
 }
 
-// Run immediately + poll every 2s (handles SPA navigation)
+// Initial poll
 poll()
-setInterval(poll, 2000)
 
-// Also watch for URL changes (SPA pushState)
+// Poll every 1.5s for smooth SPA experience
+setInterval(poll, 1500)
+
+// Watch for URL/DOM changes — handles SPA pushState navigation
 let lastUrl = window.location.href
 const urlObserver = new MutationObserver(() => {
-  if (window.location.href !== lastUrl) {
-    lastUrl = window.location.href
+  const currentUrl = window.location.href
+  if (currentUrl !== lastUrl) {
+    lastUrl = currentUrl
+    // Reset immediately on navigation
+    const prevCA = lastCA
     lastCA = ""
-    poll()
+    manuallyDismissed = false
+    // If we left a token page, hide immediately
+    if (!isTokenPage()) {
+      hideBox()
+    } else {
+      // New token page — poll right away
+      poll()
+    }
   }
 })
 urlObserver.observe(document.body, { childList: true, subtree: true })
