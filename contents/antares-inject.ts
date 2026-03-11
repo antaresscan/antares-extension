@@ -37,7 +37,24 @@ function isValid(addr: string): boolean {
   return true
 }
 
+// Returns true ONLY if the current URL path contains a Solana address.
+// This is the gate: no address in URL path = we are on a list/home page = no popup.
+function urlHasTokenAddress(): string {
+  const path = window.location.pathname + window.location.search
+  const matches = path.match(SOL_ADDR) || []
+  const valid = matches.filter(isValid)
+  if (valid.length === 0) return ""
+  // prefer pump, then mixed-case, then first
+  return valid.find(a => a.endsWith("pump"))
+    || valid.find(a => /[A-Z]/.test(a) && /[a-z]/.test(a))
+    || valid[0]
+}
+
 function findBestAddress(): string {
+  // Gate: if no address in URL, never show popup (avoids list-page false positives)
+  const urlAddr = urlHasTokenAddress()
+  if (!urlAddr) return ""
+
   const scores = new Map<string, number>()
   const url = window.location.href
 
@@ -46,7 +63,7 @@ function findBestAddress(): string {
     scores.set(addr, (scores.get(addr) || 0) + pts)
   }
 
-  // 1. Data attributes — apps store the real mint here (highest trust)
+  // 1. Data attributes — highest trust (apps store real mint here)
   for (const el of document.querySelectorAll(
     "[data-address],[data-token],[data-mint],[data-ca],[data-contract],[data-token-address],[data-mint-address]"
   )) {
@@ -55,8 +72,7 @@ function findBestAddress(): string {
     }
   }
 
-  // 2. Solscan/explorer links — contain the real mint in href
-  // e.g. solscan.io/token/MINT or explorer.solana.com/address/MINT
+  // 2. Solscan / explorer links contain real mint
   for (const a of document.querySelectorAll("a[href]")) {
     const href = a.getAttribute("href") || ""
     if (/solscan\.io\/token|solscan\.io\/address|explorer\.solana\.com\/address|solana\.fm\/address/.test(href)) {
@@ -64,7 +80,7 @@ function findBestAddress(): string {
     }
   }
 
-  // 3. Short visible text nodes — standalone address display (copy buttons etc)
+  // 3. Short standalone text nodes (copy-address displays)
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null)
   let node: Node | null
   while ((node = walker.nextNode())) {
@@ -74,15 +90,14 @@ function findBestAddress(): string {
     }
   }
 
-  // 4. URL — lower priority since it can be a LP/pair address
+  // 4. URL — lower priority (can be LP/pair address)
   for (const m of (url.match(SOL_ADDR) || [])) add(m, 60)
 
-  if (scores.size === 0) return ""
+  if (scores.size === 0) return urlAddr // fallback to URL address
 
-  // Extra bonuses
+  // Bonuses
   for (const [addr, s] of scores) {
     if (addr.endsWith("pump")) scores.set(addr, s + 100)
-    // mixed-case = real Base58 mint (not a pair/LP which tends to be mixed too but lower score overall)
     if (/[A-Z]/.test(addr) && /[a-z]/.test(addr)) scores.set(addr, (scores.get(addr) || 0) + 30)
   }
 
@@ -210,15 +225,22 @@ async function scan(ca: string) {
 
 function poll() {
   const ca = findBestAddress()
-  if (!ca) return
+  if (!ca) {
+    // No address in URL = list/home page = hide
+    if (lastCA) resetState()
+    return
+  }
   scan(ca)
 }
 
 poll()
 setInterval(poll, 1500)
 
-// Hide IMMEDIATELY on URL change — intercept all SPA navigation methods
-const onNav = () => { resetState(); setTimeout(poll, 400) }
+// Hide immediately on ANY navigation
+const onNav = () => {
+  resetState()
+  setTimeout(poll, 400)
+}
 
 let lastUrl = window.location.href
 new MutationObserver(() => {
