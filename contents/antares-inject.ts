@@ -25,6 +25,8 @@ const IGNORE = new Set([
   "SysvarC1ock11111111111111111111111111111111",
   "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s",
   "TokenzQdBNbequAOoiqaLs8AA6CRCmvsembyniztzCFm",
+  "ComputeBudget111111111111111111111111111111",
+  "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr",
 ])
 
 function isValid(addr: string): boolean {
@@ -36,43 +38,55 @@ function isValid(addr: string): boolean {
 }
 
 function findBestAddress(): string {
-  const found = new Map<string, number>()
+  const scores = new Map<string, number>()
   const url = window.location.href
 
-  const add = (addr: string, bonus: number) => {
+  const add = (addr: string, pts: number) => {
     if (!isValid(addr)) return
-    found.set(addr, (found.get(addr) || 0) + bonus)
+    scores.set(addr, (scores.get(addr) || 0) + pts)
   }
 
-  // URL — highest priority
-  for (const m of (url.match(SOL_ADDR) || [])) add(m, 100)
-
-  // Data attributes
-  for (const el of document.querySelectorAll("[data-address],[data-token],[data-mint],[data-ca],[data-contract]")) {
-    for (const attr of ["data-address","data-token","data-mint","data-ca","data-contract"]) {
-      for (const m of ((el.getAttribute(attr) || "").match(SOL_ADDR) || [])) add(m, 80)
+  // 1. Data attributes — apps store the real mint here (highest trust)
+  for (const el of document.querySelectorAll(
+    "[data-address],[data-token],[data-mint],[data-ca],[data-contract],[data-token-address],[data-mint-address]"
+  )) {
+    for (const attr of ["data-address","data-token","data-mint","data-ca","data-contract","data-token-address","data-mint-address"]) {
+      for (const m of ((el.getAttribute(attr) || "").match(SOL_ADDR) || [])) add(m, 200)
     }
   }
 
-  // Short visible text nodes (standalone address display)
+  // 2. Solscan/explorer links — contain the real mint in href
+  // e.g. solscan.io/token/MINT or explorer.solana.com/address/MINT
+  for (const a of document.querySelectorAll("a[href]")) {
+    const href = a.getAttribute("href") || ""
+    if (/solscan\.io\/token|solscan\.io\/address|explorer\.solana\.com\/address|solana\.fm\/address/.test(href)) {
+      for (const m of (href.match(SOL_ADDR) || [])) add(m, 180)
+    }
+  }
+
+  // 3. Short visible text nodes — standalone address display (copy buttons etc)
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null)
   let node: Node | null
   while ((node = walker.nextNode())) {
     const t = (node.textContent || "").trim()
     if (t.length >= 32 && t.length <= 50) {
-      for (const m of (t.match(SOL_ADDR) || [])) add(m, 60)
+      for (const m of (t.match(SOL_ADDR) || [])) add(m, 120)
     }
   }
 
-  if (found.size === 0) return ""
+  // 4. URL — lower priority since it can be a LP/pair address
+  for (const m of (url.match(SOL_ADDR) || [])) add(m, 60)
 
-  // Bonus: pump address
-  for (const [addr] of found) {
-    if (addr.endsWith("pump")) found.set(addr, (found.get(addr) || 0) + 80)
-    if (/[A-Z]/.test(addr) && /[a-z]/.test(addr)) found.set(addr, (found.get(addr) || 0) + 40)
+  if (scores.size === 0) return ""
+
+  // Extra bonuses
+  for (const [addr, s] of scores) {
+    if (addr.endsWith("pump")) scores.set(addr, s + 100)
+    // mixed-case = real Base58 mint (not a pair/LP which tends to be mixed too but lower score overall)
+    if (/[A-Z]/.test(addr) && /[a-z]/.test(addr)) scores.set(addr, (scores.get(addr) || 0) + 30)
   }
 
-  return [...found.entries()].sort((a, b) => b[1] - a[1])[0][0]
+  return [...scores.entries()].sort((a, b) => b[1] - a[1])[0][0]
 }
 
 let lastCA = ""
@@ -172,6 +186,7 @@ async function scan(ca: string) {
     if (lastCA !== ca) { scanInFlight = false; return }
 
     const color = COLORS[data.risk] || "#6b7280"
+    const displayCA = data.resolvedMint || ca
     const flags = (data.flags || []).slice(0, 4).map((f: any) =>
       `<div style="font-size:11px;color:#555;margin-top:4px;padding-left:8px;border-left:2px solid ${color}55">${f.label || f}</div>`
     ).join("")
@@ -181,7 +196,7 @@ async function scan(ca: string) {
     el.innerHTML = header(color) + `
       <div style="font-size:28px;font-weight:800;color:${color};letter-spacing:1px;margin-bottom:2px">${data.risk}</div>
       <div style="color:#888;font-size:12px;margin-bottom:2px">Score <strong style="color:#ddd">${data.score}</strong><span style="color:#444">/1000</span></div>
-      <div style="color:#333;font-size:10px;margin-bottom:6px">${ca.slice(0,4)}&hellip;${ca.slice(-4)}</div>
+      <div style="color:#333;font-size:10px;margin-bottom:6px">${displayCA.slice(0,4)}&hellip;${displayCA.slice(-4)}</div>
       ${flags}
     `
     attachClose()
@@ -202,19 +217,17 @@ function poll() {
 poll()
 setInterval(poll, 1500)
 
-// KEY FIX: hide IMMEDIATELY on every URL change, then rescan after 400ms
+// Hide IMMEDIATELY on URL change — intercept all SPA navigation methods
+const onNav = () => { resetState(); setTimeout(poll, 400) }
+
 let lastUrl = window.location.href
 new MutationObserver(() => {
   const cur = window.location.href
-  if (cur === lastUrl) return
-  lastUrl = cur
-  resetState()           // hide immediately
-  setTimeout(poll, 400)  // rescan after SPA renders
+  if (cur !== lastUrl) { lastUrl = cur; onNav() }
 }).observe(document.documentElement, { childList: true, subtree: true })
 
-// Also intercept history.pushState and replaceState directly
 const _push = history.pushState.bind(history)
 const _replace = history.replaceState.bind(history)
-history.pushState = (...args) => { _push(...args); resetState(); setTimeout(poll, 400) }
-history.replaceState = (...args) => { _replace(...args); resetState(); setTimeout(poll, 400) }
-window.addEventListener("popstate", () => { resetState(); setTimeout(poll, 400) })
+history.pushState = (...args) => { _push(...args); onNav() }
+history.replaceState = (...args) => { _replace(...args); onNav() }
+window.addEventListener("popstate", onNav)
