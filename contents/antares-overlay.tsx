@@ -14,6 +14,32 @@ export const getStyle = () => {
 
 const ANTARES_API = "https://antares-seven-rouge.vercel.app/api/scan"
 
+const BLACKLIST = new Set([
+  "So11111111111111111111111111111111111111112",
+  "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+  "11111111111111111111111111111111",
+  "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+  "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+  "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJe1bRS",
+  "SysvarRent111111111111111111111111111111111",
+  "SysvarC1ock11111111111111111111111111111111",
+  "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s",
+])
+
+// Découpe l'URL en segments et cherche une adresse Solana base58 valide
+function extractCA(url: string): string | null {
+  // Sépare l'URL sur tous les délimiteurs possibles
+  const segments = url.split(/[\/\?&=#]/)
+  const base58 = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/
+
+  for (const seg of segments) {
+    if (base58.test(seg) && !BLACKLIST.has(seg)) {
+      return seg
+    }
+  }
+  return null
+}
+
 const riskColors: Record<string, string> = {
   SAFE:    "#22c55e",
   CAUTION: "#eab308",
@@ -26,24 +52,6 @@ const riskLabels: Record<string, string> = {
   CAUTION: "⚠️ CAUTION",
   DANGER:  "🔴 DANGER",
   RUG:     "💀 RUG",
-}
-
-function extractCA(url: string): string | null {
-  const patterns = [
-    /dexscreener\.com\/solana\/([A-Za-z0-9]{32,44})/,
-    /pump\.fun\/coin\/([A-Za-z0-9]{32,44})/,
-    /birdeye\.so\/token\/([A-Za-z0-9]{32,44})/,
-    /solscan\.io\/token\/([A-Za-z0-9]{32,44})/,
-    /gmgn\.ai\/sol\/token\/([A-Za-z0-9]{32,44})/,
-    /[?&]address=([A-Za-z0-9]{32,44})/,
-    /[?&]mint=([A-Za-z0-9]{32,44})/,
-    /[?&]token=([A-Za-z0-9]{32,44})/,
-  ]
-  for (const p of patterns) {
-    const m = url.match(p)
-    if (m) return m[1]
-  }
-  return null
 }
 
 export default function AntaresOverlay() {
