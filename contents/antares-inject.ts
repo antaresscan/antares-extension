@@ -35,74 +35,47 @@ function isValid(addr: string): boolean {
   return true
 }
 
-// Score an address — higher = more likely to be the token we want
-function score(addr: string, url: string): number {
-  let s = 0
-  if (url.includes(addr)) s += 100          // in current URL
-  if (addr.endsWith("pump")) s += 80         // pump.fun token
-  if (/[A-Z]/.test(addr) && /[a-z]/.test(addr)) s += 40  // mixed case = real Base58 mint
-  if (/^[a-z0-9]+$/.test(addr)) s += 20     // lowercase = likely pair addr, backend resolves
-  return s
-}
-
 function findBestAddress(): string {
   const found = new Map<string, number>()
   const url = window.location.href
 
-  const addToMap = (addr: string) => {
+  const add = (addr: string, bonus: number) => {
     if (!isValid(addr)) return
-    found.set(addr, (found.get(addr) || 0) + score(addr, url))
+    found.set(addr, (found.get(addr) || 0) + bonus)
   }
 
-  // URL
-  for (const m of (url.match(SOL_ADDR) || [])) addToMap(m)
+  // URL — highest priority
+  for (const m of (url.match(SOL_ADDR) || [])) add(m, 100)
 
-  // Data attributes (most reliable — apps store mint here)
+  // Data attributes
   for (const el of document.querySelectorAll("[data-address],[data-token],[data-mint],[data-ca],[data-contract]")) {
     for (const attr of ["data-address","data-token","data-mint","data-ca","data-contract"]) {
-      for (const m of ((el.getAttribute(attr) || "").match(SOL_ADDR) || [])) addToMap(m)
+      for (const m of ((el.getAttribute(attr) || "").match(SOL_ADDR) || [])) add(m, 80)
     }
   }
 
-  // Visible text — only scan elements that look like address displays
-  // (short text nodes containing only base58-like chars)
+  // Short visible text nodes (standalone address display)
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null)
   let node: Node | null
   while ((node = walker.nextNode())) {
     const t = (node.textContent || "").trim()
-    // Only process text that could be a standalone address (not a paragraph)
     if (t.length >= 32 && t.length <= 50) {
-      for (const m of (t.match(SOL_ADDR) || [])) addToMap(m)
-    }
-  }
-
-  // href links — token links on list pages contain the mint
-  // BUT only pick hrefs that look like single-token URLs (contain /address or /token path)
-  for (const a of document.querySelectorAll("a[href]")) {
-    const href = a.getAttribute("href") || ""
-    if (!/\/token|\/address|\/pair|\/solana\/[1-9A-HJ]/.test(href)) continue
-    for (const m of (href.match(SOL_ADDR) || [])) {
-      if (isValid(m)) {
-        // Only add if this link is "active" — visible in viewport or has active/selected class
-        const rect = (a as HTMLElement).getBoundingClientRect()
-        const isVisible = rect.top >= 0 && rect.bottom <= window.innerHeight
-        const isActive = a.classList.contains("active") || a.getAttribute("aria-current") === "page"
-        if (isActive) found.set(m, (found.get(m) || 0) + 200)
-        else if (isVisible) found.set(m, (found.get(m) || 0) + 5)
-      }
+      for (const m of (t.match(SOL_ADDR) || [])) add(m, 60)
     }
   }
 
   if (found.size === 0) return ""
 
-  // Return address with highest score
+  // Bonus: pump address
+  for (const [addr] of found) {
+    if (addr.endsWith("pump")) found.set(addr, (found.get(addr) || 0) + 80)
+    if (/[A-Z]/.test(addr) && /[a-z]/.test(addr)) found.set(addr, (found.get(addr) || 0) + 40)
+  }
+
   return [...found.entries()].sort((a, b) => b[1] - a[1])[0][0]
 }
 
-// State
 let lastCA = ""
-let missCount = 0
-const MISS_THRESHOLD = 3  // hide after 3 polls with no address found
 let box: HTMLDivElement | null = null
 let hideTimeout: ReturnType<typeof setTimeout> | null = null
 let manuallyDismissed = false
@@ -113,7 +86,14 @@ function hideBox() {
   box.style.opacity = "0"
   box.style.transform = "translateY(10px)"
   if (hideTimeout) clearTimeout(hideTimeout)
-  hideTimeout = setTimeout(() => { if (box) box.style.display = "none" }, 280)
+  hideTimeout = setTimeout(() => { if (box) box.style.display = "none" }, 250)
+}
+
+function resetState() {
+  lastCA = ""
+  manuallyDismissed = false
+  scanInFlight = false
+  hideBox()
 }
 
 function ensureBox(): HTMLDivElement {
@@ -166,15 +146,14 @@ async function scan(ca: string) {
   if (!ca) return
   if (ca === lastCA && box && box.style.display !== "none") return
   if (manuallyDismissed && ca === lastCA) return
+  if (scanInFlight) return
 
   if (ca !== lastCA) {
     manuallyDismissed = false
     lastCA = ca
   }
 
-  if (scanInFlight) return
   scanInFlight = true
-
   const el = ensureBox()
   showBox(el)
   el.innerHTML = header("#6b7280") + `
@@ -216,40 +195,26 @@ async function scan(ca: string) {
 
 function poll() {
   const ca = findBestAddress()
-
-  if (!ca) {
-    missCount++
-    if (missCount >= MISS_THRESHOLD && lastCA !== "") {
-      lastCA = ""
-      manuallyDismissed = false
-      hideBox()
-    }
-    return
-  }
-
-  // Found an address
-  missCount = 0
-
-  if (ca !== lastCA) {
-    manuallyDismissed = false
-  }
-
+  if (!ca) return
   scan(ca)
 }
 
 poll()
 setInterval(poll, 1500)
 
-// SPA navigation: reset miss counter and force re-poll immediately
+// KEY FIX: hide IMMEDIATELY on every URL change, then rescan after 400ms
 let lastUrl = window.location.href
 new MutationObserver(() => {
   const cur = window.location.href
-  if (cur !== lastUrl) {
-    lastUrl = cur
-    missCount = 0
-    lastCA = ""
-    manuallyDismissed = false
-    // Give SPA 300ms to render the new page before polling
-    setTimeout(poll, 300)
-  }
+  if (cur === lastUrl) return
+  lastUrl = cur
+  resetState()           // hide immediately
+  setTimeout(poll, 400)  // rescan after SPA renders
 }).observe(document.documentElement, { childList: true, subtree: true })
+
+// Also intercept history.pushState and replaceState directly
+const _push = history.pushState.bind(history)
+const _replace = history.replaceState.bind(history)
+history.pushState = (...args) => { _push(...args); resetState(); setTimeout(poll, 400) }
+history.replaceState = (...args) => { _replace(...args); resetState(); setTimeout(poll, 400) }
+window.addEventListener("popstate", () => { resetState(); setTimeout(poll, 400) })
