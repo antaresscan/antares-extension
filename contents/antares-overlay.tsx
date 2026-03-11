@@ -40,7 +40,6 @@ export default function AntaresOverlay() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [visible, setVisible] = useState(true)
-
   const ca = extractCA()
 
   useEffect(() => {
@@ -48,12 +47,16 @@ export default function AntaresOverlay() {
       setLoading(false)
       return
     }
-    // Passe par le background pour éviter le CSP de DexScreener
     chrome.runtime.sendMessage({ type: "SCAN", ca }, (res) => {
+      if (chrome.runtime.lastError) {
+        setError("Extension error")
+        setLoading(false)
+        return
+      }
       if (res?.ok) {
         setData(res.data)
       } else {
-        setError("Erreur API")
+        setError("API error")
       }
       setLoading(false)
     })
@@ -89,15 +92,12 @@ export default function AntaresOverlay() {
           {data.flags?.slice(0, 3).map((f: string, i: number) => (
             <div key={i} style={{ fontSize: "11px", color: "#888", marginBottom: "2px" }}>{f}</div>
           ))}
-          <a
-            href={`https://antares-seven-rouge.vercel.app/token/${ca}`}
+          <a href={`https://antares-seven-rouge.vercel.app/token/${ca}`}
             target="_blank" rel="noreferrer"
-            style={{
-              display: "block", marginTop: "8px", textAlign: "center",
+            style={{ display: "block", marginTop: "8px", textAlign: "center",
               background: color, color: "#000", borderRadius: "6px",
               padding: "4px 0", fontWeight: "bold", fontSize: "12px",
-              textDecoration: "none"
-            }}>
+              textDecoration: "none" }}>
             Voir l'analyse complète →
           </a>
         </>
