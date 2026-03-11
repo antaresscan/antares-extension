@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import type { PlasmoCSConfig, PlasmoGetStyle } from "plasmo"
 
 export const config: PlasmoCSConfig = {
@@ -33,18 +33,27 @@ function extractCA(): string {
   return ""
 }
 
+const API = "https://antares-seven-rouge.vercel.app/api/scan"
+
 const C: Record<string, string> = {
   SAFE: "#22c55e", CAUTION: "#f97316",
   DANGER: "#ef4444", RUG: "#dc2626"
 }
 
-function doScan(ca: string, cb: (d: any) => void, err: () => void) {
+async function doScan(ca: string): Promise<any> {
   try {
-    chrome.runtime.sendMessage({ type: "SCAN", ca: ca }, function(res) {
-      if (chrome.runtime.lastError || !res || !res.ok) { err(); return }
-      cb(res.data)
+    const res = await new Promise<any>((resolve, reject) => {
+      chrome.runtime.sendMessage({ type: "SCAN", ca }, (r) => {
+        if (chrome.runtime.lastError || !r || !r.ok) reject(new Error("bg fail"))
+        else resolve(r.data)
+      })
     })
-  } catch(e) { err() }
+    return res
+  } catch {
+    const r = await fetch(API + "?ca=" + ca)
+    if (!r.ok) throw new Error("fetch fail")
+    return r.json()
+  }
 }
 
 export default function AntaresOverlay() {
@@ -52,48 +61,54 @@ export default function AntaresOverlay() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
   const [ca, setCa] = useState("")
-  const [lastUrl, setLastUrl] = useState("")
+  const lastUrlRef = useRef("")
+  const lastCaRef = useRef("")
+  const scanningRef = useRef(false)
 
-  function scan() {
-    var found = extractCA()
+  async function scan() {
+    const found = extractCA()
     if (!found || found.length < 32) {
       setCa("")
       setData(null)
       setLoading(false)
       return
     }
+    if (found === lastCaRef.current && !error) return
+    lastCaRef.current = found
     setCa(found)
     setLoading(true)
     setData(null)
     setError(false)
-    doScan(found, function(d) {
+    scanningRef.current = true
+    try {
+      const d = await doScan(found)
       setData(d)
-      setLoading(false)
-    }, function() {
+      setError(false)
+    } catch {
       setError(true)
+    } finally {
       setLoading(false)
-    })
+      scanningRef.current = false
+    }
   }
 
-  useEffect(function() {
+  useEffect(() => {
     scan()
-    setLastUrl(window.location.href)
-    var interval = setInterval(function() {
-      var currentUrl = window.location.href
-      if (currentUrl !== lastUrl) {
-        setLastUrl(currentUrl)
+    lastUrlRef.current = window.location.href
+    const interval = setInterval(() => {
+      const currentUrl = window.location.href
+      if (currentUrl !== lastUrlRef.current) {
+        lastUrlRef.current = currentUrl
         scan()
       }
-    }, 1000)
-    return function() { clearInterval(interval) }
+    }, 1500)
+    return () => clearInterval(interval)
   }, [])
 
   if (!ca) return <div style={{ display: "none" }}></div>
-
-  var risk = data ? data.risk : ""
-  var score = data ? data.score : "--"
-  var color = C[risk] || "#6b7280"
-
+  const risk = data ? data.risk : ""
+  const score = data ? data.score : "--"
+  const color = C[risk] || "#6b7280"
   return (
     <div style={{
       position: "fixed", bottom: 20, right: 20,
@@ -104,19 +119,19 @@ export default function AntaresOverlay() {
       boxShadow: "0 0 24px " + color + "44", minWidth: 210
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-        <span style={{ fontWeight: "bold", color: color }}>ANTARES</span>
+        <span style={{ fontWeight: "bold", color }}>ANTARES</span>
       </div>
       {loading ? <div style={{ color: "#888" }}>Scanning...</div> : null}
       {error && !loading ? <div style={{ color: "#ef4444" }}>API Error</div> : null}
       {data && !loading ? (
         <div>
-          <div style={{ fontSize: 22, fontWeight: "bold", color: color, marginBottom: 4 }}>{risk}</div>
+          <div style={{ fontSize: 22, fontWeight: "bold", color, marginBottom: 4 }}>{risk}</div>
           <div style={{ color: "#aaa", fontSize: 12, marginBottom: 8 }}>
             Score : <strong style={{ color: "#fff" }}>{score}/1000</strong>
           </div>
-          {(data.flags || []).slice(0, 3).map(function(f: any, i: number) {
-            return <div key={i} style={{ fontSize: 11, color: "#888", marginBottom: 2 }}>{f.label || f}</div>
-          })}
+          {(data.flags || []).slice(0, 3).map((f: any, i: number) => (
+            <div key={i} style={{ fontSize: 11, color: "#888", marginBottom: 2 }}>{f.label || f}</div>
+          ))}
           <a
             href={"https://antares-seven-rouge.vercel.app/token/" + ca}
             target="_blank" rel="noreferrer"
