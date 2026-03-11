@@ -14,8 +14,7 @@ const COLORS: Record<string, string> = {
   RUG: "#dc2626"
 }
 
-// Base58 Solana address in URL path/query (32-44 chars)
-const SOL_ADDR = /[1-9A-HJ-NP-Za-km-z]{32,44}/g
+const SOL_ADDR = /\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/g
 
 const IGNORE = new Set([
   "11111111111111111111111111111111",
@@ -24,80 +23,103 @@ const IGNORE = new Set([
   "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
   "SysvarRent111111111111111111111111111111111",
   "SysvarC1ock11111111111111111111111111111111",
+  "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s",
+  "TokenzQdBNbequAOoiqaLs8AA6CRCmvsembyniztzCFm",
 ])
 
-function isValidAddr(addr: string): boolean {
-  if (!addr || addr.length < 32 || addr.length > 44) return false
+function isValid(addr: string): boolean {
+  if (addr.length < 32 || addr.length > 44) return false
   if (IGNORE.has(addr)) return false
   if (/^[A-Z]+$/.test(addr)) return false
   if (/^[0-9]+$/.test(addr)) return false
   return true
 }
 
-// Extract the token address ONLY from the current URL path/query.
-// Returns empty string if the current page is not a single-token page.
-function getAddressFromUrl(): string {
-  const url = window.location.href
-  // Extract all candidate addresses from the URL path
-  const raw = url.match(SOL_ADDR) || []
-  const candidates = raw.filter(isValidAddr)
-  if (candidates.length === 0) return ""
-
-  // Prefer pump addresses
-  const pump = candidates.find(a => a.endsWith("pump"))
-  if (pump) return pump
-
-  // Prefer lowercase (DexScreener pair address — backend resolves to mint)
-  const lower = candidates.find(a => /^[a-z0-9]+$/.test(a))
-  if (lower) return lower
-
-  // Prefer mixed-case Base58
-  const mixed = candidates.find(a => /[A-Z]/.test(a) && /[a-z]/.test(a))
-  if (mixed) return mixed
-
-  return candidates[0]
+// Score an address — higher = more likely to be the token we want
+function score(addr: string, url: string): number {
+  let s = 0
+  if (url.includes(addr)) s += 100          // in current URL
+  if (addr.endsWith("pump")) s += 80         // pump.fun token
+  if (/[A-Z]/.test(addr) && /[a-z]/.test(addr)) s += 40  // mixed case = real Base58 mint
+  if (/^[a-z0-9]+$/.test(addr)) s += 20     // lowercase = likely pair addr, backend resolves
+  return s
 }
 
-// Only used as extra signal when URL already confirms we're on a token page.
-// Looks for mixed-case version of the address (real mint) in DOM attributes.
-function findMixedCaseInDom(pairAddr: string): string {
-  // If the URL already has a mixed-case address, just use it
-  if (/[A-Z]/.test(pairAddr) && /[a-z]/.test(pairAddr)) return pairAddr
+function findBestAddress(): string {
+  const found = new Map<string, number>()
+  const url = window.location.href
 
-  // Look for mixed-case variant in data attributes (DexScreener renders mint in DOM)
-  const attrs = ["data-address","data-token","data-mint","data-ca"]
-  const els = document.querySelectorAll(attrs.map(a => `[${a}]`).join(","))
-  for (const el of els) {
-    for (const attr of attrs) {
-      const val = el.getAttribute(attr) || ""
-      const matches = val.match(SOL_ADDR) || []
-      for (const m of matches) {
-        if (isValidAddr(m) && /[A-Z]/.test(m) && /[a-z]/.test(m)) return m
+  const addToMap = (addr: string) => {
+    if (!isValid(addr)) return
+    found.set(addr, (found.get(addr) || 0) + score(addr, url))
+  }
+
+  // URL
+  for (const m of (url.match(SOL_ADDR) || [])) addToMap(m)
+
+  // Data attributes (most reliable — apps store mint here)
+  for (const el of document.querySelectorAll("[data-address],[data-token],[data-mint],[data-ca],[data-contract]")) {
+    for (const attr of ["data-address","data-token","data-mint","data-ca","data-contract"]) {
+      for (const m of ((el.getAttribute(attr) || "").match(SOL_ADDR) || [])) addToMap(m)
+    }
+  }
+
+  // Visible text — only scan elements that look like address displays
+  // (short text nodes containing only base58-like chars)
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null)
+  let node: Node | null
+  while ((node = walker.nextNode())) {
+    const t = (node.textContent || "").trim()
+    // Only process text that could be a standalone address (not a paragraph)
+    if (t.length >= 32 && t.length <= 50) {
+      for (const m of (t.match(SOL_ADDR) || [])) addToMap(m)
+    }
+  }
+
+  // href links — token links on list pages contain the mint
+  // BUT only pick hrefs that look like single-token URLs (contain /address or /token path)
+  for (const a of document.querySelectorAll("a[href]")) {
+    const href = a.getAttribute("href") || ""
+    if (!/\/token|\/address|\/pair|\/solana\/[1-9A-HJ]/.test(href)) continue
+    for (const m of (href.match(SOL_ADDR) || [])) {
+      if (isValid(m)) {
+        // Only add if this link is "active" — visible in viewport or has active/selected class
+        const rect = (a as HTMLElement).getBoundingClientRect()
+        const isVisible = rect.top >= 0 && rect.bottom <= window.innerHeight
+        const isActive = a.classList.contains("active") || a.getAttribute("aria-current") === "page"
+        if (isActive) found.set(m, (found.get(m) || 0) + 200)
+        else if (isVisible) found.set(m, (found.get(m) || 0) + 5)
       }
     }
   }
-  return pairAddr
+
+  if (found.size === 0) return ""
+
+  // Return address with highest score
+  return [...found.entries()].sort((a, b) => b[1] - a[1])[0][0]
 }
 
+// State
 let lastCA = ""
+let missCount = 0
+const MISS_THRESHOLD = 3  // hide after 3 polls with no address found
 let box: HTMLDivElement | null = null
 let hideTimeout: ReturnType<typeof setTimeout> | null = null
 let manuallyDismissed = false
+let scanInFlight = false
 
 function hideBox() {
   if (!box) return
   box.style.opacity = "0"
-  box.style.transform = "translateY(8px)"
+  box.style.transform = "translateY(10px)"
   if (hideTimeout) clearTimeout(hideTimeout)
-  hideTimeout = setTimeout(() => {
-    if (box) box.style.display = "none"
-  }, 280)
+  hideTimeout = setTimeout(() => { if (box) box.style.display = "none" }, 280)
 }
 
 function ensureBox(): HTMLDivElement {
   if (box && document.body.contains(box)) return box
   box = document.createElement("div")
-  box.id = "antares-overlay-box"
+  box.id = "antares-box"
   Object.assign(box.style, {
     position: "fixed",
     bottom: "20px",
@@ -107,16 +129,16 @@ function ensureBox(): HTMLDivElement {
     border: "1px solid #333",
     borderRadius: "12px",
     padding: "12px 16px",
-    fontFamily: "'SF Mono', 'Fira Code', monospace",
+    fontFamily: "'SF Mono','Fira Code',monospace",
     fontSize: "13px",
     color: "#fff",
     minWidth: "220px",
     maxWidth: "290px",
-    boxShadow: "0 8px 32px rgba(0,0,0,0.7)",
+    boxShadow: "0 8px 32px rgba(0,0,0,0.8)",
     display: "none",
     transition: "opacity 0.22s ease, transform 0.22s ease",
     opacity: "0",
-    transform: "translateY(8px)"
+    transform: "translateY(10px)"
   })
   document.body.appendChild(box)
   return box
@@ -136,37 +158,31 @@ function attachClose() {
   if (btn) btn.onclick = () => { manuallyDismissed = true; hideBox() }
 }
 
-function headerHtml(color: string) {
-  return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-weight:700;font-size:11px;letter-spacing:2.5px;color:${color}">ANTARES</span><span id="antares-close" style="cursor:pointer;color:#444;font-size:18px;line-height:1">&times;</span></div>`
+function header(color: string) {
+  return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-weight:700;font-size:11px;letter-spacing:2.5px;color:${color}">ANTARES</span><span id="antares-close" style="cursor:pointer;color:#555;font-size:18px;line-height:1">&times;</span></div>`
 }
 
 async function scan(ca: string) {
-  if (!ca) {
-    hideBox()
-    lastCA = ""
-    manuallyDismissed = false
-    return
-  }
-
-  // Same token already displayed — nothing to do
+  if (!ca) return
   if (ca === lastCA && box && box.style.display !== "none") return
+  if (manuallyDismissed && ca === lastCA) return
 
-  // New token — always reset dismissed
   if (ca !== lastCA) {
     manuallyDismissed = false
     lastCA = ca
   }
 
-  if (manuallyDismissed) return
+  if (scanInFlight) return
+  scanInFlight = true
 
   const el = ensureBox()
   showBox(el)
-  el.innerHTML = headerHtml("#6b7280") + `
+  el.innerHTML = header("#6b7280") + `
     <div style="color:#444;font-size:10px;margin-bottom:8px">${ca.slice(0,4)}&hellip;${ca.slice(-4)}</div>
     <div style="color:#666;font-size:12px;display:flex;align-items:center;gap:6px">
       <span style="width:7px;height:7px;border-radius:50%;background:#6b7280;display:inline-block;animation:ap 1s infinite"></span>Scanning&hellip;
     </div>
-    <style>@keyframes ap{0%,100%{opacity:1}50%{opacity:.25}}</style>
+    <style>@keyframes ap{0%,100%{opacity:1}50%{opacity:.2}}</style>
   `
   attachClose()
 
@@ -174,7 +190,7 @@ async function scan(ca: string) {
     const res = await fetch(`${API}?ca=${ca}`)
     if (!res.ok) throw new Error("" + res.status)
     const data = await res.json()
-    if (lastCA !== ca) return // stale
+    if (lastCA !== ca) { scanInFlight = false; return }
 
     const color = COLORS[data.risk] || "#6b7280"
     const flags = (data.flags || []).slice(0, 4).map((f: any) =>
@@ -182,8 +198,8 @@ async function scan(ca: string) {
     ).join("")
 
     el.style.border = `1px solid ${color}66`
-    el.style.boxShadow = `0 8px 32px rgba(0,0,0,0.7), 0 0 20px ${color}18`
-    el.innerHTML = headerHtml(color) + `
+    el.style.boxShadow = `0 8px 32px rgba(0,0,0,0.8),0 0 20px ${color}18`
+    el.innerHTML = header(color) + `
       <div style="font-size:28px;font-weight:800;color:${color};letter-spacing:1px;margin-bottom:2px">${data.risk}</div>
       <div style="color:#888;font-size:12px;margin-bottom:2px">Score <strong style="color:#ddd">${data.score}</strong><span style="color:#444">/1000</span></div>
       <div style="color:#333;font-size:10px;margin-bottom:6px">${ca.slice(0,4)}&hellip;${ca.slice(-4)}</div>
@@ -191,19 +207,19 @@ async function scan(ca: string) {
     `
     attachClose()
   } catch (e) {
-    if (lastCA !== ca) return
-    el.innerHTML = headerHtml("#6b7280") + `<div style="color:#ef4444;font-size:12px">API Error</div>`
+    if (lastCA !== ca) { scanInFlight = false; return }
+    el.innerHTML = header("#6b7280") + `<div style="color:#ef4444;font-size:12px">API Error</div>`
     attachClose()
   }
+  scanInFlight = false
 }
 
 function poll() {
-  // Source of truth: URL only.
-  // If no Solana address in current URL path → hide immediately.
-  const urlCA = getAddressFromUrl()
+  const ca = findBestAddress()
 
-  if (!urlCA) {
-    if (lastCA !== "") {
+  if (!ca) {
+    missCount++
+    if (missCount >= MISS_THRESHOLD && lastCA !== "") {
       lastCA = ""
       manuallyDismissed = false
       hideBox()
@@ -211,21 +227,29 @@ function poll() {
     return
   }
 
-  // We're on a token page — try to get mixed-case mint from DOM if available
-  const ca = findMixedCaseInDom(urlCA)
+  // Found an address
+  missCount = 0
+
+  if (ca !== lastCA) {
+    manuallyDismissed = false
+  }
+
   scan(ca)
 }
 
 poll()
 setInterval(poll, 1500)
 
-// SPA navigation detection
+// SPA navigation: reset miss counter and force re-poll immediately
 let lastUrl = window.location.href
 new MutationObserver(() => {
   const cur = window.location.href
-  if (cur === lastUrl) return
-  lastUrl = cur
-  lastCA = ""
-  manuallyDismissed = false
-  poll()
+  if (cur !== lastUrl) {
+    lastUrl = cur
+    missCount = 0
+    lastCA = ""
+    manuallyDismissed = false
+    // Give SPA 300ms to render the new page before polling
+    setTimeout(poll, 300)
+  }
 }).observe(document.documentElement, { childList: true, subtree: true })
