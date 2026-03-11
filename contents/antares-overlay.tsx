@@ -1,151 +1,144 @@
-import { useEffect, useState } from "react"
-import cssText from "data-text:~/contents/antares-overlay.css"
-import type { PlasmoCSConfig } from "plasmo"
+import {.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json}  useEffect, useState  from "react"
+import type {.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json}  PlasmoCSConfig  from "plasmo"
 
-export const config: PlasmoCSConfig = {
-  matches: ["<all_urls>"],
-}
+export const config: PlasmoCSConfig = {.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json} 
+  matches: 
+ttps://dexscreener.com/solana/*",
+    "https://pump.fun/*",
+    "https://bonk.fun/*",
+    "https://birdeye.so/token/*"
+  
 
-export const getStyle = () => {
-  const style = document.createElement("style")
-  style.textContent = cssText
-  return style
-}
+const API = "https://antares-seven-rouge.vercel.app/api/scan"
 
-const ANTARES_API = "https://antares-seven-rouge.vercel.app/api/scan"
+function extractCA(): string {.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json} 
+  const url = window.location.href
+  if (url.includes("dexscreener.com/solana/")) {.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json} 
+    return url.split("/solana/")
+  if (url.includes("pump.fun/coin/")) {.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json} 
+    return url.split("/coin/")
+  if (url.includes("bonk.fun/token/")) {.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json} 
+    return url.split("/token/")
+  if (url.includes("birdeye.so/token/") && !url.includes("/bsc/")) {.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json} 
+    return url.split("/token/")
+  return ""
 
-const BLACKLIST = new Set([
-  "So11111111111111111111111111111111111111112",
-  "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-  "11111111111111111111111111111111",
-  "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-  "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
-  "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJe1bRS",
-  "SysvarRent111111111111111111111111111111111",
-  "SysvarC1ock11111111111111111111111111111111",
-  "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s",
-])
 
-// Découpe l'URL en segments et cherche une adresse Solana base58 valide
-function extractCA(url: string): string | null {
-  // Sépare l'URL sur tous les délimiteurs possibles
-  const segments = url.split(/[\/\?&=#]/)
-  const base58 = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/
+const COLORS = {.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json} 
+#  SAFE: "
+22c55e",
+#  CAUTION: "
+f97316",
+#  DANGER: "
+ef4444",
+#  RUG: "
+dc2626",
+#  LOADING: "
+6b7280"
 
-  for (const seg of segments) {
-    if (base58.test(seg) && !BLACKLIST.has(seg)) {
-      return seg
-    }
-  }
-  return null
-}
 
-const riskColors: Record<string, string> = {
-  SAFE:    "#22c55e",
-  CAUTION: "#eab308",
-  DANGER:  "#f97316",
-  RUG:     "#dc2626",
-}
+export default function AntaresOverlay() {.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json} 
+  const ata, setDataoading, setLoadingrror, setErrorisible, setVisible
+    if (!ca  ca.length < 32) {.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json} 
+      setError("No token found")
+      setLoading(false)
+      return
+    
 
-const riskLabels: Record<string, string> = {
-  SAFE:    "✅ SAFE",
-  CAUTION: "⚠️ CAUTION",
-  DANGER:  "🔴 DANGER",
-  RUG:     "💀 RUG",
-}
-
-export default function AntaresOverlay() {
-  const [ca, setCA]             = useState<string | null>(null)
-  const [data, setData]         = useState<any>(null)
-  const [loading, setLoading]   = useState(false)
-  const [visible, setVisible]   = useState(true)
-  const [expanded, setExpanded] = useState(false)
-
-  useEffect(() => {
-    let debounceTimer: ReturnType<typeof setTimeout>
-
-    function detect() {
-      clearTimeout(debounceTimer)
-      debounceTimer = setTimeout(() => {
-        const found = extractCA(window.location.href)
-        setCA((prev) => {
-          if (prev !== found) {
-            setData(null)
-            setExpanded(false)
-          }
-          return found
-        })
-      }, 300)
-    }
-
-    detect()
-
-    const observer = new MutationObserver(detect)
-    observer.observe(document.body, { childList: true, subtree: true })
-    window.addEventListener("popstate", detect)
-
-    return () => {
-      clearTimeout(debounceTimer)
-      observer.disconnect()
-      window.removeEventListener("popstate", detect)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!ca) return
-    setLoading(true)
-    fetch(`${ANTARES_API}?ca=${ca}`)
+    fetch($API?ca=$ca)
       .then((r) => r.json())
-      .then((d) => { setData(d); setLoading(false) })
-      .catch(() => setLoading(false))
-  }, [ca])
+      .then((d) => {.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json} 
+        setData(d)
+        setLoading(false)
+      )
+      .catch(() => {.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json} 
+        setError("API error")
+        setLoading(false)
+      )
+  , a ca.length < 32) return null
 
-  if (!ca || !visible) return null
-
-  const color = data ? riskColors[data.risk] ?? "#6366f1" : "#6366f1"
-
-  return (
-    <div className="antares-root">
-      <div
-        className="antares-badge"
-        style={{ borderColor: color }}
-        onClick={() => setExpanded((e) => !e)}
-      >
-        <div className="antares-header">
-          <span className="antares-logo">⭐ ANTARES</span>
-          <button className="antares-close" onClick={(e) => { e.stopPropagation(); setVisible(false) }}>✕</button>
-        </div>
-
-        {loading && <p className="antares-loading">Analyse en cours...</p>}
-
-        {!loading && data && (
-          <>
-            <div className="antares-score" style={{ color }}>
-              {data.score}<span className="antares-max">/1000</span>
-            </div>
-            <div className="antares-risk" style={{ background: color }}>
-              {riskLabels[data.risk] ?? data.risk}
-            </div>
-
-            {expanded && data.flags?.length > 0 && (
-              <div className="antares-flags">
-                {data.flags.slice(0, 5).map((f: any, i: number) => (
-                  <div key={i} className={`antares-flag antares-flag--${f.severity}`}>
-                    <span>{f.label}</span>
-                    <span className="antares-flag-impact">-{f.impact}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <p className="antares-hint">
-              {expanded ? "▲ Réduire" : "▼ Voir les signaux"}
-            </p>
-          </>
-        )}
-
-        {!loading && !data && <p className="antares-loading">Analyse en cours...</p>}
+  const risk = data?.risk ?? "LOADING"
+  const score = data?.score ?? ""
+  const color = COLORSisk as keyof typeof COLORS
+      position: "fixed",
+      bottom: "20px",
+      right: "20px",
+      zIndex: 2147483647,
+#      background: "
+0a0a0a",
+      border: 1px solid $color,
+      borderRadius: "10px",
+      padding: "12px 16px",
+      fontFamily: "monospace",
+      fontSize: "13px",
+#      color: "
+fff",
+      boxShadow: 0 0 24px $color44,
+      minWidth: "200px",
+      cursor: "default"
+    >
+      <div style={.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json} {.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json}  display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" >
+        <span style={.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json} {.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json}  fontWeight: "bold", color > ANTARES</span>
+        <span
+#          style={.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json} {.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json}  cursor: "pointer", color: "
+666", fontSize: "16px" 
+          onClick={.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json} () => setVisible(false)
+        ></span>
       </div>
+
+      {.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json} loading && (
+#        <div style={.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json} {.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json}  color: "
+888" >Scanning...</div>
+      )
+
+      {.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json} error && !loading && (
+#        <div style={.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json} {.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json}  color: "
+ef4444" >error</div>
+      )
+
+      {.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json} data && !loading && (
+        <>
+          <div style={.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json} {.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json} 
+            fontSize: "22px",
+            fontWeight: "bold",
+            color,
+            marginBottom: "4px"
+          >
+            {.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json} risk
+          </div>
+#          <div style={.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json} {.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json}  color: "
+aaa", fontSize: "12px", marginBottom: "8px" >
+#            Score : <strong style={.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json} {.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json}  color: "
+fff" >score/1000</strong>
+          </div>
+          {.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json} data.flags?.slice(0, 3).map((f: string, i: number) => (
+#            <div key={.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json} i style={.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json} {.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json}  fontSize: "11px", color: "
+888", marginBottom: "2px" >
+              {.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json} f
+            </div>
+          ))
+          <a
+            href={.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json} https://antares-seven-rouge.vercel.app/token/$ca
+            target="_blank"
+            rel="noreferrer"
+            style={.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json} {.{git{,hub,ignore},p{lasmo,rettierrc.mjs}},README.md,assets,build,contents,node_modules,p{ackage{-lock.json,.json},lasmo.config.ts},tsconfig.json} 
+              display: "block",
+              marginTop: "8px",
+              textAlign: "center",
+              background: color,
+#              color: "
+000",
+              borderRadius: "6px",
+              padding: "4px 0",
+              fontWeight: "bold",
+              fontSize: "12px",
+              textDecoration: "none"
+            
+          >
+            Voir l'analyse complète 
+          </a>
+        </>
+      )
     </div>
   )
-}
+
