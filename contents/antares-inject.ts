@@ -71,8 +71,8 @@ function findAddresses(): string[] {
   return Array.from(found).filter(addr => {
     if (IGNORE.has(addr)) return false
     if (addr.length < 32 || addr.length > 44) return false
-    // Filter out strings that look like common words or hashes
-    if (/^[a-z]+$/.test(addr)) return false // all lowercase = probably a word
+    // Filter short lowercase words, but keep 32+ char lowercase (Solana pair addresses)
+    if (/^[a-z]+$/.test(addr) && addr.length < 32) return false
     if (/^[A-Z]+$/.test(addr)) return false // all uppercase = probably a label
     if (/^[0-9]+$/.test(addr)) return false // all digits = number
     return true
@@ -88,12 +88,18 @@ function pickBestAddress(addrs: string[]): string {
   const pump = addrs.find(a => a.endsWith("pump"))
   if (pump) return pump
 
-  // Prefer addresses found in URL
   const url = window.location.href
+
+  // Prefer lowercase/alnum addresses found in URL first:
+  // on DexScreener this can be a pair address — the backend resolves pair -> mint
+  const lowerUrl = addrs.find(a => url.includes(a) && /^[a-z0-9]+$/.test(a))
+  if (lowerUrl) return lowerUrl
+
+  // Then prefer any address found in URL
   const inUrl = addrs.find(a => url.includes(a))
   if (inUrl) return inUrl
 
-  // Prefer mixed case (real Base58) over lowercase (DexScreener URLs)
+  // Prefer mixed case (real Base58) over generic DOM noise
   const mixedCase = addrs.find(a => /[A-Z]/.test(a) && /[a-z]/.test(a))
   if (mixedCase) return mixedCase
 
