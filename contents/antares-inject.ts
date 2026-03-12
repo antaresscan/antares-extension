@@ -38,6 +38,9 @@ function isValid(addr: string): boolean {
 }
 
 function findBestAddress(): string {
+  // Photon: only on token pages
+  if (window.location.hostname.includes("photon") && !window.location.pathname.includes("/lp/")) return ""
+
   const scores = new Map<string, number>()
   const url = window.location.href
 
