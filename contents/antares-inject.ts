@@ -97,7 +97,6 @@ function findBestAddress(): string {
     scores.set(addr, (scores.get(addr) || 0) + pts)
   }
 
-  // Priority 1: data attributes
   for (const el of document.querySelectorAll(
     "[data-address],[data-token],[data-mint],[data-ca],[data-contract],[data-token-address],[data-mint-address]"
   )) {
@@ -106,7 +105,6 @@ function findBestAddress(): string {
     }
   }
 
-  // Priority 2: explorer links
   for (const a of document.querySelectorAll("a[href]")) {
     const href = a.getAttribute("href") || ""
     if (/solscan\.io\/token|solscan\.io\/address|explorer\.solana\.com\/address|solana\.fm\/address/.test(href)) {
@@ -114,10 +112,8 @@ function findBestAddress(): string {
     }
   }
 
-  // Priority 3: URL itself (fast, no DOM walk needed)
   for (const m of (url.match(SOL_ADDR) || [])) add(m, 60)
 
-  // Priority 4: TreeWalker capped at WALKER_LIMIT nodes
   if (scores.size === 0) {
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null)
     let node: Node | null
@@ -271,14 +267,11 @@ function poll() {
   scan(ca)
 }
 
-// Initial poll on page load
 poll()
-// Delayed retry for lazy-loaded pages
 setTimeout(poll, 2000)
 
 const onNav = () => {
   resetState()
-  // Two polls after navigation: one fast, one delayed for lazy content
   setTimeout(poll, 400)
   setTimeout(poll, 2000)
 }
