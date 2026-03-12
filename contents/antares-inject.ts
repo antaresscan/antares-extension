@@ -7,6 +7,8 @@ export const config: PlasmoCSConfig = {
 
 const API = "https://antares-extension.vercel.app/api/scan"
 const ANALYSIS_PAGE = "https://antares-extension.vercel.app/token.html"
+const LS_PREFIX = "antares_scan_"
+const LS_TTL = 30_000
 
 const COLORS: Record<string, string> = {
   SAFE: "#22c55e",
@@ -30,7 +32,6 @@ const IGNORE = new Set([
   "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr",
 ])
 
-// --- Cache local 30s ---
 const CACHE_TTL = 30_000
 const scanCache = new Map<string, { data: any; ts: number }>()
 
@@ -39,6 +40,12 @@ function getCached(ca: string): any | null {
   if (!e) return null
   if (Date.now() - e.ts > CACHE_TTL) { scanCache.delete(ca); return null }
   return e.data
+}
+
+function saveToLS(ca: string, data: any) {
+  try {
+    localStorage.setItem(LS_PREFIX + ca, JSON.stringify({ data, ts: Date.now() }))
+  } catch(_) {}
 }
 
 function formatMcap(mc: number): string {
@@ -235,6 +242,7 @@ async function scan(ca: string) {
     if (lastCA !== ca) { scanInFlight = false; return }
 
     scanCache.set(ca, { data, ts: Date.now() })
+    saveToLS(ca, data)
 
     const color = COLORS[data.risk] || "#6b7280"
     el.style.border = `1px solid ${color}66`

@@ -37,106 +37,43 @@
       padding: 20px 32px;
       border-bottom: 1px solid var(--border);
     }
-    .logo {
-      font-weight: 800;
-      font-size: 13px;
-      letter-spacing: 3px;
-      color: #fff;
-      text-decoration: none;
-    }
+    .logo { font-weight: 800; font-size: 13px; letter-spacing: 3px; color: #fff; text-decoration: none; }
     .logo-sub { font-size: 10px; color: var(--muted); letter-spacing: 1px; margin-top: 2px; }
-    main {
-      flex: 1;
-      max-width: 720px;
-      width: 100%;
-      margin: 0 auto;
-      padding: 48px 24px;
+    .cached-badge {
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      padding: 4px 10px;
+      border: 1px solid #222;
+      border-radius: 4px;
     }
-    #loading {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      min-height: 300px;
-    }
-    .pulse {
-      width: 10px; height: 10px;
-      border-radius: 50%;
-      background: var(--muted);
-      animation: pulse 1s infinite;
-    }
+    main { flex: 1; max-width: 720px; width: 100%; margin: 0 auto; padding: 48px 24px; }
+    #loading { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; min-height: 300px; }
+    .pulse { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); animation: pulse 1s infinite; }
     @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.2} }
     #loading p { color: var(--muted); font-size: 12px; letter-spacing: 1px; }
     #error { display: none; text-align: center; padding: 60px 0; }
     #error h2 { color: var(--red); font-size: 20px; margin-bottom: 12px; }
     #error p { color: var(--muted); font-size: 12px; }
     #result { display: none; }
-    .token-header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      margin-bottom: 32px;
-      flex-wrap: wrap;
-      gap: 16px;
-    }
-    .token-identity h1 {
-      font-size: 28px;
-      font-weight: 900;
-      color: #fff;
-      letter-spacing: -0.5px;
-    }
-    .token-identity .symbol {
-      font-size: 13px;
-      color: var(--muted);
-      letter-spacing: 1px;
-      margin-top: 4px;
-    }
-    .token-identity .ca {
-      font-size: 10px;
-      color: #2a2a2a;
-      margin-top: 6px;
-      word-break: break-all;
-    }
+    .token-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 32px; flex-wrap: wrap; gap: 16px; }
+    .token-identity h1 { font-size: 28px; font-weight: 900; color: #fff; letter-spacing: -0.5px; }
+    .token-identity .symbol { font-size: 13px; color: var(--muted); letter-spacing: 1px; margin-top: 4px; }
+    .token-identity .ca { font-size: 10px; color: #2a2a2a; margin-top: 6px; word-break: break-all; }
     .token-identity .ca a { color: #333; text-decoration: none; }
     .token-identity .ca a:hover { color: #666; }
     .risk-badge { text-align: right; }
     .risk-level { font-size: 36px; font-weight: 900; letter-spacing: 1px; }
     .risk-score { font-size: 13px; color: #666; margin-top: 4px; }
     .risk-score strong { color: #ccc; }
-    .stats-row {
-      display: flex;
-      gap: 24px;
-      margin-bottom: 40px;
-      flex-wrap: wrap;
-    }
-    .stat-pill {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px 20px;
-    }
+    .stats-row { display: flex; gap: 24px; margin-bottom: 40px; flex-wrap: wrap; }
+    .stat-pill { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 20px; }
     .stat-pill-label { font-size: 10px; color: var(--muted); letter-spacing: 1px; margin-bottom: 4px; }
     .stat-pill-value { font-size: 16px; font-weight: 700; color: #fff; }
     .section { margin-bottom: 40px; }
-    .section-title {
-      font-size: 10px;
-      letter-spacing: 3px;
-      color: var(--muted);
-      margin-bottom: 16px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--border);
-    }
+    .section-title { font-size: 10px; letter-spacing: 3px; color: var(--muted); margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
     .flags-list { display: flex; flex-direction: column; gap: 8px; }
-    .flag-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      padding: 12px 16px;
-      background: var(--surface);
-      border-radius: 8px;
-      border-left: 3px solid;
-    }
+    .flag-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; background: var(--surface); border-radius: 8px; border-left: 3px solid; }
     .flag-item.critical { border-color: var(--rug); }
     .flag-item.warning { border-color: var(--orange); }
     .flag-item.info { border-color: #333; }
@@ -150,25 +87,9 @@
     .flag-impact { font-size: 11px; color: var(--muted); }
     .flag-item.bonus .flag-impact { color: var(--green); }
     .sources-list { display: flex; gap: 10px; flex-wrap: wrap; }
-    .source-chip {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 6px 14px;
-      font-size: 11px;
-      color: #666;
-      letter-spacing: 0.5px;
-    }
+    .source-chip { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 6px 14px; font-size: 11px; color: #666; letter-spacing: 0.5px; }
     .source-chip.active { border-color: #333; color: #aaa; }
-    footer {
-      border-top: 1px solid var(--border);
-      padding: 20px 32px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
+    footer { border-top: 1px solid var(--border); padding: 20px 32px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
     .footer-brand { font-size: 11px; color: #222; letter-spacing: 2px; }
     .footer-time { font-size: 10px; color: #222; }
     @media (max-width: 600px) {
@@ -180,12 +101,12 @@
   </style>
 </head>
 <body>
-
   <header>
     <div>
       <a href="/" class="logo">ANTARES</a>
       <div class="logo-sub">TOKEN ANALYSIS</div>
     </div>
+    <div class="cached-badge" id="data-source-badge" style="display:none">FROM EXTENSION</div>
   </header>
 
   <main>
@@ -210,22 +131,10 @@
         </div>
       </div>
       <div class="stats-row">
-        <div class="stat-pill">
-          <div class="stat-pill-label">MARKET CAP</div>
-          <div class="stat-pill-value" id="stat-mcap">—</div>
-        </div>
-        <div class="stat-pill">
-          <div class="stat-pill-label">24H VOLUME</div>
-          <div class="stat-pill-value" id="stat-vol">—</div>
-        </div>
-        <div class="stat-pill">
-          <div class="stat-pill-label">LIQUIDITY</div>
-          <div class="stat-pill-value" id="stat-liq">—</div>
-        </div>
-        <div class="stat-pill">
-          <div class="stat-pill-label">CONFIDENCE</div>
-          <div class="stat-pill-value" id="stat-conf">—</div>
-        </div>
+        <div class="stat-pill"><div class="stat-pill-label">MARKET CAP</div><div class="stat-pill-value" id="stat-mcap">—</div></div>
+        <div class="stat-pill"><div class="stat-pill-label">24H VOLUME</div><div class="stat-pill-value" id="stat-vol">—</div></div>
+        <div class="stat-pill"><div class="stat-pill-label">LIQUIDITY</div><div class="stat-pill-value" id="stat-liq">—</div></div>
+        <div class="stat-pill"><div class="stat-pill-label">CONFIDENCE</div><div class="stat-pill-value" id="stat-conf">—</div></div>
       </div>
       <div class="section">
         <div class="section-title">RISK FLAGS</div>
@@ -245,14 +154,11 @@
 
   <script>
     const API = 'https://antares-extension.vercel.app/api/scan'
+    const LS_PREFIX = 'antares_scan_'
+    const LS_TTL = 30_000
     const COLORS = { SAFE: '#22c55e', CAUTION: '#f97316', DANGER: '#ef4444', RUG: '#dc2626' }
 
-    // Labels to hide entirely
-    const HIDDEN_LABELS = [
-      'unavailable'
-    ]
-
-    // Label rewrites
+    const HIDDEN_LABELS = ['unavailable']
     const LABEL_MAP = {
       'Wash trading suspected (24h vol/liquidity > 20)': 'Wash trading suspected',
       'LP not burned or locked': 'LP not secured',
@@ -264,13 +170,8 @@
       'Freshly launched, extreme risk': 'Freshly launched'
     }
 
-    function cleanLabel(label) {
-      return LABEL_MAP[label] || label
-    }
-
-    function isHidden(label) {
-      return HIDDEN_LABELS.some(h => label.toLowerCase().includes(h))
-    }
+    function cleanLabel(label) { return LABEL_MAP[label] || label }
+    function isHidden(label) { return HIDDEN_LABELS.some(h => label.toLowerCase().includes(h)) }
 
     function fmt(n) {
       if (!n || isNaN(n)) return '—'
@@ -280,10 +181,30 @@
       return '$' + n.toFixed(0)
     }
 
+    function getFromLS(ca) {
+      try {
+        const raw = localStorage.getItem(LS_PREFIX + ca)
+        if (!raw) return null
+        const parsed = JSON.parse(raw)
+        if (Date.now() - parsed.ts > LS_TTL) { localStorage.removeItem(LS_PREFIX + ca); return null }
+        return parsed.data
+      } catch(_) { return null }
+    }
+
     async function load() {
       const params = new URLSearchParams(window.location.search)
       const ca = params.get('ca')
       if (!ca) { showError(); return }
+
+      // Try extension cache first
+      const lsData = getFromLS(ca)
+      if (lsData) {
+        document.getElementById('data-source-badge').style.display = 'block'
+        render(lsData, ca)
+        return
+      }
+
+      // Fallback: fresh API call
       try {
         const res = await fetch(API + '?ca=' + ca)
         if (!res.ok) throw new Error(res.status)
