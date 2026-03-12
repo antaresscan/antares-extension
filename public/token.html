@@ -4,10 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Antares — Token Analysis</title>
-  <meta id="og-title" property="og:title" content="Antares Token Analysis" />
-  <meta id="og-desc" property="og:description" content="Real-time Solana token risk analysis powered by Antares." />
-  <meta property="og:type" content="website" />
-  <meta name="twitter:card" content="summary" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -47,6 +43,7 @@
     .stat-pill { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 20px; }
     .stat-pill-label { font-size: 10px; color: var(--muted); letter-spacing: 1px; margin-bottom: 4px; }
     .stat-pill-value { font-size: 16px; font-weight: 700; color: #fff; }
+    .stat-pill-value.score { font-size: 16px; font-weight: 700; }
     .section { margin-bottom: 40px; }
     .section-title { font-size: 10px; letter-spacing: 3px; color: var(--muted); margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
     .flags-list { display: flex; flex-direction: column; gap: 8px; }
@@ -99,6 +96,7 @@
         <div class="stat-pill"><div class="stat-pill-label">MARKET CAP</div><div class="stat-pill-value" id="stat-mcap">—</div></div>
         <div class="stat-pill"><div class="stat-pill-label">24H VOLUME</div><div class="stat-pill-value" id="stat-vol">—</div></div>
         <div class="stat-pill"><div class="stat-pill-label">LIQUIDITY</div><div class="stat-pill-value" id="stat-liq">—</div></div>
+        <div class="stat-pill"><div class="stat-pill-label">SCORE</div><div class="stat-pill-value score" id="stat-score">—</div></div>
         <div class="stat-pill"><div class="stat-pill-label">CONFIDENCE</div><div class="stat-pill-value" id="stat-conf">—</div></div>
       </div>
       <div class="section"><div class="section-title">RISK FLAGS</div><div class="flags-list" id="flags-list"></div></div>
@@ -114,7 +112,7 @@
   <script>
     const API = 'https://antares-extension.vercel.app/api/scan'
     const LS_PREFIX = 'antares_scan_'
-    const LS_TTL = 10_000
+    const LS_TTL = 90_000
     const COLORS = { SAFE: '#22c55e', CAUTION: '#f97316', DANGER: '#ef4444', RUG: '#dc2626' }
 
     const HIDDEN_LABELS = ['unavailable']
@@ -187,8 +185,6 @@
       const name = pair.baseToken?.name || data.tokenName || (mint.slice(0,8) + '...' + mint.slice(-4))
 
       document.title = 'Antares — ' + (sym ? sym + ' ' : '') + data.risk
-      document.getElementById('og-title').content = name + (sym ? ' (' + sym + ')' : '') + ' — ' + data.risk
-      document.getElementById('og-desc').content = data.risk + ' | ' + (data.flags||[]).filter(f => !isHidden(f.label||f)).slice(0,2).map(f=>cleanLabel(f.label||f)).join(' · ')
 
       document.getElementById('token-name').textContent = name
       const showSym = sym && sym.toLowerCase() !== name.toLowerCase()
@@ -204,6 +200,16 @@
       document.getElementById('stat-mcap').textContent = fmt(pair.marketCap || pair.fdv)
       document.getElementById('stat-vol').textContent = fmt(pair.volume?.h24)
       document.getElementById('stat-liq').textContent = fmt(pair.liquidity?.usd)
+
+      const scoreEl = document.getElementById('stat-score')
+      const score = data.score ?? null
+      if (score !== null) {
+        scoreEl.textContent = score + '/1000'
+        scoreEl.style.color = color
+      } else {
+        scoreEl.textContent = '—'
+      }
+
       document.getElementById('stat-conf').textContent = (data.confidence || 0) + '%'
 
       const flagsList = document.getElementById('flags-list')
@@ -223,7 +229,7 @@
 
       const sourcesList = document.getElementById('sources-list')
       sourcesList.innerHTML = ''
-      const allSources = ['DexScreener','RugCheck','GoPlus','Honeypot.is','Birdeye']
+      const allSources = ['DexScreener', 'RugCheck', 'Helius']
       const used = data.sources_used || []
       allSources.forEach(s => {
         const chip = document.createElement('div')
