@@ -21,32 +21,11 @@
       --muted: #444;
       --font: 'SF Mono', 'Fira Code', 'Consolas', monospace;
     }
-    body {
-      background: var(--bg);
-      color: #e5e5e5;
-      font-family: var(--font);
-      font-size: 13px;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 20px 32px;
-      border-bottom: 1px solid var(--border);
-    }
+    body { background: var(--bg); color: #e5e5e5; font-family: var(--font); font-size: 13px; min-height: 100vh; display: flex; flex-direction: column; }
+    header { display: flex; justify-content: space-between; align-items: center; padding: 20px 32px; border-bottom: 1px solid var(--border); }
     .logo { font-weight: 800; font-size: 13px; letter-spacing: 3px; color: #fff; text-decoration: none; }
     .logo-sub { font-size: 10px; color: var(--muted); letter-spacing: 1px; margin-top: 2px; }
-    .cached-badge {
-      font-size: 10px;
-      color: var(--muted);
-      letter-spacing: 1px;
-      padding: 4px 10px;
-      border: 1px solid #222;
-      border-radius: 4px;
-    }
+    .cached-badge { font-size: 10px; color: var(--muted); letter-spacing: 1px; padding: 4px 10px; border: 1px solid #222; border-radius: 4px; }
     main { flex: 1; max-width: 720px; width: 100%; margin: 0 auto; padding: 48px 24px; }
     #loading { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; min-height: 300px; }
     .pulse { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); animation: pulse 1s infinite; }
@@ -92,12 +71,7 @@
     footer { border-top: 1px solid var(--border); padding: 20px 32px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
     .footer-brand { font-size: 11px; color: #222; letter-spacing: 2px; }
     .footer-time { font-size: 10px; color: #222; }
-    @media (max-width: 600px) {
-      main { padding: 32px 16px; }
-      .token-header { flex-direction: column; }
-      .risk-badge { text-align: left; }
-      header { padding: 16px 20px; }
-    }
+    @media (max-width: 600px) { main { padding: 32px 16px; } .token-header { flex-direction: column; } .risk-badge { text-align: left; } header { padding: 16px 20px; } }
   </style>
 </head>
 <body>
@@ -110,14 +84,8 @@
   </header>
 
   <main>
-    <div id="loading">
-      <div class="pulse"></div>
-      <p>SCANNING TOKEN&hellip;</p>
-    </div>
-    <div id="error">
-      <h2>Analysis failed</h2>
-      <p>Token not found or API error. Check the address and try again.</p>
-    </div>
+    <div id="loading"><div class="pulse"></div><p>SCANNING TOKEN&hellip;</p></div>
+    <div id="error"><h2>Analysis failed</h2><p>Token not found or API error. Check the address and try again.</p></div>
     <div id="result">
       <div class="token-header">
         <div class="token-identity">
@@ -136,14 +104,8 @@
         <div class="stat-pill"><div class="stat-pill-label">LIQUIDITY</div><div class="stat-pill-value" id="stat-liq">—</div></div>
         <div class="stat-pill"><div class="stat-pill-label">CONFIDENCE</div><div class="stat-pill-value" id="stat-conf">—</div></div>
       </div>
-      <div class="section">
-        <div class="section-title">RISK FLAGS</div>
-        <div class="flags-list" id="flags-list"></div>
-      </div>
-      <div class="section">
-        <div class="section-title">DATA SOURCES</div>
-        <div class="sources-list" id="sources-list"></div>
-      </div>
+      <div class="section"><div class="section-title">RISK FLAGS</div><div class="flags-list" id="flags-list"></div></div>
+      <div class="section"><div class="section-title">DATA SOURCES</div><div class="sources-list" id="sources-list"></div></div>
     </div>
   </main>
 
@@ -155,7 +117,7 @@
   <script>
     const API = 'https://antares-extension.vercel.app/api/scan'
     const LS_PREFIX = 'antares_scan_'
-    const LS_TTL = 30_000
+    const LS_TTL = 10_000
     const COLORS = { SAFE: '#22c55e', CAUTION: '#f97316', DANGER: '#ef4444', RUG: '#dc2626' }
 
     const HIDDEN_LABELS = ['unavailable']
@@ -187,6 +149,8 @@
         if (!raw) return null
         const parsed = JSON.parse(raw)
         if (Date.now() - parsed.ts > LS_TTL) { localStorage.removeItem(LS_PREFIX + ca); return null }
+        // Discard cache if pair data is missing (token not yet indexed)
+        if (!parsed.data.pair || !parsed.data.pair.baseToken) return null
         return parsed.data
       } catch(_) { return null }
     }
@@ -196,7 +160,6 @@
       const ca = params.get('ca')
       if (!ca) { showError(); return }
 
-      // Try extension cache first
       const lsData = getFromLS(ca)
       if (lsData) {
         document.getElementById('data-source-badge').style.display = 'block'
@@ -204,7 +167,6 @@
         return
       }
 
-      // Fallback: fresh API call
       try {
         const res = await fetch(API + '?ca=' + ca)
         if (!res.ok) throw new Error(res.status)
@@ -225,8 +187,10 @@
       const pair = data.pair || {}
       const color = COLORS[data.risk] || '#6b7280'
 
-      const sym = pair.baseToken?.symbol || ''
-      const name = pair.baseToken?.name || mint.slice(0,8) + '...'
+      // Name: DexScreener > tokenName field > address truncated
+      const sym = pair.baseToken?.symbol || data.tokenSymbol || ''
+      const name = pair.baseToken?.name || data.tokenName || (mint.slice(0,8) + '...' + mint.slice(-4))
+
       document.title = 'Antares — ' + (sym ? sym + ' ' : '') + data.risk + ' ' + data.score + '/1000'
       document.getElementById('og-title').content = name + (sym ? ' (' + sym + ')' : '') + ' — ' + data.risk
       document.getElementById('og-desc').content = 'Risk score: ' + data.score + '/1000 | ' + (data.flags||[]).filter(f => !isHidden(f.label||f)).slice(0,2).map(f=>cleanLabel(f.label||f)).join(' · ')
