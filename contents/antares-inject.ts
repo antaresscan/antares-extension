@@ -8,7 +8,7 @@ export const config: PlasmoCSConfig = {
 const API = "https://antares-extension.vercel.app/api/scan"
 const ANALYSIS_PAGE = "https://antares-extension.vercel.app/token.html"
 const LS_PREFIX = "antares_scan_"
-const LS_TTL = 30_000
+const LS_TTL = 90_000
 
 const COLORS: Record<string, string> = {
   SAFE: "#22c55e",
@@ -18,6 +18,7 @@ const COLORS: Record<string, string> = {
 }
 
 const SOL_ADDR = /\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/g
+const WALKER_LIMIT = 500
 
 const IGNORE = new Set([
   "11111111111111111111111111111111",
@@ -32,7 +33,7 @@ const IGNORE = new Set([
   "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr",
 ])
 
-const CACHE_TTL = 30_000
+const CACHE_TTL = 90_000
 const scanCache = new Map<string, { data: any; ts: number }>()
 
 function getCached(ca: string): any | null {
@@ -96,6 +97,7 @@ function findBestAddress(): string {
     scores.set(addr, (scores.get(addr) || 0) + pts)
   }
 
+  // Priority 1: data attributes
   for (const el of document.querySelectorAll(
     "[data-address],[data-token],[data-mint],[data-ca],[data-contract],[data-token-address],[data-mint-address]"
   )) {
@@ -104,6 +106,7 @@ function findBestAddress(): string {
     }
   }
 
+  // Priority 2: explorer links
   for (const a of document.querySelectorAll("a[href]")) {
     const href = a.getAttribute("href") || ""
     if (/solscan\.io\/token|solscan\.io\/address|explorer\.solana\.com\/address|solana\.fm\/address/.test(href)) {
@@ -111,16 +114,22 @@ function findBestAddress(): string {
     }
   }
 
-  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null)
-  let node: Node | null
-  while ((node = walker.nextNode())) {
-    const t = (node.textContent || "").trim()
-    if (t.length >= 32 && t.length <= 50) {
-      for (const m of (t.match(SOL_ADDR) || [])) add(m, 120)
+  // Priority 3: URL itself (fast, no DOM walk needed)
+  for (const m of (url.match(SOL_ADDR) || [])) add(m, 60)
+
+  // Priority 4: TreeWalker capped at WALKER_LIMIT nodes
+  if (scores.size === 0) {
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null)
+    let node: Node | null
+    let count = 0
+    while ((node = walker.nextNode()) && count < WALKER_LIMIT) {
+      count++
+      const t = (node.textContent || "").trim()
+      if (t.length >= 32 && t.length <= 50) {
+        for (const m of (t.match(SOL_ADDR) || [])) add(m, 120)
+      }
     }
   }
-
-  for (const m of (url.match(SOL_ADDR) || [])) add(m, 60)
 
   if (scores.size === 0) return ""
 
@@ -262,10 +271,17 @@ function poll() {
   scan(ca)
 }
 
+// Initial poll on page load
 poll()
-setInterval(poll, 5000)
+// Delayed retry for lazy-loaded pages
+setTimeout(poll, 2000)
 
-const onNav = () => { resetState(); setTimeout(poll, 400) }
+const onNav = () => {
+  resetState()
+  // Two polls after navigation: one fast, one delayed for lazy content
+  setTimeout(poll, 400)
+  setTimeout(poll, 2000)
+}
 
 let lastUrl = window.location.href
 new MutationObserver(() => {
