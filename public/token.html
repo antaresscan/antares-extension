@@ -4,10 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Antares — Token Analysis</title>
-  <meta id="og-title" property="og:title" content="Antares Token Analysis" />
-  <meta id="og-desc" property="og:description" content="Real-time Solana token risk analysis powered by Antares." />
-  <meta property="og:type" content="website" />
-  <meta name="twitter:card" content="summary" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -114,7 +110,7 @@
   <script>
     const API = 'https://antares-extension.vercel.app/api/scan'
     const LS_PREFIX = 'antares_scan_'
-    const LS_TTL = 10_000
+    const LS_TTL = 90_000
     const COLORS = { SAFE: '#22c55e', CAUTION: '#f97316', DANGER: '#ef4444', RUG: '#dc2626' }
 
     const HIDDEN_LABELS = ['unavailable']
@@ -187,8 +183,6 @@
       const name = pair.baseToken?.name || data.tokenName || (mint.slice(0,8) + '...' + mint.slice(-4))
 
       document.title = 'Antares — ' + (sym ? sym + ' ' : '') + data.risk
-      document.getElementById('og-title').content = name + (sym ? ' (' + sym + ')' : '') + ' — ' + data.risk
-      document.getElementById('og-desc').content = data.risk + ' | ' + (data.flags||[]).filter(f => !isHidden(f.label||f)).slice(0,2).map(f=>cleanLabel(f.label||f)).join(' · ')
 
       document.getElementById('token-name').textContent = name
       const showSym = sym && sym.toLowerCase() !== name.toLowerCase()
@@ -223,7 +217,7 @@
 
       const sourcesList = document.getElementById('sources-list')
       sourcesList.innerHTML = ''
-      const allSources = ['DexScreener','RugCheck','GoPlus','Honeypot.is','Birdeye']
+      const allSources = ['DexScreener', 'RugCheck', 'Helius']
       const used = data.sources_used || []
       allSources.forEach(s => {
         const chip = document.createElement('div')
