@@ -28,8 +28,8 @@ function checkRateLimit(ip: string): boolean {
 }
 
 const CORS: Record<string, string> = {
-  // Restrict to extension origin; browsers send null for extensions
-  "Access-Control-Allow-Origin": "null",
+  // Keep * for browser extension compatibility (extensions send chrome-extension:// origin)
+  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
 };
@@ -44,7 +44,6 @@ type ScanFlag = {
 
 function setHeaders(res: VercelResponse) {
   Object.entries(CORS).forEach(([k, v]) => res.setHeader(k, v));
-  // Fresher data — 10s edge cache instead of 30s
   res.setHeader("Cache-Control", "s-maxage=10, stale-while-revalidate=20");
 }
 
@@ -134,7 +133,6 @@ function makeFlag(label: string, severity: Severity, impact: number): ScanFlag {
   return { label, severity, impact };
 }
 
-// --- Helius helpers ---
 async function heliusGetLargestAccounts(mint: string, apiKey: string) {
   return fetchJsonPost(`${HELIUS_BASE}/?api-key=${apiKey}`, {
     jsonrpc: "2.0", id: "holders", method: "getTokenLargestAccounts",
@@ -149,7 +147,6 @@ async function heliusGetTokenSupply(mint: string, apiKey: string) {
   });
 }
 
-// Use getAccountInfo (parsed) to get mint account creation slot/time reliably
 async function heliusGetMintAccountInfo(mint: string, apiKey: string) {
   return fetchJsonPost(`${HELIUS_BASE}/?api-key=${apiKey}`, {
     jsonrpc: "2.0", id: "mintinfo", method: "getAccountInfo",
@@ -161,7 +158,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   setHeaders(res);
   if (req.method === "OPTIONS") return res.status(204).end();
 
-  // Rate limiting
   const ip =
     (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
     (req as any).socket?.remoteAddress ||
@@ -197,9 +193,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const pairData = await fetchJson(`${DEXSCREENER_BASE}/pairs/solana/${ca}`);
       const resolvedPair = pairData?.pairs?.[0] ?? pairData?.pair ?? null;
       const baseMint = resolvedPair?.baseToken?.address;
-
       if (resolvedPair) pair = pair ?? resolvedPair;
-
       if (baseMint && baseMint !== ca) {
         resolvedMint = baseMint;
         const [dexRetry, rugRetry] = await Promise.all([
@@ -235,13 +229,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       heliusHolders?.result?.value ?? [];
     const totalSupplyUi: number = asNumber(heliusSupply?.result?.value?.uiAmount);
 
-    // Reliable token age via getAccountInfo rentEpoch / blockTime unavailable directly,
-    // fallback to DexScreener pairCreatedAt if Helius doesn't expose creation slot
-    // getAccountInfo doesn't return creation blockTime directly — use pairCreatedAt as primary
-    // but mark as on-chain sourced when available via parsed data
-    const mintParsed = heliusMint?.result?.value?.data?.parsed?.info;
-    // mintParsed gives us supply, decimals, etc. — no direct creation time
-    // so we keep DexScreener pairCreatedAt for age but it's now a secondary signal
     let tokenAgeMinutes: number | null = null;
     if (pair?.pairCreatedAt) {
       tokenAgeMinutes = (Date.now() - pair.pairCreatedAt) / 60000;
@@ -258,8 +245,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (birdeyeData)  sources_used.push("Birdeye");
     if (holderAccounts.length > 0) sources_used.push("Helius");
 
-    // No more "unavailable" noise flags — removed entirely
-
     const addPenalty = (label: string, severity: Severity, impact: number) => {
       score -= impact;
       flags.push(makeFlag(label, severity, impact));
@@ -273,7 +258,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let forceRisk: "RUG" | null = null;
     let honeypotConfirmed = false;
 
-    // COUCHE 1 — Smart contract risk
     const mintAuthorityEnabled =
       Boolean(rugData?.mintAuthorityEnabled) ||
       Boolean(goplus?.mint_authority && String(goplus.mint_authority).trim() !== "");
@@ -281,7 +265,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       Boolean(rugData?.freezeAuthorityEnabled) ||
       Boolean(goplus?.freeze_authority && String(goplus.freeze_authority).trim() !== "");
 
-    if (mintAuthorityEnabled)  addPenalty("Mint Authority enabled", "critical", 300);
+    if (mintAuthorityEnabled)   addPenalty("Mint Authority enabled", "critical", 300);
     if (freezeAuthorityEnabled) addPenalty("Freeze Authority enabled", "critical", 300);
     if (mintAuthorityEnabled && freezeAuthorityEnabled) {
       forceRisk = "RUG";
@@ -299,8 +283,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (goplus.hidden_owner === "1")      addPenalty("Hidden owner detected", "critical", 300);
       if (goplus.is_proxy === "1" || goplus.is_proxy === 1 || goplus.is_proxy === true)
         addPenalty("Upgradeable/proxy contract detected", "critical", 300);
-      if (asNumber(goplus.sell_tax) > 0.1)      addPenalty("Sell tax > 10%", "critical", 250);
-      if (asNumber(goplus.buy_tax) > 0.1)       addPenalty("Buy tax > 10%", "critical", 250);
+      if (asNumber(goplus.sell_tax) > 0.1)       addPenalty("Sell tax > 10%", "critical", 250);
+      if (asNumber(goplus.buy_tax) > 0.1)        addPenalty("Buy tax > 10%", "critical", 250);
       if (asNumber(goplus.owner_percent) > 0.05)   addPenalty("Owner holds > 5%", "critical", 250);
       if (asNumber(goplus.creator_percent) > 0.05) addPenalty("Creator holds > 5%", "critical", 250);
       if (goplus.is_mintable === "1")              addPenalty("Token is mintable", "warning", 150);
@@ -311,11 +295,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (rugData) {
-      // DEDUP: use only one metadata flag — "Metadata mutable" (warning, -150) takes priority
       if (rugData.metaMutable === true) {
         addPenalty("Metadata mutable", "warning", 150);
       } else if (rugData.metaMutable !== false) {
-        // unknown state — light penalty only
         addPenalty("Metadata not immutable", "info", 50);
       }
       if (!rugData.lpBurned && !rugData.lpLocked) addPenalty("LP not burned or locked", "warning", 150);
@@ -324,7 +306,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         addPenalty("LP lock duration < 30 days", "warning", 150);
     }
 
-    // COUCHE 2 — Honeypot simulation
     if (honeypotData) {
       if (honeypotData?.honeypotResult?.isHoneypot === true) {
         addPenalty("HONEYPOT CONFIRMED", "critical", 400);
@@ -340,7 +321,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (total >= 5 && failed / total > 0.5) addPenalty("High failed-sell ratio in holder analysis", "warning", 120);
     }
 
-    // COUCHE 3 — Liquidity & pool
     if (pair) {
       const liquidity = asNumber(pair?.liquidity?.usd);
       const volume24h = asNumber(pair?.volume?.h24);
@@ -363,16 +343,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (priceChange24h < -80) addPenalty("Brutal dump 24h", "critical", 150);
     }
 
-    // COUCHE 4 — Holder distribution (RugCheck + Birdeye)
     if (rugData) {
       const top10 = getTop10Percentage(rugData);
       const top1  = getTop1Percentage(rugData);
-      if (top10 > 70)  addPenalty("Top 10 holders > 70%", "critical", 150);
+      if (top10 > 70)      addPenalty("Top 10 holders > 70%", "critical", 150);
       else if (top10 > 50) addPenalty("Top 10 holders > 50%", "warning", 80);
       if (top1 > 20) addPenalty("Top 1 holder > 20%", "critical", 150);
-      if (riskIncludes(rugData, /sniper/i))               addPenalty("Sniper activity detected", "critical", 150);
-      if (riskIncludes(rugData, /bundler|bundle/i))        addPenalty("Bundler detected", "critical", 200);
-      if (riskIncludes(rugData, /rug/i))                   addPenalty("Rug pull history", "critical", 200);
+      if (riskIncludes(rugData, /sniper/i))                addPenalty("Sniper activity detected", "critical", 150);
+      if (riskIncludes(rugData, /bundler|bundle/i))         addPenalty("Bundler detected", "critical", 200);
+      if (riskIncludes(rugData, /rug/i))                    addPenalty("Rug pull history", "critical", 200);
       if (riskIncludes(rugData, /creator.*sell|dev.*sell/i)) addPenalty("Dev wallet sold tokens", "warning", 100);
     }
 
@@ -382,7 +361,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (top5Percent > 0.5) addPenalty("Top 5 holders concentration > 50%", "critical", 120);
     }
 
-    // COUCHE 4b — Helius on-chain holder analysis
     if (holderAccounts.length > 0 && totalSupplyUi > 0) {
       const top1Amount = asNumber(holderAccounts[0]?.uiAmount);
       const top1Pct = top1Amount / totalSupplyUi;
@@ -394,39 +372,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       } else if (top1Pct > 0.1) {
         addPenalty(`Single wallet holds ${Math.round(top1Pct * 100)}% of supply`, "warning", 80);
       }
-
       const top10Amount = holderAccounts.slice(0, 10).reduce((s: number, h: any) => s + asNumber(h?.uiAmount), 0);
       const top10Pct = top10Amount / totalSupplyUi;
-      if (top10Pct > 0.8) {
-        addPenalty(`Top 10 wallets hold ${Math.round(top10Pct * 100)}% of supply`, "critical", 150);
-      } else if (top10Pct > 0.6) {
-        addPenalty(`Top 10 wallets hold ${Math.round(top10Pct * 100)}% of supply`, "warning", 80);
-      } else if (top10Pct < 0.3) {
-        addBonus("Well distributed supply ✓", 50);
-      }
+      if (top10Pct > 0.8)      addPenalty(`Top 10 wallets hold ${Math.round(top10Pct * 100)}% of supply`, "critical", 150);
+      else if (top10Pct > 0.6) addPenalty(`Top 10 wallets hold ${Math.round(top10Pct * 100)}% of supply`, "warning", 80);
+      else if (top10Pct < 0.3) addBonus("Well distributed supply ✓", 50);
     }
 
-    // COUCHE 4c — Token age (DexScreener pairCreatedAt, reliable enough)
     if (tokenAgeMinutes !== null) {
       if (tokenAgeMinutes < 1)       addPenalty("Freshly launched, extreme risk", "critical", 150);
       else if (tokenAgeMinutes < 5)  addPenalty("Token very new (< 5 min)", "warning", 80);
       else if (tokenAgeMinutes < 60) addPenalty("Token < 1 hour old", "info", 30);
     }
 
-    // COUCHE 5 — Market & social signals
-    // DEDUP: single socials check here only (RugCheck socials block removed)
     if (pair) {
-      const buys5m  = asNumber(pair?.txns?.m5?.buys);
-      const sells5m = asNumber(pair?.txns?.m5?.sells);
-      const txns5m  = buys5m + sells5m;
+      const buys5m    = asNumber(pair?.txns?.m5?.buys);
+      const sells5m   = asNumber(pair?.txns?.m5?.sells);
+      const txns5m    = buys5m + sells5m;
       const marketCap = asNumber(pair?.marketCap || pair?.fdv);
-
-      const socials  = pair?.info?.socials || [];
-      const websites = pair?.info?.websites || [];
+      const socials   = pair?.info?.socials || [];
+      const websites  = pair?.info?.websites || [];
       const hasTwitter  = Array.isArray(socials) && socials.some((s: any) => /twitter|x/i.test(String(s?.type || s?.url || "")));
       const hasTelegram = Array.isArray(socials) && socials.some((s: any) => /telegram/i.test(String(s?.type || s?.url || "")));
       const hasWebsite  = Array.isArray(websites) && websites.length > 0;
-
       if (!hasWebsite && !hasTwitter && !hasTelegram) addPenalty("No website, no Twitter/X, no Telegram", "warning", 80);
       if (txns5m < 5 && marketCap > 50000) addPenalty("Low 5m transactions vs market cap", "warning", 80);
       if (sells5m > 0 && buys5m > sells5m * 5) addPenalty("Buys/sells imbalance suggests coordinated pump", "warning", 60);
@@ -443,7 +411,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     else if (score >= 350) risk = "DANGER";
     else risk = "RUG";
 
-    // Confidence: only 3 core reliable sources (DexScreener, RugCheck, Helius)
     const coreSources = ["DexScreener", "RugCheck", "Helius"];
     const coreCount = sources_used.filter(s => coreSources.includes(s)).length;
     const confidence = Math.round((coreCount / 3) * 100);
@@ -454,14 +421,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     return res.json({
-      score,
-      risk,
-      flags,
-      pair,
-      resolvedMint,
-      honeypotConfirmed,
-      confidence,
-      sources_used,
+      score, risk, flags, pair, resolvedMint,
+      honeypotConfirmed, confidence, sources_used,
       tokenSymbol: pair?.baseToken?.symbol ?? null,
       scoring_version: "3.1",
     });
