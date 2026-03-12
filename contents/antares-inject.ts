@@ -6,6 +6,7 @@ export const config: PlasmoCSConfig = {
 }
 
 const API = "https://antares-extension.vercel.app/api/scan"
+const ANALYSIS_PAGE = "https://antares-extension.vercel.app/token.html"
 
 const COLORS: Record<string, string> = {
   SAFE: "#22c55e",
@@ -38,6 +39,33 @@ function getCached(ca: string): any | null {
   if (!e) return null
   if (Date.now() - e.ts > CACHE_TTL) { scanCache.delete(ca); return null }
   return e.data
+}
+
+function formatMcap(mc: number): string {
+  if (mc >= 1_000_000_000) return `$${(mc / 1_000_000_000).toFixed(2)}B`
+  if (mc >= 1_000_000) return `$${(mc / 1_000_000).toFixed(2)}M`
+  if (mc >= 1_000) return `$${(mc / 1_000).toFixed(1)}K`
+  return `$${mc.toFixed(0)}`
+}
+
+function buildResult(data: any, ca: string): string {
+  const color = COLORS[data.risk] || "#6b7280"
+  const displayCA = data.resolvedMint || ca
+  const mint = data.resolvedMint || ca
+  const flags = (data.flags || []).slice(0, 4).map((f: any) =>
+    `<div style="font-size:11px;color:#666;margin-top:4px;padding-left:8px;border-left:2px solid ${color}55">${f.label || f}</div>`
+  ).join("")
+  const mc = data.pair?.marketCap || data.pair?.fdv
+  const mcLine = mc ? `<div style="color:#888;font-size:11px;margin-bottom:2px">MCap <strong style="color:#ccc">${formatMcap(mc)}</strong></div>` : ""
+  const analysisLink = `<div style="margin-top:8px;padding-top:6px;border-top:1px solid #1a1a1a"><a href="${ANALYSIS_PAGE}?ca=${mint}" target="_blank" rel="noopener noreferrer" style="color:${color};font-size:10px;text-decoration:none">&#8599; Full Analysis</a></div>`
+  return header(color) + `
+    <div style="font-size:28px;font-weight:800;color:${color};letter-spacing:1px;margin-bottom:2px">${data.risk}</div>
+    <div style="color:#888;font-size:12px;margin-bottom:2px">Score <strong style="color:#ddd">${data.score}</strong><span style="color:#444">/1000</span></div>
+    ${mcLine}
+    <div style="color:#333;font-size:10px;margin-bottom:6px">${displayCA.slice(0,4)}&hellip;${displayCA.slice(-4)}</div>
+    ${flags}
+    ${analysisLink}
+  `
 }
 
 function isValid(addr: string): boolean {
@@ -183,18 +211,9 @@ async function scan(ca: string) {
   if (cached) {
     const el = ensureBox()
     const color = COLORS[cached.risk] || "#6b7280"
-    const displayCA = cached.resolvedMint || ca
-    const flags = (cached.flags || []).slice(0, 4).map((f: any) =>
-      `<div style="font-size:11px;color:#555;margin-top:4px;padding-left:8px;border-left:2px solid ${color}55">${f.label || f}</div>`
-    ).join("")
     el.style.border = `1px solid ${color}66`
     el.style.boxShadow = `0 8px 32px rgba(0,0,0,0.8),0 0 20px ${color}18`
-    el.innerHTML = header(color) + `
-      <div style="font-size:28px;font-weight:800;color:${color};letter-spacing:1px;margin-bottom:2px">${cached.risk}</div>
-      <div style="color:#888;font-size:12px;margin-bottom:2px">Score <strong style="color:#ddd">${cached.score}</strong><span style="color:#444">/1000</span></div>
-      <div style="color:#333;font-size:10px;margin-bottom:6px">${displayCA.slice(0,4)}&hellip;${displayCA.slice(-4)}</div>
-      ${flags}
-    `
+    el.innerHTML = buildResult(cached, ca)
     showBox(el)
     attachClose()
     return
@@ -221,19 +240,9 @@ async function scan(ca: string) {
     scanCache.set(ca, { data, ts: Date.now() })
 
     const color = COLORS[data.risk] || "#6b7280"
-    const displayCA = data.resolvedMint || ca
-    const flags = (data.flags || []).slice(0, 4).map((f: any) =>
-      `<div style="font-size:11px;color:#555;margin-top:4px;padding-left:8px;border-left:2px solid ${color}55">${f.label || f}</div>`
-    ).join("")
-
     el.style.border = `1px solid ${color}66`
     el.style.boxShadow = `0 8px 32px rgba(0,0,0,0.8),0 0 20px ${color}18`
-    el.innerHTML = header(color) + `
-      <div style="font-size:28px;font-weight:800;color:${color};letter-spacing:1px;margin-bottom:2px">${data.risk}</div>
-      <div style="color:#888;font-size:12px;margin-bottom:2px">Score <strong style="color:#ddd">${data.score}</strong><span style="color:#444">/1000</span></div>
-      <div style="color:#333;font-size:10px;margin-bottom:6px">${displayCA.slice(0,4)}&hellip;${displayCA.slice(-4)}</div>
-      ${flags}
-    `
+    el.innerHTML = buildResult(data, ca)
     attachClose()
   } catch (e) {
     if (lastCA !== ca) { scanInFlight = false; return }

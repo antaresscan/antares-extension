@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Antares — Token Analysis</title>
+  <meta id="og-title" property="og:title" content="Antares Token Analysis" />
+  <meta id="og-desc" property="og:description" content="Real-time Solana token risk analysis powered by Antares." />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --green: #22c55e;
+      --orange: #f97316;
+      --red: #ef4444;
+      --rug: #dc2626;
+      --bg: #080808;
+      --surface: #0f0f0f;
+      --border: #1a1a1a;
+      --muted: #444;
+      --font: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    }
+    body {
+      background: var(--bg);
+      color: #e5e5e5;
+      font-family: var(--font);
+      font-size: 13px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 32px;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo {
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing: 3px;
+      color: #fff;
+      text-decoration: none;
+    }
+    .logo-sub { font-size: 10px; color: var(--muted); letter-spacing: 1px; margin-top: 2px; }
+
+    main {
+      flex: 1;
+      max-width: 720px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 48px 24px;
+    }
+
+    /* LOADING */
+    #loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      min-height: 300px;
+    }
+    .pulse {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--muted);
+      animation: pulse 1s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.2} }
+    #loading p { color: var(--muted); font-size: 12px; letter-spacing: 1px; }
+
+    /* ERROR */
+    #error { display: none; text-align: center; padding: 60px 0; }
+    #error h2 { color: var(--red); font-size: 20px; margin-bottom: 12px; }
+    #error p { color: var(--muted); font-size: 12px; }
+
+    /* RESULT */
+    #result { display: none; }
+
+    .token-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 32px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .token-identity h1 {
+      font-size: 28px;
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: -0.5px;
+    }
+    .token-identity .symbol {
+      font-size: 13px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      margin-top: 4px;
+    }
+    .token-identity .ca {
+      font-size: 10px;
+      color: #2a2a2a;
+      margin-top: 6px;
+      word-break: break-all;
+    }
+    .token-identity .ca a {
+      color: #333;
+      text-decoration: none;
+    }
+    .token-identity .ca a:hover { color: #666; }
+
+    .risk-badge {
+      text-align: right;
+    }
+    .risk-level {
+      font-size: 36px;
+      font-weight: 900;
+      letter-spacing: 1px;
+    }
+    .risk-score {
+      font-size: 13px;
+      color: #666;
+      margin-top: 4px;
+    }
+    .risk-score strong { color: #ccc; }
+
+    /* STATS ROW */
+    .stats-row {
+      display: flex;
+      gap: 24px;
+      margin-bottom: 40px;
+      flex-wrap: wrap;
+    }
+    .stat-pill {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 20px;
+    }
+    .stat-pill-label { font-size: 10px; color: var(--muted); letter-spacing: 1px; margin-bottom: 4px; }
+    .stat-pill-value { font-size: 16px; font-weight: 700; color: #fff; }
+
+    /* SECTION */
+    .section {
+      margin-bottom: 40px;
+    }
+    .section-title {
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--muted);
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* FLAGS */
+    .flags-list { display: flex; flex-direction: column; gap: 8px; }
+    .flag-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--surface);
+      border-radius: 8px;
+      border-left: 3px solid;
+    }
+    .flag-item.critical { border-color: var(--rug); }
+    .flag-item.warning { border-color: var(--orange); }
+    .flag-item.info { border-color: #333; }
+    .flag-item.bonus { border-color: var(--green); }
+    .flag-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      margin-top: 5px;
+      flex-shrink: 0;
+    }
+    .critical .flag-dot { background: var(--rug); }
+    .warning .flag-dot { background: var(--orange); }
+    .info .flag-dot { background: #333; }
+    .bonus .flag-dot { background: var(--green); }
+    .flag-label { font-size: 12px; color: #ccc; flex: 1; }
+    .flag-impact { font-size: 11px; color: var(--muted); }
+    .flag-item.bonus .flag-impact { color: var(--green); }
+
+    /* SOURCES */
+    .sources-list { display: flex; gap: 10px; flex-wrap: wrap; }
+    .source-chip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 11px;
+      color: #666;
+      letter-spacing: 0.5px;
+    }
+    .source-chip.active { border-color: #333; color: #aaa; }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 20px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .footer-brand { font-size: 11px; color: #222; letter-spacing: 2px; }
+    .footer-time { font-size: 10px; color: #222; }
+
+    @media (max-width: 600px) {
+      main { padding: 32px 16px; }
+      .token-header { flex-direction: column; }
+      .risk-badge { text-align: left; }
+      header { padding: 16px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div>
+      <a href="/" class="logo">ANTARES</a>
+      <div class="logo-sub">TOKEN ANALYSIS</div>
+    </div>
+  </header>
+
+  <main>
+    <div id="loading">
+      <div class="pulse"></div>
+      <p>SCANNING TOKEN&hellip;</p>
+    </div>
+
+    <div id="error">
+      <h2>Analysis failed</h2>
+      <p>Token not found or API error. Check the address and try again.</p>
+    </div>
+
+    <div id="result">
+
+      <div class="token-header">
+        <div class="token-identity">
+          <h1 id="token-name">—</h1>
+          <div class="symbol" id="token-symbol"></div>
+          <div class="ca"><a id="token-solscan" href="#" target="_blank" rel="noopener">—</a></div>
+        </div>
+        <div class="risk-badge">
+          <div class="risk-level" id="risk-level">—</div>
+          <div class="risk-score">Score <strong id="risk-score">—</strong><span style="color:#333">/1000</span></div>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-pill">
+          <div class="stat-pill-label">MARKET CAP</div>
+          <div class="stat-pill-value" id="stat-mcap">—</div>
+        </div>
+        <div class="stat-pill">
+          <div class="stat-pill-label">24H VOLUME</div>
+          <div class="stat-pill-value" id="stat-vol">—</div>
+        </div>
+        <div class="stat-pill">
+          <div class="stat-pill-label">LIQUIDITY</div>
+          <div class="stat-pill-value" id="stat-liq">—</div>
+        </div>
+        <div class="stat-pill">
+          <div class="stat-pill-label">CONFIDENCE</div>
+          <div class="stat-pill-value" id="stat-conf">—</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">RISK FLAGS</div>
+        <div class="flags-list" id="flags-list"></div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">DATA SOURCES</div>
+        <div class="sources-list" id="sources-list"></div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-brand">ANTARES</div>
+    <div class="footer-time" id="scan-time"></div>
+  </footer>
+
+  <script>
+    const API = 'https://antares-extension.vercel.app/api/scan'
+    const COLORS = { SAFE: '#22c55e', CAUTION: '#f97316', DANGER: '#ef4444', RUG: '#dc2626' }
+
+    function fmt(n) {
+      if (!n || isNaN(n)) return '—'
+      if (n >= 1e9) return '$' + (n/1e9).toFixed(2) + 'B'
+      if (n >= 1e6) return '$' + (n/1e6).toFixed(2) + 'M'
+      if (n >= 1e3) return '$' + (n/1e3).toFixed(1) + 'K'
+      return '$' + n.toFixed(0)
+    }
+
+    async function load() {
+      const params = new URLSearchParams(window.location.search)
+      const ca = params.get('ca')
+      if (!ca) { showError(); return }
+
+      try {
+        const res = await fetch(API + '?ca=' + ca)
+        if (!res.ok) throw new Error(res.status)
+        const data = await res.json()
+        render(data, ca)
+      } catch(e) {
+        showError()
+      }
+    }
+
+    function showError() {
+      document.getElementById('loading').style.display = 'none'
+      document.getElementById('error').style.display = 'block'
+    }
+
+    function render(data, ca) {
+      const mint = data.resolvedMint || ca
+      const pair = data.pair || {}
+      const color = COLORS[data.risk] || '#6b7280'
+
+      // Meta OG
+      const sym = pair.baseToken?.symbol || ''
+      const name = pair.baseToken?.name || mint.slice(0,8) + '...'
+      document.title = 'Antares — ' + (sym ? sym + ' ' : '') + data.risk + ' ' + data.score + '/1000'
+      document.getElementById('og-title').content = name + (sym ? ' (' + sym + ')' : '') + ' — ' + data.risk
+      document.getElementById('og-desc').content = 'Risk score: ' + data.score + '/1000 | ' + (data.flags||[]).slice(0,2).map(f=>f.label||f).join(' · ')
+
+      // Token identity
+      document.getElementById('token-name').textContent = name
+      document.getElementById('token-symbol').textContent = sym ? '$' + sym : ''
+      const solscanEl = document.getElementById('token-solscan')
+      solscanEl.href = 'https://solscan.io/token/' + mint
+      solscanEl.textContent = mint
+
+      // Risk
+      const riskEl = document.getElementById('risk-level')
+      riskEl.textContent = data.risk
+      riskEl.style.color = color
+      document.getElementById('risk-score').textContent = data.score
+
+      // Stats
+      document.getElementById('stat-mcap').textContent = fmt(pair.marketCap || pair.fdv)
+      document.getElementById('stat-vol').textContent = fmt(pair.volume?.h24)
+      document.getElementById('stat-liq').textContent = fmt(pair.liquidity?.usd)
+      document.getElementById('stat-conf').textContent = (data.confidence || 0) + '%'
+
+      // Flags
+      const flagsList = document.getElementById('flags-list')
+      flagsList.innerHTML = ''
+      const allFlags = data.flags || []
+      allFlags.forEach(f => {
+        const sev = f.severity || 'info'
+        const impact = f.impact || 0
+        const div = document.createElement('div')
+        div.className = 'flag-item ' + sev
+        div.innerHTML = '<div class="flag-dot"></div>' +
+          '<div class="flag-label">' + (f.label || f) + '</div>' +
+          (impact > 0 ? '<div class="flag-impact">-' + impact + '</div>' : (sev === 'bonus' ? '<div class="flag-impact">+' + Math.abs(impact) + '</div>' : ''))
+        flagsList.appendChild(div)
+      })
+
+      // Sources
+      const sourcesList = document.getElementById('sources-list')
+      sourcesList.innerHTML = ''
+      const allSources = ['DexScreener','RugCheck','GoPlus','Honeypot.is','Birdeye']
+      const used = data.sources_used || []
+      allSources.forEach(s => {
+        const chip = document.createElement('div')
+        chip.className = 'source-chip' + (used.includes(s) ? ' active' : '')
+        chip.textContent = s
+        sourcesList.appendChild(chip)
+      })
+
+      // Time
+      document.getElementById('scan-time').textContent = 'Scanned at ' + new Date().toUTCString()
+
+      // Border color
+      document.querySelector('header').style.borderColor = color + '33'
+
+      document.getElementById('loading').style.display = 'none'
+      document.getElementById('result').style.display = 'block'
+    }
+
+    load()
+  </script>
+</body>
+</html>
