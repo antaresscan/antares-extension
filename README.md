@@ -1,33 +1,90 @@
-This is a [Plasmo extension](https://docs.plasmo.com/) project bootstrapped with [`plasmo init`](https://www.npmjs.com/package/plasmo).
+# Antares — Solana Token Risk Scanner
 
-## Getting Started
+> Extension Chrome qui scanne automatiquement les tokens Solana en temps réel, sur **n'importe quelle page web**.
 
-First, run the development server:
+---
+
+## Ce que ça fait
+
+Antares injecte une overlay flottante dès qu'une adresse de token Solana est détectée dans la page (URL, DOM, attributs HTML, liens d'explorers). Elle affiche instantanément :
+
+- **Niveau de risque** : `SAFE` / `CAUTION` / `DANGER` / `RUG`
+- **Score** sur 1000
+- **Flags** : mint authority active, freeze authority, concentration de holders, liquidité faible, etc.
+
+Sans clic. Sans quitter la page. Sur Twitter, Telegram Web, Discord, DexScreener, Photon, n'importe où.
+
+---
+
+## Architecture
+
+```
+antares-extension/
+├── contents/
+│   └── antares-inject.ts   # Content script — détection + overlay
+├── api/
+│   └── scan.ts             # Backend Vercel — scoring multi-sources
+├── background.ts           # Service worker Plasmo
+└── public/
+```
+
+**Content script** (`contents/antares-inject.ts`)
+- Tourne sur `<all_urls>` au chargement de chaque page
+- Détecte les adresses Solana par scoring : data-attributes (200pts) → liens Solscan (180pts) → text nodes (120pts) → URL (60pts)
+- Gère la navigation SPA via `pushState`, `replaceState`, `popstate` et `MutationObserver`
+- Cache local 30s pour éviter les appels API redondants
+
+**Backend** (`api/scan.ts`) — déployé sur Vercel
+- Agrège DexScreener + RugCheck (full report) + GoPlus Solana
+- Score part de 1000, dégradé par pénalités `critical` / `warning` / `info`
+- Résolution pair → mint (adresse LP Raydium → vrai token)
+- Cache HTTP `s-maxage=30`
+
+---
+
+## Installation (dev)
 
 ```bash
-pnpm dev
-# or
+git clone https://github.com/COMEALAMAISONGROUPE/antares-extension
+cd antares-extension
+npm install
 npm run dev
 ```
 
-Open your browser and load the appropriate development build. For example, if you are developing for the chrome browser, using manifest v3, use: `build/chrome-mv3-dev`.
+Charge le dossier `build/chrome-mv3-dev` dans `chrome://extensions` (mode développeur activé).
 
-You can start editing the popup by modifying `popup.tsx`. It should auto-update as you make changes. To add an options page, simply add a `options.tsx` file to the root of the project, with a react component default exported. Likewise to add a content page, add a `content.ts` file to the root of the project, importing some module and do some logic, then reload the extension on your browser.
-
-For further guidance, [visit our Documentation](https://docs.plasmo.com/)
-
-## Making production build
-
-Run the following:
+## Build production
 
 ```bash
-pnpm build
-# or
 npm run build
 ```
 
-This should create a production bundle for your extension, ready to be zipped and published to the stores.
+Le bundle est dans `build/chrome-mv3-prod`.
 
-## Submit to the webstores
+---
 
-The easiest way to deploy your Plasmo extension is to use the built-in [bpp](https://bpp.browser.market) GitHub action. Prior to using this action however, make sure to build your extension and upload the first version to the store to establish the basic credentials. Then, simply follow [this setup instruction](https://docs.plasmo.com/framework/workflows/submit) and you should be on your way for automated submission!
+## Scoring
+
+| Niveau | Score |
+|--------|-------|
+| SAFE   | ≥ 800 |
+| CAUTION | ≥ 600 |
+| DANGER | ≥ 350 |
+| RUG    | < 350 |
+
+---
+
+## Déploiement
+
+L'API est déployée sur Vercel : `https://antares-extension.vercel.app/api/scan`
+
+Chaque push sur `master` déclenche un redéploiement automatique.
+
+---
+
+## Revenir en arrière
+
+```bash
+git revert HEAD
+git push origin master
+```
