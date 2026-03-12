@@ -52,9 +52,12 @@ function buildResult(data: any, ca: string): string {
   const color = COLORS[data.risk] || "#6b7280"
   const displayCA = data.resolvedMint || ca
   const mint = data.resolvedMint || ca
-  const flags = (data.flags || []).slice(0, 4).map((f: any) =>
-    `<div style="font-size:11px;color:#666;margin-top:4px;padding-left:8px;border-left:2px solid ${color}55">${f.label || f}</div>`
-  ).join("")
+  const flags = (data.flags || [])
+    .filter((f: any) => !((f.label || f) as string).toLowerCase().includes("unavailable"))
+    .slice(0, 4)
+    .map((f: any) =>
+      `<div style="font-size:11px;color:#666;margin-top:4px;padding-left:8px;border-left:2px solid ${color}55">${f.label || f}</div>`
+    ).join("")
   const mc = data.pair?.marketCap || data.pair?.fdv
   const mcLine = mc ? `<div style="color:#888;font-size:11px;margin-bottom:2px">MCap <strong style="color:#ccc">${formatMcap(mc)}</strong></div>` : ""
   const analysisLink = `<div style="margin-top:8px;padding-top:6px;border-top:1px solid #1a1a1a"><a href="${ANALYSIS_PAGE}?ca=${mint}" target="_blank" rel="noopener noreferrer" style="color:${color};font-size:10px;text-decoration:none">&#8599; Full Analysis</a></div>`
@@ -77,7 +80,6 @@ function isValid(addr: string): boolean {
 }
 
 function findBestAddress(): string {
-  // Photon: only on token pages
   if (window.location.hostname.includes("photon") && !window.location.pathname.includes("/lp/")) return ""
 
   const scores = new Map<string, number>()
@@ -88,7 +90,6 @@ function findBestAddress(): string {
     scores.set(addr, (scores.get(addr) || 0) + pts)
   }
 
-  // 1. Data attributes
   for (const el of document.querySelectorAll(
     "[data-address],[data-token],[data-mint],[data-ca],[data-contract],[data-token-address],[data-mint-address]"
   )) {
@@ -97,7 +98,6 @@ function findBestAddress(): string {
     }
   }
 
-  // 2. Solscan / explorer links
   for (const a of document.querySelectorAll("a[href]")) {
     const href = a.getAttribute("href") || ""
     if (/solscan\.io\/token|solscan\.io\/address|explorer\.solana\.com\/address|solana\.fm\/address/.test(href)) {
@@ -105,7 +105,6 @@ function findBestAddress(): string {
     }
   }
 
-  // 3. Short standalone text nodes
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null)
   let node: Node | null
   while ((node = walker.nextNode())) {
@@ -115,7 +114,6 @@ function findBestAddress(): string {
     }
   }
 
-  // 4. URL
   for (const m of (url.match(SOL_ADDR) || [])) add(m, 60)
 
   if (scores.size === 0) return ""
@@ -206,7 +204,6 @@ async function scan(ca: string) {
     lastCA = ca
   }
 
-  // Serve from cache if fresh
   const cached = getCached(ca)
   if (cached) {
     const el = ensureBox()
