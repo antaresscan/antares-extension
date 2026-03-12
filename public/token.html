@@ -149,7 +149,6 @@
         if (!raw) return null
         const parsed = JSON.parse(raw)
         if (Date.now() - parsed.ts > LS_TTL) { localStorage.removeItem(LS_PREFIX + ca); return null }
-        // Discard cache if pair data is missing (token not yet indexed)
         if (!parsed.data.pair || !parsed.data.pair.baseToken) return null
         return parsed.data
       } catch(_) { return null }
@@ -187,7 +186,6 @@
       const pair = data.pair || {}
       const color = COLORS[data.risk] || '#6b7280'
 
-      // Name: DexScreener > tokenName field > address truncated
       const sym = pair.baseToken?.symbol || data.tokenSymbol || ''
       const name = pair.baseToken?.name || data.tokenName || (mint.slice(0,8) + '...' + mint.slice(-4))
 
@@ -196,7 +194,9 @@
       document.getElementById('og-desc').content = 'Risk score: ' + data.score + '/1000 | ' + (data.flags||[]).filter(f => !isHidden(f.label||f)).slice(0,2).map(f=>cleanLabel(f.label||f)).join(' · ')
 
       document.getElementById('token-name').textContent = name
-      document.getElementById('token-symbol').textContent = sym ? '$' + sym : ''
+      // Only show symbol if different from name
+      const showSym = sym && sym.toLowerCase() !== name.toLowerCase()
+      document.getElementById('token-symbol').textContent = showSym ? '$' + sym : ''
       const solscanEl = document.getElementById('token-solscan')
       solscanEl.href = 'https://solscan.io/token/' + mint
       solscanEl.textContent = mint
