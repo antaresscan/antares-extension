@@ -6,7 +6,6 @@ export const config: PlasmoCSConfig = {
 }
 
 const API = "https://antares-extension.vercel.app/api/scan"
-const CACHE_TTL = 60_000 // 60s cache per CA
 
 const COLORS: Record<string, string> = {
   SAFE: "#22c55e",
@@ -38,20 +37,7 @@ function isValid(addr: string): boolean {
   return true
 }
 
-function urlHasTokenAddress(): string {
-  const path = window.location.pathname + window.location.search
-  const matches = path.match(SOL_ADDR) || []
-  const valid = matches.filter(isValid)
-  if (valid.length === 0) return ""
-  return valid.find(a => a.endsWith("pump"))
-    || valid.find(a => /[A-Z]/.test(a) && /[a-z]/.test(a))
-    || valid[0]
-}
-
 function findBestAddress(): string {
-  const urlAddr = urlHasTokenAddress()
-  if (!urlAddr) return ""
-
   const scores = new Map<string, number>()
   const url = window.location.href
 
@@ -60,6 +46,7 @@ function findBestAddress(): string {
     scores.set(addr, (scores.get(addr) || 0) + pts)
   }
 
+  // 1. Data attributes
   for (const el of document.querySelectorAll(
     "[data-address],[data-token],[data-mint],[data-ca],[data-contract],[data-token-address],[data-mint-address]"
   )) {
@@ -68,6 +55,7 @@ function findBestAddress(): string {
     }
   }
 
+  // 2. Solscan / explorer links
   for (const a of document.querySelectorAll("a[href]")) {
     const href = a.getAttribute("href") || ""
     if (/solscan\.io\/token|solscan\.io\/address|explorer\.solana\.com\/address|solana\.fm\/address/.test(href)) {
@@ -75,6 +63,7 @@ function findBestAddress(): string {
     }
   }
 
+  // 3. Short standalone text nodes
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null)
   let node: Node | null
   while ((node = walker.nextNode())) {
@@ -84,9 +73,10 @@ function findBestAddress(): string {
     }
   }
 
+  // 4. URL
   for (const m of (url.match(SOL_ADDR) || [])) add(m, 60)
 
-  if (scores.size === 0) return urlAddr
+  if (scores.size === 0) return ""
 
   for (const [addr, s] of scores) {
     if (addr.endsWith("pump")) scores.set(addr, s + 100)
@@ -96,28 +86,11 @@ function findBestAddress(): string {
   return [...scores.entries()].sort((a, b) => b[1] - a[1])[0][0]
 }
 
-// ── Cache ──────────────────────────────────────────────────────────────────
-function getCached(ca: string): any | null {
-  try {
-    const raw = localStorage.getItem(`antares_${ca}`)
-    if (!raw) return null
-    const { data, ts } = JSON.parse(raw)
-    if (Date.now() - ts > CACHE_TTL) { localStorage.removeItem(`antares_${ca}`); return null; }
-    return data
-  } catch { return null }
-}
-
-function setCache(ca: string, data: any) {
-  try { localStorage.setItem(`antares_${ca}`, JSON.stringify({ data, ts: Date.now() })) } catch {}
-}
-
-// ── State ──────────────────────────────────────────────────────────────────
 let lastCA = ""
 let box: HTMLDivElement | null = null
 let hideTimeout: ReturnType<typeof setTimeout> | null = null
 let manuallyDismissed = false
 let scanInFlight = false
-let detailOpen = false
 
 function hideBox() {
   if (!box) return
@@ -131,7 +104,6 @@ function resetState() {
   lastCA = ""
   manuallyDismissed = false
   scanInFlight = false
-  detailOpen = false
   hideBox()
 }
 
@@ -152,13 +124,12 @@ function ensureBox(): HTMLDivElement {
     fontSize: "13px",
     color: "#fff",
     minWidth: "220px",
-    maxWidth: "310px",
+    maxWidth: "290px",
     boxShadow: "0 8px 32px rgba(0,0,0,0.8)",
     display: "none",
     transition: "opacity 0.22s ease, transform 0.22s ease",
     opacity: "0",
-    transform: "translateY(10px)",
-    userSelect: "none"
+    transform: "translateY(10px)"
   })
   document.body.appendChild(box)
   return box
@@ -175,77 +146,11 @@ function showBox(el: HTMLDivElement) {
 
 function attachClose() {
   const btn = document.getElementById("antares-close")
-  if (btn) btn.onclick = (e) => { e.stopPropagation(); manuallyDismissed = true; hideBox() }
+  if (btn) btn.onclick = () => { manuallyDismissed = true; hideBox() }
 }
 
-function scoreBar(score: number, color: string): string {
-  const pct = Math.round(score / 10)
-  return `
-    <div style="margin:6px 0 8px;height:4px;border-radius:2px;background:#1a1a1a;overflow:hidden;cursor:pointer" id="antares-score-bar">
-      <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,${color}88,${color});border-radius:2px;transition:width 0.4s ease"></div>
-    </div>
-  `
-}
-
-function renderResult(el: HTMLDivElement, data: any, ca: string) {
-  const color = COLORS[data.risk] || "#6b7280"
-  const displayCA = data.resolvedMint || ca
-  const symbol = data.tokenSymbol ? `<span style="color:#888;font-size:11px;margin-left:6px">${data.tokenSymbol}</span>` : ""
-  const honey = data.honeypotConfirmed
-    ? `<div style="color:#dc2626;font-size:10px;font-weight:700;letter-spacing:1px;animation:antblink 0.8s infinite">⚠ HONEYPOT CONFIRMED</div>` : ""
-  const conf = data.confidence < 50
-    ? `<div style="color:#555;font-size:10px;margin-top:4px">⚠ Low confidence (${data.confidence}%)</div>` : ""
-
-  const allFlags = (data.flags || []).filter((f: any) => f.severity !== "bonus")
-  const bonuses = (data.flags || []).filter((f: any) => f.severity === "bonus")
-  const visibleFlags = allFlags.slice(0, 6)
-  const hiddenFlags = allFlags.slice(6)
-
-  const renderFlag = (f: any) => {
-    const fc = f.severity === "critical" ? "#ef4444" : f.severity === "warning" ? "#f97316" : "#6b7280"
-    return `<div style="font-size:11px;color:#666;margin-top:4px;padding-left:8px;border-left:2px solid ${fc}55">${f.label}</div>`
-  }
-
-  const bonusHtml = bonuses.map((f: any) =>
-    `<div style="font-size:11px;color:#22c55e;margin-top:3px;padding-left:8px;border-left:2px solid #22c55e55">${f.label}</div>`
-  ).join("")
-
-  const hiddenHtml = hiddenFlags.length > 0
-    ? `<div id="antares-more" style="display:none">${hiddenFlags.map(renderFlag).join("")}</div>
-       <div id="antares-toggle" style="color:#555;font-size:10px;margin-top:6px;cursor:pointer">▼ ${hiddenFlags.length} more flags</div>`
-    : ""
-
-  el.style.border = `1px solid ${color}66`
-  el.style.boxShadow = `0 8px 32px rgba(0,0,0,0.8),0 0 20px ${color}18`
-  el.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-      <span style="font-weight:700;font-size:11px;letter-spacing:2.5px;color:${color}">ANTARES${symbol}</span>
-      <span id="antares-close" style="cursor:pointer;color:#555;font-size:18px;line-height:1">&times;</span>
-    </div>
-    ${honey}
-    <div style="font-size:28px;font-weight:800;color:${color};letter-spacing:1px;margin-bottom:2px;cursor:pointer" id="antares-risk">${data.risk}</div>
-    <div style="color:#888;font-size:12px;margin-bottom:2px">Score <strong style="color:#ddd">${data.score}</strong><span style="color:#444">/1000</span></div>
-    ${scoreBar(data.score, color)}
-    <div style="color:#333;font-size:10px;margin-bottom:6px">${displayCA.slice(0,4)}&hellip;${displayCA.slice(-4)}</div>
-    ${visibleFlags.map(renderFlag).join("")}
-    ${bonusHtml}
-    ${hiddenHtml}
-    ${conf}
-    <style>
-      @keyframes antblink{0%,100%{opacity:1}50%{opacity:0.2}}
-    </style>
-  `
-  attachClose()
-
-  const toggle = document.getElementById("antares-toggle")
-  const more = document.getElementById("antares-more")
-  if (toggle && more) {
-    toggle.onclick = () => {
-      detailOpen = !detailOpen
-      more.style.display = detailOpen ? "block" : "none"
-      toggle.textContent = detailOpen ? `▲ hide` : `▼ ${hiddenFlags.length} more flags`
-    }
-  }
+function header(color: string) {
+  return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-weight:700;font-size:11px;letter-spacing:2.5px;color:${color}">ANTARES</span><span id="antares-close" style="cursor:pointer;color:#555;font-size:18px;line-height:1">&times;</span></div>`
 }
 
 async function scan(ca: string) {
@@ -256,27 +161,13 @@ async function scan(ca: string) {
 
   if (ca !== lastCA) {
     manuallyDismissed = false
-    detailOpen = false
     lastCA = ca
-  }
-
-  // Check cache first
-  const cached = getCached(ca)
-  if (cached) {
-    const el = ensureBox()
-    showBox(el)
-    renderResult(el, cached, ca)
-    return
   }
 
   scanInFlight = true
   const el = ensureBox()
   showBox(el)
-  el.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <span style="font-weight:700;font-size:11px;letter-spacing:2.5px;color:#6b7280">ANTARES</span>
-      <span id="antares-close" style="cursor:pointer;color:#555;font-size:18px;line-height:1">&times;</span>
-    </div>
+  el.innerHTML = header("#6b7280") + `
     <div style="color:#444;font-size:10px;margin-bottom:8px">${ca.slice(0,4)}&hellip;${ca.slice(-4)}</div>
     <div style="color:#666;font-size:12px;display:flex;align-items:center;gap:6px">
       <span style="width:7px;height:7px;border-radius:50%;background:#6b7280;display:inline-block;animation:ap 1s infinite"></span>Scanning&hellip;
@@ -290,17 +181,25 @@ async function scan(ca: string) {
     if (!res.ok) throw new Error("" + res.status)
     const data = await res.json()
     if (lastCA !== ca) { scanInFlight = false; return }
-    setCache(ca, data)
-    renderResult(el, data, ca)
+
+    const color = COLORS[data.risk] || "#6b7280"
+    const displayCA = data.resolvedMint || ca
+    const flags = (data.flags || []).slice(0, 4).map((f: any) =>
+      `<div style="font-size:11px;color:#555;margin-top:4px;padding-left:8px;border-left:2px solid ${color}55">${f.label || f}</div>`
+    ).join("")
+
+    el.style.border = `1px solid ${color}66`
+    el.style.boxShadow = `0 8px 32px rgba(0,0,0,0.8),0 0 20px ${color}18`
+    el.innerHTML = header(color) + `
+      <div style="font-size:28px;font-weight:800;color:${color};letter-spacing:1px;margin-bottom:2px">${data.risk}</div>
+      <div style="color:#888;font-size:12px;margin-bottom:2px">Score <strong style="color:#ddd">${data.score}</strong><span style="color:#444">/1000</span></div>
+      <div style="color:#333;font-size:10px;margin-bottom:6px">${displayCA.slice(0,4)}&hellip;${displayCA.slice(-4)}</div>
+      ${flags}
+    `
+    attachClose()
   } catch (e) {
     if (lastCA !== ca) { scanInFlight = false; return }
-    el.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <span style="font-weight:700;font-size:11px;letter-spacing:2.5px;color:#6b7280">ANTARES</span>
-        <span id="antares-close" style="cursor:pointer;color:#555;font-size:18px;line-height:1">&times;</span>
-      </div>
-      <div style="color:#ef4444;font-size:12px">API Error — retry in a moment</div>
-    `
+    el.innerHTML = header("#6b7280") + `<div style="color:#ef4444;font-size:12px">API Error</div>`
     attachClose()
   }
   scanInFlight = false
@@ -308,10 +207,7 @@ async function scan(ca: string) {
 
 function poll() {
   const ca = findBestAddress()
-  if (!ca) {
-    if (lastCA) resetState()
-    return
-  }
+  if (!ca) return
   scan(ca)
 }
 
