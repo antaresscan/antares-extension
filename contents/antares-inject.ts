@@ -29,6 +29,17 @@ const IGNORE = new Set([
   "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr",
 ])
 
+// --- Cache local 30s ---
+const CACHE_TTL = 30_000
+const scanCache = new Map<string, { data: any; ts: number }>()
+
+function getCached(ca: string): any | null {
+  const e = scanCache.get(ca)
+  if (!e) return null
+  if (Date.now() - e.ts > CACHE_TTL) { scanCache.delete(ca); return null }
+  return e.data
+}
+
 function isValid(addr: string): boolean {
   if (addr.length < 32 || addr.length > 44) return false
   if (IGNORE.has(addr)) return false
@@ -167,6 +178,28 @@ async function scan(ca: string) {
     lastCA = ca
   }
 
+  // Serve from cache if fresh
+  const cached = getCached(ca)
+  if (cached) {
+    const el = ensureBox()
+    const color = COLORS[cached.risk] || "#6b7280"
+    const displayCA = cached.resolvedMint || ca
+    const flags = (cached.flags || []).slice(0, 4).map((f: any) =>
+      `<div style="font-size:11px;color:#555;margin-top:4px;padding-left:8px;border-left:2px solid ${color}55">${f.label || f}</div>`
+    ).join("")
+    el.style.border = `1px solid ${color}66`
+    el.style.boxShadow = `0 8px 32px rgba(0,0,0,0.8),0 0 20px ${color}18`
+    el.innerHTML = header(color) + `
+      <div style="font-size:28px;font-weight:800;color:${color};letter-spacing:1px;margin-bottom:2px">${cached.risk}</div>
+      <div style="color:#888;font-size:12px;margin-bottom:2px">Score <strong style="color:#ddd">${cached.score}</strong><span style="color:#444">/1000</span></div>
+      <div style="color:#333;font-size:10px;margin-bottom:6px">${displayCA.slice(0,4)}&hellip;${displayCA.slice(-4)}</div>
+      ${flags}
+    `
+    showBox(el)
+    attachClose()
+    return
+  }
+
   scanInFlight = true
   const el = ensureBox()
   showBox(el)
@@ -184,6 +217,8 @@ async function scan(ca: string) {
     if (!res.ok) throw new Error("" + res.status)
     const data = await res.json()
     if (lastCA !== ca) { scanInFlight = false; return }
+
+    scanCache.set(ca, { data, ts: Date.now() })
 
     const color = COLORS[data.risk] || "#6b7280"
     const displayCA = data.resolvedMint || ca
@@ -215,7 +250,7 @@ function poll() {
 }
 
 poll()
-setInterval(poll, 1500)
+setInterval(poll, 5000)
 
 const onNav = () => { resetState(); setTimeout(poll, 400) }
 
