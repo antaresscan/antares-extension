@@ -43,8 +43,6 @@
     .token-identity .ca a:hover { color: #666; }
     .risk-badge { text-align: right; }
     .risk-level { font-size: 36px; font-weight: 900; letter-spacing: 1px; }
-    .risk-score { font-size: 13px; color: #666; margin-top: 4px; }
-    .risk-score strong { color: #ccc; }
     .stats-row { display: flex; gap: 24px; margin-bottom: 40px; flex-wrap: wrap; }
     .stat-pill { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 20px; }
     .stat-pill-label { font-size: 10px; color: var(--muted); letter-spacing: 1px; margin-bottom: 4px; }
@@ -95,7 +93,6 @@
         </div>
         <div class="risk-badge">
           <div class="risk-level" id="risk-level">—</div>
-          <div class="risk-score">Score <strong id="risk-score">—</strong><span style="color:#333">/1000</span></div>
         </div>
       </div>
       <div class="stats-row">
@@ -189,12 +186,11 @@
       const sym = pair.baseToken?.symbol || data.tokenSymbol || ''
       const name = pair.baseToken?.name || data.tokenName || (mint.slice(0,8) + '...' + mint.slice(-4))
 
-      document.title = 'Antares — ' + (sym ? sym + ' ' : '') + data.risk + ' ' + data.score + '/1000'
+      document.title = 'Antares — ' + (sym ? sym + ' ' : '') + data.risk
       document.getElementById('og-title').content = name + (sym ? ' (' + sym + ')' : '') + ' — ' + data.risk
-      document.getElementById('og-desc').content = 'Risk score: ' + data.score + '/1000 | ' + (data.flags||[]).filter(f => !isHidden(f.label||f)).slice(0,2).map(f=>cleanLabel(f.label||f)).join(' · ')
+      document.getElementById('og-desc').content = data.risk + ' | ' + (data.flags||[]).filter(f => !isHidden(f.label||f)).slice(0,2).map(f=>cleanLabel(f.label||f)).join(' · ')
 
       document.getElementById('token-name').textContent = name
-      // Only show symbol if different from name
       const showSym = sym && sym.toLowerCase() !== name.toLowerCase()
       document.getElementById('token-symbol').textContent = showSym ? '$' + sym : ''
       const solscanEl = document.getElementById('token-solscan')
@@ -204,7 +200,6 @@
       const riskEl = document.getElementById('risk-level')
       riskEl.textContent = data.risk
       riskEl.style.color = color
-      document.getElementById('risk-score').textContent = data.score
 
       document.getElementById('stat-mcap').textContent = fmt(pair.marketCap || pair.fdv)
       document.getElementById('stat-vol').textContent = fmt(pair.volume?.h24)

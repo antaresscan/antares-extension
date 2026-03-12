@@ -70,7 +70,6 @@ function buildResult(data: any, ca: string): string {
   const analysisLink = `<div style="margin-top:8px;padding-top:6px;border-top:1px solid #1a1a1a"><a href="${ANALYSIS_PAGE}?ca=${mint}" target="_blank" rel="noopener noreferrer" style="color:${color};font-size:10px;text-decoration:none">&#8599; Full Analysis</a></div>`
   return header(color) + `
     <div style="font-size:28px;font-weight:800;color:${color};letter-spacing:1px;margin-bottom:2px">${data.risk}</div>
-    <div style="color:#888;font-size:12px;margin-bottom:2px">Score <strong style="color:#ddd">${data.score}</strong><span style="color:#444">/1000</span></div>
     ${mcLine}
     <div style="color:#333;font-size:10px;margin-bottom:6px">${displayCA.slice(0,4)}&hellip;${displayCA.slice(-4)}</div>
     ${flags}
