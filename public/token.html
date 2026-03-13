@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Antares — Token Analysis</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--c:#00e5b0}
+html{cursor:crosshair;scroll-behavior:smooth}
+body{background:#0f0f11;color:#d0d0d0;font-family:'IBM Plex Mono',monospace;overflow-x:hidden}
+
+.stripe{position:fixed;top:0;left:0;right:0;height:3px;z-index:999;
+  background:linear-gradient(90deg,#c0007a,#00e5b0,#c8c000,#c0002a,#00e5b0,#c0007a);
+  background-size:400% 100%;animation:stripe 6s linear infinite;opacity:.7}
+@keyframes stripe{0%{background-position:0% 0}100%{background-position:400% 0}}
+
+.shell{position:relative;z-index:2;max-width:1100px;margin:0 auto;padding:40px 24px}
+
+nav{display:flex;justify-content:space-between;align-items:center;
+  padding:22px 0;border-bottom:1px solid #1a1a1d;margin-bottom:50px;
+  position:sticky;top:3px;z-index:100;background:#0f0f11}
+nav .brand{font:400 26px/1 'Bebas Neue',sans-serif;letter-spacing:.18em;color:#e0e0e0;text-decoration:none}
+nav a{color:#454550;text-decoration:none;font-size:11px;
+  text-transform:uppercase;letter-spacing:.1em;transition:.2s}
+nav a:hover{color:#d0d0d0}
+
+.hero-row{display:grid;grid-template-columns:1.3fr .7fr;gap:44px;
+  align-items:center;margin-bottom:44px}
+.eyebrow{font-size:10px;color:var(--c);letter-spacing:.3em;text-transform:uppercase;
+  margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.eyebrow::before{content:'';display:block;width:14px;height:2px;background:var(--c)}
+.tname{font:400 60px/1 'Bebas Neue',sans-serif;letter-spacing:.04em;
+  margin-bottom:4px;color:#e8e8e8}
+.tca{font-size:12px;color:#3a3a3f;margin-bottom:14px;
+  display:flex;align-items:center;gap:8px}
+.copy-btn{font-size:9px;color:#454550;border:1px solid #1e1e22;padding:3px 7px;
+  cursor:pointer;transition:.2s;letter-spacing:.08em}
+.copy-btn:hover{color:var(--c);border-color:var(--c)}
+.tdesc{font-size:12px;color:#4a4a52;line-height:1.7;
+  border-left:2px solid var(--c);padding-left:12px}
+
+.score-card{background:#141417;border:1px solid #1e1e22;overflow:hidden;position:relative}
+.score-top{height:3px;background:var(--c)}
+.score-inner{padding:28px;text-align:center}
+.score-num{font:400 76px/1 'Bebas Neue',sans-serif;color:var(--c)}
+.score-sub{font-size:11px;color:#3a3a3f;margin:4px 0 14px;letter-spacing:.12em}
+.verdict{display:inline-block;padding:8px 20px;
+  font:700 13px/1 'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.14em;
+  color:var(--c);border:1px solid rgba(0,229,176,.22);background:rgba(0,229,176,.05)}
+.scan-chips{display:flex;justify-content:center;gap:5px;margin-top:10px;flex-wrap:wrap}
+.chip{font:600 9px/1 'IBM Plex Mono',monospace;padding:4px 8px;
+  background:rgba(0,229,176,.04);border:1px solid rgba(0,229,176,.12);
+  color:var(--c);letter-spacing:.08em}
+
+.meta-row{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-bottom:44px}
+.mc{background:#141417;border:1px solid #1a1a1d;padding:18px;
+  text-align:center;transition:.2s;cursor:default;position:relative;overflow:hidden}
+.mc::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
+  background:var(--c);transform:scaleX(0);transform-origin:center;transition:.3s}
+.mc:hover::after{transform:scaleX(1)}
+.mc:hover{background:#161619}
+.mc span{display:block;font-size:9px;color:#3a3a3f;
+  letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px}
+.mc strong{font-size:22px;color:#d0d0d0;font:400 22px/1 'Bebas Neue',sans-serif;letter-spacing:.04em}
+
+.sh{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;
+  padding-bottom:12px;border-bottom:2px solid #1a1a1d;position:relative}
+.sh::after{content:'';position:absolute;bottom:-2px;left:0;width:40px;height:2px;background:var(--c)}
+.sh h2{font:400 32px/1 'Bebas Neue',sans-serif;letter-spacing:.1em;color:#e0e0e0}
+.gate{display:flex;align-items:center;gap:6px;font-size:10px;color:#2a2a2f;
+  letter-spacing:.18em;text-transform:uppercase;border:1px solid #1c1c1f;padding:6px 12px}
+.gate-dot{width:6px;height:6px;border-radius:50%;background:#2a2a2f;flex-shrink:0}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+.layers{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-bottom:44px}
+.layer{background:#141417;border:1px solid #1a1a1d;overflow:hidden;position:relative;
+  transition:.2s;cursor:default}
+.layer-bar{position:absolute;top:0;left:0;right:0;height:2px;background:var(--c);opacity:.18}
+.layer.pass .layer-bar{background:var(--c)}
+.layer.warn .layer-bar{background:#f5d000}
+.layer-inner{padding:18px}
+.layer-id{font-size:9px;color:#2a2a2f;letter-spacing:.2em;margin-bottom:6px;font-weight:600}
+.layer.pass .layer-id{color:rgba(0,229,176,.3)}
+.layer.warn .layer-id{color:rgba(245,208,0,.5)}
+.layer h3{font-size:13px;color:#bbb;margin-bottom:3px;letter-spacing:.04em}
+.layer p{font-size:10px;color:#3a3a3f;margin-bottom:10px;letter-spacing:.06em}
+.status{font-size:9px;letter-spacing:.18em;text-transform:uppercase}
+.layer.pass .status{color:rgba(0,229,176,.5)}
+.layer.warn .status{color:#f5d000}
+.layer:hover{background:#161619;border-color:#222}
+
+.flags-section{margin-bottom:44px}
+.flags-section h2{font:400 32px/1 'Bebas Neue',sans-serif;letter-spacing:.1em;
+  color:#e0e0e0;margin-bottom:24px;padding-bottom:12px;
+  border-bottom:2px solid #1a1a1d;position:relative}
+.flags-section h2::after{content:'';position:absolute;bottom:-2px;left:0;width:40px;height:2px;background:var(--c)}
+.fl{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;
+  background:#141417;border:1px solid #1a1a1d;margin-bottom:2px;
+  transition:.2s;cursor:default}
+.fl:hover{background:#161619;border-color:#1f1f22}
+.dot{width:6px;height:6px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.dot.o{background:#f5d000}
+.dot.g{background:rgba(0,229,176,.4)}
+.dot.r{background:#ff2244}
+.fl .text{flex:1;font-size:11px;color:#6a6a72;letter-spacing:.04em}
+.fl .srcs{display:flex;gap:4px;flex-wrap:wrap}
+.srctag{font:600 8px/1 'IBM Plex Mono',monospace;padding:2px 5px;
+  background:rgba(0,229,176,.04);border:1px solid rgba(0,229,176,.1);
+  color:rgba(0,229,176,.4);letter-spacing:.06em}
+.fl .pts{font-size:10px;font-weight:600;white-space:nowrap;margin-left:auto}
+.fl .pts.minus{color:#f5d000}
+.fl .pts.plus{color:rgba(0,229,176,.5)}
+.fl .pts.info{color:#3a3a3f}
+
+.src-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-bottom:44px}
+.src-card{background:#141417;border:1px solid #1a1a1d;padding:20px;
+  transition:.2s;cursor:default;position:relative}
+.src-card::after{content:'';position:absolute;bottom:0;left:50%;right:50%;
+  height:2px;background:var(--c);transition:.3s ease}
+.src-card:hover::after{left:0;right:0}
+.src-card:hover{background:#161619}
+.src-name{font-size:11px;color:#d0d0d0;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+.src-status{display:flex;align-items:center;gap:5px;font-size:9px;
+  color:rgba(0,229,176,.6);letter-spacing:.14em;margin-bottom:4px}
+.src-dot{width:5px;height:5px;border-radius:50%;background:var(--c)}
+.src-time{font-size:9px;color:#2a2a2f;letter-spacing:.08em}
+
+footer{text-align:center;padding:28px;color:#2a2a2f;font-size:10px;
+  border-top:1px solid #1a1a1d;letter-spacing:.15em;text-transform:uppercase}
+footer span{color:var(--c)}
+
+.glitch{position:relative;display:inline-block;cursor:default;user-select:none}
+.glitch::before,.glitch::after{
+  content:attr(data-text);
+  position:absolute;top:0;left:0;
+  width:100%;overflow:hidden;
+  opacity:0;pointer-events:none;
+  font:inherit;color:inherit;letter-spacing:inherit
+}
+.glitch::before{color:#ff006e;clip-path:polygon(0 20%,100% 20%,100% 40%,0 40%)}
+.glitch::after{color:#00e5b0;clip-path:polygon(0 55%,100% 55%,100% 75%,0 75%)}
+.glitch:hover::before{animation:gl-a .45s steps(2,end) infinite}
+.glitch:hover::after {animation:gl-b .45s steps(2,end) infinite}
+@keyframes gl-a{
+  0%  {transform:translate(-3px,0);opacity:.75}
+  25% {transform:translate( 3px,0);opacity:.75}
+  50% {transform:translate(-2px,0);opacity:.75;clip-path:polygon(0 5%,100% 5%,100% 25%,0 25%)}
+  75% {transform:translate( 2px,0);opacity:.75}
+  100%{transform:translate(-3px,0);opacity:0}
+}
+@keyframes gl-b{
+  0%  {transform:translate( 3px,0);opacity:.55}
+  33% {transform:translate(-3px,0);opacity:.55;clip-path:polygon(0 60%,100% 60%,100% 80%,0 80%)}
+  66% {transform:translate( 2px,0);opacity:.55}
+  100%{transform:translate( 3px,0);opacity:0}
+}
+
+#particles-canvas{position:fixed;top:0;left:0;width:100vw;height:100vh;
+  pointer-events:none;z-index:0;opacity:.4}
+</style></head>
+<body>
+<div class="stripe"></div>
+<canvas id="particles-canvas"></canvas>
+<div class="shell">
+
+<nav>
+  <a href="/" class="brand glitch" data-text="ANTARES">ANTARES</a>
+  <a href="/">← Back</a>
+</nav>
+
+<div class="hero-row">
+  <div>
+    <div class="eyebrow" id="token-eyebrow">TOKEN ANALYSIS</div>
+    <div class="tname glitch" data-text="" id="token-name">Loading…</div>
+    <div class="tca">
+      <span id="token-ca-text"></span>
+      <span class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('token-ca-text').textContent)">COPY</span>
+    </div>
+    <div class="tdesc" id="token-desc">Scanning token…</div>
+  </div>
+  <div>
+    <div class="score-card" id="score-card">
+      <div class="score-top" id="score-top"></div>
+      <div class="score-inner">
+        <div class="score-num" id="score-num">—</div>
+        <div class="score-sub">SCORE / 1000</div>
+        <div class="verdict" id="verdict">SCANNING</div>
+        <div class="scan-chips" id="scan-chips"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="meta-row">
+  <div class="mc"><span>Market Cap</span><strong id="m-mcap">—</strong></div>
+  <div class="mc"><span>Liquidity</span><strong id="m-liq">—</strong></div>
+  <div class="mc"><span>Holders</span><strong id="m-holders">—</strong></div>
+  <div class="mc"><span>Confidence</span><strong id="m-conf">—</strong></div>
+</div>
+
+<div class="sh">
+  <h2 class="glitch" data-text="Analysis Layers">Analysis Layers</h2>
+  <div class="gate" id="gate-status"><div class="gate-dot"></div>SAFE GATE</div>
+</div>
+<div class="layers" id="layers-grid"></div>
+
+<div class="flags-section">
+  <h2 class="glitch" data-text="Risk Flags">Risk Flags</h2>
+  <div id="flags-list"></div>
+</div>
+
+<div class="sh" style="margin-bottom:18px">
+  <h2 class="glitch" data-text="Source Status">Source Status</h2>
+</div>
+<div class="src-grid" id="sources-grid"></div>
+
+<footer>Antares v4.1 — <span>No mercy for scammers.</span></footer>
+</div>
+
+<script>
+const API="https://antares-extension.vercel.app/api/scan"
+const COLORS={SAFE:"#00e5b0",CAUTION:"#f5d000",DANGER:"#ff5f5f",RUG:"#ff2244"}
+const LABELS={SAFE:"SAFE",CAUTION:"CAUTION",DANGER:"DANGER",RUG:"RUG PULL"}
+
+function fmt(n){
+  if(!n&&n!==0)return"—"
+  if(n>=1e9)return"$"+(n/1e9).toFixed(2)+"B"
+  if(n>=1e6)return"$"+(n/1e6).toFixed(2)+"M"
+  if(n>=1e3)return"$"+(n/1e3).toFixed(1)+"K"
+  return"$"+n.toFixed(0)
+}
+
+const params=new URLSearchParams(location.search)
+const ca=params.get("ca")
+if(!ca){document.querySelector(".shell").innerHTML="<p style='color:#ff5f5f;padding:80px 0;text-align:center'>No token address provided.</p>"}
+else{init(ca)}
+
+async function init(ca){
+  document.getElementById("token-ca-text").textContent=ca
+  document.title="Antares — "+ca.slice(0,8)+"…"
+  try{
+    const res=await fetch(API+"?ca="+ca)
+    if(!res.ok)throw new Error(res.status)
+    const d=await res.json()
+    render(d,ca)
+  }catch(e){
+    document.getElementById("token-name").textContent="API Error"
+    document.getElementById("token-desc").textContent="Could not load token data. Try again later."
+  }
+}
+
+function render(d,ca){
+  const c=COLORS[d.risk]||"#6b7280"
+  const label=LABELS[d.risk]||d.risk
+  document.documentElement.style.setProperty("--c",c)
+
+  const name=d.pair?.baseToken?.name||d.rugcheck?.tokenMeta?.name||ca.slice(0,8)+"…"
+  const symbol=d.pair?.baseToken?.symbol||d.rugcheck?.tokenMeta?.symbol||""
+  document.title="Antares — "+name
+  const nameEl=document.getElementById("token-name")
+  nameEl.textContent=name+(symbol?" ("+symbol+")":"")
+  nameEl.setAttribute("data-text",name)
+  document.getElementById("token-eyebrow").textContent=symbol?symbol+" ANALYSIS":"TOKEN ANALYSIS"
+  document.getElementById("token-desc").textContent="Score: "+d.score+" / 1000 — Verdict: "+label
+
+  document.getElementById("score-num").textContent=d.score||"—"
+  document.getElementById("score-top").style.background=c
+  const v=document.getElementById("verdict")
+  v.textContent=label;v.style.color=c
+  v.style.borderColor=c.replace("rgb(","rgba(").replace(")",",0.22)")
+  v.style.background=c.replace("rgb(","rgba(").replace(")",",0.05)")
+
+  const chips=(d.sources_used||[]).map(s=>"<span class='chip'>"+s+"</span>").join("")
+  document.getElementById("scan-chips").innerHTML=chips
+
+  const mc=d.pair?.marketCap||d.pair?.fdv
+  const liq=d.pair?.liquidity?.usd
+  document.getElementById("m-mcap").textContent=mc?fmt(mc):"—"
+  document.getElementById("m-liq").textContent=liq?fmt(liq):"—"
+  document.getElementById("m-holders").textContent=d.pair?.holders?d.pair.holders.toLocaleString():"—"
+  document.getElementById("m-conf").textContent=typeof d.confidence==="number"?d.confidence+"%":"—"
+
+  const layerDefs=[
+    {id:"L1",name:"Contract Security",src:"GoPlus · RugCheck"},
+    {id:"L2",name:"On-Chain Data",src:"RugCheck · Helius RPC"},
+    {id:"L3",name:"Liquidity & Pool",src:"DexScreener"},
+    {id:"L4",name:"Holder Distribution",src:"RugCheck · Helius"},
+    {id:"L5",name:"Identity Risk",src:"DexScreener metadata"},
+    {id:"L6",name:"Chart Intelligence",src:"DexScreener OHLCV"}
+  ]
+  const flags=d.flags||[]
+  const layerGrid=document.getElementById("layers-grid")
+  layerGrid.innerHTML=layerDefs.map(l=>{
+    const layerFlags=flags.filter(f=>(f.layer||"").toUpperCase()===l.id)
+    const hasWarn=layerFlags.some(f=>f.severity==="critical"||f.severity==="warning")
+    const cls=hasWarn?"warn":"pass"
+    const status=hasWarn?layerFlags.length+" WARNING"+(layerFlags.length>1?"S":""):"PASS"
+    return '<div class="layer '+cls+'"><div class="layer-bar"></div><div class="layer-inner">'+
+      '<div class="layer-id">'+l.id+'</div>'+
+      '<h3>'+l.name+'</h3><p>'+l.src+'</p>'+
+      '<div class="status">'+status+'</div></div></div>'
+  }).join("")
+
+  const gateEl=document.getElementById("gate-status")
+  const gateActive=d.safeGateBlocked||d.risk==="RUG"||d.risk==="DANGER"
+  if(gateActive){
+    gateEl.innerHTML='<div class="gate-dot" style="background:#f5d000;animation:blink 1.4s ease infinite"></div>GATE ACTIVE'
+    gateEl.style.color="#f5d000"
+    gateEl.style.borderColor="rgba(245,208,0,.18)"
+  }
+
+  const flagsList=document.getElementById("flags-list")
+  flagsList.innerHTML=flags.map(f=>{
+    const dotClass=f.severity==="critical"?"r":f.severity==="warning"?"o":"g"
+    const pts=f.points?((f.points>0?"+":"")+f.points):""
+    const ptsClass=f.points>0?"plus":f.points<0?"minus":"info"
+    const srcs=(f.sources||[]).map(s=>"<span class='srctag'>"+s+"</span>").join("")
+    return '<div class="fl"><div class="dot '+dotClass+'"></div>'+
+      '<span class="text">'+(f.label||f)+'</span>'+
+      '<span class="srcs">'+srcs+'</span>'+
+      (pts?'<span class="pts '+ptsClass+'">'+pts+'</span>':'')+
+      '</div>'
+  }).join("")
+
+  const srcGrid=document.getElementById("sources-grid")
+  const srcNames=d.sources_used||["DexScreener","RugCheck","GoPlus","Helius RPC"]
+  srcGrid.innerHTML=srcNames.map(s=>{
+    return '<div class="src-card"><div class="src-name">'+s+'</div>'+
+      '<div class="src-status"><div class="src-dot"></div>CONNECTED</div>'+
+      '<div class="src-time">Used in this scan</div></div>'
+  }).join("")
+}
+
+;(function(){
+  const canvas=document.getElementById("particles-canvas")
+  if(!canvas)return
+  const ctx=canvas.getContext("2d")
+  let particles=[]
+  const COUNT=45,MOUSE_R=120,MOUSE_F=0.8,CONN=100
+  let mouse={x:-9999,y:-9999,active:false}
+  const COLS=[[0,255,157],[0,255,200],[0,200,130],[255,255,255],[120,255,200]]
+  function resize(){canvas.width=innerWidth;canvas.height=innerHeight}
+  addEventListener("resize",resize);resize()
+  document.addEventListener("mousemove",e=>{mouse.x=e.clientX;mouse.y=e.clientY;mouse.active=true})
+  document.addEventListener("mouseleave",()=>{mouse.active=false})
+  function mkP(){const col=COLS[Math.random()*COLS.length|0];return{x:Math.random()*canvas.width,y:Math.random()*canvas.height,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,r:Math.random()*1.5+.5,col,a:Math.random()*.3+.1}}
+  for(let i=0;i<COUNT;i++)particles.push(mkP())
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height)
+    for(let i=0;i<particles.length;i++){
+      const p=particles[i]
+      if(mouse.active){const dx=p.x-mouse.x,dy=p.y-mouse.y,d=Math.sqrt(dx*dx+dy*dy);if(d<MOUSE_R){const f=MOUSE_F*(1-d/MOUSE_R);p.vx+=dx/d*f;p.vy+=dy/d*f}}
+      p.x+=p.vx;p.y+=p.vy;p.vx*=.99;p.vy*=.99
+      if(p.x<0)p.x=canvas.width;if(p.x>canvas.width)p.x=0;if(p.y<0)p.y=canvas.height;if(p.y>canvas.height)p.y=0
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2)
+      ctx.fillStyle="rgba("+p.col.join(",")+","+p.a+")";ctx.fill()
+      for(let j=i+1;j<particles.length;j++){
+        const q=particles[j],dx2=p.x-q.x,dy2=p.y-q.y,d2=Math.sqrt(dx2*dx2+dy2*dy2)
+        if(d2<CONN){ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y)
+          ctx.strokeStyle="rgba(0,229,176,"+(.08*(1-d2/CONN))+")";ctx.stroke()}
+      }
+    }
+    requestAnimationFrame(draw)
+  }
+  draw()
+})()
+</script>
+</body></html>
