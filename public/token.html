@@ -72,26 +72,12 @@
     .flag-tag.holder   { background: rgba(59,130,246,0.12); color: #60a5fa; }
     .flag-tag.market   { background: rgba(20,184,166,0.12); color: #2dd4bf; }
 
-    /* ENGINE SECTION */
-    .engine-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
-    .engine-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
-    .engine-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-    .engine-card-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-    .engine-card-title { font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #fff; }
-    .engine-card-source { font-size: 9px; color: var(--muted); letter-spacing: 0.5px; }
-    .engine-card ul { list-style: none; padding: 0; }
-    .engine-card ul li { font-size: 11px; color: #555; padding: 3px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-    .engine-card ul li::before { content: '— '; color: #333; }
-
     /* SOURCES */
     .sources-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
-    .source-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
-    .source-card.active { border-color: #2a2a2a; }
+    .source-card { background: var(--surface); border: 1px solid #2a2a2a; border-radius: 8px; padding: 14px 16px; }
     .source-name { font-size: 12px; font-weight: 700; color: #aaa; letter-spacing: 1px; margin-bottom: 4px; }
     .source-desc { font-size: 10px; color: #444; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.5; }
-    .source-status { font-size: 9px; margin-top: 6px; letter-spacing: 1px; }
-    .source-status.ok  { color: var(--green); }
-    .source-status.off { color: #333; }
+    .source-status { font-size: 9px; margin-top: 6px; letter-spacing: 1px; color: var(--green); }
 
     /* SCORE BAR */
     .score-bar-wrap { margin-bottom: 32px; }
@@ -156,137 +142,17 @@
         <div class="flags-list" id="flags-list"></div>
       </div>
 
-      <!-- ANALYSIS ENGINE -->
-      <div class="section">
-        <div class="section-title">ANALYSIS ENGINE — 7 LAYERS</div>
-        <div class="engine-grid">
-          <div class="engine-card">
-            <div class="engine-card-header">
-              <div class="engine-card-dot" style="background:#ef4444"></div>
-              <div>
-                <div class="engine-card-title">L1 — CONTRACT</div>
-                <div class="engine-card-source">GoPlus · RugCheck</div>
-              </div>
-            </div>
-            <ul>
-              <li>Mint Authority</li>
-              <li>Freeze Authority</li>
-              <li>Honeypot (GoPlus)</li>
-              <li>Proxy / hidden owner</li>
-              <li>Buy & sell tax</li>
-              <li>Transfer pausable</li>
-            </ul>
-          </div>
-          <div class="engine-card">
-            <div class="engine-card-header">
-              <div class="engine-card-dot" style="background:#f97316"></div>
-              <div>
-                <div class="engine-card-title">L2 — ON-CHAIN</div>
-                <div class="engine-card-source">RugCheck · Helius</div>
-              </div>
-            </div>
-            <ul>
-              <li>Metadata mutability</li>
-              <li>LP burned / locked</li>
-              <li>LP lock duration</li>
-              <li>Mint account info</li>
-              <li>Token supply</li>
-            </ul>
-          </div>
-          <div class="engine-card">
-            <div class="engine-card-header">
-              <div class="engine-card-dot" style="background:#dc2626"></div>
-              <div>
-                <div class="engine-card-title">L3 — HONEYPOT SIM</div>
-                <div class="engine-card-source">Honeypot.is</div>
-              </div>
-            </div>
-            <ul>
-              <li>Buy / sell simulation</li>
-              <li>Simulated tax rates</li>
-              <li>Failed sell ratio</li>
-              <li>Holder analysis</li>
-            </ul>
-          </div>
-          <div class="engine-card">
-            <div class="engine-card-header">
-              <div class="engine-card-dot" style="background:#3b82f6"></div>
-              <div>
-                <div class="engine-card-title">L4 — LIQUIDITY</div>
-                <div class="engine-card-source">DexScreener</div>
-              </div>
-            </div>
-            <ul>
-              <li>Pool liquidity (USD)</li>
-              <li>Vol / liquidity ratio</li>
-              <li>Wash trading signal</li>
-              <li>Price change 5m/1h/24h</li>
-              <li>Pump pattern detection</li>
-            </ul>
-          </div>
-          <div class="engine-card">
-            <div class="engine-card-header">
-              <div class="engine-card-dot" style="background:#06b6d4"></div>
-              <div>
-                <div class="engine-card-title">L5 — HOLDERS</div>
-                <div class="engine-card-source">RugCheck · Birdeye · Helius</div>
-              </div>
-            </div>
-            <ul>
-              <li>Top 1 / top 10 concentration</li>
-              <li>Dev wallet sells</li>
-              <li>Sniper / bundler flags</li>
-              <li>On-chain supply distribution</li>
-            </ul>
-          </div>
-          <div class="engine-card">
-            <div class="engine-card-header">
-              <div class="engine-card-dot" style="background:#fbbf24"></div>
-              <div>
-                <div class="engine-card-title">L6 — IDENTITY</div>
-                <div class="engine-card-source">DexScreener metadata</div>
-              </div>
-            </div>
-            <ul>
-              <li>Brand imitation (TRUMP2, PEPE2…)</li>
-              <li>Suspicious suffixes (V2, REAL, OG…)</li>
-              <li>22 known brand patterns</li>
-              <li>Copycat scoring</li>
-            </ul>
-          </div>
-          <div class="engine-card">
-            <div class="engine-card-header">
-              <div class="engine-card-dot" style="background:#a78bfa"></div>
-              <div>
-                <div class="engine-card-title">L7 — CHART PATTERNS</div>
-                <div class="engine-card-source">DexScreener chart API</div>
-              </div>
-            </div>
-            <ul>
-              <li>Crashcoin pattern</li>
-              <li>Vertical pump detection</li>
-              <li>Liquidity mirage / wash</li>
-              <li>Stair-step artificial chart</li>
-              <li>Blow-off top + dump</li>
-              <li>Early volume exhaustion</li>
-              <li>Parabolic launch structure</li>
-              <li>Active slow rug</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
       <!-- SAFE GATE EXPLANATION -->
       <div class="section">
         <div class="section-title">SAFE GATE</div>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px 20px;">
           <p style="font-size:12px;color:#555;line-height:1.8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-            Antares applies a <strong style="color:#ccc">SAFE gate</strong>: even if a token scores ≥ 800/1000, it <strong style="color:#ccc">cannot display SAFE</strong> if any of the following are true:
+            Antares applies a <strong style="color:#ccc">SAFE gate</strong>: even if a token scores &ge; 800/1000, it <strong style="color:#ccc">cannot display SAFE</strong> if any of the following are true:
           </p>
           <ul style="margin-top:12px;list-style:none;display:flex;flex-direction:column;gap:6px;">
-            <li style="font-size:11px;color:#555;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;"><span style="color:#a78bfa">■</span> Chart pattern risk detected (L7)</li>
-            <li style="font-size:11px;color:#555;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;"><span style="color:#fbbf24">■</span> Identity / copycat risk detected (L6)</li>
-            <li style="font-size:11px;color:#555;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;"><span style="color:#f97316">■</span> LP not burned or locked (L2)</li>
+            <li style="font-size:11px;color:#555;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;"><span style="color:#a78bfa">&#9632;</span> Chart pattern risk detected</li>
+            <li style="font-size:11px;color:#555;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;"><span style="color:#fbbf24">&#9632;</span> Identity / copycat risk detected</li>
+            <li style="font-size:11px;color:#555;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;"><span style="color:#f97316">&#9632;</span> LP not burned or locked</li>
           </ul>
           <p style="margin-top:12px;font-size:11px;color:#444;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">In this case the verdict is capped at <strong style="color:#f97316">CAUTION</strong> minimum.</p>
         </div>
@@ -313,13 +179,10 @@
     const COLORS = { SAFE: '#22c55e', CAUTION: '#f97316', DANGER: '#ef4444', RUG: '#dc2626' }
 
     const SOURCE_META = {
-      DexScreener: { desc: 'Pair data, market cap, liquidity, volume, price changes, OHLCV chart data.' },
-      RugCheck:    { desc: 'On-chain metadata, LP status, holder concentration, risk flags.' },
-      GoPlus:      { desc: 'Smart contract security: mint/freeze authority, taxes, honeypot detection.' },
-      'Honeypot.is': { desc: 'Buy/sell simulation engine. Confirms honeypot traps and failed sell ratios.' },
-      Birdeye:     { desc: 'Top holder distribution and wallet concentration analysis.' },
-      Helius:      { desc: 'On-chain RPC: token supply, largest accounts, mint account metadata.' },
-      DexChart:    { desc: 'OHLCV candle data used for chart pattern and wash trading detection.' },
+      DexScreener: { desc: 'Pair data, market cap, liquidity, volume and price changes.' },
+      RugCheck:    { desc: 'On-chain metadata, LP status, holder concentration and risk flags.' },
+      GoPlus:      { desc: 'Smart contract security: mint/freeze authority and tax checks.' },
+      Helius:      { desc: 'On-chain RPC: token supply, largest accounts and mint metadata.' },
     }
 
     const FLAG_LAYER = {
@@ -441,10 +304,10 @@
       scoreEl.style.color  = color
       document.getElementById('stat-conf').textContent  = (data.confidence || 0) + '%'
 
-      // Flags
+      // Flags — tous affichés, aucun slice
       const flagsList = document.getElementById('flags-list')
       flagsList.innerHTML = ''
-      const allFlags = (data.flags || [])
+      const allFlags = Array.isArray(data.flags) ? data.flags : []
       if (!allFlags.length) {
         flagsList.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:12px 0;">No flags detected.</div>'
       }
@@ -462,19 +325,20 @@
         flagsList.appendChild(div)
       })
 
-      // Sources
+      // Sources — uniquement celles réellement utilisées
       const sourcesList = document.getElementById('sources-list')
       sourcesList.innerHTML = ''
-      const used = data.sources_used || []
-      const allSources = ['DexScreener', 'RugCheck', 'GoPlus', 'Honeypot.is', 'Birdeye', 'Helius', 'DexChart']
-      allSources.forEach(s => {
-        const active = used.includes(s)
-        const meta   = SOURCE_META[s] || {}
-        const card   = document.createElement('div')
-        card.className = 'source-card' + (active ? ' active' : '')
+      const used = Array.isArray(data.sources_used) ? data.sources_used : []
+      if (!used.length) {
+        sourcesList.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:12px 0;">No source data available.</div>'
+      }
+      used.forEach(s => {
+        const meta = SOURCE_META[s] || { desc: 'Data source used in this analysis.' }
+        const card = document.createElement('div')
+        card.className = 'source-card'
         card.innerHTML = `<div class="source-name">${s}</div>
-          <div class="source-desc">${meta.desc || ''}</div>
-          <div class="source-status ${active ? 'ok' : 'off'}">${active ? '● USED' : '○ UNAVAILABLE'}</div>`
+          <div class="source-desc">${meta.desc}</div>
+          <div class="source-status">&#9679; USED</div>`
         sourcesList.appendChild(card)
       })
 
