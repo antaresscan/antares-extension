@@ -9,7 +9,7 @@ const HELIUS_BASE = "https://mainnet.helius-rpc.com";
 
 const CA_RE = /^[A-Za-z0-9]{32,44}$/;
 
-// ─── RATE LIMIT — Upstash Redis ───────────────────────────────────────────────
+// ─── RATE LIMIT ───────────────────────────────────────────────────────────────
 let ratelimit: Ratelimit | null = null;
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
   const redis = new Redis({
@@ -18,7 +18,7 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
   });
   ratelimit = new Ratelimit({
     redis,
-    limiter: Ratelimit.slidingWindow(20, "60 s"),
+    limiter: Ratelimit.slidingWindow(30, "60 s"),
     analytics: false,
     prefix: "antares_rl",
   });
@@ -32,17 +32,12 @@ const CORS: Record<string, string> = {
 
 type Severity = "critical" | "warning" | "info" | "bonus";
 type ScanFlag = { label: string; severity: Severity; impact: number };
-
-type ChartResult = {
-  flags: ScanFlag[];
-  penalty: number;
-  forceRug: boolean;
-  safeBlocked: boolean;
-};
+type ChartResult = { flags: ScanFlag[]; penalty: number; forceRug: boolean; safeBlocked: boolean };
 
 function setHeaders(res: VercelResponse) {
   Object.entries(CORS).forEach(([k, v]) => res.setHeader(k, v));
-  res.setHeader("Cache-Control", "s-maxage=20, stale-while-revalidate=40");
+  // Cache court pour données fraîches : 15s CDN, 30s stale
+  res.setHeader("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
 }
 
 function withTimeout(ms: number) {
@@ -51,7 +46,7 @@ function withTimeout(ms: number) {
   return { signal: controller.signal, clear: () => clearTimeout(timeout) };
 }
 
-async function fetchJson(url: string, init: RequestInit = {}, timeoutMs = 4000) {
+async function fetchJson(url: string, init: RequestInit = {}, timeoutMs = 5000) {
   const t = withTimeout(timeoutMs);
   try {
     const res = await fetch(url, { ...init, signal: t.signal });
@@ -61,7 +56,7 @@ async function fetchJson(url: string, init: RequestInit = {}, timeoutMs = 4000) 
   finally { t.clear(); }
 }
 
-async function fetchJsonPost(url: string, body: object, timeoutMs = 4000) {
+async function fetchJsonPost(url: string, body: object, timeoutMs = 5000) {
   const t = withTimeout(timeoutMs);
   try {
     const res = await fetch(url, {
@@ -95,10 +90,7 @@ function getTop10Percentage(rugData: any): number {
 }
 
 function getTop1Percentage(rugData: any): number {
-  return asNumber(
-    rugData?.topHolders?.top1Percentage ??
-    rugData?.topHolders?.top1HolderPercentage
-  );
+  return asNumber(rugData?.topHolders?.top1Percentage ?? rugData?.topHolders?.top1HolderPercentage);
 }
 
 function getLpLockDurationDays(rugData: any): number {
@@ -116,123 +108,87 @@ function makeFlag(label: string, severity: Severity, impact: number): ScanFlag {
 }
 
 // ─── CHART HELPERS ────────────────────────────────────────────────────────────
-
 function _mean(xs: number[]): number {
   if (!xs.length) return 0;
   return xs.reduce((a, b) => a + b, 0) / xs.length;
 }
-
 function _std(xs: number[]): number {
   if (xs.length < 2) return 0;
   const m = _mean(xs);
   return Math.sqrt(_mean(xs.map(x => (x - m) ** 2)));
 }
-
 function _pct(from: number, to: number): number {
   if (!Number.isFinite(from) || from === 0) return 0;
   return ((to - from) / Math.abs(from)) * 100;
 }
 
-// ─── L5 — IDENTITY RISK ───────────────────────────────────────────────────────
-
+// ─── IDENTITY RISK ────────────────────────────────────────────────────────────
 const KNOWN_BRANDS = [
   "TRUMP", "DOGE", "PEPE", "SHIB", "BONK", "WIF", "BRETT",
   "FLOKI", "MAGA", "BIDEN", "ELON", "SOLANA", "SOL", "BTC",
   "ETH", "SUI", "APT", "ARB", "OP", "MATIC", "AVAX",
 ];
 
-function analyzeIdentity(
-  symbol?: string | null,
-  name?: string | null
-): ChartResult {
+function analyzeIdentity(symbol?: string | null, name?: string | null): ChartResult {
   const flags: ScanFlag[] = [];
-  let penalty = 0;
-  let forceRug = false;
-  let safeBlocked = false;
-
+  let penalty = 0, forceRug = false, safeBlocked = false;
   const sym = String(symbol || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
   const nm  = String(name   || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-
-  if (/(?:2|V2|V3|OFFICIAL|REAL|OG|NEW|PLUS)$/.test(sym) ||
-      /(?:2|V2|V3|OFFICIAL|REAL|OG|NEW|PLUS)$/.test(nm)) {
+  if (/(?:2|V2|V3|OFFICIAL|REAL|OG|NEW|PLUS)$/.test(sym) || /(?:2|V2|V3|OFFICIAL|REAL|OG|NEW|PLUS)$/.test(nm)) {
     flags.push(makeFlag("Copycat branding detected (v2/official/real suffix)", "critical", 250));
-    penalty += 250;
-    safeBlocked = true;
+    penalty += 250; safeBlocked = true;
   }
-
   for (const brand of KNOWN_BRANDS) {
     const symMatch = sym.startsWith(brand) || sym.endsWith(brand);
-    const nmMatch  = nm.includes(brand);
-    if ((symMatch || nmMatch) && sym !== brand) {
+    if ((symMatch || nm.includes(brand)) && sym !== brand) {
       flags.push(makeFlag(`Brand imitation: ${brand}-style copycat token`, "critical", 250));
-      penalty += 250;
-      safeBlocked = true;
-      break;
+      penalty += 250; safeBlocked = true; break;
     }
   }
-
   return { flags, penalty, forceRug, safeBlocked };
 }
 
-// ─── L6 — CHART PATTERN RISK ─────────────────────────────────────────────────
-
+// ─── CHART PATTERN RISK ───────────────────────────────────────────────────────
 async function fetchDexCandles(
-  pairAddress: string,
-  chainId = "solana"
+  pairAddress: string, chainId = "solana"
 ): Promise<Array<{ o: number; h: number; l: number; c: number; v: number; ts: number }>> {
   const url = `https://io.dexscreener.com/dex/chart/amm/v3/${chainId}/${pairAddress}?res=1&cb=1`;
   const raw = await fetchJson(url, {}, 5000);
   if (!raw || !Array.isArray(raw.bars)) return [];
   return raw.bars.map((b: any) => ({
-    ts: asNumber(b.t),
-    o:  asNumber(b.o),
-    h:  asNumber(b.h),
-    l:  asNumber(b.l),
-    c:  asNumber(b.c),
-    v:  asNumber(b.v),
+    ts: asNumber(b.t), o: asNumber(b.o), h: asNumber(b.h),
+    l: asNumber(b.l), c: asNumber(b.c), v: asNumber(b.v),
   }));
 }
 
 function analyzeChartPatterns(
   candles: Array<{ o: number; h: number; l: number; c: number; v: number; ts: number }>,
-  pair: any,
-  tokenAgeMinutes: number | null
+  pair: any, tokenAgeMinutes: number | null
 ): ChartResult {
   const flags: ScanFlag[] = [];
-  let penalty = 0;
-  let forceRug = false;
-  let safeBlocked = false;
-
+  let penalty = 0, forceRug = false, safeBlocked = false;
   if (!candles || candles.length < 8) return { flags, penalty, forceRug, safeBlocked };
-
   const recent = candles.slice(-40);
-  const closes  = recent.map(c => c.c);
-  const volumes  = recent.map(c => c.v);
-  const greens   = recent.filter(c => c.c > c.o).length;
+  const closes = recent.map(c => c.c);
+  const volumes = recent.map(c => c.v);
+  const greens = recent.filter(c => c.c > c.o).length;
   const greenRatio = greens / recent.length;
-
-  const first  = closes[0];
-  const last   = closes[closes.length - 1];
-  const peak   = Math.max(...closes);
-  const trough = Math.min(...closes);
-
-  const runUpPct         = _pct(first, peak);
+  const first = closes[0], last = closes[closes.length - 1];
+  const peak = Math.max(...closes), trough = Math.min(...closes);
+  const runUpPct = _pct(first, peak);
   const drawdownFromPeak = _pct(peak, last);
-  const pullbackRange    = peak > 0 ? ((peak - trough) / peak) * 100 : 0;
-
-  const returns     = closes.slice(1).map((c, i) => _pct(closes[i], c));
-  const returnStd   = _std(returns);
+  const pullbackRange = peak > 0 ? ((peak - trough) / peak) * 100 : 0;
+  const returns = closes.slice(1).map((c, i) => _pct(closes[i], c));
+  const returnStd = _std(returns);
   const risingCount = closes.slice(1).filter((c, i) => c > closes[i]).length;
-
   const liquidity = asNumber(pair?.liquidity?.usd);
-  const vol24h    = asNumber(pair?.volume?.h24);
-  const vol1h     = asNumber(pair?.volume?.h1);
-  const pc5m      = asNumber(pair?.priceChange?.m5);
-  const pc1h      = asNumber(pair?.priceChange?.h1);
-  const pc24h     = asNumber(pair?.priceChange?.h24);
-  const v24Liq    = liquidity > 0 ? vol24h / liquidity : 0;
-  const v1hLiq    = liquidity > 0 ? vol1h  / liquidity : 0;
-
+  const vol24h = asNumber(pair?.volume?.h24);
+  const vol1h  = asNumber(pair?.volume?.h1);
+  const pc5m   = asNumber(pair?.priceChange?.m5);
+  const pc1h   = asNumber(pair?.priceChange?.h1);
+  const pc24h  = asNumber(pair?.priceChange?.h24);
+  const v24Liq = liquidity > 0 ? vol24h / liquidity : 0;
+  const v1hLiq = liquidity > 0 ? vol1h  / liquidity : 0;
   if (greenRatio >= 0.82 && runUpPct >= 100 && pullbackRange <= 10) {
     flags.push(makeFlag("Crashcoin pattern: near-perfect parabolic chart", "critical", 200));
     penalty += 200; safeBlocked = true;
@@ -269,26 +225,41 @@ function analyzeChartPatterns(
     flags.push(makeFlag("Active dump: -60% 24h + -20% 1h (slow rug suspected)", "critical", 200));
     penalty += 200; forceRug = true; safeBlocked = true;
   }
-
   return { flags, penalty, forceRug, safeBlocked };
 }
 
 // ─── HELIUS ───────────────────────────────────────────────────────────────────
-
 async function heliusGetLargestAccounts(mint: string, apiKey: string) {
   return fetchJsonPost(`${HELIUS_BASE}/?api-key=${apiKey}`, {
     jsonrpc: "2.0", id: "holders", method: "getTokenLargestAccounts", params: [mint],
   });
 }
-
 async function heliusGetTokenSupply(mint: string, apiKey: string) {
   return fetchJsonPost(`${HELIUS_BASE}/?api-key=${apiKey}`, {
     jsonrpc: "2.0", id: "supply", method: "getTokenSupply", params: [mint],
   });
 }
 
-// ─── HANDLER PRINCIPAL ───────────────────────────────────────────────────────
+// Nombre réel de holders via DAS getTokenAccounts
+async function heliusGetHoldersCount(mint: string, apiKey: string): Promise<number | null> {
+  const res = await fetchJsonPost(`${HELIUS_BASE}/?api-key=${apiKey}`, {
+    jsonrpc: "2.0", id: "holders-count",
+    method: "getTokenAccounts",
+    params: { mint, limit: 1, page: 1 },
+  }, 6000);
+  const total = res?.result?.total ?? res?.total;
+  return typeof total === "number" ? total : null;
+}
 
+// Prix spot via DexScreener token endpoint (le plus frais disponible)
+async function fetchLivePrice(mint: string): Promise<number | null> {
+  const d = await fetchJson(`${DEXSCREENER_BASE}/tokens/${mint}`, {}, 4000);
+  const p = d?.pairs?.[0]?.priceUsd;
+  const n = parseFloat(p);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+// ─── HANDLER PRINCIPAL ───────────────────────────────────────────────────────
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setHeaders(res);
   if (req.method === "OPTIONS") return res.status(204).end();
@@ -298,22 +269,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     (req as any).socket?.remoteAddress ||
     "unknown";
 
-  // Rate limit via Upstash Redis (sliding window 20 req/min)
   if (ratelimit) {
     const { success } = await ratelimit.limit(ip);
-    if (!success) {
-      return res.status(429).json({ error: "Too many requests. Please slow down." });
-    }
+    if (!success) return res.status(429).json({ error: "Too many requests. Please slow down." });
   }
 
   const ca = req.query.ca as string | undefined;
-  if (!ca || !CA_RE.test(ca)) {
-    return res.status(400).json({ error: "Invalid token address." });
-  }
+  if (!ca || !CA_RE.test(ca)) return res.status(400).json({ error: "Invalid token address." });
 
   const HELIUS_API_KEY = process.env.HELIUS_API_KEY || "";
 
   try {
+    // — Étape 1 : récupération simultanée de toutes les sources
     const [dexRes, rugRes] = await Promise.all([
       fetchJson(`${DEXSCREENER_BASE}/tokens/${ca}`),
       fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report/summary`),
@@ -329,6 +296,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       rugData?.error === "not found" ||
       rugData?.message?.toLowerCase?.().includes("not found");
 
+    // Fallback : si l'adresse est une pair address et non un mint
     if (!pair || !rugData || rugMissing) {
       const pairData = await fetchJson(`${DEXSCREENER_BASE}/pairs/solana/${ca}`);
       const resolvedPair = pairData?.pairs?.[0] ?? pairData?.pair ?? null;
@@ -345,12 +313,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
+    // Sélectionner la meilleure pair : priorité à la plus liquide
+    if (dexData?.pairs?.length > 1) {
+      pair = dexData.pairs.reduce((best: any, p: any) =>
+        asNumber(p?.liquidity?.usd) > asNumber(best?.liquidity?.usd) ? p : best
+      , dexData.pairs[0]);
+    }
+
     const pairAddress = pair?.pairAddress ?? ca;
-    const [candlesRaw, goplusRaw, heliusHoldersRaw, heliusSupplyRaw] = await Promise.all([
+
+    // — Étape 2 : toutes les sources secondaires en parallèle
+    const [
+      candlesRaw, goplusRaw,
+      heliusHoldersRaw, heliusSupplyRaw, holdersCount,
+    ] = await Promise.all([
       fetchDexCandles(pairAddress),
       fetchJson(`${GOPLUS_BASE}/solana/token_security?contract_addresses=${resolvedMint}`),
       HELIUS_API_KEY ? heliusGetLargestAccounts(resolvedMint, HELIUS_API_KEY) : Promise.resolve(null),
       HELIUS_API_KEY ? heliusGetTokenSupply(resolvedMint, HELIUS_API_KEY)    : Promise.resolve(null),
+      HELIUS_API_KEY ? heliusGetHoldersCount(resolvedMint, HELIUS_API_KEY)   : Promise.resolve(null),
     ]);
 
     const candles       = Array.isArray(candlesRaw) ? candlesRaw : [];
@@ -358,6 +339,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const holderAccounts: Array<{ address: string; uiAmount: number }> =
       heliusHoldersRaw?.result?.value ?? [];
     const totalSupplyUi: number = asNumber(heliusSupplyRaw?.result?.value?.uiAmount);
+
+    // Nombre réel de holders (Helius DAS)
+    const holders: number | null = holdersCount ?? null;
+
+    // Prix live le plus frais
+    const priceUsd: number | null = (() => {
+      const raw = pair?.priceUsd;
+      const n = parseFloat(raw);
+      return Number.isFinite(n) && n > 0 ? n : null;
+    })();
+
+    // MarketCap : priorité marketCap circulant > fdv, jamais null si possible
+    const marketCap: number | null = (() => {
+      const mc  = asNumber(pair?.marketCap);
+      const fdv = asNumber(pair?.fdv);
+      // Si on a la supply et le prix, on recalcule
+      if (totalSupplyUi > 0 && priceUsd && priceUsd > 0) {
+        const computed = totalSupplyUi * priceUsd;
+        // On prend le plus petit entre fdv et computed pour éviter inflation
+        if (mc > 0) return mc;
+        if (computed > 0) return computed;
+      }
+      if (mc > 0)  return mc;
+      if (fdv > 0) return fdv;
+      return null;
+    })();
+
+    // Volume, liquidité, prix en temps réel depuis DexScreener
+    const liquidity      = asNumber(pair?.liquidity?.usd) || null;
+    const volume24h      = asNumber(pair?.volume?.h24)     || null;
+    const volume1h       = asNumber(pair?.volume?.h1)      || null;
+    const priceChange5m  = pair?.priceChange?.m5  ?? null;
+    const priceChange1h  = pair?.priceChange?.h1  ?? null;
+    const priceChange24h = pair?.priceChange?.h24 ?? null;
 
     let tokenAgeMinutes: number | null = null;
     if (pair?.pairCreatedAt) tokenAgeMinutes = (Date.now() - pair.pairCreatedAt) / 60000;
@@ -370,7 +385,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (rugData)                   sources_used.push("RugCheck");
     if (goplus)                    sources_used.push("GoPlus");
     if (holderAccounts.length > 0) sources_used.push("Helius");
-    // Candles = DexScreener OHLCV, pas une source séparée
 
     const addPenalty = (label: string, severity: Severity, impact: number) => {
       score -= impact;
@@ -384,7 +398,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let forceRisk: "RUG" | null = null;
     let safeBlocked = false;
 
-    // ── L1 — Smart contract
+    // ── L1 Smart contract
     const mintAuthorityEnabled =
       Boolean(rugData?.mintAuthorityEnabled) ||
       Boolean(goplus?.mint_authority && String(goplus.mint_authority).trim() !== "");
@@ -401,8 +415,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (goplus) {
       if (goplus.is_honeypot === "1" || goplus.is_honeypot === 1 || goplus.is_honeypot === true) {
-        addPenalty("GoPlus honeypot detected", "critical", 300);
-        forceRisk = "RUG";
+        addPenalty("GoPlus honeypot detected", "critical", 300); forceRisk = "RUG";
       }
       if (goplus.cannot_sell_all === "1")   { addPenalty("Cannot sell all", "critical", 300); forceRisk = "RUG"; }
       if (goplus.is_blacklisted === "1")      addPenalty("Blacklist capability detected", "critical", 300);
@@ -421,7 +434,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (goplus.is_whitelisted === "1")           addPenalty("Whitelist system detected", "warning", 150);
     }
 
-    // ── L2 — RugCheck on-chain
+    // ── L2 RugCheck
     if (rugData) {
       if (rugData.metaMutable === true) {
         addPenalty("Metadata mutable", "warning", 150);
@@ -429,40 +442,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         addPenalty("Metadata not immutable", "info", 50);
       }
       if (!rugData.lpBurned && !rugData.lpLocked) {
-        addPenalty("LP not burned or locked", "warning", 200);
-        safeBlocked = true;
+        addPenalty("LP not burned or locked", "warning", 200); safeBlocked = true;
       }
       const lockDurationDays = getLpLockDurationDays(rugData);
       if (rugData.lpLocked && lockDurationDays > 0 && lockDurationDays < 30)
         addPenalty("LP lock duration < 30 days", "warning", 150);
     }
 
-    // ── L3 — Liquidité & pool
+    // ── L3 Liquidité
     if (pair) {
-      const liquidity      = asNumber(pair?.liquidity?.usd);
-      const volume24h      = asNumber(pair?.volume?.h24);
-      const priceChange24h = asNumber(pair?.priceChange?.h24);
-      const priceChange1h  = asNumber(pair?.priceChange?.h1);
-      const priceChange5m  = asNumber(pair?.priceChange?.m5);
+      const liq = asNumber(pair?.liquidity?.usd);
+      const vol = asNumber(pair?.volume?.h24);
+      const pc24 = asNumber(pair?.priceChange?.h24);
+      const pc1  = asNumber(pair?.priceChange?.h1);
+      const pc5  = asNumber(pair?.priceChange?.m5);
 
-      if (liquidity < 1000)       addPenalty("Very low liquidity", "critical", 200);
-      else if (liquidity < 5000)  addPenalty("Low liquidity", "warning", 100);
-      else if (liquidity < 20000) addPenalty("Liquidity < $20k", "info", 30);
+      if (liq < 1000)       addPenalty("Very low liquidity", "critical", 200);
+      else if (liq < 5000)  addPenalty("Low liquidity", "warning", 100);
+      else if (liq < 20000) addPenalty("Liquidity < $20k", "info", 30);
 
-      if (liquidity > 0 && volume24h / liquidity > 20)
-        addPenalty("Wash trading suspected (vol/liq > 20)", "critical", 120);
-      else if (liquidity > 0 && volume24h / liquidity > 5)
-        addPenalty("High vol/liquidity ratio", "warning", 60);
+      if (liq > 0 && vol / liq > 20) addPenalty("Wash trading suspected (vol/liq > 20)", "critical", 120);
+      else if (liq > 0 && vol / liq > 5) addPenalty("High vol/liquidity ratio", "warning", 60);
 
       if (rugData?.lpBurned === true) addBonus("LP Burned ✓", 100);
       const lockDays = getLpLockDurationDays(rugData);
       if (rugData?.lpLocked === true && lockDays > 180) addBonus("LP Locked > 180 days ✓", 80);
 
-      if (priceChange1h > 200 && priceChange5m > 50) addPenalty("Coordinated pump pattern", "warning", 100);
-      if (priceChange24h < -80) addPenalty("Brutal dump 24h", "critical", 150);
+      if (pc1 > 200 && pc5 > 50) addPenalty("Coordinated pump pattern", "warning", 100);
+      if (pc24 < -80) addPenalty("Brutal dump 24h", "critical", 150);
     }
 
-    // ── L4 — Holders distribution
+    // ── L4 Holders
     if (rugData) {
       const top10 = getTop10Percentage(rugData);
       const top1  = getTop1Percentage(rugData);
@@ -476,8 +486,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (holderAccounts.length > 0 && totalSupplyUi > 0) {
-      const top1Amount  = asNumber(holderAccounts[0]?.uiAmount);
-      const top1Pct     = top1Amount / totalSupplyUi;
+      const top1Amount = asNumber(holderAccounts[0]?.uiAmount);
+      const top1Pct    = top1Amount / totalSupplyUi;
       if (top1Pct > 0.3)       { addPenalty(`Single wallet holds ${Math.round(top1Pct * 100)}% of supply`, "critical", 200); forceRisk = "RUG"; }
       else if (top1Pct > 0.2)    addPenalty(`Single wallet holds ${Math.round(top1Pct * 100)}% of supply`, "critical", 150);
       else if (top1Pct > 0.1)    addPenalty(`Single wallet holds ${Math.round(top1Pct * 100)}% of supply`, "warning", 80);
@@ -498,37 +508,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Socials
     if (pair) {
-      const buys5m    = asNumber(pair?.txns?.m5?.buys);
-      const sells5m   = asNumber(pair?.txns?.m5?.sells);
-      const txns5m    = buys5m + sells5m;
-      const marketCap = asNumber(pair?.marketCap || pair?.fdv);
-      const socials   = pair?.info?.socials  || [];
-      const websites  = pair?.info?.websites || [];
+      const buys5m  = asNumber(pair?.txns?.m5?.buys);
+      const sells5m = asNumber(pair?.txns?.m5?.sells);
+      const txns5m  = buys5m + sells5m;
+      const mc      = marketCap ?? 0;
+      const socials  = pair?.info?.socials  || [];
+      const websites = pair?.info?.websites || [];
       const hasTwitter  = Array.isArray(socials) && socials.some((s: any) => /twitter|x/i.test(String(s?.type || s?.url || "")));
       const hasTelegram = Array.isArray(socials) && socials.some((s: any) => /telegram/i.test(String(s?.type || s?.url || "")));
       const hasWebsite  = Array.isArray(websites) && websites.length > 0;
       if (!hasWebsite && !hasTwitter && !hasTelegram) addPenalty("No website / Twitter / Telegram", "warning", 80);
-      if (txns5m < 5 && marketCap > 50000) addPenalty("Low 5m transactions vs market cap", "warning", 80);
+      if (txns5m < 5 && mc > 50000) addPenalty("Low 5m transactions vs market cap", "warning", 80);
       if (sells5m > 0 && buys5m > sells5m * 5) addPenalty("Buy/sell imbalance (coordinated pump)", "warning", 60);
     } else {
       addPenalty("Not indexed on DexScreener", "warning", 100);
     }
 
-    // ── L5 — Identity risk
+    // L5 Identity
     const identity = analyzeIdentity(pair?.baseToken?.symbol, pair?.baseToken?.name);
     score -= identity.penalty;
     flags.push(...identity.flags);
     if (identity.forceRug) forceRisk = "RUG";
     if (identity.safeBlocked) safeBlocked = true;
 
-    // ── L6 — Chart pattern risk
+    // L6 Chart
     const chart = analyzeChartPatterns(candles, pair, tokenAgeMinutes);
     score -= chart.penalty;
     flags.push(...chart.flags);
     if (chart.forceRug) forceRisk = "RUG";
     if (chart.safeBlocked) safeBlocked = true;
 
-    // ── VERDICT FINAL
     score = Math.max(0, Math.min(1000, score));
 
     let risk: "SAFE" | "CAUTION" | "DANGER" | "RUG";
@@ -539,7 +548,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     else if (score >= 350)                risk = "DANGER";
     else                                  risk = "RUG";
 
-    // Confidence : nombre de sources actives sur 4 possibles
     const confidence = Math.round((sources_used.length / 4) * 100);
 
     flags.sort((a, b) => {
@@ -548,14 +556,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     return res.json({
-      score, risk, flags, pair, resolvedMint,
-      confidence, sources_used,
-      tokenSymbol:     pair?.baseToken?.symbol ?? null,
+      score,
+      risk,
+      flags,
+      pair,
+      resolvedMint,
+      confidence,
+      sources_used,
+      // — Données enrichies et synchronisées —
+      holders,          // nombre réel de holders (Helius DAS)
+      marketCap,        // marketCap circulant (priorité sur fdv)
+      priceUsd,         // prix spot live
+      liquidity,        // liquidité USD temps réel
+      volume24h,        // volume 24h
+      volume1h,         // volume 1h
+      priceChange5m,    // variation 5m
+      priceChange1h,    // variation 1h
+      priceChange24h,   // variation 24h
+      tokenSymbol:      pair?.baseToken?.symbol ?? null,
+      tokenName:        pair?.baseToken?.name   ?? null,
+      pairCreatedAt:    pair?.pairCreatedAt     ?? null,
       safeBlocked,
-      scoring_version: "4.1",
+      scoring_version: "4.2",
+      fetchedAt: Date.now(),   // timestamp pour affichage "données en temps réel"
     });
   } catch (e) {
-    console.error("[scan v4.1]", e);
+    console.error("[scan v4.2]", e);
     return res.status(500).json({ error: "Analysis error." });
   }
 }
