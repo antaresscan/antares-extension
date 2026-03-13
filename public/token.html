@@ -22,7 +22,7 @@
     .logo { font-weight: 800; font-size: 13px; letter-spacing: 3px; color: #fff; text-decoration: none; }
     .logo-sub { font-size: 10px; color: var(--muted); letter-spacing: 1px; margin-top: 2px; }
     .cached-badge { font-size: 10px; color: var(--muted); letter-spacing: 1px; padding: 4px 10px; border: 1px solid #222; border-radius: 4px; }
-    main { flex: 1; max-width: 720px; width: 100%; margin: 0 auto; padding: 48px 24px; }
+    main { flex: 1; max-width: 760px; width: 100%; margin: 0 auto; padding: 48px 24px; }
     #loading { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; min-height: 300px; }
     .pulse { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); animation: pulse 1s infinite; }
     @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.2} }
@@ -31,6 +31,7 @@
     #error h2 { color: var(--red); font-size: 20px; margin-bottom: 12px; }
     #error p { color: var(--muted); font-size: 12px; }
     #result { display: none; }
+
     .token-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 32px; flex-wrap: wrap; gap: 16px; }
     .token-identity h1 { font-size: 28px; font-weight: 900; color: #fff; letter-spacing: -0.5px; }
     .token-identity .symbol { font-size: 13px; color: var(--muted); letter-spacing: 1px; margin-top: 4px; }
@@ -39,41 +40,78 @@
     .token-identity .ca a:hover { color: #666; }
     .risk-badge { text-align: right; }
     .risk-level { font-size: 36px; font-weight: 900; letter-spacing: 1px; }
-    .stats-row { display: flex; gap: 24px; margin-bottom: 40px; flex-wrap: wrap; }
-    .stat-pill { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 20px; }
+    .safe-blocked-notice { font-size: 10px; color: var(--orange); letter-spacing: 1px; margin-top: 4px; text-align: right; }
+
+    .stats-row { display: flex; gap: 16px; margin-bottom: 40px; flex-wrap: wrap; }
+    .stat-pill { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 20px; flex: 1; min-width: 100px; }
     .stat-pill-label { font-size: 10px; color: var(--muted); letter-spacing: 1px; margin-bottom: 4px; }
     .stat-pill-value { font-size: 16px; font-weight: 700; color: #fff; }
-    .stat-pill-value.score { font-size: 16px; font-weight: 700; }
+
     .section { margin-bottom: 40px; }
     .section-title { font-size: 10px; letter-spacing: 3px; color: var(--muted); margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+
+    /* FLAGS */
     .flags-list { display: flex; flex-direction: column; gap: 8px; }
     .flag-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; background: var(--surface); border-radius: 8px; border-left: 3px solid; }
-    .flag-item.critical { border-color: var(--rug); }
-    .flag-item.warning { border-color: var(--orange); }
-    .flag-item.info { border-color: #333; }
-    .flag-item.bonus { border-color: var(--green); }
+    .flag-item.critical { border-color: var(--rug); background: rgba(220,38,38,0.04); }
+    .flag-item.warning  { border-color: var(--orange); }
+    .flag-item.info     { border-color: #333; }
+    .flag-item.bonus    { border-color: var(--green); background: rgba(34,197,94,0.04); }
     .flag-dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
     .critical .flag-dot { background: var(--rug); }
-    .warning .flag-dot { background: var(--orange); }
-    .info .flag-dot { background: #333; }
-    .bonus .flag-dot { background: var(--green); }
-    .flag-label { font-size: 12px; color: #ccc; flex: 1; }
-    .flag-impact { font-size: 11px; color: var(--muted); }
+    .warning  .flag-dot { background: var(--orange); }
+    .info     .flag-dot { background: #333; }
+    .bonus    .flag-dot { background: var(--green); }
+    .flag-label  { font-size: 12px; color: #ccc; flex: 1; }
+    .flag-impact { font-size: 11px; color: var(--muted); white-space: nowrap; }
     .flag-item.bonus .flag-impact { color: var(--green); }
-    .sources-list { display: flex; gap: 10px; flex-wrap: wrap; }
-    .source-chip { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 6px 14px; font-size: 11px; color: #666; letter-spacing: 0.5px; }
-    .source-chip.active { border-color: #333; color: #aaa; }
+    .flag-tag { font-size: 9px; letter-spacing: 1px; padding: 1px 6px; border-radius: 3px; margin-left: 8px; vertical-align: middle; }
+    .flag-tag.chart    { background: rgba(139,92,246,0.15); color: #a78bfa; }
+    .flag-tag.identity { background: rgba(234,179,8,0.15); color: #fbbf24; }
+    .flag-tag.contract { background: rgba(239,68,68,0.12); color: #f87171; }
+    .flag-tag.holder   { background: rgba(59,130,246,0.12); color: #60a5fa; }
+    .flag-tag.market   { background: rgba(20,184,166,0.12); color: #2dd4bf; }
+
+    /* ENGINE SECTION */
+    .engine-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .engine-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+    .engine-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .engine-card-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .engine-card-title { font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #fff; }
+    .engine-card-source { font-size: 9px; color: var(--muted); letter-spacing: 0.5px; }
+    .engine-card ul { list-style: none; padding: 0; }
+    .engine-card ul li { font-size: 11px; color: #555; padding: 3px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .engine-card ul li::before { content: '— '; color: #333; }
+
+    /* SOURCES */
+    .sources-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+    .source-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+    .source-card.active { border-color: #2a2a2a; }
+    .source-name { font-size: 12px; font-weight: 700; color: #aaa; letter-spacing: 1px; margin-bottom: 4px; }
+    .source-desc { font-size: 10px; color: #444; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.5; }
+    .source-status { font-size: 9px; margin-top: 6px; letter-spacing: 1px; }
+    .source-status.ok  { color: var(--green); }
+    .source-status.off { color: #333; }
+
+    /* SCORE BAR */
+    .score-bar-wrap { margin-bottom: 32px; }
+    .score-bar-track { height: 6px; background: #1a1a1a; border-radius: 3px; overflow: hidden; margin-top: 8px; }
+    .score-bar-fill  { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
+    .score-bar-labels { display: flex; justify-content: space-between; font-size: 9px; color: #333; margin-top: 4px; letter-spacing: 1px; }
+
     footer { border-top: 1px solid var(--border); padding: 20px 32px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
     .footer-brand { font-size: 11px; color: #222; letter-spacing: 2px; }
-    .footer-time { font-size: 10px; color: #222; }
-    @media (max-width: 600px) { main { padding: 32px 16px; } .token-header { flex-direction: column; } .risk-badge { text-align: left; } header { padding: 16px 20px; } }
+    .footer-time  { font-size: 10px; color: #222; }
+    .footer-version { font-size: 9px; color: #1f1f1f; letter-spacing: 1px; }
+
+    @media (max-width: 600px) { main { padding: 32px 16px; } .token-header { flex-direction: column; } .risk-badge { text-align: left; } .safe-blocked-notice { text-align: left; } header { padding: 16px 20px; } }
   </style>
 </head>
 <body>
   <header>
     <div>
       <a href="/" class="logo">ANTARES</a>
-      <div class="logo-sub">TOKEN ANALYSIS</div>
+      <div class="logo-sub">FULL TOKEN ANALYSIS</div>
     </div>
     <div class="cached-badge" id="data-source-badge" style="display:none">FROM EXTENSION</div>
   </header>
@@ -81,7 +119,9 @@
   <main>
     <div id="loading"><div class="pulse"></div><p>SCANNING TOKEN&hellip;</p></div>
     <div id="error"><h2>Analysis failed</h2><p>Token not found or API error. Check the address and try again.</p></div>
+
     <div id="result">
+      <!-- TOKEN HEADER -->
       <div class="token-header">
         <div class="token-identity">
           <h1 id="token-name">—</h1>
@@ -90,22 +130,179 @@
         </div>
         <div class="risk-badge">
           <div class="risk-level" id="risk-level">—</div>
+          <div class="safe-blocked-notice" id="safe-blocked-notice" style="display:none">SAFE blocked by risk signals</div>
         </div>
       </div>
+
+      <!-- SCORE BAR -->
+      <div class="score-bar-wrap">
+        <div class="stat-pill-label">RISK SCORE</div>
+        <div class="score-bar-track"><div class="score-bar-fill" id="score-bar" style="width:0%"></div></div>
+        <div class="score-bar-labels"><span>0 RUG</span><span>350 DANGER</span><span>600 CAUTION</span><span>800 SAFE</span><span>1000</span></div>
+      </div>
+
+      <!-- STATS -->
       <div class="stats-row">
         <div class="stat-pill"><div class="stat-pill-label">MARKET CAP</div><div class="stat-pill-value" id="stat-mcap">—</div></div>
         <div class="stat-pill"><div class="stat-pill-label">24H VOLUME</div><div class="stat-pill-value" id="stat-vol">—</div></div>
         <div class="stat-pill"><div class="stat-pill-label">LIQUIDITY</div><div class="stat-pill-value" id="stat-liq">—</div></div>
-        <div class="stat-pill"><div class="stat-pill-label">SCORE</div><div class="stat-pill-value score" id="stat-score">—</div></div>
+        <div class="stat-pill"><div class="stat-pill-label">SCORE</div><div class="stat-pill-value" id="stat-score">—</div></div>
         <div class="stat-pill"><div class="stat-pill-label">CONFIDENCE</div><div class="stat-pill-value" id="stat-conf">—</div></div>
       </div>
-      <div class="section"><div class="section-title">RISK FLAGS</div><div class="flags-list" id="flags-list"></div></div>
-      <div class="section"><div class="section-title">DATA SOURCES</div><div class="sources-list" id="sources-list"></div></div>
+
+      <!-- RISK FLAGS -->
+      <div class="section">
+        <div class="section-title">RISK FLAGS</div>
+        <div class="flags-list" id="flags-list"></div>
+      </div>
+
+      <!-- ANALYSIS ENGINE -->
+      <div class="section">
+        <div class="section-title">ANALYSIS ENGINE — 7 LAYERS</div>
+        <div class="engine-grid">
+          <div class="engine-card">
+            <div class="engine-card-header">
+              <div class="engine-card-dot" style="background:#ef4444"></div>
+              <div>
+                <div class="engine-card-title">L1 — CONTRACT</div>
+                <div class="engine-card-source">GoPlus · RugCheck</div>
+              </div>
+            </div>
+            <ul>
+              <li>Mint Authority</li>
+              <li>Freeze Authority</li>
+              <li>Honeypot (GoPlus)</li>
+              <li>Proxy / hidden owner</li>
+              <li>Buy & sell tax</li>
+              <li>Transfer pausable</li>
+            </ul>
+          </div>
+          <div class="engine-card">
+            <div class="engine-card-header">
+              <div class="engine-card-dot" style="background:#f97316"></div>
+              <div>
+                <div class="engine-card-title">L2 — ON-CHAIN</div>
+                <div class="engine-card-source">RugCheck · Helius</div>
+              </div>
+            </div>
+            <ul>
+              <li>Metadata mutability</li>
+              <li>LP burned / locked</li>
+              <li>LP lock duration</li>
+              <li>Mint account info</li>
+              <li>Token supply</li>
+            </ul>
+          </div>
+          <div class="engine-card">
+            <div class="engine-card-header">
+              <div class="engine-card-dot" style="background:#dc2626"></div>
+              <div>
+                <div class="engine-card-title">L3 — HONEYPOT SIM</div>
+                <div class="engine-card-source">Honeypot.is</div>
+              </div>
+            </div>
+            <ul>
+              <li>Buy / sell simulation</li>
+              <li>Simulated tax rates</li>
+              <li>Failed sell ratio</li>
+              <li>Holder analysis</li>
+            </ul>
+          </div>
+          <div class="engine-card">
+            <div class="engine-card-header">
+              <div class="engine-card-dot" style="background:#3b82f6"></div>
+              <div>
+                <div class="engine-card-title">L4 — LIQUIDITY</div>
+                <div class="engine-card-source">DexScreener</div>
+              </div>
+            </div>
+            <ul>
+              <li>Pool liquidity (USD)</li>
+              <li>Vol / liquidity ratio</li>
+              <li>Wash trading signal</li>
+              <li>Price change 5m/1h/24h</li>
+              <li>Pump pattern detection</li>
+            </ul>
+          </div>
+          <div class="engine-card">
+            <div class="engine-card-header">
+              <div class="engine-card-dot" style="background:#06b6d4"></div>
+              <div>
+                <div class="engine-card-title">L5 — HOLDERS</div>
+                <div class="engine-card-source">RugCheck · Birdeye · Helius</div>
+              </div>
+            </div>
+            <ul>
+              <li>Top 1 / top 10 concentration</li>
+              <li>Dev wallet sells</li>
+              <li>Sniper / bundler flags</li>
+              <li>On-chain supply distribution</li>
+            </ul>
+          </div>
+          <div class="engine-card">
+            <div class="engine-card-header">
+              <div class="engine-card-dot" style="background:#fbbf24"></div>
+              <div>
+                <div class="engine-card-title">L6 — IDENTITY</div>
+                <div class="engine-card-source">DexScreener metadata</div>
+              </div>
+            </div>
+            <ul>
+              <li>Brand imitation (TRUMP2, PEPE2…)</li>
+              <li>Suspicious suffixes (V2, REAL, OG…)</li>
+              <li>22 known brand patterns</li>
+              <li>Copycat scoring</li>
+            </ul>
+          </div>
+          <div class="engine-card">
+            <div class="engine-card-header">
+              <div class="engine-card-dot" style="background:#a78bfa"></div>
+              <div>
+                <div class="engine-card-title">L7 — CHART PATTERNS</div>
+                <div class="engine-card-source">DexScreener chart API</div>
+              </div>
+            </div>
+            <ul>
+              <li>Crashcoin pattern</li>
+              <li>Vertical pump detection</li>
+              <li>Liquidity mirage / wash</li>
+              <li>Stair-step artificial chart</li>
+              <li>Blow-off top + dump</li>
+              <li>Early volume exhaustion</li>
+              <li>Parabolic launch structure</li>
+              <li>Active slow rug</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- SAFE GATE EXPLANATION -->
+      <div class="section">
+        <div class="section-title">SAFE GATE</div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px 20px;">
+          <p style="font-size:12px;color:#555;line-height:1.8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+            Antares applies a <strong style="color:#ccc">SAFE gate</strong>: even if a token scores ≥ 800/1000, it <strong style="color:#ccc">cannot display SAFE</strong> if any of the following are true:
+          </p>
+          <ul style="margin-top:12px;list-style:none;display:flex;flex-direction:column;gap:6px;">
+            <li style="font-size:11px;color:#555;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;"><span style="color:#a78bfa">■</span> Chart pattern risk detected (L7)</li>
+            <li style="font-size:11px;color:#555;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;"><span style="color:#fbbf24">■</span> Identity / copycat risk detected (L6)</li>
+            <li style="font-size:11px;color:#555;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;"><span style="color:#f97316">■</span> LP not burned or locked (L2)</li>
+          </ul>
+          <p style="margin-top:12px;font-size:11px;color:#444;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">In this case the verdict is capped at <strong style="color:#f97316">CAUTION</strong> minimum.</p>
+        </div>
+      </div>
+
+      <!-- DATA SOURCES -->
+      <div class="section">
+        <div class="section-title">DATA SOURCES USED</div>
+        <div class="sources-grid" id="sources-list"></div>
+      </div>
     </div>
   </main>
 
   <footer>
     <div class="footer-brand">ANTARES</div>
+    <div class="footer-version" id="scan-version"></div>
     <div class="footer-time" id="scan-time"></div>
   </footer>
 
@@ -115,7 +312,35 @@
     const LS_TTL = 90_000
     const COLORS = { SAFE: '#22c55e', CAUTION: '#f97316', DANGER: '#ef4444', RUG: '#dc2626' }
 
-    const HIDDEN_LABELS = ['unavailable']
+    const SOURCE_META = {
+      DexScreener: { desc: 'Pair data, market cap, liquidity, volume, price changes, OHLCV chart data.' },
+      RugCheck:    { desc: 'On-chain metadata, LP status, holder concentration, risk flags.' },
+      GoPlus:      { desc: 'Smart contract security: mint/freeze authority, taxes, honeypot detection.' },
+      'Honeypot.is': { desc: 'Buy/sell simulation engine. Confirms honeypot traps and failed sell ratios.' },
+      Birdeye:     { desc: 'Top holder distribution and wallet concentration analysis.' },
+      Helius:      { desc: 'On-chain RPC: token supply, largest accounts, mint account metadata.' },
+      DexChart:    { desc: 'OHLCV candle data used for chart pattern and wash trading detection.' },
+    }
+
+    const FLAG_LAYER = {
+      'Mint Authority': 'contract', 'Freeze Authority': 'contract',
+      'honeypot': 'contract', 'Sell tax': 'contract', 'Buy tax': 'contract',
+      'Blacklist': 'contract', 'Transfer pausable': 'contract', 'hidden owner': 'contract',
+      'proxy': 'contract', 'mintable': 'contract', 'Slippage': 'contract',
+      'Metadata': 'contract', 'LP not': 'contract', 'LP lock': 'contract',
+      'HONEYPOT': 'contract', 'Cannot sell': 'contract', 'Cannot buy': 'contract',
+      'failed-sell': 'contract',
+      'liquidity': 'market', 'Liquidity': 'market', 'Wash': 'market', 'wash': 'market',
+      'Brutal dump': 'market', 'pump': 'market', 'Pump': 'market',
+      'Top 10 holders': 'holder', 'Top 1 holder': 'holder', 'wallet holds': 'holder',
+      'Sniper': 'holder', 'Bundler': 'holder', 'Dev wallet': 'holder', 'concentration': 'holder',
+      'distributed': 'holder', 'Rug pull history': 'holder',
+      'Crashcoin': 'chart', 'Vertical pump': 'chart', 'mirage': 'chart',
+      'stair-step': 'chart', 'Blow-off': 'chart', 'exhaustion': 'chart',
+      'Parabolic': 'chart', 'Active dump': 'chart', 'slow rug': 'chart',
+      'Brand imitation': 'identity', 'Copycat': 'identity', 'copycat': 'identity',
+    }
+
     const LABEL_MAP = {
       'Wash trading suspected (24h vol/liquidity > 20)': 'Wash trading suspected',
       'LP not burned or locked': 'LP not secured',
@@ -124,11 +349,17 @@
       'Override: Mint + Freeze authority both active': 'Mint + Freeze authority both active',
       'Low 5m transactions vs market cap': 'Low recent activity',
       'Buys/sells imbalance suggests coordinated pump': 'Coordinated pump pattern',
-      'Freshly launched, extreme risk': 'Freshly launched'
+      'Freshly launched, extreme risk': 'Freshly launched',
     }
 
     function cleanLabel(label) { return LABEL_MAP[label] || label }
-    function isHidden(label) { return HIDDEN_LABELS.some(h => label.toLowerCase().includes(h)) }
+
+    function getLayer(label) {
+      for (const [kw, layer] of Object.entries(FLAG_LAYER)) {
+        if (label.includes(kw)) return layer
+      }
+      return null
+    }
 
     function fmt(n) {
       if (!n || isNaN(n)) return '—'
@@ -153,22 +384,17 @@
       const params = new URLSearchParams(window.location.search)
       const ca = params.get('ca')
       if (!ca) { showError(); return }
-
       const lsData = getFromLS(ca)
       if (lsData) {
         document.getElementById('data-source-badge').style.display = 'block'
-        render(lsData, ca)
-        return
+        render(lsData, ca); return
       }
-
       try {
         const res = await fetch(API + '?ca=' + ca)
         if (!res.ok) throw new Error(res.status)
         const data = await res.json()
         render(data, ca)
-      } catch(e) {
-        showError()
-      }
+      } catch(e) { showError() }
     }
 
     function showError() {
@@ -177,15 +403,14 @@
     }
 
     function render(data, ca) {
-      const mint = data.resolvedMint || ca
-      const pair = data.pair || {}
+      const mint  = data.resolvedMint || ca
+      const pair  = data.pair || {}
       const color = COLORS[data.risk] || '#6b7280'
 
-      const sym = pair.baseToken?.symbol || data.tokenSymbol || ''
-      const name = pair.baseToken?.name || data.tokenName || (mint.slice(0,8) + '...' + mint.slice(-4))
+      const sym  = pair.baseToken?.symbol || data.tokenSymbol || ''
+      const name = pair.baseToken?.name   || (mint.slice(0,8) + '...' + mint.slice(-4))
 
       document.title = 'Antares — ' + (sym ? sym + ' ' : '') + data.risk
-
       document.getElementById('token-name').textContent = name
       const showSym = sym && sym.toLowerCase() !== name.toLowerCase()
       document.getElementById('token-symbol').textContent = showSym ? '$' + sym : ''
@@ -194,54 +419,69 @@
       solscanEl.textContent = mint
 
       const riskEl = document.getElementById('risk-level')
-      riskEl.textContent = data.risk
-      riskEl.style.color = color
+      riskEl.textContent  = data.risk
+      riskEl.style.color  = color
+      document.querySelector('header').style.borderColor = color + '33'
 
-      document.getElementById('stat-mcap').textContent = fmt(pair.marketCap || pair.fdv)
-      document.getElementById('stat-vol').textContent = fmt(pair.volume?.h24)
-      document.getElementById('stat-liq').textContent = fmt(pair.liquidity?.usd)
-
-      const scoreEl = document.getElementById('stat-score')
-      const score = data.score ?? null
-      if (score !== null) {
-        scoreEl.textContent = score + '/1000'
-        scoreEl.style.color = color
-      } else {
-        scoreEl.textContent = '—'
+      if (data.safeBlocked) {
+        document.getElementById('safe-blocked-notice').style.display = 'block'
       }
 
-      document.getElementById('stat-conf').textContent = (data.confidence || 0) + '%'
+      // Score bar
+      const score = data.score ?? 0
+      const bar   = document.getElementById('score-bar')
+      bar.style.width      = (score / 10) + '%'
+      bar.style.background = color
 
+      document.getElementById('stat-mcap').textContent  = fmt(pair.marketCap || pair.fdv)
+      document.getElementById('stat-vol').textContent   = fmt(pair.volume?.h24)
+      document.getElementById('stat-liq').textContent   = fmt(pair.liquidity?.usd)
+      const scoreEl = document.getElementById('stat-score')
+      scoreEl.textContent  = score + '/1000'
+      scoreEl.style.color  = color
+      document.getElementById('stat-conf').textContent  = (data.confidence || 0) + '%'
+
+      // Flags
       const flagsList = document.getElementById('flags-list')
       flagsList.innerHTML = ''
-      const allFlags = (data.flags || []).filter(f => !isHidden(f.label || f))
+      const allFlags = (data.flags || [])
+      if (!allFlags.length) {
+        flagsList.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:12px 0;">No flags detected.</div>'
+      }
       allFlags.forEach(f => {
-        const sev = f.severity || 'info'
-        const impact = f.impact || 0
-        const label = cleanLabel(f.label || f)
-        const div = document.createElement('div')
+        const sev    = f.severity || 'info'
+        const impact = f.impact  || 0
+        const label  = cleanLabel(f.label || f)
+        const layer  = getLayer(label)
+        const div    = document.createElement('div')
         div.className = 'flag-item ' + sev
-        div.innerHTML = '<div class="flag-dot"></div>' +
-          '<div class="flag-label">' + label + '</div>' +
-          (impact > 0 ? '<div class="flag-impact">-' + impact + '</div>' : (sev === 'bonus' ? '<div class="flag-impact">+' + Math.abs(impact) + '</div>' : ''))
+        const tagHtml = layer ? `<span class="flag-tag ${layer}">${layer.toUpperCase()}</span>` : ''
+        const impactHtml = impact > 0 ? `<div class="flag-impact">−${impact}</div>` :
+                           (sev === 'bonus' ? `<div class="flag-impact">+${Math.abs(impact)}</div>` : '')
+        div.innerHTML = `<div class="flag-dot"></div><div class="flag-label">${label}${tagHtml}</div>${impactHtml}`
         flagsList.appendChild(div)
       })
 
+      // Sources
       const sourcesList = document.getElementById('sources-list')
       sourcesList.innerHTML = ''
-      const allSources = ['DexScreener', 'RugCheck', 'Helius']
       const used = data.sources_used || []
+      const allSources = ['DexScreener', 'RugCheck', 'GoPlus', 'Honeypot.is', 'Birdeye', 'Helius', 'DexChart']
       allSources.forEach(s => {
-        const chip = document.createElement('div')
-        chip.className = 'source-chip' + (used.includes(s) ? ' active' : '')
-        chip.textContent = s
-        sourcesList.appendChild(chip)
+        const active = used.includes(s)
+        const meta   = SOURCE_META[s] || {}
+        const card   = document.createElement('div')
+        card.className = 'source-card' + (active ? ' active' : '')
+        card.innerHTML = `<div class="source-name">${s}</div>
+          <div class="source-desc">${meta.desc || ''}</div>
+          <div class="source-status ${active ? 'ok' : 'off'}">${active ? '● USED' : '○ UNAVAILABLE'}</div>`
+        sourcesList.appendChild(card)
       })
 
-      document.getElementById('scan-time').textContent = 'Scanned at ' + new Date().toUTCString()
-      document.querySelector('header').style.borderColor = color + '33'
+      document.getElementById('scan-time').textContent    = 'Scanned ' + new Date().toUTCString()
+      document.getElementById('scan-version').textContent = 'v' + (data.scoring_version || '4.0')
       document.getElementById('loading').style.display = 'none'
-      document.getElementById('result').style.display = 'block'
+      document.getElementById('result').style.display  = 'block'
     }
 
     load()

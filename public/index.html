@@ -18,6 +18,7 @@
       --green: #22c55e;
       --orange: #f97316;
       --red: #ef4444;
+      --purple: #a78bfa;
       --bg: #080808;
       --surface: #111;
       --border: #1f1f1f;
@@ -26,128 +27,28 @@
       --font: 'SF Mono', 'Fira Code', 'Consolas', monospace;
     }
     html { scroll-behavior: smooth; }
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: var(--font);
-      font-size: 14px;
-      line-height: 1.6;
-      min-height: 100vh;
-    }
+    body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; line-height: 1.6; min-height: 100vh; }
 
-    /* NAV */
-    nav {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 20px 40px;
-      border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 0;
-      background: rgba(8,8,8,0.95);
-      backdrop-filter: blur(12px);
-      z-index: 100;
-    }
-    .nav-logo {
-      font-weight: 800;
-      font-size: 16px;
-      letter-spacing: 3px;
-      color: #fff;
-    }
+    nav { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: rgba(8,8,8,0.95); backdrop-filter: blur(12px); z-index: 100; }
+    .nav-logo { font-weight: 800; font-size: 16px; letter-spacing: 3px; color: #fff; }
     .nav-links { display: flex; gap: 24px; }
-    .nav-links a {
-      color: var(--muted);
-      text-decoration: none;
-      font-size: 12px;
-      letter-spacing: 1px;
-      transition: color 0.2s;
-    }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: 12px; letter-spacing: 1px; transition: color 0.2s; }
     .nav-links a:hover { color: #fff; }
 
-    /* HERO */
-    .hero {
-      max-width: 860px;
-      margin: 0 auto;
-      padding: 100px 40px 80px;
-      text-align: center;
-    }
-    .hero-badge {
-      display: inline-block;
-      background: rgba(34,197,94,0.1);
-      border: 1px solid rgba(34,197,94,0.3);
-      color: var(--green);
-      font-size: 11px;
-      letter-spacing: 2px;
-      padding: 4px 14px;
-      border-radius: 20px;
-      margin-bottom: 32px;
-    }
-    .hero h1 {
-      font-size: clamp(32px, 6vw, 64px);
-      font-weight: 900;
-      letter-spacing: -1px;
-      line-height: 1.1;
-      color: #fff;
-      margin-bottom: 16px;
-    }
+    .hero { max-width: 860px; margin: 0 auto; padding: 100px 40px 80px; text-align: center; }
+    .hero-badge { display: inline-block; background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); color: var(--green); font-size: 11px; letter-spacing: 2px; padding: 4px 14px; border-radius: 20px; margin-bottom: 32px; }
+    .hero h1 { font-size: clamp(32px, 6vw, 64px); font-weight: 900; letter-spacing: -1px; line-height: 1.1; color: #fff; margin-bottom: 16px; }
     .hero h1 span { color: var(--green); }
-    .hero-sub {
-      font-size: clamp(14px, 2vw, 18px);
-      color: #666;
-      max-width: 580px;
-      margin: 0 auto 48px;
-      line-height: 1.7;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    }
+    .hero-sub { font-size: clamp(14px, 2vw, 18px); color: #666; max-width: 580px; margin: 0 auto 48px; line-height: 1.7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
     .hero-cta { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
-    .btn-primary {
-      background: var(--green);
-      color: #000;
-      font-family: var(--font);
-      font-weight: 700;
-      font-size: 13px;
-      letter-spacing: 1px;
-      padding: 14px 32px;
-      border-radius: 8px;
-      text-decoration: none;
-      transition: opacity 0.2s;
-    }
+    .btn-primary { background: var(--green); color: #000; font-family: var(--font); font-weight: 700; font-size: 13px; letter-spacing: 1px; padding: 14px 32px; border-radius: 8px; text-decoration: none; transition: opacity 0.2s; }
     .btn-primary:hover { opacity: 0.85; }
-    .btn-ghost {
-      background: transparent;
-      color: var(--muted);
-      font-family: var(--font);
-      font-size: 13px;
-      letter-spacing: 1px;
-      padding: 14px 32px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      text-decoration: none;
-      transition: border-color 0.2s, color 0.2s;
-    }
+    .btn-ghost { background: transparent; color: var(--muted); font-family: var(--font); font-size: 13px; letter-spacing: 1px; padding: 14px 32px; border-radius: 8px; border: 1px solid var(--border); text-decoration: none; transition: border-color 0.2s, color 0.2s; }
     .btn-ghost:hover { border-color: #555; color: #fff; }
 
-    /* DEMO BOX */
-    .demo-wrap {
-      display: flex;
-      justify-content: center;
-      padding: 60px 40px;
-    }
-    .demo-box {
-      background: #0d0d0d;
-      border: 1px solid #22c55e66;
-      border-radius: 12px;
-      padding: 16px 20px;
-      width: 260px;
-      box-shadow: 0 8px 40px rgba(0,0,0,0.8), 0 0 30px rgba(34,197,94,0.12);
-      font-family: var(--font);
-    }
-    .demo-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-    }
+    .demo-wrap { display: flex; justify-content: center; padding: 60px 40px; }
+    .demo-box { background: #0d0d0d; border: 1px solid #22c55e66; border-radius: 12px; padding: 16px 20px; width: 260px; box-shadow: 0 8px 40px rgba(0,0,0,0.8), 0 0 30px rgba(34,197,94,0.12); font-family: var(--font); }
+    .demo-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
     .demo-logo { font-weight: 800; font-size: 11px; letter-spacing: 3px; color: var(--green); }
     .demo-close { color: #444; font-size: 18px; }
     .demo-risk { font-size: 32px; font-weight: 900; color: var(--green); letter-spacing: 1px; margin-bottom: 4px; }
@@ -156,196 +57,75 @@
     .demo-mcap { color: #888; font-size: 11px; margin-bottom: 2px; }
     .demo-mcap strong { color: #ccc; }
     .demo-ca { color: #333; font-size: 10px; margin-bottom: 8px; }
-    .demo-flag {
-      font-size: 11px;
-      color: #666;
-      margin-top: 5px;
-      padding-left: 8px;
-      border-left: 2px solid rgba(34,197,94,0.3);
-    }
-    .demo-link {
-      margin-top: 10px;
-      padding-top: 8px;
-      border-top: 1px solid #1a1a1a;
-      font-size: 10px;
-    }
+    .demo-flag { font-size: 11px; color: #666; margin-top: 5px; padding-left: 8px; border-left: 2px solid rgba(34,197,94,0.3); }
+    .demo-link { margin-top: 10px; padding-top: 8px; border-top: 1px solid #1a1a1a; font-size: 10px; }
     .demo-link a { color: var(--green); text-decoration: none; }
 
-    /* STATS */
-    .stats {
-      display: flex;
-      justify-content: center;
-      gap: 60px;
-      padding: 60px 40px;
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-      flex-wrap: wrap;
-    }
+    .stats { display: flex; justify-content: center; gap: 60px; padding: 60px 40px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
     .stat-item { text-align: center; }
-    .stat-num {
-      font-size: 36px;
-      font-weight: 900;
-      color: #fff;
-      letter-spacing: -1px;
-    }
+    .stat-num { font-size: 36px; font-weight: 900; color: #fff; letter-spacing: -1px; }
     .stat-label { font-size: 11px; color: var(--muted); letter-spacing: 1px; margin-top: 4px; }
 
-    /* FEATURES */
-    .features {
-      max-width: 960px;
-      margin: 0 auto;
-      padding: 80px 40px;
-    }
-    .section-title {
-      font-size: 11px;
-      letter-spacing: 3px;
-      color: var(--muted);
-      margin-bottom: 48px;
-      text-align: center;
-    }
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 24px;
-    }
-    .feature-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 28px;
-      transition: border-color 0.2s;
-    }
+    .features { max-width: 960px; margin: 0 auto; padding: 80px 40px; }
+    .section-title { font-size: 11px; letter-spacing: 3px; color: var(--muted); margin-bottom: 48px; text-align: center; }
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; }
+    .feature-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 28px; transition: border-color 0.2s; }
     .feature-card:hover { border-color: #333; }
     .feature-icon { font-size: 24px; margin-bottom: 16px; }
-    .feature-title {
-      font-size: 13px;
-      font-weight: 700;
-      color: #fff;
-      letter-spacing: 1px;
-      margin-bottom: 10px;
-    }
-    .feature-desc {
-      font-size: 12px;
-      color: #555;
-      line-height: 1.7;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    }
+    .feature-title { font-size: 13px; font-weight: 700; color: #fff; letter-spacing: 1px; margin-bottom: 10px; }
+    .feature-desc { font-size: 12px; color: #555; line-height: 1.7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
 
-    /* HOW IT WORKS */
-    .how {
-      max-width: 700px;
-      margin: 0 auto;
-      padding: 0 40px 80px;
-    }
+    /* ENGINE SECTION */
+    .engine-section { max-width: 960px; margin: 0 auto; padding: 0 40px 80px; }
+    .engine-layers { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 0; }
+    .layer-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 22px 24px; transition: border-color 0.2s; }
+    .layer-card:hover { border-color: #2a2a2a; }
+    .layer-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .layer-num { font-size: 10px; font-weight: 700; letter-spacing: 2px; }
+    .layer-title { font-size: 13px; font-weight: 700; color: #fff; letter-spacing: 0.5px; }
+    .layer-source { font-size: 10px; color: var(--muted); letter-spacing: 0.5px; margin-bottom: 12px; }
+    .layer-checks { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+    .layer-checks li { font-size: 11px; color: #555; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .layer-checks li::before { content: '→ '; color: #2a2a2a; }
+
+    /* SAFE GATE */
+    .safe-gate { max-width: 760px; margin: 0 auto; padding: 0 40px 80px; }
+    .safe-gate-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 28px 32px; }
+    .safe-gate-box h3 { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 16px; letter-spacing: 1px; }
+    .safe-gate-box p { font-size: 13px; color: #555; line-height: 1.8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin-bottom: 16px; }
+    .gate-rules { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+    .gate-rule { display: flex; align-items: flex-start; gap: 12px; font-size: 12px; color: #555; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .gate-rule-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+    .safe-gate-code { background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 6px; padding: 12px 16px; font-size: 11px; color: #555; margin-top: 16px; }
+    .safe-gate-code span { color: #a78bfa; }
+
+    .how { max-width: 700px; margin: 0 auto; padding: 0 40px 80px; }
     .steps { display: flex; flex-direction: column; gap: 0; }
-    .step {
-      display: flex;
-      gap: 24px;
-      align-items: flex-start;
-      padding: 28px 0;
-      border-bottom: 1px solid var(--border);
-    }
+    .step { display: flex; gap: 24px; align-items: flex-start; padding: 28px 0; border-bottom: 1px solid var(--border); }
     .step:last-child { border-bottom: none; }
-    .step-num {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--green);
-      letter-spacing: 2px;
-      min-width: 32px;
-      padding-top: 2px;
-    }
-    .step-content h3 {
-      font-size: 14px;
-      font-weight: 700;
-      color: #fff;
-      margin-bottom: 6px;
-    }
-    .step-content p {
-      font-size: 12px;
-      color: #555;
-      line-height: 1.7;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    }
+    .step-num { font-size: 11px; font-weight: 700; color: var(--green); letter-spacing: 2px; min-width: 32px; padding-top: 2px; }
+    .step-content h3 { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+    .step-content p { font-size: 12px; color: #555; line-height: 1.7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
 
-    /* SOURCES */
-    .sources {
-      max-width: 960px;
-      margin: 0 auto;
-      padding: 0 40px 80px;
-      text-align: center;
-    }
-    .sources-list {
-      display: flex;
-      justify-content: center;
-      gap: 16px;
-      flex-wrap: wrap;
-      margin-top: 32px;
-    }
-    .source-tag {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 8px 20px;
-      font-size: 12px;
-      color: #666;
-      letter-spacing: 1px;
-    }
+    .sources-section { max-width: 960px; margin: 0 auto; padding: 0 40px 80px; text-align: center; }
+    .sources-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 32px; text-align: left; }
+    .source-card-land { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
+    .source-card-land .sname { font-size: 12px; font-weight: 700; color: #aaa; letter-spacing: 1px; margin-bottom: 6px; }
+    .source-card-land .sdesc { font-size: 11px; color: #444; line-height: 1.6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .source-card-land .stag { font-size: 9px; letter-spacing: 1px; color: #333; margin-top: 8px; }
 
-    /* SOCIAL */
-    .social-section {
-      border-top: 1px solid var(--border);
-      padding: 80px 40px;
-      text-align: center;
-    }
-    .social-section h2 {
-      font-size: clamp(20px, 4vw, 36px);
-      font-weight: 900;
-      color: #fff;
-      margin-bottom: 12px;
-    }
-    .social-section p {
-      font-size: 13px;
-      color: #555;
-      margin-bottom: 40px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    }
+    .social-section { border-top: 1px solid var(--border); padding: 80px 40px; text-align: center; }
+    .social-section h2 { font-size: clamp(20px, 4vw, 36px); font-weight: 900; color: #fff; margin-bottom: 12px; }
+    .social-section p { font-size: 13px; color: #555; margin-bottom: 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
     .social-links { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; }
-    .social-btn {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px 24px;
-      text-decoration: none;
-      color: #888;
-      font-size: 12px;
-      letter-spacing: 1px;
-      transition: border-color 0.2s, color 0.2s;
-    }
+    .social-btn { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 24px; text-decoration: none; color: #888; font-size: 12px; letter-spacing: 1px; transition: border-color 0.2s, color 0.2s; }
     .social-btn:hover { border-color: #444; color: #fff; }
 
-    /* FOOTER */
-    footer {
-      border-top: 1px solid var(--border);
-      padding: 32px 40px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 16px;
-    }
+    footer { border-top: 1px solid var(--border); padding: 32px 40px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
     .footer-logo { font-weight: 800; font-size: 13px; letter-spacing: 3px; color: #333; }
     .footer-copy { font-size: 11px; color: #333; }
 
-    @media (max-width: 600px) {
-      nav { padding: 16px 20px; }
-      .hero { padding: 60px 20px 40px; }
-      .stats { gap: 32px; padding: 40px 20px; }
-      .features, .how, .sources { padding-left: 20px; padding-right: 20px; }
-      footer { padding: 24px 20px; flex-direction: column; text-align: center; }
-    }
+    @media (max-width: 600px) { nav { padding: 16px 20px; } .hero { padding: 60px 20px 40px; } .stats { gap: 32px; padding: 40px 20px; } .features, .how, .sources-section, .engine-section, .safe-gate { padding-left: 20px; padding-right: 20px; } footer { padding: 24px 20px; flex-direction: column; text-align: center; } }
   </style>
 </head>
 <body>
@@ -354,27 +134,25 @@
     <div class="nav-logo">ANTARES</div>
     <div class="nav-links">
       <a href="#features">Features</a>
+      <a href="#engine">Engine</a>
       <a href="#how">How it works</a>
       <a href="#community">Community</a>
     </div>
   </nav>
 
   <section class="hero">
-    <div class="hero-badge">SOLANA TOKEN SCANNER</div>
+    <div class="hero-badge">SOLANA TOKEN SCANNER — v4.0</div>
     <h1>Stay safe.<br /><span>Stop getting scammed.</span></h1>
-    <p class="hero-sub">Antares automatically scans every Solana token you encounter — on any website, in real-time. No clicks. No effort. Just protection.</p>
+    <p class="hero-sub">Antares automatically scans every Solana token you encounter — on any website, in real-time. No clicks. No effort. 7 analysis layers. Always on.</p>
     <div class="hero-cta">
       <a href="#community" class="btn-primary">JOIN THE COMMUNITY</a>
-      <a href="#how" class="btn-ghost">SEE HOW IT WORKS</a>
+      <a href="#engine" class="btn-ghost">SEE HOW IT WORKS</a>
     </div>
   </section>
 
   <section class="demo-wrap">
     <div class="demo-box">
-      <div class="demo-header">
-        <span class="demo-logo">ANTARES</span>
-        <span class="demo-close">&times;</span>
-      </div>
+      <div class="demo-header"><span class="demo-logo">ANTARES</span><span class="demo-close">&times;</span></div>
       <div class="demo-risk">SAFE</div>
       <div class="demo-score">Score <strong>847</strong><span style="color:#444">/1000</span></div>
       <div class="demo-mcap">MCap <strong>$2.4M</strong></div>
@@ -387,22 +165,11 @@
   </section>
 
   <section class="stats">
-    <div class="stat-item">
-      <div class="stat-num">5</div>
-      <div class="stat-label">DATA SOURCES</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-num">1000</div>
-      <div class="stat-label">POINT SCORING SYSTEM</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-num">&lt;2s</div>
-      <div class="stat-label">SCAN TIME</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-num">&infin;</div>
-      <div class="stat-label">WEBSITES COVERED</div>
-    </div>
+    <div class="stat-item"><div class="stat-num">7</div><div class="stat-label">ANALYSIS LAYERS</div></div>
+    <div class="stat-item"><div class="stat-num">7</div><div class="stat-label">DATA SOURCES</div></div>
+    <div class="stat-item"><div class="stat-num">1000</div><div class="stat-label">POINT SCORING</div></div>
+    <div class="stat-item"><div class="stat-num">&lt;2s</div><div class="stat-label">SCAN TIME</div></div>
+    <div class="stat-item"><div class="stat-num">&infin;</div><div class="stat-label">WEBSITES COVERED</div></div>
   </section>
 
   <section class="features" id="features">
@@ -411,17 +178,17 @@
       <div class="feature-card">
         <div class="feature-icon">&#128274;</div>
         <div class="feature-title">PASSIVE & AUTOMATIC</div>
-        <p class="feature-desc">Antares runs silently in the background. The moment a Solana token address appears on any page, it scans it. No action required from you.</p>
+        <p class="feature-desc">Antares runs silently in the background. The moment a Solana token address appears on any page, it scans it. No action required.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon">&#127758;</div>
         <div class="feature-title">WORKS EVERYWHERE</div>
-        <p class="feature-desc">Twitter, Telegram Web, Discord, DexScreener, Photon, any blog or forum — Antares covers all of them. Not just the platforms it knows about.</p>
+        <p class="feature-desc">Twitter, Telegram Web, Discord, DexScreener, Photon, any blog or forum — Antares covers all of them automatically.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon">&#128202;</div>
-        <div class="feature-title">MULTI-SOURCE SCORING</div>
-        <p class="feature-desc">Each scan aggregates DexScreener, RugCheck, GoPlus and more into a single 0–1000 score with categorized risk flags.</p>
+        <div class="feature-title">7-LAYER SCORING</div>
+        <p class="feature-desc">Contract security, on-chain data, honeypot simulation, liquidity, holder distribution, identity risk, and chart pattern detection.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon">&#9889;</div>
@@ -429,60 +196,140 @@
         <p class="feature-desc">Results appear in under 2 seconds. The overlay updates automatically as you navigate between token pages.</p>
       </div>
       <div class="feature-card">
-        <div class="feature-icon">&#128269;</div>
-        <div class="feature-title">FULL ANALYSIS PAGE</div>
-        <p class="feature-desc">One click from the overlay opens a detailed analysis: all risk flags, market cap, holder distribution, liquidity, socials and more.</p>
+        <div class="feature-icon">&#128681;</div>
+        <div class="feature-title">SAFE GATE</div>
+        <p class="feature-desc">No token can display SAFE if chart patterns, copycat identity or unsecured LP are detected — regardless of score.</p>
       </div>
       <div class="feature-card">
-        <div class="feature-icon">&#128736;</div>
-        <div class="feature-title">SMART DETECTION</div>
-        <p class="feature-desc">Antares identifies the correct token even on complex pages — resolving LP pair addresses to their underlying mint automatically.</p>
+        <div class="feature-icon">&#128269;</div>
+        <div class="feature-title">FULL ANALYSIS PAGE</div>
+        <p class="feature-desc">One click from the overlay opens a detailed breakdown: all risk flags tagged by layer, sources, score bar, and engine documentation.</p>
       </div>
+    </div>
+  </section>
+
+  <!-- ENGINE -->
+  <section class="engine-section" id="engine">
+    <div class="section-title">ANALYSIS ENGINE — 7 LAYERS</div>
+    <div class="engine-layers">
+      <div class="layer-card">
+        <div class="layer-header"><span class="layer-num" style="color:#ef4444">L1</span><span class="layer-title">CONTRACT SECURITY</span></div>
+        <div class="layer-source">GoPlus · RugCheck</div>
+        <ul class="layer-checks">
+          <li>Mint & Freeze Authority</li>
+          <li>Honeypot detection</li>
+          <li>Proxy / hidden owner</li>
+          <li>Buy & sell tax</li>
+          <li>Transfer pausable</li>
+          <li>Blacklist capability</li>
+        </ul>
+      </div>
+      <div class="layer-card">
+        <div class="layer-header"><span class="layer-num" style="color:#f97316">L2</span><span class="layer-title">ON-CHAIN DATA</span></div>
+        <div class="layer-source">RugCheck · Helius RPC</div>
+        <ul class="layer-checks">
+          <li>Metadata mutability</li>
+          <li>LP burned / locked status</li>
+          <li>LP lock duration</li>
+          <li>Parsed mint account info</li>
+          <li>Token supply verification</li>
+        </ul>
+      </div>
+      <div class="layer-card">
+        <div class="layer-header"><span class="layer-num" style="color:#dc2626">L3</span><span class="layer-title">HONEYPOT SIMULATION</span></div>
+        <div class="layer-source">Honeypot.is</div>
+        <ul class="layer-checks">
+          <li>Full buy/sell simulation</li>
+          <li>Simulated tax rates</li>
+          <li>canBuy / canSell flags</li>
+          <li>Failed sell ratio analysis</li>
+        </ul>
+      </div>
+      <div class="layer-card">
+        <div class="layer-header"><span class="layer-num" style="color:#3b82f6">L4</span><span class="layer-title">LIQUIDITY & POOL</span></div>
+        <div class="layer-source">DexScreener</div>
+        <ul class="layer-checks">
+          <li>Pool liquidity (USD)</li>
+          <li>Volume / liquidity ratio</li>
+          <li>Wash trading signals</li>
+          <li>Price change 5m / 1h / 24h</li>
+          <li>Coordinated pump detection</li>
+        </ul>
+      </div>
+      <div class="layer-card">
+        <div class="layer-header"><span class="layer-num" style="color:#06b6d4">L5</span><span class="layer-title">HOLDER DISTRIBUTION</span></div>
+        <div class="layer-source">RugCheck · Birdeye · Helius</div>
+        <ul class="layer-checks">
+          <li>Top 1 / top 10 concentration</li>
+          <li>Dev wallet sells</li>
+          <li>Sniper / bundler detection</li>
+          <li>On-chain supply distribution</li>
+          <li>Rug pull history flags</li>
+        </ul>
+      </div>
+      <div class="layer-card">
+        <div class="layer-header"><span class="layer-num" style="color:#fbbf24">L6</span><span class="layer-title">IDENTITY RISK</span></div>
+        <div class="layer-source">DexScreener metadata</div>
+        <ul class="layer-checks">
+          <li>Brand imitation (TRUMP2, PEPE2…)</li>
+          <li>Suspicious suffixes (V2, REAL, OG…)</li>
+          <li>22 monitored brand names</li>
+          <li>Name + symbol cross-check</li>
+        </ul>
+      </div>
+      <div class="layer-card">
+        <div class="layer-header"><span class="layer-num" style="color:#a78bfa">L7</span><span class="layer-title">CHART INTELLIGENCE</span></div>
+        <div class="layer-source">DexScreener chart API (OHLCV)</div>
+        <ul class="layer-checks">
+          <li>Crashcoin: perfect upward chart</li>
+          <li>Vertical pump (+35% 5m / +120% 1h)</li>
+          <li>Liquidity mirage / wash trading</li>
+          <li>Artificial stair-step structure</li>
+          <li>Blow-off top + dump detection</li>
+          <li>Early volume exhaustion</li>
+          <li>Parabolic launch structure</li>
+          <li>Active slow rug signal</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- SAFE GATE -->
+  <section class="safe-gate">
+    <div class="section-title">THE SAFE GATE</div>
+    <div class="safe-gate-box">
+      <h3>Why SAFE is hard to get</h3>
+      <p>Most scanners only check contract flags. Antares adds a <strong>SAFE gate</strong>: even if a token scores ≥ 800/1000, it cannot display <strong style="color:#22c55e">SAFE</strong> if any of the following are detected:</p>
+      <div class="gate-rules">
+        <div class="gate-rule"><div class="gate-rule-dot" style="background:#a78bfa"></div><span><strong style="color:#ccc">Chart pattern risk (L7)</strong> — Crashcoin, parabolic launch, blow-off top, wash trading…</span></div>
+        <div class="gate-rule"><div class="gate-rule-dot" style="background:#fbbf24"></div><span><strong style="color:#ccc">Identity / copycat risk (L6)</strong> — Brand imitation, suspicious naming (TRUMP2, PEPE2, V2…)</span></div>
+        <div class="gate-rule"><div class="gate-rule-dot" style="background:#f97316"></div><span><strong style="color:#ccc">LP not secured (L2)</strong> — Liquidity neither burned nor locked</span></div>
+      </div>
+      <p>In this case the verdict is forced to <strong style="color:#f97316">CAUTION</strong> minimum, regardless of the score.</p>
+      <div class="safe-gate-code"><span>if</span> (safeBlocked &amp;&amp; score &gt;= 800) risk = <span>"CAUTION"</span>  <span style="color:#333">// SAFE gate active</span></div>
     </div>
   </section>
 
   <section class="how" id="how">
     <div class="section-title">HOW IT WORKS</div>
     <div class="steps">
-      <div class="step">
-        <div class="step-num">01</div>
-        <div class="step-content">
-          <h3>Install the extension</h3>
-          <p>Add Antares to Chrome. It runs silently in the background — no setup, no configuration needed.</p>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">02</div>
-        <div class="step-content">
-          <h3>Browse normally</h3>
-          <p>Go anywhere on the web. Antares watches for Solana token addresses across all pages you visit — URLs, text, links, DOM attributes.</p>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">03</div>
-        <div class="step-content">
-          <h3>Get instant risk scores</h3>
-          <p>A floating overlay appears automatically with the risk level, score out of 1000, market cap and top risk flags — in under 2 seconds.</p>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">04</div>
-        <div class="step-content">
-          <h3>Dive deeper when needed</h3>
-          <p>Click &ldquo;Full Analysis&rdquo; to open a complete breakdown — all flags, sources, holder data and liquidity details.</p>
-        </div>
-      </div>
+      <div class="step"><div class="step-num">01</div><div class="step-content"><h3>Install the extension</h3><p>Add Antares to Chrome. It runs silently in the background — no setup, no configuration needed.</p></div></div>
+      <div class="step"><div class="step-num">02</div><div class="step-content"><h3>Browse normally</h3><p>Go anywhere on the web. Antares watches for Solana token addresses across all pages — URLs, text, links, DOM attributes.</p></div></div>
+      <div class="step"><div class="step-num">03</div><div class="step-content"><h3>Get instant risk scores</h3><p>A floating overlay appears automatically with the risk level, score out of 1000, market cap and top risk flags — in under 2 seconds.</p></div></div>
+      <div class="step"><div class="step-num">04</div><div class="step-content"><h3>Dive deeper when needed</h3><p>Click &ldquo;Full Analysis&rdquo; to open a complete breakdown — all 7 analysis layers, sources used, score bar and engine documentation.</p></div></div>
     </div>
   </section>
 
-  <section class="sources">
+  <section class="sources-section">
     <div class="section-title">DATA SOURCES</div>
-    <div class="sources-list">
-      <div class="source-tag">DEXSCREENER</div>
-      <div class="source-tag">RUGCHECK</div>
-      <div class="source-tag">GOPLUS</div>
-      <div class="source-tag">HONEYPOT.IS</div>
-      <div class="source-tag">BIRDEYE</div>
+    <div class="sources-grid">
+      <div class="source-card-land"><div class="sname">DEXSCREENER</div><div class="sdesc">Pair data, market cap, liquidity, volume, price changes and OHLCV chart data for pattern analysis.</div><div class="stag">L4 · L7</div></div>
+      <div class="source-card-land"><div class="sname">RUGCHECK</div><div class="sdesc">On-chain metadata, LP burn/lock status, holder concentration and risk flags from Solana blockchain.</div><div class="stag">L2 · L5</div></div>
+      <div class="source-card-land"><div class="sname">GOPLUS</div><div class="sdesc">Smart contract security audit: authorities, taxes, proxy detection, honeypot and ownership analysis.</div><div class="stag">L1</div></div>
+      <div class="source-card-land"><div class="sname">HONEYPOT.IS</div><div class="sdesc">Full buy/sell transaction simulation to detect honeypot traps, failed sell ratios and tax manipulation.</div><div class="stag">L3</div></div>
+      <div class="source-card-land"><div class="sname">BIRDEYE</div><div class="sdesc">Top holder distribution and wallet concentration data with percentage breakdowns.</div><div class="stag">L5</div></div>
+      <div class="source-card-land"><div class="sname">HELIUS RPC</div><div class="sdesc">Solana on-chain RPC: largest token accounts, total supply and parsed mint account metadata.</div><div class="stag">L2 · L5</div></div>
+      <div class="source-card-land"><div class="sname">DEXSCREENER CHART</div><div class="sdesc">OHLCV candlestick data (1m resolution) used exclusively for chart pattern and wash trading detection.</div><div class="stag">L7</div></div>
     </div>
   </section>
 
@@ -507,7 +354,7 @@
 
   <footer>
     <div class="footer-logo">ANTARES</div>
-    <div class="footer-copy">&copy; 2026 Antares. All rights reserved.</div>
+    <div class="footer-copy">&copy; 2026 Antares &mdash; v4.0</div>
   </footer>
 
 </body>
