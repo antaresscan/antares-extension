@@ -81,7 +81,7 @@ function isValid(addr: string): boolean {
   return true
 }
 
-// ── CSS Shadow DOM ──────────────────────────────────────────────────────────
+// ── CSS Shadow DOM ────────────────────────────────────────────────────────
 const SHADOW_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap');
 *{ box-sizing:border-box; margin:0; padding:0; }
@@ -136,28 +136,109 @@ const SHADOW_CSS = `
 @keyframes ant-rugline{0%,100%{opacity:1}50%{opacity:.4}}
 `
 
-// ── styles inline host — ré-appliqués à chaque fois ─────────────────────────
-const HOST_STYLE = [
-  "all:initial",
-  "position:fixed",
-  "bottom:20px",
-  "right:20px",
-  "z-index:2147483647",
-  "width:280px",
-  "height:auto",
-  "display:block",
-  "pointer-events:none",
-  "overflow:visible",
-  "padding:0",
-  "margin:0",
-  "border:none",
-  "background:transparent",
-].join(" !important; ") + " !important"
+// ── host styles ────────────────────────────────────────────────────────────────
+const HOST_STYLE = "all:initial !important;position:fixed !important;bottom:20px !important;right:20px !important;z-index:2147483647 !important;width:280px !important;height:auto !important;display:block !important;pointer-events:none !important;overflow:visible !important;padding:0 !important;margin:0 !important;border:none !important;background:transparent !important"
 
-function enforceHostStyle() {
-  if (!host) return
-  const cur = host.getAttribute("style")
-  if (cur !== HOST_STYLE) host.setAttribute("style", HOST_STYLE)
+// ── Shadow DOM host ─────────────────────────────────────────────────────────
+let host: HTMLElement | null = null
+let shadow: ShadowRoot | null = null
+let innerBox: HTMLDivElement | null = null
+let hideTimeout: ReturnType<typeof setTimeout> | null = null
+let lastCA            = ""
+let manuallyDismissed = false
+let scanInFlight      = false
+
+function createHost() {
+  // On supprime l'ancien si existant
+  const old = document.getElementById("antares-host")
+  if (old) old.remove()
+
+  host = document.createElement("div")
+  host.id = "antares-host"
+  host.setAttribute("style", HOST_STYLE)
+
+  // Inject dans <html> directement — jamais détruit par les SPA
+  document.documentElement.appendChild(host)
+
+  shadow = host.attachShadow({ mode: "open" })
+  const styleEl = document.createElement("style")
+  styleEl.textContent = SHADOW_CSS
+  shadow.appendChild(styleEl)
+
+  innerBox = document.createElement("div")
+  innerBox.id = "box"
+  shadow.appendChild(innerBox)
+
+  // Re-observer le host pour protéger son style
+  hostStyleGuard.disconnect()
+  hostStyleGuard.observe(host, { attributes: true, attributeFilter: ["style", "class"] })
+}
+
+// Surveille si le host est supprimé du <html>
+const hostRemovalGuard = new MutationObserver(() => {
+  if (!host || !document.documentElement.contains(host)) {
+    createHost()
+  }
+})
+
+// Surveille si quelqu'un touche au style/class du host
+const hostStyleGuard = new MutationObserver(() => {
+  if (host && host.getAttribute("style") !== HOST_STYLE) {
+    host.setAttribute("style", HOST_STYLE)
+  }
+})
+
+function getBox(): HTMLDivElement {
+  if (!host || !document.documentElement.contains(host)) createHost()
+  return innerBox!
+}
+
+function hideBox() {
+  const el = innerBox
+  if (!el) return
+  el.style.opacity   = "0"
+  el.style.transform = "translateY(18px)"
+  if (hideTimeout) clearTimeout(hideTimeout)
+  hideTimeout = setTimeout(() => { if (el) el.style.display = "none" }, 250)
+  host?.style.setProperty("pointer-events", "none", "important")
+}
+
+function showBox() {
+  if (!host || !document.documentElement.contains(host)) createHost()
+  const el = innerBox!
+  if (hideTimeout) clearTimeout(hideTimeout)
+  el.style.display = "block"
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    el.style.opacity   = "1"
+    el.style.transform = "translateY(0)"
+  }))
+  host?.style.setProperty("pointer-events", "auto", "important")
+}
+
+function resetState() { lastCA = ""; manuallyDismissed = false; scanInFlight = false; hideBox() }
+
+function attachClose() {
+  const btn = shadow?.getElementById("ant-close")
+  if (btn) btn.onclick = () => { manuallyDismissed = true; hideBox() }
+}
+
+function attachToggle() {
+  const btn   = shadow?.getElementById("ant-toggle")
+  const extra = shadow?.getElementById("ant-extra")
+  if (btn && extra) {
+    btn.onclick = () => {
+      const isOpen = extra.classList.contains("open")
+      extra.classList.toggle("open")
+      btn.textContent = isOpen ? "▸ Source details" : "▾ Source details"
+    }
+  }
+}
+
+function applyRiskBorder(risk: string) {
+  const c = COLORS[risk] || { main: "#6b7280", rgba: "107,114,128" }
+  if (!innerBox) return
+  innerBox.style.borderColor = risk === "RUG" ? "#2a1519" : "#1f1f22"
+  innerBox.style.boxShadow   = `0 6px 30px rgba(${c.rgba},.06)`
 }
 
 // ── HTML builder ───────────────────────────────────────────────────────────
@@ -202,103 +283,6 @@ function buildResult(data: any, ca: string): string {
     <div class="extra" id="ant-extra">${sourceRows}</div>
     <div class="actions">${dexLink}${analysisLink}</div>
   `
-}
-
-// ── Shadow DOM host ──────────────────────────────────────────────────────────
-let host: HTMLElement | null = null
-let shadow: ShadowRoot | null = null
-let innerBox: HTMLDivElement | null = null
-let hideTimeout: ReturnType<typeof setTimeout> | null = null
-let lastCA            = ""
-let manuallyDismissed = false
-let scanInFlight      = false
-
-function createHost() {
-  host = document.createElement("div")
-  host.id = "antares-host"
-  host.setAttribute("style", HOST_STYLE)
-  document.body.appendChild(host)
-  shadow = host.attachShadow({ mode: "open" })
-  const styleEl = document.createElement("style")
-  styleEl.textContent = SHADOW_CSS
-  shadow.appendChild(styleEl)
-  innerBox = document.createElement("div")
-  innerBox.id = "box"
-  shadow.appendChild(innerBox)
-}
-
-function ensureHost() {
-  if (!host || !document.body.contains(host)) {
-    createHost()
-  }
-  enforceHostStyle()
-}
-
-// Garde qui surveille si le host est supprimé ou modifié par la page
-const hostGuard = new MutationObserver(() => {
-  if (!host || !document.body.contains(host)) {
-    createHost()
-  } else {
-    enforceHostStyle()
-  }
-})
-
-function startGuard() {
-  hostGuard.observe(document.body, { childList: true, subtree: false, attributes: false })
-  if (host) hostGuard.observe(host, { attributes: true, attributeFilter: ["style", "class"] })
-}
-
-function getBox(): HTMLDivElement {
-  ensureHost()
-  return innerBox!
-}
-
-function hideBox() {
-  const el = innerBox
-  if (!el) return
-  el.style.opacity   = "0"
-  el.style.transform = "translateY(18px)"
-  if (hideTimeout) clearTimeout(hideTimeout)
-  hideTimeout = setTimeout(() => { if (el) el.style.display = "none" }, 250)
-  if (host) host.style.setProperty("pointer-events", "none", "important")
-}
-
-function showBox() {
-  ensureHost()
-  const el = innerBox!
-  if (hideTimeout) clearTimeout(hideTimeout)
-  el.style.display = "block"
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    el.style.opacity   = "1"
-    el.style.transform = "translateY(0)"
-  }))
-  if (host) host.style.setProperty("pointer-events", "auto", "important")
-}
-
-function resetState() { lastCA = ""; manuallyDismissed = false; scanInFlight = false; hideBox() }
-
-function attachClose() {
-  const btn = shadow?.getElementById("ant-close")
-  if (btn) btn.onclick = () => { manuallyDismissed = true; hideBox() }
-}
-
-function attachToggle() {
-  const btn   = shadow?.getElementById("ant-toggle")
-  const extra = shadow?.getElementById("ant-extra")
-  if (btn && extra) {
-    btn.onclick = () => {
-      const isOpen = extra.classList.contains("open")
-      extra.classList.toggle("open")
-      btn.textContent = isOpen ? "▸ Source details" : "▾ Source details"
-    }
-  }
-}
-
-function applyRiskBorder(risk: string) {
-  const c = COLORS[risk] || { main: "#6b7280", rgba: "107,114,128" }
-  if (!innerBox) return
-  innerBox.style.borderColor = risk === "RUG" ? "#2a1519" : "#1f1f22"
-  innerBox.style.boxShadow   = `0 6px 30px rgba(${c.rgba},.06)`
 }
 
 // ── scan ──────────────────────────────────────────────────────────────────
@@ -390,11 +374,10 @@ function findBestAddress(): string {
 }
 
 // ── init ───────────────────────────────────────────────────────────────────
-function poll() { const ca = findBestAddress(); if (!ca) return; scan(ca) }
-
-// initialisation
 createHost()
-startGuard()
+hostRemovalGuard.observe(document.documentElement, { childList: true, subtree: false })
+
+function poll() { const ca = findBestAddress(); if (!ca) return; scan(ca) }
 poll()
 setTimeout(poll, 2000)
 
