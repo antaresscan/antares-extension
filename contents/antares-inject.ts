@@ -410,16 +410,14 @@ function buildResult(data: any, ca: string): string {
   const mint      = data.resolvedMint || ca
   const mc        = data.pair?.marketCap || data.pair?.fdv
   const liq       = data.pair?.liquidity?.usd
-  const holders   = data.pair?.holders ?? data.holders
   const conf      = typeof data.confidence === "number" ? data.confidence : null
   const barW      = Math.round((data.score || 0) / 10)
 
   if (boxEl) boxEl.className = `box ${riskClass}`
 
   const metaCells = [
-    mc      ? `<div><span>Market Cap</span><strong>${formatMcap(mc)}</strong></div>` : "",
-    liq     ? `<div><span>Liquidity</span><strong>${formatMcap(liq)}</strong></div>` : "",
-    holders ? `<div><span>Holders</span><strong>${Number(holders).toLocaleString()}</strong></div>` : "",
+    mc   ? `<div><span>Market Cap</span><strong>${formatMcap(mc)}</strong></div>` : "",
+    liq  ? `<div><span>Liquidity</span><strong>${formatMcap(liq)}</strong></div>` : "",
     conf !== null ? `<div><span>Confidence</span><strong>${conf}%</strong></div>` : "",
   ].filter(Boolean).join("")
 
@@ -440,10 +438,7 @@ function buildResult(data: any, ca: string): string {
     <div class="inner">
       <div class="head"><span class="brand" data-text="ANTARES">ANTARES</span><button class="x" id="ant-close">&times;</button></div>
       <div class="risk">${label}</div>
-      <div class="score-row">
-        <span class="score">Score <strong>${data.score}</strong> / 1000</span>
-        ${mc ? `<span class="mcap">${formatMcap(mc)}</span>` : ""}
-      </div>
+      ${mc ? `<div class="score-row"><span></span><span class="mcap">${formatMcap(mc)}</span></div>` : ""}
       <div class="bar"><div class="bar-f" data-w="${barW}"></div></div>
       ${metaCells ? `<div class="meta">${metaCells}</div>` : ""}
       ${flags ? `<div class="flags-wrap">${flags}</div>` : ""}
