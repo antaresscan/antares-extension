@@ -35,6 +35,26 @@ const IGNORE = new Set([
 const CACHE_TTL = 90_000
 const scanCache = new Map<string, { data: any; ts: number }>()
 
+// Pré-charge le cache mémoire depuis localStorage au démarrage
+;(function hydrateCacheFromLS() {
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (!key?.startsWith(LS_PREFIX)) continue
+      const raw = localStorage.getItem(key)
+      if (!raw) continue
+      const parsed = JSON.parse(raw)
+      if (!parsed?.data || !parsed?.ts) continue
+      if (Date.now() - parsed.ts > CACHE_TTL) {
+        localStorage.removeItem(key)
+        continue
+      }
+      const ca = key.slice(LS_PREFIX.length)
+      scanCache.set(ca, { data: parsed.data, ts: parsed.ts })
+    }
+  } catch (_) {}
+})()
+
 function getCached(ca: string): any | null {
   const e = scanCache.get(ca)
   if (!e) return null
@@ -45,7 +65,7 @@ function getCached(ca: string): any | null {
 function saveToLS(ca: string, data: any) {
   try {
     localStorage.setItem(LS_PREFIX + ca, JSON.stringify({ data, ts: Date.now() }))
-  } catch(_) {}
+  } catch (_) {}
 }
 
 function formatMcap(mc: number): string {
