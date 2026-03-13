@@ -1,6 +1,11 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
+import * as Sentry from "@sentry/node";
+
+if (process.env.SENTRY_DSN) {
+  Sentry.init({ dsn: process.env.SENTRY_DSN, tracesSampleRate: 0.05 });
+}
 
 const DEXSCREENER_BASE = "https://api.dexscreener.com/latest/dex";
 const RUGCHECK_BASE = "https://api.rugcheck.xyz/v1";
@@ -354,10 +359,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const marketCap: number | null = (() => {
       const mc  = asNumber(pair?.marketCap);
       const fdv = asNumber(pair?.fdv);
-      // Si on a la supply et le prix, on recalcule
       if (totalSupplyUi > 0 && priceUsd && priceUsd > 0) {
         const computed = totalSupplyUi * priceUsd;
-        // On prend le plus petit entre fdv et computed pour éviter inflation
         if (mc > 0) return mc;
         if (computed > 0) return computed;
       }
@@ -563,24 +566,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       resolvedMint,
       confidence,
       sources_used,
-      // — Données enrichies et synchronisées —
-      holders,          // nombre réel de holders (Helius DAS)
-      marketCap,        // marketCap circulant (priorité sur fdv)
-      priceUsd,         // prix spot live
-      liquidity,        // liquidité USD temps réel
-      volume24h,        // volume 24h
-      volume1h,         // volume 1h
-      priceChange5m,    // variation 5m
-      priceChange1h,    // variation 1h
-      priceChange24h,   // variation 24h
+      holders,
+      marketCap,
+      priceUsd,
+      liquidity,
+      volume24h,
+      volume1h,
+      priceChange5m,
+      priceChange1h,
+      priceChange24h,
       tokenSymbol:      pair?.baseToken?.symbol ?? null,
       tokenName:        pair?.baseToken?.name   ?? null,
       pairCreatedAt:    pair?.pairCreatedAt     ?? null,
       safeBlocked,
       scoring_version: "4.2",
-      fetchedAt: Date.now(),   // timestamp pour affichage "données en temps réel"
+      fetchedAt: Date.now(),
     });
   } catch (e) {
+    Sentry.captureException(e);
     console.error("[scan v4.2]", e);
     return res.status(500).json({ error: "Analysis error." });
   }
