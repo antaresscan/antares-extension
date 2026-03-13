@@ -28,7 +28,9 @@
   },
   "manifest": {
     "host_permissions": [
-      "https://*/*"
+      "https://*/*",
+      "https://fonts.googleapis.com/*",
+      "https://fonts.gstatic.com/*"
     ]
   }
 }
