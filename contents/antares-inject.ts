@@ -36,7 +36,6 @@ const IGNORE = new Set([
   "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr",
 ])
 
-// ── cache ────────────────────────────────────────────────────────────────
 const scanCache = new Map<string, { data: any; ts: number }>()
 
 ;(function hydrateCacheFromLS() {
@@ -65,7 +64,6 @@ function saveToLS(ca: string, data: any) {
   try { localStorage.setItem(LS_PREFIX + ca, JSON.stringify({ data, ts: Date.now() })) } catch (_) {}
 }
 
-// ── helpers ───────────────────────────────────────────────────────────────
 function formatMcap(mc: number): string {
   if (mc >= 1_000_000_000) return `$${(mc / 1_000_000_000).toFixed(2)}B`
   if (mc >= 1_000_000)     return `$${(mc / 1_000_000).toFixed(2)}M`
@@ -81,65 +79,236 @@ function isValid(addr: string): boolean {
   return true
 }
 
-// ── CSS Shadow DOM ────────────────────────────────────────────────────────
+// ── CSS complet de la démo overlay-1 ───────────────────────────────────────────────────────
 const SHADOW_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap');
-*{ box-sizing:border-box; margin:0; padding:0; }
-:host{ display:block; }
-#box{
-  width:280px;
-  background:#141417;
-  border:1px solid #1f1f22;
-  overflow:hidden;
-  font-family:'IBM Plex Mono',monospace;
-  font-size:13px;
-  color:#d8d8d8;
-  line-height:1.4;
-  display:none;
-  opacity:0;
-  transform:translateY(18px);
-  transition:opacity .25s,transform .25s;
-  position:relative;
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:host {
+  all: initial;
+  display: block;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 2147483647;
+  width: 280px;
+  pointer-events: none;
+  font-family: 'IBM Plex Mono', monospace;
 }
-.bline{ display:block; position:absolute; top:0;left:0;right:0; height:3px; z-index:2; }
-.inner{ display:block; padding:16px; }
-.head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
-.brand{ font-size:9px; letter-spacing:.3em; color:#3a3a3f; text-transform:uppercase; font-family:'IBM Plex Mono',monospace; }
-.x{ color:#2e2e33; cursor:pointer; font-size:18px; line-height:1; transition:color .15s; }
-.x:hover{ color:#d8d8d8; }
-.risk{ display:block; font-family:'Bebas Neue',sans-serif; font-size:36px; font-weight:400; line-height:1; letter-spacing:.04em; margin-bottom:5px; }
-.score-row{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; }
-.score{ font-size:11px; color:#4a4a50; font-family:'IBM Plex Mono',monospace; }
-.score strong{ color:#aaa; font-weight:600; }
-.mcap{ font-size:11px; color:#383840; font-family:'IBM Plex Mono',monospace; }
-.bar{ display:block; height:3px; background:#1c1c1f; margin-bottom:14px; overflow:hidden; }
-.bar-f{ display:block; height:100%; transition:width 1.1s cubic-bezier(.22,1,.36,1); }
-.meta{ display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-bottom:12px; }
-.meta div{ display:block; padding:7px 9px; background:#111114; border:1px solid #1c1c1f; border-radius:2px; }
-.meta span{ display:block; font-size:9px; color:#3a3a3f; letter-spacing:.1em; text-transform:uppercase; margin-bottom:2px; font-family:'IBM Plex Mono',monospace; }
-.meta strong{ display:block; font-size:12px; color:#bbb; font-weight:600; font-family:'IBM Plex Mono',monospace; }
-.flags-wrap{ display:block; margin-bottom:12px; }
-.flag{ display:block; font-size:11px; color:#505058; padding:4px 0 4px 10px; border-left:2px solid; margin-top:3px; font-family:'IBM Plex Mono',monospace; }
-.toggle{ display:block; width:100%; padding:8px 16px; background:transparent; border:none; border-top:1px solid #1c1c1f; font-size:9px; font-weight:600; font-family:'IBM Plex Mono',monospace; letter-spacing:.2em; color:#383840; text-transform:uppercase; cursor:pointer; text-align:left; }
-.toggle:hover{ color:#bbb; background:#111114; }
-.extra{ display:none; padding:2px 16px 12px; }
-.extra.open{ display:block; }
-.extra-row{ display:flex; justify-content:space-between; font-size:10px; color:#3a3a3f; padding:4px 0; border-bottom:1px solid #171719; font-family:'IBM Plex Mono',monospace; }
-.extra-row span:last-child{ color:#777; }
-.actions{ display:flex; gap:10px; padding:10px 16px; border-top:1px solid #1c1c1f; background:#111114; }
-.actions a{ font-size:10px; color:#3a3a3f; text-decoration:none; letter-spacing:.05em; text-transform:uppercase; cursor:pointer; font-family:'IBM Plex Mono',monospace; transition:color .15s; }
-.actions a:hover{ color:#d8d8d8; }
-.actions a.primary{ margin-left:auto; }
-.scanning{ display:flex; align-items:center; gap:8px; color:#4a4a50; font-size:12px; padding:4px 0; font-family:'IBM Plex Mono',monospace; }
-.dot{ display:inline-block; width:7px; height:7px; border-radius:50%; background:#3a3a3f; animation:ant-pulse 1.2s infinite; }
-@keyframes ant-pulse{0%,100%{opacity:1}50%{opacity:.15}}
-@keyframes ant-rugline{0%,100%{opacity:1}50%{opacity:.4}}
+
+#box {
+  pointer-events: auto;
+  width: 280px;
+  background: #141417;
+  border: 1px solid #1f1f22;
+  overflow: hidden;
+  position: relative;
+  display: none;
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity .25s ease, transform .25s ease, border-color .25s, box-shadow .25s;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  color: #d8d8d8;
+  line-height: 1.4;
+}
+
+/* ── barre couleur top ── */
+.bline {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  z-index: 2;
+}
+
+/* ── inner padding ── */
+.inner { padding: 16px; }
+
+/* ── header ── */
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.brand {
+  font-size: 9px;
+  letter-spacing: .3em;
+  color: #3a3a3f;
+  text-transform: uppercase;
+  font-family: 'IBM Plex Mono', monospace;
+}
+.x {
+  color: #2e2e33;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  transition: color .15s, transform .15s;
+  user-select: none;
+}
+.x:hover { color: #d8d8d8; transform: rotate(90deg); }
+
+/* ── verdict ── */
+.risk {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 36px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: .04em;
+  margin-bottom: 5px;
+}
+
+/* ── score row ── */
+.score-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 10px;
+}
+.score {
+  font-size: 11px;
+  color: #4a4a50;
+  font-family: 'IBM Plex Mono', monospace;
+}
+.score strong { color: #aaa; font-weight: 600; }
+.mcap {
+  font-size: 11px;
+  color: #383840;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+/* ── barre score ── */
+.bar {
+  height: 3px;
+  background: #1c1c1f;
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+.bar-f {
+  height: 100%;
+  width: 0%;
+  transition: width 1.1s cubic-bezier(.22,1,.36,1);
+}
+
+/* ── meta grid ── */
+.meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  margin-bottom: 12px;
+}
+.meta div {
+  padding: 7px 9px;
+  background: #111114;
+  border: 1px solid #1c1c1f;
+  border-radius: 2px;
+}
+.meta span {
+  display: block;
+  font-size: 9px;
+  color: #3a3a3f;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+.meta strong {
+  display: block;
+  font-size: 12px;
+  color: #bbb;
+  font-weight: 600;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+/* ── flags ── */
+.flags-wrap { margin-bottom: 12px; }
+.flag {
+  font-size: 11px;
+  color: #505058;
+  padding: 4px 0 4px 10px;
+  border-left: 2px solid;
+  margin-top: 3px;
+  font-family: 'IBM Plex Mono', monospace;
+  transition: color .15s, padding-left .15s;
+}
+.flag:hover { color: #bbb; padding-left: 14px; }
+
+/* ── source details ── */
+.toggle {
+  display: block;
+  width: 100%;
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  border-top: 1px solid #1c1c1f;
+  font-size: 9px;
+  font-weight: 600;
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: .2em;
+  color: #383840;
+  text-transform: uppercase;
+  cursor: pointer;
+  text-align: left;
+  transition: color .15s, background .15s;
+}
+.toggle:hover { color: #bbb; background: #111114; }
+.extra { display: none; padding: 2px 16px 12px; }
+.extra.open { display: block; }
+.extra-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #3a3a3f;
+  padding: 4px 0;
+  border-bottom: 1px solid #171719;
+  font-family: 'IBM Plex Mono', monospace;
+}
+.extra-row span:last-child { color: #777; }
+
+/* ── actions footer ── */
+.actions {
+  display: flex;
+  gap: 10px;
+  padding: 10px 16px;
+  border-top: 1px solid #1c1c1f;
+  background: #111114;
+}
+.actions a {
+  font-size: 10px;
+  color: #3a3a3f;
+  text-decoration: none;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  font-family: 'IBM Plex Mono', monospace;
+  transition: color .15s;
+}
+.actions a:hover { color: #d8d8d8; }
+.actions a.primary { margin-left: auto; font-weight: 700; }
+
+/* ── scanning ── */
+@keyframes ant-pulse { 0%,100%{opacity:1} 50%{opacity:.15} }
+@keyframes ant-rugline { 0%,100%{opacity:1} 50%{opacity:.4} }
+.scanning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #4a4a50;
+  font-size: 12px;
+  padding: 4px 0;
+  font-family: 'IBM Plex Mono', monospace;
+}
+.dot {
+  display: inline-block;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #3a3a3f;
+  animation: ant-pulse 1.2s infinite;
+}
 `
 
-// ── host styles ────────────────────────────────────────────────────────────────
-const HOST_STYLE = "all:initial !important;position:fixed !important;bottom:20px !important;right:20px !important;z-index:2147483647 !important;width:280px !important;height:auto !important;display:block !important;pointer-events:none !important;overflow:visible !important;padding:0 !important;margin:0 !important;border:none !important;background:transparent !important"
+// ── Shadow DOM ─────────────────────────────────────────────────────────────────────────
 
-// ── Shadow DOM host ─────────────────────────────────────────────────────────
 let host: HTMLElement | null = null
 let shadow: ShadowRoot | null = null
 let innerBox: HTMLDivElement | null = null
@@ -149,44 +318,22 @@ let manuallyDismissed = false
 let scanInFlight      = false
 
 function createHost() {
-  // On supprime l'ancien si existant
-  const old = document.getElementById("antares-host")
-  if (old) old.remove()
-
+  document.getElementById("antares-host")?.remove()
   host = document.createElement("div")
   host.id = "antares-host"
-  host.setAttribute("style", HOST_STYLE)
-
-  // Inject dans <html> directement — jamais détruit par les SPA
   document.documentElement.appendChild(host)
-
   shadow = host.attachShadow({ mode: "open" })
   const styleEl = document.createElement("style")
   styleEl.textContent = SHADOW_CSS
   shadow.appendChild(styleEl)
-
   innerBox = document.createElement("div")
   innerBox.id = "box"
   shadow.appendChild(innerBox)
-
-  // Re-observer le host pour protéger son style
-  hostStyleGuard.disconnect()
-  hostStyleGuard.observe(host, { attributes: true, attributeFilter: ["style", "class"] })
 }
 
-// Surveille si le host est supprimé du <html>
-const hostRemovalGuard = new MutationObserver(() => {
-  if (!host || !document.documentElement.contains(host)) {
-    createHost()
-  }
-})
-
-// Surveille si quelqu'un touche au style/class du host
-const hostStyleGuard = new MutationObserver(() => {
-  if (host && host.getAttribute("style") !== HOST_STYLE) {
-    host.setAttribute("style", HOST_STYLE)
-  }
-})
+new MutationObserver(() => {
+  if (!host || !document.documentElement.contains(host)) createHost()
+}).observe(document.documentElement, { childList: true, subtree: false })
 
 function getBox(): HTMLDivElement {
   if (!host || !document.documentElement.contains(host)) createHost()
@@ -194,13 +341,11 @@ function getBox(): HTMLDivElement {
 }
 
 function hideBox() {
-  const el = innerBox
-  if (!el) return
-  el.style.opacity   = "0"
-  el.style.transform = "translateY(18px)"
+  if (!innerBox) return
+  innerBox.style.opacity   = "0"
+  innerBox.style.transform = "translateY(18px)"
   if (hideTimeout) clearTimeout(hideTimeout)
-  hideTimeout = setTimeout(() => { if (el) el.style.display = "none" }, 250)
-  host?.style.setProperty("pointer-events", "none", "important")
+  hideTimeout = setTimeout(() => { if (innerBox) innerBox.style.display = "none" }, 250)
 }
 
 function showBox() {
@@ -212,104 +357,104 @@ function showBox() {
     el.style.opacity   = "1"
     el.style.transform = "translateY(0)"
   }))
-  host?.style.setProperty("pointer-events", "auto", "important")
 }
 
 function resetState() { lastCA = ""; manuallyDismissed = false; scanInFlight = false; hideBox() }
 
 function attachClose() {
-  const btn = shadow?.getElementById("ant-close")
-  if (btn) btn.onclick = () => { manuallyDismissed = true; hideBox() }
+  shadow?.getElementById("ant-close")?.addEventListener("click", () => { manuallyDismissed = true; hideBox() }, { once: true })
 }
 
 function attachToggle() {
   const btn   = shadow?.getElementById("ant-toggle")
   const extra = shadow?.getElementById("ant-extra")
-  if (btn && extra) {
-    btn.onclick = () => {
-      const isOpen = extra.classList.contains("open")
-      extra.classList.toggle("open")
-      btn.textContent = isOpen ? "▸ Source details" : "▾ Source details"
-    }
-  }
+  if (btn && extra) btn.addEventListener("click", () => {
+    const open = extra.classList.toggle("open")
+    btn.textContent = (open ? "\u25BE " : "\u25B8 ") + "Source details"
+  }, { once: true })
 }
 
 function applyRiskBorder(risk: string) {
-  const c = COLORS[risk] || { main: "#6b7280", rgba: "107,114,128" }
   if (!innerBox) return
-  innerBox.style.borderColor = risk === "RUG" ? "#2a1519" : "#1f1f22"
+  const c = COLORS[risk] || { main: "#6b7280", rgba: "107,114,128" }
+  innerBox.style.borderColor = risk === "RUG" ? "#2a1519" : `rgba(${c.rgba},.35)`
   innerBox.style.boxShadow   = `0 6px 30px rgba(${c.rgba},.06)`
 }
 
-// ── HTML builder ───────────────────────────────────────────────────────────
+// ── HTML builder ─────────────────────────────────────────────────────────────────────
 function buildResult(data: any, ca: string): string {
-  const c     = COLORS[data.risk] || { main: "#6b7280", rgba: "107,114,128" }
-  const label = LABELS[data.risk] || data.risk
-  const mint  = data.resolvedMint || ca
+  const c       = COLORS[data.risk] || { main: "#6b7280", rgba: "107,114,128" }
+  const label   = LABELS[data.risk] || data.risk
+  const mint    = data.resolvedMint || ca
   const mc      = data.pair?.marketCap || data.pair?.fdv
   const liq     = data.pair?.liquidity?.usd
   const holders = data.pair?.holders
   const conf    = typeof data.confidence === "number" ? data.confidence : null
-  const barW    = (data.score || 0) / 10
+  const barW    = Math.round((data.score || 0) / 10)
+
   const metaCells = [
     mc      ? `<div><span>Market Cap</span><strong>${formatMcap(mc)}</strong></div>` : "",
     liq     ? `<div><span>Liquidity</span><strong>${formatMcap(liq)}</strong></div>` : "",
-    holders ? `<div><span>Holders</span><strong>${holders.toLocaleString()}</strong></div>` : "",
+    holders ? `<div><span>Holders</span><strong>${Number(holders).toLocaleString()}</strong></div>` : "",
     conf !== null ? `<div><span>Confidence</span><strong>${conf}%</strong></div>` : "",
   ].filter(Boolean).join("")
+
   const flags = (data.flags || [])
     .filter((f: any) => { const l = (f.label || f) as string; return !l.toLowerCase().includes("unavailable") && f.severity !== "bonus" })
     .slice(0, 4)
-    .map((f: any) => `<div class="flag" style="border-color:rgba(${c.rgba},.2)">${f.label || f}</div>`).join("")
-  const sourceRows = (data.sources_used || ["DexScreener","RugCheck","GoPlus","Helius RPC"])
-    .map((s: string) => `<div class="extra-row"><span>${s}</span><span>✓ Used</span></div>`).join("")
-  const dexLink = data.pair?.url ? `<a href="${data.pair.url}" target="_blank" rel="noopener noreferrer">↗ DexScreener</a>` : ""
-  const analysisLink = `<a href="${ANALYSIS_PAGE}?ca=${mint}" target="_blank" rel="noopener noreferrer" class="primary">↗ Full Analysis</a>`
-  const blineStyle = data.risk === "RUG" ? `background:${c.main};animation:ant-rugline 2s ease infinite` : `background:${c.main}`
+    .map((f: any) => `<div class="flag" style="border-color:rgba(${c.rgba},.2)">${f.label || f}</div>`)
+    .join("")
+
+  const sourceRows = (data.sources_used || ["DexScreener", "RugCheck", "GoPlus", "Helius RPC"])
+    .map((s: string) => `<div class="extra-row"><span>${s}</span><span>&#10003; Used</span></div>`).join("")
+
+  const dexLink      = data.pair?.url ? `<a href="${data.pair.url}" target="_blank" rel="noopener noreferrer">&#8599; DexScreener</a>` : ""
+  const analysisLink = `<a href="${ANALYSIS_PAGE}?ca=${mint}" target="_blank" rel="noopener noreferrer" class="primary">&#8599; Full Analysis</a>`
+  const blineStyle   = data.risk === "RUG" ? `background:${c.main};animation:ant-rugline 2s ease infinite` : `background:${c.main}`
+
   return `
     <div class="bline" style="${blineStyle}"></div>
     <div class="inner">
-      <div class="head"><span class="brand">ANTARES</span><span class="x" id="ant-close">×</span></div>
+      <div class="head"><span class="brand">ANTARES</span><span class="x" id="ant-close">&times;</span></div>
       <div class="risk" style="color:${c.main}">${label}</div>
       <div class="score-row">
         <span class="score">Score <strong>${data.score}</strong> / 1000</span>
-        <span class="mcap">${mc ? formatMcap(mc) : ""}</span>
+        ${mc ? `<span class="mcap">${formatMcap(mc)}</span>` : ""}
       </div>
       <div class="bar"><div class="bar-f" style="background:${c.main};width:${barW}%"></div></div>
       ${metaCells ? `<div class="meta">${metaCells}</div>` : ""}
       ${flags ? `<div class="flags-wrap">${flags}</div>` : ""}
     </div>
-    <button class="toggle" id="ant-toggle">▸ Source details</button>
+    <button class="toggle" id="ant-toggle">&#9658; Source details</button>
     <div class="extra" id="ant-extra">${sourceRows}</div>
     <div class="actions">${dexLink}${analysisLink}</div>
   `
 }
 
-// ── scan ──────────────────────────────────────────────────────────────────
+// ── scan ─────────────────────────────────────────────────────────────────────────────
 async function scan(ca: string) {
   if (!ca) return
-  if (ca === lastCA && innerBox && innerBox.style.display !== "none") return
+  const el = getBox()
+  if (ca === lastCA && el.style.display !== "none") return
   if (manuallyDismissed && ca === lastCA) return
   if (scanInFlight) return
   if (ca !== lastCA) { manuallyDismissed = false; lastCA = ca }
 
   const cached = getCached(ca)
   if (cached) {
-    const el = getBox()
     applyRiskBorder(cached.risk)
     el.innerHTML = buildResult(cached, ca)
     showBox(); attachClose(); attachToggle(); return
   }
 
   scanInFlight = true
-  const el = getBox()
   el.style.borderColor = "#1f1f22"
   el.style.boxShadow   = "none"
   el.innerHTML = `
     <div class="bline" style="background:#3a3a3f"></div>
     <div class="inner">
-      <div class="head"><span class="brand">ANTARES</span><span class="x" id="ant-close">×</span></div>
-      <div class="scanning"><span class="dot"></span>Scanning…</div>
+      <div class="head"><span class="brand">ANTARES</span><span class="x" id="ant-close">&times;</span></div>
+      <div class="scanning"><span class="dot"></span>Scanning&hellip;</div>
     </div>
   `
   showBox(); attachClose()
@@ -324,13 +469,13 @@ async function scan(ca: string) {
     applyRiskBorder(data.risk)
     el.innerHTML = buildResult(data, ca)
     showBox(); attachClose(); attachToggle()
-  } catch (e) {
+  } catch (_e) {
     if (lastCA !== ca) { scanInFlight = false; return }
     el.innerHTML = `
       <div class="bline" style="background:#ff5f5f"></div>
       <div class="inner">
-        <div class="head"><span class="brand">ANTARES</span><span class="x" id="ant-close">×</span></div>
-        <div style="color:#ff5f5f;font-size:12px;padding:4px 0">API Error — retry later</div>
+        <div class="head"><span class="brand">ANTARES</span><span class="x" id="ant-close">&times;</span></div>
+        <div style="color:#ff5f5f;font-size:12px;padding:4px 0;font-family:'IBM Plex Mono',monospace">API Error &mdash; retry later</div>
       </div>
     `
     showBox(); attachClose()
@@ -338,7 +483,7 @@ async function scan(ca: string) {
   scanInFlight = false
 }
 
-// ── address detection ────────────────────────────────────────────────────
+// ── address detection ─────────────────────────────────────────────────────────────────
 function findBestAddress(): string {
   if (window.location.hostname.includes("photon") && !window.location.pathname.includes("/lp/")) return ""
   const scores = new Map<string, number>()
@@ -373,9 +518,8 @@ function findBestAddress(): string {
   return [...scores.entries()].sort((a, b) => b[1] - a[1])[0][0]
 }
 
-// ── init ───────────────────────────────────────────────────────────────────
+// ── init ────────────────────────────────────────────────────────────────────────────────
 createHost()
-hostRemovalGuard.observe(document.documentElement, { childList: true, subtree: false })
 
 function poll() { const ca = findBestAddress(); if (!ca) return; scan(ca) }
 poll()
