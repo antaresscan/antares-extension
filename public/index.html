@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Antares — Stay safe. Stop getting scammed.</title>
+<meta name="description" content="Antares scans every Solana token in real-time, on any website. Passive. Automatic. Always on." />
+<meta property="og:title" content="Antares — Stay safe. Stop getting scammed." />
+<meta property="og:description" content="Real-time Solana token risk scanner. Works everywhere, automatically." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://antares-extension.vercel.app" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Antares — Stay safe. Stop getting scammed." />
+<meta name="twitter:description" content="Real-time Solana token risk scanner. Works everywhere, automatically." />
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--c:#00e5b0}
+html{cursor:crosshair;scroll-behavior:smooth}
+body{background:#0f0f11;color:#d0d0d0;font-family:'IBM Plex Mono',monospace;overflow-x:hidden}
+
+.stripe{position:fixed;top:0;left:0;right:0;height:3px;z-index:999;
+  background:linear-gradient(90deg,#c0007a,#00e5b0,#c8c000,#c0002a,#00e5b0,#c0007a);
+  background-size:400% 100%;animation:stripe 6s linear infinite;opacity:.7}
+@keyframes stripe{0%{background-position:0% 0}100%{background-position:400% 0}}
+
+.shell{position:relative;z-index:2;max-width:1200px;margin:0 auto;padding:0 24px}
+
+nav{display:flex;justify-content:space-between;align-items:center;
+  padding:22px 0;border-bottom:1px solid #1a1a1d;
+  position:sticky;top:3px;z-index:100;background:#0f0f11}
+nav .brand{font:400 30px/1 'Bebas Neue',sans-serif;letter-spacing:.18em;color:#e0e0e0}
+nav .links{display:flex;gap:22px}
+nav .links a{font-size:11px;color:#454550;text-decoration:none;letter-spacing:.1em;
+  text-transform:uppercase;transition:.2s}
+nav .links a:hover{color:#d0d0d0}
+nav .tag{font-size:10px;color:#333;border:1px solid #1e1e22;padding:5px 10px;letter-spacing:.08em}
+
+.hero{display:grid;grid-template-columns:1.15fr .85fr;gap:60px;
+  align-items:center;min-height:88vh;padding:60px 0}
+
+.hero-eye{font:600 11px/1 'IBM Plex Mono',monospace;color:var(--c);
+  letter-spacing:.28em;text-transform:uppercase;margin-bottom:16px;
+  display:flex;align-items:center;gap:10px}
+.hero-eye::before{content:'';display:block;width:18px;height:2px;background:var(--c)}
+
+.hero h1{font:400 clamp(62px,10.5vw,126px)/.88 'Bebas Neue',sans-serif;
+  letter-spacing:.04em;margin-bottom:20px;color:#e8e8e8}
+.hero h1 .accent{color:var(--c)}
+
+.hero p{font-size:13px;color:#5a5a62;line-height:1.75;max-width:500px;
+  margin-bottom:28px;border-left:2px solid var(--c);padding-left:14px}
+
+.cta-row{display:flex;gap:12px;flex-wrap:wrap}
+.cta{padding:14px 28px;font:700 11px/1 'IBM Plex Mono',monospace;
+  text-decoration:none;text-transform:uppercase;letter-spacing:.1em;transition:all .2s}
+.cta.main{background:var(--c);color:#0f0f11;box-shadow:3px 3px 0 #fff}
+.cta.main:hover{box-shadow:5px 5px 0 var(--c);transform:translate(-2px,-2px);background:#fff}
+.cta.alt{color:#555;border:1px solid #222}
+.cta.alt:hover{border-color:#888;color:#d0d0d0}
+
+.preview{background:#141417;border:1px solid #1e1e22;padding:20px;
+  position:relative;overflow:hidden}
+.preview .bline{position:absolute;top:0;left:0;right:0;height:3px;
+  background:var(--c)}
+.p-brand{font-size:9px;letter-spacing:.3em;color:#3a3a3f;margin-bottom:12px;padding-top:4px}
+.p-risk{font:400 34px/1 'Bebas Neue',sans-serif;color:var(--c);margin-bottom:4px}
+.p-score{font-size:11px;color:#4a4a50;margin-bottom:12px}
+.p-score strong{color:#bbb}
+.p-bar{height:3px;background:#1c1c1f;margin-bottom:14px;overflow:hidden}
+.p-bar-f{height:100%;background:var(--c);animation:barload 1.5s .5s ease both;width:0}
+@keyframes barload{to{width:84.7%}}
+.p-meta{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:12px}
+.p-meta div{padding:7px 9px;background:#111114;border:1px solid #1c1c1f}
+.p-meta span{display:block;font-size:9px;color:#3a3a3f;letter-spacing:.08em;
+  text-transform:uppercase;margin-bottom:1px}
+.p-meta strong{font-size:12px;color:#bbb}
+.p-fl{font-size:11px;color:#4a4a52;padding:3px 0 3px 10px;
+  border-left:2px solid rgba(0,229,176,.2);margin-top:3px}
+.p-srcs{display:flex;gap:5px;margin-top:12px;padding-top:10px;border-top:1px solid #1a1a1d}
+.p-src{font:600 9px/1 'IBM Plex Mono',monospace;padding:4px 7px;
+  background:rgba(0,229,176,.05);border:1px solid rgba(0,229,176,.12);
+  color:var(--c);letter-spacing:.08em}
+
+.marquee-wrap{overflow:hidden;border-top:1px solid #1a1a1d;
+  border-bottom:1px solid #1a1a1d;padding:12px 0;margin:60px 0 70px}
+.marquee-inner{display:flex;animation:scroll 30s linear infinite;white-space:nowrap}
+@keyframes scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.mi{font:400 18px/1 'Bebas Neue',sans-serif;color:#252528;
+  letter-spacing:.12em;padding:0 28px}
+.mi .hi{color:var(--c)}
+
+.numbers{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-bottom:70px}
+.nc{background:#141417;padding:30px 20px;text-align:center;
+  border:1px solid #1a1a1d;transition:.2s;cursor:default}
+.nc:hover{border-color:var(--c);background:#161619}
+.nc:hover strong{color:var(--c)}
+.nc strong{display:block;font:400 52px/1 'Bebas Neue',sans-serif;
+  color:#d0d0d0;margin-bottom:5px;transition:.2s}
+.nc span{font-size:10px;color:#3a3a3f;text-transform:uppercase;letter-spacing:.14em}
+
+.sl{font:400 48px/1 'Bebas Neue',sans-serif;letter-spacing:.1em;
+  margin-bottom:28px;padding-bottom:10px;border-bottom:2px solid #1a1a1d;
+  position:relative}
+.sl::after{content:'';position:absolute;bottom:-2px;left:0;
+  width:50px;height:2px;background:var(--c)}
+
+.features{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-bottom:70px}
+.fc{background:#141417;padding:22px;border:1px solid #1a1a1d;
+  transition:all .2s;cursor:default;position:relative;overflow:hidden}
+.fc::before{content:'';position:absolute;top:0;left:0;right:0;height:0;
+  background:rgba(0,229,176,.03);transition:height .3s}
+.fc:hover::before{height:100%}
+.fc:hover{border-color:#222;padding-left:28px}
+.fc .icon{font-size:20px;margin-bottom:10px}
+.fc h3{font-size:12px;letter-spacing:.06em;margin-bottom:5px;color:#bbb}
+.fc p{font-size:11px;color:#4a4a52;line-height:1.65}
+
+.sources{display:flex;gap:2px;margin-bottom:70px}
+.sp{flex:1;background:#141417;padding:18px;text-align:center;
+  font-size:11px;color:#454550;letter-spacing:.12em;text-transform:uppercase;
+  border:1px solid #1a1a1d;transition:all .2s;cursor:default;position:relative}
+.sp::after{content:'';position:absolute;bottom:0;left:50%;right:50%;
+  height:2px;background:var(--c);transition:.3s ease}
+.sp:hover::after{left:0;right:0}
+.sp:hover{color:var(--c);background:#161619}
+
+.cta-block{text-align:center;padding:56px;margin-bottom:56px;
+  border:1px solid #1a1a1d;background:#141417;position:relative;overflow:hidden}
+.cta-block::before{content:'ANTARES';position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);font:400 160px/1 'Bebas Neue',sans-serif;
+  color:rgba(255,255,255,.012);pointer-events:none;white-space:nowrap}
+.cta-block h2{font:400 44px/1 'Bebas Neue',sans-serif;letter-spacing:.1em;
+  margin-bottom:10px;position:relative;color:#e0e0e0}
+.cta-block p{font-size:12px;color:#4a4a52;margin-bottom:22px;position:relative}
+
+footer{text-align:center;padding:28px;color:#2a2a2f;font-size:10px;
+  border-top:1px solid #1a1a1d;letter-spacing:.15em;text-transform:uppercase}
+footer span{color:var(--c)}
+
+section{padding:70px 0 0}
+
+.glitch{position:relative;display:inline-block;cursor:default;user-select:none}
+.glitch::before,.glitch::after{
+  content:attr(data-text);
+  position:absolute;top:0;left:0;
+  width:100%;overflow:hidden;
+  opacity:0;pointer-events:none;
+  font:inherit;color:inherit;letter-spacing:inherit
+}
+.glitch::before{color:#ff006e;clip-path:polygon(0 20%,100% 20%,100% 40%,0 40%)}
+.glitch::after{color:#00e5b0;clip-path:polygon(0 55%,100% 55%,100% 75%,0 75%)}
+.glitch:hover::before{animation:gl-a .45s steps(2,end) infinite}
+.glitch:hover::after {animation:gl-b .45s steps(2,end) infinite}
+@keyframes gl-a{
+  0%  {transform:translate(-3px,0);opacity:.75}
+  25% {transform:translate( 3px,0);opacity:.75}
+  50% {transform:translate(-2px,0);opacity:.75;clip-path:polygon(0 5%,100% 5%,100% 25%,0 25%)}
+  75% {transform:translate( 2px,0);opacity:.75}
+  100%{transform:translate(-3px,0);opacity:0}
+}
+@keyframes gl-b{
+  0%  {transform:translate( 3px,0);opacity:.55}
+  33% {transform:translate(-3px,0);opacity:.55;clip-path:polygon(0 60%,100% 60%,100% 80%,0 80%)}
+  66% {transform:translate( 2px,0);opacity:.55}
+  100%{transform:translate( 3px,0);opacity:0}
+}
+
+#particles-canvas{position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:0;opacity:.4}
+
+.tactile-hover{transition:transform .15s cubic-bezier(.22,1,.36,1),box-shadow .15s ease,filter .15s ease!important;cursor:pointer}
+.tactile-hover:hover{transform:translateY(-2px) scale(1.012)!important;box-shadow:0 8px 25px rgba(0,0,0,.35),0 0 15px rgba(0,255,157,.08)!important}
+.tactile-hover:active{transform:translateY(1px) scale(.985)!important;box-shadow:0 2px 8px rgba(0,0,0,.4)!important;filter:brightness(.93)!important;transition-duration:.06s!important}
+
+.ripple-container{position:relative;overflow:hidden}
+.ripple{position:absolute;border-radius:50%;background:rgba(0,255,157,.15);transform:scale(0);animation:ripple-expand .5s ease-out forwards;pointer-events:none;z-index:999}
+@keyframes ripple-expand{to{transform:scale(3);opacity:0}}
+</style></head>
+<body>
+<div class="stripe"></div>
+<div class="shell">
+
+<nav>
+  <div class="brand glitch" data-text="ANTARES">ANTARES</div>
+  <div class="links">
+    <a href="#features">Features</a>
+    <a href="#engine">Engine</a>
+    <a href="#sources">Sources</a>
+  </div>
+  <div class="tag">v4.1 // SOLANA</div>
+</nav>
+
+<section class="hero" style="padding-top:50px">
+  <div>
+    <div class="hero-eye">Solana Token Scanner</div>
+    <h1><span class="glitch" data-text="STOP">STOP</span><br><span class="glitch" data-text="GETTING">GETTING</span><br><span class="accent glitch" data-text="SCAMMED.">SCAMMED.</span></h1>
+    <p>Antares scans every Solana token you encounter in real-time. 4 sources. 6 layers. 1000-point scoring. Safe gate enforced in under 2 seconds.</p>
+    <div class="cta-row">
+      <a class="cta main" href="#">⚡ Install Extension</a>
+      <a class="cta alt" href="#features">Learn more →</a>
+    </div>
+  </div>
+  <div>
+    <div class="preview">
+      <div class="bline"></div>
+      <div class="p-brand">ANTARES</div>
+      <div class="p-risk glitch" data-text="SAFE">SAFE</div>
+      <div class="p-score">Score <strong>847</strong> / 1000</div>
+      <div class="p-bar"><div class="p-bar-f"></div></div>
+      <div class="p-meta">
+        <div><span>MCap</span><strong>$2.4M</strong></div>
+        <div><span>Liquidity</span><strong>$184K</strong></div>
+        <div><span>Holders</span><strong>1,241</strong></div>
+        <div><span>Confidence</span><strong>100%</strong></div>
+      </div>
+      <div class="p-fl">✓ LP Burned</div>
+      <div class="p-fl">✓ No mint authority</div>
+      <div class="p-fl">⚠ Top 10 holders 42%</div>
+      <div class="p-srcs">
+        <span class="p-src">DexScreener</span>
+        <span class="p-src">RugCheck</span>
+        <span class="p-src">GoPlus</span>
+        <span class="p-src">Helius</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="marquee-wrap">
+  <div class="marquee-inner">
+    <span class="mi"><span class="hi">DEXSCREENER</span> · RUGCHECK · GOPLUS · HELIUS · </span>
+    <span class="mi">REAL-TIME · <span class="hi">6 LAYERS</span> · 1000 POINTS · SAFE GATE · </span>
+    <span class="mi"><span class="hi">ANTI-RUG</span> · ANTI-HONEYPOT · ANTI-BUNDLER · </span>
+    <span class="mi">CHART INTEL · <span class="hi">IDENTITY CHECK</span> · SOLANA · </span>
+    <span class="mi"><span class="hi">DEXSCREENER</span> · RUGCHECK · GOPLUS · HELIUS · </span>
+    <span class="mi">REAL-TIME · <span class="hi">6 LAYERS</span> · 1000 POINTS · SAFE GATE · </span>
+    <span class="mi"><span class="hi">ANTI-RUG</span> · ANTI-HONEYPOT · ANTI-BUNDLER · </span>
+    <span class="mi">CHART INTEL · <span class="hi">IDENTITY CHECK</span> · SOLANA · </span>
+  </div>
+</div>
+
+<div class="numbers">
+  <div class="nc"><strong>4</strong><span>Sources</span></div>
+  <div class="nc"><strong>6</strong><span>Layers</span></div>
+  <div class="nc"><strong>1000</strong><span>Max Score</span></div>
+  <div class="nc"><strong>&lt;2s</strong><span>Scan Time</span></div>
+</div>
+
+<section id="features">
+<div class="sl glitch" data-text="Features">Features</div>
+<div class="features">
+  <div class="fc"><div class="icon">🛡️</div><h3>Safe Gate</h3><p>Critical checks must pass regardless of score.</p></div>
+  <div class="fc"><div class="icon">⚡</div><h3>Real-time</h3><p>Under 2 seconds, directly as you browse.</p></div>
+  <div class="fc"><div class="icon">🔗</div><h3>4 Sources</h3><p>DexScreener, RugCheck, GoPlus, Helius RPC.</p></div>
+  <div class="fc"><div class="icon">📊</div><h3>Chart Intel</h3><p>Parabolic pumps, blow-off tops, wash trading.</p></div>
+  <div class="fc"><div class="icon">🧬</div><h3>Identity Check</h3><p>Copycat tokens and fake branding detection.</p></div>
+  <div class="fc"><div class="icon">🌐</div><h3>Universal</h3><p>Works on any page containing a Solana address.</p></div>
+</div>
+</section>
+
+<section id="sources">
+<div class="sl glitch" data-text="Data Sources">Data Sources</div>
+<div class="sources">
+  <div class="sp">DexScreener</div>
+  <div class="sp">RugCheck</div>
+  <div class="sp">GoPlus</div>
+  <div class="sp">Helius RPC</div>
+</div>
+</section>
+
+<div class="cta-block">
+  <h2 class="glitch" data-text="READY TO STOP LOSING MONEY?">READY TO STOP LOSING MONEY?</h2>
+  <p>Install Antares and never trust an unscanned token again.</p>
+  <a class="cta main" href="#">⚡ Install for Free</a>
+</div>
+
+<footer>Antares v4.1 — <span>No mercy for scammers.</span></footer>
+</div>
+
+<canvas id="particles-canvas"></canvas>
+<script>
+;(function(){
+  const canvas=document.getElementById('particles-canvas')
+  if(!canvas)return
+  const ctx=canvas.getContext('2d')
+  let particles=[]
+  const COUNT=45,MOUSE_R=120,MOUSE_F=0.8,CONN=100
+  let mouse={x:-9999,y:-9999,active:false}
+  const COLS=[[0,255,157],[0,255,200],[0,200,130],[255,255,255],[120,255,200]]
+  function resize(){canvas.width=innerWidth;canvas.height=innerHeight}
+  addEventListener('resize',resize);resize()
+  document.addEventListener('mousemove',function(e){mouse.x=e.clientX;mouse.y=e.clientY;mouse.active=true})
+  document.addEventListener('mouseleave',function(){mouse.active=false})
+  document.addEventListener('touchmove',function(e){mouse.x=e.touches[0].clientX;mouse.y=e.touches[0].clientY;mouse.active=true},{passive:true})
+  document.addEventListener('touchend',function(){mouse.active=false})
+  function mkP(){
+    const col=COLS[Math.random()*COLS.length|0]
+    return{x:Math.random()*canvas.width,y:Math.random()*canvas.height,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,r:Math.random()*1.5+.5,col,a:Math.random()*.3+.1,life:1}
+  }
+  for(let i=0;i<COUNT;i++)particles.push(mkP())
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height)
+    for(let i=0;i<particles.length;i++){
+      const p=particles[i]
+      if(mouse.active){const dx=p.x-mouse.x,dy=p.y-mouse.y,d=Math.sqrt(dx*dx+dy*dy);if(d<MOUSE_R){const f=MOUSE_F*(1-d/MOUSE_R);p.vx+=dx/d*f;p.vy+=dy/d*f}}
+      p.x+=p.vx;p.y+=p.vy;p.vx*=.99;p.vy*=.99
+      if(p.x<0)p.x=canvas.width;if(p.x>canvas.width)p.x=0
+      if(p.y<0)p.y=canvas.height;if(p.y>canvas.height)p.y=0
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2)
+      ctx.fillStyle='rgba('+p.col.join(',')+','+p.a+')';ctx.fill()
+      for(let j=i+1;j<particles.length;j++){
+        const q=particles[j],dx2=p.x-q.x,dy2=p.y-q.y,d2=Math.sqrt(dx2*dx2+dy2*dy2)
+        if(d2<CONN){ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y)
+          ctx.strokeStyle='rgba(0,229,176,'+(.08*(1-d2/CONN))+')';ctx.stroke()}
+      }
+    }
+    requestAnimationFrame(draw)
+  }
+  draw()
+
+  // Tactile ripple
+  document.addEventListener('click',function(e){
+    const t=e.target.closest('a,button,[class*="cta"],[class*="nc"],[class*="fc"],[class*="sp"]')
+    if(!t)return
+    const r=document.createElement('span')
+    r.className='ripple'
+    const rect=t.getBoundingClientRect()
+    const size=Math.max(rect.width,rect.height)*2
+    r.style.cssText='width:'+size+'px;height:'+size+'px;left:'+(e.clientX-rect.left-size/2)+'px;top:'+(e.clientY-rect.top-size/2)+'px'
+    t.style.position='relative';t.style.overflow='hidden'
+    t.appendChild(r)
+    setTimeout(()=>r.remove(),600)
+  })
+
+  // Tactile hover
+  document.querySelectorAll('a,button,.nc,.fc,.sp').forEach(el=>{
+    el.classList.add('tactile-hover')
+    el.addEventListener('mouseover',function(){
+      this.style.transition='transform .15s cubic-bezier(.22,1,.36,1)'
+    })
+  })
+})()
+</script>
+
+</body></html>
