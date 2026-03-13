@@ -144,6 +144,36 @@ const SHADOW_CSS = `
   letter-spacing: 0.3em;
   color: var(--text-dim);
   text-transform: uppercase;
+  position: relative;
+  display: inline-block;
+  cursor: default;
+  user-select: none;
+}
+.brand::before, .brand::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+.brand::before { color: #ff006e; clip-path: polygon(0 20%, 100% 20%, 100% 40%, 0 40%); }
+.brand::after  { color: #00e5b0; clip-path: polygon(0 55%, 100% 55%, 100% 75%, 0 75%); }
+.brand:hover::before { animation: gl-a .45s steps(2,end) infinite; }
+.brand:hover::after  { animation: gl-b .45s steps(2,end) infinite; }
+@keyframes gl-a {
+  0%  { transform: translate(-3px,0); opacity: .75; }
+  25% { transform: translate( 3px,0); opacity: .75; }
+  50% { transform: translate(-2px,0); opacity: .75; clip-path: polygon(0 5%,100% 5%,100% 25%,0 25%); }
+  75% { transform: translate( 2px,0); opacity: .75; }
+  100%{ transform: translate(-3px,0); opacity: 0; }
+}
+@keyframes gl-b {
+  0%  { transform: translate( 3px,0); opacity: .55; }
+  33% { transform: translate(-3px,0); opacity: .55; clip-path: polygon(0 60%,100% 60%,100% 80%,0 80%); }
+  66% { transform: translate( 2px,0); opacity: .55; }
+  100%{ transform: translate( 3px,0); opacity: 0; }
 }
 
 .x {
@@ -275,7 +305,7 @@ const SHADOW_CSS = `
 /* ════ COLOR VARIANTS ════ */
 .box.safe .bline { background: var(--c-safe); }
 .box.safe .risk { color: var(--c-safe); }
-.box.safe .bar-f { background: var(--c-safe); width: var(--bar-w, 0%); }
+.box.safe .bar-f { background: var(--c-safe); }
 .box.safe .flag { border-color: rgba(0,229,176,0.2); }
 .box.safe:hover { box-shadow: 0 6px 30px rgba(0,229,176,.06); }
 
@@ -408,7 +438,7 @@ function buildResult(data: any, ca: string): string {
   return `
     <div class="bline"></div>
     <div class="inner">
-      <div class="head"><span class="brand">ANTARES</span><button class="x" id="ant-close">&times;</button></div>
+      <div class="head"><span class="brand" data-text="ANTARES">ANTARES</span><button class="x" id="ant-close">&times;</button></div>
       <div class="risk">${label}</div>
       <div class="score-row">
         <span class="score">Score <strong>${data.score}</strong> / 1000</span>
@@ -448,7 +478,7 @@ async function scan(ca: string) {
   el.innerHTML = `
     <div class="bline" style="background:#3a3a3f"></div>
     <div class="inner">
-      <div class="head"><span class="brand">ANTARES</span><button class="x" id="ant-close">&times;</button></div>
+      <div class="head"><span class="brand" data-text="ANTARES">ANTARES</span><button class="x" id="ant-close">&times;</button></div>
       <div class="scanning"><span class="dot"></span>Scanning&hellip;</div>
     </div>
   `
@@ -473,7 +503,7 @@ async function scan(ca: string) {
     el.innerHTML = `
       <div class="bline"></div>
       <div class="inner">
-        <div class="head"><span class="brand">ANTARES</span><button class="x" id="ant-close">&times;</button></div>
+        <div class="head"><span class="brand" data-text="ANTARES">ANTARES</span><button class="x" id="ant-close">&times;</button></div>
         <div style="color:#ff5f5f;font-size:12px;padding:4px 0">API Error &mdash; retry later</div>
       </div>
     `
