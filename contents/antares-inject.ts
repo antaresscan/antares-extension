@@ -79,7 +79,7 @@ function isValid(addr: string): boolean {
   return true
 }
 
-// ── CSS exact antares-popup.css ────────────────────────────────────────────
+// ── CSS exact antares-popup.css ────────────────────────────────────────────────────
 const SHADOW_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap');
 
@@ -336,7 +336,7 @@ const SHADOW_CSS = `
 .dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:#3a3a3f; animation:ant-pulse 1.2s infinite; }
 `
 
-// ── Shadow DOM ───────────────────────────────────────────────────────────────
+// ── Shadow DOM ───────────────────────────────────────────────────────────────────
 
 let host: HTMLElement | null = null
 let shadow: ShadowRoot | null = null
@@ -403,23 +403,24 @@ function attachToggle() {
   }, { once: true })
 }
 
-// ── HTML builders ─────────────────────────────────────────────────────────────
+// ── HTML builders ───────────────────────────────────────────────────────────────
 function buildResult(data: any, ca: string): string {
   const riskClass = RISK_CLASS[data.risk] || "danger"
   const label     = LABELS[data.risk] || data.risk
   const mint      = data.resolvedMint || ca
-  const mc        = data.pair?.marketCap || data.pair?.fdv
-  const liq       = data.pair?.liquidity?.usd
-  const holders   = data.pair?.holders ?? data.holders
+  const mc        = data.marketCap || data.pair?.marketCap || data.pair?.fdv
+  const liq       = data.liquidity  || data.pair?.liquidity?.usd
+  // FIX: priorité à data.holders (Helius DAS) puis fallback pair
+  const holders   = data.holders ?? data.pair?.holders ?? null
   const conf      = typeof data.confidence === "number" ? data.confidence : null
   const barW      = Math.round((data.score || 0) / 10)
 
   if (boxEl) boxEl.className = `box ${riskClass}`
 
   const metaCells = [
-    mc      ? `<div><span>Market Cap</span><strong>${formatMcap(mc)}</strong></div>` : "",
-    liq     ? `<div><span>Liquidity</span><strong>${formatMcap(liq)}</strong></div>` : "",
-    holders ? `<div><span>Holders</span><strong>${Number(holders).toLocaleString()}</strong></div>` : "",
+    mc      ? `<div><span>Market Cap</span><strong>${formatMcap(Number(mc))}</strong></div>` : "",
+    liq     ? `<div><span>Liquidity</span><strong>${formatMcap(Number(liq))}</strong></div>` : "",
+    holders !== null ? `<div><span>Holders</span><strong>${Number(holders).toLocaleString()}</strong></div>` : "",
     conf !== null ? `<div><span>Confidence</span><strong>${conf}%</strong></div>` : "",
   ].filter(Boolean).join("")
 
@@ -442,7 +443,7 @@ function buildResult(data: any, ca: string): string {
       <div class="risk">${label}</div>
       <div class="score-row">
         <span class="score">Score <strong>${data.score}</strong> / 1000</span>
-        ${mc ? `<span class="mcap">${formatMcap(mc)}</span>` : ""}
+        ${mc ? `<span class="mcap">${formatMcap(Number(mc))}</span>` : ""}
       </div>
       <div class="bar"><div class="bar-f" data-w="${barW}"></div></div>
       ${metaCells ? `<div class="meta">${metaCells}</div>` : ""}
@@ -454,7 +455,7 @@ function buildResult(data: any, ca: string): string {
   `
 }
 
-// ── scan ──────────────────────────────────────────────────────────────────────
+// ── scan ────────────────────────────────────────────────────────────────────────────
 async function scan(ca: string) {
   if (!ca) return
   const el = getBox()
@@ -512,7 +513,7 @@ async function scan(ca: string) {
   scanInFlight = false
 }
 
-// ── address detection ─────────────────────────────────────────────────────────
+// ── address detection ─────────────────────────────────────────────────────────────
 function findBestAddress(): string {
   if (window.location.hostname.includes("photon") && !window.location.pathname.includes("/lp/")) return ""
   const scores = new Map<string, number>()
@@ -547,7 +548,7 @@ function findBestAddress(): string {
   return [...scores.entries()].sort((a, b) => b[1] - a[1])[0][0]
 }
 
-// ── init ──────────────────────────────────────────────────────────────────────
+// ── init ────────────────────────────────────────────────────────────────────────────
 createHost()
 
 function poll() { const ca = findBestAddress(); if (!ca) return; scan(ca) }
