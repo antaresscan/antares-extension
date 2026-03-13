@@ -1,4 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
 
 const DEXSCREENER_BASE = "https://api.dexscreener.com/latest/dex";
 const RUGCHECK_BASE = "https://api.rugcheck.xyz/v1";
@@ -7,20 +9,19 @@ const HELIUS_BASE = "https://mainnet.helius-rpc.com";
 
 const CA_RE = /^[A-Za-z0-9]{32,44}$/;
 
-const rateLimitMap = new Map<string, { count: number; ts: number }>();
-const RATE_LIMIT_WINDOW_MS = 60_000;
-const RATE_LIMIT_MAX = 20;
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-  if (!entry || now - entry.ts > RATE_LIMIT_WINDOW_MS) {
-    rateLimitMap.set(ip, { count: 1, ts: now });
-    return true;
-  }
-  if (entry.count >= RATE_LIMIT_MAX) return false;
-  entry.count++;
-  return true;
+// ─── RATE LIMIT — Upstash Redis ───────────────────────────────────────────────
+let ratelimit: Ratelimit | null = null;
+if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+  const redis = new Redis({
+    url:   process.env.UPSTASH_REDIS_REST_URL,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN,
+  });
+  ratelimit = new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(20, "60 s"),
+    analytics: false,
+    prefix: "antares_rl",
+  });
 }
 
 const CORS: Record<string, string> = {
@@ -41,7 +42,7 @@ type ChartResult = {
 
 function setHeaders(res: VercelResponse) {
   Object.entries(CORS).forEach(([k, v]) => res.setHeader(k, v));
-  res.setHeader("Cache-Control", "s-maxage=10, stale-while-revalidate=20");
+  res.setHeader("Cache-Control", "s-maxage=20, stale-while-revalidate=40");
 }
 
 function withTimeout(ms: number) {
@@ -114,7 +115,7 @@ function makeFlag(label: string, severity: Severity, impact: number): ScanFlag {
   return { label, severity, impact };
 }
 
-// ─── CHART HELPERS ───────────────────────────────────────────────────────────
+// ─── CHART HELPERS ────────────────────────────────────────────────────────────
 
 function _mean(xs: number[]): number {
   if (!xs.length) return 0;
@@ -132,7 +133,7 @@ function _pct(from: number, to: number): number {
   return ((to - from) / Math.abs(from)) * 100;
 }
 
-// ─── COUCHE 6 — IDENTITY RISK ────────────────────────────────────────────────
+// ─── L5 — IDENTITY RISK ───────────────────────────────────────────────────────
 
 const KNOWN_BRANDS = [
   "TRUMP", "DOGE", "PEPE", "SHIB", "BONK", "WIF", "BRETT",
@@ -150,7 +151,7 @@ function analyzeIdentity(
   let safeBlocked = false;
 
   const sym = String(symbol || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-  const nm  = String(name  || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const nm  = String(name   || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 
   if (/(?:2|V2|V3|OFFICIAL|REAL|OG|NEW|PLUS)$/.test(sym) ||
       /(?:2|V2|V3|OFFICIAL|REAL|OG|NEW|PLUS)$/.test(nm)) {
@@ -173,7 +174,7 @@ function analyzeIdentity(
   return { flags, penalty, forceRug, safeBlocked };
 }
 
-// ─── COUCHE 7 — CHART PATTERN RISK ───────────────────────────────────────────
+// ─── L6 — CHART PATTERN RISK ─────────────────────────────────────────────────
 
 async function fetchDexCandles(
   pairAddress: string,
@@ -210,53 +211,48 @@ function analyzeChartPatterns(
   const greens   = recent.filter(c => c.c > c.o).length;
   const greenRatio = greens / recent.length;
 
-  const first = closes[0];
-  const last  = closes[closes.length - 1];
-  const peak  = Math.max(...closes);
+  const first  = closes[0];
+  const last   = closes[closes.length - 1];
+  const peak   = Math.max(...closes);
   const trough = Math.min(...closes);
 
-  const runUpPct           = _pct(first, peak);
-  const drawdownFromPeak   = _pct(peak, last);
-  const pullbackRange      = peak > 0 ? ((peak - trough) / peak) * 100 : 0;
+  const runUpPct         = _pct(first, peak);
+  const drawdownFromPeak = _pct(peak, last);
+  const pullbackRange    = peak > 0 ? ((peak - trough) / peak) * 100 : 0;
 
-  const returns  = closes.slice(1).map((c, i) => _pct(closes[i], c));
-  const returnStd = _std(returns);
+  const returns     = closes.slice(1).map((c, i) => _pct(closes[i], c));
+  const returnStd   = _std(returns);
   const risingCount = closes.slice(1).filter((c, i) => c > closes[i]).length;
 
-  const liquidity  = asNumber(pair?.liquidity?.usd);
-  const vol24h     = asNumber(pair?.volume?.h24);
-  const vol1h      = asNumber(pair?.volume?.h1);
-  const pc5m       = asNumber(pair?.priceChange?.m5);
-  const pc1h       = asNumber(pair?.priceChange?.h1);
-  const pc24h      = asNumber(pair?.priceChange?.h24);
-  const v24Liq     = liquidity > 0 ? vol24h / liquidity : 0;
-  const v1hLiq     = liquidity > 0 ? vol1h  / liquidity : 0;
+  const liquidity = asNumber(pair?.liquidity?.usd);
+  const vol24h    = asNumber(pair?.volume?.h24);
+  const vol1h     = asNumber(pair?.volume?.h1);
+  const pc5m      = asNumber(pair?.priceChange?.m5);
+  const pc1h      = asNumber(pair?.priceChange?.h1);
+  const pc24h     = asNumber(pair?.priceChange?.h24);
+  const v24Liq    = liquidity > 0 ? vol24h / liquidity : 0;
+  const v1hLiq    = liquidity > 0 ? vol1h  / liquidity : 0;
 
   if (greenRatio >= 0.82 && runUpPct >= 100 && pullbackRange <= 10) {
     flags.push(makeFlag("Crashcoin pattern: near-perfect parabolic chart", "critical", 200));
     penalty += 200; safeBlocked = true;
   }
-
   if (pc5m > 35 && pc1h > 120) {
     flags.push(makeFlag("Vertical pump detected (+35% 5m / +120% 1h)", "warning", 150));
     penalty += 150; safeBlocked = true;
   }
-
   if (v24Liq > 12 || v1hLiq > 4) {
     flags.push(makeFlag("Liquidity mirage: volume >> liquidity (wash suspect)", "warning", 130));
     penalty += 130; safeBlocked = true;
   }
-
   if (recent.length >= 10 && risingCount >= Math.floor(recent.length * 0.8) && returnStd < 3.5) {
     flags.push(makeFlag("Over-controlled chart: artificial stair-step", "warning", 110));
     penalty += 110; safeBlocked = true;
   }
-
   if (drawdownFromPeak < -55) {
     flags.push(makeFlag("Blow-off top: price collapsed >55% from peak", "critical", 230));
     penalty += 230; forceRug = true; safeBlocked = true;
   }
-
   if (tokenAgeMinutes !== null && tokenAgeMinutes < 90 && volumes.length >= 10) {
     const recentVol = volumes.slice(-5);
     const olderVol  = volumes.slice(-10, -5);
@@ -265,12 +261,10 @@ function analyzeChartPatterns(
       penalty += 110; safeBlocked = true;
     }
   }
-
   if (_pct(first, last) > 300 && greenRatio > 0.78) {
     flags.push(makeFlag("Parabolic launch: high risk exit liquidity setup", "warning", 130));
     penalty += 130; safeBlocked = true;
   }
-
   if (pc24h < -60 && pc1h < -20) {
     flags.push(makeFlag("Active dump: -60% 24h + -20% 1h (slow rug suspected)", "critical", 200));
     penalty += 200; forceRug = true; safeBlocked = true;
@@ -303,8 +297,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
     (req as any).socket?.remoteAddress ||
     "unknown";
-  if (!checkRateLimit(ip)) {
-    return res.status(429).json({ error: "Too many requests. Please slow down." });
+
+  // Rate limit via Upstash Redis (sliding window 20 req/min)
+  if (ratelimit) {
+    const { success } = await ratelimit.limit(ip);
+    if (!success) {
+      return res.status(429).json({ error: "Too many requests. Please slow down." });
+    }
   }
 
   const ca = req.query.ca as string | undefined;
@@ -371,7 +370,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (rugData)                   sources_used.push("RugCheck");
     if (goplus)                    sources_used.push("GoPlus");
     if (holderAccounts.length > 0) sources_used.push("Helius");
-    if (candles.length > 0)        sources_used.push("DexChart");
+    // Candles = DexScreener OHLCV, pas une source séparée
 
     const addPenalty = (label: string, severity: Severity, impact: number) => {
       score -= impact;
@@ -385,7 +384,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let forceRisk: "RUG" | null = null;
     let safeBlocked = false;
 
-    // ── COUCHE 1 — Smart contract ──────────────────────────────────────────────
+    // ── L1 — Smart contract
     const mintAuthorityEnabled =
       Boolean(rugData?.mintAuthorityEnabled) ||
       Boolean(goplus?.mint_authority && String(goplus.mint_authority).trim() !== "");
@@ -411,8 +410,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (goplus.hidden_owner === "1")        addPenalty("Hidden owner detected", "critical", 300);
       if (goplus.is_proxy === "1" || goplus.is_proxy === 1 || goplus.is_proxy === true)
         addPenalty("Upgradeable/proxy contract", "critical", 300);
-      if (asNumber(goplus.sell_tax) > 0.1)       addPenalty("Sell tax > 10%", "critical", 250);
-      if (asNumber(goplus.buy_tax) > 0.1)        addPenalty("Buy tax > 10%", "critical", 250);
+      if (asNumber(goplus.sell_tax) > 0.1)         addPenalty("Sell tax > 10%", "critical", 250);
+      if (asNumber(goplus.buy_tax) > 0.1)          addPenalty("Buy tax > 10%", "critical", 250);
       if (asNumber(goplus.owner_percent) > 0.05)   addPenalty("Owner holds > 5%", "critical", 250);
       if (asNumber(goplus.creator_percent) > 0.05) addPenalty("Creator holds > 5%", "critical", 250);
       if (goplus.is_mintable === "1")              addPenalty("Token is mintable", "warning", 150);
@@ -422,14 +421,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (goplus.is_whitelisted === "1")           addPenalty("Whitelist system detected", "warning", 150);
     }
 
-    // ── COUCHE 2 — RugCheck on-chain ───────────────────────────────────────────
+    // ── L2 — RugCheck on-chain
     if (rugData) {
       if (rugData.metaMutable === true) {
         addPenalty("Metadata mutable", "warning", 150);
       } else if (rugData.metaMutable !== false) {
         addPenalty("Metadata not immutable", "info", 50);
       }
-      // LP not burned/locked: penalty augmentée à 200 + safeBlocked
       if (!rugData.lpBurned && !rugData.lpLocked) {
         addPenalty("LP not burned or locked", "warning", 200);
         safeBlocked = true;
@@ -439,10 +437,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         addPenalty("LP lock duration < 30 days", "warning", 150);
     }
 
-    // ── COUCHE 3 — Liquidité & pool ───────────────────────────────────────────
+    // ── L3 — Liquidité & pool
     if (pair) {
-      const liquidity    = asNumber(pair?.liquidity?.usd);
-      const volume24h    = asNumber(pair?.volume?.h24);
+      const liquidity      = asNumber(pair?.liquidity?.usd);
+      const volume24h      = asNumber(pair?.volume?.h24);
       const priceChange24h = asNumber(pair?.priceChange?.h24);
       const priceChange1h  = asNumber(pair?.priceChange?.h1);
       const priceChange5m  = asNumber(pair?.priceChange?.m5);
@@ -464,7 +462,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (priceChange24h < -80) addPenalty("Brutal dump 24h", "critical", 150);
     }
 
-    // ── COUCHE 4 — Holders distribution ──────────────────────────────────────
+    // ── L4 — Holders distribution
     if (rugData) {
       const top10 = getTop10Percentage(rugData);
       const top1  = getTop1Percentage(rugData);
@@ -478,8 +476,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (holderAccounts.length > 0 && totalSupplyUi > 0) {
-      const top1Amount = asNumber(holderAccounts[0]?.uiAmount);
-      const top1Pct    = top1Amount / totalSupplyUi;
+      const top1Amount  = asNumber(holderAccounts[0]?.uiAmount);
+      const top1Pct     = top1Amount / totalSupplyUi;
       if (top1Pct > 0.3)       { addPenalty(`Single wallet holds ${Math.round(top1Pct * 100)}% of supply`, "critical", 200); forceRisk = "RUG"; }
       else if (top1Pct > 0.2)    addPenalty(`Single wallet holds ${Math.round(top1Pct * 100)}% of supply`, "critical", 150);
       else if (top1Pct > 0.1)    addPenalty(`Single wallet holds ${Math.round(top1Pct * 100)}% of supply`, "warning", 80);
@@ -516,24 +514,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       addPenalty("Not indexed on DexScreener", "warning", 100);
     }
 
-    // ── COUCHE 5 — Identity risk ───────────────────────────────────────────────
-    const identity = analyzeIdentity(
-      pair?.baseToken?.symbol,
-      pair?.baseToken?.name
-    );
+    // ── L5 — Identity risk
+    const identity = analyzeIdentity(pair?.baseToken?.symbol, pair?.baseToken?.name);
     score -= identity.penalty;
     flags.push(...identity.flags);
     if (identity.forceRug) forceRisk = "RUG";
     if (identity.safeBlocked) safeBlocked = true;
 
-    // ── COUCHE 6 — Chart pattern risk ─────────────────────────────────────────
+    // ── L6 — Chart pattern risk
     const chart = analyzeChartPatterns(candles, pair, tokenAgeMinutes);
     score -= chart.penalty;
     flags.push(...chart.flags);
     if (chart.forceRug) forceRisk = "RUG";
     if (chart.safeBlocked) safeBlocked = true;
 
-    // ── VERDICT FINAL ─────────────────────────────────────────────────────────
+    // ── VERDICT FINAL
     score = Math.max(0, Math.min(1000, score));
 
     let risk: "SAFE" | "CAUTION" | "DANGER" | "RUG";
@@ -544,9 +539,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     else if (score >= 350)                risk = "DANGER";
     else                                  risk = "RUG";
 
-    const coreSources = ["DexScreener", "RugCheck", "Helius"];
-    const coreCount   = sources_used.filter(s => coreSources.includes(s)).length;
-    const confidence  = Math.round((coreCount / 3) * 100);
+    // Confidence : nombre de sources actives sur 4 possibles
+    const confidence = Math.round((sources_used.length / 4) * 100);
 
     flags.sort((a, b) => {
       const order: Record<Severity, number> = { critical: 0, warning: 1, info: 2, bonus: 3 };
