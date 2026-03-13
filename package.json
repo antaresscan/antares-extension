@@ -1,9 +1,9 @@
 {
   "name": "antares-extension",
-  "displayName": "Antares extension",
-  "version": "0.0.1",
-  "description": "ANTARES — Scanner Anti-Scam Memecoin pour Solana",
-  "author": "Plasmo Corp. <foss@plasmo.com>",
+  "displayName": "Antares — Anti-Scam Scanner for Solana",
+  "version": "1.0.0",
+  "description": "Antares scans Solana tokens in real time and detects rug pulls, honeypots, bundlers and chart manipulation — directly in your browser.",
+  "author": "COMEALAMAISONGROUPE",
   "scripts": {
     "dev": "plasmo dev",
     "build": "plasmo build",

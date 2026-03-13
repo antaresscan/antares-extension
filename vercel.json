@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "api/scan.ts": {
+      "maxDuration": 10
+    }
+  },
   "rewrites": [
     {
       "source": "/api/scan",

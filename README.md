@@ -1,90 +1,55 @@
-# Antares — Solana Token Risk Scanner
+# Antares — Anti-Scam Scanner for Solana
 
-> Extension Chrome qui scanne automatiquement les tokens Solana en temps réel, sur **n'importe quelle page web**.
+**Antares** is a Chrome extension that automatically detects the Solana token address on any page you visit and runs a real-time multi-source security scan.
 
----
+## What it does
 
-## Ce que ça fait
-
-Antares injecte une overlay flottante dès qu'une adresse de token Solana est détectée dans la page (URL, DOM, attributs HTML, liens d'explorers). Elle affiche instantanément :
-
-- **Niveau de risque** : `SAFE` / `CAUTION` / `DANGER` / `RUG`
-- **Score** sur 1000
-- **Flags** : mint authority active, freeze authority, concentration de holders, liquidité faible, etc.
-
-Sans clic. Sans quitter la page. Sur Twitter, Telegram Web, Discord, DexScreener, Photon, n'importe où.
-
----
-
-## Architecture
-
-```
-antares-extension/
-├── contents/
-│   └── antares-inject.ts   # Content script — détection + overlay
-├── api/
-│   └── scan.ts             # Backend Vercel — scoring multi-sources
-├── background.ts           # Service worker Plasmo
-└── public/
-```
-
-**Content script** (`contents/antares-inject.ts`)
-- Tourne sur `<all_urls>` au chargement de chaque page
-- Détecte les adresses Solana par scoring : data-attributes (200pts) → liens Solscan (180pts) → text nodes (120pts) → URL (60pts)
-- Gère la navigation SPA via `pushState`, `replaceState`, `popstate` et `MutationObserver`
-- Cache local 30s pour éviter les appels API redondants
-
-**Backend** (`api/scan.ts`) — déployé sur Vercel
-- Agrège DexScreener + RugCheck (full report) + GoPlus Solana
-- Score part de 1000, dégradé par pénalités `critical` / `warning` / `info`
-- Résolution pair → mint (adresse LP Raydium → vrai token)
-- Cache HTTP `s-maxage=30`
-
----
-
-## Installation (dev)
-
-```bash
-git clone https://github.com/COMEALAMAISONGROUPE/antares-extension
-cd antares-extension
-npm install
-npm run dev
-```
-
-Charge le dossier `build/chrome-mv3-dev` dans `chrome://extensions` (mode développeur activé).
-
-## Build production
-
-```bash
-npm run build
-```
-
-Le bundle est dans `build/chrome-mv3-prod`.
-
----
+- Detects mint/freeze authority, honeypots, blacklists and proxy contracts (GoPlus)
+- Checks LP burn/lock status and holder concentration (RugCheck)
+- Analyses on-chain holder distribution (Helius)
+- Detects chart manipulation patterns: parabolic pumps, blow-off tops, wash trading (DexScreener OHLCV)
+- Identifies copycat / brand-imitation tokens
+- Displays a verdict — **SAFE / CAUTION / DANGER / RUG** — with a score out of 1000
 
 ## Scoring
 
-| Niveau | Score |
-|--------|-------|
-| SAFE   | ≥ 800 |
-| CAUTION | ≥ 600 |
-| DANGER | ≥ 350 |
-| RUG    | < 350 |
+Score starts at **1000** and is reduced by weighted penalties across 6 layers:
 
----
+| Layer | What it checks |
+|---|---|
+| L1 | Smart contract flags (GoPlus) |
+| L2 | On-chain metadata & LP (RugCheck) |
+| L3 | Liquidity & pool health (DexScreener) |
+| L4 | Holder distribution (RugCheck + Helius) |
+| L5 | Identity / copycat detection |
+| L6 | Chart pattern risk (DexScreener OHLCV) |
 
-## Déploiement
+A token can only reach **SAFE** if it passes all critical gates regardless of score.
 
-L'API est déployée sur Vercel : `https://antares-extension.vercel.app/api/scan`
+## Stack
 
-Chaque push sur `master` déclenche un redéploiement automatique.
+- Extension: [Plasmo](https://plasmo.com) + TypeScript
+- Backend API: Vercel Serverless (Node)
+- Rate limiting: Upstash Redis (sliding window 20 req/min per IP)
+- Data sources: DexScreener · RugCheck · GoPlus · Helius
 
----
-
-## Revenir en arrière
+## Development
 
 ```bash
-git revert HEAD
-git push origin master
+npm install
+npm run dev      # extension hot-reload
+npm run build    # production build
+npm run package  # zip for Chrome Web Store
 ```
+
+Set the following environment variables in Vercel:
+
+```
+HELIUS_API_KEY=...
+UPSTASH_REDIS_REST_URL=...
+UPSTASH_REDIS_REST_TOKEN=...
+```
+
+## License
+
+MIT
