@@ -6,6 +6,7 @@ const DEXSCREENER_BASE = "https://api.dexscreener.com/latest/dex";
 const RUGCHECK_BASE = "https://api.rugcheck.xyz/v1";
 const GOPLUS_BASE = "https://api.gopluslabs.io/api/v1";
 const HELIUS_BASE = "https://mainnet.helius-rpc.com";
+const SOLSCAN_BASE = "https://pro-api.solscan.io/v2.0"; // ← AJOUT
 
 const CA_RE = /^[A-Za-z0-9]{32,44}$/;
 
@@ -256,6 +257,13 @@ async function fetchLivePrice(mint: string): Promise<number | null> {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
+// ─── SOLSCAN ─────────────────────────────────────────────────────────────────
+async function fetchSolscan(endpoint: string) {
+  const key = process.env.SOLSCAN_API_KEY || "";
+  if (!key) return null;
+  return fetchJson(`${SOLSCAN_BASE}${endpoint}`, { headers: { token: key } }, 5000);
+}
+
 // ─── HANDLER PRINCIPAL ───────────────────────────────────────────────────────
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setHeaders(res);
@@ -319,12 +327,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const [
       candlesRaw, goplusRaw,
       heliusHoldersRaw, heliusSupplyRaw, holdersCount,
+      solMeta, solTransfers,
     ] = await Promise.all([
       fetchDexCandles(pairAddress),
       fetchJson(`${GOPLUS_BASE}/solana/token_security?contract_addresses=${resolvedMint}`),
       HELIUS_API_KEY ? heliusGetLargestAccounts(resolvedMint, HELIUS_API_KEY) : Promise.resolve(null),
       HELIUS_API_KEY ? heliusGetTokenSupply(resolvedMint, HELIUS_API_KEY)    : Promise.resolve(null),
       HELIUS_API_KEY ? heliusGetHoldersCount(resolvedMint, HELIUS_API_KEY)   : Promise.resolve(null),
+      fetchSolscan(`/token/meta?address=${resolvedMint}`),
+      fetchSolscan(`/token/transfer?address=${resolvedMint}&page=1&page_size=10`),
     ]);
 
     const candles       = Array.isArray(candlesRaw) ? candlesRaw : [];
@@ -334,6 +345,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const totalSupplyUi: number = asNumber(heliusSupplyRaw?.result?.value?.uiAmount);
 
     const holders: number | null = holdersCount ?? null;
+
+    // ─── SOLSCAN DATA ──────────────────────────────────────────────────────────
+    const tokenLogo     = solMeta?.data?.icon || pair?.info?.imageUrl || null;
+    const tokenCreator  = solMeta?.data?.creator || null;
+    const tokenDecimals = solMeta?.data?.decimals ?? null;
+    const tokenSupply   = solMeta?.data?.supply ?? null;
+    const recentTransfers = solTransfers?.data || [];
 
     const priceUsd: number | null = (() => {
       const raw = pair?.priceUsd;
@@ -372,6 +390,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (rugData)                   sources_used.push("RugCheck");
     if (goplus)                    sources_used.push("GoPlus");
     if (holderAccounts.length > 0) sources_used.push("Helius");
+    if (solMeta?.data)             sources_used.push("Solscan"); // ← AJOUT
 
     const addPenalty = (label: string, severity: Severity, impact: number) => {
       score -= impact;
@@ -527,7 +546,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     else if (score >= 350)                risk = "DANGER";
     else                                  risk = "RUG";
 
-    const confidence = Math.round((sources_used.length / 4) * 100);
+    const confidence = Math.round((sources_used.length / 5) * 100); // 5 sources désormais
 
     flags.sort((a, b) => {
       const order: Record<Severity, number> = { critical: 0, warning: 1, info: 2, bonus: 3 };
@@ -555,11 +574,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       tokenName:        pair?.baseToken?.name   ?? null,
       pairCreatedAt:    pair?.pairCreatedAt     ?? null,
       safeBlocked,
-      scoring_version: "4.2",
+      tokenLogo,        // ← AJOUT
+      tokenCreator,     // ← AJOUT
+      tokenDecimals,    // ← AJOUT
+      tokenSupply,      // ← AJOUT
+      recentTransfers,  // ← AJOUT
+      scoring_version: "4.3",
       fetchedAt: Date.now(),
     });
   } catch (e) {
-    console.error("[scan v4.2]", e);
+    console.error("[scan v4.3]", e);
     return res.status(500).json({ error: "Analysis error." });
   }
 }
