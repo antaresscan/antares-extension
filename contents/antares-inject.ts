@@ -21,7 +21,7 @@ const LABELS: Record<string, string> = {
   SAFE: "SAFE", CAUTION: "CAUTION", DANGER: "DANGER", RUG: "RUG PULL"
 }
 
-const SOL_ADDR   = /\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/g
+const SOL_ADDR     = /\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/g
 const WALKER_LIMIT = 500
 const IGNORE = new Set([
   "11111111111111111111111111111111",
@@ -68,8 +68,8 @@ function saveToLS(ca: string, data: any) {
 // ── helpers ───────────────────────────────────────────────────────────────
 function formatMcap(mc: number): string {
   if (mc >= 1_000_000_000) return `$${(mc / 1_000_000_000).toFixed(2)}B`
-  if (mc >= 1_000_000) return `$${(mc / 1_000_000).toFixed(2)}M`
-  if (mc >= 1_000) return `$${(mc / 1_000).toFixed(1)}K`
+  if (mc >= 1_000_000)     return `$${(mc / 1_000_000).toFixed(2)}M`
+  if (mc >= 1_000)         return `$${(mc / 1_000).toFixed(1)}K`
   return `$${mc.toFixed(0)}`
 }
 
@@ -85,109 +85,260 @@ function isValid(addr: string): boolean {
 function injectStyles() {
   if (document.getElementById("antares-brutal-styles")) return
   const link = document.createElement("link")
-  link.rel = "stylesheet"
+  link.rel  = "stylesheet"
   link.href = "https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap"
   document.head?.appendChild(link)
 
   const style = document.createElement("style")
   style.id = "antares-brutal-styles"
   style.textContent = `
+/* reset ALL children to avoid host page CSS bleed */
+#antares-box,#antares-box *{
+  all:unset;
+  box-sizing:border-box !important;
+}
+
 #antares-box{
-  position:fixed;bottom:20px;right:20px;z-index:2147483647;
-  width:280px;background:#141417;border:1px solid #1f1f22;
-  padding:0;overflow:hidden;display:none;
-  transition:opacity .25s,transform .25s,border-color .25s,box-shadow .25s;
-  opacity:0;transform:translateY(18px);
-  font-family:'IBM Plex Mono',monospace;font-size:13px;color:#d8d8d8
-}
-#antares-box:hover{border-color:#2a2a2f;box-shadow:0 6px 30px rgba(0,0,0,.5)}
-
-#antares-box .bline{position:absolute;top:0;left:0;right:0;height:3px;z-index:2}
-#antares-box .inner{padding:16px}
-#antares-box .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-#antares-box .brand{font-size:9px;letter-spacing:.3em;color:#3a3a3f;text-transform:uppercase}
-#antares-box .x{color:#2e2e33;cursor:pointer;font-size:16px;line-height:1;transition:color .15s,transform .15s}
-#antares-box .x:hover{color:#d8d8d8;transform:rotate(90deg)}
-
-#antares-box .glitch{position:relative;display:inline-block;cursor:default;user-select:none}
-#antares-box .glitch::before,#antares-box .glitch::after{
-  content:attr(data-text);position:absolute;top:0;left:0;
-  width:100%;overflow:hidden;opacity:0;pointer-events:none
-}
-#antares-box .glitch::before{color:#ff006e;clip-path:polygon(0 20%,100% 20%,100% 40%,0 40%)}
-#antares-box .glitch::after{color:#00e5b0;clip-path:polygon(0 55%,100% 55%,100% 75%,0 75%)}
-#antares-box .glitch:hover::before{animation:gl-a .45s steps(2,end) infinite}
-#antares-box .glitch:hover::after{animation:gl-b .45s steps(2,end) infinite}
-@keyframes gl-a{
-  0%{transform:translate(-3px,0);opacity:.75}
-  25%{transform:translate(3px,0);opacity:.75}
-  50%{transform:translate(-2px,0);opacity:.75;clip-path:polygon(0 5%,100% 5%,100% 25%,0 25%)}
-  75%{transform:translate(2px,0);opacity:.75}
-  100%{transform:translate(-3px,0);opacity:0}
-}
-@keyframes gl-b{
-  0%{transform:translate(3px,0);opacity:.55}
-  33%{transform:translate(-3px,0);opacity:.55;clip-path:polygon(0 60%,100% 60%,100% 80%,0 80%)}
-  66%{transform:translate(2px,0);opacity:.55}
-  100%{transform:translate(3px,0);opacity:0}
+  display:none !important;
+  position:fixed !important;
+  bottom:20px !important;
+  right:20px !important;
+  z-index:2147483647 !important;
+  width:280px !important;
+  background:#141417 !important;
+  border:1px solid #1f1f22 !important;
+  padding:0 !important;
+  overflow:hidden !important;
+  opacity:0 !important;
+  transform:translateY(18px) !important;
+  font-family:'IBM Plex Mono',monospace !important;
+  font-size:13px !important;
+  color:#d8d8d8 !important;
+  line-height:1.4 !important;
+  transition:opacity .25s,transform .25s,border-color .25s,box-shadow .25s !important;
 }
 
-#antares-box .risk{font:400 36px/1 'Bebas Neue',sans-serif;letter-spacing:.04em;margin-bottom:5px}
+#antares-box .bline{
+  display:block !important;
+  position:absolute !important;
+  top:0 !important;left:0 !important;right:0 !important;
+  height:3px !important;
+  z-index:2 !important;
+}
 
-#antares-box .score-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
-#antares-box .score{font-size:11px;color:#4a4a50}
-#antares-box .score strong{color:#aaa}
-#antares-box .mcap{font-size:11px;color:#383840}
+#antares-box .inner{
+  display:block !important;
+  padding:16px !important;
+}
 
-#antares-box .bar{height:3px;background:#1c1c1f;margin-bottom:14px;overflow:hidden}
-#antares-box .bar-f{height:100%;transition:width 1.1s cubic-bezier(.22,1,.36,1)}
+#antares-box .head{
+  display:flex !important;
+  justify-content:space-between !important;
+  align-items:center !important;
+  margin-bottom:12px !important;
+}
 
-#antares-box .meta{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:12px}
-#antares-box .meta div{padding:7px 9px;background:#111114;border:1px solid #1c1c1f;border-radius:2px}
-#antares-box .meta span{display:block;font-size:9px;color:#3a3a3f;letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px}
-#antares-box .meta strong{font-size:12px;color:#bbb}
+#antares-box .brand{
+  display:block !important;
+  font-size:9px !important;
+  letter-spacing:.3em !important;
+  color:#3a3a3f !important;
+  text-transform:uppercase !important;
+  font-family:'IBM Plex Mono',monospace !important;
+  font-weight:400 !important;
+}
 
-#antares-box .flags-wrap{margin-bottom:12px}
-#antares-box .flag{font-size:11px;color:#505058;padding:4px 0 4px 10px;border-left:2px solid;
-  margin-top:3px;transition:color .15s,padding-left .15s}
-#antares-box .flag:hover{color:#bbb;padding-left:14px}
+#antares-box .x{
+  display:block !important;
+  color:#2e2e33 !important;
+  cursor:pointer !important;
+  font-size:18px !important;
+  line-height:1 !important;
+  font-family:'IBM Plex Mono',monospace !important;
+  transition:color .15s !important;
+}
+#antares-box .x:hover{ color:#d8d8d8 !important; }
 
-#antares-box .toggle{display:block;width:100%;padding:8px 16px;background:transparent;
-  border:none;border-top:1px solid #1c1c1f;
-  font:600 9px/1 'IBM Plex Mono',monospace;letter-spacing:.2em;
-  color:#383840;text-transform:uppercase;cursor:pointer;
-  transition:color .15s,background .15s;text-align:left}
-#antares-box .toggle:hover{color:#bbb;background:#111114}
+#antares-box .risk{
+  display:block !important;
+  font-family:'Bebas Neue',sans-serif !important;
+  font-size:36px !important;
+  font-weight:400 !important;
+  line-height:1 !important;
+  letter-spacing:.04em !important;
+  margin-bottom:5px !important;
+}
 
-#antares-box .extra{display:none;padding:2px 16px 12px}
-#antares-box .extra.open{display:block;animation:ant-fadeIn .2s ease}
-#antares-box .extra-row{display:flex;justify-content:space-between;
-  font-size:10px;color:#3a3a3f;padding:4px 0;border-bottom:1px solid #171719}
-#antares-box .extra-row span:last-child{color:#777}
+#antares-box .score-row{
+  display:flex !important;
+  justify-content:space-between !important;
+  align-items:baseline !important;
+  margin-bottom:10px !important;
+}
 
-#antares-box .actions{display:flex;gap:10px;padding:10px 16px;
-  border-top:1px solid #1c1c1f;background:#111114}
-#antares-box .actions a{font-size:10px;color:#3a3a3f;text-decoration:none;
-  letter-spacing:.05em;text-transform:uppercase;transition:color .15s}
-#antares-box .actions a:hover{color:#d8d8d8}
-#antares-box .actions a.primary{margin-left:auto}
+#antares-box .score{
+  display:block !important;
+  font-size:11px !important;
+  color:#4a4a50 !important;
+  font-family:'IBM Plex Mono',monospace !important;
+  font-weight:400 !important;
+}
+#antares-box .score strong{
+  color:#aaa !important;
+  font-weight:600 !important;
+}
 
-@keyframes ant-fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+#antares-box .mcap{
+  display:block !important;
+  font-size:11px !important;
+  color:#383840 !important;
+  font-family:'IBM Plex Mono',monospace !important;
+}
+
+#antares-box .bar{
+  display:block !important;
+  height:3px !important;
+  background:#1c1c1f !important;
+  margin-bottom:14px !important;
+  overflow:hidden !important;
+}
+#antares-box .bar-f{
+  display:block !important;
+  height:100% !important;
+  transition:width 1.1s cubic-bezier(.22,1,.36,1) !important;
+}
+
+#antares-box .meta{
+  display:grid !important;
+  grid-template-columns:1fr 1fr !important;
+  gap:5px !important;
+  margin-bottom:12px !important;
+}
+#antares-box .meta div{
+  display:block !important;
+  padding:7px 9px !important;
+  background:#111114 !important;
+  border:1px solid #1c1c1f !important;
+  border-radius:2px !important;
+}
+#antares-box .meta span{
+  display:block !important;
+  font-size:9px !important;
+  color:#3a3a3f !important;
+  letter-spacing:.1em !important;
+  text-transform:uppercase !important;
+  margin-bottom:2px !important;
+  font-family:'IBM Plex Mono',monospace !important;
+  font-weight:400 !important;
+}
+#antares-box .meta strong{
+  display:block !important;
+  font-size:12px !important;
+  color:#bbb !important;
+  font-weight:600 !important;
+  font-family:'IBM Plex Mono',monospace !important;
+}
+
+#antares-box .flags-wrap{
+  display:block !important;
+  margin-bottom:12px !important;
+}
+#antares-box .flag{
+  display:block !important;
+  font-size:11px !important;
+  color:#505058 !important;
+  padding:4px 0 4px 10px !important;
+  border-left:2px solid !important;
+  margin-top:3px !important;
+  font-family:'IBM Plex Mono',monospace !important;
+  font-weight:400 !important;
+  transition:color .15s,padding-left .15s !important;
+}
+#antares-box .flag:hover{ color:#bbb !important; padding-left:14px !important; }
+
+#antares-box .toggle{
+  display:block !important;
+  width:100% !important;
+  padding:8px 16px !important;
+  background:transparent !important;
+  border:none !important;
+  border-top:1px solid #1c1c1f !important;
+  font-size:9px !important;
+  font-weight:600 !important;
+  font-family:'IBM Plex Mono',monospace !important;
+  letter-spacing:.2em !important;
+  color:#383840 !important;
+  text-transform:uppercase !important;
+  cursor:pointer !important;
+  text-align:left !important;
+  transition:color .15s,background .15s !important;
+}
+#antares-box .toggle:hover{ color:#bbb !important; background:#111114 !important; }
+
+#antares-box .extra{ display:none !important; padding:2px 16px 12px !important; }
+#antares-box .extra.open{ display:block !important; }
+#antares-box .extra-row{
+  display:flex !important;
+  justify-content:space-between !important;
+  font-size:10px !important;
+  color:#3a3a3f !important;
+  padding:4px 0 !important;
+  border-bottom:1px solid #171719 !important;
+  font-family:'IBM Plex Mono',monospace !important;
+}
+#antares-box .extra-row span:last-child{ color:#777 !important; }
+
+#antares-box .actions{
+  display:flex !important;
+  gap:10px !important;
+  padding:10px 16px !important;
+  border-top:1px solid #1c1c1f !important;
+  background:#111114 !important;
+}
+#antares-box .actions a{
+  display:block !important;
+  font-size:10px !important;
+  color:#3a3a3f !important;
+  text-decoration:none !important;
+  letter-spacing:.05em !important;
+  text-transform:uppercase !important;
+  cursor:pointer !important;
+  font-family:'IBM Plex Mono',monospace !important;
+  font-weight:400 !important;
+  transition:color .15s !important;
+}
+#antares-box .actions a:hover{ color:#d8d8d8 !important; }
+#antares-box .actions a.primary{ margin-left:auto !important; }
+
+#antares-box .scanning{
+  display:flex !important;
+  align-items:center !important;
+  gap:8px !important;
+  color:#4a4a50 !important;
+  font-size:12px !important;
+  padding:4px 0 !important;
+  font-family:'IBM Plex Mono',monospace !important;
+}
+#antares-box .scanning .dot{
+  display:inline-block !important;
+  width:7px !important;
+  height:7px !important;
+  border-radius:50% !important;
+  background:#3a3a3f !important;
+  animation:ant-pulse 1.2s infinite !important;
+}
+
 @keyframes ant-pulse{0%,100%{opacity:1}50%{opacity:.15}}
 @keyframes ant-rugline{0%,100%{opacity:1}50%{opacity:.4}}
-
-#antares-box .scanning{display:flex;align-items:center;gap:8px;color:#4a4a50;font-size:12px;padding:4px 0}
-#antares-box .scanning .dot{width:7px;height:7px;border-radius:50%;background:#3a3a3f;
-  display:inline-block;animation:ant-pulse 1.2s infinite}
   `
   document.head?.appendChild(style)
 }
 
-// ── HTML builders ───────────────────────────────────────────────────────
+// ── HTML builders ─────────────────────────────────────────────────────
 function buildResult(data: any, ca: string): string {
-  const c = COLORS[data.risk] || { main: "#6b7280", rgba: "107,114,128" }
+  const c     = COLORS[data.risk] || { main: "#6b7280", rgba: "107,114,128" }
   const label = LABELS[data.risk] || data.risk
-  const mint = data.resolvedMint || ca
+  const mint  = data.resolvedMint || ca
 
   const mc      = data.pair?.marketCap || data.pair?.fdv
   const liq     = data.pair?.liquidity?.usd
@@ -231,7 +382,7 @@ function buildResult(data: any, ca: string): string {
     <div class="bline" style="${blineStyle}"></div>
     <div class="inner">
       <div class="head">
-        <span class="brand glitch" data-text="ANTARES">ANTARES</span>
+        <span class="brand">ANTARES</span>
         <span class="x" id="antares-close">×</span>
       </div>
       <div class="risk" style="color:${c.main}">${label}</div>
@@ -250,7 +401,7 @@ function buildResult(data: any, ca: string): string {
 }
 
 // ── DOM ───────────────────────────────────────────────────────────────────
-let lastCA          = ""
+let lastCA            = ""
 let box: HTMLDivElement | null = null
 let hideTimeout: ReturnType<typeof setTimeout> | null = null
 let manuallyDismissed = false
@@ -277,11 +428,7 @@ function ensureBox(): HTMLDivElement {
 
 function showBox(el: HTMLDivElement) {
   if (hideTimeout) clearTimeout(hideTimeout)
-  el.style.display = "block"
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    el.style.opacity   = "1"
-    el.style.transform = "translateY(0)"
-  }))
+  el.style.cssText = `display:block !important;opacity:1 !important;transform:translateY(0) !important;`
 }
 
 function attachClose() {
@@ -304,7 +451,7 @@ function attachToggle() {
 function applyRiskStyle(el: HTMLDivElement, risk: string) {
   const c = COLORS[risk] || { main: "#6b7280", rgba: "107,114,128" }
   el.style.borderColor = risk === "RUG" ? "#2a1519" : "#1f1f22"
-  el.style.boxShadow   = `0 6px 30px rgba(${c.rgba},.04)`
+  el.style.boxShadow   = `0 6px 30px rgba(${c.rgba},.06)`
 }
 
 // ── scan ──────────────────────────────────────────────────────────────────
@@ -326,7 +473,7 @@ async function scan(ca: string) {
   scanInFlight = true
   const el = ensureBox()
   el.style.borderColor = "#1f1f22"
-  el.style.boxShadow   = "0 6px 30px rgba(0,0,0,.5)"
+  el.style.boxShadow   = "none"
   el.innerHTML = `
     <div class="bline" style="background:#3a3a3f"></div>
     <div class="inner">
@@ -348,7 +495,7 @@ async function scan(ca: string) {
     saveToLS(ca, data)
     applyRiskStyle(el, data.risk)
     el.innerHTML = buildResult(data, ca)
-    attachClose(); attachToggle()
+    showBox(el); attachClose(); attachToggle()
   } catch (e) {
     if (lastCA !== ca) { scanInFlight = false; return }
     el.innerHTML = `
@@ -358,10 +505,10 @@ async function scan(ca: string) {
           <span class="brand">ANTARES</span>
           <span class="x" id="antares-close">×</span>
         </div>
-        <div style="color:#ff5f5f;font-size:12px;padding:4px 0">API Error — retry later</div>
+        <div style="color:#ff5f5f;font-size:12px;padding:4px 0;font-family:'IBM Plex Mono',monospace;display:block">API Error — retry later</div>
       </div>
     `
-    attachClose()
+    showBox(el); attachClose()
   }
   scanInFlight = false
 }
@@ -370,8 +517,8 @@ async function scan(ca: string) {
 function findBestAddress(): string {
   if (window.location.hostname.includes("photon") && !window.location.pathname.includes("/lp/")) return ""
   const scores = new Map<string, number>()
-  const url = window.location.href
-  const add = (addr: string, pts: number) => { if (!isValid(addr)) return; scores.set(addr, (scores.get(addr) || 0) + pts) }
+  const url    = window.location.href
+  const add    = (addr: string, pts: number) => { if (!isValid(addr)) return; scores.set(addr, (scores.get(addr) || 0) + pts) }
 
   for (const el of document.querySelectorAll("[data-address],[data-token],[data-mint],[data-ca],[data-contract],[data-token-address],[data-mint-address]")) {
     for (const attr of ["data-address","data-token","data-mint","data-ca","data-contract","data-token-address","data-mint-address"]) {
