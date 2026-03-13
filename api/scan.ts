@@ -1,11 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
-import * as Sentry from "@sentry/node";
-
-if (process.env.SENTRY_DSN) {
-  Sentry.init({ dsn: process.env.SENTRY_DSN, tracesSampleRate: 0.05 });
-}
 
 const DEXSCREENER_BASE = "https://api.dexscreener.com/latest/dex";
 const RUGCHECK_BASE = "https://api.rugcheck.xyz/v1";
@@ -41,7 +36,6 @@ type ChartResult = { flags: ScanFlag[]; penalty: number; forceRug: boolean; safe
 
 function setHeaders(res: VercelResponse) {
   Object.entries(CORS).forEach(([k, v]) => res.setHeader(k, v));
-  // Cache court pour données fraîches : 15s CDN, 30s stale
   res.setHeader("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
 }
 
@@ -245,7 +239,6 @@ async function heliusGetTokenSupply(mint: string, apiKey: string) {
   });
 }
 
-// Nombre réel de holders via DAS getTokenAccounts
 async function heliusGetHoldersCount(mint: string, apiKey: string): Promise<number | null> {
   const res = await fetchJsonPost(`${HELIUS_BASE}/?api-key=${apiKey}`, {
     jsonrpc: "2.0", id: "holders-count",
@@ -256,7 +249,6 @@ async function heliusGetHoldersCount(mint: string, apiKey: string): Promise<numb
   return typeof total === "number" ? total : null;
 }
 
-// Prix spot via DexScreener token endpoint (le plus frais disponible)
 async function fetchLivePrice(mint: string): Promise<number | null> {
   const d = await fetchJson(`${DEXSCREENER_BASE}/tokens/${mint}`, {}, 4000);
   const p = d?.pairs?.[0]?.priceUsd;
@@ -285,7 +277,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const HELIUS_API_KEY = process.env.HELIUS_API_KEY || "";
 
   try {
-    // — Étape 1 : récupération simultanée de toutes les sources
     const [dexRes, rugRes] = await Promise.all([
       fetchJson(`${DEXSCREENER_BASE}/tokens/${ca}`),
       fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report/summary`),
@@ -301,7 +292,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       rugData?.error === "not found" ||
       rugData?.message?.toLowerCase?.().includes("not found");
 
-    // Fallback : si l'adresse est une pair address et non un mint
     if (!pair || !rugData || rugMissing) {
       const pairData = await fetchJson(`${DEXSCREENER_BASE}/pairs/solana/${ca}`);
       const resolvedPair = pairData?.pairs?.[0] ?? pairData?.pair ?? null;
@@ -318,7 +308,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // Sélectionner la meilleure pair : priorité à la plus liquide
     if (dexData?.pairs?.length > 1) {
       pair = dexData.pairs.reduce((best: any, p: any) =>
         asNumber(p?.liquidity?.usd) > asNumber(best?.liquidity?.usd) ? p : best
@@ -327,7 +316,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const pairAddress = pair?.pairAddress ?? ca;
 
-    // — Étape 2 : toutes les sources secondaires en parallèle
     const [
       candlesRaw, goplusRaw,
       heliusHoldersRaw, heliusSupplyRaw, holdersCount,
@@ -345,17 +333,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       heliusHoldersRaw?.result?.value ?? [];
     const totalSupplyUi: number = asNumber(heliusSupplyRaw?.result?.value?.uiAmount);
 
-    // Nombre réel de holders (Helius DAS)
     const holders: number | null = holdersCount ?? null;
 
-    // Prix live le plus frais
     const priceUsd: number | null = (() => {
       const raw = pair?.priceUsd;
       const n = parseFloat(raw);
       return Number.isFinite(n) && n > 0 ? n : null;
     })();
 
-    // MarketCap : priorité marketCap circulant > fdv, jamais null si possible
     const marketCap: number | null = (() => {
       const mc  = asNumber(pair?.marketCap);
       const fdv = asNumber(pair?.fdv);
@@ -369,7 +354,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return null;
     })();
 
-    // Volume, liquidité, prix en temps réel depuis DexScreener
     const liquidity      = asNumber(pair?.liquidity?.usd) || null;
     const volume24h      = asNumber(pair?.volume?.h24)     || null;
     const volume1h       = asNumber(pair?.volume?.h1)      || null;
@@ -401,7 +385,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let forceRisk: "RUG" | null = null;
     let safeBlocked = false;
 
-    // ── L1 Smart contract
     const mintAuthorityEnabled =
       Boolean(rugData?.mintAuthorityEnabled) ||
       Boolean(goplus?.mint_authority && String(goplus.mint_authority).trim() !== "");
@@ -437,7 +420,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (goplus.is_whitelisted === "1")           addPenalty("Whitelist system detected", "warning", 150);
     }
 
-    // ── L2 RugCheck
     if (rugData) {
       if (rugData.metaMutable === true) {
         addPenalty("Metadata mutable", "warning", 150);
@@ -452,7 +434,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         addPenalty("LP lock duration < 30 days", "warning", 150);
     }
 
-    // ── L3 Liquidité
     if (pair) {
       const liq = asNumber(pair?.liquidity?.usd);
       const vol = asNumber(pair?.volume?.h24);
@@ -475,7 +456,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (pc24 < -80) addPenalty("Brutal dump 24h", "critical", 150);
     }
 
-    // ── L4 Holders
     if (rugData) {
       const top10 = getTop10Percentage(rugData);
       const top1  = getTop1Percentage(rugData);
@@ -502,14 +482,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       else if (top10Pct < 0.3) addBonus("Well distributed supply ✓", 50);
     }
 
-    // Token age
     if (tokenAgeMinutes !== null) {
       if (tokenAgeMinutes < 1)       addPenalty("Freshly launched, extreme risk", "critical", 150);
       else if (tokenAgeMinutes < 5)  addPenalty("Token very new (< 5 min)", "warning", 80);
       else if (tokenAgeMinutes < 60) addPenalty("Token < 1 hour old", "info", 30);
     }
 
-    // Socials
     if (pair) {
       const buys5m  = asNumber(pair?.txns?.m5?.buys);
       const sells5m = asNumber(pair?.txns?.m5?.sells);
@@ -527,14 +505,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       addPenalty("Not indexed on DexScreener", "warning", 100);
     }
 
-    // L5 Identity
     const identity = analyzeIdentity(pair?.baseToken?.symbol, pair?.baseToken?.name);
     score -= identity.penalty;
     flags.push(...identity.flags);
     if (identity.forceRug) forceRisk = "RUG";
     if (identity.safeBlocked) safeBlocked = true;
 
-    // L6 Chart
     const chart = analyzeChartPatterns(candles, pair, tokenAgeMinutes);
     score -= chart.penalty;
     flags.push(...chart.flags);
@@ -583,7 +559,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       fetchedAt: Date.now(),
     });
   } catch (e) {
-    Sentry.captureException(e);
     console.error("[scan v4.2]", e);
     return res.status(500).json({ error: "Analysis error." });
   }
