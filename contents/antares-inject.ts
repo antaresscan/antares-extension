@@ -16,6 +16,13 @@ const COLORS: Record<string, string> = {
   RUG: "#dc2626"
 }
 
+const LABELS: Record<string, string> = {
+  SAFE: "SAFE",
+  CAUTION: "CAUTION",
+  DANGER: "DANGER",
+  RUG: "RUG PULL"
+}
+
 const SOL_ADDR = /\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/g
 const WALKER_LIMIT = 500
 
@@ -35,7 +42,6 @@ const IGNORE = new Set([
 const CACHE_TTL = 90_000
 const scanCache = new Map<string, { data: any; ts: number }>()
 
-// Pré-charge le cache mémoire depuis localStorage au démarrage
 ;(function hydrateCacheFromLS() {
   try {
     for (let i = 0; i < localStorage.length; i++) {
@@ -45,12 +51,8 @@ const scanCache = new Map<string, { data: any; ts: number }>()
       if (!raw) continue
       const parsed = JSON.parse(raw)
       if (!parsed?.data || !parsed?.ts) continue
-      if (Date.now() - parsed.ts > CACHE_TTL) {
-        localStorage.removeItem(key)
-        continue
-      }
-      const ca = key.slice(LS_PREFIX.length)
-      scanCache.set(ca, { data: parsed.data, ts: parsed.ts })
+      if (Date.now() - parsed.ts > CACHE_TTL) { localStorage.removeItem(key); continue }
+      scanCache.set(key.slice(LS_PREFIX.length), { data: parsed.data, ts: parsed.ts })
     }
   } catch (_) {}
 })()
@@ -63,9 +65,7 @@ function getCached(ca: string): any | null {
 }
 
 function saveToLS(ca: string, data: any) {
-  try {
-    localStorage.setItem(LS_PREFIX + ca, JSON.stringify({ data, ts: Date.now() }))
-  } catch (_) {}
+  try { localStorage.setItem(LS_PREFIX + ca, JSON.stringify({ data, ts: Date.now() })) } catch (_) {}
 }
 
 function formatMcap(mc: number): string {
@@ -75,39 +75,243 @@ function formatMcap(mc: number): string {
   return `$${mc.toFixed(0)}`
 }
 
+function injectStyles() {
+  if (document.getElementById("antares-styles")) return
+  const style = document.createElement("style")
+  style.id = "antares-styles"
+  style.textContent = `
+    #antares-box {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 2147483647;
+      background: #0a0a0a;
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-family: 'SF Mono','Fira Code','Fira Mono',monospace;
+      font-size: 13px;
+      color: #fff;
+      min-width: 230px;
+      max-width: 300px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.9);
+      display: none;
+      transition: opacity 0.22s ease, transform 0.22s ease;
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    .ant-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    .ant-logo {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+    .ant-close {
+      cursor: pointer;
+      color: #444;
+      font-size: 18px;
+      line-height: 1;
+      transition: color 0.15s;
+    }
+    .ant-close:hover { color: #888; }
+    .ant-verdict {
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+    .ant-score-row {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+    .ant-score-val {
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1;
+    }
+    .ant-score-max {
+      font-size: 12px;
+      color: #333;
+    }
+    .ant-score-label {
+      font-size: 10px;
+      color: #555;
+      margin-left: auto;
+    }
+    .ant-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px 10px;
+      margin-bottom: 8px;
+    }
+    .ant-stat {
+      display: flex;
+      flex-direction: column;
+    }
+    .ant-stat-label {
+      font-size: 9px;
+      color: #444;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .ant-stat-val {
+      font-size: 12px;
+      color: #ccc;
+      font-weight: 700;
+    }
+    .ant-conf-bar {
+      width: 100%;
+      height: 2px;
+      background: #1a1a1a;
+      border-radius: 1px;
+      margin-bottom: 8px;
+      overflow: hidden;
+    }
+    .ant-conf-fill {
+      height: 100%;
+      border-radius: 1px;
+      transition: width 0.6s ease;
+    }
+    .ant-flags {
+      margin-bottom: 8px;
+    }
+    .ant-flag {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      font-size: 11px;
+      color: #666;
+      margin-bottom: 3px;
+      padding-left: 6px;
+      border-left-width: 2px;
+      border-left-style: solid;
+    }
+    .ant-flag-icon { flex-shrink: 0; font-size: 10px; }
+    .ant-sep {
+      height: 1px;
+      background: #111;
+      margin-bottom: 8px;
+    }
+    .ant-footer {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .ant-link {
+      font-size: 10px;
+      text-decoration: none;
+      color: #444;
+      transition: color 0.15s;
+    }
+    .ant-link:hover { color: #888; }
+    .ant-link-primary {
+      font-size: 10px;
+      text-decoration: none;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      margin-left: auto;
+      transition: opacity 0.15s;
+    }
+    .ant-link-primary:hover { opacity: 0.75; }
+    .ant-ca {
+      font-size: 9px;
+      color: #2a2a2a;
+      margin-bottom: 6px;
+      font-family: monospace;
+    }
+    @keyframes ant-pulse { 0%,100%{opacity:1} 50%{opacity:.15} }
+    .ant-scanning {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #555;
+      font-size: 12px;
+      padding: 4px 0;
+    }
+    .ant-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #555;
+      display: inline-block;
+      animation: ant-pulse 1.2s infinite;
+    }
+  `
+  document.head?.appendChild(style)
+}
+
 function buildResult(data: any, ca: string): string {
   const color = COLORS[data.risk] || "#6b7280"
+  const label = LABELS[data.risk] || data.risk
   const displayCA = data.resolvedMint || ca
   const mint = data.resolvedMint || ca
-  const flags = (data.flags || [])
+
+  const mc = data.pair?.marketCap || data.pair?.fdv
+  const liq = data.pair?.liquidity?.usd
+  const holders = data.pair?.holders
+  const conf = typeof data.confidence === "number" ? data.confidence : null
+
+  const statsHtml = (mc || liq || holders) ? `
+    <div class="ant-stats">
+      ${mc ? `<div class="ant-stat"><span class="ant-stat-label">Market Cap</span><span class="ant-stat-val">${formatMcap(mc)}</span></div>` : ""}
+      ${liq ? `<div class="ant-stat"><span class="ant-stat-label">Liquidity</span><span class="ant-stat-val">${formatMcap(liq)}</span></div>` : ""}
+      ${holders ? `<div class="ant-stat"><span class="ant-stat-label">Holders</span><span class="ant-stat-val">${holders.toLocaleString()}</span></div>` : ""}
+      ${conf !== null ? `<div class="ant-stat"><span class="ant-stat-label">Confidence</span><span class="ant-stat-val" style="color:${color}">${conf}%</span></div>` : ""}
+    </div>` : ""
+
+  const confBarHtml = conf !== null ? `
+    <div class="ant-conf-bar">
+      <div class="ant-conf-fill" style="width:${conf}%;background:${color}"></div>
+    </div>` : ""
+
+  const flagsHtml = (data.flags || [])
     .filter((f: any) => {
-      const label = (f.label || f) as string
-      return !label.toLowerCase().includes("unavailable") && f.severity !== "bonus"
+      const lbl = (f.label || f) as string
+      return !lbl.toLowerCase().includes("unavailable") && f.severity !== "bonus"
     })
     .slice(0, 4)
-    .map((f: any) =>
-      `<div style="font-size:11px;color:#666;margin-top:4px;padding-left:8px;border-left:2px solid ${color}55">${f.label || f}</div>`
-    ).join("")
-  const mc = data.pair?.marketCap || data.pair?.fdv
-  const mcLine = mc
-    ? `<div style="color:#888;font-size:11px;margin-bottom:2px">MCap <strong style="color:#ccc">${formatMcap(mc)}</strong></div>`
-    : ""
-  const conf = typeof data.confidence === "number"
-    ? `<div style="color:#444;font-size:10px;margin-bottom:4px">Confidence <strong style="color:#666">${data.confidence}%</strong></div>`
-    : ""
+    .map((f: any) => {
+      const lbl = f.label || f
+      const isGood = f.severity === "info" || lbl.startsWith("✓") || lbl.startsWith("LP")
+      const icon = isGood ? "✓" : "⚠"
+      const iconColor = isGood ? color : "#ef4444"
+      return `<div class="ant-flag" style="border-left-color:${color}22"><span class="ant-flag-icon" style="color:${iconColor}">${icon}</span><span>${lbl}</span></div>`
+    }).join("")
+
   const dexLink = data.pair?.url
-    ? `<a href="${data.pair.url}" target="_blank" rel="noopener noreferrer" style="color:#555;font-size:10px;text-decoration:none;margin-right:10px">&#8599; DexScreener</a>`
+    ? `<a href="${data.pair.url}" target="_blank" rel="noopener noreferrer" class="ant-link">&#8599; DexScreener</a>`
     : ""
-  const analysisLink = `<a href="${ANALYSIS_PAGE}?ca=${mint}" target="_blank" rel="noopener noreferrer" style="color:${color};font-size:10px;text-decoration:none">&#8599; Full Analysis</a>`
-  const footer = `<div style="margin-top:8px;padding-top:6px;border-top:1px solid #1a1a1a;display:flex;gap:8px">${dexLink}${analysisLink}</div>`
-  return header(color) + `
-    <div style="font-size:28px;font-weight:800;color:${color};letter-spacing:1px;margin-bottom:2px">${data.risk}</div>
-    <div style="color:#888;font-size:12px;margin-bottom:2px">Score <strong style="color:#ddd">${data.score}</strong><span style="color:#444">/1000</span></div>
-    ${mcLine}
-    ${conf}
-    <div style="color:#333;font-size:10px;margin-bottom:6px">${displayCA.slice(0,4)}&hellip;${displayCA.slice(-4)}</div>
-    ${flags}
-    ${footer}
+  const analysisLink = `<a href="${ANALYSIS_PAGE}?ca=${mint}" target="_blank" rel="noopener noreferrer" class="ant-link-primary" style="color:${color}">&#8599; Full Analysis</a>`
+
+  return `
+    <div class="ant-header">
+      <span class="ant-logo" style="color:${color}">ANTARES</span>
+      <span id="antares-close" class="ant-close">&times;</span>
+    </div>
+    <div class="ant-verdict" style="color:${color}">${label}</div>
+    <div class="ant-score-row">
+      <span class="ant-score-val" style="color:${color}">${data.score}</span>
+      <span class="ant-score-max">/1000</span>
+      <span class="ant-score-label">Score</span>
+    </div>
+    ${statsHtml}
+    ${confBarHtml}
+    ${flagsHtml ? `<div class="ant-flags">${flagsHtml}</div>` : ""}
+    <div class="ant-ca">${displayCA.slice(0,4)}&hellip;${displayCA.slice(-4)}</div>
+    <div class="ant-sep"></div>
+    <div class="ant-footer">
+      ${dexLink}
+      ${analysisLink}
+    </div>
   `
 }
 
@@ -121,52 +325,36 @@ function isValid(addr: string): boolean {
 
 function findBestAddress(): string {
   if (window.location.hostname.includes("photon") && !window.location.pathname.includes("/lp/")) return ""
-
   const scores = new Map<string, number>()
   const url = window.location.href
+  const add = (addr: string, pts: number) => { if (!isValid(addr)) return; scores.set(addr, (scores.get(addr) || 0) + pts) }
 
-  const add = (addr: string, pts: number) => {
-    if (!isValid(addr)) return
-    scores.set(addr, (scores.get(addr) || 0) + pts)
-  }
-
-  for (const el of document.querySelectorAll(
-    "[data-address],[data-token],[data-mint],[data-ca],[data-contract],[data-token-address],[data-mint-address]"
-  )) {
+  for (const el of document.querySelectorAll("[data-address],[data-token],[data-mint],[data-ca],[data-contract],[data-token-address],[data-mint-address]")) {
     for (const attr of ["data-address","data-token","data-mint","data-ca","data-contract","data-token-address","data-mint-address"]) {
       for (const m of ((el.getAttribute(attr) || "").match(SOL_ADDR) || [])) add(m, 200)
     }
   }
-
   for (const a of document.querySelectorAll("a[href]")) {
     const href = a.getAttribute("href") || ""
     if (/solscan\.io\/token|solscan\.io\/address|explorer\.solana\.com\/address|solana\.fm\/address/.test(href)) {
       for (const m of (href.match(SOL_ADDR) || [])) add(m, 180)
     }
   }
-
   for (const m of (url.match(SOL_ADDR) || [])) add(m, 60)
-
   if (scores.size === 0) {
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null)
-    let node: Node | null
-    let count = 0
+    let node: Node | null, count = 0
     while ((node = walker.nextNode()) && count < WALKER_LIMIT) {
       count++
       const t = (node.textContent || "").trim()
-      if (t.length >= 32 && t.length <= 50) {
-        for (const m of (t.match(SOL_ADDR) || [])) add(m, 120)
-      }
+      if (t.length >= 32 && t.length <= 50) { for (const m of (t.match(SOL_ADDR) || [])) add(m, 120) }
     }
   }
-
   if (scores.size === 0) return ""
-
   for (const [addr, s] of scores) {
     if (addr.endsWith("pump")) scores.set(addr, s + 100)
     if (/[A-Z]/.test(addr) && /[a-z]/.test(addr)) scores.set(addr, (scores.get(addr) || 0) + 30)
   }
-
   return [...scores.entries()].sort((a, b) => b[1] - a[1])[0][0]
 }
 
@@ -185,36 +373,14 @@ function hideBox() {
 }
 
 function resetState() {
-  lastCA = ""
-  manuallyDismissed = false
-  scanInFlight = false
-  hideBox()
+  lastCA = ""; manuallyDismissed = false; scanInFlight = false; hideBox()
 }
 
 function ensureBox(): HTMLDivElement {
+  injectStyles()
   if (box && document.body.contains(box)) return box
   box = document.createElement("div")
   box.id = "antares-box"
-  Object.assign(box.style, {
-    position: "fixed",
-    bottom: "20px",
-    right: "20px",
-    zIndex: "2147483647",
-    background: "#0d0d0d",
-    border: "1px solid #333",
-    borderRadius: "12px",
-    padding: "12px 16px",
-    fontFamily: "'SF Mono','Fira Code',monospace",
-    fontSize: "13px",
-    color: "#fff",
-    minWidth: "220px",
-    maxWidth: "290px",
-    boxShadow: "0 8px 32px rgba(0,0,0,0.8)",
-    display: "none",
-    transition: "opacity 0.22s ease, transform 0.22s ease",
-    opacity: "0",
-    transform: "translateY(10px)"
-  })
   document.body.appendChild(box)
   return box
 }
@@ -233,8 +399,9 @@ function attachClose() {
   if (btn) btn.onclick = () => { manuallyDismissed = true; hideBox() }
 }
 
-function header(color: string) {
-  return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-weight:700;font-size:11px;letter-spacing:2.5px;color:${color}">ANTARES</span><span id="antares-close" style="cursor:pointer;color:#555;font-size:18px;line-height:1">&times;</span></div>`
+function applyVerdictBorder(el: HTMLDivElement, color: string) {
+  el.style.border = `1px solid ${color}55`
+  el.style.boxShadow = `0 8px 40px rgba(0,0,0,0.9), 0 0 24px ${color}14`
 }
 
 async function scan(ca: string) {
@@ -242,72 +409,62 @@ async function scan(ca: string) {
   if (ca === lastCA && box && box.style.display !== "none") return
   if (manuallyDismissed && ca === lastCA) return
   if (scanInFlight) return
-
-  if (ca !== lastCA) {
-    manuallyDismissed = false
-    lastCA = ca
-  }
+  if (ca !== lastCA) { manuallyDismissed = false; lastCA = ca }
 
   const cached = getCached(ca)
   if (cached) {
     const el = ensureBox()
-    const color = COLORS[cached.risk] || "#6b7280"
-    el.style.border = `1px solid ${color}66`
-    el.style.boxShadow = `0 8px 32px rgba(0,0,0,0.8),0 0 20px ${color}18`
+    applyVerdictBorder(el, COLORS[cached.risk] || "#6b7280")
     el.innerHTML = buildResult(cached, ca)
-    showBox(el)
-    attachClose()
-    return
+    showBox(el); attachClose(); return
   }
 
   scanInFlight = true
   const el = ensureBox()
-  showBox(el)
-  el.innerHTML = header("#6b7280") + `
-    <div style="color:#444;font-size:10px;margin-bottom:8px">${ca.slice(0,4)}&hellip;${ca.slice(-4)}</div>
-    <div style="color:#666;font-size:12px;display:flex;align-items:center;gap:6px">
-      <span style="width:7px;height:7px;border-radius:50%;background:#6b7280;display:inline-block;animation:ap 1s infinite"></span>Scanning&hellip;
+  el.style.border = "1px solid #1f1f1f"
+  el.style.boxShadow = "0 8px 40px rgba(0,0,0,0.9)"
+  el.innerHTML = `
+    <div class="ant-header">
+      <span class="ant-logo" style="color:#444">ANTARES</span>
+      <span id="antares-close" class="ant-close">&times;</span>
     </div>
-    <style>@keyframes ap{0%,100%{opacity:1}50%{opacity:.2}}</style>
+    <div class="ant-ca">${ca.slice(0,4)}&hellip;${ca.slice(-4)}</div>
+    <div class="ant-scanning">
+      <span class="ant-dot"></span>Scanning&hellip;
+    </div>
   `
-  attachClose()
+  showBox(el); attachClose()
 
   try {
     const res = await fetch(`${API}?ca=${ca}`)
     if (!res.ok) throw new Error("" + res.status)
     const data = await res.json()
     if (lastCA !== ca) { scanInFlight = false; return }
-
     scanCache.set(ca, { data, ts: Date.now() })
     saveToLS(ca, data)
-
-    const color = COLORS[data.risk] || "#6b7280"
-    el.style.border = `1px solid ${color}66`
-    el.style.boxShadow = `0 8px 32px rgba(0,0,0,0.8),0 0 20px ${color}18`
+    applyVerdictBorder(el, COLORS[data.risk] || "#6b7280")
     el.innerHTML = buildResult(data, ca)
     attachClose()
   } catch (e) {
     if (lastCA !== ca) { scanInFlight = false; return }
-    el.innerHTML = header("#6b7280") + `<div style="color:#ef4444;font-size:12px">API Error</div>`
+    el.innerHTML = `
+      <div class="ant-header">
+        <span class="ant-logo" style="color:#444">ANTARES</span>
+        <span id="antares-close" class="ant-close">&times;</span>
+      </div>
+      <div style="color:#ef4444;font-size:12px;padding:4px 0">API Error — retry later</div>
+    `
     attachClose()
   }
   scanInFlight = false
 }
 
-function poll() {
-  const ca = findBestAddress()
-  if (!ca) return
-  scan(ca)
-}
+function poll() { const ca = findBestAddress(); if (!ca) return; scan(ca) }
 
 poll()
 setTimeout(poll, 2000)
 
-const onNav = () => {
-  resetState()
-  setTimeout(poll, 400)
-  setTimeout(poll, 2000)
-}
+const onNav = () => { resetState(); setTimeout(poll, 400); setTimeout(poll, 2000) }
 
 let lastUrl = window.location.href
 new MutationObserver(() => {
