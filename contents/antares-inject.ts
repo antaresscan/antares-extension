@@ -79,109 +79,234 @@ function isValid(addr: string): boolean {
   return true
 }
 
-// ── CSS exact démo overlay-1 ──────────────────────────────────────────────────
+// ── CSS exact antares-popup.css ────────────────────────────────────────────
 const SHADOW_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap');
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--c-safe:#00e5b0;--c-caution:#f5d000;--c-danger:#ff5f5f;--c-rug:#ff2244}
 
-:host{
-  all:initial;display:block;
-  position:fixed;bottom:20px;right:20px;
-  z-index:2147483647;
-  font-family:'IBM Plex Mono',monospace;
-  pointer-events:none;
+:host {
+  all: initial;
+  display: block;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 2147483647;
+  font-family: 'IBM Plex Mono', monospace;
+  pointer-events: none;
+  --c-safe: #00e5b0;
+  --c-caution: #f5d000;
+  --c-danger: #ff5f5f;
+  --c-rug: #ff2244;
+  --bg: #141417;
+  --bg-dark: #111114;
+  --border: #1f1f22;
+  --text: #d8d8d8;
+  --text-dim: #3a3a3f;
+  --text-mid: #aaaaaa;
 }
 
-/* ── Glitch ── */
-.glitch{position:relative;display:inline-block;cursor:default;user-select:none}
-.glitch::before,.glitch::after{content:attr(data-text);position:absolute;top:0;left:0;width:100%;overflow:hidden;opacity:0;pointer-events:none}
-.glitch::before{color:#ff006e;clip-path:polygon(0 20%,100% 20%,100% 40%,0 40%)}
-.glitch::after{color:#00e5b0;clip-path:polygon(0 55%,100% 55%,100% 75%,0 75%)}
-.glitch:hover::before{animation:gl-a .45s steps(2,end) infinite}
-.glitch:hover::after{animation:gl-b .45s steps(2,end) infinite}
-@keyframes gl-a{
-  0%{transform:translate(-3px,0);opacity:.75}
-  25%{transform:translate(3px,0);opacity:.75}
-  50%{transform:translate(-2px,0);opacity:.75;clip-path:polygon(0 5%,100% 5%,100% 25%,0 25%)}
-  75%{transform:translate(2px,0);opacity:.75}
-  100%{transform:translate(-3px,0);opacity:0}
-}
-@keyframes gl-b{
-  0%{transform:translate(3px,0);opacity:.55}
-  33%{transform:translate(-3px,0);opacity:.55;clip-path:polygon(0 60%,100% 60%,100% 80%,0 80%)}
-  66%{transform:translate(2px,0);opacity:.55}
-  100%{transform:translate(3px,0);opacity:0}
+.box {
+  pointer-events: auto;
+  width: 280px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  font-family: 'IBM Plex Mono', 'Courier New', monospace;
+  font-size: 12px;
+  color: var(--text);
+  position: relative;
+  overflow: hidden;
+  display: none;
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity .25s ease, transform .25s ease, border-color .25s, box-shadow .25s;
+  line-height: 1.4;
 }
 
-.box{
-  pointer-events:auto;
-  width:280px;background:#141417;border:1px solid #1f1f22;
-  padding:0;position:relative;overflow:hidden;
-  display:none;opacity:0;transform:translateY(18px);
-  transition:opacity .25s ease,transform .25s ease,border-color .25s,box-shadow .25s;
-  font-family:'IBM Plex Mono',monospace;font-size:13px;color:#d8d8d8;line-height:1.4;
+.bline {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  z-index: 2;
 }
-.box:hover{border-color:#2a2a2f;box-shadow:0 6px 30px rgba(0,0,0,.5)}
-@keyframes appear{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
 
-.bline{position:absolute;top:0;left:0;right:0;height:3px;z-index:2}
-.inner{padding:16px}
-.head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-.brand{font-size:9px;letter-spacing:.3em;color:#3a3a3f;text-transform:uppercase}
-.x{color:#2e2e33;cursor:pointer;font-size:16px;line-height:1;transition:color .15s,transform .15s;background:none;border:none;font-family:inherit}
-.x:hover{color:#d8d8d8;transform:rotate(90deg)}
+.inner { padding: 16px; }
 
-.risk{font:400 36px/1 'Bebas Neue',sans-serif;letter-spacing:.04em;margin-bottom:5px}
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
 
-.score-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
-.score{font-size:11px;color:#4a4a50}.score strong{color:#aaa}
-.mcap{font-size:11px;color:#383840}
+.brand {
+  font-size: 9px;
+  letter-spacing: 0.3em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
 
-.bar{height:3px;background:#1c1c1f;margin-bottom:14px;overflow:hidden}
-.bar-f{height:100%;width:0%;transition:width 1.1s cubic-bezier(.22,1,.36,1)}
+.x {
+  color: #2e2e33;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  transition: color .15s, transform .15s;
+  background: none;
+  border: none;
+  font-family: inherit;
+}
+.x:hover { color: var(--text); transform: rotate(90deg); }
 
-.meta{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:12px}
-.meta div{padding:7px 9px;background:#111114;border:1px solid #1c1c1f;border-radius:2px}
-.meta span{display:block;font-size:9px;color:#3a3a3f;letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px}
-.meta strong{font-size:12px;color:#bbb}
+.risk {
+  font-family: 'Bebas Neue', 'Arial Black', sans-serif;
+  font-size: 36px;
+  line-height: 1;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  margin-bottom: 5px;
+}
 
-.flags-wrap{margin-bottom:12px}
-.flag{font-size:11px;color:#505058;padding:4px 0 4px 10px;border-left:2px solid;margin-top:3px;transition:color .15s,padding-left .15s}
-.flag:hover{color:#bbb;padding-left:14px}
+.score-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 10px;
+}
+.score { font-size: 11px; color: #4a4a50; }
+.score strong { color: #aaa; }
+.mcap { font-size: 11px; color: #383840; }
 
-.toggle{display:block;width:100%;padding:8px 16px;background:transparent;
-  border:none;border-top:1px solid #1c1c1f;
-  font:600 9px/1 'IBM Plex Mono',monospace;letter-spacing:.2em;
-  color:#383840;text-transform:uppercase;cursor:pointer;text-align:left;
-  transition:color .15s,background .15s}
-.toggle:hover{color:#bbb;background:#111114}
-.extra{display:none;padding:2px 16px 12px;animation:fadeIn .2s ease}
-@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
-.extra.open{display:block}
-.extra-row{display:flex;justify-content:space-between;font-size:10px;color:#3a3a3f;padding:4px 0;border-bottom:1px solid #171719}
-.extra-row span:last-child{color:#777}
+.bar {
+  height: 3px;
+  background: #1c1c1f;
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+.bar-f {
+  height: 100%;
+  width: 0%;
+  transition: width 1.1s cubic-bezier(.22,1,.36,1);
+}
 
-.actions{display:flex;gap:10px;padding:10px 16px;border-top:1px solid #1c1c1f;background:#111114}
-.actions a{font-size:10px;color:#3a3a3f;text-decoration:none;letter-spacing:.05em;text-transform:uppercase;transition:color .15s}
-.actions a:hover{color:#d8d8d8}
-.actions a.primary{margin-left:auto;font-weight:700}
+.meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  margin-bottom: 12px;
+}
+.meta div {
+  padding: 7px 9px;
+  background: var(--bg-dark);
+  border: 1px solid #1c1c1f;
+  border-radius: 2px;
+}
+.meta span {
+  display: block;
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.meta strong { font-size: 12px; color: #bbb; }
 
-/* ── Color variants ── */
-.box.safe .bline{background:var(--c-safe)}.box.safe .risk{color:var(--c-safe)}.box.safe .bar-f{background:var(--c-safe)}.box.safe .flag{border-color:rgba(0,229,176,.2)}.box.safe:hover{box-shadow:0 6px 30px rgba(0,229,176,.06)}
-.box.caution .bline{background:var(--c-caution)}.box.caution .risk{color:var(--c-caution)}.box.caution .bar-f{background:var(--c-caution)}.box.caution .flag{border-color:rgba(245,208,0,.18)}.box.caution:hover{box-shadow:0 6px 30px rgba(245,208,0,.06)}
-.box.danger .bline{background:var(--c-danger)}.box.danger .risk{color:var(--c-danger)}.box.danger .bar-f{background:var(--c-danger)}.box.danger .flag{border-color:rgba(255,95,95,.18)}.box.danger:hover{box-shadow:0 6px 30px rgba(255,95,95,.06)}
-.box.rug{border-color:#2a1519}.box.rug .bline{background:var(--c-rug);animation:rugline 2s ease infinite}.box.rug .risk{color:var(--c-rug)}.box.rug .bar-f{background:var(--c-rug)}.box.rug .flag{border-color:rgba(255,34,68,.18)}.box.rug:hover{box-shadow:0 6px 30px rgba(255,34,68,.06),0 0 0 1px rgba(255,34,68,.08)}
-@keyframes rugline{0%,100%{opacity:1}50%{opacity:.4}}
+.flags-wrap { margin-bottom: 12px; }
+.flag {
+  font-size: 11px;
+  color: #505058;
+  padding: 4px 0 4px 10px;
+  border-left: 2px solid;
+  margin-top: 3px;
+  transition: color .15s, padding-left .15s;
+}
+.flag:hover { color: #bbb; padding-left: 14px; }
+
+.toggle {
+  display: block;
+  width: 100%;
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  border-top: 1px solid #1c1c1f;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  color: #383840;
+  text-transform: uppercase;
+  cursor: pointer;
+  text-align: left;
+  box-sizing: border-box;
+  transition: color .15s, background .15s;
+}
+.toggle:hover { color: #bbb; background: var(--bg-dark); }
+
+.extra { display: none; padding: 2px 16px 12px; }
+.extra.open { display: block; }
+.extra-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #3a3a3f;
+  padding: 4px 0;
+  border-bottom: 1px solid #171719;
+}
+.extra-row span:last-child { color: #777; }
+
+.actions {
+  display: flex;
+  gap: 10px;
+  padding: 10px 16px;
+  border-top: 1px solid #1c1c1f;
+  background: var(--bg-dark);
+}
+.actions a {
+  font-size: 10px;
+  color: #3a3a3f;
+  text-decoration: none;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: color .15s;
+}
+.actions a:hover { color: var(--text); }
+.actions a.primary { margin-left: auto; font-weight: 700; }
+
+/* ════ COLOR VARIANTS ════ */
+.box.safe .bline { background: var(--c-safe); }
+.box.safe .risk { color: var(--c-safe); }
+.box.safe .bar-f { background: var(--c-safe); width: var(--bar-w, 0%); }
+.box.safe .flag { border-color: rgba(0,229,176,0.2); }
+.box.safe:hover { box-shadow: 0 6px 30px rgba(0,229,176,.06); }
+
+.box.caution .bline { background: var(--c-caution); }
+.box.caution .risk { color: var(--c-caution); }
+.box.caution .bar-f { background: var(--c-caution); }
+.box.caution .flag { border-color: rgba(245,208,0,0.18); }
+.box.caution:hover { box-shadow: 0 6px 30px rgba(245,208,0,.06); }
+
+.box.danger .bline { background: var(--c-danger); }
+.box.danger .risk { color: var(--c-danger); }
+.box.danger .bar-f { background: var(--c-danger); }
+.box.danger .flag { border-color: rgba(255,95,95,0.18); }
+.box.danger:hover { box-shadow: 0 6px 30px rgba(255,95,95,.06); }
+
+.box.rug { border-color: #2a1519; }
+.box.rug .bline { background: var(--c-rug); animation: rugline 2s ease infinite; }
+.box.rug .risk { color: var(--c-rug); }
+.box.rug .bar-f { background: var(--c-rug); }
+.box.rug .flag { border-color: rgba(255,34,68,0.18); }
+.box.rug:hover { box-shadow: 0 6px 30px rgba(255,34,68,.06), 0 0 0 1px rgba(255,34,68,.08); }
+
+@keyframes rugline { 0%,100%{opacity:1} 50%{opacity:.4} }
 
 /* ── scanning ── */
-@keyframes ant-pulse{0%,100%{opacity:1}50%{opacity:.15}}
-.scanning{display:flex;align-items:center;gap:8px;color:#4a4a50;font-size:12px;padding:4px 0}
-.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#3a3a3f;animation:ant-pulse 1.2s infinite}
+@keyframes ant-pulse { 0%,100%{opacity:1} 50%{opacity:.15} }
+.scanning { display:flex; align-items:center; gap:8px; color:#4a4a50; font-size:12px; padding:4px 0; }
+.dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:#3a3a3f; animation:ant-pulse 1.2s infinite; }
 `
 
-// ── Shadow DOM ────────────────────────────────────────────────────────────────
+// ── Shadow DOM ───────────────────────────────────────────────────────────────
 
 let host: HTMLElement | null = null
 let shadow: ShadowRoot | null = null
@@ -259,7 +384,6 @@ function buildResult(data: any, ca: string): string {
   const conf      = typeof data.confidence === "number" ? data.confidence : null
   const barW      = Math.round((data.score || 0) / 10)
 
-  // Set class on box for color variant
   if (boxEl) boxEl.className = `box ${riskClass}`
 
   const metaCells = [
@@ -284,8 +408,8 @@ function buildResult(data: any, ca: string): string {
   return `
     <div class="bline"></div>
     <div class="inner">
-      <div class="head"><span class="brand glitch" data-text="ANTARES">ANTARES</span><button class="x" id="ant-close">&times;</button></div>
-      <div class="risk glitch" data-text="${label}">${label}</div>
+      <div class="head"><span class="brand">ANTARES</span><button class="x" id="ant-close">&times;</button></div>
+      <div class="risk">${label}</div>
       <div class="score-row">
         <span class="score">Score <strong>${data.score}</strong> / 1000</span>
         ${mc ? `<span class="mcap">${formatMcap(mc)}</span>` : ""}
@@ -311,7 +435,6 @@ async function scan(ca: string) {
 
   const cached = getCached(ca)
   if (cached) {
-    buildResult(cached, ca)
     el.innerHTML = buildResult(cached, ca)
     showBox()
     requestAnimationFrame(() => {
@@ -351,7 +474,7 @@ async function scan(ca: string) {
       <div class="bline"></div>
       <div class="inner">
         <div class="head"><span class="brand">ANTARES</span><button class="x" id="ant-close">&times;</button></div>
-        <div style="color:#ff5f5f;font-size:12px;padding:4px 0;font-family:'IBM Plex Mono',monospace">API Error &mdash; retry later</div>
+        <div style="color:#ff5f5f;font-size:12px;padding:4px 0">API Error &mdash; retry later</div>
       </div>
     `
     showBox(); attachClose()
