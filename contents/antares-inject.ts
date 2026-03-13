@@ -8,7 +8,6 @@ export const config: PlasmoCSConfig = {
 const API = "https://antares-extension.vercel.app/api/scan"
 const ANALYSIS_PAGE = "https://antares-extension.vercel.app/token.html"
 const LS_PREFIX = "antares_scan_"
-const LS_TTL = 90_000
 
 const COLORS: Record<string, string> = {
   SAFE: "#22c55e",
@@ -61,20 +60,34 @@ function buildResult(data: any, ca: string): string {
   const displayCA = data.resolvedMint || ca
   const mint = data.resolvedMint || ca
   const flags = (data.flags || [])
-    .filter((f: any) => !((f.label || f) as string).toLowerCase().includes("unavailable"))
+    .filter((f: any) => {
+      const label = (f.label || f) as string
+      return !label.toLowerCase().includes("unavailable") && f.severity !== "bonus"
+    })
     .slice(0, 4)
     .map((f: any) =>
       `<div style="font-size:11px;color:#666;margin-top:4px;padding-left:8px;border-left:2px solid ${color}55">${f.label || f}</div>`
     ).join("")
   const mc = data.pair?.marketCap || data.pair?.fdv
-  const mcLine = mc ? `<div style="color:#888;font-size:11px;margin-bottom:2px">MCap <strong style="color:#ccc">${formatMcap(mc)}</strong></div>` : ""
-  const analysisLink = `<div style="margin-top:8px;padding-top:6px;border-top:1px solid #1a1a1a"><a href="${ANALYSIS_PAGE}?ca=${mint}" target="_blank" rel="noopener noreferrer" style="color:${color};font-size:10px;text-decoration:none">&#8599; Full Analysis</a></div>`
+  const mcLine = mc
+    ? `<div style="color:#888;font-size:11px;margin-bottom:2px">MCap <strong style="color:#ccc">${formatMcap(mc)}</strong></div>`
+    : ""
+  const conf = typeof data.confidence === "number"
+    ? `<div style="color:#444;font-size:10px;margin-bottom:4px">Confidence <strong style="color:#666">${data.confidence}%</strong></div>`
+    : ""
+  const dexLink = data.pair?.url
+    ? `<a href="${data.pair.url}" target="_blank" rel="noopener noreferrer" style="color:#555;font-size:10px;text-decoration:none;margin-right:10px">&#8599; DexScreener</a>`
+    : ""
+  const analysisLink = `<a href="${ANALYSIS_PAGE}?ca=${mint}" target="_blank" rel="noopener noreferrer" style="color:${color};font-size:10px;text-decoration:none">&#8599; Full Analysis</a>`
+  const footer = `<div style="margin-top:8px;padding-top:6px;border-top:1px solid #1a1a1a;display:flex;gap:8px">${dexLink}${analysisLink}</div>`
   return header(color) + `
     <div style="font-size:28px;font-weight:800;color:${color};letter-spacing:1px;margin-bottom:2px">${data.risk}</div>
+    <div style="color:#888;font-size:12px;margin-bottom:2px">Score <strong style="color:#ddd">${data.score}</strong><span style="color:#444">/1000</span></div>
     ${mcLine}
+    ${conf}
     <div style="color:#333;font-size:10px;margin-bottom:6px">${displayCA.slice(0,4)}&hellip;${displayCA.slice(-4)}</div>
     ${flags}
-    ${analysisLink}
+    ${footer}
   `
 }
 

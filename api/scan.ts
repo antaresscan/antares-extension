@@ -3,11 +3,8 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 const DEXSCREENER_BASE = "https://api.dexscreener.com/latest/dex";
 const RUGCHECK_BASE = "https://api.rugcheck.xyz/v1";
 const GOPLUS_BASE = "https://api.gopluslabs.io/api/v1";
-const HONEYPOT_BASE = "https://api.honeypot.is/v2";
-const BIRDEYE_BASE = "https://public-api.birdeye.so";
 const HELIUS_BASE = "https://mainnet.helius-rpc.com";
 
-const SOLANA_CHAIN_ID = "1399811149";
 const CA_RE = /^[A-Za-z0-9]{32,44}$/;
 
 const rateLimitMap = new Map<string, { count: number; ts: number }>();
@@ -155,7 +152,6 @@ function analyzeIdentity(
   const sym = String(symbol || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
   const nm  = String(name  || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 
-  // Suffixes suspects : 2, V2, V3, OFFICIAL, REAL, OG, NEW, PLUS
   if (/(?:2|V2|V3|OFFICIAL|REAL|OG|NEW|PLUS)$/.test(sym) ||
       /(?:2|V2|V3|OFFICIAL|REAL|OG|NEW|PLUS)$/.test(nm)) {
     flags.push(makeFlag("Copycat branding detected (v2/official/real suffix)", "critical", 250));
@@ -183,7 +179,6 @@ async function fetchDexCandles(
   pairAddress: string,
   chainId = "solana"
 ): Promise<Array<{ o: number; h: number; l: number; c: number; v: number; ts: number }>> {
-  // DexScreener chart endpoint (public, no key needed)
   const url = `https://io.dexscreener.com/dex/chart/amm/v3/${chainId}/${pairAddress}?res=1&cb=1`;
   const raw = await fetchJson(url, {}, 5000);
   if (!raw || !Array.isArray(raw.bars)) return [];
@@ -209,7 +204,7 @@ function analyzeChartPatterns(
 
   if (!candles || candles.length < 8) return { flags, penalty, forceRug, safeBlocked };
 
-  const recent = candles.slice(-40); // max 40 dernières bougies
+  const recent = candles.slice(-40);
   const closes  = recent.map(c => c.c);
   const volumes  = recent.map(c => c.v);
   const greens   = recent.filter(c => c.c > c.o).length;
@@ -237,66 +232,48 @@ function analyzeChartPatterns(
   const v24Liq     = liquidity > 0 ? vol24h / liquidity : 0;
   const v1hLiq     = liquidity > 0 ? vol1h  / liquidity : 0;
 
-  // 1. Crashcoin : montée quasi-parfaite, très peu de bougies rouges
   if (greenRatio >= 0.82 && runUpPct >= 100 && pullbackRange <= 10) {
     flags.push(makeFlag("Crashcoin pattern: near-perfect parabolic chart", "critical", 200));
-    penalty += 200;
-    safeBlocked = true;
+    penalty += 200; safeBlocked = true;
   }
 
-  // 2. Pump vertical : +35% en 5m ET +120% en 1h
   if (pc5m > 35 && pc1h > 120) {
     flags.push(makeFlag("Vertical pump detected (+35% 5m / +120% 1h)", "warning", 150));
-    penalty += 150;
-    safeBlocked = true;
+    penalty += 150; safeBlocked = true;
   }
 
-  // 3. Liquidity mirage / wash trading
   if (v24Liq > 12 || v1hLiq > 4) {
     flags.push(makeFlag("Liquidity mirage: volume >> liquidity (wash suspect)", "warning", 130));
-    penalty += 130;
-    safeBlocked = true;
+    penalty += 130; safeBlocked = true;
   }
 
-  // 4. Stair-step artificiel : 8/10 bougies montantes, faible variance
   if (recent.length >= 10 && risingCount >= Math.floor(recent.length * 0.8) && returnStd < 3.5) {
     flags.push(makeFlag("Over-controlled chart: artificial stair-step", "warning", 110));
-    penalty += 110;
-    safeBlocked = true;
+    penalty += 110; safeBlocked = true;
   }
 
-  // 5. Blow-off top + dump : sommet puis chute > 55%
   if (drawdownFromPeak < -55) {
     flags.push(makeFlag("Blow-off top: price collapsed >55% from peak", "critical", 230));
-    penalty += 230;
-    forceRug = true;
-    safeBlocked = true;
+    penalty += 230; forceRug = true; safeBlocked = true;
   }
 
-  // 6. Epuisement précoce : volume en baisse sur 5 dernières bougies alors que prix proche ATH
   if (tokenAgeMinutes !== null && tokenAgeMinutes < 90 && volumes.length >= 10) {
     const recentVol = volumes.slice(-5);
     const olderVol  = volumes.slice(-10, -5);
     if (olderVol.length && _mean(recentVol) < _mean(olderVol) * 0.45 && last >= peak * 0.88) {
       flags.push(makeFlag("Early volume exhaustion near highs", "warning", 110));
-      penalty += 110;
-      safeBlocked = true;
+      penalty += 110; safeBlocked = true;
     }
   }
 
-  // 7. Lancement parabolique : +300% depuis ouverture + greenRatio élevé
   if (_pct(first, last) > 300 && greenRatio > 0.78) {
     flags.push(makeFlag("Parabolic launch: high risk exit liquidity setup", "warning", 130));
-    penalty += 130;
-    safeBlocked = true;
+    penalty += 130; safeBlocked = true;
   }
 
-  // 8. Crash 24h : dump brutal depuis ATH 24h (slow rug en cours)
   if (pc24h < -60 && pc1h < -20) {
     flags.push(makeFlag("Active dump: -60% 24h + -20% 1h (slow rug suspected)", "critical", 200));
-    penalty += 200;
-    forceRug = true;
-    safeBlocked = true;
+    penalty += 200; forceRug = true; safeBlocked = true;
   }
 
   return { flags, penalty, forceRug, safeBlocked };
@@ -313,13 +290,6 @@ async function heliusGetLargestAccounts(mint: string, apiKey: string) {
 async function heliusGetTokenSupply(mint: string, apiKey: string) {
   return fetchJsonPost(`${HELIUS_BASE}/?api-key=${apiKey}`, {
     jsonrpc: "2.0", id: "supply", method: "getTokenSupply", params: [mint],
-  });
-}
-
-async function heliusGetMintAccountInfo(mint: string, apiKey: string) {
-  return fetchJsonPost(`${HELIUS_BASE}/?api-key=${apiKey}`, {
-    jsonrpc: "2.0", id: "mintinfo", method: "getAccountInfo",
-    params: [mint, { encoding: "jsonParsed", commitment: "finalized" }],
   });
 }
 
@@ -376,31 +346,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // Récupération chandelles + data parallèles
     const pairAddress = pair?.pairAddress ?? ca;
-    const [candlesRaw, ...otherResults] = await Promise.allSettled([
+    const [candlesRaw, goplusRaw, heliusHoldersRaw, heliusSupplyRaw] = await Promise.all([
       fetchDexCandles(pairAddress),
-      fetchJson(`${GOPLUS_BASE}/token_security/${SOLANA_CHAIN_ID}?contract_addresses=${resolvedMint}`),
-      fetchJson(`${HONEYPOT_BASE}/IsHoneypot?address=${resolvedMint}&chainID=${SOLANA_CHAIN_ID}`),
-      fetchJson(`${BIRDEYE_BASE}/defi/token_holder?address=${resolvedMint}&offset=0&limit=20`, {
-        headers: { "x-api-key": "public", "x-chain": "solana" },
-      }),
+      fetchJson(`${GOPLUS_BASE}/solana/token_security?contract_addresses=${resolvedMint}`),
       HELIUS_API_KEY ? heliusGetLargestAccounts(resolvedMint, HELIUS_API_KEY) : Promise.resolve(null),
       HELIUS_API_KEY ? heliusGetTokenSupply(resolvedMint, HELIUS_API_KEY)    : Promise.resolve(null),
-      HELIUS_API_KEY ? heliusGetMintAccountInfo(resolvedMint, HELIUS_API_KEY) : Promise.resolve(null),
     ]);
 
-    const candles      = candlesRaw.status === "fulfilled" ? (candlesRaw.value ?? []) : [];
-    const goplusRaw    = otherResults[0].status === "fulfilled" ? otherResults[0].value : null;
-    const honeypotData = otherResults[1].status === "fulfilled" ? otherResults[1].value : null;
-    const birdeyeData  = otherResults[2].status === "fulfilled" ? otherResults[2].value : null;
-    const heliusHolders= otherResults[3].status === "fulfilled" ? otherResults[3].value : null;
-    const heliusSupply = otherResults[4].status === "fulfilled" ? otherResults[4].value : null;
-
-    const goplus = pickGoPlusResult(goplusRaw, resolvedMint);
+    const candles       = Array.isArray(candlesRaw) ? candlesRaw : [];
+    const goplus        = pickGoPlusResult(goplusRaw, resolvedMint);
     const holderAccounts: Array<{ address: string; uiAmount: number }> =
-      heliusHolders?.result?.value ?? [];
-    const totalSupplyUi: number = asNumber(heliusSupply?.result?.value?.uiAmount);
+      heliusHoldersRaw?.result?.value ?? [];
+    const totalSupplyUi: number = asNumber(heliusSupplyRaw?.result?.value?.uiAmount);
 
     let tokenAgeMinutes: number | null = null;
     if (pair?.pairCreatedAt) tokenAgeMinutes = (Date.now() - pair.pairCreatedAt) / 60000;
@@ -409,13 +367,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const flags: ScanFlag[] = [];
     const sources_used: string[] = [];
 
-    if (pair)             sources_used.push("DexScreener");
-    if (rugData)          sources_used.push("RugCheck");
-    if (goplus)           sources_used.push("GoPlus");
-    if (honeypotData)     sources_used.push("Honeypot.is");
-    if (birdeyeData)      sources_used.push("Birdeye");
+    if (pair)                      sources_used.push("DexScreener");
+    if (rugData)                   sources_used.push("RugCheck");
+    if (goplus)                    sources_used.push("GoPlus");
     if (holderAccounts.length > 0) sources_used.push("Helius");
-    if (candles.length > 0) sources_used.push("DexChart");
+    if (candles.length > 0)        sources_used.push("DexChart");
 
     const addPenalty = (label: string, severity: Severity, impact: number) => {
       score -= impact;
@@ -427,7 +383,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     };
 
     let forceRisk: "RUG" | null = null;
-    let honeypotConfirmed = false;
     let safeBlocked = false;
 
     // ── COUCHE 1 — Smart contract ──────────────────────────────────────────────
@@ -448,7 +403,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (goplus) {
       if (goplus.is_honeypot === "1" || goplus.is_honeypot === 1 || goplus.is_honeypot === true) {
         addPenalty("GoPlus honeypot detected", "critical", 300);
-        honeypotConfirmed = true; forceRisk = "RUG";
+        forceRisk = "RUG";
       }
       if (goplus.cannot_sell_all === "1")   { addPenalty("Cannot sell all", "critical", 300); forceRisk = "RUG"; }
       if (goplus.is_blacklisted === "1")      addPenalty("Blacklist capability detected", "critical", 300);
@@ -474,8 +429,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       } else if (rugData.metaMutable !== false) {
         addPenalty("Metadata not immutable", "info", 50);
       }
+      // LP not burned/locked: penalty augmentée à 200 + safeBlocked
       if (!rugData.lpBurned && !rugData.lpLocked) {
-        addPenalty("LP not burned or locked", "warning", 150);
+        addPenalty("LP not burned or locked", "warning", 200);
         safeBlocked = true;
       }
       const lockDurationDays = getLpLockDurationDays(rugData);
@@ -483,26 +439,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         addPenalty("LP lock duration < 30 days", "warning", 150);
     }
 
-    // ── COUCHE 3 — Honeypot simulation ────────────────────────────────────────
-    if (honeypotData) {
-      if (honeypotData?.honeypotResult?.isHoneypot === true) {
-        addPenalty("HONEYPOT CONFIRMED", "critical", 400);
-        honeypotConfirmed = true; forceRisk = "RUG";
-      }
-      if (asNumber(honeypotData?.simulationResult?.sellTax) > 15) addPenalty("Simulation sell tax > 15%", "critical", 200);
-      if (asNumber(honeypotData?.simulationResult?.buyTax) > 15)  addPenalty("Simulation buy tax > 15%", "warning", 100);
-      if (honeypotData?.simulationResult?.canBuy === false)  addPenalty("Cannot buy in simulation", "critical", 300);
-      if (honeypotData?.simulationResult?.canSell === false) {
-        addPenalty("Cannot sell in simulation", "critical", 400);
-        forceRisk = "RUG";
-      }
-      const successful = asNumber(honeypotData?.holderAnalysis?.successful);
-      const failed     = asNumber(honeypotData?.holderAnalysis?.failed);
-      const total = successful + failed;
-      if (total >= 5 && failed / total > 0.5) addPenalty("High failed-sell ratio", "warning", 120);
-    }
-
-    // ── COUCHE 4 — Liquidité & pool ───────────────────────────────────────────
+    // ── COUCHE 3 — Liquidité & pool ───────────────────────────────────────────
     if (pair) {
       const liquidity    = asNumber(pair?.liquidity?.usd);
       const volume24h    = asNumber(pair?.volume?.h24);
@@ -527,7 +464,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (priceChange24h < -80) addPenalty("Brutal dump 24h", "critical", 150);
     }
 
-    // ── COUCHE 5 — Holders distribution ──────────────────────────────────────
+    // ── COUCHE 4 — Holders distribution ──────────────────────────────────────
     if (rugData) {
       const top10 = getTop10Percentage(rugData);
       const top1  = getTop1Percentage(rugData);
@@ -538,12 +475,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (riskIncludes(rugData, /bundler|bundle/i))          addPenalty("Bundler detected", "critical", 200);
       if (riskIncludes(rugData, /rug/i))                     addPenalty("Rug pull history", "critical", 200);
       if (riskIncludes(rugData, /creator.*sell|dev.*sell/i)) addPenalty("Dev wallet sold tokens", "warning", 100);
-    }
-
-    if (birdeyeData?.data?.items && Array.isArray(birdeyeData.data.items)) {
-      const holders = birdeyeData.data.items.slice(0, 5);
-      const top5Pct = holders.reduce((s: number, h: any) => s + asNumber(h?.percentage), 0);
-      if (top5Pct > 0.5) addPenalty("Top 5 holders concentration > 50%", "critical", 120);
     }
 
     if (holderAccounts.length > 0 && totalSupplyUi > 0) {
@@ -585,7 +516,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       addPenalty("Not indexed on DexScreener", "warning", 100);
     }
 
-    // ── COUCHE 6 — Identity risk ───────────────────────────────────────────────
+    // ── COUCHE 5 — Identity risk ───────────────────────────────────────────────
     const identity = analyzeIdentity(
       pair?.baseToken?.symbol,
       pair?.baseToken?.name
@@ -595,7 +526,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (identity.forceRug) forceRisk = "RUG";
     if (identity.safeBlocked) safeBlocked = true;
 
-    // ── COUCHE 7 — Chart pattern risk ─────────────────────────────────────────
+    // ── COUCHE 6 — Chart pattern risk ─────────────────────────────────────────
     const chart = analyzeChartPatterns(candles, pair, tokenAgeMinutes);
     score -= chart.penalty;
     flags.push(...chart.flags);
@@ -607,7 +538,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     let risk: "SAFE" | "CAUTION" | "DANGER" | "RUG";
     if (forceRisk === "RUG")              risk = "RUG";
-    else if (safeBlocked && score >= 800) risk = "CAUTION";  // SAFE gate
+    else if (safeBlocked && score >= 800) risk = "CAUTION";
     else if (score >= 800)                risk = "SAFE";
     else if (score >= 600)                risk = "CAUTION";
     else if (score >= 350)                risk = "DANGER";
@@ -624,13 +555,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.json({
       score, risk, flags, pair, resolvedMint,
-      honeypotConfirmed, confidence, sources_used,
+      confidence, sources_used,
       tokenSymbol:     pair?.baseToken?.symbol ?? null,
       safeBlocked,
-      scoring_version: "4.0",
+      scoring_version: "4.1",
     });
   } catch (e) {
-    console.error("[scan v4.0]", e);
+    console.error("[scan v4.1]", e);
     return res.status(500).json({ error: "Analysis error." });
   }
 }
