@@ -258,7 +258,6 @@ async function solscanGetHoldersCount(mint: string): Promise<number | null> {
     { headers: { "User-Agent": "Antares/1.0" } },
     5000
   );
-  // { total: number, data: [...] }
   const total = res?.total;
   return typeof total === "number" && total > 0 ? total : null;
 }
@@ -291,11 +290,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const HELIUS_API_KEY = process.env.HELIUS_API_KEY || "";
 
   try {
-  const [dexRes, rugRes, rugReportRes] = await Promise.all([
-    fetchJson(`${DEXSCREENER_BASE}/tokens/${ca}`),
-    fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report/summary`),
-    fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report`, {}, 10000),
-  ]);
+    const [dexRes, rugRes, rugReportRes] = await Promise.all([
+      fetchJson(`${DEXSCREENER_BASE}/tokens/${ca}`),
+      fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report/summary`),
+      fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report`, {}, 10000),
+    ]);
 
     let dexData = dexRes;
     let rugData = rugRes;
@@ -336,6 +335,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       heliusHoldersRaw, heliusSupplyRaw, heliusHoldersCount,
       solscanHoldersCount,
       solMeta, solTransfers,
+      // ── NOUVEAU : markets Solscan Pro ────────────────────────────────────────
+      solMarkets,
     ] = await Promise.all([
       fetchDexCandles(pairAddress),
       fetchJson(`${GOPLUS_BASE}/solana/token_security?contract_addresses=${resolvedMint}`),
@@ -345,6 +346,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       solscanGetHoldersCount(resolvedMint),
       fetchSolscan(`/token/meta?address=${resolvedMint}`),
       fetchSolscan(`/token/transfer?address=${resolvedMint}&page=1&page_size=10`),
+      // ── NOUVEAU ──────────────────────────────────────────────────────────────
+      fetchSolscan(`/token/markets?address=${resolvedMint}&page=1&page_size=1`),
     ]);
 
     const candles       = Array.isArray(candlesRaw) ? candlesRaw : [];
@@ -366,6 +369,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const tokenSupply   = solMeta?.data?.supply ?? null;
     const recentTransfers = solTransfers?.data || [];
 
+    // ── NOUVEAU : données issues de solMarkets ────────────────────────────────
+    const solMarketPool = Array.isArray(solMarkets?.data) && solMarkets.data.length > 0
+      ? solMarkets.data.sort((a: any, b: any) => asNumber(b.liquidity) - asNumber(a.liquidity))[0]
+      : null;
+    const solscanCreatedTime: number | null = solMeta?.data?.created_time ?? null; // timestamp unix (s)
+    const solscanTokenAgeHours: number | null =
+      solscanCreatedTime !== null
+        ? Math.floor((Date.now() / 1000 - solscanCreatedTime) / 3600)
+        : null;
+    const solscanVolume24h: number | null  = asNumber(solMarketPool?.volume)  || null;
+    const solscanTrades24h: number | null  = asNumber(solMarketPool?.trade)   || null;
+    const solscanTraders24h: number | null = asNumber(solMarketPool?.trader)  || null;
+    const solscanLiquidity: number | null  = asNumber(solMarketPool?.liquidity) || null;
+    // ─────────────────────────────────────────────────────────────────────────
+
     const priceUsd: number | null = (() => {
       const raw = pair?.priceUsd;
       const n = parseFloat(raw);
@@ -385,9 +403,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return null;
     })();
 
-    const liquidity      = asNumber(pair?.liquidity?.usd) || null;
-    const volume24h      = asNumber(pair?.volume?.h24)     || null;
-    const volume1h       = asNumber(pair?.volume?.h1)      || null;
+    // Cascade liquidity/volume : DexScreener en priorité, Solscan en fallback
+    const liquidity      = asNumber(pair?.liquidity?.usd) || solscanLiquidity  || null;
+    const volume24h      = asNumber(pair?.volume?.h24)    || solscanVolume24h  || null;
+    const volume1h       = asNumber(pair?.volume?.h1)     || null;
     const priceChange5m  = pair?.priceChange?.m5  ?? null;
     const priceChange1h  = pair?.priceChange?.h1  ?? null;
     const priceChange24h = pair?.priceChange?.h24 ?? null;
@@ -549,6 +568,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (chart.forceRug) forceRisk = "RUG";
     if (chart.safeBlocked) safeBlocked = true;
 
+    // ── NOUVEAU : flags Solscan on-chain ──────────────────────────────────────
+    if (solscanHoldersCount !== null) {
+      if (solscanHoldersCount < 15) {
+        addPenalty("Very few holders (<15)", "critical", 150); safeBlocked = true;
+      } else if (solscanHoldersCount < 50) {
+        addPenalty("Low holders (<50)", "warning", 80); safeBlocked = true;
+      } else if (solscanHoldersCount > 5000) {
+        addBonus("Strong holder base (5K+) ✓", 30);
+      }
+    }
+
+    if (solscanTokenAgeHours !== null) {
+      if (solscanTokenAgeHours < 1) {
+        addPenalty("Newborn token on-chain (<1h)", "critical", 120); safeBlocked = true;
+      } else if (solscanTokenAgeHours < 6) {
+        addPenalty("Fresh token on-chain (<6h)", "warning", 60);
+      } else if (solscanTokenAgeHours > 720) {
+        addBonus("Established token on-chain (30d+) ✓", 20);
+      }
+    }
+
+    if (
+      solscanTrades24h !== null && solscanTraders24h !== null &&
+      solscanTraders24h > 0 && solscanTrades24h / solscanTraders24h > 50 && solscanTraders24h < 20
+    ) {
+      addPenalty("Wash trading suspected (trades/traders ratio)", "critical", 100); safeBlocked = true;
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     score = Math.max(0, Math.min(1000, score));
 
     let risk: "SAFE" | "CAUTION" | "DANGER" | "RUG";
@@ -574,11 +622,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       tokenName:     pair?.baseToken?.name   ?? null,
       pairCreatedAt: pair?.pairCreatedAt     ?? null,
       safeBlocked, tokenLogo, tokenCreator, tokenDecimals, tokenSupply, recentTransfers,
-      scoring_version: "4.5.1",
+      // ── NOUVEAU : champs Solscan exposés au popup ─────────────────────────
+      solscanTokenAgeHours,
+      solscanVolume24h,
+      solscanTrades24h,
+      solscanTraders24h,
+      // ─────────────────────────────────────────────────────────────────────
+      scoring_version: "4.5.2",
       fetchedAt: Date.now(),
     });
   } catch (e) {
-    console.error("[scan v4.5.1]", e);
+    console.error("[scan v4.5.2]", e);
     return res.status(500).json({ error: "Analysis error." });
   }
 }
