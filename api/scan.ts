@@ -6,7 +6,8 @@ const DEXSCREENER_BASE = "https://api.dexscreener.com/latest/dex";
 const RUGCHECK_BASE = "https://api.rugcheck.xyz/v1";
 const GOPLUS_BASE = "https://api.gopluslabs.io/api/v1";
 const HELIUS_BASE = "https://mainnet.helius-rpc.com";
-const SOLSCAN_BASE = "https://pro-api.solscan.io/v2.0"; // ← AJOUT
+const SOLSCAN_PUBLIC_BASE = "https://public-api.solscan.io";
+const SOLSCAN_BASE = "https://pro-api.solscan.io/v2.0";
 
 const CA_RE = /^[A-Za-z0-9]{32,44}$/;
 
@@ -250,14 +251,19 @@ async function heliusGetHoldersCount(mint: string, apiKey: string): Promise<numb
   return typeof total === "number" ? total : null;
 }
 
-async function fetchLivePrice(mint: string): Promise<number | null> {
-  const d = await fetchJson(`${DEXSCREENER_BASE}/tokens/${mint}`, {}, 4000);
-  const p = d?.pairs?.[0]?.priceUsd;
-  const n = parseFloat(p);
-  return Number.isFinite(n) && n > 0 ? n : null;
+// ─── SOLSCAN PUBLIC — HOLDER COUNT (sans clé API) ─────────────────────────
+async function solscanGetHoldersCount(mint: string): Promise<number | null> {
+  const res = await fetchJson(
+    `${SOLSCAN_PUBLIC_BASE}/token/holders?tokenAddress=${mint}&limit=1&offset=0`,
+    { headers: { "User-Agent": "Antares/1.0" } },
+    5000
+  );
+  // { total: number, data: [...] }
+  const total = res?.total;
+  return typeof total === "number" && total > 0 ? total : null;
 }
 
-// ─── SOLSCAN ─────────────────────────────────────────────────────────────────
+// ─── SOLSCAN PRO (clé optionnelle) ───────────────────────────────────────────
 async function fetchSolscan(endpoint: string) {
   const key = process.env.SOLSCAN_API_KEY || "";
   if (!key) return null;
@@ -326,7 +332,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const [
       candlesRaw, goplusRaw,
-      heliusHoldersRaw, heliusSupplyRaw, holdersCount,
+      heliusHoldersRaw, heliusSupplyRaw, heliusHoldersCount,
+      solscanHoldersCount,
       solMeta, solTransfers,
     ] = await Promise.all([
       fetchDexCandles(pairAddress),
@@ -334,6 +341,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       HELIUS_API_KEY ? heliusGetLargestAccounts(resolvedMint, HELIUS_API_KEY) : Promise.resolve(null),
       HELIUS_API_KEY ? heliusGetTokenSupply(resolvedMint, HELIUS_API_KEY)    : Promise.resolve(null),
       HELIUS_API_KEY ? heliusGetHoldersCount(resolvedMint, HELIUS_API_KEY)   : Promise.resolve(null),
+      solscanGetHoldersCount(resolvedMint),
       fetchSolscan(`/token/meta?address=${resolvedMint}`),
       fetchSolscan(`/token/transfer?address=${resolvedMint}&page=1&page_size=10`),
     ]);
@@ -344,9 +352,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       heliusHoldersRaw?.result?.value ?? [];
     const totalSupplyUi: number = asNumber(heliusSupplyRaw?.result?.value?.uiAmount);
 
-    const holders: number | null = holdersCount ?? null;
+    // Solscan public prioritaire, Helius en fallback
+    const holders: number | null = solscanHoldersCount ?? heliusHoldersCount ?? null;
 
-    // ─── SOLSCAN DATA ──────────────────────────────────────────────────────────
+    // ─── SOLSCAN PRO DATA ──────────────────────────────────────────────────────
     const tokenLogo     = solMeta?.data?.icon || pair?.info?.imageUrl || null;
     const tokenCreator  = solMeta?.data?.creator || null;
     const tokenDecimals = solMeta?.data?.decimals ?? null;
@@ -386,11 +395,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const flags: ScanFlag[] = [];
     const sources_used: string[] = [];
 
-    if (pair)                      sources_used.push("DexScreener");
-    if (rugData)                   sources_used.push("RugCheck");
-    if (goplus)                    sources_used.push("GoPlus");
-    if (holderAccounts.length > 0) sources_used.push("Helius");
-    if (solMeta?.data)             sources_used.push("Solscan"); // ← AJOUT
+    if (pair)                         sources_used.push("DexScreener");
+    if (rugData)                      sources_used.push("RugCheck");
+    if (goplus)                       sources_used.push("GoPlus");
+    if (holderAccounts.length > 0)    sources_used.push("Helius");
+    if (solscanHoldersCount !== null) sources_used.push("Solscan");
 
     const addPenalty = (label: string, severity: Severity, impact: number) => {
       score -= impact;
@@ -546,7 +555,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     else if (score >= 350)                risk = "DANGER";
     else                                  risk = "RUG";
 
-    const confidence = Math.round((sources_used.length / 5) * 100); // 5 sources désormais
+    const confidence = Math.round((sources_used.length / 5) * 100);
 
     flags.sort((a, b) => {
       const order: Record<Severity, number> = { critical: 0, warning: 1, info: 2, bonus: 3 };
@@ -554,36 +563,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     return res.json({
-      score,
-      risk,
-      flags,
-      pair,
-      resolvedMint,
-      confidence,
-      sources_used,
-      holders,
-      marketCap,
-      priceUsd,
-      liquidity,
-      volume24h,
-      volume1h,
-      priceChange5m,
-      priceChange1h,
-      priceChange24h,
-      tokenSymbol:      pair?.baseToken?.symbol ?? null,
-      tokenName:        pair?.baseToken?.name   ?? null,
-      pairCreatedAt:    pair?.pairCreatedAt     ?? null,
-      safeBlocked,
-      tokenLogo,        // ← AJOUT
-      tokenCreator,     // ← AJOUT
-      tokenDecimals,    // ← AJOUT
-      tokenSupply,      // ← AJOUT
-      recentTransfers,  // ← AJOUT
-      scoring_version: "4.3",
+      score, risk, flags, pair, resolvedMint, confidence, sources_used,
+      holders, marketCap, priceUsd, liquidity,
+      volume24h, volume1h, priceChange5m, priceChange1h, priceChange24h,
+      tokenSymbol:   pair?.baseToken?.symbol ?? null,
+      tokenName:     pair?.baseToken?.name   ?? null,
+      pairCreatedAt: pair?.pairCreatedAt     ?? null,
+      safeBlocked, tokenLogo, tokenCreator, tokenDecimals, tokenSupply, recentTransfers,
+      scoring_version: "4.5.1",
       fetchedAt: Date.now(),
     });
   } catch (e) {
-    console.error("[scan v4.3]", e);
+    console.error("[scan v4.5.1]", e);
     return res.status(500).json({ error: "Analysis error." });
   }
 }
