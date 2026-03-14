@@ -190,11 +190,14 @@ footer span{color:var(--c)}
   </div>
 </div>
 
-<div class="meta-row">
+<!-- ── META ROW : 4 colonnes → 6 colonnes avec Token Age + Vol 24H ── -->
+<div class="meta-row" style="grid-template-columns:repeat(3,1fr)" id="meta-row">
   <div class="mc"><span>Market Cap</span><strong id="m-mcap">—</strong></div>
   <div class="mc"><span>Liquidity</span><strong id="m-liq">—</strong></div>
   <div class="mc"><span>Holders</span><strong id="m-holders">—</strong></div>
   <div class="mc"><span>Confidence</span><strong id="m-conf">—</strong></div>
+  <div class="mc"><span>Token Age</span><strong id="m-age">—</strong></div>
+  <div class="mc"><span>Vol 24H</span><strong id="m-vol24">—</strong></div>
 </div>
 
 <div class="sh">
@@ -213,7 +216,7 @@ footer span{color:var(--c)}
 </div>
 <div class="src-grid" id="sources-grid"></div>
 
-<footer>Antares v4.1 — <span>No mercy for scammers.</span></footer>
+<footer>Antares v4.5.2 — <span>No mercy for scammers.</span></footer>
 </div>
 
 <script>
@@ -227,6 +230,15 @@ function fmt(n){
   if(n>=1e6)return"$"+(n/1e6).toFixed(2)+"M"
   if(n>=1e3)return"$"+(n/1e3).toFixed(1)+"K"
   return"$"+n.toFixed(0)
+}
+
+// ── NOUVEAU : format age ──────────────────────────────────────────────────────
+function fmtAge(h){
+  if(h===null||h===undefined)return"—"
+  if(h<1)return"<1h"
+  if(h<24)return h+"h"
+  if(h<720)return Math.floor(h/24)+"d"
+  return Math.floor(h/720)+"mo"
 }
 
 const params=new URLSearchParams(location.search)
@@ -253,8 +265,8 @@ function render(d,ca){
   const label=LABELS[d.risk]||d.risk
   document.documentElement.style.setProperty("--c",c)
 
-  const name=d.pair?.baseToken?.name||d.rugcheck?.tokenMeta?.name||ca.slice(0,8)+"…"
-  const symbol=d.pair?.baseToken?.symbol||d.rugcheck?.tokenMeta?.symbol||""
+  const name=d.pair?.baseToken?.name||ca.slice(0,8)+"…"
+  const symbol=d.pair?.baseToken?.symbol||""
   document.title="Antares — "+name
   const nameEl=document.getElementById("token-name")
   nameEl.textContent=name+(symbol?" ("+symbol+")":"")
@@ -272,12 +284,17 @@ function render(d,ca){
   const chips=(d.sources_used||[]).map(s=>"<span class='chip'>"+s+"</span>").join("")
   document.getElementById("scan-chips").innerHTML=chips
 
-  const mc=d.pair?.marketCap||d.pair?.fdv
-  const liq=d.pair?.liquidity?.usd
-  document.getElementById("m-mcap").textContent=mc?fmt(mc):"—"
-  document.getElementById("m-liq").textContent=liq?fmt(liq):"—"
-  document.getElementById("m-holders").textContent=d.pair?.holders?d.pair.holders.toLocaleString():"—"
-  document.getElementById("m-conf").textContent=typeof d.confidence==="number"?d.confidence+"%":"—"
+  // ── CORRIGÉ : lecture depuis les bons champs ──────────────────────────────
+  const mc  = d.marketCap  ?? d.pair?.marketCap ?? d.pair?.fdv ?? null
+  const liq = d.liquidity  ?? d.pair?.liquidity?.usd ?? null
+  document.getElementById("m-mcap").textContent    = fmt(mc)
+  document.getElementById("m-liq").textContent     = fmt(liq)
+  document.getElementById("m-holders").textContent = d.holders ? d.holders.toLocaleString() : "—"
+  document.getElementById("m-conf").textContent    = typeof d.confidence==="number" ? d.confidence+"%" : "—"
+  // ── NOUVEAU : Token Age + Vol 24H ─────────────────────────────────────────
+  document.getElementById("m-age").textContent     = fmtAge(d.solscanTokenAgeHours)
+  document.getElementById("m-vol24").textContent   = fmt(d.solscanVolume24h ?? d.volume24h)
+  // ─────────────────────────────────────────────────────────────────────────
 
   const layerDefs=[
     {id:"L1",name:"Contract Security",src:"GoPlus · RugCheck"},
@@ -301,7 +318,7 @@ function render(d,ca){
   }).join("")
 
   const gateEl=document.getElementById("gate-status")
-  const gateActive=d.safeGateBlocked||d.risk==="RUG"||d.risk==="DANGER"
+  const gateActive=d.safeBlocked||d.risk==="RUG"||d.risk==="DANGER"
   if(gateActive){
     gateEl.innerHTML='<div class="gate-dot" style="background:#f5d000;animation:blink 1.4s ease infinite"></div>GATE ACTIVE'
     gateEl.style.color="#f5d000"
@@ -311,8 +328,9 @@ function render(d,ca){
   const flagsList=document.getElementById("flags-list")
   flagsList.innerHTML=flags.map(f=>{
     const dotClass=f.severity==="critical"?"r":f.severity==="warning"?"o":"g"
-    const pts=f.points?((f.points>0?"+":"")+f.points):""
-    const ptsClass=f.points>0?"plus":f.points<0?"minus":"info"
+    const impact=f.impact||0
+    const pts=impact?((f.severity==="bonus"?"+":"-")+Math.abs(impact)):""
+    const ptsClass=f.severity==="bonus"?"plus":impact>0?"minus":"info"
     const srcs=(f.sources||[]).map(s=>"<span class='srctag'>"+s+"</span>").join("")
     return '<div class="fl"><div class="dot '+dotClass+'"></div>'+
       '<span class="text">'+(f.label||f)+'</span>'+
@@ -321,12 +339,21 @@ function render(d,ca){
       '</div>'
   }).join("")
 
-  const srcGrid=document.getElementById("sources-grid")
+  // ── CORRIGÉ : sources dynamiques avec description ─────────────────────────
+  const SOURCE_DETAILS={
+    "DexScreener":"Price · Liquidity · Pairs",
+    "RugCheck":"LP · Metadata · Risks",
+    "GoPlus":"Honeypot · Proxy · Mint",
+    "Helius RPC":"Token accounts · Authority",
+    "Solscan":"Holders · Age · Volume"
+  }
   const srcNames=d.sources_used||["DexScreener","RugCheck","GoPlus","Helius RPC"]
+  const srcGrid=document.getElementById("sources-grid")
+  srcGrid.style.gridTemplateColumns="repeat("+Math.min(srcNames.length,5)+",1fr)"
   srcGrid.innerHTML=srcNames.map(s=>{
     return '<div class="src-card"><div class="src-name">'+s+'</div>'+
       '<div class="src-status"><div class="src-dot"></div>CONNECTED</div>'+
-      '<div class="src-time">Used in this scan</div></div>'
+      '<div class="src-time">'+(SOURCE_DETAILS[s]||"Used in this scan")+'</div></div>'
   }).join("")
 }
 
