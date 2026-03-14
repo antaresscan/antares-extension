@@ -293,7 +293,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const [dexRes, rugRes] = await Promise.all([
       fetchJson(`${DEXSCREENER_BASE}/tokens/${ca}`),
-      fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report/summary`),
+      fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report`, {}, 8000),
     ]);
 
     let dexData = dexRes;
@@ -353,7 +353,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const totalSupplyUi: number = asNumber(heliusSupplyRaw?.result?.value?.uiAmount);
 
     // Solscan public prioritaire, Helius en fallback
-    const holders: number | null = solscanHoldersCount ?? heliusHoldersCount ?? null;
+    const rugTotalHolders: number | null =
+      typeof rugData?.totalHolders === "number" && rugData.totalHolders > 0
+        ? rugData.totalHolders : null;
+    const holders: number | null = solscanHoldersCount ?? rugTotalHolders ?? null;
 
     // ─── SOLSCAN PRO DATA ──────────────────────────────────────────────────────
     const tokenLogo     = solMeta?.data?.icon || pair?.info?.imageUrl || null;
