@@ -101,9 +101,9 @@ const SHADOW_CSS = `
   --bg: #141417;
   --bg-dark: #111114;
   --border: #1f1f22;
-  --text: #d8d8d8;
-  --text-dim: #3a3a3f;
-  --text-mid: #aaaaaa;
+  --text: #e8e8e8;
+  --text-dim: #6a6a72;
+  --text-mid: #cccccc;
 }
 
 .box {
@@ -177,7 +177,7 @@ const SHADOW_CSS = `
 }
 
 .x {
-  color: #2e2e33;
+  color: #4a4a52;
   cursor: pointer;
   font-size: 16px;
   line-height: 1;
@@ -203,9 +203,8 @@ const SHADOW_CSS = `
   align-items: baseline;
   margin-bottom: 10px;
 }
-.score { font-size: 11px; color: #4a4a50; }
-.score strong { color: #aaa; }
-.mcap { font-size: 11px; color: #383840; }
+.score { font-size: 11px; color: #6a6a72; }
+.score strong { color: #cccccc; }
 
 .bar {
   height: 3px;
@@ -234,23 +233,23 @@ const SHADOW_CSS = `
 .meta span {
   display: block;
   font-size: 9px;
-  color: var(--text-dim);
+  color: #6a6a72;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   margin-bottom: 2px;
 }
-.meta strong { font-size: 12px; color: #bbb; }
+.meta strong { font-size: 13px; color: #e0e0e0; font-weight: 700; }
 
 .flags-wrap { margin-bottom: 12px; }
 .flag {
   font-size: 11px;
-  color: #505058;
+  color: #888890;
   padding: 4px 0 4px 10px;
   border-left: 2px solid;
   margin-top: 3px;
   transition: color .15s, padding-left .15s;
 }
-.flag:hover { color: #bbb; padding-left: 14px; }
+.flag:hover { color: #e8e8e8; padding-left: 14px; }
 
 .toggle {
   display: block;
@@ -263,14 +262,14 @@ const SHADOW_CSS = `
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.2em;
-  color: #383840;
+  color: #5a5a62;
   text-transform: uppercase;
   cursor: pointer;
   text-align: left;
   box-sizing: border-box;
   transition: color .15s, background .15s;
 }
-.toggle:hover { color: #bbb; background: var(--bg-dark); }
+.toggle:hover { color: #cccccc; background: var(--bg-dark); }
 
 .extra { display: none; padding: 2px 16px 12px; }
 .extra.open { display: block; }
@@ -278,11 +277,11 @@ const SHADOW_CSS = `
   display: flex;
   justify-content: space-between;
   font-size: 10px;
-  color: #3a3a3f;
+  color: #6a6a72;
   padding: 4px 0;
   border-bottom: 1px solid #171719;
 }
-.extra-row span:last-child { color: #777; }
+.extra-row span:last-child { color: #aaaaaa; }
 
 .actions {
   display: flex;
@@ -293,7 +292,7 @@ const SHADOW_CSS = `
 }
 .actions a {
   font-size: 10px;
-  color: #3a3a3f;
+  color: #6a6a72;
   text-decoration: none;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -332,8 +331,8 @@ const SHADOW_CSS = `
 
 /* ── scanning ── */
 @keyframes ant-pulse { 0%,100%{opacity:1} 50%{opacity:.15} }
-.scanning { display:flex; align-items:center; gap:8px; color:#4a4a50; font-size:12px; padding:4px 0; }
-.dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:#3a3a3f; animation:ant-pulse 1.2s infinite; }
+.scanning { display:flex; align-items:center; gap:8px; color:#888890; font-size:12px; padding:4px 0; }
+.dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:#5a5a62; animation:ant-pulse 1.2s infinite; }
 `
 
 // ── Shadow DOM ───────────────────────────────────────────────────────────────
@@ -408,16 +407,19 @@ function buildResult(data: any, ca: string): string {
   const riskClass = RISK_CLASS[data.risk] || "danger"
   const label     = LABELS[data.risk] || data.risk
   const mint      = data.resolvedMint || ca
-  const mc        = data.pair?.marketCap || data.pair?.fdv
-  const liq       = data.pair?.liquidity?.usd
+  const mc        = data.marketCap ?? data.pair?.marketCap ?? data.pair?.fdv ?? null
+  const liq       = data.liquidity ?? data.pair?.liquidity?.usd ?? null
+  const holders   = data.holders ?? null
   const conf      = typeof data.confidence === "number" ? data.confidence : null
   const barW      = Math.round((data.score || 0) / 10)
 
   if (boxEl) boxEl.className = `box ${riskClass}`
 
+  // Market Cap appears ONLY here in the meta grid — no duplicate
   const metaCells = [
-    mc   ? `<div><span>Market Cap</span><strong>${formatMcap(mc)}</strong></div>` : "",
-    liq  ? `<div><span>Liquidity</span><strong>${formatMcap(liq)}</strong></div>` : "",
+    mc       ? `<div><span>Market Cap</span><strong>${formatMcap(mc)}</strong></div>` : "",
+    liq      ? `<div><span>Liquidity</span><strong>${formatMcap(liq)}</strong></div>` : "",
+    holders  ? `<div><span>Holders</span><strong>${holders.toLocaleString()}</strong></div>` : "",
     conf !== null ? `<div><span>Confidence</span><strong>${conf}%</strong></div>` : "",
   ].filter(Boolean).join("")
 
@@ -438,7 +440,6 @@ function buildResult(data: any, ca: string): string {
     <div class="inner">
       <div class="head"><span class="brand" data-text="ANTARES">ANTARES</span><button class="x" id="ant-close">&times;</button></div>
       <div class="risk">${label}</div>
-      ${mc ? `<div class="score-row"><span></span><span class="mcap">${formatMcap(mc)}</span></div>` : ""}
       <div class="bar"><div class="bar-f" data-w="${barW}"></div></div>
       ${metaCells ? `<div class="meta">${metaCells}</div>` : ""}
       ${flags ? `<div class="flags-wrap">${flags}</div>` : ""}
