@@ -8,7 +8,7 @@ export const config: PlasmoCSConfig = {
 const API           = "https://antares-extension.vercel.app/api/scan"
 const ANALYSIS_PAGE = "https://antares-extension.vercel.app/token.html"
 const LS_PREFIX     = "antares_scan_"
-const CACHE_TTL     = 90_000
+const CACHE_TTL     = 20_000  // réduit de 90s à 20s pour données fraîches
 
 const RISK_CLASS: Record<string, string> = {
   SAFE:    "safe",
@@ -79,7 +79,7 @@ function isValid(addr: string): boolean {
   return true
 }
 
-// ── CSS exact antares-popup.css ────────────────────────────────────────────
+// ── CSS ────────────────────────────────────────────────────────────────────
 const SHADOW_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap');
 
@@ -301,7 +301,6 @@ const SHADOW_CSS = `
 .actions a:hover { color: var(--text); }
 .actions a.primary { margin-left: auto; font-weight: 700; }
 
-/* ════ COLOR VARIANTS ════ */
 .box.safe .bline { background: var(--c-safe); }
 .box.safe .risk { color: var(--c-safe); }
 .box.safe .bar-f { background: var(--c-safe); }
@@ -329,19 +328,18 @@ const SHADOW_CSS = `
 
 @keyframes rugline { 0%,100%{opacity:1} 50%{opacity:.4} }
 
-/* ── scanning ── */
 @keyframes ant-pulse { 0%,100%{opacity:1} 50%{opacity:.15} }
 .scanning { display:flex; align-items:center; gap:8px; color:#888890; font-size:12px; padding:4px 0; }
 .dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:#5a5a62; animation:ant-pulse 1.2s infinite; }
 `
 
 // ── Shadow DOM ───────────────────────────────────────────────────────────────
-
 let host: HTMLElement | null = null
 let shadow: ShadowRoot | null = null
 let boxEl: HTMLDivElement | null = null
 let hideTimeout: ReturnType<typeof setTimeout> | null = null
 let lastCA            = ""
+let lastScannedCa     = ""
 let manuallyDismissed = false
 let scanInFlight      = false
 
@@ -387,7 +385,7 @@ function showBox() {
   }))
 }
 
-function resetState() { lastCA = ""; manuallyDismissed = false; scanInFlight = false; hideBox() }
+function resetState() { lastCA = ""; lastScannedCa = ""; manuallyDismissed = false; scanInFlight = false; hideBox() }
 
 function attachClose() {
   shadow?.querySelector("#ant-close")?.addEventListener("click", () => { manuallyDismissed = true; hideBox() }, { once: true })
@@ -415,7 +413,6 @@ function buildResult(data: any, ca: string): string {
 
   if (boxEl) boxEl.className = `box ${riskClass}`
 
-  // Market Cap appears ONLY here in the meta grid — no duplicate
   const metaCells = [
     mc       ? `<div><span>Market Cap</span><strong>${formatMcap(mc)}</strong></div>` : "",
     liq      ? `<div><span>Liquidity</span><strong>${formatMcap(liq)}</strong></div>` : "",
@@ -457,7 +454,7 @@ async function scan(ca: string) {
   if (ca === lastCA && el.style.display !== "none") return
   if (manuallyDismissed && ca === lastCA) return
   if (scanInFlight) return
-  if (ca !== lastCA) { manuallyDismissed = false; lastCA = ca }
+  if (ca !== lastCA) { manuallyDismissed = false; lastCA = ca; lastScannedCa = ca }
 
   const cached = getCached(ca)
   if (cached) {
@@ -510,7 +507,6 @@ async function scan(ca: string) {
 
 // ── address detection ─────────────────────────────────────────────────────────
 function findBestAddress(): string {
-  if (window.location.hostname.includes("photon") && !window.location.pathname.includes("/lp/")) return ""
   const scores = new Map<string, number>()
   const url    = window.location.href
   const add    = (addr: string, pts: number) => { if (!isValid(addr)) return; scores.set(addr, (scores.get(addr) || 0) + pts) }
@@ -525,7 +521,8 @@ function findBestAddress(): string {
       for (const m of (href.match(SOL_ADDR) || [])) add(m, 180)
     }
   }
-  for (const m of (url.match(SOL_ADDR) || [])) add(m, 60)
+  // Score URL plus élevé pour Axiom/Photon qui mettent le CA dans l'URL
+  for (const m of (url.match(SOL_ADDR) || [])) add(m, 120)
   if (scores.size === 0) {
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null)
     let node: Node | null, count = 0
@@ -546,13 +543,21 @@ function findBestAddress(): string {
 // ── init ──────────────────────────────────────────────────────────────────────
 createHost()
 
+let lastUrl = window.location.href
+
 function poll() { const ca = findBestAddress(); if (!ca) return; scan(ca) }
 poll()
 setTimeout(poll, 2000)
+// Refresh toutes les 20s si le token a changé
+setInterval(() => {
+  const ca = findBestAddress()
+  if (!ca) return
+  scanCache.delete(ca) // force refresh sans cache
+  scan(ca)
+}, 20000)
 
 const onNav = () => { resetState(); setTimeout(poll, 400); setTimeout(poll, 2000) }
 
-let lastUrl = window.location.href
 new MutationObserver(() => {
   const cur = window.location.href
   if (cur !== lastUrl) { lastUrl = cur; onNav() }
