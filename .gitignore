@@ -31,3 +31,6 @@ dist/
 
 # typescript
 .tsbuildinfo
+.vercel/
+fix.patch
+scan.json
