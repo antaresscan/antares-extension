@@ -73,7 +73,7 @@ canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.35}
 .danger  .logo{color:#cc5555;text-shadow:0 0 10px rgba(255,95,95,.4)}
 .rug     .logo{color:#cc3344;text-shadow:0 0 12px rgba(255,34,68,.5)}
 
-/* ── token header: texte gauche, logo droite, alignés au centre ── */
+/* ── token header ── */
 .token-header{
   display:flex;
   align-items:center;
@@ -408,7 +408,11 @@ function render(d,ca){
   const siLiq=liq?`<div class="si"><span>Liq</span><b class="${liq<5000?'n':liq<30000?'w':'y'}">${fmt(liq)}</b></div>`:""
   const siConf=conf!==null?`<div class="si"><span>Conf.</span><b class="${conf<50?'n':conf<80?'w':'y'}">${conf}%</b></div>`:""
 
-  const sourcesHtml=(d.sources_used||["DexScreener","RugCheck","GoPlus","Helius"])
+  // Always show all 4 sources, merge with API response
+  const FIXED_SOURCES=["DexScreener","RugCheck","GoPlus","Helius"]
+  const apiSources=Array.isArray(d.sources_used)?d.sources_used:[]
+  const allSources=[...new Set([...FIXED_SOURCES,...apiSources])]
+  const sourcesHtml=allSources
     .map(s=>`<div class="src-row"><span>${s}</span><span>✓ used</span></div>`).join("")
 
   const socialsHtml=[
@@ -418,7 +422,6 @@ function render(d,ca){
 
   const pairDate=pairCreated?new Date(pairCreated).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):null
   const dexUrl=d.pair?.url||`https://dexscreener.com/solana/${ca}`
-  const isDangerous=rc==="danger"||rc==="rug"
 
   window.__riskClass=rc
 
@@ -481,7 +484,7 @@ function render(d,ca){
     <div class="footer">
       <a class="btn" href="${dexUrl}" target="_blank" rel="noopener">↗ DexScreener</a>
       <a class="btn" href="https://solscan.io/token/${mint}" target="_blank" rel="noopener">↗ Solscan</a>
-      ${isDangerous?`<a class="btn warn" href="https://rugcheck.xyz/tokens/${mint}" target="_blank" rel="noopener">⚠ RugCheck</a>`:""}
+      <a class="btn warn" href="https://rugcheck.xyz/tokens/${mint}" target="_blank" rel="noopener">⚠ RugCheck</a>
     </div>
   `
 
