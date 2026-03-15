@@ -56,29 +56,33 @@ nav .tag{font-size:10px;color:#333;border:1px solid #1e1e22;padding:5px 10px;let
 .cta.alt{color:#555;border:1px solid #222}
 .cta.alt:hover{border-color:#888;color:#d0d0d0}
 
-.preview{background:#141417;border:1px solid #1e1e22;padding:20px;
-  position:relative;overflow:hidden}
-.preview .bline{position:absolute;top:0;left:0;right:0;height:3px;
-  background:var(--c)}
-.p-brand{font-size:9px;letter-spacing:.3em;color:#3a3a3f;margin-bottom:12px;padding-top:4px}
-.p-risk{font:400 34px/1 'Bebas Neue',sans-serif;color:var(--c);margin-bottom:4px}
-.p-score{font-size:11px;color:#4a4a50;margin-bottom:12px}
+/* ── PREVIEW CARD ── */
+.preview{background:#141417;border:1px solid #1e1e22;padding:18px;
+  position:relative;overflow:hidden;font-family:'IBM Plex Mono',monospace}
+.preview .bline{position:absolute;top:0;left:0;right:0;height:3px;background:var(--c)}
+.p-brand{font-size:9px;letter-spacing:.3em;color:#3a3a3f;margin-bottom:8px;padding-top:4px;
+  text-transform:uppercase}
+.p-risk{font:400 36px/1 'Bebas Neue',sans-serif;color:var(--c);margin-bottom:3px;
+  letter-spacing:.06em}
+.p-score{font-size:11px;color:#4a4a50;margin-bottom:10px}
 .p-score strong{color:#bbb}
 .p-bar{height:3px;background:#1c1c1f;margin-bottom:14px;overflow:hidden}
 .p-bar-f{height:100%;background:var(--c);animation:barload 1.5s .5s ease both;width:0}
 @keyframes barload{to{width:84.7%}}
-.p-meta{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:12px}
+
+/* 2×3 grid like the real popup */
+.p-meta{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:12px}
 .p-meta div{padding:7px 9px;background:#111114;border:1px solid #1c1c1f}
-.p-meta span{display:block;font-size:9px;color:#3a3a3f;letter-spacing:.08em;
-  text-transform:uppercase;margin-bottom:1px}
+.p-meta span{display:block;font-size:8px;color:#3a3a3f;letter-spacing:.1em;
+  text-transform:uppercase;margin-bottom:2px}
 .p-meta strong{font-size:12px;color:#bbb}
-.p-flags{display:flex;flex-direction:column;gap:3px;margin-bottom:12px}
-.p-fl{font-size:11px;color:#4a4a52;padding:3px 0 3px 10px;
-  border-left:2px solid rgba(0,229,176,.2);margin-top:0}
-.p-fl.ok{color:#4a8a72;border-left-color:rgba(0,229,176,.35)}
-.p-fl.warn{color:#7a6a30;border-left-color:rgba(245,208,0,.3)}
-.p-fl.bad{color:#7a3a3a;border-left-color:rgba(255,80,80,.3)}
-.p-srcs{display:flex;gap:5px;margin-top:12px;padding-top:10px;border-top:1px solid #1a1a1d;flex-wrap:wrap}
+
+/* flags */
+.p-fl{font-size:10px;padding:3px 0 3px 10px;margin-top:3px;
+  border-left:2px solid rgba(0,229,176,.25);color:#4a8a72}
+
+.p-srcs{display:flex;gap:5px;margin-top:12px;padding-top:10px;
+  border-top:1px solid #1a1a1d;flex-wrap:wrap}
 .p-src{font:600 9px/1 'IBM Plex Mono',monospace;padding:4px 7px;
   background:rgba(0,229,176,.05);border:1px solid rgba(0,229,176,.12);
   color:var(--c);letter-spacing:.08em}
@@ -207,24 +211,21 @@ section{padding:70px 0 0}
   <div>
     <div class="preview">
       <div class="bline"></div>
-      <div class="p-brand">ANTARES &middot; L1&ndash;L6 &middot; 5 SOURCES</div>
+      <div class="p-brand">ANTARES</div>
       <div class="p-risk glitch" data-text="SAFE">SAFE</div>
-      <div class="p-score">Score <strong>847</strong> / 1000 &nbsp;&middot;&nbsp; Confidence <strong>100%</strong></div>
+      <div class="p-score">Score <strong>847</strong> / 1000</div>
       <div class="p-bar"><div class="p-bar-f"></div></div>
       <div class="p-meta">
         <div><span>Market Cap</span><strong>$2.4M</strong></div>
         <div><span>Liquidity</span><strong>$184K</strong></div>
-        <div><span>Holders</span><strong>1,241</strong></div>
+        <div><span>Holders</span><strong>1 241</strong></div>
+        <div><span>Confidence</span><strong>100%</strong></div>
         <div><span>Token Age</span><strong>14d</strong></div>
+        <div><span>Vol 24H</span><strong>$620K</strong></div>
       </div>
-      <div class="p-flags">
-        <div class="p-fl ok">&#10003; LP Burned &mdash; RugCheck</div>
-        <div class="p-fl ok">&#10003; No mint authority &mdash; Helius RPC</div>
-        <div class="p-fl ok">&#10003; Metadata immutable &mdash; RugCheck</div>
-        <div class="p-fl ok">&#10003; No freeze authority &mdash; Helius RPC</div>
-        <div class="p-fl warn">&#9888; Top 10 holders 42% &mdash; Solscan</div>
-        <div class="p-fl warn">&#9888; No website detected &mdash; DexScreener</div>
-      </div>
+      <div class="p-fl">&#10003; LP Burned</div>
+      <div class="p-fl">&#10003; No mint authority</div>
+      <div class="p-fl">&#10003; No freeze authority</div>
       <div class="p-srcs">
         <span class="p-src">DexScreener</span>
         <span class="p-src">RugCheck</span>
