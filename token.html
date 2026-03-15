@@ -4,22 +4,23 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--c:#00e5b0}
 html{cursor:crosshair;scroll-behavior:smooth}
 body{background:#0f0f11;color:#d0d0d0;font-family:'IBM Plex Mono',monospace;overflow-x:hidden;min-height:100vh}
 canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.35}
-.wrap{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:32px 20px 80px}
+.wrap{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:32px 20px 80px}
 
-/* ── header ── */
-.hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:40px}
-.logo{font-size:7px;letter-spacing:.55em;color:#222;text-transform:uppercase}
-.ca-badge{font-size:9px;color:#1a1a1e;background:#111113;border:1px solid #18181c;border-radius:2px;padding:5px 10px;letter-spacing:.06em;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:36px}
+.logo{font-size:7px;letter-spacing:.55em;color:#1e1e22;text-transform:uppercase}
+.ca-badge{font-size:9px;color:#1a1a1e;background:#111113;border:1px solid #18181c;border-radius:2px;padding:5px 10px;letter-spacing:.06em;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-/* ── verdict ── */
-.verdict-block{margin-bottom:28px}
-.vt{font-family:'Bebas Neue',sans-serif;font-size:80px;line-height:.85;letter-spacing:.03em;font-weight:400}
-.tk-name{font-size:10px;color:#2a2a2e;letter-spacing:.06em;margin-top:6px}
-.tk-name b{color:#444}
+/* verdict */
+.verdict-block{margin-bottom:24px}
+.token-header{display:flex;align-items:center;gap:14px;margin-bottom:10px}
+.token-logo{width:48px;height:48px;border-radius:50%;border:1px solid #1a1a1e;object-fit:cover;flex-shrink:0;background:#111}
+.vt{font-family:'Bebas Neue',sans-serif;font-size:72px;line-height:.85;letter-spacing:.03em;font-weight:400}
+.tk-name{font-size:10px;color:#2a2a2e;letter-spacing:.06em;margin-top:4px}
+.tk-name b{color:#555}
+.price-big{font-size:22px;font-weight:700;color:#888;margin-top:6px;letter-spacing:.02em}
 .score-row{display:flex;align-items:center;gap:12px;margin:10px 0 4px}
 .sc-num{font-size:10px;color:#222}
 .sc-num b{color:#555}
@@ -27,7 +28,6 @@ canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.35}
 .sbar-f{height:100%;width:0%;border-radius:1px;transition:width 1.4s cubic-bezier(.22,1,.36,1)}
 .conf-line{font-size:8px;color:#1e1e22;letter-spacing:.06em;margin-top:2px}
 
-/* verdict colors */
 .safe .vt{color:#00e5b0;text-shadow:0 0 60px rgba(0,229,176,.15)}
 .safe .sbar-f{background:linear-gradient(90deg,#00e5b022,#00e5b0)}
 .caution .vt{color:#f5d000;text-shadow:0 0 60px rgba(245,208,0,.12)}
@@ -37,28 +37,54 @@ canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.35}
 .rug .vt{color:#ff2244;text-shadow:0 0 70px rgba(255,34,68,.2)}
 .rug .sbar-f{background:linear-gradient(90deg,#ff224422,#ff2244)}
 
-/* ── cards ── */
-.card{background:#0c0c0e;border:1px solid #131315;border-radius:3px;padding:20px 22px;margin-bottom:10px}
+.topbar{height:2px;border-radius:1px;margin-bottom:20px}
+.safe .topbar{background:linear-gradient(90deg,transparent,#00e5b0,transparent)}
+.caution .topbar{background:linear-gradient(90deg,transparent,#f5d000,transparent)}
+.danger .topbar{background:linear-gradient(90deg,transparent,#ff5f5f,transparent)}
+.rug .topbar{background:linear-gradient(90deg,transparent,#ff2244,transparent)}
+
+/* cards */
+.card{background:#0c0c0e;border:1px solid #131315;border-radius:3px;padding:18px 20px;margin-bottom:10px}
 .card-title{font-size:6.5px;color:#1a1a1e;letter-spacing:.35em;text-transform:uppercase;margin-bottom:14px}
 
-/* ── grid stats ── */
+/* grids */
 .grid{display:grid;gap:8px}
 .g2{grid-template-columns:1fr 1fr}
 .g3{grid-template-columns:1fr 1fr 1fr}
 .g4{grid-template-columns:1fr 1fr 1fr 1fr}
+.g5{grid-template-columns:1fr 1fr 1fr 1fr 1fr}
 .stat{background:#090909;border:1px solid #0e0e10;border-radius:2px;padding:11px 13px}
 .stat span{display:block;font-size:6.5px;color:#1a1a1e;letter-spacing:.2em;text-transform:uppercase;margin-bottom:4px}
-.stat strong{font-size:15px;color:#ccc;font-weight:700}
+.stat strong{font-size:14px;color:#ccc;font-weight:700}
+.stat strong.up{color:#00e5b0}
+.stat strong.dn{color:#ff5f5f}
+.stat strong.neu{color:#888}
 
-/* ── safety strip ── */
+/* price changes row */
+.changes{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:8px}
+.ch{background:#090909;border:1px solid #0e0e10;border-radius:2px;padding:9px 12px;text-align:center}
+.ch span{display:block;font-size:6px;color:#1a1a1e;letter-spacing:.2em;text-transform:uppercase;margin-bottom:3px}
+.ch b{font-size:13px;font-weight:700}
+.ch b.up{color:#00e5b0}.ch b.dn{color:#ff5f5f}.ch b.neu{color:#444}
+
+/* txns */
+.txn-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.txn{background:#090909;border:1px solid #0e0e10;border-radius:2px;padding:10px 13px}
+.txn span{display:block;font-size:6px;color:#1a1a1e;letter-spacing:.2em;text-transform:uppercase;margin-bottom:5px}
+.txn-bars{display:flex;gap:4px;align-items:center}
+.txn-buy{font-size:10px;color:#00e5b0;font-weight:700}
+.txn-sep{font-size:9px;color:#1e1e22}
+.txn-sell{font-size:10px;color:#ff5f5f;font-weight:700}
+
+/* safety strip */
 .strip{display:flex;background:#090909;border:1px solid #0e0e10;border-radius:3px;overflow:hidden}
 .si{flex:1;text-align:center;padding:11px 4px;position:relative}
 .si+.si::before{content:'';position:absolute;left:0;top:20%;height:60%;width:1px;background:#0e0e10}
-.si span{display:block;font-size:6px;color:#1a1a1e;letter-spacing:.2em;text-transform:uppercase;margin-bottom:4px}
+.si span{display:block;font-size:6px;color:#1a1a1e;letter-spacing:.18em;text-transform:uppercase;margin-bottom:4px}
 .si b{font-size:11px;font-weight:700}
 .si b.y{color:#00e5b0}.si b.n{color:#ff5f5f}.si b.w{color:#f5d000}
 
-/* ── flags ── */
+/* flags */
 .flag-list{display:flex;flex-direction:column}
 .fl{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid #0c0c0e;font-size:11px;line-height:1.5}
 .fl:last-child{border-bottom:none}
@@ -68,31 +94,31 @@ canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.35}
 .fic.g{background:rgba(0,229,176,.06);color:#00c89a}
 .fl.cr .fl-txt{color:#996060}.fl.wr .fl-txt{color:#8a7a40}.fl.ok .fl-txt{color:#334a40}
 
-/* ── sources ── */
+/* sources */
 .src-row{display:flex;justify-content:space-between;font-size:10px;color:#1e1e22;padding:7px 0;border-bottom:1px solid #0c0c0e}
 .src-row:last-child{border-bottom:none}
 .src-row span:last-child{color:#333}
 
-/* ── footer ── */
-.footer{margin-top:20px;display:flex;gap:8px}
+/* links footer */
+.footer{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap}
 .btn{display:inline-block;padding:10px 18px;font-size:8px;color:#1e1e22;letter-spacing:.18em;text-transform:uppercase;text-decoration:none;border:1px solid #131315;border-radius:2px;transition:.2s;font-family:'IBM Plex Mono',monospace}
 .btn:hover{color:#888;border-color:#222}
 .btn.warn{border-color:rgba(255,95,95,.12);color:#3a1818}
 .btn.warn:hover{border-color:rgba(255,95,95,.25);color:#ff5f5f;background:rgba(255,95,95,.03)}
 
-/* ── loading / error ── */
 #loading{display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:100px;color:#1e1e22;font-size:10px;letter-spacing:.12em}
 .spin{width:28px;height:28px;border:2px solid #111113;border-top-color:#222;border-radius:50%;animation:sp .7s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
 #err{display:none;color:#ff5f5f;font-size:11px;margin-top:100px;text-align:center}
 #content{display:none}
 
-/* topbar accent */
-.topbar{height:2px;border-radius:1px;margin-bottom:20px}
-.safe .topbar{background:linear-gradient(90deg,transparent,#00e5b0,transparent)}
-.caution .topbar{background:linear-gradient(90deg,transparent,#f5d000,transparent)}
-.danger .topbar{background:linear-gradient(90deg,transparent,#ff5f5f,transparent)}
-.rug .topbar{background:linear-gradient(90deg,transparent,#ff2244,transparent)}
+/* socials */
+.socials{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.soc{font-size:8px;color:#222;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;border:1px solid #131315;border-radius:2px;padding:5px 10px;transition:.15s}
+.soc:hover{color:#666;border-color:#222}
+
+/* age badge */
+.age-badge{display:inline-block;font-size:9px;color:#222;background:#0a0a0c;border:1px solid #131315;border-radius:2px;padding:3px 8px;margin-top:6px;letter-spacing:.06em}
 </style></head>
 <body>
 <canvas id="bg"></canvas>
@@ -107,18 +133,40 @@ canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.35}
 </div>
 
 <script>
-const API = "https://antares-extension.vercel.app/api/scan"
+const API="https://antares-extension.vercel.app/api/scan"
 
 function fmt(n){
+  if(n==null)return"—"
   if(n>=1e9)return`$${(n/1e9).toFixed(2)}B`
   if(n>=1e6)return`$${(n/1e6).toFixed(2)}M`
   if(n>=1e3)return`$${(n/1e3).toFixed(1)}K`
   return`$${n.toFixed(0)}`
 }
+function pct(n){
+  if(n==null)return{txt:"—",cls:"neu"}
+  const s=n>0?"+":"" 
+  const cls=n>0?"up":n<0?"dn":"neu"
+  return{txt:`${s}${n.toFixed(2)}%`,cls}
+}
+function age(h){
+  if(!h)return null
+  if(h<24)return`${Math.round(h)}h old`
+  const d=Math.floor(h/24)
+  if(d<30)return`${d}d old`
+  return`${Math.floor(d/30)}mo old`
+}
+function fmtPrice(p){
+  if(!p)return"—"
+  const n=parseFloat(p)
+  if(n<0.000001)return`$${n.toExponential(2)}`
+  if(n<0.01)return`$${n.toFixed(6)}`
+  if(n<1)return`$${n.toFixed(4)}`
+  return`$${n.toFixed(2)}`
+}
 
 const params=new URLSearchParams(location.search)
 const ca=params.get("ca")||params.get("token")||""
-document.getElementById("ca-disp").textContent=ca?ca.slice(0,8)+"..."+ca.slice(-6):"\u2014"
+document.getElementById("ca-disp").textContent=ca?ca.slice(0,8)+"..."+ca.slice(-6):"—"
 
 if(!ca){
   document.getElementById("loading").style.display="none"
@@ -146,49 +194,105 @@ function render(d,ca){
   const score=d.score||0
   const barW=Math.min(100,Math.round(score/10))
   const conf=typeof d.confidence==="number"?d.confidence:null
-  const mc=d.marketCap??d.pair?.marketCap??d.pair?.fdv??null
+
+  // market data
+  const mc=d.marketCap??d.pair?.fdv??null
   const liq=d.liquidity??d.pair?.liquidity?.usd??null
-  const vol=d.volume24h??d.pair?.volume?.h24??null
+  const vol24=d.volume24h??d.pair?.volume?.h24??null
+  const vol1h=d.volume1h??d.pair?.volume?.h1??null
   const holders=d.holders??null
+  const priceUsd=d.priceUsd??d.pair?.priceUsd??null
+  const priceNative=d.pair?.priceNative??null
+
+  // price changes
+  const pc5m=d.priceChange5m??d.pair?.priceChange?.m5??null
+  const pc1h=d.priceChange1h??d.pair?.priceChange?.h1??null
+  const pc6h=d.pair?.priceChange?.h6??null
+  const pc24h=d.priceChange24h??d.pair?.priceChange?.h24??null
+
+  // txns
+  const txH1=d.pair?.txns?.h1??null
+  const txH6=d.pair?.txns?.h6??null
+  const txH24=d.pair?.txns?.h24??null
+
+  // token info
   const name=d.tokenName||d.pair?.baseToken?.name||""
   const sym=d.tokenSymbol||d.pair?.baseToken?.symbol||""
   const mint=d.resolvedMint||ca
+  const logo=d.tokenLogo??d.pair?.info?.imageUrl??null
+  const ageStr=age(d.solscanTokenAgeHours)
+  const pairCreated=d.pairCreatedAt??d.pair?.pairCreatedAt??null
 
-  const fAll=(d.flags||[]).filter(f=>f.severity!=="bonus")
-  const fCrit=fAll.filter(f=>f.severity==="critical")
-  let summary=fAll.length===0
-    ?"All sources agree \u2014 no issues found"
-    :fCrit.length>0
-      ?`${fAll.length} flags \u2014 ${fCrit.length} critical \u2014 Conf. ${conf??"?"}%`
-      :`${fAll.length} flags detected \u2014 Conf. ${conf??"?"}%`
+  // socials
+  const websites=d.pair?.info?.websites||[]
+  const socials=d.pair?.info?.socials||[]
 
-  const flags=(d.flags||[])
-    .filter(f=>{const l=f.label||f;return!l.toLowerCase().includes("unavailable")&&f.severity!=="bonus"})
-    .map(f=>{
-      const sev=f.severity||"warning"
-      const cls=sev==="critical"?"cr":"wr"
-      const ic=sev==="critical"?"r":"y"
-      const ico=sev==="critical"?"&#10005;":"!"
-      return`<div class="fl ${cls}"><div class="fic ${ic}">${ico}</div><div class="fl-txt">${f.label||f}</div></div>`
-    }).join("")
-  const noFlags=flags===""
-    ?`<div class="fl ok"><div class="fic g">&#10003;</div><div class="fl-txt">No critical flags detected</div></div>`
-    :flags
-
+  // security
   const mintAuth=d.mintAuthority??null
   const freezeAuth=d.freezeAuthority??null
   const lpStatus=d.lpBurned===true?"BURN":d.lpLocked?"LOCK":"NO"
   const sellOk=d.honeypot===false||d.risk!=="RUG"
 
-  const siSell=`<div class="si"><span>Sell</span><b class="${sellOk?'y':'n'}">${sellOk?'&#10003;':'&#10005;'}</b></div>`
+  // flags
+  const fAll=(d.flags||[]).filter(f=>f.severity!=="bonus")
+  const fCrit=fAll.filter(f=>f.severity==="critical")
+  let summary=fAll.length===0
+    ?"All sources agree — no issues found"
+    :fCrit.length>0
+      ?`${fAll.length} flags — ${fCrit.length} critical — Conf. ${conf??"?"}%`
+      :`${fAll.length} flags detected — Conf. ${conf??"?"}%`
+
+  const flagsHtml=(d.flags||[])
+    .filter(f=>{const l=f.label||f;return!l.toLowerCase().includes("unavailable")&&f.severity!=="bonus"})
+    .map(f=>{
+      const sev=f.severity||"warning"
+      const cls=sev==="critical"?"cr":"wr"
+      const ic=sev==="critical"?"r":"y"
+      const ico=sev==="critical"?"✕":"!"
+      return`<div class="fl ${cls}"><div class="fic ${ic}">${ico}</div><div class="fl-txt">${f.label||f}</div></div>`
+    }).join("")
+  const noFlags=flagsHtml===""
+    ?`<div class="fl ok"><div class="fic g">✓</div><div class="fl-txt">No critical flags detected</div></div>`
+    :flagsHtml
+
+  // changes html
+  const c5=pct(pc5m),c1=pct(pc1h),c6=pct(pc6h),c24=pct(pc24h)
+  const changesHtml=`
+    <div class="changes">
+      <div class="ch"><span>5 min</span><b class="${c5.cls}">${c5.txt}</b></div>
+      <div class="ch"><span>1 hour</span><b class="${c1.cls}">${c1.txt}</b></div>
+      <div class="ch"><span>6 hours</span><b class="${c6.cls}">${c6.txt}</b></div>
+      <div class="ch"><span>24 hours</span><b class="${c24.cls}">${c24.txt}</b></div>
+    </div>`
+
+  // txns html
+  function txnCard(label,txObj){
+    if(!txObj)return""
+    const ratio=txObj.buys+txObj.sells>0?Math.round(txObj.buys/(txObj.buys+txObj.sells)*100):50
+    return`<div class="txn"><span>${label}</span><div class="txn-bars"><span class="txn-buy">${txObj.buys}B</span><span class="txn-sep">/</span><span class="txn-sell">${txObj.sells}S</span></div></div>`
+  }
+  const txnsHtml=`<div class="txn-row">${txnCard("1h",txH1)}${txnCard("6h",txH6)}${txnCard("24h",txH24)}</div>`
+
+  // strip
+  const siSell=`<div class="si"><span>Sell</span><b class="${sellOk?'y':'n'}">${sellOk?'✓':'✕'}</b></div>`
   const siMint=`<div class="si"><span>Mint</span><b class="${mintAuth?'n':'y'}">${mintAuth?'ON':'OFF'}</b></div>`
   const siFreeze=`<div class="si"><span>Freeze</span><b class="${freezeAuth?'n':'y'}">${freezeAuth?'ON':'OFF'}</b></div>`
   const siLP=`<div class="si"><span>LP</span><b class="${lpStatus==='NO'?'n':lpStatus==='BURN'?'y':'w'}">${lpStatus}</b></div>`
   const siLiq=liq?`<div class="si"><span>Liq</span><b class="${liq<5000?'n':liq<30000?'w':'y'}">${fmt(liq)}</b></div>`:""
   const siConf=conf!==null?`<div class="si"><span>Conf.</span><b class="${conf<50?'n':conf<80?'w':'y'}">${conf}%</b></div>`:""
 
-  const sources=(d.sources_used||["DexScreener","RugCheck","GoPlus","Helius RPC"])
-    .map(s=>`<div class="src-row"><span>${s}</span><span>&#10003; Used</span></div>`).join("")
+  // sources
+  const sourcesHtml=(d.sources_used||["DexScreener","RugCheck","GoPlus","Helius"])
+    .map(s=>`<div class="src-row"><span>${s}</span><span>✓ Used</span></div>`).join("")
+
+  // socials links
+  const socialsHtml=[
+    ...websites.map(w=>`<a class="soc" href="${w.url}" target="_blank" rel="noopener">${w.label||'Website'}</a>`),
+    ...socials.map(s=>`<a class="soc" href="${s.url}" target="_blank" rel="noopener">${s.type}</a>`)
+  ].join("")
+
+  // pair created date
+  const pairDate=pairCreated?new Date(pairCreated).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):null
 
   const dexUrl=d.pair?.url||`https://dexscreener.com/solana/${ca}`
   const isDangerous=rc==="danger"||rc==="rug"
@@ -197,13 +301,22 @@ function render(d,ca){
     <div class="${rc}">
       <div class="topbar"></div>
       <div class="verdict-block">
-        <div class="vt">${lb}</div>
-        ${sym?`<div class="tk-name"><b>${sym}</b> ${name}</div>`:""}
+        <div class="token-header">
+          ${logo?`<img class="token-logo" src="${logo}" alt="${sym}" onerror="this.style.display='none'" />`:""
+          }
+          <div>
+            <div class="vt">${lb}</div>
+            ${sym?`<div class="tk-name"><b>${sym}</b> ${name}</div>`:""}
+            ${ageStr?`<div class="age-badge">${ageStr}</div>`:pairDate?`<div class="age-badge">Pair: ${pairDate}</div>`:""}
+          </div>
+        </div>
+        ${priceUsd?`<div class="price-big">${fmtPrice(priceUsd)} <span style="font-size:11px;color:#333">${priceNative?priceNative+' SOL':''}</span></div>`:""}
         <div class="score-row">
           <span class="sc-num"><b>${score}</b> / 1000</span>
           <div class="sbar"><div class="sbar-f" id="sbarf"></div></div>
         </div>
         <div class="conf-line">${summary}</div>
+        ${socialsHtml?`<div class="socials">${socialsHtml}</div>`:""}
       </div>
     </div>
 
@@ -212,9 +325,16 @@ function render(d,ca){
       <div class="grid g4">
         ${mc?`<div class="stat"><span>Market Cap</span><strong>${fmt(mc)}</strong></div>`:""}
         ${liq?`<div class="stat"><span>Liquidity</span><strong>${fmt(liq)}</strong></div>`:""}
-        ${vol?`<div class="stat"><span>Volume 24h</span><strong>${fmt(vol)}</strong></div>`:""}
+        ${vol24?`<div class="stat"><span>Volume 24h</span><strong>${fmt(vol24)}</strong></div>`:""}
+        ${vol1h?`<div class="stat"><span>Volume 1h</span><strong>${fmt(vol1h)}</strong></div>`:""}
         ${holders?`<div class="stat"><span>Holders</span><strong>${holders.toLocaleString()}</strong></div>`:""}
       </div>
+      ${changesHtml}
+    </div>
+
+    <div class="card">
+      <div class="card-title">Transactions</div>
+      ${txnsHtml}
     </div>
 
     <div class="card">
@@ -229,12 +349,13 @@ function render(d,ca){
 
     <div class="card">
       <div class="card-title">Sources</div>
-      <div>${sources}</div>
+      <div>${sourcesHtml}</div>
     </div>
 
     <div class="footer">
-      <a class="btn" href="${dexUrl}" target="_blank" rel="noopener">&#8599; DexScreener</a>
-      ${isDangerous?`<a class="btn warn" href="https://rugcheck.xyz/tokens/${ca}" target="_blank" rel="noopener">&#9888; RugCheck</a>`:""}
+      <a class="btn" href="${dexUrl}" target="_blank" rel="noopener">↗ DexScreener</a>
+      <a class="btn" href="https://solscan.io/token/${mint}" target="_blank" rel="noopener">↗ Solscan</a>
+      ${isDangerous?`<a class="btn warn" href="https://rugcheck.xyz/tokens/${mint}" target="_blank" rel="noopener">⚠ RugCheck</a>`:""}
     </div>
   `
 
@@ -251,20 +372,9 @@ function render(d,ca){
   const ctx=C.getContext("2d")
   let W,H,pts=[]
   const N=60,CONN=140,SPEED=.35
-
-  function resize(){
-    W=C.width=window.innerWidth
-    H=C.height=window.innerHeight
-  }
-  resize()
-  window.addEventListener("resize",resize)
-
-  for(let i=0;i<N;i++) pts.push({
-    x:Math.random()*1400,y:Math.random()*900,
-    vx:(Math.random()-.5)*SPEED,vy:(Math.random()-.5)*SPEED,
-    r:Math.random()*1.5+.5
-  })
-
+  function resize(){W=C.width=window.innerWidth;H=C.height=window.innerHeight}
+  resize();window.addEventListener("resize",resize)
+  for(let i=0;i<N;i++)pts.push({x:Math.random()*1400,y:Math.random()*900,vx:(Math.random()-.5)*SPEED,vy:(Math.random()-.5)*SPEED,r:Math.random()*1.5+.5})
   function draw(){
     ctx.clearRect(0,0,W,H)
     for(const p of pts){
@@ -274,16 +384,7 @@ function render(d,ca){
       ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2)
       ctx.fillStyle="rgba(0,229,176,.18)";ctx.fill()
     }
-    for(let i=0;i<pts.length;i++){
-      const p=pts[i]
-      for(let j=i+1;j<pts.length;j++){
-        const q=pts[j]
-        const d2=(p.x-q.x)**2+(p.y-q.y)**2
-        if(d2>CONN*CONN)continue
-        ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y)
-        ctx.strokeStyle="rgba(0,229,176,"+(0.08*(1-d2/CONN))+")";ctx.stroke()
-      }
-    }
+    for(let i=0;i<pts.length;i++){const p=pts[i];for(let j=i+1;j<pts.length;j++){const q=pts[j];const d2=(p.x-q.x)**2+(p.y-q.y)**2;if(d2>CONN*CONN)continue;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.strokeStyle="rgba(0,229,176,"+(0.08*(1-d2/CONN))+")";ctx.stroke()}}
     requestAnimationFrame(draw)
   }
   draw()
