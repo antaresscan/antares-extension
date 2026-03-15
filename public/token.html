@@ -44,12 +44,11 @@ nav a:hover{color:#d0d0d0}
 .tdesc{font-size:12px;color:#4a4a52;line-height:1.7;
   border-left:2px solid var(--c);padding-left:12px}
 
-.price-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
-.price-val{font:400 26px/1 'Bebas Neue',sans-serif;color:#e0e0e0;letter-spacing:.04em}
-.pchange{font-size:9px;font-weight:700;padding:3px 7px;letter-spacing:.08em;border-radius:2px}
+.pchange{font-size:9px;font-weight:700;padding:3px 7px;letter-spacing:.08em;border-radius:2px;display:inline-block;margin-bottom:10px}
 .pchange.up{color:#00e5b0;background:rgba(0,229,176,.08);border:1px solid rgba(0,229,176,.15)}
 .pchange.dn{color:#ff5f5f;background:rgba(255,95,95,.08);border:1px solid rgba(255,95,95,.15)}
 .pchange.flat{color:#6a6a72;background:rgba(100,100,120,.08);border:1px solid rgba(100,100,120,.15)}
+.changes-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
 
 .socials-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
 .soc-btn{font-size:9px;color:#454550;border:1px solid #1e1e22;padding:4px 10px;
@@ -82,27 +81,28 @@ nav a:hover{color:#d0d0d0}
   letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px}
 .mc strong{font-size:22px;color:#d0d0d0;font:400 22px/1 'Bebas Neue',sans-serif;letter-spacing:.04em}
 
+/* txns redesign — plus visible */
 .txns-row{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-bottom:44px}
-.txn-cell{background:#141417;border:1px solid #1a1a1d;padding:14px;text-align:center}
-.txn-cell span{display:block;font-size:9px;color:#3a3a3f;letter-spacing:.14em;
-  text-transform:uppercase;margin-bottom:8px}
-.txn-buysells{display:flex;gap:6px;justify-content:center;align-items:center}
-.txn-b{color:#00e5b0;font-size:12px;font-weight:700}
-.txn-s{color:#ff5f5f;font-size:12px;font-weight:700}
-.txn-sep{color:#2a2a2f;font-size:10px}
-
-.holders-table{width:100%;border-collapse:collapse;margin-bottom:44px}
-.holders-table th{font-size:9px;color:#3a3a3f;letter-spacing:.18em;text-transform:uppercase;
-  padding:8px 12px;text-align:left;border-bottom:1px solid #1a1a1d}
-.holders-table td{font-size:11px;color:#6a6a72;padding:10px 12px;
-  border-bottom:1px solid #141417;letter-spacing:.04em;transition:.2s}
-.holders-table tr:hover td{background:#141417;color:#aaa}
-.holder-addr a{color:inherit;text-decoration:none;font-family:'IBM Plex Mono',monospace}
-.holder-addr a:hover{color:var(--c)}
-.holder-pct{color:var(--c);font-weight:700;text-align:right}
-.holder-bar-wrap{width:70px;background:#1a1a1d;height:3px;border-radius:2px;
-  overflow:hidden;display:inline-block;vertical-align:middle}
-.holder-bar{height:3px;background:var(--c);border-radius:2px}
+.txn-cell{
+  background:#141417;border:1px solid #1a1a1d;
+  padding:20px 14px 18px;text-align:center;
+  transition:.2s;position:relative;overflow:hidden}
+.txn-cell::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
+  background:var(--c);transform:scaleX(0);transform-origin:center;transition:.3s}
+.txn-cell:hover::after{transform:scaleX(1)}
+.txn-cell:hover{background:#161619}
+.txn-label{
+  font-size:9px;color:#3a3a3f;letter-spacing:.2em;
+  text-transform:uppercase;margin-bottom:12px;display:block}
+.txn-buysells{
+  display:flex;gap:8px;justify-content:center;align-items:center}
+.txn-b{
+  font:700 20px/1 'Bebas Neue',sans-serif;
+  color:#00e5b0;letter-spacing:.06em}
+.txn-s{
+  font:700 20px/1 'Bebas Neue',sans-serif;
+  color:#ff5f5f;letter-spacing:.06em}
+.txn-sep{color:#2a2a2f;font-size:14px;font-weight:300}
 
 .sh{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;
   padding-bottom:12px;border-bottom:2px solid #1a1a1d;position:relative}
@@ -219,7 +219,8 @@ footer span{color:var(--c)}
         <span id="token-ca-text"></span>
         <span class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('token-ca-text').textContent)">COPY</span>
       </div>
-      <div class="price-row" id="price-row"></div>
+      <!-- changes 1h/24h seulement, sans le prix -->
+      <div class="changes-row" id="changes-row"></div>
       <div class="tdesc" id="token-desc">Scanning token…</div>
       <div class="socials-row" id="socials-row"></div>
       <div id="dex-tag-wrap"></div>
@@ -251,25 +252,11 @@ footer span{color:var(--c)}
   <h2 class="glitch" data-text="Transactions">Transactions</h2>
 </div>
 <div class="txns-row">
-  <div class="txn-cell"><span>5 min</span><div class="txn-buysells" id="txn-5m">—</div></div>
-  <div class="txn-cell"><span>1 hour</span><div class="txn-buysells" id="txn-1h">—</div></div>
-  <div class="txn-cell"><span>6 hours</span><div class="txn-buysells" id="txn-6h">—</div></div>
-  <div class="txn-cell"><span>24 hours</span><div class="txn-buysells" id="txn-24h">—</div></div>
+  <div class="txn-cell"><span class="txn-label">5 min</span><div class="txn-buysells" id="txn-5m">—</div></div>
+  <div class="txn-cell"><span class="txn-label">1 hour</span><div class="txn-buysells" id="txn-1h">—</div></div>
+  <div class="txn-cell"><span class="txn-label">6 hours</span><div class="txn-buysells" id="txn-6h">—</div></div>
+  <div class="txn-cell"><span class="txn-label">24 hours</span><div class="txn-buysells" id="txn-24h">—</div></div>
 </div>
-
-<div class="sh" style="margin-bottom:18px">
-  <h2 class="glitch" data-text="Top Holders">Top Holders</h2>
-  <div class="gate" id="holders-total-badge"></div>
-</div>
-<table class="holders-table">
-  <thead><tr>
-    <th>#</th><th>Wallet</th><th style="text-align:right">Amount</th>
-    <th style="text-align:right">%</th><th></th>
-  </tr></thead>
-  <tbody id="holders-tbody">
-    <tr><td colspan="5" style="color:#2a2a2f;padding:20px 12px;font-size:10px">Loading holders…</td></tr>
-  </tbody>
-</table>
 
 <div class="sh">
   <h2 class="glitch" data-text="Analysis Layers">Analysis Layers</h2>
@@ -292,7 +279,6 @@ footer span{color:var(--c)}
 
 <script>
 const API="https://antares-extension.vercel.app/api/scan"
-const SOLSCAN_PUB="https://public-api.solscan.io"
 const COLORS={SAFE:"#00e5b0",CAUTION:"#f5d000",DANGER:"#ff5f5f",RUG:"#ff2244"}
 const LABELS={SAFE:"SAFE",CAUTION:"CAUTION",DANGER:"DANGER",RUG:"RUG PULL"}
 
@@ -312,33 +298,12 @@ function fmtAge(h){
   return Math.floor(h/720)+"mo"
 }
 
-// FIX: format prix lisible quel que soit l'ordre de grandeur
-function fmtPrice(p){
-  if(!p||!isFinite(p))return null
-  if(p>=1000)  return"$"+p.toLocaleString("en-US",{maximumFractionDigits:2})
-  if(p>=1)     return"$"+p.toFixed(4)
-  if(p>=0.01)  return"$"+p.toFixed(6)
-  // petit prix : on compte les zéros après la virgule
-  const str=p.toFixed(12).replace(/0+$/,"")
-  return"$"+str
-}
-
 function fmtPct(n){
   const s=parseFloat(n)
   if(!isFinite(s))return null
   return(s>=0?"+":"")+s.toFixed(2)+"%"
 }
 function pctClass(n){return n>0?"up":n<0?"dn":"flat"}
-function shortAddr(a){return a?a.slice(0,4)+"…"+a.slice(-4):"—"}
-function fmtAmt(raw,decimals){
-  const d=parseInt(decimals)||0
-  const v=d>0?(parseFloat(raw)/Math.pow(10,d)):parseFloat(raw)
-  if(!isFinite(v))return"—"
-  if(v>=1e9)return(v/1e9).toFixed(2)+"B"
-  if(v>=1e6)return(v/1e6).toFixed(2)+"M"
-  if(v>=1e3)return(v/1e3).toFixed(1)+"K"
-  return v.toFixed(0)
-}
 
 const params=new URLSearchParams(location.search)
 const ca=params.get("ca")
@@ -353,60 +318,9 @@ async function init(ca){
     if(!res.ok)throw new Error(res.status)
     const d=await res.json()
     render(d,ca)
-    fetchHolders(d.resolvedMint||ca)
   }catch(e){
     document.getElementById("token-name").textContent="API Error"
     document.getElementById("token-desc").textContent="Could not load token data. Try again later."
-  }
-}
-
-// FIX: mapping corrigé owner/address + uiAmount Solscan
-async function fetchHolders(mint){
-  try{
-    const res=await fetch(SOLSCAN_PUB+"/token/holders?tokenAddress="+mint+"&limit=10&offset=0",
-      {headers:{"User-Agent":"Antares/1.0"}})
-    if(!res.ok)throw new Error()
-    const data=await res.json()
-    // Solscan public retourne data=[{owner,amount,decimals,rank}] OU data=[{address,...}]
-    const list=Array.isArray(data?.data)?data.data:Array.isArray(data)?data:[]
-    const total=data?.total||null
-    if(total){
-      const badge=document.getElementById("holders-total-badge")
-      badge.textContent=total.toLocaleString()+" TOTAL"
-      badge.style.color="var(--c)"
-      badge.style.borderColor="rgba(0,229,176,.18)"
-    }
-    if(!list.length){
-      document.getElementById("holders-tbody").innerHTML=
-        "<tr><td colspan='5' style='color:#2a2a2f;padding:20px 12px;font-size:10px'>No holder data available.</td></tr>"
-      return
-    }
-    // FIX: Solscan retourne uiAmount (déjà divisé) ou amount (brut)
-    const maxUi=Math.max(...list.map(h=>{
-      if(typeof h.uiAmount==="number")return h.uiAmount
-      return(parseFloat(h.amount)||0)/Math.pow(10,parseInt(h.decimals)||0)
-    }))
-    document.getElementById("holders-tbody").innerHTML=list.map((h,i)=>{
-      const addr=h.owner||h.address||"?"
-      const dec=parseInt(h.decimals)||0
-      const ui=typeof h.uiAmount==="number"?h.uiAmount:(parseFloat(h.amount)||0)/Math.pow(10,dec)
-      const barW=maxUi>0?Math.round((ui/maxUi)*70):0
-      const pctRaw=h.percentage??h.uiAmountPercentage??null
-      const pctStr=pctRaw!==null?parseFloat(pctRaw).toFixed(2)+"%":"—"
-      const uiStr=ui>=1e9?(ui/1e9).toFixed(2)+"B":ui>=1e6?(ui/1e6).toFixed(2)+"M":ui>=1e3?(ui/1e3).toFixed(1)+"K":ui.toFixed(0)
-      return`<tr>
-        <td style="color:#2a2a2f;font-size:10px;width:28px">${i+1}</td>
-        <td class="holder-addr"><a href="https://solscan.io/account/${addr}" target="_blank">${shortAddr(addr)}</a></td>
-        <td style="text-align:right;color:#5a5a62;font-size:10px">${uiStr}</td>
-        <td class="holder-pct" style="text-align:right">${pctStr}</td>
-        <td style="text-align:right;padding-right:14px">
-          <div class="holder-bar-wrap"><div class="holder-bar" style="width:${barW}px"></div></div>
-        </td>
-      </tr>`
-    }).join("")
-  }catch(e){
-    document.getElementById("holders-tbody").innerHTML=
-      "<tr><td colspan='5' style='color:#2a2a2f;padding:20px 12px;font-size:10px'>Holder data unavailable.</td></tr>"
   }
 }
 
@@ -432,16 +346,12 @@ function render(d,ca){
   document.getElementById("token-eyebrow").textContent=symbol?symbol+" ANALYSIS":"TOKEN ANALYSIS"
   document.getElementById("token-desc").textContent="Score: "+d.score+" / 1000 — Verdict: "+label
 
-  // FIX: prix + changes 1h et 24h seulement (pas 5m qui pollue)
-  const priceRow=document.getElementById("price-row")
-  const priceStr=fmtPrice(parseFloat(d.priceUsd))
-  if(priceStr){
-    const p1=fmtPct(d.priceChange1h),p24=fmtPct(d.priceChange24h)
-    priceRow.innerHTML=
-      `<span class="price-val">${priceStr}</span>`+
-      (p1?`<span class="pchange ${pctClass(d.priceChange1h)}">1h ${p1}</span>`:"")+
-      (p24?`<span class="pchange ${pctClass(d.priceChange24h)}">24h ${p24}</span>`:"")
-  }
+  // changes 1h + 24h (sans le prix)
+  const changesRow=document.getElementById("changes-row")
+  const p1=fmtPct(d.priceChange1h),p24=fmtPct(d.priceChange24h)
+  changesRow.innerHTML=
+    (p1?`<span class="pchange ${pctClass(d.priceChange1h)}">1h ${p1}</span>`:"")+
+    (p24?`<span class="pchange ${pctClass(d.priceChange24h)}">24h ${p24}</span>`:"")
 
   // socials + dex
   const socials=d.pair?.info?.socials||[]
@@ -481,7 +391,7 @@ function render(d,ca){
   document.getElementById("m-vol24").textContent   = fmt(d.solscanVolume24h ?? d.volume24h)
 
   function txnHtml(t){
-    if(!t)return"—"
+    if(!t)return"<span style='color:#2a2a2f;font-size:14px'>—</span>"
     return`<span class="txn-b">${t.buys}B</span><span class="txn-sep">/</span><span class="txn-s">${t.sells}S</span>`
   }
   document.getElementById("txn-5m").innerHTML=txnHtml(d.pair?.txns?.m5)
