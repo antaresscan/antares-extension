@@ -61,7 +61,7 @@ nav .tag{font-size:10px;color:#333;border:1px solid #1e1e22;padding:5px 10px;let
   display:flex;align-items:center;gap:5px}
 .trust-badge::before{content:'✓';color:var(--c);font-size:8px}
 
-/* ── POPUP SHELL (exact v5) ── */
+/* POPUP */
 .p{width:290px;overflow:hidden;position:relative;
   border:1px solid rgba(255,255,255,.04);
   box-shadow:0 40px 80px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.02) inset}
@@ -129,27 +129,20 @@ nav .tag{font-size:10px;color:#333;border:1px solid #1e1e22;padding:5px 10px;let
 .fo a.warn{border-color:rgba(255,95,95,.1);color:#4a2020}
 .fo a.warn:hover{border-color:rgba(255,95,95,.2);color:#ff5f5f;background:rgba(255,95,95,.03)}
 
-/* ── STEPS ── */
+/* STEPS */
+.steps-grid{display:grid;grid-template-columns:1fr 1fr 1fr;padding:20px 0;width:100%}
 .step{background:transparent;border:none;padding:28px;text-align:center;
-  position:relative;transition:.2s;cursor:default;min-width:0}
-.step:hover{opacity:.8}
+  position:relative;cursor:default;min-width:0}
 .step-n{font:400 56px/1 'Bebas Neue',sans-serif;color:rgba(0,229,176,.06);
   margin-bottom:6px;transition:.3s}
 .step:hover .step-n{color:rgba(0,229,176,.2)}
 .step h3{font-size:12px;color:#d0d0d0;letter-spacing:.1em;text-transform:uppercase;
   margin-bottom:6px;font-weight:600}
 .step p{font-size:10px;color:#4a4a52;line-height:1.5}
-.step:not(:last-child)::after{content:'\2192';position:absolute;right:0;top:50%;
+.step:not(:last-child)::after{content:'→';position:absolute;right:0;top:50%;
   transform:translateY(-50%);color:#1e1e22;font-size:16px;z-index:2}
 
-/* ── MARQUEE ── */
-.marquee-wrap{overflow:hidden;border-top:1px solid #1a1a1d;
-  border-bottom:1px solid #1a1a1d;padding:12px 0}
-.marquee-inner{display:flex;animation:scroll 30s linear infinite;white-space:nowrap}
-@keyframes scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-.mi{font:400 18px/1 'Bebas Neue',sans-serif;color:#252528;letter-spacing:.12em;padding:0 28px}
-.mi .hi{color:var(--c)}
-
+/* NUMBERS */
 .numbers{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-bottom:70px}
 .nc{background:#141417;padding:30px 20px;text-align:center;
   border:1px solid #1a1a1d;transition:.2s;cursor:default}
@@ -159,10 +152,12 @@ nav .tag{font-size:10px;color:#333;border:1px solid #1e1e22;padding:5px 10px;let
   color:#d0d0d0;margin-bottom:5px;transition:.2s}
 .nc span{font-size:10px;color:#3a3a3f;text-transform:uppercase;letter-spacing:.14em}
 
+/* SECTION LABEL */
 .sl{font:400 48px/1 'Bebas Neue',sans-serif;letter-spacing:.1em;
   margin-bottom:28px;padding-bottom:10px;border-bottom:2px solid #1a1a1d;position:relative}
 .sl::after{content:'';position:absolute;bottom:-2px;left:0;width:50px;height:2px;background:var(--c)}
 
+/* FEATURES */
 .features{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-bottom:70px}
 .fc{background:#141417;padding:22px;border:1px solid #1a1a1d;
   transition:all .2s;cursor:pointer;position:relative;overflow:hidden;text-decoration:none;display:block}
@@ -177,6 +172,7 @@ nav .tag{font-size:10px;color:#333;border:1px solid #1e1e22;padding:5px 10px;let
   text-transform:uppercase;margin-top:10px;transition:.2s}
 .fc:hover .more{color:var(--c)}
 
+/* SOURCES */
 .sources{display:flex;gap:2px;margin-bottom:70px}
 .sp{flex:1;background:#141417;padding:18px;text-align:center;
   font-size:11px;color:#454550;letter-spacing:.12em;text-transform:uppercase;
@@ -187,6 +183,7 @@ nav .tag{font-size:10px;color:#333;border:1px solid #1e1e22;padding:5px 10px;let
 .sp:hover::after{left:0;right:0}
 .sp:hover{color:var(--c);background:#161619}
 
+/* CTA BLOCK */
 .cta-block{text-align:center;padding:56px;margin-bottom:56px;
   border:1px solid #1a1a1d;background:#141417;position:relative;overflow:hidden}
 .cta-block::before{content:'ANTARES';position:absolute;top:50%;left:50%;
@@ -195,6 +192,14 @@ nav .tag{font-size:10px;color:#333;border:1px solid #1e1e22;padding:5px 10px;let
 .cta-block h2{font:400 44px/1 'Bebas Neue',sans-serif;letter-spacing:.1em;
   margin-bottom:10px;position:relative;color:#e0e0e0}
 .cta-block p{font-size:12px;color:#4a4a52;margin-bottom:22px;position:relative}
+
+/* MARQUEE */
+.marquee-wrap{overflow:hidden;border-top:1px solid #1a1a1d;
+  border-bottom:1px solid #1a1a1d;padding:12px 0}
+.marquee-inner{display:flex;animation:scroll 30s linear infinite;white-space:nowrap}
+@keyframes scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.mi{font:400 18px/1 'Bebas Neue',sans-serif;color:#252528;letter-spacing:.12em;padding:0 28px}
+.mi .hi{color:var(--c)}
 
 footer{text-align:center;padding:28px;color:#2a2a2f;font-size:10px;
   border-top:1px solid #1a1a1d;letter-spacing:.15em;text-transform:uppercase}
@@ -236,7 +241,7 @@ section{padding:70px 0 0}
   <div class="tag">v4.5.3 // SOLANA</div>
 </nav>
 
-<section class="hero" style="padding-top:50px">
+<div class="hero">
   <div>
     <div class="hero-eye">Solana Token Scanner</div>
     <h1><span class="glitch" data-text="STOP">STOP</span><br><span class="glitch" data-text="GETTING">GETTING</span><br><span class="accent glitch" data-text="SCAMMED.">SCAMMED.</span></h1>
@@ -274,16 +279,16 @@ section{padding:70px 0 0}
       <div class="fo"><a href="#">&#8599; Chart</a><a href="#">Details &rarr;</a></div>
     </div>
   </div>
-</section>
+</div>
 
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;padding:20px 0;width:100%">
-  <div class="step" style="display:block">
+<div class="steps-grid">
+  <div class="step">
     <div class="step-n">01</div><h3>Install</h3><p>One click. No account. No config.</p>
   </div>
-  <div class="step" style="display:block">
+  <div class="step">
     <div class="step-n">02</div><h3>Browse</h3><p>Go anywhere. Antares watches silently.</p>
   </div>
-  <div class="step" style="display:block">
+  <div class="step">
     <div class="step-n">03</div><h3>Protected</h3><p>Every token scanned. Verdict in &lt;2s.</p>
   </div>
 </div>
@@ -324,7 +329,7 @@ section{padding:70px 0 0}
   <div style="position:absolute;top:0;left:0;right:0;height:2px;background:var(--c)"></div>
   <div style="font-size:10px;color:var(--c);letter-spacing:.24em;text-transform:uppercase;margin-bottom:14px">ANTARES SCORING ENGINE</div>
   <div style="font:400 38px/1 'Bebas Neue',sans-serif;color:#e0e0e0;margin-bottom:12px;letter-spacing:.06em">HOW THE SCORE IS BUILT</div>
-  <p style="font-size:12px;color:#4a4a52;line-height:1.75;max-width:700px;margin-bottom:28px;border-left:2px solid var(--c);padding-left:14px">Antares queries 5 independent data sources in parallel, runs 6 analysis layers and aggregates everything into a 0&ndash;1000 score. Each layer can contribute positive or negative points. A Safe Gate overrides any score: if a critical flag is raised, the token is blocked regardless of its numeric score.</p>
+  <p style="font-size:12px;color:#4a4a52;line-height:1.75;max-width:700px;margin-bottom:28px;border-left:2px solid var(--c);padding-left:14px">Antares queries 5 independent data sources in parallel, runs 6 analysis layers and aggregates everything into a 0–1000 score. Each layer can contribute positive or negative points. A Safe Gate overrides any score: if a critical flag is raised, the token is blocked regardless of its numeric score.</p>
   <a href="/engine" style="display:inline-block;padding:12px 28px;background:transparent;border:1px solid var(--c);color:var(--c);font:700 11px/1 'IBM Plex Mono',monospace;text-decoration:none;letter-spacing:.1em;text-transform:uppercase;transition:.2s" onmouseover="this.style.background='rgba(0,229,176,.08)'" onmouseout="this.style.background='transparent'">Explore the Engine &rarr;</a>
 </div>
 </section>
@@ -406,8 +411,6 @@ section{padding:70px 0 0}
   document.querySelectorAll('a,button,.nc,.fc,.sp').forEach(el=>{
     el.classList.add('tactile-hover')
   })
-
-  /* ── POPUP CYCLING ── */
   var cards=[
     '<div class="p s"><div class="bar"></div><div class="hd"><span>ANTARES</span><div class="x">&times;</div></div><div class="tk"><b>WIF</b> dogwifhat</div><div class="vb"><h1>SAFE</h1></div><div class="sr"><span class="n"><b>847</b> / 1000</span><div class="dots"><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div></div></div><div class="sbar"><div class="sbar-fill"></div></div><div class="sum">All 5 sources agree \u2014 no issues found</div><div class="sep"></div><div class="fl"><div class="f ok"><div class="ic g">\u2713</div><div class="ft-txt">No critical flags detected</div></div></div><div class="sep"></div><div class="ss"><div class="si"><span>Sell</span><b class="y">\u2713</b></div><div class="si"><span>Mint</span><b class="y">OFF</b></div><div class="si"><span>Freeze</span><b class="y">OFF</b></div><div class="si"><span>LP</span><b class="y">BURN</b></div><div class="si"><span>Liq</span><b class="y">$184K</b></div></div><div class="fo"><a href="#">\u2197 Chart</a><a href="#">Details \u2192</a></div></div>',
     '<div class="p c"><div class="bar"></div><div class="hd"><span>ANTARES</span><div class="x">&times;</div></div><div class="tk"><b>MICHI</b> michi</div><div class="vb"><h1>CAUTION</h1></div><div class="sr"><span class="n"><b>523</b> / 1000</span><div class="dots"><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt off"></div></div></div><div class="sbar"><div class="sbar-fill"></div></div><div class="sum">3 issues detected from 4 sources</div><div class="sep"></div><div class="fl"><div class="f cr"><div class="ic r">\u2715</div><div class="ft-txt">Wash trading suspected <em>vol/liq &gt; 20</em></div></div><div class="f wr"><div class="ic y">!</div><div class="ft-txt">LP not burned or locked</div></div><div class="f wr"><div class="ic y">!</div><div class="ft-txt">Metadata mutable</div></div></div><div class="sep"></div><div class="ss"><div class="si"><span>Sell</span><b class="y">\u2713</b></div><div class="si"><span>Mint</span><b class="y">OFF</b></div><div class="si"><span>Freeze</span><b class="y">OFF</b></div><div class="si"><span>LP</span><b class="n">NO</b></div><div class="si"><span>Liq</span><b class="w">$47K</b></div></div><div class="fo"><a href="#">\u2197 Chart</a><a href="#">Details \u2192</a></div></div>',
