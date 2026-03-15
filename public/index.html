@@ -61,35 +61,58 @@ nav .tag{font-size:10px;color:#333;border:1px solid #1e1e22;padding:5px 10px;let
   display:flex;align-items:center;gap:5px}
 .trust-badge::before{content:'✓';color:var(--c);font-size:8px}
 
-/* ── POPUP (exact v5) ── */
-.p{width:290px;overflow:hidden;position:relative;border:1px solid rgba(255,255,255,.04);box-shadow:0 40px 80px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.02) inset}
-.p::before{content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:180px;height:100px;border-radius:50%;filter:blur(60px);opacity:.08;z-index:0;pointer-events:none}
-.p.s::before{background:#00e5b0}.p.c::before{background:#f5d000}.p.d::before{background:#ff5f5f}.p.r::before{background:#ff2244}
-.p.s{background:linear-gradient(180deg,#0b100f 0%,#090b0a 100%)}.p.c{background:linear-gradient(180deg,#0e0d0a 0%,#0a0a09 100%)}.p.d{background:linear-gradient(180deg,#0e0a0a 0%,#0a0909 100%)}.p.r{background:linear-gradient(180deg,#100809 0%,#0a0808 100%)}
+/* ── POPUP SHELL (exact v5) ── */
+.p{width:290px;overflow:hidden;position:relative;
+  border:1px solid rgba(255,255,255,.04);
+  box-shadow:0 40px 80px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.02) inset}
+.p::before{content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);
+  width:180px;height:100px;border-radius:50%;filter:blur(60px);opacity:.08;z-index:0;pointer-events:none}
+.p.s::before{background:#00e5b0}.p.c::before{background:#f5d000}
+.p.d::before{background:#ff5f5f}.p.r::before{background:#ff2244}
+.p.s{background:linear-gradient(180deg,#0b100f 0%,#090b0a 100%)}
+.p.c{background:linear-gradient(180deg,#0e0d0a 0%,#0a0a09 100%)}
+.p.d{background:linear-gradient(180deg,#0e0a0a 0%,#0a0909 100%)}
+.p.r{background:linear-gradient(180deg,#100809 0%,#0a0808 100%)}
 .bar{height:2px}
-.p.s .bar{background:linear-gradient(90deg,transparent,#00e5b0,transparent)}.p.c .bar{background:linear-gradient(90deg,transparent,#f5d000,transparent)}.p.d .bar{background:linear-gradient(90deg,transparent,#ff5f5f,transparent)}.p.r .bar{background:linear-gradient(90deg,transparent,#ff2244,transparent)}
+.p.s .bar{background:linear-gradient(90deg,transparent,#00e5b0,transparent)}
+.p.c .bar{background:linear-gradient(90deg,transparent,#f5d000,transparent)}
+.p.d .bar{background:linear-gradient(90deg,transparent,#ff5f5f,transparent)}
+.p.r .bar{background:linear-gradient(90deg,transparent,#ff2244,transparent)}
 .hd{display:flex;justify-content:space-between;align-items:center;padding:10px 14px 0}
 .hd span{font-size:6px;color:#1a1a1d;letter-spacing:.55em}
 .x{font-size:11px;color:#1a1a1d;line-height:1}
-.tk{padding:0 14px;margin-top:6px;font-size:9px;color:#2a2a30;letter-spacing:.08em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tk{padding:0 14px;margin-top:6px;font-size:9px;color:#2a2a30;letter-spacing:.08em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tk b{color:#444;font-weight:600}
 .vb{padding:0 14px 4px;position:relative;z-index:1}
 .vb h1{font:400 46px/.88 'Bebas Neue',sans-serif;letter-spacing:.04em}
-.p.s .vb h1{color:#00e5b0;text-shadow:0 0 30px rgba(0,229,176,.15)}.p.c .vb h1{color:#f5d000;text-shadow:0 0 30px rgba(245,208,0,.12)}.p.d .vb h1{color:#ff5f5f;text-shadow:0 0 30px rgba(255,95,95,.15)}.p.r .vb h1{color:#ff2244;text-shadow:0 0 40px rgba(255,34,68,.2)}
+.p.s .vb h1{color:#00e5b0;text-shadow:0 0 30px rgba(0,229,176,.15)}
+.p.c .vb h1{color:#f5d000;text-shadow:0 0 30px rgba(245,208,0,.12)}
+.p.d .vb h1{color:#ff5f5f;text-shadow:0 0 30px rgba(255,95,95,.15)}
+.p.r .vb h1{color:#ff2244;text-shadow:0 0 40px rgba(255,34,68,.2)}
 .sr{display:flex;align-items:center;gap:8px;padding:0 14px}
 .sr .n{font-size:10px;color:#333;font-weight:600}.sr .n b{color:#777}
-.dots{display:flex;gap:2px;align-items:center}.dt{width:4px;height:4px;border-radius:50%}.dt.on{background:#00e5b0}.dt.off{background:#151517}
+.dots{display:flex;gap:2px;align-items:center}
+.dt{width:4px;height:4px;border-radius:50%}
+.dt.on{background:#00e5b0}.dt.off{background:#151517}
 .sbar{margin:6px 14px 0;height:2px;background:#101012;border-radius:1px;overflow:hidden}
 .sbar-fill{height:100%;border-radius:1px;transition:.3s}
-.p.s .sbar-fill{background:linear-gradient(90deg,#00e5b055,#00e5b0);width:84.7%}.p.c .sbar-fill{background:linear-gradient(90deg,#f5d00044,#f5d000);width:52.3%}.p.d .sbar-fill{background:linear-gradient(90deg,#ff5f5f44,#ff5f5f);width:28.5%}.p.r .sbar-fill{background:linear-gradient(90deg,#ff224444,#ff2244);width:8.7%}
+.p.s .sbar-fill{background:linear-gradient(90deg,#00e5b055,#00e5b0);width:84.7%}
+.p.c .sbar-fill{background:linear-gradient(90deg,#f5d00044,#f5d000);width:52.3%}
+.p.d .sbar-fill{background:linear-gradient(90deg,#ff5f5f44,#ff5f5f);width:28.5%}
+.p.r .sbar-fill{background:linear-gradient(90deg,#ff224444,#ff2244);width:8.7%}
 .sum{padding:8px 14px 0;font-size:8.5px;letter-spacing:.04em}
-.p.s .sum{color:#1e3a30}.p.c .sum{color:#3a3520}.p.d .sum{color:#3a2020}.p.r .sum{color:#3a1818}
+.p.s .sum{color:#1e3a30}.p.c .sum{color:#3a3520}
+.p.d .sum{color:#3a2020}.p.r .sum{color:#3a1818}
 .sep{height:1px;margin:8px 14px;background:#0e0e10}
 .fl{padding:2px 14px 6px}
 .f{display:flex;align-items:flex-start;gap:8px;padding:6px 0;font-size:10.5px;line-height:1.5}
 .f+.f{border-top:1px solid #0c0c0e}
-.ic{width:15px;height:15px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:7.5px;flex-shrink:0;margin-top:2px;font-style:normal}
-.ic.r{background:rgba(255,60,80,.08);color:#ff5f5f}.ic.y{background:rgba(245,208,0,.06);color:#bfa000}.ic.g{background:rgba(0,229,176,.06);color:#00c89a}
+.ic{width:15px;height:15px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:7.5px;flex-shrink:0;margin-top:2px;font-style:normal}
+.ic.r{background:rgba(255,60,80,.08);color:#ff5f5f}
+.ic.y{background:rgba(245,208,0,.06);color:#bfa000}
+.ic.g{background:rgba(0,229,176,.06);color:#00c89a}
 .ft-txt{color:#555}.ft-txt em{font-style:normal;font-weight:700;color:#888}
 .f.cr .ft-txt{color:#996060}.f.wr .ft-txt{color:#8a7a40}.f.ok .ft-txt{color:#334a40}
 .ss{display:flex;margin:0 14px;background:#09090b;border-radius:3px;overflow:hidden}
@@ -99,32 +122,41 @@ nav .tag{font-size:10px;color:#333;border:1px solid #1e1e22;padding:5px 10px;let
 .si b{font-size:9px;letter-spacing:.02em;font-weight:700}
 .si b.y{color:#00e5b0}.si b.n{color:#ff5f5f}.si b.w{color:#f5d000}
 .fo{display:flex;margin:8px 14px 10px;gap:4px}
-.fo a{flex:1;display:block;padding:8px;font-size:7px;color:#222;letter-spacing:.14em;text-transform:uppercase;text-decoration:none;text-align:center;border:1px solid #111114;border-radius:2px;transition:.2s}
+.fo a{flex:1;display:block;padding:8px;font-size:7px;color:#222;letter-spacing:.14em;
+  text-transform:uppercase;text-decoration:none;text-align:center;
+  border:1px solid #111114;border-radius:2px;transition:.2s}
 .fo a:hover{color:#888;border-color:#1e1e22;background:rgba(255,255,255,.01)}
 .fo a.warn{border-color:rgba(255,95,95,.1);color:#4a2020}
 .fo a.warn:hover{border-color:rgba(255,95,95,.2);color:#ff5f5f;background:rgba(255,95,95,.03)}
 
 /* ── STEPS ── */
-.step{background:transparent;border:none;padding:28px;text-align:center;position:relative;transition:.2s;cursor:default;min-width:0}
+.step{background:transparent;border:none;padding:28px;text-align:center;
+  position:relative;transition:.2s;cursor:default;min-width:0}
 .step:hover{opacity:.8}
-.step-n{font:400 56px/1 'Bebas Neue',sans-serif;color:rgba(0,229,176,.06);margin-bottom:6px;transition:.3s}
+.step-n{font:400 56px/1 'Bebas Neue',sans-serif;color:rgba(0,229,176,.06);
+  margin-bottom:6px;transition:.3s}
 .step:hover .step-n{color:rgba(0,229,176,.2)}
-.step h3{font-size:12px;color:var(--txt);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;font-weight:600}
+.step h3{font-size:12px;color:#d0d0d0;letter-spacing:.1em;text-transform:uppercase;
+  margin-bottom:6px;font-weight:600}
 .step p{font-size:10px;color:#4a4a52;line-height:1.5}
-.step:not(:last-child)::after{content:'\2192';position:absolute;right:0;top:50%;transform:translateY(-50%);color:#1e1e22;font-size:16px;z-index:2}
+.step:not(:last-child)::after{content:'\2192';position:absolute;right:0;top:50%;
+  transform:translateY(-50%);color:#1e1e22;font-size:16px;z-index:2}
 
 /* ── MARQUEE ── */
-.marquee-wrap{overflow:hidden;border-top:1px solid #1a1a1d;border-bottom:1px solid #1a1a1d;padding:12px 0}
+.marquee-wrap{overflow:hidden;border-top:1px solid #1a1a1d;
+  border-bottom:1px solid #1a1a1d;padding:12px 0}
 .marquee-inner{display:flex;animation:scroll 30s linear infinite;white-space:nowrap}
 @keyframes scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 .mi{font:400 18px/1 'Bebas Neue',sans-serif;color:#252528;letter-spacing:.12em;padding:0 28px}
 .mi .hi{color:var(--c)}
 
 .numbers{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-bottom:70px}
-.nc{background:#141417;padding:30px 20px;text-align:center;border:1px solid #1a1a1d;transition:.2s;cursor:default}
+.nc{background:#141417;padding:30px 20px;text-align:center;
+  border:1px solid #1a1a1d;transition:.2s;cursor:default}
 .nc:hover{border-color:var(--c);background:#161619}
 .nc:hover strong{color:var(--c)}
-.nc strong{display:block;font:400 52px/1 'Bebas Neue',sans-serif;color:#d0d0d0;margin-bottom:5px;transition:.2s}
+.nc strong{display:block;font:400 52px/1 'Bebas Neue',sans-serif;
+  color:#d0d0d0;margin-bottom:5px;transition:.2s}
 .nc span{font-size:10px;color:#3a3a3f;text-transform:uppercase;letter-spacing:.14em}
 
 .sl{font:400 48px/1 'Bebas Neue',sans-serif;letter-spacing:.1em;
@@ -132,34 +164,47 @@ nav .tag{font-size:10px;color:#333;border:1px solid #1e1e22;padding:5px 10px;let
 .sl::after{content:'';position:absolute;bottom:-2px;left:0;width:50px;height:2px;background:var(--c)}
 
 .features{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-bottom:70px}
-.fc{background:#141417;padding:22px;border:1px solid #1a1a1d;transition:all .2s;cursor:pointer;position:relative;overflow:hidden;text-decoration:none;display:block}
-.fc::before{content:'';position:absolute;top:0;left:0;right:0;height:0;background:rgba(0,229,176,.03);transition:height .3s}
+.fc{background:#141417;padding:22px;border:1px solid #1a1a1d;
+  transition:all .2s;cursor:pointer;position:relative;overflow:hidden;text-decoration:none;display:block}
+.fc::before{content:'';position:absolute;top:0;left:0;right:0;height:0;
+  background:rgba(0,229,176,.03);transition:height .3s}
 .fc:hover::before{height:100%}
 .fc:hover{border-color:#333;padding-left:28px}
 .fc .icon{font-size:20px;margin-bottom:10px}
 .fc h3{font-size:12px;letter-spacing:.06em;margin-bottom:5px;color:#bbb}
 .fc p{font-size:11px;color:#4a4a52;line-height:1.65}
-.fc .more{font-size:9px;color:rgba(0,229,176,.35);letter-spacing:.12em;text-transform:uppercase;margin-top:10px;transition:.2s}
+.fc .more{font-size:9px;color:rgba(0,229,176,.35);letter-spacing:.12em;
+  text-transform:uppercase;margin-top:10px;transition:.2s}
 .fc:hover .more{color:var(--c)}
 
 .sources{display:flex;gap:2px;margin-bottom:70px}
-.sp{flex:1;background:#141417;padding:18px;text-align:center;font-size:11px;color:#454550;letter-spacing:.12em;text-transform:uppercase;border:1px solid #1a1a1d;transition:all .2s;cursor:pointer;position:relative;text-decoration:none;display:block}
-.sp::after{content:'';position:absolute;bottom:0;left:50%;right:50%;height:2px;background:var(--c);transition:.3s ease}
+.sp{flex:1;background:#141417;padding:18px;text-align:center;
+  font-size:11px;color:#454550;letter-spacing:.12em;text-transform:uppercase;
+  border:1px solid #1a1a1d;transition:all .2s;cursor:pointer;position:relative;
+  text-decoration:none;display:block}
+.sp::after{content:'';position:absolute;bottom:0;left:50%;right:50%;
+  height:2px;background:var(--c);transition:.3s ease}
 .sp:hover::after{left:0;right:0}
 .sp:hover{color:var(--c);background:#161619}
 
-.cta-block{text-align:center;padding:56px;margin-bottom:56px;border:1px solid #1a1a1d;background:#141417;position:relative;overflow:hidden}
-.cta-block::before{content:'ANTARES';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font:400 160px/1 'Bebas Neue',sans-serif;color:rgba(255,255,255,.012);pointer-events:none;white-space:nowrap}
-.cta-block h2{font:400 44px/1 'Bebas Neue',sans-serif;letter-spacing:.1em;margin-bottom:10px;position:relative;color:#e0e0e0}
+.cta-block{text-align:center;padding:56px;margin-bottom:56px;
+  border:1px solid #1a1a1d;background:#141417;position:relative;overflow:hidden}
+.cta-block::before{content:'ANTARES';position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);font:400 160px/1 'Bebas Neue',sans-serif;
+  color:rgba(255,255,255,.012);pointer-events:none;white-space:nowrap}
+.cta-block h2{font:400 44px/1 'Bebas Neue',sans-serif;letter-spacing:.1em;
+  margin-bottom:10px;position:relative;color:#e0e0e0}
 .cta-block p{font-size:12px;color:#4a4a52;margin-bottom:22px;position:relative}
 
-footer{text-align:center;padding:28px;color:#2a2a2f;font-size:10px;border-top:1px solid #1a1a1d;letter-spacing:.15em;text-transform:uppercase}
+footer{text-align:center;padding:28px;color:#2a2a2f;font-size:10px;
+  border-top:1px solid #1a1a1d;letter-spacing:.15em;text-transform:uppercase}
 footer span{color:var(--c)}
 
 section{padding:70px 0 0}
 
 .glitch{position:relative;display:inline-block;cursor:default;user-select:none}
-.glitch::before,.glitch::after{content:attr(data-text);position:absolute;top:0;left:0;width:100%;overflow:hidden;opacity:0;pointer-events:none;font:inherit;color:inherit;letter-spacing:inherit}
+.glitch::before,.glitch::after{content:attr(data-text);position:absolute;top:0;left:0;
+  width:100%;overflow:hidden;opacity:0;pointer-events:none;font:inherit;color:inherit;letter-spacing:inherit}
 .glitch::before{color:#ff006e;clip-path:polygon(0 20%,100% 20%,100% 40%,0 40%)}
 .glitch::after{color:#00e5b0;clip-path:polygon(0 55%,100% 55%,100% 75%,0 75%)}
 .glitch:hover::before{animation:gl-a .45s steps(2,end) infinite}
@@ -231,7 +276,7 @@ section{padding:70px 0 0}
   </div>
 </section>
 
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;padding:20px 0;width:100%;margin:0 auto">
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;padding:20px 0;width:100%">
   <div class="step" style="display:block">
     <div class="step-n">01</div><h3>Install</h3><p>One click. No account. No config.</p>
   </div>
@@ -253,12 +298,12 @@ section{padding:70px 0 0}
 <section id="features">
 <div class="sl glitch" data-text="Features">Features</div>
 <div class="features">
-  <a class="fc" href="/features"><div class="icon">&#128737;&#65039;</div><h3>Safe Gate</h3><p>One critical flag = token blocked. No override.</p><div class="more">Learn more &rarr;</div></a>
-  <a class="fc" href="/features"><div class="icon">&#9889;</div><h3>Real-time</h3><p>Address appears, scan fires. Under 2 seconds.</p><div class="more">Learn more &rarr;</div></a>
-  <a class="fc" href="/sources"><div class="icon">&#128279;</div><h3>5 Sources</h3><p>Conflicts resolve to the most dangerous verdict.</p><div class="more">Learn more &rarr;</div></a>
-  <a class="fc" href="/features"><div class="icon">&#128202;</div><h3>Chart Intel</h3><p>Pumps, blow-off tops, wash trading &mdash; all flagged.</p><div class="more">Learn more &rarr;</div></a>
-  <a class="fc" href="/features"><div class="icon">&#129518;</div><h3>Identity Check</h3><p>Copycat names, unicode tricks, symbol collisions.</p><div class="more">Learn more &rarr;</div></a>
-  <a class="fc" href="/features"><div class="icon">&#127760;</div><h3>Universal</h3><p>Any website with a Solana address. Already scanned.</p><div class="more">Learn more &rarr;</div></a>
+  <a class="fc" href="/features"><div class="icon">🛡️</div><h3>Safe Gate</h3><p>One critical flag = token blocked. No override.</p><div class="more">Learn more &rarr;</div></a>
+  <a class="fc" href="/features"><div class="icon">⚡</div><h3>Real-time</h3><p>Address appears, scan fires. Under 2 seconds.</p><div class="more">Learn more &rarr;</div></a>
+  <a class="fc" href="/sources"><div class="icon">🔗</div><h3>5 Sources</h3><p>Conflicts resolve to the most dangerous verdict.</p><div class="more">Learn more &rarr;</div></a>
+  <a class="fc" href="/features"><div class="icon">📊</div><h3>Chart Intel</h3><p>Pumps, blow-off tops, wash trading — all flagged.</p><div class="more">Learn more &rarr;</div></a>
+  <a class="fc" href="/features"><div class="icon">🪬</div><h3>Identity Check</h3><p>Copycat names, unicode tricks, symbol collisions.</p><div class="more">Learn more &rarr;</div></a>
+  <a class="fc" href="/features"><div class="icon">🌐</div><h3>Universal</h3><p>Any website with a Solana address. Already scanned.</p><div class="more">Learn more &rarr;</div></a>
 </div>
 </section>
 
@@ -374,5 +419,6 @@ section{padding:70px 0 0}
     pw.style.opacity='0';
     setTimeout(function(){ci=(ci+1)%cards.length;pw.innerHTML=cards[ci];pw.style.opacity='1'},300);
   },4000);
-})()</script>
+})()
+</script>
 </body></html>
