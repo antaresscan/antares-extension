@@ -79,7 +79,7 @@ function isValid(addr: string): boolean {
   return true
 }
 
-// ── CSS exact antares-popup.css ────────────────────────────────────────────
+// ── SHADOW CSS v5 ──────────────────────────────────────────────────────────
 const SHADOW_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap');
 
@@ -94,244 +94,171 @@ const SHADOW_CSS = `
   z-index: 2147483647;
   font-family: 'IBM Plex Mono', monospace;
   pointer-events: none;
-  --c-safe: #00e5b0;
-  --c-caution: #f5d000;
-  --c-danger: #ff5f5f;
-  --c-rug: #ff2244;
-  --bg: #141417;
-  --bg-dark: #111114;
-  --border: #1f1f22;
-  --text: #e8e8e8;
-  --text-dim: #6a6a72;
-  --text-mid: #cccccc;
 }
 
 .box {
   pointer-events: auto;
-  width: 280px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  font-family: 'IBM Plex Mono', 'Courier New', monospace;
-  font-size: 12px;
-  color: var(--text);
-  position: relative;
+  width: 290px;
   overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(255,255,255,.04);
+  box-shadow: 0 40px 80px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.02) inset;
   display: none;
   opacity: 0;
   transform: translateY(18px);
-  transition: opacity .25s ease, transform .25s ease, border-color .25s, box-shadow .25s;
+  transition: opacity .25s ease, transform .25s ease;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
   line-height: 1.4;
 }
 
-.bline {
+.box::before {
+  content: '';
   position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  z-index: 2;
+  top: -60px; left: 50%;
+  transform: translateX(-50%);
+  width: 180px; height: 100px;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: .08;
+  z-index: 0;
+  pointer-events: none;
 }
 
-.inner { padding: 16px; }
+.box.safe   { background: linear-gradient(180deg,#0b100f 0%,#090b0a 100%); }
+.box.caution{ background: linear-gradient(180deg,#0e0d0a 0%,#0a0a09 100%); }
+.box.danger { background: linear-gradient(180deg,#0e0a0a 0%,#0a0909 100%); }
+.box.rug    { background: linear-gradient(180deg,#100809 0%,#0a0808 100%); }
 
-.head {
+.box.safe::before   { background: #00e5b0; }
+.box.caution::before{ background: #f5d000; }
+.box.danger::before { background: #ff5f5f; }
+.box.rug::before    { background: #ff2244; }
+
+.topbar { height: 2px; }
+.box.safe    .topbar { background: linear-gradient(90deg,transparent,#00e5b0,transparent); }
+.box.caution .topbar { background: linear-gradient(90deg,transparent,#f5d000,transparent); }
+.box.danger  .topbar { background: linear-gradient(90deg,transparent,#ff5f5f,transparent); }
+.box.rug     .topbar { background: linear-gradient(90deg,transparent,#ff2244,transparent); }
+
+.hd {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  padding: 10px 14px 0;
 }
-
 .brand {
-  font-size: 9px;
-  letter-spacing: 0.3em;
-  color: var(--text-dim);
+  font-size: 6px;
+  color: #2a2a30;
+  letter-spacing: .55em;
   text-transform: uppercase;
-  position: relative;
-  display: inline-block;
-  cursor: default;
-  user-select: none;
 }
-.brand::before, .brand::after {
-  content: attr(data-text);
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%;
-  overflow: hidden;
-  opacity: 0;
-  pointer-events: none;
-}
-.brand::before { color: #ff006e; clip-path: polygon(0 20%, 100% 20%, 100% 40%, 0 40%); }
-.brand::after  { color: #00e5b0; clip-path: polygon(0 55%, 100% 55%, 100% 75%, 0 75%); }
-.brand:hover::before { animation: gl-a .45s steps(2,end) infinite; }
-.brand:hover::after  { animation: gl-b .45s steps(2,end) infinite; }
-@keyframes gl-a {
-  0%  { transform: translate(-3px,0); opacity: .75; }
-  25% { transform: translate( 3px,0); opacity: .75; }
-  50% { transform: translate(-2px,0); opacity: .75; clip-path: polygon(0 5%,100% 5%,100% 25%,0 25%); }
-  75% { transform: translate( 2px,0); opacity: .75; }
-  100%{ transform: translate(-3px,0); opacity: 0; }
-}
-@keyframes gl-b {
-  0%  { transform: translate( 3px,0); opacity: .55; }
-  33% { transform: translate(-3px,0); opacity: .55; clip-path: polygon(0 60%,100% 60%,100% 80%,0 80%); }
-  66% { transform: translate( 2px,0); opacity: .55; }
-  100%{ transform: translate( 3px,0); opacity: 0; }
-}
-
 .x {
-  color: #4a4a52;
+  font-size: 11px;
+  color: #2a2a30;
   cursor: pointer;
-  font-size: 16px;
+  transition: color .15s;
   line-height: 1;
-  transition: color .15s, transform .15s;
   background: none;
   border: none;
   font-family: inherit;
 }
-.x:hover { color: var(--text); transform: rotate(90deg); }
+.x:hover { color: #555; }
 
-.risk {
-  font-family: 'Bebas Neue', 'Arial Black', sans-serif;
-  font-size: 36px;
-  line-height: 1;
-  font-weight: 400;
-  letter-spacing: 0.04em;
-  margin-bottom: 5px;
+.tk {
+  padding: 0 14px;
+  margin-top: 6px;
+  font-size: 9px;
+  color: #2a2a30;
+  letter-spacing: .08em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+.tk b { color: #444; font-weight: 600; }
 
-.score-row {
+.vb { padding: 0 14px 4px; position: relative; z-index: 1; }
+.vb h1 { font: 400 46px/.88 'Bebas Neue', sans-serif; letter-spacing: .04em; }
+.box.safe    .vb h1 { color: #00e5b0; text-shadow: 0 0 30px rgba(0,229,176,.15); }
+.box.caution .vb h1 { color: #f5d000; text-shadow: 0 0 30px rgba(245,208,0,.12); }
+.box.danger  .vb h1 { color: #ff5f5f; text-shadow: 0 0 30px rgba(255,95,95,.15); }
+.box.rug     .vb h1 { color: #ff2244; text-shadow: 0 0 40px rgba(255,34,68,.2); }
+
+.sr { display: flex; align-items: center; gap: 8px; padding: 0 14px; }
+.sr .n { font-size: 10px; color: #333; font-weight: 600; }
+.sr .n b { color: #777; }
+.dots { display: flex; gap: 2px; align-items: center; }
+.dt { width: 4px; height: 4px; border-radius: 50%; }
+.dt.on  { background: #00e5b0; }
+.dt.off { background: #151517; }
+
+.sbar { margin: 6px 14px 0; height: 2px; background: #101012; border-radius: 1px; overflow: hidden; }
+.sbar-fill { height: 100%; border-radius: 1px; width: 0%; transition: width 1.1s cubic-bezier(.22,1,.36,1); }
+.box.safe    .sbar-fill { background: linear-gradient(90deg,#00e5b055,#00e5b0); }
+.box.caution .sbar-fill { background: linear-gradient(90deg,#f5d00044,#f5d000); }
+.box.danger  .sbar-fill { background: linear-gradient(90deg,#ff5f5f44,#ff5f5f); }
+.box.rug     .sbar-fill { background: linear-gradient(90deg,#ff224444,#ff2244); }
+
+.sum { padding: 8px 14px 0; font-size: 8.5px; letter-spacing: .04em; }
+.box.safe    .sum { color: #1e3a30; }
+.box.caution .sum { color: #3a3520; }
+.box.danger  .sum { color: #3a2020; }
+.box.rug     .sum { color: #3a1818; }
+
+.sep { height: 1px; margin: 8px 14px; background: #0e0e10; }
+
+.fl { padding: 2px 14px 6px; }
+.f { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; font-size: 10.5px; line-height: 1.5; }
+.f + .f { border-top: 1px solid #0c0c0e; }
+.ic {
+  width: 15px; height: 15px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 7.5px; flex-shrink: 0; margin-top: 2px; font-style: normal;
+}
+.ic.r { background: rgba(255,60,80,.08); color: #ff5f5f; }
+.ic.y { background: rgba(245,208,0,.06);  color: #bfa000; }
+.ic.g { background: rgba(0,229,176,.06);  color: #00c89a; }
+.ft-txt { color: #555; }
+.ft-txt em { font-style: normal; font-weight: 700; color: #888; }
+.f.cr .ft-txt { color: #996060; }
+.f.wr .ft-txt { color: #8a7a40; }
+.f.ok .ft-txt { color: #334a40; }
+
+.ss {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 10px;
-}
-.score { font-size: 11px; color: #6a6a72; }
-.score strong { color: #cccccc; }
-
-.bar {
-  height: 3px;
-  background: #1c1c1f;
-  margin-bottom: 14px;
+  margin: 0 14px;
+  background: #09090b;
+  border-radius: 3px;
   overflow: hidden;
 }
-.bar-f {
-  height: 100%;
-  width: 0%;
-  transition: width 1.1s cubic-bezier(.22,1,.36,1);
+.si { flex: 1; text-align: center; padding: 7px 2px; position: relative; }
+.si + .si::before {
+  content: '';
+  position: absolute; left: 0; top: 25%; height: 50%; width: 1px;
+  background: #0e0e10;
 }
-
-.meta {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 5px;
-  margin-bottom: 12px;
+.si span {
+  display: block; font-size: 5.5px; color: #1e1e22;
+  letter-spacing: .16em; text-transform: uppercase; margin-bottom: 3px;
 }
-.meta div {
-  padding: 7px 9px;
-  background: var(--bg-dark);
-  border: 1px solid #1c1c1f;
-  border-radius: 2px;
+.si b { font-size: 9px; letter-spacing: .02em; font-weight: 700; }
+.si b.y { color: #00e5b0; }
+.si b.n { color: #ff5f5f; }
+.si b.w { color: #f5d000; }
+
+.fo { display: flex; margin: 8px 14px 10px; gap: 4px; }
+.fo a {
+  flex: 1; display: block; padding: 8px;
+  font-size: 7px; color: #222; letter-spacing: .14em;
+  text-transform: uppercase; text-decoration: none; text-align: center;
+  border: 1px solid #111114; border-radius: 2px; transition: .2s;
 }
-.meta span {
-  display: block;
-  font-size: 9px;
-  color: #6a6a72;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  margin-bottom: 2px;
-}
-.meta strong { font-size: 13px; color: #e0e0e0; font-weight: 700; }
+.fo a:hover { color: #888; border-color: #1e1e22; background: rgba(255,255,255,.01); }
+.fo a.warn  { border-color: rgba(255,95,95,.1); color: #4a2020; }
+.fo a.warn:hover { border-color: rgba(255,95,95,.2); color: #ff5f5f; background: rgba(255,95,95,.03); }
 
-.flags-wrap { margin-bottom: 12px; }
-.flag {
-  font-size: 11px;
-  color: #888890;
-  padding: 4px 0 4px 10px;
-  border-left: 2px solid;
-  margin-top: 3px;
-  transition: color .15s, padding-left .15s;
-}
-.flag:hover { color: #e8e8e8; padding-left: 14px; }
-
-.toggle {
-  display: block;
-  width: 100%;
-  padding: 8px 16px;
-  background: transparent;
-  border: none;
-  border-top: 1px solid #1c1c1f;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.2em;
-  color: #5a5a62;
-  text-transform: uppercase;
-  cursor: pointer;
-  text-align: left;
-  box-sizing: border-box;
-  transition: color .15s, background .15s;
-}
-.toggle:hover { color: #cccccc; background: var(--bg-dark); }
-
-.extra { display: none; padding: 2px 16px 12px; }
-.extra.open { display: block; }
-.extra-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 10px;
-  color: #6a6a72;
-  padding: 4px 0;
-  border-bottom: 1px solid #171719;
-}
-.extra-row span:last-child { color: #aaaaaa; }
-
-.actions {
-  display: flex;
-  gap: 10px;
-  padding: 10px 16px;
-  border-top: 1px solid #1c1c1f;
-  background: var(--bg-dark);
-}
-.actions a {
-  font-size: 10px;
-  color: #6a6a72;
-  text-decoration: none;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  transition: color .15s;
-}
-.actions a:hover { color: var(--text); }
-.actions a.primary { margin-left: auto; font-weight: 700; }
-
-/* ════ COLOR VARIANTS ════ */
-.box.safe .bline { background: var(--c-safe); }
-.box.safe .risk { color: var(--c-safe); }
-.box.safe .bar-f { background: var(--c-safe); }
-.box.safe .flag { border-color: rgba(0,229,176,0.2); }
-.box.safe:hover { box-shadow: 0 6px 30px rgba(0,229,176,.06); }
-
-.box.caution .bline { background: var(--c-caution); }
-.box.caution .risk { color: var(--c-caution); }
-.box.caution .bar-f { background: var(--c-caution); }
-.box.caution .flag { border-color: rgba(245,208,0,0.18); }
-.box.caution:hover { box-shadow: 0 6px 30px rgba(245,208,0,.06); }
-
-.box.danger .bline { background: var(--c-danger); }
-.box.danger .risk { color: var(--c-danger); }
-.box.danger .bar-f { background: var(--c-danger); }
-.box.danger .flag { border-color: rgba(255,95,95,0.18); }
-.box.danger:hover { box-shadow: 0 6px 30px rgba(255,95,95,.06); }
-
-.box.rug { border-color: #2a1519; }
-.box.rug .bline { background: var(--c-rug); animation: rugline 2s ease infinite; }
-.box.rug .risk { color: var(--c-rug); }
-.box.rug .bar-f { background: var(--c-rug); }
-.box.rug .flag { border-color: rgba(255,34,68,0.18); }
-.box.rug:hover { box-shadow: 0 6px 30px rgba(255,34,68,.06), 0 0 0 1px rgba(255,34,68,.08); }
-
-@keyframes rugline { 0%,100%{opacity:1} 50%{opacity:.4} }
-
-/* ── scanning ── */
 @keyframes ant-pulse { 0%,100%{opacity:1} 50%{opacity:.15} }
-.scanning { display:flex; align-items:center; gap:8px; color:#888890; font-size:12px; padding:4px 0; }
+.scanning { display:flex; align-items:center; gap:8px; color:#888890; font-size:12px; padding:12px 14px; }
 .dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:#5a5a62; animation:ant-pulse 1.2s infinite; }
 `
 
@@ -393,15 +320,6 @@ function attachClose() {
   shadow?.querySelector("#ant-close")?.addEventListener("click", () => { manuallyDismissed = true; hideBox() }, { once: true })
 }
 
-function attachToggle() {
-  const btn   = shadow?.querySelector("#ant-toggle")
-  const extra = shadow?.querySelector("#ant-extra")
-  if (btn && extra) btn.addEventListener("click", () => {
-    const open = extra.classList.toggle("open")
-    btn.textContent = (open ? "\u25BE " : "\u25B8 ") + "Source details"
-  }, { once: true })
-}
-
 // ── HTML builders ─────────────────────────────────────────────────────────────
 function buildResult(data: any, ca: string): string {
   const riskClass = RISK_CLASS[data.risk] || "danger"
@@ -411,42 +329,75 @@ function buildResult(data: any, ca: string): string {
   const liq       = data.liquidity ?? data.pair?.liquidity?.usd ?? null
   const holders   = data.holders ?? null
   const conf      = typeof data.confidence === "number" ? data.confidence : null
-  const barW      = Math.round((data.score || 0) / 10)
+  const score     = data.score || 0
+  const barW      = Math.min(100, Math.round(score / 10))
+
+  const tokenName   = data.tokenName   || data.pair?.baseToken?.name   || ""
+  const tokenSymbol = data.tokenSymbol || data.pair?.baseToken?.symbol || ""
 
   if (boxEl) boxEl.className = `box ${riskClass}`
 
-  // Market Cap appears ONLY here in the meta grid — no duplicate
-  const metaCells = [
-    mc       ? `<div><span>Market Cap</span><strong>${formatMcap(mc)}</strong></div>` : "",
-    liq      ? `<div><span>Liquidity</span><strong>${formatMcap(liq)}</strong></div>` : "",
-    holders  ? `<div><span>Holders</span><strong>${holders.toLocaleString()}</strong></div>` : "",
-    conf !== null ? `<div><span>Confidence</span><strong>${conf}%</strong></div>` : "",
-  ].filter(Boolean).join("")
+  // dots (5 dots, filled proportional to score/1000)
+  const dotsCount = Math.round((score / 1000) * 5)
+  const dots = Array.from({length: 5}, (_, i) =>
+    `<div class="dt ${i < dotsCount ? 'on' : 'off'}"></div>`
+  ).join("")
 
+  // summary line
+  const flagCount = (data.flags || []).filter((f: any) => f.severity !== "bonus").length
+  const critCount = (data.flags || []).filter((f: any) => f.severity === "critical").length
+  let summary = ""
+  if (flagCount === 0) summary = "All sources agree — no issues found"
+  else if (critCount > 0) summary = `${flagCount} flags — ${critCount} critical — Conf. ${conf ?? "?"}%`
+  else summary = `${flagCount} flags detected — Conf. ${conf ?? "?"}%`
+
+  // flags
   const flags = (data.flags || [])
     .filter((f: any) => { const l = (f.label || f) as string; return !l.toLowerCase().includes("unavailable") && f.severity !== "bonus" })
     .slice(0, 4)
-    .map((f: any) => `<div class="flag">${f.label || f}</div>`)
+    .map((f: any) => {
+      const sev = f.severity || "warning"
+      const cls = sev === "critical" ? "cr" : "wr"
+      const icCls = sev === "critical" ? "r" : "y"
+      const ico = sev === "critical" ? "&#10005;" : "!"
+      return `<div class="f ${cls}"><div class="ic ${icCls}">${ico}</div><div class="ft-txt">${f.label || f}</div></div>`
+    })
     .join("")
 
-  const sourceRows = (data.sources_used || ["DexScreener", "RugCheck", "GoPlus", "Helius RPC"])
-    .map((s: string) => `<div class="extra-row"><span>${s}</span><span>&#10003; Used</span></div>`).join("")
+  const noFlags = flags === "" ? `<div class="f ok"><div class="ic g">&#10003;</div><div class="ft-txt">No critical flags detected</div></div>` : flags
 
-  const dexLink      = data.pair?.url ? `<a href="${data.pair.url}" target="_blank" rel="noopener noreferrer">&#8599; DexScreener</a>` : ""
-  const analysisLink = `<a href="${ANALYSIS_PAGE}?ca=${mint}" target="_blank" rel="noopener noreferrer" class="primary">&#8599; Full Analysis</a>`
+  // safety strip — use API data
+  const mintAuth   = data.mintAuthority   ?? null
+  const freezeAuth = data.freezeAuthority ?? null
+  const lpStatus   = data.lpBurned === true ? "BURN" : data.lpLocked ? "LOCK" : "NO"
+  const sellOk     = data.honeypot === false || data.risk !== "RUG"
+
+  const siSell   = `<div class="si"><span>Sell</span><b class="${sellOk ? 'y' : 'n'}">${sellOk ? '&#10003;' : '&#10005;'}</b></div>`
+  const siMint   = `<div class="si"><span>Mint</span><b class="${mintAuth ? 'n' : 'y'}">${mintAuth ? 'ON' : 'OFF'}</b></div>`
+  const siFreeze = `<div class="si"><span>Freeze</span><b class="${freezeAuth ? 'n' : 'y'}">${freezeAuth ? 'ON' : 'OFF'}</b></div>`
+  const siLP     = `<div class="si"><span>LP</span><b class="${lpStatus === 'NO' ? 'n' : lpStatus === 'BURN' ? 'y' : 'w'}">${lpStatus}</b></div>`
+  const siLiq    = liq ? `<div class="si"><span>Liq</span><b class="${liq < 5000 ? 'n' : liq < 30000 ? 'w' : 'y'}">${formatMcap(liq)}</b></div>` : ""
+
+  // footer links
+  const isDangerous = riskClass === "danger" || riskClass === "rug"
+  const dexLink      = data.pair?.url
+    ? `<a href="${data.pair.url}" target="_blank" rel="noopener noreferrer">&#8599; DexScreener</a>`
+    : ""
+  const analysisLink = `<a href="${ANALYSIS_PAGE}?ca=${mint}" target="_blank" rel="noopener noreferrer"${isDangerous ? ' class="warn"' : ''}>Full Analysis &rarr;</a>`
 
   return `
-    <div class="bline"></div>
-    <div class="inner">
-      <div class="head"><span class="brand" data-text="ANTARES">ANTARES</span><button class="x" id="ant-close">&times;</button></div>
-      <div class="risk">${label}</div>
-      <div class="bar"><div class="bar-f" data-w="${barW}"></div></div>
-      ${metaCells ? `<div class="meta">${metaCells}</div>` : ""}
-      ${flags ? `<div class="flags-wrap">${flags}</div>` : ""}
-    </div>
-    <button class="toggle" id="ant-toggle">&#9658; Source details</button>
-    <div class="extra" id="ant-extra">${sourceRows}</div>
-    <div class="actions">${dexLink}${analysisLink}</div>
+    <div class="topbar"></div>
+    <div class="hd"><span class="brand">ANTARES</span><button class="x" id="ant-close">&times;</button></div>
+    ${tokenSymbol ? `<div class="tk"><b>${tokenSymbol}</b> ${tokenName}</div>` : ""}
+    <div class="vb"><h1>${label}</h1></div>
+    <div class="sr"><span class="n"><b>${score}</b> / 1000</span><div class="dots">${dots}</div></div>
+    <div class="sbar"><div class="sbar-fill" data-w="${barW}"></div></div>
+    <div class="sum">${summary}</div>
+    <div class="sep"></div>
+    <div class="fl">${noFlags}</div>
+    <div class="sep"></div>
+    <div class="ss">${siSell}${siMint}${siFreeze}${siLP}${siLiq}</div>
+    <div class="fo">${dexLink}${analysisLink}</div>
   `
 }
 
@@ -464,19 +415,17 @@ async function scan(ca: string) {
     el.innerHTML = buildResult(cached, ca)
     showBox()
     requestAnimationFrame(() => {
-      el.querySelectorAll(".bar-f").forEach((b: any) => setTimeout(() => { b.style.width = b.dataset.w + "%" }, 250))
+      el.querySelectorAll(".sbar-fill").forEach((b: any) => setTimeout(() => { b.style.width = b.dataset.w + "%" }, 250))
     })
-    attachClose(); attachToggle(); return
+    attachClose(); return
   }
 
   scanInFlight = true
   if (boxEl) boxEl.className = "box"
   el.innerHTML = `
-    <div class="bline" style="background:#3a3a3f"></div>
-    <div class="inner">
-      <div class="head"><span class="brand" data-text="ANTARES">ANTARES</span><button class="x" id="ant-close">&times;</button></div>
-      <div class="scanning"><span class="dot"></span>Scanning&hellip;</div>
-    </div>
+    <div class="topbar" style="background:linear-gradient(90deg,transparent,#3a3a3f,transparent)"></div>
+    <div class="hd"><span class="brand">ANTARES</span><button class="x" id="ant-close">&times;</button></div>
+    <div class="scanning"><span class="dot"></span>Scanning&hellip;</div>
   `
   showBox(); attachClose()
 
@@ -490,18 +439,16 @@ async function scan(ca: string) {
     el.innerHTML = buildResult(data, ca)
     showBox()
     requestAnimationFrame(() => {
-      el.querySelectorAll(".bar-f").forEach((b: any) => setTimeout(() => { b.style.width = b.dataset.w + "%" }, 250))
+      el.querySelectorAll(".sbar-fill").forEach((b: any) => setTimeout(() => { b.style.width = b.dataset.w + "%" }, 250))
     })
-    attachClose(); attachToggle()
+    attachClose()
   } catch (_e) {
     if (lastCA !== ca) { scanInFlight = false; return }
     if (boxEl) boxEl.className = "box danger"
     el.innerHTML = `
-      <div class="bline"></div>
-      <div class="inner">
-        <div class="head"><span class="brand" data-text="ANTARES">ANTARES</span><button class="x" id="ant-close">&times;</button></div>
-        <div style="color:#ff5f5f;font-size:12px;padding:4px 0">API Error &mdash; retry later</div>
-      </div>
+      <div class="topbar"></div>
+      <div class="hd"><span class="brand">ANTARES</span><button class="x" id="ant-close">&times;</button></div>
+      <div style="color:#ff5f5f;font-size:12px;padding:12px 14px">API Error &mdash; retry later</div>
     `
     showBox(); attachClose()
   }
