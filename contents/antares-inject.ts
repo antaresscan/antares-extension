@@ -38,6 +38,16 @@ const IGNORE = new Set([
 
 const scanCache = new Map<string, { data: any; ts: number }>()
 
+// inject Google Fonts in document <head> once (shadow DOM @import doesn't work)
+function injectFonts() {
+  if (document.getElementById("antares-fonts")) return
+  const link = document.createElement("link")
+  link.id   = "antares-fonts"
+  link.rel  = "stylesheet"
+  link.href = "https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap"
+  document.head.appendChild(link)
+}
+
 ;(function hydrateCacheFromLS() {
   try {
     for (let i = 0; i < localStorage.length; i++) {
@@ -81,8 +91,6 @@ function isValid(addr: string): boolean {
 
 // ── SHADOW CSS v5 ──────────────────────────────────────────────────────────
 const SHADOW_CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap');
-
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
 :host {
@@ -152,6 +160,7 @@ const SHADOW_CSS = `
   color: #2a2a30;
   letter-spacing: .55em;
   text-transform: uppercase;
+  font-family: 'IBM Plex Mono', monospace;
 }
 .x {
   font-size: 11px;
@@ -161,7 +170,7 @@ const SHADOW_CSS = `
   line-height: 1;
   background: none;
   border: none;
-  font-family: inherit;
+  font-family: 'IBM Plex Mono', monospace;
 }
 .x:hover { color: #555; }
 
@@ -174,18 +183,19 @@ const SHADOW_CSS = `
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-family: 'IBM Plex Mono', monospace;
 }
 .tk b { color: #444; font-weight: 600; }
 
 .vb { padding: 0 14px 4px; position: relative; z-index: 1; }
-.vb h1 { font: 400 46px/.88 'Bebas Neue', sans-serif; letter-spacing: .04em; }
+.vb h1 { font-family: 'Bebas Neue', 'Arial Black', sans-serif; font-size: 46px; line-height: .88; font-weight: 400; letter-spacing: .04em; }
 .box.safe    .vb h1 { color: #00e5b0; text-shadow: 0 0 30px rgba(0,229,176,.15); }
 .box.caution .vb h1 { color: #f5d000; text-shadow: 0 0 30px rgba(245,208,0,.12); }
 .box.danger  .vb h1 { color: #ff5f5f; text-shadow: 0 0 30px rgba(255,95,95,.15); }
 .box.rug     .vb h1 { color: #ff2244; text-shadow: 0 0 40px rgba(255,34,68,.2); }
 
 .sr { display: flex; align-items: center; gap: 8px; padding: 0 14px; }
-.sr .n { font-size: 10px; color: #333; font-weight: 600; }
+.sr .n { font-size: 10px; color: #333; font-weight: 600; font-family: 'IBM Plex Mono', monospace; }
 .sr .n b { color: #777; }
 .dots { display: flex; gap: 2px; align-items: center; }
 .dt { width: 4px; height: 4px; border-radius: 50%; }
@@ -199,7 +209,7 @@ const SHADOW_CSS = `
 .box.danger  .sbar-fill { background: linear-gradient(90deg,#ff5f5f44,#ff5f5f); }
 .box.rug     .sbar-fill { background: linear-gradient(90deg,#ff224444,#ff2244); }
 
-.sum { padding: 8px 14px 0; font-size: 8.5px; letter-spacing: .04em; }
+.sum { padding: 8px 14px 0; font-size: 8.5px; letter-spacing: .04em; font-family: 'IBM Plex Mono', monospace; }
 .box.safe    .sum { color: #1e3a30; }
 .box.caution .sum { color: #3a3520; }
 .box.danger  .sum { color: #3a2020; }
@@ -208,12 +218,12 @@ const SHADOW_CSS = `
 .sep { height: 1px; margin: 8px 14px; background: #0e0e10; }
 
 .fl { padding: 2px 14px 6px; }
-.f { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; font-size: 10.5px; line-height: 1.5; }
+.f { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; font-size: 10.5px; line-height: 1.5; font-family: 'IBM Plex Mono', monospace; }
 .f + .f { border-top: 1px solid #0c0c0e; }
 .ic {
   width: 15px; height: 15px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 7.5px; flex-shrink: 0; margin-top: 2px; font-style: normal;
+  font-size: 7.5px; flex-shrink: 0; margin-top: 2px;
 }
 .ic.r { background: rgba(255,60,80,.08); color: #ff5f5f; }
 .ic.y { background: rgba(245,208,0,.06);  color: #bfa000; }
@@ -240,8 +250,9 @@ const SHADOW_CSS = `
 .si span {
   display: block; font-size: 5.5px; color: #1e1e22;
   letter-spacing: .16em; text-transform: uppercase; margin-bottom: 3px;
+  font-family: 'IBM Plex Mono', monospace;
 }
-.si b { font-size: 9px; letter-spacing: .02em; font-weight: 700; }
+.si b { font-size: 9px; letter-spacing: .02em; font-weight: 700; font-family: 'IBM Plex Mono', monospace; }
 .si b.y { color: #00e5b0; }
 .si b.n { color: #ff5f5f; }
 .si b.w { color: #f5d000; }
@@ -252,13 +263,14 @@ const SHADOW_CSS = `
   font-size: 7px; color: #222; letter-spacing: .14em;
   text-transform: uppercase; text-decoration: none; text-align: center;
   border: 1px solid #111114; border-radius: 2px; transition: .2s;
+  font-family: 'IBM Plex Mono', monospace;
 }
 .fo a:hover { color: #888; border-color: #1e1e22; background: rgba(255,255,255,.01); }
 .fo a.warn  { border-color: rgba(255,95,95,.1); color: #4a2020; }
 .fo a.warn:hover { border-color: rgba(255,95,95,.2); color: #ff5f5f; background: rgba(255,95,95,.03); }
 
 @keyframes ant-pulse { 0%,100%{opacity:1} 50%{opacity:.15} }
-.scanning { display:flex; align-items:center; gap:8px; color:#888890; font-size:12px; padding:12px 14px; }
+.scanning { display:flex; align-items:center; gap:8px; color:#888890; font-size:12px; padding:12px 14px; font-family:'IBM Plex Mono',monospace; }
 .dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:#5a5a62; animation:ant-pulse 1.2s infinite; }
 `
 
@@ -273,6 +285,7 @@ let manuallyDismissed = false
 let scanInFlight      = false
 
 function createHost() {
+  injectFonts()
   document.getElementById("antares-host")?.remove()
   host = document.createElement("div")
   host.id = "antares-host"
@@ -325,9 +338,7 @@ function buildResult(data: any, ca: string): string {
   const riskClass = RISK_CLASS[data.risk] || "danger"
   const label     = LABELS[data.risk] || data.risk
   const mint      = data.resolvedMint || ca
-  const mc        = data.marketCap ?? data.pair?.marketCap ?? data.pair?.fdv ?? null
   const liq       = data.liquidity ?? data.pair?.liquidity?.usd ?? null
-  const holders   = data.holders ?? null
   const conf      = typeof data.confidence === "number" ? data.confidence : null
   const score     = data.score || 0
   const barW      = Math.min(100, Math.round(score / 10))
@@ -337,21 +348,18 @@ function buildResult(data: any, ca: string): string {
 
   if (boxEl) boxEl.className = `box ${riskClass}`
 
-  // dots (5 dots, filled proportional to score/1000)
   const dotsCount = Math.round((score / 1000) * 5)
   const dots = Array.from({length: 5}, (_, i) =>
     `<div class="dt ${i < dotsCount ? 'on' : 'off'}"></div>`
   ).join("")
 
-  // summary line
   const flagCount = (data.flags || []).filter((f: any) => f.severity !== "bonus").length
   const critCount = (data.flags || []).filter((f: any) => f.severity === "critical").length
   let summary = ""
-  if (flagCount === 0) summary = "All sources agree — no issues found"
-  else if (critCount > 0) summary = `${flagCount} flags — ${critCount} critical — Conf. ${conf ?? "?"}%`
-  else summary = `${flagCount} flags detected — Conf. ${conf ?? "?"}%`
+  if (flagCount === 0) summary = "All sources agree \u2014 no issues found"
+  else if (critCount > 0) summary = `${flagCount} flags \u2014 ${critCount} critical \u2014 Conf. ${conf ?? "?"}%`
+  else summary = `${flagCount} flags detected \u2014 Conf. ${conf ?? "?"}%`
 
-  // flags
   const flags = (data.flags || [])
     .filter((f: any) => { const l = (f.label || f) as string; return !l.toLowerCase().includes("unavailable") && f.severity !== "bonus" })
     .slice(0, 4)
@@ -366,7 +374,6 @@ function buildResult(data: any, ca: string): string {
 
   const noFlags = flags === "" ? `<div class="f ok"><div class="ic g">&#10003;</div><div class="ft-txt">No critical flags detected</div></div>` : flags
 
-  // safety strip — use API data
   const mintAuth   = data.mintAuthority   ?? null
   const freezeAuth = data.freezeAuthority ?? null
   const lpStatus   = data.lpBurned === true ? "BURN" : data.lpLocked ? "LOCK" : "NO"
@@ -378,7 +385,6 @@ function buildResult(data: any, ca: string): string {
   const siLP     = `<div class="si"><span>LP</span><b class="${lpStatus === 'NO' ? 'n' : lpStatus === 'BURN' ? 'y' : 'w'}">${lpStatus}</b></div>`
   const siLiq    = liq ? `<div class="si"><span>Liq</span><b class="${liq < 5000 ? 'n' : liq < 30000 ? 'w' : 'y'}">${formatMcap(liq)}</b></div>` : ""
 
-  // footer links
   const isDangerous = riskClass === "danger" || riskClass === "rug"
   const dexLink      = data.pair?.url
     ? `<a href="${data.pair.url}" target="_blank" rel="noopener noreferrer">&#8599; DexScreener</a>`
@@ -448,7 +454,7 @@ async function scan(ca: string) {
     el.innerHTML = `
       <div class="topbar"></div>
       <div class="hd"><span class="brand">ANTARES</span><button class="x" id="ant-close">&times;</button></div>
-      <div style="color:#ff5f5f;font-size:12px;padding:12px 14px">API Error &mdash; retry later</div>
+      <div style="color:#ff5f5f;font-size:12px;padding:12px 14px;font-family:'IBM Plex Mono',monospace">API Error &mdash; retry later</div>
     `
     showBox(); attachClose()
   }
