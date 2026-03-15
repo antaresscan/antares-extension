@@ -13,8 +13,10 @@ body{background:#0f0f11;color:#d0d0d0;font-family:'IBM Plex Mono',monospace;over
 .shell{position:relative;z-index:2;max-width:1100px;margin:0 auto;padding:0 24px 80px}
 nav{display:flex;justify-content:space-between;align-items:center;padding:22px 0;border-bottom:1px solid #1a1a1d;position:sticky;top:3px;z-index:100;background:#0f0f11}
 nav .brand{font:400 26px/1 'Bebas Neue',sans-serif;letter-spacing:.18em;color:#e0e0e0;text-decoration:none}
-nav a{color:#454550;text-decoration:none;font-size:11px;text-transform:uppercase;letter-spacing:.1em;transition:.2s}
-nav a:hover{color:#d0d0d0}
+nav .links{display:flex;gap:22px}
+nav .links a{color:#454550;text-decoration:none;font-size:11px;text-transform:uppercase;letter-spacing:.1em;transition:.2s}
+nav .links a:hover{color:#d0d0d0}
+nav .links a.active{color:#d0d0d0}
 .eng-hero{padding:60px 0 50px;border-bottom:1px solid #1a1a1d;margin-bottom:60px}
 .eyebrow{font-size:10px;color:var(--c);letter-spacing:.3em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px}
 .eyebrow::before{content:'';display:block;width:14px;height:2px;background:var(--c)}
@@ -24,12 +26,6 @@ nav a:hover{color:#d0d0d0}
 .sh2{font:400 38px/1 'Bebas Neue',sans-serif;letter-spacing:.08em;color:#e0e0e0;margin-bottom:6px;padding-bottom:10px;border-bottom:2px solid #1a1a1d;position:relative}
 .sh2::after{content:'';position:absolute;bottom:-2px;left:0;width:40px;height:2px;background:var(--c)}
 .sub{font-size:11px;color:#3a3a3f;letter-spacing:.1em;text-transform:uppercase;margin-bottom:28px}
-/* STAT STRIP */
-.stat-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-bottom:60px}
-.st{background:#141417;border:1px solid #1a1a1d;padding:24px 20px;text-align:center;transition:.2s;cursor:default}
-.st:hover{border-color:var(--c);background:#161619}
-.st strong{display:block;font:400 48px/1 'Bebas Neue',sans-serif;color:var(--c);margin-bottom:6px}
-.st span{font-size:9px;color:#3a3a3f;text-transform:uppercase;letter-spacing:.16em}
 /* SOURCE FULL CARDS */
 .src-list{display:flex;flex-direction:column;gap:2px;margin-bottom:60px}
 .src-big{background:#141417;border:1px solid #1a1a1d;padding:0;overflow:hidden;position:relative;transition:.2s}
@@ -79,10 +75,10 @@ footer span{color:var(--c)}
 <div class="shell">
 <nav>
   <a href="/" class="brand glitch" data-text="ANTARES">ANTARES</a>
-  <div style="display:flex;gap:22px">
+  <div class="links">
     <a href="/features">Features</a>
     <a href="/engine">Engine</a>
-    <a href="/sources">Sources</a>
+    <a href="/sources" class="active">Sources</a>
     <a href="/">&larr; Home</a>
   </div>
 </nav>
@@ -90,18 +86,11 @@ footer span{color:var(--c)}
 <div class="eng-hero">
   <div class="eyebrow">Data Sources</div>
   <h1 class="glitch" data-text="5 APIS. ONE VERDICT.">5 APIS. <span>ONE VERDICT.</span></h1>
-  <p>Antares never trusts a single source. Five independent APIs are queried in parallel on every scan. Each covers a distinct attack surface. Results are cross-validated: when sources conflict, the most conservative verdict wins. A failed source is skipped gracefully without blocking the scan.</p>
-</div>
-
-<div class="stat-strip">
-  <div class="st"><strong>5</strong><span>Sources</span></div>
-  <div class="st"><strong>&#8741;</strong><span>Parallel Queries</span></div>
-  <div class="st"><strong>&lt;2s</strong><span>Total Scan</span></div>
-  <div class="st"><strong>100%</strong><span>Confidence when all pass</span></div>
+  <p>Antares never trusts a single source. Five independent APIs are queried in parallel on every scan. Each covers a distinct attack surface. Results are cross-validated — when sources conflict, the most conservative verdict wins. A failed source is skipped gracefully without blocking the scan.</p>
 </div>
 
 <div class="sh2 glitch" data-text="Data Sources">Data Sources</div>
-<div class="sub">5 APIs, each covering a distinct risk surface</div>
+<div class="sub">5 APIs — each covering a distinct risk surface</div>
 <div class="src-list">
 
   <div class="src-big">
@@ -234,7 +223,6 @@ footer span{color:var(--c)}
 
 </div>
 
-<!-- CROSS-VALIDATION -->
 <div class="cross-block">
   <div class="cross-title glitch" data-text="Cross-Validation Logic">Cross-Validation Logic</div>
   <div class="cross-sub">What happens when sources conflict</div>

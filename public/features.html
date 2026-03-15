@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Antares Features — Every Protection, Explained</title>
-<meta name="description" content="All Antares features in detail: Safe Gate, real-time scanning, 5 sources, Chart Intel, Identity Check, Universal detection." />
+<meta name="description" content="All Antares features: Safe Gate, real-time scanning, 5 sources, Chart Intel, Identity Check, Universal detection — and what you see in your browser." />
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -13,8 +13,10 @@ body{background:#0f0f11;color:#d0d0d0;font-family:'IBM Plex Mono',monospace;over
 .shell{position:relative;z-index:2;max-width:1100px;margin:0 auto;padding:0 24px 80px}
 nav{display:flex;justify-content:space-between;align-items:center;padding:22px 0;border-bottom:1px solid #1a1a1d;position:sticky;top:3px;z-index:100;background:#0f0f11}
 nav .brand{font:400 26px/1 'Bebas Neue',sans-serif;letter-spacing:.18em;color:#e0e0e0;text-decoration:none}
-nav a{color:#454550;text-decoration:none;font-size:11px;text-transform:uppercase;letter-spacing:.1em;transition:.2s}
-nav a:hover{color:#d0d0d0}
+nav .links{display:flex;gap:22px}
+nav .links a{color:#454550;text-decoration:none;font-size:11px;text-transform:uppercase;letter-spacing:.1em;transition:.2s}
+nav .links a:hover{color:#d0d0d0}
+nav .links a.active{color:#d0d0d0}
 .eng-hero{padding:60px 0 50px;border-bottom:1px solid #1a1a1d;margin-bottom:60px}
 .eyebrow{font-size:10px;color:var(--c);letter-spacing:.3em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px}
 .eyebrow::before{content:'';display:block;width:14px;height:2px;background:var(--c)}
@@ -24,7 +26,26 @@ nav a:hover{color:#d0d0d0}
 .sh2{font:400 38px/1 'Bebas Neue',sans-serif;letter-spacing:.08em;color:#e0e0e0;margin-bottom:6px;padding-bottom:10px;border-bottom:2px solid #1a1a1d;position:relative}
 .sh2::after{content:'';position:absolute;bottom:-2px;left:0;width:40px;height:2px;background:var(--c)}
 .sub{font-size:11px;color:#3a3a3f;letter-spacing:.1em;text-transform:uppercase;margin-bottom:28px}
-/* FEATURE FULL CARDS */
+/* PIPELINE FLOW */
+.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;margin-bottom:60px}
+.flow-step{background:#141417;border:1px solid #1a1a1d;padding:20px;text-align:center;position:relative;transition:.2s;cursor:default}
+.flow-step:hover{border-color:var(--c);background:#161619}
+.flow-step:not(:last-child)::after{content:'\2192';position:absolute;right:-14px;top:50%;transform:translateY(-50%);color:#2a2a2f;font-size:18px;z-index:2}
+.flow-n{font:400 36px/1 'Bebas Neue',sans-serif;color:rgba(0,229,176,.2);margin-bottom:6px}
+.flow-step:hover .flow-n{color:var(--c)}
+.flow-label{font-size:10px;color:#bbb;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;font-weight:600}
+.flow-desc{font-size:9px;color:#3a3a3f;line-height:1.6}
+/* SAFE GATE */
+.gate-full{background:#111113;border:1px solid #1c1c14;padding:32px;margin-bottom:60px;position:relative;overflow:hidden}
+.gate-full::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:#f5d000}
+.gate-full-title{font:400 42px/1 'Bebas Neue',sans-serif;color:#f5d000;margin-bottom:6px;letter-spacing:.06em}
+.gate-full-sub{font-size:9px;color:rgba(245,208,0,.4);letter-spacing:.2em;text-transform:uppercase;margin-bottom:18px}
+.gate-full-body{display:grid;grid-template-columns:1fr 1fr;gap:32px}
+.gate-full-desc{font-size:12px;color:#5a5a62;line-height:1.75;border-left:2px solid #f5d000;padding-left:14px}
+.gate-flags{display:flex;flex-direction:column;gap:4px}
+.gf{background:#0f0f11;border:1px solid #1c1c14;padding:10px 14px;font-size:10px;color:#6a5a30;letter-spacing:.06em;display:flex;align-items:center;gap:8px}
+.gf::before{content:'';display:block;width:5px;height:5px;border-radius:50%;background:#f5d000;flex-shrink:0}
+/* FEATURE BLOCKS */
 .feat-list{display:flex;flex-direction:column;gap:2px;margin-bottom:60px}
 .feat-block{background:#141417;border:1px solid #1a1a1d;padding:32px;display:grid;grid-template-columns:80px 1fr 1fr;gap:32px;align-items:start;position:relative;overflow:hidden;transition:.2s;cursor:default}
 .feat-block::before{content:'';position:absolute;top:0;left:0;bottom:0;width:2px;background:var(--c);opacity:.12;transition:opacity .2s}
@@ -40,26 +61,23 @@ nav a:hover{color:#d0d0d0}
 .feat-detail ul{list-style:none;display:flex;flex-direction:column;gap:6px}
 .feat-detail ul li{font-size:11px;color:#4a4a52;line-height:1.6;padding-left:12px;position:relative}
 .feat-detail ul li::before{content:'//';position:absolute;left:0;color:rgba(0,229,176,.3);font-size:9px}
-/* SAFE GATE special */
-.gate-full{background:#111113;border:1px solid #1c1c14;padding:32px;margin-bottom:60px;position:relative;overflow:hidden}
-.gate-full::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:#f5d000}
-.gate-full-title{font:400 42px/1 'Bebas Neue',sans-serif;color:#f5d000;margin-bottom:6px;letter-spacing:.06em}
-.gate-full-sub{font-size:9px;color:rgba(245,208,0,.4);letter-spacing:.2em;text-transform:uppercase;margin-bottom:18px}
-.gate-full-body{display:grid;grid-template-columns:1fr 1fr;gap:32px}
-.gate-full-desc{font-size:12px;color:#5a5a62;line-height:1.75;border-left:2px solid #f5d000;padding-left:14px}
-.gate-flags{display:flex;flex-direction:column;gap:4px}
-.gf{background:#0f0f11;border:1px solid #1c1c14;padding:10px 14px;font-size:10px;color:#6a5a30;letter-spacing:.06em;display:flex;align-items:center;gap:8px}
-.gf::before{content:'';display:block;width:5px;height:5px;border-radius:50%;background:#f5d000;flex-shrink:0}
-/* HOW IT WORKS FLOW */
-.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;margin-bottom:60px}
-.flow-step{background:#141417;border:1px solid #1a1a1d;padding:20px;text-align:center;position:relative;transition:.2s;cursor:default}
-.flow-step:hover{border-color:var(--c);background:#161619}
-.flow-step:not(:last-child)::after{content:'\2192';position:absolute;right:-14px;top:50%;transform:translateY(-50%);color:#2a2a2f;font-size:18px;z-index:2}
-.flow-n{font:400 36px/1 'Bebas Neue',sans-serif;color:rgba(0,229,176,.2);margin-bottom:6px}
-.flow-step:hover .flow-n{color:var(--c)}
-.flow-label{font-size:10px;color:#bbb;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;font-weight:600}
-.flow-desc{font-size:9px;color:#3a3a3f;line-height:1.6}
-/* VERDICT MINI */
+/* OVERLAY PREVIEWS */
+.demo-section{margin-bottom:60px}
+.demo-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:2px}
+.overlay-card{background:#141417;border:1px solid #1e1e22;padding:20px;position:relative;overflow:hidden}
+.ov-top{height:3px;margin-bottom:14px}
+.ov-brand{font-size:9px;letter-spacing:.3em;color:#3a3a3f;margin-bottom:10px}
+.ov-risk{font:400 30px/1 'Bebas Neue',sans-serif;margin-bottom:3px}
+.ov-score{font-size:11px;color:#4a4a50;margin-bottom:10px}
+.ov-score strong{color:#bbb}
+.ov-meta{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:10px}
+.ov-meta div{padding:6px 8px;background:#111114;border:1px solid #1c1c1f}
+.ov-meta span{display:block;font-size:8px;color:#3a3a3f;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1px}
+.ov-meta strong{font-size:11px;color:#bbb}
+.ov-fl{font-size:10px;color:#4a4a52;padding:2px 0 2px 8px;border-left:2px solid rgba(100,100,100,.2);margin-top:2px}
+.ov-srcs{display:flex;gap:4px;margin-top:10px;padding-top:8px;border-top:1px solid #1a1a1d;flex-wrap:wrap}
+.ov-src{font:600 8px/1 'IBM Plex Mono',monospace;padding:3px 6px;background:rgba(0,229,176,.05);border:1px solid rgba(0,229,176,.12);letter-spacing:.06em}
+/* VERDICTS */
 .verdict-row{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-bottom:60px}
 .vd{padding:20px;border:1px solid #1a1a1d;text-align:center;cursor:default;transition:.2s}
 .vd:hover{transform:translateY(-2px)}
@@ -84,8 +102,8 @@ footer span{color:var(--c)}
 <div class="shell">
 <nav>
   <a href="/" class="brand glitch" data-text="ANTARES">ANTARES</a>
-  <div style="display:flex;gap:22px">
-    <a href="/features">Features</a>
+  <div class="links">
+    <a href="/features" class="active">Features</a>
     <a href="/engine">Engine</a>
     <a href="/sources">Sources</a>
     <a href="/">&larr; Home</a>
@@ -95,26 +113,26 @@ footer span{color:var(--c)}
 <div class="eng-hero">
   <div class="eyebrow">Features</div>
   <h1 class="glitch" data-text="EVERY PROTECTION EXPLAINED">EVERY <span>PROTECTION</span> EXPLAINED</h1>
-  <p>Antares is not a simple rug checker. It is a multi-layer passive scanner that runs silently as you browse, combining contract analysis, on-chain data, chart pattern detection, and identity verification into a single verdict — in under 2 seconds.</p>
+  <p>Antares runs silently as you browse. No manual input, no setup. Every Solana address you encounter triggers a full multi-source scan — contract analysis, on-chain data, chart patterns, identity check — in under 2 seconds.</p>
 </div>
 
-<!-- HOW IT RUNS -->
+<!-- PIPELINE -->
 <div class="sh2 glitch" data-text="How It Runs">How It Runs</div>
 <div class="sub">From address detection to verdict — the full pipeline</div>
 <div class="flow">
-  <div class="flow-step"><div class="flow-n">01</div><div class="flow-label">Detect</div><div class="flow-desc">Antares watches every page for Solana contract addresses as you browse.</div></div>
+  <div class="flow-step"><div class="flow-n">01</div><div class="flow-label">Detect</div><div class="flow-desc">Content script watches every page for Solana contract addresses as you browse.</div></div>
   <div class="flow-step"><div class="flow-n">02</div><div class="flow-label">Query</div><div class="flow-desc">5 sources queried in parallel via the Antares API on Vercel Edge.</div></div>
   <div class="flow-step"><div class="flow-n">03</div><div class="flow-label">Analyse</div><div class="flow-desc">6 layers process the data: contract, on-chain, liquidity, holders, identity, chart.</div></div>
-  <div class="flow-step"><div class="flow-n">04</div><div class="flow-label">Score</div><div class="flow-desc">A weighted 0–1000 score is computed. Safe Gate checks run in parallel.</div></div>
+  <div class="flow-step"><div class="flow-n">04</div><div class="flow-label">Score</div><div class="flow-desc">A weighted 0&ndash;1000 score is computed. Safe Gate checks run in parallel.</div></div>
   <div class="flow-step"><div class="flow-n">05</div><div class="flow-label">Display</div><div class="flow-desc">A floating overlay appears in your browser with the verdict and full detail.</div></div>
 </div>
 
-<!-- SAFE GATE FULL -->
+<!-- SAFE GATE -->
 <div class="gate-full">
   <div class="gate-full-title">&#128274; Safe Gate</div>
   <div class="gate-full-sub">Score-independent hard block — cannot be bypassed</div>
   <div class="gate-full-body">
-    <div class="gate-full-desc">The Safe Gate is a hardcoded set of non-negotiable checks that run alongside the scoring system. A token can score 950/1000 and still be fully blocked if a Safe Gate condition is met. This prevents edge cases where a manipulated token looks statistically safe but contains a critical trap. It is the last line of defense and the most important one. It fires instantly on honeypot detection, active mint/freeze authority, bundler launches, and near-zero liquidity.</div>
+    <div class="gate-full-desc">The Safe Gate is a hardcoded set of non-negotiable checks that run alongside the scoring system. A token can score 950/1000 and still be fully blocked if a Safe Gate condition is met. This prevents edge cases where a manipulated token looks statistically safe but contains a critical trap. It is the last line of defense — and the most important one.</div>
     <div class="gate-flags">
       <div class="gf">Honeypot / sell disabled (GoPlus)</div>
       <div class="gf">Mint authority active (Helius RPC)</div>
@@ -127,8 +145,8 @@ footer span{color:var(--c)}
 </div>
 
 <!-- FEATURE DETAILS -->
-<div class="sh2 glitch" data-text="Feature Details">Feature Details</div>
-<div class="sub">6 protection layers, one by one</div>
+<div class="sh2 glitch" data-text="Protection Layers">Protection Layers</div>
+<div class="sub">What Antares checks on every token, automatically</div>
 <div class="feat-list">
 
   <div class="feat-block">
@@ -136,7 +154,7 @@ footer span{color:var(--c)}
     <div class="feat-main">
       <h2>Real-Time Scanning</h2>
       <div class="tag-row"><span class="ftag">PASSIVE</span><span class="ftag">AUTOMATIC</span><span class="ftag">&lt;2s</span></div>
-      <p>Antares runs as a background extension. You do not need to paste a contract address manually. Every time a Solana address appears on a page you visit — Twitter, Telegram web, Discord, any DEX — the scan fires automatically. The overlay appears in under 2 seconds without any user action.</p>
+      <p>Antares runs in the background. You never paste a contract address manually. Every time a Solana address appears on a page you visit — Twitter, Telegram web, Discord, any DEX — the scan fires automatically and the overlay appears in under 2 seconds.</p>
     </div>
     <div class="feat-detail">
       <div class="dl">How it works</div>
@@ -155,7 +173,7 @@ footer span{color:var(--c)}
     <div class="feat-main">
       <h2>5 Data Sources</h2>
       <div class="tag-row"><span class="ftag">DEXSCREENER</span><span class="ftag">RUGCHECK</span><span class="ftag">GOPLUS</span><span class="ftag">HELIUS</span><span class="ftag">SOLSCAN</span></div>
-      <p>No single source is trusted alone. Antares queries 5 independent APIs simultaneously and cross-validates the results. Each source covers a different attack surface: contract code, on-chain state, liquidity, holder distribution, and price manipulation. If sources conflict, the most conservative verdict wins.</p>
+      <p>No single source is trusted alone. Antares queries 5 independent APIs simultaneously and cross-validates results. Each source covers a different attack surface. If sources conflict, the most conservative verdict wins. Full details on the <a href="/sources" style="color:var(--c);text-decoration:none">Sources page</a>.</p>
     </div>
     <div class="feat-detail">
       <div class="dl">Source roles</div>
@@ -164,7 +182,7 @@ footer span{color:var(--c)}
         <li>RugCheck — LP status, metadata, bundler, risk flags</li>
         <li>GoPlus — honeypot, proxy, blacklist, sell restrictions</li>
         <li>Helius RPC — on-chain mint/freeze authority, supply</li>
-        <li>Solscan — holder concentration, token age, volume</li>
+        <li>Solscan — holder count, concentration, token age</li>
       </ul>
     </div>
   </div>
@@ -174,7 +192,7 @@ footer span{color:var(--c)}
     <div class="feat-main">
       <h2>Chart Intelligence</h2>
       <div class="tag-row"><span class="ftag">OHLCV</span><span class="ftag">PUMP DETECTION</span><span class="ftag">WASH TRADING</span></div>
-      <p>Most rug detection tools ignore price action. Antares analyses OHLCV candle data from DexScreener across four time windows (5m, 1h, 6h, 24h) to detect manipulation patterns that precede a rug: parabolic pumps, blow-off tops, and wash trading designed to fake volume and attract buyers.</p>
+      <p>Most rug detection tools ignore price action. Antares analyses OHLCV candle data from DexScreener across four time windows (5m, 1h, 6h, 24h) to detect manipulation patterns that precede a rug: parabolic pumps, blow-off tops, and wash trading designed to fake volume.</p>
     </div>
     <div class="feat-detail">
       <div class="dl">Detected patterns</div>
@@ -193,7 +211,7 @@ footer span{color:var(--c)}
     <div class="feat-main">
       <h2>Identity Check</h2>
       <div class="tag-row"><span class="ftag">COPYCAT</span><span class="ftag">IMPERSONATION</span><span class="ftag">BRANDING</span></div>
-      <p>A large number of scams impersonate established tokens with nearly identical names and symbols. Antares cross-references every token name and ticker against a database of known projects. Copycat detection covers exact matches, unicode spoofing (e.g. вs vs v), and zero-width character tricks used to fool visual inspection.</p>
+      <p>A large number of scams impersonate established tokens with nearly identical names and symbols. Antares cross-references every token name and ticker against known projects. Copycat detection covers exact matches, unicode spoofing (e.g. вs vs v), and zero-width character tricks.</p>
     </div>
     <div class="feat-detail">
       <div class="dl">Detection methods</div>
@@ -212,7 +230,7 @@ footer span{color:var(--c)}
     <div class="feat-main">
       <h2>Universal Detection</h2>
       <div class="tag-row"><span class="ftag">ANY WEBSITE</span><span class="ftag">ANY PAGE</span><span class="ftag">NO SETUP</span></div>
-      <p>Unlike tools that only work on specific DEXs or require manual input, Antares activates on any webpage. Whether you are reading a tweet, browsing a Telegram web channel, on a DEX aggregator, or visiting a project site — if there is a Solana contract address visible, Antares scans it.</p>
+      <p>Unlike tools that only work on specific DEXs or require manual input, Antares activates on any webpage. Whether you are reading a tweet, browsing a Telegram web channel, or visiting a project site — if there is a Solana contract address visible, Antares scans it.</p>
     </div>
     <div class="feat-detail">
       <div class="dl">Supported contexts</div>
@@ -228,9 +246,9 @@ footer span{color:var(--c)}
 
 </div>
 
-<!-- VERDICTS -->
-<div class="sh2">Verdicts</div>
-<div class="sub">Four possible outcomes from the scoring engine</div>
+<!-- VERDICTS + OVERLAYS -->
+<div class="sh2 glitch" data-text="What You See">What You See</div>
+<div class="sub">Four possible verdicts — color-coded overlay in your browser</div>
 <div class="verdict-row">
   <div class="vd" style="background:#0d1a16;border-color:#00e5b0">
     <div class="vd-label" style="color:#00e5b0">SAFE</div>
@@ -251,6 +269,56 @@ footer span{color:var(--c)}
     <div class="vd-label" style="color:#ff2244">RUG PULL</div>
     <div class="vd-range" style="color:#ff2244">0 &ndash; 99</div>
     <div class="vd-desc">Safe Gate triggered or catastrophic score. Do not interact with this token.</div>
+  </div>
+</div>
+
+<div class="demo-section">
+  <div class="sub">Live overlay examples — what appears in your browser on each verdict</div>
+  <div class="demo-grid">
+    <div class="overlay-card">
+      <div class="ov-top" style="background:#00e5b0"></div>
+      <div class="ov-brand">ANTARES</div>
+      <div class="ov-risk" style="color:#00e5b0">SAFE</div>
+      <div class="ov-score">Score <strong>847</strong> / 1000</div>
+      <div class="ov-meta"><div><span>Market Cap</span><strong>$2.4M</strong></div><div><span>Liquidity</span><strong>$184K</strong></div><div><span>Holders</span><strong>1,241</strong></div><div><span>Confidence</span><strong>100%</strong></div></div>
+      <div class="ov-fl" style="border-left-color:rgba(0,229,176,.3)">&#10003; LP Burned</div>
+      <div class="ov-fl" style="border-left-color:rgba(0,229,176,.3)">&#10003; No mint authority</div>
+      <div class="ov-fl" style="border-left-color:rgba(0,229,176,.3)">&#10003; Metadata immutable</div>
+      <div class="ov-srcs"><span class="ov-src" style="color:#00e5b0">DexScreener &#10003;</span><span class="ov-src" style="color:#00e5b0">RugCheck &#10003;</span><span class="ov-src" style="color:#00e5b0">GoPlus &#10003;</span><span class="ov-src" style="color:#00e5b0">Helius &#10003;</span><span class="ov-src" style="color:#00e5b0">Solscan &#10003;</span></div>
+    </div>
+    <div class="overlay-card">
+      <div class="ov-top" style="background:#f5d000"></div>
+      <div class="ov-brand">ANTARES</div>
+      <div class="ov-risk" style="color:#f5d000">CAUTION</div>
+      <div class="ov-score">Score <strong>683</strong> / 1000</div>
+      <div class="ov-meta"><div><span>Market Cap</span><strong>$840K</strong></div><div><span>Liquidity</span><strong>$62K</strong></div><div><span>Holders</span><strong>412</strong></div><div><span>Confidence</span><strong>75%</strong></div></div>
+      <div class="ov-fl" style="border-left-color:rgba(245,208,0,.3)">&#9888; Top 10 holders &gt; 50%</div>
+      <div class="ov-fl" style="border-left-color:rgba(245,208,0,.3)">&#9888; LP lock &lt; 30 days</div>
+      <div class="ov-fl" style="border-left-color:rgba(245,208,0,.3)">&#9888; Metadata mutable</div>
+      <div class="ov-srcs"><span class="ov-src" style="color:#f5d000">DexScreener &#9888;</span><span class="ov-src" style="color:#f5d000">RugCheck &#9888;</span><span class="ov-src" style="color:#f5d000">GoPlus &#9888;</span><span class="ov-src" style="color:#00e5b0">Helius &#10003;</span><span class="ov-src" style="color:#00e5b0">Solscan &#10003;</span></div>
+    </div>
+    <div class="overlay-card">
+      <div class="ov-top" style="background:#ff5f5f"></div>
+      <div class="ov-brand">ANTARES</div>
+      <div class="ov-risk" style="color:#ff5f5f">DANGER</div>
+      <div class="ov-score">Score <strong>412</strong> / 1000</div>
+      <div class="ov-meta"><div><span>Market Cap</span><strong>$52K</strong></div><div><span>Liquidity</span><strong>$4.1K</strong></div><div><span>Holders</span><strong>87</strong></div><div><span>Confidence</span><strong>50%</strong></div></div>
+      <div class="ov-fl" style="border-left-color:rgba(255,95,95,.3)">&#9940; Freeze Authority enabled</div>
+      <div class="ov-fl" style="border-left-color:rgba(255,95,95,.3)">&#9940; Bundler detected</div>
+      <div class="ov-fl" style="border-left-color:rgba(245,208,0,.3)">&#9888; Low liquidity</div>
+      <div class="ov-srcs"><span class="ov-src" style="color:#ff5f5f">DexScreener &#9940;</span><span class="ov-src" style="color:#ff5f5f">RugCheck &#9940;</span><span class="ov-src" style="color:#ff5f5f">GoPlus &#9940;</span><span class="ov-src" style="color:#00e5b0">Helius &#10003;</span><span class="ov-src" style="color:#00e5b0">Solscan &#10003;</span></div>
+    </div>
+    <div class="overlay-card">
+      <div class="ov-top" style="background:#ff2244"></div>
+      <div class="ov-brand">ANTARES</div>
+      <div class="ov-risk" style="color:#ff2244">RUG PULL</div>
+      <div class="ov-score">Score <strong>87</strong> / 1000</div>
+      <div class="ov-meta"><div><span>Market Cap</span><strong>$3.2K</strong></div><div><span>Liquidity</span><strong>$180</strong></div><div><span>Holders</span><strong>12</strong></div><div><span>Confidence</span><strong>100%</strong></div></div>
+      <div class="ov-fl" style="border-left-color:rgba(255,34,68,.4)">&#9940; Honeypot detected</div>
+      <div class="ov-fl" style="border-left-color:rgba(255,34,68,.4)">&#9940; Mint + Freeze active</div>
+      <div class="ov-fl" style="border-left-color:rgba(255,34,68,.4)">&#9940; Cannot sell &mdash; Safe Gate</div>
+      <div class="ov-srcs"><span class="ov-src" style="color:#ff2244">DexScreener &#9940;</span><span class="ov-src" style="color:#ff2244">RugCheck &#9940;</span><span class="ov-src" style="color:#ff2244">GoPlus &#9940;</span><span class="ov-src" style="color:#ff2244">Helius &#9940;</span><span class="ov-src" style="color:#ff5f5f">Solscan &#9888;</span></div>
+    </div>
   </div>
 </div>
 
