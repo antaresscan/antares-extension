@@ -12,9 +12,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--c:#00e5b0}
+:root{--c:#00e5b0;--txt:#d0d0d0}
 html{cursor:crosshair;scroll-behavior:smooth}
-body{background:#0f0f11;color:#d0d0d0;font-family:'IBM Plex Mono',monospace;overflow-x:hidden}
+body{background:#0f0f11;color:var(--txt);font-family:'IBM Plex Mono',monospace;overflow-x:hidden}
 
 .stripe{position:fixed;top:0;left:0;right:0;height:3px;z-index:999;
   background:linear-gradient(90deg,#c0007a,#00e5b0,#c8c000,#c0002a,#00e5b0,#c0007a);
@@ -33,33 +33,29 @@ nav .links a{font-size:11px;color:#454550;text-decoration:none;letter-spacing:.1
 nav .links a:hover{color:#d0d0d0}
 nav .tag{font-size:10px;color:#333;border:1px solid #1e1e22;padding:5px 10px;letter-spacing:.08em}
 
+/* HERO */
 .hero{display:grid;grid-template-columns:1.15fr .85fr;gap:60px;
-  align-items:center;min-height:auto;padding:50px 0 20px}
-
+  align-items:center;padding:60px 0 40px}
 .hero-eye{font:600 11px/1 'IBM Plex Mono',monospace;color:var(--c);
   letter-spacing:.28em;text-transform:uppercase;margin-bottom:16px;
   display:flex;align-items:center;gap:10px}
 .hero-eye::before{content:'';display:block;width:18px;height:2px;background:var(--c)}
-
 .hero h1{font:400 clamp(62px,10.5vw,126px)/.88 'Bebas Neue',sans-serif;
   letter-spacing:.04em;margin-bottom:20px;color:#e8e8e8}
 .hero h1 .accent{color:var(--c)}
-
-.hero p{font-size:13px;color:#5a5a62;line-height:1.75;max-width:500px;
+.hero-sub{font-size:13px;color:#5a5a62;line-height:1.75;max-width:500px;
   margin-bottom:28px;border-left:2px solid var(--c);padding-left:14px}
-
-.cta-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.cta-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px}
 .cta{padding:14px 28px;font:700 11px/1 'IBM Plex Mono',monospace;
   text-decoration:none;text-transform:uppercase;letter-spacing:.1em;transition:all .2s}
 .cta.main{background:var(--c);color:#0f0f11;box-shadow:3px 3px 0 #fff}
 .cta.main:hover{box-shadow:5px 5px 0 var(--c);transform:translate(-2px,-2px);background:#fff}
 .cta.alt{color:#555;border:1px solid #222}
 .cta.alt:hover{border-color:#888;color:#d0d0d0}
-
-.trust-row{display:flex;gap:10px;flex-wrap:wrap}
-.trust-badge{font-size:9px;color:#2a2a2f;letter-spacing:.12em;text-transform:uppercase;
+.trust-row{display:flex;gap:12px;flex-wrap:wrap}
+.tbadge{font-size:9px;color:#2a2a2f;letter-spacing:.1em;text-transform:uppercase;
   display:flex;align-items:center;gap:5px}
-.trust-badge::before{content:'✓';color:var(--c);font-size:8px}
+.tbadge span{color:var(--c)}
 
 /* POPUP */
 .p{width:290px;overflow:hidden;position:relative;
@@ -130,58 +126,66 @@ nav .tag{font-size:10px;color:#333;border:1px solid #1e1e22;padding:5px 10px;let
 .fo a.warn:hover{border-color:rgba(255,95,95,.2);color:#ff5f5f;background:rgba(255,95,95,.03)}
 
 /* STEPS */
-.steps-grid{display:grid;grid-template-columns:1fr 1fr 1fr;padding:20px 0;width:100%}
-.step{background:transparent;border:none;padding:28px;text-align:center;
-  position:relative;cursor:default;min-width:0}
-.step-n{font:400 56px/1 'Bebas Neue',sans-serif;color:rgba(0,229,176,.06);
-  margin-bottom:6px;transition:.3s}
+.step{background:transparent;padding:28px;text-align:center;position:relative;cursor:default}
+.step-n{font:400 56px/1 'Bebas Neue',sans-serif;color:rgba(0,229,176,.06);margin-bottom:6px;transition:.3s}
 .step:hover .step-n{color:rgba(0,229,176,.2)}
-.step h3{font-size:12px;color:#d0d0d0;letter-spacing:.1em;text-transform:uppercase;
-  margin-bottom:6px;font-weight:600}
+.step h3{font-size:12px;color:var(--txt);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;font-weight:600}
 .step p{font-size:10px;color:#4a4a52;line-height:1.5}
-.step:not(:last-child)::after{content:'→';position:absolute;right:0;top:50%;
-  transform:translateY(-50%);color:#1e1e22;font-size:16px;z-index:2}
+.step:not(:last-child)::after{content:'\2192';position:absolute;right:0;top:50%;transform:translateY(-50%);color:#1e1e22;font-size:16px}
 
 /* NUMBERS */
 .numbers{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-bottom:70px}
-.nc{background:#141417;padding:30px 20px;text-align:center;
-  border:1px solid #1a1a1d;transition:.2s;cursor:default}
+.nc{background:#141417;padding:30px 20px;text-align:center;border:1px solid #1a1a1d;transition:.2s;cursor:default}
 .nc:hover{border-color:var(--c);background:#161619}
 .nc:hover strong{color:var(--c)}
-.nc strong{display:block;font:400 52px/1 'Bebas Neue',sans-serif;
-  color:#d0d0d0;margin-bottom:5px;transition:.2s}
+.nc strong{display:block;font:400 52px/1 'Bebas Neue',sans-serif;color:#d0d0d0;margin-bottom:5px;transition:.2s}
 .nc span{font-size:10px;color:#3a3a3f;text-transform:uppercase;letter-spacing:.14em}
 
 /* SECTION LABEL */
 .sl{font:400 48px/1 'Bebas Neue',sans-serif;letter-spacing:.1em;
-  margin-bottom:28px;padding-bottom:10px;border-bottom:2px solid #1a1a1d;position:relative}
+  margin-bottom:8px;padding-bottom:10px;border-bottom:2px solid #1a1a1d;position:relative}
 .sl::after{content:'';position:absolute;bottom:-2px;left:0;width:50px;height:2px;background:var(--c)}
+.sl-sub{font-size:11px;color:#3a3a42;letter-spacing:.14em;text-transform:uppercase;margin-bottom:28px}
 
 /* FEATURES */
+.feat-section{padding:70px 0 0}
 .features{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-bottom:70px}
-.fc{background:#141417;padding:22px;border:1px solid #1a1a1d;
-  transition:all .2s;cursor:pointer;position:relative;overflow:hidden;text-decoration:none;display:block}
-.fc::before{content:'';position:absolute;top:0;left:0;right:0;height:0;
-  background:rgba(0,229,176,.03);transition:height .3s}
+.fc{background:#141417;padding:22px;border:1px solid #1a1a1d;transition:all .2s;cursor:default;position:relative;overflow:hidden}
+.fc::before{content:'';position:absolute;top:0;left:0;right:0;height:0;background:rgba(0,229,176,.03);transition:height .3s}
 .fc:hover::before{height:100%}
 .fc:hover{border-color:#333;padding-left:28px}
-.fc .icon{font-size:20px;margin-bottom:10px}
-.fc h3{font-size:12px;letter-spacing:.06em;margin-bottom:5px;color:#bbb}
+.fc .icon{font-size:20px;margin-bottom:8px}
+.fc h3{font-size:12px;letter-spacing:.06em;margin-bottom:4px;color:#bbb;text-transform:uppercase}
+.benefit{font-size:10px;color:var(--c);letter-spacing:.04em;margin-bottom:6px;opacity:.7}
 .fc p{font-size:11px;color:#4a4a52;line-height:1.65}
-.fc .more{font-size:9px;color:rgba(0,229,176,.35);letter-spacing:.12em;
-  text-transform:uppercase;margin-top:10px;transition:.2s}
-.fc:hover .more{color:var(--c)}
+
+/* MARQUEE */
+.marquee-wrap{overflow:hidden;border-top:1px solid #1a1a1d;border-bottom:1px solid #1a1a1d;padding:12px 0;margin:0 0 70px}
+.marquee-inner{display:flex;animation:scroll 30s linear infinite;white-space:nowrap}
+@keyframes scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.mi{font:400 18px/1 'Bebas Neue',sans-serif;color:#252528;letter-spacing:.12em;padding:0 28px}
+.mi .hi{color:var(--c)}
 
 /* SOURCES */
+.src-section{padding:70px 0 0}
 .sources{display:flex;gap:2px;margin-bottom:70px}
-.sp{flex:1;background:#141417;padding:18px;text-align:center;
-  font-size:11px;color:#454550;letter-spacing:.12em;text-transform:uppercase;
-  border:1px solid #1a1a1d;transition:all .2s;cursor:pointer;position:relative;
-  text-decoration:none;display:block}
-.sp::after{content:'';position:absolute;bottom:0;left:50%;right:50%;
-  height:2px;background:var(--c);transition:.3s ease}
+.sp{flex:1;background:#141417;padding:18px;text-align:center;font-size:11px;color:#454550;
+  letter-spacing:.12em;text-transform:uppercase;border:1px solid #1a1a1d;
+  transition:all .2s;cursor:pointer;position:relative;text-decoration:none;display:block}
+.sp::after{content:'';position:absolute;bottom:0;left:50%;right:50%;height:2px;background:var(--c);transition:.3s ease}
 .sp:hover::after{left:0;right:0}
 .sp:hover{color:var(--c);background:#161619}
+
+/* ENGINE */
+.engine-section{padding:70px 0 70px}
+
+/* HOW */
+.how-section{padding:70px 0 0}
+.how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-bottom:70px}
+.hw{background:#141417;padding:24px;border:1px solid #1a1a1d;position:relative;overflow:hidden}
+.hw-n{font:400 64px/1 'Bebas Neue',sans-serif;color:rgba(0,229,176,.04);position:absolute;top:10px;right:14px}
+.hw h3{font-size:11px;color:#bbb;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;font-weight:600}
+.hw p{font-size:11px;color:#4a4a52;line-height:1.65}
 
 /* CTA BLOCK */
 .cta-block{text-align:center;padding:56px;margin-bottom:56px;
@@ -189,23 +193,12 @@ nav .tag{font-size:10px;color:#333;border:1px solid #1e1e22;padding:5px 10px;let
 .cta-block::before{content:'ANTARES';position:absolute;top:50%;left:50%;
   transform:translate(-50%,-50%);font:400 160px/1 'Bebas Neue',sans-serif;
   color:rgba(255,255,255,.012);pointer-events:none;white-space:nowrap}
-.cta-block h2{font:400 44px/1 'Bebas Neue',sans-serif;letter-spacing:.1em;
-  margin-bottom:10px;position:relative;color:#e0e0e0}
+.cta-block h2{font:400 44px/1 'Bebas Neue',sans-serif;letter-spacing:.1em;margin-bottom:10px;position:relative;color:#e0e0e0}
 .cta-block p{font-size:12px;color:#4a4a52;margin-bottom:22px;position:relative}
-
-/* MARQUEE */
-.marquee-wrap{overflow:hidden;border-top:1px solid #1a1a1d;
-  border-bottom:1px solid #1a1a1d;padding:12px 0}
-.marquee-inner{display:flex;animation:scroll 30s linear infinite;white-space:nowrap}
-@keyframes scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-.mi{font:400 18px/1 'Bebas Neue',sans-serif;color:#252528;letter-spacing:.12em;padding:0 28px}
-.mi .hi{color:var(--c)}
 
 footer{text-align:center;padding:28px;color:#2a2a2f;font-size:10px;
   border-top:1px solid #1a1a1d;letter-spacing:.15em;text-transform:uppercase}
 footer span{color:var(--c)}
-
-section{padding:70px 0 0}
 
 .glitch{position:relative;display:inline-block;cursor:default;user-select:none}
 .glitch::before,.glitch::after{content:attr(data-text);position:absolute;top:0;left:0;
@@ -234,54 +227,53 @@ section{padding:70px 0 0}
 <nav>
   <div class="brand glitch" data-text="ANTARES">ANTARES</div>
   <div class="links">
-    <a href="/features">Features</a>
-    <a href="/engine">Engine</a>
-    <a href="/sources">Sources</a>
+    <a href="#features">Features</a>
+    <a href="#engine">Engine</a>
+    <a href="#sources">Sources</a>
   </div>
   <div class="tag">v4.5.3 // SOLANA</div>
 </nav>
 
-<div class="hero">
+<section class="hero">
   <div>
     <div class="hero-eye">Solana Token Scanner</div>
     <h1><span class="glitch" data-text="STOP">STOP</span><br><span class="glitch" data-text="GETTING">GETTING</span><br><span class="accent glitch" data-text="SCAMMED.">SCAMMED.</span></h1>
-    <p>5 sources. 6 layers. 1000-point score. Every Solana token scanned in under 2 seconds — before you click buy.</p>
-    <div class="cta-row">
-      <a class="cta main ripple-container" href="#">&#9889; INSTALL FREE &mdash; CHROME</a>
-      <a class="cta alt" href="/features">Learn more &rarr;</a>
-    </div>
+    <p class="hero-sub">5 sources. 6 layers. 1000-point score. Every Solana token scanned in under 2 seconds &mdash; before you click buy.</p>
+    <div class="cta-row"><a class="cta main tactile-hover" href="#">&#9889; Install Free &mdash; Chrome</a></div>
     <div class="trust-row">
-      <span class="trust-badge">Twitter</span>
-      <span class="trust-badge">Telegram</span>
-      <span class="trust-badge">DexScreener</span>
-      <span class="trust-badge">Any Website</span>
+      <span class="tbadge"><span>&#10003;</span>Twitter</span>
+      <span class="tbadge"><span>&#10003;</span>Telegram</span>
+      <span class="tbadge"><span>&#10003;</span>DexScreener</span>
+      <span class="tbadge"><span>&#10003;</span>Any Website</span>
     </div>
   </div>
-  <div id="pv-wrap" style="width:290px;transition:opacity .3s">
-    <div class="p s">
-      <div class="bar"></div>
-      <div class="hd"><span>ANTARES</span><div class="x">&times;</div></div>
-      <div class="tk"><b>WIF</b> dogwifhat</div>
-      <div class="vb"><h1>SAFE</h1></div>
-      <div class="sr"><span class="n"><b>847</b> / 1000</span><div class="dots"><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div></div></div>
-      <div class="sbar"><div class="sbar-fill"></div></div>
-      <div class="sum">All 5 sources agree &mdash; no issues found</div>
-      <div class="sep"></div>
-      <div class="fl"><div class="f ok"><div class="ic g">&#10003;</div><div class="ft-txt">No critical flags detected</div></div></div>
-      <div class="sep"></div>
-      <div class="ss">
-        <div class="si"><span>Sell</span><b class="y">&#10003;</b></div>
-        <div class="si"><span>Mint</span><b class="y">OFF</b></div>
-        <div class="si"><span>Freeze</span><b class="y">OFF</b></div>
-        <div class="si"><span>LP</span><b class="y">BURN</b></div>
-        <div class="si"><span>Liq</span><b class="y">$184K</b></div>
+  <div>
+    <div id="pv-wrap" style="width:290px;transition:opacity .3s">
+      <div class="p s">
+        <div class="bar"></div>
+        <div class="hd"><span>ANTARES</span><div class="x">&times;</div></div>
+        <div class="tk"><b>WIF</b> dogwifhat</div>
+        <div class="vb"><h1>SAFE</h1></div>
+        <div class="sr"><span class="n"><b>847</b> / 1000</span><div class="dots"><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div></div></div>
+        <div class="sbar"><div class="sbar-fill"></div></div>
+        <div class="sum">All 5 sources agree &mdash; no issues found</div>
+        <div class="sep"></div>
+        <div class="fl"><div class="f ok"><div class="ic g">&#10003;</div><div class="ft-txt">No critical flags detected</div></div></div>
+        <div class="sep"></div>
+        <div class="ss">
+          <div class="si"><span>Sell</span><b class="y">&#10003;</b></div>
+          <div class="si"><span>Mint</span><b class="y">OFF</b></div>
+          <div class="si"><span>Freeze</span><b class="y">OFF</b></div>
+          <div class="si"><span>LP</span><b class="y">BURN</b></div>
+          <div class="si"><span>Liq</span><b class="y">$184K</b></div>
+        </div>
+        <div class="fo"><a href="#">&#8599; Chart</a><a href="#">Details &rarr;</a></div>
       </div>
-      <div class="fo"><a href="#">&#8599; Chart</a><a href="#">Details &rarr;</a></div>
     </div>
   </div>
-</div>
+</section>
 
-<div class="steps-grid">
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;padding:20px 0;width:100%">
   <div class="step">
     <div class="step-n">01</div><h3>Install</h3><p>One click. No account. No config.</p>
   </div>
@@ -300,45 +292,18 @@ section{padding:70px 0 0}
   <div class="nc"><strong>&lt;2s</strong><span>Scan Time</span></div>
 </div>
 
-<section id="features">
-<div class="sl glitch" data-text="Features">Features</div>
-<div class="features">
-  <a class="fc" href="/features"><div class="icon">🛡️</div><h3>Safe Gate</h3><p>One critical flag = token blocked. No override.</p><div class="more">Learn more &rarr;</div></a>
-  <a class="fc" href="/features"><div class="icon">⚡</div><h3>Real-time</h3><p>Address appears, scan fires. Under 2 seconds.</p><div class="more">Learn more &rarr;</div></a>
-  <a class="fc" href="/sources"><div class="icon">🔗</div><h3>5 Sources</h3><p>Conflicts resolve to the most dangerous verdict.</p><div class="more">Learn more &rarr;</div></a>
-  <a class="fc" href="/features"><div class="icon">📊</div><h3>Chart Intel</h3><p>Pumps, blow-off tops, wash trading — all flagged.</p><div class="more">Learn more &rarr;</div></a>
-  <a class="fc" href="/features"><div class="icon">🪬</div><h3>Identity Check</h3><p>Copycat names, unicode tricks, symbol collisions.</p><div class="more">Learn more &rarr;</div></a>
-  <a class="fc" href="/features"><div class="icon">🌐</div><h3>Universal</h3><p>Any website with a Solana address. Already scanned.</p><div class="more">Learn more &rarr;</div></a>
-</div>
+<section class="feat-section" id="features">
+  <div class="sl glitch" data-text="Protection">Protection</div>
+  <div class="sl-sub">Automatic. Silent. Always on.</div>
+  <div class="features">
+    <div class="fc"><div class="icon">&#128737;&#65039;</div><h3>Safe Gate</h3><div class="benefit">You never touch a honeypot.</div><p>One critical flag = token blocked. No override.</p></div>
+    <div class="fc"><div class="icon">&#9889;</div><h3>Real-Time</h3><div class="benefit">You never have to think about it.</div><p>Address appears, scan fires. Under 2 seconds.</p></div>
+    <div class="fc"><div class="icon">&#128279;</div><h3>5 Sources</h3><div class="benefit">You never trust a single data point.</div><p>Conflicts resolve to the most dangerous verdict.</p></div>
+    <div class="fc"><div class="icon">&#128202;</div><h3>Chart Intel</h3><div class="benefit">You see the dump before it happens.</div><p>Pumps, blow-off tops, wash trading &mdash; all flagged.</p></div>
+    <div class="fc"><div class="icon">&#129518;</div><h3>Identity Check</h3><div class="benefit">You never fall for a fake.</div><p>Copycat names, unicode tricks, symbol collisions.</p></div>
+    <div class="fc"><div class="icon">&#127760;</div><h3>Universal</h3><div class="benefit">You are protected everywhere.</div><p>Any website with a Solana address. Already scanned.</p></div>
+  </div>
 </section>
-
-<section id="sources">
-<div class="sl glitch" data-text="Data Sources">Data Sources</div>
-<div class="sources">
-  <a class="sp" href="/sources">DexScreener</a>
-  <a class="sp" href="/sources">RugCheck</a>
-  <a class="sp" href="/sources">GoPlus</a>
-  <a class="sp" href="/sources">Helius RPC</a>
-  <a class="sp" href="/sources">Solscan</a>
-</div>
-</section>
-
-<section id="engine" style="padding-bottom:70px">
-<div class="sl glitch" data-text="Engine">Engine</div>
-<div style="background:#141417;border:1px solid #1a1a1d;padding:36px;position:relative;overflow:hidden">
-  <div style="position:absolute;top:0;left:0;right:0;height:2px;background:var(--c)"></div>
-  <div style="font-size:10px;color:var(--c);letter-spacing:.24em;text-transform:uppercase;margin-bottom:14px">ANTARES SCORING ENGINE</div>
-  <div style="font:400 38px/1 'Bebas Neue',sans-serif;color:#e0e0e0;margin-bottom:12px;letter-spacing:.06em">HOW THE SCORE IS BUILT</div>
-  <p style="font-size:12px;color:#4a4a52;line-height:1.75;max-width:700px;margin-bottom:28px;border-left:2px solid var(--c);padding-left:14px">Antares queries 5 independent data sources in parallel, runs 6 analysis layers and aggregates everything into a 0–1000 score. Each layer can contribute positive or negative points. A Safe Gate overrides any score: if a critical flag is raised, the token is blocked regardless of its numeric score.</p>
-  <a href="/engine" style="display:inline-block;padding:12px 28px;background:transparent;border:1px solid var(--c);color:var(--c);font:700 11px/1 'IBM Plex Mono',monospace;text-decoration:none;letter-spacing:.1em;text-transform:uppercase;transition:.2s" onmouseover="this.style.background='rgba(0,229,176,.08)'" onmouseout="this.style.background='transparent'">Explore the Engine &rarr;</a>
-</div>
-</section>
-
-<div class="cta-block" style="margin-top:70px">
-  <h2 class="glitch" data-text="READY TO STOP LOSING MONEY?">READY TO STOP LOSING MONEY?</h2>
-  <p>Install Antares and never trust an unscanned token again.</p>
-  <a class="cta main" href="#">&#9889; Install for Free</a>
-</div>
 
 <div class="marquee-wrap">
   <div class="marquee-inner">
@@ -351,6 +316,46 @@ section{padding:70px 0 0}
     <span class="mi"><span class="hi">ANTI-RUG</span> &middot; ANTI-HONEYPOT &middot; ANTI-BUNDLER &middot; </span>
     <span class="mi">CHART INTEL &middot; <span class="hi">IDENTITY CHECK</span> &middot; SOLANA &middot; </span>
   </div>
+</div>
+
+<section class="src-section" id="sources">
+  <div class="sl glitch" data-text="Data Sources">Data Sources</div>
+  <div class="sl-sub">5 independent sources. Worst verdict wins.</div>
+  <div class="sources">
+    <a class="sp" href="#">DexScreener</a>
+    <a class="sp" href="#">RugCheck</a>
+    <a class="sp" href="#">GoPlus</a>
+    <a class="sp" href="#">Helius RPC</a>
+    <a class="sp" href="#">Solscan</a>
+  </div>
+</section>
+
+<section class="how-section">
+  <div class="sl glitch" data-text="How It Works">How It Works</div>
+  <div class="sl-sub">3 steps. Zero effort on your part.</div>
+  <div class="how-grid">
+    <div class="hw"><div class="hw-n">01</div><h3>Install</h3><p>One click in the Chrome Web Store. No account, no config, no permissions beyond what&#8217;s needed.</p></div>
+    <div class="hw"><div class="hw-n">02</div><h3>Browse Normally</h3><p>Open Twitter, Telegram, DexScreener &mdash; anywhere. Antares runs silently in the background.</p></div>
+    <div class="hw"><div class="hw-n">03</div><h3>Stay Protected</h3><p>Every Solana address triggers a scan. Verdict delivered in under 2 seconds, right where you see the token.</p></div>
+  </div>
+</section>
+
+<section class="engine-section" id="engine">
+  <div class="sl glitch" data-text="Engine">Engine</div>
+  <div class="sl-sub">How the 0&ndash;1000 score is built.</div>
+  <div style="background:#141417;border:1px solid #1a1a1d;padding:36px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:0;left:0;right:0;height:2px;background:var(--c)"></div>
+    <div style="font-size:10px;color:var(--c);letter-spacing:.24em;text-transform:uppercase;margin-bottom:14px">ANTARES SCORING ENGINE</div>
+    <div style="font:400 38px/1 'Bebas Neue',sans-serif;color:#e0e0e0;margin-bottom:12px;letter-spacing:.06em">HOW THE SCORE IS BUILT</div>
+    <p style="font-size:12px;color:#4a4a52;line-height:1.75;max-width:700px;margin-bottom:28px;border-left:2px solid var(--c);padding-left:14px">Antares queries 5 independent data sources in parallel, runs 6 analysis layers and aggregates everything into a 0&ndash;1000 score. Each layer can contribute positive or negative points. A Safe Gate overrides any score: if a critical flag is raised, the token is blocked regardless of its numeric score.</p>
+    <a href="#" style="display:inline-block;padding:12px 28px;background:transparent;border:1px solid var(--c);color:var(--c);font:700 11px/1 'IBM Plex Mono',monospace;text-decoration:none;letter-spacing:.1em;text-transform:uppercase;transition:.2s" onmouseover="this.style.background='rgba(0,229,176,.08)'" onmouseout="this.style.background='transparent'">Explore the Engine &rarr;</a>
+  </div>
+</section>
+
+<div class="cta-block">
+  <h2 class="glitch" data-text="READY TO STOP LOSING MONEY?">READY TO STOP LOSING MONEY?</h2>
+  <p>Install Antares and never trust an unscanned token again.</p>
+  <a class="cta main tactile-hover" href="#">&#9889; Install for Free</a>
 </div>
 
 <footer>Antares v4.5.3 &mdash; <span>No mercy for scammers.</span></footer>
@@ -408,14 +413,12 @@ section{padding:70px 0 0}
     t.appendChild(r)
     setTimeout(()=>r.remove(),600)
   })
-  document.querySelectorAll('a,button,.nc,.fc,.sp').forEach(el=>{
-    el.classList.add('tactile-hover')
-  })
+  document.querySelectorAll('a,button,.nc,.fc,.sp,.cta').forEach(el=>el.classList.add('tactile-hover'))
   var cards=[
     '<div class="p s"><div class="bar"></div><div class="hd"><span>ANTARES</span><div class="x">&times;</div></div><div class="tk"><b>WIF</b> dogwifhat</div><div class="vb"><h1>SAFE</h1></div><div class="sr"><span class="n"><b>847</b> / 1000</span><div class="dots"><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div></div></div><div class="sbar"><div class="sbar-fill"></div></div><div class="sum">All 5 sources agree \u2014 no issues found</div><div class="sep"></div><div class="fl"><div class="f ok"><div class="ic g">\u2713</div><div class="ft-txt">No critical flags detected</div></div></div><div class="sep"></div><div class="ss"><div class="si"><span>Sell</span><b class="y">\u2713</b></div><div class="si"><span>Mint</span><b class="y">OFF</b></div><div class="si"><span>Freeze</span><b class="y">OFF</b></div><div class="si"><span>LP</span><b class="y">BURN</b></div><div class="si"><span>Liq</span><b class="y">$184K</b></div></div><div class="fo"><a href="#">\u2197 Chart</a><a href="#">Details \u2192</a></div></div>',
     '<div class="p c"><div class="bar"></div><div class="hd"><span>ANTARES</span><div class="x">&times;</div></div><div class="tk"><b>MICHI</b> michi</div><div class="vb"><h1>CAUTION</h1></div><div class="sr"><span class="n"><b>523</b> / 1000</span><div class="dots"><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt off"></div></div></div><div class="sbar"><div class="sbar-fill"></div></div><div class="sum">3 issues detected from 4 sources</div><div class="sep"></div><div class="fl"><div class="f cr"><div class="ic r">\u2715</div><div class="ft-txt">Wash trading suspected <em>vol/liq &gt; 20</em></div></div><div class="f wr"><div class="ic y">!</div><div class="ft-txt">LP not burned or locked</div></div><div class="f wr"><div class="ic y">!</div><div class="ft-txt">Metadata mutable</div></div></div><div class="sep"></div><div class="ss"><div class="si"><span>Sell</span><b class="y">\u2713</b></div><div class="si"><span>Mint</span><b class="y">OFF</b></div><div class="si"><span>Freeze</span><b class="y">OFF</b></div><div class="si"><span>LP</span><b class="n">NO</b></div><div class="si"><span>Liq</span><b class="w">$47K</b></div></div><div class="fo"><a href="#">\u2197 Chart</a><a href="#">Details \u2192</a></div></div>',
-    '<div class="p d"><div class="bar"></div><div class="hd"><span>ANTARES</span><div class="x">&times;</div></div><div class="tk"><b>FAKE</b> elonmusktoken</div><div class="vb"><h1>DANGER</h1></div><div class="sr"><span class="n"><b>285</b> / 1000</span><div class="dots"><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt off"></div><div class="dt off"></div></div></div><div class="sbar"><div class="sbar-fill"></div></div><div class="sum">3 issues \u2014 2 critical \u2014 from 3 sources</div><div class="sep"></div><div class="fl"><div class="f cr"><div class="ic r">\u2715</div><div class="ft-txt"><em>Freeze</em> active \u2014 your wallet can be locked</div></div><div class="f cr"><div class="ic r">\u2715</div><div class="ft-txt"><em>Bundler</em> detected \u2014 coordinated bot launch</div></div><div class="f wr"><div class="ic y">!</div><div class="ft-txt">Top 10 wallets hold <em>&gt; 72%</em> supply</div></div></div><div class="sep"></div><div class="ss"><div class="si"><span>Sell</span><b class="y">\u2713</b></div><div class="si"><span>Mint</span><b class="y">OFF</b></div><div class="si"><span>Freeze</span><b class="n">ON</b></div><div class="si"><span>LP</span><b class="w">7D</b></div><div class="si"><span>Liq</span><b class="n">$4K</b></div></div><div class="fo"><a href="#" class="warn">\u26a0 Risks</a><a href="#">Details \u2192</a></div></div>',
-    '<div class="p r"><div class="bar"></div><div class="hd"><span>ANTARES</span><div class="x">&times;</div></div><div class="tk"><b>SCAM</b> totallylegittoken</div><div class="vb"><h1>RUG PULL</h1></div><div class="sr"><span class="n"><b>87</b> / 1000</span><div class="dots"><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div></div></div><div class="sbar"><div class="sbar-fill"></div></div><div class="sum">4 critical issues \u2014 Safe Gate blocked this token</div><div class="sep"></div><div class="fl"><div class="f cr"><div class="ic r">\u2715</div><div class="ft-txt"><em>Honeypot</em> \u2014 you cannot sell this token</div></div><div class="f cr"><div class="ic r">\u2715</div><div class="ft-txt"><em>Mint</em> active \u2014 supply can be inflated</div></div><div class="f cr"><div class="ic r">\u2715</div><div class="ft-txt"><em>Freeze</em> active \u2014 wallets can be locked</div></div><div class="f cr"><div class="ic r">\u2715</div><div class="ft-txt"><em>Liquidity $180</em> \u2014 Safe Gate trigger</div></div></div><div class="sep"></div><div class="ss"><div class="si"><span>Sell</span><b class="n">\u2715</b></div><div class="si"><span>Mint</span><b class="n">ON</b></div><div class="si"><span>Freeze</span><b class="n">ON</b></div><div class="si"><span>LP</span><b class="n">\u2014</b></div><div class="si"><span>Liq</span><b class="n">$180</b></div></div><div class="fo"><a href="#" class="warn">\u26a0 Report token</a><a href="#">Details \u2192</a></div></div>'
+    '<div class="p d"><div class="bar"></div><div class="hd"><span>ANTARES</span><div class="x">&times;</div></div><div class="tk"><b>FAKE</b> elonmusktoken</div><div class="vb"><h1>DANGER</h1></div><div class="sr"><span class="n"><b>285</b> / 1000</span><div class="dots"><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt off"></div><div class="dt off"></div></div></div><div class="sbar"><div class="sbar-fill"></div></div><div class="sum">3 issues \u2014 2 critical \u2014 from 3 sources</div><div class="sep"></div><div class="fl"><div class="f cr"><div class="ic r">\u2715</div><div class="ft-txt"><em>Freeze</em> active \u2014 your wallet can be locked</div></div><div class="f cr"><div class="ic r">\u2715</div><div class="ft-txt"><em>Bundler</em> detected \u2014 coordinated bot launch</div></div><div class="f wr"><div class="ic y">!</div><div class="ft-txt">Top 10 wallets hold <em>&gt; 72%</em> supply</div></div></div><div class="sep"></div><div class="ss"><div class="si"><span>Sell</span><b class="y">\u2713</b></div><div class="si"><span>Mint</span><b class="y">OFF</b></div><div class="si"><span>Freeze</span><b class="n">ON</b></div><div class="si"><span>LP</span><b class="w">7D</b></div><div class="si"><span>Liq</span><b class="n">$4K</b></div></div><div class="fo"><a href="#" class="warn">\u26A0 Risks</a><a href="#">Details \u2192</a></div></div>',
+    '<div class="p r"><div class="bar"></div><div class="hd"><span>ANTARES</span><div class="x">&times;</div></div><div class="tk"><b>SCAM</b> totallylegittoken</div><div class="vb"><h1>RUG PULL</h1></div><div class="sr"><span class="n"><b>87</b> / 1000</span><div class="dots"><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div></div></div><div class="sbar"><div class="sbar-fill"></div></div><div class="sum">4 critical issues \u2014 Safe Gate blocked this token</div><div class="sep"></div><div class="fl"><div class="f cr"><div class="ic r">\u2715</div><div class="ft-txt"><em>Honeypot</em> \u2014 you cannot sell this token</div></div><div class="f cr"><div class="ic r">\u2715</div><div class="ft-txt"><em>Mint</em> active \u2014 supply can be inflated</div></div><div class="f cr"><div class="ic r">\u2715</div><div class="ft-txt"><em>Freeze</em> active \u2014 wallets can be locked</div></div><div class="f cr"><div class="ic r">\u2715</div><div class="ft-txt"><em>Liquidity $180</em> \u2014 Safe Gate trigger</div></div></div><div class="sep"></div><div class="ss"><div class="si"><span>Sell</span><b class="n">\u2715</b></div><div class="si"><span>Mint</span><b class="n">ON</b></div><div class="si"><span>Freeze</span><b class="n">ON</b></div><div class="si"><span>LP</span><b class="n">\u2014</b></div><div class="si"><span>Liq</span><b class="n">$180</b></div></div><div class="fo"><a href="#" class="warn">\u26A0 Report token</a><a href="#">Details \u2192</a></div></div>'
   ];
   var ci=0,pw=document.getElementById('pv-wrap');
   setInterval(function(){
