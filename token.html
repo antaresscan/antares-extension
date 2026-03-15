@@ -9,40 +9,133 @@ body{background:#0f0f11;color:#c8c8d0;font-family:'IBM Plex Mono',monospace;over
 canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.35}
 .wrap{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:32px 20px 80px}
 
+/* ── keyframes ── */
+@keyframes sp{to{transform:rotate(360deg)}}
+@keyframes ant-flicker-safe    {0%,100%{text-shadow:0 0 30px rgba(0,229,176,.4),0 0 80px rgba(0,229,176,.15)} 50%{text-shadow:0 0 60px rgba(0,229,176,.75),0 0 130px rgba(0,229,176,.35)}}
+@keyframes ant-flicker-caution {0%,100%{text-shadow:0 0 30px rgba(245,208,0,.4),0 0 80px rgba(245,208,0,.15)} 50%{text-shadow:0 0 60px rgba(245,208,0,.75),0 0 130px rgba(245,208,0,.35)}}
+@keyframes ant-flicker-danger  {0%,100%{text-shadow:0 0 30px rgba(255,95,95,.4),0 0 80px rgba(255,95,95,.15)} 50%{text-shadow:0 0 60px rgba(255,95,95,.75),0 0 130px rgba(255,95,95,.35)}}
+@keyframes ant-flicker-rug     {0%,100%{text-shadow:0 0 30px rgba(255,34,68,.5),0 0 80px rgba(255,34,68,.2)} 50%{text-shadow:0 0 70px rgba(255,34,68,.95),0 0 150px rgba(255,34,68,.45)}}
+@keyframes ant-glitch {
+  0%,89%,100%{transform:translateX(0);opacity:0}
+  91%{transform:translateX(-3px);opacity:.5}
+  93%{transform:translateX(3px);opacity:.4}
+  95%{transform:translateX(-1px);opacity:.3}
+  97%{transform:translateX(0);opacity:0}
+}
+@keyframes sbar-in{from{width:0%}to{width:var(--bar-w,0%)}}
+@keyframes topbar-glow{0%,100%{opacity:.7}50%{opacity:1}}
+
+/* ── header ── */
 .hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:36px}
-.logo{font-size:7px;letter-spacing:.55em;color:#444;text-transform:uppercase}
+.logo{font-size:13px;letter-spacing:.55em;color:#444;text-transform:uppercase}
 .ca-badge{font-size:9px;color:#777;background:#111113;border:1px solid #222;border-radius:2px;padding:5px 10px;letter-spacing:.06em;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-.verdict-block{margin-bottom:24px}
+/* ── risk containers ── */
+.risk-wrap{
+  position:relative;
+  border-radius:4px;
+  padding:20px 22px 22px;
+  margin-bottom:12px;
+  overflow:hidden;
+}
+.risk-wrap::before,.risk-wrap::after{
+  content:'';position:absolute;width:12px;height:12px;border-style:solid;z-index:10;pointer-events:none;
+}
+.risk-wrap::before{top:0;left:0;border-width:1.5px 0 0 1.5px}
+.risk-wrap::after{bottom:0;right:0;border-width:0 1.5px 1.5px 0}
+
+.safe    .risk-wrap,.risk-wrap.safe    {background:linear-gradient(180deg,#0b100f 0%,#090b0a 100%);border:1px solid rgba(0,229,176,.18);box-shadow:0 0 0 1px rgba(0,229,176,.06),0 24px 64px rgba(0,0,0,.85),0 0 50px rgba(0,229,176,.05)}
+.caution .risk-wrap,.risk-wrap.caution {background:linear-gradient(180deg,#0e0d0a 0%,#0a0a09 100%);border:1px solid rgba(245,208,0,.18);box-shadow:0 0 0 1px rgba(245,208,0,.06),0 24px 64px rgba(0,0,0,.85),0 0 50px rgba(245,208,0,.05)}
+.danger  .risk-wrap,.risk-wrap.danger  {background:linear-gradient(180deg,#0e0a0a 0%,#0a0909 100%);border:1px solid rgba(255,95,95,.18);box-shadow:0 0 0 1px rgba(255,95,95,.06),0 24px 64px rgba(0,0,0,.85),0 0 50px rgba(255,95,95,.05)}
+.rug     .risk-wrap,.risk-wrap.rug     {background:linear-gradient(180deg,#110709 0%,#090707 100%);border:1px solid rgba(255,34,68,.22);box-shadow:0 0 0 1px rgba(255,34,68,.08),0 24px 64px rgba(0,0,0,.9), 0 0 60px rgba(255,34,68,.08)}
+
+.safe    .risk-wrap::before,.safe    .risk-wrap::after,.risk-wrap.safe::before,   .risk-wrap.safe::after    {border-color:rgba(0,229,176,.4)}
+.caution .risk-wrap::before,.caution .risk-wrap::after,.risk-wrap.caution::before,.risk-wrap.caution::after {border-color:rgba(245,208,0,.4)}
+.danger  .risk-wrap::before,.danger  .risk-wrap::after,.risk-wrap.danger::before, .risk-wrap.danger::after  {border-color:rgba(255,95,95,.4)}
+.rug     .risk-wrap::before,.rug     .risk-wrap::after,.risk-wrap.rug::before,    .risk-wrap.rug::after     {border-color:rgba(255,34,68,.45)}
+
+/* topbar */
+.topbar{height:2px;margin:-20px -22px 18px;position:relative;overflow:visible}
+.topbar::before{content:'';display:block;height:100%}
+.topbar::after{content:'';position:absolute;top:-1px;left:0;right:0;height:4px;filter:blur(4px);animation:topbar-glow 2.5s ease-in-out infinite}
+.safe    .topbar::before,.risk-wrap.safe    .topbar::before{background:linear-gradient(90deg,transparent,#00e5b0,transparent)}
+.caution .topbar::before,.risk-wrap.caution .topbar::before{background:linear-gradient(90deg,transparent,#f5d000,transparent)}
+.danger  .topbar::before,.risk-wrap.danger  .topbar::before{background:linear-gradient(90deg,transparent,#ff5f5f,transparent)}
+.rug     .topbar::before,.risk-wrap.rug     .topbar::before{background:linear-gradient(90deg,transparent,#ff2244,transparent)}
+.safe    .topbar::after,.risk-wrap.safe    .topbar::after{background:linear-gradient(90deg,transparent,rgba(0,229,176,.6),transparent)}
+.caution .topbar::after,.risk-wrap.caution .topbar::after{background:linear-gradient(90deg,transparent,rgba(245,208,0,.6),transparent)}
+.danger  .topbar::after,.risk-wrap.danger  .topbar::after{background:linear-gradient(90deg,transparent,rgba(255,95,95,.6),transparent)}
+.rug     .topbar::after,.risk-wrap.rug     .topbar::after{background:linear-gradient(90deg,transparent,rgba(255,34,68,.7),transparent)}
+
+/* logo colored by risk */
+.safe    .logo{color:#00c890;text-shadow:0 0 10px rgba(0,229,176,.4)}
+.caution .logo{color:#c8a800;text-shadow:0 0 10px rgba(245,208,0,.35)}
+.danger  .logo{color:#cc5555;text-shadow:0 0 10px rgba(255,95,95,.4)}
+.rug     .logo{color:#cc3344;text-shadow:0 0 12px rgba(255,34,68,.5)}
+
 .token-header{display:flex;align-items:center;gap:14px;margin-bottom:10px}
-.token-logo{width:48px;height:48px;border-radius:50%;border:1px solid #2a2a30;object-fit:cover;flex-shrink:0;background:#111}
-.vt{font-family:'Bebas Neue',sans-serif;font-size:72px;line-height:.85;letter-spacing:.03em;font-weight:400}
-.tk-name{font-size:11px;color:#777;letter-spacing:.06em;margin-top:4px}
-.tk-name b{color:#bbb}
-.price-big{font-size:22px;font-weight:700;color:#ccc;margin-top:6px;letter-spacing:.02em}
-.score-row{display:flex;align-items:center;gap:12px;margin:10px 0 4px}
-.sc-num{font-size:11px;color:#555}
-.sc-num b{color:#aaa}
-.sbar{flex:1;height:2px;background:#111113;border-radius:1px;overflow:hidden}
-.sbar-f{height:100%;width:0%;border-radius:1px;transition:width 1.4s cubic-bezier(.22,1,.36,1)}
-.conf-line{font-size:10px;color:#555;letter-spacing:.06em;margin-top:2px}
+.token-logo{width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0;background:#111}
+.safe    .token-logo{border:1px solid rgba(0,229,176,.2);box-shadow:0 0 16px rgba(0,229,176,.1)}
+.caution .token-logo{border:1px solid rgba(245,208,0,.2);box-shadow:0 0 16px rgba(245,208,0,.1)}
+.danger  .token-logo{border:1px solid rgba(255,95,95,.2);box-shadow:0 0 16px rgba(255,95,95,.1)}
+.rug     .token-logo{border:1px solid rgba(255,34,68,.25);box-shadow:0 0 16px rgba(255,34,68,.12)}
 
-.safe .vt{color:#00e5b0;text-shadow:0 0 60px rgba(0,229,176,.15)}
-.safe .sbar-f{background:linear-gradient(90deg,#00e5b022,#00e5b0)}
-.caution .vt{color:#f5d000;text-shadow:0 0 60px rgba(245,208,0,.12)}
-.caution .sbar-f{background:linear-gradient(90deg,#f5d00022,#f5d000)}
-.danger .vt{color:#ff5f5f;text-shadow:0 0 60px rgba(255,95,95,.15)}
-.danger .sbar-f{background:linear-gradient(90deg,#ff5f5f22,#ff5f5f)}
-.rug .vt{color:#ff2244;text-shadow:0 0 70px rgba(255,34,68,.2)}
-.rug .sbar-f{background:linear-gradient(90deg,#ff224422,#ff2244)}
+.vt{font-family:'Bebas Neue',sans-serif;font-size:72px;line-height:.85;letter-spacing:.03em;font-weight:400;position:relative}
+.safe    .vt{color:#00e5b0;animation:ant-flicker-safe    3.5s ease-in-out infinite}
+.caution .vt{color:#f5d000;animation:ant-flicker-caution 3.5s ease-in-out infinite}
+.danger  .vt{color:#ff5f5f;animation:ant-flicker-danger  3.5s ease-in-out infinite}
+.rug     .vt{color:#ff2244;animation:ant-flicker-rug     3s   ease-in-out infinite}
 
-.topbar{height:2px;border-radius:1px;margin-bottom:20px}
-.safe .topbar{background:linear-gradient(90deg,transparent,#00e5b0,transparent)}
-.caution .topbar{background:linear-gradient(90deg,transparent,#f5d000,transparent)}
-.danger .topbar{background:linear-gradient(90deg,transparent,#ff5f5f,transparent)}
-.rug .topbar{background:linear-gradient(90deg,transparent,#ff2244,transparent)}
+/* glitch for danger/rug */
+.rug    .vt::before,.rug    .vt::after,
+.danger .vt::before,.danger .vt::after{
+  content:attr(data-label);
+  position:absolute;left:0;top:0;
+  font-family:'Bebas Neue',sans-serif;font-size:72px;line-height:.85;letter-spacing:.03em;
+  animation:ant-glitch 7s infinite;pointer-events:none;
+}
+.rug    .vt::before{color:#ff2244;clip-path:polygon(0 30%,100% 30%,100% 50%,0 50%);transform:translateX(-2px);opacity:.5}
+.rug    .vt::after {color:#ff2244;clip-path:polygon(0 58%,100% 58%,100% 72%,0 72%);transform:translateX(2px); opacity:.4;animation-delay:.15s}
+.danger .vt::before{color:#ff5f5f;clip-path:polygon(0 30%,100% 30%,100% 50%,0 50%);transform:translateX(-2px);opacity:.4}
+.danger .vt::after {color:#ff5f5f;clip-path:polygon(0 58%,100% 58%,100% 72%,0 72%);transform:translateX(2px); opacity:.3;animation-delay:.1s}
 
-.card{background:#0c0c0e;border:1px solid #1e1e24;border-radius:3px;padding:18px 20px;margin-bottom:10px}
+.tk-name{font-size:11px;color:#888;letter-spacing:.06em;margin-top:4px}
+.tk-name b{color:#ddd;font-weight:700}
+.price-big{font-size:22px;font-weight:700;color:#ddd;margin-top:8px;letter-spacing:.02em}
+.price-big span{font-size:11px;color:#555}
+.score-row{display:flex;align-items:center;gap:12px;margin:12px 0 4px}
+.sc-num{font-size:11px;color:#666}
+.sc-num b{color:#ddd;font-size:13px}
+.sbar{flex:1;height:2px;background:#181818;border-radius:1px;overflow:hidden}
+.sbar-f{height:100%;border-radius:1px;width:0%;transition:width 1.4s cubic-bezier(.22,1,.36,1)}
+.safe    .sbar-f{background:linear-gradient(90deg,#00e5b055,#00e5b0);box-shadow:0 0 6px rgba(0,229,176,.5)}
+.caution .sbar-f{background:linear-gradient(90deg,#f5d00044,#f5d000);box-shadow:0 0 6px rgba(245,208,0,.5)}
+.danger  .sbar-f{background:linear-gradient(90deg,#ff5f5f44,#ff5f5f);box-shadow:0 0 6px rgba(255,95,95,.5)}
+.rug     .sbar-f{background:linear-gradient(90deg,#ff224444,#ff2244);box-shadow:0 0 8px rgba(255,34,68,.6)}
+.conf-line{font-size:10px;color:#555;letter-spacing:.06em;margin-top:4px}
+.safe    .conf-line{color:#3a9070}
+.caution .conf-line{color:#a89020}
+.danger  .conf-line{color:#cc5555}
+.rug     .conf-line{color:#cc4455}
+
+.age-badge{display:inline-block;font-size:10px;color:#666;background:#0a0a0c;border:1px solid #1e1e24;border-radius:2px;padding:3px 8px;margin-top:6px;letter-spacing:.06em}
+
+.socials{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
+.soc{font-size:9px;color:#888;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;border-radius:2px;padding:5px 11px;transition:.2s;position:relative;overflow:hidden}
+.soc::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.05),transparent);transform:translateX(-100%);transition:transform .5s}
+.soc:hover::before{transform:translateX(100%)}
+.safe    .soc{border:1px solid rgba(0,229,176,.12)}
+.safe    .soc:hover{color:#00e5b0;border-color:rgba(0,229,176,.35)}
+.caution .soc{border:1px solid rgba(245,208,0,.12)}
+.caution .soc:hover{color:#f5d000;border-color:rgba(245,208,0,.35)}
+.danger  .soc{border:1px solid rgba(255,95,95,.12)}
+.danger  .soc:hover{color:#ff5f5f;border-color:rgba(255,95,95,.35)}
+.rug     .soc{border:1px solid rgba(255,34,68,.15)}
+.rug     .soc:hover{color:#ff2244;border-color:rgba(255,34,68,.4)}
+
+/* ── cards ── */
+.card{background:#0c0c0e;border:1px solid #1e1e24;border-radius:3px;padding:18px 20px;margin-bottom:10px;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.04),transparent)}
 .card-title{font-size:8px;color:#555;letter-spacing:.3em;text-transform:uppercase;margin-bottom:14px}
 
 .grid{display:grid;gap:8px}
@@ -52,64 +145,89 @@ canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.35}
 .stat{background:#090909;border:1px solid #1a1a1e;border-radius:2px;padding:11px 13px}
 .stat span{display:block;font-size:8px;color:#555;letter-spacing:.18em;text-transform:uppercase;margin-bottom:4px}
 .stat strong{font-size:15px;color:#ddd;font-weight:700}
-.stat strong.up{color:#00e5b0}
-.stat strong.dn{color:#ff5f5f}
+.stat strong.up{color:#00e5b0;text-shadow:0 0 6px rgba(0,229,176,.3)}
+.stat strong.dn{color:#ff5f5f;text-shadow:0 0 6px rgba(255,95,95,.3)}
 .stat strong.neu{color:#888}
 
 .changes{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:8px}
 .ch{background:#090909;border:1px solid #1a1a1e;border-radius:2px;padding:9px 12px;text-align:center}
 .ch span{display:block;font-size:8px;color:#555;letter-spacing:.18em;text-transform:uppercase;margin-bottom:3px}
 .ch b{font-size:14px;font-weight:700}
-.ch b.up{color:#00e5b0}.ch b.dn{color:#ff5f5f}.ch b.neu{color:#555}
+.ch b.up{color:#00e5b0;text-shadow:0 0 8px rgba(0,229,176,.3)}
+.ch b.dn{color:#ff5f5f;text-shadow:0 0 8px rgba(255,95,95,.3)}
+.ch b.neu{color:#555}
 
 .txn-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 .txn{background:#090909;border:1px solid #1a1a1e;border-radius:2px;padding:10px 13px}
-.txn span{display:block;font-size:8px;color:#555;letter-spacing:.18em;text-transform:uppercase;margin-bottom:5px}
-.txn-bars{display:flex;gap:4px;align-items:center}
-.txn-buy{font-size:13px;color:#00e5b0;font-weight:700}
-.txn-sep{font-size:11px;color:#333}
-.txn-sell{font-size:13px;color:#ff5f5f;font-weight:700}
+.txn span{display:block;font-size:8px;color:#555;letter-spacing:.18em;text-transform:uppercase;margin-bottom:6px}
+.txn-line{display:flex;gap:5px;align-items:baseline;margin-bottom:8px}
+.txn-buy{font-size:18px;color:#00e5b0;font-weight:700;text-shadow:0 0 10px rgba(0,229,176,.4);letter-spacing:.02em}
+.txn-sep{font-size:13px;color:#333}
+.txn-sell{font-size:18px;color:#ff5f5f;font-weight:700;text-shadow:0 0 10px rgba(255,95,95,.4);letter-spacing:.02em}
+.txn-bar-wrap{display:flex;height:3px;border-radius:2px;overflow:hidden;gap:1px}
+.txn-bar-buy{background:#00e5b0;border-radius:2px 0 0 2px;box-shadow:0 0 4px rgba(0,229,176,.4)}
+.txn-bar-sell{background:#ff5f5f;border-radius:0 2px 2px 0;box-shadow:0 0 4px rgba(255,95,95,.4)}
 
-.strip{display:flex;background:#090909;border:1px solid #1a1a1e;border-radius:3px;overflow:hidden}
+.strip{display:flex;border-radius:3px;overflow:hidden}
+.safe    .strip{background:#090b0a;border:1px solid rgba(0,229,176,.1)}
+.caution .strip{background:#0a0a08;border:1px solid rgba(245,208,0,.08)}
+.danger  .strip{background:#0a0909;border:1px solid rgba(255,95,95,.1)}
+.rug     .strip{background:#0a0808;border:1px solid rgba(255,34,68,.12)}
 .si{flex:1;text-align:center;padding:11px 4px;position:relative}
-.si+.si::before{content:'';position:absolute;left:0;top:20%;height:60%;width:1px;background:#1a1a1e}
-.si span{display:block;font-size:8px;color:#555;letter-spacing:.15em;text-transform:uppercase;margin-bottom:4px}
+.si+.si::before{content:'';position:absolute;left:0;top:20%;height:60%;width:1px}
+.safe    .si+.si::before{background:rgba(0,229,176,.1)}
+.caution .si+.si::before{background:rgba(245,208,0,.08)}
+.danger  .si+.si::before{background:rgba(255,95,95,.1)}
+.rug     .si+.si::before{background:rgba(255,34,68,.1)}
+.si span{display:block;font-size:8px;color:#777;letter-spacing:.15em;text-transform:uppercase;margin-bottom:4px}
 .si b{font-size:12px;font-weight:700}
-.si b.y{color:#00e5b0}.si b.n{color:#ff5f5f}.si b.w{color:#f5d000}
+.si b.y{color:#00e5b0;text-shadow:0 0 8px rgba(0,229,176,.4)}
+.si b.n{color:#ff5f5f;text-shadow:0 0 8px rgba(255,95,95,.4)}
+.si b.w{color:#f5d000;text-shadow:0 0 6px rgba(245,208,0,.4)}
 
 .flag-list{display:flex;flex-direction:column}
-.fl{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid #141416;font-size:12px;line-height:1.5}
+.fl{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.03);font-size:12px;line-height:1.5}
 .fl:last-child{border-bottom:none}
 .fic{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;flex-shrink:0;margin-top:2px}
-.fic.r{background:rgba(255,60,80,.1);color:#ff5f5f}
-.fic.y{background:rgba(245,208,0,.08);color:#f5d000}
-.fic.g{background:rgba(0,229,176,.08);color:#00e5b0}
-.fl.cr .fl-txt{color:#cc7070}
-.fl.wr .fl-txt{color:#c8a840}
+.fic.r{background:rgba(255,60,80,.15);color:#ff5f5f}
+.fic.y{background:rgba(245,208,0,.12);color:#f5d000}
+.fic.g{background:rgba(0,229,176,.1);color:#00e5b0}
+.fl.cr .fl-txt{color:#e07070}
+.fl.wr .fl-txt{color:#d4b040}
 .fl.ok .fl-txt{color:#559970}
 
-.src-row{display:flex;justify-content:space-between;font-size:11px;color:#666;padding:7px 0;border-bottom:1px solid #141416}
+.src-row{display:flex;justify-content:space-between;font-size:11px;color:#666;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.03)}
 .src-row:last-child{border-bottom:none}
 .src-row span:first-child{color:#aaa}
-.src-row span:last-child{color:#00e5b0}
+.src-row span:last-child{color:#00e5b0;text-shadow:0 0 6px rgba(0,229,176,.3)}
 
 .footer{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap}
-.btn{display:inline-block;padding:10px 18px;font-size:9px;color:#888;letter-spacing:.14em;text-transform:uppercase;text-decoration:none;border:1px solid #2a2a30;border-radius:2px;transition:.2s;font-family:'IBM Plex Mono',monospace}
-.btn:hover{color:#ccc;border-color:#444}
+.btn{display:inline-block;padding:10px 18px;font-size:9px;color:#aaa;letter-spacing:.14em;text-transform:uppercase;text-decoration:none;border-radius:2px;transition:.2s;font-family:'IBM Plex Mono',monospace;position:relative;overflow:hidden}
+.btn::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.04),transparent);transform:translateX(-100%);transition:transform .5s}
+.btn:hover::before{transform:translateX(100%)}
+.safe    .btn,.safe-btn   {border:1px solid rgba(0,229,176,.12)}
+.caution .btn,.caution-btn{border:1px solid rgba(245,208,0,.12)}
+.danger  .btn,.danger-btn {border:1px solid rgba(255,95,95,.12)}
+.rug     .btn,.rug-btn    {border:1px solid rgba(255,34,68,.15)}
+.safe    .btn:hover{color:#00e5b0;border-color:rgba(0,229,176,.4)}
+.caution .btn:hover{color:#f5d000;border-color:rgba(245,208,0,.4)}
+.danger  .btn:hover{color:#ff5f5f;border-color:rgba(255,95,95,.4)}
+.rug     .btn:hover{color:#ff2244;border-color:rgba(255,34,68,.5)}
 .btn.warn{border-color:rgba(255,95,95,.2);color:#cc5555}
 .btn.warn:hover{border-color:#ff5f5f;color:#ff5f5f;background:rgba(255,95,95,.04)}
 
+.dots{display:flex;gap:3px;align-items:center}
+.dt{width:5px;height:5px;border-radius:50%}
+.dt.off{background:#222226}
+.safe    .dt.on{background:#00e5b0;box-shadow:0 0 6px rgba(0,229,176,.6)}
+.caution .dt.on{background:#f5d000;box-shadow:0 0 6px rgba(245,208,0,.6)}
+.danger  .dt.on{background:#ff5f5f;box-shadow:0 0 6px rgba(255,95,95,.6)}
+.rug     .dt.on{background:#ff2244;box-shadow:0 0 6px rgba(255,34,68,.7)}
+
 #loading{display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:100px;color:#444;font-size:10px;letter-spacing:.12em}
 .spin{width:28px;height:28px;border:2px solid #1a1a1e;border-top-color:#333;border-radius:50%;animation:sp .7s linear infinite}
-@keyframes sp{to{transform:rotate(360deg)}}
 #err{display:none;color:#ff5f5f;font-size:11px;margin-top:100px;text-align:center}
 #content{display:none}
-
-.socials{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
-.soc{font-size:9px;color:#666;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;border:1px solid #222;border-radius:2px;padding:5px 10px;transition:.15s}
-.soc:hover{color:#bbb;border-color:#444}
-
-.age-badge{display:inline-block;font-size:10px;color:#666;background:#0a0a0c;border:1px solid #1e1e24;border-radius:2px;padding:3px 8px;margin-top:6px;letter-spacing:.06em}
 </style></head>
 <body>
 <canvas id="bg"></canvas>
@@ -223,8 +341,8 @@ function render(d,ca){
   let summary=fAll.length===0
     ?"All sources agree — no issues found"
     :fCrit.length>0
-      ?`${fAll.length} flags — ${fCrit.length} critical — Conf. ${conf??"?"}%`
-      :`${fAll.length} flags detected — Conf. ${conf??"?"}%`
+      ?`${fAll.length} flags — ${fCrit.length} critical — Conf. ${conf??""}%`
+      :`${fAll.length} flags detected — Conf. ${conf??""}%`
 
   const flagsHtml=(d.flags||[])
     .filter(f=>{const l=f.label||f;return!l.toLowerCase().includes("unavailable")&&f.severity!=="bonus"})
@@ -232,7 +350,7 @@ function render(d,ca){
       const sev=f.severity||"warning"
       const cls=sev==="critical"?"cr":"wr"
       const ic=sev==="critical"?"r":"y"
-      const ico=sev==="critical"?"✕":"!"
+      const ico=sev==="critical"?"✕":""
       return`<div class="fl ${cls}"><div class="fic ${ic}">${ico}</div><div class="fl-txt">${f.label||f}</div></div>`
     }).join("")
   const noFlags=flagsHtml===""
@@ -250,9 +368,20 @@ function render(d,ca){
 
   function txnCard(label,txObj){
     if(!txObj)return""
-    return`<div class="txn"><span>${label}</span><div class="txn-bars"><span class="txn-buy">${txObj.buys}B</span><span class="txn-sep">/</span><span class="txn-sell">${txObj.sells}S</span></div></div>`
+    const total=txObj.buys+txObj.sells||1
+    const buyPct=Math.round(txObj.buys/total*100)
+    const sellPct=100-buyPct
+    return`<div class="txn">
+      <span>${label}</span>
+      <div class="txn-line"><span class="txn-buy">${txObj.buys}B</span><span class="txn-sep">/</span><span class="txn-sell">${txObj.sells}S</span></div>
+      <div class="txn-bar-wrap"><div class="txn-bar-buy" style="width:${buyPct}%"></div><div class="txn-bar-sell" style="width:${sellPct}%"></div></div>
+    </div>`
   }
   const txnsHtml=`<div class="txn-row">${txnCard("1h",txH1)}${txnCard("6h",txH6)}${txnCard("24h",txH24)}</div>`
+
+  // score dots
+  const dotsCount=Math.round((score/1000)*5)
+  const dotsHtml=Array.from({length:5},(_,i)=>`<div class="dt ${i<dotsCount?'on':'off'}"></div>`).join("")
 
   const siSell=`<div class="si"><span>Sell</span><b class="${sellOk?'y':'n'}">${sellOk?'✓':'✕'}</b></div>`
   const siMint=`<div class="si"><span>Mint</span><b class="${mintAuth?'n':'y'}">${mintAuth?'ON':'OFF'}</b></div>`
@@ -273,22 +402,26 @@ function render(d,ca){
   const dexUrl=d.pair?.url||`https://dexscreener.com/solana/${ca}`
   const isDangerous=rc==="danger"||rc==="rug"
 
+  // update canvas particle color per risk
+  window.__riskClass=rc
+
   wrap.innerHTML=`
     <div class="${rc}">
-      <div class="topbar"></div>
-      <div class="verdict-block">
+      <div class="risk-wrap ${rc}">
+        <div class="topbar"></div>
         <div class="token-header">
           ${logo?`<img class="token-logo" src="${logo}" alt="${sym}" onerror="this.style.display='none'"/>`:""
           }
           <div>
-            <div class="vt">${lb}</div>
+            <div class="vt" data-label="${lb}">${lb}</div>
             ${sym?`<div class="tk-name"><b>${sym}</b> ${name}</div>`:""}
             ${ageStr?`<div class="age-badge">${ageStr}</div>`:pairDate?`<div class="age-badge">Pair: ${pairDate}</div>`:""}
           </div>
         </div>
-        ${priceUsd?`<div class="price-big">${fmtPrice(priceUsd)} <span style="font-size:11px;color:#444">${priceNative?priceNative+' SOL':''}</span></div>`:""}
+        ${priceUsd?`<div class="price-big">${fmtPrice(priceUsd)} <span>${priceNative?priceNative+' SOL':''}</span></div>`:""}
         <div class="score-row">
           <span class="sc-num"><b>${score}</b> / 1000</span>
+          <div class="dots">${dotsHtml}</div>
           <div class="sbar"><div class="sbar-f" id="sbarf"></div></div>
         </div>
         <div class="conf-line">${summary}</div>
@@ -335,6 +468,12 @@ function render(d,ca){
     </div>
   `
 
+  // color the ANTARES logo per risk
+  const logoColors={safe:'#00c890',caution:'#c8a800',danger:'#cc5555',rug:'#cc3344'}
+  const logoGlow={safe:'rgba(0,229,176,.4)',caution:'rgba(245,208,0,.35)',danger:'rgba(255,95,95,.4)',rug:'rgba(255,34,68,.5)'}
+  const logoEl=document.querySelector('.logo')
+  if(logoEl){logoEl.style.color=logoColors[rc]||'#444';logoEl.style.textShadow=`0 0 10px ${logoGlow[rc]||'transparent'}`}
+
   setTimeout(()=>{
     const b=document.getElementById("sbarf")
     if(b)b.style.width=barW+"%"
@@ -351,16 +490,31 @@ function render(d,ca){
   function resize(){W=C.width=window.innerWidth;H=C.height=window.innerHeight}
   resize();window.addEventListener("resize",resize)
   for(let i=0;i<N;i++)pts.push({x:Math.random()*1400,y:Math.random()*900,vx:(Math.random()-.5)*SPEED,vy:(Math.random()-.5)*SPEED,r:Math.random()*1.5+.5})
+  const riskColors={
+    safe:'rgba(0,229,176,.18)',
+    caution:'rgba(245,208,0,.18)',
+    danger:'rgba(255,95,95,.18)',
+    rug:'rgba(255,34,68,.2)'
+  }
+  const riskLineColors={
+    safe:  (a)=>`rgba(0,229,176,${a})`,
+    caution:(a)=>`rgba(245,208,0,${a})`,
+    danger: (a)=>`rgba(255,95,95,${a})`,
+    rug:    (a)=>`rgba(255,34,68,${a})`
+  }
   function draw(){
+    const rc=window.__riskClass||'safe'
+    const dotColor=riskColors[rc]||riskColors.safe
+    const lineColor=riskLineColors[rc]||riskLineColors.safe
     ctx.clearRect(0,0,W,H)
     for(const p of pts){
       p.x+=p.vx;p.y+=p.vy
       if(p.x<0||p.x>W)p.vx*=-1
       if(p.y<0||p.y>H)p.vy*=-1
       ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2)
-      ctx.fillStyle="rgba(0,229,176,.18)";ctx.fill()
+      ctx.fillStyle=dotColor;ctx.fill()
     }
-    for(let i=0;i<pts.length;i++){const p=pts[i];for(let j=i+1;j<pts.length;j++){const q=pts[j];const d2=(p.x-q.x)**2+(p.y-q.y)**2;if(d2>CONN*CONN)continue;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.strokeStyle="rgba(0,229,176,"+(0.08*(1-d2/CONN))+")";ctx.stroke()}}
+    for(let i=0;i<pts.length;i++){const p=pts[i];for(let j=i+1;j<pts.length;j++){const q=pts[j];const d2=(p.x-q.x)**2+(p.y-q.y)**2;if(d2>CONN*CONN)continue;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.strokeStyle=lineColor(0.08*(1-d2/(CONN*CONN)));ctx.stroke()}}
     requestAnimationFrame(draw)
   }
   draw()
