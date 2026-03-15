@@ -61,22 +61,6 @@ nav .links a.active{color:#d0d0d0}
 .feat-detail ul{list-style:none;display:flex;flex-direction:column;gap:6px}
 .feat-detail ul li{font-size:11px;color:#4a4a52;line-height:1.6;padding-left:12px;position:relative}
 .feat-detail ul li::before{content:'//';position:absolute;left:0;color:rgba(0,229,176,.3);font-size:9px}
-/* OVERLAY PREVIEWS */
-.demo-section{margin-bottom:60px}
-.demo-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:2px}
-.overlay-card{background:#141417;border:1px solid #1e1e22;padding:20px;position:relative;overflow:hidden}
-.ov-top{height:3px;margin-bottom:14px}
-.ov-brand{font-size:9px;letter-spacing:.3em;color:#3a3a3f;margin-bottom:10px}
-.ov-risk{font:400 30px/1 'Bebas Neue',sans-serif;margin-bottom:3px}
-.ov-score{font-size:11px;color:#4a4a50;margin-bottom:10px}
-.ov-score strong{color:#bbb}
-.ov-meta{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:10px}
-.ov-meta div{padding:6px 8px;background:#111114;border:1px solid #1c1c1f}
-.ov-meta span{display:block;font-size:8px;color:#3a3a3f;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1px}
-.ov-meta strong{font-size:11px;color:#bbb}
-.ov-fl{font-size:10px;color:#4a4a52;padding:2px 0 2px 8px;border-left:2px solid rgba(100,100,100,.2);margin-top:2px}
-.ov-srcs{display:flex;gap:4px;margin-top:10px;padding-top:8px;border-top:1px solid #1a1a1d;flex-wrap:wrap}
-.ov-src{font:600 8px/1 'IBM Plex Mono',monospace;padding:3px 6px;background:rgba(0,229,176,.05);border:1px solid rgba(0,229,176,.12);letter-spacing:.06em}
 /* VERDICTS */
 .verdict-row{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-bottom:60px}
 .vd{padding:20px;border:1px solid #1a1a1d;text-align:center;cursor:default;transition:.2s}
@@ -113,12 +97,12 @@ footer span{color:var(--c)}
 <div class="eng-hero">
   <div class="eyebrow">Features</div>
   <h1 class="glitch" data-text="EVERY PROTECTION EXPLAINED">EVERY <span>PROTECTION</span> EXPLAINED</h1>
-  <p>Antares runs silently as you browse. No manual input, no setup. Every Solana address you encounter triggers a full multi-source scan — contract analysis, on-chain data, chart patterns, identity check — in under 2 seconds.</p>
+  <p>Antares runs silently as you browse. No manual input, no setup. Every Solana address you encounter triggers a full multi-source scan &mdash; contract analysis, on-chain data, chart patterns, identity check &mdash; in under 2 seconds.</p>
 </div>
 
 <!-- PIPELINE -->
 <div class="sh2 glitch" data-text="How It Runs">How It Runs</div>
-<div class="sub">From address detection to verdict — the full pipeline</div>
+<div class="sub">From address detection to verdict &mdash; the full pipeline</div>
 <div class="flow">
   <div class="flow-step"><div class="flow-n">01</div><div class="flow-label">Detect</div><div class="flow-desc">Content script watches every page for Solana contract addresses as you browse.</div></div>
   <div class="flow-step"><div class="flow-n">02</div><div class="flow-label">Query</div><div class="flow-desc">5 sources queried in parallel via the Antares API on Vercel Edge.</div></div>
@@ -130,9 +114,9 @@ footer span{color:var(--c)}
 <!-- SAFE GATE -->
 <div class="gate-full">
   <div class="gate-full-title">&#128274; Safe Gate</div>
-  <div class="gate-full-sub">Score-independent hard block — cannot be bypassed</div>
+  <div class="gate-full-sub">Score-independent hard block &mdash; cannot be bypassed</div>
   <div class="gate-full-body">
-    <div class="gate-full-desc">The Safe Gate is a hardcoded set of non-negotiable checks that run alongside the scoring system. A token can score 950/1000 and still be fully blocked if a Safe Gate condition is met. This prevents edge cases where a manipulated token looks statistically safe but contains a critical trap. It is the last line of defense — and the most important one.</div>
+    <div class="gate-full-desc">The Safe Gate is a hardcoded set of non-negotiable checks that run alongside the scoring system. A token can score 950/1000 and still be fully blocked if a Safe Gate condition is met. This prevents edge cases where a manipulated token looks statistically safe but contains a critical trap. It is the last line of defense &mdash; and the most important one.</div>
     <div class="gate-flags">
       <div class="gf">Honeypot / sell disabled (GoPlus)</div>
       <div class="gf">Mint authority active (Helius RPC)</div>
@@ -154,13 +138,13 @@ footer span{color:var(--c)}
     <div class="feat-main">
       <h2>Real-Time Scanning</h2>
       <div class="tag-row"><span class="ftag">PASSIVE</span><span class="ftag">AUTOMATIC</span><span class="ftag">&lt;2s</span></div>
-      <p>Antares runs in the background. You never paste a contract address manually. Every time a Solana address appears on a page you visit — Twitter, Telegram web, Discord, any DEX — the scan fires automatically and the overlay appears in under 2 seconds.</p>
+      <p>Antares runs in the background. You never paste a contract address manually. Every time a Solana address appears on a page you visit &mdash; Twitter, Telegram web, Discord, any DEX &mdash; the scan fires automatically and the overlay appears in under 2 seconds.</p>
     </div>
     <div class="feat-detail">
       <div class="dl">How it works</div>
       <ul>
         <li>Content script watches DOM mutations and URL changes</li>
-        <li>Solana address regex matches base58 strings of 32–44 chars</li>
+        <li>Solana address regex matches base58 strings of 32&ndash;44 chars</li>
         <li>Debounced to avoid duplicate scans on the same address</li>
         <li>All 5 API calls run in parallel via Promise.allSettled</li>
         <li>Overlay injects into page DOM with isolated CSS</li>
@@ -178,11 +162,11 @@ footer span{color:var(--c)}
     <div class="feat-detail">
       <div class="dl">Source roles</div>
       <ul>
-        <li>DexScreener — price, liquidity, OHLCV chart data</li>
-        <li>RugCheck — LP status, metadata, bundler, risk flags</li>
-        <li>GoPlus — honeypot, proxy, blacklist, sell restrictions</li>
-        <li>Helius RPC — on-chain mint/freeze authority, supply</li>
-        <li>Solscan — holder count, concentration, token age</li>
+        <li>DexScreener &mdash; price, liquidity, OHLCV chart data</li>
+        <li>RugCheck &mdash; LP status, metadata, bundler, risk flags</li>
+        <li>GoPlus &mdash; honeypot, proxy, blacklist, sell restrictions</li>
+        <li>Helius RPC &mdash; on-chain mint/freeze authority, supply</li>
+        <li>Solscan &mdash; holder count, concentration, token age</li>
       </ul>
     </div>
   </div>
@@ -197,11 +181,11 @@ footer span{color:var(--c)}
     <div class="feat-detail">
       <div class="dl">Detected patterns</div>
       <ul>
-        <li>Parabolic pump — price &gt;500% in &lt;1h with no retracement</li>
-        <li>Blow-off top — spike followed by immediate 80%+ crash</li>
-        <li>Wash trading — volume/liquidity ratio anomaly (&gt;10x)</li>
-        <li>Abnormal B/S ratio — 100% buys in 5m window (coordinated)</li>
-        <li>Dead chart — no recent candles despite listed token</li>
+        <li>Parabolic pump &mdash; price &gt;500% in &lt;1h with no retracement</li>
+        <li>Blow-off top &mdash; spike followed by immediate 80%+ crash</li>
+        <li>Wash trading &mdash; volume/liquidity ratio anomaly (&gt;10x)</li>
+        <li>Abnormal B/S ratio &mdash; 100% buys in 5m window (coordinated)</li>
+        <li>Dead chart &mdash; no recent candles despite listed token</li>
       </ul>
     </div>
   </div>
@@ -217,7 +201,7 @@ footer span{color:var(--c)}
       <div class="dl">Detection methods</div>
       <ul>
         <li>Exact name match against known token registry</li>
-        <li>Levenshtein distance check (1–2 char variations)</li>
+        <li>Levenshtein distance check (1&ndash;2 char variations)</li>
         <li>Unicode normalization to catch visual spoofing</li>
         <li>Symbol collision detection (e.g. two tokens named WIF)</li>
         <li>Social link absence penalty when branding is copied</li>
@@ -230,13 +214,13 @@ footer span{color:var(--c)}
     <div class="feat-main">
       <h2>Universal Detection</h2>
       <div class="tag-row"><span class="ftag">ANY WEBSITE</span><span class="ftag">ANY PAGE</span><span class="ftag">NO SETUP</span></div>
-      <p>Unlike tools that only work on specific DEXs or require manual input, Antares activates on any webpage. Whether you are reading a tweet, browsing a Telegram web channel, or visiting a project site — if there is a Solana contract address visible, Antares scans it.</p>
+      <p>Unlike tools that only work on specific DEXs or require manual input, Antares activates on any webpage. Whether you are reading a tweet, browsing a Telegram web channel, or visiting a project site &mdash; if there is a Solana contract address visible, Antares scans it.</p>
     </div>
     <div class="feat-detail">
       <div class="dl">Supported contexts</div>
       <ul>
-        <li>Twitter / X — token mentions in tweets and bios</li>
-        <li>Telegram Web — group messages and pinned posts</li>
+        <li>Twitter / X &mdash; token mentions in tweets and bios</li>
+        <li>Telegram Web &mdash; group messages and pinned posts</li>
         <li>DexScreener, Birdeye, Raydium, Jupiter</li>
         <li>Any website with a raw contract address in the DOM</li>
         <li>Google search results linking to token pages</li>
@@ -246,79 +230,29 @@ footer span{color:var(--c)}
 
 </div>
 
-<!-- VERDICTS + OVERLAYS -->
+<!-- WHAT YOU SEE -->
 <div class="sh2 glitch" data-text="What You See">What You See</div>
-<div class="sub">Four possible verdicts — color-coded overlay in your browser</div>
+<div class="sub">Four possible verdicts &mdash; color-coded overlay in your browser</div>
 <div class="verdict-row">
-  <div class="vd" style="background:#0d1a16;border-color:#00e5b0">
-    <div class="vd-label" style="color:#00e5b0">SAFE</div>
-    <div class="vd-range" style="color:#00e5b0">700 &ndash; 1000</div>
-    <div class="vd-desc">All critical checks pass. LP secured. No manipulation patterns detected.</div>
-  </div>
-  <div class="vd" style="background:#1a180a;border-color:#f5d000">
-    <div class="vd-label" style="color:#f5d000">CAUTION</div>
-    <div class="vd-range" style="color:#f5d000">400 &ndash; 699</div>
-    <div class="vd-desc">Moderate risk. Some flags raised. Proceed with reduced position and caution.</div>
+  <div class="vd" style="background:#1a0809;border-color:#ff2244">
+    <div class="vd-label" style="color:#ff2244">RUG PULL</div>
+    <div class="vd-range" style="color:#ff2244">0 &ndash; 99</div>
+    <div class="vd-desc">Safe Gate triggered or catastrophic score. Do not interact with this token.</div>
   </div>
   <div class="vd" style="background:#1a0e0e;border-color:#ff5f5f">
     <div class="vd-label" style="color:#ff5f5f">DANGER</div>
     <div class="vd-range" style="color:#ff5f5f">100 &ndash; 399</div>
     <div class="vd-desc">High risk. Multiple critical flags. Strong indicators of manipulation.</div>
   </div>
-  <div class="vd" style="background:#1a0809;border-color:#ff2244">
-    <div class="vd-label" style="color:#ff2244">RUG PULL</div>
-    <div class="vd-range" style="color:#ff2244">0 &ndash; 99</div>
-    <div class="vd-desc">Safe Gate triggered or catastrophic score. Do not interact with this token.</div>
+  <div class="vd" style="background:#1a180a;border-color:#f5d000">
+    <div class="vd-label" style="color:#f5d000">CAUTION</div>
+    <div class="vd-range" style="color:#f5d000">400 &ndash; 699</div>
+    <div class="vd-desc">Moderate risk. Some flags raised. Proceed with reduced position and caution.</div>
   </div>
-</div>
-
-<div class="demo-section">
-  <div class="sub">Live overlay examples — what appears in your browser on each verdict</div>
-  <div class="demo-grid">
-    <div class="overlay-card">
-      <div class="ov-top" style="background:#00e5b0"></div>
-      <div class="ov-brand">ANTARES</div>
-      <div class="ov-risk" style="color:#00e5b0">SAFE</div>
-      <div class="ov-score">Score <strong>847</strong> / 1000</div>
-      <div class="ov-meta"><div><span>Market Cap</span><strong>$2.4M</strong></div><div><span>Liquidity</span><strong>$184K</strong></div><div><span>Holders</span><strong>1,241</strong></div><div><span>Confidence</span><strong>100%</strong></div></div>
-      <div class="ov-fl" style="border-left-color:rgba(0,229,176,.3)">&#10003; LP Burned</div>
-      <div class="ov-fl" style="border-left-color:rgba(0,229,176,.3)">&#10003; No mint authority</div>
-      <div class="ov-fl" style="border-left-color:rgba(0,229,176,.3)">&#10003; Metadata immutable</div>
-      <div class="ov-srcs"><span class="ov-src" style="color:#00e5b0">DexScreener &#10003;</span><span class="ov-src" style="color:#00e5b0">RugCheck &#10003;</span><span class="ov-src" style="color:#00e5b0">GoPlus &#10003;</span><span class="ov-src" style="color:#00e5b0">Helius &#10003;</span><span class="ov-src" style="color:#00e5b0">Solscan &#10003;</span></div>
-    </div>
-    <div class="overlay-card">
-      <div class="ov-top" style="background:#f5d000"></div>
-      <div class="ov-brand">ANTARES</div>
-      <div class="ov-risk" style="color:#f5d000">CAUTION</div>
-      <div class="ov-score">Score <strong>683</strong> / 1000</div>
-      <div class="ov-meta"><div><span>Market Cap</span><strong>$840K</strong></div><div><span>Liquidity</span><strong>$62K</strong></div><div><span>Holders</span><strong>412</strong></div><div><span>Confidence</span><strong>75%</strong></div></div>
-      <div class="ov-fl" style="border-left-color:rgba(245,208,0,.3)">&#9888; Top 10 holders &gt; 50%</div>
-      <div class="ov-fl" style="border-left-color:rgba(245,208,0,.3)">&#9888; LP lock &lt; 30 days</div>
-      <div class="ov-fl" style="border-left-color:rgba(245,208,0,.3)">&#9888; Metadata mutable</div>
-      <div class="ov-srcs"><span class="ov-src" style="color:#f5d000">DexScreener &#9888;</span><span class="ov-src" style="color:#f5d000">RugCheck &#9888;</span><span class="ov-src" style="color:#f5d000">GoPlus &#9888;</span><span class="ov-src" style="color:#00e5b0">Helius &#10003;</span><span class="ov-src" style="color:#00e5b0">Solscan &#10003;</span></div>
-    </div>
-    <div class="overlay-card">
-      <div class="ov-top" style="background:#ff5f5f"></div>
-      <div class="ov-brand">ANTARES</div>
-      <div class="ov-risk" style="color:#ff5f5f">DANGER</div>
-      <div class="ov-score">Score <strong>412</strong> / 1000</div>
-      <div class="ov-meta"><div><span>Market Cap</span><strong>$52K</strong></div><div><span>Liquidity</span><strong>$4.1K</strong></div><div><span>Holders</span><strong>87</strong></div><div><span>Confidence</span><strong>50%</strong></div></div>
-      <div class="ov-fl" style="border-left-color:rgba(255,95,95,.3)">&#9940; Freeze Authority enabled</div>
-      <div class="ov-fl" style="border-left-color:rgba(255,95,95,.3)">&#9940; Bundler detected</div>
-      <div class="ov-fl" style="border-left-color:rgba(245,208,0,.3)">&#9888; Low liquidity</div>
-      <div class="ov-srcs"><span class="ov-src" style="color:#ff5f5f">DexScreener &#9940;</span><span class="ov-src" style="color:#ff5f5f">RugCheck &#9940;</span><span class="ov-src" style="color:#ff5f5f">GoPlus &#9940;</span><span class="ov-src" style="color:#00e5b0">Helius &#10003;</span><span class="ov-src" style="color:#00e5b0">Solscan &#10003;</span></div>
-    </div>
-    <div class="overlay-card">
-      <div class="ov-top" style="background:#ff2244"></div>
-      <div class="ov-brand">ANTARES</div>
-      <div class="ov-risk" style="color:#ff2244">RUG PULL</div>
-      <div class="ov-score">Score <strong>87</strong> / 1000</div>
-      <div class="ov-meta"><div><span>Market Cap</span><strong>$3.2K</strong></div><div><span>Liquidity</span><strong>$180</strong></div><div><span>Holders</span><strong>12</strong></div><div><span>Confidence</span><strong>100%</strong></div></div>
-      <div class="ov-fl" style="border-left-color:rgba(255,34,68,.4)">&#9940; Honeypot detected</div>
-      <div class="ov-fl" style="border-left-color:rgba(255,34,68,.4)">&#9940; Mint + Freeze active</div>
-      <div class="ov-fl" style="border-left-color:rgba(255,34,68,.4)">&#9940; Cannot sell &mdash; Safe Gate</div>
-      <div class="ov-srcs"><span class="ov-src" style="color:#ff2244">DexScreener &#9940;</span><span class="ov-src" style="color:#ff2244">RugCheck &#9940;</span><span class="ov-src" style="color:#ff2244">GoPlus &#9940;</span><span class="ov-src" style="color:#ff2244">Helius &#9940;</span><span class="ov-src" style="color:#ff5f5f">Solscan &#9888;</span></div>
-    </div>
+  <div class="vd" style="background:#0d1a16;border-color:#00e5b0">
+    <div class="vd-label" style="color:#00e5b0">SAFE</div>
+    <div class="vd-range" style="color:#00e5b0">700 &ndash; 1000</div>
+    <div class="vd-desc">All critical checks pass. LP secured. No manipulation patterns detected.</div>
   </div>
 </div>
 
