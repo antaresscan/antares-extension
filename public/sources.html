@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Antares Data Sources — 5 APIs, One Verdict</title>
+<meta name="description" content="Deep-dive into all 5 Antares data sources: DexScreener, RugCheck, GoPlus, Helius RPC, Solscan. What each provides and why it matters." />
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--c:#00e5b0}
+html{cursor:crosshair;scroll-behavior:smooth}
+body{background:#0f0f11;color:#d0d0d0;font-family:'IBM Plex Mono',monospace;overflow-x:hidden}
+.stripe{position:fixed;top:0;left:0;right:0;height:3px;z-index:999;background:linear-gradient(90deg,#c0007a,#00e5b0,#c8c000,#c0002a,#00e5b0,#c0007a);background-size:400% 100%;animation:stripe 6s linear infinite;opacity:.7}
+@keyframes stripe{0%{background-position:0% 0}100%{background-position:400% 0}}
+.shell{position:relative;z-index:2;max-width:1100px;margin:0 auto;padding:0 24px 80px}
+nav{display:flex;justify-content:space-between;align-items:center;padding:22px 0;border-bottom:1px solid #1a1a1d;position:sticky;top:3px;z-index:100;background:#0f0f11}
+nav .brand{font:400 26px/1 'Bebas Neue',sans-serif;letter-spacing:.18em;color:#e0e0e0;text-decoration:none}
+nav a{color:#454550;text-decoration:none;font-size:11px;text-transform:uppercase;letter-spacing:.1em;transition:.2s}
+nav a:hover{color:#d0d0d0}
+.eng-hero{padding:60px 0 50px;border-bottom:1px solid #1a1a1d;margin-bottom:60px}
+.eyebrow{font-size:10px;color:var(--c);letter-spacing:.3em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.eyebrow::before{content:'';display:block;width:14px;height:2px;background:var(--c)}
+.eng-hero h1{font:400 clamp(56px,9vw,110px)/.88 'Bebas Neue',sans-serif;letter-spacing:.04em;color:#e8e8e8;margin-bottom:20px}
+.eng-hero h1 span{color:var(--c)}
+.eng-hero p{font-size:13px;color:#5a5a62;line-height:1.75;max-width:620px;border-left:2px solid var(--c);padding-left:14px}
+.sh2{font:400 38px/1 'Bebas Neue',sans-serif;letter-spacing:.08em;color:#e0e0e0;margin-bottom:6px;padding-bottom:10px;border-bottom:2px solid #1a1a1d;position:relative}
+.sh2::after{content:'';position:absolute;bottom:-2px;left:0;width:40px;height:2px;background:var(--c)}
+.sub{font-size:11px;color:#3a3a3f;letter-spacing:.1em;text-transform:uppercase;margin-bottom:28px}
+/* STAT STRIP */
+.stat-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-bottom:60px}
+.st{background:#141417;border:1px solid #1a1a1d;padding:24px 20px;text-align:center;transition:.2s;cursor:default}
+.st:hover{border-color:var(--c);background:#161619}
+.st strong{display:block;font:400 48px/1 'Bebas Neue',sans-serif;color:var(--c);margin-bottom:6px}
+.st span{font-size:9px;color:#3a3a3f;text-transform:uppercase;letter-spacing:.16em}
+/* SOURCE FULL CARDS */
+.src-list{display:flex;flex-direction:column;gap:2px;margin-bottom:60px}
+.src-big{background:#141417;border:1px solid #1a1a1d;padding:0;overflow:hidden;position:relative;transition:.2s}
+.src-big::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--c);opacity:.15;transition:opacity .2s}
+.src-big:hover::after{opacity:1}
+.src-big:hover{background:#161619}
+.src-big-inner{display:grid;grid-template-columns:260px 1fr 1fr;gap:0}
+.src-left{padding:28px;border-right:1px solid #1a1a1d}
+.src-num{font:400 52px/1 'Bebas Neue',sans-serif;color:rgba(0,229,176,.08);margin-bottom:4px}
+.src-name-big{font-size:16px;color:#d0d0d0;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px;font-weight:600}
+.src-role-big{font-size:9px;color:var(--c);letter-spacing:.18em;text-transform:uppercase;margin-bottom:14px}
+.src-tags{display:flex;gap:4px;flex-wrap:wrap}
+.stag{font:600 8px/1 'IBM Plex Mono',monospace;padding:3px 7px;background:rgba(0,229,176,.04);border:1px solid rgba(0,229,176,.1);color:rgba(0,229,176,.5);letter-spacing:.06em}
+.src-mid{padding:28px;border-right:1px solid #1a1a1d}
+.src-mid-title{font-size:9px;color:var(--c);letter-spacing:.2em;text-transform:uppercase;margin-bottom:12px}
+.src-mid p{font-size:12px;color:#4a4a52;line-height:1.75}
+.src-right{padding:28px}
+.src-right-title{font-size:9px;color:#3a3a3f;letter-spacing:.2em;text-transform:uppercase;margin-bottom:12px}
+.src-fields{display:flex;flex-direction:column;gap:5px}
+.sf{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:#111113;border:1px solid #1c1c1f}
+.sf-name{font-size:10px;color:#8a8a92;letter-spacing:.06em}
+.sf-use{font-size:8px;color:rgba(0,229,176,.4);letter-spacing:.1em;text-transform:uppercase}
+/* CROSS-VALIDATION */
+.cross-block{background:#141417;border:1px solid #1a1a1d;padding:32px;margin-bottom:60px;position:relative;overflow:hidden}
+.cross-block::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--c);opacity:.3}
+.cross-title{font:400 36px/1 'Bebas Neue',sans-serif;color:#e0e0e0;margin-bottom:8px;letter-spacing:.06em}
+.cross-sub{font-size:9px;color:#3a3a3f;letter-spacing:.2em;text-transform:uppercase;margin-bottom:18px}
+.cross-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px}
+.cg{background:#111113;border:1px solid #1c1c1f;padding:16px}
+.cg-title{font-size:10px;color:#d0d0d0;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;font-weight:600}
+.cg-body{font-size:11px;color:#4a4a52;line-height:1.65}
+.glitch{position:relative;display:inline-block;cursor:default;user-select:none}
+.glitch::before,.glitch::after{content:attr(data-text);position:absolute;top:0;left:0;width:100%;overflow:hidden;opacity:0;pointer-events:none;font:inherit;color:inherit;letter-spacing:inherit}
+.glitch::before{color:#ff006e;clip-path:polygon(0 20%,100% 20%,100% 40%,0 40%)}
+.glitch::after{color:#00e5b0;clip-path:polygon(0 55%,100% 55%,100% 75%,0 75%)}
+.glitch:hover::before{animation:gl-a .45s steps(2,end) infinite}
+.glitch:hover::after{animation:gl-b .45s steps(2,end) infinite}
+@keyframes gl-a{0%{transform:translate(-3px,0);opacity:.75}50%{transform:translate(-2px,0);opacity:.75}100%{transform:translate(-3px,0);opacity:0}}
+@keyframes gl-b{0%{transform:translate(3px,0);opacity:.55}66%{transform:translate(2px,0);opacity:.55}100%{transform:translate(3px,0);opacity:0}}
+footer{text-align:center;padding:28px;color:#2a2a2f;font-size:10px;border-top:1px solid #1a1a1d;letter-spacing:.15em;text-transform:uppercase}
+footer span{color:var(--c)}
+#particles-canvas{position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:0;opacity:.35}
+</style></head>
+<body>
+<div class="stripe"></div>
+<canvas id="particles-canvas"></canvas>
+<div class="shell">
+<nav>
+  <a href="/" class="brand glitch" data-text="ANTARES">ANTARES</a>
+  <div style="display:flex;gap:22px">
+    <a href="/features">Features</a>
+    <a href="/engine">Engine</a>
+    <a href="/sources">Sources</a>
+    <a href="/">&larr; Home</a>
+  </div>
+</nav>
+
+<div class="eng-hero">
+  <div class="eyebrow">Data Sources</div>
+  <h1 class="glitch" data-text="5 APIS. ONE VERDICT.">5 APIS. <span>ONE VERDICT.</span></h1>
+  <p>Antares never trusts a single source. Five independent APIs are queried in parallel on every scan. Each covers a distinct attack surface. Results are cross-validated: when sources conflict, the most conservative verdict wins. A failed source is skipped gracefully without blocking the scan.</p>
+</div>
+
+<div class="stat-strip">
+  <div class="st"><strong>5</strong><span>Sources</span></div>
+  <div class="st"><strong>&#8741;</strong><span>Parallel Queries</span></div>
+  <div class="st"><strong>&lt;2s</strong><span>Total Scan</span></div>
+  <div class="st"><strong>100%</strong><span>Confidence when all pass</span></div>
+</div>
+
+<div class="sh2 glitch" data-text="Data Sources">Data Sources</div>
+<div class="sub">5 APIs, each covering a distinct risk surface</div>
+<div class="src-list">
+
+  <div class="src-big">
+    <div class="src-big-inner">
+      <div class="src-left">
+        <div class="src-num">01</div>
+        <div class="src-name-big">DexScreener</div>
+        <div class="src-role-big">Price &middot; Liquidity &middot; Chart</div>
+        <div class="src-tags"><span class="stag">PRICE</span><span class="stag">LIQUIDITY</span><span class="stag">OHLCV</span><span class="stag">TXNS</span></div>
+      </div>
+      <div class="src-mid">
+        <div class="src-mid-title">Why it matters</div>
+        <p>DexScreener is the primary market data layer. It provides the token's real-time price, market cap, liquidity depth across all active pairs, and granular transaction counts across 5m, 1h, 6h, and 24h windows. The OHLCV candle data powers the Chart Intelligence layer: pump detection, blow-off top analysis, and wash trading identification all depend on this feed. A token with no DexScreener pair is likely not yet indexed or is too illiquid to trade safely.</p>
+      </div>
+      <div class="src-right">
+        <div class="src-right-title">Fields used</div>
+        <div class="src-fields">
+          <div class="sf"><span class="sf-name">priceUsd</span><span class="sf-use">Score display</span></div>
+          <div class="sf"><span class="sf-name">liquidity.usd</span><span class="sf-use">L3 + Safe Gate</span></div>
+          <div class="sf"><span class="sf-name">marketCap</span><span class="sf-use">Score display</span></div>
+          <div class="sf"><span class="sf-name">txns.m5 / h1 / h6 / h24</span><span class="sf-use">Chart Intel L6</span></div>
+          <div class="sf"><span class="sf-name">volume.h24</span><span class="sf-use">Wash trading L6</span></div>
+          <div class="sf"><span class="sf-name">info.name / symbol</span><span class="sf-use">Identity L5</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="src-big">
+    <div class="src-big-inner">
+      <div class="src-left">
+        <div class="src-num">02</div>
+        <div class="src-name-big">RugCheck</div>
+        <div class="src-role-big">LP &middot; Metadata &middot; Risks</div>
+        <div class="src-tags"><span class="stag">LP STATUS</span><span class="stag">FREEZE</span><span class="stag">BUNDLER</span><span class="stag">METADATA</span></div>
+      </div>
+      <div class="src-mid">
+        <div class="src-mid-title">Why it matters</div>
+        <p>RugCheck specialises in Solana token audit. It checks whether LP tokens have been burned or locked (preventing a rug via liquidity removal), whether the token metadata is mutable (can the name/image be changed post-launch?), and whether mint or freeze authorities are still active. It also runs bundler detection — identifying tokens launched via coordinated bots that pre-buy supply before public trading. Its risk score and flag list feed directly into the Safe Gate and scoring engine.</p>
+      </div>
+      <div class="src-right">
+        <div class="src-right-title">Fields used</div>
+        <div class="src-fields">
+          <div class="sf"><span class="sf-name">topHolders</span><span class="sf-use">L4 holder distribution</span></div>
+          <div class="sf"><span class="sf-name">markets[].lp</span><span class="sf-use">L3 LP burned check</span></div>
+          <div class="sf"><span class="sf-name">mintAuthority</span><span class="sf-use">L2 + Safe Gate</span></div>
+          <div class="sf"><span class="sf-name">freezeAuthority</span><span class="sf-use">L2 + Safe Gate</span></div>
+          <div class="sf"><span class="sf-name">mutableMetadata</span><span class="sf-use">L2 deduction</span></div>
+          <div class="sf"><span class="sf-name">risks[].name</span><span class="sf-use">Bundler / Safe Gate</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="src-big">
+    <div class="src-big-inner">
+      <div class="src-left">
+        <div class="src-num">03</div>
+        <div class="src-name-big">GoPlus</div>
+        <div class="src-role-big">Honeypot &middot; Contract &middot; Blacklist</div>
+        <div class="src-tags"><span class="stag">HONEYPOT</span><span class="stag">PROXY</span><span class="stag">BLACKLIST</span><span class="stag">SELL LOCK</span></div>
+      </div>
+      <div class="src-mid">
+        <div class="src-mid-title">Why it matters</div>
+        <p>GoPlus is the contract security layer. It performs a simulated transaction to determine whether you can actually sell the token after buying — the classic honeypot trap. It also detects proxy contracts that can be upgraded to steal funds, blacklist functions that block specific wallets from selling, transfer restrictions, and hidden fees that make trading economically impossible. A honeypot detection from GoPlus is an immediate Safe Gate trigger regardless of other scores.</p>
+      </div>
+      <div class="src-right">
+        <div class="src-right-title">Fields used</div>
+        <div class="src-fields">
+          <div class="sf"><span class="sf-name">is_honeypot</span><span class="sf-use">L1 + Safe Gate</span></div>
+          <div class="sf"><span class="sf-name">cannot_sell_all</span><span class="sf-use">L1 + Safe Gate</span></div>
+          <div class="sf"><span class="sf-name">is_proxy</span><span class="sf-use">L1 deduction</span></div>
+          <div class="sf"><span class="sf-name">is_blacklisted</span><span class="sf-use">L1 deduction</span></div>
+          <div class="sf"><span class="sf-name">transfer_pausable</span><span class="sf-use">L1 deduction</span></div>
+          <div class="sf"><span class="sf-name">buy/sell_tax</span><span class="sf-use">L1 penalty</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="src-big">
+    <div class="src-big-inner">
+      <div class="src-left">
+        <div class="src-num">04</div>
+        <div class="src-name-big">Helius RPC</div>
+        <div class="src-role-big">On-Chain &middot; Authority &middot; Supply</div>
+        <div class="src-tags"><span class="stag">MINT AUTH</span><span class="stag">FREEZE AUTH</span><span class="stag">SUPPLY</span><span class="stag">ACCOUNTS</span></div>
+      </div>
+      <div class="src-mid">
+        <div class="src-mid-title">Why it matters</div>
+        <p>Helius provides a premium Solana RPC endpoint used to make direct on-chain calls. This is the ground truth layer: it bypasses any API aggregator and reads state directly from the Solana blockchain. Antares uses it to verify mint authority (can the developer infinitely print more tokens?), freeze authority (can wallets be locked, preventing selling?), current token supply, and active token accounts. These checks cannot be faked or manipulated by a bad actor controlling metadata.</p>
+      </div>
+      <div class="src-right">
+        <div class="src-right-title">Fields used</div>
+        <div class="src-fields">
+          <div class="sf"><span class="sf-name">mintAuthority</span><span class="sf-use">L2 + Safe Gate</span></div>
+          <div class="sf"><span class="sf-name">freezeAuthority</span><span class="sf-use">L2 + Safe Gate</span></div>
+          <div class="sf"><span class="sf-name">supply</span><span class="sf-use">Score context</span></div>
+          <div class="sf"><span class="sf-name">decimals</span><span class="sf-use">Display formatting</span></div>
+          <div class="sf"><span class="sf-name">isInitialized</span><span class="sf-use">Token validity</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="src-big">
+    <div class="src-big-inner">
+      <div class="src-left">
+        <div class="src-num">05</div>
+        <div class="src-name-big">Solscan</div>
+        <div class="src-role-big">Holders &middot; Age &middot; Volume</div>
+        <div class="src-tags"><span class="stag">HOLDERS</span><span class="stag">TOKEN AGE</span><span class="stag">VOLUME</span><span class="stag">DISTRIBUTION</span></div>
+      </div>
+      <div class="src-mid">
+        <div class="src-mid-title">Why it matters</div>
+        <p>Solscan is the holder distribution and token history layer. It provides the number of unique holders, top wallet percentages for concentration analysis, token creation timestamp (age is a trust signal), and 24h trading volume independent from DexScreener for cross-validation. High concentration in the top 10 wallets is a strong dump signal. A token created less than an hour ago with 12 holders and 90% in one wallet is a textbook pre-rug setup — Solscan catches this pattern.</p>
+      </div>
+      <div class="src-right">
+        <div class="src-right-title">Fields used</div>
+        <div class="src-fields">
+          <div class="sf"><span class="sf-name">holder_count</span><span class="sf-use">L4 + display</span></div>
+          <div class="sf"><span class="sf-name">top10_percentage</span><span class="sf-use">L4 concentration</span></div>
+          <div class="sf"><span class="sf-name">first_tx_time</span><span class="sf-use">Token age signal</span></div>
+          <div class="sf"><span class="sf-name">volume_24h</span><span class="sf-use">Wash trading L6</span></div>
+          <div class="sf"><span class="sf-name">price_change_24h</span><span class="sf-use">Chart Intel L6</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- CROSS-VALIDATION -->
+<div class="cross-block">
+  <div class="cross-title glitch" data-text="Cross-Validation Logic">Cross-Validation Logic</div>
+  <div class="cross-sub">What happens when sources conflict</div>
+  <div class="cross-grid">
+    <div class="cg">
+      <div class="cg-title">Conservative wins</div>
+      <div class="cg-body">When two sources give conflicting signals on the same check (e.g. RugCheck says mint auth is revoked but Helius RPC says it is still active), Antares always takes the more dangerous result. The on-chain RPC call is treated as ground truth over aggregated APIs.</div>
+    </div>
+    <div class="cg">
+      <div class="cg-title">Graceful degradation</div>
+      <div class="cg-body">If a source times out or returns an error, it is skipped via Promise.allSettled. The scan continues with the remaining sources. The confidence score drops proportionally: missing 2 of 5 sources reduces confidence to 60%. The verdict still fires, but the user sees reduced confidence.</div>
+    </div>
+    <div class="cg">
+      <div class="cg-title">Safe Gate cannot be skipped</div>
+      <div class="cg-body">Safe Gate checks require only one confirming source. If GoPlus alone detects a honeypot, the gate triggers — even if the other 4 sources are unavailable. Critical safety checks are never gated behind multi-source consensus.</div>
+    </div>
+  </div>
+</div>
+
+<footer>Antares v4.5.3 &mdash; <span>No mercy for scammers.</span></footer>
+</div>
+<script>
+;(function(){
+  const canvas=document.getElementById('particles-canvas')
+  if(!canvas)return
+  const ctx=canvas.getContext('2d')
+  let particles=[]
+  const COUNT=40,MOUSE_R=100,MOUSE_F=0.7,CONN=90
+  let mouse={x:-9999,y:-9999,active:false}
+  const COLS=[[0,255,157],[0,255,200],[0,200,130],[255,255,255]]
+  function resize(){canvas.width=innerWidth;canvas.height=innerHeight}
+  addEventListener('resize',resize);resize()
+  document.addEventListener('mousemove',function(e){mouse.x=e.clientX;mouse.y=e.clientY;mouse.active=true})
+  document.addEventListener('mouseleave',function(){mouse.active=false})
+  function mkP(){const col=COLS[Math.random()*COLS.length|0];return{x:Math.random()*canvas.width,y:Math.random()*canvas.height,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,r:Math.random()*1.4+.4,col,a:Math.random()*.25+.08}}
+  for(let i=0;i<COUNT;i++)particles.push(mkP())
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height)
+    for(let i=0;i<particles.length;i++){
+      const p=particles[i]
+      if(mouse.active){const dx=p.x-mouse.x,dy=p.y-mouse.y,d=Math.sqrt(dx*dx+dy*dy);if(d<MOUSE_R){const f=MOUSE_F*(1-d/MOUSE_R);p.vx+=dx/d*f;p.vy+=dy/d*f}}
+      p.x+=p.vx;p.y+=p.vy;p.vx*=.99;p.vy*=.99
+      if(p.x<0)p.x=canvas.width;if(p.x>canvas.width)p.x=0
+      if(p.y<0)p.y=canvas.height;if(p.y>canvas.height)p.y=0
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2)
+      ctx.fillStyle='rgba('+p.col.join(',')+','+p.a+')';ctx.fill()
+      for(let j=i+1;j<particles.length;j++){
+        const q=particles[j],dx2=p.x-q.x,dy2=p.y-q.y,d2=Math.sqrt(dx2*dx2+dy2*dy2)
+        if(d2<CONN){ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y)
+          ctx.strokeStyle='rgba(0,229,176,'+(.07*(1-d2/CONN))+')';ctx.stroke()}
+      }
+    }
+    requestAnimationFrame(draw)
+  }
+  draw()
+})()
+</script>
+</body></html>

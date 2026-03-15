@@ -7,7 +7,9 @@
   },
   "rewrites": [
     { "source": "/api/scan", "destination": "/api/scan" },
-    { "source": "/engine", "destination": "/engine.html" }
+    { "source": "/engine", "destination": "/engine.html" },
+    { "source": "/features", "destination": "/features.html" },
+    { "source": "/sources", "destination": "/sources.html" }
   ],
   "headers": [
     {
