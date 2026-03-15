@@ -73,8 +73,8 @@ canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.35}
 .danger  .logo{color:#cc5555;text-shadow:0 0 10px rgba(255,95,95,.4)}
 .rug     .logo{color:#cc3344;text-shadow:0 0 12px rgba(255,34,68,.5)}
 
-.token-header{display:flex;align-items:center;gap:14px;margin-bottom:10px}
-.token-logo{width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0;background:#111}
+.token-header{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:10px}
+.token-logo{width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0;background:#111;margin-left:auto}
 .safe    .token-logo{border:1px solid rgba(0,229,176,.2);box-shadow:0 0 16px rgba(0,229,176,.1)}
 .caution .token-logo{border:1px solid rgba(245,208,0,.2);box-shadow:0 0 16px rgba(245,208,0,.1)}
 .danger  .token-logo{border:1px solid rgba(255,95,95,.2);box-shadow:0 0 16px rgba(255,95,95,.1)}
@@ -410,13 +410,13 @@ function render(d,ca){
       <div class="risk-wrap ${rc}">
         <div class="topbar"></div>
         <div class="token-header">
-          ${logo?`<img class="token-logo" src="${logo}" alt="${sym}" onerror="this.style.display='none'"/>`:""
-          }
           <div>
             <div class="vt" data-label="${lb}">${lb}</div>
             ${sym?`<div class="tk-name"><b>${sym}</b> ${name}</div>`:""}
             ${ageStr?`<div class="age-badge">${ageStr}</div>`:pairDate?`<div class="age-badge">Pair: ${pairDate}</div>`:""}
           </div>
+          ${logo?`<img class="token-logo" src="${logo}" alt="${sym}" onerror="this.style.display='none'"/>`:""
+          }
         </div>
         ${priceUsd?`<div class="price-big">${fmtPrice(priceUsd)} <span>${priceNative?priceNative+' SOL':''}</span></div>`:""}
         <div class="score-row">
