@@ -1,16 +1,9 @@
 {
   "version": 2,
-  "buildCommand": "echo 'no build needed'",
-  "outputDirectory": ".",
-  "functions": {
-    "api/**/*.ts": {
-      "runtime": "@vercel/node@5"
-    }
-  },
+  "builds": [
+    { "src": "api/**/*.ts", "use": "@vercel/node" }
+  ],
   "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    }
+    { "src": "/api/(.*)", "dest": "/api/$1" }
   ]
 }
