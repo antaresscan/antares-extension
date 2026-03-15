@@ -81,28 +81,14 @@ nav a:hover{color:#d0d0d0}
   letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px}
 .mc strong{font-size:22px;color:#d0d0d0;font:400 22px/1 'Bebas Neue',sans-serif;letter-spacing:.04em}
 
-/* txns redesign — plus visible */
 .txns-row{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-bottom:44px}
-.txn-cell{
-  background:#141417;border:1px solid #1a1a1d;
-  padding:20px 14px 18px;text-align:center;
-  transition:.2s;position:relative;overflow:hidden}
-.txn-cell::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
-  background:var(--c);transform:scaleX(0);transform-origin:center;transition:.3s}
-.txn-cell:hover::after{transform:scaleX(1)}
-.txn-cell:hover{background:#161619}
-.txn-label{
-  font-size:9px;color:#3a3a3f;letter-spacing:.2em;
-  text-transform:uppercase;margin-bottom:12px;display:block}
-.txn-buysells{
-  display:flex;gap:8px;justify-content:center;align-items:center}
-.txn-b{
-  font:700 20px/1 'Bebas Neue',sans-serif;
-  color:#00e5b0;letter-spacing:.06em}
-.txn-s{
-  font:700 20px/1 'Bebas Neue',sans-serif;
-  color:#ff5f5f;letter-spacing:.06em}
-.txn-sep{color:#2a2a2f;font-size:14px;font-weight:300}
+.txn-cell{background:#141417;border:1px solid #1a1a1d;padding:14px;text-align:center}
+.txn-cell span{display:block;font-size:9px;color:#3a3a3f;letter-spacing:.14em;
+  text-transform:uppercase;margin-bottom:8px}
+.txn-buysells{display:flex;gap:6px;justify-content:center;align-items:center}
+.txn-b{color:#c8c8c8;font-size:13px;font-weight:700;letter-spacing:.04em}
+.txn-s{color:#c8c8c8;font-size:13px;font-weight:700;letter-spacing:.04em}
+.txn-sep{color:#2a2a2f;font-size:10px}
 
 .sh{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;
   padding-bottom:12px;border-bottom:2px solid #1a1a1d;position:relative}
@@ -219,7 +205,6 @@ footer span{color:var(--c)}
         <span id="token-ca-text"></span>
         <span class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('token-ca-text').textContent)">COPY</span>
       </div>
-      <!-- changes 1h/24h seulement, sans le prix -->
       <div class="changes-row" id="changes-row"></div>
       <div class="tdesc" id="token-desc">Scanning token…</div>
       <div class="socials-row" id="socials-row"></div>
@@ -252,10 +237,10 @@ footer span{color:var(--c)}
   <h2 class="glitch" data-text="Transactions">Transactions</h2>
 </div>
 <div class="txns-row">
-  <div class="txn-cell"><span class="txn-label">5 min</span><div class="txn-buysells" id="txn-5m">—</div></div>
-  <div class="txn-cell"><span class="txn-label">1 hour</span><div class="txn-buysells" id="txn-1h">—</div></div>
-  <div class="txn-cell"><span class="txn-label">6 hours</span><div class="txn-buysells" id="txn-6h">—</div></div>
-  <div class="txn-cell"><span class="txn-label">24 hours</span><div class="txn-buysells" id="txn-24h">—</div></div>
+  <div class="txn-cell"><span>5 min</span><div class="txn-buysells" id="txn-5m">—</div></div>
+  <div class="txn-cell"><span>1 hour</span><div class="txn-buysells" id="txn-1h">—</div></div>
+  <div class="txn-cell"><span>6 hours</span><div class="txn-buysells" id="txn-6h">—</div></div>
+  <div class="txn-cell"><span>24 hours</span><div class="txn-buysells" id="txn-24h">—</div></div>
 </div>
 
 <div class="sh">
@@ -329,7 +314,6 @@ function render(d,ca){
   const label=LABELS[d.risk]||d.risk
   document.documentElement.style.setProperty("--c",c)
 
-  // logo
   const logoUrl=d.tokenLogo||d.pair?.info?.imageUrl||null
   if(logoUrl){
     const lg=document.getElementById("token-logo")
@@ -346,14 +330,12 @@ function render(d,ca){
   document.getElementById("token-eyebrow").textContent=symbol?symbol+" ANALYSIS":"TOKEN ANALYSIS"
   document.getElementById("token-desc").textContent="Score: "+d.score+" / 1000 — Verdict: "+label
 
-  // changes 1h + 24h (sans le prix)
   const changesRow=document.getElementById("changes-row")
   const p1=fmtPct(d.priceChange1h),p24=fmtPct(d.priceChange24h)
   changesRow.innerHTML=
     (p1?`<span class="pchange ${pctClass(d.priceChange1h)}">1h ${p1}</span>`:"")+
     (p24?`<span class="pchange ${pctClass(d.priceChange24h)}">24h ${p24}</span>`:"")
 
-  // socials + dex
   const socials=d.pair?.info?.socials||[]
   const websites=d.pair?.info?.websites||[]
   let socialHtml=""
@@ -391,7 +373,7 @@ function render(d,ca){
   document.getElementById("m-vol24").textContent   = fmt(d.solscanVolume24h ?? d.volume24h)
 
   function txnHtml(t){
-    if(!t)return"<span style='color:#2a2a2f;font-size:14px'>—</span>"
+    if(!t)return"—"
     return`<span class="txn-b">${t.buys}B</span><span class="txn-sep">/</span><span class="txn-s">${t.sells}S</span>`
   }
   document.getElementById("txn-5m").innerHTML=txnHtml(d.pair?.txns?.m5)
@@ -447,9 +429,13 @@ function render(d,ca){
     "RugCheck":"LP · Metadata · Risks",
     "GoPlus":"Honeypot · Proxy · Mint",
     "Helius RPC":"Token accounts · Authority",
+    "Helius":"Token accounts · Authority",
     "Solscan":"Holders · Age · Volume"
   }
-  const srcNames=d.sources_used||["DexScreener","RugCheck","GoPlus","Helius RPC"]
+  // Solscan toujours inclus dans le fallback
+  const srcNames=d.sources_used&&d.sources_used.length
+    ? (d.sources_used.includes("Solscan")?d.sources_used:[...d.sources_used,"Solscan"])
+    : ["DexScreener","RugCheck","GoPlus","Helius RPC","Solscan"]
   const srcGrid=document.getElementById("sources-grid")
   srcGrid.style.gridTemplateColumns="repeat("+Math.min(srcNames.length,5)+",1fr)"
   srcGrid.innerHTML=srcNames.map(s=>{
