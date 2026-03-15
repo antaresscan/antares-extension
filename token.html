@@ -73,12 +73,31 @@ canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.35}
 .danger  .logo{color:#cc5555;text-shadow:0 0 10px rgba(255,95,95,.4)}
 .rug     .logo{color:#cc3344;text-shadow:0 0 12px rgba(255,34,68,.5)}
 
-.token-header{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:10px}
-.token-logo{width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0;background:#111;margin-left:auto}
-.safe    .token-logo{border:1px solid rgba(0,229,176,.2);box-shadow:0 0 16px rgba(0,229,176,.1)}
-.caution .token-logo{border:1px solid rgba(245,208,0,.2);box-shadow:0 0 16px rgba(245,208,0,.1)}
-.danger  .token-logo{border:1px solid rgba(255,95,95,.2);box-shadow:0 0 16px rgba(255,95,95,.1)}
-.rug     .token-logo{border:1px solid rgba(255,34,68,.25);box-shadow:0 0 16px rgba(255,34,68,.12)}
+/* ── token header: texte gauche, logo droite, alignés au centre ── */
+.token-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:20px;
+  margin-bottom:10px;
+}
+.token-header-text{
+  flex:1;
+  min-width:0;
+}
+.token-logo{
+  width:72px;
+  height:72px;
+  border-radius:50%;
+  object-fit:cover;
+  flex-shrink:0;
+  background:#111;
+  display:block;
+}
+.safe    .token-logo{border:1.5px solid rgba(0,229,176,.3);box-shadow:0 0 24px rgba(0,229,176,.18),0 0 48px rgba(0,229,176,.07)}
+.caution .token-logo{border:1.5px solid rgba(245,208,0,.3);box-shadow:0 0 24px rgba(245,208,0,.15),0 0 48px rgba(245,208,0,.06)}
+.danger  .token-logo{border:1.5px solid rgba(255,95,95,.3);box-shadow:0 0 24px rgba(255,95,95,.18),0 0 48px rgba(255,95,95,.07)}
+.rug     .token-logo{border:1.5px solid rgba(255,34,68,.35);box-shadow:0 0 28px rgba(255,34,68,.22),0 0 56px rgba(255,34,68,.08)}
 
 .vt{font-family:'Bebas Neue',sans-serif;font-size:72px;line-height:.85;letter-spacing:.03em;font-weight:400;position:relative}
 .safe    .vt{color:#00e5b0;animation:ant-flicker-safe    3.5s ease-in-out infinite}
@@ -379,7 +398,6 @@ function render(d,ca){
   }
   const txnsHtml=`<div class="txn-row">${txnCard("1h",txH1)}${txnCard("6h",txH6)}${txnCard("24h",txH24)}</div>`
 
-  // score dots
   const dotsCount=Math.round((score/1000)*5)
   const dotsHtml=Array.from({length:5},(_,i)=>`<div class="dt ${i<dotsCount?'on':'off'}"></div>`).join("")
 
@@ -402,7 +420,6 @@ function render(d,ca){
   const dexUrl=d.pair?.url||`https://dexscreener.com/solana/${ca}`
   const isDangerous=rc==="danger"||rc==="rug"
 
-  // update canvas particle color per risk
   window.__riskClass=rc
 
   wrap.innerHTML=`
@@ -410,7 +427,7 @@ function render(d,ca){
       <div class="risk-wrap ${rc}">
         <div class="topbar"></div>
         <div class="token-header">
-          <div>
+          <div class="token-header-text">
             <div class="vt" data-label="${lb}">${lb}</div>
             ${sym?`<div class="tk-name"><b>${sym}</b> ${name}</div>`:""}
             ${ageStr?`<div class="age-badge">${ageStr}</div>`:pairDate?`<div class="age-badge">Pair: ${pairDate}</div>`:""}
@@ -468,7 +485,6 @@ function render(d,ca){
     </div>
   `
 
-  // color the ANTARES logo per risk
   const logoColors={safe:'#00c890',caution:'#c8a800',danger:'#cc5555',rug:'#cc3344'}
   const logoGlow={safe:'rgba(0,229,176,.4)',caution:'rgba(245,208,0,.35)',danger:'rgba(255,95,95,.4)',rug:'rgba(255,34,68,.5)'}
   const logoEl=document.querySelector('.logo')
