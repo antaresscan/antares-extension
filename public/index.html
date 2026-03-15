@@ -104,19 +104,22 @@ nav .tag{font-size:10px;color:#333;border:1px solid #1e1e22;padding:5px 10px;let
 
 .features{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-bottom:70px}
 .fc{background:#141417;padding:22px;border:1px solid #1a1a1d;
-  transition:all .2s;cursor:default;position:relative;overflow:hidden}
+  transition:all .2s;cursor:pointer;position:relative;overflow:hidden;text-decoration:none;display:block}
 .fc::before{content:'';position:absolute;top:0;left:0;right:0;height:0;
   background:rgba(0,229,176,.03);transition:height .3s}
 .fc:hover::before{height:100%}
-.fc:hover{border-color:#222;padding-left:28px}
+.fc:hover{border-color:#333;padding-left:28px}
 .fc .icon{font-size:20px;margin-bottom:10px}
 .fc h3{font-size:12px;letter-spacing:.06em;margin-bottom:5px;color:#bbb}
 .fc p{font-size:11px;color:#4a4a52;line-height:1.65}
+.fc .more{font-size:9px;color:rgba(0,229,176,.35);letter-spacing:.12em;text-transform:uppercase;margin-top:10px;transition:.2s}
+.fc:hover .more{color:var(--c)}
 
 .sources{display:flex;gap:2px;margin-bottom:70px}
 .sp{flex:1;background:#141417;padding:18px;text-align:center;
   font-size:11px;color:#454550;letter-spacing:.12em;text-transform:uppercase;
-  border:1px solid #1a1a1d;transition:all .2s;cursor:default;position:relative}
+  border:1px solid #1a1a1d;transition:all .2s;cursor:pointer;position:relative;
+  text-decoration:none;display:block}
 .sp::after{content:'';position:absolute;bottom:0;left:50%;right:50%;
   height:2px;background:var(--c);transition:.3s ease}
 .sp:hover::after{left:0;right:0}
@@ -180,11 +183,11 @@ section{padding:70px 0 0}
 <nav>
   <div class="brand glitch" data-text="ANTARES">ANTARES</div>
   <div class="links">
-    <a href="#features">Features</a>
+    <a href="/features">Features</a>
     <a href="/engine">Engine</a>
-    <a href="#sources">Sources</a>
+    <a href="/sources">Sources</a>
   </div>
-  <div class="tag">v4.1 // SOLANA</div>
+  <div class="tag">v4.5.3 // SOLANA</div>
 </nav>
 
 <section class="hero" style="padding-top:50px">
@@ -194,7 +197,7 @@ section{padding:70px 0 0}
     <p>Antares scans every Solana token you encounter in real-time. 5 sources. 6 layers. 1000-point scoring. Safe gate enforced in under 2 seconds.</p>
     <div class="cta-row">
       <a class="cta main" href="#">&#9889; Install Extension</a>
-      <a class="cta alt" href="#features">Learn more &rarr;</a>
+      <a class="cta alt" href="/features">Learn more &rarr;</a>
     </div>
   </div>
   <div>
@@ -247,23 +250,23 @@ section{padding:70px 0 0}
 <section id="features">
 <div class="sl glitch" data-text="Features">Features</div>
 <div class="features">
-  <div class="fc"><div class="icon">&#128737;&#65039;</div><h3>Safe Gate</h3><p>Critical checks must pass regardless of score.</p></div>
-  <div class="fc"><div class="icon">&#9889;</div><h3>Real-time</h3><p>Under 2 seconds, directly as you browse.</p></div>
-  <div class="fc"><div class="icon">&#128279;</div><h3>5 Sources</h3><p>DexScreener, RugCheck, GoPlus, Helius RPC, Solscan.</p></div>
-  <div class="fc"><div class="icon">&#128202;</div><h3>Chart Intel</h3><p>Parabolic pumps, blow-off tops, wash trading.</p></div>
-  <div class="fc"><div class="icon">&#129518;</div><h3>Identity Check</h3><p>Copycat tokens and fake branding detection.</p></div>
-  <div class="fc"><div class="icon">&#127760;</div><h3>Universal</h3><p>Works on any page containing a Solana address.</p></div>
+  <a class="fc" href="/features"><div class="icon">&#128737;&#65039;</div><h3>Safe Gate</h3><p>Critical checks must pass regardless of score.</p><div class="more">Learn more &rarr;</div></a>
+  <a class="fc" href="/features"><div class="icon">&#9889;</div><h3>Real-time</h3><p>Under 2 seconds, directly as you browse.</p><div class="more">Learn more &rarr;</div></a>
+  <a class="fc" href="/sources"><div class="icon">&#128279;</div><h3>5 Sources</h3><p>DexScreener, RugCheck, GoPlus, Helius RPC, Solscan.</p><div class="more">Learn more &rarr;</div></a>
+  <a class="fc" href="/features"><div class="icon">&#128202;</div><h3>Chart Intel</h3><p>Parabolic pumps, blow-off tops, wash trading.</p><div class="more">Learn more &rarr;</div></a>
+  <a class="fc" href="/features"><div class="icon">&#129518;</div><h3>Identity Check</h3><p>Copycat tokens and fake branding detection.</p><div class="more">Learn more &rarr;</div></a>
+  <a class="fc" href="/features"><div class="icon">&#127760;</div><h3>Universal</h3><p>Works on any page containing a Solana address.</p><div class="more">Learn more &rarr;</div></a>
 </div>
 </section>
 
 <section id="sources">
 <div class="sl glitch" data-text="Data Sources">Data Sources</div>
 <div class="sources">
-  <div class="sp">DexScreener</div>
-  <div class="sp">RugCheck</div>
-  <div class="sp">GoPlus</div>
-  <div class="sp">Helius RPC</div>
-  <div class="sp">Solscan</div>
+  <a class="sp" href="/sources">DexScreener</a>
+  <a class="sp" href="/sources">RugCheck</a>
+  <a class="sp" href="/sources">GoPlus</a>
+  <a class="sp" href="/sources">Helius RPC</a>
+  <a class="sp" href="/sources">Solscan</a>
 </div>
 </section>
 
