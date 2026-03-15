@@ -1,11 +1,12 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/**/*.ts",
-      "use": "@vercel/node"
+  "buildCommand": "echo 'no build needed'",
+  "outputDirectory": ".",
+  "functions": {
+    "api/**/*.ts": {
+      "runtime": "@vercel/node@3.2.0"
     }
-  ],
+  },
   "routes": [
     {
       "src": "/api/(.*)",
