@@ -23,8 +23,19 @@ nav a{color:#454550;text-decoration:none;font-size:11px;
   text-transform:uppercase;letter-spacing:.1em;transition:.2s}
 nav a:hover{color:#d0d0d0}
 
+/* ── NEW: banner ── */
+.token-banner{width:100%;height:140px;object-fit:cover;display:none;
+  margin-bottom:28px;opacity:.35;border-radius:2px;filter:blur(1px)}
+
 .hero-row{display:grid;grid-template-columns:1.3fr .7fr;gap:44px;
   align-items:center;margin-bottom:44px}
+
+/* ── NEW: hero-left flex for logo ── */
+.hero-left{display:flex;gap:18px;align-items:flex-start}
+.token-logo{width:66px;height:66px;border-radius:50%;border:2px solid #1e1e22;
+  object-fit:cover;flex-shrink:0;background:#141417;display:none}
+.hero-text{flex:1}
+
 .eyebrow{font-size:10px;color:var(--c);letter-spacing:.3em;text-transform:uppercase;
   margin-bottom:10px;display:flex;align-items:center;gap:8px}
 .eyebrow::before{content:'';display:block;width:14px;height:2px;background:var(--c)}
@@ -37,6 +48,22 @@ nav a:hover{color:#d0d0d0}
 .copy-btn:hover{color:var(--c);border-color:var(--c)}
 .tdesc{font-size:12px;color:#4a4a52;line-height:1.7;
   border-left:2px solid var(--c);padding-left:12px}
+
+/* ── NEW: price row ── */
+.price-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.price-val{font:400 26px/1 'Bebas Neue',sans-serif;color:#e0e0e0;letter-spacing:.04em}
+.pchange{font-size:9px;font-weight:700;padding:3px 7px;letter-spacing:.08em;border-radius:2px}
+.pchange.up{color:#00e5b0;background:rgba(0,229,176,.08);border:1px solid rgba(0,229,176,.15)}
+.pchange.dn{color:#ff5f5f;background:rgba(255,95,95,.08);border:1px solid rgba(255,95,95,.15)}
+.pchange.flat{color:#6a6a72;background:rgba(100,100,120,.08);border:1px solid rgba(100,100,120,.15)}
+
+/* ── NEW: socials ── */
+.socials-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+.soc-btn{font-size:9px;color:#454550;border:1px solid #1e1e22;padding:4px 10px;
+  text-decoration:none;letter-spacing:.1em;text-transform:uppercase;transition:.2s}
+.soc-btn:hover{color:var(--c);border-color:var(--c)}
+.dex-tag{font-size:9px;color:#3a3a3f;letter-spacing:.1em;text-transform:uppercase;
+  border:1px solid #1a1a1d;padding:3px 8px;margin-top:6px;display:inline-block}
 
 .score-card{background:#141417;border:1px solid #1e1e22;overflow:hidden;position:relative}
 .score-top{height:3px;background:var(--c)}
@@ -61,6 +88,30 @@ nav a:hover{color:#d0d0d0}
 .mc span{display:block;font-size:9px;color:#3a3a3f;
   letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px}
 .mc strong{font-size:22px;color:#d0d0d0;font:400 22px/1 'Bebas Neue',sans-serif;letter-spacing:.04em}
+
+/* ── NEW: txns grid ── */
+.txns-row{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-bottom:44px}
+.txn-cell{background:#141417;border:1px solid #1a1a1d;padding:14px;text-align:center}
+.txn-cell span{display:block;font-size:9px;color:#3a3a3f;letter-spacing:.14em;
+  text-transform:uppercase;margin-bottom:8px}
+.txn-buysells{display:flex;gap:6px;justify-content:center;align-items:center}
+.txn-b{color:#00e5b0;font-size:12px;font-weight:700}
+.txn-s{color:#ff5f5f;font-size:12px;font-weight:700}
+.txn-sep{color:#2a2a2f;font-size:10px}
+
+/* ── NEW: top holders table ── */
+.holders-table{width:100%;border-collapse:collapse;margin-bottom:44px}
+.holders-table th{font-size:9px;color:#3a3a3f;letter-spacing:.18em;text-transform:uppercase;
+  padding:8px 12px;text-align:left;border-bottom:1px solid #1a1a1d}
+.holders-table td{font-size:11px;color:#6a6a72;padding:10px 12px;
+  border-bottom:1px solid #141417;letter-spacing:.04em;transition:.2s}
+.holders-table tr:hover td{background:#141417;color:#aaa}
+.holder-addr a{color:inherit;text-decoration:none;font-family:'IBM Plex Mono',monospace}
+.holder-addr a:hover{color:var(--c)}
+.holder-pct{color:var(--c);font-weight:700;text-align:right}
+.holder-bar-wrap{width:70px;background:#1a1a1d;height:3px;border-radius:2px;
+  overflow:hidden;display:inline-block;vertical-align:middle}
+.holder-bar{height:3px;background:var(--c);border-radius:2px}
 
 .sh{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;
   padding-bottom:12px;border-bottom:2px solid #1a1a1d;position:relative}
@@ -167,15 +218,27 @@ footer span{color:var(--c)}
   <a href="/">← Back</a>
 </nav>
 
+<!-- ── NEW: banner image ── -->
+<img id="token-banner" class="token-banner" alt="">
+
 <div class="hero-row">
-  <div>
-    <div class="eyebrow" id="token-eyebrow">TOKEN ANALYSIS</div>
-    <div class="tname glitch" data-text="" id="token-name">Loading…</div>
-    <div class="tca">
-      <span id="token-ca-text"></span>
-      <span class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('token-ca-text').textContent)">COPY</span>
+  <!-- ── NEW: hero-left wraps logo + text ── -->
+  <div class="hero-left">
+    <img id="token-logo" class="token-logo" alt="">
+    <div class="hero-text">
+      <div class="eyebrow" id="token-eyebrow">TOKEN ANALYSIS</div>
+      <div class="tname glitch" data-text="" id="token-name">Loading…</div>
+      <div class="tca">
+        <span id="token-ca-text"></span>
+        <span class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('token-ca-text').textContent)">COPY</span>
+      </div>
+      <!-- ── NEW: price + changes ── -->
+      <div class="price-row" id="price-row"></div>
+      <div class="tdesc" id="token-desc">Scanning token…</div>
+      <!-- ── NEW: socials + dex link ── -->
+      <div class="socials-row" id="socials-row"></div>
+      <div id="dex-tag-wrap"></div>
     </div>
-    <div class="tdesc" id="token-desc">Scanning token…</div>
   </div>
   <div>
     <div class="score-card" id="score-card">
@@ -190,7 +253,7 @@ footer span{color:var(--c)}
   </div>
 </div>
 
-<!-- ── META ROW : 4 colonnes → 6 colonnes avec Token Age + Vol 24H ── -->
+<!-- ── META ROW : 6 colonnes avec Token Age + Vol 24H ── -->
 <div class="meta-row" style="grid-template-columns:repeat(3,1fr)" id="meta-row">
   <div class="mc"><span>Market Cap</span><strong id="m-mcap">—</strong></div>
   <div class="mc"><span>Liquidity</span><strong id="m-liq">—</strong></div>
@@ -199,6 +262,32 @@ footer span{color:var(--c)}
   <div class="mc"><span>Token Age</span><strong id="m-age">—</strong></div>
   <div class="mc"><span>Vol 24H</span><strong id="m-vol24">—</strong></div>
 </div>
+
+<!-- ── NEW: Transactions section ── -->
+<div class="sh" style="margin-bottom:18px">
+  <h2 class="glitch" data-text="Transactions">Transactions</h2>
+</div>
+<div class="txns-row">
+  <div class="txn-cell"><span>5 min</span><div class="txn-buysells" id="txn-5m">—</div></div>
+  <div class="txn-cell"><span>1 hour</span><div class="txn-buysells" id="txn-1h">—</div></div>
+  <div class="txn-cell"><span>6 hours</span><div class="txn-buysells" id="txn-6h">—</div></div>
+  <div class="txn-cell"><span>24 hours</span><div class="txn-buysells" id="txn-24h">—</div></div>
+</div>
+
+<!-- ── NEW: Top Holders section ── -->
+<div class="sh" style="margin-bottom:18px">
+  <h2 class="glitch" data-text="Top Holders">Top Holders</h2>
+  <div class="gate" id="holders-total-badge"></div>
+</div>
+<table class="holders-table">
+  <thead><tr>
+    <th>#</th><th>Wallet</th><th style="text-align:right">Amount</th>
+    <th style="text-align:right">%</th><th></th>
+  </tr></thead>
+  <tbody id="holders-tbody">
+    <tr><td colspan="5" style="color:#2a2a2f;padding:20px 12px;font-size:10px">Loading holders…</td></tr>
+  </tbody>
+</table>
 
 <div class="sh">
   <h2 class="glitch" data-text="Analysis Layers">Analysis Layers</h2>
@@ -216,11 +305,12 @@ footer span{color:var(--c)}
 </div>
 <div class="src-grid" id="sources-grid"></div>
 
-<footer>Antares v4.5.2 — <span>No mercy for scammers.</span></footer>
+<footer>Antares v4.5.3 — <span>No mercy for scammers.</span></footer>
 </div>
 
 <script>
 const API="https://antares-extension.vercel.app/api/scan"
+const SOLSCAN_PUB="https://public-api.solscan.io"
 const COLORS={SAFE:"#00e5b0",CAUTION:"#f5d000",DANGER:"#ff5f5f",RUG:"#ff2244"}
 const LABELS={SAFE:"SAFE",CAUTION:"CAUTION",DANGER:"DANGER",RUG:"RUG PULL"}
 
@@ -232,7 +322,6 @@ function fmt(n){
   return"$"+n.toFixed(0)
 }
 
-// ── NOUVEAU : format age ──────────────────────────────────────────────────────
 function fmtAge(h){
   if(h===null||h===undefined)return"—"
   if(h<1)return"<1h"
@@ -240,6 +329,24 @@ function fmtAge(h){
   if(h<720)return Math.floor(h/24)+"d"
   return Math.floor(h/720)+"mo"
 }
+
+// ── NEW helpers ──────────────────────────────────────────────────────────────
+function fmtPct(n){
+  const s=parseFloat(n)
+  if(!isFinite(s))return null
+  return(s>=0?"+":"")+s.toFixed(2)+"%"
+}
+function pctClass(n){return n>0?"up":n<0?"dn":"flat"}
+function shortAddr(a){return a?a.slice(0,4)+"…"+a.slice(-4):"—"}
+function fmtAmt(amt,decimals){
+  const d=parseInt(decimals)||0
+  const v=d>0?amt/Math.pow(10,d):amt
+  if(v>=1e9)return(v/1e9).toFixed(2)+"B"
+  if(v>=1e6)return(v/1e6).toFixed(2)+"M"
+  if(v>=1e3)return(v/1e3).toFixed(1)+"K"
+  return v.toFixed(0)
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 const params=new URLSearchParams(location.search)
 const ca=params.get("ca")
@@ -254,16 +361,78 @@ async function init(ca){
     if(!res.ok)throw new Error(res.status)
     const d=await res.json()
     render(d,ca)
+    // ── NEW: fetch top holders async after main render ──
+    fetchHolders(d.resolvedMint||ca)
   }catch(e){
     document.getElementById("token-name").textContent="API Error"
     document.getElementById("token-desc").textContent="Could not load token data. Try again later."
   }
 }
 
+// ── NEW: fetch top 10 holders from Solscan public ────────────────────────────
+async function fetchHolders(mint){
+  try{
+    const res=await fetch(SOLSCAN_PUB+"/token/holders?tokenAddress="+mint+"&limit=10&offset=0",
+      {headers:{"User-Agent":"Antares/1.0"}})
+    if(!res.ok)throw new Error()
+    const data=await res.json()
+    const list=data?.data||[]
+    const total=data?.total||null
+    if(total){
+      const badge=document.getElementById("holders-total-badge")
+      badge.textContent=total.toLocaleString()+" TOTAL"
+      badge.style.color="var(--c)"
+      badge.style.borderColor="rgba(0,229,176,.18)"
+    }
+    if(!list.length){
+      document.getElementById("holders-tbody").innerHTML=
+        "<tr><td colspan='5' style='color:#2a2a2f;padding:20px 12px;font-size:10px'>No holder data available.</td></tr>"
+      return
+    }
+    const maxAmt=Math.max(...list.map(h=>parseFloat(h.amount)||0))
+    document.getElementById("holders-tbody").innerHTML=list.map((h,i)=>{
+      const amt=parseFloat(h.amount)||0
+      const dec=h.decimals??0
+      const barW=maxAmt>0?Math.round((amt/maxAmt)*70):0
+      const addr=h.address||h.owner||"?"
+      const pctStr=typeof h.percentage==="number"?h.percentage.toFixed(2)+"%":"—"
+      return`<tr>
+        <td style="color:#2a2a2f;font-size:10px;width:28px">${i+1}</td>
+        <td class="holder-addr"><a href="https://solscan.io/account/${addr}" target="_blank">${shortAddr(addr)}</a></td>
+        <td style="text-align:right;color:#5a5a62;font-size:10px">${fmtAmt(amt,dec)}</td>
+        <td class="holder-pct" style="text-align:right">${pctStr}</td>
+        <td style="text-align:right;padding-right:14px">
+          <div class="holder-bar-wrap"><div class="holder-bar" style="width:${barW}px"></div></div>
+        </td>
+      </tr>`
+    }).join("")
+  }catch(e){
+    document.getElementById("holders-tbody").innerHTML=
+      "<tr><td colspan='5' style='color:#2a2a2f;padding:20px 12px;font-size:10px'>Holder data unavailable.</td></tr>"
+  }
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 function render(d,ca){
   const c=COLORS[d.risk]||"#6b7280"
   const label=LABELS[d.risk]||d.risk
   document.documentElement.style.setProperty("--c",c)
+
+  // ── NEW: banner ──────────────────────────────────────────────────────────
+  const bannerUrl=d.pair?.info?.header||null
+  if(bannerUrl){
+    const bEl=document.getElementById("token-banner")
+    bEl.src=bannerUrl;bEl.style.display="block"
+  }
+
+  // ── NEW: logo ────────────────────────────────────────────────────────────
+  const logoUrl=d.tokenLogo||d.pair?.info?.imageUrl||null
+  if(logoUrl){
+    const lg=document.getElementById("token-logo")
+    lg.src=logoUrl;lg.style.display="block"
+    lg.onerror=()=>{lg.style.display="none"}
+  }
+  // ─────────────────────────────────────────────────────────────────────────
 
   const name=d.pair?.baseToken?.name||ca.slice(0,8)+"…"
   const symbol=d.pair?.baseToken?.symbol||""
@@ -273,6 +442,38 @@ function render(d,ca){
   nameEl.setAttribute("data-text",name)
   document.getElementById("token-eyebrow").textContent=symbol?symbol+" ANALYSIS":"TOKEN ANALYSIS"
   document.getElementById("token-desc").textContent="Score: "+d.score+" / 1000 — Verdict: "+label
+
+  // ── NEW: price + changes ─────────────────────────────────────────────────
+  const priceRow=document.getElementById("price-row")
+  if(d.priceUsd){
+    const p=parseFloat(d.priceUsd)
+    const priceStr=p<0.01?p.toExponential(2):"$"+p.toFixed(p<1?6:4)
+    const p5=fmtPct(d.priceChange5m),p1=fmtPct(d.priceChange1h),p24=fmtPct(d.priceChange24h)
+    priceRow.innerHTML=
+      `<span class="price-val">${priceStr}</span>`+
+      (p5?`<span class="pchange ${pctClass(d.priceChange5m)}">5m ${p5}</span>`:"")+
+      (p1?`<span class="pchange ${pctClass(d.priceChange1h)}">1h ${p1}</span>`:"")+
+      (p24?`<span class="pchange ${pctClass(d.priceChange24h)}">24h ${p24}</span>`:"")
+  }
+
+  // ── NEW: socials + dex link ──────────────────────────────────────────────
+  const socials=d.pair?.info?.socials||[]
+  const websites=d.pair?.info?.websites||[]
+  let socialHtml=""
+  websites.forEach(w=>{socialHtml+=`<a class="soc-btn" href="${w.url}" target="_blank">🌐 ${w.label||"Website"}</a>`})
+  socials.forEach(s=>{
+    const isX=/twitter|x/i.test(s.type||s.url||"")
+    const isTg=/telegram/i.test(s.type||s.url||"")
+    const icon=isX?"𝕏":isTg?"✈":"🔗"
+    const lbl=isX?"Twitter":isTg?"Telegram":"Social"
+    socialHtml+=`<a class="soc-btn" href="${s.url}" target="_blank">${icon} ${lbl}</a>`
+  })
+  document.getElementById("socials-row").innerHTML=socialHtml
+  if(d.pair?.dexId){
+    document.getElementById("dex-tag-wrap").innerHTML=
+      `<span class="dex-tag">DEX: ${d.pair.dexId.toUpperCase()} · <a href="${d.pair.url}" target="_blank" style="color:var(--c);text-decoration:none">View on DexScreener ↗</a></span>`
+  }
+  // ─────────────────────────────────────────────────────────────────────────
 
   document.getElementById("score-num").textContent=d.score||"—"
   document.getElementById("score-top").style.background=c
@@ -284,16 +485,24 @@ function render(d,ca){
   const chips=(d.sources_used||[]).map(s=>"<span class='chip'>"+s+"</span>").join("")
   document.getElementById("scan-chips").innerHTML=chips
 
-  // ── CORRIGÉ : lecture depuis les bons champs ──────────────────────────────
   const mc  = d.marketCap  ?? d.pair?.marketCap ?? d.pair?.fdv ?? null
   const liq = d.liquidity  ?? d.pair?.liquidity?.usd ?? null
   document.getElementById("m-mcap").textContent    = fmt(mc)
   document.getElementById("m-liq").textContent     = fmt(liq)
   document.getElementById("m-holders").textContent = d.holders ? d.holders.toLocaleString() : "—"
   document.getElementById("m-conf").textContent    = typeof d.confidence==="number" ? d.confidence+"%" : "—"
-  // ── NOUVEAU : Token Age + Vol 24H ─────────────────────────────────────────
   document.getElementById("m-age").textContent     = fmtAge(d.solscanTokenAgeHours)
   document.getElementById("m-vol24").textContent   = fmt(d.solscanVolume24h ?? d.volume24h)
+
+  // ── NEW: txns ────────────────────────────────────────────────────────────
+  function txnHtml(t){
+    if(!t)return"—"
+    return`<span class="txn-b">${t.buys}B</span><span class="txn-sep">/</span><span class="txn-s">${t.sells}S</span>`
+  }
+  document.getElementById("txn-5m").innerHTML=txnHtml(d.pair?.txns?.m5)
+  document.getElementById("txn-1h").innerHTML=txnHtml(d.pair?.txns?.h1)
+  document.getElementById("txn-6h").innerHTML=txnHtml(d.pair?.txns?.h6)
+  document.getElementById("txn-24h").innerHTML=txnHtml(d.pair?.txns?.h24)
   // ─────────────────────────────────────────────────────────────────────────
 
   const layerDefs=[
@@ -339,7 +548,6 @@ function render(d,ca){
       '</div>'
   }).join("")
 
-  // ── CORRIGÉ : sources dynamiques avec description ─────────────────────────
   const SOURCE_DETAILS={
     "DexScreener":"Price · Liquidity · Pairs",
     "RugCheck":"LP · Metadata · Risks",
