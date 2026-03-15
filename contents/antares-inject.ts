@@ -9,6 +9,7 @@ const API           = "https://antares-extension.vercel.app/api/scan"
 const ANALYSIS_PAGE = "https://antares-extension.vercel.app/token.html"
 const LS_PREFIX     = "antares_scan_"
 const CACHE_TTL     = 90_000
+const POS_KEY       = "antares_popup_pos"
 
 const RISK_CLASS: Record<string, string> = {
   SAFE:    "safe",
@@ -88,6 +89,11 @@ function isValid(addr: string): boolean {
   return true
 }
 
+// ── SVG icons ────────────────────────────────────────────────────────────────
+const SVG_MOVE = `<svg width="13" height="13" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 1L5.5 3h3L7 1Z" fill="currentColor"/><line x1="7" y1="2.5" x2="7" y2="6.5" stroke="currentColor" stroke-width=".9" stroke-linecap="round"/><path d="M7 13L5.5 11h3L7 13Z" fill="currentColor"/><line x1="7" y1="11.5" x2="7" y2="7.5" stroke="currentColor" stroke-width=".9" stroke-linecap="round"/><path d="M1 7L3 5.5V8.5L1 7Z" fill="currentColor"/><line x1="2.5" y1="7" x2="6.5" y2="7" stroke="currentColor" stroke-width=".9" stroke-linecap="round"/><path d="M13 7L11 5.5V8.5L13 7Z" fill="currentColor"/><line x1="11.5" y1="7" x2="7.5" y2="7" stroke="currentColor" stroke-width=".9" stroke-linecap="round"/></svg>`
+
+const SVG_CLOSE = `<svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="2" x2="11" y2="11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="11" y1="2" x2="2" y2="11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`
+
 // ── SHADOW CSS ──────────────────────────────────────────────────────────────
 const SHADOW_CSS = `
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -153,6 +159,13 @@ const SHADOW_CSS = `
   justify-content: space-between;
   align-items: center;
   padding: 10px 14px 0;
+  cursor: grab;
+}
+.hd:active { cursor: grabbing; }
+.hd-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 .brand {
   font-size: 7px;
@@ -161,17 +174,29 @@ const SHADOW_CSS = `
   text-transform: uppercase;
   font-family: 'IBM Plex Mono', monospace;
 }
+.drag-icon {
+  display: flex;
+  align-items: center;
+  color: #3a3a42;
+  transition: color .2s;
+  pointer-events: none;
+}
+.hd:hover .drag-icon { color: #777; }
 .x {
-  font-size: 13px;
-  color: #555;
+  color: #3a3a42;
   cursor: pointer;
-  transition: color .15s;
-  line-height: 1;
+  transition: color .2s;
   background: none;
   border: none;
-  font-family: 'IBM Plex Mono', monospace;
+  width: 13px;
+  height: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
 }
-.x:hover { color: #aaa; }
+.x:hover { color: #777; }
 
 .tk {
   padding: 0 14px;
@@ -282,6 +307,58 @@ let lastCA            = ""
 let manuallyDismissed = false
 let scanInFlight      = false
 
+// ── Drag ────────────────────────────────────────────────────────────────────────
+let isDragging = false
+let dragOX = 0, dragOY = 0
+
+function initDrag() {
+  if (!host) return
+  try {
+    const saved = localStorage.getItem(POS_KEY)
+    if (saved) {
+      const { x, y } = JSON.parse(saved)
+      host.style.right  = "auto"
+      host.style.bottom = "auto"
+      host.style.left   = x
+      host.style.top    = y
+    }
+  } catch (_) {}
+
+  host.addEventListener("mousedown", (e: MouseEvent) => {
+    const target = e.composedPath()[0] as Element
+    if (target?.closest?.(".x")) return
+    if (!target?.closest?.(".hd")) return
+    isDragging = true
+    const r = host!.getBoundingClientRect()
+    dragOX = e.clientX - r.left
+    dragOY = e.clientY - r.top
+    host!.style.transition = "none"
+    host!.style.right  = "auto"
+    host!.style.bottom = "auto"
+    e.preventDefault()
+  })
+
+  document.addEventListener("mousemove", (e: MouseEvent) => {
+    if (!isDragging || !host) return
+    let x = e.clientX - dragOX
+    let y = e.clientY - dragOY
+    const pw = host.offsetWidth
+    const ph = host.offsetHeight
+    x = Math.max(0, Math.min(window.innerWidth  - pw, x))
+    y = Math.max(0, Math.min(window.innerHeight - ph, y))
+    host.style.left = x + "px"
+    host.style.top  = y + "px"
+  })
+
+  document.addEventListener("mouseup", () => {
+    if (!isDragging || !host) return
+    isDragging = false
+    try {
+      localStorage.setItem(POS_KEY, JSON.stringify({ x: host.style.left, y: host.style.top }))
+    } catch (_) {}
+  })
+}
+
 function createHost() {
   injectFonts()
   document.getElementById("antares-host")?.remove()
@@ -295,6 +372,7 @@ function createHost() {
   boxEl = document.createElement("div")
   boxEl.className = "box"
   shadow.appendChild(boxEl)
+  initDrag()
 }
 
 new MutationObserver(() => {
@@ -332,6 +410,10 @@ function attachClose() {
 }
 
 // ── HTML builders ─────────────────────────────────────────────────────────────
+function buildHeader(): string {
+  return `<div class="hd"><span class="brand">ANTARES</span><div class="hd-right"><span class="drag-icon">${SVG_MOVE}</span><button class="x" id="ant-close">${SVG_CLOSE}</button></div></div>`
+}
+
 function buildResult(data: any, ca: string): string {
   const riskClass = RISK_CLASS[data.risk] || "danger"
   const label     = LABELS[data.risk] || data.risk
@@ -391,7 +473,7 @@ function buildResult(data: any, ca: string): string {
 
   return `
     <div class="topbar"></div>
-    <div class="hd"><span class="brand">ANTARES</span><button class="x" id="ant-close">&times;</button></div>
+    ${buildHeader()}
     ${tokenSymbol ? `<div class="tk"><b>${tokenSymbol}</b> ${tokenName}</div>` : ""}
     <div class="vb"><h1>${label}</h1></div>
     <div class="sr"><span class="n"><b>${score}</b> / 1000</span><div class="dots">${dots}</div></div>
@@ -428,7 +510,7 @@ async function scan(ca: string) {
   if (boxEl) boxEl.className = "box"
   el.innerHTML = `
     <div class="topbar" style="background:linear-gradient(90deg,transparent,#3a3a3f,transparent)"></div>
-    <div class="hd"><span class="brand">ANTARES</span><button class="x" id="ant-close">&times;</button></div>
+    ${buildHeader()}
     <div class="scanning"><span class="dot"></span>Scanning&hellip;</div>
   `
   showBox(); attachClose()
@@ -451,7 +533,7 @@ async function scan(ca: string) {
     if (boxEl) boxEl.className = "box danger"
     el.innerHTML = `
       <div class="topbar"></div>
-      <div class="hd"><span class="brand">ANTARES</span><button class="x" id="ant-close">&times;</button></div>
+      ${buildHeader()}
       <div style="color:#ff5f5f;font-size:12px;padding:12px 14px;font-family:'IBM Plex Mono',monospace">API Error &mdash; retry later</div>
     `
     showBox(); attachClose()
