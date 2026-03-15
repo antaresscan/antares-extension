@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Antares Engine — How the Score is Built</title>
+<meta name="description" content="Deep-dive into the Antares scoring engine: 5 data sources, 6 analysis layers, Safe Gate logic and 1000-point scoring system." />
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--c:#00e5b0}
+html{cursor:crosshair;scroll-behavior:smooth}
+body{background:#0f0f11;color:#d0d0d0;font-family:'IBM Plex Mono',monospace;overflow-x:hidden}
+
+.stripe{position:fixed;top:0;left:0;right:0;height:3px;z-index:999;
+  background:linear-gradient(90deg,#c0007a,#00e5b0,#c8c000,#c0002a,#00e5b0,#c0007a);
+  background-size:400% 100%;animation:stripe 6s linear infinite;opacity:.7}
+@keyframes stripe{0%{background-position:0% 0}100%{background-position:400% 0}}
+
+.shell{position:relative;z-index:2;max-width:1100px;margin:0 auto;padding:0 24px 80px}
+
+nav{display:flex;justify-content:space-between;align-items:center;
+  padding:22px 0;border-bottom:1px solid #1a1a1d;
+  position:sticky;top:3px;z-index:100;background:#0f0f11}
+nav .brand{font:400 26px/1 'Bebas Neue',sans-serif;letter-spacing:.18em;color:#e0e0e0;text-decoration:none}
+nav a{color:#454550;text-decoration:none;font-size:11px;
+  text-transform:uppercase;letter-spacing:.1em;transition:.2s}
+nav a:hover{color:#d0d0d0}
+
+/* HERO */
+.eng-hero{padding:60px 0 50px;border-bottom:1px solid #1a1a1d;margin-bottom:60px}
+.eyebrow{font-size:10px;color:var(--c);letter-spacing:.3em;text-transform:uppercase;
+  margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.eyebrow::before{content:'';display:block;width:14px;height:2px;background:var(--c)}
+.eng-hero h1{font:400 clamp(56px,9vw,110px)/.88 'Bebas Neue',sans-serif;
+  letter-spacing:.04em;color:#e8e8e8;margin-bottom:20px}
+.eng-hero h1 span{color:var(--c)}
+.eng-hero p{font-size:13px;color:#5a5a62;line-height:1.75;max-width:620px;
+  border-left:2px solid var(--c);padding-left:14px}
+
+/* STAT STRIP */
+.stat-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-bottom:60px}
+.st{background:#141417;border:1px solid #1a1a1d;padding:24px 20px;text-align:center;
+  transition:.2s;cursor:default}
+.st:hover{border-color:var(--c);background:#161619}
+.st strong{display:block;font:400 48px/1 'Bebas Neue',sans-serif;
+  color:var(--c);margin-bottom:6px}
+.st span{font-size:9px;color:#3a3a3f;text-transform:uppercase;letter-spacing:.16em}
+
+/* SECTION HEADERS */
+.sh2{font:400 38px/1 'Bebas Neue',sans-serif;letter-spacing:.08em;color:#e0e0e0;
+  margin-bottom:6px;padding-bottom:10px;border-bottom:2px solid #1a1a1d;position:relative}
+.sh2::after{content:'';position:absolute;bottom:-2px;left:0;width:40px;height:2px;background:var(--c)}
+.sub{font-size:11px;color:#3a3a3f;letter-spacing:.1em;text-transform:uppercase;margin-bottom:28px}
+
+/* SOURCES GRID */
+.src-full{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-bottom:60px}
+.src-card{background:#141417;border:1px solid #1a1a1d;padding:22px;position:relative;
+  overflow:hidden;transition:.2s;cursor:default}
+.src-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:var(--c);opacity:.2;transition:opacity .2s}
+.src-card:hover::after{opacity:1}
+.src-card:hover{background:#161619}
+.src-name{font-size:13px;color:#d0d0d0;letter-spacing:.1em;text-transform:uppercase;
+  margin-bottom:4px;font-weight:600}
+.src-role{font-size:9px;color:var(--c);letter-spacing:.18em;text-transform:uppercase;
+  margin-bottom:10px}
+.src-desc{font-size:11px;color:#4a4a52;line-height:1.65}
+.src-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:10px}
+.tag{font:600 8px/1 'IBM Plex Mono',monospace;padding:3px 6px;
+  background:rgba(0,229,176,.04);border:1px solid rgba(0,229,176,.1);
+  color:rgba(0,229,176,.5);letter-spacing:.06em}
+
+/* LAYERS */
+.layers-full{display:grid;grid-template-columns:repeat(2,1fr);gap:2px;margin-bottom:60px}
+.lc{background:#141417;border:1px solid #1a1a1d;padding:22px;position:relative;
+  overflow:hidden;transition:.2s;cursor:default}
+.lc::before{content:'';position:absolute;top:0;left:0;bottom:0;width:2px;
+  background:var(--c);opacity:.15;transition:opacity .2s}
+.lc:hover::before{opacity:1}
+.lc:hover{background:#161619}
+.lc-id{font-size:9px;color:rgba(0,229,176,.3);letter-spacing:.22em;margin-bottom:6px}
+.lc-name{font-size:13px;color:#c8c8c8;margin-bottom:4px;font-weight:600;letter-spacing:.04em}
+.lc-src{font-size:9px;color:#3a3a3f;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px}
+.lc-desc{font-size:11px;color:#4a4a52;line-height:1.65}
+.lc-pts{font-size:9px;color:rgba(0,229,176,.4);letter-spacing:.12em;text-transform:uppercase;margin-top:10px}
+
+/* SAFE GATE */
+.gate-block{background:#141417;border:1px solid #1a1a1d;padding:32px;margin-bottom:60px;
+  position:relative;overflow:hidden}
+.gate-block::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:#f5d000}
+.gate-title{font:400 36px/1 'Bebas Neue',sans-serif;color:#f5d000;margin-bottom:8px;letter-spacing:.06em}
+.gate-sub{font-size:9px;color:rgba(245,208,0,.4);letter-spacing:.2em;text-transform:uppercase;margin-bottom:16px}
+.gate-desc{font-size:12px;color:#5a5a62;line-height:1.75;max-width:700px;margin-bottom:20px;border-left:2px solid #f5d000;padding-left:14px}
+.gate-flags{display:grid;grid-template-columns:repeat(3,1fr);gap:2px}
+.gf{background:#111113;border:1px solid #1c1c14;padding:12px 14px;font-size:10px;color:#6a5a30;letter-spacing:.06em;display:flex;align-items:center;gap:8px}
+.gf::before{content:'';display:block;width:5px;height:5px;border-radius:50%;background:#f5d000;flex-shrink:0}
+
+/* SCORING */
+.score-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-bottom:60px}
+.sg{background:#141417;border:1px solid #1a1a1d;padding:22px}
+.sg-title{font-size:11px;color:#d0d0d0;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;font-weight:600}
+.sg-body{font-size:11px;color:#4a4a52;line-height:1.7}
+.sg-body strong{color:#9a9a9a}
+
+/* VERDICTS */
+.verdicts{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-bottom:60px}
+.vd{padding:20px;border:1px solid #1a1a1d;text-align:center;cursor:default;transition:.2s}
+.vd:hover{transform:translateY(-2px)}
+.vd-label{font:400 28px/1 'Bebas Neue',sans-serif;letter-spacing:.08em;margin-bottom:6px}
+.vd-range{font-size:10px;letter-spacing:.1em;margin-bottom:8px;opacity:.5}
+.vd-desc{font-size:10px;color:#4a4a52;line-height:1.5}
+
+/* OVERLAY DEMO */
+.demo-section{margin-bottom:60px}
+.demo-title{font:400 38px/1 'Bebas Neue',sans-serif;letter-spacing:.08em;color:#e0e0e0;
+  margin-bottom:6px}
+.demo-sub{font-size:10px;color:#3a3a3f;letter-spacing:.14em;text-transform:uppercase;margin-bottom:28px}
+.demo-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:2px}
+.overlay-card{background:#141417;border:1px solid #1e1e22;padding:20px;position:relative;overflow:hidden}
+.ov-top{height:3px;margin-bottom:14px}
+.ov-brand{font-size:9px;letter-spacing:.3em;color:#3a3a3f;margin-bottom:10px}
+.ov-risk{font:400 30px/1 'Bebas Neue',sans-serif;margin-bottom:3px}
+.ov-score{font-size:11px;color:#4a4a50;margin-bottom:10px}
+.ov-score strong{color:#bbb}
+.ov-meta{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:10px}
+.ov-meta div{padding:6px 8px;background:#111114;border:1px solid #1c1c1f}
+.ov-meta span{display:block;font-size:8px;color:#3a3a3f;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1px}
+.ov-meta strong{font-size:11px;color:#bbb}
+.ov-fl{font-size:10px;color:#4a4a52;padding:2px 0 2px 8px;border-left:2px solid rgba(100,100,100,.2);margin-top:2px}
+.ov-srcs{display:flex;gap:4px;margin-top:10px;padding-top:8px;border-top:1px solid #1a1a1d;flex-wrap:wrap}
+.ov-src{font:600 8px/1 'IBM Plex Mono',monospace;padding:3px 6px;
+  background:rgba(0,229,176,.05);border:1px solid rgba(0,229,176,.12);
+  letter-spacing:.06em}
+
+.glitch{position:relative;display:inline-block;cursor:default;user-select:none}
+.glitch::before,.glitch::after{content:attr(data-text);position:absolute;top:0;left:0;width:100%;overflow:hidden;opacity:0;pointer-events:none;font:inherit;color:inherit;letter-spacing:inherit}
+.glitch::before{color:#ff006e;clip-path:polygon(0 20%,100% 20%,100% 40%,0 40%)}
+.glitch::after{color:#00e5b0;clip-path:polygon(0 55%,100% 55%,100% 75%,0 75%)}
+.glitch:hover::before{animation:gl-a .45s steps(2,end) infinite}
+.glitch:hover::after{animation:gl-b .45s steps(2,end) infinite}
+@keyframes gl-a{0%{transform:translate(-3px,0);opacity:.75}50%{transform:translate(-2px,0);opacity:.75}100%{transform:translate(-3px,0);opacity:0}}
+@keyframes gl-b{0%{transform:translate(3px,0);opacity:.55}66%{transform:translate(2px,0);opacity:.55}100%{transform:translate(3px,0);opacity:0}}
+
+footer{text-align:center;padding:28px;color:#2a2a2f;font-size:10px;
+  border-top:1px solid #1a1a1d;letter-spacing:.15em;text-transform:uppercase}
+footer span{color:var(--c)}
+
+#particles-canvas{position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:0;opacity:.35}
+</style></head>
+<body>
+<div class="stripe"></div>
+<canvas id="particles-canvas"></canvas>
+<div class="shell">
+
+<nav>
+  <a href="/" class="brand glitch" data-text="ANTARES">ANTARES</a>
+  <a href="/">&larr; Back</a>
+</nav>
+
+<!-- HERO -->
+<div class="eng-hero">
+  <div class="eyebrow">Scoring Engine</div>
+  <h1 class="glitch" data-text="HOW ANTARES WORKS">HOW <span>ANTARES</span> WORKS</h1>
+  <p>Every token you encounter triggers a parallel query across 5 independent data sources. The engine runs 6 analysis layers, each contributing weighted points to a 0&ndash;1000 score. A hardcoded Safe Gate overrides everything: critical flags block the token regardless of score.</p>
+</div>
+
+<!-- STAT STRIP -->
+<div class="stat-strip">
+  <div class="st"><strong>5</strong><span>Data Sources</span></div>
+  <div class="st"><strong>6</strong><span>Analysis Layers</span></div>
+  <div class="st"><strong>1000</strong><span>Max Score</span></div>
+  <div class="st"><strong>&lt;2s</strong><span>Scan Time</span></div>
+</div>
+
+<!-- DATA SOURCES -->
+<div class="sh2 glitch" data-text="Data Sources">Data Sources</div>
+<div class="sub">5 independent APIs queried in parallel</div>
+<div class="src-full">
+  <div class="src-card">
+    <div class="src-name">DexScreener</div>
+    <div class="src-role">Price &middot; Liquidity &middot; Chart</div>
+    <div class="src-desc">Provides real-time price, market cap, liquidity depth, transaction counts (5m/1h/6h/24h), and OHLCV chart data used for chart intelligence analysis.</div>
+    <div class="src-tags"><span class="tag">PRICE</span><span class="tag">LIQUIDITY</span><span class="tag">TXNS</span><span class="tag">OHLCV</span></div>
+  </div>
+  <div class="src-card">
+    <div class="src-name">RugCheck</div>
+    <div class="src-role">LP &middot; Metadata &middot; Risk Flags</div>
+    <div class="src-desc">Audits LP status (burned/locked), token metadata mutability, mint/freeze authorities, bundler detection, and known risk patterns on-chain.</div>
+    <div class="src-tags"><span class="tag">LP STATUS</span><span class="tag">FREEZE</span><span class="tag">BUNDLER</span><span class="tag">METADATA</span></div>
+  </div>
+  <div class="src-card">
+    <div class="src-name">GoPlus</div>
+    <div class="src-role">Honeypot &middot; Proxy &middot; Contract</div>
+    <div class="src-desc">Detects honeypots (sell disabled), proxy contracts, blacklists, transfer restrictions, and other contract-level manipulations that trap buyers.</div>
+    <div class="src-tags"><span class="tag">HONEYPOT</span><span class="tag">BLACKLIST</span><span class="tag">PROXY</span></div>
+  </div>
+  <div class="src-card">
+    <div class="src-name">Helius RPC</div>
+    <div class="src-role">On-Chain &middot; Authority &middot; Accounts</div>
+    <div class="src-desc">Direct Solana RPC calls to verify mint/freeze authority status, token supply, holder accounts, and on-chain metadata in real time.</div>
+    <div class="src-tags"><span class="tag">MINT AUTH</span><span class="tag">SUPPLY</span><span class="tag">ACCOUNTS</span></div>
+  </div>
+  <div class="src-card">
+    <div class="src-name">Solscan</div>
+    <div class="src-role">Holders &middot; Age &middot; Volume</div>
+    <div class="src-desc">Provides holder distribution, top wallet concentration, token creation age, and 24h volume — key signals for distribution risk and wash trading detection.</div>
+    <div class="src-tags"><span class="tag">HOLDERS</span><span class="tag">TOKEN AGE</span><span class="tag">VOLUME</span></div>
+  </div>
+</div>
+
+<!-- ANALYSIS LAYERS -->
+<div class="sh2 glitch" data-text="Analysis Layers">Analysis Layers</div>
+<div class="sub">6 independent checks, each weighted in the final score</div>
+<div class="layers-full">
+  <div class="lc">
+    <div class="lc-id">L1</div>
+    <div class="lc-name">Contract Security</div>
+    <div class="lc-src">GoPlus &middot; RugCheck</div>
+    <div class="lc-desc">Checks for honeypot logic, sell restrictions, proxy contracts, blacklist functions, and freeze authorities embedded in the token contract. A single critical flag here activates the Safe Gate.</div>
+    <div class="lc-pts">Up to &minus;400 pts on critical fail &middot; Safe Gate trigger</div>
+  </div>
+  <div class="lc">
+    <div class="lc-id">L2</div>
+    <div class="lc-name">On-Chain Data</div>
+    <div class="lc-src">RugCheck &middot; Helius RPC</div>
+    <div class="lc-desc">Verifies mint authority (can supply be inflated?), freeze authority (can wallets be locked?), metadata mutability, and token creation context directly from the Solana blockchain.</div>
+    <div class="lc-pts">&minus;200 pts mint auth &middot; &minus;150 pts freeze auth &middot; &minus;80 pts mutable metadata</div>
+  </div>
+  <div class="lc">
+    <div class="lc-id">L3</div>
+    <div class="lc-name">Liquidity &amp; Pool</div>
+    <div class="lc-src">DexScreener</div>
+    <div class="lc-desc">Evaluates total liquidity depth, liquidity-to-market-cap ratio, LP burn/lock status, and number of active trading pairs. Low liquidity makes exit manipulation trivially easy.</div>
+    <div class="lc-pts">Graduated &minus;50 to &minus;200 pts based on liquidity depth</div>
+  </div>
+  <div class="lc">
+    <div class="lc-id">L4</div>
+    <div class="lc-name">Holder Distribution</div>
+    <div class="lc-src">RugCheck &middot; Solscan</div>
+    <div class="lc-desc">Analyzes top-10 wallet concentration, developer wallet size, and holder count. High concentration in few wallets signals coordinated dump risk.</div>
+    <div class="lc-pts">&minus;100 pts if top-10 &gt;60% &middot; &minus;60 pts if dev wallet &gt;10%</div>
+  </div>
+  <div class="lc">
+    <div class="lc-id">L5</div>
+    <div class="lc-name">Identity Risk</div>
+    <div class="lc-src">DexScreener Metadata</div>
+    <div class="lc-desc">Cross-references token name, symbol, and branding against known tokens and copycat patterns. Detects impersonation of established projects like WIF, BONK, PEPE, etc.</div>
+    <div class="lc-pts">&minus;120 pts copycat detected &middot; &minus;40 pts no social presence</div>
+  </div>
+  <div class="lc">
+    <div class="lc-id">L6</div>
+    <div class="lc-name">Chart Intelligence</div>
+    <div class="lc-src">DexScreener OHLCV</div>
+    <div class="lc-desc">Detects parabolic pump-and-dump patterns, blow-off tops (sudden spike + crash), wash trading (artificial volume), and abnormal buy/sell ratios across 5m, 1h, 6h, and 24h windows.</div>
+    <div class="lc-pts">&minus;150 pts blow-off top &middot; &minus;80 pts wash trading detected</div>
+  </div>
+</div>
+
+<!-- SAFE GATE -->
+<div class="gate-block">
+  <div class="gate-title">&#128274; Safe Gate</div>
+  <div class="gate-sub">Score-independent hard block</div>
+  <div class="gate-desc">The Safe Gate is a set of non-negotiable checks that bypass the scoring system entirely. If any of the following conditions are detected, the token is flagged as blocked regardless of its numeric score &mdash; even a 900/1000 token gets blocked if a honeypot is found.</div>
+  <div class="gate-flags">
+    <div class="gf">Honeypot / sell disabled</div>
+    <div class="gf">Mint authority active</div>
+    <div class="gf">Freeze authority active</div>
+    <div class="gf">Bundler / bot launch detected</div>
+    <div class="gf">Liquidity &lt; $1,000</div>
+    <div class="gf">Score &lt; 100 / 1000</div>
+  </div>
+</div>
+
+<!-- SCORING SYSTEM -->
+<div class="sh2 glitch" data-text="Scoring System">Scoring System</div>
+<div class="sub">How 0&ndash;1000 points are distributed</div>
+<div class="score-grid">
+  <div class="sg">
+    <div class="sg-title">Base Score</div>
+    <div class="sg-body">Every token starts at <strong>1000 points</strong>. Each risk flag detected deducts a weighted amount. Positive signals (LP burned, no mint authority, strong liquidity) can partially restore points. The final score reflects net confidence after all deductions.</div>
+  </div>
+  <div class="sg">
+    <div class="sg-title">Verdict Thresholds</div>
+    <div class="sg-body">
+      <strong style="color:#00e5b0">SAFE</strong> &mdash; 700&ndash;1000 pts. All critical checks pass.<br><br>
+      <strong style="color:#f5d000">CAUTION</strong> &mdash; 400&ndash;699 pts. Some warnings detected.<br><br>
+      <strong style="color:#ff5f5f">DANGER</strong> &mdash; 100&ndash;399 pts. Multiple risk flags.<br><br>
+      <strong style="color:#ff2244">RUG PULL</strong> &mdash; 0&ndash;99 pts or Safe Gate triggered.
+    </div>
+  </div>
+  <div class="sg">
+    <div class="sg-title">Confidence Score</div>
+    <div class="sg-body">A separate <strong>0&ndash;100% confidence</strong> metric reflects data completeness. If only 2 of 5 sources return data, confidence is lower. High confidence means the verdict is based on full cross-source validation.</div>
+  </div>
+  <div class="sg">
+    <div class="sg-title">Scan Speed</div>
+    <div class="sg-body">All 5 sources are queried <strong>in parallel</strong> using Promise.allSettled. Failed sources are gracefully skipped without blocking the scan. Average scan completes in <strong>under 2 seconds</strong> for indexed tokens.</div>
+  </div>
+</div>
+
+<!-- VERDICTS -->
+<div class="sh2">Verdicts</div>
+<div class="sub">Four possible outcomes, color-coded in the overlay</div>
+<div class="verdicts">
+  <div class="vd" style="background:#0d1a16;border-color:#00e5b0">
+    <div class="vd-label" style="color:#00e5b0">SAFE</div>
+    <div class="vd-range" style="color:#00e5b0">700 &ndash; 1000</div>
+    <div class="vd-desc">All critical checks pass. LP secured. No manipulation patterns detected.</div>
+  </div>
+  <div class="vd" style="background:#1a180a;border-color:#f5d000">
+    <div class="vd-label" style="color:#f5d000">CAUTION</div>
+    <div class="vd-range" style="color:#f5d000">400 &ndash; 699</div>
+    <div class="vd-desc">Moderate risk. Some flags raised. Proceed with reduced position and caution.</div>
+  </div>
+  <div class="vd" style="background:#1a0e0e;border-color:#ff5f5f">
+    <div class="vd-label" style="color:#ff5f5f">DANGER</div>
+    <div class="vd-range" style="color:#ff5f5f">100 &ndash; 399</div>
+    <div class="vd-desc">High risk. Multiple critical flags. Strong indicators of manipulation.</div>
+  </div>
+  <div class="vd" style="background:#1a0809;border-color:#ff2244">
+    <div class="vd-label" style="color:#ff2244">RUG PULL</div>
+    <div class="vd-range" style="color:#ff2244">0 &ndash; 99</div>
+    <div class="vd-desc">Safe Gate triggered or catastrophic score. Do not interact with this token.</div>
+  </div>
+</div>
+
+<!-- DEMO OVERLAYS -->
+<div class="demo-section">
+  <div class="demo-title glitch" data-text="Overlay Previews">Overlay Previews</div>
+  <div class="demo-sub">What Antares shows you in your browser, in real time</div>
+  <div class="demo-grid">
+
+    <!-- SAFE -->
+    <div class="overlay-card">
+      <div class="ov-top" style="background:#00e5b0"></div>
+      <div class="ov-brand">ANTARES</div>
+      <div class="ov-risk" style="color:#00e5b0">SAFE</div>
+      <div class="ov-score">Score <strong>847</strong> / 1000</div>
+      <div class="ov-meta">
+        <div><span>Market Cap</span><strong>$2.4M</strong></div>
+        <div><span>Liquidity</span><strong>$184K</strong></div>
+        <div><span>Holders</span><strong>1,241</strong></div>
+        <div><span>Confidence</span><strong>100%</strong></div>
+      </div>
+      <div class="ov-fl" style="border-left-color:rgba(0,229,176,.3)">&#10003; LP Burned</div>
+      <div class="ov-fl" style="border-left-color:rgba(0,229,176,.3)">&#10003; No mint authority</div>
+      <div class="ov-fl" style="border-left-color:rgba(0,229,176,.3)">&#10003; Metadata immutable</div>
+      <div class="ov-srcs">
+        <span class="ov-src" style="color:#00e5b0">DexScreener &#10003;</span>
+        <span class="ov-src" style="color:#00e5b0">RugCheck &#10003;</span>
+        <span class="ov-src" style="color:#00e5b0">GoPlus &#10003;</span>
+        <span class="ov-src" style="color:#00e5b0">Helius &#10003;</span>
+        <span class="ov-src" style="color:#00e5b0">Solscan &#10003;</span>
+      </div>
+    </div>
+
+    <!-- CAUTION -->
+    <div class="overlay-card">
+      <div class="ov-top" style="background:#f5d000"></div>
+      <div class="ov-brand">ANTARES</div>
+      <div class="ov-risk" style="color:#f5d000">CAUTION</div>
+      <div class="ov-score">Score <strong>683</strong> / 1000</div>
+      <div class="ov-meta">
+        <div><span>Market Cap</span><strong>$840K</strong></div>
+        <div><span>Liquidity</span><strong>$62K</strong></div>
+        <div><span>Holders</span><strong>412</strong></div>
+        <div><span>Confidence</span><strong>75%</strong></div>
+      </div>
+      <div class="ov-fl" style="border-left-color:rgba(245,208,0,.3)">&#9888; Top 10 holders &gt; 50%</div>
+      <div class="ov-fl" style="border-left-color:rgba(245,208,0,.3)">&#9888; LP lock &lt; 30 days</div>
+      <div class="ov-fl" style="border-left-color:rgba(245,208,0,.3)">&#9888; Metadata mutable</div>
+      <div class="ov-srcs">
+        <span class="ov-src" style="color:#f5d000">DexScreener &#9888;</span>
+        <span class="ov-src" style="color:#f5d000">RugCheck &#9888;</span>
+        <span class="ov-src" style="color:#f5d000">GoPlus &#9888;</span>
+        <span class="ov-src" style="color:#00e5b0">Helius &#10003;</span>
+        <span class="ov-src" style="color:#00e5b0">Solscan &#10003;</span>
+      </div>
+    </div>
+
+    <!-- DANGER -->
+    <div class="overlay-card">
+      <div class="ov-top" style="background:#ff5f5f"></div>
+      <div class="ov-brand">ANTARES</div>
+      <div class="ov-risk" style="color:#ff5f5f">DANGER</div>
+      <div class="ov-score">Score <strong>412</strong> / 1000</div>
+      <div class="ov-meta">
+        <div><span>Market Cap</span><strong>$52K</strong></div>
+        <div><span>Liquidity</span><strong>$4.1K</strong></div>
+        <div><span>Holders</span><strong>87</strong></div>
+        <div><span>Confidence</span><strong>50%</strong></div>
+      </div>
+      <div class="ov-fl" style="border-left-color:rgba(255,95,95,.3)">&#9940; Freeze Authority enabled</div>
+      <div class="ov-fl" style="border-left-color:rgba(255,95,95,.3)">&#9940; Bundler detected</div>
+      <div class="ov-fl" style="border-left-color:rgba(245,208,0,.3)">&#9888; Low liquidity</div>
+      <div class="ov-srcs">
+        <span class="ov-src" style="color:#ff5f5f">DexScreener &#9940;</span>
+        <span class="ov-src" style="color:#ff5f5f">RugCheck &#9940;</span>
+        <span class="ov-src" style="color:#ff5f5f">GoPlus &#9940;</span>
+        <span class="ov-src" style="color:#00e5b0">Helius &#10003;</span>
+        <span class="ov-src" style="color:#00e5b0">Solscan &#10003;</span>
+      </div>
+    </div>
+
+    <!-- RUG PULL -->
+    <div class="overlay-card">
+      <div class="ov-top" style="background:#ff2244"></div>
+      <div class="ov-brand">ANTARES</div>
+      <div class="ov-risk" style="color:#ff2244">RUG PULL</div>
+      <div class="ov-score">Score <strong>87</strong> / 1000</div>
+      <div class="ov-meta">
+        <div><span>Market Cap</span><strong>$3.2K</strong></div>
+        <div><span>Liquidity</span><strong>$180</strong></div>
+        <div><span>Holders</span><strong>12</strong></div>
+        <div><span>Confidence</span><strong>100%</strong></div>
+      </div>
+      <div class="ov-fl" style="border-left-color:rgba(255,34,68,.4)">&#9940; Honeypot detected</div>
+      <div class="ov-fl" style="border-left-color:rgba(255,34,68,.4)">&#9940; Mint + Freeze active</div>
+      <div class="ov-fl" style="border-left-color:rgba(255,34,68,.4)">&#9940; Cannot sell &mdash; Safe Gate</div>
+      <div class="ov-srcs">
+        <span class="ov-src" style="color:#ff2244">DexScreener &#9940;</span>
+        <span class="ov-src" style="color:#ff2244">RugCheck &#9940;</span>
+        <span class="ov-src" style="color:#ff2244">GoPlus &#9940;</span>
+        <span class="ov-src" style="color:#ff2244">Helius &#9940;</span>
+        <span class="ov-src" style="color:#ff5f5f">Solscan &#9888;</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer>Antares v4.5.3 &mdash; <span>No mercy for scammers.</span></footer>
+</div>
+
+<script>
+;(function(){
+  const canvas=document.getElementById('particles-canvas')
+  if(!canvas)return
+  const ctx=canvas.getContext('2d')
+  let particles=[]
+  const COUNT=40,MOUSE_R=100,MOUSE_F=0.7,CONN=90
+  let mouse={x:-9999,y:-9999,active:false}
+  const COLS=[[0,255,157],[0,255,200],[0,200,130],[255,255,255]]
+  function resize(){canvas.width=innerWidth;canvas.height=innerHeight}
+  addEventListener('resize',resize);resize()
+  document.addEventListener('mousemove',function(e){mouse.x=e.clientX;mouse.y=e.clientY;mouse.active=true})
+  document.addEventListener('mouseleave',function(){mouse.active=false})
+  function mkP(){const col=COLS[Math.random()*COLS.length|0];return{x:Math.random()*canvas.width,y:Math.random()*canvas.height,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,r:Math.random()*1.4+.4,col,a:Math.random()*.25+.08}}
+  for(let i=0;i<COUNT;i++)particles.push(mkP())
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height)
+    for(let i=0;i<particles.length;i++){
+      const p=particles[i]
+      if(mouse.active){const dx=p.x-mouse.x,dy=p.y-mouse.y,d=Math.sqrt(dx*dx+dy*dy);if(d<MOUSE_R){const f=MOUSE_F*(1-d/MOUSE_R);p.vx+=dx/d*f;p.vy+=dy/d*f}}
+      p.x+=p.vx;p.y+=p.vy;p.vx*=.99;p.vy*=.99
+      if(p.x<0)p.x=canvas.width;if(p.x>canvas.width)p.x=0
+      if(p.y<0)p.y=canvas.height;if(p.y>canvas.height)p.y=0
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2)
+      ctx.fillStyle='rgba('+p.col.join(',')+','+p.a+')';ctx.fill()
+      for(let j=i+1;j<particles.length;j++){
+        const q=particles[j],dx2=p.x-q.x,dy2=p.y-q.y,d2=Math.sqrt(dx2*dx2+dy2*dy2)
+        if(d2<CONN){ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y)
+          ctx.strokeStyle='rgba(0,229,176,'+(.07*(1-d2/CONN))+')';ctx.stroke()}
+      }
+    }
+    requestAnimationFrame(draw)
+  }
+  draw()
+})()
+</script>
+</body></html>

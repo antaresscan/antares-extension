@@ -74,7 +74,7 @@ nav .tag{font-size:10px;color:#333;border:1px solid #1e1e22;padding:5px 10px;let
 .p-meta strong{font-size:12px;color:#bbb}
 .p-fl{font-size:11px;color:#4a4a52;padding:3px 0 3px 10px;
   border-left:2px solid rgba(0,229,176,.2);margin-top:3px}
-.p-srcs{display:flex;gap:5px;margin-top:12px;padding-top:10px;border-top:1px solid #1a1a1d}
+.p-srcs{display:flex;gap:5px;margin-top:12px;padding-top:10px;border-top:1px solid #1a1a1d;flex-wrap:wrap}
 .p-src{font:600 9px/1 'IBM Plex Mono',monospace;padding:4px 7px;
   background:rgba(0,229,176,.05);border:1px solid rgba(0,229,176,.12);
   color:var(--c);letter-spacing:.08em}
@@ -181,7 +181,7 @@ section{padding:70px 0 0}
   <div class="brand glitch" data-text="ANTARES">ANTARES</div>
   <div class="links">
     <a href="#features">Features</a>
-    <a href="#engine">Engine</a>
+    <a href="/engine">Engine</a>
     <a href="#sources">Sources</a>
   </div>
   <div class="tag">v4.1 // SOLANA</div>
@@ -191,10 +191,10 @@ section{padding:70px 0 0}
   <div>
     <div class="hero-eye">Solana Token Scanner</div>
     <h1><span class="glitch" data-text="STOP">STOP</span><br><span class="glitch" data-text="GETTING">GETTING</span><br><span class="accent glitch" data-text="SCAMMED.">SCAMMED.</span></h1>
-    <p>Antares scans every Solana token you encounter in real-time. 4 sources. 6 layers. 1000-point scoring. Safe gate enforced in under 2 seconds.</p>
+    <p>Antares scans every Solana token you encounter in real-time. 5 sources. 6 layers. 1000-point scoring. Safe gate enforced in under 2 seconds.</p>
     <div class="cta-row">
-      <a class="cta main" href="#">⚡ Install Extension</a>
-      <a class="cta alt" href="#features">Learn more →</a>
+      <a class="cta main" href="#">&#9889; Install Extension</a>
+      <a class="cta alt" href="#features">Learn more &rarr;</a>
     </div>
   </div>
   <div>
@@ -210,14 +210,15 @@ section{padding:70px 0 0}
         <div><span>Holders</span><strong>1,241</strong></div>
         <div><span>Confidence</span><strong>100%</strong></div>
       </div>
-      <div class="p-fl">✓ LP Burned</div>
-      <div class="p-fl">✓ No mint authority</div>
-      <div class="p-fl">⚠ Top 10 holders 42%</div>
+      <div class="p-fl">&#10003; LP Burned</div>
+      <div class="p-fl">&#10003; No mint authority</div>
+      <div class="p-fl">&#9888; Top 10 holders 42%</div>
       <div class="p-srcs">
         <span class="p-src">DexScreener</span>
         <span class="p-src">RugCheck</span>
         <span class="p-src">GoPlus</span>
         <span class="p-src">Helius</span>
+        <span class="p-src">Solscan</span>
       </div>
     </div>
   </div>
@@ -225,19 +226,19 @@ section{padding:70px 0 0}
 
 <div class="marquee-wrap">
   <div class="marquee-inner">
-    <span class="mi"><span class="hi">DEXSCREENER</span> · RUGCHECK · GOPLUS · HELIUS · </span>
-    <span class="mi">REAL-TIME · <span class="hi">6 LAYERS</span> · 1000 POINTS · SAFE GATE · </span>
-    <span class="mi"><span class="hi">ANTI-RUG</span> · ANTI-HONEYPOT · ANTI-BUNDLER · </span>
-    <span class="mi">CHART INTEL · <span class="hi">IDENTITY CHECK</span> · SOLANA · </span>
-    <span class="mi"><span class="hi">DEXSCREENER</span> · RUGCHECK · GOPLUS · HELIUS · </span>
-    <span class="mi">REAL-TIME · <span class="hi">6 LAYERS</span> · 1000 POINTS · SAFE GATE · </span>
-    <span class="mi"><span class="hi">ANTI-RUG</span> · ANTI-HONEYPOT · ANTI-BUNDLER · </span>
-    <span class="mi">CHART INTEL · <span class="hi">IDENTITY CHECK</span> · SOLANA · </span>
+    <span class="mi"><span class="hi">DEXSCREENER</span> &middot; RUGCHECK &middot; GOPLUS &middot; HELIUS &middot; <span class="hi">SOLSCAN</span> &middot; </span>
+    <span class="mi">REAL-TIME &middot; <span class="hi">6 LAYERS</span> &middot; 1000 POINTS &middot; SAFE GATE &middot; </span>
+    <span class="mi"><span class="hi">ANTI-RUG</span> &middot; ANTI-HONEYPOT &middot; ANTI-BUNDLER &middot; </span>
+    <span class="mi">CHART INTEL &middot; <span class="hi">IDENTITY CHECK</span> &middot; SOLANA &middot; </span>
+    <span class="mi"><span class="hi">DEXSCREENER</span> &middot; RUGCHECK &middot; GOPLUS &middot; HELIUS &middot; <span class="hi">SOLSCAN</span> &middot; </span>
+    <span class="mi">REAL-TIME &middot; <span class="hi">6 LAYERS</span> &middot; 1000 POINTS &middot; SAFE GATE &middot; </span>
+    <span class="mi"><span class="hi">ANTI-RUG</span> &middot; ANTI-HONEYPOT &middot; ANTI-BUNDLER &middot; </span>
+    <span class="mi">CHART INTEL &middot; <span class="hi">IDENTITY CHECK</span> &middot; SOLANA &middot; </span>
   </div>
 </div>
 
 <div class="numbers">
-  <div class="nc"><strong>4</strong><span>Sources</span></div>
+  <div class="nc"><strong>5</strong><span>Sources</span></div>
   <div class="nc"><strong>6</strong><span>Layers</span></div>
   <div class="nc"><strong>1000</strong><span>Max Score</span></div>
   <div class="nc"><strong>&lt;2s</strong><span>Scan Time</span></div>
@@ -246,12 +247,12 @@ section{padding:70px 0 0}
 <section id="features">
 <div class="sl glitch" data-text="Features">Features</div>
 <div class="features">
-  <div class="fc"><div class="icon">🛡️</div><h3>Safe Gate</h3><p>Critical checks must pass regardless of score.</p></div>
-  <div class="fc"><div class="icon">⚡</div><h3>Real-time</h3><p>Under 2 seconds, directly as you browse.</p></div>
-  <div class="fc"><div class="icon">🔗</div><h3>4 Sources</h3><p>DexScreener, RugCheck, GoPlus, Helius RPC.</p></div>
-  <div class="fc"><div class="icon">📊</div><h3>Chart Intel</h3><p>Parabolic pumps, blow-off tops, wash trading.</p></div>
-  <div class="fc"><div class="icon">🧬</div><h3>Identity Check</h3><p>Copycat tokens and fake branding detection.</p></div>
-  <div class="fc"><div class="icon">🌐</div><h3>Universal</h3><p>Works on any page containing a Solana address.</p></div>
+  <div class="fc"><div class="icon">&#128737;&#65039;</div><h3>Safe Gate</h3><p>Critical checks must pass regardless of score.</p></div>
+  <div class="fc"><div class="icon">&#9889;</div><h3>Real-time</h3><p>Under 2 seconds, directly as you browse.</p></div>
+  <div class="fc"><div class="icon">&#128279;</div><h3>5 Sources</h3><p>DexScreener, RugCheck, GoPlus, Helius RPC, Solscan.</p></div>
+  <div class="fc"><div class="icon">&#128202;</div><h3>Chart Intel</h3><p>Parabolic pumps, blow-off tops, wash trading.</p></div>
+  <div class="fc"><div class="icon">&#129518;</div><h3>Identity Check</h3><p>Copycat tokens and fake branding detection.</p></div>
+  <div class="fc"><div class="icon">&#127760;</div><h3>Universal</h3><p>Works on any page containing a Solana address.</p></div>
 </div>
 </section>
 
@@ -262,16 +263,28 @@ section{padding:70px 0 0}
   <div class="sp">RugCheck</div>
   <div class="sp">GoPlus</div>
   <div class="sp">Helius RPC</div>
+  <div class="sp">Solscan</div>
 </div>
 </section>
 
-<div class="cta-block">
+<section id="engine" style="padding-bottom:70px">
+<div class="sl glitch" data-text="Engine">Engine</div>
+<div style="background:#141417;border:1px solid #1a1a1d;padding:36px;position:relative;overflow:hidden">
+  <div style="position:absolute;top:0;left:0;right:0;height:2px;background:var(--c)"></div>
+  <div style="font-size:10px;color:var(--c);letter-spacing:.24em;text-transform:uppercase;margin-bottom:14px">ANTARES SCORING ENGINE</div>
+  <div style="font:400 38px/1 'Bebas Neue',sans-serif;color:#e0e0e0;margin-bottom:12px;letter-spacing:.06em">HOW THE SCORE IS BUILT</div>
+  <p style="font-size:12px;color:#4a4a52;line-height:1.75;max-width:700px;margin-bottom:28px;border-left:2px solid var(--c);padding-left:14px">Antares queries 5 independent data sources in parallel, runs 6 analysis layers and aggregates everything into a 0&ndash;1000 score. Each layer can contribute positive or negative points. A Safe Gate overrides any score: if a critical flag is raised, the token is blocked regardless of its numeric score.</p>
+  <a href="/engine" style="display:inline-block;padding:12px 28px;background:transparent;border:1px solid var(--c);color:var(--c);font:700 11px/1 'IBM Plex Mono',monospace;text-decoration:none;letter-spacing:.1em;text-transform:uppercase;transition:.2s" onmouseover="this.style.background='rgba(0,229,176,.08)'" onmouseout="this.style.background='transparent'">Explore the Engine &rarr;</a>
+</div>
+</section>
+
+<div class="cta-block" style="margin-top:70px">
   <h2 class="glitch" data-text="READY TO STOP LOSING MONEY?">READY TO STOP LOSING MONEY?</h2>
   <p>Install Antares and never trust an unscanned token again.</p>
-  <a class="cta main" href="#">⚡ Install for Free</a>
+  <a class="cta main" href="#">&#9889; Install for Free</a>
 </div>
 
-<footer>Antares v4.1 — <span>No mercy for scammers.</span></footer>
+<footer>Antares v4.5.3 &mdash; <span>No mercy for scammers.</span></footer>
 </div>
 
 <canvas id="particles-canvas"></canvas>
@@ -314,8 +327,6 @@ section{padding:70px 0 0}
     requestAnimationFrame(draw)
   }
   draw()
-
-  // Tactile ripple
   document.addEventListener('click',function(e){
     const t=e.target.closest('a,button,[class*="cta"],[class*="nc"],[class*="fc"],[class*="sp"]')
     if(!t)return
@@ -328,15 +339,9 @@ section{padding:70px 0 0}
     t.appendChild(r)
     setTimeout(()=>r.remove(),600)
   })
-
-  // Tactile hover
   document.querySelectorAll('a,button,.nc,.fc,.sp').forEach(el=>{
     el.classList.add('tactile-hover')
-    el.addEventListener('mouseover',function(){
-      this.style.transition='transform .15s cubic-bezier(.22,1,.36,1)'
-    })
   })
 })()
 </script>
-
 </body></html>
