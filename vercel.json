@@ -6,10 +6,8 @@
     }
   },
   "rewrites": [
-    {
-      "source": "/api/scan",
-      "destination": "/api/scan"
-    }
+    { "source": "/api/scan", "destination": "/api/scan" },
+    { "source": "/engine", "destination": "/engine.html" }
   ],
   "headers": [
     {
