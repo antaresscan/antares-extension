@@ -124,6 +124,7 @@ const SHADOW_CSS = `
   font-family: 'IBM Plex Mono', monospace;
   font-size: 12px;
   line-height: 1.4;
+  touch-action: none;
 }
 
 .box::before {
@@ -161,6 +162,7 @@ const SHADOW_CSS = `
   align-items: center;
   padding: 10px 14px 0;
   cursor: grab;
+  touch-action: none;
 }
 .hd:active { cursor: grabbing; }
 .hd-right {
@@ -298,8 +300,7 @@ const SHADOW_CSS = `
 .dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:#444; animation:ant-pulse 1.2s infinite; }
 `
 
-// ── Shadow DOM ───────────────────────────────────────────────────────────────
-
+// ── State ───────────────────────────────────────────────────────────────────
 let host: HTMLElement | null = null
 let shadow: ShadowRoot | null = null
 let boxEl: HTMLDivElement | null = null
@@ -308,12 +309,12 @@ let lastCA            = ""
 let manuallyDismissed = false
 let scanInFlight      = false
 
-// ── Drag (rAF-batched transform for GPU compositing on all sites) ──────────────
-let isDragging  = false
+// ── Drag ────────────────────────────────────────────────────────────────────────
 let dragOX = 0, dragOY = 0
 let posX = 0, posY = 0
 let pendingX = 0, pendingY = 0
 let rafId: number | null = null
+let activePointerId: number | null = null
 
 function commitPos() {
   rafId = null
@@ -323,27 +324,10 @@ function commitPos() {
   host.style.transform = `translate(${posX}px,${posY}px)`
 }
 
-const onMouseMove = (e: MouseEvent) => {
-  if (!isDragging || !host) return
-  let nx = e.clientX - dragOX
-  let ny = e.clientY - dragOY
-  nx = Math.max(0, Math.min(window.innerWidth  - host.offsetWidth,  nx))
-  ny = Math.max(0, Math.min(window.innerHeight - host.offsetHeight, ny))
-  pendingX = nx
-  pendingY = ny
-  if (!rafId) rafId = requestAnimationFrame(commitPos)
-}
-
-const onMouseUp = () => {
-  if (!isDragging) return
-  isDragging = false
-  document.documentElement.style.userSelect = ""
-  try { localStorage.setItem(POS_KEY, JSON.stringify({ x: posX, y: posY })) } catch (_) {}
-}
-
 function initDrag() {
   if (!host) return
 
+  // Restore or default position
   try {
     const saved = localStorage.getItem(POS_KEY)
     if (saved) {
@@ -360,11 +344,15 @@ function initDrag() {
   pendingX = posX; pendingY = posY
   host.style.transform = `translate(${posX}px,${posY}px)`
 
-  host.addEventListener("mousedown", (e: MouseEvent) => {
+  // pointerdown on the header → capture the pointer so ALL subsequent
+  // pointermove/pointerup fire on this element regardless of what's under cursor
+  host.addEventListener("pointerdown", (e: PointerEvent) => {
     const target = e.composedPath()[0] as Element
     if (target?.closest?.(".x")) return
     if (!target?.closest?.(".hd")) return
-    isDragging = true
+    const hdEl = (e.currentTarget as HTMLElement)
+    try { hdEl.setPointerCapture(e.pointerId) } catch (_) {}
+    activePointerId = e.pointerId
     const r = host!.getBoundingClientRect()
     dragOX = e.clientX - r.left
     dragOY = e.clientY - r.top
@@ -372,8 +360,27 @@ function initDrag() {
     e.preventDefault()
   })
 
-  window.addEventListener("mousemove", onMouseMove, { capture: true, passive: true })
-  window.addEventListener("mouseup",   onMouseUp,   { capture: true })
+  host.addEventListener("pointermove", (e: PointerEvent) => {
+    if (activePointerId === null || e.pointerId !== activePointerId || !host) return
+    let nx = e.clientX - dragOX
+    let ny = e.clientY - dragOY
+    nx = Math.max(0, Math.min(window.innerWidth  - host.offsetWidth,  nx))
+    ny = Math.max(0, Math.min(window.innerHeight - host.offsetHeight, ny))
+    pendingX = nx; pendingY = ny
+    if (!rafId) rafId = requestAnimationFrame(commitPos)
+  }, { passive: true })
+
+  host.addEventListener("pointerup", (e: PointerEvent) => {
+    if (e.pointerId !== activePointerId) return
+    activePointerId = null
+    document.documentElement.style.userSelect = ""
+    try { localStorage.setItem(POS_KEY, JSON.stringify({ x: posX, y: posY })) } catch (_) {}
+  })
+
+  host.addEventListener("pointercancel", () => {
+    activePointerId = null
+    document.documentElement.style.userSelect = ""
+  })
 }
 
 function createHost() {
