@@ -2,34 +2,29 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// ANTARES scan.ts v6.0.0
+// Architecture : une source par domaine de responsabilité
+//
+//  Domaine              | Source          | Supprimé
+//  ---------------------|-----------------|---------------------------
+//  Prix / Vol / Liq     | DexScreener     | Solscan markets
+//  LP burned/locked     | RugCheck        | —
+//  Concentration holders| RugCheck        | Helius getTokenLargestAccounts
+//  Holders count        | Helius getTA    | Solscan public
+//  Âge du token         | Solscan meta    | pairCreatedAt (âge pool ≠ âge token)
+//  Sécurité on-chain    | GoPlus+RugCheck | —
+// ═══════════════════════════════════════════════════════════════════════════════
+
 const DEXSCREENER_BASE = "https://api.dexscreener.com/latest/dex";
 const RUGCHECK_BASE    = "https://api.rugcheck.xyz/v1";
 const GOPLUS_BASE      = "https://api.gopluslabs.io/api/v1";
 const HELIUS_BASE      = "https://mainnet.helius-rpc.com";
-const SOLSCAN_PUBLIC_BASE = "https://public-api.solscan.io";
 const SOLSCAN_BASE     = "https://pro-api.solscan.io/v2.0";
 
 const CA_RE = /^[A-Za-z0-9]{32,44}$/;
 
-// ── Pools/programmes connus exclus du calcul top-holders ─────────────────────
-const KNOWN_POOL_ADDRESSES = new Set([
-  "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1",
-  "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8",
-  "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
-  "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK",
-  "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
-  "MERLuDFBMmsHnsBPZw2sDQZHvXFMwp8EdjudcU2HKky",
-  "LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo",
-  "Eo7WjKq67rjJQSZxS6z3YkapzY3eMj6Xy8X5EkAW7vAR",
-  "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-  "11111111111111111111111111111111",
-  // Raydium CPMM v2 / Meteora Dynamic / Jupiter aggregator vaults
-  "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C",
-  "DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1",
-  "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBymszVQ",
-]);
-
-// ── Bluechips établis : bypass LP/metadata/identity ──────────────────────────
+// ── Bluechips établis ─────────────────────────────────────────────────────────
 const BLUECHIP_MINTS = new Set([
   "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263", // BONK
   "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm", // WIF
@@ -49,7 +44,7 @@ const BLUECHIP_SYMBOLS = new Set([
   "JITOSOL","STSOL","JITO",
 ]);
 
-// ─── RATE LIMIT ───────────────────────────────────────────────────────────────
+// ── Rate limit ────────────────────────────────────────────────────────────────
 let ratelimit: Ratelimit | null = null;
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
   const redis = new Redis({
@@ -70,10 +65,11 @@ const CORS: Record<string, string> = {
   "Access-Control-Allow-Headers": "Content-Type",
 };
 
-type Severity  = "critical" | "warning" | "info" | "bonus";
-type ScanFlag  = { label: string; severity: Severity; impact: number };
-type ChartResult = { flags: ScanFlag[]; penalty: number; forceRug: boolean; safeBlocked: boolean };
+type Severity   = "critical" | "warning" | "info" | "bonus";
+type ScanFlag   = { label: string; severity: Severity; impact: number };
+type ModuleResult = { flags: ScanFlag[]; penalty: number; forceRug: boolean; safeBlocked: boolean };
 
+// ─── Helpers HTTP ─────────────────────────────────────────────────────────────
 function setHeaders(res: VercelResponse) {
   Object.entries(CORS).forEach(([k, v]) => res.setHeader(k, v));
   res.setHeader("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
@@ -110,6 +106,7 @@ async function fetchJsonPost(url: string, body: object, timeoutMs = 5000) {
   finally { t.clear(); }
 }
 
+// ─── Helpers data ─────────────────────────────────────────────────────────────
 function isObject(v: unknown): v is Record<string, any> {
   return typeof v === "object" && v !== null;
 }
@@ -124,25 +121,21 @@ function pickGoPlusResult(raw: any, ca: string) {
   return raw.result[ca] || raw.result[ca.toLowerCase()] || raw.result[ca.toUpperCase()] || null;
 }
 
-function getTop10Percentage(rugData: any): number {
-  return asNumber(rugData?.topHolders?.top10Percentage);
-}
-function getTop1Percentage(rugData: any): number {
-  return asNumber(rugData?.topHolders?.top1Percentage ?? rugData?.topHolders?.top1HolderPercentage);
-}
 function getLpLockDurationDays(rugData: any): number {
   const raw = rugData?.lpLockDurationDays ?? rugData?.lpLockDuration ?? rugData?.lockDurationDays ?? 0;
   return asNumber(raw);
 }
+
 function riskIncludes(rugData: any, matcher: RegExp): boolean {
   if (!Array.isArray(rugData?.risks)) return false;
   return rugData.risks.some((r: any) => matcher.test(String(r?.name || "")));
 }
+
 function makeFlag(label: string, severity: Severity, impact: number): ScanFlag {
   return { label, severity, impact };
 }
 
-// ─── MATH HELPERS ─────────────────────────────────────────────────────────────
+// ─── Math ─────────────────────────────────────────────────────────────────────
 function _mean(xs: number[]): number {
   if (!xs.length) return 0;
   return xs.reduce((a, b) => a + b, 0) / xs.length;
@@ -157,55 +150,47 @@ function _pct(from: number, to: number): number {
   return ((to - from) / Math.abs(from)) * 100;
 }
 
-// ─── IDENTITY RISK ────────────────────────────────────────────────────────────
+// ─── IDENTITY ─────────────────────────────────────────────────────────────────
 const KNOWN_BRANDS = [
-  "TRUMP", "DOGE", "PEPE", "SHIB", "BONK", "WIF", "BRETT",
-  "FLOKI", "MAGA", "BIDEN", "ELON", "SOLANA", "SOL", "BTC",
-  "ETH", "SUI", "APT", "ARB", "OP", "MATIC", "AVAX",
+  "TRUMP","DOGE","PEPE","SHIB","BONK","WIF","BRETT",
+  "FLOKI","MAGA","BIDEN","ELON","SOLANA","SOL","BTC",
+  "ETH","SUI","APT","ARB","OP","MATIC","AVAX",
 ];
-
 const SHORT_BRANDS = new Set(["SOL","BTC","ETH","SUI","APT","ARB","OP"]);
-
-// Suffixes légitimes pour les LST / liquid staking tokens : ne pas les flagguer
-const LEGIT_STAKING_SUFFIXES = /^(JITO|MSOL|JSOL|BSOL|STSOL|LSOL|HSOL|VSOL|CSOL|DSOL|WSOL|XSOL)$/;
+const LEGIT_STAKING_RE = /^(JITO|MSOL|JSOL|BSOL|STSOL|LSOL|HSOL|VSOL|CSOL|DSOL|WSOL|XSOL)$/;
 
 function brandMatch(sym: string, brand: string): boolean {
   if (sym === brand) return false;
   if (SHORT_BRANDS.has(brand)) {
     const rest    = sym.startsWith(brand) ? sym.slice(brand.length) : "";
     const endRest = sym.endsWith(brand)   ? sym.slice(0, sym.length - brand.length) : "";
-    // FIX B : exclure les dérivés staking légitimes (JITOSOL, MSOL etc.)
-    if (endRest && LEGIT_STAKING_SUFFIXES.test(sym)) return false;
+    if (endRest && LEGIT_STAKING_RE.test(sym)) return false;
     return (rest.length > 0 && rest.length <= 3) || (endRest.length > 0 && endRest.length <= 3);
   }
   return sym.startsWith(brand) || sym.endsWith(brand);
 }
 
-// FIX C : word-boundary sur le name (nm) pour éviter "Jito Staked SOL" → false positive
 function nameContainsBrand(nm: string, brand: string): boolean {
-  // Cherche le brand comme mot entier dans le nom nettoyé
   const re = new RegExp(`(?<![A-Z0-9])${brand}(?![A-Z0-9])`);
   return re.test(nm);
 }
 
-function analyzeIdentity(
-  symbol?: string | null,
-  name?: string | null,
-  isBluechip = false,
-): ChartResult {
+function analyzeIdentity(symbol?: string | null, name?: string | null, isBluechip = false): ModuleResult {
   const flags: ScanFlag[] = [];
   let penalty = 0, forceRug = false, safeBlocked = false;
   if (isBluechip) return { flags, penalty, forceRug, safeBlocked };
+
   const sym = String(symbol || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
   const nm  = String(name   || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-  if (BLUECHIP_SYMBOLS.has(sym)) return { flags, penalty, forceRug, safeBlocked };
-  if (LEGIT_STAKING_SUFFIXES.test(sym)) return { flags, penalty, forceRug, safeBlocked };
+
+  if (BLUECHIP_SYMBOLS.has(sym) || LEGIT_STAKING_RE.test(sym))
+    return { flags, penalty, forceRug, safeBlocked };
+
   if (/(?:2|V2|V3|OFFICIAL|REAL|OG|NEW|PLUS)$/.test(sym) || /(?:2|V2|V3|OFFICIAL|REAL|OG|NEW|PLUS)$/.test(nm)) {
     flags.push(makeFlag("Copycat branding detected (v2/official/real suffix)", "critical", 250));
     penalty += 250; safeBlocked = true;
   }
   for (const brand of KNOWN_BRANDS) {
-    // FIX C : nameContainsBrand avec word-boundary au lieu de nm.includes()
     if ((brandMatch(sym, brand) || nameContainsBrand(nm, brand)) && sym !== brand) {
       flags.push(makeFlag(`Brand imitation: ${brand}-style copycat token`, "critical", 250));
       penalty += 250; safeBlocked = true; break;
@@ -214,7 +199,7 @@ function analyzeIdentity(
   return { flags, penalty, forceRug, safeBlocked };
 }
 
-// ─── CHART PATTERN RISK ───────────────────────────────────────────────────────
+// ─── CHART PATTERNS ───────────────────────────────────────────────────────────
 async function fetchDexCandles(
   pairAddress: string, chainId = "solana"
 ): Promise<Array<{ o: number; h: number; l: number; c: number; v: number; ts: number }>> {
@@ -231,7 +216,8 @@ function analyzeChartPatterns(
   candles: Array<{ o: number; h: number; l: number; c: number; v: number; ts: number }>,
   pair: any,
   tokenAgeMinutes: number | null,
-): ChartResult {
+  isPumpFun: boolean,
+): ModuleResult {
   const flags: ScanFlag[] = [];
   let penalty = 0, forceRug = false, safeBlocked = false;
   if (!candles || candles.length < 8) return { flags, penalty, forceRug, safeBlocked };
@@ -250,14 +236,19 @@ function analyzeChartPatterns(
   const returnStd   = _std(returns);
   const risingCount = closes.slice(1).filter((c, i) => c > closes[i]).length;
 
+  // Uniquement DexScreener pour vol/liq
   const liquidity = asNumber(pair?.liquidity?.usd);
   const vol24h    = asNumber(pair?.volume?.h24);
   const vol1h     = asNumber(pair?.volume?.h1);
   const pc5m      = asNumber(pair?.priceChange?.m5);
   const pc1h      = asNumber(pair?.priceChange?.h1);
   const pc24h     = asNumber(pair?.priceChange?.h24);
-  const v24Liq    = liquidity > 10 ? vol24h / liquidity : 0;
-  const v1hLiq    = liquidity > 10 ? vol1h  / liquidity : 0;
+
+  // v6: seuil wash trading relevé à 30 (pump.fun bonding curve génère naturellement vol/liq élevé)
+  // Pour pump.fun on n'applique PAS le wash trading chart (géré séparément dans scoring principal)
+  const washLiqThreshold = isPumpFun ? Infinity : 30;
+  const v24Liq = liquidity > 10 ? vol24h / liquidity : 0;
+  const v1hLiq = liquidity > 10 ? vol1h  / liquidity : 0;
 
   const isYoung = tokenAgeMinutes !== null && tokenAgeMinutes < 120;
   const crashGreenThreshold = isYoung ? 0.75 : 0.82;
@@ -275,7 +266,7 @@ function analyzeChartPatterns(
     flags.push(makeFlag("Hyper-pump: +400% en 1h sur token < 2h", "critical", 200));
     penalty += 200; safeBlocked = true;
   }
-  if (v24Liq > 12 || v1hLiq > 4) {
+  if (v24Liq > washLiqThreshold || v1hLiq > washLiqThreshold / 7.5) {
     flags.push(makeFlag("Liquidity mirage: volume >> liquidity (wash suspect)", "warning", 130));
     penalty += 130; safeBlocked = true;
   }
@@ -306,17 +297,7 @@ function analyzeChartPatterns(
   return { flags, penalty, forceRug, safeBlocked };
 }
 
-// ─── HELIUS ───────────────────────────────────────────────────────────────────
-async function heliusGetLargestAccounts(mint: string, apiKey: string) {
-  return fetchJsonPost(`${HELIUS_BASE}/?api-key=${apiKey}`, {
-    jsonrpc: "2.0", id: "holders", method: "getTokenLargestAccounts", params: [mint],
-  });
-}
-async function heliusGetTokenSupply(mint: string, apiKey: string) {
-  return fetchJsonPost(`${HELIUS_BASE}/?api-key=${apiKey}`, {
-    jsonrpc: "2.0", id: "supply", method: "getTokenSupply", params: [mint],
-  });
-}
+// ─── HELIUS (holders count uniquement) ───────────────────────────────────────
 async function heliusGetHoldersCount(mint: string, apiKey: string): Promise<number | null> {
   const res = await fetchJsonPost(`${HELIUS_BASE}/?api-key=${apiKey}`, {
     jsonrpc: "2.0", id: "holders-count",
@@ -327,26 +308,14 @@ async function heliusGetHoldersCount(mint: string, apiKey: string): Promise<numb
   return typeof total === "number" ? total : null;
 }
 
-// ─── SOLSCAN PUBLIC ───────────────────────────────────────────────────────────
-async function solscanGetHoldersCount(mint: string): Promise<number | null> {
-  const res = await fetchJson(
-    `${SOLSCAN_PUBLIC_BASE}/token/holders?tokenAddress=${mint}&limit=1&offset=0`,
-    { headers: { "User-Agent": "Antares/1.0" } },
-    5000
-  );
-  if (res === null || res === undefined) return null;
-  const total = res?.total;
-  return typeof total === "number" ? total : null;
-}
-
-// ─── SOLSCAN PRO ──────────────────────────────────────────────────────────────
-async function fetchSolscan(endpoint: string) {
+// ─── SOLSCAN PRO (meta token uniquement) ──────────────────────────────────────
+async function fetchSolscanMeta(mint: string) {
   const key = process.env.SOLSCAN_API_KEY || "";
   if (!key) return null;
-  return fetchJson(`${SOLSCAN_BASE}${endpoint}`, { headers: { token: key } }, 5000);
+  return fetchJson(`${SOLSCAN_BASE}/token/meta?address=${mint}`, { headers: { token: key } }, 5000);
 }
 
-// ─── HANDLER PRINCIPAL ───────────────────────────────────────────────────────
+// ─── HANDLER ──────────────────────────────────────────────────────────────────
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setHeaders(res);
   if (req.method === "OPTIONS") return res.status(204).end();
@@ -367,15 +336,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const HELIUS_API_KEY = process.env.HELIUS_API_KEY || "";
 
   try {
-    const [dexRes, rugRes, rugReportRes] = await Promise.all([
+    // ── Fetch 1 : DexScreener + RugCheck summary + RugCheck report (parallel) ──
+    const [dexRes, rugSummaryRes, rugReportRes] = await Promise.all([
       fetchJson(`${DEXSCREENER_BASE}/tokens/${ca}`),
       fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report/summary`),
       fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report`, {}, 10000),
     ]);
 
-    let dexData = dexRes;
-    let rugData = rugRes;
-    let pair = dexData?.pairs?.[0] ?? null;
+    let dexData     = dexRes;
+    let rugData     = rugSummaryRes;
+    let pair        = dexData?.pairs?.[0] ?? null;
     let resolvedMint = ca;
 
     const rugMissing =
@@ -383,10 +353,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       rugData?.error === "not found" ||
       rugData?.message?.toLowerCase?.().includes("not found");
 
-    if (!pair || !rugData || rugMissing) {
-      const pairData = await fetchJson(`${DEXSCREENER_BASE}/pairs/solana/${ca}`);
+    // ── Fallback : si le CA est une pairAddress (ex: URL Birdeye/Axiom) ──
+    if (!pair || rugMissing) {
+      const pairData    = await fetchJson(`${DEXSCREENER_BASE}/pairs/solana/${ca}`);
       const resolvedPair = pairData?.pairs?.[0] ?? pairData?.pair ?? null;
-      const baseMint = resolvedPair?.baseToken?.address;
+      const baseMint     = resolvedPair?.baseToken?.address;
       if (resolvedPair) pair = pair ?? resolvedPair;
       if (baseMint && baseMint !== ca) {
         resolvedMint = baseMint;
@@ -399,6 +370,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
+    // Sélectionner la paire avec la plus haute liquidité (DexScreener peut en retourner plusieurs)
     if (dexData?.pairs?.length > 1) {
       pair = dexData.pairs.reduce((best: any, p: any) =>
         asNumber(p?.liquidity?.usd) > asNumber(best?.liquidity?.usd) ? p : best
@@ -412,83 +384,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const pairAddress = pair?.pairAddress ?? ca;
 
-    const [
-      candlesRaw, goplusRaw,
-      heliusHoldersRaw, heliusSupplyRaw, heliusHoldersCount,
-      solscanHoldersCountRaw,
-      solMeta, solTransfers, solMarkets,
-    ] = await Promise.all([
-      fetchDexCandles(pairAddress),
+    // ── Fetch 2 : GoPlus + Helius holders count + Solscan meta + Candles (parallel) ──
+    const [goplusRaw, heliusHoldersCount, solMeta, candlesRaw] = await Promise.all([
       fetchJson(`${GOPLUS_BASE}/solana/token_security?contract_addresses=${resolvedMint}`),
-      HELIUS_API_KEY ? heliusGetLargestAccounts(resolvedMint, HELIUS_API_KEY) : Promise.resolve(null),
-      HELIUS_API_KEY ? heliusGetTokenSupply(resolvedMint, HELIUS_API_KEY)    : Promise.resolve(null),
-      HELIUS_API_KEY ? heliusGetHoldersCount(resolvedMint, HELIUS_API_KEY)   : Promise.resolve(null),
-      solscanGetHoldersCount(resolvedMint),
-      fetchSolscan(`/token/meta?address=${resolvedMint}`),
-      fetchSolscan(`/token/transfer?address=${resolvedMint}&page=1&page_size=10`),
-      fetchSolscan(`/token/markets?address=${resolvedMint}&page=1&page_size=1`),
+      HELIUS_API_KEY ? heliusGetHoldersCount(resolvedMint, HELIUS_API_KEY) : Promise.resolve(null),
+      fetchSolscanMeta(resolvedMint),
+      fetchDexCandles(pairAddress),
     ]);
 
     const candles = Array.isArray(candlesRaw) ? candlesRaw : [];
     const goplus  = pickGoPlusResult(goplusRaw, resolvedMint);
 
-    const rawHolderAccounts: Array<{ address: string; uiAmount: number }> =
-      heliusHoldersRaw?.result?.value ?? [];
+    // ── Holders count : Helius uniquement ────────────────────────────────────
+    const holders: number | null = heliusHoldersCount;
 
-    // FIX A : pour les tokens pump.fun, le top1 wallet est souvent la bonding
-    // curve LP (adresse dynamique non listée). On l'identifie : si isPumpFun ET
-    // que le top1 holder représente entre 5% et 35% ET que RugCheck confirme
-    // lpBurned/lpLocked → on l'exclut comme wallet LP.
-    const pumpFunLPExclusionActive =
-      isPumpFun &&
-      rawHolderAccounts.length > 0 &&
-      totalSupplyCheck(rawHolderAccounts, asNumber(heliusSupplyRaw?.result?.value?.uiAmount));
-
-    function totalSupplyCheck(accounts: typeof rawHolderAccounts, supply: number): boolean {
-      if (supply <= 0) return false;
-      const top1Pct = asNumber(accounts[0]?.uiAmount) / supply;
-      return top1Pct >= 0.05 && top1Pct <= 0.35;
-    }
-
-    const holderAccounts = rawHolderAccounts.filter(h => {
-      if (KNOWN_POOL_ADDRESSES.has(h.address)) return false;
-      // FIX A : exclure dynamiquement le top1 LP pour pump.fun
-      if (pumpFunLPExclusionActive && h.address === rawHolderAccounts[0].address) return false;
-      return true;
-    });
-
-    const totalSupplyUi: number = asNumber(heliusSupplyRaw?.result?.value?.uiAmount);
-
-    const rugTotalHolders: number | null =
-      typeof rugReportRes?.totalHolders === "number" && rugReportRes.totalHolders > 0
-        ? rugReportRes.totalHolders : null;
-
-    const solscanHoldersCount: number | null = solscanHoldersCountRaw;
-    const holders: number | null = solscanHoldersCount ?? rugTotalHolders ?? null;
-
-    const tokenLogo       = solMeta?.data?.icon || pair?.info?.imageUrl || null;
-    const tokenCreator    = solMeta?.data?.creator || null;
-    const tokenDecimals   = solMeta?.data?.decimals ?? null;
-    const tokenSupply     = solMeta?.data?.supply ?? null;
-    const recentTransfers = solTransfers?.data || [];
-
-    const solMarketPool = Array.isArray(solMarkets?.data) && solMarkets.data.length > 0
-      ? solMarkets.data.sort((a: any, b: any) => asNumber(b.liquidity) - asNumber(a.liquidity))[0]
-      : null;
+    // ── Âge du token : Solscan meta > pairCreatedAt ──────────────────────────
+    // pairCreatedAt = âge de la pool, pas du token (peut être bien plus récent)
     const solscanCreatedTime: number | null = solMeta?.data?.created_time ?? null;
-
-    const solscanTokenAgeHours: number | null =
+    const tokenAgeHours: number | null =
       solscanCreatedTime !== null
-        ? Math.floor((Date.now() / 1000 - solscanCreatedTime) / 3600)
+        ? (Date.now() / 1000 - solscanCreatedTime) / 3600
         : pair?.pairCreatedAt
-          ? Math.floor((Date.now() - pair.pairCreatedAt) / 3_600_000)
+          ? (Date.now() - pair.pairCreatedAt) / 3_600_000
           : null;
 
-    const solscanVolume24h: number | null  = asNumber(solMarketPool?.volume)    || asNumber(pair?.volume?.h24) || null;
-    const solscanTrades24h: number | null  = asNumber(solMarketPool?.trade)     || null;
-    const solscanTraders24h: number | null = asNumber(solMarketPool?.trader)    || null;
-    const solscanLiquidity: number | null  = asNumber(solMarketPool?.liquidity) || null;
+    // tokenAgeMinutes pour les chart patterns
+    let tokenAgeMinutes: number | null = null;
+    if (pair?.pairCreatedAt) tokenAgeMinutes = (Date.now() - pair.pairCreatedAt) / 60000;
 
+    // ── Données financières : DexScreener uniquement ──────────────────────────
     const priceUsd: number | null = (() => {
       const n = parseFloat(pair?.priceUsd);
       return Number.isFinite(n) && n > 0 ? n : null;
@@ -497,50 +421,52 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const marketCap: number | null = (() => {
       const mc  = asNumber(pair?.marketCap);
       const fdv = asNumber(pair?.fdv);
-      if (totalSupplyUi > 0 && priceUsd && priceUsd > 0) {
-        const computed = totalSupplyUi * priceUsd;
-        if (mc > 0) return mc;
-        if (computed > 0) return computed;
-      }
       if (mc > 0)  return mc;
       if (fdv > 0) return fdv;
       return null;
     })();
 
-    const liquidity      = asNumber(pair?.liquidity?.usd) || solscanLiquidity  || null;
-    const volume24h      = asNumber(pair?.volume?.h24)    || solscanVolume24h  || null;
-    const volume1h       = asNumber(pair?.volume?.h1)     || null;
+    const liquidity      = asNumber(pair?.liquidity?.usd)  || null;
+    const volume24h      = asNumber(pair?.volume?.h24)      || null;
+    const volume1h       = asNumber(pair?.volume?.h1)       || null;
     const priceChange5m  = pair?.priceChange?.m5  ?? null;
     const priceChange1h  = pair?.priceChange?.h1  ?? null;
     const priceChange24h = pair?.priceChange?.h24 ?? null;
 
-    let tokenAgeMinutes: number | null = null;
-    if (pair?.pairCreatedAt) tokenAgeMinutes = (Date.now() - pair.pairCreatedAt) / 60000;
+    const tokenLogo = solMeta?.data?.icon || pair?.info?.imageUrl || null;
 
     const mc       = marketCap ?? 0;
-    const ageHours = solscanTokenAgeHours ?? (tokenAgeMinutes !== null ? tokenAgeMinutes / 60 : null);
+    const ageHours = tokenAgeHours;
+
     const isEstablished = ageHours !== null && ageHours > 720 && (holders ?? 0) > 10_000;
     const isBluechip    = (mc > 50_000_000 && (holders ?? 0) > 50_000)
       || BLUECHIP_MINTS.has(resolvedMint)
       || BLUECHIP_SYMBOLS.has(String(pair?.baseToken?.symbol || "").toUpperCase());
 
-    let score = 1000;
-    const flags: ScanFlag[] = [];
+    // ── Sources utilisées ─────────────────────────────────────────────────────
     const sources_used: string[] = [];
+    if (pair)                    sources_used.push("DexScreener");
+    if (rugData && !rugMissing)  sources_used.push("RugCheck");
+    if (goplus)                  sources_used.push("GoPlus");
+    if (heliusHoldersCount !== null) sources_used.push("Helius");
+    if (solMeta?.data)           sources_used.push("Solscan");
 
-    if (pair)                         sources_used.push("DexScreener");
-    if (rugData)                      sources_used.push("RugCheck");
-    if (goplus)                       sources_used.push("GoPlus");
-    if (holderAccounts.length > 0)    sources_used.push("Helius");
-    if (solscanHoldersCount !== null) sources_used.push("Solscan");
-
+    // Confidence sur 4 sources réelles (DexScreener, RugCheck, GoPlus, Helius)
     const confidenceWeight =
       (pair ? 1 : 0) +
-      (rugData && !rugMissing ? 1 : 0.3) +
-      (goplus && Object.keys(goplus).length > 3 ? 1 : 0.3) +
-      (holderAccounts.length > 0 ? 1 : 0) +
-      (solscanHoldersCount !== null ? 1 : 0);
-    const confidence = Math.round((confidenceWeight / 5) * 100);
+      (rugData && !rugMissing ? 1 : 0) +
+      (goplus && Object.keys(goplus).length > 3 ? 1 : 0) +
+      (heliusHoldersCount !== null ? 1 : 0);
+    const confidence = Math.round((confidenceWeight / 4) * 100);
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // SCORING
+    // ═══════════════════════════════════════════════════════════════════════════
+    let score = 1000;
+    const flags: ScanFlag[] = [];
+    let forceRisk: "RUG" | null = null;
+    let safeBlocked = false;
+    let washTradingFlagged = false;
 
     const addPenalty = (label: string, severity: Severity, impact: number) => {
       score -= impact;
@@ -551,18 +477,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       flags.push(makeFlag(label, "bonus", -points));
     };
 
-    let forceRisk: "RUG" | null = null;
-    let safeBlocked = false;
-    let washTradingFlagged = false;
-    let lpPenaltyApplied   = false;
-
-    // ── Pump.fun ──────────────────────────────────────────────────────────────
+    // ── 1. Pump.fun signal ────────────────────────────────────────────────────
     if (isPumpFun) {
+      flags.push(makeFlag("Pump.fun token: LP non-lockable by design", "info", 0));
+      // safeBlocked levé plus bas si conditions favorables
       safeBlocked = true;
-      flags.push(makeFlag("Pump.fun token: LP non-lockable by design", "warning", 0));
     }
 
-    // ── Autorités mint/freeze ─────────────────────────────────────────────────
+    // ── 2. Mint / Freeze authority ────────────────────────────────────────────
     const mintAuthorityEnabled =
       Boolean(rugData?.mintAuthorityEnabled) ||
       (Boolean(goplus?.mint_authority) &&
@@ -579,7 +501,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       flags.push(makeFlag("Override: Mint + Freeze authority both active", "critical", 0));
     }
 
-    // ── GoPlus cap -600pts ────────────────────────────────────────────────────
+    // ── 3. GoPlus security (cap 600pts) ───────────────────────────────────────
     if (goplus) {
       let goplusPenalty = 0;
       const gp = (label: string, sev: Severity, pts: number) => {
@@ -590,10 +512,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (goplus.is_honeypot === "1" || goplus.is_honeypot === 1 || goplus.is_honeypot === true) {
         gp("GoPlus honeypot detected", "critical", 300); forceRisk = "RUG";
       }
-      if (goplus.cannot_sell_all === "1") { gp("Cannot sell all", "critical", 300); forceRisk = "RUG"; }
-      if (goplus.is_blacklisted === "1")    gp("Blacklist capability detected", "critical", 300);
-      if (goplus.transfer_pausable === "1") gp("Transfer pausable", "critical", 300);
-      if (goplus.hidden_owner === "1")      gp("Hidden owner detected", "critical", 300);
+      if (goplus.cannot_sell_all === "1")    { gp("Cannot sell all", "critical", 300); forceRisk = "RUG"; }
+      if (goplus.is_blacklisted === "1")       gp("Blacklist capability detected", "critical", 300);
+      if (goplus.transfer_pausable === "1")    gp("Transfer pausable", "critical", 300);
+      if (goplus.hidden_owner === "1")         gp("Hidden owner detected", "critical", 300);
       if (goplus.is_proxy === "1" || goplus.is_proxy === 1 || goplus.is_proxy === true)
         gp("Upgradeable/proxy contract", "critical", 300);
       if (asNumber(goplus.sell_tax) > 0.1)         gp("Sell tax > 10%", "critical", 250);
@@ -607,7 +529,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (goplus.is_whitelisted === "1")           gp("Whitelist system detected", "warning", 150);
     }
 
-    // ── RugCheck ─────────────────────────────────────────────────────────────
+    // ── 4. RugCheck : metadata + LP ───────────────────────────────────────────
     if (rugData) {
       if (rugData.metaMutable === true && !isEstablished) {
         addPenalty("Metadata mutable", "warning", 150);
@@ -618,70 +540,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       const isSmallAndRecent = mc < 5_000_000 && (ageHours === null || ageHours < 720);
+
       if (!rugData.lpBurned && !rugData.lpLocked) {
         if (isBluechip) {
-          // pas de pénalité LP
+          // pas de pénalité
         } else if (isPumpFun) {
-          // FIX A : pump.fun LP non-lockable par design → pénalité réduite
-          addPenalty("LP not burned or locked (pump.fun)", "info", 40);
-          lpPenaltyApplied = true;
+          // pump.fun : LP non-lockable par design, pénalité minimale
+          addPenalty("LP not burned or locked (pump.fun — by design)", "info", 30);
         } else if (isSmallAndRecent) {
           addPenalty("LP not burned or locked", "warning", 200);
           safeBlocked = true;
-          lpPenaltyApplied = true;
         } else {
           addPenalty("LP not burned or locked", "info", 30);
-          lpPenaltyApplied = true;
         }
       }
+
       const lockDurationDays = getLpLockDurationDays(rugData);
       if (rugData.lpLocked && lockDurationDays > 0 && lockDurationDays < 30)
         addPenalty("LP lock duration < 30 days", "warning", 150);
-    }
 
-    // ── DexScreener pair ─────────────────────────────────────────────────────
-    if (pair) {
-      const liq  = asNumber(pair?.liquidity?.usd);
-      const vol  = asNumber(pair?.volume?.h24);
-      const pc24 = asNumber(pair?.priceChange?.h24);
-      const pc1  = asNumber(pair?.priceChange?.h1);
-      const pc5  = asNumber(pair?.priceChange?.m5);
+      // ── 5. RugCheck concentration holders (SOURCE UNIQUE — pas de doublon Helius) ──
+      // RugCheck topHolders exclut déjà les pools connues de son côté
+      const top10 = asNumber(rugData?.topHolders?.top10Percentage);
+      const top1  = asNumber(rugData?.topHolders?.top1Percentage ?? rugData?.topHolders?.top1HolderPercentage);
 
-      if (liq < 1000)       addPenalty("Very low liquidity", "critical", 200);
-      else if (liq < 5000)  addPenalty("Low liquidity", "warning", 100);
-      else if (liq < 20000) addPenalty("Liquidity < $20k", "info", 30);
-
-      if (mc > 200_000 && liq > 0 && (liq / mc) < 0.003 && !isBluechip) {
-        addPenalty("Dangerously low liq/mcap ratio (<0.3%)", "critical", 180);
-        safeBlocked = true;
-      }
-
-      if (liq > 10 && vol / liq > 20) {
-        addPenalty("Wash trading suspected (vol/liq > 20)", "critical", 120);
-        washTradingFlagged = true;
-      } else if (liq > 10 && vol / liq > 5) {
-        addPenalty("High vol/liquidity ratio", "warning", 60);
-      }
-
-      if (rugData?.lpBurned === true) addBonus("LP Burned ✓", 100);
-      const lockDays = getLpLockDurationDays(rugData);
-      if (rugData?.lpLocked === true && lockDays > 180) addBonus("LP Locked > 180 days ✓", 80);
-
-      if (pc1 > 200 && pc5 > 50) addPenalty("Coordinated pump pattern", "warning", 100);
-      if (pc24 < -80) addPenalty("Brutal dump 24h", "critical", 150);
-    } else {
-      addPenalty("Not indexed on DexScreener", "warning", 100);
-    }
-
-    // ── RugCheck holders/risks ────────────────────────────────────────────────
-    if (rugData) {
-      const top10 = getTop10Percentage(rugData);
-      const top1  = getTop1Percentage(rugData);
       if (top10 > 70)      addPenalty("Top 10 holders > 70%", "critical", 150);
       else if (top10 > 50) addPenalty("Top 10 holders > 50%", "warning", 80);
-      if (top1 > 20)       addPenalty("Top 1 holder > 20%", "critical", 150);
 
-      if (riskIncludes(rugData, /sniper/i))        addPenalty("Sniper activity detected", "critical", 150);
+      // Pour pump.fun on tolère un top1 plus élevé (bonding curve peut encore être large)
+      const top1CritThreshold = isPumpFun ? 30 : 20;
+      if (top1 > top1CritThreshold)
+        addPenalty(`Top 1 holder > ${top1CritThreshold}%`, "critical", 150);
+
+      // ── 6. RugCheck risks ─────────────────────────────────────────────────
+      if (riskIncludes(rugData, /sniper/i))         addPenalty("Sniper activity detected", "critical", 150);
       if (riskIncludes(rugData, /bundler|bundle/i)) addPenalty("Bundler detected", "critical", 200);
       if (riskIncludes(rugData, /rug/i))            addPenalty("Rug pull history", "critical", 200);
 
@@ -698,36 +590,77 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // ── Helius top-holders ────────────────────────────────────────────────────
-    if (holderAccounts.length >= 2 && totalSupplyUi > 0) {
-      const top1Amount = asNumber(holderAccounts[0]?.uiAmount);
-      const top1Pct    = top1Amount / totalSupplyUi;
-      if (top1Pct > 0.40) {
-        addPenalty(`Single wallet holds ${Math.round(top1Pct * 100)}% of supply`, "critical", 200);
-        forceRisk = "RUG";
-      } else if (top1Pct > 0.20) {
-        addPenalty(`Single wallet holds ${Math.round(top1Pct * 100)}% of supply`, "critical", 150);
-      } else if (top1Pct > 0.10) {
-        addPenalty(`Single wallet holds ${Math.round(top1Pct * 100)}% of supply`, "warning", 80);
+    // ── 7. DexScreener : liquidité + volume (SOURCE UNIQUE) ──────────────────
+    if (pair) {
+      const liq  = asNumber(pair?.liquidity?.usd);
+      const vol  = asNumber(pair?.volume?.h24);
+      const pc24 = asNumber(pair?.priceChange?.h24);
+      const pc1  = asNumber(pair?.priceChange?.h1);
+      const pc5  = asNumber(pair?.priceChange?.m5);
+
+      if (liq < 1000)       addPenalty("Very low liquidity", "critical", 200);
+      else if (liq < 5000)  addPenalty("Low liquidity", "warning", 100);
+      else if (liq < 20000) addPenalty("Liquidity < $20k", "info", 30);
+
+      if (mc > 200_000 && liq > 0 && (liq / mc) < 0.003 && !isBluechip) {
+        addPenalty("Dangerously low liq/mcap ratio (<0.3%)", "critical", 180);
+        safeBlocked = true;
       }
 
-      if (holderAccounts.length >= 5) {
-        const top10Amount = holderAccounts.slice(0, 10).reduce((s: number, h: any) => s + asNumber(h?.uiAmount), 0);
-        const top10Pct    = top10Amount / totalSupplyUi;
-        if (top10Pct > 0.8)      addPenalty(`Top 10 wallets hold ${Math.round(top10Pct * 100)}% of supply`, "critical", 150);
-        else if (top10Pct > 0.6) addPenalty(`Top 10 wallets hold ${Math.round(top10Pct * 100)}% of supply`, "warning", 80);
-        else if (top10Pct < 0.3) addBonus("Well distributed supply ✓", 50);
+      // Wash trading : seuil 30 pour tous, ignoré pour pump.fun (bonding curve normal)
+      if (!isPumpFun && liq > 10 && vol / liq > 30) {
+        addPenalty("Wash trading suspected (vol/liq > 30)", "critical", 120);
+        washTradingFlagged = true;
+      } else if (!isPumpFun && liq > 10 && vol / liq > 8) {
+        addPenalty("High vol/liquidity ratio", "warning", 60);
       }
+
+      if (rugData?.lpBurned === true)  addBonus("LP Burned ✓", 100);
+      const lockDays = getLpLockDurationDays(rugData);
+      if (rugData?.lpLocked === true && lockDays > 180) addBonus("LP Locked > 180 days ✓", 80);
+
+      if (pc1 > 200 && pc5 > 50) addPenalty("Coordinated pump pattern", "warning", 100);
+      if (pc24 < -80)             addPenalty("Brutal dump 24h", "critical", 150);
+
+    } else {
+      addPenalty("Not indexed on DexScreener", "warning", 100);
     }
 
-    // ── Âge du token (pool) ───────────────────────────────────────────────────
+    // ── 8. Âge du token ───────────────────────────────────────────────────────
     if (tokenAgeMinutes !== null) {
       if (tokenAgeMinutes < 1)       addPenalty("Freshly launched, extreme risk", "critical", 150);
       else if (tokenAgeMinutes < 5)  addPenalty("Token very new (< 5 min)", "warning", 80);
       else if (tokenAgeMinutes < 60) addPenalty("Token < 1 hour old", "info", 30);
     }
 
-    // ── Socials / txns ────────────────────────────────────────────────────────
+    if (ageHours !== null) {
+      if (ageHours < 1) {
+        addPenalty("Newborn token on-chain (<1h)", "critical", 100);
+        safeBlocked = true;
+      } else if (ageHours < 6) {
+        addPenalty("Fresh token on-chain (<6h)", "warning", 50);
+      } else if (ageHours > 720) {
+        addBonus("Established token on-chain (30d+) ✓", 20);
+      }
+    }
+
+    // ── 9. Holders count (Helius) ────────────────────────────────────────────
+    if (holders !== null) {
+      if (holders === 0) {
+        addPenalty("Zero holders detected (ghost token)", "critical", 200);
+        safeBlocked = true;
+      } else if (holders < 15) {
+        addPenalty("Very few holders (<15)", "critical", 150);
+        safeBlocked = true;
+      } else if (holders < 50) {
+        addPenalty("Low holders (<50)", "warning", 80);
+        safeBlocked = true;
+      } else if (holders > 5000) {
+        addBonus("Strong holder base (5K+) ✓", 30);
+      }
+    }
+
+    // ── 10. Socials ───────────────────────────────────────────────────────────
     if (pair) {
       const buys5m  = asNumber(pair?.txns?.m5?.buys);
       const sells5m = asNumber(pair?.txns?.m5?.sells);
@@ -746,77 +679,44 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         addPenalty("Buy/sell imbalance (coordinated pump)", "warning", 60);
     }
 
-    // ── Identity ──────────────────────────────────────────────────────────────
+    // ── 11. Identity ──────────────────────────────────────────────────────────
     const identity = analyzeIdentity(pair?.baseToken?.symbol, pair?.baseToken?.name, isBluechip);
     score -= identity.penalty;
     flags.push(...identity.flags);
     if (identity.forceRug)    forceRisk   = "RUG";
     if (identity.safeBlocked) safeBlocked = true;
 
-    // ── Chart patterns ────────────────────────────────────────────────────────
-    const chart = analyzeChartPatterns(candles, pair, tokenAgeMinutes);
+    // ── 12. Chart patterns ────────────────────────────────────────────────────
+    const chart = analyzeChartPatterns(candles, pair, tokenAgeMinutes, isPumpFun);
     score -= chart.penalty;
     flags.push(...chart.flags);
     if (chart.forceRug)    forceRisk   = "RUG";
     if (chart.safeBlocked) safeBlocked = true;
 
-    // ── Solscan on-chain ──────────────────────────────────────────────────────
-    if (solscanHoldersCount !== null) {
-      if (solscanHoldersCount === 0) {
-        addPenalty("Zero holders detected (ghost token)", "critical", 200);
-        safeBlocked = true;
-      } else if (solscanHoldersCount < 15) {
-        addPenalty("Very few holders (<15)", "critical", 150);
-        safeBlocked = true;
-      } else if (solscanHoldersCount < 50) {
-        addPenalty("Low holders (<50)", "warning", 80);
-        safeBlocked = true;
-      } else if (solscanHoldersCount > 5000) {
-        addBonus("Strong holder base (5K+) ✓", 30);
-      }
-    }
-
-    if (solscanTokenAgeHours !== null) {
-      // FIX B : pour pump.fun avec LP brûlée, newborn pénalise moitié moins
-      // car le high vol/liq est normal sur une bonding curve active
-      if (solscanTokenAgeHours < 1) {
-        const newbornImpact = (isPumpFun && rugData?.lpBurned === true) ? 60 : 120;
-        addPenalty("Newborn token on-chain (<1h)", "critical", newbornImpact);
-        safeBlocked = true;
-      } else if (solscanTokenAgeHours < 6) {
-        addPenalty("Fresh token on-chain (<6h)", "warning", 60);
-      } else if (solscanTokenAgeHours > 720) {
-        addBonus("Established token on-chain (30d+) ✓", 20);
-      }
-    }
-
-    if (
-      solscanTrades24h !== null && solscanTraders24h !== null &&
-      solscanTraders24h > 0 && solscanTrades24h / solscanTraders24h > 50 && solscanTraders24h < 20
-    ) {
-      if (washTradingFlagged) {
-        addPenalty("Wash trading corroborated (trades/traders ratio)", "warning", 40);
-      } else {
-        addPenalty("Wash trading suspected (trades/traders ratio)", "critical", 100);
-        safeBlocked = true;
-        washTradingFlagged = true;
-      }
-    }
-
-    // ── Bonus bluechips / established ─────────────────────────────────────────
+    // ── 13. Bluechip bonus ────────────────────────────────────────────────────
     if (isBluechip)  addBonus("Large-cap established token ✓", 80);
     if (isEstablished && (holders ?? 0) > 100_000) addBonus("100K+ holders ✓", 50);
 
+    // ── Pump.fun : lever safeBlocked si conditions raisonnables ──────────────
+    // LP brûlée OU (holders > 200 ET mcap > 50k ET pas de flag critique autre que pump.fun)
+    if (isPumpFun && safeBlocked) {
+      const criticalNonPumpFlags = flags.filter(
+        f => f.severity === "critical" && f.impact > 0 &&
+             !f.label.includes("pump.fun") && !f.label.includes("Pump.fun")
+      );
+      const lpBurned = rugData?.lpBurned === true;
+      const healthyEnough = (holders ?? 0) > 200 && mc > 50_000;
+      if (lpBurned && criticalNonPumpFlags.length === 0) safeBlocked = false;
+      else if (healthyEnough && criticalNonPumpFlags.length === 0) safeBlocked = false;
+    }
+
+    // ── Score final ───────────────────────────────────────────────────────────
     score = Math.max(0, Math.min(1000, score));
 
+    // Cap selon âge (pool) — sécurité pour les très nouveaux tokens
     if (ageHours !== null && ageHours < 0.5) score = Math.min(score, 499);
     else if (ageHours !== null && ageHours < 2)  score = Math.min(score, 599);
     else if (ageHours !== null && ageHours < 6)  score = Math.min(score, 749);
-
-    const bonusCount = flags.filter(f => f.severity === "bonus").length;
-    if (safeBlocked && score >= 870 && bonusCount >= 2 && !isPumpFun) {
-      safeBlocked = false;
-    }
 
     let risk: "SAFE" | "CAUTION" | "DANGER" | "RUG";
     if (forceRisk === "RUG")              risk = "RUG";
@@ -838,17 +738,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       tokenSymbol:   pair?.baseToken?.symbol ?? null,
       tokenName:     pair?.baseToken?.name   ?? null,
       pairCreatedAt: pair?.pairCreatedAt     ?? null,
-      safeBlocked, tokenLogo, tokenCreator, tokenDecimals, tokenSupply, recentTransfers,
-      solscanTokenAgeHours,
-      solscanVolume24h,
-      solscanTrades24h,
-      solscanTraders24h,
+      safeBlocked, tokenLogo,
+      tokenAgeHours,
       isPumpFun,
-      scoring_version: "5.1.0",
+      scoring_version: "6.0.0",
       fetchedAt: Date.now(),
     });
+
   } catch (e) {
-    console.error("[scan v5.1.0]", e);
+    console.error("[scan v6.0.0]", e);
     return res.status(500).json({ error: "Analysis error." });
   }
 }
