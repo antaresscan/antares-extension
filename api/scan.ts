@@ -135,9 +135,9 @@ function getLpLockDurationDays(rugData: any): number {
   const raw = rugData?.lpLockDurationDays ?? rugData?.lpLockDuration ?? rugData?.lockDurationDays ?? 0;
   return asNumber(raw);
 }
-function riskIncludes(rugData: any, matcher: RegExp): boolean {
-  if (!Array.isArray(rugData?.risks)) return false;
-  return rugData.risks.some((r: any) => matcher.test(String(r?.name || "")));
+function riskIncludes(data: any, matcher: RegExp): boolean {
+  if (!Array.isArray(data?.risks)) return false;
+  return data.risks.some((r: any) => matcher.test(String(r?.name || "")));
 }
 function _mean(xs: number[]): number {
   return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0;
@@ -197,6 +197,40 @@ async function fetchDexCandles(
   }));
 }
 
+// ─── BUNDLE DETECTION HELPER ─────────────────────────────────────────────────
+// FIX #2 + #3: bundle lu depuis rugReportRes.risks[] (full report), pas le summary
+// Le champ bundledSupply/bundleHolders n'existe pas dans l'API RugCheck.
+// La donnée réelle est dans risks[].name qui match /bundle/i
+// et le % est dans topHolders du full report ou dans risks[].score (0-10000).
+function extractBundlePct(rugReportData: any): number {
+  if (!rugReportData) return 0;
+
+  // Priorité 1 : topHolders du full report si disponible
+  const top1 = asNumber(
+    rugReportData?.topHolders?.top1Percentage ??
+    rugReportData?.topHolders?.top1HolderPercentage
+  );
+
+  // Priorité 2 : risks[].score pour le risk item bundle (score 0-10000 → 0-100%)
+  if (Array.isArray(rugReportData?.risks)) {
+    const bundleRisk = rugReportData.risks.find((r: any) =>
+      /bundle/i.test(String(r?.name || ""))
+    );
+    if (bundleRisk) {
+      // score RugCheck = 0-10000, représente le niveau de risque pas le %
+      // On retourne un % minimal de 25% si bundle risk présent sans % précis
+      const scoreVal = asNumber(bundleRisk.score);
+      // Si on a top1 et bundle détecté, on utilise top1 comme proxy du bundle
+      if (top1 > 0) return top1 / 100; // top1 est en % (ex: 27.5 → 0.275)
+      // Sinon on estime depuis le score RugCheck (5000+ = dangereux)
+      if (scoreVal >= 8000) return 0.40;
+      if (scoreVal >= 5000) return 0.25;
+      return 0.20;
+    }
+  }
+  return 0;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // LAYER 1 — DexScreener
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -237,17 +271,16 @@ function layerDexScreener(
   else if (liq < 5000)  { flags.push(makeFlag("Low liquidity (<$5k)",         "warning",  0)); trust *= 0.65; }
   else if (liq < 20000) { flags.push(makeFlag("Liquidity < $20k",             "info",     0)); trust *= 0.90; }
 
-  // Wash trading
+  // FIX #1 — Wash trading vol/liq > 20 → forceRug (bundler en train de dump)
   if (liq > 0 && vol / liq > 20) {
-    flags.push(makeFlag("Wash trading suspected (vol/liq > 20)", "critical", 0));
-    trust *= 0.20; safeBlocked = true;
+    flags.push(makeFlag("Wash trading detected (vol/liq > 20) — bundler dump", "critical", 0));
+    trust *= 0.20; forceRug = true; safeBlocked = true;
   } else if (liq > 0 && vol / liq > 5) {
     flags.push(makeFlag("High vol/liquidity ratio", "warning", 0));
     trust *= 0.75;
   }
 
-  // v4.9.3 — Pump + âge : forceRug uniquement si signal structurel présent
-  // Un vrai projet viral peut pumper fort sans être un rug (liq saine, sells normaux)
+  // Pump + âge : forceRug uniquement si signal structurel présent
   const hasStructuralWeakness =
     (liq > 0 && vol / liq > 10) ||
     (txns5m > 30 && sells5m === 0) ||
@@ -270,7 +303,6 @@ function layerDexScreener(
       trust *= 0.40; safeBlocked = true;
     }
   } else if (pc1 > 300) {
-    // Pump extrême >300% sans condition d'âge → bundler exit quasi-certain
     flags.push(makeFlag(`Extreme pump +${Math.round(pc1)}% in 1h — bundler exit trap`, "critical", 0));
     trust *= 0.05; forceRug = true; safeBlocked = true;
   } else if (pc1 > 200 && ageMinutes < 120) {
@@ -281,7 +313,7 @@ function layerDexScreener(
     trust *= 0.65;
   }
 
-  // Slow rug: -50% sur 6h ET -15% sur 1h → liquidation progressive
+  // Slow rug: -50% sur 6h ET -15% sur 1h
   if (pc6 < -50 && pc1 < -15) {
     flags.push(makeFlag("Slow rug detected: -50% on 6h + -15% on 1h", "critical", 0));
     trust *= 0.15; forceRug = true; safeBlocked = true;
@@ -309,19 +341,28 @@ function layerRugCheck(rugData: any, rugReportData: any): LayerResult {
     forceRug: false, safeBlocked: false,
   };
 
-  const bundledSupply = asNumber(
-    rugReportData?.bundledSupply ??
-    rugReportData?.bundleHolders ??
-    rugReportData?.insiderSupplyPct ??
-    rugReportData?.insider_supply_pct
-  );
-  const bundledPct = bundledSupply > 1 ? bundledSupply / 100 : bundledSupply;
-  if (bundledPct > 0.40) {
-    flags.push(makeFlag(`Bundle holds ${Math.round(bundledPct*100)}% of supply — coordinated buy`, "critical", 0));
-    trust *= 0.05; forceRug = true;
-  } else if (bundledPct > 0.20) {
-    flags.push(makeFlag(`Bundle holds ${Math.round(bundledPct*100)}% of supply`, "critical", 0));
-    trust *= 0.25; safeBlocked = true;
+  // FIX #2 + #3 + #4 — Bundle lu depuis rugReportRes.risks[] (full report)
+  // riskIncludes sur rugReportData (full report), pas rugData (summary)
+  const bundleInReport = riskIncludes(rugReportData, /bundle/i);
+  const bundledPct = bundleInReport ? extractBundlePct(rugReportData) : 0;
+
+  if (bundleInReport && bundledPct > 0.20) {
+    // FIX #4 — bundle > 20% → forceRug immédiat
+    flags.push(makeFlag(`Bundle holds ~${Math.round(bundledPct * 100)}% of supply — coordinated buy/dump`, "critical", 0));
+    trust *= 0.05; forceRug = true; safeBlocked = true;
+  } else if (bundleInReport && bundledPct > 0.05) {
+    flags.push(makeFlag(`Bundle detected (~${Math.round(bundledPct * 100)}% of supply)`, "critical", 0));
+    trust *= 0.20; safeBlocked = true;
+  } else if (bundleInReport) {
+    // Bundle présent dans risks mais % non estimable → on reste prudent
+    flags.push(makeFlag("Bundle activity detected (RugCheck)", "critical", 0));
+    trust *= 0.20; forceRug = true; safeBlocked = true;
+  }
+
+  // Vérification bundler aussi dans le summary (fallback)
+  if (!bundleInReport && riskIncludes(rugData, /bundler|bundle/i)) {
+    flags.push(makeFlag("Bundler detected (RugCheck summary)", "critical", 0));
+    trust *= 0.15; forceRug = true; safeBlocked = true;
   }
 
   if (rugData.lpBurned === true) {
@@ -343,10 +384,9 @@ function layerRugCheck(rugData: any, rugReportData: any): LayerResult {
   else if (top10 > 50) { flags.push(makeFlag("Top 10 holders > 50%", "warning",  0)); trust *= 0.70; }
   if (top1 > 20)       { flags.push(makeFlag("Top 1 holder > 20%",   "critical", 0)); trust *= 0.45; }
 
-  if (riskIncludes(rugData, /sniper/i))                 { flags.push(makeFlag("Sniper activity detected",  "critical", 0)); trust *= 0.15; safeBlocked = true; }
-  if (riskIncludes(rugData, /bundler|bundle/i))          { flags.push(makeFlag("Bundler detected",           "critical", 0)); trust *= 0.15; safeBlocked = true; }
-  if (riskIncludes(rugData, /rug/i))                     { flags.push(makeFlag("Rug pull history",           "critical", 0)); trust *= 0.15; forceRug = true; }
-  if (riskIncludes(rugData, /creator.*sell|dev.*sell/i)) { flags.push(makeFlag("Dev wallet sold tokens",    "warning",  0)); trust *= 0.65; }
+  if (riskIncludes(rugReportData, /sniper/i))                 { flags.push(makeFlag("Sniper activity detected",  "critical", 0)); trust *= 0.15; safeBlocked = true; }
+  if (riskIncludes(rugReportData, /rug/i))                    { flags.push(makeFlag("Rug pull history",           "critical", 0)); trust *= 0.15; forceRug = true; }
+  if (riskIncludes(rugReportData, /creator.*sell|dev.*sell/i)){ flags.push(makeFlag("Dev wallet sold tokens",    "warning",  0)); trust *= 0.65; }
 
   if (rugData.mintAuthorityEnabled)   { flags.push(makeFlag("Mint Authority enabled (RugCheck)",   "critical", 0)); trust *= 0.25; }
   if (rugData.freezeAuthorityEnabled) { flags.push(makeFlag("Freeze Authority enabled (RugCheck)", "critical", 0)); trust *= 0.25; }
@@ -842,11 +882,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       solscanTrades24h,
       solscanTraders24h,
       layers: layersSnapshot,
-      scoring_version: "4.9.3",
+      scoring_version: "4.9.4",
       fetchedAt: Date.now(),
     });
   } catch (e) {
-    console.error("[scan v4.9.3]", e);
+    console.error("[scan v4.9.4]", e);
     return res.status(500).json({ error: "Analysis error." });
   }
 }
