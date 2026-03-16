@@ -185,44 +185,42 @@ async function fetchSolscan(endpoint: string) {
   if (!key) return null;
   return fetchJson(`${SOLSCAN_BASE}${endpoint}`, { headers: { token: key } }, 5000);
 }
+
+// ─── P1 FIX — GeckoTerminal candles (remplace io.dexscreener.com bloqué Cloudflare) ───
 async function fetchDexCandles(
-  pairAddress: string, chainId = "solana"
+  pairAddress: string, _chainId = "solana"
 ): Promise<Array<{ o:number; h:number; l:number; c:number; v:number; ts:number }>> {
-  const url = `https://io.dexscreener.com/dex/chart/amm/v3/${chainId}/${pairAddress}?res=1&cb=1`;
-  const raw = await fetchJson(url, {}, 5000);
-  if (!raw || !Array.isArray(raw.bars)) return [];
-  return raw.bars.map((b: any) => ({
-    ts: asNumber(b.t), o: asNumber(b.o), h: asNumber(b.h),
-    l: asNumber(b.l), c: asNumber(b.c), v: asNumber(b.v),
+  const url = `https://api.geckoterminal.com/api/v2/networks/solana/pools/${pairAddress}/ohlcv/minute?aggregate=5&limit=40`;
+  const raw = await fetchJson(url, {
+    headers: { "Accept": "application/json;version=20230302" }
+  }, 6000);
+  const ohlcv = raw?.data?.attributes?.ohlcv_list;
+  if (!Array.isArray(ohlcv) || ohlcv.length === 0) return [];
+  // Format GeckoTerminal: [timestamp, open, high, low, close, volume]
+  return ohlcv.map((b: any) => ({
+    ts: asNumber(b[0]),
+    o:  asNumber(b[1]),
+    h:  asNumber(b[2]),
+    l:  asNumber(b[3]),
+    c:  asNumber(b[4]),
+    v:  asNumber(b[5]),
   }));
 }
 
 // ─── BUNDLE DETECTION HELPER ─────────────────────────────────────────────────
-// FIX #2 + #3: bundle lu depuis rugReportRes.risks[] (full report), pas le summary
-// Le champ bundledSupply/bundleHolders n'existe pas dans l'API RugCheck.
-// La donnée réelle est dans risks[].name qui match /bundle/i
-// et le % est dans topHolders du full report ou dans risks[].score (0-10000).
 function extractBundlePct(rugReportData: any): number {
   if (!rugReportData) return 0;
-
-  // Priorité 1 : topHolders du full report si disponible
   const top1 = asNumber(
     rugReportData?.topHolders?.top1Percentage ??
     rugReportData?.topHolders?.top1HolderPercentage
   );
-
-  // Priorité 2 : risks[].score pour le risk item bundle (score 0-10000 → 0-100%)
   if (Array.isArray(rugReportData?.risks)) {
     const bundleRisk = rugReportData.risks.find((r: any) =>
       /bundle/i.test(String(r?.name || ""))
     );
     if (bundleRisk) {
-      // score RugCheck = 0-10000, représente le niveau de risque pas le %
-      // On retourne un % minimal de 25% si bundle risk présent sans % précis
       const scoreVal = asNumber(bundleRisk.score);
-      // Si on a top1 et bundle détecté, on utilise top1 comme proxy du bundle
-      if (top1 > 0) return top1 / 100; // top1 est en % (ex: 27.5 → 0.275)
-      // Sinon on estime depuis le score RugCheck (5000+ = dangereux)
+      if (top1 > 0) return top1 / 100;
       if (scoreVal >= 8000) return 0.40;
       if (scoreVal >= 5000) return 0.25;
       return 0.20;
@@ -266,12 +264,10 @@ function layerDexScreener(
   const hasWebsite  = Array.isArray(websites) && websites.length > 0;
   const ageMinutes  = tokenAgeMinutes ?? Infinity;
 
-  // Liquidité
   if (liq < 1000)       { flags.push(makeFlag("Very low liquidity (<$1k)",   "critical", 0)); trust *= 0.25; }
   else if (liq < 5000)  { flags.push(makeFlag("Low liquidity (<$5k)",         "warning",  0)); trust *= 0.65; }
   else if (liq < 20000) { flags.push(makeFlag("Liquidity < $20k",             "info",     0)); trust *= 0.90; }
 
-  // FIX #1 — Wash trading vol/liq > 20 → forceRug (bundler en train de dump)
   if (liq > 0 && vol / liq > 20) {
     flags.push(makeFlag("Wash trading detected (vol/liq > 20) — bundler dump", "critical", 0));
     trust *= 0.20; forceRug = true; safeBlocked = true;
@@ -280,7 +276,6 @@ function layerDexScreener(
     trust *= 0.75;
   }
 
-  // Pump + âge : forceRug uniquement si signal structurel présent
   const hasStructuralWeakness =
     (liq > 0 && vol / liq > 10) ||
     (txns5m > 30 && sells5m === 0) ||
@@ -313,7 +308,6 @@ function layerDexScreener(
     trust *= 0.65;
   }
 
-  // Slow rug: -50% sur 6h ET -15% sur 1h
   if (pc6 < -50 && pc1 < -15) {
     flags.push(makeFlag("Slow rug detected: -50% on 6h + -15% on 1h", "critical", 0));
     trust *= 0.15; forceRug = true; safeBlocked = true;
@@ -341,25 +335,20 @@ function layerRugCheck(rugData: any, rugReportData: any): LayerResult {
     forceRug: false, safeBlocked: false,
   };
 
-  // FIX #2 + #3 + #4 — Bundle lu depuis rugReportRes.risks[] (full report)
-  // riskIncludes sur rugReportData (full report), pas rugData (summary)
   const bundleInReport = riskIncludes(rugReportData, /bundle/i);
   const bundledPct = bundleInReport ? extractBundlePct(rugReportData) : 0;
 
   if (bundleInReport && bundledPct > 0.20) {
-    // FIX #4 — bundle > 20% → forceRug immédiat
     flags.push(makeFlag(`Bundle holds ~${Math.round(bundledPct * 100)}% of supply — coordinated buy/dump`, "critical", 0));
     trust *= 0.05; forceRug = true; safeBlocked = true;
   } else if (bundleInReport && bundledPct > 0.05) {
     flags.push(makeFlag(`Bundle detected (~${Math.round(bundledPct * 100)}% of supply)`, "critical", 0));
     trust *= 0.20; safeBlocked = true;
   } else if (bundleInReport) {
-    // Bundle présent dans risks mais % non estimable → on reste prudent
     flags.push(makeFlag("Bundle activity detected (RugCheck)", "critical", 0));
     trust *= 0.20; forceRug = true; safeBlocked = true;
   }
 
-  // Vérification bundler aussi dans le summary (fallback)
   if (!bundleInReport && riskIncludes(rugData, /bundler|bundle/i)) {
     flags.push(makeFlag("Bundler detected (RugCheck summary)", "critical", 0));
     trust *= 0.15; forceRug = true; safeBlocked = true;
@@ -384,9 +373,9 @@ function layerRugCheck(rugData: any, rugReportData: any): LayerResult {
   else if (top10 > 50) { flags.push(makeFlag("Top 10 holders > 50%", "warning",  0)); trust *= 0.70; }
   if (top1 > 20)       { flags.push(makeFlag("Top 1 holder > 20%",   "critical", 0)); trust *= 0.45; }
 
-  if (riskIncludes(rugReportData, /sniper/i))                 { flags.push(makeFlag("Sniper activity detected",  "critical", 0)); trust *= 0.15; safeBlocked = true; }
-  if (riskIncludes(rugReportData, /rug/i))                    { flags.push(makeFlag("Rug pull history",           "critical", 0)); trust *= 0.15; forceRug = true; }
-  if (riskIncludes(rugReportData, /creator.*sell|dev.*sell/i)){ flags.push(makeFlag("Dev wallet sold tokens",    "warning",  0)); trust *= 0.65; }
+  if (riskIncludes(rugReportData, /sniper/i))                  { flags.push(makeFlag("Sniper activity detected",  "critical", 0)); trust *= 0.15; safeBlocked = true; }
+  if (riskIncludes(rugReportData, /rug/i))                     { flags.push(makeFlag("Rug pull history",           "critical", 0)); trust *= 0.15; forceRug = true; }
+  if (riskIncludes(rugReportData, /creator.*sell|dev.*sell/i)) { flags.push(makeFlag("Dev wallet sold tokens",    "warning",  0)); trust *= 0.65; }
 
   if (rugData.mintAuthorityEnabled)   { flags.push(makeFlag("Mint Authority enabled (RugCheck)",   "critical", 0)); trust *= 0.25; }
   if (rugData.freezeAuthorityEnabled) { flags.push(makeFlag("Freeze Authority enabled (RugCheck)", "critical", 0)); trust *= 0.25; }
@@ -482,7 +471,8 @@ function layerHelius(
 
   if (top1Pct > 0.3)      { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "critical", 0)); trust *= 0.08; forceRug = true; }
   else if (top1Pct > 0.2) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "critical", 0)); trust *= 0.25; safeBlocked = true; }
-  else if (top1Pct > 0.1) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "warning",  0)); trust *= 0.65; }
+  // P2 FIX — top1 > 10% bloque désormais le SAFE (safeBlocked=true) et pénalise plus fort (*0.50)
+  else if (top1Pct > 0.1) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "warning",  0)); trust *= 0.50; safeBlocked = true; }
 
   if (top10Pct > 0.8)      { flags.push(makeFlag(`Top 10 wallets hold ${Math.round(top10Pct*100)}% of supply`, "critical", 0)); trust *= 0.35; safeBlocked = true; }
   else if (top10Pct > 0.6) { flags.push(makeFlag(`Top 10 wallets hold ${Math.round(top10Pct*100)}% of supply`, "warning",  0)); trust *= 0.55; safeBlocked = true; }
@@ -854,8 +844,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let risk: "SAFE" | "CAUTION" | "DANGER" | "RUG";
     if (forceRug)                         risk = "RUG";
     else if (sources_used.length === 0)   risk = "DANGER";
-    else if (safeBlocked && score >= 800) risk = "CAUTION";
-    else if (score >= 800)                risk = "SAFE";
+    else if (safeBlocked && score >= 600) risk = "CAUTION";
+    else if (safeBlocked)                 risk = "DANGER";
+    // P3 FIX — seuil SAFE relevé à 850 (au lieu de 800)
+    else if (score >= 850)                risk = "SAFE";
     else if (score >= 600)                risk = "CAUTION";
     else if (score >= 350)                risk = "DANGER";
     else                                  risk = "RUG";
@@ -882,11 +874,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       solscanTrades24h,
       solscanTraders24h,
       layers: layersSnapshot,
-      scoring_version: "4.9.4",
+      scoring_version: "4.9.5",
       fetchedAt: Date.now(),
     });
   } catch (e) {
-    console.error("[scan v4.9.4]", e);
+    console.error("[scan v4.9.5]", e);
     return res.status(500).json({ error: "Analysis error." });
   }
 }
