@@ -246,13 +246,18 @@ function layerDexScreener(
     trust *= 0.75;
   }
 
-  // v4.9.1 — Pump fallback (quand candles insuffisantes pour token récent)
-  // Pump extrême >300% en 1h → rug trap évident
-  if (pc1 > 300) {
+  // v4.9.2 — Pump + age combiné : exit trap évident
+  if (ageMinutes < 30 && pc1 > 150) {
+    flags.push(makeFlag(`Pump +${Math.round(pc1)}% on <30min token — exit trap`, "critical", 0));
+    trust *= 0.05; forceRug = true; safeBlocked = true;
+  } else if (ageMinutes < 60 && pc1 > 120) {
+    flags.push(makeFlag(`Pump +${Math.round(pc1)}% on <1h token — exit trap`, "critical", 0));
+    trust *= 0.05; forceRug = true; safeBlocked = true;
+  } else if (pc1 > 300) {
+    // v4.9.1 — Pump fallback (quand candles insuffisantes pour token récent)
     flags.push(makeFlag(`Extreme pump +${Math.round(pc1)}% in 1h — bundler exit trap`, "critical", 0));
     trust *= 0.05; forceRug = true; safeBlocked = true;
   } else if (pc1 > 200 && ageMinutes < 120) {
-    // Pump >200% sur token < 2h → quasi-certain rug
     flags.push(makeFlag(`Pump +${Math.round(pc1)}% on newborn token (<2h) — exit trap`, "critical", 0));
     trust *= 0.10; forceRug = true; safeBlocked = true;
   } else if (pc1 > 200 && pc5 > 50) {
@@ -473,7 +478,6 @@ function layerSolscan(
       flags.push(makeFlag("Wash trading suspected (trades/traders ratio)", "critical", 0));
       trust *= 0.50; safeBlocked = true;
     } else if (traders24h > 500 && tradesPerTrader < 0.1) {
-      // Beaucoup de "holders" mais quasi aucun trade → wallets bot-farmés
       flags.push(makeFlag("Bot-farmed holders: many accounts, near-zero activity", "warning", 0));
       trust *= 0.70; safeBlocked = true;
     }
@@ -826,11 +830,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       solscanTrades24h,
       solscanTraders24h,
       layers: layersSnapshot,
-      scoring_version: "4.9.1",
+      scoring_version: "4.9.2",
       fetchedAt: Date.now(),
     });
   } catch (e) {
-    console.error("[scan v4.9.1]", e);
+    console.error("[scan v4.9.2]", e);
     return res.status(500).json({ error: "Analysis error." });
   }
 }
