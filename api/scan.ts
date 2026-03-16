@@ -246,15 +246,31 @@ function layerDexScreener(
     trust *= 0.75;
   }
 
-  // v4.9.2 — Pump + age combiné : exit trap évident
+  // v4.9.3 — Pump + âge : forceRug uniquement si signal structurel présent
+  // Un vrai projet viral peut pumper fort sans être un rug (liq saine, sells normaux)
+  const hasStructuralWeakness =
+    (liq > 0 && vol / liq > 10) ||
+    (txns5m > 30 && sells5m === 0) ||
+    liq < 15000;
+
   if (ageMinutes < 30 && pc1 > 150) {
-    flags.push(makeFlag(`Pump +${Math.round(pc1)}% on <30min token — exit trap`, "critical", 0));
-    trust *= 0.05; forceRug = true; safeBlocked = true;
+    if (hasStructuralWeakness) {
+      flags.push(makeFlag(`Pump +${Math.round(pc1)}% on <30min token + structural weakness — exit trap`, "critical", 0));
+      trust *= 0.05; forceRug = true; safeBlocked = true;
+    } else {
+      flags.push(makeFlag(`Extreme pump +${Math.round(pc1)}% on newborn token (<30min)`, "warning", 0));
+      trust *= 0.30; safeBlocked = true;
+    }
   } else if (ageMinutes < 60 && pc1 > 120) {
-    flags.push(makeFlag(`Pump +${Math.round(pc1)}% on <1h token — exit trap`, "critical", 0));
-    trust *= 0.05; forceRug = true; safeBlocked = true;
+    if (hasStructuralWeakness) {
+      flags.push(makeFlag(`Pump +${Math.round(pc1)}% on <1h token + structural weakness — exit trap`, "critical", 0));
+      trust *= 0.05; forceRug = true; safeBlocked = true;
+    } else {
+      flags.push(makeFlag(`Pump +${Math.round(pc1)}% on newborn token (<1h)`, "warning", 0));
+      trust *= 0.40; safeBlocked = true;
+    }
   } else if (pc1 > 300) {
-    // v4.9.1 — Pump fallback (quand candles insuffisantes pour token récent)
+    // Pump extrême >300% sans condition d'âge → bundler exit quasi-certain
     flags.push(makeFlag(`Extreme pump +${Math.round(pc1)}% in 1h — bundler exit trap`, "critical", 0));
     trust *= 0.05; forceRug = true; safeBlocked = true;
   } else if (pc1 > 200 && ageMinutes < 120) {
@@ -265,7 +281,7 @@ function layerDexScreener(
     trust *= 0.65;
   }
 
-  // v4.9.1 — Slow rug: -50% sur 6h ET -15% sur 1h → liquidation progressive
+  // Slow rug: -50% sur 6h ET -15% sur 1h → liquidation progressive
   if (pc6 < -50 && pc1 < -15) {
     flags.push(makeFlag("Slow rug detected: -50% on 6h + -15% on 1h", "critical", 0));
     trust *= 0.15; forceRug = true; safeBlocked = true;
@@ -293,14 +309,12 @@ function layerRugCheck(rugData: any, rugReportData: any): LayerResult {
     forceRug: false, safeBlocked: false,
   };
 
-  // v4.9.1 — Bundle supply depuis /report (champ bundledSupply ou insiderSupply)
   const bundledSupply = asNumber(
     rugReportData?.bundledSupply ??
     rugReportData?.bundleHolders ??
     rugReportData?.insiderSupplyPct ??
     rugReportData?.insider_supply_pct
   );
-  //RugCheck retourne parfois une valeur 0-1, parfois 0-100
   const bundledPct = bundledSupply > 1 ? bundledSupply / 100 : bundledSupply;
   if (bundledPct > 0.40) {
     flags.push(makeFlag(`Bundle holds ${Math.round(bundledPct*100)}% of supply — coordinated buy`, "critical", 0));
@@ -464,14 +478,12 @@ function layerSolscan(
   }
 
   if (tokenAgeHours !== null) {
-    // v4.9.1 — token < 30min : risque extrême
     if (tokenAgeHours < 0.5)      { flags.push(makeFlag("Newborn token on-chain (<30min)",  "critical", 0)); trust *= 0.10; safeBlocked = true; }
     else if (tokenAgeHours < 1)   { flags.push(makeFlag("Newborn token on-chain (<1h)",    "critical", 0)); trust *= 0.20; safeBlocked = true; }
     else if (tokenAgeHours < 6)   { flags.push(makeFlag("Fresh token on-chain (<6h)",      "warning",  0)); trust *= 0.65; }
     else if (tokenAgeHours > 720) { flags.push(makeFlag("Established token (30d+) ✓",      "bonus",    0)); trust = Math.min(1.0, trust * 1.05); }
   }
 
-  // v4.9.1 — bot-farm detection: volume/trader ratio très bas avec beaucoup de traders
   if (trades24h !== null && traders24h !== null && traders24h > 0) {
     const tradesPerTrader = trades24h / traders24h;
     if (tradesPerTrader > 50 && traders24h < 20) {
@@ -830,11 +842,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       solscanTrades24h,
       solscanTraders24h,
       layers: layersSnapshot,
-      scoring_version: "4.9.2",
+      scoring_version: "4.9.3",
       fetchedAt: Date.now(),
     });
   } catch (e) {
-    console.error("[scan v4.9.2]", e);
+    console.error("[scan v4.9.3]", e);
     return res.status(500).json({ error: "Analysis error." });
   }
 }
