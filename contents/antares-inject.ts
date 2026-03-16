@@ -8,7 +8,7 @@ export const config: PlasmoCSConfig = {
 const API           = "https://antares-extension.vercel.app/api/scan"
 const ANALYSIS_PAGE = "https://antares-extension.vercel.app/token.html"
 const LS_PREFIX     = "antares_scan_"
-const CACHE_TTL     = 90_000
+const CACHE_TTL     = 20_000   // fix: was 90_000 — stale results were shown for up to 90s
 const POS_KEY       = "antares_popup_pos"
 
 const RISK_CLASS: Record<string, string> = {
@@ -344,8 +344,6 @@ function initDrag() {
   pendingX = posX; pendingY = posY
   host.style.transform = `translate(${posX}px,${posY}px)`
 
-  // pointerdown on the header → capture the pointer so ALL subsequent
-  // pointermove/pointerup fire on this element regardless of what's under cursor
   host.addEventListener("pointerdown", (e: PointerEvent) => {
     const target = e.composedPath()[0] as Element
     if (target?.closest?.(".x")) return
@@ -515,12 +513,14 @@ function buildResult(data: any, ca: string): string {
 async function scan(ca: string) {
   if (!ca) return
   const el = getBox()
-  if (ca === lastCA && el.style.display !== "none") return
+
+  // fix: was blocking rescan if box visible with same CA — now only blocks if cache is still fresh
+  const cached = getCached(ca)
+  if (ca === lastCA && cached && el.style.display !== "none") return
   if (manuallyDismissed && ca === lastCA) return
   if (scanInFlight) return
   if (ca !== lastCA) { manuallyDismissed = false; lastCA = ca }
 
-  const cached = getCached(ca)
   if (cached) {
     el.innerHTML = buildResult(cached, ca)
     showBox()
@@ -553,16 +553,20 @@ async function scan(ca: string) {
     })
     attachClose()
   } catch (_e) {
-    if (lastCA !== ca) { scanInFlight = false; return }
-    if (boxEl) boxEl.className = "box danger"
-    el.innerHTML = `
-      <div class="topbar"></div>
-      ${buildHeader()}
-      <div style="color:#ff5f5f;font-size:12px;padding:12px 14px;font-family:'IBM Plex Mono',monospace">API Error &mdash; retry later</div>
-    `
-    showBox(); attachClose()
+    // fix: always reset scanInFlight regardless of lastCA check
+    if (lastCA === ca) {
+      if (boxEl) boxEl.className = "box danger"
+      el.innerHTML = `
+        <div class="topbar"></div>
+        ${buildHeader()}
+        <div style="color:#ff5f5f;font-size:12px;padding:12px 14px;font-family:'IBM Plex Mono',monospace">API Error &mdash; retry later</div>
+      `
+      showBox(); attachClose()
+    }
+  } finally {
+    // fix: was only reset at end of try block — now guaranteed via finally
+    scanInFlight = false
   }
-  scanInFlight = false
 }
 
 // ── address detection ─────────────────────────────────────────────────────────
