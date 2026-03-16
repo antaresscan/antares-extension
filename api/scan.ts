@@ -19,11 +19,7 @@ const LP_PROGRAM_ADDRESSES = new Set([
   "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
   "LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo",
   "Eo7WjKq67rjJQSZxS6z3YkapzY3eMj6Xy8X5EkAW7vAB",
-  // PumpSwap AMM program
-  "pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA",
 ]);
-
-const PUMPSWAP_DEX_IDS = new Set(["pump", "pumpswap", "pump-fun"]);
 
 const FOUNDATION_WALLETS = new Set([
   "B9n3tgBJ8f1K2VXrF5aTBNXXmj5V8sKXrk3GV5uPump",
@@ -190,7 +186,7 @@ async function fetchSolscan(endpoint: string) {
   return fetchJson(`${SOLSCAN_BASE}${endpoint}`, { headers: { token: key } }, 5000);
 }
 
-// ─── GeckoTerminal candles ────────────────────────────────────────────────────
+// ─── P1 FIX — GeckoTerminal candles (remplace io.dexscreener.com bloqué Cloudflare) ───
 async function fetchDexCandles(
   pairAddress: string, _chainId = "solana"
 ): Promise<Array<{ o:number; h:number; l:number; c:number; v:number; ts:number }>> {
@@ -200,6 +196,7 @@ async function fetchDexCandles(
   }, 6000);
   const ohlcv = raw?.data?.attributes?.ohlcv_list;
   if (!Array.isArray(ohlcv) || ohlcv.length === 0) return [];
+  // Format GeckoTerminal: [timestamp, open, high, low, close, volume]
   return ohlcv.map((b: any) => ({
     ts: asNumber(b[0]),
     o:  asNumber(b[1]),
@@ -211,25 +208,19 @@ async function fetchDexCandles(
 }
 
 // ─── BUNDLE DETECTION HELPER ─────────────────────────────────────────────────
-// BUG-03 FIX: extraction du % bundle depuis le full report RugCheck
 function extractBundlePct(rugReportData: any): number {
   if (!rugReportData) return 0;
+  const top1 = asNumber(
+    rugReportData?.topHolders?.top1Percentage ??
+    rugReportData?.topHolders?.top1HolderPercentage
+  );
   if (Array.isArray(rugReportData?.risks)) {
     const bundleRisk = rugReportData.risks.find((r: any) =>
       /bundle/i.test(String(r?.name || ""))
     );
     if (bundleRisk) {
-      // Essaie d'extraire un % direct depuis le champ value/score
-      const rawVal = asNumber(bundleRisk.value ?? bundleRisk.pct ?? 0);
-      if (rawVal > 0 && rawVal <= 100) return rawVal / 100;
-      // Fallback: utilise top1 holder comme proxy du bundle
-      const top1 = asNumber(
-        rugReportData?.topHolders?.top1Percentage ??
-        rugReportData?.topHolders?.top1HolderPercentage
-      );
-      if (top1 > 0) return top1 / 100;
-      // Fallback score-based
       const scoreVal = asNumber(bundleRisk.score);
+      if (top1 > 0) return top1 / 100;
       if (scoreVal >= 8000) return 0.40;
       if (scoreVal >= 5000) return 0.25;
       return 0.20;
@@ -260,7 +251,6 @@ function layerDexScreener(
   const vol  = asNumber(pair?.volume?.h24);
   const pc24 = asNumber(pair?.priceChange?.h24);
   const pc1  = asNumber(pair?.priceChange?.h1);
-  // BUG-01 FIX: lecture de h6 pour slow rug
   const pc6  = asNumber(pair?.priceChange?.h6);
   const pc5  = asNumber(pair?.priceChange?.m5);
   const buys5m  = asNumber(pair?.txns?.m5?.buys);
@@ -278,7 +268,6 @@ function layerDexScreener(
   else if (liq < 5000)  { flags.push(makeFlag("Low liquidity (<$5k)",         "warning",  0)); trust *= 0.65; }
   else if (liq < 20000) { flags.push(makeFlag("Liquidity < $20k",             "info",     0)); trust *= 0.90; }
 
-  // BUG-17 FIX: vol/liq > 20 → forceRug
   if (liq > 0 && vol / liq > 20) {
     flags.push(makeFlag("Wash trading detected (vol/liq > 20) — bundler dump", "critical", 0));
     trust *= 0.20; forceRug = true; safeBlocked = true;
@@ -292,7 +281,6 @@ function layerDexScreener(
     (txns5m > 30 && sells5m === 0) ||
     liq < 15000;
 
-  // BUG-11/20 FIX: pump sur token jeune + faiblesse structurelle → forceRug
   if (ageMinutes < 30 && pc1 > 150) {
     if (hasStructuralWeakness) {
       flags.push(makeFlag(`Pump +${Math.round(pc1)}% on <30min token + structural weakness — exit trap`, "critical", 0));
@@ -320,7 +308,6 @@ function layerDexScreener(
     trust *= 0.65;
   }
 
-  // BUG-01 FIX: slow rug avec seuils corrects h6 < -50 && h1 < -15
   if (pc6 < -50 && pc1 < -15) {
     flags.push(makeFlag("Slow rug detected: -50% on 6h + -15% on 1h", "critical", 0));
     trust *= 0.15; forceRug = true; safeBlocked = true;
@@ -337,7 +324,7 @@ function layerDexScreener(
 // ═══════════════════════════════════════════════════════════════════════════════
 // LAYER 2 — RugCheck
 // ═══════════════════════════════════════════════════════════════════════════════
-function layerRugCheck(rugData: any, rugReportData: any, isPumpSwap: boolean): LayerResult {
+function layerRugCheck(rugData: any, rugReportData: any): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
   let forceRug = false, safeBlocked = false;
@@ -348,7 +335,6 @@ function layerRugCheck(rugData: any, rugReportData: any, isPumpSwap: boolean): L
     forceRug: false, safeBlocked: false,
   };
 
-  // BUG-02 + BUG-03 FIX: bundle avec seuils + forceRug si >20%
   const bundleInReport = riskIncludes(rugReportData, /bundle/i);
   const bundledPct = bundleInReport ? extractBundlePct(rugReportData) : 0;
 
@@ -368,7 +354,6 @@ function layerRugCheck(rugData: any, rugReportData: any, isPumpSwap: boolean): L
     trust *= 0.15; forceRug = true; safeBlocked = true;
   }
 
-  // BUG-05 FIX: LP faux positif PumpSwap — downgrade en info au lieu de warning
   if (rugData.lpBurned === true) {
     flags.push(makeFlag("LP Burned ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.10);
   } else if (rugData.lpLocked === true) {
@@ -376,13 +361,7 @@ function layerRugCheck(rugData: any, rugReportData: any, isPumpSwap: boolean): L
     if (days > 180) { flags.push(makeFlag("LP Locked > 180 days ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.05); }
     else if (days > 0 && days < 30) { flags.push(makeFlag("LP lock duration < 30 days", "warning", 0)); trust *= 0.75; }
   } else {
-    if (isPumpSwap) {
-      // PumpSwap: LP jamais brûlé selon RugCheck — faux positif connu, pénalité minimale
-      flags.push(makeFlag("LP not burned or locked (PumpSwap — expected)", "info", 0));
-      trust *= 0.97;
-    } else {
-      flags.push(makeFlag("LP not burned or locked", "warning", 0)); trust *= 0.70;
-    }
+    flags.push(makeFlag("LP not burned or locked", "warning", 0)); trust *= 0.70;
   }
 
   if (rugData.metaMutable === true) { flags.push(makeFlag("Metadata mutable", "warning", 0)); trust *= 0.82; }
@@ -426,13 +405,11 @@ function layerGoPlus(goplus: any): LayerResult {
   const authorityActive = (val: any) =>
     Boolean(val) && !["0","false","null",""].includes(String(val).trim().toLowerCase());
 
-  // Test 4: honeypot → forceRug immédiat
   if (gp("is_honeypot")) {
     flags.push(makeFlag("Honeypot detected — cannot sell", "critical", 0));
     trust = 0; forceRug = true;
     return { source: "goplus", trust: 0, available: true, flags, forceRug, safeBlocked };
   }
-  // Test 25: cannot_sell_all → forceRug
   if (gp("cannot_sell_all")) {
     flags.push(makeFlag("Cannot sell all tokens", "critical", 0));
     trust = 0; forceRug = true;
@@ -441,7 +418,6 @@ function layerGoPlus(goplus: any): LayerResult {
 
   const hasMint   = authorityActive(goplus.mint_authority);
   const hasFreeze = authorityActive(goplus.freeze_authority);
-  // Test 5: mint + freeze → forceRug
   if (hasMint && hasFreeze) {
     flags.push(makeFlag("Mint + Freeze authority both active", "critical", 0));
     trust *= 0.05; forceRug = true;
@@ -450,12 +426,10 @@ function layerGoPlus(goplus: any): LayerResult {
     if (hasFreeze) { flags.push(makeFlag("Freeze Authority enabled", "critical", 0)); trust *= 0.25; }
   }
 
-  // Test 26: blacklist → trust *0.30
   if (gp("is_blacklisted"))      { flags.push(makeFlag("Blacklist capability",         "critical", 0)); trust *= 0.30; }
   if (gp("transfer_pausable"))   { flags.push(makeFlag("Transfer pausable",            "critical", 0)); trust *= 0.30; }
   if (gp("hidden_owner"))        { flags.push(makeFlag("Hidden owner detected",        "critical", 0)); trust *= 0.30; }
   if (gp("is_proxy"))            { flags.push(makeFlag("Upgradeable/proxy contract",   "critical", 0)); trust *= 0.50; }
-  // Test 27: sell_tax > 10% → trust *0.35
   if (gpNum("sell_tax") > 0.1)   { flags.push(makeFlag("Sell tax > 10%",               "critical", 0)); trust *= 0.35; }
   if (gpNum("buy_tax")  > 0.1)   { flags.push(makeFlag("Buy tax > 10%",                "critical", 0)); trust *= 0.35; }
   if (gpNum("owner_percent")   > 0.05) { flags.push(makeFlag("Owner holds > 5%",   "critical", 0)); trust *= 0.50; }
@@ -495,13 +469,11 @@ function layerHelius(
   const top10Amount = accounts.slice(0, 10).reduce((s, h) => s + asNumber(h.uiAmount), 0);
   const top10Pct    = top10Amount / totalSupplyUi;
 
-  // Test 6: top1 >30% → forceRug
   if (top1Pct > 0.3)      { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "critical", 0)); trust *= 0.08; forceRug = true; }
-  // Test 28: top1 >20% → safeBlocked only
   else if (top1Pct > 0.2) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "critical", 0)); trust *= 0.25; safeBlocked = true; }
+  // P2 FIX — top1 > 10% bloque désormais le SAFE (safeBlocked=true) et pénalise plus fort (*0.50)
   else if (top1Pct > 0.1) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "warning",  0)); trust *= 0.50; safeBlocked = true; }
 
-  // Test 29: top10 >80% → safeBlocked
   if (top10Pct > 0.8)      { flags.push(makeFlag(`Top 10 wallets hold ${Math.round(top10Pct*100)}% of supply`, "critical", 0)); trust *= 0.35; safeBlocked = true; }
   else if (top10Pct > 0.6) { flags.push(makeFlag(`Top 10 wallets hold ${Math.round(top10Pct*100)}% of supply`, "warning",  0)); trust *= 0.55; safeBlocked = true; }
   else if (top10Pct < 0.3) { flags.push(makeFlag("Well distributed supply ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.05); }
@@ -529,14 +501,12 @@ function layerSolscan(
     forceRug: false, safeBlocked: false,
   };
 
-  // Test 30: holders <15 → safeBlocked
   if (holderCount !== null) {
     if (holderCount < 15)        { flags.push(makeFlag("Very few holders (<15)",     "critical", 0)); trust *= 0.20; safeBlocked = true; }
     else if (holderCount < 50)   { flags.push(makeFlag("Low holders (<50)",          "warning",  0)); trust *= 0.35; safeBlocked = true; }
     else if (holderCount > 5000) { flags.push(makeFlag("Strong holder base (5K+) ✓", "bonus",    0)); trust = Math.min(1.0, trust * 1.05); }
   }
 
-  // BUG-06 FIX: seuil 30min (0.5h) avec bon label
   if (tokenAgeHours !== null) {
     if (tokenAgeHours < 0.5)      { flags.push(makeFlag("Newborn token on-chain (<30min)",  "critical", 0)); trust *= 0.10; safeBlocked = true; }
     else if (tokenAgeHours < 1)   { flags.push(makeFlag("Newborn token on-chain (<1h)",    "critical", 0)); trust *= 0.20; safeBlocked = true; }
@@ -544,7 +514,6 @@ function layerSolscan(
     else if (tokenAgeHours > 720) { flags.push(makeFlag("Established token (30d+) ✓",      "bonus",    0)); trust = Math.min(1.0, trust * 1.05); }
   }
 
-  // Test 32: wash trading trades/traders ratio
   if (trades24h !== null && traders24h !== null && traders24h > 0) {
     const tradesPerTrader = trades24h / traders24h;
     if (tradesPerTrader > 50 && traders24h < 20) {
@@ -598,17 +567,14 @@ function layerChart(
   const v24Liq = liq > 0 ? vol24h / liq : 0;
   const v1hLiq = liq > 0 ? vol1h  / liq : 0;
 
-  // Test 33: crashcoin pattern
   if (greenRatio >= 0.82 && runUpPct >= 100 && pullbackRange <= 10) {
     flags.push(makeFlag("Crashcoin pattern: near-perfect parabolic chart", "critical", 0));
     trust *= 0.35; safeBlocked = true;
   }
-  // Test 34: vertical pump
   if (pc5m > 35 && pc1h > 120) {
     flags.push(makeFlag("Vertical pump detected (+35% 5m / +120% 1h)", "warning", 0));
     trust *= 0.55; safeBlocked = true;
   }
-  // Test 35: liquidity mirage v24Liq > 12
   if (v24Liq > 12 || v1hLiq > 4) {
     flags.push(makeFlag("Liquidity mirage: volume >> liquidity (wash)", "warning", 0));
     trust *= 0.60; safeBlocked = true;
@@ -617,7 +583,6 @@ function layerChart(
     flags.push(makeFlag("Over-controlled chart: artificial stair-step", "warning", 0));
     trust *= 0.65; safeBlocked = true;
   }
-  // Test 36: blow-off top drawdown < -55% → forceRug
   if (drawdownFromPeak < -55) {
     flags.push(makeFlag("Blow-off top: price collapsed >55% from peak", "critical", 0));
     trust *= 0.20; forceRug = true; safeBlocked = true;
@@ -630,12 +595,10 @@ function layerChart(
       trust *= 0.65; safeBlocked = true;
     }
   }
-  // Test 37: parabolic launch +300% greenRatio > 0.78
   if (_pct(first, last) > 300 && greenRatio > 0.78) {
     flags.push(makeFlag("Parabolic launch: high risk exit liquidity setup", "warning", 0));
     trust *= 0.60; safeBlocked = true;
   }
-  // Test 38: active dump pc24h < -60 && pc1h < -20 → forceRug
   if (pc24h < -60 && pc1h < -20) {
     flags.push(makeFlag("Active dump: -60% 24h + -20% 1h (slow rug)", "critical", 0));
     trust *= 0.25; forceRug = true; safeBlocked = true;
@@ -655,14 +618,12 @@ function layerIdentity(symbol?: string | null, name?: string | null, mint?: stri
   const sym = String(symbol || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
   const nm  = String(name   || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 
-  // Test 39: copycat suffix V2/OFFICIAL etc.
   const hasCopycatSuffix = COPYCAT_SUFFIXES.some(s => sym.endsWith(s) || nm.endsWith(s));
   if (hasCopycatSuffix) {
     flags.push(makeFlag("Copycat branding detected (v2/official/real suffix)", "critical", 0));
     trust *= 0.25; safeBlocked = true;
   }
 
-  // Test 40: brand imitation DOGE2/TRUMPINU etc.
   if (!mint || !OFFICIAL_MINTS.has(mint)) {
     for (const brand of KNOWN_BRANDS) {
       const symMatch = sym.startsWith(brand) || sym.endsWith(brand) || sym === brand;
@@ -689,12 +650,10 @@ function layerCrossValidation(
   const flags: ScanFlag[] = [];
   let forceRug = false, safeBlocked = false;
 
-  // Test 41: LP burn conflict RugCheck vs on-chain
   if (rugData?.lpBurned === true) {
     const lpStillActive = rawHolderAccounts.some(h => LP_PROGRAM_ADDRESSES.has(h.address));
     if (lpStillActive) flags.push(makeFlag("LP burn conflict: RugCheck vs on-chain data", "warning", 0));
   }
-  // Test 42: Mint authority conflict GoPlus vs RugCheck
   if (goplus && rugData) {
     const gpMint = goplus.mint_authority;
     const gpOff  = ["0","false","null",""].includes(String(gpMint).trim().toLowerCase());
@@ -796,12 +755,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const pairAddress = pair?.pairAddress ?? ca;
 
-    // BUG-05 FIX: détection PumpSwap via dexId ou program address
-    const isPumpSwap =
-      PUMPSWAP_DEX_IDS.has(String(pair?.dexId || "").toLowerCase()) ||
-      /pump/i.test(String(pair?.labels?.[0] || "")) ||
-      LP_PROGRAM_ADDRESSES.has(String(pair?.lpAddress || ""));
-
     const tokenAgeMinutes: number | null = pair?.pairCreatedAt
       ? (Date.now() - pair.pairCreatedAt) / 60000 : null;
 
@@ -833,12 +786,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const solscanCreatedTime: number | null = solMeta?.data?.created_time ?? null;
     const solscanTokenAgeHours: number | null =
       solscanCreatedTime !== null
-      ? (Date.now() / 1000 - solscanCreatedTime) / 3600
+      ? Math.floor((Date.now() / 1000 - solscanCreatedTime) / 3600)
       : pair?.pairCreatedAt
-      ? (Date.now() - pair.pairCreatedAt) / 3_600_000
+      ? Math.floor((Date.now() - pair.pairCreatedAt) / 3_600_000)
       : null;
     const dexTokenAgeHours: number | null = pair?.pairCreatedAt
-      ? (Date.now() - pair.pairCreatedAt) / 3_600_000
+      ? Math.floor((Date.now() - pair.pairCreatedAt) / 3_600_000)
       : null;
     const solscanVolume24h: number | null  = asNumber(solMarketPool?.volume)    || asNumber(pair?.volume?.h24) || null;
     const solscanTrades24h: number | null  = asNumber(solMarketPool?.trade)     || null;
@@ -871,7 +824,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const priceChange24h = pair?.priceChange?.h24 ?? null;
 
     const l1 = layerDexScreener(pair, marketCap, tokenAgeMinutes);
-    const l2 = layerRugCheck(rugData, rugReportRes, isPumpSwap);
+    const l2 = layerRugCheck(rugData, rugReportRes);
     const l3 = layerGoPlus(goplus);
     const l4 = layerHelius(rawHolderAccounts, totalSupplyUi);
     const l5 = layerSolscan(solscanHoldersCount, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h);
@@ -888,25 +841,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .filter(l => l.available && l.source !== "crossvalidation" && l.source !== "identity")
       .map(l => l.source);
 
-    // BUG-04 FIX: safeBlocked bloque SAFE à tous les niveaux de score
-    // BUG-07 FIX: confidence recalibré sur sources réellement disponibles
     let risk: "SAFE" | "CAUTION" | "DANGER" | "RUG";
-    if (forceRug)                       risk = "RUG";
-    else if (sources_used.length === 0) risk = "DANGER";
-    else if (safeBlocked)               risk = score >= 600 ? "CAUTION" : "DANGER";
-    else if (score >= 850)              risk = "SAFE";
-    else if (score >= 600)              risk = "CAUTION";
-    else if (score >= 350)              risk = "DANGER";
-    else                                risk = "RUG";
+    if (forceRug)                         risk = "RUG";
+    else if (sources_used.length === 0)   risk = "DANGER";
+    else if (safeBlocked && score >= 600) risk = "CAUTION";
+    else if (safeBlocked)                 risk = "DANGER";
+    // P3 FIX — seuil SAFE relevé à 850 (au lieu de 800)
+    else if (score >= 850)                risk = "SAFE";
+    else if (score >= 600)                risk = "CAUTION";
+    else if (score >= 350)                risk = "DANGER";
+    else                                  risk = "RUG";
 
     const flags: ScanFlag[] = allLayers.flatMap(l => l.flags);
     const severityOrder: Record<Severity, number> = { critical:0, warning:1, info:2, bonus:3 };
     flags.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
 
-    // BUG-07 FIX: dénominateur = sources max disponibles selon config
-    const maxSources = HELIUS_API_KEY ? 5 : 4;
-    const confidence = Math.round((sources_used.length / maxSources) * 100);
-
+    const confidence = Math.round((sources_used.length / 5) * 100);
     const layersSnapshot = Object.fromEntries(
       allLayers.map(l => [l.source, { trust: +l.trust.toFixed(3), available: l.available }])
     );
@@ -924,11 +874,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       solscanTrades24h,
       solscanTraders24h,
       layers: layersSnapshot,
-      scoring_version: "5.0.0",
+      scoring_version: "4.9.5",
       fetchedAt: Date.now(),
     });
   } catch (e) {
-    console.error("[scan v5.0.0]", e);
+    console.error("[scan v4.9.5]", e);
     return res.status(500).json({ error: "Analysis error." });
   }
 }
