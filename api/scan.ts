@@ -43,15 +43,13 @@ const KNOWN_BRANDS = [
 
 const COPYCAT_SUFFIXES = ["2","V2","V3","OFFICIAL","REAL","NEW","PLUS","INU"];
 
-// Poids de chaque layer dans le produit final (exposants)
 const LAYER_WEIGHTS = {
   dexscreener: 0.20,
   rugcheck:    0.20,
-  goplus:      0.25,  // honeypot = source la plus critique
+  goplus:      0.25,
   helius:      0.20,
   solscan:     0.10,
   chart:       0.05,
-  // identity & crossvalidation : flags directs, pas de trust product
 };
 
 // ─── RATE LIMIT ───────────────────────────────────────────────────────────────
@@ -79,7 +77,7 @@ type Severity   = "critical" | "warning" | "info" | "bonus";
 type ScanFlag   = { label: string; severity: Severity; impact: number };
 type LayerResult = {
   source:      string;
-  trust:       number;   // 0.0 → 1.0
+  trust:       number;
   available:   boolean;
   flags:       ScanFlag[];
   forceRug:    boolean;
@@ -91,13 +89,11 @@ function setHeaders(res: VercelResponse) {
   Object.entries(CORS).forEach(([k, v]) => res.setHeader(k, v));
   res.setHeader("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
 }
-
 function withTimeout(ms: number) {
   const controller = new AbortController();
   const t = setTimeout(() => controller.abort(), ms);
   return { signal: controller.signal, clear: () => clearTimeout(t) };
 }
-
 async function fetchJson(url: string, init: RequestInit = {}, ms = 5000) {
   const t = withTimeout(ms);
   try {
@@ -107,7 +103,6 @@ async function fetchJson(url: string, init: RequestInit = {}, ms = 5000) {
   } catch { return null; }
   finally { t.clear(); }
 }
-
 async function fetchJsonPost(url: string, body: object, ms = 5000) {
   const t = withTimeout(ms);
   try {
@@ -122,7 +117,6 @@ async function fetchJsonPost(url: string, body: object, ms = 5000) {
   } catch { return null; }
   finally { t.clear(); }
 }
-
 function isObject(v: unknown): v is Record<string, any> {
   return typeof v === "object" && v !== null;
 }
@@ -204,7 +198,7 @@ async function fetchDexCandles(
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// LAYER 1 — DexScreener : liquidité, volume, prix, socials, txns
+// LAYER 1 — DexScreener
 // ═══════════════════════════════════════════════════════════════════════════════
 function layerDexScreener(pair: any, marketCap: number | null): LayerResult {
   const flags: ScanFlag[] = [];
@@ -249,7 +243,7 @@ function layerDexScreener(pair: any, marketCap: number | null): LayerResult {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// LAYER 2 — RugCheck : LP, metadata, top holders%, risks[]
+// LAYER 2 — RugCheck
 // ═══════════════════════════════════════════════════════════════════════════════
 function layerRugCheck(rugData: any): LayerResult {
   const flags: ScanFlag[] = [];
@@ -262,7 +256,6 @@ function layerRugCheck(rugData: any): LayerResult {
     forceRug: false, safeBlocked: false,
   };
 
-  // LP
   if (rugData.lpBurned === true) {
     flags.push(makeFlag("LP Burned ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.10);
   } else if (rugData.lpLocked === true) {
@@ -273,24 +266,20 @@ function layerRugCheck(rugData: any): LayerResult {
     flags.push(makeFlag("LP not burned or locked", "warning", 0)); trust *= 0.75;
   }
 
-  // Metadata
   if (rugData.metaMutable === true) { flags.push(makeFlag("Metadata mutable", "warning", 0)); trust *= 0.85; }
   else if (rugData.metaMutable !== false) { flags.push(makeFlag("Metadata not immutable", "info", 0)); trust *= 0.96; }
 
-  // Top holders %
   const top10 = asNumber(rugData?.topHolders?.top10Percentage);
   const top1  = asNumber(rugData?.topHolders?.top1Percentage ?? rugData?.topHolders?.top1HolderPercentage);
   if (top10 > 70)      { flags.push(makeFlag("Top 10 holders > 70%", "critical", 0)); trust *= 0.55; }
   else if (top10 > 50) { flags.push(makeFlag("Top 10 holders > 50%", "warning",  0)); trust *= 0.80; }
   if (top1 > 20)       { flags.push(makeFlag("Top 1 holder > 20%",   "critical", 0)); trust *= 0.60; }
 
-  // risks[]
   if (riskIncludes(rugData, /sniper/i))                 { flags.push(makeFlag("Sniper activity detected",  "critical", 0)); trust *= 0.60; }
   if (riskIncludes(rugData, /bundler|bundle/i))          { flags.push(makeFlag("Bundler detected",           "critical", 0)); trust *= 0.55; }
   if (riskIncludes(rugData, /rug/i))                     { flags.push(makeFlag("Rug pull history",           "critical", 0)); trust *= 0.40; forceRug = true; }
   if (riskIncludes(rugData, /creator.*sell|dev.*sell/i)) { flags.push(makeFlag("Dev wallet sold tokens",    "warning",  0)); trust *= 0.80; }
 
-  // Mint/Freeze — RugCheck fallback (GoPlus est prioritaire, L3)
   if (rugData.mintAuthorityEnabled)   { flags.push(makeFlag("Mint Authority enabled (RugCheck)",   "critical", 0)); trust *= 0.40; }
   if (rugData.freezeAuthorityEnabled) { flags.push(makeFlag("Freeze Authority enabled (RugCheck)", "critical", 0)); trust *= 0.40; }
 
@@ -298,7 +287,7 @@ function layerRugCheck(rugData: any): LayerResult {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// LAYER 3 — GoPlus : honeypot, mint/freeze, taxes, blacklist (poids 0.25)
+// LAYER 3 — GoPlus
 // ═══════════════════════════════════════════════════════════════════════════════
 function layerGoPlus(goplus: any): LayerResult {
   const flags: ScanFlag[] = [];
@@ -319,7 +308,6 @@ function layerGoPlus(goplus: any): LayerResult {
   const authorityActive = (val: any) =>
     Boolean(val) && !["0","false","null",""].includes(String(val).trim().toLowerCase());
 
-  // Honeypot — trust = 0 immédiatement
   if (gp("is_honeypot")) {
     flags.push(makeFlag("Honeypot detected — cannot sell", "critical", 0));
     trust = 0; forceRug = true;
@@ -331,7 +319,6 @@ function layerGoPlus(goplus: any): LayerResult {
     return { source: "goplus", trust: 0, available: true, flags, forceRug, safeBlocked };
   }
 
-  // Mint + Freeze authority (GoPlus est source principale)
   const hasMint   = authorityActive(goplus.mint_authority);
   const hasFreeze = authorityActive(goplus.freeze_authority);
   if (hasMint && hasFreeze) {
@@ -360,7 +347,7 @@ function layerGoPlus(goplus: any): LayerResult {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// LAYER 4 — Helius : concentration wallets (LP + fondation filtrés)
+// LAYER 4 — Helius
 // ═══════════════════════════════════════════════════════════════════════════════
 function layerHelius(
   rawHolderAccounts: Array<{ address: string; uiAmount: number }>,
@@ -397,7 +384,7 @@ function layerHelius(
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// LAYER 5 — Solscan : âge on-chain, holder count, wash ratio
+// LAYER 5 — Solscan
 // ═══════════════════════════════════════════════════════════════════════════════
 function layerSolscan(
   holderCount: number | null,
@@ -417,15 +404,15 @@ function layerSolscan(
   };
 
   if (holderCount !== null) {
-    if (holderCount < 15)        { flags.push(makeFlag("Very few holders (<15)",   "critical", 0)); trust *= 0.30; safeBlocked = true; }
-    else if (holderCount < 50)   { flags.push(makeFlag("Low holders (<50)",        "warning",  0)); trust *= 0.70; safeBlocked = true; }
-    else if (holderCount > 5000) { flags.push(makeFlag("Strong holder base (5K+) ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.05); }
+    if (holderCount < 15)        { flags.push(makeFlag("Very few holders (<15)",    "critical", 0)); trust *= 0.30; safeBlocked = true; }
+    else if (holderCount < 50)   { flags.push(makeFlag("Low holders (<50)",         "warning",  0)); trust *= 0.70; safeBlocked = true; }
+    else if (holderCount > 5000) { flags.push(makeFlag("Strong holder base (5K+) ✓", "bonus",    0)); trust = Math.min(1.0, trust * 1.05); }
   }
 
   if (tokenAgeHours !== null) {
-    if (tokenAgeHours < 1)        { flags.push(makeFlag("Newborn token on-chain (<1h)",     "critical", 0)); trust *= 0.40; safeBlocked = true; }
-    else if (tokenAgeHours < 6)   { flags.push(makeFlag("Fresh token on-chain (<6h)",       "warning",  0)); trust *= 0.80; }
-    else if (tokenAgeHours > 720) { flags.push(makeFlag("Established token (30d+) ✓",       "bonus",    0)); trust = Math.min(1.0, trust * 1.05); }
+    if (tokenAgeHours < 1)        { flags.push(makeFlag("Newborn token on-chain (<1h)",   "critical", 0)); trust *= 0.40; safeBlocked = true; }
+    else if (tokenAgeHours < 6)   { flags.push(makeFlag("Fresh token on-chain (<6h)",     "warning",  0)); trust *= 0.80; }
+    else if (tokenAgeHours > 720) { flags.push(makeFlag("Established token (30d+) ✓",     "bonus",    0)); trust = Math.min(1.0, trust * 1.05); }
   }
 
   if (trades24h !== null && traders24h !== null && traders24h > 0) {
@@ -439,7 +426,7 @@ function layerSolscan(
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// LAYER 6 — Chart patterns (candles DexScreener)
+// LAYER 6 — Chart patterns
 // ═══════════════════════════════════════════════════════════════════════════════
 function layerChart(
   candles: Array<{ o:number; h:number; l:number; c:number; v:number; ts:number }>,
@@ -518,7 +505,7 @@ function layerChart(
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// LAYER 7 — Identity : brand imitation, copycat suffixes (interne)
+// LAYER 7 — Identity
 // ═══════════════════════════════════════════════════════════════════════════════
 function layerIdentity(symbol?: string | null, name?: string | null, mint?: string | null): LayerResult {
   const flags: ScanFlag[] = [];
@@ -548,7 +535,7 @@ function layerIdentity(symbol?: string | null, name?: string | null, mint?: stri
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// LAYER 8 — CrossValidation : conflits entre sources
+// LAYER 8 — CrossValidation
 // ═══════════════════════════════════════════════════════════════════════════════
 function layerCrossValidation(
   rugData: any,
@@ -560,36 +547,26 @@ function layerCrossValidation(
   const flags: ScanFlag[] = [];
   let forceRug = false, safeBlocked = false;
 
-  // Conflit LP : RugCheck dit burned mais un LP program wallet est encore actif
   if (rugData?.lpBurned === true) {
     const lpStillActive = rawHolderAccounts.some(h => LP_PROGRAM_ADDRESSES.has(h.address));
-    if (lpStillActive) {
-      flags.push(makeFlag("LP burn conflict: RugCheck vs on-chain data", "warning", 0));
-    }
+    if (lpStillActive) flags.push(makeFlag("LP burn conflict: RugCheck vs on-chain data", "warning", 0));
   }
-
-  // Conflit Mint : GoPlus dit désactivé mais RugCheck dit activé
   if (goplus && rugData) {
-    const gpMint  = goplus.mint_authority;
-    const gpOff   = ["0","false","null",""].includes(String(gpMint).trim().toLowerCase());
-    if (gpOff && rugData.mintAuthorityEnabled === true) {
+    const gpMint = goplus.mint_authority;
+    const gpOff  = ["0","false","null",""].includes(String(gpMint).trim().toLowerCase());
+    if (gpOff && rugData.mintAuthorityEnabled === true)
       flags.push(makeFlag("Mint authority conflict: GoPlus vs RugCheck", "warning", 0));
-    }
   }
-
-  // Conflit âge : Solscan et DexScreener divergent de > 72h
   if (solscanAgeHours !== null && dexAgeHours !== null) {
-    if (Math.abs(solscanAgeHours - dexAgeHours) > 72) {
+    if (Math.abs(solscanAgeHours - dexAgeHours) > 72)
       flags.push(makeFlag("Token age conflict between sources (>72h diff)", "info", 0));
-    }
   }
 
-  // trust = 1.0 toujours — layer cross-val ne vote pas dans le produit
   return { source: "crossvalidation", trust: 1.0, available: true, flags, forceRug, safeBlocked };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// SCORING FINAL — produit pondéré des trust scores
+// SCORING FINAL
 // ═══════════════════════════════════════════════════════════════════════════════
 function computeFinalScore(layers: LayerResult[]): number {
   const sources = ["dexscreener","rugcheck","goplus","helius","solscan","chart"] as const;
@@ -599,17 +576,18 @@ function computeFinalScore(layers: LayerResult[]): number {
   for (const src of sources) {
     const layer = layers.find(l => l.source === src);
     const w = LAYER_WEIGHTS[src];
-    if (!layer || !layer.available) continue; // source absente = exposant 0 = neutre
+    if (!layer || !layer.available) continue;
     product    *= Math.pow(Math.max(0.001, layer.trust), w);
     totalWeight += w;
   }
 
-  // Normalise si toutes les sources ne sont pas disponibles
-  if (totalWeight > 0 && totalWeight < 1.0) {
-    product = Math.pow(product, 1 / totalWeight);
-  }
+  // FIX v4.8.1 : 0 sources disponibles → score = 0 (cohérent avec risk DANGER)
+  if (totalWeight === 0) return 0;
 
-  // Identity + CrossVal : multiplicateurs directs (pas dans le produit pondéré)
+  // Normalise si sources partielles
+  if (totalWeight < 1.0) product = Math.pow(product, 1 / totalWeight);
+
+  // Identity : multiplicateur direct
   const identity = layers.find(l => l.source === "identity");
   if (identity?.available) product *= identity.trust;
 
@@ -637,7 +615,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const HELIUS_API_KEY = process.env.HELIUS_API_KEY || "";
 
   try {
-    // ── LAYER 0 : Résolution mint ─────────────────────────────────────────────
     const [dexRes, rugRes, rugReportRes] = await Promise.all([
       fetchJson(`${DEXSCREENER_BASE}/tokens/${ca}`),
       fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report/summary`),
@@ -655,9 +632,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       rugData?.message?.toLowerCase?.().includes("not found");
 
     if (!pair || !rugData || rugMissing) {
-      const pairData    = await fetchJson(`${DEXSCREENER_BASE}/pairs/solana/${ca}`);
+      const pairData     = await fetchJson(`${DEXSCREENER_BASE}/pairs/solana/${ca}`);
       const resolvedPair = pairData?.pairs?.[0] ?? pairData?.pair ?? null;
-      const baseMint    = resolvedPair?.baseToken?.address;
+      const baseMint     = resolvedPair?.baseToken?.address;
       if (resolvedPair) pair = pair ?? resolvedPair;
       if (baseMint && baseMint !== ca) {
         resolvedMint = baseMint;
@@ -671,7 +648,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (pair?.baseToken?.address) resolvedMint = pair.baseToken.address;
-
     if (dexData?.pairs?.length > 1) {
       pair = dexData.pairs.reduce((best: any, p: any) =>
         asNumber(p?.liquidity?.usd) > asNumber(best?.liquidity?.usd) ? p : best
@@ -680,7 +656,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const pairAddress = pair?.pairAddress ?? ca;
 
-    // ── Fetch toutes les sources en parallèle ─────────────────────────────────
     const [
       candlesRaw, goplusRaw,
       heliusHoldersRaw, heliusSupplyRaw,
@@ -703,7 +678,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       heliusHoldersRaw?.result?.value ?? [];
     const totalSupplyUi: number = asNumber(heliusSupplyRaw?.result?.value?.uiAmount);
 
-    // Données Solscan Pro
     const solMarketPool = Array.isArray(solMarkets?.data) && solMarkets.data.length > 0
       ? solMarkets.data.sort((a: any, b: any) => asNumber(b.liquidity) - asNumber(a.liquidity))[0]
       : null;
@@ -731,7 +705,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ? rugReportRes.totalHolders : null;
     const holders: number | null = solscanHoldersCount ?? rugTotalHolders ?? null;
 
-    // Données marché consolidées
     const priceUsd: number | null = (() => {
       const n = parseFloat(pair?.priceUsd);
       return Number.isFinite(n) && n > 0 ? n : null;
@@ -750,7 +723,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const tokenAgeMinutes: number | null = pair?.pairCreatedAt
       ? (Date.now() - pair.pairCreatedAt) / 60000 : null;
 
-    // ── Exécution des 8 layers ────────────────────────────────────────────────
     const l1 = layerDexScreener(pair, marketCap);
     const l2 = layerRugCheck(rugData);
     const l3 = layerGoPlus(goplus);
@@ -761,20 +733,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const l8 = layerCrossValidation(rugData, rawHolderAccounts, goplus, solscanTokenAgeHours, dexTokenAgeHours);
 
     const allLayers = [l1, l2, l3, l4, l5, l6, l7, l8];
-
-    // ── Score final (produit pondéré) ─────────────────────────────────────────
-    const score = computeFinalScore(allLayers);
-
-    // ── forceRug / safeBlocked agrégés ───────────────────────────────────────
+    const score       = computeFinalScore(allLayers);
     const forceRug    = allLayers.some(l => l.forceRug);
     const safeBlocked = allLayers.some(l => l.safeBlocked);
 
-    // ── sources_used ─────────────────────────────────────────────────────────
     const sources_used: string[] = allLayers
       .filter(l => l.available && l.source !== "crossvalidation" && l.source !== "identity")
       .map(l => l.source);
 
-    // ── Risque final ──────────────────────────────────────────────────────────
     let risk: "SAFE" | "CAUTION" | "DANGER" | "RUG";
     if (forceRug)                         risk = "RUG";
     else if (sources_used.length === 0)   risk = "DANGER";
@@ -784,14 +750,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     else if (score >= 350)                risk = "DANGER";
     else                                  risk = "RUG";
 
-    // ── Flags consolidés + triés ──────────────────────────────────────────────
     const flags: ScanFlag[] = allLayers.flatMap(l => l.flags);
     const severityOrder: Record<Severity, number> = { critical:0, warning:1, info:2, bonus:3 };
     flags.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
 
     const confidence = Math.round((sources_used.length / 5) * 100);
-
-    // ── layers snapshot pour debug ────────────────────────────────────────────
     const layersSnapshot = Object.fromEntries(
       allLayers.map(l => [l.source, { trust: +l.trust.toFixed(3), available: l.available }])
     );
@@ -809,11 +772,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       solscanTrades24h,
       solscanTraders24h,
       layers: layersSnapshot,
-      scoring_version: "4.8.0",
+      scoring_version: "4.8.1",
       fetchedAt: Date.now(),
     });
   } catch (e) {
-    console.error("[scan v4.8.0]", e);
+    console.error("[scan v4.8.1]", e);
     return res.status(500).json({ error: "Analysis error." });
   }
 }
