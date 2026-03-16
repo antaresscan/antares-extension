@@ -9,7 +9,6 @@ const API           = "https://antares-extension.vercel.app/api/scan"
 const ANALYSIS_PAGE = "https://antares-extension.vercel.app/token.html"
 const LS_PREFIX     = "antares_scan_"
 const CACHE_TTL     = 90_000
-const POS_KEY       = "antares_popup_pos"
 
 const RISK_CLASS: Record<string, string> = {
   SAFE:    "safe",
@@ -89,11 +88,6 @@ function isValid(addr: string): boolean {
   return true
 }
 
-// ── SVG icons ────────────────────────────────────────────────────────────────
-const SVG_MOVE = `<svg width="13" height="13" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 1L5.5 3h3L7 1Z" fill="currentColor"/><line x1="7" y1="2.5" x2="7" y2="6.5" stroke="currentColor" stroke-width=".9" stroke-linecap="round"/><path d="M7 13L5.5 11h3L7 13Z" fill="currentColor"/><line x1="7" y1="11.5" x2="7" y2="7.5" stroke="currentColor" stroke-width=".9" stroke-linecap="round"/><path d="M1 7L3 5.5V8.5L1 7Z" fill="currentColor"/><line x1="2.5" y1="7" x2="6.5" y2="7" stroke="currentColor" stroke-width=".9" stroke-linecap="round"/><path d="M13 7L11 5.5V8.5L13 7Z" fill="currentColor"/><line x1="11.5" y1="7" x2="7.5" y2="7" stroke="currentColor" stroke-width=".9" stroke-linecap="round"/></svg>`
-
-const SVG_CLOSE = `<svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="2" x2="11" y2="11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="11" y1="2" x2="2" y2="11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`
-
 // ── SHADOW CSS ──────────────────────────────────────────────────────────────
 const SHADOW_CSS = `
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -102,12 +96,11 @@ const SHADOW_CSS = `
   all: initial;
   display: block;
   position: fixed;
-  top: 0;
-  left: 0;
+  bottom: 20px;
+  right: 20px;
   z-index: 2147483647;
   font-family: 'IBM Plex Mono', monospace;
   pointer-events: none;
-  will-change: transform;
 }
 
 .box {
@@ -124,7 +117,6 @@ const SHADOW_CSS = `
   font-family: 'IBM Plex Mono', monospace;
   font-size: 12px;
   line-height: 1.4;
-  touch-action: none;
 }
 
 .box::before {
@@ -161,14 +153,6 @@ const SHADOW_CSS = `
   justify-content: space-between;
   align-items: center;
   padding: 10px 14px 0;
-  cursor: grab;
-  touch-action: none;
-}
-.hd:active { cursor: grabbing; }
-.hd-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
 }
 .brand {
   font-size: 7px;
@@ -177,29 +161,17 @@ const SHADOW_CSS = `
   text-transform: uppercase;
   font-family: 'IBM Plex Mono', monospace;
 }
-.drag-icon {
-  display: flex;
-  align-items: center;
-  color: #3a3a42;
-  transition: color .2s;
-  pointer-events: none;
-}
-.hd:hover .drag-icon { color: #777; }
 .x {
-  color: #3a3a42;
+  font-size: 13px;
+  color: #555;
   cursor: pointer;
-  transition: color .2s;
+  transition: color .15s;
+  line-height: 1;
   background: none;
   border: none;
-  width: 13px;
-  height: 13px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  flex-shrink: 0;
+  font-family: 'IBM Plex Mono', monospace;
 }
-.x:hover { color: #777; }
+.x:hover { color: #aaa; }
 
 .tk {
   padding: 0 14px;
@@ -300,7 +272,8 @@ const SHADOW_CSS = `
 .dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:#444; animation:ant-pulse 1.2s infinite; }
 `
 
-// ── State ───────────────────────────────────────────────────────────────────
+// ── Shadow DOM ───────────────────────────────────────────────────────────────
+
 let host: HTMLElement | null = null
 let shadow: ShadowRoot | null = null
 let boxEl: HTMLDivElement | null = null
@@ -308,80 +281,6 @@ let hideTimeout: ReturnType<typeof setTimeout> | null = null
 let lastCA            = ""
 let manuallyDismissed = false
 let scanInFlight      = false
-
-// ── Drag ────────────────────────────────────────────────────────────────────────
-let dragOX = 0, dragOY = 0
-let posX = 0, posY = 0
-let pendingX = 0, pendingY = 0
-let rafId: number | null = null
-let activePointerId: number | null = null
-
-function commitPos() {
-  rafId = null
-  if (!host) return
-  posX = pendingX
-  posY = pendingY
-  host.style.transform = `translate(${posX}px,${posY}px)`
-}
-
-function initDrag() {
-  if (!host) return
-
-  // Restore or default position
-  try {
-    const saved = localStorage.getItem(POS_KEY)
-    if (saved) {
-      const p = JSON.parse(saved)
-      posX = p.x; posY = p.y
-    } else {
-      posX = window.innerWidth  - 310
-      posY = window.innerHeight - 400
-    }
-  } catch (_) {
-    posX = window.innerWidth  - 310
-    posY = window.innerHeight - 400
-  }
-  pendingX = posX; pendingY = posY
-  host.style.transform = `translate(${posX}px,${posY}px)`
-
-  // pointerdown on the header → capture the pointer so ALL subsequent
-  // pointermove/pointerup fire on this element regardless of what's under cursor
-  host.addEventListener("pointerdown", (e: PointerEvent) => {
-    const target = e.composedPath()[0] as Element
-    if (target?.closest?.(".x")) return
-    if (!target?.closest?.(".hd")) return
-    const hdEl = (e.currentTarget as HTMLElement)
-    try { hdEl.setPointerCapture(e.pointerId) } catch (_) {}
-    activePointerId = e.pointerId
-    const r = host!.getBoundingClientRect()
-    dragOX = e.clientX - r.left
-    dragOY = e.clientY - r.top
-    document.documentElement.style.userSelect = "none"
-    e.preventDefault()
-  })
-
-  host.addEventListener("pointermove", (e: PointerEvent) => {
-    if (activePointerId === null || e.pointerId !== activePointerId || !host) return
-    let nx = e.clientX - dragOX
-    let ny = e.clientY - dragOY
-    nx = Math.max(0, Math.min(window.innerWidth  - host.offsetWidth,  nx))
-    ny = Math.max(0, Math.min(window.innerHeight - host.offsetHeight, ny))
-    pendingX = nx; pendingY = ny
-    if (!rafId) rafId = requestAnimationFrame(commitPos)
-  }, { passive: true })
-
-  host.addEventListener("pointerup", (e: PointerEvent) => {
-    if (e.pointerId !== activePointerId) return
-    activePointerId = null
-    document.documentElement.style.userSelect = ""
-    try { localStorage.setItem(POS_KEY, JSON.stringify({ x: posX, y: posY })) } catch (_) {}
-  })
-
-  host.addEventListener("pointercancel", () => {
-    activePointerId = null
-    document.documentElement.style.userSelect = ""
-  })
-}
 
 function createHost() {
   injectFonts()
@@ -396,7 +295,6 @@ function createHost() {
   boxEl = document.createElement("div")
   boxEl.className = "box"
   shadow.appendChild(boxEl)
-  initDrag()
 }
 
 new MutationObserver(() => {
@@ -434,10 +332,6 @@ function attachClose() {
 }
 
 // ── HTML builders ─────────────────────────────────────────────────────────────
-function buildHeader(): string {
-  return `<div class="hd"><span class="brand">ANTARES</span><div class="hd-right"><span class="drag-icon">${SVG_MOVE}</span><button class="x" id="ant-close">${SVG_CLOSE}</button></div></div>`
-}
-
 function buildResult(data: any, ca: string): string {
   const riskClass = RISK_CLASS[data.risk] || "danger"
   const label     = LABELS[data.risk] || data.risk
@@ -497,7 +391,7 @@ function buildResult(data: any, ca: string): string {
 
   return `
     <div class="topbar"></div>
-    ${buildHeader()}
+    <div class="hd"><span class="brand">ANTARES</span><button class="x" id="ant-close">&times;</button></div>
     ${tokenSymbol ? `<div class="tk"><b>${tokenSymbol}</b> ${tokenName}</div>` : ""}
     <div class="vb"><h1>${label}</h1></div>
     <div class="sr"><span class="n"><b>${score}</b> / 1000</span><div class="dots">${dots}</div></div>
@@ -534,7 +428,7 @@ async function scan(ca: string) {
   if (boxEl) boxEl.className = "box"
   el.innerHTML = `
     <div class="topbar" style="background:linear-gradient(90deg,transparent,#3a3a3f,transparent)"></div>
-    ${buildHeader()}
+    <div class="hd"><span class="brand">ANTARES</span><button class="x" id="ant-close">&times;</button></div>
     <div class="scanning"><span class="dot"></span>Scanning&hellip;</div>
   `
   showBox(); attachClose()
@@ -557,7 +451,7 @@ async function scan(ca: string) {
     if (boxEl) boxEl.className = "box danger"
     el.innerHTML = `
       <div class="topbar"></div>
-      ${buildHeader()}
+      <div class="hd"><span class="brand">ANTARES</span><button class="x" id="ant-close">&times;</button></div>
       <div style="color:#ff5f5f;font-size:12px;padding:12px 14px;font-family:'IBM Plex Mono',monospace">API Error &mdash; retry later</div>
     `
     showBox(); attachClose()
