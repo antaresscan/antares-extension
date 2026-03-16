@@ -311,8 +311,30 @@ let scanInFlight      = false
 let isDragging = false
 let dragOX = 0, dragOY = 0
 
+const onMouseMove = (e: MouseEvent) => {
+  if (!isDragging || !host) return
+  let x = e.clientX - dragOX
+  let y = e.clientY - dragOY
+  x = Math.max(0, Math.min(window.innerWidth  - host.offsetWidth,  x))
+  y = Math.max(0, Math.min(window.innerHeight - host.offsetHeight, y))
+  host.style.left = x + "px"
+  host.style.top  = y + "px"
+}
+
+const onMouseUp = () => {
+  if (!isDragging || !host) return
+  isDragging = false
+  document.documentElement.style.userSelect = ""
+  host.style.willChange = ""
+  try {
+    localStorage.setItem(POS_KEY, JSON.stringify({ x: host.style.left, y: host.style.top }))
+  } catch (_) {}
+}
+
 function initDrag() {
   if (!host) return
+
+  // Restore saved position
   try {
     const saved = localStorage.getItem(POS_KEY)
     if (saved) {
@@ -335,28 +357,14 @@ function initDrag() {
     host!.style.transition = "none"
     host!.style.right  = "auto"
     host!.style.bottom = "auto"
+    host!.style.willChange = "left, top"
+    document.documentElement.style.userSelect = "none"
     e.preventDefault()
   })
 
-  document.addEventListener("mousemove", (e: MouseEvent) => {
-    if (!isDragging || !host) return
-    let x = e.clientX - dragOX
-    let y = e.clientY - dragOY
-    const pw = host.offsetWidth
-    const ph = host.offsetHeight
-    x = Math.max(0, Math.min(window.innerWidth  - pw, x))
-    y = Math.max(0, Math.min(window.innerHeight - ph, y))
-    host.style.left = x + "px"
-    host.style.top  = y + "px"
-  })
-
-  document.addEventListener("mouseup", () => {
-    if (!isDragging || !host) return
-    isDragging = false
-    try {
-      localStorage.setItem(POS_KEY, JSON.stringify({ x: host.style.left, y: host.style.top }))
-    } catch (_) {}
-  })
+  // Use window + capture so events never get lost even when cursor leaves the element fast
+  window.addEventListener("mousemove", onMouseMove, { capture: true, passive: true })
+  window.addEventListener("mouseup",   onMouseUp,   { capture: true })
 }
 
 function createHost() {
