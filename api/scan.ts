@@ -200,7 +200,11 @@ async function fetchDexCandles(
 // ═══════════════════════════════════════════════════════════════════════════════
 // LAYER 1 — DexScreener
 // ═══════════════════════════════════════════════════════════════════════════════
-function layerDexScreener(pair: any, marketCap: number | null): LayerResult {
+function layerDexScreener(
+  pair: any,
+  marketCap: number | null,
+  tokenAgeMinutes: number | null
+): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
   let forceRug = false, safeBlocked = false;
@@ -215,6 +219,7 @@ function layerDexScreener(pair: any, marketCap: number | null): LayerResult {
   const vol  = asNumber(pair?.volume?.h24);
   const pc24 = asNumber(pair?.priceChange?.h24);
   const pc1  = asNumber(pair?.priceChange?.h1);
+  const pc6  = asNumber(pair?.priceChange?.h6);
   const pc5  = asNumber(pair?.priceChange?.m5);
   const buys5m  = asNumber(pair?.txns?.m5?.buys);
   const sells5m = asNumber(pair?.txns?.m5?.sells);
@@ -225,26 +230,46 @@ function layerDexScreener(pair: any, marketCap: number | null): LayerResult {
   const hasTwitter  = Array.isArray(socials)  && socials.some((s: any)  => /twitter|x/i.test(String(s?.type || s?.url || "")));
   const hasTelegram = Array.isArray(socials)  && socials.some((s: any)  => /telegram/i.test(String(s?.type || s?.url || "")));
   const hasWebsite  = Array.isArray(websites) && websites.length > 0;
+  const ageMinutes  = tokenAgeMinutes ?? Infinity;
 
-  // v4.9.0 — liquidité
+  // Liquidité
   if (liq < 1000)       { flags.push(makeFlag("Very low liquidity (<$1k)",   "critical", 0)); trust *= 0.25; }
   else if (liq < 5000)  { flags.push(makeFlag("Low liquidity (<$5k)",         "warning",  0)); trust *= 0.65; }
   else if (liq < 20000) { flags.push(makeFlag("Liquidity < $20k",             "info",     0)); trust *= 0.90; }
 
-  // v4.8.2 wash trading + v4.9.0 ratio vol/liq
+  // Wash trading
   if (liq > 0 && vol / liq > 20) {
     flags.push(makeFlag("Wash trading suspected (vol/liq > 20)", "critical", 0));
     trust *= 0.20; safeBlocked = true;
   } else if (liq > 0 && vol / liq > 5) {
     flags.push(makeFlag("High vol/liquidity ratio", "warning", 0));
-    trust *= 0.75; // 0.80 → 0.75
+    trust *= 0.75;
   }
 
-  if (!hasWebsite && !hasTwitter && !hasTelegram) { flags.push(makeFlag("No website / Twitter / Telegram", "warning", 0)); trust *= 0.80; } // 0.85→0.80
+  // v4.9.1 — Pump fallback (quand candles insuffisantes pour token récent)
+  // Pump extrême >300% en 1h → rug trap évident
+  if (pc1 > 300) {
+    flags.push(makeFlag(`Extreme pump +${Math.round(pc1)}% in 1h — bundler exit trap`, "critical", 0));
+    trust *= 0.05; forceRug = true; safeBlocked = true;
+  } else if (pc1 > 200 && ageMinutes < 120) {
+    // Pump >200% sur token < 2h → quasi-certain rug
+    flags.push(makeFlag(`Pump +${Math.round(pc1)}% on newborn token (<2h) — exit trap`, "critical", 0));
+    trust *= 0.10; forceRug = true; safeBlocked = true;
+  } else if (pc1 > 200 && pc5 > 50) {
+    flags.push(makeFlag("Coordinated pump pattern", "warning", 0));
+    trust *= 0.65;
+  }
+
+  // v4.9.1 — Slow rug: -50% sur 6h ET -15% sur 1h → liquidation progressive
+  if (pc6 < -50 && pc1 < -15) {
+    flags.push(makeFlag("Slow rug detected: -50% on 6h + -15% on 1h", "critical", 0));
+    trust *= 0.15; forceRug = true; safeBlocked = true;
+  }
+
+  if (!hasWebsite && !hasTwitter && !hasTelegram) { flags.push(makeFlag("No website / Twitter / Telegram", "warning", 0)); trust *= 0.80; }
   if (txns5m < 5 && mc > 50000) { flags.push(makeFlag("Low 5m transactions vs market cap", "warning", 0)); trust *= 0.88; }
   if (sells5m > 0 && buys5m > sells5m * 5) { flags.push(makeFlag("Buy/sell imbalance (coordinated pump)", "warning", 0)); trust *= 0.85; }
-  if (pc1 > 200 && pc5 > 50) { flags.push(makeFlag("Coordinated pump pattern", "warning", 0)); trust *= 0.65; }   // 0.75→0.65
-  if (pc24 < -80) { flags.push(makeFlag("Brutal dump 24h (-80%)", "critical", 0)); trust *= 0.35; }                // 0.40→0.35
+  if (pc24 < -80) { flags.push(makeFlag("Brutal dump 24h (-80%)", "critical", 0)); trust *= 0.35; }
 
   return { source: "dexscreener", trust: Math.max(0, trust), available: true, flags, forceRug, safeBlocked };
 }
@@ -252,7 +277,7 @@ function layerDexScreener(pair: any, marketCap: number | null): LayerResult {
 // ═══════════════════════════════════════════════════════════════════════════════
 // LAYER 2 — RugCheck
 // ═══════════════════════════════════════════════════════════════════════════════
-function layerRugCheck(rugData: any): LayerResult {
+function layerRugCheck(rugData: any, rugReportData: any): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
   let forceRug = false, safeBlocked = false;
@@ -263,34 +288,49 @@ function layerRugCheck(rugData: any): LayerResult {
     forceRug: false, safeBlocked: false,
   };
 
+  // v4.9.1 — Bundle supply depuis /report (champ bundledSupply ou insiderSupply)
+  const bundledSupply = asNumber(
+    rugReportData?.bundledSupply ??
+    rugReportData?.bundleHolders ??
+    rugReportData?.insiderSupplyPct ??
+    rugReportData?.insider_supply_pct
+  );
+  //RugCheck retourne parfois une valeur 0-1, parfois 0-100
+  const bundledPct = bundledSupply > 1 ? bundledSupply / 100 : bundledSupply;
+  if (bundledPct > 0.40) {
+    flags.push(makeFlag(`Bundle holds ${Math.round(bundledPct*100)}% of supply — coordinated buy`, "critical", 0));
+    trust *= 0.05; forceRug = true;
+  } else if (bundledPct > 0.20) {
+    flags.push(makeFlag(`Bundle holds ${Math.round(bundledPct*100)}% of supply`, "critical", 0));
+    trust *= 0.25; safeBlocked = true;
+  }
+
   if (rugData.lpBurned === true) {
     flags.push(makeFlag("LP Burned ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.10);
   } else if (rugData.lpLocked === true) {
     const days = getLpLockDurationDays(rugData);
     if (days > 180) { flags.push(makeFlag("LP Locked > 180 days ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.05); }
-    else if (days > 0 && days < 30) { flags.push(makeFlag("LP lock duration < 30 days", "warning", 0)); trust *= 0.75; } // 0.80→0.75
+    else if (days > 0 && days < 30) { flags.push(makeFlag("LP lock duration < 30 days", "warning", 0)); trust *= 0.75; }
   } else {
-    flags.push(makeFlag("LP not burned or locked", "warning", 0)); trust *= 0.70; // 0.75→0.70
+    flags.push(makeFlag("LP not burned or locked", "warning", 0)); trust *= 0.70;
   }
 
-  if (rugData.metaMutable === true) { flags.push(makeFlag("Metadata mutable", "warning", 0)); trust *= 0.82; }       // 0.85→0.82
+  if (rugData.metaMutable === true) { flags.push(makeFlag("Metadata mutable", "warning", 0)); trust *= 0.82; }
   else if (rugData.metaMutable !== false) { flags.push(makeFlag("Metadata not immutable", "info", 0)); trust *= 0.96; }
 
   const top10 = asNumber(rugData?.topHolders?.top10Percentage);
   const top1  = asNumber(rugData?.topHolders?.top1Percentage ?? rugData?.topHolders?.top1HolderPercentage);
-  if (top10 > 70)      { flags.push(makeFlag("Top 10 holders > 70%", "critical", 0)); trust *= 0.45; }  // 0.55→0.45
-  else if (top10 > 50) { flags.push(makeFlag("Top 10 holders > 50%", "warning",  0)); trust *= 0.70; }  // 0.80→0.70
-  if (top1 > 20)       { flags.push(makeFlag("Top 1 holder > 20%",   "critical", 0)); trust *= 0.45; }  // 0.60→0.45
+  if (top10 > 70)      { flags.push(makeFlag("Top 10 holders > 70%", "critical", 0)); trust *= 0.45; }
+  else if (top10 > 50) { flags.push(makeFlag("Top 10 holders > 50%", "warning",  0)); trust *= 0.70; }
+  if (top1 > 20)       { flags.push(makeFlag("Top 1 holder > 20%",   "critical", 0)); trust *= 0.45; }
 
-  // v4.9.0 — Sniper + Bundler : trust*=0.15 + safeBlocked (jamais SAFE, mais pas forceRug si seul)
   if (riskIncludes(rugData, /sniper/i))                 { flags.push(makeFlag("Sniper activity detected",  "critical", 0)); trust *= 0.15; safeBlocked = true; }
   if (riskIncludes(rugData, /bundler|bundle/i))          { flags.push(makeFlag("Bundler detected",           "critical", 0)); trust *= 0.15; safeBlocked = true; }
-  // v4.9.0 — Rug pull history → forceRug direct
   if (riskIncludes(rugData, /rug/i))                     { flags.push(makeFlag("Rug pull history",           "critical", 0)); trust *= 0.15; forceRug = true; }
-  if (riskIncludes(rugData, /creator.*sell|dev.*sell/i)) { flags.push(makeFlag("Dev wallet sold tokens",    "warning",  0)); trust *= 0.65; }  // 0.80→0.65
+  if (riskIncludes(rugData, /creator.*sell|dev.*sell/i)) { flags.push(makeFlag("Dev wallet sold tokens",    "warning",  0)); trust *= 0.65; }
 
-  if (rugData.mintAuthorityEnabled)   { flags.push(makeFlag("Mint Authority enabled (RugCheck)",   "critical", 0)); trust *= 0.25; }  // 0.40→0.25
-  if (rugData.freezeAuthorityEnabled) { flags.push(makeFlag("Freeze Authority enabled (RugCheck)", "critical", 0)); trust *= 0.25; }  // 0.40→0.25
+  if (rugData.mintAuthorityEnabled)   { flags.push(makeFlag("Mint Authority enabled (RugCheck)",   "critical", 0)); trust *= 0.25; }
+  if (rugData.freezeAuthorityEnabled) { flags.push(makeFlag("Freeze Authority enabled (RugCheck)", "critical", 0)); trust *= 0.25; }
 
   return { source: "rugcheck", trust: Math.max(0, trust), available: true, flags, forceRug, safeBlocked };
 }
@@ -334,19 +374,19 @@ function layerGoPlus(goplus: any): LayerResult {
     flags.push(makeFlag("Mint + Freeze authority both active", "critical", 0));
     trust *= 0.05; forceRug = true;
   } else {
-    if (hasMint)   { flags.push(makeFlag("Mint Authority enabled",   "critical", 0)); trust *= 0.25; }   // 0.30→0.25
-    if (hasFreeze) { flags.push(makeFlag("Freeze Authority enabled", "critical", 0)); trust *= 0.25; }   // 0.30→0.25
+    if (hasMint)   { flags.push(makeFlag("Mint Authority enabled",   "critical", 0)); trust *= 0.25; }
+    if (hasFreeze) { flags.push(makeFlag("Freeze Authority enabled", "critical", 0)); trust *= 0.25; }
   }
 
-  if (gp("is_blacklisted"))      { flags.push(makeFlag("Blacklist capability",         "critical", 0)); trust *= 0.30; }  // 0.40→0.30
-  if (gp("transfer_pausable"))   { flags.push(makeFlag("Transfer pausable",            "critical", 0)); trust *= 0.30; }  // 0.40→0.30
-  if (gp("hidden_owner"))        { flags.push(makeFlag("Hidden owner detected",        "critical", 0)); trust *= 0.30; }  // 0.40→0.30
+  if (gp("is_blacklisted"))      { flags.push(makeFlag("Blacklist capability",         "critical", 0)); trust *= 0.30; }
+  if (gp("transfer_pausable"))   { flags.push(makeFlag("Transfer pausable",            "critical", 0)); trust *= 0.30; }
+  if (gp("hidden_owner"))        { flags.push(makeFlag("Hidden owner detected",        "critical", 0)); trust *= 0.30; }
   if (gp("is_proxy"))            { flags.push(makeFlag("Upgradeable/proxy contract",   "critical", 0)); trust *= 0.50; }
-  if (gpNum("sell_tax") > 0.1)   { flags.push(makeFlag("Sell tax > 10%",               "critical", 0)); trust *= 0.35; }  // 0.45→0.35
-  if (gpNum("buy_tax")  > 0.1)   { flags.push(makeFlag("Buy tax > 10%",                "critical", 0)); trust *= 0.35; }  // 0.45→0.35
-  if (gpNum("owner_percent")   > 0.05) { flags.push(makeFlag("Owner holds > 5%",   "critical", 0)); trust *= 0.50; }     // 0.60→0.50
-  if (gpNum("creator_percent") > 0.05) { flags.push(makeFlag("Creator holds > 5%", "critical", 0)); trust *= 0.50; }     // 0.60→0.50
-  if (gp("is_mintable"))              { flags.push(makeFlag("Token is mintable",             "warning", 0)); trust *= 0.60; }  // 0.70→0.60
+  if (gpNum("sell_tax") > 0.1)   { flags.push(makeFlag("Sell tax > 10%",               "critical", 0)); trust *= 0.35; }
+  if (gpNum("buy_tax")  > 0.1)   { flags.push(makeFlag("Buy tax > 10%",                "critical", 0)); trust *= 0.35; }
+  if (gpNum("owner_percent")   > 0.05) { flags.push(makeFlag("Owner holds > 5%",   "critical", 0)); trust *= 0.50; }
+  if (gpNum("creator_percent") > 0.05) { flags.push(makeFlag("Creator holds > 5%", "critical", 0)); trust *= 0.50; }
+  if (gp("is_mintable"))              { flags.push(makeFlag("Token is mintable",             "warning", 0)); trust *= 0.60; }
   if (gp("slippage_modifiable"))      { flags.push(makeFlag("Slippage/tax modifiable",       "warning", 0)); trust *= 0.75; }
   if (gp("is_anti_whale_modifiable")) { flags.push(makeFlag("Anti-whale rules modifiable",   "warning", 0)); trust *= 0.80; }
   if (gp("trading_cooldown"))         { flags.push(makeFlag("Trading cooldown enabled",      "warning", 0)); trust *= 0.80; }
@@ -381,13 +421,12 @@ function layerHelius(
   const top10Amount = accounts.slice(0, 10).reduce((s, h) => s + asNumber(h.uiAmount), 0);
   const top10Pct    = top10Amount / totalSupplyUi;
 
-  // v4.9.0 — concentrations de wallets
-  if (top1Pct > 0.3)      { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "critical", 0)); trust *= 0.08; forceRug = true; }   // 0.10→0.08
-  else if (top1Pct > 0.2) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "critical", 0)); trust *= 0.25; safeBlocked = true; } // 0.35→0.25+sb
-  else if (top1Pct > 0.1) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "warning",  0)); trust *= 0.65; }                    // 0.75→0.65
+  if (top1Pct > 0.3)      { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "critical", 0)); trust *= 0.08; forceRug = true; }
+  else if (top1Pct > 0.2) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "critical", 0)); trust *= 0.25; safeBlocked = true; }
+  else if (top1Pct > 0.1) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "warning",  0)); trust *= 0.65; }
 
-  if (top10Pct > 0.8)      { flags.push(makeFlag(`Top 10 wallets hold ${Math.round(top10Pct*100)}% of supply`, "critical", 0)); trust *= 0.35; safeBlocked = true; } // 0.45→0.35+sb
-  else if (top10Pct > 0.6) { flags.push(makeFlag(`Top 10 wallets hold ${Math.round(top10Pct*100)}% of supply`, "warning",  0)); trust *= 0.55; safeBlocked = true; } // 0.75→0.55+sb
+  if (top10Pct > 0.8)      { flags.push(makeFlag(`Top 10 wallets hold ${Math.round(top10Pct*100)}% of supply`, "critical", 0)); trust *= 0.35; safeBlocked = true; }
+  else if (top10Pct > 0.6) { flags.push(makeFlag(`Top 10 wallets hold ${Math.round(top10Pct*100)}% of supply`, "warning",  0)); trust *= 0.55; safeBlocked = true; }
   else if (top10Pct < 0.3) { flags.push(makeFlag("Well distributed supply ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.05); }
 
   return { source: "helius", trust: Math.max(0, trust), available: true, flags, forceRug, safeBlocked };
@@ -414,21 +453,29 @@ function layerSolscan(
   };
 
   if (holderCount !== null) {
-    if (holderCount < 15)        { flags.push(makeFlag("Very few holders (<15)",    "critical", 0)); trust *= 0.20; safeBlocked = true; }  // 0.30→0.20
-    else if (holderCount < 50)   { flags.push(makeFlag("Low holders (<50)",         "warning",  0)); trust *= 0.35; safeBlocked = true; }  // 0.70→0.35
+    if (holderCount < 15)        { flags.push(makeFlag("Very few holders (<15)",     "critical", 0)); trust *= 0.20; safeBlocked = true; }
+    else if (holderCount < 50)   { flags.push(makeFlag("Low holders (<50)",          "warning",  0)); trust *= 0.35; safeBlocked = true; }
     else if (holderCount > 5000) { flags.push(makeFlag("Strong holder base (5K+) ✓", "bonus",    0)); trust = Math.min(1.0, trust * 1.05); }
   }
 
   if (tokenAgeHours !== null) {
-    if (tokenAgeHours < 1)        { flags.push(makeFlag("Newborn token on-chain (<1h)",   "critical", 0)); trust *= 0.20; safeBlocked = true; }  // 0.40→0.20
-    else if (tokenAgeHours < 6)   { flags.push(makeFlag("Fresh token on-chain (<6h)",     "warning",  0)); trust *= 0.65; }                      // 0.80→0.65
-    else if (tokenAgeHours > 720) { flags.push(makeFlag("Established token (30d+) ✓",     "bonus",    0)); trust = Math.min(1.0, trust * 1.05); }
+    // v4.9.1 — token < 30min : risque extrême
+    if (tokenAgeHours < 0.5)      { flags.push(makeFlag("Newborn token on-chain (<30min)",  "critical", 0)); trust *= 0.10; safeBlocked = true; }
+    else if (tokenAgeHours < 1)   { flags.push(makeFlag("Newborn token on-chain (<1h)",    "critical", 0)); trust *= 0.20; safeBlocked = true; }
+    else if (tokenAgeHours < 6)   { flags.push(makeFlag("Fresh token on-chain (<6h)",      "warning",  0)); trust *= 0.65; }
+    else if (tokenAgeHours > 720) { flags.push(makeFlag("Established token (30d+) ✓",      "bonus",    0)); trust = Math.min(1.0, trust * 1.05); }
   }
 
+  // v4.9.1 — bot-farm detection: volume/trader ratio très bas avec beaucoup de traders
   if (trades24h !== null && traders24h !== null && traders24h > 0) {
-    if (trades24h / traders24h > 50 && traders24h < 20) {
+    const tradesPerTrader = trades24h / traders24h;
+    if (tradesPerTrader > 50 && traders24h < 20) {
       flags.push(makeFlag("Wash trading suspected (trades/traders ratio)", "critical", 0));
       trust *= 0.50; safeBlocked = true;
+    } else if (traders24h > 500 && tradesPerTrader < 0.1) {
+      // Beaucoup de "holders" mais quasi aucun trade → wallets bot-farmés
+      flags.push(makeFlag("Bot-farmed holders: many accounts, near-zero activity", "warning", 0));
+      trust *= 0.70; safeBlocked = true;
     }
   }
 
@@ -528,7 +575,7 @@ function layerIdentity(symbol?: string | null, name?: string | null, mint?: stri
   const hasCopycatSuffix = COPYCAT_SUFFIXES.some(s => sym.endsWith(s) || nm.endsWith(s));
   if (hasCopycatSuffix) {
     flags.push(makeFlag("Copycat branding detected (v2/official/real suffix)", "critical", 0));
-    trust *= 0.25; safeBlocked = true; // 0.30→0.25
+    trust *= 0.25; safeBlocked = true;
   }
 
   if (!mint || !OFFICIAL_MINTS.has(mint)) {
@@ -536,7 +583,7 @@ function layerIdentity(symbol?: string | null, name?: string | null, mint?: stri
       const symMatch = sym.startsWith(brand) || sym.endsWith(brand) || sym === brand;
       if (symMatch || nm.includes(brand)) {
         flags.push(makeFlag(`Brand imitation: ${brand}-style copycat token`, "critical", 0));
-        trust *= 0.20; safeBlocked = true; break; // 0.25→0.20
+        trust *= 0.20; safeBlocked = true; break;
       }
     }
   }
@@ -591,13 +638,9 @@ function computeFinalScore(layers: LayerResult[]): number {
     totalWeight += w;
   }
 
-  // FIX v4.8.1 : 0 sources disponibles → score = 0
   if (totalWeight === 0) return 0;
-
-  // Normalise si sources partielles
   if (totalWeight < 1.0) product = Math.pow(product, 1 / totalWeight);
 
-  // Identity : multiplicateur direct
   const identity = layers.find(l => l.source === "identity");
   if (identity?.available) product *= identity.trust;
 
@@ -666,6 +709,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const pairAddress = pair?.pairAddress ?? ca;
 
+    const tokenAgeMinutes: number | null = pair?.pairCreatedAt
+      ? (Date.now() - pair.pairCreatedAt) / 60000 : null;
+
     const [
       candlesRaw, goplusRaw,
       heliusHoldersRaw, heliusSupplyRaw,
@@ -730,11 +776,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const priceChange5m  = pair?.priceChange?.m5  ?? null;
     const priceChange1h  = pair?.priceChange?.h1  ?? null;
     const priceChange24h = pair?.priceChange?.h24 ?? null;
-    const tokenAgeMinutes: number | null = pair?.pairCreatedAt
-      ? (Date.now() - pair.pairCreatedAt) / 60000 : null;
 
-    const l1 = layerDexScreener(pair, marketCap);
-    const l2 = layerRugCheck(rugData);
+    const l1 = layerDexScreener(pair, marketCap, tokenAgeMinutes);
+    const l2 = layerRugCheck(rugData, rugReportRes);
     const l3 = layerGoPlus(goplus);
     const l4 = layerHelius(rawHolderAccounts, totalSupplyUi);
     const l5 = layerSolscan(solscanHoldersCount, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h);
@@ -782,11 +826,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       solscanTrades24h,
       solscanTraders24h,
       layers: layersSnapshot,
-      scoring_version: "4.9.0",
+      scoring_version: "4.9.1",
       fetchedAt: Date.now(),
     });
   } catch (e) {
-    console.error("[scan v4.9.0]", e);
+    console.error("[scan v4.9.1]", e);
     return res.status(500).json({ error: "Analysis error." });
   }
 }
