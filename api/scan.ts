@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
+
 const DEXSCREENER_BASE = "https://api.dexscreener.com/latest/dex";
 const RUGCHECK_BASE = "https://api.rugcheck.xyz/v1";
 const GOPLUS_BASE = "https://api.gopluslabs.io/api/v1";
@@ -9,21 +10,9 @@ const HELIUS_BASE = "https://mainnet.helius-rpc.com";
 const SOLSCAN_PUBLIC_BASE = "https://public-api.solscan.io";
 const SOLSCAN_BASE = "https://pro-api.solscan.io/v2.0";
 
+
 const CA_RE = /^[A-Za-z0-9]{32,44}$/;
 
-// ── Adresses de pools/programmes connus à exclure du calcul top-holders ──────
-const KNOWN_POOL_ADDRESSES = new Set([
-  "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1", // Raydium Authority v4
-  "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8", // Raydium AMM Program
-  "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM", // Raydium CLMM
-  "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK", // Raydium CPMM
-  "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",  // Orca Whirlpool
-  "MERLuDFBMmsHnsBPZw2sDQZHvXFMwp8EdjudcU2HKky",  // Mercurial
-  "LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo",  // Meteora DLMM
-  "Eo7WjKq67rjJQSZxS6z3YkapzY3eMj6Xy8X5EkAW7vAR", // Meteora Pool
-  "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",  // Token Program
-  "11111111111111111111111111111111",               // System Program
-]);
 
 // ─── RATE LIMIT ───────────────────────────────────────────────────────────────
 let ratelimit: Ratelimit | null = null;
@@ -40,26 +29,31 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
   });
 }
 
+
 const CORS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
 };
 
+
 type Severity = "critical" | "warning" | "info" | "bonus";
 type ScanFlag = { label: string; severity: Severity; impact: number };
 type ChartResult = { flags: ScanFlag[]; penalty: number; forceRug: boolean; safeBlocked: boolean };
+
 
 function setHeaders(res: VercelResponse) {
   Object.entries(CORS).forEach(([k, v]) => res.setHeader(k, v));
   res.setHeader("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
 }
 
+
 function withTimeout(ms: number) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), ms);
   return { signal: controller.signal, clear: () => clearTimeout(timeout) };
 }
+
 
 async function fetchJson(url: string, init: RequestInit = {}, timeoutMs = 5000) {
   const t = withTimeout(timeoutMs);
@@ -70,6 +64,7 @@ async function fetchJson(url: string, init: RequestInit = {}, timeoutMs = 5000) 
   } catch { return null; }
   finally { t.clear(); }
 }
+
 
 async function fetchJsonPost(url: string, body: object, timeoutMs = 5000) {
   const t = withTimeout(timeoutMs);
@@ -86,41 +81,50 @@ async function fetchJsonPost(url: string, body: object, timeoutMs = 5000) {
   finally { t.clear(); }
 }
 
+
 function isObject(v: unknown): v is Record<string, any> {
   return typeof v === "object" && v !== null;
 }
+
 
 function asNumber(v: any): number {
   const n = typeof v === "number" ? v : parseFloat(v);
   return Number.isFinite(n) ? n : 0;
 }
 
+
 function pickGoPlusResult(raw: any, ca: string) {
   if (!raw || !isObject(raw.result)) return null;
   return raw.result[ca] || raw.result[ca.toLowerCase()] || raw.result[ca.toUpperCase()] || null;
 }
 
+
 function getTop10Percentage(rugData: any): number {
   return asNumber(rugData?.topHolders?.top10Percentage);
 }
 
+
 function getTop1Percentage(rugData: any): number {
   return asNumber(rugData?.topHolders?.top1Percentage ?? rugData?.topHolders?.top1HolderPercentage);
 }
+
 
 function getLpLockDurationDays(rugData: any): number {
   const raw = rugData?.lpLockDurationDays ?? rugData?.lpLockDuration ?? rugData?.lockDurationDays ?? 0;
   return asNumber(raw);
 }
 
+
 function riskIncludes(rugData: any, matcher: RegExp): boolean {
   if (!Array.isArray(rugData?.risks)) return false;
   return rugData.risks.some((r: any) => matcher.test(String(r?.name || "")));
 }
 
+
 function makeFlag(label: string, severity: Severity, impact: number): ScanFlag {
   return { label, severity, impact };
 }
+
 
 // ─── CHART HELPERS ────────────────────────────────────────────────────────────
 function _mean(xs: number[]): number {
@@ -137,6 +141,7 @@ function _pct(from: number, to: number): number {
   return ((to - from) / Math.abs(from)) * 100;
 }
 
+
 // ─── IDENTITY RISK ────────────────────────────────────────────────────────────
 const KNOWN_BRANDS = [
   "TRUMP", "DOGE", "PEPE", "SHIB", "BONK", "WIF", "BRETT",
@@ -144,19 +149,12 @@ const KNOWN_BRANDS = [
   "ETH", "SUI", "APT", "ARB", "OP", "MATIC", "AVAX",
 ];
 
-// ── Tokens bluechips connus : jamais SAFE bloqué par LP ou metadata ───────────
-const BLUECHIP_SYMBOLS = new Set([
-  "PENGU","BONK","WIF","JUP","PYTH","RAY","ORCA","MNGO",
-  "SAMO","STEP","COPE","FIDA","SRM","MSOL","JSOL","BSOL",
-]);
 
 function analyzeIdentity(symbol?: string | null, name?: string | null): ChartResult {
   const flags: ScanFlag[] = [];
   let penalty = 0, forceRug = false, safeBlocked = false;
   const sym = String(symbol || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
   const nm  = String(name   || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-  // Ne pas pénaliser les bluechips connus
-  if (BLUECHIP_SYMBOLS.has(sym)) return { flags, penalty, forceRug, safeBlocked };
   if (/(?:2|V2|V3|OFFICIAL|REAL|OG|NEW|PLUS)$/.test(sym) || /(?:2|V2|V3|OFFICIAL|REAL|OG|NEW|PLUS)$/.test(nm)) {
     flags.push(makeFlag("Copycat branding detected (v2/official/real suffix)", "critical", 250));
     penalty += 250; safeBlocked = true;
@@ -171,6 +169,7 @@ function analyzeIdentity(symbol?: string | null, name?: string | null): ChartRes
   return { flags, penalty, forceRug, safeBlocked };
 }
 
+
 // ─── CHART PATTERN RISK ───────────────────────────────────────────────────────
 async function fetchDexCandles(
   pairAddress: string, chainId = "solana"
@@ -183,6 +182,7 @@ async function fetchDexCandles(
     l: asNumber(b.l), c: asNumber(b.c), v: asNumber(b.v),
   }));
 }
+
 
 function analyzeChartPatterns(
   candles: Array<{ o: number; h: number; l: number; c: number; v: number; ts: number }>,
@@ -212,24 +212,13 @@ function analyzeChartPatterns(
   const pc24h  = asNumber(pair?.priceChange?.h24);
   const v24Liq = liquidity > 0 ? vol24h / liquidity : 0;
   const v1hLiq = liquidity > 0 ? vol1h  / liquidity : 0;
-
-  // ── Seuils abaissés pour tokens très jeunes (< 2h) ────────────────────────
-  const isYoung = tokenAgeMinutes !== null && tokenAgeMinutes < 120;
-  const crashGreenThreshold  = isYoung ? 0.75 : 0.82;
-  const crashRunUpThreshold  = isYoung ? 50   : 100;
-
-  if (greenRatio >= crashGreenThreshold && runUpPct >= crashRunUpThreshold && pullbackRange <= 10) {
+  if (greenRatio >= 0.82 && runUpPct >= 100 && pullbackRange <= 10) {
     flags.push(makeFlag("Crashcoin pattern: near-perfect parabolic chart", "critical", 200));
     penalty += 200; safeBlocked = true;
   }
   if (pc5m > 35 && pc1h > 120) {
     flags.push(makeFlag("Vertical pump detected (+35% 5m / +120% 1h)", "warning", 150));
     penalty += 150; safeBlocked = true;
-  }
-  // ── Pump extrême sur token jeune ──────────────────────────────────────────
-  if (isYoung && pc1h > 400) {
-    flags.push(makeFlag("Hyper-pump: +400% en 1h sur token < 2h", "critical", 200));
-    penalty += 200; safeBlocked = true;
   }
   if (v24Liq > 12 || v1hLiq > 4) {
     flags.push(makeFlag("Liquidity mirage: volume >> liquidity (wash suspect)", "warning", 130));
@@ -262,6 +251,7 @@ function analyzeChartPatterns(
   return { flags, penalty, forceRug, safeBlocked };
 }
 
+
 // ─── HELIUS ───────────────────────────────────────────────────────────────────
 async function heliusGetLargestAccounts(mint: string, apiKey: string) {
   return fetchJsonPost(`${HELIUS_BASE}/?api-key=${apiKey}`, {
@@ -274,6 +264,7 @@ async function heliusGetTokenSupply(mint: string, apiKey: string) {
   });
 }
 
+
 async function heliusGetHoldersCount(mint: string, apiKey: string): Promise<number | null> {
   const res = await fetchJsonPost(`${HELIUS_BASE}/?api-key=${apiKey}`, {
     jsonrpc: "2.0", id: "holders-count",
@@ -283,6 +274,7 @@ async function heliusGetHoldersCount(mint: string, apiKey: string): Promise<numb
   const total = res?.result?.total ?? res?.total;
   return typeof total === "number" ? total : null;
 }
+
 
 // ─── SOLSCAN PUBLIC — HOLDER COUNT (sans clé API) ─────────────────────────
 async function solscanGetHoldersCount(mint: string): Promise<number | null> {
@@ -295,6 +287,7 @@ async function solscanGetHoldersCount(mint: string): Promise<number | null> {
   return typeof total === "number" && total > 0 ? total : null;
 }
 
+
 // ─── SOLSCAN PRO (clé optionnelle) ───────────────────────────────────────────
 async function fetchSolscan(endpoint: string) {
   const key = process.env.SOLSCAN_API_KEY || "";
@@ -302,25 +295,31 @@ async function fetchSolscan(endpoint: string) {
   return fetchJson(`${SOLSCAN_BASE}${endpoint}`, { headers: { token: key } }, 5000);
 }
 
+
 // ─── HANDLER PRINCIPAL ───────────────────────────────────────────────────────
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setHeaders(res);
   if (req.method === "OPTIONS") return res.status(204).end();
+
 
   const ip =
     (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
     (req as any).socket?.remoteAddress ||
     "unknown";
 
+
   if (ratelimit) {
     const { success } = await ratelimit.limit(ip);
     if (!success) return res.status(429).json({ error: "Too many requests. Please slow down." });
   }
 
+
   const ca = req.query.ca as string | undefined;
   if (!ca || !CA_RE.test(ca)) return res.status(400).json({ error: "Invalid token address." });
 
+
   const HELIUS_API_KEY = process.env.HELIUS_API_KEY || "";
+
 
   try {
     const [dexRes, rugRes, rugReportRes] = await Promise.all([
@@ -329,15 +328,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report`, {}, 10000),
     ]);
 
+
     let dexData = dexRes;
     let rugData = rugRes;
     let pair = dexData?.pairs?.[0] ?? null;
     let resolvedMint = ca;
 
+
     const rugMissing =
       !rugData ||
       rugData?.error === "not found" ||
       rugData?.message?.toLowerCase?.().includes("not found");
+
 
     if (!pair || !rugData || rugMissing) {
       const pairData = await fetchJson(`${DEXSCREENER_BASE}/pairs/solana/${ca}`);
@@ -355,24 +357,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
+
     if (dexData?.pairs?.length > 1) {
       pair = dexData.pairs.reduce((best: any, p: any) =>
         asNumber(p?.liquidity?.usd) > asNumber(best?.liquidity?.usd) ? p : best
       , dexData.pairs[0]);
     }
 
-    // ── Détection pump.fun ────────────────────────────────────────────────────
-    const isPumpFun = pair?.dexId === "pump_fun" ||
-      String(pair?.url || "").includes("pump.fun") ||
-      String(pair?.labels || "").includes("pump");
 
     const pairAddress = pair?.pairAddress ?? ca;
+
 
     const [
       candlesRaw, goplusRaw,
       heliusHoldersRaw, heliusSupplyRaw, heliusHoldersCount,
       solscanHoldersCount,
       solMeta, solTransfers,
+      // ── NOUVEAU : markets Solscan Pro ────────────────────────────────────────
       solMarkets,
     ] = await Promise.all([
       fetchDexCandles(pairAddress),
@@ -383,37 +384,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       solscanGetHoldersCount(resolvedMint),
       fetchSolscan(`/token/meta?address=${resolvedMint}`),
       fetchSolscan(`/token/transfer?address=${resolvedMint}&page=1&page_size=10`),
+      // ── NOUVEAU ──────────────────────────────────────────────────────────────
       fetchSolscan(`/token/markets?address=${resolvedMint}&page=1&page_size=1`),
     ]);
 
-    const candles = Array.isArray(candlesRaw) ? candlesRaw : [];
-    const goplus  = pickGoPlusResult(goplusRaw, resolvedMint);
 
-    // ── FIX: exclure adresses de pools connues du calcul top-holders ──────────
-    const rawHolderAccounts: Array<{ address: string; uiAmount: number }> =
+    const candles       = Array.isArray(candlesRaw) ? candlesRaw : [];
+    const goplus        = pickGoPlusResult(goplusRaw, resolvedMint);
+    const holderAccounts: Array<{ address: string; uiAmount: number }> =
       heliusHoldersRaw?.result?.value ?? [];
-    const holderAccounts = rawHolderAccounts.filter(
-      h => !KNOWN_POOL_ADDRESSES.has(h.address)
-    );
     const totalSupplyUi: number = asNumber(heliusSupplyRaw?.result?.value?.uiAmount);
 
+
+    // Solscan public prioritaire, Helius en fallback
     const rugTotalHolders: number | null =
       typeof rugReportRes?.totalHolders === "number" && rugReportRes.totalHolders > 0
         ? rugReportRes.totalHolders : null;
     const holders: number | null = solscanHoldersCount ?? rugTotalHolders ?? null;
 
+
     // ─── SOLSCAN PRO DATA ──────────────────────────────────────────────────────
-    const tokenLogo       = solMeta?.data?.icon || pair?.info?.imageUrl || null;
-    const tokenCreator    = solMeta?.data?.creator || null;
-    const tokenDecimals   = solMeta?.data?.decimals ?? null;
-    const tokenSupply     = solMeta?.data?.supply ?? null;
+    const tokenLogo     = solMeta?.data?.icon || pair?.info?.imageUrl || null;
+    const tokenCreator  = solMeta?.data?.creator || null;
+    const tokenDecimals = solMeta?.data?.decimals ?? null;
+    const tokenSupply   = solMeta?.data?.supply ?? null;
     const recentTransfers = solTransfers?.data || [];
 
+
+    // ── NOUVEAU : données issues de solMarkets ────────────────────────────────
     const solMarketPool = Array.isArray(solMarkets?.data) && solMarkets.data.length > 0
       ? solMarkets.data.sort((a: any, b: any) => asNumber(b.liquidity) - asNumber(a.liquidity))[0]
       : null;
     const solscanCreatedTime: number | null = solMeta?.data?.created_time ?? null;
 
+    // ── CORRECTION : fallback pairCreatedAt si Solscan Pro indisponible ───────
     const solscanTokenAgeHours: number | null =
       solscanCreatedTime !== null
         ? Math.floor((Date.now() / 1000 - solscanCreatedTime) / 3600)
@@ -421,18 +425,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           ? Math.floor((Date.now() - pair.pairCreatedAt) / 3_600_000)
           : null;
 
+    // ── CORRECTION : fallback pair.volume.h24 si Solscan Pro indisponible ─────
     const solscanVolume24h: number | null =
       asNumber(solMarketPool?.volume) || asNumber(pair?.volume?.h24) || null;
 
     const solscanTrades24h: number | null  = asNumber(solMarketPool?.trade)   || null;
     const solscanTraders24h: number | null = asNumber(solMarketPool?.trader)  || null;
     const solscanLiquidity: number | null  = asNumber(solMarketPool?.liquidity) || null;
+    // ─────────────────────────────────────────────────────────────────────────
+
 
     const priceUsd: number | null = (() => {
       const raw = pair?.priceUsd;
       const n = parseFloat(raw);
       return Number.isFinite(n) && n > 0 ? n : null;
     })();
+
 
     const marketCap: number | null = (() => {
       const mc  = asNumber(pair?.marketCap);
@@ -447,6 +455,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return null;
     })();
 
+
+    // Cascade liquidity/volume : DexScreener en priorité, Solscan en fallback
     const liquidity      = asNumber(pair?.liquidity?.usd) || solscanLiquidity  || null;
     const volume24h      = asNumber(pair?.volume?.h24)    || solscanVolume24h  || null;
     const volume1h       = asNumber(pair?.volume?.h1)     || null;
@@ -454,24 +464,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const priceChange1h  = pair?.priceChange?.h1  ?? null;
     const priceChange24h = pair?.priceChange?.h24 ?? null;
 
+
     let tokenAgeMinutes: number | null = null;
     if (pair?.pairCreatedAt) tokenAgeMinutes = (Date.now() - pair.pairCreatedAt) / 60000;
 
-    // ── Contexte global du token ──────────────────────────────────────────────
-    const mc = marketCap ?? 0;
-    const ageHours = solscanTokenAgeHours ?? (tokenAgeMinutes !== null ? tokenAgeMinutes / 60 : null);
-    const isEstablished = ageHours !== null && ageHours > 720 && (holders ?? 0) > 10_000;
-    const isBluechip    = mc > 50_000_000 && (holders ?? 0) > 50_000;
 
     let score = 1000;
     const flags: ScanFlag[] = [];
     const sources_used: string[] = [];
+
 
     if (pair)                         sources_used.push("DexScreener");
     if (rugData)                      sources_used.push("RugCheck");
     if (goplus)                       sources_used.push("GoPlus");
     if (holderAccounts.length > 0)    sources_used.push("Helius");
     if (solscanHoldersCount !== null) sources_used.push("Solscan");
+
 
     const addPenalty = (label: string, severity: Severity, impact: number) => {
       score -= impact;
@@ -482,22 +490,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       flags.push(makeFlag(label, "bonus", -points));
     };
 
+
     let forceRisk: "RUG" | null = null;
     let safeBlocked = false;
 
-    // ── Pump.fun : jamais SAFE (LP jamais lockée par design) ─────────────────
-    if (isPumpFun) {
-      safeBlocked = true;
-      flags.push(makeFlag("Pump.fun token: LP non-lockable by design", "warning", 0));
-    }
 
-    // ── FIX GoPlus authority : ignorer "0" / "false" / "null" ────────────────
     const mintAuthorityEnabled =
       Boolean(rugData?.mintAuthorityEnabled) ||
-      (Boolean(goplus?.mint_authority) && !["0","false","null",""].includes(String(goplus.mint_authority).trim().toLowerCase()));
+      Boolean(goplus?.mint_authority && String(goplus.mint_authority).trim() !== "");
     const freezeAuthorityEnabled =
       Boolean(rugData?.freezeAuthorityEnabled) ||
-      (Boolean(goplus?.freeze_authority) && !["0","false","null",""].includes(String(goplus.freeze_authority).trim().toLowerCase()));
+      Boolean(goplus?.freeze_authority && String(goplus.freeze_authority).trim() !== "");
+
 
     if (mintAuthorityEnabled)   addPenalty("Mint Authority enabled", "critical", 300);
     if (freezeAuthorityEnabled) addPenalty("Freeze Authority enabled", "critical", 300);
@@ -505,6 +509,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       forceRisk = "RUG";
       flags.push(makeFlag("Override: Mint + Freeze authority both active", "critical", 0));
     }
+
 
     if (goplus) {
       if (goplus.is_honeypot === "1" || goplus.is_honeypot === 1 || goplus.is_honeypot === true) {
@@ -527,53 +532,48 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (goplus.is_whitelisted === "1")           addPenalty("Whitelist system detected", "warning", 150);
     }
 
+
     if (rugData) {
-      if (rugData.metaMutable === true && !isEstablished) {
-        // Metadata mutable : sévère sur token récent, info seulement sur token établi
+      if (rugData.metaMutable === true) {
         addPenalty("Metadata mutable", "warning", 150);
-      } else if (rugData.metaMutable === true && isEstablished) {
-        addPenalty("Metadata mutable (token établi)", "info", 20);
-      } else if (rugData.metaMutable !== false && !isEstablished && !isBluechip) {
+      } else if (rugData.metaMutable !== false) {
         addPenalty("Metadata not immutable", "info", 50);
       }
-
-      // ── FIX LP : ne pénaliser que si token récent ET petit mcap ────────────
-      const isSmallAndRecent = mc < 5_000_000 && (ageHours === null || ageHours < 720);
       if (!rugData.lpBurned && !rugData.lpLocked) {
-        if (isSmallAndRecent) {
-          addPenalty("LP not burned or locked", "warning", 200); safeBlocked = true;
-        } else if (!isBluechip) {
-          // Token moyen établi : warning léger sans bloquer SAFE
-          addPenalty("LP not burned or locked", "info", 30);
-        }
-        // Bluechip ou gros mcap : pas de pénalité LP
+        addPenalty("LP not burned or locked", "warning", 200); safeBlocked = true;
       }
       const lockDurationDays = getLpLockDurationDays(rugData);
       if (rugData.lpLocked && lockDurationDays > 0 && lockDurationDays < 30)
         addPenalty("LP lock duration < 30 days", "warning", 150);
     }
 
+
     if (pair) {
-      const liq  = asNumber(pair?.liquidity?.usd);
-      const vol  = asNumber(pair?.volume?.h24);
+      const liq = asNumber(pair?.liquidity?.usd);
+      const vol = asNumber(pair?.volume?.h24);
       const pc24 = asNumber(pair?.priceChange?.h24);
       const pc1  = asNumber(pair?.priceChange?.h1);
       const pc5  = asNumber(pair?.priceChange?.m5);
+
 
       if (liq < 1000)       addPenalty("Very low liquidity", "critical", 200);
       else if (liq < 5000)  addPenalty("Low liquidity", "warning", 100);
       else if (liq < 20000) addPenalty("Liquidity < $20k", "info", 30);
 
+
       if (liq > 0 && vol / liq > 20) addPenalty("Wash trading suspected (vol/liq > 20)", "critical", 120);
       else if (liq > 0 && vol / liq > 5) addPenalty("High vol/liquidity ratio", "warning", 60);
+
 
       if (rugData?.lpBurned === true) addBonus("LP Burned ✓", 100);
       const lockDays = getLpLockDurationDays(rugData);
       if (rugData?.lpLocked === true && lockDays > 180) addBonus("LP Locked > 180 days ✓", 80);
 
+
       if (pc1 > 200 && pc5 > 50) addPenalty("Coordinated pump pattern", "warning", 100);
       if (pc24 < -80) addPenalty("Brutal dump 24h", "critical", 150);
     }
+
 
     if (rugData) {
       const top10 = getTop10Percentage(rugData);
@@ -587,13 +587,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (riskIncludes(rugData, /creator.*sell|dev.*sell/i)) addPenalty("Dev wallet sold tokens", "warning", 100);
     }
 
-    // ── FIX top-holders : pools déjà filtrées, calcul propre ─────────────────
+
     if (holderAccounts.length > 0 && totalSupplyUi > 0) {
       const top1Amount = asNumber(holderAccounts[0]?.uiAmount);
       const top1Pct    = top1Amount / totalSupplyUi;
       if (top1Pct > 0.3)       { addPenalty(`Single wallet holds ${Math.round(top1Pct * 100)}% of supply`, "critical", 200); forceRisk = "RUG"; }
       else if (top1Pct > 0.2)    addPenalty(`Single wallet holds ${Math.round(top1Pct * 100)}% of supply`, "critical", 150);
       else if (top1Pct > 0.1)    addPenalty(`Single wallet holds ${Math.round(top1Pct * 100)}% of supply`, "warning", 80);
+
 
       const top10Amount = holderAccounts.slice(0, 10).reduce((s: number, h: any) => s + asNumber(h?.uiAmount), 0);
       const top10Pct    = top10Amount / totalSupplyUi;
@@ -602,28 +603,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       else if (top10Pct < 0.3) addBonus("Well distributed supply ✓", 50);
     }
 
+
     if (tokenAgeMinutes !== null) {
       if (tokenAgeMinutes < 1)       addPenalty("Freshly launched, extreme risk", "critical", 150);
       else if (tokenAgeMinutes < 5)  addPenalty("Token very new (< 5 min)", "warning", 80);
       else if (tokenAgeMinutes < 60) addPenalty("Token < 1 hour old", "info", 30);
     }
 
+
     if (pair) {
       const buys5m  = asNumber(pair?.txns?.m5?.buys);
       const sells5m = asNumber(pair?.txns?.m5?.sells);
       const txns5m  = buys5m + sells5m;
+      const mc      = marketCap ?? 0;
       const socials  = pair?.info?.socials  || [];
       const websites = pair?.info?.websites || [];
       const hasTwitter  = Array.isArray(socials) && socials.some((s: any) => /twitter|x/i.test(String(s?.type || s?.url || "")));
       const hasTelegram = Array.isArray(socials) && socials.some((s: any) => /telegram/i.test(String(s?.type || s?.url || "")));
       const hasWebsite  = Array.isArray(websites) && websites.length > 0;
       if (!hasWebsite && !hasTwitter && !hasTelegram) addPenalty("No website / Twitter / Telegram", "warning", 80);
-      // ── FIX: désactiver flag low txns si mcap > 50M (gros token normal) ────
-      if (txns5m < 5 && mc <= 50_000_000) addPenalty("Low 5m transactions vs market cap", "warning", 80);
+      if (txns5m < 5 && mc > 50000) addPenalty("Low 5m transactions vs market cap", "warning", 80);
       if (sells5m > 0 && buys5m > sells5m * 5) addPenalty("Buy/sell imbalance (coordinated pump)", "warning", 60);
     } else {
       addPenalty("Not indexed on DexScreener", "warning", 100);
     }
+
 
     const identity = analyzeIdentity(pair?.baseToken?.symbol, pair?.baseToken?.name);
     score -= identity.penalty;
@@ -631,13 +635,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (identity.forceRug) forceRisk = "RUG";
     if (identity.safeBlocked) safeBlocked = true;
 
+
     const chart = analyzeChartPatterns(candles, pair, tokenAgeMinutes);
     score -= chart.penalty;
     flags.push(...chart.flags);
     if (chart.forceRug) forceRisk = "RUG";
     if (chart.safeBlocked) safeBlocked = true;
 
-    // ── Solscan on-chain flags ────────────────────────────────────────────────
+
+    // ── NOUVEAU : flags Solscan on-chain ──────────────────────────────────────
     if (solscanHoldersCount !== null) {
       if (solscanHoldersCount < 15) {
         addPenalty("Very few holders (<15)", "critical", 150); safeBlocked = true;
@@ -648,16 +654,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
+
     if (solscanTokenAgeHours !== null) {
       if (solscanTokenAgeHours < 1) {
         addPenalty("Newborn token on-chain (<1h)", "critical", 120); safeBlocked = true;
       } else if (solscanTokenAgeHours < 6) {
-        // ── FIX: pas de safeBlocked si token établi malgré age récent ────────
         addPenalty("Fresh token on-chain (<6h)", "warning", 60);
       } else if (solscanTokenAgeHours > 720) {
         addBonus("Established token on-chain (30d+) ✓", 20);
       }
     }
+
 
     if (
       solscanTrades24h !== null && solscanTraders24h !== null &&
@@ -665,20 +672,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     ) {
       addPenalty("Wash trading suspected (trades/traders ratio)", "critical", 100); safeBlocked = true;
     }
+    // ─────────────────────────────────────────────────────────────────────────
 
-    // ── Bonus bluechip établis ────────────────────────────────────────────────
-    if (isBluechip) {
-      addBonus("Large-cap established token ✓", 80);
-    }
-    if (isEstablished && (holders ?? 0) > 100_000) {
-      addBonus("100K+ holders ✓", 50);
-    }
 
     score = Math.max(0, Math.min(1000, score));
 
-    // ── FIX: plafond de score par âge (tokens très jeunes ne peuvent pas être SAFE) ──
-    if (tokenAgeMinutes !== null && tokenAgeMinutes < 30)  score = Math.min(score, 599);  // max CAUTION
-    else if (tokenAgeMinutes !== null && tokenAgeMinutes < 120) score = Math.min(score, 749); // max CAUTION
 
     let risk: "SAFE" | "CAUTION" | "DANGER" | "RUG";
     if (forceRisk === "RUG")              risk = "RUG";
@@ -688,12 +686,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     else if (score >= 350)                risk = "DANGER";
     else                                  risk = "RUG";
 
+
     const confidence = Math.round((sources_used.length / 5) * 100);
+
 
     flags.sort((a, b) => {
       const order: Record<Severity, number> = { critical: 0, warning: 1, info: 2, bonus: 3 };
       return order[a.severity] - order[b.severity];
     });
+
 
     return res.json({
       score, risk, flags, pair, resolvedMint, confidence, sources_used,
@@ -703,16 +704,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       tokenName:     pair?.baseToken?.name   ?? null,
       pairCreatedAt: pair?.pairCreatedAt     ?? null,
       safeBlocked, tokenLogo, tokenCreator, tokenDecimals, tokenSupply, recentTransfers,
+      // ── NOUVEAU : champs Solscan exposés au popup ─────────────────────────
       solscanTokenAgeHours,
       solscanVolume24h,
       solscanTrades24h,
       solscanTraders24h,
-      isPumpFun,
-      scoring_version: "4.7.0",
+      // ─────────────────────────────────────────────────────────────────────
+      scoring_version: "4.5.2",
       fetchedAt: Date.now(),
     });
   } catch (e) {
-    console.error("[scan v4.7.0]", e);
+    console.error("[scan v4.5.2]", e);
     return res.status(500).json({ error: "Analysis error." });
   }
 }
