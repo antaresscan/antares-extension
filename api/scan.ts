@@ -230,8 +230,14 @@ function layerDexScreener(pair: any, marketCap: number | null): LayerResult {
   else if (liq < 5000)  { flags.push(makeFlag("Low liquidity (<$5k)",         "warning",  0)); trust *= 0.70; }
   else if (liq < 20000) { flags.push(makeFlag("Liquidity < $20k",             "info",     0)); trust *= 0.90; }
 
-  if (liq > 0 && vol / liq > 20) { flags.push(makeFlag("Wash trading suspected (vol/liq > 20)", "critical", 0)); trust *= 0.50; }
-  else if (liq > 0 && vol / liq > 5) { flags.push(makeFlag("High vol/liquidity ratio", "warning", 0)); trust *= 0.80; }
+  // FIX v4.8.2 : wash trading → pénalité 0.20 + safeBlocked=true
+  if (liq > 0 && vol / liq > 20) {
+    flags.push(makeFlag("Wash trading suspected (vol/liq > 20)", "critical", 0));
+    trust *= 0.20; safeBlocked = true;
+  } else if (liq > 0 && vol / liq > 5) {
+    flags.push(makeFlag("High vol/liquidity ratio", "warning", 0));
+    trust *= 0.80;
+  }
 
   if (!hasWebsite && !hasTwitter && !hasTelegram) { flags.push(makeFlag("No website / Twitter / Telegram", "warning", 0)); trust *= 0.85; }
   if (txns5m < 5 && mc > 50000) { flags.push(makeFlag("Low 5m transactions vs market cap", "warning", 0)); trust *= 0.88; }
@@ -581,7 +587,7 @@ function computeFinalScore(layers: LayerResult[]): number {
     totalWeight += w;
   }
 
-  // FIX v4.8.1 : 0 sources disponibles → score = 0 (cohérent avec risk DANGER)
+  // FIX v4.8.1 : 0 sources disponibles → score = 0
   if (totalWeight === 0) return 0;
 
   // Normalise si sources partielles
@@ -772,11 +778,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       solscanTrades24h,
       solscanTraders24h,
       layers: layersSnapshot,
-      scoring_version: "4.8.1",
+      scoring_version: "4.8.2",
       fetchedAt: Date.now(),
     });
   } catch (e) {
-    console.error("[scan v4.8.1]", e);
+    console.error("[scan v4.8.2]", e);
     return res.status(500).json({ error: "Analysis error." });
   }
 }
