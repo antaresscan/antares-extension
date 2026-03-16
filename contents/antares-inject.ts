@@ -102,11 +102,12 @@ const SHADOW_CSS = `
   all: initial;
   display: block;
   position: fixed;
-  bottom: 20px;
-  right: 20px;
+  top: 0;
+  left: 0;
   z-index: 2147483647;
   font-family: 'IBM Plex Mono', monospace;
   pointer-events: none;
+  will-change: transform;
 }
 
 .box {
@@ -307,44 +308,57 @@ let lastCA            = ""
 let manuallyDismissed = false
 let scanInFlight      = false
 
-// ── Drag ────────────────────────────────────────────────────────────────────────
-let isDragging = false
+// ── Drag (rAF-batched transform for GPU compositing on all sites) ──────────────
+let isDragging  = false
 let dragOX = 0, dragOY = 0
+let posX = 0, posY = 0
+let pendingX = 0, pendingY = 0
+let rafId: number | null = null
+
+function commitPos() {
+  rafId = null
+  if (!host) return
+  posX = pendingX
+  posY = pendingY
+  host.style.transform = `translate(${posX}px,${posY}px)`
+}
 
 const onMouseMove = (e: MouseEvent) => {
   if (!isDragging || !host) return
-  let x = e.clientX - dragOX
-  let y = e.clientY - dragOY
-  x = Math.max(0, Math.min(window.innerWidth  - host.offsetWidth,  x))
-  y = Math.max(0, Math.min(window.innerHeight - host.offsetHeight, y))
-  host.style.left = x + "px"
-  host.style.top  = y + "px"
+  let nx = e.clientX - dragOX
+  let ny = e.clientY - dragOY
+  nx = Math.max(0, Math.min(window.innerWidth  - host.offsetWidth,  nx))
+  ny = Math.max(0, Math.min(window.innerHeight - host.offsetHeight, ny))
+  pendingX = nx
+  pendingY = ny
+  if (!rafId) rafId = requestAnimationFrame(commitPos)
 }
 
 const onMouseUp = () => {
-  if (!isDragging || !host) return
+  if (!isDragging) return
   isDragging = false
   document.documentElement.style.userSelect = ""
-  host.style.willChange = ""
-  try {
-    localStorage.setItem(POS_KEY, JSON.stringify({ x: host.style.left, y: host.style.top }))
-  } catch (_) {}
+  try { localStorage.setItem(POS_KEY, JSON.stringify({ x: posX, y: posY })) } catch (_) {}
 }
 
 function initDrag() {
   if (!host) return
 
-  // Restore saved position
   try {
     const saved = localStorage.getItem(POS_KEY)
     if (saved) {
-      const { x, y } = JSON.parse(saved)
-      host.style.right  = "auto"
-      host.style.bottom = "auto"
-      host.style.left   = x
-      host.style.top    = y
+      const p = JSON.parse(saved)
+      posX = p.x; posY = p.y
+    } else {
+      posX = window.innerWidth  - 310
+      posY = window.innerHeight - 400
     }
-  } catch (_) {}
+  } catch (_) {
+    posX = window.innerWidth  - 310
+    posY = window.innerHeight - 400
+  }
+  pendingX = posX; pendingY = posY
+  host.style.transform = `translate(${posX}px,${posY}px)`
 
   host.addEventListener("mousedown", (e: MouseEvent) => {
     const target = e.composedPath()[0] as Element
@@ -354,15 +368,10 @@ function initDrag() {
     const r = host!.getBoundingClientRect()
     dragOX = e.clientX - r.left
     dragOY = e.clientY - r.top
-    host!.style.transition = "none"
-    host!.style.right  = "auto"
-    host!.style.bottom = "auto"
-    host!.style.willChange = "left, top"
     document.documentElement.style.userSelect = "none"
     e.preventDefault()
   })
 
-  // Use window + capture so events never get lost even when cursor leaves the element fast
   window.addEventListener("mousemove", onMouseMove, { capture: true, passive: true })
   window.addEventListener("mouseup",   onMouseUp,   { capture: true })
 }
