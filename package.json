@@ -28,6 +28,10 @@
     "typescript": "5.3.3"
   },
   "manifest": {
+    "permissions": [
+      "storage",
+      "notifications"
+    ],
     "host_permissions": [
       "https://*/*",
       "https://fonts.googleapis.com/*",
