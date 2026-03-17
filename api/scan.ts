@@ -186,7 +186,7 @@ async function fetchSolscan(endpoint: string) {
   return fetchJson(`${SOLSCAN_BASE}${endpoint}`, { headers: { token: key } }, 5000);
 }
 
-// ─── P1 FIX — GeckoTerminal candles (remplace io.dexscreener.com bloqué Cloudflare) ───
+// ─── GeckoTerminal candles (remplace io.dexscreener.com bloqué Cloudflare) ───
 async function fetchDexCandles(
   pairAddress: string, _chainId = "solana"
 ): Promise<Array<{ o:number; h:number; l:number; c:number; v:number; ts:number }>> {
@@ -196,7 +196,6 @@ async function fetchDexCandles(
   }, 6000);
   const ohlcv = raw?.data?.attributes?.ohlcv_list;
   if (!Array.isArray(ohlcv) || ohlcv.length === 0) return [];
-  // Format GeckoTerminal: [timestamp, open, high, low, close, volume]
   return ohlcv.map((b: any) => ({
     ts: asNumber(b[0]),
     o:  asNumber(b[1]),
@@ -354,8 +353,7 @@ function layerRugCheck(rugData: any, rugReportData: any, resolvedMint: string): 
     trust *= 0.15; forceRug = true; safeBlocked = true;
   }
 
-  // ─── BUG A FIX — LP warning: only fire when RugCheck provides reliable LP data
-  // and the mint is not a known official token.
+  // Bug A FIX — pas de warning LP si RugCheck n'a pas de données LP ou si mint officiel
   if (rugData.lpBurned === true) {
     flags.push(makeFlag("LP Burned ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.10);
   } else if (rugData.lpLocked === true) {
@@ -370,7 +368,6 @@ function layerRugCheck(rugData: any, rugReportData: any, resolvedMint: string): 
       typeof rugData.lpLockDuration === "number" ||
       typeof rugData.lockDurationDays === "number";
     const isOfficialMint = OFFICIAL_MINTS.has(resolvedMint);
-
     if (lpDataPresent && !isOfficialMint) {
       flags.push(makeFlag("LP not burned or locked", "warning", 0));
       trust *= 0.70;
@@ -387,11 +384,11 @@ function layerRugCheck(rugData: any, rugReportData: any, resolvedMint: string): 
   if (top1 > 20)       { flags.push(makeFlag("Top 1 holder > 20%",   "critical", 0)); trust *= 0.45; }
 
   if (riskIncludes(rugReportData, /sniper/i))                  { flags.push(makeFlag("Sniper activity detected",  "critical", 0)); trust *= 0.15; safeBlocked = true; }
-  if (riskIncludes(rugReportData, /rug/i))                     { flags.push(makeFlag("Rug pull history",           "critical", 0)); trust *= 0.15; forceRug = true; }
+  // Bug J FIX — \brug\b pour éviter faux positifs sur "drug", "shrug", etc.
+  if (riskIncludes(rugReportData, /\brug\b/i))                 { flags.push(makeFlag("Rug pull history",           "critical", 0)); trust *= 0.15; forceRug = true; }
   if (riskIncludes(rugReportData, /creator.*sell|dev.*sell/i)) { flags.push(makeFlag("Dev wallet sold tokens",    "warning",  0)); trust *= 0.65; }
 
-  // ─── BUG E FIX — Mint/Freeze authority: read from risks[] in full report
-  // since /report/summary always returns null for mintAuthorityEnabled / freezeAuthorityEnabled.
+  // Bug E FIX — Mint/Freeze authority: lire depuis risks[] du full report
   const mintInSummary   = rugData.mintAuthorityEnabled === true;
   const freezeInSummary = rugData.freezeAuthorityEnabled === true;
   const mintInRisks     = riskIncludes(rugReportData, /mint.*authority|authority.*mint/i);
@@ -498,7 +495,6 @@ function layerHelius(
 
   if (top1Pct > 0.3)      { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "critical", 0)); trust *= 0.08; forceRug = true; }
   else if (top1Pct > 0.2) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "critical", 0)); trust *= 0.25; safeBlocked = true; }
-  // P2 FIX — top1 > 10% bloque désormais le SAFE (safeBlocked=true) et pénalise plus fort (*0.50)
   else if (top1Pct > 0.1) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "warning",  0)); trust *= 0.50; safeBlocked = true; }
 
   if (top10Pct > 0.8)      { flags.push(makeFlag(`Top 10 wallets hold ${Math.round(top10Pct*100)}% of supply`, "critical", 0)); trust *= 0.35; safeBlocked = true; }
@@ -536,9 +532,9 @@ function layerSolscan(
 
   if (tokenAgeHours !== null) {
     if (tokenAgeHours < 0.5)      { flags.push(makeFlag("Newborn token on-chain (<30min)",  "critical", 0)); trust *= 0.10; safeBlocked = true; }
-    else if (tokenAgeHours < 1)   { flags.push(makeFlag("Newborn token on-chain (<1h)",    "critical", 0)); trust *= 0.20; safeBlocked = true; }
-    else if (tokenAgeHours < 6)   { flags.push(makeFlag("Fresh token on-chain (<6h)",      "warning",  0)); trust *= 0.65; }
-    else if (tokenAgeHours > 720) { flags.push(makeFlag("Established token (30d+) ✓",      "bonus",    0)); trust = Math.min(1.0, trust * 1.05); }
+    else if (tokenAgeHours < 1)   { flags.push(makeFlag("Newborn token on-chain (<1h)",     "critical", 0)); trust *= 0.20; safeBlocked = true; }
+    else if (tokenAgeHours < 6)   { flags.push(makeFlag("Fresh token on-chain (<6h)",       "warning",  0)); trust *= 0.65; }
+    else if (tokenAgeHours > 720) { flags.push(makeFlag("Established token (30d+) ✓",       "bonus",    0)); trust = Math.min(1.0, trust * 1.05); }
   }
 
   if (trades24h !== null && traders24h !== null && traders24h > 0) {
@@ -810,13 +806,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const solMarketPool = Array.isArray(solMarkets?.data) && solMarkets.data.length > 0
       ? solMarkets.data.sort((a: any, b: any) => asNumber(b.liquidity) - asNumber(a.liquidity))[0]
       : null;
+
+    // Bug D FIX — tokenAgeHours basé UNIQUEMENT sur Solscan created_time (on-chain)
+    // On supprime le fallback pairCreatedAt qui causait des faux positifs "Newborn token"
+    // sur des tokens anciens avec une nouvelle paire.
     const solscanCreatedTime: number | null = solMeta?.data?.created_time ?? null;
     const solscanTokenAgeHours: number | null =
       solscanCreatedTime !== null
       ? Math.floor((Date.now() / 1000 - solscanCreatedTime) / 3600)
-      : pair?.pairCreatedAt
-      ? Math.floor((Date.now() - pair.pairCreatedAt) / 3_600_000)
-      : null;
+      : null; // Bug D FIX: plus de fallback pairCreatedAt ici
+
     const dexTokenAgeHours: number | null = pair?.pairCreatedAt
       ? Math.floor((Date.now() - pair.pairCreatedAt) / 3_600_000)
       : null;
@@ -873,7 +872,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     else if (sources_used.length === 0)   risk = "DANGER";
     else if (safeBlocked && score >= 600) risk = "CAUTION";
     else if (safeBlocked)                 risk = "DANGER";
-    // P3 FIX — seuil SAFE relevé à 850 (au lieu de 800)
     else if (score >= 850)                risk = "SAFE";
     else if (score >= 600)                risk = "CAUTION";
     else if (score >= 350)                risk = "DANGER";
@@ -883,7 +881,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const severityOrder: Record<Severity, number> = { critical:0, warning:1, info:2, bonus:3 };
     flags.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
 
-    const confidence = Math.round((sources_used.length / 5) * 100);
+    // P4 FIX — diviseur 6 (6 sources possibles: dex, rug, goplus, helius, solscan, chart)
+    const confidence = Math.round((sources_used.length / 6) * 100);
     const layersSnapshot = Object.fromEntries(
       allLayers.map(l => [l.source, { trust: +l.trust.toFixed(3), available: l.available }])
     );
@@ -901,11 +900,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       solscanTrades24h,
       solscanTraders24h,
       layers: layersSnapshot,
-      scoring_version: "4.9.7",
+      scoring_version: "4.9.8",
       fetchedAt: Date.now(),
     });
   } catch (e) {
-    console.error("[scan v4.9.7]", e);
+    console.error("[scan v4.9.8]", e);
     return res.status(500).json({ error: "Analysis error." });
   }
 }
