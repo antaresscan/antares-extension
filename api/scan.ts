@@ -77,6 +77,7 @@ const CORS: Record<string, string> = {
 
 type Severity   = "critical" | "warning" | "info" | "bonus";
 type ScanFlag   = { label: string; severity: Severity; impact: number };
+type SafeBlockedReason = "age" | "holders" | "mint" | "freeze" | "honeypot" | "copycat" | "rug_pattern" | "wash_trading" | "pump" | "bundle" | "sniper" | "chart";
 type LayerResult = {
   source:      string;
   trust:       number;
@@ -734,6 +735,46 @@ function computeFinalScore(layers: LayerResult[]): number {
   return Math.round(Math.max(0, Math.min(1, product)) * 1000);
 }
 
+// ─── [2.3] SAFE-BLOCK REASON CLASSIFIER ──────────────────────────────────────
+const HARD_BLOCK_PATTERNS: Array<[RegExp, SafeBlockedReason]> = [
+  [/mint authority/i,    "mint"],
+  [/freeze authority/i,  "freeze"],
+  [/honeypot/i,          "honeypot"],
+  [/copycat|brand imitation/i, "copycat"],
+  [/wash trading/i,      "wash_trading"],
+  [/bundle|bundler/i,    "bundle"],
+  [/sniper/i,            "sniper"],
+  [/rug|dump|exit trap/i,"rug_pattern"],
+  [/pump|parabolic/i,    "pump"],
+  [/chart|blow-off|stair-step|volume exhaustion|liquidity mirage/i, "chart"],
+];
+
+function classifySafeBlockedReasons(layers: LayerResult[]): SafeBlockedReason[] {
+  const reasons: SafeBlockedReason[] = [];
+  const seen: Record<string, boolean> = {};
+  function add(r: SafeBlockedReason) { if (!seen[r]) { seen[r] = true; reasons.push(r); } }
+
+  for (const layer of layers) {
+    if (!layer.safeBlocked) continue;
+    let matched = false;
+    for (const flag of layer.flags) {
+      for (const entry of HARD_BLOCK_PATTERNS) {
+        if (entry[0].test(flag.label)) { add(entry[1]); matched = true; }
+      }
+    }
+    // If safeBlocked but no hard-block flag matched, classify by layer source
+    if (!matched) {
+      if (layer.source === "solscan" || layer.source === "helius") {
+        for (const f of layer.flags) {
+          if (/holder/i.test(f.label) || /wallet.*holds/i.test(f.label) || /top.*hold/i.test(f.label)) add("holders");
+          if (/newborn|fresh|age|<\d+h|<\d+min/i.test(f.label)) add("age");
+        }
+      }
+    }
+  }
+  return reasons;
+}
+
 // ─── HANDLER PRINCIPAL ───────────────────────────────────────────────────────
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setHeaders(res);
@@ -886,9 +927,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const l8 = layerCrossValidation(rugData, rawHolderAccounts, goplus, solscanTokenAgeHours, dexTokenAgeHours);
 
     const allLayers = [l1, l2, l3, l4, l5, l6, l7, l8];
-    const score       = computeFinalScore(allLayers);
+    let score         = computeFinalScore(allLayers);
     const forceRug    = allLayers.some(l => l.forceRug);
-    const safeBlocked = allLayers.some(l => l.safeBlocked);
+    let safeBlocked   = allLayers.some(l => l.safeBlocked);
+
+    // [2.3] Track safeBlocked reasons for gate hardening
+    const safeBlockedReasons = classifySafeBlockedReasons(allLayers);
+    const SOFT_REASONS: Record<string, boolean> = { age: true, holders: true };
+    const onlySoftReasons = safeBlockedReasons.length > 0 &&
+      safeBlockedReasons.every(r => SOFT_REASONS[r] === true);
+
+    const lpBurned = rugData?.lpBurned === true;
+    const goPlusClean = l3.available && l3.trust >= 0.95 && !l3.forceRug;
+
+    // [2.3] SAFE gate override: if safeBlocked reason is ONLY age/holders
+    // (not mint/freeze/honeypot/copycat), allow SAFE when conditions met
+    if (safeBlocked && onlySoftReasons && !forceRug &&
+        (holders ?? 0) > 500 && lpBurned && goPlusClean) {
+      safeBlocked = false;
+      console.log(JSON.stringify({ ca: resolvedMint, stage: "safe_gate_override", reasons: safeBlockedReasons }));
+    }
+
+    // [2.4] Established token bonus
+    const tokenAgeHours = solscanTokenAgeHours ?? dexTokenAgeHours ?? null;
+    if (tokenAgeHours !== null && tokenAgeHours > 720 &&
+        (holders ?? 0) > 1000 && lpBurned && goPlusClean) {
+      score = Math.min(1000, Math.round(score * 1.15));
+      console.log(JSON.stringify({ ca: resolvedMint, stage: "established_bonus_applied", score }));
+    }
 
     const sources_used: string[] = allLayers
       .filter(l => l.available && l.source !== "crossvalidation" && l.source !== "identity")
@@ -921,7 +987,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       tokenSymbol:   pair?.baseToken?.symbol ?? null,
       tokenName:     pair?.baseToken?.name   ?? null,
       pairCreatedAt: pair?.pairCreatedAt     ?? null,
-      safeBlocked, tokenLogo, tokenCreator, tokenDecimals, tokenSupply, recentTransfers,
+      safeBlocked, safeBlockedReasons, tokenLogo, tokenCreator, tokenDecimals, tokenSupply, recentTransfers,
       solscanTokenAgeHours,
       solscanVolume24h,
       solscanTrades24h,
