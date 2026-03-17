@@ -307,7 +307,8 @@ let boxEl: HTMLDivElement | null = null
 let hideTimeout: ReturnType<typeof setTimeout> | null = null
 let lastCA            = ""
 let manuallyDismissed = false
-let scanInFlight      = false
+let currentScanController: AbortController | null = null
+let isInjecting       = false
 
 // ── Drag ────────────────────────────────────────────────────────────────────────
 let dragOX = 0, dragOY = 0
@@ -398,7 +399,11 @@ function createHost() {
 }
 
 new MutationObserver(() => {
-  if (!host || !document.documentElement.contains(host)) createHost()
+  if (!host || !document.documentElement.contains(host)) {
+    if (isInjecting) return
+    isInjecting = true
+    setTimeout(() => { createHost(); isInjecting = false }, 150)
+  }
 }).observe(document.documentElement, { childList: true, subtree: false })
 
 function getBox(): HTMLDivElement {
@@ -425,7 +430,13 @@ function showBox() {
   }))
 }
 
-function resetState() { lastCA = ""; manuallyDismissed = false; scanInFlight = false; hideBox() }
+function resetState() {
+  lastCA = ""
+  manuallyDismissed = false
+  currentScanController?.abort()
+  currentScanController = null
+  hideBox()
+}
 
 function attachClose() {
   shadow?.querySelector("#ant-close")?.addEventListener("click", () => { manuallyDismissed = true; hideBox() }, { once: true })
@@ -514,23 +525,29 @@ async function scan(ca: string) {
   if (!ca) return
   const el = getBox()
 
-  // fix: was blocking rescan if box visible with same CA — now only blocks if cache is still fresh
   const cached = getCached(ca)
   if (ca === lastCA && cached && el.style.display !== "none") return
   if (manuallyDismissed && ca === lastCA) return
-  if (scanInFlight) return
+  if (currentScanController) return
   if (ca !== lastCA) { manuallyDismissed = false; lastCA = ca }
 
   if (cached) {
     el.innerHTML = buildResult(cached, ca)
     showBox()
     requestAnimationFrame(() => {
-      el.querySelectorAll(".sbar-fill").forEach((b: any) => setTimeout(() => { b.style.width = b.dataset.w + "%" }, 250))
+      el.querySelectorAll(".sbar-fill").forEach((b: Element) => {
+        const bar = b as HTMLElement
+        setTimeout(() => { bar.style.width = bar.dataset.w + "%" }, 250)
+      })
     })
     attachClose(); return
   }
 
-  scanInFlight = true
+  // Abort any previous in-flight scan, start a new one
+  currentScanController?.abort()
+  const controller = new AbortController()
+  currentScanController = controller
+
   if (boxEl) boxEl.className = "box"
   el.innerHTML = `
     <div class="topbar" style="background:linear-gradient(90deg,transparent,#3a3a3f,transparent)"></div>
@@ -540,20 +557,24 @@ async function scan(ca: string) {
   showBox(); attachClose()
 
   try {
-    const res  = await fetch(`${API}?ca=${ca}`)
+    const res  = await fetch(`${API}?ca=${ca}`, { signal: controller.signal })
+    if (controller.signal.aborted) return
     if (!res.ok) throw new Error("" + res.status)
     const data = await res.json()
-    if (lastCA !== ca) { scanInFlight = false; return }
+    if (controller.signal.aborted) return
     scanCache.set(ca, { data, ts: Date.now() })
     saveToLS(ca, data)
     el.innerHTML = buildResult(data, ca)
     showBox()
     requestAnimationFrame(() => {
-      el.querySelectorAll(".sbar-fill").forEach((b: any) => setTimeout(() => { b.style.width = b.dataset.w + "%" }, 250))
+      el.querySelectorAll(".sbar-fill").forEach((b: Element) => {
+        const bar = b as HTMLElement
+        setTimeout(() => { bar.style.width = bar.dataset.w + "%" }, 250)
+      })
     })
     attachClose()
-  } catch (_e) {
-    // fix: always reset scanInFlight regardless of lastCA check
+  } catch (e) {
+    if (controller.signal.aborted) return
     if (lastCA === ca) {
       if (boxEl) boxEl.className = "box danger"
       el.innerHTML = `
@@ -564,8 +585,9 @@ async function scan(ca: string) {
       showBox(); attachClose()
     }
   } finally {
-    // fix: was only reset at end of try block — now guaranteed via finally
-    scanInFlight = false
+    if (currentScanController === controller) {
+      currentScanController = null
+    }
   }
 }
 
