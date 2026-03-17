@@ -713,10 +713,23 @@ function computeFinalScore(layers: LayerResult[]): number {
   }
 
   if (totalWeight === 0) return 0;
-  if (totalWeight < 1.0) product = Math.pow(product, 1 / totalWeight);
+
+  // [2.1] Dynamic layer reweighting — normalise by available weight so missing
+  // sources don't structurally deflate the score.
+  product = Math.pow(product, 1 / totalWeight);
 
   const identity = layers.find(l => l.source === "identity");
   if (identity?.available) product *= identity.trust;
+
+  // [2.2] Cross-validation trust penalties — apply multipliers based on conflict flags
+  const xv = layers.find(l => l.source === "crossvalidation");
+  if (xv?.available && xv.flags.length > 0) {
+    for (const f of xv.flags) {
+      if (/LP burn conflict/i.test(f.label))        product *= 0.85;
+      else if (/Mint authority conflict/i.test(f.label)) product *= 0.70;
+      else if (/age conflict/i.test(f.label))        product *= 0.90;
+    }
+  }
 
   return Math.round(Math.max(0, Math.min(1, product)) * 1000);
 }
