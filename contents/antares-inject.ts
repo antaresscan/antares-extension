@@ -119,8 +119,8 @@ const SHADOW_CSS = `
   box-shadow: 0 40px 80px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.02) inset;
   display: none;
   opacity: 0;
-  transform: translateY(18px);
-  transition: opacity .25s ease, transform .25s ease;
+  transform: translateY(8px);
+  transition: opacity .2s ease, transform .2s ease;
   font-family: 'IBM Plex Mono', monospace;
   font-size: 12px;
   line-height: 1.4;
@@ -295,9 +295,17 @@ const SHADOW_CSS = `
 .fo a.warn  { border-color: rgba(255,95,95,.2); color: #cc5555; }
 .fo a.warn:hover { border-color: rgba(255,95,95,.4); color: #ff5f5f; background: rgba(255,95,95,.04); }
 
-@keyframes ant-pulse { 0%,100%{opacity:1} 50%{opacity:.15} }
+@keyframes ant-pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
 .scanning { display:flex; align-items:center; gap:8px; color:#777; font-size:12px; padding:12px 14px; font-family:'IBM Plex Mono',monospace; }
 .dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:#444; animation:ant-pulse 1.2s infinite; }
+
+.skel { padding: 10px 14px; }
+.skel-verdict { width: 120px; height: 38px; background: #1a1a1e; border-radius: 6px; animation: ant-pulse 1.4s ease-in-out infinite; margin-bottom: 10px; }
+.skel-bar { width: 100%; height: 2px; background: #1a1a1e; border-radius: 1px; animation: ant-pulse 1.4s ease-in-out infinite .2s; margin-bottom: 10px; }
+.skel-line { height: 10px; background: #1a1a1e; border-radius: 3px; animation: ant-pulse 1.4s ease-in-out infinite; margin-bottom: 6px; }
+.skel-line:nth-child(3) { width: 90%; animation-delay: .1s; }
+.skel-line:nth-child(4) { width: 75%; animation-delay: .2s; }
+.skel-line:nth-child(5) { width: 60%; animation-delay: .3s; }
 `
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -413,10 +421,16 @@ function getBox(): HTMLDivElement {
 
 function hideBox() {
   if (!boxEl) return
+  boxEl.style.transition = "opacity .15s ease, transform .15s ease"
   boxEl.style.opacity   = "0"
-  boxEl.style.transform = "translateY(18px)"
+  boxEl.style.transform = "translateY(8px)"
   if (hideTimeout) clearTimeout(hideTimeout)
-  hideTimeout = setTimeout(() => { if (boxEl) boxEl.style.display = "none" }, 250)
+  hideTimeout = setTimeout(() => {
+    if (boxEl) {
+      boxEl.style.display = "none"
+      boxEl.style.transition = "opacity .2s ease, transform .2s ease"
+    }
+  }, 150)
 }
 
 function showBox() {
@@ -424,6 +438,7 @@ function showBox() {
   const el = boxEl!
   if (hideTimeout) clearTimeout(hideTimeout)
   el.style.display = "block"
+  el.style.transition = "opacity .2s ease, transform .2s ease"
   requestAnimationFrame(() => requestAnimationFrame(() => {
     el.style.opacity   = "1"
     el.style.transform = "translateY(0)"
@@ -440,6 +455,35 @@ function resetState() {
 
 function attachClose() {
   shadow?.querySelector("#ant-close")?.addEventListener("click", () => { manuallyDismissed = true; hideBox() }, { once: true })
+}
+
+function triggerResultAnimations(el: HTMLDivElement) {
+  requestAnimationFrame(() => {
+    el.querySelectorAll(".sbar-fill").forEach((b: Element) => {
+      const bar = b as HTMLElement
+      setTimeout(() => { bar.style.width = bar.dataset.w + "%" }, 250)
+    })
+    const scoreEl = el.querySelector(".ant-score") as HTMLElement | null
+    if (scoreEl) {
+      const target = parseInt(scoreEl.dataset.target || "0", 10)
+      animateScore(scoreEl, target)
+    }
+  })
+}
+
+// ── Animated score counter ─────────────────────────────────────────────────────
+function easeOutQuad(t: number): number { return t * (2 - t) }
+
+function animateScore(el: HTMLElement, target: number, duration = 1100) {
+  const start = performance.now()
+  function tick(now: number) {
+    const elapsed = now - start
+    const progress = Math.min(elapsed / duration, 1)
+    const value = Math.round(easeOutQuad(progress) * target)
+    el.textContent = String(value)
+    if (progress < 1) requestAnimationFrame(tick)
+  }
+  requestAnimationFrame(tick)
 }
 
 // ── HTML builders ─────────────────────────────────────────────────────────────
@@ -509,7 +553,7 @@ function buildResult(data: any, ca: string): string {
     ${buildHeader()}
     ${tokenSymbol ? `<div class="tk"><b>${tokenSymbol}</b> ${tokenName}</div>` : ""}
     <div class="vb"><h1>${label}</h1></div>
-    <div class="sr"><span class="n"><b>${score}</b> / 1000</span><div class="dots">${dots}</div></div>
+    <div class="sr"><span class="n"><b class="ant-score" data-target="${score}">0</b> / 1000</span><div class="dots">${dots}</div></div>
     <div class="sbar"><div class="sbar-fill" data-w="${barW}"></div></div>
     <div class="sum">${summary}</div>
     <div class="sep"></div>
@@ -534,12 +578,7 @@ async function scan(ca: string) {
   if (cached) {
     el.innerHTML = buildResult(cached, ca)
     showBox()
-    requestAnimationFrame(() => {
-      el.querySelectorAll(".sbar-fill").forEach((b: Element) => {
-        const bar = b as HTMLElement
-        setTimeout(() => { bar.style.width = bar.dataset.w + "%" }, 250)
-      })
-    })
+    triggerResultAnimations(el)
     attachClose(); return
   }
 
@@ -552,7 +591,13 @@ async function scan(ca: string) {
   el.innerHTML = `
     <div class="topbar" style="background:linear-gradient(90deg,transparent,#3a3a3f,transparent)"></div>
     ${buildHeader()}
-    <div class="scanning"><span class="dot"></span>Scanning&hellip;</div>
+    <div class="skel">
+      <div class="skel-verdict"></div>
+      <div class="skel-bar"></div>
+      <div class="skel-line"></div>
+      <div class="skel-line"></div>
+      <div class="skel-line"></div>
+    </div>
   `
   showBox(); attachClose()
 
@@ -566,12 +611,7 @@ async function scan(ca: string) {
     saveToLS(ca, data)
     el.innerHTML = buildResult(data, ca)
     showBox()
-    requestAnimationFrame(() => {
-      el.querySelectorAll(".sbar-fill").forEach((b: Element) => {
-        const bar = b as HTMLElement
-        setTimeout(() => { bar.style.width = bar.dataset.w + "%" }, 250)
-      })
-    })
+    triggerResultAnimations(el)
     attachClose()
   } catch (e) {
     if (controller.signal.aborted) return
