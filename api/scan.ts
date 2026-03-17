@@ -52,13 +52,15 @@ const LAYER_WEIGHTS = {
   chart:       0.05,
 };
 
-// ─── RATE LIMIT ───────────────────────────────────────────────────────────────
+// ─── RATE LIMIT & SCAN CACHE ──────────────────────────────────────────────────
 let ratelimit: Ratelimit | null = null;
+let scanCacheRedis: Redis | null = null;
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
   const redis = new Redis({
     url: process.env.UPSTASH_REDIS_REST_URL,
     token: process.env.UPSTASH_REDIS_REST_TOKEN,
   });
+  scanCacheRedis = redis;
   ratelimit = new Ratelimit({
     redis,
     limiter: Ratelimit.slidingWindow(30, "60 s"),
@@ -152,16 +154,27 @@ function _pct(from: number, to: number): number {
   return ((to - from) / Math.abs(from)) * 100;
 }
 
+function settled<T>(p: Promise<T>): Promise<T | null> {
+  return p.then(v => v).catch(() => null);
+}
+
+function computeCacheTTL(tokenAgeMinutes: number | null): number {
+  if (tokenAgeMinutes === null) return 20;
+  if (tokenAgeMinutes < 60) return 15;
+  if (tokenAgeMinutes < 1440) return 30;
+  return 120;
+}
+
 // ─── HELIUS HELPERS ───────────────────────────────────────────────────────────
 async function heliusGetLargestAccounts(mint: string, key: string) {
   return fetchJsonPost(`${HELIUS_BASE}/?api-key=${key}`, {
     jsonrpc: "2.0", id: "holders", method: "getTokenLargestAccounts", params: [mint],
-  });
+  }, 6000);
 }
 async function heliusGetTokenSupply(mint: string, key: string) {
   return fetchJsonPost(`${HELIUS_BASE}/?api-key=${key}`, {
     jsonrpc: "2.0", id: "supply", method: "getTokenSupply", params: [mint],
-  });
+  }, 6000);
 }
 async function heliusGetHoldersCount(mint: string, key: string): Promise<number | null> {
   const res = await fetchJsonPost(`${HELIUS_BASE}/?api-key=${key}`, {
@@ -726,13 +739,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const ca = req.query.ca as string | undefined;
   if (!ca || !CA_RE.test(ca)) return res.status(400).json({ error: "Invalid token address." });
 
+  // [1.3] Adaptive Redis cache — serve cached result if within TTL
+  const cacheKey = `antares:v2:${ca}`;
+  if (scanCacheRedis) {
+    try {
+      const cached = await scanCacheRedis.get(cacheKey);
+      if (cached) return res.json(cached);
+    } catch { /* cache miss or Redis error — continue with fresh fetch */ }
+  }
+
   const HELIUS_API_KEY = process.env.HELIUS_API_KEY || "";
 
   try {
     const [dexRes, rugRes, rugReportRes] = await Promise.all([
-      fetchJson(`${DEXSCREENER_BASE}/tokens/${ca}`),
-      fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report/summary`),
-      fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report`, {}, 10000),
+      settled(fetchJson(`${DEXSCREENER_BASE}/tokens/${ca}`, {}, 5000)),
+      settled(fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report/summary`, {}, 5000)),
+      settled(fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report`, {}, 8000)),
     ]);
 
     let dexData = dexRes;
@@ -746,18 +768,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       rugData?.message?.toLowerCase?.().includes("not found");
 
     if (!pair || !rugData || rugMissing) {
-      const pairData     = await fetchJson(`${DEXSCREENER_BASE}/pairs/solana/${ca}`);
+      const pairData     = await settled(fetchJson(`${DEXSCREENER_BASE}/pairs/solana/${ca}`, {}, 5000));
       const resolvedPair = pairData?.pairs?.[0] ?? pairData?.pair ?? null;
       const baseMint     = resolvedPair?.baseToken?.address;
       if (resolvedPair) pair = pair ?? resolvedPair;
       if (baseMint && baseMint !== ca) {
         resolvedMint = baseMint;
         const [dexRetry, rugRetry] = await Promise.all([
-          fetchJson(`${DEXSCREENER_BASE}/tokens/${resolvedMint}`),
-          fetchJson(`${RUGCHECK_BASE}/tokens/${resolvedMint}/report/summary`),
+          settled(fetchJson(`${DEXSCREENER_BASE}/tokens/${resolvedMint}`, {}, 5000)),
+          settled(fetchJson(`${RUGCHECK_BASE}/tokens/${resolvedMint}/report/summary`, {}, 5000)),
         ]);
         if (dexRetry?.pairs?.[0]) { dexData = dexRetry; pair = dexRetry.pairs[0]; }
         if (rugRetry) rugData = rugRetry;
+      } else if (!baseMint) {
+        // [1.6] Structured log on mint resolution failure
+        console.warn(JSON.stringify({ ca, stage: "mint_resolution_failed" }));
       }
     }
 
@@ -779,14 +804,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       solscanHoldersCount,
       solMeta, solTransfers, solMarkets,
     ] = await Promise.all([
-      fetchDexCandles(pairAddress),
-      fetchJson(`${GOPLUS_BASE}/solana/token_security?contract_addresses=${resolvedMint}`),
-      HELIUS_API_KEY ? heliusGetLargestAccounts(resolvedMint, HELIUS_API_KEY) : Promise.resolve(null),
-      HELIUS_API_KEY ? heliusGetTokenSupply(resolvedMint, HELIUS_API_KEY)    : Promise.resolve(null),
-      solscanGetHoldersCount(resolvedMint),
-      fetchSolscan(`/token/meta?address=${resolvedMint}`),
-      fetchSolscan(`/token/transfer?address=${resolvedMint}&page=1&page_size=10`),
-      fetchSolscan(`/token/markets?address=${resolvedMint}&page=1&page_size=1`),
+      settled(fetchDexCandles(pairAddress)),                                                          // GeckoTerminal 6s
+      settled(fetchJson(`${GOPLUS_BASE}/solana/token_security?contract_addresses=${resolvedMint}`, {}, 4000)), // GoPlus 4s
+      HELIUS_API_KEY ? settled(heliusGetLargestAccounts(resolvedMint, HELIUS_API_KEY)) : null,        // Helius holders 6s
+      HELIUS_API_KEY ? settled(heliusGetTokenSupply(resolvedMint, HELIUS_API_KEY))     : null,        // Helius supply 6s
+      settled(solscanGetHoldersCount(resolvedMint)),                                                  // Solscan 5s
+      settled(fetchSolscan(`/token/meta?address=${resolvedMint}`)),                                   // Solscan 5s
+      settled(fetchSolscan(`/token/transfer?address=${resolvedMint}&page=1&page_size=10`)),           // Solscan 5s
+      settled(fetchSolscan(`/token/markets?address=${resolvedMint}&page=1&page_size=1`)),             // Solscan 5s
     ]);
 
     const candles  = Array.isArray(candlesRaw) ? candlesRaw : [];
@@ -876,7 +901,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       allLayers.map(l => [l.source, { trust: +l.trust.toFixed(3), available: l.available }])
     );
 
-    return res.json({
+    const result = {
       score, risk, flags, pair, resolvedMint, confidence, sources_used,
       holders, marketCap, priceUsd, liquidity,
       volume24h, volume1h, priceChange5m, priceChange1h, priceChange24h,
@@ -891,7 +916,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       layers: layersSnapshot,
       scoring_version: "4.9.6",
       fetchedAt: Date.now(),
-    });
+    };
+
+    // [1.3] Adaptive Redis cache — write with TTL based on token age
+    if (scanCacheRedis) {
+      const ttl = computeCacheTTL(tokenAgeMinutes);
+      scanCacheRedis.setex(cacheKey, ttl, JSON.stringify(result)).catch(() => {});
+    }
+
+    return res.json(result);
   } catch (e) {
     console.error("[scan v4.9.6]", e);
     return res.status(500).json({ error: "Analysis error." });
