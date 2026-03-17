@@ -55,6 +55,34 @@ function checkRiskEscalation(ca: string, currentRisk: string, tokenSymbol: strin
   })
 }
 
+// ─── HISTORY ───────────────────────────────────────────────────────────────
+interface HistoryEntry {
+  ca: string
+  symbol: string
+  risk: string
+  score: number
+  ts: number
+}
+
+const HISTORY_KEY = "antares_scan_history"
+const MAX_HISTORY = 10
+
+function saveToHistory(ca: string, data: Record<string, unknown>) {
+  const entry: HistoryEntry = {
+    ca,
+    symbol: (data.tokenSymbol as string) || (data.pair as Record<string, Record<string, string>> | undefined)?.baseToken?.symbol || ca.slice(0, 8),
+    risk: (data.risk as string) || "UNKNOWN",
+    score: (data.score as number) || 0,
+    ts: Date.now(),
+  }
+  chrome.storage.local.get([HISTORY_KEY], (result) => {
+    const history = (result[HISTORY_KEY] || []) as HistoryEntry[]
+    const filtered = history.filter((h) => h.ca !== ca)
+    filtered.unshift(entry)
+    chrome.storage.local.set({ [HISTORY_KEY]: filtered.slice(0, MAX_HISTORY) })
+  })
+}
+
 // ─── MESSAGE HANDLER ────────────────────────────────────────────────────────
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === "SCAN") {
@@ -67,9 +95,16 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           const sym = (data.tokenSymbol || data.pair?.baseToken?.symbol || "") as string
           checkRiskEscalation(msg.ca as string, risk, sym)
         }
+        saveToHistory(msg.ca as string, data as Record<string, unknown>)
         sendResponse({ ok: true, data })
       })
       .catch((e: Error) => sendResponse({ ok: false, error: e.message }))
     return true // keep channel open
+  }
+  if (msg.type === "GET_HISTORY") {
+    chrome.storage.local.get([HISTORY_KEY], (result) => {
+      sendResponse({ ok: true, history: (result[HISTORY_KEY] || []) as HistoryEntry[] })
+    })
+    return true
   }
 })

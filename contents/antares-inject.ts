@@ -306,6 +306,35 @@ const SHADOW_CSS = `
 .skel-line:nth-child(3) { width: 90%; animation-delay: .1s; }
 .skel-line:nth-child(4) { width: 75%; animation-delay: .2s; }
 .skel-line:nth-child(5) { width: 60%; animation-delay: .3s; }
+
+.sparkline { padding: 4px 14px 0; }
+.sparkline svg { display: block; }
+
+.hist-btn {
+  flex: 1; display: block; padding: 8px;
+  font-size: 8px; color: #888; letter-spacing: .12em;
+  text-transform: uppercase; text-decoration: none; text-align: center;
+  border: 1px solid #252528; border-radius: 2px; transition: .2s;
+  font-family: 'IBM Plex Mono', monospace; background: none; cursor: pointer;
+}
+.hist-btn:hover { color: #ccc; border-color: #444; background: rgba(255,255,255,.02); }
+
+.hist-panel { display: none; padding: 0 14px 6px; }
+.hist-panel.open { display: block; }
+.hist-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 5px 0; font-size: 9px; font-family: 'IBM Plex Mono', monospace;
+  border-bottom: 1px solid #131316; color: #777;
+}
+.hist-item:last-child { border-bottom: none; }
+.hist-sym { color: #bbb; font-weight: 600; }
+.hist-risk { font-weight: 700; }
+.hist-risk.safe { color: #00e5b0; }
+.hist-risk.caution { color: #f5d000; }
+.hist-risk.danger { color: #ff5f5f; }
+.hist-risk.rug { color: #ff2244; }
+.hist-score { color: #555; }
+.hist-time { color: #444; font-size: 8px; }
 `
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -455,6 +484,35 @@ function resetState() {
 
 function attachClose() {
   shadow?.querySelector("#ant-close")?.addEventListener("click", () => { manuallyDismissed = true; hideBox() }, { once: true })
+  shadow?.querySelector("#ant-hist-btn")?.addEventListener("click", toggleHistory)
+}
+
+function toggleHistory() {
+  const panel = shadow?.querySelector("#ant-hist") as HTMLElement | null
+  if (!panel) return
+  if (panel.classList.contains("open")) {
+    panel.classList.remove("open")
+    return
+  }
+  panel.innerHTML = `<div style="color:#555;font-size:9px;padding:6px 0;font-family:'IBM Plex Mono',monospace">Loading...</div>`
+  panel.classList.add("open")
+  chrome.runtime.sendMessage({ type: "GET_HISTORY" }, (response) => {
+    if (!response?.ok || !response.history?.length) {
+      panel.innerHTML = `<div style="color:#444;font-size:9px;padding:6px 0;font-family:'IBM Plex Mono',monospace">No recent scans</div>`
+      return
+    }
+    const items = (response.history as Array<{ ca: string; symbol: string; risk: string; score: number; ts: number }>)
+      .map((h) => {
+        const rClass = (h.risk || "").toLowerCase()
+        return `<div class="hist-item">
+          <span class="hist-sym">${h.symbol}</span>
+          <span class="hist-risk ${rClass}">${h.risk}</span>
+          <span class="hist-score">${h.score}/1000</span>
+          <span class="hist-time">${formatTimeAgo(h.ts)}</span>
+        </div>`
+      }).join("")
+    panel.innerHTML = items
+  })
 }
 
 function triggerResultAnimations(el: HTMLDivElement) {
@@ -484,6 +542,38 @@ function animateScore(el: HTMLElement, target: number, duration = 1100) {
     if (progress < 1) requestAnimationFrame(tick)
   }
   requestAnimationFrame(tick)
+}
+
+// ── Sparkline builder ─────────────────────────────────────────────────────────
+const VERDICT_COLORS: Record<string, string> = {
+  SAFE: "#00e5b0", CAUTION: "#f5d000", DANGER: "#ff5f5f", RUG: "#ff2244",
+}
+
+function buildSparkline(candles: Array<{ close: number }> | undefined, risk: string): string {
+  if (!candles || candles.length < 2) return ""
+  const closes = candles.map((c) => c.close)
+  const min = Math.min(...closes)
+  const max = Math.max(...closes)
+  const range = max - min || 1
+  const w = 60, h = 30
+  const points = closes.map((v, i) => {
+    const x = (i / (closes.length - 1)) * w
+    const y = h - ((v - min) / range) * h
+    return `${x.toFixed(1)},${y.toFixed(1)}`
+  }).join(" ")
+  const color = VERDICT_COLORS[risk] || "#555"
+  return `<div class="sparkline"><svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg"><polyline points="${points}" fill="none" stroke="${color}" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`
+}
+
+// ── History helpers ──────────────────────────────────────────────────────────
+function formatTimeAgo(ts: number): string {
+  const diff = Date.now() - ts
+  const mins = Math.floor(diff / 60_000)
+  if (mins < 1) return "now"
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  return `${Math.floor(hrs / 24)}d ago`
 }
 
 // ── HTML builders ─────────────────────────────────────────────────────────────
@@ -548,6 +638,8 @@ function buildResult(data: any, ca: string): string {
     : ""
   const analysisLink = `<a href="${ANALYSIS_PAGE}?ca=${mint}" target="_blank" rel="noopener noreferrer"${isDangerous ? ' class="warn"' : ''}>Full Analysis &rarr;</a>`
 
+  const sparkline = buildSparkline(data.candles as Array<{ close: number }> | undefined, data.risk as string)
+
   return `
     <div class="topbar"></div>
     ${buildHeader()}
@@ -555,12 +647,14 @@ function buildResult(data: any, ca: string): string {
     <div class="vb"><h1>${label}</h1></div>
     <div class="sr"><span class="n"><b class="ant-score" data-target="${score}">0</b> / 1000</span><div class="dots">${dots}</div></div>
     <div class="sbar"><div class="sbar-fill" data-w="${barW}"></div></div>
+    ${sparkline}
     <div class="sum">${summary}</div>
     <div class="sep"></div>
     <div class="fl">${noFlags}</div>
     <div class="sep"></div>
     <div class="ss">${siSell}${siMint}${siFreeze}${siLP}${siLiq}</div>
-    <div class="fo">${dexLink}${analysisLink}</div>
+    <div class="hist-panel" id="ant-hist"></div>
+    <div class="fo">${dexLink}${analysisLink}<button class="hist-btn" id="ant-hist-btn">History</button></div>
   `
 }
 
