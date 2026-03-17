@@ -363,8 +363,6 @@ function layerRugCheck(rugData: any, rugReportData: any, resolvedMint: string): 
     if (days > 180) { flags.push(makeFlag("LP Locked > 180 days ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.05); }
     else if (days > 0 && days < 30) { flags.push(makeFlag("LP lock duration < 30 days", "warning", 0)); trust *= 0.75; }
   } else {
-    // Only emit the LP warning if RugCheck explicitly returned LP fields
-    // (lpBurned=false OR lpLocked=false) AND the mint is not an official token.
     const lpDataPresent =
       rugData.lpBurned === false ||
       rugData.lpLocked === false ||
@@ -392,8 +390,22 @@ function layerRugCheck(rugData: any, rugReportData: any, resolvedMint: string): 
   if (riskIncludes(rugReportData, /rug/i))                     { flags.push(makeFlag("Rug pull history",           "critical", 0)); trust *= 0.15; forceRug = true; }
   if (riskIncludes(rugReportData, /creator.*sell|dev.*sell/i)) { flags.push(makeFlag("Dev wallet sold tokens",    "warning",  0)); trust *= 0.65; }
 
-  if (rugData.mintAuthorityEnabled)   { flags.push(makeFlag("Mint Authority enabled (RugCheck)",   "critical", 0)); trust *= 0.25; }
-  if (rugData.freezeAuthorityEnabled) { flags.push(makeFlag("Freeze Authority enabled (RugCheck)", "critical", 0)); trust *= 0.25; }
+  // ─── BUG E FIX — Mint/Freeze authority: read from risks[] in full report
+  // since /report/summary always returns null for mintAuthorityEnabled / freezeAuthorityEnabled.
+  const mintInSummary   = rugData.mintAuthorityEnabled === true;
+  const freezeInSummary = rugData.freezeAuthorityEnabled === true;
+  const mintInRisks     = riskIncludes(rugReportData, /mint.*authority|authority.*mint/i);
+  const freezeInRisks   = riskIncludes(rugReportData, /freeze.*authority|authority.*freeze/i);
+  const hasMintAuthority   = mintInSummary   || mintInRisks;
+  const hasFreezeAuthority = freezeInSummary || freezeInRisks;
+
+  if (hasMintAuthority && hasFreezeAuthority) {
+    flags.push(makeFlag("Mint + Freeze authority both active (RugCheck)", "critical", 0));
+    trust *= 0.05; forceRug = true;
+  } else {
+    if (hasMintAuthority)   { flags.push(makeFlag("Mint Authority enabled (RugCheck)",   "critical", 0)); trust *= 0.25; }
+    if (hasFreezeAuthority) { flags.push(makeFlag("Freeze Authority enabled (RugCheck)", "critical", 0)); trust *= 0.25; }
+  }
 
   return { source: "rugcheck", trust: Math.max(0, trust), available: true, flags, forceRug, safeBlocked };
 }
@@ -889,11 +901,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       solscanTrades24h,
       solscanTraders24h,
       layers: layersSnapshot,
-      scoring_version: "4.9.6",
+      scoring_version: "4.9.7",
       fetchedAt: Date.now(),
     });
   } catch (e) {
-    console.error("[scan v4.9.6]", e);
+    console.error("[scan v4.9.7]", e);
     return res.status(500).json({ error: "Analysis error." });
   }
 }
