@@ -928,8 +928,43 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const allLayers = [l1, l2, l3, l4, l5, l6, l7, l8];
     let score         = computeFinalScore(allLayers);
-    const forceRug    = allLayers.some(l => l.forceRug);
+    let forceRug      = allLayers.some(l => l.forceRug);
     let safeBlocked   = allLayers.some(l => l.safeBlocked);
+    const postLayerFlags: ScanFlag[] = [];
+
+    // [2.5] Social honeypot detection
+    const buys5m  = asNumber(pair?.txns?.m5?.buys);
+    const sells5m = asNumber(pair?.txns?.m5?.sells);
+    const liqUsd  = asNumber(pair?.liquidity?.usd);
+    const ageMin  = tokenAgeMinutes ?? 0;
+    if (sells5m === 0 && buys5m > 10 && liqUsd > 5000 && ageMin > 30) {
+      postLayerFlags.push(makeFlag("Sells blocked (social honeypot)", "critical", 0));
+      forceRug = true;
+    }
+
+    // [2.6] Wash trading detection via transfers (R10: skip cleanly if data unavailable)
+    if (Array.isArray(recentTransfers) && recentTransfers.length >= 10) {
+      const wallets = new Set<string>();
+      for (const tx of recentTransfers) {
+        const from = (tx as Record<string, unknown>).from_address ?? (tx as Record<string, unknown>).from;
+        const to   = (tx as Record<string, unknown>).to_address   ?? (tx as Record<string, unknown>).to;
+        if (typeof from === "string") wallets.add(from);
+        if (typeof to   === "string") wallets.add(to);
+      }
+      if (wallets.size <= 3) {
+        postLayerFlags.push(makeFlag("Wash trading via transfers (≤3 unique wallets in 10+ txs)", "critical", 0));
+        forceRug = true;
+      }
+    }
+    // TODO [2.6]: If Solscan Pro API does not return recentTransfers, this block is safely skipped.
+
+    // [2.7] Pump.fun bonding curve guard (R10: safe proxy only, no undocumented API parsing)
+    // TODO: When Pump.fun releases official API for curve % → implement graduation check.
+    const volLiqRatio = liqUsd > 0 ? asNumber(pair?.volume?.h24) / liqUsd : 0;
+    if (ageMin > 0 && ageMin < 60 && volLiqRatio > 15) {
+      postLayerFlags.push(makeFlag("Pump.fun-style launch: <1h + vol/liq >15 — DANGER", "critical", 0));
+      safeBlocked = true;
+    }
 
     // [2.3] Track safeBlocked reasons for gate hardening
     const safeBlockedReasons = classifySafeBlockedReasons(allLayers);
@@ -971,7 +1006,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     else if (score >= 350)                risk = "DANGER";
     else                                  risk = "RUG";
 
-    const flags: ScanFlag[] = allLayers.flatMap(l => l.flags);
+    const flags: ScanFlag[] = allLayers.flatMap(l => l.flags).concat(postLayerFlags);
     const severityOrder: Record<Severity, number> = { critical:0, warning:1, info:2, bonus:3 };
     flags.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
 
