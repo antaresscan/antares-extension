@@ -324,7 +324,7 @@ function layerDexScreener(
 // ═══════════════════════════════════════════════════════════════════════════════
 // LAYER 2 — RugCheck
 // ═══════════════════════════════════════════════════════════════════════════════
-function layerRugCheck(rugData: any, rugReportData: any): LayerResult {
+function layerRugCheck(rugData: any, rugReportData: any, resolvedMint: string): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
   let forceRug = false, safeBlocked = false;
@@ -354,6 +354,8 @@ function layerRugCheck(rugData: any, rugReportData: any): LayerResult {
     trust *= 0.15; forceRug = true; safeBlocked = true;
   }
 
+  // ─── BUG A FIX — LP warning: only fire when RugCheck provides reliable LP data
+  // and the mint is not a known official token.
   if (rugData.lpBurned === true) {
     flags.push(makeFlag("LP Burned ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.10);
   } else if (rugData.lpLocked === true) {
@@ -361,7 +363,20 @@ function layerRugCheck(rugData: any, rugReportData: any): LayerResult {
     if (days > 180) { flags.push(makeFlag("LP Locked > 180 days ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.05); }
     else if (days > 0 && days < 30) { flags.push(makeFlag("LP lock duration < 30 days", "warning", 0)); trust *= 0.75; }
   } else {
-    flags.push(makeFlag("LP not burned or locked", "warning", 0)); trust *= 0.70;
+    // Only emit the LP warning if RugCheck explicitly returned LP fields
+    // (lpBurned=false OR lpLocked=false) AND the mint is not an official token.
+    const lpDataPresent =
+      rugData.lpBurned === false ||
+      rugData.lpLocked === false ||
+      typeof rugData.lpLockDurationDays === "number" ||
+      typeof rugData.lpLockDuration === "number" ||
+      typeof rugData.lockDurationDays === "number";
+    const isOfficialMint = OFFICIAL_MINTS.has(resolvedMint);
+
+    if (lpDataPresent && !isOfficialMint) {
+      flags.push(makeFlag("LP not burned or locked", "warning", 0));
+      trust *= 0.70;
+    }
   }
 
   if (rugData.metaMutable === true) { flags.push(makeFlag("Metadata mutable", "warning", 0)); trust *= 0.82; }
@@ -824,7 +839,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const priceChange24h = pair?.priceChange?.h24 ?? null;
 
     const l1 = layerDexScreener(pair, marketCap, tokenAgeMinutes);
-    const l2 = layerRugCheck(rugData, rugReportRes);
+    const l2 = layerRugCheck(rugData, rugReportRes, resolvedMint);
     const l3 = layerGoPlus(goplus);
     const l4 = layerHelius(rawHolderAccounts, totalSupplyUi);
     const l5 = layerSolscan(solscanHoldersCount, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h);
@@ -874,11 +889,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       solscanTrades24h,
       solscanTraders24h,
       layers: layersSnapshot,
-      scoring_version: "4.9.5",
+      scoring_version: "4.9.6",
       fetchedAt: Date.now(),
     });
   } catch (e) {
-    console.error("[scan v4.9.5]", e);
+    console.error("[scan v4.9.6]", e);
     return res.status(500).json({ error: "Analysis error." });
   }
 }
