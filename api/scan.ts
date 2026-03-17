@@ -54,6 +54,7 @@ const LAYER_WEIGHTS = {
 
 // ─── RATE LIMIT & SCAN CACHE ──────────────────────────────────────────────────
 let ratelimit: Ratelimit | null = null;
+let burstRatelimit: Ratelimit | null = null;
 let scanCacheRedis: Redis | null = null;
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
   const redis = new Redis({
@@ -66,6 +67,13 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
     limiter: Ratelimit.slidingWindow(30, "60 s"),
     analytics: false,
     prefix: "antares_rl",
+  });
+  // [2.8] Burst rate limiting — 5 req/10s per IP
+  burstRatelimit = new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(5, "10 s"),
+    analytics: false,
+    prefix: "antares_burst",
   });
 }
 
@@ -789,6 +797,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { success } = await ratelimit.limit(ip);
     if (!success) return res.status(429).json({ error: "Too many requests. Please slow down." });
   }
+  // [2.8] Burst rate limiting — 5 req/10s per IP
+  if (burstRatelimit) {
+    const { success } = await burstRatelimit.limit(ip);
+    if (!success) {
+      res.setHeader("Retry-After", "10");
+      return res.status(429).json({ error: "Burst limit exceeded. Retry in 10 seconds." });
+    }
+  }
 
   const ca = req.query.ca as string | undefined;
   if (!ca || !CA_RE.test(ca)) return res.status(400).json({ error: "Invalid token address." });
@@ -1028,7 +1044,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       solscanTrades24h,
       solscanTraders24h,
       layers: layersSnapshot,
-      scoring_version: "4.9.6",
+      scoring_version: "6.0.0",
       fetchedAt: Date.now(),
     };
 
@@ -1040,7 +1056,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.json(result);
   } catch (e) {
-    console.error("[scan v4.9.6]", e);
+    console.error("[scan v6.0.0]", e);
     return res.status(500).json({ error: "Analysis error." });
   }
 }
