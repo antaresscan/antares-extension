@@ -6,7 +6,7 @@ import type {
   DexScreenerPair, DexScreenerResponse, DexScreenerSocial,
   RugCheckSummary, RugCheckReport, RugCheckRisk,
   GoPlusTokenResult, GoPlusResponse,
-  HeliusHolder, HeliusLargestAccountsResponse, HeliusSupplyResponse, HeliusTokenAccountsResponse,
+    HeliusHolder, HeliusLargestAccountsResponse, HeliusSupplyResponse,
   SolscanTransfer, SolscanMeta, SolscanMarketPool, SolscanMarketsResponse, SolscanTransfersResponse,
   OHLCVCandle, GeckoTerminalOHLCVResponse,
   ScanResult, LayerSnapshot,
