@@ -1,6 +1,16 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
+import type {
+  Severity, ScanFlag, SafeBlockedReason, LayerResult, Verdict,
+  DexScreenerPair, DexScreenerResponse, DexScreenerSocial,
+  RugCheckSummary, RugCheckReport, RugCheckRisk,
+  GoPlusTokenResult, GoPlusResponse,
+  HeliusHolder, HeliusLargestAccountsResponse, HeliusSupplyResponse, HeliusTokenAccountsResponse,
+  SolscanTransfer, SolscanMeta, SolscanMarketPool, SolscanMarketsResponse, SolscanTransfersResponse,
+  OHLCVCandle, GeckoTerminalOHLCVResponse,
+  ScanResult, LayerSnapshot,
+} from "./types";
 
 const DEXSCREENER_BASE = "https://api.dexscreener.com/latest/dex";
 const RUGCHECK_BASE    = "https://api.rugcheck.xyz/v1";
@@ -83,17 +93,7 @@ const CORS: Record<string, string> = {
   "Access-Control-Allow-Headers": "Content-Type",
 };
 
-type Severity   = "critical" | "warning" | "info" | "bonus";
-type ScanFlag   = { label: string; severity: Severity; impact: number };
-type SafeBlockedReason = "age" | "holders" | "mint" | "freeze" | "honeypot" | "copycat" | "rug_pattern" | "wash_trading" | "pump" | "bundle" | "sniper" | "chart";
-type LayerResult = {
-  source:      string;
-  trust:       number;
-  available:   boolean;
-  flags:       ScanFlag[];
-  forceRug:    boolean;
-  safeBlocked: boolean;
-};
+// Types imported from ./types
 
 // ─── UTILS ────────────────────────────────────────────────────────────────────
 function setHeaders(res: VercelResponse) {
@@ -128,27 +128,29 @@ async function fetchJsonPost(url: string, body: object, ms = 5000) {
   } catch { return null; }
   finally { t.clear(); }
 }
-function isObject(v: unknown): v is Record<string, any> {
+function isObject(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
 }
-function asNumber(v: any): number {
-  const n = typeof v === "number" ? v : parseFloat(v);
+function asNumber(v: unknown): number {
+  const n = typeof v === "number" ? v : parseFloat(String(v));
   return Number.isFinite(n) ? n : 0;
 }
-function pickGoPlusResult(raw: any, ca: string) {
-  if (!raw || !isObject(raw.result)) return null;
-  return raw.result[ca] || raw.result[ca.toLowerCase()] || raw.result[ca.toUpperCase()] || null;
+function pickGoPlusResult(raw: unknown, ca: string): GoPlusTokenResult | null {
+  if (!isObject(raw)) return null;
+  const result = (raw as GoPlusResponse).result;
+  if (!result || typeof result !== "object") return null;
+  return result[ca] || result[ca.toLowerCase()] || result[ca.toUpperCase()] || null;
 }
 function makeFlag(label: string, severity: Severity, impact: number): ScanFlag {
   return { label, severity, impact };
 }
-function getLpLockDurationDays(rugData: any): number {
+function getLpLockDurationDays(rugData: RugCheckSummary): number {
   const raw = rugData?.lpLockDurationDays ?? rugData?.lpLockDuration ?? rugData?.lockDurationDays ?? 0;
   return asNumber(raw);
 }
-function riskIncludes(data: any, matcher: RegExp): boolean {
-  if (!Array.isArray(data?.risks)) return false;
-  return data.risks.some((r: any) => matcher.test(String(r?.name || "")));
+function riskIncludes(data: RugCheckSummary | RugCheckReport | null | undefined, matcher: RegExp): boolean {
+  if (!data || !Array.isArray(data.risks)) return false;
+  return data.risks.some((r: RugCheckRisk) => matcher.test(String(r?.name || "")));
 }
 function _mean(xs: number[]): number {
   return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0;
@@ -190,7 +192,7 @@ async function heliusGetHoldersCount(mint: string, key: string): Promise<number 
     jsonrpc: "2.0", id: "holders-count",
     method: "getTokenAccounts",
     params: { mint, limit: 1, page: 1 },
-  }, 6000);
+  }, 6000) as HeliusTokenAccountsResponse | null;
   const total = res?.result?.total ?? res?.total;
   return typeof total === "number" ? total : null;
 }
@@ -211,15 +213,15 @@ async function fetchSolscan(endpoint: string) {
 // ─── P1 FIX — GeckoTerminal candles (remplace io.dexscreener.com bloqué Cloudflare) ───
 async function fetchDexCandles(
   pairAddress: string, _chainId = "solana"
-): Promise<Array<{ o:number; h:number; l:number; c:number; v:number; ts:number }>> {
+): Promise<OHLCVCandle[]> {
   const url = `https://api.geckoterminal.com/api/v2/networks/solana/pools/${pairAddress}/ohlcv/minute?aggregate=5&limit=40`;
   const raw = await fetchJson(url, {
     headers: { "Accept": "application/json;version=20230302" }
-  }, 6000);
+  }, 6000) as GeckoTerminalOHLCVResponse | null;
   const ohlcv = raw?.data?.attributes?.ohlcv_list;
   if (!Array.isArray(ohlcv) || ohlcv.length === 0) return [];
   // Format GeckoTerminal: [timestamp, open, high, low, close, volume]
-  return ohlcv.map((b: any) => ({
+  return ohlcv.map((b: number[]) => ({
     ts: asNumber(b[0]),
     o:  asNumber(b[1]),
     h:  asNumber(b[2]),
@@ -230,14 +232,14 @@ async function fetchDexCandles(
 }
 
 // ─── BUNDLE DETECTION HELPER ─────────────────────────────────────────────────
-function extractBundlePct(rugReportData: any): number {
+function extractBundlePct(rugReportData: RugCheckReport | null): number {
   if (!rugReportData) return 0;
   const top1 = asNumber(
     rugReportData?.topHolders?.top1Percentage ??
     rugReportData?.topHolders?.top1HolderPercentage
   );
   if (Array.isArray(rugReportData?.risks)) {
-    const bundleRisk = rugReportData.risks.find((r: any) =>
+    const bundleRisk = rugReportData.risks.find((r: RugCheckRisk) =>
       /bundle/i.test(String(r?.name || ""))
     );
     if (bundleRisk) {
@@ -255,7 +257,7 @@ function extractBundlePct(rugReportData: any): number {
 // LAYER 1 — DexScreener
 // ═══════════════════════════════════════════════════════════════════════════════
 function layerDexScreener(
-  pair: any,
+  pair: DexScreenerPair | null,
   marketCap: number | null,
   tokenAgeMinutes: number | null
 ): LayerResult {
@@ -281,8 +283,8 @@ function layerDexScreener(
   const mc = marketCap ?? 0;
   const socials  = pair?.info?.socials  || [];
   const websites = pair?.info?.websites || [];
-  const hasTwitter  = Array.isArray(socials)  && socials.some((s: any)  => /twitter|x/i.test(String(s?.type || s?.url || "")));
-  const hasTelegram = Array.isArray(socials)  && socials.some((s: any)  => /telegram/i.test(String(s?.type || s?.url || "")));
+  const hasTwitter  = Array.isArray(socials)  && socials.some((s: DexScreenerSocial)  => /twitter|x/i.test(String(s?.type || s?.url || "")));
+  const hasTelegram = Array.isArray(socials)  && socials.some((s: DexScreenerSocial)  => /telegram/i.test(String(s?.type || s?.url || "")));
   const hasWebsite  = Array.isArray(websites) && websites.length > 0;
   const ageMinutes  = tokenAgeMinutes ?? Infinity;
 
@@ -346,7 +348,7 @@ function layerDexScreener(
 // ═══════════════════════════════════════════════════════════════════════════════
 // LAYER 2 — RugCheck
 // ═══════════════════════════════════════════════════════════════════════════════
-function layerRugCheck(rugData: any, rugReportData: any, resolvedMint: string): LayerResult {
+function layerRugCheck(rugData: RugCheckSummary | null, rugReportData: RugCheckReport | null, resolvedMint: string): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
   let forceRug = false, safeBlocked = false;
@@ -423,7 +425,7 @@ function layerRugCheck(rugData: any, rugReportData: any, resolvedMint: string): 
 // ═══════════════════════════════════════════════════════════════════════════════
 // LAYER 3 — GoPlus
 // ═══════════════════════════════════════════════════════════════════════════════
-function layerGoPlus(goplus: any): LayerResult {
+function layerGoPlus(goplus: GoPlusTokenResult | null): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
   let forceRug = false, safeBlocked = false;
@@ -434,12 +436,12 @@ function layerGoPlus(goplus: any): LayerResult {
     forceRug: false, safeBlocked: false,
   };
 
-  const gp = (field: string) => {
+  const gp = (field: keyof GoPlusTokenResult) => {
     const v = goplus[field];
     return v === "1" || v === 1 || v === true;
   };
-  const gpNum = (field: string) => asNumber(goplus[field]);
-  const authorityActive = (val: any) =>
+  const gpNum = (field: keyof GoPlusTokenResult) => asNumber(goplus[field]);
+  const authorityActive = (val: unknown) =>
     Boolean(val) && !["0","false","null",""].includes(String(val).trim().toLowerCase());
 
   if (gp("is_honeypot")) {
@@ -484,7 +486,7 @@ function layerGoPlus(goplus: any): LayerResult {
 // LAYER 4 — Helius
 // ═══════════════════════════════════════════════════════════════════════════════
 function layerHelius(
-  rawHolderAccounts: Array<{ address: string; uiAmount: number }>,
+  rawHolderAccounts: HeliusHolder[],
   totalSupplyUi: number
 ): LayerResult {
   const flags: ScanFlag[] = [];
@@ -569,8 +571,8 @@ function layerSolscan(
 // LAYER 6 — Chart patterns
 // ═══════════════════════════════════════════════════════════════════════════════
 function layerChart(
-  candles: Array<{ o:number; h:number; l:number; c:number; v:number; ts:number }>,
-  pair: any,
+  candles: OHLCVCandle[],
+  pair: DexScreenerPair | null,
   tokenAgeMinutes: number | null
 ): LayerResult {
   const flags: ScanFlag[] = [];
@@ -678,9 +680,9 @@ function layerIdentity(symbol?: string | null, name?: string | null, mint?: stri
 // LAYER 8 — CrossValidation
 // ═══════════════════════════════════════════════════════════════════════════════
 function layerCrossValidation(
-  rugData: any,
-  rawHolderAccounts: Array<{ address: string; uiAmount: number }>,
-  goplus: any,
+  rugData: RugCheckSummary | null,
+  rawHolderAccounts: HeliusHolder[],
+  goplus: GoPlusTokenResult | null,
   solscanAgeHours: number | null,
   dexAgeHours: number | null
 ): LayerResult {
@@ -790,7 +792,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const ip =
     (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
-    (req as any).socket?.remoteAddress ||
+    (req.socket as { remoteAddress?: string } | undefined)?.remoteAddress ||
     "unknown";
 
   if (ratelimit) {
@@ -827,9 +829,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       settled(fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report`, {}, 8000)),
     ]);
 
-    let dexData = dexRes;
-    let rugData = rugRes;
-    let pair    = dexData?.pairs?.[0] ?? null;
+    let dexData = dexRes as DexScreenerResponse | null;
+    let rugData = rugRes as RugCheckSummary | null;
+    let pair: DexScreenerPair | null = dexData?.pairs?.[0] ?? null;
     let resolvedMint = ca;
 
     const rugMissing =
@@ -838,7 +840,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       rugData?.message?.toLowerCase?.().includes("not found");
 
     if (!pair || !rugData || rugMissing) {
-      const pairData     = await settled(fetchJson(`${DEXSCREENER_BASE}/pairs/solana/${ca}`, {}, 5000));
+      const pairData     = await settled(fetchJson(`${DEXSCREENER_BASE}/pairs/solana/${ca}`, {}, 5000)) as DexScreenerResponse | null;
       const resolvedPair = pairData?.pairs?.[0] ?? pairData?.pair ?? null;
       const baseMint     = resolvedPair?.baseToken?.address;
       if (resolvedPair) pair = pair ?? resolvedPair;
@@ -848,8 +850,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           settled(fetchJson(`${DEXSCREENER_BASE}/tokens/${resolvedMint}`, {}, 5000)),
           settled(fetchJson(`${RUGCHECK_BASE}/tokens/${resolvedMint}/report/summary`, {}, 5000)),
         ]);
-        if (dexRetry?.pairs?.[0]) { dexData = dexRetry; pair = dexRetry.pairs[0]; }
-        if (rugRetry) rugData = rugRetry;
+        const dexRetryTyped = dexRetry as DexScreenerResponse | null;
+        const rugRetryTyped = rugRetry as RugCheckSummary | null;
+        if (dexRetryTyped?.pairs?.[0]) { dexData = dexRetryTyped; pair = dexRetryTyped.pairs[0]; }
+        if (rugRetryTyped) rugData = rugRetryTyped;
       } else if (!baseMint) {
         // [1.6] Structured log on mint resolution failure
         console.warn(JSON.stringify({ ca, stage: "mint_resolution_failed" }));
@@ -857,8 +861,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (pair?.baseToken?.address) resolvedMint = pair.baseToken.address;
-    if (dexData?.pairs?.length > 1) {
-      pair = dexData.pairs.reduce((best: any, p: any) =>
+    if (dexData?.pairs && dexData.pairs.length > 1) {
+      pair = dexData.pairs.reduce((best: DexScreenerPair, p: DexScreenerPair) =>
         asNumber(p?.liquidity?.usd) > asNumber(best?.liquidity?.usd) ? p : best
       , dexData.pairs[0]);
     }
@@ -884,16 +888,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       settled(fetchSolscan(`/token/markets?address=${resolvedMint}&page=1&page_size=1`)),             // Solscan 5s
     ]);
 
-    const candles  = Array.isArray(candlesRaw) ? candlesRaw : [];
-    const goplus   = pickGoPlusResult(goplusRaw, resolvedMint);
-    const rawHolderAccounts: Array<{ address: string; uiAmount: number }> =
-      heliusHoldersRaw?.result?.value ?? [];
-    const totalSupplyUi: number = asNumber(heliusSupplyRaw?.result?.value?.uiAmount);
+    const candles: OHLCVCandle[] = Array.isArray(candlesRaw) ? candlesRaw : [];
+    const goplus = pickGoPlusResult(goplusRaw, resolvedMint);
+    const heliusResponse = heliusHoldersRaw as HeliusLargestAccountsResponse | null;
+    const rawHolderAccounts: HeliusHolder[] =
+      heliusResponse?.result?.value ?? [];
+    const supplyResponse = heliusSupplyRaw as HeliusSupplyResponse | null;
+    const totalSupplyUi: number = asNumber(supplyResponse?.result?.value?.uiAmount);
 
-    const solMarketPool = Array.isArray(solMarkets?.data) && solMarkets.data.length > 0
-      ? solMarkets.data.sort((a: any, b: any) => asNumber(b.liquidity) - asNumber(a.liquidity))[0]
+    const solMarketsData = solMarkets as SolscanMarketsResponse | null;
+    const solMarketPool: SolscanMarketPool | null =
+      Array.isArray(solMarketsData?.data) && solMarketsData!.data!.length > 0
+      ? [...solMarketsData!.data!].sort((a: SolscanMarketPool, b: SolscanMarketPool) => asNumber(b.liquidity) - asNumber(a.liquidity))[0]
       : null;
-    const solscanCreatedTime: number | null = solMeta?.data?.created_time ?? null;
+    const solMetaData = solMeta as SolscanMeta | null;
+    const solscanCreatedTime: number | null = solMetaData?.data?.created_time ?? null;
     const solscanTokenAgeHours: number | null =
       solscanCreatedTime !== null
       ? Math.floor((Date.now() / 1000 - solscanCreatedTime) / 3600)
@@ -907,18 +916,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const solscanTrades24h: number | null  = asNumber(solMarketPool?.trade)     || null;
     const solscanTraders24h: number | null = asNumber(solMarketPool?.trader)    || null;
     const solscanLiquidity: number | null  = asNumber(solMarketPool?.liquidity) || null;
-    const tokenLogo     = solMeta?.data?.icon || pair?.info?.imageUrl || null;
-    const tokenCreator  = solMeta?.data?.creator || null;
-    const tokenDecimals = solMeta?.data?.decimals ?? null;
-    const tokenSupply   = solMeta?.data?.supply   ?? null;
-    const recentTransfers = solTransfers?.data || [];
+    const tokenLogo     = solMetaData?.data?.icon || pair?.info?.imageUrl || null;
+    const tokenCreator  = solMetaData?.data?.creator || null;
+    const tokenDecimals = solMetaData?.data?.decimals ?? null;
+    const tokenSupply   = solMetaData?.data?.supply   ?? null;
+    const solTransfersData = solTransfers as SolscanTransfersResponse | null;
+    const recentTransfers: SolscanTransfer[] = solTransfersData?.data || [];
+    const rugReport = rugReportRes as RugCheckReport | null;
     const rugTotalHolders: number | null =
-      typeof rugReportRes?.totalHolders === "number" && rugReportRes.totalHolders > 0
-      ? rugReportRes.totalHolders : null;
+      typeof rugReport?.totalHolders === "number" && rugReport.totalHolders > 0
+      ? rugReport.totalHolders : null;
     const holders: number | null = solscanHoldersCount ?? rugTotalHolders ?? null;
 
     const priceUsd: number | null = (() => {
-      const n = parseFloat(pair?.priceUsd);
+      const n = parseFloat(pair?.priceUsd ?? "");
       return Number.isFinite(n) && n > 0 ? n : null;
     })();
     const marketCap: number | null = (() => {
@@ -934,7 +945,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const priceChange24h = pair?.priceChange?.h24 ?? null;
 
     const l1 = layerDexScreener(pair, marketCap, tokenAgeMinutes);
-    const l2 = layerRugCheck(rugData, rugReportRes, resolvedMint);
+    const l2 = layerRugCheck(rugData, rugReport, resolvedMint);
     const l3 = layerGoPlus(goplus);
     const l4 = layerHelius(rawHolderAccounts, totalSupplyUi);
     const l5 = layerSolscan(solscanHoldersCount, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h);
@@ -962,8 +973,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (Array.isArray(recentTransfers) && recentTransfers.length >= 10) {
       const wallets = new Set<string>();
       for (const tx of recentTransfers) {
-        const from = (tx as Record<string, unknown>).from_address ?? (tx as Record<string, unknown>).from;
-        const to   = (tx as Record<string, unknown>).to_address   ?? (tx as Record<string, unknown>).to;
+        const from = tx.from_address ?? tx.from;
+        const to   = tx.to_address   ?? tx.to;
         if (typeof from === "string") wallets.add(from);
         if (typeof to   === "string") wallets.add(to);
       }
@@ -1011,7 +1022,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .filter(l => l.available && l.source !== "crossvalidation" && l.source !== "identity")
       .map(l => l.source);
 
-    let risk: "SAFE" | "CAUTION" | "DANGER" | "RUG";
+    let risk: Verdict;
     if (forceRug)                         risk = "RUG";
     else if (sources_used.length === 0)   risk = "DANGER";
     else if (safeBlocked && score >= 600) risk = "CAUTION";
@@ -1027,11 +1038,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     flags.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
 
     const confidence = Math.round((sources_used.length / 5) * 100);
-    const layersSnapshot = Object.fromEntries(
+    const layersSnapshot: Record<string, LayerSnapshot> = Object.fromEntries(
       allLayers.map(l => [l.source, { trust: +l.trust.toFixed(3), available: l.available }])
     );
 
-    const result = {
+    const result: ScanResult = {
       score, risk, flags, pair, resolvedMint, confidence, sources_used,
       holders, marketCap, priceUsd, liquidity,
       volume24h, volume1h, priceChange5m, priceChange1h, priceChange24h,
