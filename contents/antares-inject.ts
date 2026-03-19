@@ -778,7 +778,6 @@ async function scan(ca: string) {
   }
 
   // Abort any previous in-flight scan, start a new one
-  currentScanController?.abort()
   const controller = new AbortController()
   currentScanController = controller
 
