@@ -1,6 +1,6 @@
 // api/scoring.ts — Final scoring, verdict & safe-block classification
 
-import type { LayerResult, SafeBlockedReason, Severity } from "./types";
+import type { LayerResult, SafeBlockedReason } from "./types";
 import { LAYER_WEIGHTS } from "./constants";
 
 // ═══ SCORING FINAL ═══════════════════════════════════════════════════════════════
