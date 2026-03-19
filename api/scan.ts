@@ -11,6 +11,15 @@ import type {
   OHLCVCandle, GeckoTerminalOHLCVResponse,
   ScanResult, LayerSnapshot,
 } from "./types";
+import * as Sentry from "@sentry/node";
+
+// ─── SENTRY INITIALIZATION ──────────────────────────────────────────────────
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    tracesSampleRate: 0.1,
+  });
+}
 
 const DEXSCREENER_BASE = "https://api.dexscreener.com/latest/dex";
 const RUGCHECK_BASE    = "https://api.rugcheck.xyz/v1";
@@ -1068,6 +1077,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.json(result);
   } catch (e) {
     console.error("[scan v6.0.0]", e);
+    Sentry.captureException(e);
     return res.status(500).json({ error: "Analysis error." });
   }
 }

@@ -1,5 +1,13 @@
 export {}
 
+import * as Sentry from "@sentry/browser"
+
+// ─── SENTRY INITIALIZATION ──────────────────────────────────────────────────
+const SENTRY_DSN = process.env.PLASMO_PUBLIC_SENTRY_DSN || ""
+if (SENTRY_DSN) {
+  Sentry.init({ dsn: SENTRY_DSN, tracesSampleRate: 0.1 })
+}
+
 // ─── KEEPALIVE — empêche Chrome de tuer le Service Worker ───────────────────
 // Chrome suspend le SW après ~30s d'inactivité, ce qui coupe les fetches
 // en cours et provoque des bugs aléatoires. Ce ping toutes les 20s
@@ -98,7 +106,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         saveToHistory(msg.ca as string, data as Record<string, unknown>)
         sendResponse({ ok: true, data })
       })
-      .catch((e: Error) => sendResponse({ ok: false, error: e.message }))
+      .catch((e: Error) => {
+        Sentry.captureException(e)
+        sendResponse({ ok: false, error: e.message })
+      })
     return true // keep channel open
   }
   if (msg.type === "GET_HISTORY") {
