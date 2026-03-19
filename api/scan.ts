@@ -205,6 +205,40 @@ async function heliusGetHoldersCount(mint: string, key: string): Promise<number 
   const total = res?.result?.total ?? res?.total;
   return typeof total === "number" ? total : null;
 }
+// ─── [5.1] CREATOR REPUTATION — Helius transaction history ───────────────────
+interface CreatorReputation {
+  priorTokens: number;
+  flagged: boolean;
+  reason: string | null;
+}
+async function heliusGetCreatorReputation(
+  creator: string,
+  key: string
+): Promise<CreatorReputation | null> {
+  if (!creator || !key) return null;
+  // R10: Helius v0 /addresses/{addr}/transactions is a documented DAS endpoint
+  const res = await fetchJson(
+    `https://api.helius.xyz/v0/addresses/${creator}/transactions?api-key=${key}&limit=20`,
+    {}, 6000
+  ) as Array<{ type?: string; description?: string }> | null;
+  if (!Array.isArray(res)) return null;
+  // Count token creation transactions ("CREATE" type or SPL token init patterns)
+  let priorTokens = 0;
+  for (const tx of res) {
+    const desc = String(tx.description || "").toLowerCase();
+    const type = String(tx.type || "").toLowerCase();
+    if (type === "create" || desc.includes("create") || desc.includes("initialize mint")) {
+      priorTokens++;
+    }
+  }
+  // If creator has multiple token creations, flag as suspicious
+  // (serial creators are higher risk — most legitimate projects have 1 token)
+  if (priorTokens >= 3) {
+    return { priorTokens, flagged: true, reason: `Creator launched ${priorTokens}+ tokens — serial deployer` };
+  }
+  return { priorTokens, flagged: false, reason: null };
+}
+
 async function solscanGetHoldersCount(mint: string): Promise<number | null> {
   const res = await fetchJson(
     `${SOLSCAN_PUBLIC_BASE}/token/holders?tokenAddress=${mint}&limit=1&offset=0`,
@@ -927,6 +961,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const solscanLiquidity: number | null  = asNumber(solMarketPool?.liquidity) || null;
     const tokenLogo     = solMetaData?.data?.icon || pair?.info?.imageUrl || null;
     const tokenCreator  = solMetaData?.data?.creator || null;
+
+    // [5.1] Creator reputation — fetch in parallel, non-blocking
+    const creatorReputation: CreatorReputation | null = tokenCreator && HELIUS_API_KEY
+      ? await settled(heliusGetCreatorReputation(tokenCreator, HELIUS_API_KEY))
+      : null;
+
     const tokenDecimals = solMetaData?.data?.decimals ?? null;
     const tokenSupply   = solMetaData?.data?.supply   ?? null;
     const solTransfersData = solTransfers as SolscanTransfersResponse | null;
@@ -999,6 +1039,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const volLiqRatio = liqUsd > 0 ? asNumber(pair?.volume?.h24) / liqUsd : 0;
     if (ageMin > 0 && ageMin < 60 && volLiqRatio > 15) {
       postLayerFlags.push(makeFlag("Pump.fun-style launch: <1h + vol/liq >15 — DANGER", "critical", 0));
+      safeBlocked = true;
+    }
+
+    // [5.1] Creator reputation — flag serial deployers
+    if (creatorReputation?.flagged && creatorReputation.reason) {
+      postLayerFlags.push(makeFlag(creatorReputation.reason, "critical", 0));
       safeBlocked = true;
     }
 
