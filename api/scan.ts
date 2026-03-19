@@ -196,15 +196,6 @@ async function heliusGetTokenSupply(mint: string, key: string) {
     jsonrpc: "2.0", id: "supply", method: "getTokenSupply", params: [mint],
   }, 6000);
 }
-async function heliusGetHoldersCount(mint: string, key: string): Promise<number | null> {
-  const res = await fetchJsonPost(`${HELIUS_BASE}/?api-key=${key}`, {
-    jsonrpc: "2.0", id: "holders-count",
-    method: "getTokenAccounts",
-    params: { mint, limit: 1, page: 1 },
-  }, 6000) as HeliusTokenAccountsResponse | null;
-  const total = res?.result?.total ?? res?.total;
-  return typeof total === "number" ? total : null;
-}
 // ─── [5.1] CREATOR REPUTATION — Helius transaction history ───────────────────
 interface CreatorReputation {
   priorTokens: number;
