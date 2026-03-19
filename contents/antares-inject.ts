@@ -26,6 +26,7 @@ interface ScanResponseData {
   holders?: number | null
   marketCap?: number | null
   priceUsd?: number | null
+  priceChange1h?: number | null
   liquidity?: number | null
   tokenSymbol?: string | null
   tokenName?: string | null
@@ -219,6 +220,17 @@ const SHADOW_CSS = `
   pointer-events: none;
 }
 .hd:hover .drag-icon { color: #777; }
+.stealth-btn {
+  color: #3a3a42;
+  cursor: pointer;
+  transition: color .2s;
+  background: none;
+  border: none;
+  font-size: 11px;
+  line-height: 1;
+  padding: 0 2px;
+}
+.stealth-btn:hover { color: #00e5b0; }
 .x {
   color: #3a3a42;
   cursor: pointer;
@@ -380,6 +392,22 @@ let lastCA            = ""
 let manuallyDismissed = false
 let currentScanController: AbortController | null = null
 let isInjecting       = false
+let stealthMode       = false
+let rescanTimer: ReturnType<typeof setTimeout> | null = null
+
+// [5.3] Load stealth mode preference from chrome.storage
+try {
+  chrome.storage.local.get(["antares_stealth"], (result) => {
+    stealthMode = result?.antares_stealth === true
+  })
+  // Listen for stealth toggle changes from popup or other tabs
+  chrome.storage.onChanged.addListener((changes) => {
+    if (changes.antares_stealth) {
+      stealthMode = changes.antares_stealth.newValue === true
+      if (stealthMode) hideBox()
+    }
+  })
+} catch (_) { /* content script context — storage may not be available */ }
 
 // ── Drag ────────────────────────────────────────────────────────────────────────
 let dragOX = 0, dragOY = 0
@@ -513,12 +541,20 @@ function resetState() {
   manuallyDismissed = false
   currentScanController?.abort()
   currentScanController = null
+  if (rescanTimer) { clearTimeout(rescanTimer); rescanTimer = null }
   hideBox()
 }
 
 function attachClose() {
   shadow?.querySelector("#ant-close")?.addEventListener("click", () => { manuallyDismissed = true; hideBox() }, { once: true })
   shadow?.querySelector("#ant-hist-btn")?.addEventListener("click", toggleHistory)
+  shadow?.querySelector("#ant-stealth")?.addEventListener("click", () => {
+    try {
+      chrome.storage.local.set({ antares_stealth: true })
+    } catch (_) { /* noop */ }
+    stealthMode = true
+    hideBox()
+  }, { once: true })
 }
 
 function toggleHistory() {
@@ -612,7 +648,7 @@ function formatTimeAgo(ts: number): string {
 
 // ── HTML builders ─────────────────────────────────────────────────────────────
 function buildHeader(): string {
-  return `<div class="hd"><span class="brand">ANTARES</span><div class="hd-right"><span class="drag-icon">${SVG_MOVE}</span><button class="x" id="ant-close">${SVG_CLOSE}</button></div></div>`
+  return `<div class="hd"><span class="brand">ANTARES</span><div class="hd-right"><button class="stealth-btn" id="ant-stealth" title="Enable stealth mode (badge only)">&#128065;</button><span class="drag-icon">${SVG_MOVE}</span><button class="x" id="ant-close">${SVG_CLOSE}</button></div></div>`
 }
 
 function buildResult(data: ScanResponseData, ca: string): string {
@@ -692,9 +728,38 @@ function buildResult(data: ScanResponseData, ca: string): string {
   `
 }
 
+// ── [5.2] Price-based forced rescan ─────────────────────────────────────────
+function scheduleRescanIfPriceCrash(data: ScanResponseData, ca: string) {
+  if (rescanTimer) { clearTimeout(rescanTimer); rescanTimer = null }
+  const pc1h = typeof data.priceChange1h === "number" ? data.priceChange1h : null
+  if (pc1h !== null && pc1h < -30) {
+    rescanTimer = setTimeout(() => {
+      rescanTimer = null
+      // Invalidate cache so rescan hits the API
+      scanCache.delete(ca)
+      try { localStorage.removeItem(LS_PREFIX + ca) } catch (_) { /* noop */ }
+      // Force rescan
+      lastCA = ""
+      manuallyDismissed = false
+      scan(ca)
+    }, 5_000)
+  }
+}
+
 // ── scan ──────────────────────────────────────────────────────────────────────
 async function scan(ca: string) {
   if (!ca) return
+
+  // [5.3] Stealth mode — send to background for badge update only, skip popup
+  if (stealthMode) {
+    if (ca === lastCA) return
+    lastCA = ca
+    try {
+      chrome.runtime.sendMessage({ type: "SCAN", ca })
+    } catch (_) { /* extension context may be invalidated */ }
+    return
+  }
+
   const el = getBox()
 
   const cached = getCached(ca)
@@ -707,7 +772,9 @@ async function scan(ca: string) {
     el.innerHTML = buildResult(cached, ca)
     showBox()
     triggerResultAnimations(el)
-    attachClose(); return
+    attachClose()
+    scheduleRescanIfPriceCrash(cached, ca)
+    return
   }
 
   // Abort any previous in-flight scan, start a new one
@@ -733,7 +800,7 @@ async function scan(ca: string) {
     const res  = await fetch(`${API}?ca=${ca}`, { signal: controller.signal })
     if (controller.signal.aborted) return
     if (!res.ok) throw new Error("" + res.status)
-    const data = await res.json()
+    const data = await res.json() as ScanResponseData
     if (controller.signal.aborted) return
     scanCache.set(ca, { data, ts: Date.now() })
     saveToLS(ca, data)
@@ -741,6 +808,8 @@ async function scan(ca: string) {
     showBox()
     triggerResultAnimations(el)
     attachClose()
+    // [5.2] Schedule forced rescan if price crashed > -30% in 1h
+    scheduleRescanIfPriceCrash(data, ca)
   } catch (e) {
     if (controller.signal.aborted) return
     if (lastCA === ca) {
