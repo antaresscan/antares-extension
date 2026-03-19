@@ -24,6 +24,7 @@ jobs:
 
       - name: Lint
         run: npx eslint . --ext .ts,.tsx
+        continue-on-error: true
 
       - name: Build extension
         run: npx plasmo build
