@@ -870,7 +870,30 @@ function poll() { const ca = findBestAddress(); if (!ca) return; scan(ca) }
 poll()
 setTimeout(poll, 2000)
 
-const onNav = () => { resetState(); setTimeout(poll, 400); setTimeout(poll, 2000) }
+// Debounced navigation handler — prevents rapid-fire resets on SPA DOM churn.
+// Only resets state if the URL path actually changed (ignores query/hash-only updates
+// and replaceState calls that SPAs like Birdeye fire during chart/tab rendering).
+let navDebounce: ReturnType<typeof setTimeout> | null = null
+let lastNavPath = window.location.pathname
+
+function onNav() {
+  const curPath = window.location.pathname
+  // If only query/hash changed but path is same, just re-poll without resetting.
+  // This prevents killing an in-flight scan when the SPA updates minor state.
+  const pathChanged = curPath !== lastNavPath
+  lastNavPath = curPath
+
+  if (navDebounce) clearTimeout(navDebounce)
+  navDebounce = setTimeout(() => {
+    navDebounce = null
+    if (pathChanged) {
+      resetState()
+    }
+    // Re-poll: if same CA is still on page, scan() guards will skip (cache/lastCA).
+    // If a new CA appeared, it will be picked up.
+    poll()
+  }, 500)
+}
 
 let lastUrl = window.location.href
 new MutationObserver(() => {
