@@ -1,7 +1,7 @@
 // api/layers.ts — All analysis layer functions (1–8)
 
 import type {
-  LayerResult, ScanFlag, Severity,
+    LayerResult, ScanFlag,
   DexScreenerPair, DexScreenerSocial,
   RugCheckSummary, RugCheckReport,
   GoPlusTokenResult,
