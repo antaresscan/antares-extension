@@ -5,6 +5,40 @@ export const config: PlasmoCSConfig = {
   run_at: "document_idle"
 }
 
+// ─── Scan response shape (matches ScanResult from api/types.ts) ─────────────
+interface ScanResponseFlag {
+  label: string
+  severity: string
+  impact: number
+}
+interface ScanResponseData {
+  score: number
+  risk: string
+  flags: ScanResponseFlag[]
+  pair?: {
+    baseToken?: { symbol?: string; name?: string; address?: string }
+    liquidity?: { usd?: number }
+    url?: string
+  } | null
+  resolvedMint?: string
+  confidence?: number
+  sources_used?: string[]
+  holders?: number | null
+  marketCap?: number | null
+  priceUsd?: number | null
+  liquidity?: number | null
+  tokenSymbol?: string | null
+  tokenName?: string | null
+  mintAuthority?: boolean | null
+  freezeAuthority?: boolean | null
+  lpBurned?: boolean | null
+  lpLocked?: boolean | null
+  honeypot?: boolean | null
+  safeBlocked?: boolean
+  candles?: Array<{ close: number }>
+  [key: string]: unknown
+}
+
 const API           = "https://antares-extension.vercel.app/api/scan"
 const ANALYSIS_PAGE = "https://antares-extension.vercel.app/token.html"
 const LS_PREFIX     = "antares_scan_"
@@ -37,7 +71,7 @@ const IGNORE = new Set([
   "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr",
 ])
 
-const scanCache = new Map<string, { data: any; ts: number }>()
+const scanCache = new Map<string, { data: ScanResponseData; ts: number }>()
 
 function injectFonts() {
   if (document.getElementById("antares-fonts")) return
@@ -55,7 +89,7 @@ function injectFonts() {
       if (!key?.startsWith(LS_PREFIX)) continue
       const raw = localStorage.getItem(key)
       if (!raw) continue
-      const parsed = JSON.parse(raw)
+      const parsed = JSON.parse(raw) as { data?: ScanResponseData; ts?: number }
       if (!parsed?.data || !parsed?.ts) continue
       if (Date.now() - parsed.ts > CACHE_TTL) { localStorage.removeItem(key); continue }
       scanCache.set(key.slice(LS_PREFIX.length), { data: parsed.data, ts: parsed.ts })
@@ -63,14 +97,14 @@ function injectFonts() {
   } catch (_) {}
 })()
 
-function getCached(ca: string): any | null {
+function getCached(ca: string): ScanResponseData | null {
   const e = scanCache.get(ca)
   if (!e) return null
   if (Date.now() - e.ts > CACHE_TTL) { scanCache.delete(ca); return null }
   return e.data
 }
 
-function saveToLS(ca: string, data: any) {
+function saveToLS(ca: string, data: ScanResponseData) {
   try { localStorage.setItem(LS_PREFIX + ca, JSON.stringify({ data, ts: Date.now() })) } catch (_) {}
 }
 
@@ -581,7 +615,7 @@ function buildHeader(): string {
   return `<div class="hd"><span class="brand">ANTARES</span><div class="hd-right"><span class="drag-icon">${SVG_MOVE}</span><button class="x" id="ant-close">${SVG_CLOSE}</button></div></div>`
 }
 
-function buildResult(data: any, ca: string): string {
+function buildResult(data: ScanResponseData, ca: string): string {
   const riskClass = RISK_CLASS[data.risk] || "danger"
   const label     = LABELS[data.risk] || data.risk
   const mint      = data.resolvedMint || ca
@@ -600,17 +634,17 @@ function buildResult(data: any, ca: string): string {
     `<div class="dt ${i < dotsCount ? 'on' : 'off'}"></div>`
   ).join("")
 
-  const flagCount = (data.flags || []).filter((f: any) => f.severity !== "bonus").length
-  const critCount = (data.flags || []).filter((f: any) => f.severity === "critical").length
+  const flagCount = (data.flags || []).filter((f: ScanResponseFlag) => f.severity !== "bonus").length
+  const critCount = (data.flags || []).filter((f: ScanResponseFlag) => f.severity === "critical").length
   let summary = ""
   if (flagCount === 0) summary = "All sources agree \u2014 no issues found"
   else if (critCount > 0) summary = `${flagCount} flags \u2014 ${critCount} critical \u2014 Conf. ${conf ?? "?"}%`
   else summary = `${flagCount} flags detected \u2014 Conf. ${conf ?? "?"}%`
 
   const flags = (data.flags || [])
-    .filter((f: any) => { const l = (f.label || f) as string; return !l.toLowerCase().includes("unavailable") && f.severity !== "bonus" })
+    .filter((f: ScanResponseFlag) => { const l = f.label || ""; return !l.toLowerCase().includes("unavailable") && f.severity !== "bonus" })
     .slice(0, 4)
-    .map((f: any) => {
+    .map((f: ScanResponseFlag) => {
       const sev = f.severity || "warning"
       const cls = sev === "critical" ? "cr" : "wr"
       const icCls = sev === "critical" ? "r" : "y"

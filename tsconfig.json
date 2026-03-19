@@ -9,6 +9,9 @@
     "./**/*.tsx"
   ],
   "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
     "paths": {
       "~*": [
         "./*"
