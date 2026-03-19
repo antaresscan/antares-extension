@@ -34,3 +34,9 @@ dist/
 .vercel/
 fix.patch
 scan.json
+
+
+# general patterns
+*.patch
+*.log
+.env
