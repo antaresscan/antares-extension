@@ -9,6 +9,39 @@ if (SENTRY_DSN) {
   Sentry.init({ dsn: SENTRY_DSN, tracesSampleRate: 0.1 })
 }
 
+// ─── INPUT VALIDATION ───────────────────────────────────────────────────────
+const CA_RE = /^[A-Za-z0-9]{32,44}$/
+const API_BASE = process.env.PLASMO_PUBLIC_API_BASE || "https://antares-extension.vercel.app"
+
+// ─── SAFE DATA EXTRACTION HELPERS ───────────────────────────────────────────
+function safeString(val: unknown): string | undefined {
+  return typeof val === "string" ? val : undefined
+}
+
+function safeNumber(val: unknown): number {
+  return typeof val === "number" && Number.isFinite(val) ? val : 0
+}
+
+function safeRecord(val: unknown): Record<string, unknown> | undefined {
+  return typeof val === "object" && val !== null && !Array.isArray(val)
+    ? val as Record<string, unknown>
+    : undefined
+}
+
+function extractSymbol(data: Record<string, unknown>): string {
+  const sym = safeString(data.tokenSymbol)
+  if (sym) return sym
+  const pair = safeRecord(data.pair)
+  if (pair) {
+    const baseToken = safeRecord(pair.baseToken)
+    if (baseToken) {
+      const s = safeString(baseToken.symbol)
+      if (s) return s
+    }
+  }
+  return ""
+}
+
 // ─── KEEPALIVE — chrome.alarms replaces setInterval for MV3 service workers ──
 void chrome.alarms.create("keepalive", { periodInMinutes: 1 });
 chrome.alarms.onAlarm.addListener((a) => { if (a.name === "keepalive") void chrome.runtime.id; });
@@ -39,18 +72,26 @@ function updateBadge(risk: string, tabId?: number) {
 
 function checkRiskEscalation(ca: string, currentRisk: string, tokenSymbol: string) {
   const key = `antares_last_risk_${ca}`
-  chrome.storage.local.get([key], (result) => {
-    const prev = result[key] as string | undefined
-    if (prev && riskWorsened(prev, currentRisk)) {
-      chrome.notifications.create(`antares_alert_${ca}`, {
-        type: "basic",
-        iconUrl: chrome.runtime.getURL("assets/icon.png"),
-        title: "Antares \u2014 Risk Escalation",
-        message: `${tokenSymbol || ca.slice(0, 8)} risk changed: ${prev} \u2192 ${currentRisk}`,
-      })
-    }
-    void chrome.storage.local.set({ [key]: currentRisk })
-  })
+  try {
+    chrome.storage.local.get([key], (result) => {
+      if (chrome.runtime.lastError) {
+        console.warn("[antares] storage.get error:", chrome.runtime.lastError.message)
+        return
+      }
+      const prev = safeString(result[key])
+      if (prev && riskWorsened(prev, currentRisk)) {
+        chrome.notifications.create(`antares_alert_${ca}`, {
+          type: "basic",
+          iconUrl: chrome.runtime.getURL("assets/icon.png"),
+          title: "Antares \u2014 Risk Escalation",
+          message: `${tokenSymbol || ca.slice(0, 8)} risk changed: ${prev} \u2192 ${currentRisk}`,
+        })
+      }
+      void chrome.storage.local.set({ [key]: currentRisk })
+    })
+  } catch (e: unknown) {
+    console.warn("[antares] checkRiskEscalation error:", e)
+  }
 }
 
 // ─── HISTORY ───────────────────────────────────────────────────────────────
@@ -60,33 +101,45 @@ const MAX_HISTORY = 10
 function saveToHistory(ca: string, data: Record<string, unknown>) {
   const entry: HistoryEntry = {
     ca,
-    symbol: (data.tokenSymbol as string) || (data.pair as Record<string, Record<string, string>> | undefined)?.baseToken?.symbol || ca.slice(0, 8),
-    risk: (data.risk as string) || "UNKNOWN",
-    score: (data.score as number) || 0,
+    symbol: extractSymbol(data) || ca.slice(0, 8),
+    risk: safeString(data.risk) || "UNKNOWN",
+    score: safeNumber(data.score),
     ts: Date.now(),
   }
-  chrome.storage.local.get([HISTORY_KEY], (result) => {
-    const history = (result[HISTORY_KEY] || []) as HistoryEntry[]
-    const filtered = history.filter((h) => h.ca !== ca)
-    filtered.unshift(entry)
-    void chrome.storage.local.set({ [HISTORY_KEY]: filtered.slice(0, MAX_HISTORY) })
-  })
+  try {
+    chrome.storage.local.get([HISTORY_KEY], (result) => {
+      if (chrome.runtime.lastError) {
+        console.warn("[antares] storage.get error:", chrome.runtime.lastError.message)
+        return
+      }
+      const history = (Array.isArray(result[HISTORY_KEY]) ? result[HISTORY_KEY] : []) as HistoryEntry[]
+      const filtered = history.filter((h) => h.ca !== ca)
+      filtered.unshift(entry)
+      void chrome.storage.local.set({ [HISTORY_KEY]: filtered.slice(0, MAX_HISTORY) })
+    })
+  } catch (e: unknown) {
+    console.warn("[antares] saveToHistory error:", e)
+  }
 }
 
 // ─── MESSAGE HANDLER ────────────────────────────────────────────────────────
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === "SCAN") {
-    void fetch(`https://antares-extension.vercel.app/api/scan?ca=${msg.ca}`)
+    const ca = typeof msg.ca === "string" ? msg.ca.trim() : ""
+    if (!CA_RE.test(ca)) {
+      sendResponse({ ok: false, error: "Invalid contract address" })
+      return true
+    }
+    void fetch(`${API_BASE}/api/scan?ca=${ca}`)
       .then((r) => r.json())
       .then((data: Record<string, unknown>) => {
-        const risk = data.risk as string | undefined
+        const risk = safeString(data.risk)
         if (risk) {
           updateBadge(risk, sender.tab?.id)
-          const pair = data.pair as Record<string, Record<string, string>> | undefined
-          const sym = ((data.tokenSymbol as string) || pair?.baseToken?.symbol || "")
-          checkRiskEscalation(msg.ca as string, risk, sym)
+          const sym = extractSymbol(data)
+          checkRiskEscalation(ca, risk, sym)
         }
-        saveToHistory(msg.ca as string, data as Record<string, unknown>)
+        saveToHistory(ca, data)
         sendResponse({ ok: true, data })
       })
       .catch((e: Error) => {
@@ -96,9 +149,17 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true // keep channel open
   }
   if (msg.type === "GET_HISTORY") {
-    chrome.storage.local.get([HISTORY_KEY], (result) => {
-      sendResponse({ ok: true, history: (result[HISTORY_KEY] || []) as HistoryEntry[] })
-    })
+    try {
+      chrome.storage.local.get([HISTORY_KEY], (result) => {
+        if (chrome.runtime.lastError) {
+          sendResponse({ ok: false, error: chrome.runtime.lastError.message })
+          return
+        }
+        sendResponse({ ok: true, history: (Array.isArray(result[HISTORY_KEY]) ? result[HISTORY_KEY] : []) as HistoryEntry[] })
+      })
+    } catch (e: unknown) {
+      sendResponse({ ok: false, error: String(e) })
+    }
     return true
   }
 })
