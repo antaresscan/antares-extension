@@ -8,7 +8,7 @@ import type {
   SolscanTransfer, SolscanMarketPool,
   OHLCVCandle,
   ScanResult, LayerSnapshot,
-} from "./types";
+} from "./_lib/types";
 import {
   fetchJson, asNumber, pickGoPlusResult,
   settled, apiError,
@@ -16,23 +16,23 @@ import {
   isHeliusLargestAccountsResponse, isHeliusSupplyResponse,
   isSolscanMarketsResponse, isSolscanMeta, isSolscanTransfersResponse,
   isRugCheckReport,
-} from "./helpers";
+} from "./_lib/helpers";
 import {
   heliusGetLargestAccounts, heliusGetTokenSupply, heliusGetCreatorReputation,
   solscanGetHoldersCount, fetchSolscan, fetchDexCandles,
   type CreatorReputation,
-} from "./fetchers";
+} from "./_lib/fetchers";
 import {
   DEXSCREENER_BASE, RUGCHECK_BASE, GOPLUS_BASE,
-} from "./constants";
+} from "./_lib/constants";
 import {
   layerDexScreener, layerRugCheck, layerGoPlus, layerHelius,
   layerSolscan, layerChart, layerIdentity, layerCrossValidation,
-} from "./layers";
-import { computeFinalScore, classifySafeBlockedReasons } from "./scoring";
-import { evaluatePostLayerFlags, applySafeGateOverride, applyEstablishedBonus, determineVerdict } from "./pipeline";
-import { setCorsHeaders, getClientIp, checkRateLimit, validateCA, initRateLimiters } from "./middleware";
-import { initCache, getCachedResult, setCachedResult } from "./cache";
+} from "./_lib/layers";
+import { computeFinalScore, classifySafeBlockedReasons } from "./_lib/scoring";
+import { evaluatePostLayerFlags, applySafeGateOverride, applyEstablishedBonus, determineVerdict } from "./_lib/pipeline";
+import { setCorsHeaders, getClientIp, checkRateLimit, validateCA, initRateLimiters } from "./_lib/middleware";
+import { initCache, getCachedResult, setCachedResult } from "./_lib/cache";
 import * as Sentry from "@sentry/node";
 
 // ─── SENTRY INITIALIZATION ──────────────────────────────────────────────────

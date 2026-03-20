@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { layerDexScreener, layerGoPlus, layerRugCheck, layerHelius, layerIdentity } from "../api/layers";
+import { layerDexScreener, layerGoPlus, layerRugCheck, layerHelius, layerIdentity } from "../api/_lib/layers";
 
 describe("layerDexScreener", () => {
   it("returns unavailable for null pair", () => {

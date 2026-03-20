@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { computeFinalScore, classifySafeBlockedReasons } from "../api/scoring";
-import { LAYER_WEIGHTS } from "../api/constants";
-import type { LayerResult } from "../api/types";
+import { computeFinalScore, classifySafeBlockedReasons } from "../api/_lib/scoring";
+import { LAYER_WEIGHTS } from "../api/_lib/constants";
+import type { LayerResult } from "../api/_lib/types";
 
 function makeLayer(source: string, trust: number, available: boolean, flags: LayerResult["flags"] = [], forceRug = false, safeBlocked = false): LayerResult {
   return { source, trust, available, flags, forceRug, safeBlocked };

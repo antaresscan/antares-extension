@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { extractBundlePct } from "../api/fetchers";
-import type { RugCheckReport } from "../api/types";
+import { extractBundlePct } from "../api/_lib/fetchers";
+import type { RugCheckReport } from "../api/_lib/types";
 
 // ─── extractBundlePct (pure function, no mocking needed) ─────────────────────
 describe("extractBundlePct", () => {
@@ -64,8 +64,8 @@ describe("extractBundlePct", () => {
 const mockFetchJson = vi.fn();
 const mockFetchJsonPost = vi.fn();
 
-vi.mock("../api/http", async () => {
-  const actual = await vi.importActual<typeof import("../api/http")>("../api/http");
+vi.mock("../api/_lib/http", async () => {
+  const actual = await vi.importActual<typeof import("../api/_lib/http")>("../api/_lib/http");
   return {
     ...actual,
     fetchJson: (...args: unknown[]) => mockFetchJson(...args),
@@ -80,7 +80,7 @@ const {
   heliusGetCreatorReputation,
   solscanGetHoldersCount,
   fetchDexCandles,
-} = await import("../api/fetchers");
+} = await import("../api/_lib/fetchers");
 
 beforeEach(() => {
   vi.clearAllMocks();

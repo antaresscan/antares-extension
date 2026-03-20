@@ -22,8 +22,8 @@ vi.mock("@upstash/ratelimit", () => {
 });
 
 // Mock middleware — pass through
-vi.mock("../api/middleware", async () => {
-  const actual = await vi.importActual<typeof import("../api/middleware")>("../api/middleware");
+vi.mock("../api/_lib/middleware", async () => {
+  const actual = await vi.importActual<typeof import("../api/_lib/middleware")>("../api/_lib/middleware");
   return {
     ...actual,
     initRateLimiters: vi.fn(),
@@ -32,7 +32,7 @@ vi.mock("../api/middleware", async () => {
 });
 
 // Mock cache — no-op
-vi.mock("../api/cache", () => ({
+vi.mock("../api/_lib/cache", () => ({
   initCache: vi.fn(),
   getCachedResult: vi.fn().mockResolvedValue(null),
   setCachedResult: vi.fn(),
@@ -52,7 +52,7 @@ const mockSolscanGetHoldersCount = vi.fn();
 const mockFetchSolscan = vi.fn();
 const mockFetchDexCandles = vi.fn();
 
-vi.mock("../api/fetchers", () => ({
+vi.mock("../api/_lib/fetchers", () => ({
   heliusGetLargestAccounts: (...args: unknown[]) => mockHeliusGetLargestAccounts(...args),
   heliusGetTokenSupply: (...args: unknown[]) => mockHeliusGetTokenSupply(...args),
   heliusGetCreatorReputation: (...args: unknown[]) => mockHeliusGetCreatorReputation(...args),

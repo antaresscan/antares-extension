@@ -5,7 +5,7 @@ import {
   isHeliusLargestAccountsResponse, isHeliusSupplyResponse,
   isSolscanMarketsResponse, isSolscanMeta, isSolscanTransfersResponse,
   isRugCheckReport,
-} from "../api/helpers";
+} from "../api/_lib/helpers";
 
 describe("asNumber", () => {
   it("returns number directly", () => {
