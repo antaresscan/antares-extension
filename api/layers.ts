@@ -12,10 +12,8 @@ import {
   LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS, OFFICIAL_MINTS,
   KNOWN_BRANDS, COPYCAT_SUFFIXES,
 } from "./constants";
-import {
-  asNumber, makeFlag, getLpLockDurationDays, riskIncludes,
-  _mean, _std, _pct,
-} from "./helpers";
+import { asNumber, _mean, _std, _pct } from "./math";
+import { makeFlag, getLpLockDurationDays, riskIncludes } from "./helpers";
 import { extractBundlePct } from "./fetchers";
 
 // ═══ LAYER 1 — DexScreener ═════════════════════════════════════════════════════

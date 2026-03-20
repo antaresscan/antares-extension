@@ -60,12 +60,12 @@ describe("extractBundlePct", () => {
 });
 
 // ─── Mocked fetcher tests ────────────────────────────────────────────────────
-// Mock the helpers module to control fetchJson / fetchJsonPost
+// Mock the http module (fetchJson/fetchJsonPost now live in api/http.ts)
 const mockFetchJson = vi.fn();
 const mockFetchJsonPost = vi.fn();
 
-vi.mock("../api/helpers", async () => {
-  const actual = await vi.importActual<typeof import("../api/helpers")>("../api/helpers");
+vi.mock("../api/http", async () => {
+  const actual = await vi.importActual<typeof import("../api/http")>("../api/http");
   return {
     ...actual,
     fetchJson: (...args: unknown[]) => mockFetchJson(...args),

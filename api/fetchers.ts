@@ -6,7 +6,8 @@ import type {
   RugCheckReport, RugCheckRisk,
 } from "./types";
 import { HELIUS_BASE, SOLSCAN_PUBLIC_BASE, SOLSCAN_BASE } from "./constants";
-import { fetchJson, fetchJsonPost, asNumber } from "./helpers";
+import { fetchJson, fetchJsonPost } from "./http";
+import { asNumber } from "./math";
 
 // ─── HELIUS HELPERS ─────────────────────────────────────────────────────────
 export async function heliusGetLargestAccounts(mint: string, key: string) {
