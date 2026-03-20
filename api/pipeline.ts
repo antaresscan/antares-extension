@@ -2,11 +2,10 @@
 // Session 1: Zero side-effects, zero console.log, zero async.
 
 import type {
-  ScanFlag, Verdict, SafeBlockedReason,
+  ScanFlag, Verdict,
   PostLayerFlagsInput, PostLayerFlagsResult,
   SafeGateInput, EstablishedBonusInput, VerdictInput,
-  SolscanTransfer,
-} from "./types";
+  } from "./types";
 import { makeFlag } from "./helpers";
 
 // ─── BLOCK E: Post-layer flags ──────────────────────────────────────────────
