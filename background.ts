@@ -9,20 +9,9 @@ if (SENTRY_DSN) {
   Sentry.init({ dsn: SENTRY_DSN, tracesSampleRate: 0.1 })
 }
 
-// ─── KEEPALIVE — empêche Chrome de tuer le Service Worker ───────────────────
-// Chrome suspend le SW après ~30s d'inactivité, ce qui coupe les fetches
-// en cours et provoque des bugs aléatoires. Ce ping toutes les 20s
-// maintient le SW actif tant que l'extension tourne.
-function startKeepalive() {
-  setInterval(() => {
-    // Accès à chrome.runtime.id suffit à réveiller/maintenir le contexte SW
-    void chrome.runtime.id;
-  }, 20_000);
-}
-
-chrome.runtime.onInstalled.addListener(startKeepalive);
-chrome.runtime.onStartup.addListener(startKeepalive);
-startKeepalive();
+// ─── KEEPALIVE — chrome.alarms replaces setInterval for MV3 service workers ──
+chrome.alarms.create("keepalive", { periodInMinutes: 1 });
+chrome.alarms.onAlarm.addListener((a) => { if (a.name === "keepalive") void chrome.runtime.id; });
 
 // ─── BADGE CONFIG ──────────────────────────────────────────────────────────
 const BADGE_MAP: Record<string, { text: string; color: string }> = {

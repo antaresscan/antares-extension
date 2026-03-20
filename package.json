@@ -40,7 +40,8 @@
     "permissions": [
       "storage",
       "notifications",
-      "activeTab"
+      "activeTab",
+      "alarms"
     ],
     "host_permissions": [
       "https://dexscreener.com/*",

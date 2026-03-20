@@ -12,7 +12,7 @@ import type {
 } from "./types";
 import { CA_RE } from "./constants";
 import {
-  setHeaders, fetchJson, asNumber, pickGoPlusResult, makeFlag,
+  fetchJson, asNumber, pickGoPlusResult, makeFlag,
   settled, computeCacheTTL,
 } from "./helpers";
 import {
@@ -63,9 +63,22 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
   });
 }
 
+// ─── CORS WHITELIST ──────────────────────────────────────────────────────────
+const ALLOWED_ORIGINS = [
+  "https://dexscreener.com", "https://birdeye.so", "https://pump.fun",
+  "https://jup.ag", "https://raydium.io", "https://solscan.io",
+  "https://www.geckoterminal.com", "https://antares-extension.vercel.app"
+];
+
 // ─── HANDLER PRINCIPAL ───────────────────────────────────────────────────────
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  setHeaders(res);
+  const origin = (req.headers.origin as string) || "";
+  const corsOk = ALLOWED_ORIGINS.some(o => origin.startsWith(o)) || origin.startsWith("chrome-extension://");
+  if (corsOk) res.setHeader("Access-Control-Allow-Origin", origin);
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Max-Age", "86400");
+  res.setHeader("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
   if (req.method === "OPTIONS") return res.status(204).end();
 
   const ip =
@@ -95,7 +108,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
       const cached = await scanCacheRedis.get(cacheKey);
       if (cached) return res.json(cached);
-    } catch { /* cache miss or Redis error — continue with fresh fetch */ }
+    } catch (e: unknown) { console.warn("[antares] cache miss or Redis error", e); }
   }
 
   const HELIUS_API_KEY = process.env.HELIUS_API_KEY || "";

@@ -25,7 +25,7 @@ export async function fetchJson(url: string, init: RequestInit = {}, ms = 5000) 
     const r = await fetch(url, { ...init, signal: t.signal });
     if (!r.ok) return null;
     return await r.json();
-  } catch { return null; }
+  } catch (e: unknown) { console.warn("[antares]", e); return null; }
   finally { t.clear(); }
 }
 
@@ -40,7 +40,7 @@ export async function fetchJsonPost(url: string, body: object, ms = 5000) {
     });
     if (!r.ok) return null;
     return await r.json();
-  } catch { return null; }
+  } catch (e: unknown) { console.warn("[antares]", e); return null; }
   finally { t.clear(); }
 }
 
