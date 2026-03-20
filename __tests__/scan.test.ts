@@ -21,6 +21,23 @@ vi.mock("@upstash/ratelimit", () => {
   return { Ratelimit: MockRatelimit };
 });
 
+// Mock middleware — pass through
+vi.mock("../api/middleware", async () => {
+  const actual = await vi.importActual<typeof import("../api/middleware")>("../api/middleware");
+  return {
+    ...actual,
+    initRateLimiters: vi.fn(),
+    checkRateLimit: vi.fn().mockResolvedValue(true),
+  };
+});
+
+// Mock cache — no-op
+vi.mock("../api/cache", () => ({
+  initCache: vi.fn(),
+  getCachedResult: vi.fn().mockResolvedValue(null),
+  setCachedResult: vi.fn(),
+}));
+
 // Mock @sentry/node
 vi.mock("@sentry/node", () => ({
   init: vi.fn(),

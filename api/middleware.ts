@@ -1,0 +1,76 @@
+// api/middleware.ts — CORS, rate limiting, and input validation middleware
+import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
+import { CA_RE } from "./constants";
+import { isCorsAllowed, apiError } from "./helpers";
+
+export const ALLOWED_ORIGINS = [
+  "https://dexscreener.com", "https://birdeye.so", "https://pump.fun",
+  "https://jup.ag", "https://raydium.io", "https://solscan.io",
+  "https://www.geckoterminal.com", "https://antares-extension.vercel.app"
+];
+
+// ─── RATE LIMITERS ──────────────────────────────────────────────────────────
+let ratelimit: Ratelimit | null = null;
+let burstRatelimit: Ratelimit | null = null;
+
+export function initRateLimiters(redis: Redis): void {
+  ratelimit = new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(30, "60 s"),
+    analytics: false,
+    prefix: "antares_rl",
+  });
+  burstRatelimit = new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(5, "10 s"),
+    analytics: false,
+    prefix: "antares_burst",
+  });
+}
+
+export function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean {
+  const origin = (req.headers.origin as string) || "";
+  const corsOk = isCorsAllowed(origin, ALLOWED_ORIGINS);
+  if (corsOk) res.setHeader("Access-Control-Allow-Origin", origin);
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Max-Age", "86400");
+  res.setHeader("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
+  return corsOk;
+}
+
+export function getClientIp(req: VercelRequest): string {
+  return (
+    (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
+    (req.socket as { remoteAddress?: string } | undefined)?.remoteAddress ||
+    "unknown"
+  );
+}
+
+export async function checkRateLimit(res: VercelResponse, ip: string): Promise<boolean> {
+  if (ratelimit) {
+    const { success, remaining } = await ratelimit.limit(ip);
+    res.setHeader("X-RateLimit-Limit", "30");
+    res.setHeader("X-RateLimit-Remaining", String(remaining));
+    if (!success) {
+      apiError(res, 429, "Too many requests. Please slow down.");
+      return false;
+    }
+  }
+  if (burstRatelimit) {
+    const { success } = await burstRatelimit.limit(ip);
+    if (!success) {
+      res.setHeader("Retry-After", "10");
+      apiError(res, 429, "Burst limit exceeded. Retry in 10 seconds.");
+      return false;
+    }
+  }
+  return true;
+}
+
+export function validateCA(ca: unknown): string | null {
+  const trimmed = typeof ca === "string" ? ca.trim() : "";
+  return CA_RE.test(trimmed) ? trimmed : null;
+}

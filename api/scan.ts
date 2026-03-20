@@ -1,6 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { randomUUID } from "node:crypto";
-import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import type {
   ScanFlag, Verdict, Severity,
@@ -10,10 +9,9 @@ import type {
   OHLCVCandle,
   ScanResult, LayerSnapshot,
 } from "./types";
-import { CA_RE } from "./constants";
 import {
   fetchJson, asNumber, pickGoPlusResult,
-  settled, computeCacheTTL, apiError, isCorsAllowed,
+  settled, apiError,
   isValidDexScreenerResponse, isValidRugCheckSummary,
   isHeliusLargestAccountsResponse, isHeliusSupplyResponse,
   isSolscanMarketsResponse, isSolscanMeta, isSolscanTransfersResponse,
@@ -33,6 +31,8 @@ import {
 } from "./layers";
 import { computeFinalScore, classifySafeBlockedReasons } from "./scoring";
 import { evaluatePostLayerFlags, applySafeGateOverride, applyEstablishedBonus, determineVerdict } from "./pipeline";
+import { setCorsHeaders, getClientIp, checkRateLimit, validateCA, initRateLimiters } from "./middleware";
+import { initCache, getCachedResult, setCachedResult } from "./cache";
 import * as Sentry from "@sentry/node";
 
 // ─── SENTRY INITIALIZATION ──────────────────────────────────────────────────
@@ -43,87 +43,38 @@ if (process.env.SENTRY_DSN) {
   });
 }
 
-// ─── RATE LIMIT & SCAN CACHE ──────────────────────────────────────────────────
-let ratelimit: Ratelimit | null = null;
-let burstRatelimit: Ratelimit | null = null;
-let scanCacheRedis: Redis | null = null;
+// ─── REDIS INITIALIZATION ───────────────────────────────────────────────────
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
   const redis = new Redis({
     url: process.env.UPSTASH_REDIS_REST_URL,
     token: process.env.UPSTASH_REDIS_REST_TOKEN,
   });
-  scanCacheRedis = redis;
-  ratelimit = new Ratelimit({
-    redis,
-    limiter: Ratelimit.slidingWindow(30, "60 s"),
-    analytics: false,
-    prefix: "antares_rl",
-  });
-  // [2.8] Burst rate limiting — 5 req/10s per IP
-  burstRatelimit = new Ratelimit({
-    redis,
-    limiter: Ratelimit.slidingWindow(5, "10 s"),
-    analytics: false,
-    prefix: "antares_burst",
-  });
+  initCache(redis);
+  initRateLimiters(redis);
 }
-
-// ─── CORS WHITELIST ──────────────────────────────────────────────────────────
-const ALLOWED_ORIGINS = [
-  "https://dexscreener.com", "https://birdeye.so", "https://pump.fun",
-  "https://jup.ag", "https://raydium.io", "https://solscan.io",
-  "https://www.geckoterminal.com", "https://antares-extension.vercel.app"
-];
 
 // ─── HANDLER PRINCIPAL ───────────────────────────────────────────────────────
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const requestId = randomUUID();
   res.setHeader("X-Request-Id", requestId);
 
-  const origin = (req.headers.origin as string) || "";
-  const corsOk = isCorsAllowed(origin, ALLOWED_ORIGINS);
-  if (corsOk) res.setHeader("Access-Control-Allow-Origin", origin);
-  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  res.setHeader("Access-Control-Max-Age", "86400");
-  res.setHeader("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
+  setCorsHeaders(req, res);
   if (req.method === "OPTIONS") return res.status(204).end();
 
   if (req.method !== "GET" && req.method !== "OPTIONS") {
     return apiError(res, 405, "Method not allowed.");
   }
 
-  const ip =
-    (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
-    (req.socket as { remoteAddress?: string } | undefined)?.remoteAddress ||
-    "unknown";
+  const ip = getClientIp(req);
+  const rateLimitOk = await checkRateLimit(res, ip);
+  if (!rateLimitOk) return;
 
-  if (ratelimit) {
-    const { success, remaining } = await ratelimit.limit(ip);
-    res.setHeader("X-RateLimit-Limit", "30");
-    res.setHeader("X-RateLimit-Remaining", String(remaining));
-    if (!success) return apiError(res, 429, "Too many requests. Please slow down.");
-  }
-  // [2.8] Burst rate limiting — 5 req/10s per IP
-  if (burstRatelimit) {
-    const { success } = await burstRatelimit.limit(ip);
-    if (!success) {
-      res.setHeader("Retry-After", "10");
-      return apiError(res, 429, "Burst limit exceeded. Retry in 10 seconds.");
-    }
-  }
+  const ca = validateCA(req.query.ca);
+  if (!ca) return apiError(res, 400, "Invalid token address.");
 
-  const ca = (req.query.ca as string | undefined)?.trim();
-  if (!ca || !CA_RE.test(ca)) return apiError(res, 400, "Invalid token address.");
-
-  // [1.3] Adaptive Redis cache — serve cached result if within TTL
-  const cacheKey = `antares:v2:${ca}`;
-  if (scanCacheRedis) {
-    try {
-      const cached = await scanCacheRedis.get(cacheKey);
-      if (cached) return res.json(cached);
-    } catch (e: unknown) { console.warn("[antares] cache miss or Redis error", requestId, e); }
-  }
+  // Cache check
+  const cached = await getCachedResult(ca, requestId);
+  if (cached) return res.json(cached);
 
   const HELIUS_API_KEY = process.env.HELIUS_API_KEY || "";
 
@@ -132,7 +83,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       settled(fetchJson(`${DEXSCREENER_BASE}/tokens/${ca}`, {}, 5000)),
       settled(fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report/summary`, {}, 5000)),
       settled(fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report`, {}, 8000)),
-        ]);
+    ]);
 
     let dexData = isValidDexScreenerResponse(dexRes) ? dexRes : null;
     let rugData = isValidRugCheckSummary(rugRes) ? rugRes : null;
@@ -145,23 +96,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       rugData?.message?.toLowerCase?.().includes("not found");
 
     if (!pair || !rugData || rugMissing) {
-      const pairDataRaw  = await settled(fetchJson(`${DEXSCREENER_BASE}/pairs/solana/${ca}`, {}, 5000));
-      const pairData     = isValidDexScreenerResponse(pairDataRaw) ? pairDataRaw : null;
+      const pairDataRaw = await settled(fetchJson(`${DEXSCREENER_BASE}/pairs/solana/${ca}`, {}, 5000));
+      const pairData = isValidDexScreenerResponse(pairDataRaw) ? pairDataRaw : null;
       const resolvedPair = pairData?.pairs?.[0] ?? pairData?.pair ?? null;
-      const baseMint     = resolvedPair?.baseToken?.address;
+      const baseMint = resolvedPair?.baseToken?.address;
       if (resolvedPair) pair = pair ?? resolvedPair;
       if (baseMint && baseMint !== ca) {
         resolvedMint = baseMint;
         const [dexRetry, rugRetry] = await Promise.all([
           settled(fetchJson(`${DEXSCREENER_BASE}/tokens/${resolvedMint}`, {}, 5000)),
           settled(fetchJson(`${RUGCHECK_BASE}/tokens/${resolvedMint}/report/summary`, {}, 5000)),
-              ]);
+        ]);
         const dexRetryTyped = isValidDexScreenerResponse(dexRetry) ? dexRetry : null;
         const rugRetryTyped = isValidRugCheckSummary(rugRetry) ? rugRetry : null;
         if (dexRetryTyped?.pairs?.[0]) { dexData = dexRetryTyped; pair = dexRetryTyped.pairs[0]; }
         if (rugRetryTyped) rugData = rugRetryTyped;
       } else if (!baseMint) {
-        // [1.6] Structured log on mint resolution failure
         console.warn(JSON.stringify({ requestId, ca, stage: "mint_resolution_failed" }));
       }
     }
@@ -174,7 +124,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const pairAddress = pair?.pairAddress ?? ca;
-
     const tokenAgeMinutes: number | null = pair?.pairCreatedAt
       ? (Date.now() - pair.pairCreatedAt) / 60000 : null;
 
@@ -184,21 +133,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       solscanHoldersCount,
       solMeta, solTransfers, solMarkets,
     ] = await Promise.all([
-      settled(fetchDexCandles(pairAddress)),                                                          // GeckoTerminal 6s
-      settled(fetchJson(`${GOPLUS_BASE}/solana/token_security?contract_addresses=${resolvedMint}`, {}, 4000)), // GoPlus 4s
-      HELIUS_API_KEY ? settled(heliusGetLargestAccounts(resolvedMint, HELIUS_API_KEY)) : null,        // Helius holders 6s
-      HELIUS_API_KEY ? settled(heliusGetTokenSupply(resolvedMint, HELIUS_API_KEY))     : null,        // Helius supply 6s
-      settled(solscanGetHoldersCount(resolvedMint)),                                                  // Solscan 5s
-      settled(fetchSolscan(`/token/meta?address=${resolvedMint}`)),                                   // Solscan 5s
-      settled(fetchSolscan(`/token/transfer?address=${resolvedMint}&page=1&page_size=10`)),           // Solscan 5s
-      settled(fetchSolscan(`/token/markets?address=${resolvedMint}&page=1&page_size=1`)),             // Solscan 5s
-        ]);
+      settled(fetchDexCandles(pairAddress)),
+      settled(fetchJson(`${GOPLUS_BASE}/solana/token_security?contract_addresses=${resolvedMint}`, {}, 4000)),
+      HELIUS_API_KEY ? settled(heliusGetLargestAccounts(resolvedMint, HELIUS_API_KEY)) : null,
+      HELIUS_API_KEY ? settled(heliusGetTokenSupply(resolvedMint, HELIUS_API_KEY)) : null,
+      settled(solscanGetHoldersCount(resolvedMint)),
+      settled(fetchSolscan(`/token/meta?address=${resolvedMint}`)),
+      settled(fetchSolscan(`/token/transfer?address=${resolvedMint}&page=1&page_size=10`)),
+      settled(fetchSolscan(`/token/markets?address=${resolvedMint}&page=1&page_size=1`)),
+    ]);
 
     const candles: OHLCVCandle[] = Array.isArray(candlesRaw) ? candlesRaw : [];
     const goplus = pickGoPlusResult(goplusRaw, resolvedMint);
     const heliusResponse = isHeliusLargestAccountsResponse(heliusHoldersRaw) ? heliusHoldersRaw : null;
-    const rawHolderAccounts: HeliusHolder[] =
-      heliusResponse?.result?.value ?? [];
+    const rawHolderAccounts: HeliusHolder[] = heliusResponse?.result?.value ?? [];
     const supplyResponse = isHeliusSupplyResponse(heliusSupplyRaw) ? heliusSupplyRaw : null;
     const totalSupplyUi: number = asNumber(supplyResponse?.result?.value?.uiAmount);
 
@@ -225,7 +173,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const tokenLogo     = solMetaData?.data?.icon || pair?.info?.imageUrl || null;
     const tokenCreator  = solMetaData?.data?.creator || null;
 
-    // [5.1] Creator reputation — fetch in parallel, non-blocking
     const creatorReputation: CreatorReputation | null = tokenCreator && HELIUS_API_KEY
       ? await settled(heliusGetCreatorReputation(tokenCreator, HELIUS_API_KEY))
       : null;
@@ -270,7 +217,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let forceRug      = allLayers.some(l => l.forceRug);
     let safeBlocked   = allLayers.some(l => l.safeBlocked);
 
-    // [BLOCK E] Post-layer flags via pipeline
     const buys5m  = asNumber(pair?.txns?.m5?.buys);
     const sells5m = asNumber(pair?.txns?.m5?.sells);
     const liqUsd  = asNumber(pair?.liquidity?.usd);
@@ -285,7 +231,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (postLayerResult.forceRug) forceRug = true;
     if (postLayerResult.safeBlocked) safeBlocked = true;
 
-    // [BLOCK F] Safe gate override via pipeline
     const safeBlockedReasons = classifySafeBlockedReasons(allLayers);
     const lpBurned = rugData?.lpBurned === true;
     const goPlusClean = l3.available && l3.trust >= 0.95 && !l3.forceRug;
@@ -299,7 +244,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     safeBlocked = newSafeBlocked;
 
-    // [BLOCK G] Established token bonus via pipeline
     const tokenAgeHours = solscanTokenAgeHours ?? dexTokenAgeHours ?? null;
     const newScore = applyEstablishedBonus({
       score, tokenAgeHours, holders, lpBurned, goPlusClean,
@@ -309,7 +253,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     score = newScore;
 
-    // [BLOCK H] Verdict via pipeline
     const sources_used: string[] = allLayers
       .filter(l => l.available && l.source !== "crossvalidation" && l.source !== "identity")
       .map(l => l.source);
@@ -344,12 +287,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       fetchedAt: Date.now(),
     };
 
-    // [1.3] Adaptive Redis cache — write with TTL based on token age
-    if (scanCacheRedis) {
-      const ttl = computeCacheTTL(tokenAgeMinutes);
-      scanCacheRedis.setex(cacheKey, ttl, JSON.stringify(result)).catch(() => {});
-    }
-
+    setCachedResult(ca, result, tokenAgeMinutes);
     return res.json(result);
   } catch (e) {
     console.error("[scan v6.2.0]", requestId, e);
