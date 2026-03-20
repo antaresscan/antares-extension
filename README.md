@@ -1,54 +1,113 @@
 # Antares — Anti-Scam Scanner for Solana
 
+[![CI](https://github.com/COMEALAMAISONGROUPE/antares-extension/actions/workflows/ci.yml/badge.svg)](https://github.com/COMEALAMAISONGROUPE/antares-extension/actions/workflows/ci.yml)
+
 **Antares** is a Chrome extension that automatically detects the Solana token address on any page you visit and runs a real-time multi-source security scan.
 
 ## What it does
 
 - Detects mint/freeze authority, honeypots, blacklists and proxy contracts (GoPlus)
-- Checks LP burn/lock status and holder concentration (RugCheck)
+- Checks LP burn/lock status, bundler activity, and holder concentration (RugCheck)
 - Analyses on-chain holder distribution (Helius)
 - Detects chart manipulation patterns: parabolic pumps, blow-off tops, wash trading (DexScreener OHLCV)
+- Verifies on-chain age, holder count, and trading patterns (Solscan)
 - Identifies copycat / brand-imitation tokens
+- Cross-validates data across sources to flag conflicts
 - Displays a verdict — **SAFE / CAUTION / DANGER / RUG** — with a score out of 1000
 
 ## Scoring
 
-Score starts at **1000** and is reduced by weighted penalties across 6 layers:
+Score starts at **1000** and is reduced by weighted penalties across **8 layers**:
 
-| Layer | What it checks |
-|---|---|
-| L1 | Smart contract flags (GoPlus) |
-| L2 | On-chain metadata & LP (RugCheck) |
-| L3 | Liquidity & pool health (DexScreener) |
-| L4 | Holder distribution (RugCheck + Helius) |
-| L5 | Identity / copycat detection |
-| L6 | Chart pattern risk (DexScreener OHLCV) |
+| Layer | Source | Weight | What it checks |
+|---|---|---|---|
+| L1 | DexScreener | 0.20 | Liquidity, volume, price changes, social presence |
+| L2 | RugCheck | 0.20 | LP burn/lock, bundler activity, metadata, top holders |
+| L3 | GoPlus | 0.20 | Honeypot, mint/freeze authority, tax, proxy contracts |
+| L4 | Helius | 0.20 | On-chain holder distribution (top 1 / top 10) |
+| L5 | Solscan | 0.10 | Holder count, token age, wash trading patterns |
+| L6 | Chart | 0.10 | OHLCV pattern analysis (pump, dump, wash, stair-step) |
+| L7 | Identity | — | Copycat / brand imitation detection |
+| L8 | CrossValidation | — | Cross-source conflict detection |
 
-A token can only reach **SAFE** if it passes all critical gates regardless of score.
+Layers 1–6 contribute weighted trust scores to the geometric mean. Layers 7–8 produce flags and safe-gate blocks but do not affect the weighted score directly.
+
+A token can only reach **SAFE** (score ≥ 850) if it passes all critical gates regardless of score.
+
+**Scoring version:** `6.2.0`
+
+## Architecture
+
+```
+api/
+  scan.ts          — Main serverless handler (GET /api/scan?ca=<mint>)
+  fetchers.ts      — External API data fetching (DexScreener, RugCheck, GoPlus, Helius, Solscan)
+  layers.ts        — 8 analysis layer functions (pure, no side effects)
+  scoring.ts       — Geometric-mean scoring engine with cross-validation penalties
+  pipeline.ts      — Post-layer flags, safe-gate, established bonus, verdict
+  constants.ts     — All constants: weights, brands, thresholds, API bases
+  types.ts         — TypeScript type definitions
+  helpers.ts       — Re-exports from math.ts and http.ts + utility functions
+  math.ts          — Numeric helpers: asNumber, _mean, _std, _pct
+  http.ts          — Typed HTTP: fetchJson<T>, fetchJsonPost<T>, withTimeout
+  middleware.ts    — CORS, rate limiting, input validation
+  cache.ts         — Upstash Redis caching layer
+
+background.ts      — Chrome extension service worker
+popup.tsx          — Extension popup UI (recent scans, stealth toggle)
+options.tsx        — Extension options page (preferences)
+```
+
+## API
+
+```
+GET /api/scan?ca=<solana_mint_address>
+```
+
+Returns JSON with `score`, `risk` (SAFE/CAUTION/DANGER/RUG), `flags`, and per-layer details.
+
+Example:
+```bash
+curl "https://antares-extension.vercel.app/api/scan?ca=So11111111111111111111111111111111111111112"
+```
 
 ## Stack
 
 - Extension: [Plasmo](https://plasmo.com) + TypeScript
 - Backend API: Vercel Serverless (Node)
 - Rate limiting: Upstash Redis (sliding window 20 req/min per IP)
-- Data sources: DexScreener · RugCheck · GoPlus · Helius
+- Data sources: DexScreener · RugCheck · GoPlus · Helius · Solscan · GeckoTerminal
+- CI: GitHub Actions (Node 22, Vitest, TypeScript strict, coverage thresholds)
+- Security: CodeQL weekly scanning, Dependabot alerts
 
 ## Development
 
 ```bash
-npm install
-npm run dev      # extension hot-reload
-npm run build    # production build
-npm run package  # zip for Chrome Web Store
+npm ci
+npm run dev        # extension hot-reload
+npm run build      # production build
+npm run test       # run all tests (Vitest)
+npm run typecheck  # tsc --noEmit
+npm run lint       # ESLint
 ```
 
-Set the following environment variables in Vercel:
+### Environment variables (Vercel)
 
 ```
 HELIUS_API_KEY=...
 UPSTASH_REDIS_REST_URL=...
 UPSTASH_REDIS_REST_TOKEN=...
+SENTRY_DSN=... (optional)
 ```
+
+## Contributing
+
+1. Clone the repo and run `npm ci`
+2. Make your changes
+3. Run `npm run test` — all tests must pass
+4. Run `npx tsc --noEmit` — zero type errors
+5. Run `npm run lint` — zero lint errors
+6. One commit per logical block, message format: `feat(scope): description`
 
 ## License
 
