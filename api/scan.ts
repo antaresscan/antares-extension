@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { randomUUID } from "node:crypto";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import type {
@@ -12,8 +13,9 @@ import type {
 } from "./types";
 import { CA_RE } from "./constants";
 import {
-  fetchJson, asNumber, pickGoPlusResult, makeFlag,
-  settled, computeCacheTTL,
+  fetchJson, asNumber, pickGoPlusResult,
+  settled, computeCacheTTL, apiError, isCorsAllowed,
+  isValidDexScreenerResponse, isValidRugCheckSummary,
 } from "./helpers";
 import {
   heliusGetLargestAccounts, heliusGetTokenSupply, heliusGetCreatorReputation,
@@ -28,6 +30,7 @@ import {
   layerSolscan, layerChart, layerIdentity, layerCrossValidation,
 } from "./layers";
 import { computeFinalScore, classifySafeBlockedReasons } from "./scoring";
+import { evaluatePostLayerFlags, applySafeGateOverride, applyEstablishedBonus, determineVerdict } from "./pipeline";
 import * as Sentry from "@sentry/node";
 
 // ─── SENTRY INITIALIZATION ──────────────────────────────────────────────────
@@ -72,8 +75,11 @@ const ALLOWED_ORIGINS = [
 
 // ─── HANDLER PRINCIPAL ───────────────────────────────────────────────────────
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const requestId = randomUUID();
+  res.setHeader("X-Request-Id", requestId);
+
   const origin = (req.headers.origin as string) || "";
-  const corsOk = ALLOWED_ORIGINS.some(o => origin.startsWith(o)) || origin.startsWith("chrome-extension://");
+  const corsOk = isCorsAllowed(origin, ALLOWED_ORIGINS);
   if (corsOk) res.setHeader("Access-Control-Allow-Origin", origin);
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -81,26 +87,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
   if (req.method === "OPTIONS") return res.status(204).end();
 
+  if (req.method !== "GET" && req.method !== "OPTIONS") {
+    return apiError(res, 405, "Method not allowed.");
+  }
+
   const ip =
     (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
     (req.socket as { remoteAddress?: string } | undefined)?.remoteAddress ||
     "unknown";
 
   if (ratelimit) {
-    const { success } = await ratelimit.limit(ip);
-    if (!success) return res.status(429).json({ error: "Too many requests. Please slow down." });
+    const { success, remaining } = await ratelimit.limit(ip);
+    res.setHeader("X-RateLimit-Limit", "30");
+    res.setHeader("X-RateLimit-Remaining", String(remaining));
+    if (!success) return apiError(res, 429, "Too many requests. Please slow down.");
   }
   // [2.8] Burst rate limiting — 5 req/10s per IP
   if (burstRatelimit) {
     const { success } = await burstRatelimit.limit(ip);
     if (!success) {
       res.setHeader("Retry-After", "10");
-      return res.status(429).json({ error: "Burst limit exceeded. Retry in 10 seconds." });
+      return apiError(res, 429, "Burst limit exceeded. Retry in 10 seconds.");
     }
   }
 
-  const ca = req.query.ca as string | undefined;
-  if (!ca || !CA_RE.test(ca)) return res.status(400).json({ error: "Invalid token address." });
+  const ca = (req.query.ca as string | undefined)?.trim();
+  if (!ca || !CA_RE.test(ca)) return apiError(res, 400, "Invalid token address.");
 
   // [1.3] Adaptive Redis cache — serve cached result if within TTL
   const cacheKey = `antares:v2:${ca}`;
@@ -108,7 +120,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
       const cached = await scanCacheRedis.get(cacheKey);
       if (cached) return res.json(cached);
-    } catch (e: unknown) { console.warn("[antares] cache miss or Redis error", e); }
+    } catch (e: unknown) { console.warn("[antares] cache miss or Redis error", requestId, e); }
   }
 
   const HELIUS_API_KEY = process.env.HELIUS_API_KEY || "";
@@ -120,8 +132,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       settled(fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report`, {}, 8000)),
     ]);
 
-    let dexData = dexRes as DexScreenerResponse | null;
-    let rugData = rugRes as RugCheckSummary | null;
+    let dexData = isValidDexScreenerResponse(dexRes) ? dexRes : null;
+    let rugData = isValidRugCheckSummary(rugRes) ? rugRes : null;
     let pair: DexScreenerPair | null = dexData?.pairs?.[0] ?? null;
     let resolvedMint = ca;
 
@@ -131,7 +143,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       rugData?.message?.toLowerCase?.().includes("not found");
 
     if (!pair || !rugData || rugMissing) {
-      const pairData     = await settled(fetchJson(`${DEXSCREENER_BASE}/pairs/solana/${ca}`, {}, 5000)) as DexScreenerResponse | null;
+      const pairDataRaw  = await settled(fetchJson(`${DEXSCREENER_BASE}/pairs/solana/${ca}`, {}, 5000));
+      const pairData     = isValidDexScreenerResponse(pairDataRaw) ? pairDataRaw : null;
       const resolvedPair = pairData?.pairs?.[0] ?? pairData?.pair ?? null;
       const baseMint     = resolvedPair?.baseToken?.address;
       if (resolvedPair) pair = pair ?? resolvedPair;
@@ -141,13 +154,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           settled(fetchJson(`${DEXSCREENER_BASE}/tokens/${resolvedMint}`, {}, 5000)),
           settled(fetchJson(`${RUGCHECK_BASE}/tokens/${resolvedMint}/report/summary`, {}, 5000)),
         ]);
-        const dexRetryTyped = dexRetry as DexScreenerResponse | null;
-        const rugRetryTyped = rugRetry as RugCheckSummary | null;
+        const dexRetryTyped = isValidDexScreenerResponse(dexRetry) ? dexRetry : null;
+        const rugRetryTyped = isValidRugCheckSummary(rugRetry) ? rugRetry : null;
         if (dexRetryTyped?.pairs?.[0]) { dexData = dexRetryTyped; pair = dexRetryTyped.pairs[0]; }
         if (rugRetryTyped) rugData = rugRetryTyped;
       } else if (!baseMint) {
         // [1.6] Structured log on mint resolution failure
-        console.warn(JSON.stringify({ ca, stage: "mint_resolution_failed" }));
+        console.warn(JSON.stringify({ requestId, ca, stage: "mint_resolution_failed" }));
       }
     }
 
@@ -254,87 +267,54 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let score         = computeFinalScore(allLayers);
     let forceRug      = allLayers.some(l => l.forceRug);
     let safeBlocked   = allLayers.some(l => l.safeBlocked);
-    const postLayerFlags: ScanFlag[] = [];
 
-    // [2.5] Social honeypot detection
+    // [BLOCK E] Post-layer flags via pipeline
     const buys5m  = asNumber(pair?.txns?.m5?.buys);
     const sells5m = asNumber(pair?.txns?.m5?.sells);
     const liqUsd  = asNumber(pair?.liquidity?.usd);
     const ageMin  = tokenAgeMinutes ?? 0;
-    if (sells5m === 0 && buys5m > 10 && liqUsd > 5000 && ageMin > 30) {
-      postLayerFlags.push(makeFlag("Sells blocked (social honeypot)", "critical", 0));
-      forceRug = true;
-    }
-
-    // [2.6] Wash trading detection via transfers (R10: skip cleanly if data unavailable)
-    if (Array.isArray(recentTransfers) && recentTransfers.length >= 10) {
-      const wallets = new Set<string>();
-      for (const tx of recentTransfers) {
-        const from = tx.from_address ?? tx.from;
-        const to   = tx.to_address   ?? tx.to;
-        if (typeof from === "string") wallets.add(from);
-        if (typeof to   === "string") wallets.add(to);
-      }
-      if (wallets.size <= 3) {
-        postLayerFlags.push(makeFlag("Wash trading via transfers (≤3 unique wallets in 10+ txs)", "critical", 0));
-        forceRug = true;
-      }
-    }
-    // TODO [2.6]: If Solscan Pro API does not return recentTransfers, this block is safely skipped.
-
-    // [2.7] Pump.fun bonding curve guard (R10: safe proxy only, no undocumented API parsing)
-    // TODO: When Pump.fun releases official API for curve % → implement graduation check.
     const volLiqRatio = liqUsd > 0 ? asNumber(pair?.volume?.h24) / liqUsd : 0;
-    if (ageMin > 0 && ageMin < 60 && volLiqRatio > 15) {
-      postLayerFlags.push(makeFlag("Pump.fun-style launch: <1h + vol/liq >15 — DANGER", "critical", 0));
-      safeBlocked = true;
-    }
 
-    // [5.1] Creator reputation — flag serial deployers
-    if (creatorReputation?.flagged && creatorReputation.reason) {
-      postLayerFlags.push(makeFlag(creatorReputation.reason, "critical", 0));
-      safeBlocked = true;
-    }
+    const postLayerResult = evaluatePostLayerFlags({
+      buys5m, sells5m, liqUsd, ageMin,
+      recentTransfers, creatorReputation, volLiqRatio,
+    });
+    const postLayerFlags = postLayerResult.flags;
+    if (postLayerResult.forceRug) forceRug = true;
+    if (postLayerResult.safeBlocked) safeBlocked = true;
 
-    // [2.3] Track safeBlocked reasons for gate hardening
+    // [BLOCK F] Safe gate override via pipeline
     const safeBlockedReasons = classifySafeBlockedReasons(allLayers);
-    const SOFT_REASONS: Record<string, boolean> = { age: true, holders: true };
-    const onlySoftReasons = safeBlockedReasons.length > 0 &&
-      safeBlockedReasons.every(r => SOFT_REASONS[r] === true);
-
     const lpBurned = rugData?.lpBurned === true;
     const goPlusClean = l3.available && l3.trust >= 0.95 && !l3.forceRug;
 
-    // [2.3] SAFE gate override: if safeBlocked reason is ONLY age/holders
-    // (not mint/freeze/honeypot/copycat), allow SAFE when conditions met
-    if (safeBlocked && onlySoftReasons && !forceRug &&
-        (holders ?? 0) > 500 && lpBurned && goPlusClean) {
-      safeBlocked = false;
-      console.log(JSON.stringify({ ca: resolvedMint, stage: "safe_gate_override", reasons: safeBlockedReasons }));
+    const newSafeBlocked = applySafeGateOverride({
+      safeBlocked, safeBlockedReasons, forceRug,
+      holders, lpBurned, goPlusClean,
+    });
+    if (newSafeBlocked !== safeBlocked) {
+      console.log(JSON.stringify({ requestId, ca: resolvedMint, stage: "safe_gate_override", reasons: safeBlockedReasons }));
     }
+    safeBlocked = newSafeBlocked;
 
-    // [2.4] Established token bonus
+    // [BLOCK G] Established token bonus via pipeline
     const tokenAgeHours = solscanTokenAgeHours ?? dexTokenAgeHours ?? null;
-    if (tokenAgeHours !== null && tokenAgeHours > 720 &&
-        (holders ?? 0) > 1000 && lpBurned && goPlusClean) {
-      score = Math.min(1000, Math.round(score * 1.15));
-      console.log(JSON.stringify({ ca: resolvedMint, stage: "established_bonus_applied", score }));
+    const newScore = applyEstablishedBonus({
+      score, tokenAgeHours, holders, lpBurned, goPlusClean,
+    });
+    if (newScore !== score) {
+      console.log(JSON.stringify({ requestId, ca: resolvedMint, stage: "established_bonus_applied", score: newScore }));
     }
+    score = newScore;
 
+    // [BLOCK H] Verdict via pipeline
     const sources_used: string[] = allLayers
       .filter(l => l.available && l.source !== "crossvalidation" && l.source !== "identity")
       .map(l => l.source);
 
-    let risk: Verdict;
-    if (forceRug)                         risk = "RUG";
-    else if (sources_used.length === 0)   risk = "DANGER";
-    else if (safeBlocked && score >= 600) risk = "CAUTION";
-    else if (safeBlocked)                 risk = "DANGER";
-    // P3 FIX — seuil SAFE relevé à 850 (au lieu de 800)
-    else if (score >= 850)                risk = "SAFE";
-    else if (score >= 600)                risk = "CAUTION";
-    else if (score >= 350)                risk = "DANGER";
-    else                                  risk = "RUG";
+    const risk: Verdict = determineVerdict({
+      score, forceRug, safeBlocked, sourcesUsedCount: sources_used.length,
+    });
 
     const flags: ScanFlag[] = allLayers.flatMap(l => l.flags).concat(postLayerFlags);
     const severityOrder: Record<Severity, number> = { critical:0, warning:1, info:2, bonus:3 };
@@ -358,7 +338,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       solscanTrades24h,
       solscanTraders24h,
       layers: layersSnapshot,
-      scoring_version: "6.0.0",
+      scoring_version: "6.1.0",
       fetchedAt: Date.now(),
     };
 
@@ -370,8 +350,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.json(result);
   } catch (e) {
-    console.error("[scan v6.0.0]", e);
+    console.error("[scan v6.1.0]", requestId, e);
     Sentry.captureException(e);
-    return res.status(500).json({ error: "Analysis error." });
+    return apiError(res, 500, "Analysis error.");
   }
 }

@@ -211,6 +211,48 @@ export interface GeckoTerminalOHLCVResponse {
   };
 }
 
+// ─── PIPELINE INPUT/OUTPUT TYPES ────────────────────────────────────────────
+
+export interface PostLayerFlagsInput {
+  buys5m: number;
+  sells5m: number;
+  liqUsd: number;
+  ageMin: number;
+  recentTransfers: SolscanTransfer[];
+  creatorReputation: { priorTokens: number; flagged: boolean; reason: string | null } | null;
+  volLiqRatio: number;
+}
+
+export interface PostLayerFlagsResult {
+  flags: ScanFlag[];
+  forceRug: boolean;
+  safeBlocked: boolean;
+}
+
+export interface SafeGateInput {
+  safeBlocked: boolean;
+  safeBlockedReasons: SafeBlockedReason[];
+  forceRug: boolean;
+  holders: number | null;
+  lpBurned: boolean;
+  goPlusClean: boolean;
+}
+
+export interface EstablishedBonusInput {
+  score: number;
+  tokenAgeHours: number | null;
+  holders: number | null;
+  lpBurned: boolean;
+  goPlusClean: boolean;
+}
+
+export interface VerdictInput {
+  score: number;
+  forceRug: boolean;
+  safeBlocked: boolean;
+  sourcesUsedCount: number;
+}
+
 // ─── SCAN RESULT ─────────────────────────────────────────────────────────────
 export interface LayerSnapshot {
   trust: number;

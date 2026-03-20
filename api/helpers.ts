@@ -4,7 +4,7 @@ import type { VercelResponse } from "@vercel/node";
 import type {
   Severity, ScanFlag,
   GoPlusTokenResult, GoPlusResponse,
-  RugCheckSummary, RugCheckReport, RugCheckRisk,
+  DexScreenerResponse, RugCheckSummary, RugCheckReport, RugCheckRisk,
 } from "./types";
 import { CORS } from "./constants";
 
@@ -98,4 +98,22 @@ export function computeCacheTTL(tokenAgeMinutes: number | null): number {
   if (tokenAgeMinutes < 60) return 15;
   if (tokenAgeMinutes < 1440) return 30;
   return 120;
+}
+
+export function apiError(res: VercelResponse, status: number, message: string, details?: Record<string, unknown>): void {
+  res.status(status).json({ error: message, ...(details ? { details } : {}) });
+}
+
+export function isCorsAllowed(origin: string, allowedOrigins: string[]): boolean {
+  return allowedOrigins.some(o => origin.startsWith(o)) || origin.startsWith("chrome-extension://");
+}
+
+export function isValidDexScreenerResponse(data: unknown): data is DexScreenerResponse {
+  if (!isObject(data)) return false;
+  return Array.isArray(data.pairs) || data.pair !== undefined;
+}
+
+export function isValidRugCheckSummary(data: unknown): data is RugCheckSummary {
+  if (!isObject(data)) return false;
+  return "lpBurned" in data || "risks" in data || "error" in data;
 }
