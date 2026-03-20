@@ -4,8 +4,8 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import type {
   ScanFlag, Verdict, Severity,
-  DexScreenerPair, DexScreenerResponse,
-  RugCheckSummary, RugCheckReport,
+    DexScreenerPair,
+    RugCheckReport,
   HeliusHolder, HeliusLargestAccountsResponse, HeliusSupplyResponse,
   SolscanTransfer, SolscanMeta, SolscanMarketPool, SolscanMarketsResponse, SolscanTransfersResponse,
   OHLCVCandle,
@@ -130,7 +130,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       settled(fetchJson(`${DEXSCREENER_BASE}/tokens/${ca}`, {}, 5000)),
       settled(fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report/summary`, {}, 5000)),
       settled(fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report`, {}, 8000)),
-    ]);
+        ]) as [unknown, unknown, unknown];
 
     let dexData = isValidDexScreenerResponse(dexRes) ? dexRes : null;
     let rugData = isValidRugCheckSummary(rugRes) ? rugRes : null;
@@ -143,7 +143,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       rugData?.message?.toLowerCase?.().includes("not found");
 
     if (!pair || !rugData || rugMissing) {
-      const pairDataRaw  = await settled(fetchJson(`${DEXSCREENER_BASE}/pairs/solana/${ca}`, {}, 5000));
+      const pairDataRaw  = await settled(fetchJson(`${DEXSCREENER_BASE}/pairs/solana/${ca}`, {}, 5000)) as unknown;
       const pairData     = isValidDexScreenerResponse(pairDataRaw) ? pairDataRaw : null;
       const resolvedPair = pairData?.pairs?.[0] ?? pairData?.pair ?? null;
       const baseMint     = resolvedPair?.baseToken?.address;
@@ -153,7 +153,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const [dexRetry, rugRetry] = await Promise.all([
           settled(fetchJson(`${DEXSCREENER_BASE}/tokens/${resolvedMint}`, {}, 5000)),
           settled(fetchJson(`${RUGCHECK_BASE}/tokens/${resolvedMint}/report/summary`, {}, 5000)),
-        ]);
+              ]) as [unknown, unknown];
         const dexRetryTyped = isValidDexScreenerResponse(dexRetry) ? dexRetry : null;
         const rugRetryTyped = isValidRugCheckSummary(rugRetry) ? rugRetry : null;
         if (dexRetryTyped?.pairs?.[0]) { dexData = dexRetryTyped; pair = dexRetryTyped.pairs[0]; }
@@ -190,7 +190,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       settled(fetchSolscan(`/token/meta?address=${resolvedMint}`)),                                   // Solscan 5s
       settled(fetchSolscan(`/token/transfer?address=${resolvedMint}&page=1&page_size=10`)),           // Solscan 5s
       settled(fetchSolscan(`/token/markets?address=${resolvedMint}&page=1&page_size=1`)),             // Solscan 5s
-    ]);
+        ]) as [unknown, unknown, unknown, unknown, unknown, unknown, unknown, unknown];
 
     const candles: OHLCVCandle[] = Array.isArray(candlesRaw) ? candlesRaw : [];
     const goplus = pickGoPlusResult(goplusRaw, resolvedMint);
