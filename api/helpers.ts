@@ -117,3 +117,37 @@ export function isValidRugCheckSummary(data: unknown): data is RugCheckSummary {
   if (!isObject(data)) return false;
   return "lpBurned" in data || "risks" in data || "error" in data;
 }
+
+// ─── RUNTIME TYPE GUARDS ─────────────────────────────────────────────────────
+
+export function isHeliusLargestAccountsResponse(data: unknown): data is import("./types").HeliusLargestAccountsResponse {
+  if (!isObject(data)) return false;
+  if (!("result" in data) || !isObject(data.result)) return false;
+  return Array.isArray((data.result as Record<string, unknown>).value);
+}
+
+export function isHeliusSupplyResponse(data: unknown): data is import("./types").HeliusSupplyResponse {
+  if (!isObject(data)) return false;
+  if (!("result" in data) || !isObject(data.result)) return false;
+  return "value" in (data.result as Record<string, unknown>);
+}
+
+export function isSolscanMarketsResponse(data: unknown): data is import("./types").SolscanMarketsResponse {
+  if (!isObject(data)) return false;
+  return Array.isArray(data.data);
+}
+
+export function isSolscanMeta(data: unknown): data is import("./types").SolscanMeta {
+  if (!isObject(data)) return false;
+  return "data" in data && isObject(data.data);
+}
+
+export function isSolscanTransfersResponse(data: unknown): data is import("./types").SolscanTransfersResponse {
+  if (!isObject(data)) return false;
+  return Array.isArray(data.data);
+}
+
+export function isRugCheckReport(data: unknown): data is import("./types").RugCheckReport {
+  if (!isObject(data)) return false;
+  return "risks" in data || "topHolders" in data || "totalHolders" in data;
+}

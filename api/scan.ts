@@ -4,10 +4,9 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import type {
   ScanFlag, Verdict, Severity,
-    DexScreenerPair,
-    RugCheckReport,
-  HeliusHolder, HeliusLargestAccountsResponse, HeliusSupplyResponse,
-  SolscanTransfer, SolscanMeta, SolscanMarketPool, SolscanMarketsResponse, SolscanTransfersResponse,
+  DexScreenerPair,
+  HeliusHolder,
+  SolscanTransfer, SolscanMarketPool,
   OHLCVCandle,
   ScanResult, LayerSnapshot,
 } from "./types";
@@ -16,6 +15,9 @@ import {
   fetchJson, asNumber, pickGoPlusResult,
   settled, computeCacheTTL, apiError, isCorsAllowed,
   isValidDexScreenerResponse, isValidRugCheckSummary,
+  isHeliusLargestAccountsResponse, isHeliusSupplyResponse,
+  isSolscanMarketsResponse, isSolscanMeta, isSolscanTransfersResponse,
+  isRugCheckReport,
 } from "./helpers";
 import {
   heliusGetLargestAccounts, heliusGetTokenSupply, heliusGetCreatorReputation,
@@ -194,18 +196,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const candles: OHLCVCandle[] = Array.isArray(candlesRaw) ? candlesRaw : [];
     const goplus = pickGoPlusResult(goplusRaw, resolvedMint);
-    const heliusResponse = heliusHoldersRaw as HeliusLargestAccountsResponse | null;
+    const heliusResponse = isHeliusLargestAccountsResponse(heliusHoldersRaw) ? heliusHoldersRaw : null;
     const rawHolderAccounts: HeliusHolder[] =
       heliusResponse?.result?.value ?? [];
-    const supplyResponse = heliusSupplyRaw as HeliusSupplyResponse | null;
+    const supplyResponse = isHeliusSupplyResponse(heliusSupplyRaw) ? heliusSupplyRaw : null;
     const totalSupplyUi: number = asNumber(supplyResponse?.result?.value?.uiAmount);
 
-    const solMarketsData = solMarkets as SolscanMarketsResponse | null;
+    const solMarketsData = isSolscanMarketsResponse(solMarkets) ? solMarkets : null;
     const solMarketPool: SolscanMarketPool | null =
       Array.isArray(solMarketsData?.data) && solMarketsData!.data!.length > 0
       ? [...solMarketsData!.data!].sort((a: SolscanMarketPool, b: SolscanMarketPool) => asNumber(b.liquidity) - asNumber(a.liquidity))[0]
       : null;
-    const solMetaData = solMeta as SolscanMeta | null;
+    const solMetaData = isSolscanMeta(solMeta) ? solMeta : null;
     const solscanCreatedTime: number | null = solMetaData?.data?.created_time ?? null;
     const solscanTokenAgeHours: number | null =
       solscanCreatedTime !== null
@@ -230,9 +232,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const tokenDecimals = solMetaData?.data?.decimals ?? null;
     const tokenSupply   = solMetaData?.data?.supply   ?? null;
-    const solTransfersData = solTransfers as SolscanTransfersResponse | null;
+    const solTransfersData = isSolscanTransfersResponse(solTransfers) ? solTransfers : null;
     const recentTransfers: SolscanTransfer[] = solTransfersData?.data || [];
-    const rugReport = rugReportRes as RugCheckReport | null;
+    const rugReport = isRugCheckReport(rugReportRes) ? rugReportRes : null;
     const rugTotalHolders: number | null =
       typeof rugReport?.totalHolders === "number" && rugReport.totalHolders > 0
       ? rugReport.totalHolders : null;

@@ -2,6 +2,9 @@ import { describe, it, expect, vi } from "vitest";
 import {
   asNumber, _mean, _std, _pct, makeFlag, computeCacheTTL,
   apiError, isCorsAllowed, isValidDexScreenerResponse, isValidRugCheckSummary,
+  isHeliusLargestAccountsResponse, isHeliusSupplyResponse,
+  isSolscanMarketsResponse, isSolscanMeta, isSolscanTransfersResponse,
+  isRugCheckReport,
 } from "../api/helpers";
 
 describe("asNumber", () => {
@@ -199,5 +202,66 @@ describe("isValidRugCheckSummary", () => {
 
   it("{ randomField: true } -> false", () => {
     expect(isValidRugCheckSummary({ randomField: true })).toBe(false);
+  });
+});
+
+// ─── Runtime Type Guards (Session 6) ─────────────────────────────────────────
+describe("isHeliusLargestAccountsResponse", () => {
+  it("accepts valid response", () => {
+    expect(isHeliusLargestAccountsResponse({ result: { value: [] } })).toBe(true);
+  });
+  it("rejects null", () => {
+    expect(isHeliusLargestAccountsResponse(null)).toBe(false);
+  });
+  it("rejects missing result", () => {
+    expect(isHeliusLargestAccountsResponse({ foo: "bar" })).toBe(false);
+  });
+});
+
+describe("isHeliusSupplyResponse", () => {
+  it("accepts valid response", () => {
+    expect(isHeliusSupplyResponse({ result: { value: { uiAmount: 1000 } } })).toBe(true);
+  });
+  it("rejects null", () => {
+    expect(isHeliusSupplyResponse(null)).toBe(false);
+  });
+});
+
+describe("isSolscanMarketsResponse", () => {
+  it("accepts valid response", () => {
+    expect(isSolscanMarketsResponse({ data: [] })).toBe(true);
+  });
+  it("rejects non-array data", () => {
+    expect(isSolscanMarketsResponse({ data: "nope" })).toBe(false);
+  });
+});
+
+describe("isSolscanMeta", () => {
+  it("accepts valid meta", () => {
+    expect(isSolscanMeta({ data: { created_time: 123 } })).toBe(true);
+  });
+  it("rejects non-object data", () => {
+    expect(isSolscanMeta({ data: 42 })).toBe(false);
+  });
+});
+
+describe("isSolscanTransfersResponse", () => {
+  it("accepts valid response", () => {
+    expect(isSolscanTransfersResponse({ data: [{ from: "a", to: "b" }] })).toBe(true);
+  });
+  it("rejects null", () => {
+    expect(isSolscanTransfersResponse(null)).toBe(false);
+  });
+});
+
+describe("isRugCheckReport", () => {
+  it("accepts report with risks", () => {
+    expect(isRugCheckReport({ risks: [] })).toBe(true);
+  });
+  it("accepts report with topHolders", () => {
+    expect(isRugCheckReport({ topHolders: {} })).toBe(true);
+  });
+  it("rejects empty object", () => {
+    expect(isRugCheckReport({})).toBe(false);
   });
 });
