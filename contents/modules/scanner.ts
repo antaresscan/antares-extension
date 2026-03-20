@@ -1,4 +1,5 @@
 import type { ScanResponseData } from "../../shared/types"
+import * as Sentry from "@sentry/browser"
 import { API, LS_PREFIX, IGNORE } from "./constants"
 import { state, scanCache } from "./state"
 import { getCached, saveToLS } from "./cache"
@@ -95,6 +96,7 @@ export async function scan(ca: string) {
   } catch (e: unknown) {
     if (controller.signal.aborted) return
     console.warn("[antares]", e)
+    Sentry.captureException(e)
     if (state.lastCA === ca) {
       if (state.boxEl) state.boxEl.className = "box danger"
       el.innerHTML = `

@@ -10,7 +10,7 @@ if (SENTRY_DSN) {
 }
 
 // ─── KEEPALIVE — chrome.alarms replaces setInterval for MV3 service workers ──
-chrome.alarms.create("keepalive", { periodInMinutes: 1 });
+void chrome.alarms.create("keepalive", { periodInMinutes: 1 });
 chrome.alarms.onAlarm.addListener((a) => { if (a.name === "keepalive") void chrome.runtime.id; });
 
 // ─── BADGE CONFIG ──────────────────────────────────────────────────────────

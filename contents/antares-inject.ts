@@ -1,8 +1,13 @@
 import type { PlasmoCSConfig } from "plasmo"
+import * as Sentry from "@sentry/browser"
 
 export const config: PlasmoCSConfig = {
   matches: ["<all_urls>"],
   run_at: "document_idle"
+}
+
+if (process.env.PLASMO_PUBLIC_SENTRY_DSN) {
+  Sentry.init({ dsn: process.env.PLASMO_PUBLIC_SENTRY_DSN, tracesSampleRate: 0.1 });
 }
 
 import { state } from "./modules/state"
