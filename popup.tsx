@@ -35,7 +35,7 @@ function Popup() {
   const toggleStealth = () => {
     const newVal = !stealthMode;
     setStealthMode(newVal);
-    chrome.storage.sync.set({ stealthMode: newVal });
+    void chrome.storage.sync.set({ stealthMode: newVal });
   };
 
   const riskColor = (risk?: string): string => {

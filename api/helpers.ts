@@ -7,7 +7,6 @@ import type {
   GoPlusTokenResult, GoPlusResponse,
   DexScreenerResponse, RugCheckSummary, RugCheckReport, RugCheckRisk,
 } from "./types";
-import { CORS } from "./constants";
 
 // Re-export split modules
 export { asNumber, _mean, _std, _pct } from "./math";

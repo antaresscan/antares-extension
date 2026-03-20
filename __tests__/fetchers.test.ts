@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { extractBundlePct } from "../api/fetchers";
-import type { RugCheckReport, RugCheckRisk, OHLCVCandle } from "../api/types";
+import type { RugCheckReport } from "../api/types";
 
 // ─── extractBundlePct (pure function, no mocking needed) ─────────────────────
 describe("extractBundlePct", () => {
@@ -79,7 +79,6 @@ const {
   heliusGetTokenSupply,
   heliusGetCreatorReputation,
   solscanGetHoldersCount,
-  fetchSolscan,
   fetchDexCandles,
 } = await import("../api/fetchers");
 

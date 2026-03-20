@@ -12,7 +12,7 @@ function Options() {
   }, []);
 
   const save = (key: string, val: boolean) => {
-    chrome.storage.sync.set({ [key]: val });
+    void chrome.storage.sync.set({ [key]: val });
   };
 
   return (
