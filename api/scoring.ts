@@ -1,7 +1,7 @@
 // api/scoring.ts — Final scoring, verdict & safe-block classification
 
 import type { LayerResult, SafeBlockedReason } from "./types";
-import { LAYER_WEIGHTS } from "./constants";
+import { LAYER_WEIGHTS, TRUST_FLOOR, XV_PENALTY_LP_BURN, XV_PENALTY_MINT_AUTH, XV_PENALTY_AGE } from "./constants";
 
 // ═══ SCORING FINAL ═══════════════════════════════════════════════════════════════
 export function computeFinalScore(layers: LayerResult[]): number {
@@ -12,7 +12,7 @@ export function computeFinalScore(layers: LayerResult[]): number {
     const layer = layers.find(l => l.source === src);
     const w = LAYER_WEIGHTS[src];
     if (!layer || !layer.available) continue;
-    product *= Math.pow(Math.max(0.001, layer.trust), w);
+    product *= Math.pow(Math.max(TRUST_FLOOR, layer.trust), w);
     totalWeight += w;
   }
   if (totalWeight === 0) return 0;
@@ -22,9 +22,9 @@ export function computeFinalScore(layers: LayerResult[]): number {
   const xv = layers.find(l => l.source === "crossvalidation");
   if (xv?.available && xv.flags.length > 0) {
     for (const f of xv.flags) {
-      if (/LP burn conflict/i.test(f.label)) product *= 0.85;
-      else if (/Mint authority conflict/i.test(f.label)) product *= 0.70;
-      else if (/age conflict/i.test(f.label)) product *= 0.90;
+      if (/LP burn conflict/i.test(f.label)) product *= XV_PENALTY_LP_BURN;
+      else if (/Mint authority conflict/i.test(f.label)) product *= XV_PENALTY_MINT_AUTH;
+      else if (/age conflict/i.test(f.label)) product *= XV_PENALTY_AGE;
     }
   }
   return Math.round(Math.max(0, Math.min(1, product)) * 1000);

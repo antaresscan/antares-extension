@@ -340,7 +340,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       solscanTrades24h,
       solscanTraders24h,
       layers: layersSnapshot,
-      scoring_version: "6.1.0",
+      scoring_version: "6.2.0",
       fetchedAt: Date.now(),
     };
 
@@ -352,7 +352,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.json(result);
   } catch (e) {
-    console.error("[scan v6.1.0]", requestId, e);
+    console.error("[scan v6.2.0]", requestId, e);
     Sentry.captureException(e);
     return apiError(res, 500, "Analysis error.");
   }

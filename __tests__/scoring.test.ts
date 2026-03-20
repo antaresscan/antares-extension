@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { computeFinalScore, classifySafeBlockedReasons } from "../api/scoring";
+import { LAYER_WEIGHTS } from "../api/constants";
 import type { LayerResult } from "../api/types";
 
 function makeLayer(source: string, trust: number, available: boolean, flags: LayerResult["flags"] = [], forceRug = false, safeBlocked = false): LayerResult {
@@ -21,7 +22,7 @@ describe("computeFinalScore", () => {
     expect(computeFinalScore(layers)).toBeGreaterThan(900);
   });
 
-  it("returns very low score with one trust=0", () => {
+  it("returns low score with one trust=0 (clamped to TRUST_FLOOR 0.10)", () => {
     const layers: LayerResult[] = [
       makeLayer("dexscreener", 1, true),
       makeLayer("rugcheck", 0, true),
@@ -32,8 +33,10 @@ describe("computeFinalScore", () => {
       makeLayer("identity", 1, true),
       makeLayer("crossvalidation", 1, true),
     ];
-    // trust=0 gets clamped to 0.001 in scoring, so score is very low but not exactly 0
-    expect(computeFinalScore(layers)).toBeLessThan(300);
+    // trust=0 gets clamped to TRUST_FLOOR (0.10), so score is lower but not devastated
+    const score = computeFinalScore(layers);
+    expect(score).toBeLessThan(700);
+    expect(score).toBeGreaterThan(500);
   });
 
   it("returns 0 with none available", () => {
@@ -46,6 +49,74 @@ describe("computeFinalScore", () => {
       makeLayer("chart", 1, false),
     ];
     expect(computeFinalScore(layers)).toBe(0);
+  });
+
+  it("LAYER_WEIGHTS sum to 1.0", () => {
+    const sum = Object.values(LAYER_WEIGHTS).reduce((a: number, b: number) => a + b, 0);
+    expect(sum).toBeCloseTo(1.0, 10);
+  });
+
+  it("XV penalties reduce score for LP burn conflict", () => {
+    const layers: LayerResult[] = [
+      makeLayer("dexscreener", 1, true),
+      makeLayer("rugcheck", 1, true),
+      makeLayer("goplus", 1, true),
+      makeLayer("helius", 1, true),
+      makeLayer("solscan", 1, true),
+      makeLayer("chart", 1, true),
+      makeLayer("identity", 1, true),
+      makeLayer("crossvalidation", 1, true, [
+        { label: "LP burn conflict: RugCheck vs on-chain data", severity: "warning", impact: 0 }
+      ]),
+    ];
+    const score = computeFinalScore(layers);
+    expect(score).toBeLessThan(1000);
+    expect(score).toBe(850); // 1000 * 0.85
+  });
+
+  it("identity trust < 1 reduces final score", () => {
+    const layers: LayerResult[] = [
+      makeLayer("dexscreener", 1, true),
+      makeLayer("rugcheck", 1, true),
+      makeLayer("goplus", 1, true),
+      makeLayer("helius", 1, true),
+      makeLayer("solscan", 1, true),
+      makeLayer("chart", 1, true),
+      makeLayer("identity", 0.5, true),
+      makeLayer("crossvalidation", 1, true),
+    ];
+    expect(computeFinalScore(layers)).toBe(500);
+  });
+
+  it("score caps at 1000", () => {
+    const layers: LayerResult[] = [
+      makeLayer("dexscreener", 1, true),
+      makeLayer("rugcheck", 1, true),
+      makeLayer("goplus", 1, true),
+      makeLayer("helius", 1, true),
+      makeLayer("solscan", 1, true),
+      makeLayer("chart", 1, true),
+      makeLayer("identity", 1, true),
+      makeLayer("crossvalidation", 1, true),
+    ];
+    expect(computeFinalScore(layers)).toBeLessThanOrEqual(1000);
+  });
+
+  it("chart weight at 0.10 gives chart more influence than before", () => {
+    const base: LayerResult[] = [
+      makeLayer("dexscreener", 1, true),
+      makeLayer("rugcheck", 1, true),
+      makeLayer("goplus", 1, true),
+      makeLayer("helius", 1, true),
+      makeLayer("solscan", 1, true),
+      makeLayer("identity", 1, true),
+      makeLayer("crossvalidation", 1, true),
+    ];
+    const withGoodChart = [...base, makeLayer("chart", 1, true)];
+    const withBadChart = [...base, makeLayer("chart", 0.2, true)];
+    const goodScore = computeFinalScore(withGoodChart);
+    const badScore = computeFinalScore(withBadChart);
+    expect(goodScore - badScore).toBeGreaterThan(100);
   });
 });
 

@@ -45,11 +45,19 @@ export const COPYCAT_SUFFIXES = ["2","V2","V3","OFFICIAL","REAL","NEW","PLUS","I
 export const LAYER_WEIGHTS: Record<string, number> = {
   dexscreener: 0.20,
   rugcheck: 0.20,
-  goplus: 0.25,
+  goplus: 0.20,
   helius: 0.20,
   solscan: 0.10,
-  chart: 0.05,
+  chart: 0.10,
 };
+
+// Cross-validation penalty multipliers (extracted from scoring.ts)
+export const XV_PENALTY_LP_BURN = 0.85;
+export const XV_PENALTY_MINT_AUTH = 0.70;
+export const XV_PENALTY_AGE = 0.90;
+
+// Trust floor for geometric mean — prevents single-layer nuking
+export const TRUST_FLOOR = 0.10;
 
 export const CORS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
