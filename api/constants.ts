@@ -25,6 +25,7 @@ export const FOUNDATION_WALLETS = new Set([
 ]);
 
 export const OFFICIAL_MINTS = new Set([
+  "So11111111111111111111111111111111111111112",
   "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
   "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm",
   "6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN",
@@ -36,9 +37,10 @@ export const KNOWN_BRANDS = [
   "TRUMP","DOGE","PEPE","SHIB","BONK","WIF","BRETT",
   "FLOKI","MAGA","BIDEN","ELON","SOLANA","SOL","BTC",
   "ETH","SUI","APT","ARB","OP","MATIC","AVAX",
+  "POPCAT","BOME","WEN","PONKE","NEIRO","MOODENG",
 ];
 
-export const COPYCAT_SUFFIXES = ["2","V2","V3","OFFICIAL","REAL","NEW","PLUS","INU"];
+export const COPYCAT_SUFFIXES = ["2","V2","V3","OFFICIAL","REAL","NEW","PLUS","INU","AI","GPT","X","PRO","CLASSIC"];
 
 export const LAYER_WEIGHTS: Record<string, number> = {
   dexscreener: 0.20,
