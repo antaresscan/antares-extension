@@ -22,9 +22,12 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit
 
+      - name: Test
+        run: npm run test
+
       - name: Lint
         run: npx eslint . --ext .ts,.tsx
-        continue-on-error: true
 
       - name: Build extension
         run: npx plasmo build
+        continue-on-error: true

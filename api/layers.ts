@@ -163,7 +163,8 @@ export function layerRugCheck(rugData: RugCheckSummary | null, rugReportData: Ru
 export function layerGoPlus(goplus: GoPlusTokenResult | null): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
-  let forceRug = false, safeBlocked = false;
+  let forceRug = false;
+  const safeBlocked = false;
   if (!goplus) return {
     source: "goplus", trust: 1.0, available: false,
     flags: [makeFlag("GoPlus unavailable", "info", 0)],
@@ -249,7 +250,8 @@ export function layerSolscan(
 ): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
-  let forceRug = false, safeBlocked = false;
+  const forceRug = false;
+  let safeBlocked = false;
   const hasData = holderCount !== null || tokenAgeHours !== null;
   if (!hasData) return {
     source: "solscan", trust: 1.0, available: false,
@@ -357,7 +359,8 @@ export function layerChart(
 export function layerIdentity(symbol?: string | null, name?: string | null, mint?: string | null): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
-  let forceRug = false, safeBlocked = false;
+  const forceRug = false;
+  let safeBlocked = false;
   const sym = String(symbol || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
   const nm = String(name || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
   const hasCopycatSuffix = COPYCAT_SUFFIXES.some(s => sym.endsWith(s) || nm.endsWith(s));
@@ -386,7 +389,7 @@ export function layerCrossValidation(
   dexAgeHours: number | null
 ): LayerResult {
   const flags: ScanFlag[] = [];
-  let forceRug = false, safeBlocked = false;
+  const forceRug = false, safeBlocked = false;
   if (rugData?.lpBurned === true) {
     const lpStillActive = rawHolderAccounts.some(h => LP_PROGRAM_ADDRESSES.has(h.address));
     if (lpStillActive) flags.push(makeFlag("LP burn conflict: RugCheck vs on-chain data", "warning", 0));

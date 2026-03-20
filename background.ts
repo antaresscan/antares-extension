@@ -1,6 +1,7 @@
 export {}
 
 import * as Sentry from "@sentry/browser"
+import type { HistoryEntry } from "./shared/types"
 
 // ─── SENTRY INITIALIZATION ──────────────────────────────────────────────────
 const SENTRY_DSN = process.env.PLASMO_PUBLIC_SENTRY_DSN || ""
@@ -8,20 +9,9 @@ if (SENTRY_DSN) {
   Sentry.init({ dsn: SENTRY_DSN, tracesSampleRate: 0.1 })
 }
 
-// ─── KEEPALIVE — empêche Chrome de tuer le Service Worker ───────────────────
-// Chrome suspend le SW après ~30s d'inactivité, ce qui coupe les fetches
-// en cours et provoque des bugs aléatoires. Ce ping toutes les 20s
-// maintient le SW actif tant que l'extension tourne.
-function startKeepalive() {
-  setInterval(() => {
-    // Accès à chrome.runtime.id suffit à réveiller/maintenir le contexte SW
-    void chrome.runtime.id;
-  }, 20_000);
-}
-
-chrome.runtime.onInstalled.addListener(startKeepalive);
-chrome.runtime.onStartup.addListener(startKeepalive);
-startKeepalive();
+// ─── KEEPALIVE — chrome.alarms replaces setInterval for MV3 service workers ──
+void chrome.alarms.create("keepalive", { periodInMinutes: 1 });
+chrome.alarms.onAlarm.addListener((a) => { if (a.name === "keepalive") void chrome.runtime.id; });
 
 // ─── BADGE CONFIG ──────────────────────────────────────────────────────────
 const BADGE_MAP: Record<string, { text: string; color: string }> = {
@@ -43,8 +33,8 @@ function updateBadge(risk: string, tabId?: number) {
   const badge = BADGE_MAP[risk]
   if (!badge) return
   const target = tabId !== undefined ? { tabId } : {}
-  chrome.action.setBadgeText({ text: badge.text, ...target })
-  chrome.action.setBadgeBackgroundColor({ color: badge.color, ...target })
+  void chrome.action.setBadgeText({ text: badge.text, ...target })
+  void chrome.action.setBadgeBackgroundColor({ color: badge.color, ...target })
 }
 
 function checkRiskEscalation(ca: string, currentRisk: string, tokenSymbol: string) {
@@ -59,19 +49,11 @@ function checkRiskEscalation(ca: string, currentRisk: string, tokenSymbol: strin
         message: `${tokenSymbol || ca.slice(0, 8)} risk changed: ${prev} \u2192 ${currentRisk}`,
       })
     }
-    chrome.storage.local.set({ [key]: currentRisk })
+    void chrome.storage.local.set({ [key]: currentRisk })
   })
 }
 
 // ─── HISTORY ───────────────────────────────────────────────────────────────
-interface HistoryEntry {
-  ca: string
-  symbol: string
-  risk: string
-  score: number
-  ts: number
-}
-
 const HISTORY_KEY = "antares_scan_history"
 const MAX_HISTORY = 10
 
@@ -87,20 +69,21 @@ function saveToHistory(ca: string, data: Record<string, unknown>) {
     const history = (result[HISTORY_KEY] || []) as HistoryEntry[]
     const filtered = history.filter((h) => h.ca !== ca)
     filtered.unshift(entry)
-    chrome.storage.local.set({ [HISTORY_KEY]: filtered.slice(0, MAX_HISTORY) })
+    void chrome.storage.local.set({ [HISTORY_KEY]: filtered.slice(0, MAX_HISTORY) })
   })
 }
 
 // ─── MESSAGE HANDLER ────────────────────────────────────────────────────────
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === "SCAN") {
-    fetch(`https://antares-extension.vercel.app/api/scan?ca=${msg.ca}`)
+    void fetch(`https://antares-extension.vercel.app/api/scan?ca=${msg.ca}`)
       .then((r) => r.json())
-      .then((data) => {
+      .then((data: Record<string, unknown>) => {
         const risk = data.risk as string | undefined
         if (risk) {
           updateBadge(risk, sender.tab?.id)
-          const sym = (data.tokenSymbol || data.pair?.baseToken?.symbol || "") as string
+          const pair = data.pair as Record<string, Record<string, string>> | undefined
+          const sym = ((data.tokenSymbol as string) || pair?.baseToken?.symbol || "")
           checkRiskEscalation(msg.ca as string, risk, sym)
         }
         saveToHistory(msg.ca as string, data as Record<string, unknown>)
