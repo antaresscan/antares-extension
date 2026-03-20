@@ -1,6 +1,7 @@
 export {}
 
 import * as Sentry from "@sentry/browser"
+import type { HistoryEntry } from "./shared/types"
 
 // ─── SENTRY INITIALIZATION ──────────────────────────────────────────────────
 const SENTRY_DSN = process.env.PLASMO_PUBLIC_SENTRY_DSN || ""
@@ -64,14 +65,6 @@ function checkRiskEscalation(ca: string, currentRisk: string, tokenSymbol: strin
 }
 
 // ─── HISTORY ───────────────────────────────────────────────────────────────
-interface HistoryEntry {
-  ca: string
-  symbol: string
-  risk: string
-  score: number
-  ts: number
-}
-
 const HISTORY_KEY = "antares_scan_history"
 const MAX_HISTORY = 10
 

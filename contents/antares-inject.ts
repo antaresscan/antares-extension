@@ -1,43 +1,9 @@
 import type { PlasmoCSConfig } from "plasmo"
+import type { ScanResponseFlag, ScanResponseData } from "../shared/types"
 
 export const config: PlasmoCSConfig = {
   matches: ["<all_urls>"],
   run_at: "document_idle"
-}
-
-// ─── Scan response shape (matches ScanResult from api/types.ts) ─────────────
-interface ScanResponseFlag {
-  label: string
-  severity: string
-  impact: number
-}
-interface ScanResponseData {
-  score: number
-  risk: string
-  flags: ScanResponseFlag[]
-  pair?: {
-    baseToken?: { symbol?: string; name?: string; address?: string }
-    liquidity?: { usd?: number }
-    url?: string
-  } | null
-  resolvedMint?: string
-  confidence?: number
-  sources_used?: string[]
-  holders?: number | null
-  marketCap?: number | null
-  priceUsd?: number | null
-  priceChange1h?: number | null
-  liquidity?: number | null
-  tokenSymbol?: string | null
-  tokenName?: string | null
-  mintAuthority?: boolean | null
-  freezeAuthority?: boolean | null
-  lpBurned?: boolean | null
-  lpLocked?: boolean | null
-  honeypot?: boolean | null
-  safeBlocked?: boolean
-  candles?: Array<{ close: number }>
-  [key: string]: unknown
 }
 
 const API           = "https://antares-extension.vercel.app/api/scan"
