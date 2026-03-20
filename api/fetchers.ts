@@ -67,7 +67,7 @@ export async function solscanGetHoldersCount(mint: string): Promise<number | nul
   const res = await fetchJson(
     `${SOLSCAN_PUBLIC_BASE}/token/holders?tokenAddress=${mint}&limit=1&offset=0`,
     { headers: { "User-Agent": "Antares/1.0" } }, 5000
-  );
+    ) as { total?: number } | null;
   const total = res?.total;
   return typeof total === "number" && total > 0 ? total : null;
 }
