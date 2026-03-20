@@ -37,7 +37,7 @@ export function findBestAddress(): string {
   return [...scores.entries()].sort((a, b) => b[1] - a[1])[0][0]
 }
 
-export function poll() { const ca = findBestAddress(); if (!ca) return; scan(ca) }
+export function poll() { const ca = findBestAddress(); if (!ca) return; void scan(ca) }
 
 export function onNav() {
   const curPath = window.location.pathname

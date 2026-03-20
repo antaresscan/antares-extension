@@ -2,7 +2,7 @@ import type { ScanResponseData } from "../../shared/types"
 import { API, LS_PREFIX, IGNORE } from "./constants"
 import { state, scanCache } from "./state"
 import { getCached, saveToLS } from "./cache"
-import { getBox, showBox, hideBox, attachClose, triggerResultAnimations, buildHeader, buildResult } from "./components"
+import { getBox, showBox, attachClose, triggerResultAnimations, buildHeader, buildResult } from "./components"
 
 export function isValid(addr: string): boolean {
   if (addr.length < 32 || addr.length > 44) return false
@@ -25,7 +25,7 @@ export function scheduleRescanIfPriceCrash(data: ScanResponseData, ca: string) {
       // Force rescan
       state.lastCA = ""
       state.manuallyDismissed = false
-      scan(ca)
+      void scan(ca)
     }, 5_000)
   }
 }
@@ -38,7 +38,7 @@ export async function scan(ca: string) {
     if (ca === state.lastCA) return
     state.lastCA = ca
     try {
-      chrome.runtime.sendMessage({ type: "SCAN", ca })
+      void chrome.runtime.sendMessage({ type: "SCAN", ca })
     } catch (e: unknown) { console.warn("[antares]", e) }
     return
   }

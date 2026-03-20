@@ -1,5 +1,3 @@
-import type { ScanResponseData } from "../../shared/types"
-
 export const API           = "https://antares-extension.vercel.app/api/scan"
 export const ANALYSIS_PAGE = "https://antares-extension.vercel.app/token.html"
 export const LS_PREFIX     = "antares_scan_"

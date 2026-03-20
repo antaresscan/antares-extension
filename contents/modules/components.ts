@@ -72,7 +72,7 @@ export function attachClose() {
   state.shadow?.querySelector("#ant-hist-btn")?.addEventListener("click", toggleHistory)
   state.shadow?.querySelector("#ant-stealth")?.addEventListener("click", () => {
     try {
-      chrome.storage.local.set({ antares_stealth: true })
+      void chrome.storage.local.set({ antares_stealth: true })
     } catch (e: unknown) { console.warn("[antares]", e) }
     state.stealthMode = true
     hideBox()

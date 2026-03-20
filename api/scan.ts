@@ -5,7 +5,6 @@ import type {
   ScanFlag, Verdict, Severity,
   DexScreenerPair, DexScreenerResponse,
   RugCheckSummary, RugCheckReport,
-  GoPlusTokenResult,
   HeliusHolder, HeliusLargestAccountsResponse, HeliusSupplyResponse,
   SolscanTransfer, SolscanMeta, SolscanMarketPool, SolscanMarketsResponse, SolscanTransfersResponse,
   OHLCVCandle,
@@ -13,7 +12,7 @@ import type {
 } from "./types";
 import { CA_RE } from "./constants";
 import {
-  setHeaders, fetchJson, fetchJsonPost, asNumber, pickGoPlusResult, makeFlag,
+  setHeaders, fetchJson, asNumber, pickGoPlusResult, makeFlag,
   settled, computeCacheTTL,
 } from "./helpers";
 import {
