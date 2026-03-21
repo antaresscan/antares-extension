@@ -17,7 +17,7 @@ jobs:
           node-version: "22"
           cache: "npm"
 
-            - run: npm install
+      - run: npm install
 
       - name: Typecheck
         run: npx tsc --noEmit
