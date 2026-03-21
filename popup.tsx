@@ -1,5 +1,15 @@
 import { useState, useEffect } from "react";
 
+function sanitize(input: string | null | undefined): string {
+  if (!input) return "";
+  return input
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 interface ScanResult {
   ca: string;
   score?: number;
@@ -13,16 +23,16 @@ function Popup() {
   const [stealthMode, setStealthMode] = useState(false);
 
   useEffect(() => {
-    chrome.storage.local.get(["scanCache", "stealthMode"], (data: Record<string, unknown>) => {
-      if (data.scanCache && typeof data.scanCache === "object") {
-        const cache = data.scanCache as Record<string, Record<string, unknown>>;
-        const scans: ScanResult[] = Object.entries(cache)
-          .map(([ca, result]) => ({
-            ca,
-            score: typeof result.score === "number" ? result.score : undefined,
-            risk: typeof result.risk === "string" ? result.risk : undefined,
-            symbol: typeof result.symbol === "string" ? result.symbol : undefined,
-            timestamp: typeof result.timestamp === "number" ? result.timestamp : undefined,
+    chrome.storage.local.get(["antares_scan_history", "stealthMode"], (data: Record<string, unknown>) => {
+      if (Array.isArray(data.antares_scan_history)) {
+        const history = data.antares_scan_history as Array<Record<string, unknown>>;
+        const scans: ScanResult[] = history
+          .map((entry) => ({
+            ca: typeof entry.ca === "string" ? entry.ca : "",
+            score: typeof entry.score === "number" ? entry.score : undefined,
+            risk: typeof entry.risk === "string" ? entry.risk : undefined,
+            symbol: typeof entry.symbol === "string" ? entry.symbol : undefined,
+            timestamp: typeof entry.ts === "number" ? entry.ts : undefined,
           }))
           .sort((a, b) => (b.timestamp ?? 0) - (a.timestamp ?? 0))
           .slice(0, 10);
@@ -60,8 +70,8 @@ function Popup() {
           padding: 8, margin: "4px 0", borderRadius: 6,
           background: riskColor(scan.risk),
         }}>
-          <strong>{scan.symbol ?? scan.ca.slice(0, 8)}</strong>
-          <span style={{ float: "right" }}>{scan.risk ?? "?"} ({scan.score ?? "—"})</span>
+          <strong>{sanitize(scan.symbol) || scan.ca.slice(0, 8)}</strong>
+          <span style={{ float: "right" }}>{sanitize(scan.risk) || "?"} ({scan.score ?? "—"})</span>
         </div>
       ))}
     </div>

@@ -31,6 +31,7 @@ dist/
 
 # typescript
 .tsbuildinfo
+tsconfig.tsbuildinfo
 .vercel/
 fix.patch
 scan.json
