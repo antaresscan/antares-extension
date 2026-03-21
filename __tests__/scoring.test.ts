@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { computeFinalScore, classifySafeBlockedReasons } from "../api/_lib/scoring";
-import { LAYER_WEIGHTS } from "../api/_lib/constants";
+import { LAYER_WEIGHTS, TRUST_FLOOR, XV_PENALTY_LP_BURN, XV_PENALTY_MINT_AUTH, XV_PENALTY_HOLDER_CONCENTRATION } from "../api/_lib/constants";
 import type { LayerResult } from "../api/_lib/types";
 
 function makeLayer(source: string, trust: number, available: boolean, flags: LayerResult["flags"] = [], forceRug = false, safeBlocked = false): LayerResult {
@@ -22,7 +22,7 @@ describe("computeFinalScore", () => {
     expect(computeFinalScore(layers)).toBeGreaterThan(900);
   });
 
-  it("returns 0 with one trust=0 (hard kill)", () => {
+  it("hard kill: returns 0 when any available layer has trust === 0", () => {
     const layers: LayerResult[] = [
       makeLayer("dexscreener", 1, true),
       makeLayer("rugcheck", 0, true),
@@ -33,11 +33,57 @@ describe("computeFinalScore", () => {
       makeLayer("identity", 1, true),
       makeLayer("crossvalidation", 1, true),
     ];
-    // HARD KILL: any available layer with trust=0 returns 0 immediately
     expect(computeFinalScore(layers)).toBe(0);
   });
 
-  it("returns 0 with none available", () => {
+  it("no hard kill for unavailable layer with trust 0", () => {
+    const layers: LayerResult[] = [
+      makeLayer("dexscreener", 1, true),
+      makeLayer("rugcheck", 0, false), // unavailable, trust 0 should not kill
+      makeLayer("goplus", 1, true),
+      makeLayer("helius", 1, true),
+      makeLayer("solscan", 1, true),
+      makeLayer("chart", 1, true),
+      makeLayer("identity", 1, true),
+      makeLayer("crossvalidation", 1, true),
+    ];
+    const score = computeFinalScore(layers);
+    expect(score).toBeGreaterThan(0);
+    expect(score).toBe(1000);
+  });
+
+  it("dynamic LAYER_WEIGHTS including identity", () => {
+    expect(LAYER_WEIGHTS).toHaveProperty("identity");
+    expect(LAYER_WEIGHTS.identity).toBe(0.08);
+  });
+
+  it("LAYER_WEIGHTS sum to 1.0", () => {
+    const sum = Object.values(LAYER_WEIGHTS).reduce((a: number, b: number) => a + b, 0);
+    expect(sum).toBeCloseTo(1.0, 10);
+  });
+
+  it("crossvalidation not in weighted mean (post-multiplier only)", () => {
+    expect(LAYER_WEIGHTS).not.toHaveProperty("crossvalidation");
+  });
+
+  it("XV_PENALTY_HOLDER_CONCENTRATION applied", () => {
+    const layers: LayerResult[] = [
+      makeLayer("dexscreener", 1, true),
+      makeLayer("rugcheck", 1, true),
+      makeLayer("goplus", 1, true),
+      makeLayer("helius", 1, true),
+      makeLayer("solscan", 1, true),
+      makeLayer("chart", 1, true),
+      makeLayer("identity", 1, true),
+      makeLayer("crossvalidation", 1, true, [
+        { label: "holder concentration conflict", severity: "warning", impact: 0 }
+      ]),
+    ];
+    const score = computeFinalScore(layers);
+    expect(score).toBe(Math.round(1000 * XV_PENALTY_HOLDER_CONCENTRATION));
+  });
+
+  it("returns 0 when no sources available", () => {
     const layers: LayerResult[] = [
       makeLayer("dexscreener", 1, false),
       makeLayer("rugcheck", 1, false),
@@ -49,9 +95,8 @@ describe("computeFinalScore", () => {
     expect(computeFinalScore(layers)).toBe(0);
   });
 
-  it("LAYER_WEIGHTS sum to 1.0", () => {
-    const sum = Object.values(LAYER_WEIGHTS).reduce((a: number, b: number) => a + b, 0);
-    expect(sum).toBeCloseTo(1.0, 10);
+  it("TRUST_FLOOR is 0.001 (not 0.10)", () => {
+    expect(TRUST_FLOOR).toBe(0.001);
   });
 
   it("XV penalties reduce score for LP burn conflict", () => {
@@ -69,7 +114,24 @@ describe("computeFinalScore", () => {
     ];
     const score = computeFinalScore(layers);
     expect(score).toBeLessThan(1000);
-    expect(score).toBe(850); // 1000 * 0.85
+    expect(score).toBe(Math.round(1000 * XV_PENALTY_LP_BURN));
+  });
+
+  it("XV penalties reduce score for mint authority conflict", () => {
+    const layers: LayerResult[] = [
+      makeLayer("dexscreener", 1, true),
+      makeLayer("rugcheck", 1, true),
+      makeLayer("goplus", 1, true),
+      makeLayer("helius", 1, true),
+      makeLayer("solscan", 1, true),
+      makeLayer("chart", 1, true),
+      makeLayer("identity", 1, true),
+      makeLayer("crossvalidation", 1, true, [
+        { label: "Mint authority conflict: GoPlus vs RugCheck", severity: "warning", impact: 0 }
+      ]),
+    ];
+    const score = computeFinalScore(layers);
+    expect(score).toBe(Math.round(1000 * XV_PENALTY_MINT_AUTH));
   });
 
   it("identity trust < 1 reduces final score (via weighted geometric mean)", () => {
@@ -84,7 +146,6 @@ describe("computeFinalScore", () => {
       makeLayer("crossvalidation", 1, true),
     ];
     const score = computeFinalScore(layers);
-    // identity is now in LAYER_WEIGHTS (0.08), so 0.5 trust reduces via geometric mean
     expect(score).toBeLessThan(1000);
     expect(score).toBeGreaterThan(900);
   });
@@ -136,5 +197,32 @@ describe("classifySafeBlockedReasons", () => {
       makeLayer("dexscreener", 1, true, [], false, false),
     ];
     expect(classifySafeBlockedReasons(layers)).toEqual([]);
+  });
+
+  it("detects honeypot reason", () => {
+    const layers: LayerResult[] = [
+      makeLayer("goplus", 0, true, [
+        { label: "Honeypot detected — cannot sell", severity: "critical", impact: 0 }
+      ], true, true),
+    ];
+    expect(classifySafeBlockedReasons(layers)).toContain("honeypot");
+  });
+
+  it("detects age reason from solscan", () => {
+    const layers: LayerResult[] = [
+      makeLayer("solscan", 0.5, true, [
+        { label: "Newborn token on-chain (<30min)", severity: "critical", impact: 0 }
+      ], false, true),
+    ];
+    expect(classifySafeBlockedReasons(layers)).toContain("age");
+  });
+
+  it("detects holders reason from helius", () => {
+    const layers: LayerResult[] = [
+      makeLayer("helius", 0.5, true, [
+        { label: "Single wallet holds 60% of supply", severity: "critical", impact: 0 }
+      ], false, true),
+    ];
+    expect(classifySafeBlockedReasons(layers)).toContain("holders");
   });
 });

@@ -58,6 +58,15 @@ describe("extractBundlePct", () => {
     const report = { risks: [] };
     expect(extractBundlePct(report)).toBe(0);
   });
+
+  it("never uses top1Percentage (regression test)", () => {
+    // extractBundlePct should only look at risks array, not topHolders.top1Percentage
+    const report = {
+      risks: [],
+      topHolders: { top1Percentage: 50 },
+    };
+    expect(extractBundlePct(report)).toBe(0);
+  });
 });
 
 // ─── Mocked fetcher tests ────────────────────────────────────────────────────

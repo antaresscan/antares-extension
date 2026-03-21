@@ -295,6 +295,52 @@ describe("applySafeGateOverride", () => {
       safeBlockedReasons: ["age"], holders: null,
     }))).toBe(true);
   });
+
+  // Age-aware safe-gate tests
+  it("unlocks token > 24h with 4+ sources and 200+ holders", () => {
+    expect(applySafeGateOverride(makeSafeGateInput({
+      safeBlockedReasons: ["age"],
+      tokenAgeHours: 25,
+      sourcesAvailableCount: 4,
+      holders: 250,
+      goPlusClean: true,
+      lpBurned: false, // not burned, but relaxed unlock doesn't require it
+    }))).toBe(false);
+  });
+
+  it("keeps blocked for token < 24h with only soft reasons", () => {
+    expect(applySafeGateOverride(makeSafeGateInput({
+      safeBlockedReasons: ["age"],
+      tokenAgeHours: 12,
+      sourcesAvailableCount: 4,
+      holders: 250,
+      goPlusClean: true,
+      lpBurned: false,
+    }))).toBe(true);
+  });
+
+  it("keeps blocked when sourcesAvailableCount < 4", () => {
+    expect(applySafeGateOverride(makeSafeGateInput({
+      safeBlockedReasons: ["age"],
+      tokenAgeHours: 25,
+      sourcesAvailableCount: 3,
+      holders: 250,
+      goPlusClean: true,
+      lpBurned: false,
+    }))).toBe(true);
+  });
+
+  it("always returns true when forceRug", () => {
+    expect(applySafeGateOverride(makeSafeGateInput({
+      forceRug: true,
+      safeBlockedReasons: ["age"],
+      tokenAgeHours: 25,
+      sourcesAvailableCount: 5,
+      holders: 1000,
+      goPlusClean: true,
+      lpBurned: true,
+    }))).toBe(true);
+  });
 });
 
 // ─── applyEstablishedBonus ──────────────────────────────────────────────────
