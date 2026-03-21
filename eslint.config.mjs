@@ -26,6 +26,7 @@ export default tseslint.config(
         destructuredArrayIgnorePattern: "^_",
       }],
       "prefer-const": "warn",
+            "no-useless-assignment": "off",
     },
   },
   {
