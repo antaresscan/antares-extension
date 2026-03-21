@@ -270,7 +270,7 @@ describe("scan handler", () => {
     const body = (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as Record<string, unknown>;
     expect(body.score).toBeTypeOf("number");
     expect(body.risk).toBeDefined();
-    expect(body.scoring_version).toBe("6.2.0");
+    expect(body.scoring_version).toBe("7.0.0");
     expect(body.resolvedMint).toBeDefined();
     expect(body.flags).toBeDefined();
     expect(Array.isArray(body.sources_used)).toBe(true);
