@@ -100,23 +100,19 @@ export async function fetchDexCandles(
 }
 
 // ─── BUNDLE DETECTION ──────────────────────────────────────────────────────
-export function extractBundlePct(rugReportData: RugCheckReport | null): number {
-  if (!rugReportData) return 0;
-  const top1 = asNumber(
-    rugReportData?.topHolders?.top1Percentage ??
-    rugReportData?.topHolders?.top1HolderPercentage
+export function extractBundlePct(rugReportData: any): number {
+  const bundleRisk = rugReportData?.risks?.find(
+    (r: any) => /bundle/i.test(r.name ?? "")
   );
-  if (Array.isArray(rugReportData?.risks)) {
-    const bundleRisk = rugReportData.risks.find((r: RugCheckRisk) =>
-      /bundle/i.test(String(r?.name || ""))
-    );
-    if (bundleRisk) {
-      const scoreVal = asNumber(bundleRisk.score);
-      if (top1 > 0) return top1 / 100;
-      if (scoreVal >= 8000) return 0.40;
-      if (scoreVal >= 5000) return 0.25;
-      return 0.20;
-    }
-  }
-  return 0;
+  if (!bundleRisk) return 0;
+
+  const match = bundleRisk.description?.match(/(\d+(?:\.\d+)?)\s*%/);
+  if (match) return parseFloat(match[1]) / 100;
+
+  const scoreVal = asNumber(bundleRisk.score);
+  if (scoreVal >= 10000) return 0.50;
+  if (scoreVal >= 8000) return 0.35;
+  if (scoreVal >= 5000) return 0.20;
+  if (scoreVal >= 2000) return 0.10;
+  return 0.08;
 }

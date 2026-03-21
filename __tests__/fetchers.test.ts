@@ -9,53 +9,55 @@ describe("extractBundlePct", () => {
   });
 
   it("returns 0 when no bundle risk exists", () => {
-    const report = { risks: [{ name: "Low liquidity", score: 2000 }] } as unknown as RugCheckReport;
+    const report = { risks: [{ name: "Low liquidity", score: 2000 }] };
     expect(extractBundlePct(report)).toBe(0);
   });
 
-  it("returns top1Percentage/100 when bundle risk exists and top1 > 0", () => {
-    const report: RugCheckReport = {
-      risks: [{ name: "Bundle detected", score: 5000 }],
-      topHolders: { top1Percentage: 35 },
+  it("extracts percentage from bundle risk description", () => {
+    const report = {
+      risks: [{ name: "Bundle detected", score: 5000, description: "Bundle holds 35% of supply" }],
     };
     expect(extractBundlePct(report)).toBeCloseTo(0.35, 2);
   });
 
-  it("returns 0.40 for bundle score >= 8000 with no top1", () => {
-    const report: RugCheckReport = {
+  it("returns 0.35 for bundle score >= 8000 with no description %", () => {
+    const report = {
       risks: [{ name: "Bundle detected", score: 8000 }],
-      topHolders: {},
     };
-    expect(extractBundlePct(report)).toBe(0.40);
+    expect(extractBundlePct(report)).toBe(0.35);
   });
 
-  it("returns 0.25 for bundle score >= 5000 with no top1", () => {
-    const report: RugCheckReport = {
+  it("returns 0.20 for bundle score >= 5000 with no description %", () => {
+    const report = {
       risks: [{ name: "Bundle activity", score: 5000 }],
-      topHolders: {},
-    };
-    expect(extractBundlePct(report)).toBe(0.25);
-  });
-
-  it("returns 0.20 for low bundle score with no top1", () => {
-    const report: RugCheckReport = {
-      risks: [{ name: "Bundle activity", score: 1000 }],
-      topHolders: {},
     };
     expect(extractBundlePct(report)).toBe(0.20);
   });
 
-  it("returns 0 when risks array is empty", () => {
-    const report: RugCheckReport = { risks: [] };
-    expect(extractBundlePct(report)).toBe(0);
+  it("returns 0.10 for bundle score >= 2000 with no description %", () => {
+    const report = {
+      risks: [{ name: "Bundle activity", score: 2000 }],
+    };
+    expect(extractBundlePct(report)).toBe(0.10);
   });
 
-  it("uses top1HolderPercentage when top1Percentage is missing", () => {
-    const report: RugCheckReport = {
-      risks: [{ name: "Bundle risk", score: 3000 }],
-      topHolders: { top1HolderPercentage: 22 },
+  it("returns 0.08 for low bundle score with no description %", () => {
+    const report = {
+      risks: [{ name: "Bundle activity", score: 1000 }],
     };
-    expect(extractBundlePct(report)).toBeCloseTo(0.22, 2);
+    expect(extractBundlePct(report)).toBe(0.08);
+  });
+
+  it("returns 0.50 for bundle score >= 10000", () => {
+    const report = {
+      risks: [{ name: "Bundle detected", score: 10000 }],
+    };
+    expect(extractBundlePct(report)).toBe(0.50);
+  });
+
+  it("returns 0 when risks array is empty", () => {
+    const report = { risks: [] };
+    expect(extractBundlePct(report)).toBe(0);
   });
 });
 

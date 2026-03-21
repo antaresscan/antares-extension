@@ -178,7 +178,7 @@ export function layerGoPlus(goplus: GoPlusTokenResult | null): LayerResult {
   let trust = 1.0;
   const penalties: number[] = [];
   let forceRug = false;
-  const safeBlocked = false;
+  let safeBlocked = false;
   if (!goplus) return {
     source: "goplus", trust: 1.0, available: false,
     flags: [makeFlag("GoPlus unavailable", "info", 0)],
@@ -193,27 +193,27 @@ export function layerGoPlus(goplus: GoPlusTokenResult | null): LayerResult {
     Boolean(val) && !["0","false","null",""].includes(String(val).trim().toLowerCase());
   if (gp("is_honeypot")) {
     flags.push(makeFlag("Honeypot detected — cannot sell", "critical", 0));
-    trust = 0; forceRug = true;
+    trust = 0; forceRug = true; safeBlocked = true;
     return { source: "goplus", trust: 0, available: true, flags, forceRug, safeBlocked };
   }
   if (gp("cannot_sell_all")) {
     flags.push(makeFlag("Cannot sell all tokens", "critical", 0));
-    trust = 0; forceRug = true;
+    trust = 0; forceRug = true; safeBlocked = true;
     return { source: "goplus", trust: 0, available: true, flags, forceRug, safeBlocked };
   }
   const hasMint = authorityActive(goplus.mint_authority);
   const hasFreeze = authorityActive(goplus.freeze_authority);
   if (hasMint && hasFreeze) {
     flags.push(makeFlag("Mint + Freeze authority both active", "critical", 0));
-    penalties.push(0.05); forceRug = true;
+    penalties.push(0.05); forceRug = true; safeBlocked = true;
   } else {
     if (hasMint) { flags.push(makeFlag("Mint Authority enabled", "critical", 0)); penalties.push(0.25); }
     if (hasFreeze) { flags.push(makeFlag("Freeze Authority enabled", "critical", 0)); penalties.push(0.25); }
   }
-  if (gp("is_blacklisted")) { flags.push(makeFlag("Blacklist capability", "critical", 0)); penalties.push(0.30); }
-  if (gp("transfer_pausable")) { flags.push(makeFlag("Transfer pausable", "critical", 0)); penalties.push(0.30); }
-  if (gp("hidden_owner")) { flags.push(makeFlag("Hidden owner detected", "critical", 0)); penalties.push(0.30); }
-  if (gp("is_proxy")) { flags.push(makeFlag("Upgradeable/proxy contract", "critical", 0)); penalties.push(0.50); }
+  if (gp("is_blacklisted")) { flags.push(makeFlag("Blacklist capability", "critical", 0)); penalties.push(0.30); safeBlocked = true; }
+  if (gp("transfer_pausable")) { flags.push(makeFlag("Transfer pausable", "critical", 0)); penalties.push(0.30); safeBlocked = true; }
+  if (gp("hidden_owner")) { flags.push(makeFlag("Hidden owner detected", "critical", 0)); penalties.push(0.30); safeBlocked = true; }
+  if (gp("is_proxy")) { flags.push(makeFlag("Upgradeable/proxy contract", "critical", 0)); penalties.push(0.50); safeBlocked = true; }
   if (gpNum("sell_tax") > 0.1) { flags.push(makeFlag("Sell tax > 10%", "critical", 0)); penalties.push(0.35); }
   if (gpNum("buy_tax") > 0.1) { flags.push(makeFlag("Buy tax > 10%", "critical", 0)); penalties.push(0.35); }
   if (gpNum("owner_percent") > 0.05) { flags.push(makeFlag("Owner holds > 5%", "critical", 0)); penalties.push(0.50); }
@@ -268,7 +268,7 @@ export function layerSolscan(
   const flags: ScanFlag[] = [];
   let trust = 1.0;
   const penalties: number[] = [];
-  const forceRug = false;
+  let forceRug = false;
   let safeBlocked = false;
   const hasData = holderCount !== null || tokenAgeHours !== null;
   if (!hasData) return {
@@ -287,15 +287,20 @@ export function layerSolscan(
     else if (tokenAgeHours < 6) { flags.push(makeFlag("Fresh token on-chain (<6h)", "warning", 0)); penalties.push(0.65); }
     else if (tokenAgeHours > 720) { flags.push(makeFlag("Established token (30d+) ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.05); }
   }
+  let washTradingDetected = false;
   if (trades24h !== null && traders24h !== null && traders24h > 0) {
     const tradesPerTrader = trades24h / traders24h;
     if (tradesPerTrader > 50 && traders24h < 20) {
       flags.push(makeFlag("Wash trading suspected (trades/traders ratio)", "critical", 0));
       penalties.push(0.50); safeBlocked = true;
+      washTradingDetected = true;
     } else if (traders24h > 500 && tradesPerTrader < 0.1) {
       flags.push(makeFlag("Bot-farmed holders: many accounts, near-zero activity", "warning", 0));
       penalties.push(0.70); safeBlocked = true;
     }
+  }
+  if (washTradingDetected && holderCount !== null && holderCount < 15 && tokenAgeHours !== null && tokenAgeHours < 0.5) {
+    forceRug = true;
   }
   trust = applyDiminishingPenalties(trust, penalties);
   return { source: "solscan", trust: Math.max(0, trust), available: true, flags, forceRug, safeBlocked };
@@ -412,16 +417,22 @@ export function layerCrossValidation(
   dexAgeHours: number | null
 ): LayerResult {
   const flags: ScanFlag[] = [];
-  const forceRug = false, safeBlocked = false;
+  let forceRug = false;
+  let safeBlocked = false;
   if (rugData?.lpBurned === true) {
     const lpStillActive = rawHolderAccounts.some(h => LP_PROGRAM_ADDRESSES.has(h.address));
-    if (lpStillActive) flags.push(makeFlag("LP burn conflict: RugCheck vs on-chain data", "warning", 0));
+    if (lpStillActive) {
+      flags.push(makeFlag("LP burn conflict: RugCheck vs on-chain data", "warning", 0));
+      safeBlocked = true;
+    }
   }
   if (goplus && rugData) {
     const gpMint = goplus.mint_authority;
     const gpOff = ["0","false","null",""].includes(String(gpMint).trim().toLowerCase());
-    if (gpOff && rugData.mintAuthorityEnabled === true)
+    if (gpOff && rugData.mintAuthorityEnabled === true) {
       flags.push(makeFlag("Mint authority conflict: GoPlus vs RugCheck", "warning", 0));
+      safeBlocked = true;
+    }
   }
   if (solscanAgeHours !== null && dexAgeHours !== null) {
     if (Math.abs(solscanAgeHours - dexAgeHours) > 72)
