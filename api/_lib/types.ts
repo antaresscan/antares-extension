@@ -236,6 +236,8 @@ export interface SafeGateInput {
   holders: number | null;
   lpBurned: boolean;
   goPlusClean: boolean;
+  tokenAgeHours: number | null;
+  sourcesAvailableCount: number;
 }
 
 export interface EstablishedBonusInput {

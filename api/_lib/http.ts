@@ -1,10 +1,11 @@
 // api/http.ts — HTTP utility functions extracted from helpers.ts
 
 import type { VercelResponse } from "@vercel/node";
-import { CORS } from "./constants";
 
 export function setHeaders(res: VercelResponse) {
-  Object.entries(CORS).forEach(([k, v]) => res.setHeader(k, v));
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   res.setHeader("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
 }
 

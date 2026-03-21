@@ -43,24 +43,25 @@ export const KNOWN_BRANDS = [
 export const COPYCAT_SUFFIXES = ["2","V2","V3","OFFICIAL","REAL","NEW","PLUS","INU","AI","GPT","X","PRO","CLASSIC"];
 
 export const LAYER_WEIGHTS: Record<string, number> = {
-  dexscreener: 0.20,
-  rugcheck: 0.20,
-  goplus: 0.20,
-  helius: 0.20,
+  dexscreener: 0.18,
+  rugcheck: 0.18,
+  goplus: 0.18,
+  helius: 0.18,
   solscan: 0.10,
   chart: 0.10,
+  identity: 0.08,
 };
+// crossvalidation n'a PAS de poids - c'est un multiplicateur post-score
 
 // Cross-validation penalty multipliers (extracted from scoring.ts)
 export const XV_PENALTY_LP_BURN = 0.85;
 export const XV_PENALTY_MINT_AUTH = 0.70;
 export const XV_PENALTY_AGE = 0.90;
+export const XV_PENALTY_HOLDER_CONCENTRATION = 0.80;
+export const ESTABLISHED_BONUS_MULTIPLIER = 1.15;
+export const ESTABLISHED_AGE_THRESHOLD_HOURS = 720;
+export const ESTABLISHED_HOLDERS_THRESHOLD = 1000;
 
 // Trust floor for geometric mean — prevents single-layer nuking
-export const TRUST_FLOOR = 0.10;
+export const TRUST_FLOOR = 0.001;
 
-export const CORS: Record<string, string> = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};

@@ -234,17 +234,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const safeBlockedReasons = classifySafeBlockedReasons(allLayers);
     const lpBurned = rugData?.lpBurned === true;
     const goPlusClean = l3.available && l3.trust >= 0.95 && !l3.forceRug;
+    const tokenAgeHours = solscanTokenAgeHours ?? dexTokenAgeHours ?? null;
+    const sourcesAvailableCount = allLayers.filter(l => l.available).length;
 
     const newSafeBlocked = applySafeGateOverride({
       safeBlocked, safeBlockedReasons, forceRug,
       holders, lpBurned, goPlusClean,
+      tokenAgeHours, sourcesAvailableCount,
     });
     if (newSafeBlocked !== safeBlocked) {
       console.log(JSON.stringify({ requestId, ca: resolvedMint, stage: "safe_gate_override", reasons: safeBlockedReasons }));
     }
     safeBlocked = newSafeBlocked;
-
-    const tokenAgeHours = solscanTokenAgeHours ?? dexTokenAgeHours ?? null;
     const newScore = applyEstablishedBonus({
       score, tokenAgeHours, holders, lpBurned, goPlusClean,
     });

@@ -48,6 +48,8 @@ function makeSafeGateInput(overrides: Partial<SafeGateInput> = {}): SafeGateInpu
     holders: 600,
     lpBurned: true,
     goPlusClean: true,
+    tokenAgeHours: null,
+    sourcesAvailableCount: 5,
     ...overrides,
   };
 }
