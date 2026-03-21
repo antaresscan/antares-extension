@@ -3,7 +3,6 @@
 import type {
   HeliusTokenAccountsResponse,
   OHLCVCandle, GeckoTerminalOHLCVResponse,
-  RugCheckReport, RugCheckRisk,
 } from "./types";
 import { HELIUS_BASE, SOLSCAN_PUBLIC_BASE, SOLSCAN_BASE } from "./constants";
 import { fetchJson, fetchJsonPost } from "./http";
@@ -100,6 +99,7 @@ export async function fetchDexCandles(
 }
 
 // ─── BUNDLE DETECTION ──────────────────────────────────────────────────────
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment */
 export function extractBundlePct(rugReportData: any): number {
   const bundleRisk = rugReportData?.risks?.find(
     (r: any) => /bundle/i.test(r.name ?? "")
@@ -116,3 +116,4 @@ export function extractBundlePct(rugReportData: any): number {
   if (scoreVal >= 2000) return 0.10;
   return 0.08;
 }
+/* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment */

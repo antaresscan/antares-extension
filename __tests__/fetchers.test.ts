@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { extractBundlePct } from "../api/_lib/fetchers";
-import type { RugCheckReport } from "../api/_lib/types";
 
 // ─── extractBundlePct (pure function, no mocking needed) ─────────────────────
 describe("extractBundlePct", () => {

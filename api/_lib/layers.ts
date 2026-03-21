@@ -417,7 +417,7 @@ export function layerCrossValidation(
   dexAgeHours: number | null
 ): LayerResult {
   const flags: ScanFlag[] = [];
-  let forceRug = false;
+  const forceRug = false;
   let safeBlocked = false;
   if (rugData?.lpBurned === true) {
     const lpStillActive = rawHolderAccounts.some(h => LP_PROGRAM_ADDRESSES.has(h.address));
