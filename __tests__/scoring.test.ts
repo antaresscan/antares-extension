@@ -22,7 +22,7 @@ describe("computeFinalScore", () => {
     expect(computeFinalScore(layers)).toBeGreaterThan(900);
   });
 
-  it("returns low score with one trust=0 (clamped to TRUST_FLOOR 0.10)", () => {
+  it("returns very low score with one trust=0 (clamped to TRUST_FLOOR 0.001)", () => {
     const layers: LayerResult[] = [
       makeLayer("dexscreener", 1, true),
       makeLayer("rugcheck", 0, true),
@@ -33,10 +33,10 @@ describe("computeFinalScore", () => {
       makeLayer("identity", 1, true),
       makeLayer("crossvalidation", 1, true),
     ];
-    // trust=0 gets clamped to TRUST_FLOOR (0.10), so score is lower but not devastated
+    // trust=0 gets clamped to TRUST_FLOOR (0.001), so score is severely impacted
     const score = computeFinalScore(layers);
-    expect(score).toBeLessThan(700);
-    expect(score).toBeGreaterThan(500);
+    expect(score).toBeLessThan(500);
+    expect(score).toBeGreaterThan(0);
   });
 
   it("returns 0 with none available", () => {

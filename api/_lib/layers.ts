@@ -16,6 +16,17 @@ import { asNumber, _mean, _std, _pct } from "./math";
 import { makeFlag, getLpLockDurationDays, riskIncludes } from "./helpers";
 import { extractBundlePct } from "./fetchers";
 
+function applyDiminishingPenalties(trust: number, penalties: number[]): number {
+  if (penalties.length > 0) {
+    penalties.sort((a, b) => a - b); // worst first
+    for (let i = 0; i < penalties.length; i++) {
+      const dampening = 1 / (1 + i * 0.3); // diminishing impact
+      trust *= 1 - (1 - penalties[i]) * dampening;
+    }
+  }
+  return trust;
+}
+
 // ═══ LAYER 1 — DexScreener ═════════════════════════════════════════════════════
 export function layerDexScreener(
   pair: DexScreenerPair | null,
@@ -24,6 +35,7 @@ export function layerDexScreener(
 ): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
+  const penalties: number[] = [];
   let forceRug = false, safeBlocked = false;
   if (!pair) return {
     source: "dexscreener", trust: 1.0, available: false,
@@ -46,15 +58,15 @@ export function layerDexScreener(
   const hasTelegram = Array.isArray(socials) && socials.some((s: DexScreenerSocial) => /telegram/i.test(String(s?.type || s?.url || "")));
   const hasWebsite = Array.isArray(websites) && websites.length > 0;
   const ageMinutes = tokenAgeMinutes ?? Infinity;
-  if (liq < 1000) { flags.push(makeFlag("Very low liquidity (<$1k)", "critical", 0)); trust *= 0.25; }
-  else if (liq < 5000) { flags.push(makeFlag("Low liquidity (<$5k)", "warning", 0)); trust *= 0.65; }
-  else if (liq < 20000) { flags.push(makeFlag("Liquidity < $20k", "info", 0)); trust *= 0.90; }
+  if (liq < 1000) { flags.push(makeFlag("Very low liquidity (<$1k)", "critical", 0)); penalties.push(0.25); }
+  else if (liq < 5000) { flags.push(makeFlag("Low liquidity (<$5k)", "warning", 0)); penalties.push(0.65); }
+  else if (liq < 20000) { flags.push(makeFlag("Liquidity < $20k", "info", 0)); penalties.push(0.90); }
   if (liq > 0 && vol / liq > 20) {
     flags.push(makeFlag("Wash trading detected (vol/liq > 20) — bundler dump", "critical", 0));
-    trust *= 0.20; forceRug = true; safeBlocked = true;
+    penalties.push(0.20); forceRug = true; safeBlocked = true;
   } else if (liq > 0 && vol / liq > 5) {
     flags.push(makeFlag("High vol/liquidity ratio", "warning", 0));
-    trust *= 0.75;
+    penalties.push(0.75);
   }
   const hasStructuralWeakness =
     (liq > 0 && vol / liq > 10) ||
@@ -63,37 +75,38 @@ export function layerDexScreener(
   if (ageMinutes < 30 && pc1 > 150) {
     if (hasStructuralWeakness) {
       flags.push(makeFlag(`Pump +${Math.round(pc1)}% on <30min token + structural weakness — exit trap`, "critical", 0));
-      trust *= 0.05; forceRug = true; safeBlocked = true;
+      penalties.push(0.05); forceRug = true; safeBlocked = true;
     } else {
       flags.push(makeFlag(`Extreme pump +${Math.round(pc1)}% on newborn token (<30min)`, "warning", 0));
-      trust *= 0.30; safeBlocked = true;
+      penalties.push(0.30); safeBlocked = true;
     }
   } else if (ageMinutes < 60 && pc1 > 120) {
     if (hasStructuralWeakness) {
       flags.push(makeFlag(`Pump +${Math.round(pc1)}% on <1h token + structural weakness — exit trap`, "critical", 0));
-      trust *= 0.05; forceRug = true; safeBlocked = true;
+      penalties.push(0.05); forceRug = true; safeBlocked = true;
     } else {
       flags.push(makeFlag(`Pump +${Math.round(pc1)}% on newborn token (<1h)`, "warning", 0));
-      trust *= 0.40; safeBlocked = true;
+      penalties.push(0.40); safeBlocked = true;
     }
   } else if (pc1 > 300) {
     flags.push(makeFlag(`Extreme pump +${Math.round(pc1)}% in 1h — bundler exit trap`, "critical", 0));
-    trust *= 0.05; forceRug = true; safeBlocked = true;
+    penalties.push(0.05); forceRug = true; safeBlocked = true;
   } else if (pc1 > 200 && ageMinutes < 120) {
     flags.push(makeFlag(`Pump +${Math.round(pc1)}% on newborn token (<2h) — exit trap`, "critical", 0));
-    trust *= 0.10; forceRug = true; safeBlocked = true;
+    penalties.push(0.10); forceRug = true; safeBlocked = true;
   } else if (pc1 > 200 && pc5 > 50) {
     flags.push(makeFlag("Coordinated pump pattern", "warning", 0));
-    trust *= 0.65;
+    penalties.push(0.65);
   }
   if (pc6 < -50 && pc1 < -15) {
     flags.push(makeFlag("Slow rug detected: -50% on 6h + -15% on 1h", "critical", 0));
-    trust *= 0.15; forceRug = true; safeBlocked = true;
+    penalties.push(0.15); forceRug = true; safeBlocked = true;
   }
-  if (!hasWebsite && !hasTwitter && !hasTelegram) { flags.push(makeFlag("No website / Twitter / Telegram", "warning", 0)); trust *= 0.80; }
-  if (txns5m < 5 && mc > 50000) { flags.push(makeFlag("Low 5m transactions vs market cap", "warning", 0)); trust *= 0.88; }
-  if (sells5m > 0 && buys5m > sells5m * 5) { flags.push(makeFlag("Buy/sell imbalance (coordinated pump)", "warning", 0)); trust *= 0.85; }
-  if (pc24 < -80) { flags.push(makeFlag("Brutal dump 24h (-80%)", "critical", 0)); trust *= 0.35; }
+  if (!hasWebsite && !hasTwitter && !hasTelegram) { flags.push(makeFlag("No website / Twitter / Telegram", "warning", 0)); penalties.push(0.80); }
+  if (txns5m < 5 && mc > 50000) { flags.push(makeFlag("Low 5m transactions vs market cap", "warning", 0)); penalties.push(0.88); }
+  if (sells5m > 0 && buys5m > sells5m * 5) { flags.push(makeFlag("Buy/sell imbalance (coordinated pump)", "warning", 0)); penalties.push(0.85); }
+  if (pc24 < -80) { flags.push(makeFlag("Brutal dump 24h (-80%)", "critical", 0)); penalties.push(0.35); }
+  trust = applyDiminishingPenalties(trust, penalties);
   return { source: "dexscreener", trust: Math.max(0, trust), available: true, flags, forceRug, safeBlocked };
 }
 
@@ -101,6 +114,7 @@ export function layerDexScreener(
 export function layerRugCheck(rugData: RugCheckSummary | null, rugReportData: RugCheckReport | null, resolvedMint: string): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
+  const penalties: number[] = [];
   let forceRug = false, safeBlocked = false;
   if (!rugData) return {
     source: "rugcheck", trust: 1.0, available: false,
@@ -111,24 +125,24 @@ export function layerRugCheck(rugData: RugCheckSummary | null, rugReportData: Ru
   const bundledPct = bundleInReport ? extractBundlePct(rugReportData) : 0;
   if (bundleInReport && bundledPct > 0.20) {
     flags.push(makeFlag(`Bundle holds ~${Math.round(bundledPct * 100)}% of supply — coordinated buy/dump`, "critical", 0));
-    trust *= 0.05; forceRug = true; safeBlocked = true;
+    penalties.push(0.05); forceRug = true; safeBlocked = true;
   } else if (bundleInReport && bundledPct > 0.05) {
     flags.push(makeFlag(`Bundle detected (~${Math.round(bundledPct * 100)}% of supply)`, "critical", 0));
-    trust *= 0.20; safeBlocked = true;
+    penalties.push(0.20); safeBlocked = true;
   } else if (bundleInReport) {
     flags.push(makeFlag("Bundle activity detected (RugCheck)", "critical", 0));
-    trust *= 0.20; forceRug = true; safeBlocked = true;
+    penalties.push(0.20); forceRug = true; safeBlocked = true;
   }
   if (!bundleInReport && riskIncludes(rugData, /bundler|bundle/i)) {
     flags.push(makeFlag("Bundler detected (RugCheck summary)", "critical", 0));
-    trust *= 0.15; forceRug = true; safeBlocked = true;
+    penalties.push(0.15); forceRug = true; safeBlocked = true;
   }
   if (rugData.lpBurned === true) {
     flags.push(makeFlag("LP Burned ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.10);
   } else if (rugData.lpLocked === true) {
     const days = getLpLockDurationDays(rugData);
     if (days > 180) { flags.push(makeFlag("LP Locked > 180 days ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.05); }
-    else if (days > 0 && days < 30) { flags.push(makeFlag("LP lock duration < 30 days", "warning", 0)); trust *= 0.75; }
+    else if (days > 0 && days < 30) { flags.push(makeFlag("LP lock duration < 30 days", "warning", 0)); penalties.push(0.75); }
   } else {
     const lpDataPresent =
       rugData.lpBurned === false ||
@@ -139,21 +153,22 @@ export function layerRugCheck(rugData: RugCheckSummary | null, rugReportData: Ru
     const isOfficialMint = OFFICIAL_MINTS.has(resolvedMint);
     if (lpDataPresent && !isOfficialMint) {
       flags.push(makeFlag("LP not burned or locked", "warning", 0));
-      trust *= 0.70;
+      penalties.push(0.70);
     }
   }
-  if (rugData.metaMutable === true) { flags.push(makeFlag("Metadata mutable", "warning", 0)); trust *= 0.82; }
-  else if (rugData.metaMutable !== false) { flags.push(makeFlag("Metadata not immutable", "info", 0)); trust *= 0.96; }
+  if (rugData.metaMutable === true) { flags.push(makeFlag("Metadata mutable", "warning", 0)); penalties.push(0.82); }
+  else if (rugData.metaMutable !== false) { flags.push(makeFlag("Metadata not immutable", "info", 0)); penalties.push(0.96); }
   const top10 = asNumber(rugData?.topHolders?.top10Percentage);
   const top1 = asNumber(rugData?.topHolders?.top1Percentage ?? rugData?.topHolders?.top1HolderPercentage);
-  if (top10 > 70) { flags.push(makeFlag("Top 10 holders > 70%", "critical", 0)); trust *= 0.45; }
-  else if (top10 > 50) { flags.push(makeFlag("Top 10 holders > 50%", "warning", 0)); trust *= 0.70; }
-  if (top1 > 20) { flags.push(makeFlag("Top 1 holder > 20%", "critical", 0)); trust *= 0.45; }
-  if (riskIncludes(rugReportData, /sniper/i)) { flags.push(makeFlag("Sniper activity detected", "critical", 0)); trust *= 0.15; safeBlocked = true; }
-  if (riskIncludes(rugReportData, /rug/i)) { flags.push(makeFlag("Rug pull history", "critical", 0)); trust *= 0.15; forceRug = true; }
-  if (riskIncludes(rugReportData, /creator.*sell|dev.*sell/i)) { flags.push(makeFlag("Dev wallet sold tokens", "warning", 0)); trust *= 0.65; }
-  if (rugData.mintAuthorityEnabled) { flags.push(makeFlag("Mint Authority enabled (RugCheck)", "critical", 0)); trust *= 0.25; }
-  if (rugData.freezeAuthorityEnabled) { flags.push(makeFlag("Freeze Authority enabled (RugCheck)", "critical", 0)); trust *= 0.25; }
+  if (top10 > 70) { flags.push(makeFlag("Top 10 holders > 70%", "critical", 0)); penalties.push(0.45); }
+  else if (top10 > 50) { flags.push(makeFlag("Top 10 holders > 50%", "warning", 0)); penalties.push(0.70); }
+  if (top1 > 20) { flags.push(makeFlag("Top 1 holder > 20%", "critical", 0)); penalties.push(0.45); }
+  if (riskIncludes(rugReportData, /sniper/i)) { flags.push(makeFlag("Sniper activity detected", "critical", 0)); penalties.push(0.15); safeBlocked = true; }
+  if (riskIncludes(rugReportData, /rug/i)) { flags.push(makeFlag("Rug pull history", "critical", 0)); penalties.push(0.15); forceRug = true; }
+  if (riskIncludes(rugReportData, /creator.*sell|dev.*sell/i)) { flags.push(makeFlag("Dev wallet sold tokens", "warning", 0)); penalties.push(0.65); }
+  if (rugData.mintAuthorityEnabled) { flags.push(makeFlag("Mint Authority enabled (RugCheck)", "critical", 0)); penalties.push(0.25); }
+  if (rugData.freezeAuthorityEnabled) { flags.push(makeFlag("Freeze Authority enabled (RugCheck)", "critical", 0)); penalties.push(0.25); }
+  trust = applyDiminishingPenalties(trust, penalties);
   return { source: "rugcheck", trust: Math.max(0, trust), available: true, flags, forceRug, safeBlocked };
 }
 
@@ -161,6 +176,7 @@ export function layerRugCheck(rugData: RugCheckSummary | null, rugReportData: Ru
 export function layerGoPlus(goplus: GoPlusTokenResult | null): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
+  const penalties: number[] = [];
   let forceRug = false;
   const safeBlocked = false;
   if (!goplus) return {
@@ -189,24 +205,25 @@ export function layerGoPlus(goplus: GoPlusTokenResult | null): LayerResult {
   const hasFreeze = authorityActive(goplus.freeze_authority);
   if (hasMint && hasFreeze) {
     flags.push(makeFlag("Mint + Freeze authority both active", "critical", 0));
-    trust *= 0.05; forceRug = true;
+    penalties.push(0.05); forceRug = true;
   } else {
-    if (hasMint) { flags.push(makeFlag("Mint Authority enabled", "critical", 0)); trust *= 0.25; }
-    if (hasFreeze) { flags.push(makeFlag("Freeze Authority enabled", "critical", 0)); trust *= 0.25; }
+    if (hasMint) { flags.push(makeFlag("Mint Authority enabled", "critical", 0)); penalties.push(0.25); }
+    if (hasFreeze) { flags.push(makeFlag("Freeze Authority enabled", "critical", 0)); penalties.push(0.25); }
   }
-  if (gp("is_blacklisted")) { flags.push(makeFlag("Blacklist capability", "critical", 0)); trust *= 0.30; }
-  if (gp("transfer_pausable")) { flags.push(makeFlag("Transfer pausable", "critical", 0)); trust *= 0.30; }
-  if (gp("hidden_owner")) { flags.push(makeFlag("Hidden owner detected", "critical", 0)); trust *= 0.30; }
-  if (gp("is_proxy")) { flags.push(makeFlag("Upgradeable/proxy contract", "critical", 0)); trust *= 0.50; }
-  if (gpNum("sell_tax") > 0.1) { flags.push(makeFlag("Sell tax > 10%", "critical", 0)); trust *= 0.35; }
-  if (gpNum("buy_tax") > 0.1) { flags.push(makeFlag("Buy tax > 10%", "critical", 0)); trust *= 0.35; }
-  if (gpNum("owner_percent") > 0.05) { flags.push(makeFlag("Owner holds > 5%", "critical", 0)); trust *= 0.50; }
-  if (gpNum("creator_percent") > 0.05) { flags.push(makeFlag("Creator holds > 5%", "critical", 0)); trust *= 0.50; }
-  if (gp("is_mintable")) { flags.push(makeFlag("Token is mintable", "warning", 0)); trust *= 0.60; }
-  if (gp("slippage_modifiable")) { flags.push(makeFlag("Slippage/tax modifiable", "warning", 0)); trust *= 0.75; }
-  if (gp("is_anti_whale_modifiable")) { flags.push(makeFlag("Anti-whale rules modifiable", "warning", 0)); trust *= 0.80; }
-  if (gp("trading_cooldown")) { flags.push(makeFlag("Trading cooldown enabled", "warning", 0)); trust *= 0.80; }
-  if (gp("is_whitelisted")) { flags.push(makeFlag("Whitelist system detected", "warning", 0)); trust *= 0.80; }
+  if (gp("is_blacklisted")) { flags.push(makeFlag("Blacklist capability", "critical", 0)); penalties.push(0.30); }
+  if (gp("transfer_pausable")) { flags.push(makeFlag("Transfer pausable", "critical", 0)); penalties.push(0.30); }
+  if (gp("hidden_owner")) { flags.push(makeFlag("Hidden owner detected", "critical", 0)); penalties.push(0.30); }
+  if (gp("is_proxy")) { flags.push(makeFlag("Upgradeable/proxy contract", "critical", 0)); penalties.push(0.50); }
+  if (gpNum("sell_tax") > 0.1) { flags.push(makeFlag("Sell tax > 10%", "critical", 0)); penalties.push(0.35); }
+  if (gpNum("buy_tax") > 0.1) { flags.push(makeFlag("Buy tax > 10%", "critical", 0)); penalties.push(0.35); }
+  if (gpNum("owner_percent") > 0.05) { flags.push(makeFlag("Owner holds > 5%", "critical", 0)); penalties.push(0.50); }
+  if (gpNum("creator_percent") > 0.05) { flags.push(makeFlag("Creator holds > 5%", "critical", 0)); penalties.push(0.50); }
+  if (gp("is_mintable")) { flags.push(makeFlag("Token is mintable", "warning", 0)); penalties.push(0.60); }
+  if (gp("slippage_modifiable")) { flags.push(makeFlag("Slippage/tax modifiable", "warning", 0)); penalties.push(0.75); }
+  if (gp("is_anti_whale_modifiable")) { flags.push(makeFlag("Anti-whale rules modifiable", "warning", 0)); penalties.push(0.80); }
+  if (gp("trading_cooldown")) { flags.push(makeFlag("Trading cooldown enabled", "warning", 0)); penalties.push(0.80); }
+  if (gp("is_whitelisted")) { flags.push(makeFlag("Whitelist system detected", "warning", 0)); penalties.push(0.80); }
+  trust = applyDiminishingPenalties(trust, penalties);
   return { source: "goplus", trust: Math.max(0, trust), available: true, flags, forceRug, safeBlocked };
 }
 
@@ -217,6 +234,7 @@ export function layerHelius(
 ): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
+  const penalties: number[] = [];
   let forceRug = false, safeBlocked = false;
   if (!rawHolderAccounts.length || totalSupplyUi === 0) return {
     source: "helius", trust: 1.0, available: false,
@@ -230,12 +248,13 @@ export function layerHelius(
   const top1Pct = top1Amount / totalSupplyUi;
   const top10Amount = accounts.slice(0, 10).reduce((s, h) => s + asNumber(h.uiAmount), 0);
   const top10Pct = top10Amount / totalSupplyUi;
-  if (top1Pct > 0.3) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "critical", 0)); trust *= 0.08; forceRug = true; }
-  else if (top1Pct > 0.2) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "critical", 0)); trust *= 0.25; safeBlocked = true; }
-  else if (top1Pct > 0.1) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "warning", 0)); trust *= 0.50; safeBlocked = true; }
-  if (top10Pct > 0.8) { flags.push(makeFlag(`Top 10 wallets hold ${Math.round(top10Pct*100)}% of supply`, "critical", 0)); trust *= 0.35; safeBlocked = true; }
-  else if (top10Pct > 0.6) { flags.push(makeFlag(`Top 10 wallets hold ${Math.round(top10Pct*100)}% of supply`, "warning", 0)); trust *= 0.55; safeBlocked = true; }
+  if (top1Pct > 0.3) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "critical", 0)); penalties.push(0.08); forceRug = true; }
+  else if (top1Pct > 0.2) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "critical", 0)); penalties.push(0.25); safeBlocked = true; }
+  else if (top1Pct > 0.1) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "warning", 0)); penalties.push(0.50); safeBlocked = true; }
+  if (top10Pct > 0.8) { flags.push(makeFlag(`Top 10 wallets hold ${Math.round(top10Pct*100)}% of supply`, "critical", 0)); penalties.push(0.35); safeBlocked = true; }
+  else if (top10Pct > 0.6) { flags.push(makeFlag(`Top 10 wallets hold ${Math.round(top10Pct*100)}% of supply`, "warning", 0)); penalties.push(0.55); safeBlocked = true; }
   else if (top10Pct < 0.3) { flags.push(makeFlag("Well distributed supply ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.05); }
+  trust = applyDiminishingPenalties(trust, penalties);
   return { source: "helius", trust: Math.max(0, trust), available: true, flags, forceRug, safeBlocked };
 }
 
@@ -248,6 +267,7 @@ export function layerSolscan(
 ): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
+  const penalties: number[] = [];
   const forceRug = false;
   let safeBlocked = false;
   const hasData = holderCount !== null || tokenAgeHours !== null;
@@ -257,26 +277,27 @@ export function layerSolscan(
     forceRug: false, safeBlocked: false,
   };
   if (holderCount !== null) {
-    if (holderCount < 15) { flags.push(makeFlag("Very few holders (<15)", "critical", 0)); trust *= 0.20; safeBlocked = true; }
-    else if (holderCount < 50) { flags.push(makeFlag("Low holders (<50)", "warning", 0)); trust *= 0.35; safeBlocked = true; }
+    if (holderCount < 15) { flags.push(makeFlag("Very few holders (<15)", "critical", 0)); penalties.push(0.20); safeBlocked = true; }
+    else if (holderCount < 50) { flags.push(makeFlag("Low holders (<50)", "warning", 0)); penalties.push(0.35); safeBlocked = true; }
     else if (holderCount > 5000) { flags.push(makeFlag("Strong holder base (5K+) ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.05); }
   }
   if (tokenAgeHours !== null) {
-    if (tokenAgeHours < 0.5) { flags.push(makeFlag("Newborn token on-chain (<30min)", "critical", 0)); trust *= 0.10; safeBlocked = true; }
-    else if (tokenAgeHours < 1) { flags.push(makeFlag("Newborn token on-chain (<1h)", "critical", 0)); trust *= 0.20; safeBlocked = true; }
-    else if (tokenAgeHours < 6) { flags.push(makeFlag("Fresh token on-chain (<6h)", "warning", 0)); trust *= 0.65; }
+    if (tokenAgeHours < 0.5) { flags.push(makeFlag("Newborn token on-chain (<30min)", "critical", 0)); penalties.push(0.10); safeBlocked = true; }
+    else if (tokenAgeHours < 1) { flags.push(makeFlag("Newborn token on-chain (<1h)", "critical", 0)); penalties.push(0.20); safeBlocked = true; }
+    else if (tokenAgeHours < 6) { flags.push(makeFlag("Fresh token on-chain (<6h)", "warning", 0)); penalties.push(0.65); }
     else if (tokenAgeHours > 720) { flags.push(makeFlag("Established token (30d+) ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.05); }
   }
   if (trades24h !== null && traders24h !== null && traders24h > 0) {
     const tradesPerTrader = trades24h / traders24h;
     if (tradesPerTrader > 50 && traders24h < 20) {
       flags.push(makeFlag("Wash trading suspected (trades/traders ratio)", "critical", 0));
-      trust *= 0.50; safeBlocked = true;
+      penalties.push(0.50); safeBlocked = true;
     } else if (traders24h > 500 && tradesPerTrader < 0.1) {
       flags.push(makeFlag("Bot-farmed holders: many accounts, near-zero activity", "warning", 0));
-      trust *= 0.70; safeBlocked = true;
+      penalties.push(0.70); safeBlocked = true;
     }
   }
+  trust = applyDiminishingPenalties(trust, penalties);
   return { source: "solscan", trust: Math.max(0, trust), available: true, flags, forceRug, safeBlocked };
 }
 
@@ -288,6 +309,7 @@ export function layerChart(
 ): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
+  const penalties: number[] = [];
   let forceRug = false, safeBlocked = false;
   if (!candles || candles.length < 8) return {
     source: "chart", trust: 1.0, available: false,
@@ -316,40 +338,41 @@ export function layerChart(
   const v1hLiq = liq > 0 ? vol1h / liq : 0;
   if (greenRatio >= 0.82 && runUpPct >= 100 && pullbackRange <= 10) {
     flags.push(makeFlag("Crashcoin pattern: near-perfect parabolic chart", "critical", 0));
-    trust *= 0.35; safeBlocked = true;
+    penalties.push(0.35); safeBlocked = true;
   }
   if (pc5m > 35 && pc1h > 120) {
     flags.push(makeFlag("Vertical pump detected (+35% 5m / +120% 1h)", "warning", 0));
-    trust *= 0.55; safeBlocked = true;
+    penalties.push(0.55); safeBlocked = true;
   }
   if (v24Liq > 12 || v1hLiq > 4) {
     flags.push(makeFlag("Liquidity mirage: volume >> liquidity (wash)", "warning", 0));
-    trust *= 0.60; safeBlocked = true;
+    penalties.push(0.60); safeBlocked = true;
   }
   if (recent.length >= 10 && risingCount >= Math.floor(recent.length * 0.8) && returnStd < 3.5) {
     flags.push(makeFlag("Over-controlled chart: artificial stair-step", "warning", 0));
-    trust *= 0.65; safeBlocked = true;
+    penalties.push(0.65); safeBlocked = true;
   }
   if (drawdownFromPeak < -55) {
     flags.push(makeFlag("Blow-off top: price collapsed >55% from peak", "critical", 0));
-    trust *= 0.20; forceRug = true; safeBlocked = true;
+    penalties.push(0.20); forceRug = true; safeBlocked = true;
   }
   if (tokenAgeMinutes !== null && tokenAgeMinutes < 90 && volumes.length >= 10) {
     const recentVol = volumes.slice(-5);
     const olderVol = volumes.slice(-10, -5);
     if (olderVol.length && _mean(recentVol) < _mean(olderVol) * 0.45 && last >= peak * 0.88) {
       flags.push(makeFlag("Early volume exhaustion near highs", "warning", 0));
-      trust *= 0.65; safeBlocked = true;
+      penalties.push(0.65); safeBlocked = true;
     }
   }
   if (_pct(first, last) > 300 && greenRatio > 0.78) {
     flags.push(makeFlag("Parabolic launch: high risk exit liquidity setup", "warning", 0));
-    trust *= 0.60; safeBlocked = true;
+    penalties.push(0.60); safeBlocked = true;
   }
   if (pc24h < -60 && pc1h < -20) {
     flags.push(makeFlag("Active dump: -60% 24h + -20% 1h (slow rug)", "critical", 0));
-    trust *= 0.25; forceRug = true; safeBlocked = true;
+    penalties.push(0.25); forceRug = true; safeBlocked = true;
   }
+  trust = applyDiminishingPenalties(trust, penalties);
   return { source: "chart", trust: Math.max(0, trust), available: true, flags, forceRug, safeBlocked };
 }
 
@@ -357,6 +380,7 @@ export function layerChart(
 export function layerIdentity(symbol?: string | null, name?: string | null, mint?: string | null): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
+  const penalties: number[] = [];
   const forceRug = false;
   let safeBlocked = false;
   const sym = String(symbol || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -364,17 +388,18 @@ export function layerIdentity(symbol?: string | null, name?: string | null, mint
   const hasCopycatSuffix = COPYCAT_SUFFIXES.some(s => sym.endsWith(s) || nm.endsWith(s));
   if (hasCopycatSuffix) {
     flags.push(makeFlag("Copycat branding detected (v2/official/real suffix)", "critical", 0));
-    trust *= 0.25; safeBlocked = true;
+    penalties.push(0.25); safeBlocked = true;
   }
   if (!mint || !OFFICIAL_MINTS.has(mint)) {
     for (const brand of KNOWN_BRANDS) {
       const symMatch = sym.startsWith(brand) || sym.endsWith(brand) || sym === brand;
       if (symMatch || nm.includes(brand)) {
         flags.push(makeFlag(`Brand imitation: ${brand}-style copycat token`, "critical", 0));
-        trust *= 0.20; safeBlocked = true; break;
+        penalties.push(0.20); safeBlocked = true; break;
       }
     }
   }
+  trust = applyDiminishingPenalties(trust, penalties);
   return { source: "identity", trust: Math.max(0, trust), available: true, flags, forceRug, safeBlocked };
 }
 
