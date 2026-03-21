@@ -48,6 +48,7 @@ vi.mock("@sentry/node", () => ({
 const mockHeliusGetLargestAccounts = vi.fn();
 const mockHeliusGetTokenSupply = vi.fn();
 const mockHeliusGetCreatorReputation = vi.fn();
+const mockHeliusGetHoldersCount = vi.fn();
 const mockSolscanGetHoldersCount = vi.fn();
 const mockFetchSolscan = vi.fn();
 const mockFetchDexCandles = vi.fn();
@@ -56,6 +57,7 @@ vi.mock("../api/_lib/fetchers", () => ({
   heliusGetLargestAccounts: (...args: unknown[]) => mockHeliusGetLargestAccounts(...args),
   heliusGetTokenSupply: (...args: unknown[]) => mockHeliusGetTokenSupply(...args),
   heliusGetCreatorReputation: (...args: unknown[]) => mockHeliusGetCreatorReputation(...args),
+  heliusGetHoldersCount: (...args: unknown[]) => mockHeliusGetHoldersCount(...args),
   solscanGetHoldersCount: (...args: unknown[]) => mockSolscanGetHoldersCount(...args),
   fetchSolscan: (...args: unknown[]) => mockFetchSolscan(...args),
   fetchDexCandles: (...args: unknown[]) => mockFetchDexCandles(...args),
@@ -182,6 +184,7 @@ function setupGoodTokenMocks() {
     result: { value: { uiAmount: 100000 } },
   });
   mockHeliusGetCreatorReputation.mockResolvedValue(null);
+  mockHeliusGetHoldersCount.mockResolvedValue(null);
   mockSolscanGetHoldersCount.mockResolvedValue(5000);
   mockFetchSolscan.mockImplementation((endpoint: string) => {
     if (endpoint.includes("meta")) {
@@ -318,6 +321,7 @@ describe("scan handler", () => {
     mockHeliusGetLargestAccounts.mockResolvedValue(null);
     mockHeliusGetTokenSupply.mockResolvedValue(null);
     mockHeliusGetCreatorReputation.mockResolvedValue(null);
+    mockHeliusGetHoldersCount.mockResolvedValue(null);
     mockSolscanGetHoldersCount.mockResolvedValue(null);
     mockFetchSolscan.mockResolvedValue(null);
     mockFetchDexCandles.mockResolvedValue([]);

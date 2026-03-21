@@ -54,17 +54,21 @@ export function evaluatePostLayerFlags(input: PostLayerFlagsInput): PostLayerFla
 export function applySafeGateOverride(input: SafeGateInput): boolean {
   if (!input.safeBlocked) return false;
   if (input.forceRug) return true;
-
   const SOFT_REASONS: Record<string, boolean> = { age: true, holders: true };
   const onlySoftReasons = input.safeBlockedReasons.length > 0 &&
     input.safeBlockedReasons.every(r => SOFT_REASONS[r] === true);
-
-  if (onlySoftReasons &&
-      (input.holders ?? 0) > 500 && input.lpBurned && input.goPlusClean) {
-    return false; // unlocked
+  if (onlySoftReasons) {
+    const ageHours = input.tokenAgeHours ?? 0;
+    const hasEnoughSources = input.sourcesAvailableCount >= 4;
+    if ((input.holders ?? 0) > 500 && input.lpBurned && input.goPlusClean) {
+      return false; // unlock
+    }
+    // Relaxed unlock for tokens > 24h with enough sources
+    if (ageHours > 24 && hasEnoughSources && (input.holders ?? 0) > 200 && input.goPlusClean) {
+      return false; // unlock
+    }
   }
-
-  return true; // stays blocked
+  return true;
 }
 
 // ─── BLOCK G: Established token bonus ───────────────────────────────────────

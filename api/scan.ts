@@ -19,6 +19,7 @@ import {
 } from "./_lib/helpers";
 import {
   heliusGetLargestAccounts, heliusGetTokenSupply, heliusGetCreatorReputation,
+  heliusGetHoldersCount,
   solscanGetHoldersCount, fetchSolscan, fetchDexCandles,
   type CreatorReputation,
 } from "./_lib/fetchers";
@@ -185,7 +186,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const rugTotalHolders: number | null =
       typeof rugReport?.totalHolders === "number" && rugReport.totalHolders > 0
       ? rugReport.totalHolders : null;
-    const holders: number | null = solscanHoldersCount ?? rugTotalHolders ?? null;
+    let holders: number | null = solscanHoldersCount ?? rugTotalHolders ?? null;
+    if ((holders === null || holders === 0) && HELIUS_API_KEY) {
+      try {
+        const fallbackCount = await heliusGetHoldersCount(resolvedMint, HELIUS_API_KEY);
+        if (fallbackCount !== null && fallbackCount > 0) holders = fallbackCount;
+      } catch { /* silent fallback */ }
+    }
 
     const priceUsd: number | null = (() => {
       const n = parseFloat(pair?.priceUsd ?? "");
@@ -231,11 +238,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (postLayerResult.forceRug) forceRug = true;
     if (postLayerResult.safeBlocked) safeBlocked = true;
 
+    // Post-layer score clamping
+    if (postLayerResult.forceRug) {
+      score = Math.min(score, 100);
+    }
+    if (postLayerResult.safeBlocked) {
+      score = Math.min(score, 500);
+    }
+
     const safeBlockedReasons = classifySafeBlockedReasons(allLayers);
     const lpBurned = rugData?.lpBurned === true;
     const goPlusClean = l3.available && l3.trust >= 0.95 && !l3.forceRug;
     const tokenAgeHours = solscanTokenAgeHours ?? dexTokenAgeHours ?? null;
-    const sourcesAvailableCount = allLayers.filter(l => l.available).length;
+    const sourcesAvailableCount = allLayers
+      .filter(l => l.available && l.source !== "crossvalidation" && l.source !== "identity")
+      .length;
 
     const newSafeBlocked = applySafeGateOverride({
       safeBlocked, safeBlockedReasons, forceRug,
@@ -266,7 +283,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const severityOrder: Record<Severity, number> = { critical:0, warning:1, info:2, bonus:3 };
     flags.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
 
-    const confidence = Math.round((sources_used.length / 5) * 100);
+    const confidence = Math.round((sources_used.length / 6) * 100);
     const layersSnapshot: Record<string, LayerSnapshot> = Object.fromEntries(
       allLayers.map(l => [l.source, { trust: +l.trust.toFixed(3), available: l.available }])
     );
