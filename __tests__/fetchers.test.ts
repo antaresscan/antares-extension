@@ -19,6 +19,34 @@ describe("extractBundlePct", () => {
     expect(extractBundlePct(report)).toBeCloseTo(0.35, 2);
   });
 
+  it("should parse percentage from description", () => {
+    const mockReport = {
+      risks: [{ name: "Bundle detected", description: "Bundle holds 45% of supply", score: 5000 }]
+    };
+    expect(extractBundlePct(mockReport)).toBe(0.45);
+  });
+
+  it("should parse decimal percentage", () => {
+    const mockReport = {
+      risks: [{ name: "Bundle activity", description: "Bundled 12.5% of total supply", score: 3000 }]
+    };
+    expect(extractBundlePct(mockReport)).toBe(0.125);
+  });
+
+  it("should fallback to score heuristic when no percentage in description", () => {
+    const mockReport = {
+      risks: [{ name: "Bundle detected", description: "Suspicious bundling activity", score: 8000 }]
+    };
+    expect(extractBundlePct(mockReport)).toBe(0.35);
+  });
+
+  it("should return 0 when no bundle risk", () => {
+    const mockReport = {
+      risks: [{ name: "Other risk", description: "Something else", score: 1000 }]
+    };
+    expect(extractBundlePct(mockReport)).toBe(0);
+  });
+
   it("returns 0.35 for bundle score >= 8000 with no description %", () => {
     const report = {
       risks: [{ name: "Bundle detected", score: 8000 }],
