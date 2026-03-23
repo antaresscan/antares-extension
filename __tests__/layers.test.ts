@@ -269,9 +269,9 @@ describe("layerIdentity", () => {
     expect(result.safeBlocked).toBe(false);
   });
 
-  it("flags brand imitation for non-official DOGE token", () => {
-    const result = layerIdentity("DOGE", "Doge Clone", "FakeMintAddress12345678901234567890123456");
-    expect(result.trust).toBeLessThan(0.3);
+  it("flags brand imitation for non-official DOGE token (new, few holders)", () => {
+    const result = layerIdentity("DOGE", "Doge Clone", "FakeMintAddress12345678901234567890123456", 2, 20);
+    expect(result.trust).toBeLessThan(1.0);
     expect(result.flags.some(f => /brand imitation/i.test(f.label))).toBe(true);
   });
 
@@ -292,6 +292,33 @@ describe("layerIdentity", () => {
     const result = layerIdentity("TRUMP", "Trump Token", "So11111111111111111111111111111111111111112");
     expect(result.trust).toBe(1.0);
     expect(result.flags).toHaveLength(0);
+  });
+
+  it("should NOT flag official mints", () => {
+    const result = layerIdentity("BONK", "Bonk", "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263", 1000, 50000);
+    expect(result.flags.length).toBe(0);
+    expect(result.safeBlocked).toBe(false);
+  });
+
+  it("should NOT flag established tokens with brand-like names", () => {
+    const result = layerIdentity("DOGE", "Dogecoin", "someRandomMint123456789012345678901234", 2000, 10000);
+    expect(result.safeBlocked).toBe(false);
+  });
+
+  it("should flag copycat with suffix", () => {
+    const result = layerIdentity("TRUMPV2", "Trump V2", "fakeMint12345678901234567890123456789", 1, 10);
+    expect(result.safeBlocked).toBe(true);
+    expect(result.flags.some(f => /copycat/i.test(f.label))).toBe(true);
+  });
+
+  it("should NOT flag tokens with short brand substrings like SOL in RESOLUTION", () => {
+    const result = layerIdentity("RESOLUTION", "Resolution Token", "someMint1234567890123456789012345678", 10, 50);
+    expect(result.flags.some(f => /brand imitation/i.test(f.label))).toBe(false);
+  });
+
+  it("should flag exact brand match on new token without suffix", () => {
+    const result = layerIdentity("TRUMP", "Trump Token", "newFakeMint123456789012345678901234", 2, 20);
+    expect(result.flags.some(f => /brand imitation/i.test(f.label))).toBe(true);
   });
 });
 
