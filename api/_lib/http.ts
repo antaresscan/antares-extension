@@ -11,9 +11,9 @@ export async function fetchJson<T = unknown>(url: string, init: RequestInit = {}
     const t = withTimeout(ms);
     try {
       const r = await fetch(url, { ...init, signal: t.signal });
+      t.clear();
       if (r.status === 429 || r.status === 503) {
         if (attempt < maxRetries) {
-          t.clear();
           await new Promise(resolve => setTimeout(resolve, 300 * (attempt + 1)));
           continue;
         }
@@ -21,9 +21,10 @@ export async function fetchJson<T = unknown>(url: string, init: RequestInit = {}
       if (!r.ok) return null;
       return (await r.json()) as T;
     } catch (e: unknown) {
+      t.clear();
       if (attempt === maxRetries) { console.warn("[antares]", e); return null; }
       await new Promise(resolve => setTimeout(resolve, 200 * (attempt + 1)));
-    } finally { t.clear(); }
+    }
   }
   return null;
 }
@@ -38,9 +39,9 @@ export async function fetchJsonPost<T = unknown>(url: string, body: object, ms =
         body: JSON.stringify(body),
         signal: t.signal,
       });
+      t.clear();
       if (r.status === 429 || r.status === 503) {
         if (attempt < maxRetries) {
-          t.clear();
           await new Promise(resolve => setTimeout(resolve, 300 * (attempt + 1)));
           continue;
         }
@@ -48,9 +49,10 @@ export async function fetchJsonPost<T = unknown>(url: string, body: object, ms =
       if (!r.ok) return null;
       return (await r.json()) as T;
     } catch (e: unknown) {
+      t.clear();
       if (attempt === maxRetries) { console.warn("[antares]", e); return null; }
       await new Promise(resolve => setTimeout(resolve, 200 * (attempt + 1)));
-    } finally { t.clear(); }
+    }
   }
   return null;
 }
