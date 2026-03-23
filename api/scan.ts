@@ -77,6 +77,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const cached = await getCachedResult(ca, requestId);
   if (cached) return res.json(cached);
 
+  const GLOBAL_TIMEOUT_MS = Number(process.env.VERCEL_TIMEOUT) || 9000;
+
+  const timeoutPromise = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error("Global timeout")), GLOBAL_TIMEOUT_MS)
+  );
+
+  try {
+    await Promise.race([
+      runAnalysis(req, res, requestId, ca),
+      timeoutPromise,
+    ]);
+    return;
+  } catch (e: unknown) {
+    if (e instanceof Error && e.message === "Global timeout") {
+      return apiError(res, 504, "Analysis timed out. Try again.");
+    }
+    throw e;
+  }
+}
+
+async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: string, ca: string) {
   const HELIUS_API_KEY = process.env.HELIUS_API_KEY || "";
 
   try {
