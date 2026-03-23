@@ -382,28 +382,64 @@ export function layerChart(
 }
 
 // ═══ LAYER 7 — Identity ════════════════════════════════════════════════════════
-export function layerIdentity(symbol?: string | null, name?: string | null, mint?: string | null): LayerResult {
+export function layerIdentity(
+  symbol?: string | null,
+  name?: string | null,
+  mint?: string | null,
+  tokenAgeHours?: number | null,
+  holders?: number | null
+): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
   const penalties: number[] = [];
   const forceRug = false;
   let safeBlocked = false;
+
+  // Skip identity checks for official mints
+  if (mint && OFFICIAL_MINTS.has(mint)) {
+    return { source: "identity", trust: 1.0, available: true, flags: [], forceRug: false, safeBlocked: false };
+  }
+
   const sym = String(symbol || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
   const nm = String(name || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+
   const hasCopycatSuffix = COPYCAT_SUFFIXES.some(s => sym.endsWith(s) || nm.endsWith(s));
+
+  // Only flag as brand imitation if BOTH conditions are met:
+  // 1. Has a copycat suffix (V2, OFFICIAL, REAL, etc.)
+  // 2. Contains a known brand name
+  // OR: exact brand match in symbol with copycat suffix
   if (hasCopycatSuffix) {
     flags.push(makeFlag("Copycat branding detected (v2/official/real suffix)", "critical", 0));
-    penalties.push(0.25); safeBlocked = true;
-  }
-  if (!mint || !OFFICIAL_MINTS.has(mint)) {
+    penalties.push(0.30);
+    safeBlocked = true;
+
+    // Check if it also imitates a known brand (makes it worse)
     for (const brand of KNOWN_BRANDS) {
-      const symMatch = sym.startsWith(brand) || sym.endsWith(brand) || sym === brand;
-      if (symMatch || nm.includes(brand)) {
-        flags.push(makeFlag(`Brand imitation: ${brand}-style copycat token`, "critical", 0));
-        penalties.push(0.20); safeBlocked = true; break;
+      if (brand.length <= 3) continue; // Skip short brands for name matching
+      if (sym.includes(brand) || nm.includes(brand)) {
+        flags.push(makeFlag(`Brand imitation + copycat suffix: ${brand}`, "critical", 0));
+        penalties.push(0.15);
+        break;
+      }
+    }
+  } else {
+    // No copycat suffix — only flag EXACT symbol matches for long brands
+    // AND only if the token is young and has few holders (established tokens are likely legit)
+    const isEstablished = (tokenAgeHours ?? 0) > 168 && (holders ?? 0) > 500;
+    if (!isEstablished) {
+      for (const brand of KNOWN_BRANDS) {
+        if (brand.length <= 3) continue; // NEVER flag short brands without suffix
+        // Only flag if symbol IS the brand exactly (not substring)
+        if (sym === brand) {
+          flags.push(makeFlag(`Possible brand imitation: ${brand} (no copycat suffix)`, "warning", 0));
+          penalties.push(0.85); // mild penalty
+          break;
+        }
       }
     }
   }
+
   trust = applyDiminishingPenalties(trust, penalties);
   return { source: "identity", trust: Math.max(0, trust), available: true, flags, forceRug, safeBlocked };
 }

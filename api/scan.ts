@@ -216,7 +216,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const l4 = layerHelius(rawHolderAccounts, totalSupplyUi);
     const l5 = layerSolscan(solscanHoldersCount, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h);
     const l6 = layerChart(candles, pair, tokenAgeMinutes);
-    const l7 = layerIdentity(pair?.baseToken?.symbol, pair?.baseToken?.name, resolvedMint);
+    const l7 = layerIdentity(pair?.baseToken?.symbol, pair?.baseToken?.name, resolvedMint, solscanTokenAgeHours ?? dexTokenAgeHours ?? null, holders);
     const l8 = layerCrossValidation(rugData, rawHolderAccounts, goplus, solscanTokenAgeHours, dexTokenAgeHours);
 
     const allLayers = [l1, l2, l3, l4, l5, l6, l7, l8];
