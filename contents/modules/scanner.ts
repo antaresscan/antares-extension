@@ -49,8 +49,17 @@ export async function scan(ca: string) {
   const cached = getCached(ca)
   if (ca === state.lastCA && cached && el.style.display !== "none") return
   if (state.manuallyDismissed && ca === state.lastCA) return
-  if (state.currentScanController) return
-  if (ca !== state.lastCA) { state.manuallyDismissed = false; state.lastCA = ca }
+  if (state.currentScanController) {
+    // New CA detected while scan in-flight — abort previous
+    if (ca !== state.lastCA) {
+      state.currentScanController.abort();
+      state.currentScanController = null;
+    } else {
+      return; // Same CA, skip
+    }
+  }
+  state.manuallyDismissed = false;
+  state.lastCA = ca;
 
   if (cached) {
     el.innerHTML = buildResult(cached, ca)
