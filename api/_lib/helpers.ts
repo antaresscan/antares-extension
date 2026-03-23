@@ -10,7 +10,7 @@ import type {
 
 // Re-export split modules
 export { asNumber, _mean, _std, _pct } from "./math";
-export { setHeaders, withTimeout, fetchJson, fetchJsonPost } from "./http";
+export { withTimeout, fetchJson, fetchJsonPost } from "./http";
 
 // Import for local use
 import { asNumber } from "./math";

@@ -7,6 +7,7 @@ export const HELIUS_BASE = "https://mainnet.helius-rpc.com";
 export const SOLSCAN_PUBLIC_BASE = "https://public-api.solscan.io";
 export const SOLSCAN_BASE = "https://pro-api.solscan.io/v2.0";
 
+// IMPORTANT: Keep in sync with shared/constants.ts
 export const CA_RE = /^[A-Za-z0-9]{32,44}$/;
 
 export const LP_PROGRAM_ADDRESSES = new Set([

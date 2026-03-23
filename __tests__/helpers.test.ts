@@ -6,6 +6,7 @@ import {
   isSolscanMarketsResponse, isSolscanMeta, isSolscanTransfersResponse,
   isRugCheckReport,
 } from "../api/_lib/helpers";
+import { CA_RE } from "../api/_lib/constants";
 
 describe("asNumber", () => {
   it("returns number directly", () => {
@@ -263,5 +264,17 @@ describe("isRugCheckReport", () => {
   });
   it("rejects empty object", () => {
     expect(isRugCheckReport({})).toBe(false);
+  });
+});
+
+describe("CA_RE consistency", () => {
+  it("should match valid Solana addresses", () => {
+    expect(CA_RE.test("So11111111111111111111111111111111111111112")).toBe(true);
+    expect(CA_RE.test("DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263")).toBe(true);
+  });
+  it("should reject invalid addresses", () => {
+    expect(CA_RE.test("short")).toBe(false);
+    expect(CA_RE.test("")).toBe(false);
+    expect(CA_RE.test("invalid!@#$%^&*()characters1234567890ab")).toBe(false);
   });
 });
