@@ -59,6 +59,20 @@ describe("extractBundlePct", () => {
     expect(extractBundlePct(report)).toBe(0);
   });
 
+  it("should parse percentage from description (45%)", () => {
+    const mockReport = {
+      risks: [{ name: "Bundle detected", description: "Bundle holds 45% of supply", score: 5000 }]
+    };
+    expect(extractBundlePct(mockReport)).toBe(0.45);
+  });
+
+  it("should parse decimal percentage (12.5%)", () => {
+    const mockReport = {
+      risks: [{ name: "Bundle activity", description: "Bundled 12.5% of total supply", score: 3000 }]
+    };
+    expect(extractBundlePct(mockReport)).toBe(0.125);
+  });
+
   it("never uses top1Percentage (regression test)", () => {
     // extractBundlePct should only look at risks array, not topHolders.top1Percentage
     const report = {

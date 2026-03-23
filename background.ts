@@ -2,15 +2,13 @@ export {}
 
 import * as Sentry from "@sentry/browser"
 import type { HistoryEntry } from "./shared/types"
+import { CA_RE } from "./shared/constants"
 
 // ─── SENTRY INITIALIZATION ──────────────────────────────────────────────────
 const SENTRY_DSN = process.env.PLASMO_PUBLIC_SENTRY_DSN || ""
 if (SENTRY_DSN) {
   Sentry.init({ dsn: SENTRY_DSN, tracesSampleRate: 0.1 })
 }
-
-// ─── INPUT VALIDATION ───────────────────────────────────────────────────────
-const CA_RE = /^[A-Za-z0-9]{32,44}$/
 const API_BASE = process.env.PLASMO_PUBLIC_API_BASE || "https://antares-extension.vercel.app"
 
 // ─── SAFE DATA EXTRACTION HELPERS ───────────────────────────────────────────
