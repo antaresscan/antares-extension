@@ -239,7 +239,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const l5 = layerSolscan(solscanHoldersCount, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h);
     const l6 = layerChart(candles, pair, tokenAgeMinutes);
     const l7 = layerIdentity(pair?.baseToken?.symbol, pair?.baseToken?.name, resolvedMint, solscanTokenAgeHours ?? dexTokenAgeHours ?? null, holders);
-    const l8 = layerCrossValidation(rugData, rawHolderAccounts, goplus, solscanTokenAgeHours, dexTokenAgeHours);
+    const l8 = layerCrossValidation(rugData, rawHolderAccounts, goplus, solscanTokenAgeHours, dexTokenAgeHours, totalSupplyUi);
 
     const allLayers = [l1, l2, l3, l4, l5, l6, l7, l8];
     let score         = computeFinalScore(allLayers);
@@ -298,7 +298,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       .map(l => l.source);
 
     const risk: Verdict = determineVerdict({
-      score, forceRug, safeBlocked, sourcesUsedCount: sources_used.length,
+      score, forceRug, safeBlocked, safeBlockedReasons, sourcesUsedCount: sources_used.length,
     });
 
     const flags: ScanFlag[] = allLayers.flatMap(l => l.flags).concat(postLayerFlags);
