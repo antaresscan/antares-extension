@@ -5,37 +5,44 @@ import { LAYER_WEIGHTS, TRUST_FLOOR, XV_PENALTY_LP_BURN, XV_PENALTY_MINT_AUTH, X
 
 // ═══ SCORING FINAL ═══════════════════════════════════════════════════════════════
 export function computeFinalScore(layers: LayerResult[]): number {
-    // PHASE 1: HARD KILL
-    if (layers.filter(l => l.available).some(l => l.trust === 0)) return 0;
+  // PHASE 1: HARD KILL
+  if (layers.filter(l => l.available).some(l => l.trust === 0)) return 0;
 
-    // DYNAMIC weighted geometric mean
-    const weightedSources = Object.keys(LAYER_WEIGHTS);
-    let product = 1.0;
-    let totalWeight = 0;
+  // DYNAMIC weighted geometric mean with NORMALIZED weights
+  const weightedSources = Object.keys(LAYER_WEIGHTS);
+  let totalWeight = 0;
+  const availableLayers: Array<{ trust: number; weight: number }> = [];
 
-    for (const src of weightedSources) {
-        const layer = layers.find(l => l.source === src);
-        const w = LAYER_WEIGHTS[src];
-        if (!layer || !layer.available) continue;
-        product *= Math.pow(Math.max(TRUST_FLOOR, layer.trust), w);
-        totalWeight += w;
+  for (const src of weightedSources) {
+    const layer = layers.find(l => l.source === src);
+    const w = LAYER_WEIGHTS[src];
+    if (!layer || !layer.available) continue;
+    availableLayers.push({ trust: Math.max(TRUST_FLOOR, layer.trust), weight: w });
+    totalWeight += w;
+  }
+
+  if (totalWeight === 0) return 0;
+
+  // Normalize weights so they sum to 1.0 among available sources
+  let product = 1.0;
+  for (const { trust, weight } of availableLayers) {
+    const normalizedWeight = weight / totalWeight;
+    product *= Math.pow(trust, normalizedWeight);
+  }
+
+  // product is now the properly normalized geometric mean (exponent = 1.0 always)
+  // crossvalidation post-multiplier
+  const xv = layers.find(l => l.source === "crossvalidation");
+  if (xv?.available && xv.flags.length > 0) {
+    for (const f of xv.flags) {
+      if (/LP burn conflict/i.test(f.label)) product *= XV_PENALTY_LP_BURN;
+      else if (/Mint authority conflict/i.test(f.label)) product *= XV_PENALTY_MINT_AUTH;
+      else if (/age conflict/i.test(f.label)) product *= XV_PENALTY_AGE;
+      else if (/holder concentration/i.test(f.label)) product *= XV_PENALTY_HOLDER_CONCENTRATION;
     }
+  }
 
-    if (totalWeight === 0) return 0;
-    product = Math.pow(product, 1 / totalWeight);
-
-    // crossvalidation post-multiplier
-    const xv = layers.find(l => l.source === "crossvalidation");
-    if (xv?.available && xv.flags.length > 0) {
-        for (const f of xv.flags) {
-            if (/LP burn conflict/i.test(f.label)) product *= XV_PENALTY_LP_BURN;
-            else if (/Mint authority conflict/i.test(f.label)) product *= XV_PENALTY_MINT_AUTH;
-            else if (/age conflict/i.test(f.label)) product *= XV_PENALTY_AGE;
-            else if (/holder concentration/i.test(f.label)) product *= XV_PENALTY_HOLDER_CONCENTRATION;
-        }
-    }
-
-    return Math.round(Math.max(0, Math.min(1, product)) * 1000);
+  return Math.round(Math.max(0, Math.min(1, product)) * 1000);
 }
 
 // ─── [2.3] SAFE-BLOCK REASON CLASSIFIER ────────────────────────────────────
