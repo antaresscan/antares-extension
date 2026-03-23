@@ -226,3 +226,49 @@ describe("classifySafeBlockedReasons", () => {
     expect(classifySafeBlockedReasons(layers)).toContain("holders");
   });
 });
+
+function makeMockLayer(source: string, trust: number, available = true): LayerResult {
+  return { source, trust, available, flags: [], forceRug: false, safeBlocked: false };
+}
+
+describe("computeFinalScore normalization", () => {
+  it("should give equal scores regardless of source count when trusts are equal", () => {
+    const allSources = [
+      makeMockLayer("dexscreener", 0.8),
+      makeMockLayer("rugcheck", 0.8),
+      makeMockLayer("goplus", 0.8),
+      makeMockLayer("helius", 0.8),
+      makeMockLayer("solscan", 0.8),
+      makeMockLayer("chart", 0.8),
+      makeMockLayer("identity", 0.8),
+      makeMockLayer("crossvalidation", 1.0),
+    ];
+    const scoreAll = computeFinalScore(allSources);
+
+    const fewerSources = [
+      makeMockLayer("dexscreener", 0.8),
+      makeMockLayer("rugcheck", 0.8),
+      makeMockLayer("goplus", 0.8),
+      makeMockLayer("helius", 0.8, false),
+      makeMockLayer("solscan", 0.8, false),
+      makeMockLayer("chart", 0.8, false),
+      makeMockLayer("identity", 0.8, false),
+      makeMockLayer("crossvalidation", 1.0),
+    ];
+    const scoreFewer = computeFinalScore(fewerSources);
+
+    // Scores should be equal (both 800) since all available trusts are 0.8
+    expect(scoreAll).toBe(scoreFewer);
+    expect(scoreAll).toBe(800);
+  });
+
+  it("should return 0 if any available layer has trust 0 (hard kill)", () => {
+    const layers = [
+      makeMockLayer("dexscreener", 0),
+      makeMockLayer("rugcheck", 0.9),
+      makeMockLayer("goplus", 0.9),
+      makeMockLayer("crossvalidation", 1.0),
+    ];
+    expect(computeFinalScore(layers)).toBe(0);
+  });
+});
