@@ -82,13 +82,21 @@ export function applyEstablishedBonus(input: EstablishedBonusInput): number {
 
 // ─── BLOCK H: Verdict determination ────────────────────────────────────────
 export function determineVerdict(input: VerdictInput): Verdict {
-  if (input.forceRug)                                   return "RUG";
-  if (input.sourcesUsedCount === 0)                     return "DANGER";
-  if (input.safeBlocked && input.score >= 600)          return "CAUTION";
-  if (input.safeBlocked)                                return "DANGER";
-  // SAFE threshold raised to 850 (from 800) — ref: P3
-  if (input.score >= 850)                               return "SAFE";
-  if (input.score >= 600)                               return "CAUTION";
-  if (input.score >= 350)                               return "DANGER";
+  if (input.forceRug) return "RUG";
+  if (input.sourcesUsedCount === 0) return "DANGER";
+
+  if (input.safeBlocked) {
+    // Hard blocks always cap at DANGER regardless of score
+    const HARD_REASONS = new Set(["honeypot", "mint", "freeze", "bundle", "rug_pattern", "wash_trading"]);
+    const hasHardReason = input.safeBlockedReasons?.some(r => HARD_REASONS.has(r));
+    if (hasHardReason) return input.score >= 400 ? "DANGER" : "RUG";
+    // Soft blocks (age, holders, pump, chart) allow CAUTION if score is decent
+    if (input.score >= 550) return "CAUTION";
+    return "DANGER";
+  }
+
+  if (input.score >= 850) return "SAFE";
+  if (input.score >= 600) return "CAUTION";
+  if (input.score >= 350) return "DANGER";
   return "RUG";
 }

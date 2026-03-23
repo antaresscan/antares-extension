@@ -450,7 +450,8 @@ export function layerCrossValidation(
   rawHolderAccounts: HeliusHolder[],
   goplus: GoPlusTokenResult | null,
   solscanAgeHours: number | null,
-  dexAgeHours: number | null
+  dexAgeHours: number | null,
+  totalSupplyUi: number = 0
 ): LayerResult {
   const flags: ScanFlag[] = [];
   const forceRug = false;
@@ -473,6 +474,20 @@ export function layerCrossValidation(
   if (solscanAgeHours !== null && dexAgeHours !== null) {
     if (Math.abs(solscanAgeHours - dexAgeHours) > 72)
       flags.push(makeFlag("Token age conflict between sources (>72h diff)", "info", 0));
+  }
+  if (rugData?.topHolders?.top10Percentage && rawHolderAccounts.length > 0) {
+    const rugTop10 = asNumber(rugData.topHolders.top10Percentage);
+    const heliusAccounts = rawHolderAccounts.filter(
+      h => !LP_PROGRAM_ADDRESSES.has(h.address) && !FOUNDATION_WALLETS.has(h.address)
+    );
+    const heliusTop10Pct = totalSupplyUi > 0
+      ? (heliusAccounts.slice(0, 10).reduce((s, h) => s + asNumber(h.uiAmount), 0) / totalSupplyUi) * 100
+      : 0;
+
+    if (Math.abs(rugTop10 - heliusTop10Pct) > 25) {
+      flags.push(makeFlag("Holder concentration conflict between RugCheck and Helius", "warning", 0));
+      safeBlocked = true;
+    }
   }
   return { source: "crossvalidation", trust: 1.0, available: true, flags, forceRug, safeBlocked };
 }

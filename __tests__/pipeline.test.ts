@@ -422,8 +422,8 @@ describe("determineVerdict", () => {
     expect(determineVerdict(makeVerdictInput({ safeBlocked: true, score: 600 }))).toBe("CAUTION");
   });
 
-  it("6. safeBlocked=true, score=599 -> DANGER (blocked + score<600)", () => {
-    expect(determineVerdict(makeVerdictInput({ safeBlocked: true, score: 599 }))).toBe("DANGER");
+  it("6. safeBlocked=true, score=599 -> CAUTION (soft-blocked + score>=550)", () => {
+    expect(determineVerdict(makeVerdictInput({ safeBlocked: true, score: 599 }))).toBe("CAUTION");
   });
 
   it("7. score=850, normal conditions -> SAFE", () => {
@@ -456,5 +456,38 @@ describe("determineVerdict", () => {
 
   it("14. score=1000, all clean -> SAFE", () => {
     expect(determineVerdict(makeVerdictInput({ score: 1000 }))).toBe("SAFE");
+  });
+});
+
+// ─── determineVerdict safeBlocked granularity ─────────────────────────────
+
+
+describe("determineVerdict safeBlocked granularity", () => {
+  it("should return DANGER for hard-blocked token with score 400", () => {
+    expect(determineVerdict({
+      score: 400, forceRug: false, safeBlocked: true,
+      safeBlockedReasons: ["honeypot"], sourcesUsedCount: 5
+    })).toBe("DANGER");
+  });
+
+  it("should return RUG for hard-blocked token with score 300", () => {
+    expect(determineVerdict({
+      score: 300, forceRug: false, safeBlocked: true,
+      safeBlockedReasons: ["mint"], sourcesUsedCount: 5
+    })).toBe("RUG");
+  });
+
+  it("should return CAUTION for soft-blocked token with score 600", () => {
+    expect(determineVerdict({
+      score: 600, forceRug: false, safeBlocked: true,
+      safeBlockedReasons: ["age"], sourcesUsedCount: 5
+    })).toBe("CAUTION");
+  });
+
+  it("should return DANGER for soft-blocked token with score 400", () => {
+    expect(determineVerdict({
+      score: 400, forceRug: false, safeBlocked: true,
+      safeBlockedReasons: ["age"], sourcesUsedCount: 5
+    })).toBe("DANGER");
   });
 });

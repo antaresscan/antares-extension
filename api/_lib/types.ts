@@ -252,6 +252,7 @@ export interface VerdictInput {
   score: number;
   forceRug: boolean;
   safeBlocked: boolean;
+  safeBlockedReasons?: string[];
   sourcesUsedCount: number;
 }
 
