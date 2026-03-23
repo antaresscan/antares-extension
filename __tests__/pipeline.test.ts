@@ -422,7 +422,7 @@ describe("determineVerdict", () => {
     expect(determineVerdict(makeVerdictInput({ safeBlocked: true, score: 600 }))).toBe("CAUTION");
   });
 
-  it("6. safeBlocked=true, score=599 -> CAUTION (soft block + score>=550)", () => {
+  it("6. safeBlocked=true, score=599 -> CAUTION (soft-blocked + score>=550)", () => {
     expect(determineVerdict(makeVerdictInput({ safeBlocked: true, score: 599 }))).toBe("CAUTION");
   });
 
@@ -458,6 +458,9 @@ describe("determineVerdict", () => {
     expect(determineVerdict(makeVerdictInput({ score: 1000 }))).toBe("SAFE");
   });
 });
+
+// ─── determineVerdict safeBlocked granularity ─────────────────────────────
+
 
 describe("determineVerdict safeBlocked granularity", () => {
   it("should return DANGER for hard-blocked token with score 400", () => {
