@@ -140,6 +140,12 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     }
 
     if (pair?.baseToken?.address) resolvedMint = pair.baseToken.address;
+
+        // Cache check for resolvedMint (avoids redundant analysis)
+    if (resolvedMint !== ca) {
+      const cachedByMint = await getCachedResult(resolvedMint, requestId);
+      if (cachedByMint) return res.json(cachedByMint);
+    }
     if (dexData?.pairs && dexData.pairs.length > 1) {
       pair = dexData.pairs.reduce((best: DexScreenerPair, p: DexScreenerPair) =>
         asNumber(p?.liquidity?.usd) > asNumber(best?.liquidity?.usd) ? p : best
