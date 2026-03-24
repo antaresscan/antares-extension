@@ -175,9 +175,9 @@ describe("heliusGetCreatorReputation", () => {
 
   it("flags serial deployer with 3+ create txs", async () => {
     mockFetchJson.mockResolvedValue([
-      { type: "create", description: "created token" },
-      { type: "create", description: "created another" },
-      { type: "create", description: "yet another" },
+      { type: "initialize_mint", description: "initialize mint" },
+      { type: "initialize_mint", description: "initialize mint for token 2" },
+      { type: "initialize_mint", description: "initialize mint for token 3" },
     ]);
     const result = await heliusGetCreatorReputation("creator1", "key1");
     expect(result?.flagged).toBe(true);
