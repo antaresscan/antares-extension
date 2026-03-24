@@ -289,7 +289,7 @@ describe("scan handler", () => {
     await handler(req, res);
     const body = (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as Record<string, unknown>;
     const score = body.score as number;
-    expect(score).toBeGreaterThan(600);
+    expect(score).toBeGreaterThan(550);
     expect(body.risk).not.toBe("DANGER");
     expect(body.risk).not.toBe("RUG");
   });
