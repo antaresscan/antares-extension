@@ -23,7 +23,7 @@ function Popup() {
   const [stealthMode, setStealthMode] = useState(false);
 
   useEffect(() => {
-    chrome.storage.local.get(["antares_scan_history", "stealthMode"], (data: Record<string, unknown>) => {
+    chrome.storage.local.get(["antares_scan_history", "antares_stealth"], (data: Record<string, unknown>) => {
       if (Array.isArray(data.antares_scan_history)) {
         const history = data.antares_scan_history as Array<Record<string, unknown>>;
         const scans: ScanResult[] = history
@@ -38,14 +38,14 @@ function Popup() {
           .slice(0, 10);
         setRecentScans(scans);
       }
-      setStealthMode(!!data.stealthMode);
+      setStealthMode(!!data.antares_stealth);
     });
   }, []);
 
   const toggleStealth = () => {
     const newVal = !stealthMode;
     setStealthMode(newVal);
-    void chrome.storage.sync.set({ stealthMode: newVal });
+    void chrome.storage.local.set({ antares_stealth: newVal });
   };
 
   const riskColor = (risk?: string): string => {
@@ -71,7 +71,7 @@ function Popup() {
           background: riskColor(scan.risk),
         }}>
           <strong>{sanitize(scan.symbol) || scan.ca.slice(0, 8)}</strong>
-          <span style={{ float: "right" }}>{sanitize(scan.risk) || "?"} ({scan.score ?? "—"})</span>
+          <span style={{ float: "right" }}>{sanitize(scan.risk) || "?"} ({scan.score ?? "\u2014"})</span>
         </div>
       ))}
     </div>
