@@ -43,9 +43,9 @@ export async function heliusGetCreatorReputation(
   key: string
 ): Promise<CreatorReputation | null> {
   if (!creator || !key) return null;
-  const res = await fetchJson(
-    `https://api.helius.xyz/v0/addresses/${creator}/transactions?api-key=${key}&limit=20`,
-    {}, 6000
+      const res = await fetchJson(
+        `https://api.helius.xyz/v0/addresses/${creator}/transactions?limit=20`,
+        { headers: { 'Authorization': `Bearer ${key}` } }, 6000
   ) as Array<{ type?: string; description?: string }> | null;
   if (!Array.isArray(res)) return null;
   let priorTokens = 0;
