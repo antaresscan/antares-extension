@@ -1,8 +1,7 @@
-// ─── ANTARES TYPE DEFINITIONS ────────────────────────────────────────────────
+// ─── ANTARES TYPE DEFINITIONS ────────────────────────────────────────────
 // Centralised types for all API layers, scoring engine, and scan results.
-// Phase 4.1 — eliminates scattered `any` usage across the codebase.
 
-// ─── SEVERITY & FLAGS ────────────────────────────────────────────────────────
+// ─── SEVERITY & FLAGS ────────────────────────────────────────────────
 export type Severity = "critical" | "warning" | "info" | "bonus";
 
 export interface ScanFlag {
@@ -25,7 +24,7 @@ export type SafeBlockedReason =
   | "sniper"
   | "chart";
 
-// ─── LAYER RESULT ────────────────────────────────────────────────────────────
+// ─── LAYER RESULT ────────────────────────────────────────────────────────
 export interface LayerResult {
   source: string;
   trust: number;
@@ -72,7 +71,7 @@ export interface DexScreenerResponse {
   pair?: DexScreenerPair;
 }
 
-// ─── RUGCHECK ────────────────────────────────────────────────────────────────
+// ─── RUGCHECK ─────────────────────────────────────────────────────────────────
 export interface RugCheckRisk {
   name?: string;
   score?: number;
@@ -106,7 +105,7 @@ export interface RugCheckReport {
   totalHolders?: number;
 }
 
-// ─── GOPLUS ──────────────────────────────────────────────────────────────────
+// ─── GOPLUS ─────────────────────────────────────────────────────────────────────
 export interface GoPlusTokenResult {
   is_honeypot?: string | number | boolean;
   cannot_sell_all?: string | number | boolean;
@@ -131,7 +130,7 @@ export interface GoPlusResponse {
   result?: Record<string, GoPlusTokenResult>;
 }
 
-// ─── HELIUS ──────────────────────────────────────────────────────────────────
+// ─── HELIUS ─────────────────────────────────────────────────────────────────────
 export interface HeliusHolder {
   address: string;
   uiAmount: number;
@@ -158,7 +157,7 @@ export interface HeliusTokenAccountsResponse {
   total?: number;
 }
 
-// ─── SOLSCAN ─────────────────────────────────────────────────────────────────
+// ─── SOLSCAN ───────────────────────────────────────────────────────────────────
 export interface SolscanTransfer {
   from_address?: string;
   from?: string;
@@ -193,7 +192,7 @@ export interface SolscanTransfersResponse {
   data?: SolscanTransfer[];
 }
 
-// ─── GECKO TERMINAL ──────────────────────────────────────────────────────────
+// ─── GECKO TERMINAL ────────────────────────────────────────────────────────
 export interface OHLCVCandle {
   ts: number;
   o: number;
@@ -211,8 +210,7 @@ export interface GeckoTerminalOHLCVResponse {
   };
 }
 
-// ─── PIPELINE INPUT/OUTPUT TYPES ────────────────────────────────────────────
-
+// ─── PIPELINE INPUT/OUTPUT TYPES ───────────────────────────────────────────────
 export interface PostLayerFlagsInput {
   buys5m: number;
   sells5m: number;
@@ -256,7 +254,7 @@ export interface VerdictInput {
   sourcesUsedCount: number;
 }
 
-// ─── SCAN RESULT ─────────────────────────────────────────────────────────────
+// ─── SCAN RESULT ────────────────────────────────────────────────────────────────
 export interface LayerSnapshot {
   trust: number;
   available: boolean;
@@ -295,7 +293,7 @@ export interface ScanResult {
   solscanTraders24h: number | null;
   layers: Record<string, LayerSnapshot>;
   scoring_version: string;
-    fetchedAt: number;
+  fetchedAt: number;
   honeypot?: boolean;
   mintAuthority?: boolean;
   freezeAuthority?: boolean;
