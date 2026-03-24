@@ -2,7 +2,20 @@ import type { PlasmoCSConfig } from "plasmo"
 import * as Sentry from "@sentry/browser"
 
 export const config: PlasmoCSConfig = {
-  matches: ["<all_urls>"],
+  matches: [
+    "https://dexscreener.com/*",
+    "https://pump.fun/*",
+    "https://axiom.trade/*",
+    "https://neo.bullx.io/*",
+    "https://photon-sol.tinyastro.io/*",
+    "https://birdeye.so/*",
+    "https://raydium.io/*",
+    "https://jup.ag/*",
+    "https://solscan.io/*",
+    "https://www.geckoterminal.com/*",
+    "https://gmgn.ai/*",
+    "https://app.telemetry.io/*"
+  ],
   run_at: "document_idle"
 }
 
