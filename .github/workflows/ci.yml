@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [master]
+    branches: [master, "fix/**", "feat/**"]
   pull_request:
     branches: [master]
 
@@ -16,7 +16,8 @@ jobs:
         with:
           node-version: "22"
 
-      - run: npm install
+      - name: Install dependencies
+        run: npm install
 
       - name: Typecheck
         run: npx tsc --noEmit

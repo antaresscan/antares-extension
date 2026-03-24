@@ -3,6 +3,7 @@
 import type {
     HeliusTokenAccountsResponse,
     OHLCVCandle, GeckoTerminalOHLCVResponse,
+    RugCheckReport, RugCheckRisk,
 } from "./types";
 import { HELIUS_BASE, SOLSCAN_PUBLIC_BASE, SOLSCAN_BASE } from "./constants";
 import { fetchJson, fetchJsonPost } from "./http";
@@ -43,9 +44,10 @@ export async function heliusGetCreatorReputation(
   key: string
 ): Promise<CreatorReputation | null> {
   if (!creator || !key) return null;
-      const res = await fetchJson(
-        `https://api.helius.xyz/v0/addresses/${creator}/transactions?limit=20`,
-        { headers: { 'Authorization': `Bearer ${key}` } }, 6000
+  // Use ?api-key= query param — consistent with all other Helius calls (not Bearer)
+  const res = await fetchJson(
+    `https://api.helius.xyz/v0/addresses/${creator}/transactions?limit=20&api-key=${key}`,
+    {}, 6000
   ) as Array<{ type?: string; description?: string }> | null;
   if (!Array.isArray(res)) return null;
   let priorTokens = 0;
@@ -100,11 +102,9 @@ export async function fetchDexCandles(
 }
 
 // ─── BUNDLE DETECTION ──────────────────────────────────────────────────────
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment */
-export function extractBundlePct(rugReportData: any): number {
-  const bundleRisk = rugReportData?.risks?.find(
-    (r: any) => /bundle/i.test(r.name ?? "")
-  );
+export function extractBundlePct(rugReportData: RugCheckReport | null | undefined): number {
+  const risks: RugCheckRisk[] = rugReportData?.risks ?? [];
+  const bundleRisk = risks.find((r: RugCheckRisk) => /bundle/i.test(r.name ?? ""));
   if (!bundleRisk) return 0;
   const match = bundleRisk.description?.match(/(\d+(?:\.\d+)?)\s*%/);
   if (match) return parseFloat(match[1]) / 100;
@@ -115,4 +115,3 @@ export function extractBundlePct(rugReportData: any): number {
   if (scoreVal >= 2000) return 0.10;
   return 0.08;
 }
-/* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment */

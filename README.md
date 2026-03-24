@@ -21,41 +21,44 @@ Score starts at **1000** and is reduced by weighted penalties across **8 layers*
 
 | Layer | Source | Weight | What it checks |
 |---|---|---|---|
-| L1 | DexScreener | 0.20 | Liquidity, volume, price changes, social presence |
-| L2 | RugCheck | 0.20 | LP burn/lock, bundler activity, metadata, top holders |
-| L3 | GoPlus | 0.20 | Honeypot, mint/freeze authority, tax, proxy contracts |
-| L4 | Helius | 0.20 | On-chain holder distribution (top 1 / top 10) |
+| L1 | DexScreener | 0.18 | Liquidity, volume, price changes, social presence |
+| L2 | RugCheck | 0.18 | LP burn/lock, bundler activity, metadata, top holders |
+| L3 | GoPlus | 0.18 | Honeypot, mint/freeze authority, tax, proxy contracts |
+| L4 | Helius | 0.18 | On-chain holder distribution (top 1 / top 10) |
 | L5 | Solscan | 0.10 | Holder count, token age, wash trading patterns |
 | L6 | Chart | 0.10 | OHLCV pattern analysis (pump, dump, wash, stair-step) |
-| L7 | Identity | — | Copycat / brand imitation detection |
-| L8 | CrossValidation | — | Cross-source conflict detection |
+| L7 | Identity | 0.08 | Copycat / brand imitation detection |
+| L8 | CrossValidation | — | Cross-source conflict detection (post-score multiplier) |
 
-Layers 1–6 contribute weighted trust scores to the geometric mean. Layers 7–8 produce flags and safe-gate blocks but do not affect the weighted score directly.
+Layers 1–6 contribute weighted trust scores to the geometric mean. Layer 7 (Identity) contributes with weight 0.08. Layer 8 (CrossValidation) produces flags and penalty multipliers but does not feed the geometric mean directly.
 
 A token can only reach **SAFE** (score ≥ 850) if it passes all critical gates regardless of score.
 
-**Scoring version:** `6.2.0`
+**Scoring version:** `7.0.0`
 
 ## Architecture
 
 ```
 api/
   scan.ts          — Main serverless handler (GET /api/scan?ca=<mint>)
-  fetchers.ts      — External API data fetching (DexScreener, RugCheck, GoPlus, Helius, Solscan)
-  layers.ts        — 8 analysis layer functions (pure, no side effects)
-  scoring.ts       — Geometric-mean scoring engine with cross-validation penalties
-  pipeline.ts      — Post-layer flags, safe-gate, established bonus, verdict
-  constants.ts     — All constants: weights, brands, thresholds, API bases
-  types.ts         — TypeScript type definitions
-  helpers.ts       — Re-exports from math.ts and http.ts + utility functions
-  math.ts          — Numeric helpers: asNumber, _mean, _std, _pct
-  http.ts          — Typed HTTP: fetchJson<T>, fetchJsonPost<T>, withTimeout
-  middleware.ts    — CORS, rate limiting, input validation
-  cache.ts         — Upstash Redis caching layer
+  _lib/
+    fetchers.ts    — External API data fetching (DexScreener, RugCheck, GoPlus, Helius, Solscan)
+    layers.ts      — 8 analysis layer functions (pure, no side effects)
+    scoring.ts     — Geometric-mean scoring engine with cross-validation penalties
+    pipeline.ts    — Post-layer flags, safe-gate, established bonus, verdict
+    constants.ts   — All constants: weights, brands, thresholds, API bases
+    types.ts       — TypeScript type definitions
+    helpers.ts     — Re-exports from math.ts and http.ts + utility/guard functions
+    math.ts        — Numeric helpers: asNumber, _mean, _std, _pct
+    http.ts        — Typed HTTP: fetchJson<T>, fetchJsonPost<T>, withTimeout
+    middleware.ts  — CORS (origin whitelist), rate limiting, input validation
+    cache.ts       — Upstash Redis caching layer
+privacy.ts         — GET /privacy — Privacy Policy page (required by Chrome Web Store)
+token.html         — Static Full Analysis page served at /token.html?ca=<mint>
 
-background.ts      — Chrome extension service worker
+background.ts      — Chrome extension service worker (MV3, keepalive via alarms)
 popup.tsx          — Extension popup UI (recent scans, stealth toggle)
-options.tsx        — Extension options page (preferences)
+options.tsx        — Extension options page (stealth mode, auto-rescan preferences)
 ```
 
 ## API
@@ -74,11 +77,11 @@ curl "https://antares-extension.vercel.app/api/scan?ca=So11111111111111111111111
 ## Stack
 
 - Extension: [Plasmo](https://plasmo.com) + TypeScript
-- Backend API: Vercel Serverless (Node)
-- Rate limiting: Upstash Redis (sliding window 20 req/min per IP)
+- Backend API: Vercel Serverless (Node 22)
+- Rate limiting: Upstash Redis (sliding window 30 req/60s + burst 5 req/10s)
 - Data sources: DexScreener · RugCheck · GoPlus · Helius · Solscan · GeckoTerminal
 - CI: GitHub Actions (Node 22, Vitest, TypeScript strict, coverage thresholds)
-- Security: CodeQL weekly scanning, Dependabot alerts
+- Security: CORS origin whitelist, CodeQL weekly scanning, Dependabot alerts, Sentry
 
 ## Development
 
@@ -93,11 +96,14 @@ npm run lint       # ESLint
 
 ### Environment variables (Vercel)
 
+Copy `.env.example` to `.env.local` and fill in your values:
+
 ```
-HELIUS_API_KEY=...
-UPSTASH_REDIS_REST_URL=...
-UPSTASH_REDIS_REST_TOKEN=...
-SENTRY_DSN=... (optional)
+HELIUS_API_KEY=...              # Required
+UPSTASH_REDIS_REST_URL=...      # Required
+UPSTASH_REDIS_REST_TOKEN=...    # Required
+SOLSCAN_API_KEY=...             # Optional (L5 Solscan Pro)
+SENTRY_DSN=...                  # Optional (error monitoring)
 ```
 
 ## Contributing

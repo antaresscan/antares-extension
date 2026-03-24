@@ -3,30 +3,30 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  submit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Cache pnpm modules
-        uses: actions/cache@v3
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
         with:
-          path: ~/.pnpm-store
-          key: ${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-
-      - uses: pnpm/action-setup@v2.4.1
-        with:
-          version: latest
-          run_install: true
-      - name: Use Node.js 16.x
-        uses: actions/setup-node@v3.9.1
-        with:
-          node-version: 16.x
-          cache: "pnpm"
+          node-version: "22"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Test
+        run: npm run test
+
       - name: Build the extension
-        run: pnpm build
+        run: npx plasmo build
+
       - name: Package the extension into a zip artifact
-        run: pnpm package
+        run: npx plasmo package
+
       - name: Browser Platform Publish
         uses: PlasmoHQ/bpp@v3
         with:
