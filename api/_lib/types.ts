@@ -295,5 +295,10 @@ export interface ScanResult {
   solscanTraders24h: number | null;
   layers: Record<string, LayerSnapshot>;
   scoring_version: string;
-  fetchedAt: number;
+    fetchedAt: number;
+  honeypot?: boolean;
+  mintAuthority?: boolean;
+  freezeAuthority?: boolean;
+  lpBurned?: boolean;
+  candles?: Array<{ close: number }>;
 }

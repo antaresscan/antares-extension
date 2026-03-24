@@ -33,7 +33,6 @@ export function scheduleRescanIfPriceCrash(data: ScanResponseData, ca: string) {
 
 export async function scan(ca: string) {
   if (!ca) return
-
   // [5.3] Stealth mode — send to background for badge update only, skip popup
   if (state.stealthMode) {
     if (ca === state.lastCA) return
@@ -43,9 +42,7 @@ export async function scan(ca: string) {
     } catch (e: unknown) { console.warn("[antares]", e) }
     return
   }
-
   const el = getBox()
-
   const cached = getCached(ca)
   if (ca === state.lastCA && cached && el.style.display !== "none") return
   if (state.manuallyDismissed && ca === state.lastCA) return
@@ -60,36 +57,34 @@ export async function scan(ca: string) {
   }
   state.manuallyDismissed = false;
   state.lastCA = ca;
-
   if (cached) {
     el.innerHTML = buildResult(cached, ca)
     showBox()
     triggerResultAnimations(el)
     attachClose()
-    scheduleRescanIfPriceCrash(cached, ca)
+    chrome.storage.sync.get(["autoRescan"], (prefs) => {
+      if (prefs.autoRescan !== false) scheduleRescanIfPriceCrash(cached, ca)
+    })
     return
   }
-
   // Abort any previous in-flight scan, start a new one
   const controller = new AbortController()
   state.currentScanController = controller
-
   if (state.boxEl) state.boxEl.className = "box"
   el.innerHTML = `
-    <div class="topbar" style="background:linear-gradient(90deg,transparent,#3a3a3f,transparent)"></div>
-    ${buildHeader()}
-    <div class="skel">
-      <div class="skel-verdict"></div>
-      <div class="skel-bar"></div>
-      <div class="skel-line"></div>
-      <div class="skel-line"></div>
-      <div class="skel-line"></div>
-    </div>
+  <div class="topbar" style="background:linear-gradient(90deg,transparent,#3a3a3f,transparent)"></div>
+  ${buildHeader()}
+  <div class="skel">
+  <div class="skel-verdict"></div>
+  <div class="skel-bar"></div>
+  <div class="skel-line"></div>
+  <div class="skel-line"></div>
+  <div class="skel-line"></div>
+  </div>
   `
   showBox(); attachClose()
-
   try {
-    const res  = await fetch(`${API}?ca=${ca}`, { signal: controller.signal })
+    const res = await fetch(`${API}?ca=${ca}`, { signal: controller.signal })
     if (controller.signal.aborted) return
     if (!res.ok) throw new Error("" + res.status)
     const data = await res.json() as ScanResponseData
@@ -101,7 +96,9 @@ export async function scan(ca: string) {
     triggerResultAnimations(el)
     attachClose()
     // [5.2] Schedule forced rescan if price crashed > -30% in 1h
-    scheduleRescanIfPriceCrash(data, ca)
+    chrome.storage.sync.get(["autoRescan"], (prefs) => {
+      if (prefs.autoRescan !== false) scheduleRescanIfPriceCrash(data, ca)
+    })
   } catch (e: unknown) {
     if (controller.signal.aborted) return
     console.warn("[antares]", e)
@@ -109,9 +106,9 @@ export async function scan(ca: string) {
     if (state.lastCA === ca) {
       if (state.boxEl) state.boxEl.className = "box danger"
       el.innerHTML = `
-        <div class="topbar"></div>
-        ${buildHeader()}
-        <div style="color:#ff5f5f;font-size:12px;padding:12px 14px;font-family:'IBM Plex Mono',monospace">API Error &mdash; retry later</div>
+      <div class="topbar"></div>
+      ${buildHeader()}
+      <div style="color:#ff5f5f;font-size:12px;padding:12px 14px;font-family:'IBM Plex Mono',monospace">API Error \u2014 retry later</div>
       `
       showBox(); attachClose()
     }

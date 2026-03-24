@@ -1,8 +1,8 @@
 // api/fetchers.ts — External API fetcher functions
 
 import type {
-  HeliusTokenAccountsResponse,
-  OHLCVCandle, GeckoTerminalOHLCVResponse,
+    HeliusTokenAccountsResponse,
+    OHLCVCandle, GeckoTerminalOHLCVResponse,
 } from "./types";
 import { HELIUS_BASE, SOLSCAN_PUBLIC_BASE, SOLSCAN_BASE } from "./constants";
 import { fetchJson, fetchJsonPost } from "./http";
@@ -52,12 +52,13 @@ export async function heliusGetCreatorReputation(
   for (const tx of res) {
     const desc = String(tx.description || "").toLowerCase();
     const type = String(tx.type || "").toLowerCase();
-    if (type === "create" || desc.includes("create") || desc.includes("initialize mint")) {
+    const isTokenLaunch = type === "initialize_mint" || (desc.includes("initialize mint") && !desc.includes("account"));
+    if (isTokenLaunch) {
       priorTokens++;
     }
   }
   if (priorTokens >= 3) {
-    return { priorTokens, flagged: true, reason: `Creator launched ${priorTokens}+ tokens — serial deployer` };
+    return { priorTokens, flagged: true, reason: `Creator launched ${priorTokens}+ tokens \u2014 serial deployer` };
   }
   return { priorTokens, flagged: false, reason: null };
 }
@@ -67,7 +68,7 @@ export async function solscanGetHoldersCount(mint: string): Promise<number | nul
   const res = await fetchJson(
     `${SOLSCAN_PUBLIC_BASE}/token/holders?tokenAddress=${mint}&limit=1&offset=0`,
     { headers: { "User-Agent": "Antares/1.0" } }, 5000
-    ) as { total?: number } | null;
+  ) as { total?: number } | null;
   const total = res?.total;
   return typeof total === "number" && total > 0 ? total : null;
 }
@@ -105,10 +106,8 @@ export function extractBundlePct(rugReportData: any): number {
     (r: any) => /bundle/i.test(r.name ?? "")
   );
   if (!bundleRisk) return 0;
-
   const match = bundleRisk.description?.match(/(\d+(?:\.\d+)?)\s*%/);
   if (match) return parseFloat(match[1]) / 100;
-
   const scoreVal = asNumber(bundleRisk.score);
   if (scoreVal >= 10000) return 0.50;
   if (scoreVal >= 8000) return 0.35;

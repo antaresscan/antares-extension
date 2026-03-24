@@ -3,17 +3,17 @@ import { useState, useEffect } from "react";
 function Options() {
   const [stealthMode, setStealthMode] = useState(false);
   const [autoRescan, setAutoRescan] = useState(true);
+  const [version, setVersion] = useState("");
 
   useEffect(() => {
-    chrome.storage.sync.get(["stealthMode", "autoRescan"], (data: Record<string, unknown>) => {
-      setStealthMode(!!data.stealthMode);
-      setAutoRescan(data.autoRescan !== false);
+    chrome.storage.local.get(["antares_stealth"], (localData) => {
+      setStealthMode(!!localData.antares_stealth);
     });
+    chrome.storage.sync.get(["autoRescan"], (syncData) => {
+      setAutoRescan(syncData.autoRescan !== false);
+    });
+    setVersion(chrome.runtime.getManifest().version);
   }, []);
-
-  const save = (key: string, val: boolean) => {
-    void chrome.storage.sync.set({ [key]: val });
-  };
 
   return (
     <div style={{ maxWidth: 600, margin: "40px auto", fontFamily: "system-ui" }}>
@@ -21,20 +21,26 @@ function Options() {
       <div style={{ marginBottom: 16 }}>
         <label>
           <input type="checkbox" checked={stealthMode}
-            onChange={(e) => { setStealthMode(e.target.checked); save("stealthMode", e.target.checked); }} />
+            onChange={(e) => {
+              setStealthMode(e.target.checked);
+              void chrome.storage.local.set({ antares_stealth: e.target.checked });
+            }} />
           {" "}Stealth Mode (hide overlay on pages)
         </label>
       </div>
       <div style={{ marginBottom: 16 }}>
         <label>
           <input type="checkbox" checked={autoRescan}
-            onChange={(e) => { setAutoRescan(e.target.checked); save("autoRescan", e.target.checked); }} />
+            onChange={(e) => {
+              setAutoRescan(e.target.checked);
+              void chrome.storage.sync.set({ autoRescan: e.target.checked });
+            }} />
           {" "}Auto-rescan on price crash (&gt;30% drop in 1h)
         </label>
       </div>
       <h2>About</h2>
-      <p>Antares is a real-time Solana token scanner that detects scams, rugs, and dangerous tokens.</p>
-      <p>Version: 1.0.0</p>
+      <p>Antares \u2014 real-time Solana token scanner.</p>
+      <p>Version: {version}</p>
       <p><a href="https://antares-extension.vercel.app/privacy" target="_blank" rel="noreferrer">Privacy Policy</a></p>
     </div>
   );

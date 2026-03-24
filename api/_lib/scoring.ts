@@ -3,7 +3,7 @@
 import type { LayerResult, SafeBlockedReason } from "./types";
 import { LAYER_WEIGHTS, TRUST_FLOOR, XV_PENALTY_LP_BURN, XV_PENALTY_MINT_AUTH, XV_PENALTY_AGE, XV_PENALTY_HOLDER_CONCENTRATION } from "./constants";
 
-// ═══ SCORING FINAL ═══════════════════════════════════════════════════════════════
+// ═══ SCORING FINAL ═════════════════════════════════════════════════════════════════
 export function computeFinalScore(layers: LayerResult[]): number {
   // PHASE 1: HARD KILL
   if (layers.filter(l => l.available).some(l => l.trust === 0)) return 0;
@@ -31,6 +31,7 @@ export function computeFinalScore(layers: LayerResult[]): number {
   }
 
   // product is now the properly normalized geometric mean (exponent = 1.0 always)
+
   // crossvalidation post-multiplier
   const xv = layers.find(l => l.source === "crossvalidation");
   if (xv?.available && xv.flags.length > 0) {
@@ -45,7 +46,7 @@ export function computeFinalScore(layers: LayerResult[]): number {
   return Math.round(Math.max(0, Math.min(1, product)) * 1000);
 }
 
-// ─── [2.3] SAFE-BLOCK REASON CLASSIFIER ────────────────────────────────────
+// ─── [2.3] SAFE-BLOCK REASON CLASSIFIER ────────────────────────────────────────
 export const HARD_BLOCK_PATTERNS: Array<[RegExp, SafeBlockedReason]> = [
   [/mint authority/i, "mint"],
   [/freeze authority/i, "freeze"],
@@ -63,6 +64,7 @@ export function classifySafeBlockedReasons(layers: LayerResult[]): SafeBlockedRe
   const reasons: SafeBlockedReason[] = [];
   const seen: Record<string, boolean> = {};
   function add(r: SafeBlockedReason) { if (!seen[r]) { seen[r] = true; reasons.push(r); } }
+
   for (const layer of layers) {
     if (!layer.safeBlocked) continue;
     let matched = false;
@@ -72,6 +74,13 @@ export function classifySafeBlockedReasons(layers: LayerResult[]): SafeBlockedRe
       }
     }
     if (!matched) {
+      if (layer.source === "dexscreener") {
+        for (const f of layer.flags) {
+          if (/pump|exit trap/i.test(f.label)) add("pump");
+          if (/rug|dump/i.test(f.label)) add("rug_pattern");
+          if (/wash/i.test(f.label)) add("wash_trading");
+        }
+      }
       if (layer.source === "solscan" || layer.source === "helius") {
         for (const f of layer.flags) {
           if (/holder/i.test(f.label) || /wallet.*holds/i.test(f.label) || /top.*hold/i.test(f.label)) add("holders");

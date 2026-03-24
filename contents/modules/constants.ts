@@ -1,7 +1,7 @@
 export const API           = "https://antares-extension.vercel.app/api/scan"
 export const ANALYSIS_PAGE = "https://antares-extension.vercel.app/token.html"
 export const LS_PREFIX     = "antares_scan_"
-export const CACHE_TTL     = 20_000
+export const CACHE_TTL    = 5 * 60 * 1000
 export const POS_KEY       = "antares_popup_pos"
 
 export const RISK_CLASS: Record<string, string> = {
