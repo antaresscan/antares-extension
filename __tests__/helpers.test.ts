@@ -64,17 +64,17 @@ describe("makeFlag", () => {
 });
 
 describe("computeCacheTTL", () => {
-  it("returns 20 for null", () => {
-    expect(computeCacheTTL(null)).toBe(20);
+      it("returns 60 for null", () => {
+          expect(computeCacheTTL(null)).toBe(60);
   });
-  it("returns 15 for age < 60", () => {
-    expect(computeCacheTTL(30)).toBe(15);
+      it("returns 45 for age < 60", () => {
+    expect(computeCacheTTL(30)).toBe(45);
   });
-  it("returns 30 for age 60-1440", () => {
-    expect(computeCacheTTL(120)).toBe(30);
+      it("returns 120 for age 60-1440", () => {
+          expect(computeCacheTTL(120)).toBe(120);
   });
-  it("returns 120 for age > 1440", () => {
-    expect(computeCacheTTL(2000)).toBe(120);
+      it("returns 300 for age > 1440", () => {
+          expect(computeCacheTTL(2000)).toBe(300);
   });
 });
 
