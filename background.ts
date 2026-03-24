@@ -10,6 +10,7 @@ if (SENTRY_DSN) {
   Sentry.init({ dsn: SENTRY_DSN, tracesSampleRate: 0.1 })
 }
 const API_BASE = process.env.PLASMO_PUBLIC_API_BASE || "https://antares-extension.vercel.app"
+const FETCH_TIMEOUT_MS = 10_000
 
 // ─── SAFE DATA EXTRACTION HELPERS ───────────────────────────────────────────
 function safeString(val: unknown): string | undefined {
@@ -46,10 +47,10 @@ chrome.alarms.onAlarm.addListener((a) => { if (a.name === "keepalive") void chro
 
 // ─── BADGE CONFIG ──────────────────────────────────────────────────────────
 const BADGE_MAP: Record<string, { text: string; color: string }> = {
-  SAFE:    { text: "\u2713", color: "#00e5b0" },
-  CAUTION: { text: "!",     color: "#f5d000" },
-  DANGER:  { text: "\u2717", color: "#ff5f5f" },
-  RUG:     { text: "\u2717", color: "#ff2244" },
+  SAFE: { text: "\u2713", color: "#00e5b0" },
+  CAUTION: { text: "!", color: "#f5d000" },
+  DANGER: { text: "\u2717", color: "#ff5f5f" },
+  RUG: { text: "\u2717", color: "#ff2244" },
 }
 
 const RISK_ORDER: Record<string, number> = { SAFE: 0, CAUTION: 1, DANGER: 2, RUG: 3 }
@@ -128,9 +129,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       sendResponse({ ok: false, error: "Invalid contract address" })
       return true
     }
-    void fetch(`${API_BASE}/api/scan?ca=${ca}`)
+    const ctrl = new AbortController()
+    const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS)
+    void fetch(`${API_BASE}/api/scan?ca=${ca}`, { signal: ctrl.signal })
       .then((r) => r.json())
       .then((data: Record<string, unknown>) => {
+        clearTimeout(timer)
         const risk = safeString(data.risk)
         if (risk) {
           updateBadge(risk, sender.tab?.id)
@@ -141,6 +145,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         sendResponse({ ok: true, data })
       })
       .catch((e: Error) => {
+        clearTimeout(timer)
         Sentry.captureException(e)
         sendResponse({ ok: false, error: e.message })
       })
