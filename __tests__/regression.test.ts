@@ -3,13 +3,10 @@ import {
   computeFinalScore,
 } from "../api/_lib/scoring";
 import {
-  evaluatePostLayerFlags,
-  applySafeGateOverride,
-  applyEstablishedBonus,
   determineVerdict,
 } from "../api/_lib/pipeline";
 import { layerIdentity } from "../api/_lib/layers";
-import type { LayerResult, VerdictInput } from "../api/_lib/types";
+import type { LayerResult } from "../api/_lib/types";
 import { computeCacheTTL } from "../api/_lib/helpers";
 
 // ─── Session 1: Safety overhaul regressions ──────────────────────────────────
