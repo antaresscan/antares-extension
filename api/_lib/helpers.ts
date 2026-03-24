@@ -49,10 +49,12 @@ export function settled<T>(p: Promise<T>): Promise<T | null> {
 }
 
 export function computeCacheTTL(tokenAgeMinutes: number | null): number {
-  if (tokenAgeMinutes === null) return 20;
-  if (tokenAgeMinutes < 60) return 15;
-  if (tokenAgeMinutes < 1440) return 30;
-  return 120;
+    if (tokenAgeMinutes === null) return 60;    // 1 minute (unknown age)
+  if (tokenAgeMinutes < 30) return 20;          // 20s for <30min tokens (fast-moving)
+  if (tokenAgeMinutes < 60) return 45;          // 45s for <1h tokens
+  if (tokenAgeMinutes < 1440) return 120;       // 2 minutes for <1 day tokens
+  if (tokenAgeMinutes < 10080) return 300;      // 5 minutes for <1 week tokens
+  return 600;                                    // 10 minutes for established tokens (>1 week)
 }
 
 export function apiError(res: VercelResponse, status: number, message: string, details?: Record<string, unknown>): void {
