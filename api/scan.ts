@@ -260,13 +260,6 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     if (postLayerResult.forceRug) forceRug = true;
     if (postLayerResult.safeBlocked) safeBlocked = true;
 
-    // Post-layer score clamping
-    if (postLayerResult.forceRug) {
-      score = Math.min(score, 100);
-    }
-    if (postLayerResult.safeBlocked) {
-      score = Math.min(score, 500);
-    }
 
     const safeBlockedReasons = classifySafeBlockedReasons(allLayers);
     const lpBurned = rugData?.lpBurned === true;
@@ -285,6 +278,9 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       console.log(JSON.stringify({ requestId, ca: resolvedMint, stage: "safe_gate_override", reasons: safeBlockedReasons }));
     }
     safeBlocked = newSafeBlocked;
+      // Score clamp AFTER safe gate override
+  if (safeBlocked) score = Math.min(score, 500);
+  if (forceRug) score = Math.min(score, 100);
     const newScore = applyEstablishedBonus({
       score, tokenAgeHours, holders, lpBurned, goPlusClean,
     });
@@ -323,11 +319,17 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       solscanTrades24h,
       solscanTraders24h,
       layers: layersSnapshot,
+          honeypot: l3.available && l3.trust === 0 && l3.flags.some(f => /honeypot/i.test(f.label)),
+    mintAuthority: allLayers.some(l => l.flags.some(f => /mint authority/i.test(f.label) && f.severity === "critical")),
+    freezeAuthority: allLayers.some(l => l.flags.some(f => /freeze authority/i.test(f.label) && f.severity === "critical")),
+    lpBurned: rugData?.lpBurned === true,
+    candles: candles.slice(-20).map(c => ({ close: c.c })),
       scoring_version: "7.0.0",
       fetchedAt: Date.now(),
     };
 
     setCachedResult(ca, result, tokenAgeMinutes);
+        if (resolvedMint !== ca) setCachedResult(resolvedMint, result, tokenAgeMinutes);
     return res.json(result);
   } catch (e) {
     console.error("[scan v7.0.0]", requestId, e);
