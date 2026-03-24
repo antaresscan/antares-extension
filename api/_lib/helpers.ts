@@ -106,3 +106,24 @@ export function isRugCheckReport(data: unknown): data is import("./types").RugCh
   if (!isObject(data)) return false;
   return "risks" in data || "topHolders" in data || "totalHolders" in data;
 }
+
+// ─── XSS SANITIZATION ────────────────────────────────────────────────────────
+const HTML_ESCAPE_MAP: Record<string, string> = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;",
+};
+
+export function sanitizeString(val: string | null | undefined): string | null {
+  if (val == null) return null;
+  return String(val).replace(/[&<>"']/g, ch => HTML_ESCAPE_MAP[ch] || ch);
+}
+
+export function sanitizeUrl(val: string | null | undefined): string | null {
+  if (val == null) return null;
+  const s = String(val).trim();
+  if (/^https?:\/\//i.test(s)) return s;
+  return null;
+}
