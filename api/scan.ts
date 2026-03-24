@@ -16,6 +16,7 @@ import {
   isHeliusLargestAccountsResponse, isHeliusSupplyResponse,
   isSolscanMarketsResponse, isSolscanMeta, isSolscanTransfersResponse,
   isRugCheckReport,
+    sanitizeString, sanitizeUrl,
 } from "./_lib/helpers";
 import {
   heliusGetLargestAccounts, heliusGetTokenSupply, heliusGetCreatorReputation,
@@ -310,10 +311,10 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       score, risk, flags, pair, resolvedMint, confidence, sources_used,
       holders, marketCap, priceUsd, liquidity,
       volume24h, volume1h, priceChange5m, priceChange1h, priceChange24h,
-      tokenSymbol:   pair?.baseToken?.symbol ?? null,
-      tokenName:     pair?.baseToken?.name   ?? null,
+          tokenSymbol: sanitizeString(pair?.baseToken?.symbol) ?? null,
+          tokenName: sanitizeString(pair?.baseToken?.name) ?? null,
       pairCreatedAt: pair?.pairCreatedAt     ?? null,
-      safeBlocked, safeBlockedReasons, tokenLogo, tokenCreator, tokenDecimals, tokenSupply, recentTransfers,
+          safeBlocked, safeBlockedReasons, tokenLogo: sanitizeUrl(tokenLogo), tokenCreator, tokenDecimals, tokenSupply, recentTransfers,
       solscanTokenAgeHours,
       solscanVolume24h,
       solscanTrades24h,
