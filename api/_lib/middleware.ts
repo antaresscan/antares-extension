@@ -6,12 +6,22 @@ import { CA_RE } from "./constants";
 import { isCorsAllowed, apiError } from "./helpers";
 
 export const ALLOWED_ORIGINS = [
-  "https://dexscreener.com", "https://birdeye.so", "https://pump.fun",
-  "https://jup.ag", "https://raydium.io", "https://solscan.io",
-  "https://www.geckoterminal.com", "https://antares-extension.vercel.app"
+  "https://dexscreener.com",
+  "https://birdeye.so",
+  "https://axiom.trade",
+  "https://pump.fun",
+  "https://jup.ag",
+  "https://raydium.io",
+  "https://solscan.io",
+  "https://www.geckoterminal.com",
+  "https://photon-sol.tinyastro.io",
+  "https://neo.bullx.io",
+  "https://gmgn.ai",
+  "https://app.telemetry.io",
+  "https://antares-extension.vercel.app",
 ];
 
-// ─── RATE LIMITERS ──────────────────────────────────────────────────────────
+// ─── RATE LIMITERS ────────────────────────────────────────────
 let ratelimit: Ratelimit | null = null;
 let burstRatelimit: Ratelimit | null = null;
 
