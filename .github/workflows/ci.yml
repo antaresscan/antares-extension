@@ -15,10 +15,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: "npm"
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Typecheck
         run: npx tsc --noEmit
@@ -34,3 +33,5 @@ jobs:
 
       - name: Coverage
         run: npx vitest run --coverage --reporter=json --outputFile=coverage/coverage.json
+
+      # TODO: commit package-lock.json to repo to enable npm ci in the future
