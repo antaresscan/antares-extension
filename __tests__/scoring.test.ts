@@ -16,7 +16,6 @@ describe("computeFinalScore", () => {
       makeLayer("helius", 1, true),
       makeLayer("solscan", 1, true),
       makeLayer("chart", 1, true),
-      makeLayer("identity", 1, true),
       makeLayer("crossvalidation", 1, true),
     ];
     expect(computeFinalScore(layers)).toBeGreaterThan(900);
@@ -30,7 +29,6 @@ describe("computeFinalScore", () => {
       makeLayer("helius", 1, true),
       makeLayer("solscan", 1, true),
       makeLayer("chart", 1, true),
-      makeLayer("identity", 1, true),
       makeLayer("crossvalidation", 1, true),
     ];
     expect(computeFinalScore(layers)).toBe(0);
@@ -39,12 +37,11 @@ describe("computeFinalScore", () => {
   it("no hard kill for unavailable layer with trust 0", () => {
     const layers: LayerResult[] = [
       makeLayer("dexscreener", 1, true),
-      makeLayer("rugcheck", 0, false), // unavailable, trust 0 should not kill
+      makeLayer("rugcheck", 0, false),
       makeLayer("goplus", 1, true),
       makeLayer("helius", 1, true),
       makeLayer("solscan", 1, true),
       makeLayer("chart", 1, true),
-      makeLayer("identity", 1, true),
       makeLayer("crossvalidation", 1, true),
     ];
     const score = computeFinalScore(layers);
@@ -52,9 +49,8 @@ describe("computeFinalScore", () => {
     expect(score).toBe(1000);
   });
 
-  it("dynamic LAYER_WEIGHTS including identity", () => {
-    expect(LAYER_WEIGHTS).toHaveProperty("identity");
-    expect(LAYER_WEIGHTS.identity).toBe(0.08);
+  it("LAYER_WEIGHTS does NOT contain identity (removed)", () => {
+    expect(LAYER_WEIGHTS).not.toHaveProperty("identity");
   });
 
   it("LAYER_WEIGHTS sum to 1.0", () => {
@@ -74,7 +70,6 @@ describe("computeFinalScore", () => {
       makeLayer("helius", 1, true),
       makeLayer("solscan", 1, true),
       makeLayer("chart", 1, true),
-      makeLayer("identity", 1, true),
       makeLayer("crossvalidation", 1, true, [
         { label: "holder concentration conflict", severity: "warning", impact: 0 }
       ]),
@@ -107,7 +102,6 @@ describe("computeFinalScore", () => {
       makeLayer("helius", 1, true),
       makeLayer("solscan", 1, true),
       makeLayer("chart", 1, true),
-      makeLayer("identity", 1, true),
       makeLayer("crossvalidation", 1, true, [
         { label: "LP burn conflict: RugCheck vs on-chain data", severity: "warning", impact: 0 }
       ]),
@@ -125,29 +119,12 @@ describe("computeFinalScore", () => {
       makeLayer("helius", 1, true),
       makeLayer("solscan", 1, true),
       makeLayer("chart", 1, true),
-      makeLayer("identity", 1, true),
       makeLayer("crossvalidation", 1, true, [
         { label: "Mint authority conflict: GoPlus vs RugCheck", severity: "warning", impact: 0 }
       ]),
     ];
     const score = computeFinalScore(layers);
     expect(score).toBe(Math.round(1000 * XV_PENALTY_MINT_AUTH));
-  });
-
-  it("identity trust < 1 reduces final score (via weighted geometric mean)", () => {
-    const layers: LayerResult[] = [
-      makeLayer("dexscreener", 1, true),
-      makeLayer("rugcheck", 1, true),
-      makeLayer("goplus", 1, true),
-      makeLayer("helius", 1, true),
-      makeLayer("solscan", 1, true),
-      makeLayer("chart", 1, true),
-      makeLayer("identity", 0.5, true),
-      makeLayer("crossvalidation", 1, true),
-    ];
-    const score = computeFinalScore(layers);
-    expect(score).toBeLessThan(1000);
-    expect(score).toBeGreaterThan(900);
   });
 
   it("score caps at 1000", () => {
@@ -158,20 +135,18 @@ describe("computeFinalScore", () => {
       makeLayer("helius", 1, true),
       makeLayer("solscan", 1, true),
       makeLayer("chart", 1, true),
-      makeLayer("identity", 1, true),
       makeLayer("crossvalidation", 1, true),
     ];
     expect(computeFinalScore(layers)).toBeLessThanOrEqual(1000);
   });
 
-  it("chart weight at 0.10 gives chart more influence than before", () => {
+  it("chart weight at 0.10 gives chart influence on final score", () => {
     const base: LayerResult[] = [
       makeLayer("dexscreener", 1, true),
       makeLayer("rugcheck", 1, true),
       makeLayer("goplus", 1, true),
       makeLayer("helius", 1, true),
       makeLayer("solscan", 1, true),
-      makeLayer("identity", 1, true),
       makeLayer("crossvalidation", 1, true),
     ];
     const withGoodChart = [...base, makeLayer("chart", 1, true)];
@@ -240,7 +215,6 @@ describe("computeFinalScore normalization", () => {
       makeMockLayer("helius", 0.8),
       makeMockLayer("solscan", 0.8),
       makeMockLayer("chart", 0.8),
-      makeMockLayer("identity", 0.8),
       makeMockLayer("crossvalidation", 1.0),
     ];
     const scoreAll = computeFinalScore(allSources);
@@ -252,12 +226,10 @@ describe("computeFinalScore normalization", () => {
       makeMockLayer("helius", 0.8, false),
       makeMockLayer("solscan", 0.8, false),
       makeMockLayer("chart", 0.8, false),
-      makeMockLayer("identity", 0.8, false),
       makeMockLayer("crossvalidation", 1.0),
     ];
     const scoreFewer = computeFinalScore(fewerSources);
 
-    // Scores should be equal (both 800) since all available trusts are 0.8
     expect(scoreAll).toBe(scoreFewer);
     expect(scoreAll).toBe(800);
   });

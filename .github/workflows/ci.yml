@@ -33,3 +33,5 @@ jobs:
 
       - name: Coverage
         run: npx vitest run --coverage --reporter=json --outputFile=coverage/coverage.json
+
+      # TODO: commit package-lock.json to repo to enable npm ci in the future

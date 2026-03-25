@@ -1,26 +1,30 @@
 // api/pipeline.ts — Pure decision functions extracted from scan.ts handler
-// Session 1: Zero side-effects, zero console.log, zero async.
 
 import type {
   ScanFlag, Verdict,
   PostLayerFlagsInput, PostLayerFlagsResult,
   SafeGateInput, EstablishedBonusInput, VerdictInput,
-  } from "./types";
+} from "./types";
 import { makeFlag } from "./helpers";
 
-// ─── BLOCK E: Post-layer flags ──────────────────────────────────────────────
 export function evaluatePostLayerFlags(input: PostLayerFlagsInput): PostLayerFlagsResult {
   const flags: ScanFlag[] = [];
   let forceRug = false;
   let safeBlocked = false;
 
-  // [2.5] Social honeypot detection
-  if (input.sells5m === 0 && input.buys5m > 10 && input.liqUsd > 5000 && input.ageMin > 30) {
+  // Fix: require at least 5 total transactions to avoid false positives on brand-new tokens
+  const totalTxns5m = (input.buys5m ?? 0) + (input.sells5m ?? 0);
+  if (
+    input.sells5m === 0 &&
+    input.buys5m > 10 &&
+    input.liqUsd > 5000 &&
+    input.ageMin > 30 &&
+    totalTxns5m > 5
+  ) {
     flags.push(makeFlag("Sells blocked (social honeypot)", "critical", 0));
     forceRug = true;
   }
 
-  // [2.6] Wash trading detection via transfers
   if (Array.isArray(input.recentTransfers) && input.recentTransfers.length >= 10) {
     const wallets = new Set<string>();
     for (const tx of input.recentTransfers) {
@@ -35,13 +39,11 @@ export function evaluatePostLayerFlags(input: PostLayerFlagsInput): PostLayerFla
     }
   }
 
-  // [2.7] Pump.fun bonding curve guard
   if (input.ageMin > 0 && input.ageMin < 60 && input.volLiqRatio > 15) {
     flags.push(makeFlag("Pump.fun-style launch: <1h + vol/liq >15 — DANGER", "critical", 0));
     safeBlocked = true;
   }
 
-  // [5.1] Creator reputation — flag serial deployers
   if (input.creatorReputation?.flagged && input.creatorReputation.reason) {
     flags.push(makeFlag(input.creatorReputation.reason, "critical", 0));
     safeBlocked = true;
@@ -50,7 +52,6 @@ export function evaluatePostLayerFlags(input: PostLayerFlagsInput): PostLayerFla
   return { flags, forceRug, safeBlocked };
 }
 
-// ─── BLOCK F: Safe gate override ────────────────────────────────────────────
 export function applySafeGateOverride(input: SafeGateInput): boolean {
   if (!input.safeBlocked) return false;
   if (input.forceRug) return true;
@@ -61,36 +62,36 @@ export function applySafeGateOverride(input: SafeGateInput): boolean {
     const ageHours = input.tokenAgeHours ?? 0;
     const hasEnoughSources = input.sourcesAvailableCount >= 4;
     if ((input.holders ?? 0) > 500 && input.lpBurned && input.goPlusClean) {
-      return false; // unlock
+      return false;
     }
-    // Relaxed unlock for tokens > 24h with enough sources
     if (ageHours > 24 && hasEnoughSources && (input.holders ?? 0) > 200 && input.goPlusClean) {
-      return false; // unlock
+      return false;
     }
   }
   return true;
 }
 
-// ─── BLOCK G: Established token bonus ───────────────────────────────────────
 export function applyEstablishedBonus(input: EstablishedBonusInput): number {
-  if (input.tokenAgeHours !== null && input.tokenAgeHours > 720 &&
-      (input.holders ?? 0) > 1000 && input.lpBurned && input.goPlusClean) {
+  if (
+    input.tokenAgeHours !== null &&
+    input.tokenAgeHours > 720 &&
+    (input.holders ?? 0) > 1000 &&
+    input.lpBurned &&
+    input.goPlusClean
+  ) {
     return Math.min(1000, Math.round(input.score * 1.15));
   }
   return input.score;
 }
 
-// ─── BLOCK H: Verdict determination ────────────────────────────────────────
 export function determineVerdict(input: VerdictInput): Verdict {
   if (input.forceRug) return "RUG";
   if (input.sourcesUsedCount === 0) return "DANGER";
 
   if (input.safeBlocked) {
-    // Hard blocks always cap at DANGER regardless of score
     const HARD_REASONS = new Set(["honeypot", "mint", "freeze", "bundle", "rug_pattern", "wash_trading"]);
     const hasHardReason = input.safeBlockedReasons?.some(r => HARD_REASONS.has(r));
     if (hasHardReason) return input.score >= 400 ? "DANGER" : "RUG";
-    // Soft blocks (age, holders, pump, chart) allow CAUTION if score is decent
     if (input.score >= 550) return "CAUTION";
     return "DANGER";
   }

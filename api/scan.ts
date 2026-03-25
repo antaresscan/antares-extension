@@ -16,7 +16,7 @@ import {
   isHeliusLargestAccountsResponse, isHeliusSupplyResponse,
   isSolscanMarketsResponse, isSolscanMeta, isSolscanTransfersResponse,
   isRugCheckReport,
-    sanitizeString, sanitizeUrl,
+  sanitizeString, sanitizeUrl,
 } from "./_lib/helpers";
 import {
   heliusGetLargestAccounts, heliusGetTokenSupply, heliusGetCreatorReputation,
@@ -29,7 +29,7 @@ import {
 } from "./_lib/constants";
 import {
   layerDexScreener, layerRugCheck, layerGoPlus, layerHelius,
-  layerSolscan, layerChart, layerIdentity, layerCrossValidation,
+  layerSolscan, layerChart, layerCrossValidation,
 } from "./_lib/layers";
 import { computeFinalScore, classifySafeBlockedReasons } from "./_lib/scoring";
 import { evaluatePostLayerFlags, applySafeGateOverride, applyEstablishedBonus, determineVerdict } from "./_lib/pipeline";
@@ -37,15 +37,10 @@ import { setCorsHeaders, getClientIp, checkRateLimit, validateCA, initRateLimite
 import { initCache, getCachedResult, setCachedResult } from "./_lib/cache";
 import * as Sentry from "@sentry/node";
 
-// ─── SENTRY INITIALIZATION ──────────────────────────────────────────────────
 if (process.env.SENTRY_DSN) {
-  Sentry.init({
-    dsn: process.env.SENTRY_DSN,
-    tracesSampleRate: 0.1,
-  });
+  Sentry.init({ dsn: process.env.SENTRY_DSN, tracesSampleRate: 0.1 });
 }
 
-// ─── REDIS INITIALIZATION ───────────────────────────────────────────────────
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
   const redis = new Redis({
     url: process.env.UPSTASH_REDIS_REST_URL,
@@ -55,17 +50,14 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
   initRateLimiters(redis);
 }
 
-// ─── GLOBAL TIMEOUT ─────────────────────────────────────────────────────────
 const GLOBAL_TIMEOUT_MS = Number(process.env.VERCEL_TIMEOUT) || 9000;
 
-// ─── HANDLER PRINCIPAL ───────────────────────────────────────────────────────
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const requestId = randomUUID();
   res.setHeader("X-Request-Id", requestId);
 
   setCorsHeaders(req, res);
   if (req.method === "OPTIONS") return res.status(204).end();
-
   if (req.method !== "GET" && req.method !== "OPTIONS") {
     return apiError(res, 405, "Method not allowed.");
   }
@@ -77,7 +69,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const ca = validateCA(req.query.ca);
   if (!ca) return apiError(res, 400, "Invalid token address.");
 
-  // Cache check
   const cached = await getCachedResult(ca, requestId);
   if (cached) return res.json(cached);
 
@@ -86,10 +77,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   );
 
   try {
-    const result = await Promise.race([
-      runAnalysis(req, res, requestId, ca),
-      timeoutPromise,
-    ]);
+    const result = await Promise.race([runAnalysis(req, res, requestId, ca), timeoutPromise]);
     return result;
   } catch (e: unknown) {
     if (e instanceof Error && e.message === "Global timeout") {
@@ -142,7 +130,6 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
 
     if (pair?.baseToken?.address) resolvedMint = pair.baseToken.address;
 
-        // Cache check for resolvedMint (avoids redundant analysis)
     if (resolvedMint !== ca) {
       const cachedByMint = await getCachedResult(resolvedMint, requestId);
       if (cachedByMint) return res.json(cachedByMint);
@@ -200,8 +187,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const solscanTrades24h: number | null  = asNumber(solMarketPool?.trade)     || null;
     const solscanTraders24h: number | null = asNumber(solMarketPool?.trader)    || null;
     const solscanLiquidity: number | null  = asNumber(solMarketPool?.liquidity) || null;
-    const tokenLogo     = solMetaData?.data?.icon || pair?.info?.imageUrl || null;
-    const tokenCreator  = solMetaData?.data?.creator || null;
+    const tokenLogo    = solMetaData?.data?.icon || pair?.info?.imageUrl || null;
+    const tokenCreator = solMetaData?.data?.creator || null;
 
     const creatorReputation: CreatorReputation | null = tokenCreator && HELIUS_API_KEY
       ? await settled(heliusGetCreatorReputation(tokenCreator, HELIUS_API_KEY))
@@ -239,19 +226,19 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const priceChange1h  = pair?.priceChange?.h1  ?? null;
     const priceChange24h = pair?.priceChange?.h24 ?? null;
 
+    // 6 layers — identity layer removed
     const l1 = layerDexScreener(pair, marketCap, tokenAgeMinutes);
     const l2 = layerRugCheck(rugData, rugReport, resolvedMint);
     const l3 = layerGoPlus(goplus);
     const l4 = layerHelius(rawHolderAccounts, totalSupplyUi);
     const l5 = layerSolscan(solscanHoldersCount, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h);
     const l6 = layerChart(candles, pair, tokenAgeMinutes);
-    const l7 = layerIdentity(pair?.baseToken?.symbol, pair?.baseToken?.name, resolvedMint, solscanTokenAgeHours ?? dexTokenAgeHours ?? null, holders);
     const l8 = layerCrossValidation(rugData, rawHolderAccounts, goplus, solscanTokenAgeHours, dexTokenAgeHours, totalSupplyUi);
 
-    const allLayers = [l1, l2, l3, l4, l5, l6, l7, l8];
-    let score         = computeFinalScore(allLayers);
-    let forceRug      = allLayers.some(l => l.forceRug);
-    let safeBlocked   = allLayers.some(l => l.safeBlocked);
+    const allLayers = [l1, l2, l3, l4, l5, l6, l8];
+    let score       = computeFinalScore(allLayers);
+    let forceRug    = allLayers.some(l => l.forceRug);
+    let safeBlocked = allLayers.some(l => l.safeBlocked);
 
     const buys5m  = asNumber(pair?.txns?.m5?.buys);
     const sells5m = asNumber(pair?.txns?.m5?.sells);
@@ -267,13 +254,12 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     if (postLayerResult.forceRug) forceRug = true;
     if (postLayerResult.safeBlocked) safeBlocked = true;
 
-
     const safeBlockedReasons = classifySafeBlockedReasons(allLayers);
     const lpBurned = rugData?.lpBurned === true;
     const goPlusClean = l3.available && l3.trust >= 0.95 && !l3.forceRug;
     const tokenAgeHours = solscanTokenAgeHours ?? dexTokenAgeHours ?? null;
     const sourcesAvailableCount = allLayers
-      .filter(l => l.available && l.source !== "crossvalidation" && l.source !== "identity")
+      .filter(l => l.available && l.source !== "crossvalidation")
       .length;
 
     const newSafeBlocked = applySafeGateOverride({
@@ -285,19 +271,18 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       console.log(JSON.stringify({ requestId, ca: resolvedMint, stage: "safe_gate_override", reasons: safeBlockedReasons }));
     }
     safeBlocked = newSafeBlocked;
-      // Score clamp AFTER safe gate override
-  if (safeBlocked) score = Math.min(score, 500);
-  if (forceRug) score = Math.min(score, 100);
-    const newScore = applyEstablishedBonus({
-      score, tokenAgeHours, holders, lpBurned, goPlusClean,
-    });
+
+    if (safeBlocked) score = Math.min(score, 500);
+    if (forceRug) score = Math.min(score, 100);
+
+    const newScore = applyEstablishedBonus({ score, tokenAgeHours, holders, lpBurned, goPlusClean });
     if (newScore !== score) {
       console.log(JSON.stringify({ requestId, ca: resolvedMint, stage: "established_bonus_applied", score: newScore }));
     }
     score = newScore;
 
     const sources_used: string[] = allLayers
-      .filter(l => l.available && l.source !== "crossvalidation" && l.source !== "identity")
+      .filter(l => l.available && l.source !== "crossvalidation")
       .map(l => l.source);
 
     const risk: Verdict = determineVerdict({
@@ -317,29 +302,27 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       score, risk, flags, pair, resolvedMint, confidence, sources_used,
       holders, marketCap, priceUsd, liquidity,
       volume24h, volume1h, priceChange5m, priceChange1h, priceChange24h,
-          tokenSymbol: sanitizeString(pair?.baseToken?.symbol) ?? null,
-          tokenName: sanitizeString(pair?.baseToken?.name) ?? null,
-      pairCreatedAt: pair?.pairCreatedAt     ?? null,
-          safeBlocked, safeBlockedReasons, tokenLogo: sanitizeUrl(tokenLogo), tokenCreator, tokenDecimals, tokenSupply, recentTransfers,
-      solscanTokenAgeHours,
-      solscanVolume24h,
-      solscanTrades24h,
-      solscanTraders24h,
+      tokenSymbol: sanitizeString(pair?.baseToken?.symbol) ?? null,
+      tokenName: sanitizeString(pair?.baseToken?.name) ?? null,
+      pairCreatedAt: pair?.pairCreatedAt ?? null,
+      safeBlocked, safeBlockedReasons, tokenLogo: sanitizeUrl(tokenLogo), tokenCreator,
+      tokenDecimals, tokenSupply, recentTransfers,
+      solscanTokenAgeHours, solscanVolume24h, solscanTrades24h, solscanTraders24h,
       layers: layersSnapshot,
-          honeypot: l3.available && l3.trust === 0 && l3.flags.some(f => /honeypot/i.test(f.label)),
-    mintAuthority: allLayers.some(l => l.flags.some(f => /mint authority/i.test(f.label) && f.severity === "critical")),
-    freezeAuthority: allLayers.some(l => l.flags.some(f => /freeze authority/i.test(f.label) && f.severity === "critical")),
-    lpBurned: rugData?.lpBurned === true,
-    candles: candles.slice(-20).map(c => ({ close: c.c })),
-      scoring_version: "7.0.0",
+      honeypot: l3.available && l3.trust === 0 && l3.flags.some(f => /honeypot/i.test(f.label)),
+      mintAuthority: allLayers.some(l => l.flags.some(f => /mint authority/i.test(f.label) && f.severity === "critical")),
+      freezeAuthority: allLayers.some(l => l.flags.some(f => /freeze authority/i.test(f.label) && f.severity === "critical")),
+      lpBurned: rugData?.lpBurned === true,
+      candles: candles.slice(-20).map(c => ({ close: c.c })),
+      scoring_version: "7.1.0",
       fetchedAt: Date.now(),
     };
 
     setCachedResult(ca, result, tokenAgeMinutes);
-        if (resolvedMint !== ca) setCachedResult(resolvedMint, result, tokenAgeMinutes);
+    if (resolvedMint !== ca) setCachedResult(resolvedMint, result, tokenAgeMinutes);
     return res.json(result);
   } catch (e) {
-    console.error("[scan v7.0.0]", requestId, e);
+    console.error("[scan v7.1.0]", requestId, e);
     Sentry.captureException(e);
     return apiError(res, 500, "Analysis error.");
   }

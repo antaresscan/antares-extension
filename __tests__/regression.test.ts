@@ -5,7 +5,6 @@ import {
 import {
   determineVerdict,
 } from "../api/_lib/pipeline";
-import { layerIdentity } from "../api/_lib/layers";
 import type { LayerResult } from "../api/_lib/types";
 import { computeCacheTTL } from "../api/_lib/helpers";
 
@@ -32,16 +31,6 @@ describe("Session 1 regressions", () => {
       sourcesUsedCount: 5,
     });
     expect(result).not.toBe("SAFE");
-  });
-});
-
-// ─── Session 2: Identity detection regressions ──────────────────────────────
-
-describe("Session 2 regressions", () => {
-  it("Copycat suffix detection works (TRUMPV2)", () => {
-    const result = layerIdentity("TRUMPV2", "Fake Trump", "fakemint123");
-    const hasBrandFlag = result.flags.some((f) => /brand|copycat|impersonat/i.test(f.label));
-    expect(hasBrandFlag).toBe(true);
   });
 });
 
@@ -81,12 +70,6 @@ describe("Session 3 regressions", () => {
 // ─── Session 5: Verdict logic regressions ────────────────────────────────────
 
 describe("Session 5 regressions", () => {
-  it("Brand matching is exact only (SOLAR does not match SOL)", () => {
-    const result = layerIdentity("SOLAR", "Solar Protocol", "fakemint123");
-    const hasBrandFlag = result.flags.some((f) => /brand|copycat|impersonat/i.test(f.label));
-    expect(hasBrandFlag).toBe(false);
-  });
-
   it("Soft safeBlock with score 550+ -> CAUTION", () => {
     const verdict = determineVerdict({
       score: 570,
