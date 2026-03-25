@@ -99,7 +99,6 @@ function createMockRes(): VercelResponse {
 
 // Standard mock responses for a "good" token
 function setupGoodTokenMocks() {
-  // Global fetch mock — DexScreener, RugCheck, GoPlus
   mockFetch.mockImplementation((url: string) => {
     if (url.includes("dexscreener")) {
       return Promise.resolve({
@@ -115,7 +114,7 @@ function setupGoodTokenMocks() {
             priceUsd: "150.25",
             marketCap: 50000000,
             fdv: 50000000,
-            pairCreatedAt: Date.now() - 90 * 24 * 3600 * 1000, // 90 days old
+            pairCreatedAt: Date.now() - 90 * 24 * 3600 * 1000,
             info: {
               socials: [{ type: "twitter", url: "https://twitter.com/test" }],
               websites: [{ url: "https://test.com" }],
@@ -170,7 +169,6 @@ function setupGoodTokenMocks() {
     return Promise.resolve({ ok: false, json: () => Promise.resolve(null) });
   });
 
-  // Fetcher mocks
   mockHeliusGetLargestAccounts.mockResolvedValue({
     result: {
       value: [
@@ -222,7 +220,6 @@ function setupGoodTokenMocks() {
   ]);
 }
 
-// Set env vars before import
 process.env.UPSTASH_REDIS_REST_URL = "https://mock.upstash.io";
 process.env.UPSTASH_REDIS_REST_TOKEN = "mock-token";
 process.env.HELIUS_API_KEY = "mock-helius-key";
@@ -273,11 +270,10 @@ describe("scan handler", () => {
     const body = (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as Record<string, unknown>;
     expect(body.score).toBeTypeOf("number");
     expect(body.risk).toBeDefined();
-    expect(body.scoring_version).toBe("7.0.0");
+    expect(body.scoring_version).toBe("7.1.0");
     expect(body.resolvedMint).toBeDefined();
     expect(body.flags).toBeDefined();
     expect(Array.isArray(body.sources_used)).toBe(true);
-    // wSOL should NOT be flagged as brand imitation
     const flags = body.flags as Array<{ label: string }>;
     expect(flags.some(f => /brand imitation/i.test(f.label))).toBe(false);
   });
@@ -304,7 +300,8 @@ describe("scan handler", () => {
     expect(layers.dexscreener).toBeDefined();
     expect(layers.rugcheck).toBeDefined();
     expect(layers.goplus).toBeDefined();
-    expect(layers.identity).toBeDefined();
+    // identity layer removed — no longer present in pipeline
+    expect(layers.identity).toBeUndefined();
   });
 
   it("sets CORS and cache headers", async () => {
@@ -329,7 +326,6 @@ describe("scan handler", () => {
     const req = createMockReq({ ca: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263" });
     const res = createMockRes();
     await handler(req, res);
-    // Should not crash — either returns a result or a 500
     expect(res.json).toHaveBeenCalled();
   });
 });
