@@ -1,11 +1,11 @@
 import { describe, it, expect } from "vitest";
 import {
   layerDexScreener, layerGoPlus, layerRugCheck, layerHelius,
-  layerIdentity, layerSolscan, layerCrossValidation,
+  layerSolscan, layerCrossValidation,
 } from "../api/_lib/layers";
 import type { DexScreenerPair, RugCheckSummary, GoPlusTokenResult, HeliusHolder } from "../api/_lib/types";
 
-// ═══ LAYER 1 — DexScreener ═════════════════════════════════════════════════
+// ═══ LAYER 1 — DexScreener ══════════════════════════════════════════════════
 
 describe("layerDexScreener", () => {
   it("returns unavailable for null pair", () => {
@@ -44,7 +44,7 @@ describe("layerDexScreener", () => {
     expect(result.available).toBe(true);
   });
 
-  it("forceRug when liquidity 0 with vol/liq > 20", () => {
+  it("forceRug when vol/liq > 20", () => {
     const pair: DexScreenerPair = {
       liquidity: { usd: 1 },
       volume: { h24: 100 },
@@ -56,8 +56,20 @@ describe("layerDexScreener", () => {
     expect(result.safeBlocked).toBe(true);
   });
 
+  it("forceRug when liq=0 and high volume (abandoned pool)", () => {
+    const pair: DexScreenerPair = {
+      liquidity: { usd: 0 },
+      volume: { h24: 50000 },
+      priceChange: {},
+      txns: { m5: { buys: 1, sells: 1 } },
+    };
+    const result = layerDexScreener(pair, null, null);
+    expect(result.forceRug).toBe(true);
+    expect(result.safeBlocked).toBe(true);
+    expect(result.flags.some(f => /abandoned pool/i.test(f.label))).toBe(true);
+  });
+
   it("diminishing returns for multiple penalties", () => {
-    // Low liquidity + no socials => 2 penalties, trust reduces but not to 0
     const pair: DexScreenerPair = {
       liquidity: { usd: 800 },
       volume: { h24: 100 },
@@ -85,10 +97,22 @@ describe("layerRugCheck", () => {
       metaMutable: false,
     };
     const result = layerRugCheck(rugData, null, "someMint123");
-    // LP burned gives 1.10 bonus (capped at 1.0) and metaMutable false gives 0.96 penalty
     expect(result.trust).toBeGreaterThan(0.95);
     expect(result.available).toBe(true);
     expect(result.forceRug).toBe(false);
+  });
+
+  it("metaMutable undefined does NOT penalize (fix: only penalize if explicitly true)", () => {
+    const rugData: RugCheckSummary = { lpBurned: true };
+    const result = layerRugCheck(rugData, null, "someMint123");
+    expect(result.trust).toBeGreaterThan(0.95);
+    expect(result.flags.some(f => /metadata mutable/i.test(f.label))).toBe(false);
+  });
+
+  it("metaMutable true penalizes", () => {
+    const rugData: RugCheckSummary = { lpBurned: true, metaMutable: true };
+    const result = layerRugCheck(rugData, null, "someMint123");
+    expect(result.flags.some(f => /metadata mutable/i.test(f.label))).toBe(true);
   });
 
   it("mint authority penalty reduces trust", () => {
@@ -122,14 +146,14 @@ describe("layerGoPlus", () => {
     expect(result.available).toBe(false);
   });
 
-  it("honeypot sets BOTH trust:0 AND safeBlocked:true", () => {
+  it("honeypot sets trust:0 AND safeBlocked:true", () => {
     const result = layerGoPlus({ is_honeypot: "1" });
     expect(result.trust).toBe(0);
     expect(result.forceRug).toBe(true);
     expect(result.safeBlocked).toBe(true);
   });
 
-  it("cannot_sell_all sets safeBlocked BEFORE early return", () => {
+  it("cannot_sell_all sets safeBlocked", () => {
     const result = layerGoPlus({ cannot_sell_all: "1" });
     expect(result.trust).toBe(0);
     expect(result.forceRug).toBe(true);
@@ -145,6 +169,19 @@ describe("layerGoPlus", () => {
     expect(result.safeBlocked).toBe(true);
     expect(result.forceRug).toBe(true);
     expect(result.flags.some(f => /mint.*freeze/i.test(f.label))).toBe(true);
+  });
+
+  it("sell tax \"10\" (GoPlus raw format) is treated as 10%, not 1000%", () => {
+    const goplus: GoPlusTokenResult = { sell_tax: "10", buy_tax: "5" };
+    const result = layerGoPlus(goplus);
+    // sell_tax = 10 -> normalized to 0.10 -> exactly at threshold, NOT > 0.10
+    expect(result.flags.some(f => /sell tax/i.test(f.label))).toBe(false);
+  });
+
+  it("sell tax \"0.15\" is correctly flagged as > 10%", () => {
+    const goplus: GoPlusTokenResult = { sell_tax: "0.15", buy_tax: "0" };
+    const result = layerGoPlus(goplus);
+    expect(result.flags.some(f => /sell tax/i.test(f.label))).toBe(true);
   });
 
   it("clean token returns high trust", () => {
@@ -178,13 +215,11 @@ describe("layerHelius", () => {
       { address: "wallet5abc", uiAmount: 100 },
     ];
     const result = layerHelius(holders, 1000);
-    // top1Pct = 0.6 => > 0.3 => penalty 0.08 + forceRug
     expect(result.trust).toBeLessThan(0.15);
     expect(result.forceRug).toBe(true);
   });
 
   it("foundation wallet detection — excludes foundation wallets from holder analysis", () => {
-    // Foundation wallet should be filtered out of analysis
     const holders: HeliusHolder[] = [
       { address: "B9n3tgBJ8f1K2VXrF5aTBNXXmj5V8sKXrk3GV5uPump", uiAmount: 500 },
       { address: "wallet1abc", uiAmount: 50 },
@@ -199,7 +234,6 @@ describe("layerHelius", () => {
       { address: "wallet10abc", uiAmount: 50 },
     ];
     const result = layerHelius(holders, 1000);
-    // Foundation wallet filtered out, so top1 = 50/1000 = 5% which is fine
     expect(result.trust).toBeGreaterThan(0.9);
     expect(result.forceRug).toBe(false);
   });
@@ -210,8 +244,7 @@ describe("layerHelius", () => {
       uiAmount: 50,
     }));
     const result = layerHelius(holders, 10000);
-    // top10Pct = 500/10000 = 5% < 30% => bonus
-    expect(result.trust).toBe(1.0); // min(1.0, 1.0 * 1.05)
+    expect(result.trust).toBe(1.0);
     expect(result.flags.some(f => /well distributed/i.test(f.label))).toBe(true);
   });
 });
@@ -226,10 +259,6 @@ describe("layerSolscan", () => {
 
   it("forceRug for wash trading + <15 holders + <30min age", () => {
     const result = layerSolscan(10, 0.25, 600, 10);
-    // holderCount < 15 => safeBlocked + penalty
-    // tokenAgeHours < 0.5 => safeBlocked + penalty
-    // trades/traders = 60 > 50 && traders < 20 => wash trading
-    // washTradingDetected && holderCount < 15 && tokenAgeHours < 0.5 => forceRug
     expect(result.forceRug).toBe(true);
     expect(result.safeBlocked).toBe(true);
   });
@@ -237,7 +266,7 @@ describe("layerSolscan", () => {
   it("strong holder base gets bonus", () => {
     const result = layerSolscan(6000, 800, null, null);
     expect(result.flags.some(f => /strong holder/i.test(f.label))).toBe(true);
-    expect(result.trust).toBe(1.0); // capped
+    expect(result.trust).toBe(1.0);
   });
 
   it("established token gets bonus", () => {
@@ -246,88 +275,11 @@ describe("layerSolscan", () => {
   });
 });
 
-// ═══ LAYER 7 — Identity ═════════════════════════════════════════════════════
-
-describe("layerIdentity", () => {
-  it("allows official wSOL mint through whitelist", () => {
-    const result = layerIdentity("SOL", "Wrapped SOL", "So11111111111111111111111111111111111111112");
-    expect(result.trust).toBe(1.0);
-    expect(result.flags).toHaveLength(0);
-  });
-
-  it("TRUMP copycat detection", () => {
-    const result = layerIdentity("TRUMPV2", "Trump V2", "SomeFakeMintAddress1234567890123456789012");
-    expect(result.trust).toBeLessThan(0.3);
-    expect(result.flags.some(f => /copycat/i.test(f.label))).toBe(true);
-    expect(result.safeBlocked).toBe(true);
-  });
-
-  it("no false flags on legitimate unique tokens", () => {
-    const result = layerIdentity("MYTOKEN", "My Cool Token", "RealMintAddress123456789012345678901234567");
-    expect(result.trust).toBe(1.0);
-    expect(result.flags).toHaveLength(0);
-    expect(result.safeBlocked).toBe(false);
-  });
-
-  it("flags brand imitation for non-official DOGE token (new, few holders)", () => {
-    const result = layerIdentity("DOGE", "Doge Clone", "FakeMintAddress12345678901234567890123456", 2, 20);
-    expect(result.trust).toBeLessThan(1.0);
-    expect(result.flags.some(f => /brand imitation/i.test(f.label))).toBe(true);
-  });
-
-  it("flags AI copycat suffix", () => {
-    const result = layerIdentity("TRUMPAI", "Trump AI", "FakeMintAddress12345678901234567890123456");
-    expect(result.trust).toBeLessThan(0.3);
-    expect(result.flags.some(f => /copycat/i.test(f.label))).toBe(true);
-  });
-
-  it("returns clean for unique non-brand token", () => {
-    const result = layerIdentity("MYTOKEN", "My Cool Token", "RealMintAddress123456789012345678901234567");
-    expect(result.trust).toBe(1.0);
-    expect(result.flags).toHaveLength(0);
-  });
-
-  it("does not flag official TRUMP mint", () => {
-    // Official mint in whitelist
-    const result = layerIdentity("TRUMP", "Trump Token", "So11111111111111111111111111111111111111112");
-    expect(result.trust).toBe(1.0);
-    expect(result.flags).toHaveLength(0);
-  });
-
-  it("should NOT flag official mints", () => {
-    const result = layerIdentity("BONK", "Bonk", "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263", 1000, 50000);
-    expect(result.flags.length).toBe(0);
-    expect(result.safeBlocked).toBe(false);
-  });
-
-  it("should NOT flag established tokens with brand-like names", () => {
-    const result = layerIdentity("DOGE", "Dogecoin", "someRandomMint123456789012345678901234", 2000, 10000);
-    expect(result.safeBlocked).toBe(false);
-  });
-
-  it("should flag copycat with suffix", () => {
-    const result = layerIdentity("TRUMPV2", "Trump V2", "fakeMint12345678901234567890123456789", 1, 10);
-    expect(result.safeBlocked).toBe(true);
-    expect(result.flags.some(f => /copycat/i.test(f.label))).toBe(true);
-  });
-
-  it("should NOT flag tokens with short brand substrings like SOL in RESOLUTION", () => {
-    const result = layerIdentity("RESOLUTION", "Resolution Token", "someMint1234567890123456789012345678", 10, 50);
-    expect(result.flags.some(f => /brand imitation/i.test(f.label))).toBe(false);
-  });
-
-  it("should flag exact brand match on new token without suffix", () => {
-    const result = layerIdentity("TRUMP", "Trump Token", "newFakeMint123456789012345678901234", 2, 20);
-    expect(result.flags.some(f => /brand imitation/i.test(f.label))).toBe(true);
-  });
-});
-
-// ═══ LAYER 8 — CrossValidation ═══════════════════════════════════════════════
+// ═══ LAYER 7 (formerly 8) — CrossValidation ═════════════════════════════════
 
 describe("layerCrossValidation", () => {
   it("safeBlocked on LP burn conflict", () => {
     const rugData: RugCheckSummary = { lpBurned: true };
-    // Helius holders include an LP program address — means LP is still active on-chain
     const holders: HeliusHolder[] = [
       { address: "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1", uiAmount: 1000 },
       { address: "wallet1abc", uiAmount: 500 },
@@ -354,7 +306,6 @@ describe("layerCrossValidation", () => {
 
   it("detects age conflict between sources", () => {
     const result = layerCrossValidation(null, [], null, 100, 10);
-    // |100 - 10| = 90 > 72
     expect(result.flags.some(f => /age conflict/i.test(f.label))).toBe(true);
   });
 
