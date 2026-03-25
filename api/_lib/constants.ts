@@ -26,46 +26,49 @@ export const FOUNDATION_WALLETS = new Set([
 ]);
 
 export const OFFICIAL_MINTS = new Set([
-  "So11111111111111111111111111111111111111112",
+  "So11111111111111111111111111111111111111112",    // wSOL
   "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263", // BONK
   "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm", // WIF
-  "6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN",
-  "MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5", // MEW
-  "ukHH6c7mMyiWCf1b9pnWe25TSpkDDt3H5pQZgZ74J82", // POPCAT
+  "6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN",  // Raydium LP vault
+  "MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5",  // MEW
+  "ukHH6c7mMyiWCf1b9pnWe25TSpkDDt3H5pQZgZ74J82",  // POPCAT
   "ED5nyyWEzpPPiWimP8vYm7sD7TD3LAt3Q3gRTWHzPJBY", // MOODENG
   "CzLSujWBLFsSjncfkh59rUFqvafWcY5tzedWJSuypump", // GOAT
   "Df6yfrKC8kZE3KNkrHERKzAetSxbrWeniQfyJY4Jpump", // CHILLGUY
   "HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC", // AI16Z
+  "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // USDC
+  "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",  // USDT
+  "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R", // RAY
+  "orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE",  // ORCA
+  "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN",  // JUP
+  "3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh", // WBTC (Wormhole)
+  "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs", // ETH (Wormhole)
+  "J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn", // jitoSOL
+  "bSo13r4TkiE4KumL71LsHTPpL2euBYLFx6h9HP3piy1",  // bSOL
+  "7dHbWXmci3dT8UFYWYZweBLXgycu7Y3iL6trKn1Y7ARj", // stSOL
+  "mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So",  // mSOL
+  "HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3", // SPX6900 (Wormhole)
 ]);
 
-export const KNOWN_BRANDS = [
-  "TRUMP","DOGE","PEPE","SHIB","BONK","BRETT",
-  "FLOKI","MAGA","BIDEN","ELON","SOLANA","MATIC","AVAX",
-  "POPCAT","BOME","PONKE","NEIRO","MOODENG",
-];
-
-export const COPYCAT_SUFFIXES = ["2","V2","V3","OFFICIAL","REAL","NEW","PLUS","INU","AI","GPT","X","PRO","CLASSIC"];
-
+// ─── LAYER WEIGHTS (identity layer removed) ──────────────────────────────────
 export const LAYER_WEIGHTS: Record<string, number> = {
-  dexscreener: 0.18,
-  rugcheck: 0.18,
-  goplus: 0.18,
-  helius: 0.18,
-  solscan: 0.10,
-  chart: 0.10,
-  identity: 0.08,
+  dexscreener: 0.20,
+  rugcheck:    0.20,
+  goplus:      0.20,
+  helius:      0.20,
+  solscan:     0.10,
+  chart:       0.10,
 };
-// crossvalidation n'a PAS de poids - c'est un multiplicateur post-score
+// crossvalidation has NO weight — it is a post-score multiplier
 
-// Cross-validation penalty multipliers (extracted from scoring.ts)
-export const XV_PENALTY_LP_BURN = 0.85;
-export const XV_PENALTY_MINT_AUTH = 0.70;
-export const XV_PENALTY_AGE = 0.90;
+// Cross-validation penalty multipliers
+export const XV_PENALTY_LP_BURN              = 0.85;
+export const XV_PENALTY_MINT_AUTH            = 0.70;
+export const XV_PENALTY_AGE                  = 0.90;
 export const XV_PENALTY_HOLDER_CONCENTRATION = 0.80;
-export const ESTABLISHED_BONUS_MULTIPLIER = 1.15;
+export const ESTABLISHED_BONUS_MULTIPLIER    = 1.15;
 export const ESTABLISHED_AGE_THRESHOLD_HOURS = 720;
-export const ESTABLISHED_HOLDERS_THRESHOLD = 1000;
+export const ESTABLISHED_HOLDERS_THRESHOLD   = 1000;
 
 // Trust floor for geometric mean — prevents single-layer nuking
 export const TRUST_FLOOR = 0.001;
-
