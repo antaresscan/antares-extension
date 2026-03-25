@@ -1,4 +1,5 @@
 // api/layers.ts — All analysis layer functions (1–8)
+// Layer 7 (Identity/Copycat) REMOVED — caused massive false positives
 
 import type {
     LayerResult, ScanFlag,
@@ -10,7 +11,6 @@ import type {
 } from "./types";
 import {
   LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS, OFFICIAL_MINTS,
-  KNOWN_BRANDS, COPYCAT_SUFFIXES,
 } from "./constants";
 import { asNumber, _mean, _std, _pct } from "./math";
 import { makeFlag, getLpLockDurationDays, riskIncludes } from "./helpers";
@@ -20,7 +20,7 @@ function applyDiminishingPenalties(trust: number, penalties: number[]): number {
   if (penalties.length > 0) {
     penalties.sort((a, b) => a - b); // worst first
     for (let i = 0; i < penalties.length; i++) {
-      const dampening = 1 / (1 + i * 0.3); // diminishing impact
+      const dampening = 1 / (1 + i * 0.3);
       trust *= 1 - (1 - penalties[i]) * dampening;
     }
   }
@@ -58,16 +58,23 @@ export function layerDexScreener(
   const hasTelegram = Array.isArray(socials) && socials.some((s: DexScreenerSocial) => /telegram/i.test(String(s?.type || s?.url || "")));
   const hasWebsite = Array.isArray(websites) && websites.length > 0;
   const ageMinutes = tokenAgeMinutes ?? Infinity;
+
   if (liq < 1000) { flags.push(makeFlag("Very low liquidity (<$1k)", "critical", 0)); penalties.push(0.25); }
   else if (liq < 5000) { flags.push(makeFlag("Low liquidity (<$5k)", "warning", 0)); penalties.push(0.65); }
   else if (liq < 20000) { flags.push(makeFlag("Liquidity < $20k", "info", 0)); penalties.push(0.90); }
-  if (liq > 0 && vol / liq > 20) {
+
+  // Fix: liq=0 with volume is suspicious (abandoned pool / exploit)
+  if (liq === 0 && vol > 10000) {
+    flags.push(makeFlag("Volume with zero liquidity — abandoned pool", "critical", 0));
+    penalties.push(0.10); forceRug = true; safeBlocked = true;
+  } else if (liq > 0 && vol / liq > 20) {
     flags.push(makeFlag("Wash trading detected (vol/liq > 20) — bundler dump", "critical", 0));
     penalties.push(0.20); forceRug = true; safeBlocked = true;
   } else if (liq > 0 && vol / liq > 5) {
     flags.push(makeFlag("High vol/liquidity ratio", "warning", 0));
     penalties.push(0.75);
   }
+
   const hasStructuralWeakness =
     (liq > 0 && vol / liq > 10) ||
     (txns5m > 30 && sells5m === 0) ||
@@ -156,8 +163,11 @@ export function layerRugCheck(rugData: RugCheckSummary | null, rugReportData: Ru
       penalties.push(0.70);
     }
   }
-  if (rugData.metaMutable === true) { flags.push(makeFlag("Metadata mutable", "warning", 0)); penalties.push(0.82); }
-  else if (rugData.metaMutable !== false) { flags.push(makeFlag("Metadata not immutable", "info", 0)); penalties.push(0.96); }
+  // Fix: only penalize if metaMutable is explicitly true — don't penalize absence of info
+  if (rugData.metaMutable === true) {
+    flags.push(makeFlag("Metadata mutable", "warning", 0));
+    penalties.push(0.82);
+  }
   const top10 = asNumber(rugData?.topHolders?.top10Percentage);
   const top1 = asNumber(rugData?.topHolders?.top1Percentage ?? rugData?.topHolders?.top1HolderPercentage);
   if (top10 > 70) { flags.push(makeFlag("Top 10 holders > 70%", "critical", 0)); penalties.push(0.45); }
@@ -184,9 +194,15 @@ export function layerGoPlus(goplus: GoPlusTokenResult | null): LayerResult {
     flags: [makeFlag("GoPlus unavailable", "info", 0)],
     forceRug: false, safeBlocked: false,
   };
+  // Fix: more robust gp() handles "true"/"yes" string values
   const gp = (field: keyof GoPlusTokenResult) => {
     const v = goplus[field];
-    return v === "1" || v === 1 || v === true;
+    if (v === "1" || v === 1 || v === true) return true;
+    if (typeof v === "string") {
+      const s = v.trim().toLowerCase();
+      if (s === "true" || s === "yes") return true;
+    }
+    return false;
   };
   const gpNum = (field: keyof GoPlusTokenResult) => asNumber(goplus[field]);
   const authorityActive = (val: unknown) =>
@@ -214,8 +230,13 @@ export function layerGoPlus(goplus: GoPlusTokenResult | null): LayerResult {
   if (gp("transfer_pausable")) { flags.push(makeFlag("Transfer pausable", "critical", 0)); penalties.push(0.30); safeBlocked = true; }
   if (gp("hidden_owner")) { flags.push(makeFlag("Hidden owner detected", "critical", 0)); penalties.push(0.30); safeBlocked = true; }
   if (gp("is_proxy")) { flags.push(makeFlag("Upgradeable/proxy contract", "critical", 0)); penalties.push(0.50); safeBlocked = true; }
-  if (gpNum("sell_tax") > 0.1) { flags.push(makeFlag("Sell tax > 10%", "critical", 0)); penalties.push(0.35); }
-  if (gpNum("buy_tax") > 0.1) { flags.push(makeFlag("Buy tax > 10%", "critical", 0)); penalties.push(0.35); }
+  // Fix: GoPlus returns sometimes "10" (=10%) sometimes "0.10" (=10%) — normalize
+  const sellTaxRaw = gpNum("sell_tax");
+  const buyTaxRaw  = gpNum("buy_tax");
+  const sellTax = sellTaxRaw > 1 ? sellTaxRaw / 100 : sellTaxRaw;
+  const buyTax  = buyTaxRaw  > 1 ? buyTaxRaw  / 100 : buyTaxRaw;
+  if (sellTax > 0.10) { flags.push(makeFlag("Sell tax > 10%", "critical", 0)); penalties.push(0.35); }
+  if (buyTax  > 0.10) { flags.push(makeFlag("Buy tax > 10%",  "critical", 0)); penalties.push(0.35); }
   if (gpNum("owner_percent") > 0.05) { flags.push(makeFlag("Owner holds > 5%", "critical", 0)); penalties.push(0.50); }
   if (gpNum("creator_percent") > 0.05) { flags.push(makeFlag("Creator holds > 5%", "critical", 0)); penalties.push(0.50); }
   if (gp("is_mintable")) { flags.push(makeFlag("Token is mintable", "warning", 0)); penalties.push(0.60); }
@@ -381,70 +402,7 @@ export function layerChart(
   return { source: "chart", trust: Math.max(0, trust), available: true, flags, forceRug, safeBlocked };
 }
 
-// ═══ LAYER 7 — Identity ════════════════════════════════════════════════════════
-export function layerIdentity(
-  symbol?: string | null,
-  name?: string | null,
-  mint?: string | null,
-  tokenAgeHours?: number | null,
-  holders?: number | null
-): LayerResult {
-  const flags: ScanFlag[] = [];
-  let trust = 1.0;
-  const penalties: number[] = [];
-  const forceRug = false;
-  let safeBlocked = false;
-
-  // Skip identity checks for official mints
-  if (mint && OFFICIAL_MINTS.has(mint)) {
-    return { source: "identity", trust: 1.0, available: true, flags: [], forceRug: false, safeBlocked: false };
-  }
-
-  const sym = String(symbol || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-  const nm = String(name || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-
-  const hasCopycatSuffix = COPYCAT_SUFFIXES.some(s => sym.endsWith(s) || nm.endsWith(s));
-
-  // Only flag as brand imitation if BOTH conditions are met:
-  // 1. Has a copycat suffix (V2, OFFICIAL, REAL, etc.)
-  // 2. Contains a known brand name
-  // OR: exact brand match in symbol with copycat suffix
-  if (hasCopycatSuffix) {
-    flags.push(makeFlag("Copycat branding detected (v2/official/real suffix)", "critical", 0));
-    penalties.push(0.30);
-    safeBlocked = true;
-
-    // Check if it also imitates a known brand (makes it worse)
-    for (const brand of KNOWN_BRANDS) {
-      if (brand.length <= 3) continue; // Skip short brands for name matching
-      if (sym.includes(brand) || nm.includes(brand)) {
-        flags.push(makeFlag(`Brand imitation + copycat suffix: ${brand}`, "critical", 0));
-        penalties.push(0.15);
-        break;
-      }
-    }
-  } else {
-    // No copycat suffix — only flag EXACT symbol matches for long brands
-    // AND only if the token is young and has few holders (established tokens are likely legit)
-    const isEstablished = (tokenAgeHours ?? 0) > 168 && (holders ?? 0) > 500;
-    if (!isEstablished) {
-      for (const brand of KNOWN_BRANDS) {
-        if (brand.length <= 3) continue; // NEVER flag short brands without suffix
-        // Only flag if symbol IS the brand exactly (not substring)
-        if (sym === brand) {
-          flags.push(makeFlag(`Possible brand imitation: ${brand} (no copycat suffix)`, "warning", 0));
-          penalties.push(0.85); // mild penalty
-          break;
-        }
-      }
-    }
-  }
-
-  trust = applyDiminishingPenalties(trust, penalties);
-  return { source: "identity", trust: Math.max(0, trust), available: true, flags, forceRug, safeBlocked };
-}
-
-// ═══ LAYER 8 — CrossValidation ═══════════════════════════════════════════════
+// ═══ LAYER 7 (CrossValidation, formerly Layer 8) ════════════════════════════
 export function layerCrossValidation(
   rugData: RugCheckSummary | null,
   rawHolderAccounts: HeliusHolder[],
@@ -483,7 +441,6 @@ export function layerCrossValidation(
     const heliusTop10Pct = totalSupplyUi > 0
       ? (heliusAccounts.slice(0, 10).reduce((s, h) => s + asNumber(h.uiAmount), 0) / totalSupplyUi) * 100
       : 0;
-
     if (Math.abs(rugTop10 - heliusTop10Pct) > 25) {
       flags.push(makeFlag("Holder concentration conflict between RugCheck and Helius", "warning", 0));
       safeBlocked = true;

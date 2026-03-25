@@ -3,12 +3,9 @@
 import type { LayerResult, SafeBlockedReason } from "./types";
 import { LAYER_WEIGHTS, TRUST_FLOOR, XV_PENALTY_LP_BURN, XV_PENALTY_MINT_AUTH, XV_PENALTY_AGE, XV_PENALTY_HOLDER_CONCENTRATION } from "./constants";
 
-// ═══ SCORING FINAL ═════════════════════════════════════════════════════════════════
 export function computeFinalScore(layers: LayerResult[]): number {
-  // PHASE 1: HARD KILL
   if (layers.filter(l => l.available).some(l => l.trust === 0)) return 0;
 
-  // DYNAMIC weighted geometric mean with NORMALIZED weights
   const weightedSources = Object.keys(LAYER_WEIGHTS);
   let totalWeight = 0;
   const availableLayers: Array<{ trust: number; weight: number }> = [];
@@ -23,16 +20,12 @@ export function computeFinalScore(layers: LayerResult[]): number {
 
   if (totalWeight === 0) return 0;
 
-  // Normalize weights so they sum to 1.0 among available sources
   let product = 1.0;
   for (const { trust, weight } of availableLayers) {
     const normalizedWeight = weight / totalWeight;
     product *= Math.pow(trust, normalizedWeight);
   }
 
-  // product is now the properly normalized geometric mean (exponent = 1.0 always)
-
-  // crossvalidation post-multiplier
   const xv = layers.find(l => l.source === "crossvalidation");
   if (xv?.available && xv.flags.length > 0) {
     for (const f of xv.flags) {
@@ -46,16 +39,14 @@ export function computeFinalScore(layers: LayerResult[]): number {
   return Math.round(Math.max(0, Math.min(1, product)) * 1000);
 }
 
-// ─── [2.3] SAFE-BLOCK REASON CLASSIFIER ────────────────────────────────────────
 export const HARD_BLOCK_PATTERNS: Array<[RegExp, SafeBlockedReason]> = [
   [/mint authority/i, "mint"],
   [/freeze authority/i, "freeze"],
   [/honeypot/i, "honeypot"],
-  [/copycat|brand imitation/i, "copycat"],
   [/wash trading/i, "wash_trading"],
   [/bundle|bundler/i, "bundle"],
   [/sniper/i, "sniper"],
-  [/rug|dump|exit trap/i,"rug_pattern"],
+  [/rug|dump|exit trap/i, "rug_pattern"],
   [/pump|parabolic/i, "pump"],
   [/chart|blow-off|stair-step|volume exhaustion|liquidity mirage/i, "chart"],
 ];
