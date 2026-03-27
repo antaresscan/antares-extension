@@ -1,69 +1,75 @@
-import { SOL_ADDR, WALKER_LIMIT } from "./constants"
 import { state } from "./state"
 import { resetState } from "./components"
-import { isValid, scan } from "./scanner"
+import { scan } from "./scanner"
+import { getAdapter } from "./adapters"
+import type { SiteAdapter } from "./adapters"
 
-export function findBestAddress(): string {
-  if (window.location.hostname.includes("photon") && !window.location.pathname.includes("/lp/")) return ""
-  const scores = new Map<string, number>()
-  const url    = window.location.href
-  const add    = (addr: string, pts: number) => { if (!isValid(addr)) return; scores.set(addr, (scores.get(addr) || 0) + pts) }
-  for (const el of document.querySelectorAll("[data-address],[data-token],[data-mint],[data-ca],[data-contract],[data-token-address],[data-mint-address]")) {
-    for (const attr of ["data-address","data-token","data-mint","data-ca","data-contract","data-token-address","data-mint-address"]) {
-      for (const m of ((el.getAttribute(attr) || "").match(SOL_ADDR) || [])) add(m, 200)
-    }
+/**
+ * The active adapter for the current site.
+ * Resolved once at injection time and reused for all navigations.
+ */
+let activeAdapter: SiteAdapter | null = null
+
+/** Get or lazily resolve the adapter for the current site */
+function adapter(): SiteAdapter {
+  if (!activeAdapter) {
+    activeAdapter = getAdapter(window.location.hostname)
+    console.log(`[antares] Using adapter: ${activeAdapter.name}`)
   }
-  for (const a of document.querySelectorAll("a[href]")) {
-    const href = a.getAttribute("href") || ""
-    if (/solscan\.io\/token|solscan\.io\/address|explorer\.solana\.com\/address|solana\.fm\/address/.test(href)) {
-      for (const m of (href.match(SOL_ADDR) || [])) add(m, 180)
-    }
-  }
-  for (const m of (url.match(SOL_ADDR) || [])) add(m, 60)
-  if (scores.size === 0) {
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null)
-    let node: Node | null, count = 0
-    while ((node = walker.nextNode()) && count < WALKER_LIMIT) {
-      count++
-      const t = (node.textContent || "").trim()
-      if (t.length >= 32 && t.length <= 50) { for (const m of (t.match(SOL_ADDR) || [])) add(m, 120) }
-    }
-  }
-  if (scores.size === 0) return ""
-  for (const [addr, s] of scores) {
-    if (addr.endsWith("pump")) scores.set(addr, s + 100)
-    if (/[A-Z]/.test(addr) && /[a-z]/.test(addr)) scores.set(addr, (scores.get(addr) || 0) + 30)
-  }
-  return [...scores.entries()].sort((a, b) => b[1] - a[1])[0][0]
+  return activeAdapter
 }
 
-export function poll() { const ca = findBestAddress(); if (!ca) return; void scan(ca) }
+/**
+ * Poll the current page for a token address using the active adapter.
+ * This replaces the old monolithic findBestAddress().
+ */
+export function poll(): void {
+  const url = new URL(window.location.href)
+  const ca = adapter().extractCA(url, document)
+  if (!ca) return
+  void scan(ca)
+}
 
-export function onNav() {
-  const curPath = window.location.pathname
-  const pathChanged = curPath !== state.lastNavPath
-  state.lastNavPath = curPath
+/**
+ * Handle a navigation event.
+ * Uses the adapter's isNewToken() to decide whether to reset and re-scan.
+ */
+export function onNav(): void {
+  const curUrl = new URL(window.location.href)
+  const prevUrl = new URL(state.lastUrl || window.location.href)
+
+  const isNew = adapter().isNewToken(prevUrl, curUrl)
+  state.lastUrl = window.location.href
 
   if (state.navDebounce) clearTimeout(state.navDebounce)
   state.navDebounce = setTimeout(() => {
     state.navDebounce = null
-    if (pathChanged) {
+    if (isNew) {
       resetState()
     }
     poll()
   }, 500)
 }
 
-export function setupNavListeners() {
+/**
+ * Set up SPA navigation listeners.
+ * The MutationObserver + history API interception detects URL changes,
+ * then delegates to the adapter's isNewToken() to filter noise.
+ */
+export function setupNavListeners(): void {
   state.lastUrl = window.location.href
   new MutationObserver(() => {
     const cur = window.location.href
-    if (cur !== state.lastUrl) { state.lastUrl = cur; onNav() }
+    if (cur !== state.lastUrl) { onNav() }
   }).observe(document.documentElement, { childList: true, subtree: true })
-
-  const _push    = history.pushState.bind(history)
+  const _push = history.pushState.bind(history)
   const _replace = history.replaceState.bind(history)
-  history.pushState    = (...args) => { _push(...args);    onNav() }
+  history.pushState = (...args) => { _push(...args); onNav() }
   history.replaceState = (...args) => { _replace(...args); onNav() }
   window.addEventListener("popstate", onNav)
+}
+
+/** Get the initial delay for the current adapter */
+export function getInitialDelay(): number {
+  return adapter().initialDelay
 }
