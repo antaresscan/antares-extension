@@ -3,7 +3,9 @@ import { extractCAFromPathname, scoreAddresses } from "./base-adapter"
 
 /**
  * Birdeye adapter
- * URL pattern: birdeye.so/token/{CA}?chain=solana&tab=overview...
+ * URL patterns:
+ *   - birdeye.so/token/{CA}?chain=solana  (old, redirects)
+ *   - birdeye.so/solana/token/{CA}         (current canonical URL)
  * SPA: React — adds query params progressively WITHOUT changing token
  * KEY ISSUE: MutationObserver must compare PATHNAME only, not full href
  */
@@ -13,8 +15,8 @@ export const BirdeyeAdapter: SiteAdapter = {
   initialDelay: 300,
 
   extractCA(url: URL, doc: Document): string {
-    // birdeye.so/token/{CA} — CA is in the pathname
-    if (url.pathname.startsWith("/token/")) {
+    // Birdeye canonical: /solana/token/{CA} or legacy /token/{CA}
+    if (url.pathname.includes("/token/")) {
       const ca = extractCAFromPathname(url)
       if (ca) return ca
     }
