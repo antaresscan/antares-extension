@@ -26,7 +26,7 @@ if (process.env.PLASMO_PUBLIC_SENTRY_DSN) {
 import { state } from "./modules/state"
 import { hydrateCacheFromLS } from "./modules/cache"
 import { createHost } from "./modules/components"
-import { poll, setupNavListeners } from "./modules/address-detector"
+import { poll, setupNavListeners, getInitialDelay } from "./modules/address-detector"
 import { hideBox } from "./modules/components"
 
 // Hydrate scan cache from localStorage
@@ -59,5 +59,6 @@ new MutationObserver(() => {
 state.lastNavPath = window.location.pathname
 createHost()
 poll()
-setTimeout(poll, 2000)
+// Re-poll only if first poll found nothing (adapter-specific delay)
+setTimeout(() => { if (!state.lastCA) poll() }, getInitialDelay())
 setupNavListeners()
