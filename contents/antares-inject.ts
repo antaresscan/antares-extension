@@ -58,7 +58,15 @@ new MutationObserver(() => {
 // Init
 state.lastNavPath = window.location.pathname
 createHost()
-poll()
-// Re-poll only if first poll found nothing (adapter-specific delay)
-setTimeout(() => { if (!state.lastCA) poll() }, getInitialDelay())
+
+/**
+ * SINGLE initial poll with adapter-specific delayed retry.
+ * OLD CODE had: poll() + setTimeout(poll, delay) = DOUBLE SCAN.
+ * NEW CODE: first poll after adapter delay, single scan only.
+ * The delay gives the SPA time to render token data in the DOM.
+ */
+setTimeout(() => {
+  poll()
+}, getInitialDelay())
+
 setupNavListeners()
