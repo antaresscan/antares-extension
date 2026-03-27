@@ -11,6 +11,8 @@
 
 import type { SiteAdapter } from "./base-adapter"
 import { extractCAFromPathname, pathnameChanged, scoreAddresses } from "./base-adapter"
+import { SOL_ADDR } from "../constants"
+import { isValid } from "../scanner"
 
 // Adapters with site-specific logic (separate files)
 import { DexScreenerAdapter } from "./dexscreener.adapter"
@@ -46,24 +48,45 @@ const BullXAdapter: SiteAdapter = {
   isNewToken: pathnameChanged
 }
 
+/**
+ * Raydium adapter
+ * URL: raydium.io/swap/?inputMint=sol&outputMint={CA}
+ * CA is in QUERY PARAMS (outputMint or inputMint), not pathname
+ */
 const RaydiumAdapter: SiteAdapter = {
   name: "Raydium",
   hostnames: ["raydium.io"],
   initialDelay: 500,
   extractCA(url: URL, doc: Document): string {
+    // Check query params first (outputMint, inputMint)
+    for (const param of ["outputMint", "inputMint"]) {
+      const val = url.searchParams.get(param)
+      if (val && val !== "sol" && SOL_ADDR.test(val)) {
+        SOL_ADDR.lastIndex = 0
+        if (isValid(val)) return val
+      }
+      SOL_ADDR.lastIndex = 0
+    }
+    // Fallback to pathname then DOM
     const ca = extractCAFromPathname(url)
     return ca || scoreAddresses(doc, url.href)
   },
-  isNewToken: pathnameChanged
+  isNewToken(prev: URL, next: URL): boolean {
+    // On Raydium, both pathname AND search params matter
+    return prev.pathname !== next.pathname || prev.search !== next.search
+  }
 }
 
+/**
+ * Jupiter adapter
+ * URL: jup.ag/swap/SOL-{CA}
+ * CA embedded in pathname segment after dash separator
+ */
 const JupiterAdapter: SiteAdapter = {
   name: "Jupiter",
   hostnames: ["jup.ag"],
   initialDelay: 400,
   extractCA(url: URL, doc: Document): string {
-    // Jupiter uses query params for swap: jup.ag/swap/SOL-{CA}
-    // Also check pathname
     const ca = extractCAFromPathname(url)
     return ca || scoreAddresses(doc, url.href)
   },
@@ -73,14 +96,20 @@ const JupiterAdapter: SiteAdapter = {
   }
 }
 
+/**
+ * GeckoTerminal adapter
+ * URL: geckoterminal.com/solana/pools/{poolAddress}
+ * NOTE: URL contains POOL address, not token address.
+ * Must rely on DOM scoring to find the actual token CA.
+ */
 const GeckoTerminalAdapter: SiteAdapter = {
   name: "GeckoTerminal",
   hostnames: ["geckoterminal.com"],
-  initialDelay: 400,
+  initialDelay: 600,
   extractCA(url: URL, doc: Document): string {
-    // geckoterminal.com/solana/pools/{poolAddress}
-    const ca = extractCAFromPathname(url)
-    return ca || scoreAddresses(doc, url.href)
+    // DO NOT extract from pathname — it's a pool address, not a token CA
+    // Go straight to DOM scoring
+    return scoreAddresses(doc, url.href)
   },
   isNewToken: pathnameChanged
 }
@@ -90,8 +119,12 @@ const GMGNAdapter: SiteAdapter = {
   hostnames: ["gmgn.ai"],
   initialDelay: 400,
   extractCA(url: URL, doc: Document): string {
-    const ca = extractCAFromPathname(url)
-    return ca || scoreAddresses(doc, url.href)
+    // gmgn.ai/sol/token/{CA}
+    if (url.pathname.includes("/token/")) {
+      const ca = extractCAFromPathname(url)
+      if (ca) return ca
+    }
+    return scoreAddresses(doc, url.href)
   },
   isNewToken: pathnameChanged
 }
