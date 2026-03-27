@@ -1,7 +1,5 @@
 import type { SiteAdapter } from "./base-adapter"
 import { extractCAFromPathname, scoreAddresses } from "./base-adapter"
-import { SOL_ADDR } from "../constants"
-import { isValid } from "../scanner"
 
 /**
  * Birdeye adapter
