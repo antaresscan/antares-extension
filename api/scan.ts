@@ -25,7 +25,7 @@ import {
   type CreatorReputation,
 } from "./_lib/fetchers";
 import {
-  DEXSCREENER_BASE, RUGCHECK_BASE, GOPLUS_BASE,
+  DEXSCREENER_BASE, RUGCHECK_BASE, GOPLUS_BASE, LAYER_WEIGHTS,
 } from "./_lib/constants";
 import {
   layerDexScreener, layerRugCheck, layerGoPlus, layerHelius,
@@ -293,7 +293,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const severityOrder: Record<Severity, number> = { critical:0, warning:1, info:2, bonus:3 };
     flags.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
 
-    const confidence = Math.round((sources_used.length / 6) * 100);
+    const confidence = Math.round(sources_used.reduce((sum, src) => sum + (LAYER_WEIGHTS[src] ?? 0), 0) * 100);
     const layersSnapshot: Record<string, LayerSnapshot> = Object.fromEntries(
       allLayers.map(l => [l.source, { trust: +l.trust.toFixed(3), available: l.available }])
     );
