@@ -14,6 +14,7 @@ export function evaluatePostLayerFlags(input: PostLayerFlagsInput): PostLayerFla
 
   // Fix: require at least 5 total transactions to avoid false positives on brand-new tokens
   const totalTxns5m = (input.buys5m ?? 0) + (input.sells5m ?? 0);
+
   if (
     input.sells5m === 0 &&
     input.buys5m > 10 &&
@@ -29,18 +30,18 @@ export function evaluatePostLayerFlags(input: PostLayerFlagsInput): PostLayerFla
     const wallets = new Set<string>();
     for (const tx of input.recentTransfers) {
       const from = tx.from_address ?? tx.from;
-      const to   = tx.to_address   ?? tx.to;
+      const to = tx.to_address ?? tx.to;
       if (typeof from === "string") wallets.add(from);
-      if (typeof to   === "string") wallets.add(to);
+      if (typeof to === "string") wallets.add(to);
     }
     if (wallets.size <= 3) {
-      flags.push(makeFlag("Wash trading via transfers (≤3 unique wallets in 10+ txs)", "critical", 0));
+      flags.push(makeFlag("Wash trading via transfers (\u22643 unique wallets in 10+ txs)", "critical", 0));
       forceRug = true;
     }
   }
 
   if (input.ageMin > 0 && input.ageMin < 60 && input.volLiqRatio > 15) {
-    flags.push(makeFlag("Pump.fun-style launch: <1h + vol/liq >15 — DANGER", "critical", 0));
+    flags.push(makeFlag("Pump.fun-style launch: <1h + vol/liq >15 \u2014 DANGER", "critical", 0));
     safeBlocked = true;
   }
 
@@ -55,9 +56,11 @@ export function evaluatePostLayerFlags(input: PostLayerFlagsInput): PostLayerFla
 export function applySafeGateOverride(input: SafeGateInput): boolean {
   if (!input.safeBlocked) return false;
   if (input.forceRug) return true;
+
   const SOFT_REASONS: Record<string, boolean> = { age: true, holders: true };
   const onlySoftReasons = input.safeBlockedReasons.length > 0 &&
     input.safeBlockedReasons.every(r => SOFT_REASONS[r] === true);
+
   if (onlySoftReasons) {
     const ageHours = input.tokenAgeHours ?? 0;
     const hasEnoughSources = input.sourcesAvailableCount >= 4;
@@ -68,6 +71,7 @@ export function applySafeGateOverride(input: SafeGateInput): boolean {
       return false;
     }
   }
+
   return true;
 }
 
@@ -89,7 +93,10 @@ export function determineVerdict(input: VerdictInput): Verdict {
   if (input.sourcesUsedCount === 0) return "DANGER";
 
   if (input.safeBlocked) {
-    const HARD_REASONS = new Set(["honeypot", "mint", "freeze", "bundle", "rug_pattern", "wash_trading"]);
+    // Fix(Bug 15): Added "sniper", "pump", "chart" to HARD_REASONS.
+    // Previously these were missing, causing tokens with sniper/pump flags
+    // to receive only CAUTION instead of DANGER.
+    const HARD_REASONS = new Set(["honeypot", "mint", "freeze", "bundle", "rug_pattern", "wash_trading", "sniper", "pump", "chart"]);
     const hasHardReason = input.safeBlockedReasons?.some(r => HARD_REASONS.has(r));
     if (hasHardReason) return input.score >= 400 ? "DANGER" : "RUG";
     if (input.score >= 550) return "CAUTION";

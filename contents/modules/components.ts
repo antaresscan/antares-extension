@@ -246,8 +246,11 @@ export function buildResult(data: ScanResponseData, ca: string): string {
   const siLiq    = `<div class="si"><span>Liq</span><b${liq !== null && liq < 5000 ? ' class="n"' : liq !== null && liq > 50000 ? ' class="y"' : ""}>${liqDisplay}</b></div>`
 
   const isDangerous = data.risk === "RUG" || data.risk === "DANGER"
-  const dexLink = data.pair?.url
-    ? `<a href="${data.pair.url}" target="_blank" rel="noopener noreferrer">DexScreener</a>`
+    // Fix(Bug 25): Sanitize pair.url to prevent XSS via javascript: or data: URIs
+  const rawDexUrl = data.pair?.url
+  const safeDexUrl = rawDexUrl && /^https?:\/\//i.test(rawDexUrl) ? rawDexUrl : ""
+  const dexLink = safeDexUrl
+    ? `<a href="${escapeHtml(safeDexUrl)}" target="_blank" rel="noopener noreferrer">DexScreener</a>`
     : ""
   const analysisLink = `<a href="${ANALYSIS_PAGE}?ca=${encodeURIComponent(mint)}" target="_blank" rel="noopener noreferrer"${isDangerous ? ' class="warn"' : ''}>Full Analysis &rarr;</a>`
 
