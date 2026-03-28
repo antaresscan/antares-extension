@@ -31,7 +31,13 @@ jobs:
       - name: Build extension
         run: npx plasmo build
 
+      - name: Upload build artifact
+        if: github.ref == 'refs/heads/master'
+        uses: actions/upload-artifact@v4
+        with:
+          name: antares-extension-build
+          path: build/chrome-mv3-prod/
+          retention-days: 30
+
       - name: Coverage
         run: npx vitest run --coverage --reporter=json --outputFile=coverage/coverage.json
-
-      # TODO: commit package-lock.json to repo to enable npm ci in the future
