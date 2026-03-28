@@ -9,6 +9,19 @@ function commitPos() {
   state.host.style.transform = `translate(${state.posX}px,${state.posY}px)`
 }
 
+/** Clamp position so widget stays within viewport bounds */
+function clampPosition() {
+  if (!state.host) return
+  const w = state.host.offsetWidth || 280
+  const h = state.host.offsetHeight || 360
+  state.posX = Math.max(0, Math.min(window.innerWidth - w, state.posX))
+  state.posY = Math.max(0, Math.min(window.innerHeight - h, state.posY))
+  state.pendingX = state.posX
+  state.pendingY = state.posY
+  state.host.style.transform = `translate(${state.posX}px,${state.posY}px)`
+  try { localStorage.setItem(POS_KEY, JSON.stringify({ x: state.posX, y: state.posY })) } catch (e: unknown) { console.warn("[antares]", e) }
+}
+
 export function initDrag() {
   if (!state.host) return
 
@@ -27,8 +40,12 @@ export function initDrag() {
     state.posX = window.innerWidth  - 310
     state.posY = window.innerHeight - 400
   }
+
   state.pendingX = state.posX; state.pendingY = state.posY
   state.host.style.transform = `translate(${state.posX}px,${state.posY}px)`
+
+  // Clamp on window resize so widget never gets stuck off-screen
+  window.addEventListener("resize", clampPosition)
 
   state.host.addEventListener("pointerdown", (e: PointerEvent) => {
     const target = e.composedPath()[0] as Element
