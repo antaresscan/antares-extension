@@ -4,7 +4,20 @@ import { state } from "./state"
 import { SHADOW_CSS, injectFonts } from "./styles"
 import { initDrag } from "./drag"
 
-export function formatMcap(mc: number): string {
+// ─── HTML ESCAPE UTILITY ──────────────────────────────────────────────────────
+const HTML_ESCAPE: Record<string, string> = {
+  "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+}
+function escapeHtml(str: string): string {
+  return str.replace(/[&<>"']/g, ch => HTML_ESCAPE[ch] || ch)
+}
+function safeText(val: string | null | undefined): string {
+  if (!val) return ""
+  return escapeHtml(String(val))
+}
+
+export function formatMcap(mc: number | null | undefined): string {
+  if (mc == null) return "—"
   if (mc >= 1_000_000_000) return `$${(mc / 1_000_000_000).toFixed(2)}B`
   if (mc >= 1_000_000)     return `$${(mc / 1_000_000).toFixed(2)}M`
   if (mc >= 1_000)         return `$${(mc / 1_000).toFixed(1)}K`
@@ -88,23 +101,32 @@ export function toggleHistory() {
   }
   panel.innerHTML = `<div style="color:#555;font-size:9px;padding:6px 0;font-family:'IBM Plex Mono',monospace">Loading...</div>`
   panel.classList.add("open")
-  chrome.runtime.sendMessage({ type: "GET_HISTORY" }, (response) => {
-    if (!response?.ok || !response.history?.length) {
-      panel.innerHTML = `<div style="color:#444;font-size:9px;padding:6px 0;font-family:'IBM Plex Mono',monospace">No recent scans</div>`
-      return
-    }
-    const items = (response.history as Array<{ ca: string; symbol: string; risk: string; score: number; ts: number }>)
-      .map((h) => {
-        const rClass = (h.risk || "").toLowerCase()
-        return `<div class="hist-item">
-          <span class="hist-sym">${h.symbol}</span>
-          <span class="hist-risk ${rClass}">${h.risk}</span>
-          <span class="hist-score">${h.score}/1000</span>
-          <span class="hist-time">${formatTimeAgo(h.ts)}</span>
-        </div>`
-      }).join("")
-    panel.innerHTML = items
-  })
+  try {
+    chrome.runtime.sendMessage({ type: "GET_HISTORY" }, (response) => {
+      if (chrome.runtime.lastError) {
+        panel.innerHTML = `<div style="color:#444;font-size:9px;padding:6px 0;font-family:'IBM Plex Mono',monospace">Extension reloaded — refresh page</div>`
+        return
+      }
+      if (!response?.ok || !response.history?.length) {
+        panel.innerHTML = `<div style="color:#444;font-size:9px;padding:6px 0;font-family:'IBM Plex Mono',monospace">No recent scans</div>`
+        return
+      }
+      const items = (response.history as Array<{ ca: string; symbol: string; risk: string; score: number; ts: number }>)
+        .map((h) => {
+          const rClass = (h.risk || "").toLowerCase()
+          return `<div class="hist-item">
+            <span class="hist-sym">${escapeHtml(h.symbol || "")}</span>
+            <span class="hist-risk ${rClass}">${escapeHtml(h.risk || "")}</span>
+            <span class="hist-score">${h.score}/1000</span>
+            <span class="hist-time">${formatTimeAgo(h.ts)}</span>
+          </div>`
+        }).join("")
+      panel.innerHTML = items
+    })
+  } catch (e: unknown) {
+    console.warn("[antares] runtime unavailable", e)
+    panel.innerHTML = `<div style="color:#444;font-size:9px;padding:6px 0;font-family:'IBM Plex Mono',monospace">Extension reloaded — refresh page</div>`
+  }
 }
 
 export function triggerResultAnimations(el: HTMLDivElement) {
@@ -174,8 +196,9 @@ export function buildResult(data: ScanResponseData, ca: string): string {
   const score     = data.score || 0
   const barW      = Math.min(100, Math.round(score / 10))
 
-  const tokenName   = data.tokenName   || data.pair?.baseToken?.name   || ""
-  const tokenSymbol = data.tokenSymbol || data.pair?.baseToken?.symbol || ""
+  // Sanitize user-supplied strings before HTML injection
+  const tokenName   = safeText(data.tokenName   || data.pair?.baseToken?.name   || "")
+  const tokenSymbol = safeText(data.tokenSymbol || data.pair?.baseToken?.symbol || "")
 
   if (state.boxEl) state.boxEl.className = `box ${riskClass}`
 
@@ -184,38 +207,49 @@ export function buildResult(data: ScanResponseData, ca: string): string {
     `<div class="dt ${i < dotsCount ? 'on' : 'off'}"></div>`
   ).join("")
 
-  const flagCount = (data.flags || []).filter((f: ScanResponseFlag) => f.severity !== "bonus").length
-  const critCount = (data.flags || []).filter((f: ScanResponseFlag) => f.severity === "critical").length
+  const allFlags = (data.flags || []).filter((f: ScanResponseFlag) => f.severity !== "bonus")
+  const flagCount = allFlags.length
+  const critCount = allFlags.filter((f: ScanResponseFlag) => f.severity === "critical").length
   let summary = ""
   if (flagCount === 0) summary = "All sources agree \u2014 no issues found"
   else if (critCount > 0) summary = `${flagCount} flags \u2014 ${critCount} critical \u2014 Conf. ${conf ?? "?"}%`
   else summary = `${flagCount} flags \u2014 Conf. ${conf ?? "?"}%`
 
-  const flagsHtml = (data.flags || []).slice(0, 8).map((f: ScanResponseFlag) => {
+  const MAX_FLAGS = 8
+  const visibleFlags = allFlags.slice(0, MAX_FLAGS)
+  const hiddenCount = allFlags.length - visibleFlags.length
+
+  const flagsHtml = visibleFlags.map((f: ScanResponseFlag) => {
     const cls = f.severity === "critical" ? "cr" : f.severity === "warning" ? "wr" : "ok"
     const ic  = f.severity === "critical" ? "r"  : f.severity === "warning" ? "y"  : "g"
     const sym = f.severity === "critical" ? "\u2717" : f.severity === "warning" ? "!" : "\u2713"
-    return `<div class="f ${cls}"><span class="ic ${ic}">${sym}</span><span class="ft-txt">${f.label}</span></div>`
+    return `<div class="f ${cls}"><span class="ic ${ic}">${sym}</span><span class="ft-txt">${escapeHtml(f.label)}</span></div>`
   }).join("")
+
+  const moreFlags = hiddenCount > 0
+    ? `<div class="f-more">+${hiddenCount} more flag${hiddenCount > 1 ? "s" : ""}</div>`
+    : ""
+
   const noFlags = flagsHtml || `<div class="f ok"><span class="ic g">\u2713</span><span class="ft-txt">No significant risks detected</span></div>`
 
   const boolSI = (label: string, val: unknown, invert = false) => {
-    if (val === null || val === undefined) return `<div class="si"><span>${label}</span><b style="color:#333">\u2014</b></div>`
+    if (val === null || val === undefined) return `<div class="si"><span>${escapeHtml(label)}</span><b style="color:#333">\u2014</b></div>`
     const yes = invert ? !val : !!val
-    return `<div class="si"><span>${label}</span><b class="${yes ? "y" : "n"}">${yes ? "\u2713" : "\u2717"}</b></div>`
+    return `<div class="si"><span>${escapeHtml(label)}</span><b class="${yes ? "y" : "n"}">${yes ? "\u2713" : "\u2717"}</b></div>`
   }
 
   const siSell   = `<div class="si"><span>Sell</span><b class="${data.honeypot ? "n" : "y"}">${data.honeypot ? "\u2717" : "\u2713"}</b></div>`
   const siMint   = boolSI("Mint", data.mintAuthority, true)
   const siFreeze = boolSI("Freeze", data.freezeAuthority, true)
   const siLP     = boolSI("LP Lock", data.lpBurned ?? data.lpLocked)
-  const siLiq    = `<div class="si"><span>Liq</span><b${liq !== null && liq < 5000 ? ' class="n"' : liq !== null && liq > 50000 ? ' class="y"' : ""}>${liq !== null ? formatMcap(liq) : "\u2014"}</b></div>`
+  const liqDisplay = liq !== null ? formatMcap(liq) : "\u2014"
+  const siLiq    = `<div class="si"><span>Liq</span><b${liq !== null && liq < 5000 ? ' class="n"' : liq !== null && liq > 50000 ? ' class="y"' : ""}>${liqDisplay}</b></div>`
 
   const isDangerous = data.risk === "RUG" || data.risk === "DANGER"
   const dexLink = data.pair?.url
     ? `<a href="${data.pair.url}" target="_blank" rel="noopener noreferrer">DexScreener</a>`
     : ""
-  const analysisLink = `<a href="${ANALYSIS_PAGE}?ca=${mint}" target="_blank" rel="noopener noreferrer"${isDangerous ? ' class="warn"' : ''}>Full Analysis &rarr;</a>`
+  const analysisLink = `<a href="${ANALYSIS_PAGE}?ca=${encodeURIComponent(mint)}" target="_blank" rel="noopener noreferrer"${isDangerous ? ' class="warn"' : ''}>Full Analysis &rarr;</a>`
 
   const sparkline = buildSparkline(data.candles as Array<{ close: number }> | undefined, data.risk as string)
 
@@ -229,7 +263,7 @@ export function buildResult(data: ScanResponseData, ca: string): string {
     ${sparkline}
     <div class="sum">${summary}</div>
     <div class="sep"></div>
-    <div class="fl">${noFlags}</div>
+    <div class="fl">${noFlags}${moreFlags}</div>
     <div class="sep"></div>
     <div class="ss">${siSell}${siMint}${siFreeze}${siLP}${siLiq}</div>
     <div class="hist-panel" id="ant-hist"></div>

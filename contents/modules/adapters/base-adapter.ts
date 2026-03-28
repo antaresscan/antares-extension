@@ -1,4 +1,4 @@
-import { SOL_ADDR, WALKER_LIMIT } from "../constants"
+import { makeSOLAddrRegex, WALKER_LIMIT } from "../constants"
 import { isValid } from "../scanner"
 
 /**
@@ -44,6 +44,12 @@ export function scoreAddresses(doc: Document, url: string): string {
     scores.set(addr, (scores.get(addr) || 0) + pts)
   }
 
+  // Each call gets its own fresh regex to avoid lastIndex state bugs
+  const re1 = makeSOLAddrRegex()
+  const re2 = makeSOLAddrRegex()
+  const re3 = makeSOLAddrRegex()
+  const re4 = makeSOLAddrRegex()
+
   // 1. data-* attributes (highest confidence)
   const dataAttrs = [
     "data-address", "data-token", "data-mint", "data-ca",
@@ -51,7 +57,8 @@ export function scoreAddresses(doc: Document, url: string): string {
   ]
   for (const el of doc.querySelectorAll(dataAttrs.map(a => `[${a}]`).join(","))) {
     for (const attr of dataAttrs) {
-      for (const m of ((el.getAttribute(attr) || "").match(SOL_ADDR) || [])) add(m, 200)
+      for (const m of ((el.getAttribute(attr) || "").match(re1) || [])) add(m, 200)
+      re1.lastIndex = 0
     }
   }
 
@@ -59,12 +66,13 @@ export function scoreAddresses(doc: Document, url: string): string {
   for (const a of doc.querySelectorAll("a[href]")) {
     const href = a.getAttribute("href") || ""
     if (/solscan\.io\/token|solscan\.io\/address|explorer\.solana\.com\/address|solana\.fm\/address/.test(href)) {
-      for (const m of (href.match(SOL_ADDR) || [])) add(m, 180)
+      for (const m of (href.match(re2) || [])) add(m, 180)
+      re2.lastIndex = 0
     }
   }
 
   // 3. URL itself
-  for (const m of (url.match(SOL_ADDR) || [])) add(m, 60)
+  for (const m of (url.match(re3) || [])) add(m, 60)
 
   // 4. Fallback: walk text nodes (expensive, only if nothing found yet)
   if (scores.size === 0) {
@@ -74,7 +82,8 @@ export function scoreAddresses(doc: Document, url: string): string {
       count++
       const t = (node.textContent || "").trim()
       if (t.length >= 32 && t.length <= 50) {
-        for (const m of (t.match(SOL_ADDR) || [])) add(m, 120)
+        for (const m of (t.match(re4) || [])) add(m, 120)
+        re4.lastIndex = 0
       }
     }
   }
@@ -97,14 +106,15 @@ export function pathnameChanged(prev: URL, next: URL): boolean {
 
 /** Extract a CA from a URL pathname segment matching SOL_ADDR */
 export function extractCAFromPathname(url: URL): string {
+  const re = makeSOLAddrRegex()
   const segments = url.pathname.split("/")
   for (const seg of segments) {
-    if (SOL_ADDR.test(seg)) {
-      SOL_ADDR.lastIndex = 0
-      const m = seg.match(SOL_ADDR)
+    if (re.test(seg)) {
+      re.lastIndex = 0
+      const m = seg.match(makeSOLAddrRegex())
       if (m && isValid(m[0])) return m[0]
     }
-    SOL_ADDR.lastIndex = 0
+    re.lastIndex = 0
   }
   return ""
 }

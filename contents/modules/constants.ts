@@ -1,5 +1,7 @@
-export const API           = "https://antares-extension.vercel.app/api/scan"
-export const ANALYSIS_PAGE = "https://antares-extension.vercel.app/token.html"
+// Use env var for API URL so local dev can point to localhost
+// Plasmo exposes PLASMO_PUBLIC_* vars to content scripts at build time
+export const API           = process.env.PLASMO_PUBLIC_API_URL || "https://antares-extension.vercel.app/api/scan"
+export const ANALYSIS_PAGE = process.env.PLASMO_PUBLIC_ANALYSIS_URL || "https://antares-extension.vercel.app/token.html"
 export const LS_PREFIX     = "antares_scan_"
 export const CACHE_TTL    = 5 * 60 * 1000
 export const POS_KEY       = "antares_popup_pos"
@@ -15,7 +17,13 @@ export const LABELS: Record<string, string> = {
   SAFE: "SAFE", CAUTION: "CAUTION", DANGER: "DANGER", RUG: "RUG PULL"
 }
 
+// NON-global regex: callers must use new RegExp or matchAll to avoid lastIndex issues
+// Use makeSOLAddrRegex() for each independent match operation
 export const SOL_ADDR     = /\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/g
+/** Create a fresh non-stateful SOL address regex for independent match operations */
+export function makeSOLAddrRegex(): RegExp {
+  return /\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/g
+}
 export const WALKER_LIMIT = 500
 export const IGNORE = new Set([
   "11111111111111111111111111111111",

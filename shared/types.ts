@@ -30,8 +30,7 @@ export interface ScanResponseData {
   honeypot?: boolean | null;
   safeBlocked?: boolean;
   candles?: Array<{ close: number }>;
-  [key: string]: unknown;
-}
+  }
 
 export interface HistoryEntry {
   ca: string;

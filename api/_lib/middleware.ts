@@ -25,7 +25,11 @@ export const ALLOWED_ORIGINS = [
 let ratelimit: Ratelimit | null = null;
 let burstRatelimit: Ratelimit | null = null;
 
+// When true, Redis was configured but failed to initialize — fail closed
+let redisConfigured = false;
+
 export function initRateLimiters(redis: Redis): void {
+  redisConfigured = true;
   ratelimit = new Ratelimit({
     redis,
     limiter: Ratelimit.slidingWindow(30, "60 s"),
@@ -42,6 +46,7 @@ export function initRateLimiters(redis: Redis): void {
 
 export function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean {
   const origin = (req.headers.origin as string) || "";
+  // TODO: add X-Antares-Key header check for stricter CORS (chrome-extension:// accepts all extensions)
   const corsOk = isCorsAllowed(origin, ALLOWED_ORIGINS);
   if (corsOk) res.setHeader("Access-Control-Allow-Origin", origin);
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
@@ -60,6 +65,13 @@ export function getClientIp(req: VercelRequest): string {
 }
 
 export async function checkRateLimit(res: VercelResponse, ip: string): Promise<boolean> {
+  // Fail-closed: if Redis was configured but limiters are null (init failed), block requests
+  if (redisConfigured && !ratelimit) {
+    console.warn("[antares] Rate limiter unavailable — fail-closed");
+    apiError(res, 503, "Service temporarily unavailable. Please retry.");
+    return false;
+  }
+
   if (ratelimit) {
     const { success, remaining } = await ratelimit.limit(ip);
     res.setHeader("X-RateLimit-Limit", "30");
@@ -69,6 +81,7 @@ export async function checkRateLimit(res: VercelResponse, ip: string): Promise<b
       return false;
     }
   }
+
   if (burstRatelimit) {
     const { success } = await burstRatelimit.limit(ip);
     if (!success) {
@@ -77,6 +90,7 @@ export async function checkRateLimit(res: VercelResponse, ip: string): Promise<b
       return false;
     }
   }
+
   return true;
 }
 
