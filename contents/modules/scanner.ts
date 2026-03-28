@@ -127,7 +127,7 @@ export async function scan(ca: string) {
     if (controller.signal.aborted) return
     console.warn("[antares]", e)
     // Guard: only call Sentry if it was initialized
-    try { Sentry.captureException(e) } catch (_) { /* Sentry not initialized */ }
+    try { Sentry.captureException(e) } catch { /* Sentry not initialized */ }
     if (state.lastCA === ca) {
       if (state.boxEl) state.boxEl.className = "box danger"
       const msg = userErrorMessage(e)
