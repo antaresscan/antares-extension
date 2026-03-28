@@ -12,10 +12,11 @@ export function getCacheRedis(): Redis | null {
   return scanCacheRedis;
 }
 
-export async function getCachedResult(ca: string, requestId: string): Promise<unknown | null> {
+export async function getCachedResult<T = unknown>(ca: string, requestId: string): Promise<T | null> {
   if (!scanCacheRedis) return null;
   try {
-    return await scanCacheRedis.get(`antares:v2:${ca}`);
+    const result = await scanCacheRedis.get<T>(`antares:v2:${ca}`);
+    return result ?? null;
   } catch (e: unknown) {
     console.warn("[antares] cache miss or Redis error", requestId, e);
     return null;
@@ -25,5 +26,7 @@ export async function getCachedResult(ca: string, requestId: string): Promise<un
 export function setCachedResult(ca: string, result: object, tokenAgeMinutes: number | null): void {
   if (!scanCacheRedis) return;
   const ttl = computeCacheTTL(tokenAgeMinutes);
-    scanCacheRedis.setex(`antares:v2:${ca}`, ttl, result as object).catch((e: unknown) => { console.warn("[antares] Redis cache write failed", e); });
+  scanCacheRedis.setex(`antares:v2:${ca}`, ttl, result).catch((e: unknown) => {
+    console.warn("[antares] Redis cache write failed", e);
+  });
 }
