@@ -1,8 +1,8 @@
 {
   "name": "antares-extension",
-  "displayName": "Antares — Anti-Scam Scanner for Solana",
+  "displayName": "Antares \u2014 Anti-Scam Scanner for Solana",
   "version": "1.0.0",
-  "description": "Antares scans Solana tokens in real time and detects rug pulls, honeypots, bundlers and chart manipulation — directly in your browser.",
+  "description": "Antares scans Solana tokens in real time and detects rug pulls, honeypots, bundlers and chart manipulation \u2014 directly in your browser.",
   "author": "COMEALAMAISONGROUPE",
   "scripts": {
     "dev": "plasmo dev",
@@ -45,21 +45,14 @@
       "alarms"
     ],
     "host_permissions": [
-      "https://dexscreener.com/*",
-      "https://birdeye.so/*",
-      "https://raydium.io/*",
-      "https://pump.fun/*",
-      "https://jup.ag/*",
-      "https://solscan.io/*",
-      "https://www.geckoterminal.com/*",
-      "https://photon-sol.tinyastro.io/*",
-      "https://neo.bullx.io/*",
-      "https://gmgn.ai/*",
       "https://app.telemetry.io/*",
       "https://axiom.trade/*",
-      "https://antares-extension.vercel.app/*",
-      "https://fonts.googleapis.com/*",
-      "https://fonts.gstatic.com/*"
+      "https://birdeye.so/*",
+      "https://dexscreener.com/*",
+      "https://gmgn.ai/*",
+      "https://photon-sol.tinyastro.io/*",
+      "https://pump.fun/*",
+      "https://www.geckoterminal.com/*"
     ],
     "content_security_policy": {
       "extension_pages": "script-src 'self'; object-src 'none'"
