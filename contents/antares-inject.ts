@@ -6,12 +6,8 @@ export const config: PlasmoCSConfig = {
     "https://dexscreener.com/*",
     "https://pump.fun/*",
     "https://axiom.trade/*",
-    "https://neo.bullx.io/*",
     "https://photon-sol.tinyastro.io/*",
     "https://birdeye.so/*",
-    "https://raydium.io/*",
-    "https://jup.ag/*",
-    "https://solscan.io/*",
     "https://www.geckoterminal.com/*",
     "https://gmgn.ai/*",
     "https://app.telemetry.io/*"
@@ -62,7 +58,9 @@ if (document.documentElement.hasAttribute(GUARD)) {
         if (state.stealthMode) hideBox()
       }
     })
-  } catch (e: unknown) { console.warn("[antares]", e) }
+  } catch (e: unknown) {
+    console.warn("[antares]", e)
+  }
 
   // MutationObserver to re-inject host if removed
   new MutationObserver(() => {
