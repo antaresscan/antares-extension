@@ -10,8 +10,6 @@
  */
 import type { SiteAdapter } from "./base-adapter"
 import { extractCAFromPathname, pathnameChanged, scoreAddresses } from "./base-adapter"
-import { makeSOLAddrRegex } from "../constants"
-import { isValid } from "../scanner"
 
 // Adapters with site-specific logic (separate files)
 import { DexScreenerAdapter } from "./dexscreener.adapter"
@@ -47,8 +45,6 @@ const GeckoTerminalAdapter: SiteAdapter = {
   hostnames: ["geckoterminal.com"],
   initialDelay: 600,
   extractCA(url: URL, doc: Document): string {
-    // DO NOT extract from pathname — it's a pool address, not a token CA
-    // scoreAddresses() will find the mint address from data-* attributes or explorer links
     return scoreAddresses(doc, url.href)
   },
   isNewToken: pathnameChanged
@@ -59,7 +55,6 @@ const GMGNAdapter: SiteAdapter = {
   hostnames: ["gmgn.ai"],
   initialDelay: 400,
   extractCA(url: URL, doc: Document): string {
-    // gmgn.ai/sol/token/{CA}
     if (url.pathname.includes("/token/")) {
       const ca = extractCAFromPathname(url)
       if (ca) return ca
