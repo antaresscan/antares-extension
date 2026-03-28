@@ -89,7 +89,7 @@ export function determineVerdict(input: VerdictInput): Verdict {
   if (input.sourcesUsedCount === 0) return "DANGER";
 
   if (input.safeBlocked) {
-    const HARD_REASONS = new Set(["honeypot", "mint", "freeze", "bundle", "rug_pattern", "wash_trading"]);
+    const HARD_REASONS = new Set(["honeypot", "mint", "freeze", "bundle", "rug_pattern", "wash_trading", "sniper", "pump"]);
     const hasHardReason = input.safeBlockedReasons?.some(r => HARD_REASONS.has(r));
     if (hasHardReason) return input.score >= 400 ? "DANGER" : "RUG";
     if (input.score >= 550) return "CAUTION";
