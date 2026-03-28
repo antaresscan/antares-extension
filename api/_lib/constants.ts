@@ -8,7 +8,8 @@ export const SOLSCAN_PUBLIC_BASE = "https://public-api.solscan.io";
 export const SOLSCAN_BASE = "https://pro-api.solscan.io/v2.0";
 
 // IMPORTANT: Keep in sync with shared/constants.ts
-export const CA_RE = /^[A-Za-z0-9]{32,44}$/;
+// Strict base58 alphabet — excludes 0, O, I, l which are not valid in base58
+export const CA_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 
 export const LP_PROGRAM_ADDRESSES = new Set([
   "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1",
@@ -21,7 +22,7 @@ export const LP_PROGRAM_ADDRESSES = new Set([
 
 export const FOUNDATION_WALLETS = new Set([
   "B9n3tgBJ8f1K2VXrF5aTBNXXmj5V8sKXrk3GV5uPump",
-  "6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN",
+  // Note: 6p6xg... removed here — it belongs only to OFFICIAL_MINTS (Raydium LP vault/JUP)
   "9yrPkpCTBCqJmSmTtkMZoxFWMkrAPEQK6DkfaESMpump",
 ]);
 
@@ -29,7 +30,7 @@ export const OFFICIAL_MINTS = new Set([
   "So11111111111111111111111111111111111111112",    // wSOL
   "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263", // BONK
   "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm", // WIF
-  "6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN",  // Raydium LP vault
+  "6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN",  // JUP
   "MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5",  // MEW
   "ukHH6c7mMyiWCf1b9pnWe25TSpkDDt3H5pQZgZ74J82",  // POPCAT
   "ED5nyyWEzpPPiWimP8vYm7sD7TD3LAt3Q3gRTWHzPJBY", // MOODENG
@@ -40,7 +41,7 @@ export const OFFICIAL_MINTS = new Set([
   "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",  // USDT
   "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R", // RAY
   "orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE",  // ORCA
-  "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN",  // JUP
+  "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN",  // JUP (governance)
   "3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh", // WBTC (Wormhole)
   "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs", // ETH (Wormhole)
   "J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn", // jitoSOL
@@ -50,7 +51,7 @@ export const OFFICIAL_MINTS = new Set([
   "HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3", // SPX6900 (Wormhole)
 ]);
 
-// ─── LAYER WEIGHTS (identity layer removed) ──────────────────────────────────
+// ═══ LAYER WEIGHTS (identity layer removed) ────────────────────────────────────────────
 export const LAYER_WEIGHTS: Record<string, number> = {
   dexscreener: 0.20,
   rugcheck:    0.20,
