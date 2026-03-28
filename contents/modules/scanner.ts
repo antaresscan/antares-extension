@@ -31,8 +31,22 @@ export function scheduleRescanIfPriceCrash(data: ScanResponseData, ca: string) {
   }
 }
 
+/** Map HTTP status or error type to a user-friendly message */
+function userErrorMessage(e: unknown): string {
+  if (e instanceof Error) {
+    const status = parseInt(e.message, 10)
+    if (status === 429) return "Rate limit reached \u2014 retry in 60s"
+    if (status === 503 || status === 502) return "Server unavailable \u2014 retry shortly"
+    if (status >= 500) return "Server error \u2014 retry later"
+    if (e.name === "AbortError") return "Request timed out \u2014 retry"
+    if (e.message === "Failed to fetch") return "Network error \u2014 check connection"
+  }
+  return "API Error \u2014 retry later"
+}
+
 export async function scan(ca: string) {
   if (!ca) return
+
   // [5.3] Stealth mode — send to background for badge update only, skip popup
   if (state.stealthMode) {
     if (ca === state.lastCA) return
@@ -42,10 +56,13 @@ export async function scan(ca: string) {
     } catch (e: unknown) { console.warn("[antares]", e) }
     return
   }
+
   const el = getBox()
   const cached = getCached(ca)
+
   if (ca === state.lastCA && cached && el.style.display !== "none") return
   if (state.manuallyDismissed && ca === state.lastCA) return
+
   if (state.currentScanController) {
     // New CA detected while scan in-flight — abort previous
     if (ca !== state.lastCA) {
@@ -55,8 +72,10 @@ export async function scan(ca: string) {
       return; // Same CA, skip
     }
   }
+
   state.manuallyDismissed = false;
   state.lastCA = ca;
+
   if (cached) {
     el.innerHTML = buildResult(cached, ca)
     showBox()
@@ -67,34 +86,39 @@ export async function scan(ca: string) {
     })
     return
   }
+
   // Abort any previous in-flight scan, start a new one
   const controller = new AbortController()
   state.currentScanController = controller
+
   if (state.boxEl) state.boxEl.className = "box"
   el.innerHTML = `
   <div class="topbar" style="background:linear-gradient(90deg,transparent,#3a3a3f,transparent)"></div>
   ${buildHeader()}
   <div class="skel">
-  <div class="skel-verdict"></div>
-  <div class="skel-bar"></div>
-  <div class="skel-line"></div>
-  <div class="skel-line"></div>
-  <div class="skel-line"></div>
+    <div class="skel-verdict"></div>
+    <div class="skel-bar"></div>
+    <div class="skel-line"></div>
+    <div class="skel-line"></div>
+    <div class="skel-line"></div>
   </div>
   `
   showBox(); attachClose()
+
   try {
     const res = await fetch(`${API}?ca=${ca}`, { signal: controller.signal })
     if (controller.signal.aborted) return
     if (!res.ok) throw new Error("" + res.status)
     const data = await res.json() as ScanResponseData
     if (controller.signal.aborted) return
+
     scanCache.set(ca, { data, ts: Date.now() })
     saveToLS(ca, data)
     el.innerHTML = buildResult(data, ca)
     showBox()
     triggerResultAnimations(el)
     attachClose()
+
     // [5.2] Schedule forced rescan if price crashed > -30% in 1h
     chrome.storage.sync.get(["autoRescan"], (prefs) => {
       if (prefs.autoRescan !== false) scheduleRescanIfPriceCrash(data, ca)
@@ -102,13 +126,15 @@ export async function scan(ca: string) {
   } catch (e: unknown) {
     if (controller.signal.aborted) return
     console.warn("[antares]", e)
-    Sentry.captureException(e)
+    // Guard: only call Sentry if it was initialized
+    try { Sentry.captureException(e) } catch (_) { /* Sentry not initialized */ }
     if (state.lastCA === ca) {
       if (state.boxEl) state.boxEl.className = "box danger"
+      const msg = userErrorMessage(e)
       el.innerHTML = `
       <div class="topbar"></div>
       ${buildHeader()}
-      <div style="color:#ff5f5f;font-size:12px;padding:12px 14px;font-family:'IBM Plex Mono',monospace">API Error \u2014 retry later</div>
+      <div style="color:#ff5f5f;font-size:12px;padding:12px 14px;font-family:'IBM Plex Mono',monospace">${msg}</div>
       `
       showBox(); attachClose()
     }
