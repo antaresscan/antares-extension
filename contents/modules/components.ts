@@ -16,7 +16,8 @@ function safeText(val: string | null | undefined): string {
   return escapeHtml(String(val))
 }
 
-export function formatMcap(mc: number): string {
+export function formatMcap(mc: number | null | undefined): string {
+  if (mc == null) return "—"
   if (mc >= 1_000_000_000) return `$${(mc / 1_000_000_000).toFixed(2)}B`
   if (mc >= 1_000_000)     return `$${(mc / 1_000_000).toFixed(2)}M`
   if (mc >= 1_000)         return `$${(mc / 1_000).toFixed(1)}K`
