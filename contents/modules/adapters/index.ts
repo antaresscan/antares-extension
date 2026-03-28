@@ -9,75 +9,16 @@
  * That's it — no other file needs to change.
  */
 import type { SiteAdapter } from "./base-adapter"
-import { extractCAFromPathname, pathnameChanged, scoreAddresses } from "./base-adapter"
 
-// Adapters with site-specific logic (separate files)
 import { DexScreenerAdapter } from "./dexscreener.adapter"
 import { BirdeyeAdapter } from "./birdeye.adapter"
 import { PumpAdapter } from "./pump.adapter"
 import { PhotonAdapter } from "./photon.adapter"
+import { AxiomAdapter } from "./axiom.adapter"
+import { GeckoTerminalAdapter } from "./geckoterminal.adapter"
+import { GMGNAdapter } from "./gmgn.adapter"
+import { TelemetryAdapter } from "./telemetry.adapter"
 import { GenericAdapter } from "./generic.adapter"
-
-/* ------------------------------------------------------------------ */
-/*  Simple adapters (pathname-based, no special logic needed)          */
-/* ------------------------------------------------------------------ */
-
-const AxiomAdapter: SiteAdapter = {
-  name: "Axiom",
-  hostnames: ["axiom.trade"],
-  initialDelay: 400,
-  extractCA(url: URL, doc: Document): string {
-    const ca = extractCAFromPathname(url)
-    return ca || scoreAddresses(doc, url.href)
-  },
-  isNewToken: pathnameChanged
-}
-
-/**
- * GeckoTerminal adapter
- * URL: geckoterminal.com/solana/pools/{poolAddress}
- * NOTE: URL contains POOL address, not token address.
- * Must rely on DOM scoring to find the actual token CA.
- * Pool addresses are excluded by the IGNORE set and scoring heuristics.
- */
-const GeckoTerminalAdapter: SiteAdapter = {
-  name: "GeckoTerminal",
-  hostnames: ["geckoterminal.com"],
-  initialDelay: 600,
-  extractCA(url: URL, doc: Document): string {
-    return scoreAddresses(doc, url.href)
-  },
-  isNewToken: pathnameChanged
-}
-
-const GMGNAdapter: SiteAdapter = {
-  name: "GMGN",
-  hostnames: ["gmgn.ai"],
-  initialDelay: 400,
-  extractCA(url: URL, doc: Document): string {
-    if (url.pathname.includes("/token/")) {
-      const ca = extractCAFromPathname(url)
-      if (ca) return ca
-    }
-    return scoreAddresses(doc, url.href)
-  },
-  isNewToken: pathnameChanged
-}
-
-const TelemetryAdapter: SiteAdapter = {
-  name: "Telemetry",
-  hostnames: ["app.telemetry.io"],
-  initialDelay: 500,
-  extractCA(url: URL, doc: Document): string {
-    const ca = extractCAFromPathname(url)
-    return ca || scoreAddresses(doc, url.href)
-  },
-  isNewToken: pathnameChanged
-}
-
-/* ------------------------------------------------------------------ */
-/*  Registry                                                           */
-/* ------------------------------------------------------------------ */
 
 /** All registered adapters, ordered by specificity */
 const ADAPTERS: SiteAdapter[] = [
