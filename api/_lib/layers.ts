@@ -337,7 +337,7 @@ export function layerChart(
   let trust = 1.0;
   const penalties: number[] = [];
   let forceRug = false, safeBlocked = false;
-  if (!candles || candles.length < 8) return {
+  if (!candles || candles.length < 3) return {
     source: "chart", trust: 1.0, available: false,
     flags: [], forceRug: false, safeBlocked: false,
   };

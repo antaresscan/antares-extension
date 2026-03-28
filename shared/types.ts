@@ -30,6 +30,25 @@ export interface ScanResponseData {
   honeypot?: boolean | null;
   safeBlocked?: boolean;
   candles?: Array<{ close: number }>;
+    // Additional fields returned by API
+  volume24h?: number | null;
+  volume1h?: number | null;
+  priceChange5m?: number | null;
+  priceChange24h?: number | null;
+  pairCreatedAt?: number | null;
+  safeBlockedReasons?: string[];
+  tokenLogo?: string | null;
+  tokenCreator?: string | null;
+  tokenDecimals?: number | null;
+  tokenSupply?: number | null;
+  solscanTokenAgeHours?: number | null;
+  solscanVolume24h?: number | null;
+  solscanTrades24h?: number | null;
+  solscanTraders24h?: number | null;
+  layers?: Record<string, { trust: number; available: boolean }>;
+  scoring_version?: string;
+  fetchedAt?: number;
+  recentTransfers?: unknown[];
   }
 
 export interface HistoryEntry {
