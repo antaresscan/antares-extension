@@ -29,25 +29,33 @@ import { createHost, hideBox } from "./modules/components"
 import { poll, setupNavListeners, getInitialDelay } from "./modules/address-detector"
 
 /**
- * GUARD: Prevent double injection.
- * Chrome/Plasmo may re-inject content scripts on SPA navigations,
- * creating a second instance with fresh state that triggers a redundant scan.
- * This window-level flag ensures only the FIRST instance initializes.
+ * GUARD: Prevent double injection using a DOM attribute.
  *
- * ROOT CAUSE: On Birdeye (and other SPAs), when clicking a token in the
- * trending bar, Chrome detects a "navigation" and may re-inject the content
- * script. The second instance creates new state (lastCA = ""), new listeners,
- * and fires a new setTimeout(poll, 1200ms). This second poll runs ~1-3s
- * after the first scan completed, overwriting the correct result with
- * "DANGER 0/1000" because the second instance's API call races or uses
- * stale context.
+ * Chrome content scripts run in an isolated world, but they share the same DOM.
+ * Using a data attribute on <html> ensures any re-injection of this script
+ * (same or different isolated world) can detect a previous instance.
+ *
+ * Also use window-level flag for same-world re-injections (Plasmo HMR, etc).
+ *
+ * ROOT CAUSE OF DOUBLE SCAN:
+ * On Birdeye and other SPAs, Chrome may re-inject the content script when
+ * the URL changes via pushState/replaceState. The second instance creates
+ * new state (lastCA = ""), new setTimeout(poll, 1200ms), and new nav listeners.
+ * This second poll fires ~1-3s after the first scan completed, calling the API
+ * again. If the API returns a different result (or an error), it overwrites
+ * the correct first result with "DANGER 0/1000".
  */
-const GUARD_KEY = "__antares_injected__"
-if ((window as any)[GUARD_KEY]) {
-  // Already running -- skip all initialization
-  console.log("[antares] Duplicate injection detected, skipping")
+const GUARD_ATTR = "data-antares-init"
+const GUARD_WIN = "__antares_injected__"
+
+const alreadyInitDOM = document.documentElement.hasAttribute(GUARD_ATTR)
+const alreadyInitWin = (window as any)[GUARD_WIN] === true
+
+if (alreadyInitDOM || alreadyInitWin) {
+  console.log("[antares] Duplicate injection detected, skipping init")
 } else {
-  ;(window as any)[GUARD_KEY] = true
+  document.documentElement.setAttribute(GUARD_ATTR, "1")
+  ;(window as any)[GUARD_WIN] = true
 
   // Hydrate scan cache from localStorage
   hydrateCacheFromLS()
