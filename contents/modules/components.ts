@@ -11,7 +11,7 @@ const HTML_ESCAPE: Record<string, string> = {
 function escapeHtml(str: string): string {
   return str.replace(/[&<>"']/g, ch => HTML_ESCAPE[ch] || ch)
 }
-safe function safeText(val: string | null | undefined): string {
+function safeText(val: string | null | undefined): string {
   if (!val) return ""
   return escapeHtml(String(val))
 }
