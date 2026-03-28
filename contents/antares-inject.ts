@@ -29,33 +29,23 @@ import { createHost, hideBox } from "./modules/components"
 import { poll, setupNavListeners, getInitialDelay } from "./modules/address-detector"
 
 /**
- * GUARD: Prevent double injection using a DOM attribute.
+ * GUARD: Prevent double injection via a DOM attribute on <html>.
  *
- * Chrome content scripts run in an isolated world, but they share the same DOM.
- * Using a data attribute on <html> ensures any re-injection of this script
- * (same or different isolated world) can detect a previous instance.
- *
- * Also use window-level flag for same-world re-injections (Plasmo HMR, etc).
+ * Content scripts share the DOM with the page regardless of isolated world.
+ * A data-attribute on documentElement survives across re-injections.
  *
  * ROOT CAUSE OF DOUBLE SCAN:
- * On Birdeye and other SPAs, Chrome may re-inject the content script when
- * the URL changes via pushState/replaceState. The second instance creates
- * new state (lastCA = ""), new setTimeout(poll, 1200ms), and new nav listeners.
- * This second poll fires ~1-3s after the first scan completed, calling the API
- * again. If the API returns a different result (or an error), it overwrites
- * the correct first result with "DANGER 0/1000".
+ * On SPAs (Birdeye, etc.), Chrome may re-inject the content script on
+ * pushState navigations. The second instance has fresh state (lastCA=""),
+ * fires a new setTimeout(poll, initialDelay), and overwrites the first
+ * correct scan result with a stale "DANGER 0/1000".
  */
-const GUARD_ATTR = "data-antares-init"
-const GUARD_WIN = "__antares_injected__"
+const GUARD = "data-antares-init"
 
-const alreadyInitDOM = document.documentElement.hasAttribute(GUARD_ATTR)
-const alreadyInitWin = (window as any)[GUARD_WIN] === true
-
-if (alreadyInitDOM || alreadyInitWin) {
-  console.log("[antares] Duplicate injection detected, skipping init")
+if (document.documentElement.hasAttribute(GUARD)) {
+  console.log("[antares] Already injected, skipping duplicate")
 } else {
-  document.documentElement.setAttribute(GUARD_ATTR, "1")
-  ;(window as any)[GUARD_WIN] = true
+  document.documentElement.setAttribute(GUARD, "1")
 
   // Hydrate scan cache from localStorage
   hydrateCacheFromLS()
