@@ -8,7 +8,6 @@
  * 2. Import and add it to the ADAPTERS array below
  * That's it — no other file needs to change.
  */
-
 import type { SiteAdapter } from "./base-adapter"
 import { extractCAFromPathname, pathnameChanged, scoreAddresses } from "./base-adapter"
 import { makeSOLAddrRegex } from "../constants"
@@ -19,7 +18,6 @@ import { DexScreenerAdapter } from "./dexscreener.adapter"
 import { BirdeyeAdapter } from "./birdeye.adapter"
 import { PumpAdapter } from "./pump.adapter"
 import { PhotonAdapter } from "./photon.adapter"
-import { SolscanAdapter } from "./solscan.adapter"
 import { GenericAdapter } from "./generic.adapter"
 
 /* ------------------------------------------------------------------ */
@@ -35,90 +33,6 @@ const AxiomAdapter: SiteAdapter = {
     return ca || scoreAddresses(doc, url.href)
   },
   isNewToken: pathnameChanged
-}
-
-/**
- * BullX adapter
- * Handles both:
- *   neo.bullx.io/terminal?address={CA}  (query param)
- *   neo.bullx.io/{path}/{CA}            (pathname)
- */
-const BullXAdapter: SiteAdapter = {
-  name: "BullX",
-  hostnames: ["neo.bullx.io", "bullx.io"],
-  initialDelay: 400,
-  extractCA(url: URL, doc: Document): string {
-    // Check query params first (BullX terminal uses ?address=)
-    const re = makeSOLAddrRegex()
-    for (const param of ["address", "token", "mint"]) {
-      const val = url.searchParams.get(param)
-      if (val && re.test(val) && isValid(val)) return val
-      re.lastIndex = 0
-    }
-    const ca = extractCAFromPathname(url)
-    return ca || scoreAddresses(doc, url.href)
-  },
-  isNewToken(prev: URL, next: URL): boolean {
-    return prev.pathname !== next.pathname || prev.search !== next.search
-  }
-}
-
-/**
- * Raydium adapter
- * URL: raydium.io/swap/?inputMint=sol&outputMint={CA}
- * CA is in QUERY PARAMS (outputMint or inputMint), not pathname
- */
-const RaydiumAdapter: SiteAdapter = {
-  name: "Raydium",
-  hostnames: ["raydium.io"],
-  initialDelay: 500,
-  extractCA(url: URL, doc: Document): string {
-    const re = makeSOLAddrRegex()
-    for (const param of ["outputMint", "inputMint"]) {
-      const val = url.searchParams.get(param)
-      if (val && val !== "sol" && re.test(val)) {
-        re.lastIndex = 0
-        if (isValid(val)) return val
-      }
-      re.lastIndex = 0
-    }
-    const ca = extractCAFromPathname(url)
-    return ca || scoreAddresses(doc, url.href)
-  },
-  isNewToken(prev: URL, next: URL): boolean {
-    return prev.pathname !== next.pathname || prev.search !== next.search
-  }
-}
-
-/**
- * Jupiter adapter
- * URL: jup.ag/swap/SOL-{CA} or jup.ag/swap/{CA1}-{CA2}
- * Extracts the non-SOL token from the swap pair.
- */
-const JupiterAdapter: SiteAdapter = {
-  name: "Jupiter",
-  hostnames: ["jup.ag"],
-  initialDelay: 400,
-  extractCA(url: URL, doc: Document): string {
-    // jup.ag/swap/{tokenA}-{tokenB}: try to find the non-SOL token
-    if (url.pathname.startsWith("/swap/")) {
-      const swapSegment = url.pathname.split("/").find(s => s.includes("-"))
-      if (swapSegment) {
-        const re = makeSOLAddrRegex()
-        const parts = swapSegment.split("-")
-        const SOL_SYMBOLS = new Set(["SOL", "sol"])
-        for (const part of parts.reverse()) { // prefer last token (output)
-          if (!SOL_SYMBOLS.has(part) && re.test(part) && isValid(part)) return part
-          re.lastIndex = 0
-        }
-      }
-    }
-    const ca = extractCAFromPathname(url)
-    return ca || scoreAddresses(doc, url.href)
-  },
-  isNewToken(prev: URL, next: URL): boolean {
-    return prev.pathname !== next.pathname || prev.search !== next.search
-  }
 }
 
 /**
@@ -176,11 +90,7 @@ const ADAPTERS: SiteAdapter[] = [
   BirdeyeAdapter,
   PumpAdapter,
   PhotonAdapter,
-  SolscanAdapter,
   AxiomAdapter,
-  BullXAdapter,
-  RaydiumAdapter,
-  JupiterAdapter,
   GeckoTerminalAdapter,
   GMGNAdapter,
   TelemetryAdapter,
