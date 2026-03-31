@@ -10,24 +10,25 @@ import { fetchJson, fetchJsonPost } from "./http";
 import { asNumber } from "./math";
 
 // ─── HELIUS HELPERS ─────────────────────────────────────────────────────────
+const heliusHeaders = (key: string) => ({ "Authorization": `Bearer ${key}` });
 export async function heliusGetLargestAccounts(mint: string, key: string) {
-  return fetchJsonPost(`${HELIUS_BASE}/?api-key=${key}`, {
+  return fetchJsonPost(`${HELIUS_BASE}, {
     jsonrpc: "2.0", id: "holders", method: "getTokenLargestAccounts", params: [mint],
-  }, 6000);
+  }, 6000, 2, heliusHeaders(key));
 }
 
 export async function heliusGetTokenSupply(mint: string, key: string) {
-  return fetchJsonPost(`${HELIUS_BASE}/?api-key=${key}`, {
+  return fetchJsonPost(`${HELIUS_BASE}, {
     jsonrpc: "2.0", id: "supply", method: "getTokenSupply", params: [mint],
-  }, 6000);
+  }, 6000, 2, heliusHeaders(key));
 }
 
 export async function heliusGetHoldersCount(mint: string, key: string): Promise<number | null> {
-  const res = await fetchJsonPost(`${HELIUS_BASE}/?api-key=${key}`, {
+  const res = await fetchJsonPost(`${HELIUS_BASE}, {
     jsonrpc: "2.0", id: "holders-count",
     method: "getTokenAccounts",
     params: { mint, limit: 1, page: 1 },
-  }, 6000) as HeliusTokenAccountsResponse | null;
+      }, 6000, 2, heliusHeaders(key)) as HeliusTokenAccountsResponse | null;
   const total = res?.result?.total ?? res?.total;
   return typeof total === "number" ? total : null;
 }
@@ -44,10 +45,10 @@ export async function heliusGetCreatorReputation(
   key: string
 ): Promise<CreatorReputation | null> {
   if (!creator || !key) return null;
-  // Use ?api-key= query param — consistent with all other Helius calls (not Bearer)
+      // Use Authorization header instead of query param for security
   const res = await fetchJson(
-    `https://api.helius.xyz/v0/addresses/${creator}/transactions?limit=20&api-key=${key}`,
-    {}, 6000
+            `https://api.helius.xyz/v0/addresses/${creator}/transactions?limit=20`,
+            { headers: heliusHeaders(key) }, 6000
   ) as Array<{ type?: string; description?: string }> | null;
   if (!Array.isArray(res)) return null;
   let priorTokens = 0;
