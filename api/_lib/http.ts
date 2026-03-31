@@ -29,13 +29,13 @@ export async function fetchJson<T = unknown>(url: string, init: RequestInit = {}
   return null;
 }
 
-export async function fetchJsonPost<T = unknown>(url: string, body: object, ms = 5000, maxRetries = 2): Promise<T | null> {
+export async function fetchJsonPost<T = unknown>(url: string, body: object, ms = 5000, maxRetries = 2, extraHeaders: Record<string, string> = {}): Promise<T | null> {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const t = withTimeout(ms);
     try {
       const r = await fetch(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+                headers: { "Content-Type": "application/json", ...extraHeaders },
         body: JSON.stringify(body),
         signal: t.signal,
       });
