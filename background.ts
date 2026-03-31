@@ -133,7 +133,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     
     if (!CA_RE.test(ca)) {
       sendResponse({ ok: false, error: "Invalid contract address" })
-        turn true
+        return true
     }
     const ctrl = new AbortController()
     const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS)
