@@ -18,13 +18,13 @@ export async function heliusGetLargestAccounts(mint: string, key: string) {
 }
 
 export async function heliusGetTokenSupply(mint: string, key: string) {
-  return fetchJsonPost(`${HELIUS_BASE}, {
+  return fetchJsonPost(HELIUS_BASE, {
     jsonrpc: "2.0", id: "supply", method: "getTokenSupply", params: [mint],
   }, 6000, 2, heliusHeaders(key));
 }
 
 export async function heliusGetHoldersCount(mint: string, key: string): Promise<number | null> {
-  const res = await fetchJsonPost(`${HELIUS_BASE}, {
+  const res = await fetchJsonPost(HELIUS_BASE, {
     jsonrpc: "2.0", id: "holders-count",
     method: "getTokenAccounts",
     params: { mint, limit: 1, page: 1 },
@@ -47,7 +47,7 @@ export async function heliusGetCreatorReputation(
   if (!creator || !key) return null;
       // Use Authorization header instead of query param for security
   const res = await fetchJson(
-            `https://api.helius.xyz/v0/addresses/${creator}/transactions?limit=20`,
+                        "https://api.helius.xyz/v0/addresses/" + creator + "/transactions?limit=20",
             { headers: heliusHeaders(key) }, 6000
   ) as Array<{ type?: string; description?: string }> | null;
   if (!Array.isArray(res)) return null;
