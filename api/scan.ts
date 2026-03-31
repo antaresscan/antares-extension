@@ -56,8 +56,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const requestId = randomUUID();
   res.setHeader("X-Request-Id", requestId);
 
-  setCorsHeaders(req, res);
+  const corsOk = setCorsHeaders(req, res);
   if (req.method === "OPTIONS") return res.status(204).end();
+    if (!corsOk) return apiError(res, 403, "Origin not allowed.");
   if (req.method !== "GET" && req.method !== "OPTIONS") {
     return apiError(res, 405, "Method not allowed.");
   }
