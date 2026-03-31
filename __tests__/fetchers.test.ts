@@ -143,8 +143,9 @@ describe("heliusGetLargestAccounts", () => {
     mockFetchJsonPost.mockResolvedValue({ result: { value: [] } });
     const result = await heliusGetLargestAccounts("mint123", "key456");
     expect(mockFetchJsonPost).toHaveBeenCalledOnce();
-    const [url, body] = mockFetchJsonPost.mock.calls[0] as [string, Record<string, unknown>];
-    expect(url).toContain("api-key=key456");
+    const [url, body, , , headers] = mockFetchJsonPost.mock.calls[0] as [string, Record<string, unknown>, number, number, Record<string, string>];
+    expect(url).not.toContain("api-key");
+    expect(headers).toEqual({ "Authorization": "Bearer key456" });
     expect(body.method).toBe("getTokenLargestAccounts");
     expect(body.params).toEqual(["mint123"]);
     expect(result).toEqual({ result: { value: [] } });
