@@ -9,13 +9,6 @@ import { HELIUS_BASE, SOLSCAN_PUBLIC_BASE, SOLSCAN_BASE } from "./constants";
 import { fetchJson, fetchJsonPost } from "./http";
 import { asNumber } from "./math";
 
-/** DRY helper for Helius JSON-RPC calls */
-function heliusRpc(key: string, id: string, method: string, params: unknown[], timeout = 6000) {
-    return fetchJsonPost(`${HELIUS_BASE}/?api-key=${key}`, {
-        jsonrpc: "2.0", id, method, params,
-    }, timeout);
-}
-
 
 // ─── HELIUS HELPERS ─────────────────────────────────────────────────────────
 const heliusHeaders = (key: string) => ({ "Authorization": "Bearer " + key });
