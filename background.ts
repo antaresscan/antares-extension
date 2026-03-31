@@ -121,10 +121,6 @@ function saveToHistory(ca: string, data: Record<string, unknown>) {
   }
 }
 
-// ─── MESSAGE HANDLER ────────────────────────────────────────────────────────
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (msg.type === "SCAN") {
-    const ca = typeof msg.ca === "string" ? msg.ca.trim() : ""
     // ─── MESSAGE HANDLER (map-based) ────────────────────────────────────────────
 type MessageHandler = (
   msg: Record<string, unknown>,
