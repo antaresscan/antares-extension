@@ -111,7 +111,7 @@ export function layerDexScreener(
   }
   if (!hasWebsite && !hasTwitter && !hasTelegram) { flags.push(makeFlag("No website / Twitter / Telegram", "warning", 0)); penalties.push(0.80); }
   if (txns5m < 5 && mc > 50000 && ageMinutes < 1440) { flags.push(makeFlag("Low 5m transactions vs market cap", "warning", 0)); penalties.push(0.88); }
-  if (sells5m > 0 && buys5m > sells5m * 5) { flags.push(makeFlag("Buy/sell imbalance (coordinated pump)", "warning", 0)); penalties.push(0.85); }
+  if ((sells5m === 0 && buys5m > 0 && txns5m > 5) || (sells5m > 0 && buys5m > sells5m * 5)) { flags.push(makeFlag("Buy/sell imbalance (coordinated pump)", "warning", 0)); penalties.push(0.85); }
   if (pc24 < -80) { flags.push(makeFlag("Brutal dump 24h (-80%)", "critical", 0)); penalties.push(0.35); }
   trust = applyDiminishingPenalties(trust, penalties);
   return { source: "dexscreener", trust: Math.max(0, trust), available: true, flags, forceRug, safeBlocked };
