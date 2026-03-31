@@ -293,7 +293,7 @@ function fmtPrice(p){
 }
 
 const params=new URLSearchParams(location.search)
-const ca=params.get("ca")||params.get("token")||""
+  const CA_RE=/^[1-9A-HJ-NP-Za-km-z]{32,44}$/;const _raw=params.get("ca")||params.get("token")||"";const ca=CA_RE.test(_raw)?_raw:""
 document.getElementById("ca-disp").textContent=ca?ca.slice(0,8)+"..."+ca.slice(-6):"—"
 
 if(!ca){
