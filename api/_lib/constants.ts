@@ -7,9 +7,8 @@ export const HELIUS_BASE = "https://mainnet.helius-rpc.com";
 export const SOLSCAN_PUBLIC_BASE = "https://public-api.solscan.io";
 export const SOLSCAN_BASE = "https://pro-api.solscan.io/v2.0";
 
-// IMPORTANT: Keep in sync with shared/constants.ts
-// Strict base58 alphabet — excludes 0, O, I, l which are not valid in base58
-export const CA_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+// CA_RE — single source of truth from shared/constants.ts
+export { CA_RE } from "../../shared/constants";
 
 export const LP_PROGRAM_ADDRESSES = new Set([
   "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1",
