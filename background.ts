@@ -121,9 +121,15 @@ function saveToHistory(ca: string, data: Record<string, unknown>) {
   }
 }
 
-// ─── MESSAGE HANDLER ────────────────────────────────────────────────────────
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (msg.type === "SCAN") {
+    // ─── MESSAGE HANDLER (map-based) ────────────────────────────────────────────
+type MessageHandler = (
+  msg: Record<string, unknown>,
+  sender: chrome.runtime.MessageSender,
+  sendResponse: (response: unknown) => void
+) => void
+
+const handlers: Record<string, MessageHandler> = {
+  SCAN: (msg, sender, sendResponse) => {
     const ca = typeof msg.ca === "string" ? msg.ca.trim() : ""
     // Security: only accept messages from our own extension or content scripts
   if (sender.id !== chrome.runtime.id) {
@@ -155,9 +161,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         Sentry.captureException(e)
         sendResponse({ ok: false, error: e.message })
       })
-    return true // keep channel open
-  }
-  if (msg.type === "GET_HISTORY") {
+  },
+
+  GET_HISTORY: (_msg, _sender, sendResponse) => {
     try {
       chrome.storage.local.get([HISTORY_KEY], (result) => {
         if (chrome.runtime.lastError) {
@@ -169,6 +175,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     } catch (e: unknown) {
       sendResponse({ ok: false, error: String(e) })
     }
-    return true
+  },
+}
+
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  const handler = handlers[msg.type as string]
+  if (handler) {
+    handler(msg, sender, sendResponse)
+    return true // keep channel open for async response
   }
 })
