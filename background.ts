@@ -131,9 +131,15 @@ type MessageHandler = (
 const handlers: Record<string, MessageHandler> = {
   SCAN: (msg, sender, sendResponse) => {
     const ca = typeof msg.ca === "string" ? msg.ca.trim() : ""
+    // Security: only accept messages from our own extension or content scripts
+  if (sender.id !== chrome.runtime.id) {
+    sendResponse({ ok: false, error: "Unauthorized sender" })
+    return true
+  }
+    
     if (!CA_RE.test(ca)) {
       sendResponse({ ok: false, error: "Invalid contract address" })
-      return
+        return true
     }
     const ctrl = new AbortController()
     const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS)
