@@ -415,9 +415,10 @@ function render(d,ca){
   const sourcesHtml=allSources
     .map(s=>`<div class="src-row"><span>${s}</span><span>✓ used</span></div>`).join("")
 
+  function safeUrl(u){return typeof u==='string'&&/^https?:\/\//i.test(u)?u:'#'}
   const socialsHtml=[
-    ...websites.map(w=>`<a class="soc" href="${w.url}" target="_blank" rel="noopener">${w.label||'Website'}</a>`),
-    ...socials.map(s=>`<a class="soc" href="${s.url}" target="_blank" rel="noopener">${s.type}</a>`)
+    ...websites.map(w=>`<a class="soc" href="${safeUrl(w.url)}" target="_blank" rel="noopener">${w.label||'Website'}</a>`),
+    ...socials.map(s=>`<a class="soc" href="${safeUrl(s.url)}" target="_blank" rel="noopener">${s.type}</a>`)
   ].join("")
 
   const pairDate=pairCreated?new Date(pairCreated).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):null
