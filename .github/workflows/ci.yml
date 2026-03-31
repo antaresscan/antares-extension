@@ -22,8 +22,8 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit
 
-      - name: Test
-        run: npm run test
+      - name: Test with coverage
+        run: npx vitest run --coverage
 
       - name: Lint
         run: npx eslint .
@@ -38,6 +38,3 @@ jobs:
           name: antares-extension-build
           path: build/chrome-mv3-prod/
           retention-days: 30
-
-      - name: Coverage
-        run: npx vitest run --coverage --reporter=json --outputFile=coverage/coverage.json
