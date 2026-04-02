@@ -411,7 +411,7 @@ function render(d,ca){
   // Always show all 4 sources, merge with API response
   const FIXED_SOURCES=["DexScreener","RugCheck","GoPlus","Helius"]
   const apiSources=Array.isArray(d.sources_used)?d.sources_used:[]
-  const allSources=[...new Set([...FIXED_SOURCES,...apiSources])]
+  const allSources=[...new Map([...FIXED_SOURCES,...apiSources].map(s=>[s.toLowerCase(),s])).values()]
   const sourcesHtml=allSources
     .map(s=>`<div class="src-row"><span>${s}</span><span>✓ used</span></div>`).join("")
 
@@ -453,18 +453,13 @@ function render(d,ca){
     <div class="card">
       <div class="card-title">Market Data</div>
       <div class="grid g4">
-        ${mc?`<div class="stat"><span>Market Cap</span><strong>${fmt(mc)}</strong></div>`:""}
+        ${mc?`<div class="stat"><span>FDV</span><strong>${fmt(mc)}</strong></div>`:""}
         ${liq?`<div class="stat"><span>Liquidity</span><strong>${fmt(liq)}</strong></div>`:""}
         ${vol24?`<div class="stat"><span>Volume 24h</span><strong>${fmt(vol24)}</strong></div>`:""}
         ${vol1h?`<div class="stat"><span>Volume 1h</span><strong>${fmt(vol1h)}</strong></div>`:""}
-        ${holders?`<div class="stat"><span>Holders</span><strong>${holders.toLocaleString()}</strong></div>`:""}
+        
       </div>
       ${changesHtml}
-    </div>
-
-    <div class="card">
-      <div class="card-title">Transactions</div>
-      ${txnsHtml}
     </div>
 
     <div class="card">
