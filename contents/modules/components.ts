@@ -208,8 +208,6 @@ export function buildResult(data: ScanResponseData, ca: string): string {
   const allFlags = (data.flags || []).filter((f: ScanResponseFlag) => f.severity !== "bonus")
   const flagCount = allFlags.length
   const critCount = allFlags.filter((f: ScanResponseFlag) => f.severity === "critical").length
-  const conf = typeof data.confidence === "number" ? data.confidence : null
-
   let summary = ""
   if (flagCount === 0) summary = "No issues found"
   else if (critCount > 0) summary = `${flagCount} flags \u2014 ${critCount} critical`
