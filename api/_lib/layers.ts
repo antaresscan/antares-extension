@@ -309,6 +309,12 @@ export function layerSolscan(
     else if (tokenAgeHours > 720) { flags.push(makeFlag("Established token (30d+) ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.05); }
   }
   let washTradingDetected = false;
+        // Fix: handle traders24h=0 with trades — pure wash trading (no real traders)
+    if (trades24h !== null && traders24h !== null && traders24h === 0 && trades24h > 0) {
+        flags.push(makeFlag("Wash trading: trades with zero identified traders", "critical", 0));
+        penalties.push(0.40); safeBlocked = true;
+        washTradingDetected = true;
+    }
   if (trades24h !== null && traders24h !== null && traders24h > 0) {
     const tradesPerTrader = trades24h / traders24h;
     if (tradesPerTrader > 50 && traders24h < 20) {
@@ -389,6 +395,11 @@ export function layerChart(
       flags.push(makeFlag("Early volume exhaustion near highs", "warning", 0));
       penalties.push(0.65); safeBlocked = true;
     }
+              // Fix: handle olderVol mean=0 with sudden volume spike — artificial pump
+        if (olderVol.length && _mean(olderVol) === 0 && _mean(recentVol) > 0) {
+            flags.push(makeFlag("Sudden volume spike from zero — artificial pump", "warning", 0));
+            penalties.push(0.60); safeBlocked = true;
+        }
   }
   if (_pct(first, last) > 300 && greenRatio > 0.78) {
     flags.push(makeFlag("Parabolic launch: high risk exit liquidity setup", "warning", 0));
