@@ -191,6 +191,7 @@ export function buildResult(data: ScanResponseData, ca: string): string {
   const riskClass = RISK_CLASS[data.risk] || "danger"
   const label = LABELS[data.risk] || data.risk
   const mint = data.resolvedMint || ca
+  const liq = data.liquidity ?? data.pair?.liquidity?.usd ?? null
 
   const score = data.score || 0
   const barW = Math.min(100, Math.round(score / 10))
@@ -208,12 +209,26 @@ export function buildResult(data: ScanResponseData, ca: string): string {
   const allFlags = (data.flags || []).filter((f: ScanResponseFlag) => f.severity !== "bonus")
   const flagCount = allFlags.length
   const critCount = allFlags.filter((f: ScanResponseFlag) => f.severity === "critical").length
+
   let summary = ""
   if (flagCount === 0) summary = "No issues found"
   else if (critCount > 0) summary = `${flagCount} flags \u2014 ${critCount} critical`
   else summary = `${flagCount} flags detected`
 
   const isDangerous = data.risk === "RUG" || data.risk === "DANGER"
+
+  // Security indicators
+  const boolSI = (siLabel: string, val: unknown, invert = false) => {
+    if (val === null || val === undefined) return `<div class="si"><span>${escapeHtml(siLabel)}</span><b style="color:#333">\u2014</b></div>`
+    const yes = invert ? !val : !!val
+    return `<div class="si"><span>${escapeHtml(siLabel)}</span><b class="${yes ? "y" : "n"}">${yes ? "\u2713" : "\u2717"}</b></div>`
+  }
+  const siSell = `<div class="si"><span>Sell</span><b class="${data.honeypot ? "n" : "y"}">${data.honeypot ? "\u2717" : "\u2713"}</b></div>`
+  const siMint = boolSI("Mint", data.mintAuthority, true)
+  const siFreeze = boolSI("Freeze", data.freezeAuthority, true)
+  const siLP = boolSI("LP Lock", data.lpBurned ?? data.lpLocked)
+  const liqDisplay = liq !== null ? formatMcap(liq) : "\u2014"
+  const siLiq = `<div class="si"><span>Liq</span><b${liq !== null && liq < 5000 ? ' class="n"' : liq !== null && liq > 50000 ? ' class="y"' : ""}>${liqDisplay}</b></div>`
 
   const rawDexUrl = data.pair?.url
   const safeDexUrl = rawDexUrl && /^https?:\/\//i.test(rawDexUrl) ? rawDexUrl : ""
@@ -222,8 +237,6 @@ export function buildResult(data: ScanResponseData, ca: string): string {
     : ""
   const analysisLink = `<a href="${ANALYSIS_PAGE}?ca=${encodeURIComponent(mint)}" target="_blank" rel="noopener noreferrer"${isDangerous ? ' class="warn"' : ''}>Full Analysis \u2192</a>`
 
-  const sparkline = buildSparkline(data.candles as Array<{ close: number }> | undefined, data.risk as string)
-
   return `
     <div class="topbar"></div>
     ${buildHeader()}
@@ -231,8 +244,9 @@ export function buildResult(data: ScanResponseData, ca: string): string {
     <div class="vb"><h1>${label}</h1></div>
     <div class="sr"><span class="n"><b class="ant-score" data-target="${score}">0</b> / 1000</span><div class="dots">${dots}</div></div>
     <div class="sbar"><div class="sbar-fill" data-w="${barW}"></div></div>
-    ${sparkline}
     <div class="sum">${summary}</div>
+    <div class="sep"></div>
+    <div class="ss">${siSell}${siMint}${siFreeze}${siLP}${siLiq}</div>
     <div class="hist-panel" id="ant-hist"></div>
     <div class="fo">${dexLink}${analysisLink}<button class="hist-btn" id="ant-hist-btn">History</button></div>
   `
