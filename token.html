@@ -323,7 +323,7 @@ function render(d,ca){
   const barW=Math.min(100,Math.round(score/10))
   const conf=typeof d.confidence==="number"?d.confidence:null
 
-  const mc=d.marketCap??d.pair?.fdv??null
+  const mc=d.marketCap??d.pair?.marketCap??null
   const liq=d.liquidity??d.pair?.liquidity?.usd??null
   const vol24=d.volume24h??d.pair?.volume?.h24??null
   const vol1h=d.volume1h??d.pair?.volume?.h1??null
@@ -453,7 +453,7 @@ function render(d,ca){
     <div class="card">
       <div class="card-title">Market Data</div>
       <div class="grid g4">
-        ${mc?`<div class="stat"><span>FDV</span><strong>${fmt(mc)}</strong></div>`:""}
+        ${mc?`<div class="stat"><span>Market Cap</span><strong>${fmt(mc)}</strong></div>`:""}
         ${liq?`<div class="stat"><span>Liquidity</span><strong>${fmt(liq)}</strong></div>`:""}
         ${vol24?`<div class="stat"><span>Volume 24h</span><strong>${fmt(vol24)}</strong></div>`:""}
         ${vol1h?`<div class="stat"><span>Volume 1h</span><strong>${fmt(vol1h)}</strong></div>`:""}
