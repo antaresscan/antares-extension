@@ -61,6 +61,17 @@ export function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean
     }
   }
 
+    // Fix: Allow same-origin requests (token.html -> /api/scan on same domain)
+  // Browsers don't send Origin header for same-origin fetch requests.
+  if (!origin) {
+    const referer = (req.headers.referer as string) || "";
+    if (referer.startsWith("https://antares-extension.vercel.app")) {
+      res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+      res.setHeader("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
+      return true;
+    }
+  }
+  
   const corsOk = isCorsAllowed(origin, ALLOWED_ORIGINS);
 
   if (corsOk) res.setHeader("Access-Control-Allow-Origin", origin);
