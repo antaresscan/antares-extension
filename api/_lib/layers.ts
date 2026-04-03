@@ -8,6 +8,7 @@ import type {
   GoPlusTokenResult,
   HeliusHolder,
   OHLCVCandle,
+    DefadeAnalysis,
 } from "./types";
 import {
   LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS, OFFICIAL_MINTS,
@@ -458,4 +459,84 @@ export function layerCrossValidation(
     }
   }
   return { source: "crossvalidation", trust: 1.0, available: true, flags, forceRug, safeBlocked };
+}
+
+      // ═══ LAYER 8 — DeFade ═════════════════════════════════════════════════════════════
+export function layerDefade(defade: DefadeAnalysis | null): LayerResult {
+    const flags: ScanFlag[] = [];
+    let trust = 1.0;
+    const penalties: number[] = [];
+    let forceRug = false, safeBlocked = false;
+
+    if (!defade) return {
+        source: "defade", trust: 1.0, available: false,
+        flags: [makeFlag("DeFade unavailable", "info", 0)],
+        forceRug: false, safeBlocked: false,
+    };
+
+    const score = defade.rugScore ?? 0;
+    const level = defade.riskLevel ?? "LOW";
+
+    // Map DeFade rugScore (0-100, higher = riskier) to trust
+    if (score >= 76) {
+        flags.push(makeFlag(`DeFade: CRITICAL risk (score ${score}/100)`, "critical", 0));
+        penalties.push(0.10); forceRug = true; safeBlocked = true;
+    } else if (score >= 51) {
+        flags.push(makeFlag(`DeFade: HIGH risk (score ${score}/100)`, "critical", 0));
+        penalties.push(0.30); safeBlocked = true;
+    } else if (score >= 26) {
+        flags.push(makeFlag(`DeFade: MEDIUM risk (score ${score}/100)`, "warning", 0));
+        penalties.push(0.70);
+    } else {
+        flags.push(makeFlag(`DeFade: LOW risk (score ${score}/100)`, "bonus", 0));
+        trust = Math.min(1.0, trust * 1.05);
+    }
+
+    // Bundle detection from DeFade
+    if (defade.bundleDetected) {
+        const bPct = defade.bundlePercentage ?? 0;
+        if (bPct > 20) {
+            flags.push(makeFlag(`DeFade: Bundle holds ~${bPct}% of supply`, "critical", 0));
+            penalties.push(0.10); forceRug = true; safeBlocked = true;
+        } else if (bPct > 5) {
+            flags.push(makeFlag(`DeFade: Bundle detected (~${bPct}%)`, "critical", 0));
+            penalties.push(0.25); safeBlocked = true;
+        } else {
+            flags.push(makeFlag("DeFade: Bundle activity detected", "warning", 0));
+            penalties.push(0.50); safeBlocked = true;
+        }
+    }
+
+    // Sniper detection
+    if (defade.sniperCount && defade.sniperCount > 0) {
+        const sPct = defade.sniperPercentage ?? 0;
+        if (sPct > 15) {
+            flags.push(makeFlag(`DeFade: ${defade.sniperCount} snipers (~${sPct}%)`, "critical", 0));
+            penalties.push(0.20); safeBlocked = true;
+        } else {
+            flags.push(makeFlag(`DeFade: ${defade.sniperCount} snipers detected`, "warning", 0));
+            penalties.push(0.65);
+        }
+    }
+
+    // Insider network
+    if (defade.insiderCount && defade.insiderCount > 3) {
+        flags.push(makeFlag(`DeFade: ${defade.insiderCount} insider wallets detected`, "critical", 0));
+        penalties.push(0.30); safeBlocked = true;
+    }
+
+    // Dev wallet sold
+    if (defade.devWalletSold) {
+        flags.push(makeFlag("DeFade: Dev wallet sold tokens", "warning", 0));
+        penalties.push(0.60);
+    }
+
+    // Smart money signal (positive)
+    if (defade.smartMoneyIn === true) {
+        flags.push(makeFlag("DeFade: Smart money detected \u2713", "bonus", 0));
+        trust = Math.min(1.0, trust * 1.05);
+    }
+
+    trust = applyDiminishingPenalties(trust, penalties);
+    return { source: "defade", trust: Math.max(0, trust), available: true, flags, forceRug, safeBlocked };
 }
