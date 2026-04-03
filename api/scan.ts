@@ -22,6 +22,7 @@ import {
   heliusGetLargestAccounts, heliusGetTokenSupply, heliusGetCreatorReputation,
   heliusGetHoldersCount,
   solscanGetHoldersCount, fetchSolscan, fetchDexCandles,
+  fetchDefadeAnalysis,
   type CreatorReputation,
 } from "./_lib/fetchers";
 import {
@@ -29,7 +30,7 @@ import {
 } from "./_lib/constants";
 import {
   layerDexScreener, layerRugCheck, layerGoPlus, layerHelius,
-  layerSolscan, layerChart, layerCrossValidation,
+  layerSolscan, layerChart, layerCrossValidati,on layerDefade,
 } from "./_lib/layers";
 import { computeFinalScore, classifySafeBlockedReasons } from "./_lib/scoring";
 import { evaluatePostLayerFlags, applySafeGateOverride, applyEstablishedBonus, determineVerdict } from "./_lib/pipeline";
@@ -90,6 +91,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: string, ca: string) {
   const HELIUS_API_KEY = process.env.HELIUS_API_KEY || "";
+    const DEFADE_API_KEY = process.env.DEFADE_API_KEY || "";
 
   try {
     const [dexRes, rugRes, rugReportRes] = await Promise.all([
@@ -149,7 +151,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       candlesRaw, goplusRaw,
       heliusHoldersRaw, heliusSupplyRaw,
       solscanHoldersCount,
-      solMeta, solTransfers, solMarkets,
+          solMeta, solTransfers, solMarkets, defadeRaw,
     ] = await Promise.all([
       settled(fetchDexCandles(pairAddress)),
       settled(fetchJson(`${GOPLUS_BASE}/solana/token_security?contract_addresses=${resolvedMint}`, {}, 4000)),
@@ -159,6 +161,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       settled(fetchSolscan(`/token/meta?address=${resolvedMint}`)),
       settled(fetchSolscan(`/token/transfer?address=${resolvedMint}&page=1&page_size=10`)),
       settled(fetchSolscan(`/token/markets?address=${resolvedMint}&page=1&page_size=1`)),
+          DEFADE_API_KEY ? settled(fetchDefadeAnalysis(resolvedMint, DEFADE_API_KEY)) : null,
     ]);
 
     const candles: OHLCVCandle[] = Array.isArray(candlesRaw) ? candlesRaw : [];
@@ -227,7 +230,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const priceChange1h  = pair?.priceChange?.h1  ?? null;
     const priceChange24h = pair?.priceChange?.h24 ?? null;
 
-    // 6 layers — identity layer removed
+        const defadeData = defadeRaw && typeof defadeRaw === "object" && "rugScore" in defadeRaw ? defadeRaw : null;
+        // 7 layers — identity layer removed, DeFade added
     const l1 = layerDexScreener(pair, marketCap, tokenAgeMinutes);
     const l2 = layerRugCheck(rugData, rugReport, resolvedMint);
     const l3 = layerGoPlus(goplus);
@@ -235,8 +239,9 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const l5 = layerSolscan(solscanHoldersCount, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h);
     const l6 = layerChart(candles, pair, tokenAgeMinutes);
     const l8 = layerCrossValidation(rugData, rawHolderAccounts, goplus, solscanTokenAgeHours, dexTokenAgeHours, totalSupplyUi);
-
-    const allLayers = [l1, l2, l3, l4, l5, l6, l8];
+        const lDefade = layerDefade(defadeData);
+    const allLayers = [l1, l2, l3, l4, l5, l6, l8, lDefade];
+  
     let score       = computeFinalScore(allLayers);
     let forceRug    = allLayers.some(l => l.forceRug);
     let safeBlocked = allLayers.some(l => l.safeBlocked);
@@ -315,7 +320,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       freezeAuthority: allLayers.some(l => l.flags.some(f => /freeze authority/i.test(f.label) && f.severity === "critical")),
       lpBurned: rugData?.lpBurned === true,
       candles: candles.slice(-20).map(c => ({ close: c.c })),
-      scoring_version: "7.1.0",
+            scoring_version: "8.0.0",
       fetchedAt: Date.now(),
     };
 
@@ -323,7 +328,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     if (resolvedMint !== ca) setCachedResult(resolvedMint, result, tokenAgeMinutes);
     return res.json(result);
   } catch (e) {
-    console.error("[scan v7.1.0]", requestId, e);
+          console.error("[scan v8.0.0]", requestId, e);
     Sentry.captureException(e);
     return apiError(res, 500, "Analysis error.");
   }
