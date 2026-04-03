@@ -34,7 +34,7 @@ Layers 1–6 contribute weighted trust scores to the geometric mean. Layer 7 (Id
 
 A token can only reach **SAFE** (score ≥ 850) if it passes all critical gates regardless of score.
 
-**Scoring version:** `7.0.0`
+**Scoring version:** `7.1.0`
 
 ## Architecture
 
