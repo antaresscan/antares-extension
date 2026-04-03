@@ -317,6 +317,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       candles: candles.slice(-20).map(c => ({ close: c.c })),
       scoring_version: "7.1.0",
       fetchedAt: Date.now(),
+      requestId,
     };
 
     setCachedResult(ca, result, tokenAgeMinutes);
