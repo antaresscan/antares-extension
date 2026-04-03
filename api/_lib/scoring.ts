@@ -12,13 +12,13 @@ export function computeFinalScore(layers: LayerResult[]): number {
 
   for (const src of weightedSources) {
     const layer = layers.find(l => l.source === src);
-    const w = LAYER_WEIGHTS[src];
+    const w = LAYER_WEIGHTS[src] ?? 0;
     if (!layer || !layer.available) continue;
     availableLayers.push({ trust: Math.max(TRUST_FLOOR, layer.trust), weight: w });
     totalWeight += w;
   }
 
-  if (totalWeight === 0) return 0;
+  if (!totalWeight || totalWeight <= 0) return 0;
 
   let product = 1.0;
   for (const { trust, weight } of availableLayers) {
