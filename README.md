@@ -11,26 +11,24 @@
 - Analyses on-chain holder distribution (Helius)
 - Detects chart manipulation patterns: parabolic pumps, blow-off tops, wash trading (DexScreener OHLCV)
 - Verifies on-chain age, holder count, and trading patterns (Solscan)
-- Identifies copycat / brand-imitation tokens
 - Cross-validates data across sources to flag conflicts
 - Displays a verdict — **SAFE / CAUTION / DANGER / RUG** — with a score out of 1000
 
 ## Scoring
 
-Score starts at **1000** and is reduced by weighted penalties across **8 layers**:
+Score starts at **1000** and is reduced by weighted penalties across **6 layers**:
 
 | Layer | Source | Weight | What it checks |
 |---|---|---|---|
-| L1 | DexScreener | 0.18 | Liquidity, volume, price changes, social presence |
-| L2 | RugCheck | 0.18 | LP burn/lock, bundler activity, metadata, top holders |
-| L3 | GoPlus | 0.18 | Honeypot, mint/freeze authority, tax, proxy contracts |
-| L4 | Helius | 0.18 | On-chain holder distribution (top 1 / top 10) |
+| L1 | DexScreener | 0.20 | Liquidity, volume, price changes, social presence |
+| L2 | RugCheck | 0.20 | LP burn/lock, bundler activity, metadata, top holders |
+| L3 | GoPlus | 0.20 | Honeypot, mint/freeze authority, tax, proxy contracts |
+| L4 | Helius | 0.20 | On-chain holder distribution (top 1 / top 10) |
 | L5 | Solscan | 0.10 | Holder count, token age, wash trading patterns |
 | L6 | Chart | 0.10 | OHLCV pattern analysis (pump, dump, wash, stair-step) |
-| L7 | Identity | 0.08 | Copycat / brand imitation detection |
 | L8 | CrossValidation | — | Cross-source conflict detection (post-score multiplier) |
 
-Layers 1–6 contribute weighted trust scores to the geometric mean. Layer 7 (Identity) contributes with weight 0.08. Layer 8 (CrossValidation) produces flags and penalty multipliers but does not feed the geometric mean directly.
+Layers 1–6 contribute weighted trust scores to the geometric mean. Layer 8 (CrossValidation) produces flags and penalty multipliers but does not feed the geometric mean directly.
 
 A token can only reach **SAFE** (score ≥ 850) if it passes all critical gates regardless of score.
 
@@ -43,7 +41,7 @@ api/
   scan.ts          — Main serverless handler (GET /api/scan?ca=<mint>)
   _lib/
     fetchers.ts    — External API data fetching (DexScreener, RugCheck, GoPlus, Helius, Solscan)
-    layers.ts      — 8 analysis layer functions (pure, no side effects)
+    layers.ts      — 6 analysis layer functions (pure, no side effects)
     scoring.ts     — Geometric-mean scoring engine with cross-validation penalties
     pipeline.ts    — Post-layer flags, safe-gate, established bonus, verdict
     constants.ts   — All constants: weights, brands, thresholds, API bases
@@ -102,6 +100,7 @@ Copy `.env.example` to `.env.local` and fill in your values:
 HELIUS_API_KEY=...              # Required
 UPSTASH_REDIS_REST_URL=...      # Required
 UPSTASH_REDIS_REST_TOKEN=...    # Required
+ANTARES_API_KEY=...            # Required (Chrome extension auth)
 SOLSCAN_API_KEY=...             # Optional (L5 Solscan Pro)
 SENTRY_DSN=...                  # Optional (error monitoring)
 ```
