@@ -257,7 +257,7 @@ export function layerHelius(
   let trust = 1.0;
   const penalties: number[] = [];
   let forceRug = false, safeBlocked = false;
-  if (!rawHolderAccounts.length || totalSupplyUi === 0) return {
+    if (!rawHolderAccounts.length || !totalSupplyUi || totalSupplyUi <= 0) return {
     source: "helius", trust: 1.0, available: false,
     flags: [makeFlag("Helius unavailable", "info", 0)],
     forceRug: false, safeBlocked: false,

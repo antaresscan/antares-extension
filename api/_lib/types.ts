@@ -297,6 +297,7 @@ export interface ScanResult {
   honeypot?: boolean;
   mintAuthority?: boolean;
   freezeAuthority?: boolean;
+      requestId: string;
   lpBurned?: boolean;
   candles?: Array<{ close: number }>;
 }
