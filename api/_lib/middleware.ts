@@ -84,6 +84,7 @@ export function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean
 
 export function getClientIp(req: VercelRequest): string {
   return (
+    (req.headers["x-real-ip"] as string)?.trim() ||
     (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
     (req.socket as { remoteAddress?: string } | undefined)?.remoteAddress ||
     "unknown"
