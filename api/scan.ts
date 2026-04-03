@@ -37,6 +37,7 @@ import { setCorsHeaders, getClientIp, checkRateLimit, validateCA, initRateLimite
 import { initCache, getCachedResult, setCachedResult } from "./_lib/cache";
 import * as Sentry from "@sentry/node";
 
+import { initRugDb, getRugEntry, recordRug } from "./_lib/rugdb";
 if (process.env.SENTRY_DSN) {
   Sentry.init({ dsn: process.env.SENTRY_DSN, tracesSampleRate: 0.1 });
 }
@@ -48,6 +49,7 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
   });
   initCache(redis);
   initRateLimiters(redis);
+    initRugDb(redis);
 }
 
 const GLOBAL_TIMEOUT_MS = Number(process.env.VERCEL_TIMEOUT) || 9000;
@@ -322,6 +324,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
 
     setCachedResult(ca, result, tokenAgeMinutes);
     if (resolvedMint !== ca) setCachedResult(resolvedMint, result, tokenAgeMinutes);
+        void recordRug({ mint: resolvedMint, symbol: sanitizeString(pair?.baseToken?.symbol) ?? null, score, risk, flags, creator: tokenCreator });
     return res.json(result);
   } catch (e) {
     console.error("[scan v7.1.0]", requestId, e);
