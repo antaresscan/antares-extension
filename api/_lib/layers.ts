@@ -42,18 +42,18 @@ export function layerDexScreener(
     flags: [makeFlag("Not indexed on DexScreener", "warning", 0)],
     forceRug: false, safeBlocked: false,
   };
-  const liq = asNumber(pair?.liquidity?.usd);
-  const vol = asNumber(pair?.volume?.h24);
-  const pc24 = asNumber(pair?.priceChange?.h24);
-  const pc1 = asNumber(pair?.priceChange?.h1);
-  const pc6 = asNumber(pair?.priceChange?.h6);
-  const pc5 = asNumber(pair?.priceChange?.m5);
-  const buys5m = asNumber(pair?.txns?.m5?.buys);
-  const sells5m = asNumber(pair?.txns?.m5?.sells);
+  const liq = asNumber(pair.liquidity?.usd);
+  const vol = asNumber(pair.volume?.h24);
+  const pc24 = asNumber(pair.priceChange?.h24);
+  const pc1 = asNumber(pair.priceChange?.h1);
+  const pc6 = asNumber(pair.priceChange?.h6);
+  const pc5 = asNumber(pair.priceChange?.m5);
+  const buys5m = asNumber(pair.txns?.m5?.buys);
+  const sells5m = asNumber(pair.txns?.m5?.sells);
   const txns5m = buys5m + sells5m;
   const mc = marketCap ?? 0;
-  const socials = pair?.info?.socials || [];
-  const websites = pair?.info?.websites || [];
+  const socials = pair.info?.socials || [];
+  const websites = pair.info?.websites || [];
   const hasTwitter = Array.isArray(socials) && socials.some((s: DexScreenerSocial) => /twitter|x/i.test(String(s?.type || s?.url || "")));
   const hasTelegram = Array.isArray(socials) && socials.some((s: DexScreenerSocial) => /telegram/i.test(String(s?.type || s?.url || "")));
   const hasWebsite = Array.isArray(websites) && websites.length > 0;
@@ -257,7 +257,7 @@ export function layerHelius(
   let trust = 1.0;
   const penalties: number[] = [];
   let forceRug = false, safeBlocked = false;
-  if (!rawHolderAccounts.length || totalSupplyUi === 0) return {
+    if (!rawHolderAccounts.length || !totalSupplyUi || totalSupplyUi <= 0) return {
     source: "helius", trust: 1.0, available: false,
     flags: [makeFlag("Helius unavailable", "info", 0)],
     forceRug: false, safeBlocked: false,

@@ -76,7 +76,7 @@ export function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean
 
   if (corsOk) res.setHeader("Access-Control-Allow-Origin", origin);
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Antares-Key");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Antares-Key, Authorization");
   res.setHeader("Access-Control-Max-Age", "86400");
   res.setHeader("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
   return corsOk;
@@ -84,6 +84,7 @@ export function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean
 
 export function getClientIp(req: VercelRequest): string {
   return (
+    (req.headers["x-real-ip"] as string)?.trim() ||
     (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
     (req.socket as { remoteAddress?: string } | undefined)?.remoteAddress ||
     "unknown"

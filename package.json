@@ -24,8 +24,8 @@
   "devDependencies": {
     "@eslint/js": "^10.0.0",
     "@ianvs/prettier-plugin-sort-imports": "4.7.1",
-    "@types/chrome": "0.1.39",
-    "@types/node": "20.19.37",
+"@types/chrome": "0.1.39",
+        "@types/node": "20.19.39",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vercel/node": "^5.0.0",

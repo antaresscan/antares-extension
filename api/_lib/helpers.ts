@@ -21,7 +21,7 @@ export function isObject(v: unknown): v is Record<string, unknown> {
 
 export function pickGoPlusResult(raw: unknown, ca: string): GoPlusTokenResult | null {
   if (!isObject(raw)) return null;
-  const result = (raw as GoPlusResponse).result;
+  const result = (raw as GoPlusResponse)?.result;
   if (!result || typeof result !== "object") return null;
   return result[ca] || result[ca.toLowerCase()] || result[ca.toUpperCase()] || null;
 }
@@ -62,7 +62,7 @@ export function apiError(res: VercelResponse, status: number, message: string, d
 }
 
 export function isCorsAllowed(origin: string, allowedOrigins: string[]): boolean {
-  return allowedOrigins.some(o => origin.startsWith(o)) || origin.startsWith("chrome-extension://");
+    return allowedOrigins.some(o => origin.startsWith(o));
 }
 
 export function isValidDexScreenerResponse(data: unknown): data is DexScreenerResponse {

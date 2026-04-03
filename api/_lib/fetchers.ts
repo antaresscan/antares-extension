@@ -8,6 +8,7 @@ import type {
 import { HELIUS_BASE, SOLSCAN_PUBLIC_BASE, SOLSCAN_BASE } from "./constants";
 import { fetchJson, fetchJsonPost } from "./http";
 import { asNumber } from "./math";
+const HELIUS_REST_BASE = "https://api.helius.xyz";
 
 
 // ─── HELIUS HELPERS ─────────────────────────────────────────────────────────
@@ -48,7 +49,7 @@ export async function heliusGetCreatorReputation(
     if (!creator || !key) return null;
     // Use Authorization header instead of query param for security
     const res = await fetchJson(
-        "https://api.helius.xyz/v0/addresses/" + creator + "/transactions?limit=20",
+        HELIUS_REST_BASE + "/v0/addresses/" + creator + "/transactions?limit=20",
         { headers: heliusHeaders(key) }, 6000
     ) as Array<{ type?: string; description?: string }> | null;
     if (!Array.isArray(res)) return null;
