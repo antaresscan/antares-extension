@@ -91,7 +91,7 @@ export function applyEstablishedBonus(input: EstablishedBonusInput): number {
 
 export function determineVerdict(input: VerdictInput): Verdict {
   if (input.forceRug) return "RUG";
-  if (input.sourcesUsedCount === 0) return "DANGER";
+  if (!input.sourcesUsedCount || input.sourcesUsedCount <= 0) return "DANGER";
 
   if (input.safeBlocked) {
     // Fix(Bug 15): Added "sniper", "pump", "chart" to HARD_REASONS.
