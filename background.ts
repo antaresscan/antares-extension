@@ -144,7 +144,7 @@ const handlers: Record<string, MessageHandler> = {
     const ctrl = new AbortController()
     const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS)
     void fetch(`${API_BASE}/api/scan?ca=${ca}`, { signal: ctrl.signal })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
       .then((data: Record<string, unknown>) => {
         clearTimeout(timer)
         const risk = safeString(data.risk)
