@@ -117,8 +117,8 @@ describe("isCorsAllowed", () => {
     expect(isCorsAllowed("https://dexscreener.com/solana/abc", origins)).toBe(true);
   });
 
-  it("chrome-extension://abc123 -> true", () => {
-    expect(isCorsAllowed("chrome-extension://abc123", origins)).toBe(true);
+      it("chrome-extension://abc123 -> false (wildcard removed)", () => {
+          expect(isCorsAllowed("chrome-extension://abc123", origins)).toBe(false);
   });
 
   it("evil.com -> false", () => {
@@ -129,8 +129,8 @@ describe("isCorsAllowed", () => {
     expect(isCorsAllowed("", origins)).toBe(false);
   });
 
-  it("chrome-extension:// exactly -> true", () => {
-    expect(isCorsAllowed("chrome-extension://", origins)).toBe(true);
+      it("chrome-extension:// exactly -> false (wildcard removed)", () => {
+          expect(isCorsAllowed("chrome-extension://", origins)).toBe(false);
   });
 
   it("dexscreener.org (different TLD) -> false", () => {
