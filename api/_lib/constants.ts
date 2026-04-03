@@ -6,6 +6,7 @@ export const GOPLUS_BASE = "https://api.gopluslabs.io/api/v1";
 export const HELIUS_BASE = "https://mainnet.helius-rpc.com";
 export const SOLSCAN_PUBLIC_BASE = "https://public-api.solscan.io";
 export const SOLSCAN_BASE = "https://pro-api.solscan.io/v2.0";
+export const DEFADE_BASE = "https://api.defade.org/v1";
 
 // CA_RE — single source of truth from shared/constants.ts
 export { CA_RE } from "../../shared/constants";
@@ -55,12 +56,13 @@ export const OFFICIAL_MINTS = new Set([
 
 // ═══ LAYER WEIGHTS (identity layer removed) ────────────────────────────────────────────
 export const LAYER_WEIGHTS: Record<string, number> = {
-  dexscreener: 0.20,
-  rugcheck:    0.20,
-  goplus:      0.20,
-  helius:      0.20,
-  solscan:     0.10,
-  chart:       0.10,
+    dexscreener: 0.18,
+    rugcheck:    0.18,
+    goplus:      0.18,
+    helius:      0.18,
+    solscan:     0.09,
+    chart:       0.09,
+  defade:      0.10,
 };
 // crossvalidation has NO weight — it is a post-score multiplier
 
