@@ -3,14 +3,12 @@ export {}
 import * as Sentry from "@sentry/browser"
 import type { HistoryEntry } from "./shared/types"
 import { CA_RE } from "./shared/constants"
+import { config } from "./shared/config"
 
 // ─── SENTRY INITIALIZATION ──────────────────────────────────────────────────
-const SENTRY_DSN = process.env.PLASMO_PUBLIC_SENTRY_DSN || ""
-if (SENTRY_DSN) {
-  Sentry.init({ dsn: SENTRY_DSN, tracesSampleRate: 0.1 })
+if (config.sentryDsn) {
+  Sentry.init({ dsn: config.sentryDsn, tracesSampleRate: config.sentryTracesSampleRate })
 }
-const API_BASE = process.env.PLASMO_PUBLIC_API_BASE || "https://antares-extension.vercel.app"
-const FETCH_TIMEOUT_MS = 10_000
 
 // ─── SAFE DATA EXTRACTION HELPERS ───────────────────────────────────────────
 function safeString(val: unknown): string | undefined {
@@ -42,8 +40,8 @@ function extractSymbol(data: Record<string, unknown>): string {
 }
 
 // ─── KEEPALIVE — chrome.alarms replaces setInterval for MV3 service workers ──
-void chrome.alarms.create("keepalive", { periodInMinutes: 1 });
-chrome.alarms.onAlarm.addListener((a) => { if (a.name === "keepalive") void chrome.runtime.id; });
+void chrome.alarms.create(config.keepaliveAlarmName, { periodInMinutes: config.keepaliveIntervalMinutes });
+chrome.alarms.onAlarm.addListener((a) => { if (a.name === config.keepaliveAlarmName) void chrome.runtime.id; });
 
 // ─── BADGE CONFIG ──────────────────────────────────────────────────────────
 const BADGE_MAP: Record<string, { text: string; color: string }> = {
@@ -70,7 +68,7 @@ function updateBadge(risk: string, tabId?: number) {
 }
 
 function checkRiskEscalation(ca: string, currentRisk: string, tokenSymbol: string) {
-  const key = `antares_last_risk_${ca}`
+  const key = `${config.riskStoragePrefix}${ca}`
   try {
     chrome.storage.local.get([key], (result) => {
       if (chrome.runtime.lastError) {
@@ -94,9 +92,6 @@ function checkRiskEscalation(ca: string, currentRisk: string, tokenSymbol: strin
 }
 
 // ─── HISTORY ───────────────────────────────────────────────────────────────
-const HISTORY_KEY = "antares_scan_history"
-const MAX_HISTORY = 10
-
 function saveToHistory(ca: string, data: Record<string, unknown>) {
   const entry: HistoryEntry = {
     ca,
@@ -106,15 +101,15 @@ function saveToHistory(ca: string, data: Record<string, unknown>) {
     ts: Date.now(),
   }
   try {
-    chrome.storage.local.get([HISTORY_KEY], (result) => {
+    chrome.storage.local.get([config.historyStorageKey], (result) => {
       if (chrome.runtime.lastError) {
         console.warn("[antares] storage.get error:", chrome.runtime.lastError.message)
         return
       }
-      const history = (Array.isArray(result[HISTORY_KEY]) ? result[HISTORY_KEY] : []) as HistoryEntry[]
+      const history = (Array.isArray(result[config.historyStorageKey]) ? result[config.historyStorageKey] : []) as HistoryEntry[]
       const filtered = history.filter((h) => h.ca !== ca)
       filtered.unshift(entry)
-      void chrome.storage.local.set({ [HISTORY_KEY]: filtered.slice(0, MAX_HISTORY) })
+      void chrome.storage.local.set({ [config.historyStorageKey]: filtered.slice(0, config.maxHistoryEntries) })
     })
   } catch (e: unknown) {
     console.warn("[antares] saveToHistory error:", e)
@@ -142,9 +137,9 @@ const handlers: Record<string, MessageHandler> = {
         return true
     }
     const ctrl = new AbortController()
-    const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS)
-    void fetch(`${API_BASE}/api/scan?ca=${ca}`, { signal: ctrl.signal })
-      .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+    const timer = setTimeout(() => ctrl.abort(), config.fetchTimeoutMs)
+    void fetch(`${config.apiBase}/api/scan?ca=${ca}`, { signal: ctrl.signal })
+              .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
       .then((data: Record<string, unknown>) => {
         clearTimeout(timer)
         const risk = safeString(data.risk)
@@ -165,12 +160,12 @@ const handlers: Record<string, MessageHandler> = {
 
   GET_HISTORY: (_msg, _sender, sendResponse) => {
     try {
-      chrome.storage.local.get([HISTORY_KEY], (result) => {
+      chrome.storage.local.get([config.historyStorageKey], (result) => {
         if (chrome.runtime.lastError) {
           sendResponse({ ok: false, error: chrome.runtime.lastError.message })
           return
         }
-        sendResponse({ ok: true, history: (Array.isArray(result[HISTORY_KEY]) ? result[HISTORY_KEY] : []) as HistoryEntry[] })
+        sendResponse({ ok: true, history: (Array.isArray(result[config.historyStorageKey]) ? result[config.historyStorageKey] : []) as HistoryEntry[] })
       })
     } catch (e: unknown) {
       sendResponse({ ok: false, error: String(e) })
