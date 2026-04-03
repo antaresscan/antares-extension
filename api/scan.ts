@@ -36,10 +36,10 @@ import { evaluatePostLayerFlags, applySafeGateOverride, applyEstablishedBonus, d
 import { setCorsHeaders, getClientIp, checkRateLimit, validateCA, initRateLimiters } from "./_lib/middleware";
 import { initCache, getCachedResult, setCachedResult } from "./_lib/cache";
 import * as Sentry from "@sentry/node";
+import { generateAISummary } from "./_lib/ai-summary";
 
 if (process.env.SENTRY_DSN) {
   Sentry.init({ dsn: process.env.SENTRY_DSN, tracesSampleRate: 0.1 });
-}
 
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
   const redis = new Redis({
@@ -299,11 +299,22 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       allLayers.map(l => [l.source, { trust: +l.trust.toFixed(3), available: l.available }])
     );
 
+        // AI Summary — best-effort, non-blocking
+    const aiSummary = await settled(generateAISummary({
+      score, risk, flags,
+      tokenSymbol: sanitizeString(pair?.baseToken?.symbol) ?? null,
+      holders, marketCap, liquidity, lpBurned: rugData?.lpBurned === true,
+      mintAuthority: allLayers.some(l => l.flags.some(f => /mint authority/i.test(f.label) && f.severity === "critical")),
+      freezeAuthority: allLayers.some(l => l.flags.some(f => /freeze authority/i.test(f.label) && f.severity === "critical")),
+      honeypot: l3.available && l3.trust === 0 && l3.flags.some(f => /honeypot/i.test(f.label)),
+      tokenAgeHours: solscanTokenAgeHours ?? dexTokenAgeHours ?? null,
+      sourcesUsed: sources_used,
+    }));
     const result: ScanResult = {
       score, risk, flags, pair, resolvedMint, confidence, sources_used,
       holders, marketCap, priceUsd, liquidity,
       volume24h, volume1h, priceChange5m, priceChange1h, priceChange24h,
-      tokenSymbol: sanitizeString(pair?.baseToken?.symbol) ?? null,
+          nSymbol: sanitizeString(pair?.baseToken?.symbol) ?? null,
       tokenName: sanitizeString(pair?.baseToken?.name) ?? null,
       pairCreatedAt: pair?.pairCreatedAt ?? null,
       safeBlocked, safeBlockedReasons, tokenLogo: sanitizeUrl(tokenLogo), tokenCreator,
@@ -318,6 +329,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       scoring_version: "7.1.0",
       fetchedAt: Date.now(),
       requestId,
+            aiSummary: aiSummary ?? null,
     };
 
     setCachedResult(ca, result, tokenAgeMinutes);
