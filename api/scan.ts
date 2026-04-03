@@ -84,7 +84,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (e instanceof Error && e.message === "Global timeout") {
       return apiError(res, 504, "Analysis timed out. Try again.");
     }
-    throw e;
+    Sentry.captureException(e); return apiError(res, 500, "Unexpected error.");
   }
 }
 
