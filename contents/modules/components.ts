@@ -245,9 +245,10 @@ export function buildResult(data: ScanResponseData, ca: string): string {
     <div class="sr"><span class="n"><b class="ant-score" data-target="${score}">0</b> / 1000</span><div class="dots">${dots}</div></div>
     <div class="sbar"><div class="sbar-fill" data-w="${barW}"></div></div>
     <div class="sum">${summary}</div>
+    ${data.aiSummary ? `<div class="ai-sum"><span class="ai-label">✨ AI</span> ${escapeHtml(data.aiSummary)}</div>` : ""}
     <div class="sep"></div>
     <div class="ss">${siSell}${siMint}${siFreeze}${siLP}${siLiq}</div>
     <div class="hist-panel" id="ant-hist"></div>
     <div class="fo">${dexLink}${analysisLink}<button class="hist-btn" id="ant-hist-btn">History</button></div>
-  `
+        
 }
