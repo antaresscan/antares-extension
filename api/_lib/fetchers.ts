@@ -3,9 +3,10 @@
 import type {
     HeliusTokenAccountsResponse,
     OHLCVCandle, GeckoTerminalOHLCVResponse,
-    RugCheckReport, RugCheckRisk,
+    RugCheckReport, RugCheckRisk
+    DefadeAnalysis,,
 } from "./types";
-import { HELIUS_BASE, SOLSCAN_PUBLIC_BASE, SOLSCAN_BASE } from "./constants";
+import { HELIUS_BASE, SOLSCAN_PUBLIC_BASE, SOLSCAN_BASE, DEFADE_BASE } from "./constants";
 import { fetchJson, fetchJsonPost } from "./http";
 import { asNumber } from "./math";
 
@@ -116,4 +117,27 @@ export function extractBundlePct(rugReportData: RugCheckReport | null | undefine
     if (scoreVal >= 5000) return 0.20;
     if (scoreVal >= 2000) return 0.10;
     return 0.08;
+}
+
+// ─── DEFADE HELPERS ────────────────────────────────────────────────────────────
+const defadeHeaders = (key: string) => ({ "x-api-key": key });
+
+export async function fetchDefadeAnalysis(
+    mint: string, key: string
+): Promise<DefadeAnalysis | null> {
+    if (!key) return null;
+    return fetchJson(
+        `${DEFADE_BASE}/analyze/${mint}`,
+        { headers: defadeHeaders(key) }, 5000
+    ) as Promise<DefadeAnalysis | null>;
+}
+
+export async function fetchDefadeRugScore(
+    mint: string, key: string
+): Promise<{ rugScore: number; riskLevel: string } | null> {
+    if (!key) return null;
+    return fetchJson(
+        `${DEFADE_BASE}/rug-score/${mint}`,
+        { headers: defadeHeaders(key) }, 5000
+    ) as Promise<{ rugScore: number; riskLevel: string } | null>;
 }
