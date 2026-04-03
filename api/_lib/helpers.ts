@@ -62,7 +62,7 @@ export function apiError(res: VercelResponse, status: number, message: string, d
 }
 
 export function isCorsAllowed(origin: string, allowedOrigins: string[]): boolean {
-  return allowedOrigins.some(o => origin.startsWith(o)) || origin.startsWith("chrome-extension://");
+    return allowedOrigins.some(o => origin.startsWith(o));
 }
 
 export function isValidDexScreenerResponse(data: unknown): data is DexScreenerResponse {
