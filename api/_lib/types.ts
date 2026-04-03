@@ -300,3 +300,31 @@ export interface ScanResult {
   lpBurned?: boolean;
   candles?: Array<{ close: number }>;
 }
+
+
+// ─── DEFADE ─────────────────────────────────────────────────────────────────────
+export interface DefadeAnalysis {
+  rugScore: number;
+  riskLevel: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  bundleDetected?: boolean;
+  bundlePercentage?: number;
+  sniperCount?: number;
+  sniperPercentage?: number;
+  insiderCount?: number;
+  whaleCount?: number;
+  smartMoneyIn?: boolean;
+  devWalletSold?: boolean;
+  liquidityLocked?: boolean;
+  topHolderPercentage?: number;
+}
+
+export interface DefadeRugScore {
+  rugScore: number;
+  riskLevel: string;
+}
+
+export interface DefadeHolders {
+  totalHolders?: number;
+  top10Percentage?: number;
+  top1Percentage?: number;
+}
