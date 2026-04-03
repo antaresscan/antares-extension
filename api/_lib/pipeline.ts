@@ -24,6 +24,7 @@ export function evaluatePostLayerFlags(input: PostLayerFlagsInput): PostLayerFla
   ) {
     flags.push(makeFlag("Sells blocked (social honeypot)", "critical", 0));
     forceRug = true;
+    safeBlocked = true;
   }
 
   if (Array.isArray(input.recentTransfers) && input.recentTransfers.length >= 10) {
