@@ -2,6 +2,7 @@
 
 import type {
     HeliusTokenAccountsResponse,
+        HeliusHolder,
     OHLCVCandle, GeckoTerminalOHLCVResponse,
     RugCheckReport, RugCheckRisk,
 } from "./types";
@@ -19,6 +20,29 @@ export async function heliusGetLargestAccounts(mint: string, key: string) {
     }, 6000, 2, heliusHeaders(key));
 }
 
+
+// Resolve token account addresses to their owner wallet addresses
+export async function heliusResolveAccountOwners(
+    holders: HeliusHolder[],
+    key: string
+): Promise<HeliusHolder[]> {
+    if (!holders.length) return [];
+    const addresses = holders.map(h => h.address);
+    try {
+        const res = await fetchJsonPost(HELIUS_BASE, {
+            jsonrpc: "2.0", id: "owners", method: "getMultipleAccounts",
+            params: [addresses, { encoding: "jsonParsed" }],
+        }, 6000, 2, heliusHeaders(key));
+        const accounts = res?.result?.value ?? [];
+        return holders.map((h, i) => {
+            const parsed = accounts[i]?.data?.parsed?.info?.owner;
+            return { ...h, owner: parsed ?? h.address };
+        });
+    } catch {
+        // Fallback: use address as owner (old behavior)
+        return holders.map(h => ({ ...h, owner: h.address }));
+    }
+}
 export async function heliusGetTokenSupply(mint: string, key: string) {
     return fetchJsonPost(HELIUS_BASE, {
         jsonrpc: "2.0", id: "supply", method: "getTokenSupply", params: [mint],
