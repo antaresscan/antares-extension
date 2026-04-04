@@ -141,11 +141,10 @@ const handlers: Record<string, MessageHandler> = {
 
     void fetch(`${config.apiBase}/api/scan?ca=${ca}`, {
       signal: ctrl.signal,
-      headers: { "X-Antares-Key": config.antaresApiKey }
-    })
+            })
     .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
     .then((data: Record<string, unknown>) => {
-      clearTimeout(timer)
+    
       const risk = safeString(data.risk)
       if (risk) {
         updateBadge(risk, sender.tab?.id)
