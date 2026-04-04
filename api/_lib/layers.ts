@@ -263,7 +263,7 @@ export function layerHelius(
     forceRug: false, safeBlocked: false,
   };
   const accounts = rawHolderAccounts.filter(
-    h => !LP_PROGRAM_ADDRESSES.has(h.address) && !FOUNDATION_WALLETS.has(h.address)
+    h => !LP_PROGRAM_ADDRESSES.has(h.owner) && !FOUNDATION_WALLETS.has(h.owner)
   );
   const top1Amount = asNumber(accounts[0]?.uiAmount);
   const top1Pct = top1Amount / totalSupplyUi;
@@ -426,7 +426,7 @@ export function layerCrossValidation(
   const forceRug = false;
   let safeBlocked = false;
   if (rugData?.lpBurned === true) {
-    const lpStillActive = rawHolderAccounts.some(h => LP_PROGRAM_ADDRESSES.has(h.address));
+    const lpStillActive = rawHolderAccounts.some(h => LP_PROGRAM_ADDRESSES.has(h.owner));
     if (lpStillActive) {
       flags.push(makeFlag("LP burn conflict: RugCheck vs on-chain data", "warning", 0));
       safeBlocked = true;
@@ -447,7 +447,7 @@ export function layerCrossValidation(
   if (rugData?.topHolders?.top10Percentage && rawHolderAccounts.length > 0) {
     const rugTop10 = asNumber(rugData.topHolders.top10Percentage);
     const heliusAccounts = rawHolderAccounts.filter(
-      h => !LP_PROGRAM_ADDRESSES.has(h.address) && !FOUNDATION_WALLETS.has(h.address)
+      h => !LP_PROGRAM_ADDRESSES.has(h.owner) && !FOUNDATION_WALLETS.has(h.owner)
     );
     const heliusTop10Pct = totalSupplyUi > 0
       ? (heliusAccounts.slice(0, 10).reduce((s, h) => s + asNumber(h.uiAmount), 0) / totalSupplyUi) * 100
