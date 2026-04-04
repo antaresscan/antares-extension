@@ -241,6 +241,7 @@ describe("layerHelius", () => {
   it("well distributed supply gets bonus", () => {
     const holders: HeliusHolder[] = Array.from({ length: 20 }, (_, i) => ({
       address: `wallet${i}abc`,
+            owner: `wallet${i}abc`,
       uiAmount: 50,
     }));
     const result = layerHelius(holders, 10000);
