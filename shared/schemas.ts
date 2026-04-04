@@ -77,4 +77,5 @@ export const ScanResponseDataSchema = z.object({
   scoring_version: z.string().optional(),
   fetchedAt: z.number().optional(),
   recentTransfers: z.array(z.unknown()).optional(),
+    aiSummary: z.string().nullable().optional(),
 })
