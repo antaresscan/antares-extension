@@ -315,7 +315,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       score, risk, flags, pair, resolvedMint, confidence, sources_used,
       holders, marketCap, priceUsd, liquidity,
       volume24h, volume1h, priceChange5m, priceChange1h, priceChange24h,
-          nSymbol: sanitizeString(pair?.baseToken?.symbol) ?? null,
+          tokenSymbol: sanitizeString(pair?.baseToken?.symbol) ?? null,
       tokenName: sanitizeString(pair?.baseToken?.name) ?? null,
       pairCreatedAt: pair?.pairCreatedAt ?? null,
       safeBlocked, safeBlockedReasons, tokenLogo: sanitizeUrl(tokenLogo), tokenCreator,
