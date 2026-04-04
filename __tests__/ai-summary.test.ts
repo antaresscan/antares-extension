@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { generateAISummary } from "../api/_lib/ai-summary";
 import type { AISummaryInput } from "../api/_lib/ai-summary";
