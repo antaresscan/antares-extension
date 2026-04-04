@@ -6,11 +6,9 @@ function Options() {
   const [version, setVersion] = useState("");
 
   useEffect(() => {
-    chrome.storage.local.get(["antares_stealth"], (localData) => {
-      setStealthMode(!!localData.antares_stealth);
-    });
-    chrome.storage.sync.get(["autoRescan"], (syncData) => {
-      setAutoRescan(syncData.autoRescan !== false);
+    chrome.storage.local.get(["antares_stealth", "autoRescan"], (data) => {
+      setStealthMode(!!data.antares_stealth);
+      setAutoRescan(data.autoRescan !== false);
     });
     setVersion(chrome.runtime.getManifest().version);
   }, []);
@@ -33,13 +31,13 @@ function Options() {
           <input type="checkbox" checked={autoRescan}
             onChange={(e) => {
               setAutoRescan(e.target.checked);
-              void chrome.storage.sync.set({ autoRescan: e.target.checked });
+              void chrome.storage.local.set({ autoRescan: e.target.checked });
             }} />
           {" "}Auto-rescan on price crash (&gt;30% drop in 1h)
         </label>
       </div>
       <h2>About</h2>
-      <p>Antares \u2014 real-time Solana token scanner.</p>
+      <p>Antares &mdash; real-time Solana token scanner.</p>
       <p>Version: {version}</p>
       <p><a href="https://antares-extension.vercel.app/privacy" target="_blank" rel="noreferrer">Privacy Policy</a></p>
     </div>
