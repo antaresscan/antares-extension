@@ -230,16 +230,16 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const priceChange1h  = pair?.priceChange?.h1  ?? null;
     const priceChange24h = pair?.priceChange?.h24 ?? null;
 
-    // 6 layers — identity layer removed
+    // 7 layers — identity layer removed
     const l1 = layerDexScreener(pair, marketCap, tokenAgeMinutes);
     const l2 = layerRugCheck(rugData, rugReport, resolvedMint);
     const l3 = layerGoPlus(goplus);
     const l4 = layerHelius(rawHolderAccounts, totalSupplyUi);
     const l5 = layerSolscan(solscanHoldersCount, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h);
     const l6 = layerChart(candles, pair, tokenAgeMinutes);
-    const l8 = layerCrossValidation(rugData, rawHolderAccounts, goplus, solscanTokenAgeHours, dexTokenAgeHours, totalSupplyUi);
+    const l7 = layerCrossValidation(rugData, rawHolderAccounts, goplus, solscanTokenAgeHours, dexTokenAgeHours, totalSupplyUi);
 
-    const allLayers = [l1, l2, l3, l4, l5, l6, l8];
+    const allLayers = [l1, l2, l3, l4, l5, l6, l7];
     let score       = computeFinalScore(allLayers);
     let forceRug    = allLayers.some(l => l.forceRug);
     let safeBlocked = allLayers.some(l => l.safeBlocked);
