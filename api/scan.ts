@@ -300,9 +300,9 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       allLayers.map(l => [l.source, { trust: +l.trust.toFixed(3), available: l.available }])
     );
 
-        // AI Summary — best-effort, non-blocking
-    const aiSummary = await settled(generateAISummary({
-      score, risk, flags,
+            // AI summary — non-critical, runs post-verdict
+    const aiSummary = await generateAISummary({
+      score,       risk,       flags: flags.map(f => `[${f.severity}] ${f.label}`),
       tokenSymbol: sanitizeString(pair?.baseToken?.symbol) ?? null,
       holders, marketCap, liquidity, lpBurned: rugData?.lpBurned === true,
       mintAuthority: allLayers.some(l => l.flags.some(f => /mint authority/i.test(f.label) && f.severity === "critical")),
@@ -310,7 +310,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       honeypot: l3.available && l3.trust === 0 && l3.flags.some(f => /honeypot/i.test(f.label)),
       tokenAgeHours: solscanTokenAgeHours ?? dexTokenAgeHours ?? null,
       sourcesUsed: sources_used,
-    }));
+        }).catch(() => null);
     const result: ScanResult = {
       score, risk, flags, pair, resolvedMint, confidence, sources_used,
       holders, marketCap, priceUsd, liquidity,
