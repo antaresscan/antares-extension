@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { BirdeyeAdapter } from "../../contents/modules/adapters/birdeye.adapter";
 
 const BONK = "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263";
-const EMPTY_DOC = new Document();
+const EMPTY_DOC = null as unknown as Document;
 
 describe("BirdeyeAdapter", () => {
   describe("extractCA", () => {
