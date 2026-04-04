@@ -115,4 +115,28 @@ describe("generateAISummary", () => {
     const result = await generateAISummary(baseInput)
     expect(result).toBeNull()
   })
+
+    it("returns null when response content exceeds 600 chars", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "test-key")
+    const mockFetch = vi.fn().mockResolvedValue(
+      mockFetchResponse({
+        choices: [{ message: { content: "a".repeat(601) } }],
+      })
+    )
+    vi.stubGlobal("fetch", mockFetch)
+    const result = await generateAISummary(baseInput)
+    expect(result).toBeNull()
+  })
+
+  it("returns null when choices array has no message content", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "test-key")
+    const mockFetch = vi.fn().mockResolvedValue(
+      mockFetchResponse({
+        choices: [{ message: {} }],
+      })
+    )
+    vi.stubGlobal("fetch", mockFetch)
+    const result = await generateAISummary(baseInput)
+    expect(result).toBeNull()
+  })
 })
