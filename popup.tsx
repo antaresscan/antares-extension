@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { config } from "./shared/config";
 
 function sanitize(input: string | null | undefined): string {
   if (!input) return "";
@@ -23,9 +24,9 @@ function Popup() {
   const [stealthMode, setStealthMode] = useState(false);
 
   useEffect(() => {
-    chrome.storage.local.get(["antares_scan_history", "antares_stealth"], (data: Record<string, unknown>) => {
-      if (Array.isArray(data.antares_scan_history)) {
-        const history = data.antares_scan_history as Array<Record<string, unknown>>;
+    chrome.storage.local.get([config.historyStorageKey, "antares_stealth"], (data: Record<string, unknown>) => {
+      if (Array.isArray(data[config.historyStorageKey])) {
+        const history = data[config.historyStorageKey] as Array<Record<string, unknown>>;
         const scans: ScanResult[] = history
           .map((entry) => ({
             ca: typeof entry.ca === "string" ? entry.ca : "",
@@ -35,7 +36,7 @@ function Popup() {
             timestamp: typeof entry.ts === "number" ? entry.ts : undefined,
           }))
           .sort((a, b) => (b.timestamp ?? 0) - (a.timestamp ?? 0))
-          .slice(0, 10);
+          .slice(0, config.maxHistoryEntries);
         setRecentScans(scans);
       }
       setStealthMode(!!data.antares_stealth);
