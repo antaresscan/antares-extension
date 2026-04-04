@@ -1,90 +1,132 @@
-// api/_lib/ai-summary.ts — AI-powered scan summary generator
-import type { ScanFlag, Verdict } from "./types";
-import { fetchJson } from "./helpers";
-
-export interface AISummaryInput {
-  score: number;
-  risk: Verdict;
-  flags: ScanFlag[];
-  tokenSymbol: string | null;
-  holders: number | null;
-  marketCap: number | null;
-  liquidity: number | null;
-  lpBurned: boolean;
-  mintAuthority: boolean;
-  freezeAuthority: boolean;
-  honeypot: boolean;
-  tokenAgeHours: number | null;
-  sourcesUsed: string[];
+export type AISummaryInput = {
+  score: number
+  risk: string
+  flags: string[]
+  tokenSymbol: string | null
+  holders: number | null
+  marketCap: number | null
+  liquidity: number | null
+  lpBurned: boolean | null
+  mintAuthority: boolean | null
+  freezeAuthority: boolean | null
+  honeypot: boolean | null
+  tokenAgeHours: number | null
+  sourcesUsed: string[]
 }
 
-const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
-const MAX_FLAGS = 8;
-const TIMEOUT_MS = 4000;
+const OPENAI_URL = "https://api.openai.com/v1/chat/completions"
+const MAX_FLAGS = 5
+const TIMEOUT_MS = 5000
+const MIN_LENGTH = 20
+const MAX_LENGTH = 600
 
-/**
- * Generate a 2-3 sentence AI summary of a token scan.
- * Uses GPT-4o-mini for cost efficiency (~$0.00015/call).
- * Returns null silently on any failure — never blocks the scan.
- */
-export async function generateAISummary(input: AISummaryInput): Promise<string | null> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return null;
+const FLAG_LABELS: Record<string, string> = {
+  "mint_authority_enabled": "Mint authority is enabled",
+  "freeze_authority_enabled": "Freeze authority is enabled",
+  "honeypot_detected": "Honeypot detected",
+  "lp_not_burned": "LP not burned or locked",
+  "low_holders": "Low holder count",
+  "top_holder_concentration": "Top holder concentration is high",
+  "copycat_token": "Copycat token detected",
+  "rug_pattern": "Rug pull pattern detected",
+  "wash_trading": "Wash trading detected",
+  "bundle_activity": "Bundle activity detected",
+  "sniper_activity": "Sniper activity detected",
+  "pump_and_dump": "Pump and dump pattern",
+  "low_liquidity": "Low liquidity",
+  "very_new_token": "Very new token",
+  "cannot_sell": "Cannot sell all tokens",
+  "blacklisted": "Token is blacklisted",
+  "hidden_owner": "Hidden owner detected",
+  "proxy_contract": "Proxy contract detected",
+}
+
+const SEVERITY_ORDER: Record<string, number> = {
+  critical: 0,
+  warning: 1,
+}
+
+const SYSTEM_PROMPT =
+  "You are a terse, factual crypto risk analyst. " +
+  "Summarize only the facts given to you. Never invent or infer. " +
+  "Never use markdown, emojis, bullet points, or disclaimers. " +
+  "Output exactly 2 to 3 complete plain-text sentences. Nothing more."
+
+export async function generateAISummary(
+  input: AISummaryInput
+): Promise<string | null> {
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey || apiKey === "") return null
+
+  const model = process.env.OPENAI_MODEL || "gpt-4o-mini"
 
   const topFlags = input.flags
-    .filter(f => f.severity === "critical" || f.severity === "warning")
+    .filter((f: string) => {
+      const lower = f.toLowerCase()
+      return lower.includes("critical") || lower.includes("warning")
+    })
+    .sort((a: string, b: string) => {
+      const aScore = a.toLowerCase().includes("critical") ? SEVERITY_ORDER.critical : SEVERITY_ORDER.warning
+      const bScore = b.toLowerCase().includes("critical") ? SEVERITY_ORDER.critical : SEVERITY_ORDER.warning
+      return aScore - bScore
+    })
     .slice(0, MAX_FLAGS)
-    .map(f => `[${f.severity.toUpperCase()}] ${f.label}`);
+    .map((f: string) => FLAG_LABELS[f] || f)
 
   const context = {
-    token: input.tokenSymbol || "Unknown",
-    score: `${input.score}/1000`,
-    verdict: input.risk,
-    flags: topFlags,
+    score: input.score,
+    risk: input.risk,
+    tokenSymbol: input.tokenSymbol,
     holders: input.holders,
-    marketCap: input.marketCap,
     liquidity: input.liquidity,
     lpBurned: input.lpBurned,
     mintAuthority: input.mintAuthority,
     freezeAuthority: input.freezeAuthority,
     honeypot: input.honeypot,
-    ageHours: input.tokenAgeHours,
-    sources: input.sourcesUsed.length,
-  };
+    tokenAgeHours: input.tokenAgeHours,
+    flags: topFlags,
+    sourcesUsed: input.sourcesUsed,
+  }
 
-  const systemPrompt = [
-    "You are Antares, a Solana token safety analyst.",
-    "Given scan data, write exactly 2-3 sentences summarizing the risk level and key findings.",
-    "Be direct and specific. Mention the most critical flags first.",
-    "Use trader-friendly language. No markdown, no bullet points.",
-    "If the token is dangerous, warn clearly. If safe, confirm why.",
-  ].join(" ");
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS)
 
   try {
-    const response = await fetchJson(OPENAI_URL, {
+    const response = await fetch(OPENAI_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
-        max_tokens: 120,
+        model,
+        max_tokens: 150,
         temperature: 0.3,
         messages: [
-          { role: "system", content: systemPrompt },
+          { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: JSON.stringify(context) },
         ],
       }),
-    }, TIMEOUT_MS);
+      signal: controller.signal,
+    })
 
-    const msg = (response as { choices?: Array<{ message?: { content?: string } }> })
-      ?.choices?.[0]?.message?.content?.trim();
+    clearTimeout(timeout)
 
-    if (!msg || msg.length < 10 || msg.length > 500) return null;
-    return msg;
+    if (!response.ok) return null
+
+    const data = (await response.json()) as {
+      choices?: Array<{ message?: { content?: string } }>
+    }
+
+    const msg = data?.choices?.[0]?.message?.content?.trim()
+
+    if (typeof msg !== "string") return null
+    if (msg.length < MIN_LENGTH) return null
+    if (msg.length > MAX_LENGTH) return null
+
+    return msg
   } catch {
-    // AI summary is best-effort — never fail the scan
-    return null;
+    clearTimeout(timeout)
+    return null
   }
 }
