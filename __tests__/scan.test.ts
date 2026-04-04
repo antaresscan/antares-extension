@@ -180,8 +180,8 @@ function setupGoodTokenMocks() {
       ],
     },
   });
-    mockHeliusResolveAccountOwners.mockImplementation(async (holders: any[]) =>
-    holders.map((h: any) => ({ ...h, owner: h.owner || h.address }))
+    mockHeliusResolveAccountOwners.mockImplementation(async (holders: Record<string, unknown>[]) =>
+    holders.map((h: Record<string, unknown>) => ({ ...h, owner: h.owner || h.address }))
   );
   mockHeliusGetTokenSupply.mockResolvedValue({
     result: { value: { uiAmount: 100000 } },
