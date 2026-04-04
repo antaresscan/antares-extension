@@ -175,8 +175,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const solMarketsData = isSolscanMarketsResponse(solMarkets) ? solMarkets : null;
       // Resolve token account addresses to owner wallet addresses for accurate LP filtering
   const resolvedHolderAccounts: HeliusHolder[] = HELIUS_API_KEY && rawHolderAccounts.length > 0
-    ? await settled(heliusResolveAccountOwners(rawHolderAccounts, HELIUS_API_KEY)) ?? rawHolderAccounts
-    : rawHolderAccounts;
+    ? await settled(heliusResolveAccountOwners(rawHolderAccounts, HELIUS_API_KEY)) ?? rawHolderAccounts.map(h => ({ ...h, owner: h.owner ?? h.address }))
+    : rawHolderAccounts.map(h => ({ ...h, owner: h.owner ?? h.address }));
     const solMarketPool: SolscanMarketPool | null =
       Array.isArray(solMarketsData?.data) && solMarketsData!.data!.length > 0
       ? [...solMarketsData!.data!].sort((a: SolscanMarketPool, b: SolscanMarketPool) => asNumber(b.liquidity) - asNumber(a.liquidity))[0]
