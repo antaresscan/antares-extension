@@ -6,13 +6,22 @@ import { pathnameChanged, scoreAddresses } from "./base-adapter"
  * URL: geckoterminal.com/solana/pools/{poolAddress}
  * NOTE: URL contains POOL address, not token address.
  * Must rely on DOM scoring to find the actual token CA.
+ *
+ * FIX: Only use scoreAddresses on /pools/ pages.
+ * Non-pool pages (trending, top pools list, etc.) contain
+ * many token addresses and should NOT trigger a scan.
  */
 export const GeckoTerminalAdapter: SiteAdapter = {
   name: "GeckoTerminal",
   hostnames: ["geckoterminal.com"],
   initialDelay: 600,
   extractCA(url: URL, doc: Document): string {
-    return scoreAddresses(doc, url.href)
+    // Only scan on pool detail pages
+    if (url.pathname.includes("/pools/")) {
+      return scoreAddresses(doc, url.href)
+    }
+    // Non-pool pages — do NOT scan
+    return ""
   },
   isNewToken: pathnameChanged
 }
