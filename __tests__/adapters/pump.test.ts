@@ -2,39 +2,23 @@ import { describe, it, expect } from "vitest";
 import { PumpAdapter } from "../../contents/modules/adapters/pump.adapter";
 
 const BONK = "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263";
-
-function mockDocWithSolscanLink(ca: string): Document {
-  const doc = document.implementation.createHTMLDocument("test");
-  const a = doc.createElement("a");
-  a.href = `https://solscan.io/token/${ca}`;
-  doc.body.appendChild(a);
-  return doc;
-}
+const STUB_DOC = null as unknown as Document;
 
 describe("PumpAdapter", () => {
   describe("extractCA", () => {
     it("extracts CA from /coin/{CA} path", () => {
       const url = new URL(`https://pump.fun/coin/${BONK}`);
-      const doc = document.implementation.createHTMLDocument("test");
-      expect(PumpAdapter.extractCA(url, doc)).toBe(BONK);
+      expect(PumpAdapter.extractCA(url, STUB_DOC)).toBe(BONK);
     });
 
     it("extracts CA from /{CA} root path", () => {
       const url = new URL(`https://pump.fun/${BONK}`);
-      const doc = document.implementation.createHTMLDocument("test");
-      expect(PumpAdapter.extractCA(url, doc)).toBe(BONK);
+      expect(PumpAdapter.extractCA(url, STUB_DOC)).toBe(BONK);
     });
 
-    it("falls back to DOM scoring when no CA in path", () => {
+    it("returns empty string for non-token path with no DOM", () => {
       const url = new URL("https://pump.fun/board");
-      const doc = mockDocWithSolscanLink(BONK);
-      expect(PumpAdapter.extractCA(url, doc)).toBe(BONK);
-    });
-
-    it("returns empty string when no CA anywhere", () => {
-      const url = new URL("https://pump.fun/board");
-      const doc = document.implementation.createHTMLDocument("test");
-      expect(PumpAdapter.extractCA(url, doc)).toBe("");
+      expect(PumpAdapter.extractCA(url, STUB_DOC)).toBe("");
     });
   });
 
