@@ -32,22 +32,22 @@ afterEach(() => {
 })
 
 describe("generateAISummary", () => {
-  it("returns null when OPENAI_API_KEY is undefined", async () => {
-    vi.stubEnv("OPENAI_API_KEY", "")
-    delete process.env.OPENAI_API_KEY
+  it("returns null when GEMINI_API_KEY is undefined", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "")
+    delete process.env.GEMINI_API_KEY
     const result = await generateAISummary(baseInput)
     expect(result).toBeNull()
   })
 
-  it("returns null when OPENAI_API_KEY is an empty string", async () => {
-    vi.stubEnv("OPENAI_API_KEY", "")
+  it("returns null when GEMINI_API_KEY is an empty string", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "")
     const result = await generateAISummary(baseInput)
     expect(result).toBeNull()
   })
 
-  it("does not call fetch when OPENAI_API_KEY is missing", async () => {
-    vi.stubEnv("OPENAI_API_KEY", "")
-    delete process.env.OPENAI_API_KEY
+  it("does not call fetch when GEMINI_API_KEY is missing", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "")
+    delete process.env.GEMINI_API_KEY
     const mockFetch = vi.fn()
     vi.stubGlobal("fetch", mockFetch)
     await generateAISummary(baseInput)
@@ -55,7 +55,7 @@ describe("generateAISummary", () => {
   })
 
   it("calls fetch with correct URL and Authorization header when key is present", async () => {
-    vi.stubEnv("OPENAI_API_KEY", "test-key-123")
+    vi.stubEnv("GEMINI_API_KEY", "test-key-123")
     const mockFetch = vi.fn().mockResolvedValue(
       mockFetchResponse({
         choices: [{ message: { content: "This is a valid summary that is long enough to pass validation checks." } }],
@@ -64,7 +64,7 @@ describe("generateAISummary", () => {
     vi.stubGlobal("fetch", mockFetch)
     await generateAISummary(baseInput)
     expect(mockFetch).toHaveBeenCalledWith(
-      "https://api.openai.com/v1/chat/completions",
+      "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
       expect.objectContaining({
         method: "POST",
         headers: expect.objectContaining({
@@ -74,11 +74,11 @@ describe("generateAISummary", () => {
     )
   })
 
-  it("returns trimmed summary string on a valid OpenAI 200 response", async () => {
-    vi.stubEnv("OPENAI_API_KEY", "test-key")
+  it("returns trimmed summary string on a valid 200 response", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key")
     const mockFetch = vi.fn().mockResolvedValue(
       mockFetchResponse({
-        choices: [{ message: { content: "  This token appears safe with strong liquidity and burned LP.  " } }],
+        choices: [{ message: { content: " This token appears safe with strong liquidity and burned LP. " } }],
       })
     )
     vi.stubGlobal("fetch", mockFetch)
@@ -87,15 +87,15 @@ describe("generateAISummary", () => {
   })
 
   it("returns null when fetch throws a network error", async () => {
-    vi.stubEnv("OPENAI_API_KEY", "test-key")
+    vi.stubEnv("GEMINI_API_KEY", "test-key")
     const mockFetch = vi.fn().mockRejectedValue(new Error("network error"))
     vi.stubGlobal("fetch", mockFetch)
     const result = await generateAISummary(baseInput)
     expect(result).toBeNull()
   })
 
-  it("returns null when OpenAI returns HTTP 500", async () => {
-    vi.stubEnv("OPENAI_API_KEY", "test-key")
+  it("returns null when API returns HTTP 500", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key")
     const mockFetch = vi.fn().mockResolvedValue(
       mockFetchResponse({ error: "internal server error" }, 500)
     )
@@ -105,7 +105,7 @@ describe("generateAISummary", () => {
   })
 
   it("returns null when response content is empty or shorter than 20 chars", async () => {
-    vi.stubEnv("OPENAI_API_KEY", "test-key")
+    vi.stubEnv("GEMINI_API_KEY", "test-key")
     const mockFetch = vi.fn().mockResolvedValue(
       mockFetchResponse({
         choices: [{ message: { content: "Too short" } }],
@@ -116,8 +116,8 @@ describe("generateAISummary", () => {
     expect(result).toBeNull()
   })
 
-    it("returns null when response content exceeds 600 chars", async () => {
-    vi.stubEnv("OPENAI_API_KEY", "test-key")
+  it("returns null when response content exceeds 600 chars", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key")
     const mockFetch = vi.fn().mockResolvedValue(
       mockFetchResponse({
         choices: [{ message: { content: "a".repeat(601) } }],
@@ -129,7 +129,7 @@ describe("generateAISummary", () => {
   })
 
   it("returns null when choices array has no message content", async () => {
-    vi.stubEnv("OPENAI_API_KEY", "test-key")
+    vi.stubEnv("GEMINI_API_KEY", "test-key")
     const mockFetch = vi.fn().mockResolvedValue(
       mockFetchResponse({
         choices: [{ message: {} }],
