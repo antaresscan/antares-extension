@@ -37,7 +37,7 @@ import { setCorsHeaders, getClientIp, checkRateLimit, validateCA, initRateLimite
 import { initCache, getCachedResult, setCachedResult } from "./_lib/cache";
 import * as Sentry from "@sentry/node";
 
-import { initRugDb, getRugEntry, recordRug } from "./_lib/rugdb";
+import { initRugDb, recordRug } from "./_lib/rugdb";
 if (process.env.SENTRY_DSN) {
   Sentry.init({ dsn: process.env.SENTRY_DSN, tracesSampleRate: 0.1 });
 }
