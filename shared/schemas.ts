@@ -76,5 +76,5 @@ export const ScanResponseDataSchema = z.object({
   layers: z.record(z.string(), z.object({ trust: z.number(), available: z.boolean() })).optional(),
   scoring_version: z.string().optional(),
   fetchedAt: z.number().optional(),
-  recentTransfers: z.array(z.unknown()).optional(),
+  recentTransfers: z.array(z.object({ from_address: z.string().optional(), to_address: z.string().optional(), from: z.string().optional(), to: z.string().optional(), amount: z.number().optional(), timestamp: z.number().optional(), type: z.string().optional() })).optional(),
 })
