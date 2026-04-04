@@ -8,6 +8,9 @@ export const config = {
   /** Base URL for the Antares API */
   apiBase: process.env.PLASMO_PUBLIC_API_BASE || "https://antares-extension.vercel.app",
 
+    /** API key for authenticating extension requests */
+  antaresApiKey: process.env.PLASMO_PUBLIC_ANTARES_API_KEY || "",
+
   /** Sentry DSN for error reporting */
   sentryDsn: process.env.PLASMO_PUBLIC_SENTRY_DSN || "",
 
