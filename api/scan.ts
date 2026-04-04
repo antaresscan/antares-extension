@@ -21,6 +21,7 @@ import {
 import {
   heliusGetLargestAccounts, heliusGetTokenSupply, heliusGetCreatorReputation,
   heliusGetHoldersCount,
+    heliusResolveAccountOwners,
   solscanGetHoldersCount, fetchSolscan, fetchDexCandles,
   type CreatorReputation,
 } from "./_lib/fetchers";
@@ -172,6 +173,10 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const totalSupplyUi: number = asNumber(supplyResponse?.result?.value?.uiAmount);
 
     const solMarketsData = isSolscanMarketsResponse(solMarkets) ? solMarkets : null;
+      // Resolve token account addresses to owner wallet addresses for accurate LP filtering
+  const resolvedHolderAccounts: HeliusHolder[] = HELIUS_API_KEY && rawHolderAccounts.length > 0
+    ? await settled(heliusResolveAccountOwners(rawHolderAccounts, HELIUS_API_KEY)) ?? rawHolderAccounts
+    : rawHolderAccounts;
     const solMarketPool: SolscanMarketPool | null =
       Array.isArray(solMarketsData?.data) && solMarketsData!.data!.length > 0
       ? [...solMarketsData!.data!].sort((a: SolscanMarketPool, b: SolscanMarketPool) => asNumber(b.liquidity) - asNumber(a.liquidity))[0]
@@ -234,10 +239,10 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const l1 = layerDexScreener(pair, marketCap, tokenAgeMinutes);
     const l2 = layerRugCheck(rugData, rugReport, resolvedMint);
     const l3 = layerGoPlus(goplus);
-    const l4 = layerHelius(rawHolderAccounts, totalSupplyUi);
+    const l4 = layerHelius(resolvedHolderAccounts, totalSupplyUi);
     const l5 = layerSolscan(solscanHoldersCount, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h);
     const l6 = layerChart(candles, pair, tokenAgeMinutes);
-    const l7 = layerCrossValidation(rugData, rawHolderAccounts, goplus, solscanTokenAgeHours, dexTokenAgeHours, totalSupplyUi);
+    const l7 = layerCrossValidation(rugData, resolvedHolderAccounts, goplus, solscanTokenAgeHours, dexTokenAgeHours, totalSupplyUi);
 
     const allLayers = [l1, l2, l3, l4, l5, l6, l7];
     let score       = computeFinalScore(allLayers);
