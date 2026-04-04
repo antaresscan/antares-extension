@@ -17,6 +17,10 @@ export const LP_PROGRAM_ADDRESSES = new Set([
   "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
   "LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo",
   "Eo7WjKq67rjJQSZxS6z3YkapzY3eMj6Xy8X5EkAW7vAB",
+    "PSwapMdSai8tjrEXcxFeQth87xC4rRsa4VA5mhGhXkP", // PumpSwap AMM
+  "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P", // pump.fun bonding curve program
+  "TSWAPaqyCSx2KABk68Shruf4rp7CxcNi8hAsbdwmHbN", // Tensor Swap
+  "CURVGoZn8zycx6FXwwevgBTB2gVvdbGTEpvMJDbgs2t4", // Saber/Curves
 ]);
 
 export const FOUNDATION_WALLETS = new Set([
@@ -26,6 +30,8 @@ export const FOUNDATION_WALLETS = new Set([
   "B9n3tgBJ8f1K2VXrF5aTBNXXmj5V8sKXrk3GV5uPump",
   // Note: 6p6xg... removed here — it belongs only to OFFICIAL_MINTS (Raydium LP vault/JUP)
   "9yrPkpCTBCqJmSmTtkMZoxFWMkrAPEQK6DkfaESMpump",
+    "PSwapMdSai8tjrEXcxFeQth87xC4rRsa4VA5mhGhXkP", // PumpSwap AMM
+  "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P", // pump.fun bonding curve
 ]);
 
 export const OFFICIAL_MINTS = new Set([
