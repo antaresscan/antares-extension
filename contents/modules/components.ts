@@ -34,6 +34,11 @@ export function createHost() {
   const styleEl = document.createElement("style")
   styleEl.textContent = SHADOW_CSS
   state.shadow.appendChild(styleEl)
+    // Inject font stylesheet inside shadow DOM to prevent host-page font overrides
+  const fontLink = document.createElement("link")
+  fontLink.rel = "stylesheet"
+  fontLink.href = "https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap"
+  state.shadow.appendChild(fontLink)
   state.boxEl = document.createElement("div")
   state.boxEl.className = "box"
   state.shadow.appendChild(state.boxEl)
