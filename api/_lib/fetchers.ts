@@ -33,7 +33,7 @@ export async function heliusResolveAccountOwners(
             jsonrpc: "2.0", id: "owners", method: "getMultipleAccounts",
             params: [addresses, { encoding: "jsonParsed" }],
         }, 6000, 2, heliusHeaders(key));
-        const accounts = res?.result?.value ?? [];
+        const accounts = (res as any)?.result?.value ?? [];
         return holders.map((h, i) => {
             const parsed = accounts[i]?.data?.parsed?.info?.owner;
             return { ...h, owner: parsed ?? h.address };
