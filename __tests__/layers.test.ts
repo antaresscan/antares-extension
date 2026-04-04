@@ -208,11 +208,11 @@ describe("layerHelius", () => {
 
   it("penalty for top holder > 50%", () => {
     const holders: HeliusHolder[] = [
-      { address: "wallet1abc", uiAmount: 600 },
-      { address: "wallet2abc", uiAmount: 100 },
-      { address: "wallet3abc", uiAmount: 100 },
-      { address: "wallet4abc", uiAmount: 100 },
-      { address: "wallet5abc", uiAmount: 100 },
+      { address: "wallet1abc", owner: "wallet1abc", uiAmount: 600 },
+      { address: "wallet2abc", owner: "wallet2abc", uiAmount: 100 },
+      { address: "wallet3abc", owner: "wallet3abc", uiAmount: 100 },
+      { address: "wallet4abc", owner: "wallet4abc", uiAmount: 100 },
+      { address: "wallet5abc", owner: "wallet5abc", uiAmount: 100 },
     ];
     const result = layerHelius(holders, 1000);
     expect(result.trust).toBeLessThan(0.15);
@@ -221,17 +221,17 @@ describe("layerHelius", () => {
 
   it("foundation wallet detection — excludes foundation wallets from holder analysis", () => {
     const holders: HeliusHolder[] = [
-      { address: "B9n3tgBJ8f1K2VXrF5aTBNXXmj5V8sKXrk3GV5uPump", uiAmount: 500 },
-      { address: "wallet1abc", uiAmount: 50 },
-      { address: "wallet2abc", uiAmount: 50 },
-      { address: "wallet3abc", uiAmount: 50 },
-      { address: "wallet4abc", uiAmount: 50 },
-      { address: "wallet5abc", uiAmount: 50 },
-      { address: "wallet6abc", uiAmount: 50 },
-      { address: "wallet7abc", uiAmount: 50 },
-      { address: "wallet8abc", uiAmount: 50 },
-      { address: "wallet9abc", uiAmount: 50 },
-      { address: "wallet10abc", uiAmount: 50 },
+      { address: "B9n3tgBJ8f1K2VXrF5aTBNXXmj5V8sKXrk3GV5uPump", owner: "B9n3tgBJ8f1K2VXrF5aTBNXXmj5V8sKXrk3GV5uPump", uiAmount: 500 },
+      { address: "wallet1abc", owner: "wallet1abc", uiAmount: 50 },
+      { address: "wallet2abc", owner: "wallet2abc", uiAmount: 50 },
+      { address: "wallet3abc", owner: "wallet3abc", uiAmount: 50 },
+      { address: "wallet4abc", owner: "wallet4abc", uiAmount: 50 },
+      { address: "wallet5abc", owner: "wallet5abc", uiAmount: 50 },
+      { address: "wallet6abc", owner: "wallet6abc", uiAmount: 50 },
+      { address: "wallet7abc", owner: "wallet7abc", uiAmount: 50 },
+      { address: "wallet8abc", owner: "wallet8abc", uiAmount: 50 },
+      { address: "wallet9abc", owner: "wallet9abc", uiAmount: 50 },
+      { address: "wallet10abc", owner: "wallet10abc", uiAmount: 50 },
     ];
     const result = layerHelius(holders, 1000);
     expect(result.trust).toBeGreaterThan(0.9);
@@ -281,8 +281,8 @@ describe("layerCrossValidation", () => {
   it("safeBlocked on LP burn conflict", () => {
     const rugData: RugCheckSummary = { lpBurned: true };
     const holders: HeliusHolder[] = [
-      { address: "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1", uiAmount: 1000 },
-      { address: "wallet1abc", uiAmount: 500 },
+      { address: "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1", owner: "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1", uiAmount: 1000 },
+      { address: "wallet1abc", owner: "wallet1abc", uiAmount: 500 },
     ];
     const result = layerCrossValidation(rugData, holders, null, null, null);
     expect(result.safeBlocked).toBe(true);
@@ -312,7 +312,7 @@ describe("layerCrossValidation", () => {
   it("trust is always 1.0 (post-multiplier only)", () => {
     const rugData: RugCheckSummary = { lpBurned: true };
     const holders: HeliusHolder[] = [
-      { address: "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1", uiAmount: 1000 },
+      { address: "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1", owner: "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1", uiAmount: 1000 },
     ];
     const result = layerCrossValidation(rugData, holders, null, null, null);
     expect(result.trust).toBe(1.0);
