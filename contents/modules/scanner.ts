@@ -4,6 +4,7 @@ import { API, LS_PREFIX, IGNORE } from "./constants"
 import { state, scanCache } from "./state"
 import { getCached, saveToLS } from "./cache"
 import { getBox, showBox, attachClose, triggerResultAnimations, buildHeader, buildResult } from "./components"
+import { scanRateLimiter } from "../../shared/rate-limit"
 
 export function isValid(addr: string): boolean {
   if (addr.length < 32 || addr.length > 44) return false
@@ -33,7 +34,6 @@ export function scheduleRescanIfPriceCrash(data: ScanResponseData, ca: string) {
 
 /** Maximum number of retry attempts before giving up silently */
 const MAX_RETRIES = 3
-
 /** Delay between retries in ms (doubles each attempt) */
 const BASE_RETRY_DELAY = 1500
 
@@ -41,8 +41,8 @@ const BASE_RETRY_DELAY = 1500
 function isRetryable(e: unknown): boolean {
   if (e instanceof Error) {
     const status = parseInt(e.message, 10)
-    if (status === 429) return true  // Rate limit
-    if (status >= 500) return true   // Server errors
+    if (status === 429) return true // Rate limit
+    if (status >= 500) return true // Server errors
     if (e.name === "AbortError") return false // User-initiated abort
     if (e.message === "Failed to fetch") return true // Network error
   }
@@ -85,6 +85,12 @@ async function fetchWithRetry(
 export async function scan(ca: string) {
   if (!ca) return
 
+  // Client-side rate limiting to prevent API flooding
+  if (!scanRateLimiter.tryAcquire()) {
+    console.warn("[antares] scan rate-limited, retry after", scanRateLimiter.getRetryAfterMs(), "ms")
+    return
+  }
+
   // [5.3] Stealth mode
   if (state.stealthMode) {
     if (ca === state.lastCA) return
@@ -97,7 +103,6 @@ export async function scan(ca: string) {
 
   const el = getBox()
   const cached = getCached(ca)
-
   if (ca === state.lastCA && cached && el.style.display !== "none") return
   if (state.manuallyDismissed && ca === state.lastCA) return
 
@@ -118,7 +123,7 @@ export async function scan(ca: string) {
     showBox()
     triggerResultAnimations(el)
     attachClose()
-    chrome.storage.sync.get(["autoRescan"], (prefs) => {
+    chrome.storage.local.get(["autoRescan"], (prefs) => {
       if (prefs.autoRescan !== false) scheduleRescanIfPriceCrash(cached, ca)
     })
     return
@@ -126,7 +131,6 @@ export async function scan(ca: string) {
 
   const controller = new AbortController()
   state.currentScanController = controller
-
   if (state.boxEl) state.boxEl.className = "box"
   el.innerHTML = `
     <div class="topbar" style="background:linear-gradient(90deg,transparent,#3a3a3f,transparent)"></div>
@@ -140,28 +144,24 @@ export async function scan(ca: string) {
     </div>
   `
   showBox(); attachClose()
-
   try {
     const res = await fetchWithRetry(`${API}?ca=${ca}`, controller.signal)
     if (controller.signal.aborted) return
     const data = await res.json() as ScanResponseData
     if (controller.signal.aborted) return
-
     scanCache.set(ca, { data, ts: Date.now() })
     saveToLS(ca, data)
     el.innerHTML = buildResult(data, ca)
     showBox()
     triggerResultAnimations(el)
     attachClose()
-
-    chrome.storage.sync.get(["autoRescan"], (prefs) => {
+    chrome.storage.local.get(["autoRescan"], (prefs) => {
       if (prefs.autoRescan !== false) scheduleRescanIfPriceCrash(data, ca)
     })
   } catch (e: unknown) {
     if (controller.signal.aborted) return
     console.warn("[antares] scan failed after retries:", e)
     try { Sentry.captureException(e) } catch { /* Sentry not initialized */ }
-
     // Silent failure: hide the box instead of showing an error to the user.
     // The scan will be retried automatically on next navigation or page change.
     if (state.lastCA === ca && state.boxEl) {
