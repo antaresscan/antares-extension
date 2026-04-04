@@ -5,11 +5,6 @@ import { Redis } from "@upstash/redis";
 import { CA_RE } from "./constants";
 import { isCorsAllowed, apiError } from "./helpers";
 
-// ——— ANTARES EXTENSION KEY ———————————————————————————————————
-// chrome-extension:// origins must present this key to use the API.
-// Set ANTARES_API_KEY in your Vercel environment variables.
-const ANTARES_KEY = process.env.ANTARES_API_KEY || "";
-
 export const ALLOWED_ORIGINS = [
   "https://dexscreener.com",
   "https://birdeye.so",
