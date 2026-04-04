@@ -52,6 +52,7 @@ const mockHeliusGetHoldersCount = vi.fn();
 const mockSolscanGetHoldersCount = vi.fn();
 const mockFetchSolscan = vi.fn();
 const mockFetchDexCandles = vi.fn();
+const mockHeliusResolveAccountOwners = vi.fn();
 
 vi.mock("../api/_lib/fetchers", () => ({
   heliusGetLargestAccounts: (...args: unknown[]) => mockHeliusGetLargestAccounts(...args),
@@ -61,6 +62,7 @@ vi.mock("../api/_lib/fetchers", () => ({
   solscanGetHoldersCount: (...args: unknown[]) => mockSolscanGetHoldersCount(...args),
   fetchSolscan: (...args: unknown[]) => mockFetchSolscan(...args),
   fetchDexCandles: (...args: unknown[]) => mockFetchDexCandles(...args),
+    heliusResolveAccountOwners: (...args: unknown[]) => mockHeliusResolveAccountOwners(...args),
 }));
 
 // Mock global fetch for DexScreener, RugCheck, GoPlus
@@ -178,6 +180,9 @@ function setupGoodTokenMocks() {
       ],
     },
   });
+    mockHeliusResolveAccountOwners.mockImplementation(async (holders: Record<string, unknown>[]) =>
+    holders.map((h: Record<string, unknown>) => ({ ...h, owner: h.owner || h.address }))
+  );
   mockHeliusGetTokenSupply.mockResolvedValue({
     result: { value: { uiAmount: 100000 } },
   });

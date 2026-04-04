@@ -133,6 +133,7 @@ export interface GoPlusResponse {
 // ─── HELIUS ─────────────────────────────────────────────────────────────────────
 export interface HeliusHolder {
   address: string;
+    owner: string;
   uiAmount: number;
 }
 
