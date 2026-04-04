@@ -2,33 +2,18 @@ import { describe, it, expect } from "vitest";
 import { DexScreenerAdapter } from "../../contents/modules/adapters/dexscreener.adapter";
 
 const BONK = "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263";
-
-function mockDocWithSolscanLink(ca: string): Document {
-  const doc = document.implementation.createHTMLDocument("test");
-  const a = doc.createElement("a");
-  a.href = `https://solscan.io/token/${ca}`;
-  doc.body.appendChild(a);
-  return doc;
-}
+const STUB_DOC = null as unknown as Document;
 
 describe("DexScreenerAdapter", () => {
   describe("extractCA", () => {
     it("extracts CA from /solana/{CA} path", () => {
       const url = new URL(`https://dexscreener.com/solana/${BONK}`);
-      const doc = document.implementation.createHTMLDocument("test");
-      expect(DexScreenerAdapter.extractCA(url, doc)).toBe(BONK);
+      expect(DexScreenerAdapter.extractCA(url, STUB_DOC)).toBe(BONK);
     });
 
-    it("falls back to DOM scoring for non-solana paths", () => {
+    it("returns empty string for non-solana paths with no DOM", () => {
       const url = new URL("https://dexscreener.com/trending");
-      const doc = mockDocWithSolscanLink(BONK);
-      expect(DexScreenerAdapter.extractCA(url, doc)).toBe(BONK);
-    });
-
-    it("returns empty string when no CA found", () => {
-      const url = new URL("https://dexscreener.com/trending");
-      const doc = document.implementation.createHTMLDocument("test");
-      expect(DexScreenerAdapter.extractCA(url, doc)).toBe("");
+      expect(DexScreenerAdapter.extractCA(url, STUB_DOC)).toBe("");
     });
   });
 
