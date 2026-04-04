@@ -78,7 +78,7 @@ export async function recordRug(data: {
 
     // Trim index to prevent unbounded growth
     const count = await redis.zcard(RUG_INDEX);
-    if (count > MAX_RUG_INDEX) {
+    if (count > MAX_RUG_INDEX * 0.8) console.warn(`[rugdb] RugDB at ${Math.round(count/MAX_RUG_INDEX*100)}% capacity (${count}/${MAX_RUG_INDEX})`);     if (count > MAX_RUG_INDEX) {
       await redis.zremrangebyrank(RUG_INDEX, 0, count - MAX_RUG_INDEX - 1);
     }
   } catch {
