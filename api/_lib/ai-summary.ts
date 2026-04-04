@@ -14,7 +14,7 @@ export type AISummaryInput = {
   sourcesUsed: string[]
 }
 
-const OPENAI_URL = "https://api.openai.com/v1/chat/completions"
+const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
 const MAX_FLAGS = 5
 const TIMEOUT_MS = 5000
 const MIN_LENGTH = 20
@@ -55,10 +55,10 @@ const SYSTEM_PROMPT =
 export async function generateAISummary(
   input: AISummaryInput
 ): Promise<string | null> {
-  const apiKey = process.env.OPENAI_API_KEY
+  const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey || apiKey === "") return null
 
-  const model = process.env.OPENAI_MODEL || "gpt-4o-mini"
+  const model = process.env.AI_MODEL || "gemini-2.5-flash"
 
   const topFlags = input.flags
     .filter((f: string) => {
@@ -92,7 +92,7 @@ export async function generateAISummary(
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS)
 
   try {
-    const response = await fetch(OPENAI_URL, {
+    const response = await fetch(GEMINI_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -111,7 +111,6 @@ export async function generateAISummary(
     })
 
     clearTimeout(timeout)
-
     if (!response.ok) return null
 
     const data = (await response.json()) as {
@@ -119,11 +118,9 @@ export async function generateAISummary(
     }
 
     const msg = data?.choices?.[0]?.message?.content?.trim()
-
     if (typeof msg !== "string") return null
     if (msg.length < MIN_LENGTH) return null
     if (msg.length > MAX_LENGTH) return null
-
     return msg
   } catch {
     clearTimeout(timeout)
