@@ -77,17 +77,19 @@ describe("rugdb", () => {
       mockSet.mockResolvedValueOnce("OK");
       mockZadd.mockResolvedValueOnce(1);
       mockZcard.mockResolvedValueOnce(1);
+
       await recordRug({
         mint: "rug1",
         symbol: "SCAM",
         score: 30,
         risk: "RUG",
         flags: [
-          { label: "Honeypot", severity: "critical" },
-          { label: "Info flag", severity: "info" },
+          { label: "Honeypot", severity: "critical", impact: -20 },
+          { label: "Info flag", severity: "info", impact: 0 },
         ],
         creator: "creator1",
       });
+
       expect(mockSet).toHaveBeenCalled();
       expect(mockZadd).toHaveBeenCalled();
     });
@@ -111,14 +113,16 @@ describe("rugdb", () => {
       mockSet.mockResolvedValueOnce("OK");
       mockZadd.mockResolvedValueOnce(1);
       mockZcard.mockResolvedValueOnce(10);
+
       await recordRug({
         mint: "danger1",
         symbol: "BAD",
         score: 100,
         risk: "DANGER",
-        flags: [{ label: "Freeze authority", severity: "warning" }],
+        flags: [{ label: "Freeze authority", severity: "warning", impact: -10 }],
         creator: null,
       });
+
       expect(mockSet).toHaveBeenCalled();
     });
 
@@ -128,14 +132,16 @@ describe("rugdb", () => {
       mockSet.mockResolvedValueOnce("OK");
       mockZadd.mockResolvedValueOnce(1);
       mockZcard.mockResolvedValueOnce(5);
+
       await recordRug({
         mint: "rug2",
         symbol: "SCAM2",
         score: 20,
         risk: "RUG",
-        flags: [{ label: "LP not burned", severity: "critical" }],
+        flags: [{ label: "LP not burned", severity: "critical", impact: -20 }],
         creator: null,
       });
+
       const setCall = mockSet.mock.calls[0];
       expect(setCall[1].scanCount).toBe(4);
       expect(setCall[1].flaggedAt).toBe(500);
@@ -148,6 +154,7 @@ describe("rugdb", () => {
       mockZadd.mockResolvedValueOnce(1);
       mockZcard.mockResolvedValueOnce(600);
       mockZremrangebyrank.mockResolvedValueOnce(100);
+
       await recordRug({
         mint: "rug3",
         symbol: null,
@@ -156,12 +163,14 @@ describe("rugdb", () => {
         flags: [],
         creator: null,
       });
+
       expect(mockZremrangebyrank).toHaveBeenCalled();
     });
 
     it("silently fails on redis error", async () => {
       initRugDb(mockRedis);
       mockGet.mockRejectedValueOnce(new Error("fail"));
+
       await expect(recordRug({
         mint: "err",
         symbol: null,
