@@ -2,7 +2,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Redis } from "@upstash/redis";
 import { setCorsHeaders, validateCA } from "./_lib/middleware";
-import { apiError, fetchJson, settled } from "./_lib/helpers";
+import { apiError, settled } from "./_lib/helpers";
 import { heliusGetLargestAccounts, heliusGetTokenSupply } from "./_lib/fetchers";
 import { LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS } from "./_lib/constants";
 import { buildInsiderGraph, initGraphCache } from "./_lib/insider-graph";
