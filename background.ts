@@ -50,7 +50,6 @@ const BADGE_MAP: Record<string, { text: string; color: string }> = {
   DANGER: { text: "\u2717", color: "#ff5f5f" },
   RUG: { text: "\u2717", color: "#ff2244" },
 }
-
 const RISK_ORDER: Record<string, number> = { SAFE: 0, CAUTION: 1, DANGER: 2, RUG: 3 }
 
 function riskWorsened(prev: string, current: string): boolean {
@@ -115,8 +114,7 @@ function saveToHistory(ca: string, data: Record<string, unknown>) {
     console.warn("[antares] saveToHistory error:", e)
   }
 }
-
-    // ─── MESSAGE HANDLER (map-based) ────────────────────────────────────────────
+ // ─── MESSAGE HANDLER (map-based) ────────────────────────────────────────────
 type MessageHandler = (
   msg: Record<string, unknown>,
   sender: chrome.runtime.MessageSender,
@@ -126,36 +124,42 @@ type MessageHandler = (
 const handlers: Record<string, MessageHandler> = {
   SCAN: (msg, sender, sendResponse) => {
     const ca = typeof msg.ca === "string" ? msg.ca.trim() : ""
+
     // Security: only accept messages from our own extension or content scripts
-  if (sender.id !== chrome.runtime.id) {
-    sendResponse({ ok: false, error: "Unauthorized sender" })
-    return true
-  }
+    if (sender.id !== chrome.runtime.id) {
+      sendResponse({ ok: false, error: "Unauthorized sender" })
+      return true
+    }
     
     if (!CA_RE.test(ca)) {
       sendResponse({ ok: false, error: "Invalid contract address" })
-        return true
+      return true
     }
+
     const ctrl = new AbortController()
     const timer = setTimeout(() => ctrl.abort(), config.fetchTimeoutMs)
-    void fetch(`${config.apiBase}/api/scan?ca=${ca}`, { signal: ctrl.signal })
-              .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
-      .then((data: Record<string, unknown>) => {
-        clearTimeout(timer)
-        const risk = safeString(data.risk)
-        if (risk) {
-          updateBadge(risk, sender.tab?.id)
-          const sym = extractSymbol(data)
-          checkRiskEscalation(ca, risk, sym)
-        }
-        saveToHistory(ca, data)
-        sendResponse({ ok: true, data })
-      })
-      .catch((e: Error) => {
-        clearTimeout(timer)
-        Sentry.captureException(e)
-        sendResponse({ ok: false, error: e.message })
-      })
+
+    void fetch(`${config.apiBase}/api/scan?ca=${ca}`, {
+      signal: ctrl.signal,
+      headers: { "X-Antares-Key": config.antaresApiKey }
+    })
+    .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+    .then((data: Record<string, unknown>) => {
+      clearTimeout(timer)
+      const risk = safeString(data.risk)
+      if (risk) {
+        updateBadge(risk, sender.tab?.id)
+        const sym = extractSymbol(data)
+        checkRiskEscalation(ca, risk, sym)
+      }
+      saveToHistory(ca, data)
+      sendResponse({ ok: true, data })
+    })
+    .catch((e: Error) => {
+      clearTimeout(timer)
+      Sentry.captureException(e)
+      sendResponse({ ok: false, error: e.message })
+    })
   },
 
   GET_HISTORY: (_msg, _sender, sendResponse) => {
