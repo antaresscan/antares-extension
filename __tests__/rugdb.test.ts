@@ -83,8 +83,8 @@ describe("rugdb", () => {
         score: 30,
         risk: "RUG",
         flags: [
-          { label: "Honeypot", severity: "critical", source: "goplus" },
-          { label: "Info flag", severity: "info", source: "dex" },
+          { label: "Honeypot", severity: "critical" },
+          { label: "Info flag", severity: "info" },
         ],
         creator: "creator1",
       });
@@ -116,7 +116,7 @@ describe("rugdb", () => {
         symbol: "BAD",
         score: 100,
         risk: "DANGER",
-        flags: [{ label: "Freeze authority", severity: "warning", source: "rugcheck" }],
+        flags: [{ label: "Freeze authority", severity: "warning" }],
         creator: null,
       });
       expect(mockSet).toHaveBeenCalled();
@@ -133,7 +133,7 @@ describe("rugdb", () => {
         symbol: "SCAM2",
         score: 20,
         risk: "RUG",
-        flags: [{ label: "LP not burned", severity: "critical", source: "rugcheck" }],
+        flags: [{ label: "LP not burned", severity: "critical" }],
         creator: null,
       });
       const setCall = mockSet.mock.calls[0];
