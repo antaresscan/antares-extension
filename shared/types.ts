@@ -59,3 +59,27 @@ export interface HistoryEntry {
   score: number;
   ts: number;
 }
+
+  // Insider Graph types
+export interface InsiderGraphNode {
+  address: string;
+  ownership: number;
+  label?: string;
+  isInsider: boolean;
+  cluster?: string;
+}
+
+export interface InsiderGraphEdge {
+  from: string;
+  to: string;
+  amount: number;
+  timestamp?: number;
+}
+
+export interface InsiderGraphData {
+  nodes: InsiderGraphNode[];
+  edges: InsiderGraphEdge[];
+  insiderPercent: number;
+  clusterCount: number;
+  riskLevel: "low" | "medium" | "high" | "critical";
+}
