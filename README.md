@@ -4,6 +4,8 @@
 
 **Antares** is a Chrome extension that automatically detects the Solana token address on any page you visit and runs a real-time multi-source security scan.
 
+> **Supported chain: Solana only.** Ethereum and BNB chain support is on the roadmap — see [#120](https://github.com/COMEALAMAISONGROUPE/antares-extension/issues/120).
+
 ## What it does
 
 - Detects mint/freeze authority, honeypots, blacklists and proxy contracts (GoPlus)
