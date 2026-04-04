@@ -300,4 +300,5 @@ export interface ScanResult {
       requestId: string;
   lpBurned?: boolean;
   candles?: Array<{ close: number }>;
+    aiSummary?: string | null;
 }

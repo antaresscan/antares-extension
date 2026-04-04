@@ -49,6 +49,7 @@ export interface ScanResponseData {
   scoring_version?: string;
   fetchedAt?: number;
   recentTransfers?: unknown[];
+    aiSummary?: string | null;
   }
 
 export interface HistoryEntry {

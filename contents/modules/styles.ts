@@ -164,6 +164,8 @@ export const SHADOW_CSS = `
 .box.caution .sum { color: #8a7820; }
 .box.danger  .sum { color: #aa5050; }
 .box.rug     .sum { color: #cc3344; }
+.ai-sum { padding: 6px 14px 2px; font-size: 9px; color: #8a8aad; line-height: 1.45; letter-spacing: .02em; font-family: 'IBM Plex Mono', monospace; }
+.ai-label { font-weight: 700; color: #a78bfa; margin-right: 4px; font-size: 8px; text-transform: uppercase; letter-spacing: .06em; }
 
 .sep { height: 1px; margin: 8px 14px; background: #1a1a1e; }
 
