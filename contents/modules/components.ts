@@ -250,5 +250,6 @@ export function buildResult(data: ScanResponseData, ca: string): string {
     <div class="ss">${siSell}${siMint}${siFreeze}${siLP}${siLiq}</div>
     <div class="hist-panel" id="ant-hist"></div>
     <div class="fo">${dexLink}${analysisLink}<button class="hist-btn" id="ant-hist-btn">History</button></div>
+      `
         
 }
