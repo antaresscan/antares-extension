@@ -5,11 +5,6 @@ import { Redis } from "@upstash/redis";
 import { CA_RE } from "./constants";
 import { isCorsAllowed, apiError } from "./helpers";
 
-// ——— ANTARES EXTENSION KEY ———————————————————————————————————
-// chrome-extension:// origins must present this key to use the API.
-// Set ANTARES_API_KEY in your Vercel environment variables.
-const ANTARES_KEY = process.env.ANTARES_API_KEY || "";
-
 export const ALLOWED_ORIGINS = [
   "https://dexscreener.com",
   "https://birdeye.so",
@@ -52,13 +47,14 @@ export function initRateLimiters(redis: Redis): void {
 export function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean {
   const origin = (req.headers.origin as string) || "";
 
-  // Fix(Bug 19): For chrome-extension:// origins, require X-Antares-Key header.
-  // This prevents rogue extensions from abusing the API for free.
+    // chrome-extension:// origins are allowed via rate limiting only.
+  // API key removed from extension bundle for security (see #102).
   if (origin.startsWith("chrome-extension://")) {
-    const key = req.headers["x-antares-key"];
-    if (!ANTARES_KEY || key !== ANTARES_KEY) {
-      return false;
-    }
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
+    return true;
   }
 
     // Fix: Allow same-origin requests (token.html -> /api/scan on same domain)
