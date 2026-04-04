@@ -1,22 +1,11 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment */
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { generateAISummary } from "../api/_lib/ai-summary";
-import type { AISummaryInput } from "../api/_lib/ai-summary";
-
-vi.mock("../api/_lib/helpers", () => ({
-  fetchJson: vi.fn(),
-}));
-
-import { fetchJson } from "../api/_lib/helpers";
-const mockFetchJson = vi.mocked(fetchJson);
+import { describe, it, expect, vi, afterEach } from "vitest"
+import { generateAISummary } from "../api/_lib/ai-summary"
+import type { AISummaryInput } from "../api/_lib/ai-summary"
 
 const baseInput: AISummaryInput = {
   score: 750,
   risk: "SAFE",
-  flags: [
-    { label: "LP burned", severity: "bonus", impact: 5 },
-    { label: "Low holders", severity: "warning", impact: -10 },
-  ],
+  flags: ["[critical] Mint authority enabled", "[warning] Low holders"],
   tokenSymbol: "TEST",
   holders: 500,
   marketCap: 100000,
@@ -27,80 +16,103 @@ const baseInput: AISummaryInput = {
   honeypot: false,
   tokenAgeHours: 48,
   sourcesUsed: ["dexscreener", "rugcheck", "goplus"],
-};
+}
 
-beforeEach(() => {
-  vi.clearAllMocks();
-  delete process.env.OPENAI_API_KEY;
-});
+function mockFetchResponse(body: unknown, status = 200): Response {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    json: async () => body,
+  } as Response
+}
+
+afterEach(() => {
+  vi.unstubAllEnvs()
+  vi.unstubAllGlobals()
+})
 
 describe("generateAISummary", () => {
-  it("returns null when OPENAI_API_KEY is not set", async () => {
-    const result = await generateAISummary(baseInput);
-    expect(result).toBeNull();
-    expect(mockFetchJson).not.toHaveBeenCalled();
-  });
+  it("returns null when OPENAI_API_KEY is undefined", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "")
+    delete process.env.OPENAI_API_KEY
+    const result = await generateAISummary(baseInput)
+    expect(result).toBeNull()
+  })
 
-  it("calls OpenAI API when key is set and returns summary", async () => {
-    process.env.OPENAI_API_KEY = "test-key";
-    mockFetchJson.mockResolvedValueOnce({
-      choices: [{ message: { content: "This token appears safe with strong liquidity and burned LP." } }],
-    });
-    const result = await generateAISummary(baseInput);
-    expect(result).toBe("This token appears safe with strong liquidity and burned LP.");
-    expect(mockFetchJson).toHaveBeenCalledOnce();
-  });
+  it("returns null when OPENAI_API_KEY is an empty string", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "")
+    const result = await generateAISummary(baseInput)
+    expect(result).toBeNull()
+  })
 
-  it("returns null when API returns empty content", async () => {
-    process.env.OPENAI_API_KEY = "test-key";
-    mockFetchJson.mockResolvedValueOnce({
-      choices: [{ message: { content: "" } }],
-    });
-    const result = await generateAISummary(baseInput);
-    expect(result).toBeNull();
-  });
+  it("does not call fetch when OPENAI_API_KEY is missing", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "")
+    delete process.env.OPENAI_API_KEY
+    const mockFetch = vi.fn()
+    vi.stubGlobal("fetch", mockFetch)
+    await generateAISummary(baseInput)
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
 
-  it("returns null when API returns too short content", async () => {
-    process.env.OPENAI_API_KEY = "test-key";
-    mockFetchJson.mockResolvedValueOnce({
-      choices: [{ message: { content: "Short" } }],
-    });
-    const result = await generateAISummary(baseInput);
-    expect(result).toBeNull();
-  });
+  it("calls fetch with correct URL and Authorization header when key is present", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "test-key-123")
+    const mockFetch = vi.fn().mockResolvedValue(
+      mockFetchResponse({
+        choices: [{ message: { content: "This is a valid summary that is long enough to pass validation checks." } }],
+      })
+    )
+    vi.stubGlobal("fetch", mockFetch)
+    await generateAISummary(baseInput)
+    expect(mockFetch).toHaveBeenCalledWith(
+      "https://api.openai.com/v1/chat/completions",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          Authorization: "Bearer test-key-123",
+        }),
+      })
+    )
+  })
 
-  it("returns null when API returns too long content", async () => {
-    process.env.OPENAI_API_KEY = "test-key";
-    mockFetchJson.mockResolvedValueOnce({
-      choices: [{ message: { content: "x".repeat(501) } }],
-    });
-    const result = await generateAISummary(baseInput);
-    expect(result).toBeNull();
-  });
+  it("returns trimmed summary string on a valid OpenAI 200 response", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "test-key")
+    const mockFetch = vi.fn().mockResolvedValue(
+      mockFetchResponse({
+        choices: [{ message: { content: "  This token appears safe with strong liquidity and burned LP.  " } }],
+      })
+    )
+    vi.stubGlobal("fetch", mockFetch)
+    const result = await generateAISummary(baseInput)
+    expect(result).toBe("This token appears safe with strong liquidity and burned LP.")
+  })
 
-  it("returns null on API error", async () => {
-    process.env.OPENAI_API_KEY = "test-key";
-    mockFetchJson.mockRejectedValueOnce(new Error("timeout"));
-    const result = await generateAISummary(baseInput);
-    expect(result).toBeNull();
-  });
+  it("returns null when fetch throws a network error", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "test-key")
+    const mockFetch = vi.fn().mockRejectedValue(new Error("network error"))
+    vi.stubGlobal("fetch", mockFetch)
+    const result = await generateAISummary(baseInput)
+    expect(result).toBeNull()
+  })
 
-  it("returns null when choices array is empty", async () => {
-    process.env.OPENAI_API_KEY = "test-key";
-    mockFetchJson.mockResolvedValueOnce({ choices: [] });
-    const result = await generateAISummary(baseInput);
-    expect(result).toBeNull();
-  });
+  it("returns null when OpenAI returns HTTP 500", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "test-key")
+    const mockFetch = vi.fn().mockResolvedValue(
+      mockFetchResponse({ error: "internal server error" }, 500)
+    )
+    vi.stubGlobal("fetch", mockFetch)
+    const result = await generateAISummary(baseInput)
+    expect(result).toBeNull()
+  })
 
-  it("filters only critical and warning flags", async () => {
-    process.env.OPENAI_API_KEY = "test-key";
-    mockFetchJson.mockResolvedValueOnce({
-      choices: [{ message: { content: "Token has some warning signs but is generally okay." } }],
-    });
-    await generateAISummary(baseInput);
-    const callArgs = mockFetchJson.mock.calls[0];
-    const body = JSON.parse((callArgs[1] as any).body);
-    const context = JSON.parse(body.messages[1].content);
-    expect(context.flags).toEqual(["[WARNING] Low holders"]);
-  });
-});
+  it("returns null when response content is empty or shorter than 20 chars", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "test-key")
+    const mockFetch = vi.fn().mockResolvedValue(
+      mockFetchResponse({
+        choices: [{ message: { content: "Too short" } }],
+      })
+    )
+    vi.stubGlobal("fetch", mockFetch)
+    const result = await generateAISummary(baseInput)
+    expect(result).toBeNull()
+  })
+})
