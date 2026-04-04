@@ -13,8 +13,8 @@ const baseInput: AISummaryInput = {
   score: 750,
   risk: "SAFE",
   flags: [
-    { label: "LP burned", severity: "bonus" },
-    { label: "Low holders", severity: "warning" },
+    { label: "LP burned", severity: "bonus", impact: 5 },
+    { label: "Low holders", severity: "warning", impact: -10 },
   ],
   tokenSymbol: "TEST",
   holders: 500,
