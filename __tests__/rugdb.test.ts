@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { initRugDb, getRugEntry, recordRug, getRecentRugs } from "../api/_lib/rugdb";
 import type { RugEntry } from "../api/_lib/rugdb";
