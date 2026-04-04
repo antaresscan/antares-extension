@@ -4,6 +4,12 @@ export interface ScanResponseFlag {
   impact: number;
 }
 
+
+export interface Transfer {
+  from_address?: string;
+  to_address?: string;
+  from?: string;
+}
 export interface ScanResponseData {
   score: number;
   risk: string;
@@ -48,7 +54,7 @@ export interface ScanResponseData {
   layers?: Record<string, { trust: number; available: boolean }>;
   scoring_version?: string;
   fetchedAt?: number;
-  recentTransfers?: unknown[];
+    recentTransfers?: Transfer[];
     aiSummary?: string | null;
   }
 
