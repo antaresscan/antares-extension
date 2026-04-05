@@ -190,7 +190,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 // ─── EXTENSION TOGGLE (click icon to enable/disable) ────────────────────────
 let extensionEnabled = true
 
-chrome.action.onClicked.addListener(async (tab) => {
+chrome.action.onClicked.addListener(async (_tab) => {
   extensionEnabled = !extensionEnabled
   const label = extensionEnabled ? "ON" : "OFF"
   void chrome.action.setBadgeText({ text: label })
