@@ -1,7 +1,7 @@
 // api/graph.ts — Insider Network Graph API endpoint
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Redis } from "@upstash/redis";
-import { setCorsHeaders, validateCA } from "./_lib/middleware";
+import { setCorsHeaders, validateCA, checkRateLimit, getClientIp, initRateLimiters } from "./_lib/middleware";
 import { apiError, settled } from "./_lib/helpers";
 import { heliusGetLargestAccounts, heliusGetTokenSupply } from "./_lib/fetchers";
 import { LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS } from "./_lib/constants";
@@ -14,6 +14,7 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
     token: process.env.UPSTASH_REDIS_REST_TOKEN,
   });
   initGraphCache(redis);
+    initRateLimiters(redis);
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -21,6 +22,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === "OPTIONS") return res.status(204).end();
   if (!corsOk) return apiError(res, 403, "Origin not allowed.");
   if (req.method !== "GET") return apiError(res, 405, "Method not allowed.");
+
+    // Dedicated rate limiting for /api/graph (expensive Helius calls)
+  const ip = getClientIp(req);
+  const allowed = await checkRateLimit(res, ip);
+  if (!allowed) return;
 
   const HELIUS_API_KEY = process.env.HELIUS_API_KEY;
   if (!HELIUS_API_KEY) return apiError(res, 503, "Helius API key not configured.");
