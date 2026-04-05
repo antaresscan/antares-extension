@@ -209,8 +209,6 @@ export function buildResult(data: ScanResponseData, ca: string): string {
   else if (critCount > 0) summary = `${flagCount} flags \u2014 ${critCount} critical`
   else summary = `${flagCount} flags detected`
 
-  const isDangerous = data.risk === "RUG" || data.risk === "DANGER"
-
   // Security indicators
   const boolSI = (siLabel: string, val: unknown, invert = false) => {
     if (val === null || val === undefined)
