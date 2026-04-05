@@ -46,16 +46,16 @@ if (document.documentElement.hasAttribute(GUARD)) {
   // Hydrate scan cache from localStorage
   hydrateCacheFromLS()
 
-  // [5.3] Load stealth mode preference from chrome.storage
+  // Load enabled state from chrome.storage (default: true)
   try {
-    chrome.storage.local.get(["antares_stealth"], (result) => {
-      state.stealthMode = result?.antares_stealth === true
+    chrome.storage.local.get(["antares_enabled"], (result) => {
+      state.enabled = result?.antares_enabled !== false
     })
-    // Listen for stealth toggle changes from popup or other tabs
-    chrome.storage.onChanged.addListener((changes) => {
-      if (changes.antares_stealth) {
-        state.stealthMode = changes.antares_stealth.newValue === true
-        if (state.stealthMode) hideBox()
+    // Listen for toggle changes from background (click on extension icon)
+    chrome.runtime.onMessage.addListener((msg) => {
+      if (msg?.type === "ANTARES_TOGGLE") {
+        state.enabled = !!msg.enabled
+        if (!state.enabled) hideBox()
       }
     })
   } catch (e: unknown) {
@@ -79,9 +79,6 @@ if (document.documentElement.hasAttribute(GUARD)) {
    * SINGLE initial poll with adapter-specific delayed retry.
    * The delay gives the SPA time to render token data in the DOM.
    */
-  setTimeout(() => {
-    poll()
-  }, getInitialDelay())
-
+  setTimeout(() => { poll() }, getInitialDelay())
   setupNavListeners()
 }
