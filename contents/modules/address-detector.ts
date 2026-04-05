@@ -29,6 +29,7 @@ function alreadyHandled(ca: string): boolean {
  * Returns the CA found (or empty string) so callers can check.
  */
 export function poll(): string {
+    if (!state.enabled) return ""
   const url = new URL(window.location.href)
   const ca = adapter().extractCA(url, document)
   if (!ca) return ""
@@ -56,6 +57,7 @@ let lastNavTriggerTs = 0
  *     If the CA is the same, skip entirely (handles redirect noise).
  */
 export function onNav(): void {
+    if (!state.enabled) return
   const now = Date.now()
   const curUrl = new URL(window.location.href)
   const prevUrl = new URL(state.lastUrl || window.location.href)
