@@ -91,16 +91,6 @@ export async function scan(ca: string) {
     return
   }
 
-  // [5.3] Stealth mode
-  if (state.stealthMode) {
-    if (ca === state.lastCA) return
-    state.lastCA = ca
-    try {
-      void chrome.runtime.sendMessage({ type: "SCAN", ca })
-    } catch (e: unknown) { console.warn("[antares]", e) }
-    return
-  }
-
   const el = getBox()
   const cached = getCached(ca)
   if (ca === state.lastCA && cached && el.style.display !== "none") return
