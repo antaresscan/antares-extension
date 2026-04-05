@@ -43,7 +43,13 @@ function extractSymbol(data: Record<string, unknown>): string {
 void chrome.alarms.create(config.keepaliveAlarmName, { periodInMinutes: config.keepaliveIntervalMinutes });
 chrome.alarms.onAlarm.addListener((a) => { if (a.name === config.keepaliveAlarmName) void chrome.runtime.id; });
 
-let extensionEnabled = true
+// ─── BADGE CONFIG ────────────────────────────────────────────────────────────────
+const BADGE_MAP: Record<string, { text: string; color: string }> = {
+  SAFE: { text: "\u2713", color: "#00e5b0" },
+  CAUTION: { text: "!", color: "#f5d000" },
+  DANGER: { text: "\u2717", color: "#ff5f5f" },
+  RUG: { text: "\u2717", color: "#ff2244" },
+}
 
 const RISK_ORDER: Record<string, number> = { SAFE: 0, CAUTION: 1, DANGER: 2, RUG: 3 }
 
@@ -51,6 +57,15 @@ function riskWorsened(prev: string, current: string): boolean {
   const p = RISK_ORDER[prev]
   const c = RISK_ORDER[current]
   return p !== undefined && c !== undefined && c > p
+}
+
+function updateBadge(risk: string, tabId?: number) {
+  const badge = BADGE_MAP[risk]
+  if (!badge) return
+  const target = tabId !== undefined ? { tabId } : {}
+  void chrome.action.setBadgeText({ text: badge.text, ...target })
+  void chrome.action.setBadgeBackgroundColor({ color: "#FFFFFF", ...target })
+  void chrome.action.setBadgeTextColor({ color: badge.color, ...target })
 }
 
 function checkRiskEscalation(ca: string, currentRisk: string, tokenSymbol: string) {
@@ -102,7 +117,7 @@ function saveToHistory(ca: string, data: Record<string, unknown>) {
   }
 }
 
-// ─── MESSAGE HANDLER (map-based) ────────────────────────────────────────────────────────
+ // ─── MESSAGE HANDLER (map-based) ────────────────────────────────────────────────────────
 type MessageHandler = (
   msg: Record<string, unknown>,
   sender: chrome.runtime.MessageSender,
@@ -113,6 +128,7 @@ const handlers: Record<string, MessageHandler> = {
   SCAN: (msg, sender, sendResponse) => {
     const ca = typeof msg.ca === "string" ? msg.ca.trim() : ""
 
+    // Security: only accept messages from our own extension or content scripts
     if (sender.id !== chrome.runtime.id) {
       sendResponse({ ok: false, error: "Unauthorized sender" })
       return true
@@ -126,20 +142,26 @@ const handlers: Record<string, MessageHandler> = {
     const ctrl = new AbortController()
     const timer = setTimeout(() => ctrl.abort(), config.fetchTimeoutMs)
 
-    void fetch(`${config.apiBase}/api/scan?ca=${ca}`, { signal: ctrl.signal })
-      .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
-      .then((data: Record<string, unknown>) => {
-        clearTimeout(timer)
-        const risk = safeString(data.risk)
-        if (risk) checkRiskEscalation(ca, risk, extractSymbol(data))
-        saveToHistory(ca, data)
-        sendResponse({ ok: true, data })
-      })
-      .catch((e: Error) => {
-        clearTimeout(timer)
-        Sentry.captureException(e)
-        sendResponse({ ok: false, error: e.message })
-      })
+    void fetch(`${config.apiBase}/api/scan?ca=${ca}`, {
+      signal: ctrl.signal,
+    })
+    .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+    .then((data: Record<string, unknown>) => {
+      clearTimeout(timer)
+      const risk = safeString(data.risk)
+      if (risk) {
+        updateBadge(risk, sender.tab?.id)
+        const sym = extractSymbol(data)
+        checkRiskEscalation(ca, risk, sym)
+      }
+      saveToHistory(ca, data)
+      sendResponse({ ok: true, data })
+    })
+    .catch((e: Error) => {
+      clearTimeout(timer)
+      Sentry.captureException(e)
+      sendResponse({ ok: false, error: e.message })
+    })
   },
 
   GET_HISTORY: (_msg, _sender, sendResponse) => {
@@ -149,12 +171,7 @@ const handlers: Record<string, MessageHandler> = {
           sendResponse({ ok: false, error: chrome.runtime.lastError.message })
           return
         }
-        sendResponse({
-          ok: true,
-          history: (Array.isArray(result[config.historyStorageKey])
-            ? result[config.historyStorageKey]
-            : []) as HistoryEntry[],
-        })
+        sendResponse({ ok: true, history: (Array.isArray(result[config.historyStorageKey]) ? result[config.historyStorageKey] : []) as HistoryEntry[] })
       })
     } catch (e: unknown) {
       sendResponse({ ok: false, error: String(e) })
@@ -166,32 +183,30 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   const handler = handlers[msg.type as string]
   if (handler) {
     handler(msg, sender, sendResponse)
-    return true
+    return true // keep channel open for async response
   }
 })
 
-// ─── EXTENSION TOGGLE ─────────────────────────────────────────────────────────────────
-// Clic sur l'icône : vert = ON, rouge = OFF
-chrome.action.onClicked.addListener((_tab) => {
+// ─── EXTENSION TOGGLE (click icon to enable/disable) ────────────────────────
+let extensionEnabled = true
+
+chrome.action.onClicked.addListener(async (_tab) => {
   extensionEnabled = !extensionEnabled
-
-  void chrome.action.setBadgeText({ text: "\u25CF" })
-  void chrome.action.setBadgeBackgroundColor({
-    color: extensionEnabled ? "#00e5b0" : "#ff2244",
+  const label = "\u25CF"
+  void chrome.action.setBadgeText({ text: label })
+  void chrome.action.setBadgeBackgroundColor({ color: "#FFFFFF" })
+  void chrome.action.setBadgeTextColor({
+    color: extensionEnabled ? "#00e5b0" : "#ff5f5f",
   })
-
+  // Broadcast to ALL tabs so every content script toggles instantly
   chrome.tabs.query({}, (tabs) => {
     for (const t of tabs) {
       if (t.id) {
         chrome.tabs.sendMessage(t.id, {
           type: "EXTENSION_TOGGLE",
           enabled: extensionEnabled,
-        }).catch(() => {})
+        }).catch(() => { /* no content script in this tab */ })
       }
     }
   })
 })
-
-// Badge vert au démarrage
-void chrome.action.setBadgeText({ text: "\u25CF" })
-void chrome.action.setBadgeBackgroundColor({ color: "#00e5b0" })
