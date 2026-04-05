@@ -50,9 +50,15 @@ export function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean
     // chrome-extension:// origins are allowed via rate limiting only.
   // API key removed from extension bundle for security (see #102).
   if (origin.startsWith("chrome-extension://")) {
+        // Validate extension token to prevent abuse from unknown extensions
+    const extToken = (req.headers["x-antares-token"] as string) || "";
+    const expectedToken = process.env.ANTARES_EXT_TOKEN || "";
+    if (!expectedToken || extToken !== expectedToken) {
+      return false;
+    }
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+        res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Antares-Token");
     res.setHeader("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
     return true;
   }
@@ -72,7 +78,7 @@ export function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean
 
   if (corsOk) res.setHeader("Access-Control-Allow-Origin", origin);
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Antares-Key, Authorization");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Antares-Key, X-Antares-Token, Authorization");
   res.setHeader("Access-Control-Max-Age", "86400");
   res.setHeader("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
   return corsOk;
