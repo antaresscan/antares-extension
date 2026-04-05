@@ -65,11 +65,11 @@ export function applySafeGateOverride(input: SafeGateInput): boolean {
   if (onlySoftReasons) {
     const ageHours = input.tokenAgeHours ?? 0;
     // HARDENED: Never unlock tokens younger than 48 hours
-    if (ageHours < 48) return true;
+        if (input.tokenAgeHours !== null && ageHours < 48) return true;
     const hasEnoughSources = input.sourcesAvailableCount >= 5;
     // HARDENED: Require ALL conditions: age>48h, 5+ sources, 1000+ holders, LP burned, GoPlus clean
     if (
-      ageHours > 48 &&
+            (input.tokenAgeHours === null || ageHours > 48) &&
       hasEnoughSources &&
       (input.holders ?? 0) > 1000 &&
       input.lpBurned &&
