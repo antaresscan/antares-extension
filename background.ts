@@ -66,7 +66,8 @@ function updateBadge(risk: string, tabId?: number) {
   if (!badge) return
   const target = tabId !== undefined ? { tabId } : {}
   void chrome.action.setBadgeText({ text: badge.text, ...target })
-  void chrome.action.setBadgeBackgroundColor({ color: badge.color, ...target })
+    void chrome.action.setBadgeBackgroundColor({ color: [0, 0, 0, 0], ...target })
+  void chrome.action.setBadgeTextColor({ color: badge.color, ...target })
 }
 
 function checkRiskEscalation(ca: string, currentRisk: string, tokenSymbol: string) {
