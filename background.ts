@@ -194,9 +194,10 @@ chrome.action.onClicked.addListener(async (_tab) => {
   extensionEnabled = !extensionEnabled
     const label = "\u25CF"
   void chrome.action.setBadgeText({ text: label })
-  void chrome.action.setBadgeBackgroundColor({
-        color: extensionEnabled ? "#00e5b0" : "#ff5f5f",
-  })
+  void chrome.action.setBadgeBackgroundColor({ color: [0, 0, 0, 0] })
+    void chrome.action.setBadgeTextColor({
+      color: extensionEnabled ? "#00e5b0" : "#ff5f5f",
+    })
   // Broadcast to ALL tabs so every content script toggles instantly
   chrome.tabs.query({}, (tabs) => {
     for (const t of tabs) {
