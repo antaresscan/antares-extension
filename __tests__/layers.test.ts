@@ -221,7 +221,7 @@ describe("layerHelius", () => {
 
   it("foundation wallet detection — excludes foundation wallets from holder analysis", () => {
     const holders: HeliusHolder[] = [
-      { address: "B9n3tgBJ8f1K2VXrF5aTBNXXmj5V8sKXrk3GV5uPump", owner: "B9n3tgBJ8f1K2VXrF5aTBNXXmj5V8sKXrk3GV5uPump", uiAmount: 500 },
+      { address: "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8", owner: "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8", uiAmount: 500 },
       { address: "wallet1abc", owner: "wallet1abc", uiAmount: 50 },
       { address: "wallet2abc", owner: "wallet2abc", uiAmount: 50 },
       { address: "wallet3abc", owner: "wallet3abc", uiAmount: 50 },
