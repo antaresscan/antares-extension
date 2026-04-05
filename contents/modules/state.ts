@@ -3,6 +3,7 @@ import type { ScanResponseData } from "../../shared/types"
 export const scanCache = new Map<string, { data: ScanResponseData; ts: number }>()
 
 export const state = {
+    enabled: true,
   host: null as HTMLElement | null,
   shadow: null as ShadowRoot | null,
   boxEl: null as HTMLDivElement | null,
