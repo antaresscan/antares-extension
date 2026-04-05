@@ -5,12 +5,12 @@ import type { HistoryEntry } from "./shared/types"
 import { CA_RE } from "./shared/constants"
 import { config } from "./shared/config"
 
-// ─── SENTRY INITIALIZATION ──────────────────────────────────────────────────
+// ─── SENTRY INITIALIZATION ───────────────────────────────────────────────────────────────
 if (config.sentryDsn) {
   Sentry.init({ dsn: config.sentryDsn, tracesSampleRate: config.sentryTracesSampleRate })
 }
 
-// ─── SAFE DATA EXTRACTION HELPERS ───────────────────────────────────────────
+// ─── SAFE DATA EXTRACTION HELPERS ───────────────────────────────────────────────────────
 function safeString(val: unknown): string | undefined {
   return typeof val === "string" ? val : undefined
 }
@@ -43,13 +43,14 @@ function extractSymbol(data: Record<string, unknown>): string {
 void chrome.alarms.create(config.keepaliveAlarmName, { periodInMinutes: config.keepaliveIntervalMinutes });
 chrome.alarms.onAlarm.addListener((a) => { if (a.name === config.keepaliveAlarmName) void chrome.runtime.id; });
 
-// ─── BADGE CONFIG ──────────────────────────────────────────────────────────
+// ─── BADGE CONFIG ────────────────────────────────────────────────────────────────
 const BADGE_MAP: Record<string, { text: string; color: string }> = {
   SAFE: { text: "\u2713", color: "#00e5b0" },
   CAUTION: { text: "!", color: "#f5d000" },
   DANGER: { text: "\u2717", color: "#ff5f5f" },
   RUG: { text: "\u2717", color: "#ff2244" },
 }
+
 const RISK_ORDER: Record<string, number> = { SAFE: 0, CAUTION: 1, DANGER: 2, RUG: 3 }
 
 function riskWorsened(prev: string, current: string): boolean {
@@ -76,7 +77,7 @@ function checkRiskEscalation(ca: string, currentRisk: string, tokenSymbol: strin
       }
       const prev = safeString(result[key])
       if (prev && riskWorsened(prev, currentRisk)) {
-        chrome.notifications.create(`antares_alert_${ca}`, {
+        void chrome.notifications.create(`antares_alert_${ca}`, {
           type: "basic",
           iconUrl: chrome.runtime.getURL("assets/icon.png"),
           title: "Antares \u2014 Risk Escalation",
@@ -90,7 +91,7 @@ function checkRiskEscalation(ca: string, currentRisk: string, tokenSymbol: strin
   }
 }
 
-// ─── HISTORY ───────────────────────────────────────────────────────────────
+// ─── HISTORY ─────────────────────────────────────────────────────────────────
 function saveToHistory(ca: string, data: Record<string, unknown>) {
   const entry: HistoryEntry = {
     ca,
@@ -114,7 +115,8 @@ function saveToHistory(ca: string, data: Record<string, unknown>) {
     console.warn("[antares] saveToHistory error:", e)
   }
 }
- // ─── MESSAGE HANDLER (map-based) ────────────────────────────────────────────
+
+ // ─── MESSAGE HANDLER (map-based) ────────────────────────────────────────────────────────
 type MessageHandler = (
   msg: Record<string, unknown>,
   sender: chrome.runtime.MessageSender,
@@ -141,10 +143,11 @@ const handlers: Record<string, MessageHandler> = {
 
     void fetch(`${config.apiBase}/api/scan?ca=${ca}`, {
       signal: ctrl.signal,
-            })
+    })
     .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
     .then((data: Record<string, unknown>) => {
-    
+      clearTimeout(timer) // FIX: clear timeout on success to prevent late abort
+      
       const risk = safeString(data.risk)
       if (risk) {
         updateBadge(risk, sender.tab?.id)
