@@ -46,22 +46,7 @@ if (document.documentElement.hasAttribute(GUARD)) {
   // Hydrate scan cache from localStorage
   hydrateCacheFromLS()
 
-  // [5.3] Load stealth mode preference from chrome.storage
-  try {
-    chrome.storage.local.get(["antares_stealth"], (result) => {
-      state.stealthMode = result?.antares_stealth === true
-    })
-    // Listen for stealth toggle changes from popup or other tabs
-    chrome.storage.onChanged.addListener((changes) => {
-      if (changes.antares_stealth) {
-        state.stealthMode = changes.antares_stealth.newValue === true
-        if (state.stealthMode) hideBox()
-      }
-    })
-  } catch (e: unknown) {
-    console.warn("[antares]", e)
-  }
-
+  
   // MutationObserver to re-inject host if removed
   new MutationObserver(() => {
     if (!state.host || !document.documentElement.contains(state.host)) {
