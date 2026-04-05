@@ -191,22 +191,53 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 let extensionEnabled = true
 
 chrome.action.onClicked.addListener(async (_tab) => {
-  extensionEnabled = !extensionEnabled
-    const label = "\u25CF"
-  void chrome.action.setBadgeText({ text: label })
-  void chrome.action.setBadgeBackgroundColor({ color: [0, 0, 0, 0] })
-    void chrome.action.setBadgeTextColor({
-      color: extensionEnabled ? "#00e5b0" : "#ff5f5f",
-    })
-  // Broadcast to ALL tabs so every content script toggles instantly
-  chrome.tabs.query({}, (tabs) => {
-    for (const t of tabs) {
-      if (t.id) {
-        chrome.tabs.sendMessage(t.id, {
-          type: "EXTENSION_TOGGLE",
-          enabled: extensionEnabled,
-        }).catch(() => { /* no content script in this tab */ })
+    extensionEnabled = !extensionEnabled
+    // Clear any badge text
+    void chrome.action.setBadgeText({ text: "" })
+    if (extensionEnabled) {
+      // Restore original colored icon
+      void chrome.action.setIcon({
+        path: {
+          16: "assets/icon.png",
+          32: "assets/icon.png",
+          48: "assets/icon.png",
+          128: "assets/icon.png",
+        },
+      })
+    } else {
+      // Generate grayscale icon to indicate disabled state
+      try {
+        const response = await fetch(chrome.runtime.getURL("assets/icon.png"))
+        const blob = await response.blob()
+        const bitmap = await createImageBitmap(blob)
+        const size = 128
+        const canvas = new OffscreenCanvas(size, size)
+        const ctx = canvas.getContext("2d")!
+        ctx.drawImage(bitmap, 0, 0, size, size)
+        const imageData = ctx.getImageData(0, 0, size, size)
+        const d = imageData.data
+        for (let i = 0; i < d.length; i += 4) {
+          const gray = d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11
+          d[i] = gray; d[i + 1] = gray; d[i + 2] = gray
+          d[i + 3] = Math.round(d[i + 3] * 0.5) // 50% opacity
+        }
+        ctx.putImageData(imageData, 0, 0)
+        void chrome.action.setIcon({ imageData: { 128: imageData } })
+      } catch {
+        // Fallback: just use a dim badge
+        void chrome.action.setBadgeText({ text: " " })
+        void chrome.action.setBadgeBackgroundColor({ color: "#666666" })
       }
     }
+    // Broadcast to ALL tabs so every content script toggles instantly
+    chrome.tabs.query({}, (tabs) => {
+      for (const t of tabs) {
+        if (t.id) {
+          chrome.tabs.sendMessage(t.id, {
+            type: "EXTENSION_TOGGLE",
+            enabled: extensionEnabled,
+          }).catch(() => { /* no content script in this tab */ })
+        }
+      }
+    })
   })
-})
