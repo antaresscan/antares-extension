@@ -91,8 +91,15 @@ export async function scan(ca: string) {
     return
   }
 
-  // Extension disabled — do nothing
-  if (!state.enabled) return
+  // [5.3] Stealth mode
+  if (state.stealthMode) {
+    if (ca === state.lastCA) return
+    state.lastCA = ca
+    try {
+      void chrome.runtime.sendMessage({ type: "SCAN", ca })
+    } catch (e: unknown) { console.warn("[antares]", e) }
+    return
+  }
 
   const el = getBox()
   const cached = getCached(ca)
@@ -101,8 +108,11 @@ export async function scan(ca: string) {
 
   if (state.currentScanController) {
     if (ca !== state.lastCA) {
-      state.currentScanController.abort(); state.currentScanController = null;
-    } else { return; }
+      state.currentScanController.abort();
+      state.currentScanController = null;
+    } else {
+      return;
+    }
   }
 
   state.manuallyDismissed = false;
@@ -121,27 +131,30 @@ export async function scan(ca: string) {
 
   const controller = new AbortController()
   state.currentScanController = controller
-
   if (state.boxEl) state.boxEl.className = "box"
   el.innerHTML = `
-${buildHeader()}
-<div class="loading"></div>`
+    <div class="topbar" style="background:linear-gradient(90deg,transparent,#3a3a3f,transparent)"></div>
+    ${buildHeader()}
+    <div class="skel">
+      <div class="skel-verdict"></div>
+      <div class="skel-bar"></div>
+      <div class="skel-line"></div>
+      <div class="skel-line"></div>
+      <div class="skel-line"></div>
+    </div>
+  `
   showBox(); attachClose()
-
   try {
     const res = await fetchWithRetry(`${API}?ca=${ca}`, controller.signal)
     if (controller.signal.aborted) return
     const data = await res.json() as ScanResponseData
     if (controller.signal.aborted) return
-
     scanCache.set(ca, { data, ts: Date.now() })
     saveToLS(ca, data)
-
     el.innerHTML = buildResult(data, ca)
     showBox()
     triggerResultAnimations(el)
     attachClose()
-
     chrome.storage.local.get(["autoRescan"], (prefs) => {
       if (prefs.autoRescan !== false) scheduleRescanIfPriceCrash(data, ca)
     })
