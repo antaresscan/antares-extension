@@ -11,7 +11,6 @@ export const state = {
   manuallyDismissed: false,
   currentScanController: null as AbortController | null,
   isInjecting: false,
-  stealthMode: false,
   rescanTimer: null as ReturnType<typeof setTimeout> | null,
   // drag state
   dragOX: 0,
