@@ -197,15 +197,15 @@ chrome.action.onClicked.addListener(async (tab) => {
   void chrome.action.setBadgeBackgroundColor({
     color: extensionEnabled ? "#00e5b0" : "#888888",
   })
-  // Notify the content script about the state change
-  if (tab.id) {
-    try {
-      void chrome.tabs.sendMessage(tab.id, {
-        type: "EXTENSION_TOGGLE",
-        enabled: extensionEnabled,
-      })
-    } catch {
-      // Content script not ready, ignore
+  // Broadcast to ALL tabs so every content script toggles instantly
+  chrome.tabs.query({}, (tabs) => {
+    for (const t of tabs) {
+      if (t.id) {
+        chrome.tabs.sendMessage(t.id, {
+          type: "EXTENSION_TOGGLE",
+          enabled: extensionEnabled,
+        }).catch(() => { /* no content script in this tab */ })
+      }
     }
-  }
+  })
 })
