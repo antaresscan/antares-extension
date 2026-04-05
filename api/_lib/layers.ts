@@ -63,7 +63,6 @@ export function layerDexScreener(
   else if (liq < 5000) { flags.push(makeFlag("Low liquidity (<$5k)", "warning", 0)); penalties.push(0.65); }
   else if (liq < 20000) { flags.push(makeFlag("Liquidity < $20k", "info", 0)); penalties.push(0.90); }
 
-  // Fix: liq=0 with volume is suspicious (abandoned pool / exploit)
   if (liq === 0 && vol > 10000) {
     flags.push(makeFlag("Volume with zero liquidity — abandoned pool", "critical", 0));
     penalties.push(0.10); forceRug = true; safeBlocked = true;
@@ -118,7 +117,21 @@ export function layerDexScreener(
 }
 
 // ═══ LAYER 2 — RugCheck ═══════════════════════════════════════════════════════
-export function layerRugCheck(rugData: RugCheckSummary | null, rugReportData: RugCheckReport | null, resolvedMint: string): LayerResult {
+
+// Fix(DECEPTIVE_NAME): Tokens impersonating real financial institutions
+const DECEPTIVE_NAME_PATTERNS: RegExp[] = [
+  /\bvanguard\b/i, /\bblackrock\b/i, /\bgoldman\b/i, /\bfederal reserve\b/i,
+  /\bjpmorgan\b/i, /\bmorgan stanley\b/i, /\bfidelity\b/i, /\bcitadel\b/i,
+  /\bsequoia\b/i, /\ba16z\b/i, /\bberkshire\b/i, /\bdeutsche bank\b/i,
+  /\bcredit suisse\b/i, /\bubs group\b/i, /\braymond james\b/i,
+];
+
+export function layerRugCheck(
+  rugData: RugCheckSummary | null,
+  rugReportData: RugCheckReport | null,
+  resolvedMint: string,
+  tokenName?: string | null
+): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
   const penalties: number[] = [];
@@ -128,6 +141,16 @@ export function layerRugCheck(rugData: RugCheckSummary | null, rugReportData: Ru
     flags: [makeFlag("RugCheck unavailable", "info", 0)],
     forceRug: false, safeBlocked: false,
   };
+
+  // Fix(DECEPTIVE_NAME): Flag tokens impersonating real-world financial institutions
+  if (tokenName) {
+    const isDeceptive = DECEPTIVE_NAME_PATTERNS.some(p => p.test(tokenName));
+    if (isDeceptive) {
+      flags.push(makeFlag(`Deceptive name — impersonates real institution: "${tokenName}"`, "critical", 0));
+      penalties.push(0.20); safeBlocked = true;
+    }
+  }
+
   const bundleInReport = riskIncludes(rugReportData, /bundle/i);
   const bundledPct = bundleInReport ? extractBundlePct(rugReportData) : 0;
   if (bundleInReport && bundledPct > 0.20) {
@@ -159,11 +182,13 @@ export function layerRugCheck(rugData: RugCheckSummary | null, rugReportData: Ru
       typeof rugData.lockDurationDays === "number";
     const isOfficialMint = OFFICIAL_MINTS.has(resolvedMint);
     if (lpDataPresent && !isOfficialMint) {
-      flags.push(makeFlag("LP not burned or locked", "warning", 0));
+      // Fix(LP_SAFE_BLOCK): LP not burned or locked MUST block SAFE verdict.
+      // Previously penalty-only — rug pulls like VDOR passed through with accessible LP.
+      flags.push(makeFlag("LP not burned or locked — dev can rug liquidity", "warning", 0));
       penalties.push(0.70);
+      safeBlocked = true; // ← THE KEY FIX
     }
   }
-  // Fix: only penalize if metaMutable is explicitly true — don't penalize absence of info
   if (rugData.metaMutable === true) {
     flags.push(makeFlag("Metadata mutable", "warning", 0));
     penalties.push(0.82);
@@ -194,7 +219,6 @@ export function layerGoPlus(goplus: GoPlusTokenResult | null): LayerResult {
     flags: [makeFlag("GoPlus unavailable", "info", 0)],
     forceRug: false, safeBlocked: false,
   };
-  // Fix: more robust gp() handles "true"/"yes" string values
   const gp = (field: keyof GoPlusTokenResult) => {
     const v = goplus[field];
     if (v === "1" || v === 1 || v === true) return true;
@@ -230,13 +254,16 @@ export function layerGoPlus(goplus: GoPlusTokenResult | null): LayerResult {
   if (gp("transfer_pausable")) { flags.push(makeFlag("Transfer pausable", "critical", 0)); penalties.push(0.30); safeBlocked = true; }
   if (gp("hidden_owner")) { flags.push(makeFlag("Hidden owner detected", "critical", 0)); penalties.push(0.30); safeBlocked = true; }
   if (gp("is_proxy")) { flags.push(makeFlag("Upgradeable/proxy contract", "critical", 0)); penalties.push(0.50); safeBlocked = true; }
-  // Fix: GoPlus returns sometimes "10" (=10%) sometimes "0.10" (=10%) — normalize
   const sellTaxRaw = gpNum("sell_tax");
   const buyTaxRaw  = gpNum("buy_tax");
   const sellTax = sellTaxRaw > 1 ? sellTaxRaw / 100 : sellTaxRaw;
   const buyTax  = buyTaxRaw  > 1 ? buyTaxRaw  / 100 : buyTaxRaw;
   if (sellTax > 0.10) { flags.push(makeFlag("Sell tax > 10%", "critical", 0)); penalties.push(0.35); }
   if (buyTax  > 0.10) { flags.push(makeFlag("Buy tax > 10%",  "critical", 0)); penalties.push(0.35); }
+  // Fix(TAX_WARNING): Tax between 2% and 10% is a common rug mechanic — flag it.
+  // VDOR had 4.5% tax which previously passed through completely undetected.
+  if (sellTax > 0.02 && sellTax <= 0.10) { flags.push(makeFlag(`Sell tax ${Math.round(sellTax * 100)}% — suspicious`, "warning", 0)); penalties.push(0.80); }
+  if (buyTax  > 0.02 && buyTax  <= 0.10) { flags.push(makeFlag(`Buy tax ${Math.round(buyTax  * 100)}% — suspicious`,  "warning", 0)); penalties.push(0.80); }
   if (gpNum("owner_percent") > 0.05) { flags.push(makeFlag("Owner holds > 5%", "critical", 0)); penalties.push(0.50); }
   if (gpNum("creator_percent") > 0.05) { flags.push(makeFlag("Creator holds > 5%", "critical", 0)); penalties.push(0.50); }
   if (gp("is_mintable")) { flags.push(makeFlag("Token is mintable", "warning", 0)); penalties.push(0.60); }
@@ -257,7 +284,7 @@ export function layerHelius(
   let trust = 1.0;
   const penalties: number[] = [];
   let forceRug = false, safeBlocked = false;
-    if (!rawHolderAccounts.length || !totalSupplyUi || totalSupplyUi <= 0) return {
+  if (!rawHolderAccounts.length || !totalSupplyUi || totalSupplyUi <= 0) return {
     source: "helius", trust: 1.0, available: false,
     flags: [makeFlag("Helius unavailable", "info", 0)],
     forceRug: false, safeBlocked: false,
@@ -309,12 +336,11 @@ export function layerSolscan(
     else if (tokenAgeHours > 720) { flags.push(makeFlag("Established token (30d+) ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.05); }
   }
   let washTradingDetected = false;
-        // Fix: handle traders24h=0 with trades — pure wash trading (no real traders)
-    if (trades24h !== null && traders24h !== null && traders24h === 0 && trades24h > 0) {
-        flags.push(makeFlag("Wash trading: trades with zero identified traders", "critical", 0));
-        penalties.push(0.40); safeBlocked = true;
-        washTradingDetected = true;
-    }
+  if (trades24h !== null && traders24h !== null && traders24h === 0 && trades24h > 0) {
+    flags.push(makeFlag("Wash trading: trades with zero identified traders", "critical", 0));
+    penalties.push(0.40); safeBlocked = true;
+    washTradingDetected = true;
+  }
   if (trades24h !== null && traders24h !== null && traders24h > 0) {
     const tradesPerTrader = trades24h / traders24h;
     if (tradesPerTrader > 50 && traders24h < 20) {
@@ -395,11 +421,10 @@ export function layerChart(
       flags.push(makeFlag("Early volume exhaustion near highs", "warning", 0));
       penalties.push(0.65); safeBlocked = true;
     }
-              // Fix: handle olderVol mean=0 with sudden volume spike — artificial pump
-        if (olderVol.length && _mean(olderVol) === 0 && _mean(recentVol) > 0) {
-            flags.push(makeFlag("Sudden volume spike from zero — artificial pump", "warning", 0));
-            penalties.push(0.60); safeBlocked = true;
-        }
+    if (olderVol.length && _mean(olderVol) === 0 && _mean(recentVol) > 0) {
+      flags.push(makeFlag("Sudden volume spike from zero — artificial pump", "warning", 0));
+      penalties.push(0.60); safeBlocked = true;
+    }
   }
   if (_pct(first, last) > 300 && greenRatio > 0.78) {
     flags.push(makeFlag("Parabolic launch: high risk exit liquidity setup", "warning", 0));
