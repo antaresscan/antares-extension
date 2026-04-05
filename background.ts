@@ -45,30 +45,12 @@ chrome.alarms.onAlarm.addListener((a) => { if (a.name === config.keepaliveAlarmN
 
 let extensionEnabled = true
 
-// ─── BADGE CONFIG ────────────────────────────────────────────────────────────────
-const BADGE_MAP: Record<string, { text: string; color: string }> = {
-  SAFE: { text: "\u25CF", color: "#00e5b0" },
-  CAUTION: { text: "\u25CF", color: "#f5d000" },
-  DANGER: { text: "\u25CF", color: "#ff5f5f" },
-  RUG: { text: "\u25CF", color: "#ff2244" },
-}
-
 const RISK_ORDER: Record<string, number> = { SAFE: 0, CAUTION: 1, DANGER: 2, RUG: 3 }
 
 function riskWorsened(prev: string, current: string): boolean {
   const p = RISK_ORDER[prev]
   const c = RISK_ORDER[current]
   return p !== undefined && c !== undefined && c > p
-}
-
-function updateBadge(risk: string, tabId?: number) {
-  if (!extensionEnabled) return
-  const badge = BADGE_MAP[risk]
-  if (!badge) return
-  const target = tabId !== undefined ? { tabId } : {}
-  void chrome.action.setBadgeText({ text: badge.text, ...target })
-  void chrome.action.setBadgeBackgroundColor({ color: "#FFFFFF", ...target })
-  void chrome.action.setBadgeTextColor({ color: badge.color, ...target })
 }
 
 function checkRiskEscalation(ca: string, currentRisk: string, tokenSymbol: string) {
@@ -120,7 +102,7 @@ function saveToHistory(ca: string, data: Record<string, unknown>) {
   }
 }
 
- // ─── MESSAGE HANDLER (map-based) ────────────────────────────────────────────────────────
+// ─── MESSAGE HANDLER (map-based) ────────────────────────────────────────────────────────
 type MessageHandler = (
   msg: Record<string, unknown>,
   sender: chrome.runtime.MessageSender,
@@ -131,12 +113,11 @@ const handlers: Record<string, MessageHandler> = {
   SCAN: (msg, sender, sendResponse) => {
     const ca = typeof msg.ca === "string" ? msg.ca.trim() : ""
 
-    // Security: only accept messages from our own extension or content scripts
     if (sender.id !== chrome.runtime.id) {
       sendResponse({ ok: false, error: "Unauthorized sender" })
       return true
     }
-    
+
     if (!CA_RE.test(ca)) {
       sendResponse({ ok: false, error: "Invalid contract address" })
       return true
@@ -145,27 +126,20 @@ const handlers: Record<string, MessageHandler> = {
     const ctrl = new AbortController()
     const timer = setTimeout(() => ctrl.abort(), config.fetchTimeoutMs)
 
-    void fetch(`${config.apiBase}/api/scan?ca=${ca}`, {
-      signal: ctrl.signal,
-    })
-    .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
-    .then((data: Record<string, unknown>) => {
-      clearTimeout(timer) // FIX: clear timeout on success to prevent late abort
-      
-      const risk = safeString(data.risk)
-      if (risk) {
-        updateBadge(risk, sender.tab?.id)
-        const sym = extractSymbol(data)
-        checkRiskEscalation(ca, risk, sym)
-      }
-      saveToHistory(ca, data)
-      sendResponse({ ok: true, data })
-    })
-    .catch((e: Error) => {
-      clearTimeout(timer)
-      Sentry.captureException(e)
-      sendResponse({ ok: false, error: e.message })
-    })
+    void fetch(`${config.apiBase}/api/scan?ca=${ca}`, { signal: ctrl.signal })
+      .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then((data: Record<string, unknown>) => {
+        clearTimeout(timer)
+        const risk = safeString(data.risk)
+        if (risk) checkRiskEscalation(ca, risk, extractSymbol(data))
+        saveToHistory(ca, data)
+        sendResponse({ ok: true, data })
+      })
+      .catch((e: Error) => {
+        clearTimeout(timer)
+        Sentry.captureException(e)
+        sendResponse({ ok: false, error: e.message })
+      })
   },
 
   GET_HISTORY: (_msg, _sender, sendResponse) => {
@@ -175,7 +149,12 @@ const handlers: Record<string, MessageHandler> = {
           sendResponse({ ok: false, error: chrome.runtime.lastError.message })
           return
         }
-        sendResponse({ ok: true, history: (Array.isArray(result[config.historyStorageKey]) ? result[config.historyStorageKey] : []) as HistoryEntry[] })
+        sendResponse({
+          ok: true,
+          history: (Array.isArray(result[config.historyStorageKey])
+            ? result[config.historyStorageKey]
+            : []) as HistoryEntry[],
+        })
       })
     } catch (e: unknown) {
       sendResponse({ ok: false, error: String(e) })
@@ -187,60 +166,32 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   const handler = handlers[msg.type as string]
   if (handler) {
     handler(msg, sender, sendResponse)
-    return true // keep channel open for async response
+    return true
   }
 })
 
-// ─── EXTENSION TOGGLE (click icon to enable/disable) ────────────────────────
-
-chrome.action.onClicked.addListener(async (_tab) => {
+// ─── EXTENSION TOGGLE ─────────────────────────────────────────────────────────────────
+// Clic sur l'icône : vert = ON, rouge = OFF
+chrome.action.onClicked.addListener((_tab) => {
   extensionEnabled = !extensionEnabled
-  // Clear any badge text
-  void chrome.action.setBadgeText({ text: "" })
-  if (extensionEnabled) {
-    // Restore original colored icon
-    void chrome.action.setIcon({
-      path: {
-        16: "assets/icon.png",
-        32: "assets/icon.png",
-        48: "assets/icon.png",
-        128: "assets/icon.png",
-      },
-    })
-  } else {
-    // Generate grayscale icon to indicate disabled state
-    try {
-      const response = await fetch(chrome.runtime.getURL("assets/icon.png"))
-      const blob = await response.blob()
-      const bitmap = await createImageBitmap(blob)
-      const size = 128
-      const canvas = new OffscreenCanvas(size, size)
-      const ctx = canvas.getContext("2d")!
-      ctx.drawImage(bitmap, 0, 0, size, size)
-      const imageData = ctx.getImageData(0, 0, size, size)
-      const d = imageData.data
-      for (let i = 0; i < d.length; i += 4) {
-        const gray = d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11
-        d[i] = gray; d[i + 1] = gray; d[i + 2] = gray
-        d[i + 3] = Math.round(d[i + 3] * 0.5) // 50% opacity
-      }
-      ctx.putImageData(imageData, 0, 0)
-      void chrome.action.setIcon({ imageData: { 128: imageData } })
-    } catch {
-      // Fallback: just use a dim badge
-      void chrome.action.setBadgeText({ text: " " })
-      void chrome.action.setBadgeBackgroundColor({ color: "#666666" })
-    }
-  }
-  // Broadcast to ALL tabs so every content script toggles instantly
+
+  void chrome.action.setBadgeText({ text: "\u25CF" })
+  void chrome.action.setBadgeBackgroundColor({
+    color: extensionEnabled ? "#00e5b0" : "#ff2244",
+  })
+
   chrome.tabs.query({}, (tabs) => {
     for (const t of tabs) {
       if (t.id) {
         chrome.tabs.sendMessage(t.id, {
           type: "EXTENSION_TOGGLE",
           enabled: extensionEnabled,
-        }).catch(() => { /* no content script in this tab */ })
+        }).catch(() => {})
       }
     }
   })
 })
+
+// Badge vert au démarrage
+void chrome.action.setBadgeText({ text: "\u25CF" })
+void chrome.action.setBadgeBackgroundColor({ color: "#00e5b0" })
