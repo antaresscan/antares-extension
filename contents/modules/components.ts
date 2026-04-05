@@ -34,7 +34,7 @@ export function createHost() {
   const styleEl = document.createElement("style")
   styleEl.textContent = SHADOW_CSS
   state.shadow.appendChild(styleEl)
-  // Inject font stylesheet inside shadow DOM to prevent host-page font overrides
+    // Inject font stylesheet inside shadow DOM to prevent host-page font overrides
   const fontLink = document.createElement("link")
   fontLink.rel = "stylesheet"
   fontLink.href = "https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap"
@@ -86,40 +86,51 @@ export function resetState() {
 }
 
 export function attachClose() {
-  state.shadow?.querySelector("#ant-close")?.addEventListener("click", () => {
-    state.manuallyDismissed = true; hideBox()
-  }, { once: true })
+  state.shadow?.querySelector("#ant-close")?.addEventListener("click", () => { state.manuallyDismissed = true; hideBox() }, { once: true })
   state.shadow?.querySelector("#ant-hist-btn")?.addEventListener("click", toggleHistory)
+  state.shadow?.querySelector("#ant-stealth")?.addEventListener("click", () => {
+    try {
+      void chrome.storage.local.set({ antares_stealth: true })
+    } catch (e: unknown) { console.warn("[antares]", e) }
+    state.stealthMode = true
+    hideBox()
+  }, { once: true })
 }
 
 export function toggleHistory() {
   const panel = state.shadow?.querySelector("#ant-hist") as HTMLElement | null
   if (!panel) return
-  if (panel.classList.contains("open")) { panel.classList.remove("open"); return }
-  panel.innerHTML = `<div class="hist-item">Loading...</div>`
+  if (panel.classList.contains("open")) {
+    panel.classList.remove("open")
+    return
+  }
+  panel.innerHTML = `<div style="color:#555;font-size:9px;padding:6px 0;font-family:'IBM Plex Mono',monospace">Loading...</div>`
   panel.classList.add("open")
   try {
     chrome.runtime.sendMessage({ type: "GET_HISTORY" }, (response) => {
       if (chrome.runtime.lastError) {
-        panel.innerHTML = `<div class="hist-item">Extension reloaded \u2014 refresh page</div>`
+        panel.innerHTML = `<div style="color:#444;font-size:9px;padding:6px 0;font-family:'IBM Plex Mono',monospace">Extension reloaded \u2014 refresh page</div>`
         return
       }
       if (!response?.ok || !response.history?.length) {
-        panel.innerHTML = `<div class="hist-item">No recent scans</div>`
+        panel.innerHTML = `<div style="color:#444;font-size:9px;padding:6px 0;font-family:'IBM Plex Mono',monospace">No recent scans</div>`
         return
       }
       const items = (response.history as Array<{ ca: string; symbol: string; risk: string; score: number; ts: number }>)
         .map((h) => {
           const rClass = (h.risk || "").toLowerCase()
-          return `<div class="hist-item ${rClass}">
-  ${escapeHtml(h.symbol || "")}&nbsp;&nbsp;${escapeHtml(h.risk || "")}&nbsp;&nbsp;${h.score}/1000&nbsp;&nbsp;${formatTimeAgo(h.ts)}
-</div>`
+          return `<div class="hist-item">
+            <span class="hist-sym">${escapeHtml(h.symbol || "")}</span>
+            <span class="hist-risk ${rClass}">${escapeHtml(h.risk || "")}</span>
+            <span class="hist-score">${h.score}/1000</span>
+            <span class="hist-time">${formatTimeAgo(h.ts)}</span>
+          </div>`
         }).join("")
       panel.innerHTML = items
     })
   } catch (e: unknown) {
     console.warn("[antares] runtime unavailable", e)
-    panel.innerHTML = `<div class="hist-item">Extension reloaded \u2014 refresh page</div>`
+    panel.innerHTML = `<div style="color:#444;font-size:9px;padding:6px 0;font-family:'IBM Plex Mono',monospace">Extension reloaded \u2014 refresh page</div>`
   }
 }
 
@@ -164,7 +175,7 @@ export function buildSparkline(candles: Array<{ close: number }> | undefined, ri
     return `${x.toFixed(1)},${y.toFixed(1)}`
   }).join(" ")
   const color = VERDICT_COLORS[risk] || "#555"
-  return `<svg class="sparkline" viewBox="0 0 ${w} ${h}"><polyline points="${points}" fill="none" stroke="${color}" stroke-width="1.5"/></svg>`
+  return `<div class="sparkline"><svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg"><polyline points="${points}" fill="none" stroke="${color}" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`
 }
 
 export function formatTimeAgo(ts: number): string {
@@ -178,10 +189,7 @@ export function formatTimeAgo(ts: number): string {
 }
 
 export function buildHeader(): string {
-  return `<div class="hdr">
-<span class="logo">ANTARES</span>
-<span class="hdr-actions">${SVG_MOVE}${SVG_CLOSE}</span>
-</div>`
+  return `<div class="hd"><span class="brand">ANTARES</span><div class="hd-right"><button class="stealth-btn" id="ant-stealth" title="Enable stealth mode (badge only)">\u{1F441}</button><span class="drag-icon">${SVG_MOVE}</span><button class="x" id="ant-close">${SVG_CLOSE}</button></div></div>`
 }
 
 export function buildResult(data: ScanResponseData, ca: string): string {
@@ -189,8 +197,10 @@ export function buildResult(data: ScanResponseData, ca: string): string {
   const label = LABELS[data.risk] || data.risk
   const mint = data.resolvedMint || ca
   const liq = data.liquidity ?? data.pair?.liquidity?.usd ?? null
+
   const score = data.score || 0
   const barW = Math.min(100, Math.round(score / 10))
+
   const tokenName = safeText(data.tokenName || data.pair?.baseToken?.name || "")
   const tokenSymbol = safeText(data.tokenSymbol || data.pair?.baseToken?.symbol || "")
 
@@ -198,50 +208,53 @@ export function buildResult(data: ScanResponseData, ca: string): string {
 
   const dotsCount = Math.round((score / 1000) * 5)
   const dots = Array.from({length: 5}, (_, i) =>
-    `<span class="dot${i < dotsCount ? " on" : ""}"></span>`
+    `<div class="dt ${i < dotsCount ? 'on' : 'off'}"></div>`
   ).join("")
 
   const allFlags = (data.flags || []).filter((f: ScanResponseFlag) => f.severity !== "bonus")
   const flagCount = allFlags.length
   const critCount = allFlags.filter((f: ScanResponseFlag) => f.severity === "critical").length
+
   let summary = ""
   if (flagCount === 0) summary = "No issues found"
   else if (critCount > 0) summary = `${flagCount} flags \u2014 ${critCount} critical`
   else summary = `${flagCount} flags detected`
 
+  const isDangerous = data.risk === "RUG" || data.risk === "DANGER"
+
   // Security indicators
   const boolSI = (siLabel: string, val: unknown, invert = false) => {
-    if (val === null || val === undefined)
-      return `<span class="si"><span class="si-label">${escapeHtml(siLabel)}</span> <b>\u2014</b></span>`
+    if (val === null || val === undefined) return `<div class="si"><span>${escapeHtml(siLabel)}</span><b style="color:#333">\u2014</b></div>`
     const yes = invert ? !val : !!val
-    return `<span class="si ${yes ? "y" : "n"}"><span class="si-label">${escapeHtml(siLabel)}</span> <b>${yes ? "\u2713" : "\u2717"}</b></span>`
+    return `<div class="si"><span>${escapeHtml(siLabel)}</span><b class="${yes ? "y" : "n"}">${yes ? "\u2713" : "\u2717"}</b></div>`
   }
-
-  const siSell = `<span class="si ${data.honeypot ? "n" : "y"}"><span class="si-label">Sell</span> <b>${data.honeypot ? "\u2717" : "\u2713"}</b></span>`
+  const siSell = `<div class="si"><span>Sell</span><b class="${data.honeypot ? "n" : "y"}">${data.honeypot ? "\u2717" : "\u2713"}</b></div>`
   const siMint = boolSI("Mint", data.mintAuthority, true)
   const siFreeze = boolSI("Freeze", data.freezeAuthority, true)
   const siLP = boolSI("LP Lock", data.lpBurned ?? data.lpLocked)
   const liqDisplay = liq !== null ? formatMcap(liq) : "\u2014"
-  const siLiq = `<span class="si"><span class="si-label">Liq</span> <b${liq !== null && liq > 50000 ? ' class="y"' : ""}>${liqDisplay}</b></span>`
+  const siLiq = `<div class="si"><span>Liq</span><b${liq !== null && liq < 5000 ? ' class="n"' : liq !== null && liq > 50000 ? ' class="y"' : ""}>${liqDisplay}</b></div>`
 
   const rawDexUrl = data.pair?.url
   const safeDexUrl = rawDexUrl && /^https?:\/\//i.test(rawDexUrl) ? rawDexUrl : ""
   const dexLink = safeDexUrl
-    ? `<a class="btn" href="${escapeHtml(safeDexUrl)}" target="_blank" rel="noopener">DexScreener</a>`
+    ? `<a href="${escapeHtml(safeDexUrl)}" target="_blank" rel="noopener noreferrer">DexScreener</a>`
     : ""
-  const analysisLink = `<a class="btn" href="${ANALYSIS_PAGE}?ca=${encodeURIComponent(mint)}" target="_blank" rel="noopener">Full Analysis \u2192</a>`
+  const analysisLink = `<a href="${ANALYSIS_PAGE}?ca=${encodeURIComponent(mint)}" target="_blank" rel="noopener noreferrer"${isDangerous ? ' class="warn"' : ''}>Full Analysis \u2192</a>`
 
   return `
-${buildHeader()}
-${tokenSymbol ? `<div class="token-id"><b>${tokenSymbol}</b> ${tokenName}</div>` : ""}
-<h2 class="verdict">${label}</h2>
-<div class="sbar"><div class="sbar-fill" data-w="${barW}"></div></div>
-<div class="score-line"> <span class="ant-score" data-target="${score}">0</span> / 1000 </div>
-<div class="dots">${dots}</div>
-<div class="summary">${summary}</div>
-${data.aiSummary ? `<div class="ai-summary"><div class="ai-title">AI Summary</div><div class="ai-text">${escapeHtml(data.aiSummary)}</div></div>` : ""}
-<div class="si-row">${siSell}${siMint}${siFreeze}${siLP}${siLiq}</div>
-<div class="actions">${dexLink}${analysisLink}<button class="btn" id="ant-hist-btn">History</button></div>
-<div id="ant-hist" class="hist"></div>
-`
+    <div class="topbar"></div>
+    ${buildHeader()}
+    ${tokenSymbol ? `<div class="tk"><b>${tokenSymbol}</b> ${tokenName}</div>` : ""}
+    <div class="vb"><h1>${label}</h1></div>
+    <div class="sr"><span class="n"><b class="ant-score" data-target="${score}">0</b> / 1000</span><div class="dots">${dots}</div></div>
+    <div class="sbar"><div class="sbar-fill" data-w="${barW}"></div></div>
+    <div class="sum">${summary}</div>
+    ${data.aiSummary ? `<div class="antares-ai-summary" style="margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;opacity:0.7"><div style="font-size:9px;text-transform:uppercase;letter-spacing:0.05em;color:#888;margin-bottom:2px">AI Summary</div>${escapeHtml(data.aiSummary)}</div>` : ""}
+    <div class="sep"></div>
+    <div class="ss">${siSell}${siMint}${siFreeze}${siLP}${siLiq}</div>
+    <div class="hist-panel" id="ant-hist"></div>
+    <div class="fo">${dexLink}${analysisLink}<button class="hist-btn" id="ant-hist-btn">History</button></div>
+      `
+        
 }
