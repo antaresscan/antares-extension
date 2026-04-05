@@ -46,10 +46,10 @@ chrome.alarms.onAlarm.addListener((a) => { if (a.name === config.keepaliveAlarmN
 let extensionEnabled = true
 // ─── BADGE CONFIG ────────────────────────────────────────────────────────────────
 const BADGE_MAP: Record<string, { text: string; color: string }> = {
-  SAFE: { text: "\u2713", color: "#00e5b0" },
-  CAUTION: { text: "!", color: "#f5d000" },
-  DANGER: { text: "\u2717", color: "#ff5f5f" },
-  RUG: { text: "\u2717", color: "#ff2244" },
+  SAFE: { text: "\u25CF", color: "#00e5b0" },
+  CAUTION: { text: "\u25CF", color: "#f5d000" },
+  DANGER: { text: "\u25CF", color: "#ff5f5f" },
+  RUG: { text: "\u25CF", color: "#ff2244" },
 }
 
 const RISK_ORDER: Record<string, number> = { SAFE: 0, CAUTION: 1, DANGER: 2, RUG: 3 }
