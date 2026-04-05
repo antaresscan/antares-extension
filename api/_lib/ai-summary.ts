@@ -62,10 +62,6 @@ const FLAG_LABELS: Record<string, string> = {
   "suspicious_deployer": "Deployer has suspicious history",
 }
 
-/** Convert a flag key to a human-readable label, with fallback for unknown flags */
-export function getFlagLabel(key: string): string {
-  return FLAG_LABELS[key] ?? key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-}
 
 const SEVERITY_ORDER: Record<string, number> = {
   critical: 0,
