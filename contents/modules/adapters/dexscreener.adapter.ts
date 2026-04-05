@@ -1,5 +1,5 @@
 import type { SiteAdapter } from "./base-adapter"
-import { extractCAFromPathname, pathnameChanged, scoreAddresses } from "./base-adapter"
+import { extractCAFromPathname, pathnameChanged } from "./base-adapter"
 import { makeSOLAddrRegex } from "../constants"
 import { isValid } from "../scanner"
 
