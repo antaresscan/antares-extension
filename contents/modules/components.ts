@@ -88,6 +88,7 @@ export function resetState() {
 export function attachClose() {
   state.shadow?.querySelector("#ant-close")?.addEventListener("click", () => { state.manuallyDismissed = true; hideBox() }, { once: true })
   state.shadow?.querySelector("#ant-hist-btn")?.addEventListener("click", toggleHistory)
+  }
   
 
 export function toggleHistory() {
@@ -183,6 +184,7 @@ export function formatTimeAgo(ts: number): string {
 
 export function buildHeader(): string {
     return `<div class="hd"><span class="brand">ANTARES</span><div class="hd-right"><span class="drag-icon">${SVG_MOVE}</span><button class="x" id="ant-close">${SVG_CLOSE}</button></div></div>`
+  }
 
 
 export function buildResult(data: ScanResponseData, ca: string): string {
