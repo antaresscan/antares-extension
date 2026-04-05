@@ -186,3 +186,26 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true // keep channel open for async response
   }
 })
+
+// ─── EXTENSION TOGGLE (click icon to enable/disable) ────────────────────────
+let extensionEnabled = true
+
+chrome.action.onClicked.addListener(async (tab) => {
+  extensionEnabled = !extensionEnabled
+  const label = extensionEnabled ? "ON" : "OFF"
+  void chrome.action.setBadgeText({ text: label })
+  void chrome.action.setBadgeBackgroundColor({
+    color: extensionEnabled ? "#00e5b0" : "#888888",
+  })
+  // Notify the content script about the state change
+  if (tab.id) {
+    try {
+      void chrome.tabs.sendMessage(tab.id, {
+        type: "EXTENSION_TOGGLE",
+        enabled: extensionEnabled,
+      })
+    } catch {
+      // Content script not ready, ignore
+    }
+  }
+})
