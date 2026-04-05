@@ -21,7 +21,7 @@ if (process.env.PLASMO_PUBLIC_SENTRY_DSN) {
 
 import { state } from "./modules/state"
 import { hydrateCacheFromLS } from "./modules/cache"
-import { createHost, hideBox } from "./modules/components"
+import { createHost } from "./modules/components"
 import { poll, setupNavListeners, getInitialDelay } from "./modules/address-detector"
 
 /**
