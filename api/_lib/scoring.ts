@@ -36,13 +36,6 @@ export function computeFinalScore(layers: LayerResult[]): number {
     }
   }
 
-  // HARDENED: Penalize score when critical security sources are missing
-  const availableSources = new Set(availableLayers.map(l => l.source));
-  const goplusAvail = availableSources.has("goplus");
-  const rugcheckAvail = availableSources.has("rugcheck");
-  if (!goplusAvail && !rugcheckAvail) product *= 0.60;       // -40% if both missing
-  else if (!goplusAvail || !rugcheckAvail) product *= 0.80;  // -20% if one missing
-
   return Math.round(Math.max(0, Math.min(1, product)) * 1000);
 }
 
