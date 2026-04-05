@@ -45,29 +45,12 @@ chrome.alarms.onAlarm.addListener((a) => { if (a.name === config.keepaliveAlarmN
 
 let extensionEnabled = true
 
-// ─── BADGE CONFIG ────────────────────────────────────────────────────────────────
-const BADGE_MAP: Record<string, { text: string; color: string }> = {
-  SAFE:    { text: "\u2713", color: "#00e5b0" },
-  CAUTION: { text: "!",       color: "#f5d000" },
-  DANGER:  { text: "\u2717", color: "#ff5f5f" },
-  RUG:     { text: "\u2717", color: "#ff2244" },
-}
-
 const RISK_ORDER: Record<string, number> = { SAFE: 0, CAUTION: 1, DANGER: 2, RUG: 3 }
 
 function riskWorsened(prev: string, current: string): boolean {
   const p = RISK_ORDER[prev]
   const c = RISK_ORDER[current]
   return p !== undefined && c !== undefined && c > p
-}
-
-function updateBadge(risk: string, tabId?: number) {
-  if (!extensionEnabled) return
-  const badge = BADGE_MAP[risk]
-  if (!badge) return
-  const target = tabId !== undefined ? { tabId } : {}
-  void chrome.action.setBadgeText({ text: badge.text, ...target })
-  void chrome.action.setBadgeBackgroundColor({ color: badge.color, ...target })
 }
 
 function checkRiskEscalation(ca: string, currentRisk: string, tokenSymbol: string) {
@@ -119,7 +102,7 @@ function saveToHistory(ca: string, data: Record<string, unknown>) {
   }
 }
 
- // ─── MESSAGE HANDLER (map-based) ────────────────────────────────────────────────────────
+// ─── MESSAGE HANDLER (map-based) ────────────────────────────────────────────────────────
 type MessageHandler = (
   msg: Record<string, unknown>,
   sender: chrome.runtime.MessageSender,
@@ -148,11 +131,7 @@ const handlers: Record<string, MessageHandler> = {
       .then((data: Record<string, unknown>) => {
         clearTimeout(timer)
         const risk = safeString(data.risk)
-        if (risk) {
-          updateBadge(risk, sender.tab?.id)
-          const sym = extractSymbol(data)
-          checkRiskEscalation(ca, risk, sym)
-        }
+        if (risk) checkRiskEscalation(ca, risk, extractSymbol(data))
         saveToHistory(ca, data)
         sendResponse({ ok: true, data })
       })
@@ -192,8 +171,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 })
 
 // ─── EXTENSION TOGGLE ─────────────────────────────────────────────────────────────────
-// Icon click: green badge = ON, red badge = OFF
-// The dot (●) is always visible on any icon background.
+// Clic sur l'icône : vert = ON, rouge = OFF
 chrome.action.onClicked.addListener((_tab) => {
   extensionEnabled = !extensionEnabled
 
@@ -202,7 +180,6 @@ chrome.action.onClicked.addListener((_tab) => {
     color: extensionEnabled ? "#00e5b0" : "#ff2244",
   })
 
-  // Broadcast to all tabs
   chrome.tabs.query({}, (tabs) => {
     for (const t of tabs) {
       if (t.id) {
@@ -215,6 +192,6 @@ chrome.action.onClicked.addListener((_tab) => {
   })
 })
 
-// Set initial green badge on startup to show extension is active
+// Badge vert au démarrage
 void chrome.action.setBadgeText({ text: "\u25CF" })
 void chrome.action.setBadgeBackgroundColor({ color: "#00e5b0" })
