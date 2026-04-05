@@ -77,7 +77,7 @@ function checkRiskEscalation(ca: string, currentRisk: string, tokenSymbol: strin
       }
       const prev = safeString(result[key])
       if (prev && riskWorsened(prev, currentRisk)) {
-        chrome.notifications.create(`antares_alert_${ca}`, {
+        void chrome.notifications.create(`antares_alert_${ca}`, {
           type: "basic",
           iconUrl: chrome.runtime.getURL("assets/icon.png"),
           title: "Antares \u2014 Risk Escalation",
