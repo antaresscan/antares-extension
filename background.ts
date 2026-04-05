@@ -45,10 +45,10 @@ chrome.alarms.onAlarm.addListener((a) => { if (a.name === config.keepaliveAlarmN
 
 // ─── BADGE CONFIG ────────────────────────────────────────────────────────────────
 const BADGE_MAP: Record<string, { text: string; color: string }> = {
-  SAFE:    { text: "\u2713", color: "#00e5b0" },
-  CAUTION: { text: "!",      color: "#f5d000" },
-  DANGER:  { text: "\u2717", color: "#ff5f5f" },
-  RUG:     { text: "\u2717", color: "#ff2244" },
+  SAFE: { text: "\u2713", color: "#00e5b0" },
+  CAUTION: { text: "!", color: "#f5d000" },
+  DANGER: { text: "\u2717", color: "#ff5f5f" },
+  RUG: { text: "\u2717", color: "#ff2244" },
 }
 
 const RISK_ORDER: Record<string, number> = { SAFE: 0, CAUTION: 1, DANGER: 2, RUG: 3 }
@@ -90,36 +90,6 @@ function checkRiskEscalation(ca: string, currentRisk: string, tokenSymbol: strin
     console.warn("[antares] checkRiskEscalation error:", e)
   }
 }
-
-// ─── TOGGLE EXTENSION ON/OFF (click on extension icon) ──────────────────────────
-chrome.action.onClicked.addListener(async () => {
-  try {
-    const result = await chrome.storage.local.get(["antares_enabled"])
-    const wasEnabled = result.antares_enabled !== false
-    const nowEnabled = !wasEnabled
-    await chrome.storage.local.set({ antares_enabled: nowEnabled })
-
-    // Update badge to reflect state
-    if (nowEnabled) {
-      void chrome.action.setBadgeText({ text: "" })
-    } else {
-      void chrome.action.setBadgeText({ text: "OFF" })
-      void chrome.action.setBadgeBackgroundColor({ color: "#666" })
-    }
-
-    // Notify all tabs running the content script
-    const tabs = await chrome.tabs.query({})
-    for (const tab of tabs) {
-      if (tab.id) {
-        try {
-          void chrome.tabs.sendMessage(tab.id, { type: "ANTARES_TOGGLE", enabled: nowEnabled })
-        } catch { /* tab may not have content script */ }
-      }
-    }
-  } catch (e: unknown) {
-    console.warn("[antares] toggle error:", e)
-  }
-})
 
 // ─── HISTORY ─────────────────────────────────────────────────────────────────
 function saveToHistory(ca: string, data: Record<string, unknown>) {
