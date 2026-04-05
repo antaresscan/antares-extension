@@ -21,7 +21,7 @@ if (process.env.PLASMO_PUBLIC_SENTRY_DSN) {
 
 import { state } from "./modules/state"
 import { hydrateCacheFromLS } from "./modules/cache"
-import { createHost } from "./modules/components"
+import { createHost, hideBox } from "./modules/components"
 import { poll, setupNavListeners, getInitialDelay } from "./modules/address-detector"
 
 /**
@@ -70,3 +70,23 @@ if (document.documentElement.hasAttribute(GUARD)) {
 
   setupNavListeners()
 }
+
+    // ─── EXTENSION TOGGLE (icon click) ─────────────────────────────────────────
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg.type !== "EXTENSION_TOGGLE") return
+  state.enabled = !!msg.enabled
+  if (!state.enabled) {
+    // Disable: hide box, abort any in-flight scan
+    hideBox()
+    if (state.currentScanController) {
+      state.currentScanController.abort()
+      state.currentScanController = null
+    }
+    if (state.rescanTimer) { clearTimeout(state.rescanTimer); state.rescanTimer = null }
+  } else {
+    // Re-enable: reset lastCA so poll() will re-scan the current page
+    state.lastCA = ""
+    state.manuallyDismissed = false
+    poll()
+  }
+})
