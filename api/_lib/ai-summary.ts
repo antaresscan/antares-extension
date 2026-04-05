@@ -39,7 +39,29 @@ const FLAG_LABELS: Record<string, string> = {
   "blacklisted": "Token is blacklisted",
   "hidden_owner": "Hidden owner detected",
   "proxy_contract": "Proxy contract detected",
+    // GoPlus additional flags
+  "is_open_source": "Contract is not open source",
+  "is_proxy": "Contract uses proxy pattern",
+  "is_mintable": "Token is mintable",
+  "can_take_back_ownership": "Ownership can be reclaimed",
+  "owner_change_balance": "Owner can change balances",
+  "selfdestruct": "Contract has selfdestruct",
+  "external_call": "Contract makes external calls",
+  "transfer_pausable": "Transfers can be paused",
+  "trading_cooldown": "Trading cooldown enabled",
+  "anti_whale_modifiable": "Anti-whale rules are modifiable",
+  "is_anti_whale": "Anti-whale mechanism active",
+  "is_whitelisted": "Whitelist restriction active",
+  "is_blacklisted": "Blacklist mechanism detected",
+  "slippage_modifiable": "Slippage/tax is modifiable",
+  "personal_slippage_modifiable": "Per-address tax modifiable",
+  // RugCheck additional flags
+  "mutable_metadata": "Token metadata is mutable",
+  "high_ownership_concentration": "High ownership concentration",
+  "low_community_trust": "Low community trust score",
+  "suspicious_deployer": "Deployer has suspicious history",
 }
+
 
 const SEVERITY_ORDER: Record<string, number> = {
   critical: 0,
