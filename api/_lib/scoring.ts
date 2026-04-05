@@ -8,13 +8,13 @@ export function computeFinalScore(layers: LayerResult[]): number {
 
   const weightedSources = Object.keys(LAYER_WEIGHTS);
   let totalWeight = 0;
-  const availableLayers: Array<{ trust: number; weight: number }> = [];
+  const availableLayers: Array<{ trust: number; weight: number; source: string }> = [];
 
   for (const src of weightedSources) {
     const layer = layers.find(l => l.source === src);
     const w = LAYER_WEIGHTS[src] ?? 0;
     if (!layer || !layer.available) continue;
-    availableLayers.push({ trust: Math.max(TRUST_FLOOR, layer.trust), weight: w });
+    availableLayers.push({ trust: Math.max(TRUST_FLOOR, layer.trust), weight: w, source: src });
     totalWeight += w;
   }
 
@@ -35,6 +35,13 @@ export function computeFinalScore(layers: LayerResult[]): number {
       else if (/holder concentration/i.test(f.label)) product *= XV_PENALTY_HOLDER_CONCENTRATION;
     }
   }
+
+  // HARDENED: Penalize score when critical security sources are missing
+  const availableSources = new Set(availableLayers.map(l => l.source));
+  const goplusAvail = availableSources.has("goplus");
+  const rugcheckAvail = availableSources.has("rugcheck");
+  if (!goplusAvail && !rugcheckAvail) product *= 0.60;       // -40% if both missing
+  else if (!goplusAvail || !rugcheckAvail) product *= 0.80;  // -20% if one missing
 
   return Math.round(Math.max(0, Math.min(1, product)) * 1000);
 }
@@ -80,5 +87,6 @@ export function classifySafeBlockedReasons(layers: LayerResult[]): SafeBlockedRe
       }
     }
   }
+
   return reasons;
 }
