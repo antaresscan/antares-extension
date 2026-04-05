@@ -46,22 +46,7 @@ if (document.documentElement.hasAttribute(GUARD)) {
   // Hydrate scan cache from localStorage
   hydrateCacheFromLS()
 
-  // [5.3] Load stealth mode preference from chrome.storage
-  try {
-    chrome.storage.local.get(["antares_stealth"], (result) => {
-      state.stealthMode = result?.antares_stealth === true
-    })
-    // Listen for stealth toggle changes from popup or other tabs
-    chrome.storage.onChanged.addListener((changes) => {
-      if (changes.antares_stealth) {
-        state.stealthMode = changes.antares_stealth.newValue === true
-        if (state.stealthMode) hideBox()
-      }
-    })
-  } catch (e: unknown) {
-    console.warn("[antares]", e)
-  }
-
+  
   // MutationObserver to re-inject host if removed
   new MutationObserver(() => {
     if (!state.host || !document.documentElement.contains(state.host)) {
@@ -85,3 +70,23 @@ if (document.documentElement.hasAttribute(GUARD)) {
 
   setupNavListeners()
 }
+
+    // ─── EXTENSION TOGGLE (icon click) ─────────────────────────────────────────
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg.type !== "EXTENSION_TOGGLE") return
+  state.enabled = !!msg.enabled
+  if (!state.enabled) {
+    // Disable: hide box, abort any in-flight scan
+    hideBox()
+    if (state.currentScanController) {
+      state.currentScanController.abort()
+      state.currentScanController = null
+    }
+    if (state.rescanTimer) { clearTimeout(state.rescanTimer); state.rescanTimer = null }
+  } else {
+    // Re-enable: reset lastCA so poll() will re-scan the current page
+    state.lastCA = ""
+    state.manuallyDismissed = false
+    poll()
+  }
+})
