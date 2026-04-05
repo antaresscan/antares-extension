@@ -43,6 +43,7 @@ function extractSymbol(data: Record<string, unknown>): string {
 void chrome.alarms.create(config.keepaliveAlarmName, { periodInMinutes: config.keepaliveIntervalMinutes });
 chrome.alarms.onAlarm.addListener((a) => { if (a.name === config.keepaliveAlarmName) void chrome.runtime.id; });
 
+let extensionEnabled = true
 // ─── BADGE CONFIG ────────────────────────────────────────────────────────────────
 const BADGE_MAP: Record<string, { text: string; color: string }> = {
   SAFE: { text: "\u2713", color: "#00e5b0" },
@@ -60,6 +61,7 @@ function riskWorsened(prev: string, current: string): boolean {
 }
 
 function updateBadge(risk: string, tabId?: number) {
+    if (!extensionEnabled) return
   const badge = BADGE_MAP[risk]
   if (!badge) return
   const target = tabId !== undefined ? { tabId } : {}
@@ -188,7 +190,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 })
 
 // ─── EXTENSION TOGGLE (click icon to enable/disable) ────────────────────────
-let extensionEnabled = true
 
 chrome.action.onClicked.addListener(async (_tab) => {
     extensionEnabled = !extensionEnabled
