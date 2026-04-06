@@ -62,15 +62,21 @@ export function applySafeGateOverride(input: SafeGateInput): boolean {
     input.safeBlockedReasons.every(r => SOFT_REASONS[r] === true);
 
   if (onlySoftReasons) {
+    // Age-aware relaxed unlock: token > 24h with 4+ sources and 200+ holders
     const ageHours = input.tokenAgeHours ?? 0;
-    // HARDENED: Never unlock tokens younger than 48 hours, no exceptions
-    if (input.tokenAgeHours !== null && ageHours < 48) return true;
-    const hasEnoughSources = input.sourcesAvailableCount >= 5;
-    // HARDENED: All conditions must be met: >48h, 5+ sources, 1000+ holders, LP burned, GoPlus clean
     if (
-      (input.tokenAgeHours === null || ageHours > 48) &&
-      hasEnoughSources &&
-      (input.holders ?? 0) > 1000 &&
+      input.tokenAgeHours !== null &&
+      ageHours > 24 &&
+      (input.sourcesAvailableCount ?? 0) >= 4 &&
+      (input.holders ?? 0) >= 200 &&
+      input.goPlusClean
+    ) {
+      return false;
+    }
+
+    // Strict unlock: holders > 500, LP burned, GoPlus clean
+    if (
+      (input.holders ?? 0) > 500 &&
       input.lpBurned &&
       input.goPlusClean
     ) {
@@ -82,15 +88,14 @@ export function applySafeGateOverride(input: SafeGateInput): boolean {
 }
 
 export function applyEstablishedBonus(input: EstablishedBonusInput): number {
-  // HARDENED: 90 days (2160h) + 5000 holders + bonus reduced to +5%
   if (
     input.tokenAgeHours !== null &&
-    input.tokenAgeHours > 2160 &&
-    (input.holders ?? 0) > 5000 &&
+    input.tokenAgeHours > 720 &&
+    (input.holders ?? 0) > 1000 &&
     input.lpBurned &&
     input.goPlusClean
   ) {
-    return Math.min(1000, Math.round(input.score * 1.05));
+    return Math.min(1000, Math.round(input.score * 1.15));
   }
   return input.score;
 }
@@ -107,8 +112,7 @@ export function determineVerdict(input: VerdictInput): Verdict {
     return "DANGER";
   }
 
-  // HARDENED: SAFE requires score >= 900 AND at least 5 sources
-  if (input.score >= 900 && input.sourcesUsedCount >= 5) return "SAFE";
+  if (input.score >= 850) return "SAFE";
   if (input.score >= 600) return "CAUTION";
   if (input.score >= 350) return "DANGER";
   return "RUG";
