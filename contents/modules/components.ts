@@ -28,11 +28,11 @@ export function createHost() {
   document.getElementById("antares-host")?.remove()
   state.host = document.createElement("div")
   state.host.id = "antares-host"
+  document.documentElement.appendChild(state.host)
   state.shadow = state.host.attachShadow({ mode: "open" })
   const styleEl = document.createElement("style")
   styleEl.textContent = SHADOW_CSS
   state.shadow.appendChild(styleEl)
-    // Inject font stylesheet inside shadow DOM to prevent host-page font overrides
   const fontLink = document.createElement("link")
   fontLink.rel = "stylesheet"
   fontLink.href = "https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap"
@@ -86,8 +86,7 @@ export function resetState() {
 export function attachClose() {
   state.shadow?.querySelector("#ant-close")?.addEventListener("click", () => { state.manuallyDismissed = true; hideBox() }, { once: true })
   state.shadow?.querySelector("#ant-hist-btn")?.addEventListener("click", toggleHistory)
-  }
-  
+}
 
 export function toggleHistory() {
   const panel = state.shadow?.querySelector("#ant-hist") as HTMLElement | null
@@ -181,9 +180,8 @@ export function formatTimeAgo(ts: number): string {
 }
 
 export function buildHeader(): string {
-    return `<div class="hd"><span class="brand">ANTARES</span><div class="hd-right"><span class="drag-icon">${SVG_MOVE}</span><button class="x" id="ant-close">${SVG_CLOSE}</button></div></div>`
-  }
-
+  return `<div class="hd"><span class="brand">ANTARES</span><div class="hd-right"><span class="drag-icon">${SVG_MOVE}</span><button class="x" id="ant-close">${SVG_CLOSE}</button></div></div>`
+}
 
 export function buildResult(data: ScanResponseData, ca: string): string {
   const riskClass = RISK_CLASS[data.risk] || "danger"
@@ -215,7 +213,6 @@ export function buildResult(data: ScanResponseData, ca: string): string {
 
   const isDangerous = data.risk === "RUG" || data.risk === "DANGER"
 
-  // Security indicators
   const boolSI = (siLabel: string, val: unknown, invert = false) => {
     if (val === null || val === undefined) return `<div class="si"><span>${escapeHtml(siLabel)}</span><b style="color:#333">\u2014</b></div>`
     const yes = invert ? !val : !!val
@@ -248,6 +245,5 @@ export function buildResult(data: ScanResponseData, ca: string): string {
     <div class="ss">${siSell}${siMint}${siFreeze}${siLP}${siLiq}</div>
     <div class="hist-panel" id="ant-hist"></div>
     <div class="fo">${dexLink}${analysisLink}<button class="hist-btn" id="ant-hist-btn">History</button></div>
-      `
-        
+  `
 }
