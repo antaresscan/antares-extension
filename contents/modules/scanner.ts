@@ -3,7 +3,7 @@ import * as Sentry from "@sentry/browser"
 import { API, LS_PREFIX, IGNORE } from "./constants"
 import { state, scanCache } from "./state"
 import { getCached, saveToLS } from "./cache"
-import { getBox, showBox, attachClose, triggerResultAnimations, buildHeader, buildResult } from "./components"
+import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimations, buildHeader, buildResult } from "./components"
 import { scanRateLimiter } from "../../shared/rate-limit"
 
 export function isValid(addr: string): boolean {
@@ -113,6 +113,7 @@ export async function scan(ca: string) {
     showBox()
     triggerResultAnimations(el)
     attachClose()
+    attachAnalysisBtn(cached.resolvedMint || ca)
     chrome.storage.local.get(["autoRescan"], (prefs) => {
       if (prefs.autoRescan !== false) scheduleRescanIfPriceCrash(cached, ca)
     })
@@ -145,6 +146,7 @@ export async function scan(ca: string) {
     showBox()
     triggerResultAnimations(el)
     attachClose()
+    attachAnalysisBtn(data.resolvedMint || ca)
     chrome.storage.local.get(["autoRescan"], (prefs) => {
       if (prefs.autoRescan !== false) scheduleRescanIfPriceCrash(data, ca)
     })

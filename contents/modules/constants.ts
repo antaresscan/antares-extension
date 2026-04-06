@@ -1,7 +1,7 @@
 // Use env var for API URL so local dev can point to localhost
 // Plasmo exposes PLASMO_PUBLIC_* vars to content scripts at build time
 export const API           = process.env.PLASMO_PUBLIC_API_URL || "https://antares-extension.vercel.app/api/scan"
-export const ANALYSIS_PAGE = process.env.PLASMO_PUBLIC_ANALYSIS_URL || "https://antares-extension.vercel.app/token.html"
+export const ANALYSIS_PAGE = process.env.PLASMO_PUBLIC_ANALYSIS_URL || "https://antares-website.vercel.app/token.html"
 export const LS_PREFIX     = "antares_scan_"
 export const CACHE_TTL    = 5 * 60 * 1000
 export const POS_KEY       = "antares_popup_pos"

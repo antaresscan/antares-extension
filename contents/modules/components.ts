@@ -89,6 +89,41 @@ export function attachClose() {
   state.shadow?.querySelector("#ant-hist-btn")?.addEventListener("click", toggleHistory)
 }
 
+/**
+ * Attaches the smart-tab handler to the Full Analysis button.
+ * Instead of always opening a new tab, it looks for an existing tab
+ * already showing the analysis page for the same CA and focuses it.
+ */
+export function attachAnalysisBtn(mint: string) {
+  const btn = state.shadow?.querySelector("#ant-full-analysis")
+  if (!btn) return
+  btn.addEventListener("click", (e) => {
+    e.preventDefault()
+    const url = `${ANALYSIS_PAGE}?ca=${encodeURIComponent(mint)}`
+    try {
+      chrome.tabs.query({ url: `${ANALYSIS_PAGE}*` }, (tabs) => {
+        if (chrome.runtime.lastError) {
+          // Fallback: open normally if tabs API fails
+          chrome.tabs.create({ url })
+          return
+        }
+        const existing = tabs.find((t) =>
+          typeof t.url === "string" && t.url.includes(`ca=${encodeURIComponent(mint)}`)
+        )
+        if (existing?.id !== undefined && existing.windowId !== undefined) {
+          chrome.tabs.update(existing.id, { active: true })
+          chrome.windows.update(existing.windowId, { focused: true })
+        } else {
+          chrome.tabs.create({ url })
+        }
+      })
+    } catch {
+      // Service worker context: fallback to opening URL
+      chrome.tabs.create({ url })
+    }
+  }, { once: true })
+}
+
 export function toggleHistory() {
   const panel = state.shadow?.querySelector("#ant-hist") as HTMLElement | null
   if (!panel) return
@@ -231,7 +266,8 @@ export function buildResult(data: ScanResponseData, ca: string): string {
   const dexLink = safeDexUrl
     ? `<a href="${escapeHtml(safeDexUrl)}" target="_blank" rel="noopener noreferrer">DexScreener</a>`
     : ""
-  const analysisLink = `<a href="${ANALYSIS_PAGE}?ca=${encodeURIComponent(mint)}" target="_blank" rel="noopener noreferrer"${isDangerous ? ' class="warn"' : ''}>Full Analysis \u2192</a>`
+  // Use data-ca attribute + id so attachAnalysisBtn() can wire the smart-tab handler
+  const analysisLink = `<a href="#" id="ant-full-analysis" data-ca="${encodeURIComponent(mint)}"${isDangerous ? ' class="warn"' : ''}>Full Analysis \u2192</a>`
 
   return `
     <div class="topbar"></div>
