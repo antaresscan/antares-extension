@@ -375,7 +375,7 @@ export function layerChart(
   };
   const recent = candles.slice(-40);
   const closes = recent.map(c => c.c);
-  const highs = recent.map(c => c.h);
+  const _highs = recent.map(c => c.h);
   const volumes = recent.map(c => c.v);
   const greens = recent.filter(c => c.c > c.o).length;
   const greenRatio = greens / recent.length;
