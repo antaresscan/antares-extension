@@ -27,9 +27,6 @@ export const FOUNDATION_WALLETS = new Set([
     // Fix(Bug 9): Add missing known foundation/LP wallets to prevent false positive holder flags
   "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1", // Raydium Authority V4
   "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8", // Raydium LP V4
-  "B9n3tgBJ8f1K2VXrF5aTBNXXmj5V8sKXrk3GV5uPump",
-  // Note: 6p6xg... removed here — it belongs only to OFFICIAL_MINTS (Raydium LP vault/JUP)
-  "9yrPkpCTBCqJmSmTtkMZoxFWMkrAPEQK6DkfaESMpump",
     "PSwapMdSai8tjrEXcxFeQth87xC4rRsa4VA5mhGhXkP", // PumpSwap AMM
   "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P", // pump.fun bonding curve
 ]);

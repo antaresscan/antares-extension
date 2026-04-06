@@ -64,7 +64,8 @@ function updateBadge(risk: string, tabId?: number) {
   if (!badge) return
   const target = tabId !== undefined ? { tabId } : {}
   void chrome.action.setBadgeText({ text: badge.text, ...target })
-  void chrome.action.setBadgeBackgroundColor({ color: badge.color, ...target })
+  void chrome.action.setBadgeBackgroundColor({ color: "#FFFFFF", ...target })
+  void chrome.action.setBadgeTextColor({ color: badge.color, ...target })
 }
 
 function checkRiskEscalation(ca: string, currentRisk: string, tokenSymbol: string) {
@@ -132,7 +133,7 @@ const handlers: Record<string, MessageHandler> = {
       sendResponse({ ok: false, error: "Unauthorized sender" })
       return true
     }
-    
+
     if (!CA_RE.test(ca)) {
       sendResponse({ ok: false, error: "Invalid contract address" })
       return true
@@ -146,8 +147,7 @@ const handlers: Record<string, MessageHandler> = {
     })
     .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
     .then((data: Record<string, unknown>) => {
-      clearTimeout(timer) // FIX: clear timeout on success to prevent late abort
-      
+      clearTimeout(timer)
       const risk = safeString(data.risk)
       if (risk) {
         updateBadge(risk, sender.tab?.id)
@@ -192,10 +192,11 @@ let extensionEnabled = true
 
 chrome.action.onClicked.addListener(async (_tab) => {
   extensionEnabled = !extensionEnabled
-    const label = "\u25CF"
+  const label = "\u25CF"
   void chrome.action.setBadgeText({ text: label })
-  void chrome.action.setBadgeBackgroundColor({
-        color: extensionEnabled ? "#00e5b0" : "#ff5f5f",
+  void chrome.action.setBadgeBackgroundColor({ color: "#FFFFFF" })
+  void chrome.action.setBadgeTextColor({
+    color: extensionEnabled ? "#00e5b0" : "#ff5f5f",
   })
   // Broadcast to ALL tabs so every content script toggles instantly
   chrome.tabs.query({}, (tabs) => {

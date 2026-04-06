@@ -47,17 +47,24 @@ export function initRateLimiters(redis: Redis): void {
 export function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean {
   const origin = (req.headers.origin as string) || "";
 
-    // chrome-extension:// origins are allowed via rate limiting only.
-  // API key removed from extension bundle for security (see #102).
+  // chrome-extension:// origins: allow via rate limiting.
+  // If ANTARES_EXT_TOKEN is configured, validate it. Otherwise allow all extensions.
   if (origin.startsWith("chrome-extension://")) {
+    const expectedToken = process.env.ANTARES_EXT_TOKEN || "";
+    if (expectedToken) {
+      const extToken = (req.headers["x-antares-token"] as string) || "";
+      if (extToken !== expectedToken) {
+        return false;
+      }
+    }
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Antares-Token");
     res.setHeader("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
     return true;
   }
 
-    // Fix: Allow same-origin requests (token.html -> /api/scan on same domain)
+  // Fix: Allow same-origin requests (token.html -> /api/scan on same domain)
   // Browsers don't send Origin header for same-origin fetch requests.
   if (!origin) {
     const referer = (req.headers.referer as string) || "";
@@ -67,12 +74,12 @@ export function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean
       return true;
     }
   }
-  
+
   const corsOk = isCorsAllowed(origin, ALLOWED_ORIGINS);
 
   if (corsOk) res.setHeader("Access-Control-Allow-Origin", origin);
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Antares-Key, Authorization");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Antares-Key, X-Antares-Token, Authorization");
   res.setHeader("Access-Control-Max-Age", "86400");
   res.setHeader("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
   return corsOk;
