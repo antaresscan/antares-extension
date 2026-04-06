@@ -1,7 +1,7 @@
 import type { ScanResponseFlag, ScanResponseData } from "../../shared/types"
 import { RISK_CLASS, LABELS, ANALYSIS_PAGE, SVG_MOVE, SVG_CLOSE, VERDICT_COLORS } from "./constants"
 import { state } from "./state"
-import { SHADOW_CSS } from "./styles"
+import { SHADOW_CSS, injectFonts } from "./styles"
 import { initDrag } from "./drag"
 
 // ─── HTML ESCAPE UTILITY ──────────────────────────────────────────────────────
@@ -25,6 +25,7 @@ export function formatMcap(mc: number | null | undefined): string {
 }
 
 export function createHost() {
+  injectFonts()
   document.getElementById("antares-host")?.remove()
   state.host = document.createElement("div")
   state.host.id = "antares-host"
