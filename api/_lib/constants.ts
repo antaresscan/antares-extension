@@ -17,17 +17,16 @@ export const LP_PROGRAM_ADDRESSES = new Set([
   "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
   "LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo",
   "Eo7WjKq67rjJQSZxS6z3YkapzY3eMj6Xy8X5EkAW7vAB",
-    "PSwapMdSai8tjrEXcxFeQth87xC4rRsa4VA5mhGhXkP", // PumpSwap AMM
+  "PSwapMdSai8tjrEXcxFeQth87xC4rRsa4VA5mhGhXkP", // PumpSwap AMM
   "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P", // pump.fun bonding curve program
   "TSWAPaqyCSx2KABk68Shruf4rp7CxcNi8hAsbdwmHbN", // Tensor Swap
   "CURVGoZn8zycx6FXwwevgBTB2gVvdbGTEpvMJDbgs2t4", // Saber/Curves
 ]);
 
 export const FOUNDATION_WALLETS = new Set([
-    // Fix(Bug 9): Add missing known foundation/LP wallets to prevent false positive holder flags
   "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1", // Raydium Authority V4
   "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8", // Raydium LP V4
-    "PSwapMdSai8tjrEXcxFeQth87xC4rRsa4VA5mhGhXkP", // PumpSwap AMM
+  "PSwapMdSai8tjrEXcxFeQth87xC4rRsa4VA5mhGhXkP", // PumpSwap AMM
   "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P", // pump.fun bonding curve
 ]);
 
@@ -72,9 +71,9 @@ export const XV_PENALTY_LP_BURN              = 0.85; // -15% if LP burn status c
 export const XV_PENALTY_MINT_AUTH            = 0.70; // -30% if mint authority conflicts
 export const XV_PENALTY_AGE                  = 0.90; // -10% if token age conflicts
 export const XV_PENALTY_HOLDER_CONCENTRATION = 0.80; // -20% if holder concentration conflicts
-export const ESTABLISHED_BONUS_MULTIPLIER    = 1.15; // +15% bonus for established tokens
-export const ESTABLISHED_AGE_THRESHOLD_HOURS = 720; // 30 days minimum age for established status
-export const ESTABLISHED_HOLDERS_THRESHOLD   = 1000; // minimum holders for established status
+export const ESTABLISHED_BONUS_MULTIPLIER    = 1.05; // HARDENED: +5% bonus (was +15%)
+export const ESTABLISHED_AGE_THRESHOLD_HOURS = 2160; // HARDENED: 90 days minimum (was 30 days)
+export const ESTABLISHED_HOLDERS_THRESHOLD   = 5000; // HARDENED: 5000 holders minimum (was 1000)
 
 // Trust floor for geometric mean — prevents single-layer nuking
 export const TRUST_FLOOR = 0.001;
