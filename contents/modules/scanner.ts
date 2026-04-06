@@ -3,7 +3,7 @@ import * as Sentry from "@sentry/browser"
 import { API, LS_PREFIX, IGNORE } from "./constants"
 import { state, scanCache } from "./state"
 import { getCached, saveToLS } from "./cache"
-import { getBox, showBox, attachClose, triggerResultAnimations, buildHeader, buildResult } from "./components"
+import { getBox, showBox, attachClose, attachAnalysisBtn, showCachedBadge, triggerResultAnimations, buildHeader, buildResult } from "./components"
 import { scanRateLimiter } from "../../shared/rate-limit"
 
 export function isValid(addr: string): boolean {
@@ -21,10 +21,8 @@ export function scheduleRescanIfPriceCrash(data: ScanResponseData, ca: string) {
   if (pc1h !== null && pc1h < -30) {
     state.rescanTimer = setTimeout(() => {
       state.rescanTimer = null
-      // Invalidate cache so rescan hits the API
       scanCache.delete(ca)
       try { localStorage.removeItem(LS_PREFIX + ca) } catch (e: unknown) { console.warn("[antares]", e) }
-      // Force rescan
       state.lastCA = ""
       state.manuallyDismissed = false
       void scan(ca)
@@ -32,24 +30,20 @@ export function scheduleRescanIfPriceCrash(data: ScanResponseData, ca: string) {
   }
 }
 
-/** Maximum number of retry attempts before giving up silently */
 const MAX_RETRIES = 3
-/** Delay between retries in ms (doubles each attempt) */
 const BASE_RETRY_DELAY = 1500
 
-/** Check if an error is retryable (network/server issues) */
 function isRetryable(e: unknown): boolean {
   if (e instanceof Error) {
     const status = parseInt(e.message, 10)
-    if (status === 429) return true // Rate limit
-    if (status >= 500) return true // Server errors
-    if (e.name === "AbortError") return false // User-initiated abort
-    if (e.message === "Failed to fetch") return true // Network error
+    if (status === 429) return true
+    if (status >= 500) return true
+    if (e.name === "AbortError") return false
+    if (e.message === "Failed to fetch") return true
   }
-  return true // Default: retry unknown errors
+  return true
 }
 
-/** Fetch with automatic retry + exponential backoff */
 async function fetchWithRetry(
   url: string,
   signal: AbortSignal,
@@ -60,7 +54,6 @@ async function fetchWithRetry(
     if (signal.aborted) throw new DOMException("Aborted", "AbortError")
     try {
       const res = await fetch(url, { signal })
-      // 429 / 5xx => retry
       if (!res.ok) {
         const status = res.status
         if ((status === 429 || status >= 500) && attempt < retries) {
@@ -85,7 +78,6 @@ async function fetchWithRetry(
 export async function scan(ca: string) {
   if (!ca) return
 
-  // Client-side rate limiting to prevent API flooding
   if (!scanRateLimiter.tryAcquire()) {
     console.warn("[antares] scan rate-limited, retry after", scanRateLimiter.getRetryAfterMs(), "ms")
     return
@@ -109,10 +101,14 @@ export async function scan(ca: string) {
   state.lastCA = ca;
 
   if (cached) {
+    const cacheEntry = scanCache.get(ca)
+    const ageMs = cacheEntry ? Date.now() - cacheEntry.ts : 0
     el.innerHTML = buildResult(cached, ca)
     showBox()
     triggerResultAnimations(el)
     attachClose()
+    attachAnalysisBtn(cached.resolvedMint || ca)
+    if (ageMs > 0) showCachedBadge(ageMs)
     chrome.storage.local.get(["autoRescan"], (prefs) => {
       if (prefs.autoRescan !== false) scheduleRescanIfPriceCrash(cached, ca)
     })
@@ -145,6 +141,7 @@ export async function scan(ca: string) {
     showBox()
     triggerResultAnimations(el)
     attachClose()
+    attachAnalysisBtn(data.resolvedMint || ca)
     chrome.storage.local.get(["autoRescan"], (prefs) => {
       if (prefs.autoRescan !== false) scheduleRescanIfPriceCrash(data, ca)
     })
@@ -152,8 +149,6 @@ export async function scan(ca: string) {
     if (controller.signal.aborted) return
     console.warn("[antares] scan failed after retries:", e)
     try { Sentry.captureException(e) } catch { /* Sentry not initialized */ }
-    // Silent failure: hide the box instead of showing an error to the user.
-    // The scan will be retried automatically on next navigation or page change.
     if (state.lastCA === ca && state.boxEl) {
       state.boxEl.style.display = "none"
       state.boxEl.style.opacity = "0"

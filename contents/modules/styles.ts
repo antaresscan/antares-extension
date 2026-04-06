@@ -267,7 +267,7 @@ export const SHADOW_CSS = `
 .si b.n { color: #ff5f5f; }
 .si b.w { color: #f5d000; }
 
-.fo { display: flex; margin: 8px 14px 10px; gap: 4px; }
+.fo { display: flex; margin: 8px 14px 10px; gap: 4px; align-items: center; flex-wrap: wrap; }
 .fo a {
   flex: 1; display: block; padding: 8px;
   font-size: 8px; color: #888; letter-spacing: .12em;
@@ -278,6 +278,20 @@ export const SHADOW_CSS = `
 .fo a:hover { color: #ccc; border-color: #444; background: rgba(255,255,255,.02); }
 .fo a.warn  { border-color: rgba(255,95,95,.2); color: #cc5555; }
 .fo a.warn:hover { border-color: rgba(255,95,95,.4); color: #ff5f5f; background: rgba(255,95,95,.04); }
+
+/* Cached badge — shown when result served from local storage */
+.cached-badge {
+  display: block;
+  width: 100%;
+  text-align: center;
+  font-size: 7px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #3a5a50;
+  font-family: 'IBM Plex Mono', monospace;
+  padding: 0 0 4px;
+  order: -1;
+}
 
 @keyframes ant-pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
 .scanning { display:flex; align-items:center; gap:8px; color:#777; font-size:12px; padding:12px 14px; font-family:'IBM Plex Mono',monospace; }
