@@ -100,6 +100,7 @@ describe("layerRugCheck", () => {
     expect(result.trust).toBeGreaterThan(0.95);
     expect(result.available).toBe(true);
     expect(result.forceRug).toBe(false);
+    expect(result.safeBlocked).toBe(false);
   });
 
   it("metaMutable undefined does NOT penalize (fix: only penalize if explicitly true)", () => {
@@ -136,6 +137,35 @@ describe("layerRugCheck", () => {
     expect(result.trust).toBeLessThan(0.5);
     expect(result.flags.some(f => /freeze authority/i.test(f.label))).toBe(true);
   });
+
+  it("Fix(DECEPTIVE_NAME): 'Vanguard' in name triggers safeBlocked", () => {
+    const rugData: RugCheckSummary = { lpBurned: true, metaMutable: false };
+    const result = layerRugCheck(rugData, null, "mintABC", "Vanguard Digital Oil Reserve");
+    expect(result.safeBlocked).toBe(true);
+    expect(result.flags.some(f => /deceptive name/i.test(f.label))).toBe(true);
+  });
+
+  it("Fix(DECEPTIVE_NAME): 'BlackRock' in name triggers safeBlocked", () => {
+    const rugData: RugCheckSummary = { lpBurned: true, metaMutable: false };
+    const result = layerRugCheck(rugData, null, "mintABC", "BlackRock Treasury Token");
+    expect(result.safeBlocked).toBe(true);
+  });
+
+  it("Fix(DECEPTIVE_NAME): non-deceptive name does NOT trigger", () => {
+    const rugData: RugCheckSummary = { lpBurned: true, metaMutable: false };
+    const result = layerRugCheck(rugData, null, "mintABC", "Bonk");
+    expect(result.flags.some(f => /deceptive name/i.test(f.label))).toBe(false);
+  });
+
+  it("Fix(LP_SAFE_BLOCK): LP not burned or locked sets safeBlocked=true", () => {
+    const rugData: RugCheckSummary = {
+      lpBurned: false,
+      lpLocked: false,
+    };
+    const result = layerRugCheck(rugData, null, "someMint123");
+    expect(result.safeBlocked).toBe(true);
+    expect(result.flags.some(f => /LP not burned or locked/i.test(f.label))).toBe(true);
+  });
 });
 
 // ═══ LAYER 3 — GoPlus ═══════════════════════════════════════════════════════
@@ -171,25 +201,40 @@ describe("layerGoPlus", () => {
     expect(result.flags.some(f => /mint.*freeze/i.test(f.label))).toBe(true);
   });
 
-  it("sell tax \"10\" (GoPlus raw format) is treated as 10%, not 1000%", () => {
-    const goplus: GoPlusTokenResult = { sell_tax: "10", buy_tax: "5" };
+  it("Fix(TAX_WARNING): sell_tax '10' (=10%) is at boundary — triggers warning (>0.02 && <=0.10)", () => {
+    // sell_tax='10' -> normalized to 0.10 -> 0.10 > 0.02 && 0.10 <= 0.10 → TRUE → warning flag present
+    const goplus: GoPlusTokenResult = { sell_tax: "10", buy_tax: "0" };
     const result = layerGoPlus(goplus);
-    // sell_tax = 10 -> normalized to 0.10 -> exactly at threshold, NOT > 0.10
-    expect(result.flags.some(f => /sell tax/i.test(f.label))).toBe(false);
+    expect(result.flags.some(f => /sell tax.*suspicious/i.test(f.label))).toBe(true);
   });
 
-  it("sell tax \"0.15\" is correctly flagged as > 10%", () => {
+  it("Fix(TAX_WARNING): sell_tax '4.5' (VDOR-style) triggers warning flag", () => {
+    const goplus: GoPlusTokenResult = { sell_tax: "4.5", buy_tax: "0" };
+    const result = layerGoPlus(goplus);
+    expect(result.flags.some(f => /sell tax.*suspicious/i.test(f.label))).toBe(true);
+    expect(result.trust).toBeLessThan(1.0);
+  });
+
+  it("Fix(TAX_WARNING): sell_tax '0.15' (=15%) is hard flagged as > 10%", () => {
     const goplus: GoPlusTokenResult = { sell_tax: "0.15", buy_tax: "0" };
     const result = layerGoPlus(goplus);
-    expect(result.flags.some(f => /sell tax/i.test(f.label))).toBe(true);
+    expect(result.flags.some(f => /sell tax > 10%/i.test(f.label))).toBe(true);
   });
 
-  it("clean token returns high trust", () => {
+  it("Fix(TAX_WARNING): sell_tax '11' (=11%) is hard flagged as > 10%", () => {
+    const goplus: GoPlusTokenResult = { sell_tax: "11", buy_tax: "0" };
+    const result = layerGoPlus(goplus);
+    expect(result.flags.some(f => /sell tax > 10%/i.test(f.label))).toBe(true);
+  });
+
+  it("clean token (sell_tax=0, buy_tax=0) returns trust 1.0", () => {
     const goplus: GoPlusTokenResult = {
       is_honeypot: "0",
       cannot_sell_all: "0",
       mint_authority: "0",
       freeze_authority: "0",
+      sell_tax: "0",
+      buy_tax: "0",
     };
     const result = layerGoPlus(goplus);
     expect(result.trust).toBe(1.0);
@@ -241,7 +286,7 @@ describe("layerHelius", () => {
   it("well distributed supply gets bonus", () => {
     const holders: HeliusHolder[] = Array.from({ length: 20 }, (_, i) => ({
       address: `wallet${i}abc`,
-            owner: `wallet${i}abc`,
+      owner: `wallet${i}abc`,
       uiAmount: 50,
     }));
     const result = layerHelius(holders, 10000);

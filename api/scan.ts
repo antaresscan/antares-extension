@@ -173,10 +173,10 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const totalSupplyUi: number = asNumber(supplyResponse?.result?.value?.uiAmount);
 
     const solMarketsData = isSolscanMarketsResponse(solMarkets) ? solMarkets : null;
-      // Resolve token account addresses to owner wallet addresses for accurate LP filtering
-  const resolvedHolderAccounts: HeliusHolder[] = HELIUS_API_KEY && rawHolderAccounts.length > 0
-    ? await settled(heliusResolveAccountOwners(rawHolderAccounts, HELIUS_API_KEY)) ?? rawHolderAccounts.map(h => ({ ...h, owner: h.owner ?? h.address }))
-    : rawHolderAccounts.map(h => ({ ...h, owner: h.owner ?? h.address }));
+    // Resolve token account addresses to owner wallet addresses for accurate LP filtering
+    const resolvedHolderAccounts: HeliusHolder[] = HELIUS_API_KEY && rawHolderAccounts.length > 0
+      ? await settled(heliusResolveAccountOwners(rawHolderAccounts, HELIUS_API_KEY)) ?? rawHolderAccounts.map(h => ({ ...h, owner: h.owner ?? h.address }))
+      : rawHolderAccounts.map(h => ({ ...h, owner: h.owner ?? h.address }));
     const solMarketPool: SolscanMarketPool | null =
       Array.isArray(solMarketsData?.data) && solMarketsData!.data!.length > 0
       ? [...solMarketsData!.data!].sort((a: SolscanMarketPool, b: SolscanMarketPool) => asNumber(b.liquidity) - asNumber(a.liquidity))[0]
@@ -235,9 +235,12 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const priceChange1h  = pair?.priceChange?.h1  ?? null;
     const priceChange24h = pair?.priceChange?.h24 ?? null;
 
+    // Fix(VDOR): Pass tokenName to layerRugCheck to activate deceptive institution name detection
+    const tokenName: string | null = sanitizeString(pair?.baseToken?.name) ?? null;
+
     // 7 layers — identity layer removed
     const l1 = layerDexScreener(pair, marketCap, tokenAgeMinutes);
-    const l2 = layerRugCheck(rugData, rugReport, resolvedMint);
+    const l2 = layerRugCheck(rugData, rugReport, resolvedMint, tokenName);
     const l3 = layerGoPlus(goplus);
     const l4 = layerHelius(resolvedHolderAccounts, totalSupplyUi);
     const l5 = layerSolscan(solscanHoldersCount, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h);
@@ -302,12 +305,12 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const severityOrder: Record<Severity, number> = { critical:0, warning:1, info:2, bonus:3 };
     flags.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
 
-  const confidence = Math.round(sources_used.reduce((sum, src) => sum + (LAYER_WEIGHTS[src] ?? 0), 0) * 100);
+    const confidence = Math.round(sources_used.reduce((sum, src) => sum + (LAYER_WEIGHTS[src] ?? 0), 0) * 100);
     const layersSnapshot: Record<string, LayerSnapshot> = Object.fromEntries(
       allLayers.map(l => [l.source, { trust: +l.trust.toFixed(3), available: l.available }])
     );
 
-            // AI summary — non-critical, runs post-verdict
+    // AI summary — non-critical, runs post-verdict
     const aiSummary = await generateAISummary({
       score,       risk,       flags: flags.map(f => `[${f.severity}] ${f.label}`),
       tokenSymbol: sanitizeString(pair?.baseToken?.symbol) ?? null,
@@ -322,7 +325,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       score, risk, flags, pair, resolvedMint, confidence, sources_used,
       holders, marketCap, priceUsd, liquidity,
       volume24h, volume1h, priceChange5m, priceChange1h, priceChange24h,
-              tokenSymbol: sanitizeString(pair?.baseToken?.symbol) ?? null,
+      tokenSymbol: sanitizeString(pair?.baseToken?.symbol) ?? null,
       tokenName: sanitizeString(pair?.baseToken?.name) ?? null,
       pairCreatedAt: pair?.pairCreatedAt ?? null,
       safeBlocked, safeBlockedReasons, tokenLogo: sanitizeUrl(tokenLogo), tokenCreator,
@@ -334,18 +337,18 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       freezeAuthority: allLayers.some(l => l.flags.some(f => /freeze authority/i.test(f.label) && f.severity === "critical")),
       lpBurned: rugData?.lpBurned === true,
       candles: candles.slice(-20).map(c => ({ close: c.c })),
-      scoring_version: "7.1.0",
+      scoring_version: "7.2.0",
       fetchedAt: Date.now(),
       requestId,
-                aiSummary: aiSummary ?? null,
+      aiSummary: aiSummary ?? null,
     };
 
     setCachedResult(ca, result, tokenAgeMinutes);
     if (resolvedMint !== ca) setCachedResult(resolvedMint, result, tokenAgeMinutes);
-        void recordRug({ mint: resolvedMint, symbol: sanitizeString(pair?.baseToken?.symbol) ?? null, score, risk, flags, creator: tokenCreator });
+    void recordRug({ mint: resolvedMint, symbol: sanitizeString(pair?.baseToken?.symbol) ?? null, score, risk, flags, creator: tokenCreator });
     return res.json(result);
   } catch (e) {
-    console.error("[scan v7.1.0]", requestId, e);
+    console.error("[scan v7.2.0]", requestId, e);
     Sentry.captureException(e);
     return apiError(res, 500, "Analysis error.");
   }
