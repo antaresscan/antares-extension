@@ -62,7 +62,7 @@ vi.mock("../api/_lib/fetchers", () => ({
   solscanGetHoldersCount: (...args: unknown[]) => mockSolscanGetHoldersCount(...args),
   fetchSolscan: (...args: unknown[]) => mockFetchSolscan(...args),
   fetchDexCandles: (...args: unknown[]) => mockFetchDexCandles(...args),
-    heliusResolveAccountOwners: (...args: unknown[]) => mockHeliusResolveAccountOwners(...args),
+  heliusResolveAccountOwners: (...args: unknown[]) => mockHeliusResolveAccountOwners(...args),
 }));
 
 // Mock global fetch for DexScreener, RugCheck, GoPlus
@@ -180,7 +180,7 @@ function setupGoodTokenMocks() {
       ],
     },
   });
-    mockHeliusResolveAccountOwners.mockImplementation(async (holders: Record<string, unknown>[]) =>
+  mockHeliusResolveAccountOwners.mockImplementation(async (holders: Record<string, unknown>[]) =>
     holders.map((h: Record<string, unknown>) => ({ ...h, owner: h.owner || h.address }))
   );
   mockHeliusGetTokenSupply.mockResolvedValue({
@@ -212,16 +212,16 @@ function setupGoodTokenMocks() {
     return Promise.resolve(null);
   });
   mockFetchDexCandles.mockResolvedValue([
-          { ts: 1, o: 100, h: 102, l: 98, c: 101, v: 5000 },
-      { ts: 2, o: 101, h: 103, l: 99, c: 100, v: 5500 },
-      { ts: 3, o: 100, h: 102, l: 98, c: 101, v: 5200 },
-      { ts: 4, o: 101, h: 103, l: 99, c: 100, v: 5100 },
-      { ts: 5, o: 100, h: 102, l: 98, c: 101, v: 5300 },
-      { ts: 6, o: 101, h: 103, l: 99, c: 100, v: 5400 },
-      { ts: 7, o: 100, h: 102, l: 98, c: 101, v: 5000 },
-      { ts: 8, o: 101, h: 103, l: 99, c: 100, v: 5200 },
-      { ts: 9, o: 100, h: 102, l: 98, c: 101, v: 5100 },
-      { ts: 10, o: 101, h: 103, l: 99, c: 100, v: 5300 },
+    { ts: 1, o: 100, h: 102, l: 98, c: 101, v: 5000 },
+    { ts: 2, o: 101, h: 103, l: 99, c: 100, v: 5500 },
+    { ts: 3, o: 100, h: 102, l: 98, c: 101, v: 5200 },
+    { ts: 4, o: 101, h: 103, l: 99, c: 100, v: 5100 },
+    { ts: 5, o: 100, h: 102, l: 98, c: 101, v: 5300 },
+    { ts: 6, o: 101, h: 103, l: 99, c: 100, v: 5400 },
+    { ts: 7, o: 100, h: 102, l: 98, c: 101, v: 5000 },
+    { ts: 8, o: 101, h: 103, l: 99, c: 100, v: 5200 },
+    { ts: 9, o: 100, h: 102, l: 98, c: 101, v: 5100 },
+    { ts: 10, o: 101, h: 103, l: 99, c: 100, v: 5300 },
   ]);
 }
 
@@ -275,7 +275,7 @@ describe("scan handler", () => {
     const body = (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as Record<string, unknown>;
     expect(body.score).toBeTypeOf("number");
     expect(body.risk).toBeDefined();
-    expect(body.scoring_version).toBe("7.1.0");
+    expect(body.scoring_version).toBe("7.2.0");
     expect(body.resolvedMint).toBeDefined();
     expect(body.flags).toBeDefined();
     expect(Array.isArray(body.sources_used)).toBe(true);
