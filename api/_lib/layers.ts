@@ -394,6 +394,8 @@ export function layerChart(
   const pc24h = asNumber(pair?.priceChange?.h24);
   const v24Liq = liq > 0 ? vol24h / liq : 0;
   const v1hLiq = liq > 0 ? vol1h / liq : 0;
+
+  // ── Existing patterns ──────────────────────────────────────────────────────
   if (greenRatio >= 0.82 && runUpPct >= 100 && pullbackRange <= 10) {
     flags.push(makeFlag("Crashcoin pattern: near-perfect parabolic chart", "critical", 0));
     penalties.push(0.35); safeBlocked = true;
@@ -434,6 +436,77 @@ export function layerChart(
     flags.push(makeFlag("Active dump: -60% 24h + -20% 1h (slow rug)", "critical", 0));
     penalties.push(0.25); forceRug = true; safeBlocked = true;
   }
+
+  // ── NEW v8 patterns — OHLCV rug fingerprints ───────────────────────────────
+
+  // Pattern 1: Post-ATH dump >50% in last 4 candles = rug exit in progress
+  if (closes.length >= 5) {
+    const athIdx = closes.indexOf(Math.max(...closes));
+    const isRecentATH = athIdx >= closes.length - 4;
+    if (isRecentATH && peak > 0) {
+      const dumpFromATH = (last - peak) / peak;
+      if (dumpFromATH < -0.50) {
+        flags.push(makeFlag(`Post-ATH dump ${Math.round(dumpFromATH * 100)}% — rug exit in progress`, "critical", 0));
+        penalties.push(0.10); forceRug = true; safeBlocked = true;
+      } else if (dumpFromATH < -0.35) {
+        flags.push(makeFlag(`Post-ATH dump ${Math.round(dumpFromATH * 100)}% — exit liquidity pattern`, "warning", 0));
+        penalties.push(0.40); safeBlocked = true;
+      }
+    }
+  }
+
+  // Pattern 2: Micro-window pump — +200% in last 10 candles with high green ratio
+  if (closes.length >= 10) {
+    const shortWindow = closes.slice(-10);
+    const shortFirst = shortWindow[0], shortLast = shortWindow[shortWindow.length - 1];
+    const shortGreenCount = shortWindow.filter((c, i) => i > 0 && c > shortWindow[i - 1]).length;
+    const shortGreenRatio = shortGreenCount / (shortWindow.length - 1);
+    if (_pct(shortFirst, shortLast) > 200 && shortGreenRatio > 0.80) {
+      flags.push(makeFlag(`Micro-window pump: +${Math.round(_pct(shortFirst, shortLast))}% in 10 candles — coordinated launch`, "critical", 0));
+      penalties.push(0.15); safeBlocked = true;
+    }
+  }
+
+  // Pattern 3: Dead cat bounce — massive drop then partial recovery = distribution trap
+  if (closes.length >= 8) {
+    const midWindow = closes.slice(-8);
+    const midMin = Math.min(...midWindow.slice(0, 4));
+    const midStart = midWindow[0];
+    const midEnd = midWindow[midWindow.length - 1];
+    const dropPct = midStart > 0 ? (midMin - midStart) / midStart : 0;
+    const recoveryPct = midMin > 0 ? (midEnd - midMin) / midMin : 0;
+    if (dropPct < -0.50 && recoveryPct > 0.60 && midEnd < midStart * 0.85) {
+      flags.push(makeFlag("Dead cat bounce: -50% drop then partial recovery — distribution trap", "warning", 0));
+      penalties.push(0.45); safeBlocked = true;
+    }
+  }
+
+  // Pattern 4: Rug staircase — volume decaying 3 consecutive windows while price holds
+  if (volumes.length >= 15) {
+    const v1 = _mean(volumes.slice(-15, -10));
+    const v2 = _mean(volumes.slice(-10, -5));
+    const v3 = _mean(volumes.slice(-5));
+    const priceFlat = Math.abs(_pct(closes[closes.length - 15] ?? closes[0], last)) < 15;
+    if (v1 > 0 && v2 < v1 * 0.60 && v3 < v2 * 0.60 && priceFlat) {
+      flags.push(makeFlag("Rug staircase: volume collapsing while price held flat — controlled dump", "warning", 0));
+      penalties.push(0.55); safeBlocked = true;
+    }
+  }
+
+  // Pattern 5: Candle wick trap — high wicks with closing near lows = repeated sells at highs
+  if (recent.length >= 5) {
+    const lastCandles = recent.slice(-5);
+    const wickTrapCount = lastCandles.filter(c => {
+      const range = c.h - c.l;
+      const upperWick = c.h - Math.max(c.o, c.c);
+      return range > 0 && (upperWick / range) > 0.70;
+    }).length;
+    if (wickTrapCount >= 3) {
+      flags.push(makeFlag("Wick trap: 3+ candles with dominant upper wick — repeated selling at highs", "warning", 0));
+      penalties.push(0.65); safeBlocked = true;
+    }
+  }
+
   trust = applyDiminishingPenalties(trust, penalties);
   return { source: "chart", trust: Math.max(0, trust), available: true, flags, forceRug, safeBlocked };
 }
