@@ -4,13 +4,14 @@ import * as Sentry from "@sentry/browser"
 import type { HistoryEntry } from "./shared/types"
 import { CA_RE } from "./shared/constants"
 import { config } from "./shared/config"
+import { getLocalCacheTTL } from "./shared/cache-ttl"
 
-// ─── SENTRY INITIALIZATION ───────────────────────────────────────────────────────────────
+// ─── SENTRY INITIALIZATION ────────────────────────────────────────────────────────────────────────────────────────
 if (config.sentryDsn) {
   Sentry.init({ dsn: config.sentryDsn, tracesSampleRate: config.sentryTracesSampleRate })
 }
 
-// ─── SAFE DATA EXTRACTION HELPERS ───────────────────────────────────────────────────────
+// ─── SAFE DATA EXTRACTION HELPERS ───────────────────────────────────────────────────────────────────────────
 function safeString(val: unknown): string | undefined {
   return typeof val === "string" ? val : undefined
 }
@@ -43,7 +44,7 @@ function extractSymbol(data: Record<string, unknown>): string {
 void chrome.alarms.create(config.keepaliveAlarmName, { periodInMinutes: config.keepaliveIntervalMinutes });
 chrome.alarms.onAlarm.addListener((a) => { if (a.name === config.keepaliveAlarmName) void chrome.runtime.id; });
 
-// ─── BADGE CONFIG ────────────────────────────────────────────────────────────────
+// ─── BADGE CONFIG ────────────────────────────────────────────────────────────────────────────────────
 const BADGE_MAP: Record<string, { text: string; color: string }> = {
   SAFE: { text: "\u2713", color: "#00e5b0" },
   CAUTION: { text: "!", color: "#f5d000" },
@@ -92,14 +93,42 @@ function checkRiskEscalation(ca: string, currentRisk: string, tokenSymbol: strin
   }
 }
 
-// ─── HISTORY ─────────────────────────────────────────────────────────────────
+/**
+ * Sends a Chrome notification if a token's score drops by more than 150 points
+ * compared to its last stored value. Triggered on every fresh API scan.
+ */
+function checkScoreDropAlert(ca: string, currentScore: number, symbol: string) {
+  const key = `${config.riskStoragePrefix}score_${ca}`
+  try {
+    chrome.storage.local.get([key], (result) => {
+      if (chrome.runtime.lastError) return
+      const prevScore = result[key]
+      if (typeof prevScore === "number" && Number.isFinite(prevScore) && (prevScore - currentScore) > 150) {
+        void chrome.notifications.create(`antares_score_drop_${ca}`, {
+          type: "basic",
+          iconUrl: chrome.runtime.getURL("assets/icon.png"),
+          title: "Antares \u2014 Score Drop Alert",
+          message: `${symbol || ca.slice(0, 8)}: score dropped ${prevScore} \u2192 ${currentScore}`,
+        })
+      }
+      void chrome.storage.local.set({ [key]: currentScore })
+    })
+  } catch (e: unknown) {
+    console.warn("[antares] checkScoreDropAlert error:", e)
+  }
+}
+
+// ─── HISTORY ─────────────────────────────────────────────────────────────────────────────────────
 function saveToHistory(ca: string, data: Record<string, unknown>) {
+  const now = Date.now()
   const entry: HistoryEntry = {
     ca,
     symbol: extractSymbol(data) || ca.slice(0, 8),
     risk: safeString(data.risk) || "UNKNOWN",
     score: safeNumber(data.score),
-    ts: Date.now(),
+    ts: now,
+    data,
+    dataTs: now,
   }
   try {
     chrome.storage.local.get([config.historyStorageKey], (result) => {
@@ -117,7 +146,7 @@ function saveToHistory(ca: string, data: Record<string, unknown>) {
   }
 }
 
- // ─── MESSAGE HANDLER (map-based) ────────────────────────────────────────────────────────
+ // ─── MESSAGE HANDLER (map-based) ───────────────────────────────────────────────────────────────────────────────
 type MessageHandler = (
   msg: Record<string, unknown>,
   sender: chrome.runtime.MessageSender,
@@ -131,36 +160,39 @@ const handlers: Record<string, MessageHandler> = {
     // Security: only accept messages from our own extension or content scripts
     if (sender.id !== chrome.runtime.id) {
       sendResponse({ ok: false, error: "Unauthorized sender" })
-      return true
+      return
     }
 
     if (!CA_RE.test(ca)) {
       sendResponse({ ok: false, error: "Invalid contract address" })
-      return true
+      return
     }
 
-    const ctrl = new AbortController()
-    const timer = setTimeout(() => ctrl.abort(), config.fetchTimeoutMs)
-
-    void fetch(`${config.apiBase}/api/scan?ca=${ca}`, {
-      signal: ctrl.signal,
-    })
-    .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
-    .then((data: Record<string, unknown>) => {
-      clearTimeout(timer)
-      const risk = safeString(data.risk)
-      if (risk) {
-        updateBadge(risk, sender.tab?.id)
-        const sym = extractSymbol(data)
-        checkRiskEscalation(ca, risk, sym)
+    // ─── LOCAL CACHE CHECK before hitting the network ──────────────────────────────────
+    chrome.storage.local.get([config.historyStorageKey], (result) => {
+      if (chrome.runtime.lastError) {
+        // If storage fails, fall through to network fetch
+        doFetch(ca, sender, sendResponse)
+        return
       }
-      saveToHistory(ca, data)
-      sendResponse({ ok: true, data })
-    })
-    .catch((e: Error) => {
-      clearTimeout(timer)
-      Sentry.captureException(e)
-      sendResponse({ ok: false, error: e.message })
+      const history = (Array.isArray(result[config.historyStorageKey])
+        ? result[config.historyStorageKey]
+        : []) as HistoryEntry[]
+
+      const cached = history.find((h) => h.ca === ca && h.data && typeof h.dataTs === "number")
+      if (cached?.dataTs && cached.data) {
+        const tokenAge = typeof cached.data.solscanTokenAgeHours === "number"
+          ? cached.data.solscanTokenAgeHours
+          : null
+        const ttl = getLocalCacheTTL(tokenAge)
+        if (Date.now() - cached.dataTs < ttl) {
+          // Cache HIT: return stored data immediately, no network call
+          sendResponse({ ok: true, data: cached.data, fromCache: true })
+          return
+        }
+      }
+      // Cache MISS or expired: fetch from API
+      doFetch(ca, sender, sendResponse)
     })
   },
 
@@ -179,6 +211,42 @@ const handlers: Record<string, MessageHandler> = {
   },
 }
 
+/**
+ * Performs the actual API fetch, updates badge/history, and sends the response.
+ * Extracted to be callable both from cache miss and directly.
+ */
+function doFetch(
+  ca: string,
+  sender: chrome.runtime.MessageSender,
+  sendResponse: (response: unknown) => void
+) {
+  const ctrl = new AbortController()
+  const timer = setTimeout(() => ctrl.abort(), config.fetchTimeoutMs)
+
+  void fetch(`${config.apiBase}/api/scan?ca=${ca}`, {
+    signal: ctrl.signal,
+  })
+  .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+  .then((data: Record<string, unknown>) => {
+    clearTimeout(timer)
+    const risk = safeString(data.risk)
+    const score = safeNumber(data.score)
+    const sym = extractSymbol(data)
+    if (risk) {
+      updateBadge(risk, sender.tab?.id)
+      checkRiskEscalation(ca, risk, sym)
+    }
+    checkScoreDropAlert(ca, score, sym)
+    saveToHistory(ca, data)
+    sendResponse({ ok: true, data })
+  })
+  .catch((e: Error) => {
+    clearTimeout(timer)
+    Sentry.captureException(e)
+    sendResponse({ ok: false, error: e.message })
+  })
+}
+
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   const handler = handlers[msg.type as string]
   if (handler) {
@@ -187,7 +255,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 })
 
-// ─── EXTENSION TOGGLE (click icon to enable/disable) ────────────────────────
+// ─── EXTENSION TOGGLE (click icon to enable/disable) ──────────────────────────────────────
 let extensionEnabled = true
 
 chrome.action.onClicked.addListener(async (_tab) => {
