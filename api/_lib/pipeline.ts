@@ -64,11 +64,17 @@ export function applySafeGateOverride(input: SafeGateInput): boolean {
 
   if (onlySoftReasons) {
     const ageHours = input.tokenAgeHours ?? 0;
-    const hasEnoughSources = input.sourcesAvailableCount >= 4;
-    if ((input.holders ?? 0) > 500 && input.lpBurned && input.goPlusClean) {
-      return false;
-    }
-    if (ageHours > 24 && hasEnoughSources && (input.holders ?? 0) > 200 && input.goPlusClean) {
+    // HARDENED: Never unlock tokens younger than 48 hours
+        if (input.tokenAgeHours !== null && ageHours < 48) return true;
+    const hasEnoughSources = input.sourcesAvailableCount >= 5;
+    // HARDENED: Require ALL conditions: age>48h, 5+ sources, 1000+ holders, LP burned, GoPlus clean
+    if (
+            (input.tokenAgeHours === null || ageHours > 48) &&
+      hasEnoughSources &&
+      (input.holders ?? 0) > 1000 &&
+      input.lpBurned &&
+      input.goPlusClean
+    ) {
       return false;
     }
   }
@@ -77,14 +83,16 @@ export function applySafeGateOverride(input: SafeGateInput): boolean {
 }
 
 export function applyEstablishedBonus(input: EstablishedBonusInput): number {
+  // HARDENED: Require 90 days (2160h) instead of 30, 5000 holders instead of 1000
+  // Bonus reduced from 1.15 to 1.05
   if (
     input.tokenAgeHours !== null &&
-    input.tokenAgeHours > 720 &&
-    (input.holders ?? 0) > 1000 &&
+    input.tokenAgeHours > 2160 &&
+    (input.holders ?? 0) > 5000 &&
     input.lpBurned &&
     input.goPlusClean
   ) {
-    return Math.min(1000, Math.round(input.score * 1.15));
+    return Math.min(1000, Math.round(input.score * 1.05));
   }
   return input.score;
 }
@@ -95,8 +103,6 @@ export function determineVerdict(input: VerdictInput): Verdict {
 
   if (input.safeBlocked) {
     // Fix(Bug 15): Added "sniper", "pump", "chart" to HARD_REASONS.
-    // Previously these were missing, causing tokens with sniper/pump flags
-    // to receive only CAUTION instead of DANGER.
     const HARD_REASONS = new Set(["honeypot", "mint", "freeze", "bundle", "rug_pattern", "wash_trading", "sniper", "pump", "chart"]);
     const hasHardReason = input.safeBlockedReasons?.some(r => HARD_REASONS.has(r));
     if (hasHardReason) return input.score >= 400 ? "DANGER" : "RUG";
@@ -104,7 +110,8 @@ export function determineVerdict(input: VerdictInput): Verdict {
     return "DANGER";
   }
 
-  if (input.score >= 850) return "SAFE";
+  // HARDENED: SAFE requires score >= 900 AND at least 5 sources
+  if (input.score >= 900 && input.sourcesUsedCount >= 5) return "SAFE";
   if (input.score >= 600) return "CAUTION";
   if (input.score >= 350) return "DANGER";
   return "RUG";

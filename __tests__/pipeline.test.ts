@@ -218,22 +218,22 @@ describe("applySafeGateOverride", () => {
     expect(applySafeGateOverride(makeSafeGateInput({ forceRug: true }))).toBe(true);
   });
 
-  it("3. Soft reason 'age' + all conditions met -> returns false (unlocked)", () => {
+  it("3. Soft reason 'age' + all conditions met -> returns true (HARDENED: holders < 1000)", () => {
     expect(applySafeGateOverride(makeSafeGateInput({
       safeBlockedReasons: ["age"], holders: 600, lpBurned: true, goPlusClean: true,
-    }))).toBe(false);
+    }))).toBe(true);
   });
 
-  it("4. Soft reason 'holders' + all conditions met -> returns false (unlocked)", () => {
+  it("4. Soft reason 'holders' + all conditions met -> returns true (HARDENED: holders < 1000)", () => {
     expect(applySafeGateOverride(makeSafeGateInput({
       safeBlockedReasons: ["holders"], holders: 600, lpBurned: true, goPlusClean: true,
-    }))).toBe(false);
+    }))).toBe(true);
   });
 
-  it("5. Both soft reasons ['age','holders'] + all conditions met -> returns false (unlocked)", () => {
+  it("5. Both soft reasons ['age','holders'] + all conditions met -> returns true (HARDENED: holders < 1000)", () => {
     expect(applySafeGateOverride(makeSafeGateInput({
       safeBlockedReasons: ["age", "holders"], holders: 600, lpBurned: true, goPlusClean: true,
-    }))).toBe(false);
+    }))).toBe(true);
   });
 
   it("6. Hard reason 'mint' -> returns true (stays blocked)", () => {
@@ -272,10 +272,10 @@ describe("applySafeGateOverride", () => {
     }))).toBe(true);
   });
 
-  it("12. Soft reason but holders=501 -> returns false (just above threshold)", () => {
+    it("12. Soft reason but holders=501 -> returns true (HARDENED: needs > 1000)", () => {
     expect(applySafeGateOverride(makeSafeGateInput({
       safeBlockedReasons: ["age"], holders: 501,
-    }))).toBe(false);
+    }))).toBe(true);
   });
 
   it("13. Soft reason but lpBurned=false -> returns true", () => {
@@ -297,7 +297,7 @@ describe("applySafeGateOverride", () => {
   });
 
   // Age-aware safe-gate tests
-  it("unlocks token > 24h with 4+ sources and 200+ holders", () => {
+    it("HARDENED: keeps blocked for token < 48h with insufficient holders", () => {
     expect(applySafeGateOverride(makeSafeGateInput({
       safeBlockedReasons: ["age"],
       tokenAgeHours: 25,
@@ -305,7 +305,7 @@ describe("applySafeGateOverride", () => {
       holders: 250,
       goPlusClean: true,
       lpBurned: false, // not burned, but relaxed unlock doesn't require it
-    }))).toBe(false);
+    }))).toBe(true);
   });
 
   it("keeps blocked for token < 24h with only soft reasons", () => {
@@ -346,40 +346,40 @@ describe("applySafeGateOverride", () => {
 // ─── applyEstablishedBonus ──────────────────────────────────────────────────
 
 describe("applyEstablishedBonus", () => {
-  it("1. All conditions met, score=920 -> capped at 1000", () => {
-    expect(applyEstablishedBonus(makeEstablishedBonusInput({ score: 920 }))).toBe(1000);
+    it("1. Default conditions (age<2160, holders<5000) -> no bonus, score unchanged", () => {
+    expect(applyEstablishedBonus(makeEstablishedBonusInput({ score: 920 }))).toBe(920);
   });
 
-  it("2. All conditions met, score=800 -> 920", () => {
-    expect(applyEstablishedBonus(makeEstablishedBonusInput({ score: 800 }))).toBe(920);
+    it("2. Default conditions, score=800 -> no bonus, returns 800", () => {
+    expect(applyEstablishedBonus(makeEstablishedBonusInput({ score: 800 }))).toBe(800);
   });
 
-  it("3. All conditions met, score=500 -> 575", () => {
-    expect(applyEstablishedBonus(makeEstablishedBonusInput({ score: 500 }))).toBe(575);
+  it("3. All conditions met, score=500 -> no bonus, returns 500", () => {
+    expect(applyEstablishedBonus(makeEstablishedBonusInput({ score: 500 }))).toBe(500);
   });
 
-  it("4. tokenAgeHours=100 -> score unchanged (needs >720)", () => {
+  it("4. tokenAgeHours=100 -> score unchanged (HARDENED: needs >2160)", () => {
     expect(applyEstablishedBonus(makeEstablishedBonusInput({ tokenAgeHours: 100 }))).toBe(920);
   });
 
-  it("5. tokenAgeHours=720 -> score unchanged (boundary: needs >720)", () => {
+  it("5. tokenAgeHours=720 -> score unchanged (boundary: HARDENED: needs >2160)", () => {
     expect(applyEstablishedBonus(makeEstablishedBonusInput({ tokenAgeHours: 720 }))).toBe(920);
   });
 
-  it("6. tokenAgeHours=721 + all conditions met -> bonus applied", () => {
-    expect(applyEstablishedBonus(makeEstablishedBonusInput({ tokenAgeHours: 721 }))).toBe(1000);
+    it("6. tokenAgeHours=721 -> score unchanged (HARDENED: needs >2160)", () => {
+    expect(applyEstablishedBonus(makeEstablishedBonusInput({ tokenAgeHours: 721 }))).toBe(920);
   });
 
-  it("7. holders=500 -> score unchanged (needs >1000)", () => {
+  it("7. holders=500 -> score unchanged (HARDENED: needs >5000)", () => {
     expect(applyEstablishedBonus(makeEstablishedBonusInput({ holders: 500 }))).toBe(920);
   });
 
-  it("8. holders=1000 -> score unchanged (boundary: needs >1000)", () => {
+  it("8. holders=1000 -> score unchanged (boundary: HARDENED: needs >5000)", () => {
     expect(applyEstablishedBonus(makeEstablishedBonusInput({ holders: 1000 }))).toBe(920);
   });
 
-  it("9. holders=1001 + all conditions met -> bonus applied", () => {
-    expect(applyEstablishedBonus(makeEstablishedBonusInput({ holders: 1001 }))).toBe(1000);
+    it("9. holders=1001 -> score unchanged (HARDENED: needs >5000 AND age >2160)", () => {
+    expect(applyEstablishedBonus(makeEstablishedBonusInput({ holders: 1001 }))).toBe(920);
   });
 
   it("10. lpBurned=false -> score unchanged", () => {
@@ -426,8 +426,8 @@ describe("determineVerdict", () => {
     expect(determineVerdict(makeVerdictInput({ safeBlocked: true, score: 599 }))).toBe("CAUTION");
   });
 
-  it("7. score=850, normal conditions -> SAFE", () => {
-    expect(determineVerdict(makeVerdictInput({ score: 850 }))).toBe("SAFE");
+    it("7. score=850 -> CAUTION (HARDENED: SAFE needs >=900)", () => {
+    expect(determineVerdict(makeVerdictInput({ score: 850 }))).toBe("CAUTION");
   });
 
   it("8. score=849 -> CAUTION (just below SAFE)", () => {

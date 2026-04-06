@@ -8,13 +8,13 @@ export function computeFinalScore(layers: LayerResult[]): number {
 
   const weightedSources = Object.keys(LAYER_WEIGHTS);
   let totalWeight = 0;
-  const availableLayers: Array<{ trust: number; weight: number }> = [];
+  const availableLayers: Array<{ trust: number; weight: number; source: string }> = [];
 
   for (const src of weightedSources) {
     const layer = layers.find(l => l.source === src);
     const w = LAYER_WEIGHTS[src] ?? 0;
     if (!layer || !layer.available) continue;
-    availableLayers.push({ trust: Math.max(TRUST_FLOOR, layer.trust), weight: w });
+    availableLayers.push({ trust: Math.max(TRUST_FLOOR, layer.trust), weight: w, source: src });
     totalWeight += w;
   }
 
@@ -80,5 +80,6 @@ export function classifySafeBlockedReasons(layers: LayerResult[]): SafeBlockedRe
       }
     }
   }
+
   return reasons;
 }
