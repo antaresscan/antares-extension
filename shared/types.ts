@@ -64,6 +64,10 @@ export interface HistoryEntry {
   risk: string;
   score: number;
   ts: number;
+  /** Full scan payload — stored for local cache reuse */
+  data?: Record<string, unknown>;
+  /** Timestamp of when `data` was fetched, for TTL checks */
+  dataTs?: number;
 }
 
   // Insider Graph types
