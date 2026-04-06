@@ -3,6 +3,8 @@ import { RISK_CLASS, LABELS, ANALYSIS_PAGE, SVG_MOVE, SVG_CLOSE, VERDICT_COLORS 
 import { state } from "./state"
 import { SHADOW_CSS, injectFonts } from "./styles"
 import { initDrag } from "./drag"
+import { encodeHashPayload } from "../../shared/hash-payload"
+import { scanCache } from "./state"
 
 // ─── HTML ESCAPE UTILITY ──────────────────────────────────────────────────────
 const HTML_ESCAPE: Record<string, string> = {
@@ -87,6 +89,66 @@ export function resetState() {
 export function attachClose() {
   state.shadow?.querySelector("#ant-close")?.addEventListener("click", () => { state.manuallyDismissed = true; hideBox() }, { once: true })
   state.shadow?.querySelector("#ant-hist-btn")?.addEventListener("click", toggleHistory)
+}
+
+/**
+ * Attaches the smart-tab handler to the Full Analysis button.
+ *
+ * New behaviour (Solution 4):
+ * 1. Encode the cached scan result as a base64url hash payload
+ * 2. Look for an existing tab already open on this token's analysis page
+ *    - If found: focus it and reload with the fresh hash (0 extra tabs)
+ *    - If not found: open exactly one new tab with the hash embedded
+ *
+ * The token.html page reads this hash and renders instantly at 0ms,
+ * no network request needed.
+ */
+export function attachAnalysisBtn(mint: string) {
+  const btn = state.shadow?.querySelector("#ant-full-analysis")
+  if (!btn) return
+  btn.addEventListener("click", (e) => {
+    e.preventDefault()
+    // Build hash payload from in-memory scan cache
+    const cacheEntry = scanCache.get(mint)
+    const hashFragment = cacheEntry ? encodeHashPayload(cacheEntry.data as Record<string, unknown>) : ""
+    const baseUrl = `${ANALYSIS_PAGE}?ca=${encodeURIComponent(mint)}`
+    const urlWithHash = hashFragment ? `${baseUrl}#data=${hashFragment}` : baseUrl
+    try {
+      chrome.tabs.query({ url: `${ANALYSIS_PAGE}*` }, (tabs) => {
+        if (chrome.runtime.lastError) {
+          chrome.tabs.create({ url: urlWithHash })
+          return
+        }
+        const existing = tabs.find((t) =>
+          typeof t.url === "string" && t.url.includes(`ca=${encodeURIComponent(mint)}`)
+        )
+        if (existing?.id !== undefined && existing.windowId !== undefined) {
+          // Update the existing tab's URL (new hash = fresh data) and focus it
+          chrome.tabs.update(existing.id, { active: true, url: urlWithHash })
+          chrome.windows.update(existing.windowId, { focused: true })
+        } else {
+          chrome.tabs.create({ url: urlWithHash })
+        }
+      })
+    } catch {
+      chrome.tabs.create({ url: urlWithHash })
+    }
+  }, { once: true })
+}
+
+/**
+ * Injects a subtle 'CACHED · Xm ago' badge in the overlay footer
+ * to inform the user that the result came from local storage, not a live API call.
+ */
+export function showCachedBadge(ageMs: number) {
+  const fo = state.shadow?.querySelector(".fo")
+  if (!fo) return
+  fo.querySelector(".cached-badge")?.remove()
+  const mins = Math.max(1, Math.round(ageMs / 60_000))
+  const badge = document.createElement("span")
+  badge.className = "cached-badge"
+  badge.textContent = `\u26a1 cached \u00b7 ${mins}m ago`
+  fo.prepend(badge)
 }
 
 export function toggleHistory() {
@@ -231,7 +293,7 @@ export function buildResult(data: ScanResponseData, ca: string): string {
   const dexLink = safeDexUrl
     ? `<a href="${escapeHtml(safeDexUrl)}" target="_blank" rel="noopener noreferrer">DexScreener</a>`
     : ""
-  const analysisLink = `<a href="${ANALYSIS_PAGE}?ca=${encodeURIComponent(mint)}" target="_blank" rel="noopener noreferrer"${isDangerous ? ' class="warn"' : ''}>Full Analysis \u2192</a>`
+  const analysisLink = `<a href="#" id="ant-full-analysis" data-ca="${encodeURIComponent(mint)}"${isDangerous ? ' class="warn"' : ''}>Full Analysis \u2192</a>`
 
   return `
     <div class="topbar"></div>
