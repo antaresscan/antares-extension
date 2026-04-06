@@ -71,7 +71,7 @@ describe("Session 3 regressions", () => {
 // ─── Session 5: Verdict logic regressions ────────────────────────────────────
 
 describe("Session 5 regressions", () => {
-  it("Soft safeBlock with score 550+ -> CAUTION", () => {
+    it("Soft safeBlock with score 570 -> DANGER (HARDENED: needs >=700 for CAUTION)", () => {
     const verdict = determineVerdict({
       score: 570,
       forceRug: false,
@@ -79,7 +79,7 @@ describe("Session 5 regressions", () => {
       safeBlockedReasons: ["age"],
       sourcesUsedCount: 5,
     });
-    expect(verdict).toBe("CAUTION");
+        expect(verdict).toBe("DANGER");
   });
 
   it("Hard safeBlock with score 400 -> RUG or DANGER", () => {
