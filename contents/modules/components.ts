@@ -108,7 +108,7 @@ export function attachAnalysisBtn(mint: string) {
   btn.addEventListener("click", (e) => {
     e.preventDefault()
     const cacheEntry = scanCache.get(mint)
-    const hashFragment = cacheEntry ? encodeHashPayload(cacheEntry.data as Record<string, unknown>) : ""
+    const hashFragment = cacheEntry ? encodeHashPayload(cacheEntry.data as unknown as Record<string, unknown>) : ""
     const baseUrl = `${ANALYSIS_PAGE}?ca=${encodeURIComponent(mint)}`
     const urlWithHash = hashFragment ? `${baseUrl}#data=${hashFragment}` : baseUrl
     try {
