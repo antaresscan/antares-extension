@@ -39,7 +39,12 @@ export function computeFinalScore(layers: LayerResult[]): number {
   return Math.round(Math.max(0, Math.min(1, product)) * 1000);
 }
 
+// HARD_BLOCK_PATTERNS: flags that classify as hard safeBlocked reasons.
+// CRITICAL: 'lp' is a HARD reason — LP not burned/locked can NEVER be soft-unlocked.
+// Without this, LP-flagged tokens had safeBlockedReasons=[] which caused
+// the safe gate to fall through and allow SAFE verdicts on rug-able tokens.
 export const HARD_BLOCK_PATTERNS: Array<[RegExp, SafeBlockedReason]> = [
+  [/LP not burned|LP not locked|dev can rug/i, "lp"],           // FIX: LP is now a HARD reason
   [/mint authority/i, "mint"],
   [/freeze authority/i, "freeze"],
   [/honeypot/i, "honeypot"],
@@ -49,6 +54,7 @@ export const HARD_BLOCK_PATTERNS: Array<[RegExp, SafeBlockedReason]> = [
   [/rug|dump|exit trap/i, "rug_pattern"],
   [/pump|parabolic/i, "pump"],
   [/chart|blow-off|stair-step|volume exhaustion|liquidity mirage/i, "chart"],
+  [/deceptive name/i, "deceptive_name"],                         // FIX: deceptive names are hard
 ];
 
 export function classifySafeBlockedReasons(layers: LayerResult[]): SafeBlockedReason[] {
@@ -76,6 +82,12 @@ export function classifySafeBlockedReasons(layers: LayerResult[]): SafeBlockedRe
         for (const f of layer.flags) {
           if (/holder/i.test(f.label) || /wallet.*holds/i.test(f.label) || /top.*hold/i.test(f.label)) add("holders");
           if (/newborn|fresh|age|<\d+h|<\d+min/i.test(f.label)) add("age");
+        }
+      }
+      // FIX: rugcheck layer with safeBlocked but unmatched flag — treat as lp if LP-related
+      if (layer.source === "rugcheck") {
+        for (const f of layer.flags) {
+          if (/LP|liquidity/i.test(f.label)) add("lp");
         }
       }
     }

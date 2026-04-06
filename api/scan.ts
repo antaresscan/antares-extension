@@ -21,7 +21,7 @@ import {
 import {
   heliusGetLargestAccounts, heliusGetTokenSupply, heliusGetCreatorReputation,
   heliusGetHoldersCount,
-    heliusResolveAccountOwners,
+  heliusResolveAccountOwners,
   solscanGetHoldersCount, fetchSolscan, fetchDexCandles,
   type CreatorReputation,
 } from "./_lib/fetchers";
@@ -42,7 +42,7 @@ import { generateAISummary } from "./_lib/ai-summary";
 import { initRugDb, recordRug } from "./_lib/rugdb";
 if (process.env.SENTRY_DSN) {
   Sentry.init({ dsn: process.env.SENTRY_DSN, tracesSampleRate: 0.1 });
-  }
+}
 
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
   const redis = new Redis({
@@ -51,7 +51,7 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
   });
   initCache(redis);
   initRateLimiters(redis);
-      initRugDb(redis);
+  initRugDb(redis);
 }
 
 const GLOBAL_TIMEOUT_MS = Number(process.env.VERCEL_TIMEOUT) || 9000;
@@ -62,7 +62,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const corsOk = setCorsHeaders(req, res);
   if (req.method === "OPTIONS") return res.status(204).end();
-    if (!corsOk) return apiError(res, 403, "Origin not allowed.");
+  if (!corsOk) return apiError(res, 403, "Origin not allowed.");
   if (req.method !== "GET" && req.method !== "OPTIONS") {
     return apiError(res, 405, "Method not allowed.");
   }
@@ -173,7 +173,6 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const totalSupplyUi: number = asNumber(supplyResponse?.result?.value?.uiAmount);
 
     const solMarketsData = isSolscanMarketsResponse(solMarkets) ? solMarkets : null;
-    // Resolve token account addresses to owner wallet addresses for accurate LP filtering
     const resolvedHolderAccounts: HeliusHolder[] = HELIUS_API_KEY && rawHolderAccounts.length > 0
       ? await settled(heliusResolveAccountOwners(rawHolderAccounts, HELIUS_API_KEY)) ?? rawHolderAccounts.map(h => ({ ...h, owner: h.owner ?? h.address }))
       : rawHolderAccounts.map(h => ({ ...h, owner: h.owner ?? h.address }));
@@ -235,10 +234,9 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const priceChange1h  = pair?.priceChange?.h1  ?? null;
     const priceChange24h = pair?.priceChange?.h24 ?? null;
 
-    // Fix(VDOR): Pass tokenName to layerRugCheck to activate deceptive institution name detection
     const tokenName: string | null = sanitizeString(pair?.baseToken?.name) ?? null;
 
-    // 7 layers — identity layer removed
+    // 7 layers
     const l1 = layerDexScreener(pair, marketCap, tokenAgeMinutes);
     const l2 = layerRugCheck(rugData, rugReport, resolvedMint, tokenName);
     const l3 = layerGoPlus(goplus);
@@ -310,7 +308,6 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       allLayers.map(l => [l.source, { trust: +l.trust.toFixed(3), available: l.available }])
     );
 
-    // AI summary — non-critical, runs post-verdict
     const aiSummary = await generateAISummary({
       score,       risk,       flags: flags.map(f => `[${f.severity}] ${f.label}`),
       tokenSymbol: sanitizeString(pair?.baseToken?.symbol) ?? null,
@@ -320,7 +317,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       honeypot: l3.available && l3.trust === 0 && l3.flags.some(f => /honeypot/i.test(f.label)),
       tokenAgeHours: solscanTokenAgeHours ?? dexTokenAgeHours ?? null,
       sourcesUsed: sources_used,
-        }).catch(() => null);
+    }).catch(() => null);
+
     const result: ScanResult = {
       score, risk, flags, pair, resolvedMint, confidence, sources_used,
       holders, marketCap, priceUsd, liquidity,
@@ -337,7 +335,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       freezeAuthority: allLayers.some(l => l.flags.some(f => /freeze authority/i.test(f.label) && f.severity === "critical")),
       lpBurned: rugData?.lpBurned === true,
       candles: candles.slice(-20).map(c => ({ close: c.c })),
-      scoring_version: "7.2.0",
+      scoring_version: "7.3.0",
       fetchedAt: Date.now(),
       requestId,
       aiSummary: aiSummary ?? null,
@@ -348,7 +346,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     void recordRug({ mint: resolvedMint, symbol: sanitizeString(pair?.baseToken?.symbol) ?? null, score, risk, flags, creator: tokenCreator });
     return res.json(result);
   } catch (e) {
-    console.error("[scan v7.2.0]", requestId, e);
+    console.error("[scan v7.3.0]", requestId, e);
     Sentry.captureException(e);
     return apiError(res, 500, "Analysis error.");
   }
