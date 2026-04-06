@@ -12,7 +12,6 @@ export function evaluatePostLayerFlags(input: PostLayerFlagsInput): PostLayerFla
   let forceRug = false;
   let safeBlocked = false;
 
-  // Fix: require at least 5 total transactions to avoid false positives on brand-new tokens
   const totalTxns5m = (input.buys5m ?? 0) + (input.sells5m ?? 0);
 
   if (
@@ -58,18 +57,28 @@ export function applySafeGateOverride(input: SafeGateInput): boolean {
   if (!input.safeBlocked) return false;
   if (input.forceRug) return true;
 
+  // HARD reasons can NEVER be soft-unlocked regardless of age, holders, or source count.
+  // 'lp': dev can pull liquidity at any time — fundamentally unacceptable for SAFE verdict.
+  // 'deceptive_name': intentional fraud signal, not a maturity issue.
+  const HARD_REASONS = new Set([
+    "lp", "mint", "freeze", "honeypot", "copycat", "deceptive_name",
+    "rug_pattern", "wash_trading", "pump", "bundle", "sniper", "chart",
+  ]);
+  const hasHardReason = input.safeBlockedReasons.some(r => HARD_REASONS.has(r));
+  if (hasHardReason) return true; // Always keep safeBlocked for hard reasons
+
+  // Only 'age' and 'holders' are soft reasons that can potentially unlock
   const SOFT_REASONS: Record<string, boolean> = { age: true, holders: true };
   const onlySoftReasons = input.safeBlockedReasons.length > 0 &&
     input.safeBlockedReasons.every(r => SOFT_REASONS[r] === true);
 
   if (onlySoftReasons) {
     const ageHours = input.tokenAgeHours ?? 0;
-    // HARDENED: Never unlock tokens younger than 48 hours
-        if (input.tokenAgeHours !== null && ageHours < 48) return true;
+    if (input.tokenAgeHours !== null && ageHours < 48) return true;
     const hasEnoughSources = input.sourcesAvailableCount >= 5;
-    // HARDENED: Require ALL conditions: age>48h, 5+ sources, 1000+ holders, LP burned, GoPlus clean
+    // ALL conditions must be met to unlock: age>48h, 5+ sources, 1000+ holders, LP burned, GoPlus clean
     if (
-            (input.tokenAgeHours === null || ageHours > 48) &&
+      (input.tokenAgeHours === null || ageHours > 48) &&
       hasEnoughSources &&
       (input.holders ?? 0) > 1000 &&
       input.lpBurned &&
@@ -79,12 +88,12 @@ export function applySafeGateOverride(input: SafeGateInput): boolean {
     }
   }
 
+  // safeBlockedReasons is empty (unclassified) — keep blocked by default
   return true;
 }
 
 export function applyEstablishedBonus(input: EstablishedBonusInput): number {
-  // HARDENED: Require 90 days (2160h) instead of 30, 5000 holders instead of 1000
-  // Bonus reduced from 1.15 to 1.05
+  // Require 90 days, 5000 holders, LP burned AND GoPlus clean to get bonus
   if (
     input.tokenAgeHours !== null &&
     input.tokenAgeHours > 2160 &&
@@ -102,11 +111,17 @@ export function determineVerdict(input: VerdictInput): Verdict {
   if (!input.sourcesUsedCount || input.sourcesUsedCount <= 0) return "DANGER";
 
   if (input.safeBlocked) {
-    // Fix(Bug 15): Added "sniper", "pump", "chart" to HARD_REASONS.
-    const HARD_REASONS = new Set(["honeypot", "mint", "freeze", "bundle", "rug_pattern", "wash_trading", "sniper", "pump", "chart"]);
+    // HARD reasons: 'lp' and 'deceptive_name' added alongside existing hard reasons.
+    // A token where LP is not burned can rug at any time — must return DANGER or RUG.
+    const HARD_REASONS = new Set([
+      "lp", "deceptive_name",
+      "honeypot", "mint", "freeze", "bundle", "rug_pattern",
+      "wash_trading", "sniper", "pump", "chart",
+    ]);
     const hasHardReason = input.safeBlockedReasons?.some(r => HARD_REASONS.has(r));
     if (hasHardReason) return input.score >= 400 ? "DANGER" : "RUG";
-    if (input.score >= 550) return "CAUTION";
+    // Soft reasons (age/holders) only: tightened from 550 to 700 for CAUTION
+    if (input.score >= 700) return "CAUTION";
     return "DANGER";
   }
 
