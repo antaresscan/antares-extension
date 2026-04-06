@@ -1,10 +1,9 @@
 import type { ScanResponseFlag, ScanResponseData } from "../../shared/types"
 import { RISK_CLASS, LABELS, ANALYSIS_PAGE, SVG_MOVE, SVG_CLOSE, VERDICT_COLORS } from "./constants"
-import { state } from "./state"
+import { state, scanCache } from "./state"
 import { SHADOW_CSS, injectFonts } from "./styles"
 import { initDrag } from "./drag"
 import { encodeHashPayload } from "../../shared/hash-payload"
-import { scanCache } from "./state"
 
 // ─── HTML ESCAPE UTILITY ──────────────────────────────────────────────────────
 const HTML_ESCAPE: Record<string, string> = {
@@ -108,7 +107,6 @@ export function attachAnalysisBtn(mint: string) {
   if (!btn) return
   btn.addEventListener("click", (e) => {
     e.preventDefault()
-    // Build hash payload from in-memory scan cache
     const cacheEntry = scanCache.get(mint)
     const hashFragment = cacheEntry ? encodeHashPayload(cacheEntry.data as Record<string, unknown>) : ""
     const baseUrl = `${ANALYSIS_PAGE}?ca=${encodeURIComponent(mint)}`
@@ -123,7 +121,6 @@ export function attachAnalysisBtn(mint: string) {
           typeof t.url === "string" && t.url.includes(`ca=${encodeURIComponent(mint)}`)
         )
         if (existing?.id !== undefined && existing.windowId !== undefined) {
-          // Update the existing tab's URL (new hash = fresh data) and focus it
           chrome.tabs.update(existing.id, { active: true, url: urlWithHash })
           chrome.windows.update(existing.windowId, { focused: true })
         } else {
