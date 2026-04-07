@@ -55,6 +55,7 @@ export const HARD_BLOCK_PATTERNS: Array<[RegExp, SafeBlockedReason]> = [
   [/pump|parabolic/i, "pump"],
   [/chart|blow-off|stair-step|volume exhaustion|liquidity mirage/i, "chart"],
   [/deceptive name/i, "deceptive_name"],                         // FIX: deceptive names are hard
+    [/very few holders|few holders|<15|<50/i, "low_holders"], // FIX: very low holders is a HARD reason
 ];
 
 export function classifySafeBlockedReasons(layers: LayerResult[]): SafeBlockedReason[] {
