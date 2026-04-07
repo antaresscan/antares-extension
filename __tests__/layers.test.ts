@@ -81,6 +81,72 @@ describe("layerDexScreener", () => {
     expect(result.trust).toBeGreaterThan(0);
     expect(result.trust).toBeLessThan(0.25);
   });
+
+    // Fix(EXTREME_PUMP_24H): Extreme 24h pump detection
+  it("Fix(EXTREME_PUMP_24H): pc24 > 5000 sets forceRug and safeBlocked", () => {
+    const pair: DexScreenerPair = {
+      liquidity: { usd: 50000 },
+      volume: { h24: 100000 },
+      priceChange: { h24: 6000, h1: 10, h6: 50, m5: 2 },
+      txns: { m5: { buys: 10, sells: 8 } },
+      info: {
+        socials: [{ type: "twitter", url: "https://twitter.com/test" }],
+        websites: [{ url: "https://test.com" }],
+      },
+    };
+    const result = layerDexScreener(pair, 500000, 1440);
+    expect(result.forceRug).toBe(true);
+    expect(result.safeBlocked).toBe(true);
+    expect(result.flags.some(f => /extreme 24h pump/i.test(f.label))).toBe(true);
+  });
+
+  it("Fix(EXTREME_PUMP_24H): pc24 > 1000 sets safeBlocked (not forceRug)", () => {
+    const pair: DexScreenerPair = {
+      liquidity: { usd: 50000 },
+      volume: { h24: 100000 },
+      priceChange: { h24: 2000, h1: 10, h6: 50, m5: 2 },
+      txns: { m5: { buys: 10, sells: 8 } },
+      info: {
+        socials: [{ type: "twitter", url: "https://twitter.com/test" }],
+        websites: [{ url: "https://test.com" }],
+      },
+    };
+    const result = layerDexScreener(pair, 500000, 1440);
+    expect(result.forceRug).toBe(false);
+    expect(result.safeBlocked).toBe(true);
+    expect(result.flags.some(f => /extreme 24h pump/i.test(f.label))).toBe(true);
+  });
+
+  it("Fix(EXTREME_PUMP_24H): pc24 > 500 on token <24h sets safeBlocked", () => {
+    const pair: DexScreenerPair = {
+      liquidity: { usd: 50000 },
+      volume: { h24: 100000 },
+      priceChange: { h24: 600, h1: 10, h6: 50, m5: 2 },
+      txns: { m5: { buys: 10, sells: 8 } },
+      info: {
+        socials: [{ type: "twitter", url: "https://twitter.com/test" }],
+        websites: [{ url: "https://test.com" }],
+      },
+    };
+    const result = layerDexScreener(pair, 500000, 720);
+    expect(result.safeBlocked).toBe(true);
+    expect(result.flags.some(f => /large 24h pump/i.test(f.label))).toBe(true);
+  });
+
+  it("Fix(EXTREME_PUMP_24H): pc24 = 400 does NOT trigger extreme pump flag", () => {
+    const pair: DexScreenerPair = {
+      liquidity: { usd: 50000 },
+      volume: { h24: 100000 },
+      priceChange: { h24: 400, h1: 10, h6: 50, m5: 2 },
+      txns: { m5: { buys: 10, sells: 8 } },
+      info: {
+        socials: [{ type: "twitter", url: "https://twitter.com/test" }],
+        websites: [{ url: "https://test.com" }],
+      },
+    };
+    const result = layerDexScreener(pair, 500000, 1440);
+    expect(result.flags.some(f => /extreme 24h pump|large 24h pump/i.test(f.label))).toBe(false);
+  });
 });
 
 // ═══ LAYER 2 — RugCheck ═════════════════════════════════════════════════════
