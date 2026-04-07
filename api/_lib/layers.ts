@@ -112,6 +112,19 @@ export function layerDexScreener(
   if (txns5m < 5 && mc > 50000 && ageMinutes < 1440) { flags.push(makeFlag("Low 5m transactions vs market cap", "warning", 0)); penalties.push(0.88); }
   if ((sells5m === 0 && buys5m > 0 && txns5m > 5) || (sells5m > 0 && buys5m > sells5m * 5)) { flags.push(makeFlag("Buy/sell imbalance (coordinated pump)", "warning", 0)); penalties.push(0.85); }
   if (pc24 < -80) { flags.push(makeFlag("Brutal dump 24h (-80%)", "critical", 0)); penalties.push(0.35); }
+
+  // Fix(EXTREME_PUMP_24H): Tokens with +1000% to +5000% 24h are exit traps — TRAP, KERMIT, HOUSETOUR pattern
+  // DeFade flags these as HIGH/CRITICAL risk; Antares was letting them pass as SAFE
+  if (pc24 > 5000) {
+    flags.push(makeFlag(`Extreme 24h pump +${Math.round(pc24)}% — exit liquidity trap`, "critical", 0));
+    penalties.push(0.05); forceRug = true; safeBlocked = true;
+  } else if (pc24 > 1000) {
+    flags.push(makeFlag(`Extreme 24h pump +${Math.round(pc24)}% — high risk exit trap`, "critical", 0));
+    penalties.push(0.15); safeBlocked = true;
+  } else if (pc24 > 500 && ageMinutes < 1440) {
+    flags.push(makeFlag(`Large 24h pump +${Math.round(pc24)}% on token <24h`, "warning", 0));
+    penalties.push(0.55); safeBlocked = true;
+  }
   trust = applyDiminishingPenalties(trust, penalties);
   return { source: "dexscreener", trust: Math.max(0, trust), available: true, flags, forceRug, safeBlocked };
 }
