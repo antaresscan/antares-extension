@@ -27,7 +27,8 @@ export type SafeBlockedReason =
   | "pump"            // HARD
   | "bundle"          // HARD
   | "sniper"          // HARD
-  | "chart";          // HARD
+    | "chart"            // HARD
+  | "low_holders";     // HARD — tokens with <50 holders
 
 // ─── LAYER RESULT ────────────────────────────────────────────────────────────────────
 export interface LayerResult {

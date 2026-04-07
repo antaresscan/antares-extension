@@ -63,6 +63,7 @@ export function applySafeGateOverride(input: SafeGateInput): boolean {
   const HARD_REASONS = new Set([
     "lp", "mint", "freeze", "honeypot", "copycat", "deceptive_name",
     "rug_pattern", "wash_trading", "pump", "bundle", "sniper", "chart",
+        "low_holders", // FIX: tokens with <50 holders cannot be SAFE
   ]);
   const hasHardReason = input.safeBlockedReasons.some(r => HARD_REASONS.has(r));
   if (hasHardReason) return true; // Always keep safeBlocked for hard reasons
@@ -117,6 +118,7 @@ export function determineVerdict(input: VerdictInput): Verdict {
       "lp", "deceptive_name",
       "honeypot", "mint", "freeze", "bundle", "rug_pattern",
       "wash_trading", "sniper", "pump", "chart",
+            "low_holders",
     ]);
     const hasHardReason = input.safeBlockedReasons?.some(r => HARD_REASONS.has(r));
     if (hasHardReason) return input.score >= 400 ? "DANGER" : "RUG";

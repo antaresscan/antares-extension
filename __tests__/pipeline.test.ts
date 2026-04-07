@@ -491,3 +491,34 @@ describe("determineVerdict safeBlocked granularity", () => {
     })).toBe("DANGER");
   });
 });
+
+
+describe("low_holders as HARD reason", () => {
+  it("applySafeGateOverride keeps safeBlocked when low_holders is present", () => {
+    const result = applySafeGateOverride({
+      safeBlocked: true,
+      forceRug: false,
+      safeBlockedReasons: ["low_holders"],
+      tokenAgeHours: 500,
+      sourcesAvailableCount: 7,
+      holders: 30,
+      lpBurned: true,
+      goPlusClean: true,
+    });
+    expect(result).toBe(true);
+  });
+
+  it("determineVerdict returns DANGER for low_holders with score 500", () => {
+    expect(determineVerdict({
+      score: 500, forceRug: false, safeBlocked: true,
+      safeBlockedReasons: ["low_holders"], sourcesUsedCount: 5
+    })).toBe("DANGER");
+  });
+
+  it("determineVerdict returns RUG for low_holders with score 300", () => {
+    expect(determineVerdict({
+      score: 300, forceRug: false, safeBlocked: true,
+      safeBlockedReasons: ["low_holders"], sourcesUsedCount: 5
+    })).toBe("RUG");
+  });
+});
