@@ -11,6 +11,7 @@ import type {
 } from "./types";
 import {
   LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS, OFFICIAL_MINTS,
+  LP_UNVERIFIED_MIN_HOLDERS, LP_UNVERIFIED_MIN_LIQUIDITY, LP_UNVERIFIED_MIN_AGE_HOURS,
 } from "./constants";
 import { asNumber, _mean, _std, _pct } from "./math";
 import { makeFlag, getLpLockDurationDays, riskIncludes } from "./helpers";
@@ -143,7 +144,8 @@ export function layerRugCheck(
   rugData: RugCheckSummary | null,
   rugReportData: RugCheckReport | null,
   resolvedMint: string,
-  tokenName?: string | null
+  tokenName?: string | null,
+  maturityContext?: { holders: number | null; liquidity: number; tokenAgeHours: number | null; mintAuthority: boolean; freezeAuthority: boolean; honeypot: boolean }
 ): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
@@ -197,9 +199,22 @@ export function layerRugCheck(
     if (lpDataPresent && !isOfficialMint) {
       // Fix(LP_SAFE_BLOCK): LP not burned or locked MUST block SAFE verdict.
       // Previously penalty-only — rug pulls like VDOR passed through with accessible LP.
-      flags.push(makeFlag("LP not burned or locked — dev can rug liquidity", "warning", 0));
-      penalties.push(0.70);
-      safeBlocked = true; // ← THE KEY FIX
+      // Smart LP classification: mature tokens get lp_unverified instead of hard lp block
+      const ctx = maturityContext;
+      const isMature = ctx
+        && (ctx.holders ?? 0) >= LP_UNVERIFIED_MIN_HOLDERS
+        && ctx.liquidity >= LP_UNVERIFIED_MIN_LIQUIDITY
+        && (ctx.tokenAgeHours ?? 0) >= LP_UNVERIFIED_MIN_AGE_HOURS
+        && !ctx.mintAuthority && !ctx.freezeAuthority && !ctx.honeypot;
+      if (isMature) {
+        flags.push(makeFlag("LP not burned but token is mature and liquid (unverified LP)", "warning", 0));
+        penalties.push(0.85);
+        safeBlocked = true;
+      } else {
+        flags.push(makeFlag("LP not burned or locked — dev can rug liquidity", "warning", 0));
+        penalties.push(0.70);
+        safeBlocked = true;
+      }
     }
   }
   if (rugData.metaMutable === true) {
