@@ -6,6 +6,7 @@ import type {
   SafeGateInput, EstablishedBonusInput, VerdictInput,
 } from "./types";
 import { makeFlag } from "./helpers";
+import { HARD_BLOCK_REASONS } from "./constants";
 
 export function evaluatePostLayerFlags(input: PostLayerFlagsInput): PostLayerFlagsResult {
   const flags: ScanFlag[] = [];
@@ -60,11 +61,7 @@ export function applySafeGateOverride(input: SafeGateInput): boolean {
   // HARD reasons can NEVER be soft-unlocked regardless of age, holders, or source count.
   // 'lp': dev can pull liquidity at any time — fundamentally unacceptable for SAFE verdict.
   // 'deceptive_name': intentional fraud signal, not a maturity issue.
-  const HARD_REASONS = new Set([
-    "lp", "mint", "freeze", "honeypot", "copycat", "deceptive_name",
-    "rug_pattern", "wash_trading", "pump", "bundle", "sniper", "chart",
-  ]);
-  const hasHardReason = input.safeBlockedReasons.some(r => HARD_REASONS.has(r));
+  const hasHardReason = input.safeBlockedReasons.some(r => HARD_BLOCK_REASONS.has(r));
   if (hasHardReason) return true; // Always keep safeBlocked for hard reasons
 
   // Only 'age' and 'holders' are soft reasons that can potentially unlock
@@ -113,12 +110,7 @@ export function determineVerdict(input: VerdictInput): Verdict {
   if (input.safeBlocked) {
     // HARD reasons: 'lp' and 'deceptive_name' added alongside existing hard reasons.
     // A token where LP is not burned can rug at any time — must return DANGER or RUG.
-    const HARD_REASONS = new Set([
-      "lp", "deceptive_name",
-      "honeypot", "mint", "freeze", "bundle", "rug_pattern",
-      "wash_trading", "sniper", "pump", "chart",
-    ]);
-    const hasHardReason = input.safeBlockedReasons?.some(r => HARD_REASONS.has(r));
+      const hasHardReason = input.safeBlockedReasons?.some(r => HARD_BLOCK_REASONS.has(r));
     if (hasHardReason) return input.score >= 400 ? "DANGER" : "RUG";
     // Soft reasons (age/holders) only: tightened from 550 to 700 for CAUTION
     if (input.score >= 700) return "CAUTION";

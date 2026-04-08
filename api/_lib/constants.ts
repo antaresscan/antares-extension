@@ -111,3 +111,14 @@ export const ESTABLISHED_HOLDERS_THRESHOLD    = 5000; // HARDENED: 5000 holders 
 
 // Trust floor for geometric mean — prevents single-layer nuking
 export const TRUST_FLOOR = 0.001;
+
+// ── HARD BLOCK REASONS ────────────────────────────────────────
+// Single source of truth for reasons that force DANGER/RUG regardless of score
+export const HARD_BLOCK_REASONS = new Set([
+  "lp", "deceptive_name",
+  "honeypot", "mint", "freeze", "bundle", "rug_pattern",
+  "wash_trading", "sniper", "pump", "chart",
+]);
+
+// ── EXTERNAL API BASE URLs ───────────────────────────────────
+export const HELIUS_REST_BASE = "https://api.helius.xyz";

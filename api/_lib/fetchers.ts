@@ -9,7 +9,7 @@ import type {
 import { HELIUS_BASE, SOLSCAN_PUBLIC_BASE, SOLSCAN_BASE } from "./constants";
 import { fetchJson, fetchJsonPost } from "./http";
 import { asNumber } from "./math";
-const HELIUS_REST_BASE = "https://api.helius.xyz";
+import { HELIUS_REST_BASE } from "./constants";
 
 
 // ─── HELIUS HELPERS ─────────────────────────────────────────────────────────
