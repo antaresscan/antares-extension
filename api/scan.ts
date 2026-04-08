@@ -239,7 +239,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // 7 layers
     const l1 = layerDexScreener(pair, marketCap, tokenAgeMinutes);
     const l2 = layerRugCheck(rugData, rugReport, resolvedMint, tokenName, {
-      holders: solscanHoldersCount,
+      holders: solscanHoldersCount ?? rugTotalHolders ?? null,
       liquidity: asNumber(pair?.liquidity?.usd),
       tokenAgeHours: solscanTokenAgeHours,
       mintAuthority: rugData?.mintAuthorityEnabled === true,
