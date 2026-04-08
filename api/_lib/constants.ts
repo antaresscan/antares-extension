@@ -106,8 +106,17 @@ export const XV_PENALTY_MINT_AUTH            = 0.70; // -30% if mint authority c
 export const XV_PENALTY_AGE                  = 0.90; // -10% if token age conflicts
 export const XV_PENALTY_HOLDER_CONCENTRATION = 0.80; // -20% if holder concentration conflicts
 export const ESTABLISHED_BONUS_MULTIPLIER    = 1.05; // HARDENED: +5% bonus (was +15%)
-export const ESTABLISHED_AGE_THRESHOLD_HOURS = 2160; // HARDENED: 90 days (was 30 days)
+export const ESTABLISHED_AGE_THRESHOLD_HOURS = 720;  // 30 days — realistic for meme tokens
 export const ESTABLISHED_HOLDERS_THRESHOLD    = 5000; // HARDENED: 5000 holders (was 1000)
 
 // Trust floor for geometric mean — prevents single-layer nuking
 export const TRUST_FLOOR = 0.001;
+
+// ── HARD BLOCK REASONS (single source of truth) ──────────────
+export const HARD_BLOCK_REASONS = new Set([
+  "lp", "deceptive_name", "honeypot", "mint", "freeze",
+  "bundle", "rug_pattern", "wash_trading", "sniper", "pump", "chart", "low_holders",
+]);
+
+// ── EXTERNAL API BASE URLs ───────────────────────────────────
+export const HELIUS_REST_BASE = "https://api.helius.xyz";

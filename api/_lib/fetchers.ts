@@ -6,10 +6,9 @@ import type {
     OHLCVCandle, GeckoTerminalOHLCVResponse,
     RugCheckReport, RugCheckRisk,
 } from "./types";
-import { HELIUS_BASE, SOLSCAN_PUBLIC_BASE, SOLSCAN_BASE } from "./constants";
+import { HELIUS_BASE, SOLSCAN_PUBLIC_BASE, SOLSCAN_BASE, HELIUS_REST_BASE } from "./constants";
 import { fetchJson, fetchJsonPost } from "./http";
 import { asNumber } from "./math";
-const HELIUS_REST_BASE = "https://api.helius.xyz";
 
 
 // ─── HELIUS HELPERS ─────────────────────────────────────────────────────────
