@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  layerDexScreener, layerGoPlus, layerRugCheck, layerHelius,
+  layerChart, layerDexScreener, layerGoPlus, layerRugCheck, layerHelius,
   layerSolscan, layerCrossValidation,
 } from "../api/_lib/layers";
 import type { DexScreenerPair, RugCheckSummary, GoPlusTokenResult, HeliusHolder } from "../api/_lib/types";
@@ -428,5 +428,89 @@ describe("layerCrossValidation", () => {
     ];
     const result = layerCrossValidation(rugData, holders, null, null, null);
     expect(result.trust).toBe(1.0);
+  });
+});
+
+
+describe("layerChart", () => {
+  const mkCandle = (o: number, h: number, l: number, c: number, v: number) => ({
+    ts: Date.now(), o, h, l, c, v,
+  });
+
+  it("returns unavailable when candles array is empty", () => {
+    const r = layerChart([], null, null);
+    expect(r.available).toBe(false);
+    expect(r.source).toBe("chart");
+  });
+
+  it("returns unavailable when fewer than 5 candles", () => {
+    const candles = [mkCandle(1,2,0.5,1.5,100), mkCandle(1.5,2,1,1.8,200)];
+    const r = layerChart(candles, null, null);
+    expect(r.available).toBe(false);
+  });
+
+  it("returns high trust for stable healthy chart", () => {
+    const candles = Array.from({length: 20}, (_, i) => {
+      const base = 1 + i * 0.01;
+      return mkCandle(base, base + 0.02, base - 0.01, base + 0.005, 1000 + i * 10);
+    });
+    const r = layerChart(candles, null, 1440);
+    expect(r.available).toBe(true);
+    expect(r.trust).toBeGreaterThanOrEqual(0);
+  });
+
+  it("detects parabolic pump pattern (>500% run-up)", () => {
+    const candles = Array.from({length: 20}, (_, i) => {
+      const price = 1 * Math.pow(1.15, i);
+      return mkCandle(price * 0.95, price * 1.05, price * 0.9, price, 5000);
+    });
+    const r = layerChart(candles, null, 60);
+    expect(r.available).toBe(true);
+    expect(r.trust).toBeLessThan(100);
+  });
+
+  it("detects post-ATH dump pattern", () => {
+    const up = Array.from({length: 10}, (_, i) => {
+      const price = 1 + i * 0.5;
+      return mkCandle(price - 0.2, price + 0.1, price - 0.3, price, 2000);
+    });
+    const peak = up[up.length - 1].c;
+    const down = Array.from({length: 6}, (_, i) => {
+      const price = peak * (1 - (i + 1) * 0.12);
+      return mkCandle(price + 0.1, price + 0.2, price - 0.1, price, 3000);
+    });
+    const candles = [...up, ...down];
+    const r = layerChart(candles, null, 120);
+    expect(r.available).toBe(true);
+    expect(r.trust).toBeLessThan(70);
+  });
+
+  it("detects wash trading (low volume variance)", () => {
+    const candles = Array.from({length: 20}, () => {
+      return mkCandle(1.0, 1.01, 0.99, 1.0, 100);
+    });
+    const r = layerChart(candles, null, 1440);
+    expect(r.available).toBe(true);
+  });
+
+  it("handles pair liquidity data", () => {
+    const candles = Array.from({length: 20}, (_, i) => {
+      const base = 1 + i * 0.01;
+      return mkCandle(base, base + 0.02, base - 0.01, base + 0.005, 1000);
+    });
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const pair = { liquidity: { usd: 500 }, fdv: 100000 } as unknown as Parameters<typeof layerChart>[1];
+    const r = layerChart(candles, pair, 1440);
+    expect(r.available).toBe(true);
+    expect(r.source).toBe("chart");
+  });
+
+  it("detects blow-off top with high green ratio", () => {
+    const candles = Array.from({length: 20}, (_, i) => {
+      const price = 1 + i * 0.3;
+      return mkCandle(price - 0.1, price + 0.5, price - 0.2, price + 0.2, 10000);
+    });
+    const r = layerChart(candles, null, 30);
+    expect(r.available).toBe(true);
   });
 });
