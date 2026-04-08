@@ -51,6 +51,12 @@ export function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean
   // If ANTARES_EXT_TOKEN is configured, validate it. Otherwise allow all extensions.
   if (origin.startsWith("chrome-extension://")) {
     const expectedToken = process.env.ANTARES_EXT_TOKEN || "";
+  // PROD GUARD: reject all requests if token not configured in production
+  if (!expectedToken && process.env.VERCEL_ENV === "production") {
+    console.error("[SECURITY] ANTARES_EXT_TOKEN is not set in production!");
+    res.status(503).json({ error: "Service misconfigured" });
+    return false;
+  }
     if (expectedToken) {
       const extToken = (req.headers["x-antares-token"] as string) || "";
       if (extToken !== expectedToken) {
