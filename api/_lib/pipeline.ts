@@ -73,7 +73,7 @@ export function applySafeGateOverride(input: SafeGateInput): boolean {
     const ageHours = input.tokenAgeHours ?? 0;
     if (input.tokenAgeHours !== null && ageHours < 48) return true;
     const hasEnoughSources = input.sourcesAvailableCount >= 5;
-    // ALL conditions must be met to unlock: age>48h, 5+ sources, 1000+ holders, LP burned, GoPlus clean
+    // Path 1: Standard unlock — ALL conditions including LP burn
     if (
       (input.tokenAgeHours === null || ageHours > 48) &&
       hasEnoughSources &&
@@ -83,6 +83,19 @@ export function applySafeGateOverride(input: SafeGateInput): boolean {
     ) {
       return false;
     }
+    // Path 2: Established token override — for blue chips where LP is not burned
+    // but the token is clearly legitimate (massive holder base, very old, GoPlus clean).
+    // Tokens like Fartcoin (600k+ holders, 30d+) were stuck in DANGER because
+    // the safe gate required lpBurned to unlock even soft reasons like 'holders'.
+    // This path uses MUCH stricter thresholds to compensate for unburned LP.
+    const isEstablished =
+      (input.tokenAgeHours !== null && ageHours >= 720) && // 30+ days
+      hasEnoughSources &&
+      (input.holders ?? 0) >= 50000 && // 50k+ holders (vs 1k standard)
+      input.goPlusClean;
+    if (isEstablished) {
+      return false;
+    }
   }
 
   // safeBlockedReasons is empty (unclassified) — keep blocked by default
@@ -90,14 +103,14 @@ export function applySafeGateOverride(input: SafeGateInput): boolean {
 }
 
 export function applyEstablishedBonus(input: EstablishedBonusInput): number {
-  // Require 90 days, 5000 holders, LP burned AND GoPlus clean to get bonus
-  if (
+  // Require 90 days, 5000 holders, GoPlus clean. LP burned is preferred but
+  // not required for the bonus if the token is truly established (50k+ holders).
+  const meetsBase =
     input.tokenAgeHours !== null &&
     input.tokenAgeHours > 2160 &&
     (input.holders ?? 0) > 5000 &&
-    input.lpBurned &&
-    input.goPlusClean
-  ) {
+    input.goPlusClean;
+  if (meetsBase && (input.lpBurned || (input.holders ?? 0) >= 50000)) {
     return Math.min(1000, Math.round(input.score * 1.05));
   }
   return input.score;
