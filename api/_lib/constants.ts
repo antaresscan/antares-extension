@@ -119,4 +119,8 @@ export const HARD_BLOCK_REASONS = new Set([
 ]);
 
 // ── EXTERNAL API BASE URLs ───────────────────────────────────
+export const LP_UNVERIFIED_MIN_HOLDERS = 50000;
+export const LP_UNVERIFIED_MIN_LIQUIDITY = 1000000;
+export const LP_UNVERIFIED_MIN_AGE_HOURS = 720;
+
 export const HELIUS_REST_BASE = "https://api.helius.xyz";

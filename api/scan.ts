@@ -238,7 +238,14 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
 
     // 7 layers
     const l1 = layerDexScreener(pair, marketCap, tokenAgeMinutes);
-    const l2 = layerRugCheck(rugData, rugReport, resolvedMint, tokenName);
+    const l2 = layerRugCheck(rugData, rugReport, resolvedMint, tokenName, {
+      holders: solscanHoldersCount,
+      liquidity: asNumber(pair?.liquidity?.usd),
+      tokenAgeHours: solscanTokenAgeHours,
+      mintAuthority: rugData?.mintAuthorityEnabled === true,
+      freezeAuthority: rugData?.freezeAuthorityEnabled === true,
+      honeypot: false, // GoPlus not yet processed; RugCheck mint/freeze covers this
+    });
     const l3 = layerGoPlus(goplus);
     const l4 = layerHelius(resolvedHolderAccounts, totalSupplyUi);
     const l5 = layerSolscan(solscanHoldersCount, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h);

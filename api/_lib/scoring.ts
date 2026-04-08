@@ -44,6 +44,7 @@ export function computeFinalScore(layers: LayerResult[]): number {
 // Without this, LP-flagged tokens had safeBlockedReasons=[] which caused
 // the safe gate to fall through and allow SAFE verdicts on rug-able tokens.
 export const HARD_BLOCK_PATTERNS: Array<[RegExp, SafeBlockedReason]> = [
+  [/unverified LP|LP not burned but token is mature/i, "lp_unverified"],
   [/LP not burned|LP not locked|dev can rug/i, "lp"],           // FIX: LP is now a HARD reason
   [/mint authority/i, "mint"],
   [/freeze authority/i, "freeze"],
@@ -61,7 +62,7 @@ export const HARD_BLOCK_PATTERNS: Array<[RegExp, SafeBlockedReason]> = [
 export function classifySafeBlockedReasons(layers: LayerResult[]): SafeBlockedReason[] {
   const reasons: SafeBlockedReason[] = [];
   const seen: Record<string, boolean> = {};
-  function add(r: SafeBlockedReason) { if (!seen[r]) { seen[r] = true; reasons.push(r); } }
+  function add(r: SafeBlockedReason) { if (r === "lp" && seen["lp_unverified"]) return; if (!seen[r]) { seen[r] = true; reasons.push(r); } }
 
   for (const layer of layers) {
     if (!layer.safeBlocked) continue;

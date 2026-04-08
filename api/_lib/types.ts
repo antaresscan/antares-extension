@@ -28,7 +28,8 @@ export type SafeBlockedReason =
   | "bundle"          // HARD
   | "sniper"          // HARD
     | "chart"            // HARD
-  | "low_holders";     // HARD — tokens with <50 holders
+  | "low_holders"     // HARD — tokens with <50 holders
+  | "lp_unverified"; // SOFT - LP not burned but token is mature and clean
 
 // ─── LAYER RESULT ────────────────────────────────────────────────────────────────────
 export interface LayerResult {
