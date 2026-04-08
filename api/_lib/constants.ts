@@ -106,8 +106,8 @@ export const XV_PENALTY_MINT_AUTH            = 0.70; // -30% if mint authority c
 export const XV_PENALTY_AGE                  = 0.90; // -10% if token age conflicts
 export const XV_PENALTY_HOLDER_CONCENTRATION = 0.80; // -20% if holder concentration conflicts
 export const ESTABLISHED_BONUS_MULTIPLIER    = 1.05; // HARDENED: +5% bonus (was +15%)
-export const ESTABLISHED_AGE_THRESHOLD_HOURS = 2160; // HARDENED: 90 days (was 30 days)
-export const ESTABLISHED_HOLDERS_THRESHOLD    = 5000; // HARDENED: 5000 holders (was 1000)
+export const ESTABLISHED_AGE_THRESHOLD_HOURS = 720; // HARDENED: 30 days (lowered from 90)
+export const ESTABLISHED_HOLDERS_THRESHOLD   = 1000; // HARDENED: 1000 holders (lowered from 5000)
 
 // Trust floor for geometric mean — prevents single-layer nuking
 export const TRUST_FLOOR = 0.001;
