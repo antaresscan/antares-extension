@@ -34,7 +34,7 @@ test.describe('API Security & Hardening', () => {
         request.get(`${BASE}/api/health`)
       );
       const results = await Promise.all(promises);
-      const hasRateLimit = results.some(r => r.status() === 429);
+      const _hasRateLimit = results.some(r => r.status() === 429);
       // Either gets rate-limited or not (both valid in E2E context)
       expect(results.length).toBe(15);
     });
