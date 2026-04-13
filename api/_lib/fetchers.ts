@@ -74,7 +74,7 @@ export async function heliusGetCreatorReputation(
     if (!creator || !key) return null;
     // Use Authorization header instead of query param for security
     const res = await fetchJson(
-        HELIUS_REST_BASE + "/v0/addresses/" + creator + "/transactions?limit=50",
+        HELIUS_REST_BASE + "/v0/addresses/" + creator + "/transactions?limit=200",
         { headers: heliusHeaders(key) }, 6000
     ) as Array<{ type?: string; description?: string }> | null;
     if (!Array.isArray(res)) return null;
