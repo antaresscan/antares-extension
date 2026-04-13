@@ -14,7 +14,7 @@ export async function fetchJson<T = unknown>(url: string, init: RequestInit = {}
       t.clear();
       if (r.status === 429 || r.status === 503) {
         if (attempt < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, 300 * (attempt + 1)));
+          await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
           continue;
         }
       }
@@ -23,7 +23,7 @@ export async function fetchJson<T = unknown>(url: string, init: RequestInit = {}
     } catch (e: unknown) {
       t.clear();
       if (attempt === maxRetries) { console.warn("[antares]", e); return null; }
-      await new Promise(resolve => setTimeout(resolve, 200 * (attempt + 1)));
+      await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
     }
   }
   return null;
@@ -42,7 +42,7 @@ export async function fetchJsonPost<T = unknown>(url: string, body: object, ms =
       t.clear();
       if (r.status === 429 || r.status === 503) {
         if (attempt < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, 300 * (attempt + 1)));
+          await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
           continue;
         }
       }
@@ -51,7 +51,7 @@ export async function fetchJsonPost<T = unknown>(url: string, body: object, ms =
     } catch (e: unknown) {
       t.clear();
       if (attempt === maxRetries) { console.warn("[antares]", e); return null; }
-      await new Promise(resolve => setTimeout(resolve, 200 * (attempt + 1)));
+      await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
     }
   }
   return null;
