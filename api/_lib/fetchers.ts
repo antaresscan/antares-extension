@@ -9,7 +9,6 @@ import type {
 import { HELIUS_BASE, SOLSCAN_PUBLIC_BASE, SOLSCAN_BASE, HELIUS_REST_BASE } from "./constants";
 import { fetchJson, fetchJsonPost } from "./http";
 import { asNumber } from "./math";
-import { catchWithLog } from "./errors";
 import { logger } from "./logger";
 
 
