@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 const BASE = process.env.E2E_BASE_URL || 'https://antares-extension.vercel.app';
 
 test.describe('Privacy Page', () => {
-  test('loads /privacy.html with 200', async ({ page, request }) => {
+  test('loads /privacy.html with 200', async ({ request }) => {
     const r = await request.get(`${BASE}/privacy.html`);
     expect(r.ok()).toBeTruthy();
   });
