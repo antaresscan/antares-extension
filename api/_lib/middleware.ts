@@ -4,6 +4,7 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { CA_RE } from "./constants";
 import { isCorsAllowed, apiError } from "./helpers";
+import { logger } from "./logger";
 
 export const ALLOWED_ORIGINS = [
   "https://dexscreener.com",
@@ -53,7 +54,7 @@ export function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean
     const expectedToken = process.env.ANTARES_EXT_TOKEN || "";
   // PROD GUARD: reject all requests if token not configured in production
   if (!expectedToken && process.env.VERCEL_ENV === "production") {
-    console.error("[SECURITY] ANTARES_EXT_TOKEN is not set in production!");
+    logger.error("middleware", "ANTARES_EXT_TOKEN is not set in production!");
     res.status(503).json({ error: "Service misconfigured" });
     return false;
   }
