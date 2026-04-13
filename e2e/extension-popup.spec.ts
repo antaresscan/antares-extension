@@ -29,6 +29,7 @@ test.describe('Chrome Extension — Popup', () => {
     });
 
     // Wait for service worker to register and get extension ID
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let sw: any;
     if (context.serviceWorkers().length === 0) {
       sw = await context.waitForEvent('serviceworker');
