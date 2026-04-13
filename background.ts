@@ -189,9 +189,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 // ─── EXTENSION TOGGLE (click icon to enable/disable) ────────────────────────
 let extensionEnabled = true
+chrome.storage.local.get(["extensionEnabled"], (r) => {
+  if (typeof r.extensionEnabled === "boolean") extensionEnabled = r.extensionEnabled
+})
 
 chrome.action.onClicked.addListener(async (_tab) => {
   extensionEnabled = !extensionEnabled
+    void chrome.storage.local.set({ extensionEnabled })
   const label = "\u25CF"
   void chrome.action.setBadgeText({ text: label })
   void chrome.action.setBadgeBackgroundColor({ color: "#FFFFFF" })
