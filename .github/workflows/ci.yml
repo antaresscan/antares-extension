@@ -1,11 +1,9 @@
 name: CI
-
 on:
   push:
     branches: [master, "fix/**", "feat/**"]
   pull_request:
     branches: [master]
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -42,11 +40,19 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Run E2E tests
-        run: npx playwright test
+      - name: Run E2E tests (API + Web + Integration + Regression)
+        run: npx playwright test --project=api --project=web-desktop --project=integration
         env:
-          LANDING_URL: https://antares-extension.vercel.app
-              
+          E2E_BASE_URL: https://antares-extension.vercel.app
+
+      - name: Upload E2E test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report
+          path: playwright-report/
+          retention-days: 14
+
       - name: Upload build artifact
         if: github.ref == 'refs/heads/master'
         uses: actions/upload-artifact@v4
