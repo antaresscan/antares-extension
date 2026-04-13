@@ -124,3 +124,28 @@ export const LP_UNVERIFIED_MIN_LIQUIDITY = 1000000;
 export const LP_UNVERIFIED_MIN_AGE_HOURS = 720;
 
 export const HELIUS_REST_BASE = "https://api.helius.xyz";
+
+// ── LAYER THRESHOLDS (extracted from layers.ts) ─────────────────────────────
+// DexScreener liquidity thresholds
+export const LIQ_CRITICAL = 1000;       // <$1k = critical
+export const LIQ_LOW = 5000;            // <$5k = warning
+export const LIQ_MEDIUM = 20000;        // <$20k = info
+// Wash trading
+export const WASH_VOL_LIQ_RATIO = 20;   // vol/liq > 20 = wash trading
+export const HIGH_VOL_LIQ_RATIO = 5;    // vol/liq > 5 = high ratio warning
+// Holder thresholds (Helius)
+export const TOP1_CRITICAL_PCT = 0.30;   // single wallet > 30% = forceRug
+export const TOP1_HIGH_PCT = 0.20;       // single wallet > 20% = critical
+export const TOP1_WARN_PCT = 0.10;       // single wallet > 10% = warning
+export const TOP10_CRITICAL_PCT = 0.80;  // top 10 > 80% = critical
+export const TOP10_WARN_PCT = 0.60;      // top 10 > 60% = warning
+export const TOP10_GOOD_PCT = 0.30;      // top 10 < 30% = well distributed
+// Solscan holder counts
+export const HOLDERS_CRITICAL = 15;      // <15 = very few
+export const HOLDERS_LOW = 50;           // <50 = low
+export const HOLDERS_STRONG = 5000;      // >5000 = strong
+// Chart pattern thresholds
+export const DAMPENING_FACTOR = 0.3;     // applyDiminishingPenalties factor
+// HTTP timeouts (ms)
+export const API_TIMEOUT_DEFAULT = 5000;
+export const API_TIMEOUT_HELIUS = 6000;
