@@ -39,6 +39,14 @@ jobs:
       - name: Build extension
         run: npx plasmo build
 
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        run: npx playwright test
+        env:
+          LANDING_URL: https://antares-extension.vercel.app
+              
       - name: Upload build artifact
         if: github.ref == 'refs/heads/master'
         uses: actions/upload-artifact@v4
