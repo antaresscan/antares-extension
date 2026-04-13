@@ -1,14 +1,14 @@
 // api/_lib/insider-graph.ts — Insider Network Graph builder
 // Analyzes top holder wallets to detect coordinated clusters
 import { fetchJson } from "./helpers";
-import { HELIUS_BASE, HELIUS_REST_BASE } from "./constants";
+import { HELIUS_BASE, HELIUS_REST_BASE, INSIDER_MAX_HOLDERS, INSIDER_MAX_SIGNATURES, INSIDER_GRAPH_CACHE_TTL, INSIDER_GRAPH_CACHE_PREFIX } from "./constants";
 import type { Redis } from "@upstash/redis";
 
-// ─── CONSTANTS (imported from constants.ts where possible) ─────────────────
-const MAX_HOLDERS = 20;           // top N holders to analyze
-const MAX_SIGNATURES = 30;        // signatures per wallet to fetch
-const GRAPH_CACHE_TTL = 300;      // 5 minutes cache
-const GRAPH_CACHE_PREFIX = "graph:";
+// Constants imported from constants.ts
+const MAX_HOLDERS = INSIDER_MAX_HOLDERS;
+const MAX_SIGNATURES = INSIDER_MAX_SIGNATURES;
+const GRAPH_CACHE_TTL = INSIDER_GRAPH_CACHE_TTL;
+const GRAPH_CACHE_PREFIX = INSIDER_GRAPH_CACHE_PREFIX;
 
 // ─── TYPES ─────────────────────────────────────────────────────────────
 export interface GraphNode {
