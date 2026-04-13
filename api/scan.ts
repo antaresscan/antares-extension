@@ -26,7 +26,7 @@ import {
   type CreatorReputation,
 } from "./_lib/fetchers";
 import {
-  DEXSCREENER_BASE, RUGCHECK_BASE, GOPLUS_BASE, LAYER_WEIGHTS,
+  DEXSCREENER_BASE, RUGCHECK_BASE, GOPLUS_BASE, LAYER_WEIGHTS, SCORING_VERSION,
 } from "./_lib/constants";
 import {
   layerDexScreener, layerRugCheck, layerGoPlus, layerHelius,
@@ -342,7 +342,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       freezeAuthority: allLayers.some(l => l.flags.some(f => /freeze authority/i.test(f.label) && f.severity === "critical")),
       lpBurned: rugData?.lpBurned === true,
       candles: candles.slice(-20).map(c => ({ close: c.c })),
-      scoring_version: "7.3.0",
+      scoring_version: SCORING_VERSION,
       fetchedAt: Date.now(),
       requestId,
       aiSummary: aiSummary ?? null,
@@ -353,7 +353,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     void recordRug({ mint: resolvedMint, symbol: sanitizeString(pair?.baseToken?.symbol) ?? null, score, risk, flags, creator: tokenCreator });
     return res.json(result);
   } catch (e) {
-    console.error("[scan v7.3.0]", requestId, e);
+    console.error(`[scan ${SCORING_VERSION}]`, requestId, e);
     Sentry.captureException(e);
     return apiError(res, 500, "Analysis error.");
   }
