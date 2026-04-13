@@ -62,9 +62,16 @@ export function apiError(res: VercelResponse, status: number, message: string, d
 }
 
 export function isCorsAllowed(origin: string, allowedOrigins: string[]): boolean {
-    try { const h = new URL(origin).hostname; return allowedOrigins.some(o => { try { return h === new URL(o).hostname; } catch { return false; } }); } catch { return false; }
+  try {
+    const h = new URL(origin).hostname;
+    return allowedOrigins.some(o => {
+      try { return h === new URL(o).hostname; }
+      catch { return false; }
+    });
+  } catch {
+    return false;
+  }
 }
-
 export function isValidDexScreenerResponse(data: unknown): data is DexScreenerResponse {
   if (!isObject(data)) return false;
   return Array.isArray(data.pairs) || data.pair !== undefined;
