@@ -149,3 +149,12 @@ export const DAMPENING_FACTOR = 0.3;     // applyDiminishingPenalties factor
 // HTTP timeouts (ms)
 export const API_TIMEOUT_DEFAULT = 5000;
 export const API_TIMEOUT_HELIUS = 6000;
+
+// ── SCORING VERSION (single source of truth) ─────────────────
+export const SCORING_VERSION = "7.3.0";
+
+// ── SOFT REASONS (safe gate unlock) ───────────────────────────
+export const SOFT_REASONS: Record<string, boolean> = { age: true, holders: true, lp_unverified: true };
+
+// ── RUG DATABASE ───────────────────────────────────────────
+export const MAX_RUG_INDEX = 5000;  // increased from 500 for production scale
