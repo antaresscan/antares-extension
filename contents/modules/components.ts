@@ -114,21 +114,21 @@ export function attachAnalysisBtn(mint: string) {
     try {
       chrome.tabs.query({ url: `${ANALYSIS_PAGE}*` }, (tabs) => {
         if (chrome.runtime.lastError) {
-          chrome.tabs.create({ url: urlWithHash })
+          void chrome.tabs.create({ url: urlWithHash })
           return
         }
         const existing = tabs.find((t) =>
           typeof t.url === "string" && t.url.includes(`ca=${encodeURIComponent(mint)}`)
         )
         if (existing?.id !== undefined && existing.windowId !== undefined) {
-          chrome.tabs.update(existing.id, { active: true, url: urlWithHash })
-          chrome.windows.update(existing.windowId, { focused: true })
+          void chrome.tabs.update(existing.id, { active: true, url: urlWithHash })
+          void chrome.windows.update(existing.windowId, { focused: true })
         } else {
-          chrome.tabs.create({ url: urlWithHash })
+          void chrome.tabs.create({ url: urlWithHash })
         }
       })
     } catch {
-      chrome.tabs.create({ url: urlWithHash })
+      void chrome.tabs.create({ url: urlWithHash })
     }
   }, { once: true })
 }
