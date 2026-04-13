@@ -9,6 +9,8 @@ import type {
 import { HELIUS_BASE, SOLSCAN_PUBLIC_BASE, SOLSCAN_BASE, HELIUS_REST_BASE } from "./constants";
 import { fetchJson, fetchJsonPost } from "./http";
 import { asNumber } from "./math";
+import { catchWithLog } from "./errors";
+import { logger } from "./logger";
 
 
 // ─── HELIUS HELPERS ─────────────────────────────────────────────────────────
@@ -39,8 +41,8 @@ export async function heliusResolveAccountOwners(
                 const parsed = accounts[i]?.data?.parsed?.info?.owner;
                 return { ...h, owner: parsed ?? h.address };
         });
-    } catch {
-        // Fallback: use address as owner (old behavior)
+    } catch (e) {
+                logger.warn("fetchers", "resolve account owners failed, using fallback", { error: String(e) });
         return holders.map(h => ({ ...h, owner: h.address }));
     }
 }
