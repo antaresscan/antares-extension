@@ -28,7 +28,7 @@ export default defineConfig({
     /* ── API tests (headless, no browser needed) ── */
     {
       name: "api",
-      testMatch: /api[\-.].*\.spec\.ts/,
+      testMatch: /api[-.].*\.spec\.ts/,
     },
     /* ── Landing page + static pages (Chromium) ── */
     {
