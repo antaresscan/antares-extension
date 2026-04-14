@@ -1,4 +1,5 @@
 // api/http.ts — HTTP utility functions extracted from helpers.ts
+import { logger } from "./logger";
 
 export function withTimeout(ms: number) {
   const controller = new AbortController();
@@ -22,7 +23,7 @@ export async function fetchJson<T = unknown>(url: string, init: RequestInit = {}
       return (await r.json()) as T;
     } catch (e: unknown) {
       t.clear();
-      if (attempt === maxRetries) { console.warn("[antares]", e); return null; }
+      if (attempt === maxRetries) { logger.warn("http", "fetchJson failed", { error: String(e) }); return null; }
       await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
     }
   }
@@ -35,7 +36,7 @@ export async function fetchJsonPost<T = unknown>(url: string, body: object, ms =
     try {
       const r = await fetch(url, {
         method: "POST",
-                headers: { "Content-Type": "application/json", ...extraHeaders },
+        headers: { "Content-Type": "application/json", ...extraHeaders },
         body: JSON.stringify(body),
         signal: t.signal,
       });
@@ -50,7 +51,7 @@ export async function fetchJsonPost<T = unknown>(url: string, body: object, ms =
       return (await r.json()) as T;
     } catch (e: unknown) {
       t.clear();
-      if (attempt === maxRetries) { console.warn("[antares]", e); return null; }
+      if (attempt === maxRetries) { logger.warn("http", "fetchJsonPost failed", { error: String(e) }); return null; }
       await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
     }
   }
