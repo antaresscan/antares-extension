@@ -158,3 +158,9 @@ export const SOFT_REASONS: Record<string, boolean> = { age: true, holders: true,
 
 // ── RUG DATABASE ───────────────────────────────────────────
 export const MAX_RUG_INDEX = 5000;  // increased from 500 for production scale
+
+// ── INSIDER GRAPH CONSTANTS ─────────────────────────────────────────
+export const INSIDER_MAX_HOLDERS = 100;
+export const INSIDER_MAX_SIGNATURES = 50;
+export const INSIDER_GRAPH_CACHE_TTL = 300; // 5 minutes
+export const INSIDER_GRAPH_CACHE_PREFIX = "ig:";

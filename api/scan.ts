@@ -40,6 +40,7 @@ import * as Sentry from "@sentry/node";
 import { generateAISummary } from "./_lib/ai-summary";
 
 import { initRugDb, recordRug } from "./_lib/rugdb";
+import { logger } from "./_lib/logger";
 if (process.env.SENTRY_DSN) {
   Sentry.init({ dsn: process.env.SENTRY_DSN, tracesSampleRate: 0.1 });
 }
@@ -129,7 +130,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
         if (dexRetryTyped?.pairs?.[0]) { dexData = dexRetryTyped; pair = dexRetryTyped.pairs[0]; }
         if (rugRetryTyped) rugData = rugRetryTyped;
       } else if (!baseMint) {
-        console.warn(JSON.stringify({ requestId, ca, stage: "mint_resolution_failed" }));
+        logger.warn("scan", "mint resolution failed", { requestId, ca });
       }
     }
 
@@ -285,7 +286,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       tokenAgeHours, sourcesAvailableCount,
     });
     if (newSafeBlocked !== safeBlocked) {
-      console.log(JSON.stringify({ requestId, ca: resolvedMint, stage: "safe_gate_override", reasons: safeBlockedReasons }));
+      logger.info("scan", "safe gate override", { requestId, ca: resolvedMint, reasons: safeBlockedReasons });
     }
     safeBlocked = newSafeBlocked;
 
@@ -294,7 +295,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
 
     const newScore = applyEstablishedBonus({ score, tokenAgeHours, holders, lpBurned, goPlusClean });
     if (newScore !== score) {
-      console.log(JSON.stringify({ requestId, ca: resolvedMint, stage: "established_bonus_applied", score: newScore }));
+      logger.info("scan", "established bonus applied", { requestId, ca: resolvedMint, score: newScore });
     }
     score = newScore;
 
@@ -353,7 +354,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     void recordRug({ mint: resolvedMint, symbol: sanitizeString(pair?.baseToken?.symbol) ?? null, score, risk, flags, creator: tokenCreator });
     return res.json(result);
   } catch (e) {
-    console.error(`[scan ${SCORING_VERSION}]`, requestId, e);
+    logger.error("scan", "analysis error", { requestId, version: SCORING_VERSION, error: String(e) });
     Sentry.captureException(e);
     return apiError(res, 500, "Analysis error.");
   }

@@ -1,6 +1,7 @@
 // api/cache.ts — Redis scan cache logic
 import { Redis } from "@upstash/redis";
 import { computeCacheTTL } from "./helpers";
+import { logger } from "./logger";
 
 let scanCacheRedis: Redis | null = null;
 
@@ -18,7 +19,7 @@ export async function getCachedResult<T = unknown>(ca: string, requestId: string
     const result = await scanCacheRedis.get<T>(`antares:v2:${ca}`);
     return result ?? null;
   } catch (e: unknown) {
-    console.warn("[antares] cache miss or Redis error", requestId, e);
+        logger.warn("cache", "cache miss or Redis error", { requestId, error: String(e) });
     return null;
   }
 }
@@ -27,6 +28,6 @@ export function setCachedResult(ca: string, result: object, tokenAgeMinutes: num
   if (!scanCacheRedis) return;
   const ttl = computeCacheTTL(tokenAgeMinutes);
   scanCacheRedis.setex(`antares:v2:${ca}`, ttl, result).catch((e: unknown) => {
-    console.warn("[antares] Redis cache write failed", e);
+        logger.warn("cache", "Redis cache write failed", { error: String(e) });
   });
 }
