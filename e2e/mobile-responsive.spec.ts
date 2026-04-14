@@ -1,4 +1,4 @@
-import { test, expect, devices } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 const BASE = process.env.E2E_BASE_URL || 'https://antares-extension.vercel.app';
 
