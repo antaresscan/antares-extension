@@ -6,7 +6,7 @@ import type {
   SafeGateInput, EstablishedBonusInput, VerdictInput,
 } from "./types";
 import { makeFlag } from "./helpers";
-import { HARD_BLOCK_REASONS } from "./constants";
+import { HARD_BLOCK_REASONS, SOFT_REASONS } from "./constants";
 
 export function evaluatePostLayerFlags(input: PostLayerFlagsInput): PostLayerFlagsResult {
   const flags: ScanFlag[] = [];
@@ -65,7 +65,7 @@ export function applySafeGateOverride(input: SafeGateInput): boolean {
   if (hasHardReason) return true; // Always keep safeBlocked for hard reasons
 
   // Only 'age' and 'holders' are soft reasons that can potentially unlock
-  const SOFT_REASONS: Record<string, boolean> = { age: true, holders: true, lp_unverified: true };
+  // SOFT_REASONS imported from constants.ts
   const onlySoftReasons = input.safeBlockedReasons.length > 0 &&
     input.safeBlockedReasons.every(r => SOFT_REASONS[r] === true);
 
