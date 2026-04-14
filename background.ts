@@ -164,11 +164,11 @@ const handlers: Record<string, MessageHandler> = {
     })
   },
 
-      GET_HISTORY: (_msg, sender, sendResponse) => {
-      if (sender.id !== chrome.runtime.id) {
-        sendResponse({ ok: false, error: "Unauthorized sender" })
-        return
-      }
+    GET_HISTORY: (_msg, sender, sendResponse) => {
+    if (sender.id !== chrome.runtime.id) {
+      sendResponse({ ok: false, error: "Unauthorized sender" })
+      return
+    }
     try {
       chrome.storage.local.get([config.historyStorageKey], (result) => {
         if (chrome.runtime.lastError) {
