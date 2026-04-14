@@ -52,7 +52,7 @@ jobs:
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
       - name: Run E2E tests (API + Web + Integration + Regression)
-              if: steps.e2e-health.outputs.skip != 'true'
+              if: ${{ steps.e2e-health.outputs.skip != 'true' }}
         run: npx playwright test --project=api --project=web-desktop --project=integration
         env:
           E2E_BASE_URL: https://antares-extension.vercel.app
