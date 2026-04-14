@@ -5,6 +5,7 @@ import { state, scanCache } from "./state"
 import { getCached, saveToLS } from "./cache"
 import { getBox, showBox, attachClose, triggerResultAnimations, buildHeader, buildResult } from "./components"
 import { scanRateLimiter } from "../../shared/rate-limit"
+import { logger } from "../../shared/logger"
 
 export function isValid(addr: string): boolean {
   if (addr.length < 32 || addr.length > 44) return false
@@ -23,7 +24,7 @@ export function scheduleRescanIfPriceCrash(data: ScanResponseData, ca: string) {
       state.rescanTimer = null
       // Invalidate cache so rescan hits the API
       scanCache.delete(ca)
-      try { localStorage.removeItem(LS_PREFIX + ca) } catch (e: unknown) { console.warn("[antares]", e) }
+      try { localStorage.removeItem(LS_PREFIX + ca) } catch (e: unknown) { logger.warn("scanner", "Failed to remove LS cache", e) }
       // Force rescan
       state.lastCA = ""
       state.manuallyDismissed = false
@@ -87,7 +88,7 @@ export async function scan(ca: string) {
 
   // Client-side rate limiting to prevent API flooding
   if (!scanRateLimiter.tryAcquire()) {
-    console.warn("[antares] scan rate-limited, retry after", scanRateLimiter.getRetryAfterMs(), "ms")
+    logger.warn("scanner", "scan rate-limited, retry after", scanRateLimiter.getRetryAfterMs())
     return
   }
 
@@ -122,18 +123,20 @@ export async function scan(ca: string) {
   const controller = new AbortController()
   state.currentScanController = controller
   if (state.boxEl) state.boxEl.className = "box"
+
   el.innerHTML = `
-    <div class="topbar" style="background:linear-gradient(90deg,transparent,#3a3a3f,transparent)"></div>
-    ${buildHeader()}
-    <div class="skel">
-      <div class="skel-verdict"></div>
-      <div class="skel-bar"></div>
-      <div class="skel-line"></div>
-      <div class="skel-line"></div>
-      <div class="skel-line"></div>
-    </div>
+  <div class="topbar" style="background:linear-gradient(90deg,transparent,#3a3a3f,transparent)"></div>
+  ${buildHeader()}
+  <div class="skel">
+    <div class="skel-verdict"></div>
+    <div class="skel-bar"></div>
+    <div class="skel-line"></div>
+    <div class="skel-line"></div>
+    <div class="skel-line"></div>
+  </div>
   `
   showBox(); attachClose()
+
   try {
     const res = await fetchWithRetry(`${API}?ca=${ca}`, controller.signal)
     if (controller.signal.aborted) return
@@ -150,7 +153,7 @@ export async function scan(ca: string) {
     })
   } catch (e: unknown) {
     if (controller.signal.aborted) return
-    console.warn("[antares] scan failed after retries:", e)
+    logger.warn("scanner", "scan failed after retries", e)
     try { Sentry.captureException(e) } catch { /* Sentry not initialized */ }
     // Silent failure: hide the box instead of showing an error to the user.
     // The scan will be retried automatically on next navigation or page change.
