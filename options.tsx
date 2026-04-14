@@ -37,7 +37,7 @@ function Options() {
               setAutoRescan(e.target.checked);
               void chrome.storage.local.set({ autoRescan: e.target.checked });
             }} />
-          {" "}Auto-rescan on price crash (>30% drop in 1h)
+          {" "}Auto-rescan on price crash (&gt;30% drop in 1h)
         </label>
       </div>
       <h2>About</h2>
