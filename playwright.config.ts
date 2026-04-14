@@ -25,28 +25,31 @@ export default defineConfig({
     trace: IS_CI ? "retain-on-failure" : "off",
   },
   projects: [
-    /* ── API tests (headless, no browser needed) ── */
+    /* -- API tests (headless, no browser needed) -- */
     {
       name: "api",
       testMatch: /api[-.].*\.spec\.ts/,
     },
-    /* ── Landing page + static pages (Chromium) ── */
+    /* -- Web pages (Desktop Chrome) -- */
     {
       name: "web-desktop",
-      testMatch: /(?:landing|token-page|privacy-page).*\.spec\.ts/,
+      testMatch:
+        /(?:landing|token-page|privacy-page|seo-meta|accessibility|navigation|performance).*\.spec\.ts/,
       use: { ...devices["Desktop Chrome"] },
     },
+    /* -- Mobile viewport tests -- */
     {
       name: "web-mobile",
-      testMatch: /landing\.spec\.ts/,
+      testMatch: /(?:landing|mobile-responsive)\.spec\.ts/,
       use: { ...devices["Pixel 7"] },
     },
+    /* -- Tablet viewport -- */
     {
       name: "web-tablet",
       testMatch: /landing\.spec\.ts/,
       use: { ...devices["iPad (gen 7)"] },
     },
-    /* ── Chrome Extension tests (persistent context) ── */
+    /* -- Chrome Extension tests (persistent context) -- */
     {
       name: "extension",
       testMatch: /extension.*\.spec\.ts/,
@@ -63,10 +66,11 @@ export default defineConfig({
         },
       },
     },
-    /* ── Integration / Regression tests ── */
+    /* -- Integration / Regression / Cross-cutting tests -- */
     {
       name: "integration",
-      testMatch: /(?:scan-integration|regression).*\.spec\.ts/,
+      testMatch:
+        /(?:scan-integration|regression|error-handling|security-headers)\.spec\.ts/,
     },
   ],
 });
