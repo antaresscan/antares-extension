@@ -104,7 +104,7 @@ export function getClientIp(req: VercelRequest): string {
 export async function checkRateLimit(res: VercelResponse, ip: string): Promise<boolean> {
   // Fail-closed: if Redis was configured but limiters are null (init failed), block requests
   if (redisConfigured && !ratelimit) {
-    console.warn("[antares] Rate limiter unavailable — fail-closed");
+    logger.warn("middleware", "Rate limiter unavailable — fail-closed");
     apiError(res, 503, "Service temporarily unavailable. Please retry.");
     return false;
   }
