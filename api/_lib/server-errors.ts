@@ -1,4 +1,4 @@
-// api/_lib/errors.ts — Custom error class for Antares
+// api/_lib/server-errors.ts — Server-side error class for Antares API
 import { logger } from "./logger";
 
 export class AntaresError extends Error {
