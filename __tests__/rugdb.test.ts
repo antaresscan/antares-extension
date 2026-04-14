@@ -153,7 +153,7 @@ describe("rugdb", () => {
       mockGet.mockResolvedValueOnce(null);
       mockSet.mockResolvedValueOnce("OK");
       mockZadd.mockResolvedValueOnce(1);
-      mockZcard.mockResolvedValueOnce(600);
+      mockZcard.mockResolvedValueOnce(6000);
       mockZremrangebyrank.mockResolvedValueOnce(100);
 
       await recordRug({

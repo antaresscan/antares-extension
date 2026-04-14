@@ -1,6 +1,8 @@
 // api/_lib/rugdb.ts — Rug Database: stores flagged tokens in Redis
 import type { Redis } from "@upstash/redis";
 import type { ScanFlag, Verdict } from "./types";
+import { MAX_RUG_INDEX } from "./constants";
+import { logger } from "./logger";
 
 export interface RugEntry {
   mint: string;
@@ -16,7 +18,6 @@ export interface RugEntry {
 const RUG_PREFIX = "rug:";
 const RUG_INDEX = "rug:index";
 const RUG_TTL_SECONDS = 90 * 24 * 3600; // 90 days
-const MAX_RUG_INDEX = 500; // max entries in the index
 
 let redis: Redis | null = null;
 
@@ -79,9 +80,7 @@ export async function recordRug(data: {
     // Trim index to prevent unbounded growth
     const count = await redis.zcard(RUG_INDEX);
     if (count > MAX_RUG_INDEX * 0.8) {
-      console.warn(
-        `[rugdb] RugDB at ${Math.round((count / MAX_RUG_INDEX) * 100)}% capacity (${count}/${MAX_RUG_INDEX})`
-      );
+      logger.warn("rugdb", "RugDB capacity warning", { count, max: MAX_RUG_INDEX });
     }
     if (count > MAX_RUG_INDEX) {
       await redis.zremrangebyrank(RUG_INDEX, 0, count - MAX_RUG_INDEX - 1);
