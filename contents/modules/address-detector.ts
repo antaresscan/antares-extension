@@ -3,6 +3,7 @@ import { resetState } from "./components"
 import { scan } from "./scanner"
 import { getAdapter } from "./adapters"
 import type { SiteAdapter } from "./adapters"
+import { logger } from "../../shared/logger"
 
 /**
  * The active adapter for the current site.
@@ -14,7 +15,7 @@ let activeAdapter: SiteAdapter | null = null
 function adapter(): SiteAdapter {
   if (!activeAdapter) {
     activeAdapter = getAdapter(window.location.hostname)
-    console.log(`[antares] Using adapter: ${activeAdapter.name}`)
+    logger.info(`Using adapter: ${activeAdapter.name}`)
   }
   return activeAdapter
 }
