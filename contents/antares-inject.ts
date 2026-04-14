@@ -23,6 +23,7 @@ import { state } from "./modules/state"
 import { hydrateCacheFromLS } from "./modules/cache"
 import { createHost, hideBox } from "./modules/components"
 import { poll, setupNavListeners, getInitialDelay } from "./modules/address-detector"
+import { logger } from "../shared/logger"
 
 /**
  * GUARD: Prevent double injection via a DOM attribute on <html>.
@@ -39,7 +40,7 @@ import { poll, setupNavListeners, getInitialDelay } from "./modules/address-dete
 const GUARD = "data-antares-init"
 
 if (document.documentElement.hasAttribute(GUARD)) {
-  console.log("[antares] Already injected, skipping duplicate")
+  logger.info("Already injected, skipping duplicate")
 } else {
   document.documentElement.setAttribute(GUARD, "1")
 
