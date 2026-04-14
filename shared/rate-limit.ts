@@ -40,4 +40,3 @@ import { config } from "./config"
 
 // Use centralized config values for rate limiting
 export const scanRateLimiter = new RateLimiter(config.rateLimitMaxScans, config.rateLimitWindowMs)
-export const scanRateLimiter = new RateLimiter(10, 60_000)
