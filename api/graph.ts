@@ -7,6 +7,7 @@ import { heliusGetLargestAccounts, heliusGetTokenSupply } from "./_lib/fetchers"
 import { LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS } from "./_lib/constants";
 import { buildInsiderGraph, initGraphCache } from "./_lib/insider-graph";
 import type { HeliusHolder } from "./_lib/types";
+import { logger } from "./_lib/logger";
 
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
   const redis = new Redis({
@@ -14,7 +15,7 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
     token: process.env.UPSTASH_REDIS_REST_TOKEN,
   });
   initGraphCache(redis);
-    initRateLimiters(redis);
+  initRateLimiters(redis);
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -23,7 +24,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!corsOk) return apiError(res, 403, "Origin not allowed.");
   if (req.method !== "GET") return apiError(res, 405, "Method not allowed.");
 
-    // Dedicated rate limiting for /api/graph (expensive Helius calls)
+  // Dedicated rate limiting for /api/graph (expensive Helius calls)
   const ip = getClientIp(req);
   const allowed = await checkRateLimit(res, ip);
   if (!allowed) return;
@@ -54,7 +55,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
     return res.json(graph);
   } catch (e) {
-    console.error("[graph]", e);
+    logger.error("graph", "Graph analysis failed", { error: String(e) });
     return apiError(res, 500, "Graph analysis failed.");
   }
 }
