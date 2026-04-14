@@ -1,30 +1,36 @@
 // api/_lib/insider-graph.ts — Insider Network Graph builder
 // Analyzes top holder wallets to detect coordinated clusters
 import { fetchJson } from "./helpers";
-import { HELIUS_BASE } from "./constants";
+import { HELIUS_BASE, HELIUS_REST_BASE, INSIDER_MAX_HOLDERS, INSIDER_MAX_SIGNATURES, INSIDER_GRAPH_CACHE_TTL, INSIDER_GRAPH_CACHE_PREFIX } from "./constants";
 import type { Redis } from "@upstash/redis";
+
+// Constants imported from constants.ts
+const MAX_HOLDERS = INSIDER_MAX_HOLDERS;
+const MAX_SIGNATURES = INSIDER_MAX_SIGNATURES;
+const GRAPH_CACHE_TTL = INSIDER_GRAPH_CACHE_TTL;
+const GRAPH_CACHE_PREFIX = INSIDER_GRAPH_CACHE_PREFIX;
 
 // ─── TYPES ─────────────────────────────────────────────────────────────
 export interface GraphNode {
-  id: string;         // wallet address (truncated for display)
-  address: string;    // full wallet address
-  holdings: number;   // token balance (UI amount)
-  pctSupply: number;  // percentage of total supply
-  isLP: boolean;      // is this a known LP/program address
-  label?: string;     // optional label ("Creator", "LP", etc.)
+  id: string;          // wallet address (truncated for display)
+  address: string;     // full wallet address
+  holdings: number;    // token balance (UI amount)
+  pctSupply: number;   // percentage of total supply
+  isLP: boolean;       // is this a known LP/program address
+  label?: string;      // optional label ("Creator", "LP", etc.)
 }
 
 export interface GraphEdge {
-  source: string;     // wallet address
-  target: string;     // wallet address
-  weight: number;     // transfer volume between the two
-  txCount: number;    // number of transactions
+  source: string;      // wallet address
+  target: string;      // wallet address
+  weight: number;      // transfer volume between the two
+  txCount: number;     // number of transactions
 }
 
 export interface InsiderCluster {
   wallets: string[];
-  totalPct: number;   // combined supply percentage
-  label: string;      // "Cluster A", "Insider Group 1", etc.
+  totalPct: number;    // combined supply percentage
+  label: string;       // "Cluster A", "Insider Group 1", etc.
 }
 
 export interface InsiderGraphResult {
@@ -35,19 +41,13 @@ export interface InsiderGraphResult {
     totalHolders: number;
     analyzedWallets: number;
     clusterCount: number;
-    insiderPct: number;   // total % held by clustered wallets
+    insiderPct: number;  // total % held by clustered wallets
   };
   cachedAt: number;
 }
 
-// ─── CONFIG ────────────────────────────────────────────────────────────
-const MAX_HOLDERS = 20;           // top N holders to analyze
-const MAX_SIGNATURES = 30;        // signatures per wallet to fetch
-const GRAPH_CACHE_TTL = 300;      // 5 minutes cache
-const GRAPH_CACHE_PREFIX = "graph:";
-
+// ─── CACHE ─────────────────────────────────────────────────────────────
 let redis: Redis | null = null;
-
 export function initGraphCache(r: Redis): void {
   redis = r;
 }
@@ -106,10 +106,12 @@ async function getWalletSignatures(
   wallet: string, apiKey: string
 ): Promise<string[]> {
   try {
-    const url = `${HELIUS_BASE}/?api-key=${apiKey}`;
-    const res = await fetchJson(url, {
+    const res = await fetchJson(HELIUS_BASE, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
       body: JSON.stringify({
         jsonrpc: "2.0", id: 1,
         method: "getSignaturesForAddress",
@@ -128,10 +130,12 @@ async function parseTransactions(
 ): Promise<HeliusParsedTx[]> {
   if (!signatures.length) return [];
   try {
-    const url = `https://api.helius.xyz/v0/transactions?api-key=${apiKey}`;
-    const res = await fetchJson(url, {
+    const res = await fetchJson(`${HELIUS_REST_BASE}/v0/transactions`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
       body: JSON.stringify({ transactions: signatures.slice(0, 20) }),
     }, 8000);
     return Array.isArray(res) ? res : [];
@@ -204,7 +208,6 @@ export async function buildInsiderGraph(
           txCount: 1,
         });
       }
-
       // Union wallets that transact with each other
       uf.union(from, to);
     }
@@ -230,7 +233,6 @@ export async function buildInsiderGraph(
       totalPct: Math.round(totalPct * 100) / 100,
       label: `Insider Group ${clusterIndex}`,
     });
-
     // Label nodes in clusters
     for (const addr of members) {
       const node = nodeMap.get(addr);

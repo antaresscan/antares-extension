@@ -6,10 +6,10 @@ import type {
     OHLCVCandle, GeckoTerminalOHLCVResponse,
     RugCheckReport, RugCheckRisk,
 } from "./types";
-import { HELIUS_BASE, SOLSCAN_PUBLIC_BASE, SOLSCAN_BASE } from "./constants";
+import { HELIUS_BASE, SOLSCAN_PUBLIC_BASE, SOLSCAN_BASE, HELIUS_REST_BASE } from "./constants";
 import { fetchJson, fetchJsonPost } from "./http";
 import { asNumber } from "./math";
-const HELIUS_REST_BASE = "https://api.helius.xyz";
+import { logger } from "./logger";
 
 
 // ─── HELIUS HELPERS ─────────────────────────────────────────────────────────
@@ -40,8 +40,8 @@ export async function heliusResolveAccountOwners(
                 const parsed = accounts[i]?.data?.parsed?.info?.owner;
                 return { ...h, owner: parsed ?? h.address };
         });
-    } catch {
-        // Fallback: use address as owner (old behavior)
+    } catch (e) {
+                logger.warn("fetchers", "resolve account owners failed, using fallback", { error: String(e) });
         return holders.map(h => ({ ...h, owner: h.address }));
     }
 }
@@ -75,7 +75,7 @@ export async function heliusGetCreatorReputation(
     if (!creator || !key) return null;
     // Use Authorization header instead of query param for security
     const res = await fetchJson(
-        HELIUS_REST_BASE + "/v0/addresses/" + creator + "/transactions?limit=50",
+        HELIUS_REST_BASE + "/v0/addresses/" + creator + "/transactions?limit=200",
         { headers: heliusHeaders(key) }, 6000
     ) as Array<{ type?: string; description?: string }> | null;
     if (!Array.isArray(res)) return null;

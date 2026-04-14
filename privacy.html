@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Antares — Privacy Policy</title>
+<meta name="description" content="Privacy policy for the Antares Chrome extension.">
+<meta property="og:title" content="Antares — Privacy Policy">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://antares-extension.vercel.app/privacy.html">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:#0a0a0f;color:#c4c4cc;font-family:"IBM Plex Mono",monospace;font-size:15px;line-height:1.8;padding:2rem 1rem}
+.container{max-width:780px;margin:0 auto}
+h1{font-family:"Bebas Neue",sans-serif;font-size:2.6rem;color:#00ffa3;margin-bottom:.5rem;letter-spacing:2px}
+.updated{color:#666;font-size:.8rem;margin-bottom:2rem}
+h2{font-family:"Bebas Neue",sans-serif;font-size:1.5rem;color:#e0e0e0;margin:2rem 0 .8rem;letter-spacing:1px}
+p,ul{margin-bottom:1rem}
+ul{padding-left:1.5rem}
+li{margin-bottom:.4rem}
+a{color:#00ffa3;text-decoration:none}
+a:hover{text-decoration:underline}
+.back{display:inline-block;margin-top:2rem;padding:.6rem 1.4rem;border:1px solid #00ffa3;color:#00ffa3;border-radius:4px;font-size:.85rem;transition:all .2s}
+.back:hover{background:#00ffa3;color:#0a0a0f;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Privacy Policy</h1>
+<p class="updated">Last updated: April 8, 2025</p>
+
+<h2>1. Overview</h2>
+<p>Antares (“the Extension”) is a browser extension that scans Solana token pages for potential scam indicators. Your privacy is important to us. This policy explains what data we collect, how we use it, and your rights.</p>
+
+<h2>2. Data We Collect</h2>
+<p>Antares collects <strong>only</strong> the following data:</p>
+<ul>
+<li><strong>Solana token contract addresses</strong> detected on pages you visit (e.g. pump.fun, Raydium, Jupiter). These addresses are sent to our API to run security analysis.</li>
+<li><strong>No personal data</strong> is collected: no names, emails, wallet addresses, IP addresses, or browsing history.</li>
+<li><strong>No cookies or trackers</strong> are used.</li>
+</ul>
+
+<h2>3. How We Use Data</h2>
+<p>Token addresses are used exclusively to:</p>
+<ul>
+<li>Query public blockchain APIs (GoPlus, RugCheck, Helius, DexScreener, Solscan) for security data.</li>
+<li>Compute a risk score displayed in the extension popup.</li>
+<li>Cache results temporarily (up to 5 minutes) to reduce API calls.</li>
+</ul>
+<p>We do not sell, share, or monetize any data.</p>
+
+<h2>4. Third-Party APIs</h2>
+<p>The Extension sends token addresses to the following third-party services:</p>
+<ul>
+<li>GoPlus Security API</li>
+<li>RugCheck API</li>
+<li>Helius RPC</li>
+<li>DexScreener API</li>
+<li>Solscan Public API</li>
+</ul>
+<p>Each service has its own privacy policy. No user-identifiable information is included in these requests.</p>
+
+<h2>5. Data Storage</h2>
+<p>Antares does not store any data on your device beyond the default Chrome extension storage for user preferences (theme, settings). Server-side caching is ephemeral (max 5 minutes) and contains only token analysis results, not user data.</p>
+
+<h2>6. Permissions</h2>
+<p>The Extension requests the following Chrome permissions:</p>
+<ul>
+<li><strong>activeTab</strong>: To detect Solana token addresses on the current page.</li>
+<li><strong>storage</strong>: To save user preferences locally.</li>
+</ul>
+
+<h2>7. Children’s Privacy</h2>
+<p>Antares is not directed at children under 13. We do not knowingly collect data from children.</p>
+
+<h2>8. Changes</h2>
+<p>We may update this policy. Changes will be posted on this page with a revised date.</p>
+
+<h2>9. Contact</h2>
+<p>Questions? Reach us at <a href="mailto:lennypierrepro@gmail.com">lennypierrepro@gmail.com</a>.</p>
+
+<a href="/token.html" class="back">&larr; Back to Antares</a>
+</div>
+</body>
+</html>

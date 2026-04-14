@@ -11,6 +11,7 @@ import type {
 } from "./types";
 import {
   LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS, OFFICIAL_MINTS,
+  LP_UNVERIFIED_MIN_HOLDERS, LP_UNVERIFIED_MIN_LIQUIDITY, LP_UNVERIFIED_MIN_AGE_HOURS,
 } from "./constants";
 import { asNumber, _mean, _std, _pct } from "./math";
 import { makeFlag, getLpLockDurationDays, riskIncludes } from "./helpers";
@@ -63,7 +64,6 @@ export function layerDexScreener(
   else if (liq < 5000) { flags.push(makeFlag("Low liquidity (<$5k)", "warning", 0)); penalties.push(0.65); }
   else if (liq < 20000) { flags.push(makeFlag("Liquidity < $20k", "info", 0)); penalties.push(0.90); }
 
-  // Fix: liq=0 with volume is suspicious (abandoned pool / exploit)
   if (liq === 0 && vol > 10000) {
     flags.push(makeFlag("Volume with zero liquidity — abandoned pool", "critical", 0));
     penalties.push(0.10); forceRug = true; safeBlocked = true;
@@ -113,12 +113,40 @@ export function layerDexScreener(
   if (txns5m < 5 && mc > 50000 && ageMinutes < 1440) { flags.push(makeFlag("Low 5m transactions vs market cap", "warning", 0)); penalties.push(0.88); }
   if ((sells5m === 0 && buys5m > 0 && txns5m > 5) || (sells5m > 0 && buys5m > sells5m * 5)) { flags.push(makeFlag("Buy/sell imbalance (coordinated pump)", "warning", 0)); penalties.push(0.85); }
   if (pc24 < -80) { flags.push(makeFlag("Brutal dump 24h (-80%)", "critical", 0)); penalties.push(0.35); }
+
+  // Fix(EXTREME_PUMP_24H): Tokens with +1000% to +5000% 24h are exit traps — TRAP, KERMIT, HOUSETOUR pattern
+  // DeFade flags these as HIGH/CRITICAL risk; Antares was letting them pass as SAFE
+  if (pc24 > 5000) {
+    flags.push(makeFlag(`Extreme 24h pump +${Math.round(pc24)}% — exit liquidity trap`, "critical", 0));
+    penalties.push(0.05); forceRug = true; safeBlocked = true;
+  } else if (pc24 > 1000) {
+    flags.push(makeFlag(`Extreme 24h pump +${Math.round(pc24)}% — high risk exit trap`, "critical", 0));
+    penalties.push(0.15); safeBlocked = true;
+  } else if (pc24 > 500 && ageMinutes < 1440) {
+    flags.push(makeFlag(`Large 24h pump +${Math.round(pc24)}% on token <24h`, "warning", 0));
+    penalties.push(0.55); safeBlocked = true;
+  }
   trust = applyDiminishingPenalties(trust, penalties);
   return { source: "dexscreener", trust: Math.max(0, trust), available: true, flags, forceRug, safeBlocked };
 }
 
 // ═══ LAYER 2 — RugCheck ═══════════════════════════════════════════════════════
-export function layerRugCheck(rugData: RugCheckSummary | null, rugReportData: RugCheckReport | null, resolvedMint: string): LayerResult {
+
+// Fix(DECEPTIVE_NAME): Tokens impersonating real financial institutions
+const DECEPTIVE_NAME_PATTERNS: RegExp[] = [
+  /\bvanguard\b/i, /\bblackrock\b/i, /\bgoldman\b/i, /\bfederal reserve\b/i,
+  /\bjpmorgan\b/i, /\bmorgan stanley\b/i, /\bfidelity\b/i, /\bcitadel\b/i,
+  /\bsequoia\b/i, /\ba16z\b/i, /\bberkshire\b/i, /\bdeutsche bank\b/i,
+  /\bcredit suisse\b/i, /\bubs group\b/i, /\braymond james\b/i,
+];
+
+export function layerRugCheck(
+  rugData: RugCheckSummary | null,
+  rugReportData: RugCheckReport | null,
+  resolvedMint: string,
+  tokenName?: string | null,
+  maturityContext?: { holders: number | null; liquidity: number; tokenAgeHours: number | null; mintAuthority: boolean; freezeAuthority: boolean; honeypot: boolean }
+): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
   const penalties: number[] = [];
@@ -128,6 +156,16 @@ export function layerRugCheck(rugData: RugCheckSummary | null, rugReportData: Ru
     flags: [makeFlag("RugCheck unavailable", "info", 0)],
     forceRug: false, safeBlocked: false,
   };
+
+  // Fix(DECEPTIVE_NAME): Flag tokens impersonating real-world financial institutions
+  if (tokenName) {
+    const isDeceptive = DECEPTIVE_NAME_PATTERNS.some(p => p.test(tokenName));
+    if (isDeceptive) {
+      flags.push(makeFlag(`Deceptive name — impersonates real institution: "${tokenName}"`, "critical", 0));
+      penalties.push(0.20); safeBlocked = true;
+    }
+  }
+
   const bundleInReport = riskIncludes(rugReportData, /bundle/i);
   const bundledPct = bundleInReport ? extractBundlePct(rugReportData) : 0;
   if (bundleInReport && bundledPct > 0.20) {
@@ -159,11 +197,26 @@ export function layerRugCheck(rugData: RugCheckSummary | null, rugReportData: Ru
       typeof rugData.lockDurationDays === "number";
     const isOfficialMint = OFFICIAL_MINTS.has(resolvedMint);
     if (lpDataPresent && !isOfficialMint) {
-      flags.push(makeFlag("LP not burned or locked", "warning", 0));
-      penalties.push(0.70);
+      // Fix(LP_SAFE_BLOCK): LP not burned or locked MUST block SAFE verdict.
+      // Previously penalty-only — rug pulls like VDOR passed through with accessible LP.
+      // Smart LP classification: mature tokens get lp_unverified instead of hard lp block
+      const ctx = maturityContext;
+      const isMature = ctx
+        && (ctx.holders ?? 0) >= LP_UNVERIFIED_MIN_HOLDERS
+        && ctx.liquidity >= LP_UNVERIFIED_MIN_LIQUIDITY
+        && (ctx.tokenAgeHours ?? 0) >= LP_UNVERIFIED_MIN_AGE_HOURS
+        && !ctx.mintAuthority && !ctx.freezeAuthority && !ctx.honeypot;
+      if (isMature) {
+        flags.push(makeFlag("LP not burned but token is mature and liquid (unverified LP)", "warning", 0));
+        penalties.push(0.85);
+        safeBlocked = true;
+      } else {
+        flags.push(makeFlag("LP not burned or locked — dev can rug liquidity", "warning", 0));
+        penalties.push(0.70);
+        safeBlocked = true;
+      }
     }
   }
-  // Fix: only penalize if metaMutable is explicitly true — don't penalize absence of info
   if (rugData.metaMutable === true) {
     flags.push(makeFlag("Metadata mutable", "warning", 0));
     penalties.push(0.82);
@@ -194,7 +247,6 @@ export function layerGoPlus(goplus: GoPlusTokenResult | null): LayerResult {
     flags: [makeFlag("GoPlus unavailable", "info", 0)],
     forceRug: false, safeBlocked: false,
   };
-  // Fix: more robust gp() handles "true"/"yes" string values
   const gp = (field: keyof GoPlusTokenResult) => {
     const v = goplus[field];
     if (v === "1" || v === 1 || v === true) return true;
@@ -230,13 +282,16 @@ export function layerGoPlus(goplus: GoPlusTokenResult | null): LayerResult {
   if (gp("transfer_pausable")) { flags.push(makeFlag("Transfer pausable", "critical", 0)); penalties.push(0.30); safeBlocked = true; }
   if (gp("hidden_owner")) { flags.push(makeFlag("Hidden owner detected", "critical", 0)); penalties.push(0.30); safeBlocked = true; }
   if (gp("is_proxy")) { flags.push(makeFlag("Upgradeable/proxy contract", "critical", 0)); penalties.push(0.50); safeBlocked = true; }
-  // Fix: GoPlus returns sometimes "10" (=10%) sometimes "0.10" (=10%) — normalize
   const sellTaxRaw = gpNum("sell_tax");
   const buyTaxRaw  = gpNum("buy_tax");
   const sellTax = sellTaxRaw > 1 ? sellTaxRaw / 100 : sellTaxRaw;
   const buyTax  = buyTaxRaw  > 1 ? buyTaxRaw  / 100 : buyTaxRaw;
   if (sellTax > 0.10) { flags.push(makeFlag("Sell tax > 10%", "critical", 0)); penalties.push(0.35); }
   if (buyTax  > 0.10) { flags.push(makeFlag("Buy tax > 10%",  "critical", 0)); penalties.push(0.35); }
+  // Fix(TAX_WARNING): Tax between 2% and 10% is a common rug mechanic — flag it.
+  // VDOR had 4.5% tax which previously passed through completely undetected.
+  if (sellTax > 0.02 && sellTax <= 0.10) { flags.push(makeFlag(`Sell tax ${Math.round(sellTax * 100)}% — suspicious`, "warning", 0)); penalties.push(0.80); }
+  if (buyTax  > 0.02 && buyTax  <= 0.10) { flags.push(makeFlag(`Buy tax ${Math.round(buyTax  * 100)}% — suspicious`,  "warning", 0)); penalties.push(0.80); }
   if (gpNum("owner_percent") > 0.05) { flags.push(makeFlag("Owner holds > 5%", "critical", 0)); penalties.push(0.50); }
   if (gpNum("creator_percent") > 0.05) { flags.push(makeFlag("Creator holds > 5%", "critical", 0)); penalties.push(0.50); }
   if (gp("is_mintable")) { flags.push(makeFlag("Token is mintable", "warning", 0)); penalties.push(0.60); }
@@ -257,7 +312,7 @@ export function layerHelius(
   let trust = 1.0;
   const penalties: number[] = [];
   let forceRug = false, safeBlocked = false;
-    if (!rawHolderAccounts.length || !totalSupplyUi || totalSupplyUi <= 0) return {
+  if (!rawHolderAccounts.length || !totalSupplyUi || totalSupplyUi <= 0) return {
     source: "helius", trust: 1.0, available: false,
     flags: [makeFlag("Helius unavailable", "info", 0)],
     forceRug: false, safeBlocked: false,
@@ -309,12 +364,11 @@ export function layerSolscan(
     else if (tokenAgeHours > 720) { flags.push(makeFlag("Established token (30d+) ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.05); }
   }
   let washTradingDetected = false;
-        // Fix: handle traders24h=0 with trades — pure wash trading (no real traders)
-    if (trades24h !== null && traders24h !== null && traders24h === 0 && trades24h > 0) {
-        flags.push(makeFlag("Wash trading: trades with zero identified traders", "critical", 0));
-        penalties.push(0.40); safeBlocked = true;
-        washTradingDetected = true;
-    }
+  if (trades24h !== null && traders24h !== null && traders24h === 0 && trades24h > 0) {
+    flags.push(makeFlag("Wash trading: trades with zero identified traders", "critical", 0));
+    penalties.push(0.40); safeBlocked = true;
+    washTradingDetected = true;
+  }
   if (trades24h !== null && traders24h !== null && traders24h > 0) {
     const tradesPerTrader = trades24h / traders24h;
     if (tradesPerTrader > 50 && traders24h < 20) {
@@ -368,6 +422,8 @@ export function layerChart(
   const pc24h = asNumber(pair?.priceChange?.h24);
   const v24Liq = liq > 0 ? vol24h / liq : 0;
   const v1hLiq = liq > 0 ? vol1h / liq : 0;
+
+  // ── Existing patterns ──────────────────────────────────────────────────────
   if (greenRatio >= 0.82 && runUpPct >= 100 && pullbackRange <= 10) {
     flags.push(makeFlag("Crashcoin pattern: near-perfect parabolic chart", "critical", 0));
     penalties.push(0.35); safeBlocked = true;
@@ -395,11 +451,10 @@ export function layerChart(
       flags.push(makeFlag("Early volume exhaustion near highs", "warning", 0));
       penalties.push(0.65); safeBlocked = true;
     }
-              // Fix: handle olderVol mean=0 with sudden volume spike — artificial pump
-        if (olderVol.length && _mean(olderVol) === 0 && _mean(recentVol) > 0) {
-            flags.push(makeFlag("Sudden volume spike from zero — artificial pump", "warning", 0));
-            penalties.push(0.60); safeBlocked = true;
-        }
+    if (olderVol.length && _mean(olderVol) === 0 && _mean(recentVol) > 0) {
+      flags.push(makeFlag("Sudden volume spike from zero — artificial pump", "warning", 0));
+      penalties.push(0.60); safeBlocked = true;
+    }
   }
   if (_pct(first, last) > 300 && greenRatio > 0.78) {
     flags.push(makeFlag("Parabolic launch: high risk exit liquidity setup", "warning", 0));
@@ -409,6 +464,77 @@ export function layerChart(
     flags.push(makeFlag("Active dump: -60% 24h + -20% 1h (slow rug)", "critical", 0));
     penalties.push(0.25); forceRug = true; safeBlocked = true;
   }
+
+  // ── NEW v8 patterns — OHLCV rug fingerprints ───────────────────────────────
+
+  // Pattern 1: Post-ATH dump >50% in last 4 candles = rug exit in progress
+  if (closes.length >= 5) {
+    const athIdx = closes.indexOf(Math.max(...closes));
+    const isRecentATH = athIdx >= closes.length - 4;
+    if (isRecentATH && peak > 0) {
+      const dumpFromATH = (last - peak) / peak;
+      if (dumpFromATH < -0.50) {
+        flags.push(makeFlag(`Post-ATH dump ${Math.round(dumpFromATH * 100)}% — rug exit in progress`, "critical", 0));
+        penalties.push(0.10); forceRug = true; safeBlocked = true;
+      } else if (dumpFromATH < -0.35) {
+        flags.push(makeFlag(`Post-ATH dump ${Math.round(dumpFromATH * 100)}% — exit liquidity pattern`, "warning", 0));
+        penalties.push(0.40); safeBlocked = true;
+      }
+    }
+  }
+
+  // Pattern 2: Micro-window pump — +200% in last 10 candles with high green ratio
+  if (closes.length >= 10) {
+    const shortWindow = closes.slice(-10);
+    const shortFirst = shortWindow[0], shortLast = shortWindow[shortWindow.length - 1];
+    const shortGreenCount = shortWindow.filter((c, i) => i > 0 && c > shortWindow[i - 1]).length;
+    const shortGreenRatio = shortGreenCount / (shortWindow.length - 1);
+    if (_pct(shortFirst, shortLast) > 200 && shortGreenRatio > 0.80) {
+      flags.push(makeFlag(`Micro-window pump: +${Math.round(_pct(shortFirst, shortLast))}% in 10 candles — coordinated launch`, "critical", 0));
+      penalties.push(0.15); safeBlocked = true;
+    }
+  }
+
+  // Pattern 3: Dead cat bounce — massive drop then partial recovery = distribution trap
+  if (closes.length >= 8) {
+    const midWindow = closes.slice(-8);
+    const midMin = Math.min(...midWindow.slice(0, 4));
+    const midStart = midWindow[0];
+    const midEnd = midWindow[midWindow.length - 1];
+    const dropPct = midStart > 0 ? (midMin - midStart) / midStart : 0;
+    const recoveryPct = midMin > 0 ? (midEnd - midMin) / midMin : 0;
+    if (dropPct < -0.50 && recoveryPct > 0.60 && midEnd < midStart * 0.85) {
+      flags.push(makeFlag("Dead cat bounce: -50% drop then partial recovery — distribution trap", "warning", 0));
+      penalties.push(0.45); safeBlocked = true;
+    }
+  }
+
+  // Pattern 4: Rug staircase — volume decaying 3 consecutive windows while price holds
+  if (volumes.length >= 15) {
+    const v1 = _mean(volumes.slice(-15, -10));
+    const v2 = _mean(volumes.slice(-10, -5));
+    const v3 = _mean(volumes.slice(-5));
+    const priceFlat = Math.abs(_pct(closes[closes.length - 15] ?? closes[0], last)) < 15;
+    if (v1 > 0 && v2 < v1 * 0.60 && v3 < v2 * 0.60 && priceFlat) {
+      flags.push(makeFlag("Rug staircase: volume collapsing while price held flat — controlled dump", "warning", 0));
+      penalties.push(0.55); safeBlocked = true;
+    }
+  }
+
+  // Pattern 5: Candle wick trap — high wicks with closing near lows = repeated sells at highs
+  if (recent.length >= 5) {
+    const lastCandles = recent.slice(-5);
+    const wickTrapCount = lastCandles.filter(c => {
+      const range = c.h - c.l;
+      const upperWick = c.h - Math.max(c.o, c.c);
+      return range > 0 && (upperWick / range) > 0.70;
+    }).length;
+    if (wickTrapCount >= 3) {
+      flags.push(makeFlag("Wick trap: 3+ candles with dominant upper wick — repeated selling at highs", "warning", 0));
+      penalties.push(0.65); safeBlocked = true;
+    }
+  }
+
   trust = applyDiminishingPenalties(trust, penalties);
   return { source: "chart", trust: Math.max(0, trust), available: true, flags, forceRug, safeBlocked };
 }

@@ -1,6 +1,7 @@
 import type { ScanResponseData } from "../../shared/types"
 import { LS_PREFIX, CACHE_TTL } from "./constants"
 import { scanCache } from "./state"
+import { logger } from "../../shared/logger"
 
 export function hydrateCacheFromLS() {
   try {
@@ -14,7 +15,7 @@ export function hydrateCacheFromLS() {
       if (Date.now() - parsed.ts > CACHE_TTL) { localStorage.removeItem(key); continue }
       scanCache.set(key.slice(LS_PREFIX.length), { data: parsed.data, ts: parsed.ts })
     }
-  } catch (e: unknown) { console.warn("[antares]", e) }
+  } catch (e: unknown) { logger.warn(e) }
 }
 
 export function getCached(ca: string): ScanResponseData | null {
@@ -25,5 +26,5 @@ export function getCached(ca: string): ScanResponseData | null {
 }
 
 export function saveToLS(ca: string, data: ScanResponseData) {
-  try { localStorage.setItem(LS_PREFIX + ca, JSON.stringify({ data, ts: Date.now() })) } catch (e: unknown) { console.warn("[antares]", e) }
+  try { localStorage.setItem(LS_PREFIX + ca, JSON.stringify({ data, ts: Date.now() })) } catch (e: unknown) { logger.warn(e) }
 }

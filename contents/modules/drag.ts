@@ -1,5 +1,6 @@
 import { POS_KEY } from "./constants"
 import { state } from "./state"
+import { logger } from "../../shared/logger"
 
 function commitPos() {
   state.rafId = null
@@ -19,7 +20,7 @@ function clampPosition() {
   state.pendingX = state.posX
   state.pendingY = state.posY
   state.host.style.transform = `translate(${state.posX}px,${state.posY}px)`
-  try { localStorage.setItem(POS_KEY, JSON.stringify({ x: state.posX, y: state.posY })) } catch (e: unknown) { console.warn("[antares]", e) }
+  try { localStorage.setItem(POS_KEY, JSON.stringify({ x: state.posX, y: state.posY })) } catch (e: unknown) { logger.warn(e) }
 }
 
 export function initDrag() {
@@ -32,12 +33,12 @@ export function initDrag() {
       const p = JSON.parse(saved) as { x: number; y: number }
       state.posX = p.x; state.posY = p.y
     } else {
-      state.posX = window.innerWidth  - 310
+      state.posX = window.innerWidth - 310
       state.posY = window.innerHeight - 400
     }
   } catch (e: unknown) {
-    console.warn("[antares]", e)
-    state.posX = window.innerWidth  - 310
+    logger.warn(e)
+    state.posX = window.innerWidth - 310
     state.posY = window.innerHeight - 400
   }
 
@@ -52,7 +53,7 @@ export function initDrag() {
     if (target?.closest?.(".x")) return
     if (!target?.closest?.(".hd")) return
     const hdEl = (e.currentTarget as HTMLElement)
-    try { hdEl.setPointerCapture(e.pointerId) } catch (e2: unknown) { console.warn("[antares]", e2) }
+    try { hdEl.setPointerCapture(e.pointerId) } catch (e2: unknown) { logger.warn(e2) }
     state.activePointerId = e.pointerId
     const r = state.host!.getBoundingClientRect()
     state.dragOX = e.clientX - r.left
@@ -65,7 +66,7 @@ export function initDrag() {
     if (state.activePointerId === null || e.pointerId !== state.activePointerId || !state.host) return
     let nx = e.clientX - state.dragOX
     let ny = e.clientY - state.dragOY
-    nx = Math.max(0, Math.min(window.innerWidth  - state.host.offsetWidth,  nx))
+    nx = Math.max(0, Math.min(window.innerWidth - state.host.offsetWidth, nx))
     ny = Math.max(0, Math.min(window.innerHeight - state.host.offsetHeight, ny))
     state.pendingX = nx; state.pendingY = ny
     if (!state.rafId) state.rafId = requestAnimationFrame(commitPos)
@@ -75,7 +76,7 @@ export function initDrag() {
     if (e.pointerId !== state.activePointerId) return
     state.activePointerId = null
     document.documentElement.style.userSelect = ""
-    try { localStorage.setItem(POS_KEY, JSON.stringify({ x: state.posX, y: state.posY })) } catch (e2: unknown) { console.warn("[antares]", e2) }
+    try { localStorage.setItem(POS_KEY, JSON.stringify({ x: state.posX, y: state.posY })) } catch (e2: unknown) { logger.warn(e2) }
   })
 
   state.host.addEventListener("pointercancel", () => {

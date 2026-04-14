@@ -4,6 +4,7 @@ import { state, scanCache } from "./state"
 import { SHADOW_CSS, injectFonts } from "./styles"
 import { initDrag } from "./drag"
 import { encodeHashPayload } from "../../shared/hash-payload"
+import { logger } from "../../shared/logger"
 
 // ─── HTML ESCAPE UTILITY ──────────────────────────────────────────────────────
 const HTML_ESCAPE: Record<string, string> = {
@@ -180,7 +181,7 @@ export function toggleHistory() {
       panel.innerHTML = items
     })
   } catch (e: unknown) {
-    console.warn("[antares] runtime unavailable", e)
+    logger.warn("runtime unavailable", e)
     panel.innerHTML = `<div style="color:#444;font-size:9px;padding:6px 0;font-family:'IBM Plex Mono',monospace">Extension reloaded \u2014 refresh page</div>`
   }
 }

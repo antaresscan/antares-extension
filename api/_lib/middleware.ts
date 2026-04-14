@@ -4,6 +4,7 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { CA_RE } from "./constants";
 import { isCorsAllowed, apiError } from "./helpers";
+import { logger } from "./logger";
 
 export const ALLOWED_ORIGINS = [
   "https://dexscreener.com",
@@ -21,7 +22,7 @@ export const ALLOWED_ORIGINS = [
   "https://antares-extension.vercel.app",
 ];
 
-// ——— RATE LIMITERS ————————————————————————————————————————————
+// ——— RATE LIMITERS ————————————————————————————————————————————————————————————
 let ratelimit: Ratelimit | null = null;
 let burstRatelimit: Ratelimit | null = null;
 
@@ -51,12 +52,21 @@ export function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean
   // If ANTARES_EXT_TOKEN is configured, validate it. Otherwise allow all extensions.
   if (origin.startsWith("chrome-extension://")) {
     const expectedToken = process.env.ANTARES_EXT_TOKEN || "";
+
+    // DEPLOY GUARD: reject all requests if token not configured on any Vercel deployment
+    if (!expectedToken && process.env.VERCEL_ENV) {
+      logger.error("middleware", "ANTARES_EXT_TOKEN is not set on Vercel deployment!");
+      res.status(503).json({ error: "Service misconfigured" });
+      return false;
+    }
+
     if (expectedToken) {
       const extToken = (req.headers["x-antares-token"] as string) || "";
       if (extToken !== expectedToken) {
         return false;
       }
     }
+
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Antares-Token");
@@ -76,7 +86,6 @@ export function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean
   }
 
   const corsOk = isCorsAllowed(origin, ALLOWED_ORIGINS);
-
   if (corsOk) res.setHeader("Access-Control-Allow-Origin", origin);
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Antares-Key, X-Antares-Token, Authorization");
@@ -97,7 +106,7 @@ export function getClientIp(req: VercelRequest): string {
 export async function checkRateLimit(res: VercelResponse, ip: string): Promise<boolean> {
   // Fail-closed: if Redis was configured but limiters are null (init failed), block requests
   if (redisConfigured && !ratelimit) {
-    console.warn("[antares] Rate limiter unavailable — fail-closed");
+    logger.warn("middleware", "Rate limiter unavailable — fail-closed");
     apiError(res, 503, "Service temporarily unavailable. Please retry.");
     return false;
   }

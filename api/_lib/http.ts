@@ -1,4 +1,5 @@
 // api/http.ts — HTTP utility functions extracted from helpers.ts
+import { logger } from "./logger";
 
 export function withTimeout(ms: number) {
   const controller = new AbortController();
@@ -14,7 +15,7 @@ export async function fetchJson<T = unknown>(url: string, init: RequestInit = {}
       t.clear();
       if (r.status === 429 || r.status === 503) {
         if (attempt < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, 300 * (attempt + 1)));
+          await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
           continue;
         }
       }
@@ -22,8 +23,8 @@ export async function fetchJson<T = unknown>(url: string, init: RequestInit = {}
       return (await r.json()) as T;
     } catch (e: unknown) {
       t.clear();
-      if (attempt === maxRetries) { console.warn("[antares]", e); return null; }
-      await new Promise(resolve => setTimeout(resolve, 200 * (attempt + 1)));
+      if (attempt === maxRetries) { logger.warn("http", "fetchJson failed", { error: String(e) }); return null; }
+      await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
     }
   }
   return null;
@@ -35,14 +36,14 @@ export async function fetchJsonPost<T = unknown>(url: string, body: object, ms =
     try {
       const r = await fetch(url, {
         method: "POST",
-                headers: { "Content-Type": "application/json", ...extraHeaders },
+        headers: { "Content-Type": "application/json", ...extraHeaders },
         body: JSON.stringify(body),
         signal: t.signal,
       });
       t.clear();
       if (r.status === 429 || r.status === 503) {
         if (attempt < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, 300 * (attempt + 1)));
+          await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
           continue;
         }
       }
@@ -50,8 +51,8 @@ export async function fetchJsonPost<T = unknown>(url: string, body: object, ms =
       return (await r.json()) as T;
     } catch (e: unknown) {
       t.clear();
-      if (attempt === maxRetries) { console.warn("[antares]", e); return null; }
-      await new Promise(resolve => setTimeout(resolve, 200 * (attempt + 1)));
+      if (attempt === maxRetries) { logger.warn("http", "fetchJsonPost failed", { error: String(e) }); return null; }
+      await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
     }
   }
   return null;

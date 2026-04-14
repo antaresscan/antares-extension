@@ -5,7 +5,10 @@ import {
 import {
   determineVerdict,
 } from "../api/_lib/pipeline";
-import type { LayerResult } from "../api/_lib/types";
+import {
+  layerGoPlus, layerRugCheck,
+} from "../api/_lib/layers";
+import type { LayerResult, GoPlusTokenResult, RugCheckSummary } from "../api/_lib/types";
 import { computeCacheTTL } from "../api/_lib/helpers";
 
 // ─── Session 1: Safety overhaul regressions ──────────────────────────────────
@@ -42,7 +45,6 @@ describe("Session 3 regressions", () => {
       source: `source${i}`,
       available: true,
       trust: 1.0,
-      weight: 0.2,
       flags: [],
       forceRug: false,
       safeBlocked: false,
@@ -57,7 +59,6 @@ describe("Session 3 regressions", () => {
       source: `source${i}`,
       available: true,
       trust: 0.0,
-      weight: 0.2,
       flags: [],
       forceRug: false,
       safeBlocked: false,
@@ -70,7 +71,7 @@ describe("Session 3 regressions", () => {
 // ─── Session 5: Verdict logic regressions ────────────────────────────────────
 
 describe("Session 5 regressions", () => {
-  it("Soft safeBlock with score 550+ -> CAUTION", () => {
+    it("Soft safeBlock with score 570 -> DANGER (HARDENED: needs >=700 for CAUTION)", () => {
     const verdict = determineVerdict({
       score: 570,
       forceRug: false,
@@ -78,7 +79,7 @@ describe("Session 5 regressions", () => {
       safeBlockedReasons: ["age"],
       sourcesUsedCount: 5,
     });
-    expect(verdict).toBe("CAUTION");
+        expect(verdict).toBe("DANGER");
   });
 
   it("Hard safeBlock with score 400 -> RUG or DANGER", () => {
@@ -102,5 +103,59 @@ describe("Session 6 regressions", () => {
     expect(computeCacheTTL(60)).toBeGreaterThan(0);
     expect(computeCacheTTL(1440)).toBeGreaterThan(0);
     expect(computeCacheTTL(100000)).toBeGreaterThan(0);
+  });
+});
+
+// ─── Session 7: VDOR-class rug regression ─────────────────────────────────────
+// Ensures tokens like VDOR (Vanguard Digital Oil Reserve) are NEVER scored SAFE.
+// VDOR fingerprint: deceptive institutional name + LP not locked + 4.5% sell tax.
+
+describe("VDOR-class rug regression", () => {
+  it("deceptive name (Vanguard) triggers safeBlocked in layerRugCheck", () => {
+    const rugData: RugCheckSummary = {
+      lpBurned: false,
+      lpLocked: false,
+      metaMutable: false,
+    };
+    const result = layerRugCheck(rugData, null, "VDORmint123", "Vanguard Digital Oil Reserve");
+    expect(result.safeBlocked).toBe(true);
+    expect(result.flags.some(f => /deceptive name/i.test(f.label))).toBe(true);
+  });
+
+  it("sell tax 4.5% (VDOR-style) triggers warning flag in layerGoPlus", () => {
+    const goplus: GoPlusTokenResult = {
+      is_honeypot: "0",
+      cannot_sell_all: "0",
+      mint_authority: "0",
+      freeze_authority: "0",
+      sell_tax: "4.5",
+      buy_tax: "0",
+    };
+    const result = layerGoPlus(goplus);
+    expect(result.flags.some(f => /sell tax.*suspicious/i.test(f.label))).toBe(true);
+    expect(result.trust).toBeLessThan(1.0);
+  });
+
+  it("LP not locked/burned sets safeBlocked in layerRugCheck", () => {
+    const rugData: RugCheckSummary = {
+      lpBurned: false,
+      lpLocked: false,
+    };
+    const result = layerRugCheck(rugData, null, "VDORmint123");
+    expect(result.safeBlocked).toBe(true);
+    expect(result.flags.some(f => /LP not burned or locked/i.test(f.label))).toBe(true);
+  });
+
+  it("VDOR-like token with high score is still blocked from SAFE verdict", () => {
+    // Simulate a token that passes most checks but has safeBlocked=true
+    const verdict = determineVerdict({
+      score: 950,
+      forceRug: false,
+      safeBlocked: true,
+      safeBlockedReasons: ["rug_pattern"],
+      sourcesUsedCount: 5,
+    });
+    expect(verdict).not.toBe("SAFE");
+    expect(["CAUTION", "DANGER", "RUG"]).toContain(verdict);
   });
 });

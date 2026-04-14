@@ -1,7 +1,7 @@
-// ─── ANTARES TYPE DEFINITIONS ────────────────────────────────────────────
+// ─── ANTARES TYPE DEFINITIONS ─────────────────────────────────────────────────────────────
 // Centralised types for all API layers, scoring engine, and scan results.
 
-// ─── SEVERITY & FLAGS ────────────────────────────────────────────────
+// ─── SEVERITY & FLAGS ─────────────────────────────────────────────────────────────────
 export type Severity = "critical" | "warning" | "info" | "bonus";
 
 export interface ScanFlag {
@@ -10,21 +10,28 @@ export interface ScanFlag {
   impact: number;
 }
 
+// IMPORTANT: 'lp' and 'deceptive_name' are HARD reasons — they can never
+// be soft-unlocked by applySafeGateOverride. A token with LP not burned
+// can ALWAYS pull liquidity and rug. A deceptive name is always intentional fraud.
 export type SafeBlockedReason =
-  | "age"
-  | "holders"
-  | "mint"
-  | "freeze"
-  | "honeypot"
-  | "copycat"
-  | "rug_pattern"
-  | "wash_trading"
-  | "pump"
-  | "bundle"
-  | "sniper"
-  | "chart";
+  | "age"             // soft — can unlock after 48h+ with other conditions
+  | "holders"         // soft — can unlock with enough holders
+  | "lp"              // HARD — LP not burned/locked, dev can rug at any time
+  | "mint"            // HARD
+  | "freeze"          // HARD
+  | "honeypot"        // HARD
+  | "copycat"         // HARD
+  | "deceptive_name" // HARD — impersonating real institution
+  | "rug_pattern"     // HARD
+  | "wash_trading"    // HARD
+  | "pump"            // HARD
+  | "bundle"          // HARD
+  | "sniper"          // HARD
+    | "chart"            // HARD
+  | "low_holders"     // HARD — tokens with <50 holders
+  | "lp_unverified"; // SOFT - LP not burned but token is mature and clean
 
-// ─── LAYER RESULT ────────────────────────────────────────────────────────
+// ─── LAYER RESULT ────────────────────────────────────────────────────────────────────
 export interface LayerResult {
   source: string;
   trust: number;
@@ -36,7 +43,7 @@ export interface LayerResult {
 
 export type Verdict = "SAFE" | "CAUTION" | "DANGER" | "RUG";
 
-// ─── DEXSCREENER ─────────────────────────────────────────────────────────────
+// ─── DEXSCREENER ─────────────────────────────────────────────────────────────────────────
 export interface DexScreenerSocial {
   type?: string;
   url?: string;
@@ -71,7 +78,7 @@ export interface DexScreenerResponse {
   pair?: DexScreenerPair;
 }
 
-// ─── RUGCHECK ─────────────────────────────────────────────────────────────────
+// ─── RUGCHECK ───────────────────────────────────────────────────────────────────────────────
 export interface RugCheckRisk {
   name?: string;
   score?: number;
@@ -105,7 +112,7 @@ export interface RugCheckReport {
   totalHolders?: number;
 }
 
-// ─── GOPLUS ─────────────────────────────────────────────────────────────────────
+// ─── GOPLUS ────────────────────────────────────────────────────────────────────────────────────
 export interface GoPlusTokenResult {
   is_honeypot?: string | number | boolean;
   cannot_sell_all?: string | number | boolean;
@@ -130,10 +137,10 @@ export interface GoPlusResponse {
   result?: Record<string, GoPlusTokenResult>;
 }
 
-// ─── HELIUS ─────────────────────────────────────────────────────────────────────
+// ─── HELIUS ────────────────────────────────────────────────────────────────────────────────────
 export interface HeliusHolder {
   address: string;
-    owner: string;
+  owner: string;
   uiAmount: number;
 }
 
@@ -158,7 +165,7 @@ export interface HeliusTokenAccountsResponse {
   total?: number;
 }
 
-// ─── SOLSCAN ───────────────────────────────────────────────────────────────────
+// ─── SOLSCAN ───────────────────────────────────────────────────────────────────────────────────
 export interface SolscanTransfer {
   from_address?: string;
   from?: string;
@@ -193,7 +200,7 @@ export interface SolscanTransfersResponse {
   data?: SolscanTransfer[];
 }
 
-// ─── GECKO TERMINAL ────────────────────────────────────────────────────────
+// ─── GECKO TERMINAL ──────────────────────────────────────────────────────────────────────
 export interface OHLCVCandle {
   ts: number;
   o: number;
@@ -211,7 +218,7 @@ export interface GeckoTerminalOHLCVResponse {
   };
 }
 
-// ─── PIPELINE INPUT/OUTPUT TYPES ───────────────────────────────────────────────
+// ─── PIPELINE INPUT/OUTPUT TYPES ─────────────────────────────────────────────────────────────────
 export interface PostLayerFlagsInput {
   buys5m: number;
   sells5m: number;
@@ -255,7 +262,7 @@ export interface VerdictInput {
   sourcesUsedCount: number;
 }
 
-// ─── SCAN RESULT ────────────────────────────────────────────────────────────────
+// ─── SCAN RESULT ────────────────────────────────────────────────────────────────────────────────
 export interface LayerSnapshot {
   trust: number;
   available: boolean;
@@ -298,8 +305,8 @@ export interface ScanResult {
   honeypot?: boolean;
   mintAuthority?: boolean;
   freezeAuthority?: boolean;
-      requestId: string;
+  requestId: string;
   lpBurned?: boolean;
   candles?: Array<{ close: number }>;
-    aiSummary?: string | null;
+  aiSummary?: string | null;
 }

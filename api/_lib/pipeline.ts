@@ -6,13 +6,13 @@ import type {
   SafeGateInput, EstablishedBonusInput, VerdictInput,
 } from "./types";
 import { makeFlag } from "./helpers";
+import { HARD_BLOCK_REASONS, SOFT_REASONS } from "./constants";
 
 export function evaluatePostLayerFlags(input: PostLayerFlagsInput): PostLayerFlagsResult {
   const flags: ScanFlag[] = [];
   let forceRug = false;
   let safeBlocked = false;
 
-  // Fix: require at least 5 total transactions to avoid false positives on brand-new tokens
   const totalTxns5m = (input.buys5m ?? 0) + (input.sells5m ?? 0);
 
   if (
@@ -58,33 +58,60 @@ export function applySafeGateOverride(input: SafeGateInput): boolean {
   if (!input.safeBlocked) return false;
   if (input.forceRug) return true;
 
-  const SOFT_REASONS: Record<string, boolean> = { age: true, holders: true };
+  // HARD reasons can NEVER be soft-unlocked regardless of age, holders, or source count.
+  // 'lp': dev can pull liquidity at any time — fundamentally unacceptable for SAFE verdict.
+  // 'deceptive_name': intentional fraud signal, not a maturity issue.
+  const hasHardReason = input.safeBlockedReasons.some(r => HARD_BLOCK_REASONS.has(r));
+  if (hasHardReason) return true; // Always keep safeBlocked for hard reasons
+
+  // Only 'age' and 'holders' are soft reasons that can potentially unlock
+  // SOFT_REASONS imported from constants.ts
   const onlySoftReasons = input.safeBlockedReasons.length > 0 &&
     input.safeBlockedReasons.every(r => SOFT_REASONS[r] === true);
 
   if (onlySoftReasons) {
     const ageHours = input.tokenAgeHours ?? 0;
-    const hasEnoughSources = input.sourcesAvailableCount >= 4;
-    if ((input.holders ?? 0) > 500 && input.lpBurned && input.goPlusClean) {
+    if (input.tokenAgeHours !== null && ageHours < 48) return true;
+    const hasEnoughSources = input.sourcesAvailableCount >= 5;
+    // Path 1: Standard unlock — ALL conditions including LP burn
+    if (
+      (input.tokenAgeHours === null || ageHours > 48) &&
+      hasEnoughSources &&
+      (input.holders ?? 0) > 1000 &&
+      input.lpBurned &&
+      input.goPlusClean
+    ) {
       return false;
     }
-    if (ageHours > 24 && hasEnoughSources && (input.holders ?? 0) > 200 && input.goPlusClean) {
+    // Path 2: Established token override — for blue chips where LP is not burned
+    // but the token is clearly legitimate (massive holder base, very old, GoPlus clean).
+    // Tokens like Fartcoin (600k+ holders, 30d+) were stuck in DANGER because
+    // the safe gate required lpBurned to unlock even soft reasons like 'holders'.
+    // This path uses MUCH stricter thresholds to compensate for unburned LP.
+    const isEstablished =
+      (input.tokenAgeHours !== null && ageHours >= 720) && // 30+ days
+      hasEnoughSources &&
+      (input.holders ?? 0) >= 50000 && // 50k+ holders (vs 1k standard)
+      input.goPlusClean;
+    if (isEstablished) {
       return false;
     }
   }
 
+  // safeBlockedReasons is empty (unclassified) — keep blocked by default
   return true;
 }
 
 export function applyEstablishedBonus(input: EstablishedBonusInput): number {
-  if (
+  // Require 90 days, 5000 holders, GoPlus clean. LP burned is preferred but
+  // not required for the bonus if the token is truly established (50k+ holders).
+  const meetsBase =
     input.tokenAgeHours !== null &&
-    input.tokenAgeHours > 720 &&
-    (input.holders ?? 0) > 1000 &&
-    input.lpBurned &&
-    input.goPlusClean
-  ) {
-    return Math.min(1000, Math.round(input.score * 1.15));
+    input.tokenAgeHours > 2160 &&
+    (input.holders ?? 0) > 5000 &&
+    input.goPlusClean;
+  if (meetsBase && (input.lpBurned || (input.holders ?? 0) >= 50000)) {
+    return Math.min(1000, Math.round(input.score * 1.05));
   }
   return input.score;
 }
@@ -94,17 +121,17 @@ export function determineVerdict(input: VerdictInput): Verdict {
   if (!input.sourcesUsedCount || input.sourcesUsedCount <= 0) return "DANGER";
 
   if (input.safeBlocked) {
-    // Fix(Bug 15): Added "sniper", "pump", "chart" to HARD_REASONS.
-    // Previously these were missing, causing tokens with sniper/pump flags
-    // to receive only CAUTION instead of DANGER.
-    const HARD_REASONS = new Set(["honeypot", "mint", "freeze", "bundle", "rug_pattern", "wash_trading", "sniper", "pump", "chart"]);
-    const hasHardReason = input.safeBlockedReasons?.some(r => HARD_REASONS.has(r));
+    // HARD reasons: 'lp' and 'deceptive_name' added alongside existing hard reasons.
+    // A token where LP is not burned can rug at any time — must return DANGER or RUG.
+    const hasHardReason = input.safeBlockedReasons?.some(r => HARD_BLOCK_REASONS.has(r));
     if (hasHardReason) return input.score >= 400 ? "DANGER" : "RUG";
-    if (input.score >= 550) return "CAUTION";
+    // Soft reasons (age/holders) only: tightened from 550 to 700 for CAUTION
+    if (input.score >= 700) return "CAUTION";
     return "DANGER";
   }
 
-  if (input.score >= 850) return "SAFE";
+  // HARDENED: SAFE requires score >= 900 AND at least 5 sources
+  if (input.score >= 900 && input.sourcesUsedCount >= 5) return "SAFE";
   if (input.score >= 600) return "CAUTION";
   if (input.score >= 350) return "DANGER";
   return "RUG";

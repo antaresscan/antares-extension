@@ -8,13 +8,13 @@ export function computeFinalScore(layers: LayerResult[]): number {
 
   const weightedSources = Object.keys(LAYER_WEIGHTS);
   let totalWeight = 0;
-  const availableLayers: Array<{ trust: number; weight: number }> = [];
+  const availableLayers: Array<{ trust: number; weight: number; source: string }> = [];
 
   for (const src of weightedSources) {
     const layer = layers.find(l => l.source === src);
     const w = LAYER_WEIGHTS[src] ?? 0;
     if (!layer || !layer.available) continue;
-    availableLayers.push({ trust: Math.max(TRUST_FLOOR, layer.trust), weight: w });
+    availableLayers.push({ trust: Math.max(TRUST_FLOOR, layer.trust), weight: w, source: src });
     totalWeight += w;
   }
 
@@ -39,7 +39,13 @@ export function computeFinalScore(layers: LayerResult[]): number {
   return Math.round(Math.max(0, Math.min(1, product)) * 1000);
 }
 
+// HARD_BLOCK_PATTERNS: flags that classify as hard safeBlocked reasons.
+// CRITICAL: 'lp' is a HARD reason — LP not burned/locked can NEVER be soft-unlocked.
+// Without this, LP-flagged tokens had safeBlockedReasons=[] which caused
+// the safe gate to fall through and allow SAFE verdicts on rug-able tokens.
 export const HARD_BLOCK_PATTERNS: Array<[RegExp, SafeBlockedReason]> = [
+  [/unverified LP|LP not burned but token is mature/i, "lp_unverified"],
+  [/LP not burned|LP not locked|dev can rug/i, "lp"],           // FIX: LP is now a HARD reason
   [/mint authority/i, "mint"],
   [/freeze authority/i, "freeze"],
   [/honeypot/i, "honeypot"],
@@ -49,12 +55,14 @@ export const HARD_BLOCK_PATTERNS: Array<[RegExp, SafeBlockedReason]> = [
   [/rug|dump|exit trap/i, "rug_pattern"],
   [/pump|parabolic/i, "pump"],
   [/chart|blow-off|stair-step|volume exhaustion|liquidity mirage/i, "chart"],
+  [/deceptive name/i, "deceptive_name"],                         // FIX: deceptive names are hard
+    [/very few holders|few holders|<15|<50/i, "low_holders"], // FIX: very low holders is a HARD reason
 ];
 
 export function classifySafeBlockedReasons(layers: LayerResult[]): SafeBlockedReason[] {
   const reasons: SafeBlockedReason[] = [];
   const seen: Record<string, boolean> = {};
-  function add(r: SafeBlockedReason) { if (!seen[r]) { seen[r] = true; reasons.push(r); } }
+  function add(r: SafeBlockedReason) { if (r === "lp" && seen["lp_unverified"]) return; if (!seen[r]) { seen[r] = true; reasons.push(r); } }
 
   for (const layer of layers) {
     if (!layer.safeBlocked) continue;
@@ -78,7 +86,14 @@ export function classifySafeBlockedReasons(layers: LayerResult[]): SafeBlockedRe
           if (/newborn|fresh|age|<\d+h|<\d+min/i.test(f.label)) add("age");
         }
       }
+      // FIX: rugcheck layer with safeBlocked but unmatched flag — treat as lp if LP-related
+      if (layer.source === "rugcheck") {
+        for (const f of layer.flags) {
+          if (/LP|liquidity/i.test(f.label)) add("lp");
+        }
+      }
     }
   }
+
   return reasons;
 }

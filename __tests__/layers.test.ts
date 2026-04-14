@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  layerDexScreener, layerGoPlus, layerRugCheck, layerHelius,
+  layerChart, layerDexScreener, layerGoPlus, layerRugCheck, layerHelius,
   layerSolscan, layerCrossValidation,
 } from "../api/_lib/layers";
 import type { DexScreenerPair, RugCheckSummary, GoPlusTokenResult, HeliusHolder } from "../api/_lib/types";
@@ -81,6 +81,72 @@ describe("layerDexScreener", () => {
     expect(result.trust).toBeGreaterThan(0);
     expect(result.trust).toBeLessThan(0.25);
   });
+
+    // Fix(EXTREME_PUMP_24H): Extreme 24h pump detection
+  it("Fix(EXTREME_PUMP_24H): pc24 > 5000 sets forceRug and safeBlocked", () => {
+    const pair: DexScreenerPair = {
+      liquidity: { usd: 50000 },
+      volume: { h24: 100000 },
+      priceChange: { h24: 6000, h1: 10, h6: 50, m5: 2 },
+      txns: { m5: { buys: 10, sells: 8 } },
+      info: {
+        socials: [{ type: "twitter", url: "https://twitter.com/test" }],
+        websites: [{ url: "https://test.com" }],
+      },
+    };
+    const result = layerDexScreener(pair, 500000, 1440);
+    expect(result.forceRug).toBe(true);
+    expect(result.safeBlocked).toBe(true);
+    expect(result.flags.some(f => /extreme 24h pump/i.test(f.label))).toBe(true);
+  });
+
+  it("Fix(EXTREME_PUMP_24H): pc24 > 1000 sets safeBlocked (not forceRug)", () => {
+    const pair: DexScreenerPair = {
+      liquidity: { usd: 50000 },
+      volume: { h24: 100000 },
+      priceChange: { h24: 2000, h1: 10, h6: 50, m5: 2 },
+      txns: { m5: { buys: 10, sells: 8 } },
+      info: {
+        socials: [{ type: "twitter", url: "https://twitter.com/test" }],
+        websites: [{ url: "https://test.com" }],
+      },
+    };
+    const result = layerDexScreener(pair, 500000, 1440);
+    expect(result.forceRug).toBe(false);
+    expect(result.safeBlocked).toBe(true);
+    expect(result.flags.some(f => /extreme 24h pump/i.test(f.label))).toBe(true);
+  });
+
+  it("Fix(EXTREME_PUMP_24H): pc24 > 500 on token <24h sets safeBlocked", () => {
+    const pair: DexScreenerPair = {
+      liquidity: { usd: 50000 },
+      volume: { h24: 100000 },
+      priceChange: { h24: 600, h1: 10, h6: 50, m5: 2 },
+      txns: { m5: { buys: 10, sells: 8 } },
+      info: {
+        socials: [{ type: "twitter", url: "https://twitter.com/test" }],
+        websites: [{ url: "https://test.com" }],
+      },
+    };
+    const result = layerDexScreener(pair, 500000, 720);
+    expect(result.safeBlocked).toBe(true);
+    expect(result.flags.some(f => /large 24h pump/i.test(f.label))).toBe(true);
+  });
+
+  it("Fix(EXTREME_PUMP_24H): pc24 = 400 does NOT trigger extreme pump flag", () => {
+    const pair: DexScreenerPair = {
+      liquidity: { usd: 50000 },
+      volume: { h24: 100000 },
+      priceChange: { h24: 400, h1: 10, h6: 50, m5: 2 },
+      txns: { m5: { buys: 10, sells: 8 } },
+      info: {
+        socials: [{ type: "twitter", url: "https://twitter.com/test" }],
+        websites: [{ url: "https://test.com" }],
+      },
+    };
+    const result = layerDexScreener(pair, 500000, 1440);
+    expect(result.flags.some(f => /extreme 24h pump|large 24h pump/i.test(f.label))).toBe(false);
+  });
 });
 
 // ═══ LAYER 2 — RugCheck ═════════════════════════════════════════════════════
@@ -100,6 +166,7 @@ describe("layerRugCheck", () => {
     expect(result.trust).toBeGreaterThan(0.95);
     expect(result.available).toBe(true);
     expect(result.forceRug).toBe(false);
+    expect(result.safeBlocked).toBe(false);
   });
 
   it("metaMutable undefined does NOT penalize (fix: only penalize if explicitly true)", () => {
@@ -136,6 +203,35 @@ describe("layerRugCheck", () => {
     expect(result.trust).toBeLessThan(0.5);
     expect(result.flags.some(f => /freeze authority/i.test(f.label))).toBe(true);
   });
+
+  it("Fix(DECEPTIVE_NAME): 'Vanguard' in name triggers safeBlocked", () => {
+    const rugData: RugCheckSummary = { lpBurned: true, metaMutable: false };
+    const result = layerRugCheck(rugData, null, "mintABC", "Vanguard Digital Oil Reserve");
+    expect(result.safeBlocked).toBe(true);
+    expect(result.flags.some(f => /deceptive name/i.test(f.label))).toBe(true);
+  });
+
+  it("Fix(DECEPTIVE_NAME): 'BlackRock' in name triggers safeBlocked", () => {
+    const rugData: RugCheckSummary = { lpBurned: true, metaMutable: false };
+    const result = layerRugCheck(rugData, null, "mintABC", "BlackRock Treasury Token");
+    expect(result.safeBlocked).toBe(true);
+  });
+
+  it("Fix(DECEPTIVE_NAME): non-deceptive name does NOT trigger", () => {
+    const rugData: RugCheckSummary = { lpBurned: true, metaMutable: false };
+    const result = layerRugCheck(rugData, null, "mintABC", "Bonk");
+    expect(result.flags.some(f => /deceptive name/i.test(f.label))).toBe(false);
+  });
+
+  it("Fix(LP_SAFE_BLOCK): LP not burned or locked sets safeBlocked=true", () => {
+    const rugData: RugCheckSummary = {
+      lpBurned: false,
+      lpLocked: false,
+    };
+    const result = layerRugCheck(rugData, null, "someMint123");
+    expect(result.safeBlocked).toBe(true);
+    expect(result.flags.some(f => /LP not burned or locked/i.test(f.label))).toBe(true);
+  });
 });
 
 // ═══ LAYER 3 — GoPlus ═══════════════════════════════════════════════════════
@@ -171,25 +267,40 @@ describe("layerGoPlus", () => {
     expect(result.flags.some(f => /mint.*freeze/i.test(f.label))).toBe(true);
   });
 
-  it("sell tax \"10\" (GoPlus raw format) is treated as 10%, not 1000%", () => {
-    const goplus: GoPlusTokenResult = { sell_tax: "10", buy_tax: "5" };
+  it("Fix(TAX_WARNING): sell_tax '10' (=10%) is at boundary — triggers warning (>0.02 && <=0.10)", () => {
+    // sell_tax='10' -> normalized to 0.10 -> 0.10 > 0.02 && 0.10 <= 0.10 → TRUE → warning flag present
+    const goplus: GoPlusTokenResult = { sell_tax: "10", buy_tax: "0" };
     const result = layerGoPlus(goplus);
-    // sell_tax = 10 -> normalized to 0.10 -> exactly at threshold, NOT > 0.10
-    expect(result.flags.some(f => /sell tax/i.test(f.label))).toBe(false);
+    expect(result.flags.some(f => /sell tax.*suspicious/i.test(f.label))).toBe(true);
   });
 
-  it("sell tax \"0.15\" is correctly flagged as > 10%", () => {
+  it("Fix(TAX_WARNING): sell_tax '4.5' (VDOR-style) triggers warning flag", () => {
+    const goplus: GoPlusTokenResult = { sell_tax: "4.5", buy_tax: "0" };
+    const result = layerGoPlus(goplus);
+    expect(result.flags.some(f => /sell tax.*suspicious/i.test(f.label))).toBe(true);
+    expect(result.trust).toBeLessThan(1.0);
+  });
+
+  it("Fix(TAX_WARNING): sell_tax '0.15' (=15%) is hard flagged as > 10%", () => {
     const goplus: GoPlusTokenResult = { sell_tax: "0.15", buy_tax: "0" };
     const result = layerGoPlus(goplus);
-    expect(result.flags.some(f => /sell tax/i.test(f.label))).toBe(true);
+    expect(result.flags.some(f => /sell tax > 10%/i.test(f.label))).toBe(true);
   });
 
-  it("clean token returns high trust", () => {
+  it("Fix(TAX_WARNING): sell_tax '11' (=11%) is hard flagged as > 10%", () => {
+    const goplus: GoPlusTokenResult = { sell_tax: "11", buy_tax: "0" };
+    const result = layerGoPlus(goplus);
+    expect(result.flags.some(f => /sell tax > 10%/i.test(f.label))).toBe(true);
+  });
+
+  it("clean token (sell_tax=0, buy_tax=0) returns trust 1.0", () => {
     const goplus: GoPlusTokenResult = {
       is_honeypot: "0",
       cannot_sell_all: "0",
       mint_authority: "0",
       freeze_authority: "0",
+      sell_tax: "0",
+      buy_tax: "0",
     };
     const result = layerGoPlus(goplus);
     expect(result.trust).toBe(1.0);
@@ -241,7 +352,7 @@ describe("layerHelius", () => {
   it("well distributed supply gets bonus", () => {
     const holders: HeliusHolder[] = Array.from({ length: 20 }, (_, i) => ({
       address: `wallet${i}abc`,
-            owner: `wallet${i}abc`,
+      owner: `wallet${i}abc`,
       uiAmount: 50,
     }));
     const result = layerHelius(holders, 10000);
@@ -317,5 +428,89 @@ describe("layerCrossValidation", () => {
     ];
     const result = layerCrossValidation(rugData, holders, null, null, null);
     expect(result.trust).toBe(1.0);
+  });
+});
+
+
+describe("layerChart", () => {
+  const mkCandle = (o: number, h: number, l: number, c: number, v: number) => ({
+    ts: Date.now(), o, h, l, c, v,
+  });
+
+  it("returns unavailable when candles array is empty", () => {
+    const r = layerChart([], null, null);
+    expect(r.available).toBe(false);
+    expect(r.source).toBe("chart");
+  });
+
+  it("returns unavailable when fewer than 5 candles", () => {
+    const candles = [mkCandle(1,2,0.5,1.5,100), mkCandle(1.5,2,1,1.8,200)];
+    const r = layerChart(candles, null, null);
+    expect(r.available).toBe(false);
+  });
+
+  it("returns high trust for stable healthy chart", () => {
+    const candles = Array.from({length: 20}, (_, i) => {
+      const base = 1 + i * 0.01;
+      return mkCandle(base, base + 0.02, base - 0.01, base + 0.005, 1000 + i * 10);
+    });
+    const r = layerChart(candles, null, 1440);
+    expect(r.available).toBe(true);
+    expect(r.trust).toBeGreaterThanOrEqual(0);
+  });
+
+  it("detects parabolic pump pattern (>500% run-up)", () => {
+    const candles = Array.from({length: 20}, (_, i) => {
+      const price = 1 * Math.pow(1.15, i);
+      return mkCandle(price * 0.95, price * 1.05, price * 0.9, price, 5000);
+    });
+    const r = layerChart(candles, null, 60);
+    expect(r.available).toBe(true);
+    expect(r.trust).toBeLessThan(100);
+  });
+
+  it("detects post-ATH dump pattern", () => {
+    const up = Array.from({length: 10}, (_, i) => {
+      const price = 1 + i * 0.5;
+      return mkCandle(price - 0.2, price + 0.1, price - 0.3, price, 2000);
+    });
+    const peak = up[up.length - 1].c;
+    const down = Array.from({length: 6}, (_, i) => {
+      const price = peak * (1 - (i + 1) * 0.12);
+      return mkCandle(price + 0.1, price + 0.2, price - 0.1, price, 3000);
+    });
+    const candles = [...up, ...down];
+    const r = layerChart(candles, null, 120);
+    expect(r.available).toBe(true);
+    expect(r.trust).toBeLessThan(70);
+  });
+
+  it("detects wash trading (low volume variance)", () => {
+    const candles = Array.from({length: 20}, () => {
+      return mkCandle(1.0, 1.01, 0.99, 1.0, 100);
+    });
+    const r = layerChart(candles, null, 1440);
+    expect(r.available).toBe(true);
+  });
+
+  it("handles pair liquidity data", () => {
+    const candles = Array.from({length: 20}, (_, i) => {
+      const base = 1 + i * 0.01;
+      return mkCandle(base, base + 0.02, base - 0.01, base + 0.005, 1000);
+    });
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const pair = { liquidity: { usd: 500 }, fdv: 100000 } as unknown as Parameters<typeof layerChart>[1];
+    const r = layerChart(candles, pair, 1440);
+    expect(r.available).toBe(true);
+    expect(r.source).toBe("chart");
+  });
+
+  it("detects blow-off top with high green ratio", () => {
+    const candles = Array.from({length: 20}, (_, i) => {
+      const price = 1 + i * 0.3;
+      return mkCandle(price - 0.1, price + 0.5, price - 0.2, price + 0.2, 10000);
+    });
+    const r = layerChart(candles, null, 30);
+    expect(r.available).toBe(true);
   });
 });

@@ -244,3 +244,30 @@ describe("computeFinalScore normalization", () => {
     expect(computeFinalScore(layers)).toBe(0);
   });
 });
+
+
+describe("classifySafeBlockedReasons — low_holders HARD reason", () => {
+  it("classifies 'Very few holders (<15)' as low_holders HARD reason", () => {
+    const layers = [
+      makeLayer("solscan", 0.2, true, [{ label: "Very few holders (<15)", severity: "critical", impact: 0 }], false, true),
+    ];
+    const reasons = classifySafeBlockedReasons(layers);
+    expect(reasons).toContain("low_holders");
+  });
+
+  it("classifies 'Low holders (<50)' as low_holders HARD reason", () => {
+    const layers = [
+      makeLayer("solscan", 0.35, true, [{ label: "Low holders (<50)", severity: "warning", impact: 0 }], false, true),
+    ];
+    const reasons = classifySafeBlockedReasons(layers);
+    expect(reasons).toContain("low_holders");
+  });
+
+  it("does NOT classify 'Strong holder base (5K+)' as low_holders", () => {
+    const layers = [
+      makeLayer("solscan", 1.0, true, [{ label: "Strong holder base (5K+) \u2713", severity: "bonus", impact: 0 }], false, false),
+    ];
+    const reasons = classifySafeBlockedReasons(layers);
+    expect(reasons).not.toContain("low_holders");
+  });
+});
