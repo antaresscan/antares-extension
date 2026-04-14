@@ -7,6 +7,10 @@ function Options() {
 
   useEffect(() => {
     chrome.storage.local.get(["antares_stealth", "autoRescan"], (data) => {
+      if (chrome.runtime.lastError) {
+        console.error("[antares] options storage error:", chrome.runtime.lastError.message);
+        return;
+      }
       setStealthMode(!!data.antares_stealth);
       setAutoRescan(data.autoRescan !== false);
     });
@@ -33,11 +37,11 @@ function Options() {
               setAutoRescan(e.target.checked);
               void chrome.storage.local.set({ autoRescan: e.target.checked });
             }} />
-          {" "}Auto-rescan on price crash (&gt;30% drop in 1h)
+          {" "}Auto-rescan on price crash (>30% drop in 1h)
         </label>
       </div>
       <h2>About</h2>
-      <p>Antares &mdash; real-time Solana token scanner.</p>
+      <p>Antares — real-time Solana token scanner.</p>
       <p>Version: {version}</p>
       <p><a href="https://antares-extension.vercel.app/privacy" target="_blank" rel="noreferrer">Privacy Policy</a></p>
     </div>
