@@ -6,7 +6,6 @@ import { initDrag } from "./drag"
 import { encodeHashPayload } from "../../shared/hash-payload"
 import { toggleAiSummary } from "./ai-summary"
 
-// ── HTML ESCAPE UTILITY ─────────────────────────────────────────────────────────────────────────────────
 const HTML_ESCAPE: Record<string, string> = {
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
 }
@@ -86,10 +85,6 @@ export function resetState() {
   hideBox()
 }
 
-/**
- * Attaches close button + AI Summary button handlers.
- * aiSummary is passed so the panel can be populated on first open.
- */
 export function attachClose(aiSummary?: string | null) {
   state.shadow?.querySelector("#ant-close")?.addEventListener(
     "click",
@@ -98,46 +93,48 @@ export function attachClose(aiSummary?: string | null) {
   )
   const aiBtn = state.shadow?.querySelector("#ant-ai-summary-btn")
   if (aiBtn) {
-    // Remove any previous listener by cloning
     const fresh = aiBtn.cloneNode(true) as HTMLElement
     aiBtn.parentNode?.replaceChild(fresh, aiBtn)
-    fresh.addEventListener("click", () => toggleAiSummary(aiSummary ?? null))
+    if (!fresh.hasAttribute("disabled")) {
+      fresh.addEventListener("click", () => toggleAiSummary(aiSummary ?? null))
+    }
   }
 }
 
 /**
- * Attaches the smart-tab handler to the Full Analysis button.
+ * Attaches the Full Analysis button handler.
+ * Delegates tab creation to the background service worker via chrome.runtime.sendMessage
+ * because chrome.tabs.create is NOT available in content scripts (MV3).
  */
 export function attachAnalysisBtn(mint: string) {
   const btn = state.shadow?.querySelector("#ant-full-analysis")
   if (!btn) return
-  btn.addEventListener("click", (e) => {
+
+  // Clone to remove any previous listener
+  const fresh = btn.cloneNode(true) as HTMLElement
+  btn.parentNode?.replaceChild(fresh, btn)
+
+  fresh.addEventListener("click", (e) => {
     e.preventDefault()
     const cacheEntry = scanCache.get(mint)
-    const hashFragment = cacheEntry ? encodeHashPayload(cacheEntry.data as unknown as Record<string, unknown>) : ""
+    const hashFragment = cacheEntry
+      ? encodeHashPayload(cacheEntry.data as unknown as Record<string, unknown>)
+      : ""
     const baseUrl = `${ANALYSIS_PAGE}?ca=${encodeURIComponent(mint)}`
-    const urlWithHash = hashFragment ? `${baseUrl}#data=${hashFragment}` : baseUrl
-    const TAB_PATTERN = "https://antares-extension.vercel.app/token.html*"
-    try {
-      chrome.tabs.query({ url: TAB_PATTERN }, (tabs) => {
-        if (chrome.runtime.lastError) {
-          void chrome.tabs.create({ url: urlWithHash })
-          return
+    const url = hashFragment ? `${baseUrl}#data=${hashFragment}` : baseUrl
+    const reusePattern = `ca=${encodeURIComponent(mint)}`
+
+    // Delegate to background — the only place allowed to call chrome.tabs.create in MV3
+    chrome.runtime.sendMessage(
+      { type: "OPEN_TAB", url, reusePattern },
+      (resp) => {
+        if (chrome.runtime.lastError || !resp?.ok) {
+          // Last-resort fallback: open via window.open (works from content script)
+          window.open(url, "_blank", "noopener,noreferrer")
         }
-        const existing = tabs.find((t) =>
-          typeof t.url === "string" && t.url.includes(`ca=${encodeURIComponent(mint)}`)
-        )
-        if (existing?.id !== undefined && existing.windowId !== undefined) {
-          void chrome.tabs.update(existing.id, { active: true, url: urlWithHash })
-          void chrome.windows.update(existing.windowId, { focused: true })
-        } else {
-          void chrome.tabs.create({ url: urlWithHash })
-        }
-      })
-    } catch {
-      void chrome.tabs.create({ url: urlWithHash })
-    }
-  }, { once: true })
+      }
+    )
+  })
 }
 
 export function showCachedBadge(ageMs: number) {
@@ -267,11 +264,10 @@ export function buildResult(data: ScanResponseData, ca: string): string {
     : ""
   const analysisLink = `<a href="#" id="ant-full-analysis" data-ca="${encodeURIComponent(mint)}"${isDangerous ? ' class="warn"' : ''}>Full Analysis \u2192</a>`
 
-  // AI Summary button: active (purple) if summary available, greyed out if not
   const hasAI = !!data.aiSummary
   const aiBtn = hasAI
     ? `<button class="ai-btn ai-btn--active" id="ant-ai-summary-btn">\u2b21 AI Summary</button>`
-    : `<button class="ai-btn ai-btn--disabled" id="ant-ai-summary-btn" disabled>\u2b21 AI Summary</button>`
+    : `<button class="ai-btn ai-btn--disabled" id="ant-ai-summary-btn" disabled title="No AI summary available">\u2b21 AI Summary</button>`
 
   return `
     <div class="topbar"></div>
