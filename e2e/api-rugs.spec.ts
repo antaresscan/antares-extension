@@ -5,11 +5,15 @@ const BASE = process.env.E2E_BASE_URL || 'https://antares-extension.vercel.app';
 test.describe('API /api/rugs — Wall of Shame', () => {
 
   test.describe('CORS enforcement', () => {
-    test('blocks requests from non-allowed origins', async ({ request }) => {
-      const r = await request.get(`${BASE}/api/rugs`);
+    test('blocks requests from non-allowed origins', async ({ playwright }) => {
+      const ctx = await playwright.request.newContext({
+        extraHTTPHeaders: { 'Origin': 'https://evil.com' },
+      });
+      const r = await ctx.get(`${BASE}/api/rugs`);
       expect(r.status()).toBe(403);
       const b = await r.json();
       expect(b.error).toBeTruthy();
+      await ctx.dispose();
     });
   });
 
@@ -45,11 +49,15 @@ test.describe('API /api/rugs — Wall of Shame', () => {
   });
 
   test.describe('Error shape', () => {
-    test('error response has consistent shape', async ({ request }) => {
-      const r = await request.get(`${BASE}/api/rugs`);
+    test('error response has consistent shape', async ({ playwright }) => {
+      const ctx = await playwright.request.newContext({
+        extraHTTPHeaders: { 'Origin': 'https://evil.com' },
+      });
+      const r = await ctx.get(`${BASE}/api/rugs`);
       const b = await r.json();
       expect(b).toHaveProperty('error');
       expect(typeof b.error).toBe('string');
+      await ctx.dispose();
     });
   });
 });
