@@ -282,11 +282,17 @@ export function buildResult(data: ScanResponseData, ca: string): string {
   const siSell = `<div class="si"><span>Sell</span><b class="${data.honeypot ? "n" : "y"}">${data.honeypot ? "\u2717" : "\u2713"}</b></div>`
   const siMint = boolSI("Mint", data.mintAuthority, true)
   const siFreeze = boolSI("Freeze", data.freezeAuthority, true)
-  const siLP = boolSI("LP Lock", data.lpBurned ?? data.lpLocked)
-  const liqDisplay = liq !== null ? formatMcap(liq) : "\u2014"
   const siLiq = `<div class="si"><span>Liq</span><b${liq !== null && liq < 5000 ? ' class="n"' : liq !== null && liq > 50000 ? ' class="y"' : ""}>${liqDisplay}</b></div>`
 
-  const rawDexUrl = data.pair?.url
+    const siLP = (() => {
+      if (data.lpBurned) return `<div class="si"><span>LP Burned</span><b class="y">\u2713</b></div>`
+      if (data.lpLocked) {
+        const pct = data.lpLockedPct != null ? ` ${data.lpLockedPct}%` : ""
+        const dur = data.lpLockDurationDays != null ? ` (${data.lpLockDurationDays}d)` : ""
+        return `<div class="si"><span>LP Locked${escapeHtml(pct + dur)}</span><b class="y">\u2713</b></div>`
+      }
+      return `<div class="si"><span>LP Lock</span><b class="n">\u2717</b></div>`
+    })()
   const safeDexUrl = rawDexUrl && /^https?:\/\//i.test(rawDexUrl) ? rawDexUrl : ""
   const dexLink = safeDexUrl
     ? `<a href="${escapeHtml(safeDexUrl)}" target="_blank" rel="noopener noreferrer">DexScreener</a>`
