@@ -286,7 +286,7 @@ export function buildResult(data: ScanResponseData, ca: string): string {
   const liqDisplay = liq !== null ? formatMcap(liq) : "\u2014"
   const siLiq = `<div class="si"><span>Liq</span><b${liq !== null && liq < 5000 ? ' class="n"' : liq !== null && liq > 50000 ? ' class="y"' : ""}>${liqDisplay}</b></div>`
 
-  const rawDexUrl = data.pair?.url
+  const rawDexUrl = data.pair?.url || `https://dexscreener.com/solana/${mint}`
   const safeDexUrl = rawDexUrl && /^https?:\/\//i.test(rawDexUrl) ? rawDexUrl : ""
   const dexLink = safeDexUrl
     ? `<a href="${escapeHtml(safeDexUrl)}" target="_blank" rel="noopener noreferrer">DexScreener</a>`
