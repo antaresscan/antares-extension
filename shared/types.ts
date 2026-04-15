@@ -33,6 +33,8 @@ export interface ScanResponseData {
   freezeAuthority?: boolean | null;
   lpBurned?: boolean | null;
   lpLocked?: boolean | null;
+      lpLockedPct?: number | null;
+    lpLockDurationDays?: number | null;
   honeypot?: boolean | null;
   safeBlocked?: boolean;
   candles?: Array<{ close: number }>;
