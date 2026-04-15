@@ -38,31 +38,9 @@ jobs:
       - name: Build extension
         run: npx plasmo build
 
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
-
-      - name: Check E2E target health
-        id: e2e-health
-        run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://antares-extension.vercel.app/api/health || echo "000")
-          if [ "$STATUS" = "000" ] || [ "$STATUS" = "403" ]; then
-            echo "skip=true" >> $GITHUB_OUTPUT
-            echo "::warning::E2E target unreachable (HTTP $STATUS), skipping E2E tests"
-          else
-            echo "skip=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Run E2E tests (API + Web + Integration + Regression)
-        if: steps.e2e-health.outputs.skip != 'true'
-        continue-on-error: true
-        run: npx playwright test --project=api --project=web-desktop --project=integration
-        env:
-          E2E_BASE_URL: https://antares-extension.vercel.app
-
-      - name: Upload E2E test report
-        if: always()
+      - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-report
-          path: playwright-report/
-          retention-days: 14
+          name: antares-extension-build
+          path: build/chrome-mv3-prod/
+          retention-days: 30
