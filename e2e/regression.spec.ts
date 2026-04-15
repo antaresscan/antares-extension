@@ -4,8 +4,9 @@ const BASE = process.env.E2E_BASE_URL || 'https://antares-extension.vercel.app';
 const SOL = 'So11111111111111111111111111111111111111112';
 
 /**
- * Regression tests: these verify that previously fixed bugs stay fixed.
- * Add a new test here for every bug fix or critical behavior change.
+ * Regression tests: verify previously fixed bugs stay fixed.
+ * — All tests here use only { request } so they run in the headless `integration` project.
+ * — Tests requiring a real browser page (e.g. mixed-content check) live in the `web-desktop` project.
  */
 test.describe('Regression Tests', () => {
 
@@ -40,15 +41,6 @@ test.describe('Regression Tests', () => {
     }
   });
 
-  test('REG-005: landing page does not have mixed content', async ({ page }) => {
-    const mixedContent: string[] = [];
-    page.on('console', (msg) => {
-      if (msg.text().includes('Mixed Content')) mixedContent.push(msg.text());
-    });
-    await page.goto(BASE, { waitUntil: 'networkidle' });
-    expect(mixedContent).toHaveLength(0);
-  });
-
   test('REG-006: API responses include scoring_version', async ({ request }) => {
     const r = await request.get(`${BASE}/api/scan?ca=${SOL}`);
     const b = await r.json();
@@ -62,6 +54,7 @@ test.describe('Regression Tests', () => {
     expect(r.status()).toBe(400);
   });
 
+  // REG-008: concurrent scans use requestId (not scan_id) to distinguish responses
   test('REG-008: concurrent scans do not interfere', async ({ request }) => {
     const [r1, r2] = await Promise.all([
       request.get(`${BASE}/api/scan?ca=${SOL}`),
@@ -71,7 +64,7 @@ test.describe('Regression Tests', () => {
     expect(r2.ok()).toBeTruthy();
     const b1 = await r1.json();
     const b2 = await r2.json();
-    // Different tokens should not get mixed up
-    expect(b1.scan_id).not.toBe(b2.scan_id);
+    // Different tokens must return different resolvedMint addresses
+    expect(b1.resolvedMint).not.toBe(b2.resolvedMint);
   });
 });
