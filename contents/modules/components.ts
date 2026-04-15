@@ -4,7 +4,6 @@ import { state, scanCache } from "./state"
 import { SHADOW_CSS, injectFonts } from "./styles"
 import { initDrag } from "./drag"
 import { encodeHashPayload } from "../../shared/hash-payload"
-import { logger } from "../../shared/logger"
 import { toggleAiSummary } from "./ai-summary"
 
 // ─── HTML ESCAPE UTILITY ──────────────────────────────────────────────────────
