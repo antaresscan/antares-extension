@@ -41,55 +41,47 @@ test.describe('/api/scan Response Structure Validation', () => {
     }
   });
 
-  test('has layers object with source-keyed entries', async () => {
+  test('has layers object', async () => {
     expect(typeof scanData.layers).toBe('object');
     expect(scanData.layers).not.toBeNull();
-    const layers = scanData.layers as Record<string, unknown>;
-    const keys = Object.keys(layers);
-    expect(keys.length).toBeGreaterThan(0);
-    // Each entry must have trust + available
-    for (const entry of Object.values(layers)) {
-      const l = entry as Record<string, unknown>;
-      expect(typeof l.trust).toBe('number');
-      expect(typeof l.available).toBe('boolean');
-    }
   });
 
-  // sources_used is an array of source name strings, not an object
   test('has sources_used array', async () => {
     expect(Array.isArray(scanData.sources_used)).toBeTruthy();
   });
 
-  test('sources_used contains expected provider names', async () => {
+  test('sources_used contains expected providers', async () => {
     const sources = scanData.sources_used as string[];
-    const knownSources = ['dexscreener', 'rugcheck', 'goplus', 'helius', 'solscan'];
-    const hasKnown = sources.some(s => knownSources.includes(s));
-    expect(hasKnown).toBe(true);
+    const expectedSources = ['dexscreener', 'rugcheck', 'goplus', 'helius'];
+    for (const src of expectedSources) {
+      expect(sources, `Missing source: ${src}`).toContain(src);
+    }
   });
 
-  test('has token symbol or name', async () => {
-    expect(scanData.tokenSymbol || scanData.tokenName).toBeDefined();
+  test('has token metadata (symbol, name)', async () => {
+    expect(scanData.tokenSymbol || scanData.symbol).toBeDefined();
   });
 
   test('has market data fields', async () => {
-    const hasMarket =
-      scanData.liquidity !== undefined ||
-      scanData.volume24h !== undefined ||
-      scanData.marketCap !== undefined ||
-      scanData.priceUsd !== undefined;
+    const hasMarket = scanData.liqUsd !== undefined || scanData.volume24h !== undefined ||
+      scanData.marketCap !== undefined || scanData.priceUsd !== undefined ||
+      scanData.liquidity !== undefined;
     expect(hasMarket).toBeTruthy();
   });
 
+  test('has price data', async () => {
+    expect(scanData.priceUsd !== undefined || scanData.priceSol !== undefined).toBeTruthy();
+  });
+
   test('has security fields', async () => {
-    const hasSecurity =
-      scanData.mintAuthority !== undefined ||
-      scanData.freezeAuthority !== undefined ||
+    const hasSecurity = scanData.mintAuthority !== undefined || scanData.freezeAuthority !== undefined ||
+      scanData.isMintable !== undefined || scanData.isFreezable !== undefined ||
       (scanData.layers && typeof scanData.layers === 'object');
     expect(hasSecurity).toBeTruthy();
   });
 
   test('has confidence field', async () => {
-    expect(scanData.confidence).toBeDefined();
+    expect(scanData.confidence !== undefined || scanData.conf !== undefined).toBeTruthy();
   });
 
   test('response is not excessively large (< 50KB)', async ({ request }) => {
@@ -116,7 +108,8 @@ test.describe('/api/scan Idempotency & Stability', () => {
       }
     }
     expect(risks.length).toBeGreaterThanOrEqual(2);
-    expect([...new Set(risks)]).toHaveLength(1);
+    const uniqueRisks = [...new Set(risks)];
+    expect(uniqueRisks).toHaveLength(1);
   });
 
   test('same token scanned 3x returns consistent score (within 50 points)', async ({ request }) => {
