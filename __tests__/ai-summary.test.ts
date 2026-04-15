@@ -67,8 +67,8 @@ describe("generateAISummary", () => {
       "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
       expect.objectContaining({
         method: "POST",
-                  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          headers: expect.objectContaining({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        headers: expect.objectContaining({
           Authorization: "Bearer test-key-123",
         }),
       })
@@ -117,16 +117,20 @@ describe("generateAISummary", () => {
     expect(result).toBeNull()
   })
 
-  it("returns null when response content exceeds 600 chars", async () => {
+  it("truncates and returns a string (not null) when response content exceeds MAX_LENGTH (800 chars)", async () => {
     vi.stubEnv("GEMINI_API_KEY", "test-key")
+    const longContent = "This is a valid sentence that will be repeated. ".repeat(20) // ~960 chars
     const mockFetch = vi.fn().mockResolvedValue(
       mockFetchResponse({
-        choices: [{ message: { content: "a".repeat(601) } }],
+        choices: [{ message: { content: longContent } }],
       })
     )
     vi.stubGlobal("fetch", mockFetch)
     const result = await generateAISummary(baseInput)
-    expect(result).toBeNull()
+    expect(result).not.toBeNull()
+    expect(typeof result).toBe("string")
+    expect(result!.length).toBeLessThanOrEqual(800)
+    expect(result!.endsWith(".")).toBe(true)
   })
 
   it("returns null when choices array has no message content", async () => {
