@@ -83,17 +83,19 @@ canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.35}
 .rug     .logo{color:#cc3344;text-shadow:0 0 12px rgba(255,34,68,.5)}
 
 /* ── token header ── */
+/* Row: left=verdict+name+age | right=token logo */
 .token-header{
   display:flex;
-  align-items:center;
+  align-items:flex-start;
   justify-content:space-between;
   gap:20px;
-  margin-bottom:10px;
+  margin-bottom:12px;
 }
 .token-header-text{
   flex:1;
   min-width:0;
 }
+/* Token logo top-right */
 .token-logo{
   width:72px;
   height:72px;
@@ -102,6 +104,7 @@ canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.35}
   flex-shrink:0;
   background:#111;
   display:block;
+  margin-top:4px;
 }
 .safe    .token-logo{border:1.5px solid rgba(0,229,176,.3);box-shadow:0 0 24px rgba(0,229,176,.18),0 0 48px rgba(0,229,176,.07)}
 .caution .token-logo{border:1.5px solid rgba(245,208,0,.3);box-shadow:0 0 24px rgba(245,208,0,.15),0 0 48px rgba(245,208,0,.06)}
@@ -127,9 +130,12 @@ canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.35}
 .danger .vt::before{color:#ff5f5f;clip-path:polygon(0 30%,100% 30%,100% 50%,0 50%);transform:translateX(-2px);opacity:.4}
 .danger .vt::after {color:#ff5f5f;clip-path:polygon(0 58%,100% 58%,100% 72%,0 72%);transform:translateX(2px); opacity:.3;animation-delay:.1s}
 
-.tk-name{font-size:11px;color:#888;letter-spacing:.06em;margin-top:4px}
+.tk-name{font-size:11px;color:#888;letter-spacing:.06em;margin-top:6px;line-height:1.4}
 .tk-name b{color:#ddd;font-weight:700}
-.price-big{font-size:22px;font-weight:700;color:#ddd;margin-top:8px;letter-spacing:.02em}
+.age-badge{display:inline-block;font-size:10px;color:#666;background:#0a0a0c;border:1px solid #1e1e24;border-radius:2px;padding:3px 8px;margin-top:6px;letter-spacing:.06em}
+
+/* price + score outside token-header, full width */
+.price-big{font-size:22px;font-weight:700;color:#ddd;margin-top:14px;letter-spacing:.02em}
 .price-big span{font-size:11px;color:#555}
 .score-row{display:flex;align-items:center;gap:12px;margin:12px 0 4px}
 .sc-num{font-size:11px;color:#666}
@@ -145,8 +151,6 @@ canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.35}
 .caution .conf-line{color:#a89020}
 .danger  .conf-line{color:#cc5555}
 .rug     .conf-line{color:#cc4455}
-
-.age-badge{display:inline-block;font-size:10px;color:#666;background:#0a0a0c;border:1px solid #1e1e24;border-radius:2px;padding:3px 8px;margin-top:6px;letter-spacing:.06em}
 
 .socials{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
 .soc{font-size:9px;color:#888;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;border-radius:2px;padding:5px 11px;transition:.2s;position:relative;overflow:hidden}
@@ -216,7 +220,7 @@ canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.35}
 .flag-list{display:flex;flex-direction:column}
 .fl{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.03);font-size:12px;line-height:1.5}
 .fl:last-child{border-bottom:none}
-.fic{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:16px;font-size:8px;flex-shrink:0;margin-top:2px}
+.fic{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;flex-shrink:0;margin-top:2px}
 .fic.r{background:rgba(255,60,80,.15);color:#ff5f5f}
 .fic.y{background:rgba(245,208,0,.12);color:#f5d000}
 .fic.g{background:rgba(0,229,176,.1);color:#00e5b0}
@@ -318,7 +322,7 @@ canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.35}
     <span id="loading-status"></span>
   </div>
   <div id="err">
-    <div id="err-msg">Failed to load analysis. Please try again.</div>
+    <div id="err-msg">Analysis failed. Please try again.</div>
     <button id="err-retry">↺ Retry</button>
   </div>
   <div id="content"></div>
@@ -426,7 +430,7 @@ function showError(msg) {
   document.getElementById("loading").style.display="none"
   const errEl = document.getElementById("err")
   const msgEl = document.getElementById("err-msg")
-  if (msgEl) msgEl.textContent = msg || "Failed to load analysis. Please try again."
+  if (msgEl) msgEl.textContent = msg || "Analysis failed. Please try again."
   errEl.style.display="block"
   const retryBtn = document.getElementById("err-retry")
   if (retryBtn) retryBtn.style.display = "inline-block"
@@ -462,7 +466,7 @@ if(!ca){
 
   fetchWithRetry(`${API}?ca=${ca}`)
     .then(d => render(d, ca))
-    .catch(() => showError("Failed to load analysis. Please try again."))
+    .catch(() => showError("Analysis failed after multiple attempts. Please try again later."))
 }
 
 function render(d,ca){
@@ -482,7 +486,6 @@ function render(d,ca){
   const liq=d.liquidity??d.pair?.liquidity?.usd??null
   const vol24=d.volume24h??d.pair?.volume?.h24??null
   const vol1h=d.volume1h??d.pair?.volume?.h1??null
-  const holders=d.holders??null
   const priceUsd=d.priceUsd??d.pair?.priceUsd??null
   const priceNative=d.pair?.priceNative??null
 
@@ -554,7 +557,6 @@ function render(d,ca){
       <div class="txn-bar-wrap"><div class="txn-bar-buy" style="width:${buyPct}%"></div><div class="txn-bar-sell" style="width:${sellPct}%"></div></div>
     </div>`
   }
-  const txnsHtml=`<div class="txn-row">${txnCard("1h",txH1)}${txnCard("6h",txH6)}${txnCard("24h",txH24)}</div>`
 
   const dotsCount=Math.round((score/1000)*5)
   const dotsHtml=Array.from({length:5},(_,i)=>`<div class="dt ${i<dotsCount?'on':'off'}"></div>`).join("")
@@ -583,19 +585,37 @@ function render(d,ca){
 
   window.__riskClass=rc
 
+  // ── Logo token (top-right) — shown if available
+  const logoHtml=logo
+    ?`<img class="token-logo" src="${logo}" alt="${escapeHtml(sym)}" onerror="this.style.display='none'"/>`
+    :""
+
+  // ── tk-name: symbol + full name, properly closed
+  const tkNameHtml=sym
+    ?`<div class="tk-name"><b>${escapeHtml(sym)}</b>${name?' '+escapeHtml(name):''}</div>`
+    :""
+
+  // ── age badge
+  const ageBadgeHtml=ageStr
+    ?`<div class="age-badge">${ageStr}</div>`
+    :pairDate?`<div class="age-badge">Pair: ${pairDate}</div>`:""
+
   wrap.innerHTML=`
     <div class="${rc}">
       <div class="risk-wrap ${rc}">
         <div class="topbar"></div>
+
+        <!-- verdict + name + age on the left, token logo on the right -->
         <div class="token-header">
           <div class="token-header-text">
-            <div class="vt" data-label="${lb}">${lb}</div>
-            ${sym?`<div class="tk-name"><b>${sym}</b> ${name}`:""}
-            ${ageStr?`<div class="age-badge">${ageStr}</div>`:pairDate?`<div class="age-badge">Pair: ${pairDate}</div>`:""}
+            <div class="vt" data-label="${escapeHtml(lb)}">${lb}</div>
+            ${tkNameHtml}
+            ${ageBadgeHtml}
           </div>
-          ${logo?`<img class="token-logo" src="${logo}" alt="${sym}" onerror="this.style.display='none'"/>`:""
-          }
+          ${logoHtml}
         </div>
+
+        <!-- price, score bar and confidence BELOW the header row, full width -->
         ${priceUsd?`<div class="price-big">${fmtPrice(priceUsd)} <span>${priceNative?priceNative+' SOL':''}</span></div>`:""}
         <div class="score-row">
           <span class="sc-num"><b>${score}</b> / 1000</span>
@@ -614,7 +634,6 @@ function render(d,ca){
         ${liq?`<div class="stat"><span>Liquidity</span><strong>${fmt(liq)}</strong></div>`:""}
         ${vol24?`<div class="stat"><span>Volume 24h</span><strong>${fmt(vol24)}</strong></div>`:""}
         ${vol1h?`<div class="stat"><span>Volume 1h</span><strong>${fmt(vol1h)}</strong></div>`:""}
-        
       </div>
       ${changesHtml}
     </div>
@@ -636,7 +655,7 @@ function render(d,ca){
     </div>
   `
 
-  // ── AI Analysis card — toujours affichée, contenu selon disponibilité
+  // ── AI Analysis card
   const aiSection = document.createElement('div')
   aiSection.className = 'card ai-card'
   aiSection.id = 'ai-section'
@@ -644,55 +663,31 @@ function render(d,ca){
     aiSection.innerHTML = `<div class="card-title"><span class="ai-icon">⬡</span> AI Analysis</div><p class="ai-body">${escapeHtml(d.aiSummary)}</p>`
   } else {
     aiSection.innerHTML = `<div class="card-title"><span class="ai-icon">⬡</span> AI Analysis</div><p class="ai-loading">Generating analysis…</p>`
-    // Tentative de récupération asynchrone si l'AI summary n'est pas dans la réponse initiale
-    // (cas où Gemini a timeout côté serveur mais les données scan sont OK)
     fetch(`${API}?ca=${ca}&ai=1`)
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (data && data.aiSummary) {
           const p = aiSection.querySelector('.ai-loading, .ai-body')
-          if (p) {
-            p.className = 'ai-body'
-            p.textContent = data.aiSummary
-          }
+          if (p) { p.className = 'ai-body'; p.textContent = data.aiSummary }
         } else {
           const p = aiSection.querySelector('.ai-loading')
-          if (p) {
-            p.className = 'ai-body'
-            p.style.animation = 'none'
-            p.style.color = '#444'
-            p.textContent = 'AI analysis unavailable for this token.'
-          }
+          if (p) { p.className = 'ai-body'; p.style.animation = 'none'; p.style.color = '#444'; p.textContent = 'AI analysis unavailable for this token.' }
         }
       })
       .catch(() => {
         const p = aiSection.querySelector('.ai-loading')
-        if (p) {
-          p.className = 'ai-body'
-          p.style.animation = 'none'
-          p.style.color = '#444'
-          p.textContent = 'AI analysis unavailable for this token.'
-        }
+        if (p) { p.className = 'ai-body'; p.style.animation = 'none'; p.style.color = '#444'; p.textContent = 'AI analysis unavailable for this token.' }
       })
   }
-  // Insérer après le bloc risque, avant les cards
   const firstCard = wrap.querySelector('.card')
-  if (firstCard) {
-    wrap.insertBefore(aiSection, firstCard)
-  } else {
-    wrap.appendChild(aiSection)
-  }
+  if (firstCard) { wrap.insertBefore(aiSection, firstCard) } else { wrap.appendChild(aiSection) }
 
   // ── Flags card
   const flagsSection = document.createElement('div')
   flagsSection.className = 'card'
   flagsSection.innerHTML = `<div class="card-title">Flags</div><div class="flag-list">${noFlags}</div>`
   const secCard = wrap.querySelector('.card:nth-child(3)')
-  if (secCard) {
-    secCard.after(flagsSection)
-  } else {
-    wrap.insertBefore(flagsSection, wrap.querySelector('.footer'))
-  }
+  if (secCard) { secCard.after(flagsSection) } else { wrap.insertBefore(flagsSection, wrap.querySelector('.footer')) }
 
   // ── On-Chain Data
   const onchainRows = [
