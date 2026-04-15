@@ -4,7 +4,7 @@ const BASE = process.env.E2E_BASE_URL || 'https://antares-extension.vercel.app';
 const SOL = 'So11111111111111111111111111111111111111112';
 const USDC = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
 
-test.describe('Scan Integration — Full Flow E2E', () => {
+test.describe('Scan Integration \u2014 Full Flow E2E', () => {
 
   test('full scan flow: health check -> scan -> verify response', async ({ request }) => {
     // Step 1: Health check
@@ -30,7 +30,6 @@ test.describe('Scan Integration — Full Flow E2E', () => {
     const r2 = await request.get(`${BASE}/api/scan?ca=${SOL}`);
     const b1 = await r1.json();
     const b2 = await r2.json();
-
     // Scores should be identical (cached) or within small tolerance
     expect(Math.abs(b1.score - b2.score)).toBeLessThan(50);
     expect(b1.risk).toBe(b2.risk);
@@ -41,11 +40,10 @@ test.describe('Scan Integration — Full Flow E2E', () => {
     const r2 = await request.get(`${BASE}/api/scan?ca=${USDC}`);
     const b1 = await r1.json();
     const b2 = await r2.json();
-
     // Both should succeed but may differ
     expect(r1.ok()).toBeTruthy();
     expect(r2.ok()).toBeTruthy();
-    expect(b1.scan_id).not.toBe(b2.scan_id);
+    expect(b1.requestId).not.toBe(b2.requestId);
   });
 
   test('token page loads and calls API for scan data', async ({ page }) => {
@@ -61,7 +59,6 @@ test.describe('Scan Integration — Full Flow E2E', () => {
     if (await cta.count() > 0) {
       const href = await cta.getAttribute('href');
       expect(href).toBeTruthy();
-      // Should link to Chrome Web Store, GitHub, or internal page
       expect(href).toMatch(/chrome\.google\.com|github\.com|#|\//i);
     }
   });
