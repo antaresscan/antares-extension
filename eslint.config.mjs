@@ -26,7 +26,7 @@ export default tseslint.config(
         destructuredArrayIgnorePattern: "^_",
       }],
       "prefer-const": "warn",
-            "no-useless-assignment": "off",
+      "no-useless-assignment": "off",
     },
   },
   {
@@ -34,6 +34,7 @@ export default tseslint.config(
       "node_modules/",
       ".plasmo/",
       "build/",
+      "e2e/",
       "**/*.js",
       "**/*.mjs",
     ],
