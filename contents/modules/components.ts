@@ -5,6 +5,7 @@ import { SHADOW_CSS, injectFonts } from "./styles"
 import { initDrag } from "./drag"
 import { encodeHashPayload } from "../../shared/hash-payload"
 import { logger } from "../../shared/logger"
+import { toggleAiSummary } from "./ai-summary"
 
 // ─── HTML ESCAPE UTILITY ──────────────────────────────────────────────────────
 const HTML_ESCAPE: Record<string, string> = {
@@ -88,7 +89,7 @@ export function resetState() {
 
 export function attachClose() {
   state.shadow?.querySelector("#ant-close")?.addEventListener("click", () => { state.manuallyDismissed = true; hideBox() }, { once: true })
-  state.shadow?.querySelector("#ant-hist-btn")?.addEventListener("click", toggleHistory)
+  state.shadow?.querySelector("#ant-ai-summary-btn")?.addEventListener("click", toggleAiSummary)
 }
 
 /**
@@ -147,43 +148,6 @@ export function showCachedBadge(ageMs: number) {
   badge.className = "cached-badge"
   badge.textContent = `\u26a1 cached \u00b7 ${mins}m ago`
   fo.prepend(badge)
-}
-
-export function toggleHistory() {
-  const panel = state.shadow?.querySelector("#ant-hist") as HTMLElement | null
-  if (!panel) return
-  if (panel.classList.contains("open")) {
-    panel.classList.remove("open")
-    return
-  }
-  panel.innerHTML = `<div style="color:#555;font-size:9px;padding:6px 0;font-family:'IBM Plex Mono',monospace">Loading...</div>`
-  panel.classList.add("open")
-  try {
-    chrome.runtime.sendMessage({ type: "GET_HISTORY" }, (response) => {
-      if (chrome.runtime.lastError) {
-        panel.innerHTML = `<div style="color:#444;font-size:9px;padding:6px 0;font-family:'IBM Plex Mono',monospace">Extension reloaded \u2014 refresh page</div>`
-        return
-      }
-      if (!response?.ok || !response.history?.length) {
-        panel.innerHTML = `<div style="color:#444;font-size:9px;padding:6px 0;font-family:'IBM Plex Mono',monospace">No recent scans</div>`
-        return
-      }
-      const items = (response.history as Array<{ ca: string; symbol: string; risk: string; score: number; ts: number }>)
-        .map((h) => {
-          const rClass = (h.risk || "").toLowerCase()
-          return `<div class="hist-item">
-            <span class="hist-sym">${escapeHtml(h.symbol || "")}</span>
-            <span class="hist-risk ${rClass}">${escapeHtml(h.risk || "")}</span>
-            <span class="hist-score">${h.score}/1000</span>
-            <span class="hist-time">${formatTimeAgo(h.ts)}</span>
-          </div>`
-        }).join("")
-      panel.innerHTML = items
-    })
-  } catch (e: unknown) {
-    logger.warn("runtime unavailable", e)
-    panel.innerHTML = `<div style="color:#444;font-size:9px;padding:6px 0;font-family:'IBM Plex Mono',monospace">Extension reloaded \u2014 refresh page</div>`
-  }
 }
 
 export function triggerResultAnimations(el: HTMLDivElement) {
@@ -304,7 +268,7 @@ export function buildResult(data: ScanResponseData, ca: string): string {
     ${data.aiSummary ? `<div class="antares-ai-summary" style="margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;opacity:0.7"><div style="font-size:9px;text-transform:uppercase;letter-spacing:0.05em;color:#888;margin-bottom:2px">AI Summary</div>${escapeHtml(data.aiSummary)}</div>` : ""}
     <div class="sep"></div>
     <div class="ss">${siSell}${siMint}${siFreeze}${siLP}${siLiq}</div>
-    <div class="hist-panel" id="ant-hist"></div>
-    <div class="fo">${dexLink}${analysisLink}<button class="hist-btn" id="ant-hist-btn">History</button></div>
+    <div class="ai-panel" id="ant-ai-summary"></div>
+    <div class="fo">${dexLink}${analysisLink}<button class="ai-btn" id="ant-ai-summary-btn">AI Summary</button></div>
   `
 }
