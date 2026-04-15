@@ -294,17 +294,89 @@ export const SHADOW_CSS = `
 .sparkline { padding: 4px 14px 0; }
 .sparkline svg { display: block; }
 
+/* ── AI Summary button ─────────────────────────────────────────── */
 .ai-btn {
   flex: 1; display: block; padding: 8px;
-  font-size: 8px; color: #888; letter-spacing: .12em;
-  text-transform: uppercase; text-decoration: none; text-align: center;
-  border: 1px solid #252528; border-radius: 2px; transition: .2s;
+  font-size: 8px; letter-spacing: .12em;
+  text-transform: uppercase; text-align: center;
+  border-radius: 2px; transition: color .2s, border-color .2s, background .2s;
   font-family: 'IBM Plex Mono', monospace; background: none; cursor: pointer;
+  color: #888; border: 1px solid #252528;
 }
-.ai-btn:hover { color: #ccc; border-color: #444; background: rgba(255,255,255,.02); }
+.ai-btn--active {
+  color: #a78bfa;
+  border-color: rgba(167,139,250,.25);
+  background: rgba(167,139,250,.05);
+}
+.ai-btn--active:hover {
+  color: #c4b5fd;
+  border-color: rgba(167,139,250,.5);
+  background: rgba(167,139,250,.1);
+}
+.ai-btn--disabled {
+  color: #333;
+  border-color: #1c1c1e;
+  cursor: not-allowed;
+  opacity: .5;
+}
 
-.ai-panel { display: none; padding: 0 14px 6px; }
-.ai-panel.open { display: block; }
+/* ── AI Summary panel (inline in overlay) ───────────────────────── */
+@keyframes ai-panel-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.ai-panel {
+  display: none;
+  margin: 0 14px 2px;
+  border: 1px solid rgba(167,139,250,.15);
+  border-radius: 3px;
+  background: rgba(167,139,250,.04);
+  overflow: hidden;
+}
+.ai-panel.open {
+  display: block;
+  animation: ai-panel-in .18s ease;
+}
+
+.ai-panel-inner {
+  padding: 10px 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* First sentence — acts as a verdict summary */
+.ai-panel-verdict {
+  font-size: 10px;
+  font-weight: 600;
+  color: #c4b5fd;
+  line-height: 1.5;
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: .01em;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(167,139,250,.1);
+}
+
+/* Subsequent sentences */
+.ai-panel-line {
+  font-size: 9.5px;
+  color: #8a8aad;
+  line-height: 1.55;
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: .01em;
+}
+
+/* Empty state */
+.ai-panel-empty {
+  padding: 10px 12px;
+  font-size: 9px;
+  color: #444;
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: .04em;
+  text-align: center;
+}
+
 .ai-item {
   display: flex; justify-content: space-between; align-items: center;
   padding: 5px 0; font-size: 9px; font-family: 'IBM Plex Mono', monospace;
