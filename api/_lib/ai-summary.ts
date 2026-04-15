@@ -15,15 +15,15 @@ export type AISummaryInput = {
 }
 
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
-const MAX_FLAGS = 5
-const TIMEOUT_MS = 5000
+const MAX_FLAGS = 8
+const TIMEOUT_MS = 8000
 const MIN_LENGTH = 20
-const MAX_LENGTH = 600
+const MAX_LENGTH = 800
 
 const FLAG_LABELS: Record<string, string> = {
   "mint_authority_enabled": "Mint authority is enabled",
   "freeze_authority_enabled": "Freeze authority is enabled",
-  "honeypot_detected": "Honeypot detected",
+  "honeypot_detected": "Honeypot detected — cannot sell",
   "lp_not_burned": "LP not burned or locked",
   "low_holders": "Low holder count",
   "top_holder_concentration": "Top holder concentration is high",
@@ -39,7 +39,6 @@ const FLAG_LABELS: Record<string, string> = {
   "blacklisted": "Token is blacklisted",
   "hidden_owner": "Hidden owner detected",
   "proxy_contract": "Proxy contract detected",
-    // GoPlus additional flags
   "is_open_source": "Contract is not open source",
   "is_proxy": "Contract uses proxy pattern",
   "is_mintable": "Token is mintable",
@@ -55,24 +54,25 @@ const FLAG_LABELS: Record<string, string> = {
   "is_blacklisted": "Blacklist mechanism detected",
   "slippage_modifiable": "Slippage/tax is modifiable",
   "personal_slippage_modifiable": "Per-address tax modifiable",
-  // RugCheck additional flags
   "mutable_metadata": "Token metadata is mutable",
   "high_ownership_concentration": "High ownership concentration",
   "low_community_trust": "Low community trust score",
   "suspicious_deployer": "Deployer has suspicious history",
 }
 
-
 const SEVERITY_ORDER: Record<string, number> = {
   critical: 0,
   warning: 1,
+  bonus: 2,
+  info: 3,
 }
 
 const SYSTEM_PROMPT =
-  "You are a terse, factual crypto risk analyst. " +
-  "Summarize only the facts given to you. Never invent or infer. " +
-  "Never use markdown, emojis, bullet points, or disclaimers. " +
-  "Output exactly 2 to 3 complete plain-text sentences. Nothing more."
+  "You are a concise crypto risk analyst explaining a Solana token scan result to a retail user. " +
+  "Write 2 to 4 plain-text sentences explaining whether this token looks safe or dangerous and why, " +
+  "based strictly on the data provided. Be direct and specific: mention the actual flags, score, and " +
+  "key on-chain facts. If the token is dangerous, say clearly why. If it looks safe, say why it passed. " +
+  "Never use markdown, emojis, bullet points, or generic disclaimers. Output only the sentences."
 
 export async function generateAISummary(
   input: AISummaryInput
@@ -82,14 +82,20 @@ export async function generateAISummary(
 
   const model = process.env.AI_MODEL || "gemini-2.5-flash"
 
+  // Include ALL flags sorted by severity (no restrictive keyword filter)
   const topFlags = input.flags
-    .filter((f: string) => {
-      const lower = f.toLowerCase()
-      return lower.includes("critical") || lower.includes("warning")
-    })
+    .slice()
     .sort((a: string, b: string) => {
-      const aScore = a.toLowerCase().includes("critical") ? SEVERITY_ORDER.critical : SEVERITY_ORDER.warning
-      const bScore = b.toLowerCase().includes("critical") ? SEVERITY_ORDER.critical : SEVERITY_ORDER.warning
+      const aLower = a.toLowerCase()
+      const bLower = b.toLowerCase()
+      const aScore = aLower.includes("critical") ? SEVERITY_ORDER.critical
+        : aLower.includes("warning") ? SEVERITY_ORDER.warning
+        : aLower.includes("bonus") ? SEVERITY_ORDER.bonus
+        : SEVERITY_ORDER.info
+      const bScore = bLower.includes("critical") ? SEVERITY_ORDER.critical
+        : bLower.includes("warning") ? SEVERITY_ORDER.warning
+        : bLower.includes("bonus") ? SEVERITY_ORDER.bonus
+        : SEVERITY_ORDER.info
       return aScore - bScore
     })
     .slice(0, MAX_FLAGS)
@@ -100,6 +106,7 @@ export async function generateAISummary(
     risk: input.risk,
     tokenSymbol: input.tokenSymbol,
     holders: input.holders,
+    marketCap: input.marketCap,
     liquidity: input.liquidity,
     lpBurned: input.lpBurned,
     mintAuthority: input.mintAuthority,
@@ -122,8 +129,8 @@ export async function generateAISummary(
       },
       body: JSON.stringify({
         model,
-        max_tokens: 150,
-        temperature: 0.3,
+        max_tokens: 200,
+        temperature: 0.35,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: JSON.stringify(context) },
@@ -142,7 +149,7 @@ export async function generateAISummary(
     const msg = data?.choices?.[0]?.message?.content?.trim()
     if (typeof msg !== "string") return null
     if (msg.length < MIN_LENGTH) return null
-    if (msg.length > MAX_LENGTH) return null
+    if (msg.length > MAX_LENGTH) return msg.slice(0, MAX_LENGTH).replace(/\s+\S*$/, "") + "."
     return msg
   } catch {
     clearTimeout(timeout)
