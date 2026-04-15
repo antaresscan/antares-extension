@@ -6,11 +6,15 @@ const SOL = 'So11111111111111111111111111111111111111112';
 test.describe('API /api/graph — Insider Network Graph', () => {
 
   test.describe('CORS & Method enforcement', () => {
-    test('blocks requests without allowed origin', async ({ request }) => {
-      const r = await request.get(`${BASE}/api/graph?ca=${SOL}`);
+    test('blocks requests without allowed origin', async ({ playwright }) => {
+      const ctx = await playwright.request.newContext({
+        extraHTTPHeaders: { 'Origin': 'https://evil.com' },
+      });
+      const r = await ctx.get(`${BASE}/api/graph?ca=${SOL}`);
       expect(r.status()).toBe(403);
       const b = await r.json();
       expect(b.error).toBeTruthy();
+      await ctx.dispose();
     });
 
     test('rejects POST method', async ({ request }) => {
