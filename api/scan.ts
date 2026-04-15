@@ -342,6 +342,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       mintAuthority: allLayers.some(l => l.flags.some(f => /mint authority/i.test(f.label) && f.severity === "critical")),
       freezeAuthority: allLayers.some(l => l.flags.some(f => /freeze authority/i.test(f.label) && f.severity === "critical")),
       lpBurned: rugData?.lpBurned === true,
+          lpLocked: rugData?.lpLocked === true,
+    lpLockedPct: typeof rugData?.lpLockDurationDays === "number" ? rugData.lpLockDurationDays : typeof rugData?.lpLockDuration === "number" ? rugData.lpLockDuration : null,
       candles: candles.slice(-20).map(c => ({ close: c.c })),
       scoring_version: SCORING_VERSION,
       fetchedAt: Date.now(),
