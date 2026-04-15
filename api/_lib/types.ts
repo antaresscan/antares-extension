@@ -309,4 +309,7 @@ export interface ScanResult {
   lpBurned?: boolean;
   candles?: Array<{ close: number }>;
   aiSummary?: string | null;
+      lpLocked?: boolean;
+  lpLockedPct?: number | null;
+  lpLockDurationDays?: number | null;
 }
