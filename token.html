@@ -255,6 +255,49 @@ canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.35}
 .spin{width:28px;height:28px;border:2px solid #1a1a1e;border-top-color:#333;border-radius:50%;animation:sp .7s linear infinite}
 #err{display:none;color:#ff5f5f;font-size:11px;margin-top:100px;text-align:center}
 #content{display:none}
+
+/* ── Flag descriptions ── */
+.f-body { display: flex; flex-direction: column; gap: 2px; }
+.flag-desc { font-size: 9.5px; color: #555; line-height: 1.45; font-style: italic; }
+
+/* ── AI Summary card ── */
+.ai-card { border-color: rgba(167,139,250,.2) !important; }
+.ai-icon { color: #a78bfa; }
+.ai-body { font-size: 12px; line-height: 1.7; color: #9a8fbf; margin-top: 10px; }
+
+/* ── On-Chain grid ── */
+.oc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; margin-top: 10px; }
+.oc-item { display: flex; flex-direction: column; gap: 3px; }
+.oc-label { font-size: 9px; color: #555; text-transform: uppercase; letter-spacing: .08em; }
+.oc-val { font-size: 13px; color: #ccc; font-weight: 600; }
+
+/* ── Creator ── */
+.creator-link {
+  display: flex; align-items: center; gap: 8px; margin-top: 10px;
+  padding: 8px 10px; background: #0a0a0c; border-radius: 4px;
+  border: 1px solid #1a1a1e; text-decoration: none; transition: .2s;
+}
+.creator-link:hover { border-color: rgba(0,229,176,.3); }
+.creator-addr { font-size: 11px; color: #888; font-family: 'IBM Plex Mono', monospace; }
+.creator-ext { font-size: 9px; color: #444; margin-left: auto; }
+
+/* ── Layers ── */
+.layer-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 0; border-bottom: 1px solid #111114;
+}
+.layer-row:last-child { border: none; }
+.layer-name { font-size: 10px; color: #666; width: 88px; flex-shrink: 0; }
+.layer-bar-wrap { flex: 1; height: 4px; background: #1a1a1e; border-radius: 2px; overflow: hidden; }
+.layer-bar { height: 100%; border-radius: 2px; width: 0%; transition: width .9s cubic-bezier(.22,1,.36,1); }
+.layer-bar.layer-ok   { background: linear-gradient(90deg, #00e5b055, #00e5b0); }
+.layer-bar.layer-warn { background: linear-gradient(90deg, #f5d00055, #f5d000); }
+.layer-bar.layer-bad  { background: linear-gradient(90deg, #ff224455, #ff2244); }
+.layer-pct { font-size: 10px; width: 34px; text-align: right; font-weight: 600; }
+.layer-pct.layer-ok   { color: #00e5b0; }
+.layer-pct.layer-warn { color: #f5d000; }
+.layer-pct.layer-bad  { color: #ff2244; }
+.layer-unavail { font-size: 9px; color: #333; flex: 1; }
 </style></head>
 <body>
 <canvas id="bg"></canvas>
@@ -298,6 +341,59 @@ function fmtPrice(p){
   if(n<0.01)return`$${n.toFixed(6)}`
   if(n<1)return`$${n.toFixed(4)}`
   return`$${n.toFixed(2)}`
+}
+
+function formatAge(hours) {
+  if (!hours && hours !== 0) return null
+  if (hours < 1) return Math.round(hours * 60) + 'm'
+  if (hours < 24) return Math.round(hours) + 'h'
+  const days = Math.floor(hours / 24)
+  const rem = Math.round(hours % 24)
+  return rem > 0 ? `${days}d ${rem}h` : `${days}d`
+}
+
+function escapeHtml(str) {
+  if (!str) return ''
+  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
+}
+
+const FLAG_DESCRIPTIONS = {
+  "Mint Authority enabled": "The dev can print unlimited new tokens and dump them on you at any time.",
+  "Mint Authority enabled (RugCheck)": "The dev can print unlimited new tokens and dump them on you at any time.",
+  "Freeze Authority enabled": "The dev can freeze your wallet and prevent you from selling.",
+  "Freeze Authority enabled (RugCheck)": "The dev can freeze your wallet and prevent you from selling.",
+  "LP not burned or locked": "The dev can pull all liquidity in one transaction and crash the price to zero.",
+  "LP not burned but token is mature and liquid (unverified LP)": "Liquidity is not locked — the dev can still rug at any time.",
+  "Honeypot detected — cannot sell": "You cannot sell this token. Any funds spent are gone.",
+  "Bundle activity detected": "Coordinated wallets bought together to fake demand — classic pump and dump setup.",
+  "Bundle holds": "A coordinated group controls a large portion of supply and can dump at will.",
+  "Sniper activity detected": "Bots bought massively at launch before anyone else could — supply is concentrated.",
+  "Top 10 holders > 70%": "Ten wallets control over 70% of the supply. If they sell together, the price collapses.",
+  "Top 10 holders > 50%": "Half the supply is in 10 wallets — high dump risk.",
+  "Single wallet holds": "One wallet controls a huge portion of supply and can crash the price alone.",
+  "Metadata mutable": "The dev can change the token name, symbol and logo after launch — common in rug setups.",
+  "No website / Twitter / Telegram": "Zero social presence — the team can disappear without any trace.",
+  "Wash trading detected": "The trading volume is fake — bots trading with themselves to create false activity.",
+  "Sell tax": "A hidden fee is taken every time you sell — often used to bleed holders slowly.",
+  "Buy tax": "A fee is taken on every purchase — used to fund the dev or prevent exits.",
+  "Owner holds > 5%": "The owner wallet holds a large stake and can dump it at any time.",
+  "Creator holds > 5%": "The creator wallet holds a large stake and can dump it at any time.",
+  "Blacklist capability": "The dev can blacklist specific wallets and prevent them from selling.",
+  "Transfer pausable": "The dev can pause all transfers, trapping everyone's funds.",
+  "Hidden owner": "The real owner of the contract is hidden — a known red flag for rug pulls.",
+  "Upgradeable/proxy contract": "The contract code can be replaced after launch — any security audit becomes worthless.",
+  "LP Burned ✓": "The liquidity is permanently burned. The dev cannot pull it.",
+  "Well distributed supply ✓": "The token supply is well spread across many wallets — good sign.",
+  "Strong holder base (5K+) ✓": "Over 5000 holders — strong community adoption signal.",
+  "Established token (30d+) ✓": "The token has survived over 30 days — most rugs die within hours.",
+}
+
+function getFlagDescription(label) {
+  if (FLAG_DESCRIPTIONS[label]) return FLAG_DESCRIPTIONS[label]
+  for (const key of Object.keys(FLAG_DESCRIPTIONS)) {
+    if (label.toLowerCase().startsWith(key.toLowerCase())) return FLAG_DESCRIPTIONS[key]
+  }
+  return null
 }
 
 const params=new URLSearchParams(location.search)
@@ -375,13 +471,16 @@ function render(d,ca){
     .filter(f=>{const l=f.label||f;return!l.toLowerCase().includes("unavailable")&&f.severity!=="bonus"})
     .map(f=>{
       const sev=f.severity||"warning"
-      const cls=sev==="critical"?"cr":"wr"
-      const ic=sev==="critical"?"r":"y"
-      const ico=sev==="critical"?"✕":""
-      return`<div class="fl ${cls}"><div class="fic ${ic}">${ico}</div><div class="fl-txt">${f.label||f}</div></div>`
+      const isCrit=sev==="critical"
+      const isBonus=sev==="bonus"
+      const cls=isCrit?"cr":isBonus?"ok":"wr"
+      const ic=isCrit?"r":isBonus?"g":"y"
+      const ico=isCrit?"✕":isBonus?"✓":"!"
+      const desc=getFlagDescription(f.label||f)
+      return`<div class="fl ${cls}"><div class="fic ${ic}">${ico}</div><div class="f-body"><span class="fl-txt">${escapeHtml(f.label||f)}</span>${desc?`<div class="flag-desc">${escapeHtml(desc)}</div>`:''}</div></div>`
     }).join("")
   const noFlags=flagsHtml===""
-    ?`<div class="fl ok"><div class="fic g">✓</div><div class="fl-txt">No critical flags detected</div></div>`
+    ?`<div class="fl ok"><div class="fic g">✓</div><div class="f-body"><span class="fl-txt">No critical flags detected</span></div></div>`
     :flagsHtml
 
   const c5=pct(pc5m),c1=pct(pc1h),c6=pct(pc6h),c24=pct(pc24h)
@@ -416,7 +515,6 @@ function render(d,ca){
   const siLiq=liq?`<div class="si"><span>Liq</span><b class="${liq<5000?'n':liq<30000?'w':'y'}">${fmt(liq)}</b></div>`:""
   const siConf=conf!==null?`<div class="si"><span>Conf.</span><b class="${conf<50?'n':conf<80?'w':'y'}">${conf}%</b></div>`:""
 
-  // Always show all 4 sources, merge with API response
   const FIXED_SOURCES=["DexScreener","RugCheck","GoPlus","Helius"]
   const apiSources=Array.isArray(d.sources_used)?d.sources_used:[]
   const allSources=[...new Map([...FIXED_SOURCES,...apiSources].map(s=>[s.toLowerCase(),s])).values()]
@@ -441,7 +539,7 @@ function render(d,ca){
         <div class="token-header">
           <div class="token-header-text">
             <div class="vt" data-label="${lb}">${lb}</div>
-            ${sym?`<div class="tk-name"><b>${sym}</b> ${name}</div>`:""}
+            ${sym?`<div class="tk-name"><b>${sym}</b> ${name}`:""}
             ${ageStr?`<div class="age-badge">${ageStr}</div>`:pairDate?`<div class="age-badge">Pair: ${pairDate}</div>`:""}
           </div>
           ${logo?`<img class="token-logo" src="${logo}" alt="${sym}" onerror="this.style.display='none'"/>`:""
@@ -476,11 +574,6 @@ function render(d,ca){
     </div>
 
     <div class="card">
-      <div class="card-title">Flags</div>
-      <div class="flag-list">${noFlags}</div>
-    </div>
-
-    <div class="card">
       <div class="card-title">Sources</div>
       <div>${sourcesHtml}</div>
     </div>
@@ -491,6 +584,108 @@ function render(d,ca){
       <a class="btn warn" href="https://rugcheck.xyz/tokens/${mint}" target="_blank" rel="noopener">⚠ RugCheck</a>
     </div>
   `
+
+  // ── AI Summary card (après le verdict, avant les flags)
+  const flagsSection = document.createElement('div')
+  flagsSection.className = 'card'
+  flagsSection.innerHTML = `<div class="card-title">Flags</div><div class="flag-list">${noFlags}</div>`
+
+  if (d.aiSummary) {
+    const aiSection = document.createElement('div')
+    aiSection.className = 'card ai-card'
+    aiSection.innerHTML = `<div class="card-title"><span class="ai-icon">⬡</span> AI Analysis</div><p class="ai-body">${escapeHtml(d.aiSummary)}</p>`
+    wrap.insertBefore(aiSection, wrap.querySelector('.card:nth-child(3)'))
+  }
+
+  // Insert flags card after security card
+  const secCard = wrap.querySelector('.card:nth-child(3)')
+  if (secCard) {
+    secCard.after(flagsSection)
+  } else {
+    wrap.insertBefore(flagsSection, wrap.querySelector('.footer'))
+  }
+
+  // ── On-Chain Data
+  const onchainRows = [
+    d.holders         != null && ['Holders',      d.holders.toLocaleString()],
+    d.marketCap       != null && ['Market Cap',    fmt(d.marketCap)],
+    d.liquidity       != null && ['Liquidity',     fmt(d.liquidity)],
+    d.volume24h       != null && ['Volume 24h',    fmt(d.volume24h)],
+    d.solscanTrades24h  != null && ['Trades 24h',  d.solscanTrades24h.toLocaleString()],
+    d.solscanTraders24h != null && ['Traders 24h', d.solscanTraders24h.toLocaleString()],
+    d.solscanTokenAgeHours != null && ['Token Age', formatAge(d.solscanTokenAgeHours)],
+    d.priceChange1h   != null && ['Chg 1h',  (d.priceChange1h  >= 0 ? '+' : '') + d.priceChange1h.toFixed(1)  + '%'],
+    d.priceChange24h  != null && ['Chg 24h', (d.priceChange24h >= 0 ? '+' : '') + d.priceChange24h.toFixed(1) + '%'],
+  ].filter(Boolean)
+
+  if (onchainRows.length > 0) {
+    const ocCard = document.createElement('div')
+    ocCard.className = 'card'
+    ocCard.innerHTML = `
+      <div class="card-title">On-Chain Data</div>
+      <div class="oc-grid">
+        ${onchainRows.map(([label, val]) => `
+          <div class="oc-item">
+            <span class="oc-label">${label}</span>
+            <strong class="oc-val">${val}</strong>
+          </div>`).join('')}
+      </div>`
+    wrap.insertBefore(ocCard, wrap.querySelector('.footer'))
+  }
+
+  // ── Creator
+  if (d.tokenCreator) {
+    const creatorCard = document.createElement('div')
+    creatorCard.className = 'card'
+    const solscanUrl = `https://solscan.io/account/${d.tokenCreator}`
+    creatorCard.innerHTML = `
+      <div class="card-title">Token Creator</div>
+      <a href="${solscanUrl}" target="_blank" rel="noopener noreferrer" class="creator-link">
+        <span class="creator-addr">${d.tokenCreator.slice(0,8)}…${d.tokenCreator.slice(-8)}</span>
+        <span class="creator-ext">↗ Solscan</span>
+      </a>`
+    wrap.insertBefore(creatorCard, wrap.querySelector('.footer'))
+  }
+
+  // ── Layers / Trust par Source
+  const SOURCE_LABELS = {
+    dexscreener: 'DexScreener', rugcheck: 'RugCheck', goplus: 'GoPlus',
+    helius: 'Helius', solscan: 'Solscan', chart: 'Chart'
+  }
+
+  if (d.layers) {
+    const layerEntries = Object.entries(d.layers).filter(([src]) => src !== 'crossvalidation')
+    if (layerEntries.length > 0) {
+      const layersCard = document.createElement('div')
+      layersCard.className = 'card'
+      const rows = layerEntries.map(([src, l]) => {
+        const pct = Math.round(l.trust * 100)
+        const colorCls = !l.available ? 'layer-na' : pct >= 75 ? 'layer-ok' : pct >= 40 ? 'layer-warn' : 'layer-bad'
+        const label = SOURCE_LABELS[src] || src
+        if (!l.available) {
+          return `<div class="layer-row">
+            <span class="layer-name">${label}</span>
+            <span class="layer-unavail">Unavailable</span>
+          </div>`
+        }
+        return `<div class="layer-row">
+          <span class="layer-name">${label}</span>
+          <div class="layer-bar-wrap">
+            <div class="layer-bar ${colorCls}" style="width:0%" data-w="${pct}"></div>
+          </div>
+          <span class="layer-pct ${colorCls}">${pct}%</span>
+        </div>`
+      }).join('')
+      layersCard.innerHTML = `<div class="card-title">Trust par Source</div>${rows}`
+      wrap.insertBefore(layersCard, wrap.querySelector('.footer'))
+
+      requestAnimationFrame(() => {
+        layersCard.querySelectorAll('.layer-bar[data-w]').forEach(bar => {
+          setTimeout(() => { bar.style.width = bar.dataset.w + '%' }, 300)
+        })
+      })
+    }
+  }
 
   const logoColors={safe:'#00c890',caution:'#c8a800',danger:'#cc5555',rug:'#cc3344'}
   const logoGlow={safe:'rgba(0,229,176,.4)',caution:'rgba(245,208,0,.35)',danger:'rgba(255,95,95,.4)',rug:'rgba(255,34,68,.5)'}
