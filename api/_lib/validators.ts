@@ -28,19 +28,21 @@ export function validateRugCheckResponse(data: unknown): RugCheckReport | null {
 
 export function validateHeliusHolders(data: unknown): HeliusHolder[] | null {
   if (!Array.isArray(data)) return null;
-  if (data.length > 0) {
-    const first = data[0];
+  const arr = data as unknown[];
+  if (arr.length > 0) {
+    const first = arr[0];
     if (!isObject(first) || !('address' in first) || !('amount' in first)) return null;
   }
-  return data as HeliusHolder[];
+  return data as unknown as HeliusHolder[];
 }
 
 export function validateOHLCVCandle(data: unknown): OHLCVCandle[] | null {
   if (!Array.isArray(data)) return null;
-  if (data.length > 0) {
-    const first = data[0];
+  const arr = data as unknown[];
+  if (arr.length > 0) {
+    const first = arr[0];
     if (!isObject(first)) return null;
     if (!('o' in first) || !('h' in first) || !('l' in first) || !('c' in first) || !('v' in first)) return null;
   }
-  return data as OHLCVCandle[];
+  return data as unknown as OHLCVCandle[];
 }
