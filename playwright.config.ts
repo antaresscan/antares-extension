@@ -19,7 +19,7 @@ export default defineConfig({
     : [["html", { open: "on-failure" }], ["list"]],
   use: {
     baseURL: BASE_URL,
-    extraHTTPHeaders: { "User-Agent": "Antares-E2E/2.0" },
+        extraHTTPHeaders: { "User-Agent": "Antares-E2E/2.0", "Origin": BASE_URL },
     screenshot: "only-on-failure",
     video: IS_CI ? "retain-on-failure" : "off",
     trace: IS_CI ? "retain-on-failure" : "off",
