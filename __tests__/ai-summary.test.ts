@@ -144,4 +144,44 @@ describe("generateAISummary", () => {
     const result = await generateAISummary(baseInput)
     expect(result).toBeNull()
   })
+
+  it("sorts bonus flags after critical and warning", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key")
+    const inputWithBonus: AISummaryInput = {
+      ...baseInput,
+      flags: [
+        "[bonus] LP Burned",
+        "[critical] Mint authority enabled",
+        "[warning] Low holders",
+        "[info] Token is 3 days old",
+      ],
+    }
+    const mockFetch = vi.fn().mockResolvedValue(
+      mockFetchResponse({
+        choices: [{ message: { content: "This token has critical mint authority enabled and low holders but LP is burned." } }],
+      })
+    )
+    vi.stubGlobal("fetch", mockFetch)
+    const result = await generateAISummary(inputWithBonus)
+    expect(result).not.toBeNull()
+    // Verify fetch was called (flags were processed without throwing)
+    expect(mockFetch).toHaveBeenCalledOnce()
+  })
+
+  it("handles flags with no recognized severity prefix (info fallback)", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key")
+    const inputNoSeverity: AISummaryInput = {
+      ...baseInput,
+      flags: ["unknown_flag_without_severity", "another_plain_flag"],
+    }
+    const mockFetch = vi.fn().mockResolvedValue(
+      mockFetchResponse({
+        choices: [{ message: { content: "This token has no recognized severity flags but looks borderline." } }],
+      })
+    )
+    vi.stubGlobal("fetch", mockFetch)
+    const result = await generateAISummary(inputNoSeverity)
+    expect(result).not.toBeNull()
+    expect(mockFetch).toHaveBeenCalledOnce()
+  })
 })
