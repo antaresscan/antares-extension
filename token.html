@@ -32,6 +32,7 @@ canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.35}
 }
 @keyframes sbar-in{from{width:0%}to{width:var(--bar-w,0%)}}
 @keyframes topbar-glow{0%,100%{opacity:.7}50%{opacity:1}}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
 
 /* ── header ── */
 .hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:36px}
@@ -215,7 +216,7 @@ canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.35}
 .flag-list{display:flex;flex-direction:column}
 .fl{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.03);font-size:12px;line-height:1.5}
 .fl:last-child{border-bottom:none}
-.fic{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;flex-shrink:0;margin-top:2px}
+.fic{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:16px;font-size:8px;flex-shrink:0;margin-top:2px}
 .fic.r{background:rgba(255,60,80,.15);color:#ff5f5f}
 .fic.y{background:rgba(245,208,0,.12);color:#f5d000}
 .fic.g{background:rgba(0,229,176,.1);color:#00e5b0}
@@ -253,7 +254,10 @@ canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.35}
 
 #loading{display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:100px;color:#444;font-size:10px;letter-spacing:.12em}
 .spin{width:28px;height:28px;border:2px solid #1a1a1e;border-top-color:#333;border-radius:50%;animation:sp .7s linear infinite}
+#loading-status{font-size:9px;color:#333;letter-spacing:.1em;min-height:14px}
 #err{display:none;color:#ff5f5f;font-size:11px;margin-top:100px;text-align:center}
+#err-retry{display:none;margin-top:12px;padding:8px 18px;font-size:9px;color:#888;letter-spacing:.12em;text-transform:uppercase;border:1px solid #333;border-radius:2px;background:none;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:.2s}
+#err-retry:hover{color:#ccc;border-color:#666}
 #content{display:none}
 
 /* ── Flag descriptions ── */
@@ -262,8 +266,10 @@ canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.35}
 
 /* ── AI Summary card ── */
 .ai-card { border-color: rgba(167,139,250,.2) !important; }
-.ai-icon { color: #a78bfa; }
+.ai-card .card-title { color: #a78bfa; }
+.ai-icon { color: #a78bfa; margin-right: 4px; }
 .ai-body { font-size: 12px; line-height: 1.7; color: #9a8fbf; margin-top: 10px; }
+.ai-loading { font-size: 11px; color: #555; letter-spacing: .06em; animation: pulse 1.2s ease-in-out infinite; }
 
 /* ── On-Chain grid ── */
 .oc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; margin-top: 10px; }
@@ -306,13 +312,22 @@ canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.35}
     <span class="logo">Antares</span>
     <span class="ca-badge" id="ca-disp">&mdash;</span>
   </div>
-  <div id="loading"><div class="spin"></div>LOADING ANALYSIS</div>
-  <div id="err">Failed to load analysis. Please try again.</div>
+  <div id="loading">
+    <div class="spin"></div>
+    LOADING ANALYSIS
+    <span id="loading-status"></span>
+  </div>
+  <div id="err">
+    <div id="err-msg">Failed to load analysis. Please try again.</div>
+    <button id="err-retry">↺ Retry</button>
+  </div>
   <div id="content"></div>
 </div>
 
 <script>
 const API="https://antares-extension.vercel.app/api/scan"
+const MAX_RETRIES=3
+const RETRY_DELAYS=[1000,2000]
 
 function fmt(n){
   if(n==null)return"—"
@@ -397,21 +412,57 @@ function getFlagDescription(label) {
 }
 
 const params=new URLSearchParams(location.search)
-  const CA_RE=/^[1-9A-HJ-NP-Za-km-z]{32,44}$/;const _raw=params.get("ca")||params.get("token")||"";const ca=CA_RE.test(_raw)?_raw:""
+const CA_RE=/^[1-9A-HJ-NP-Za-km-z]{32,44}$/
+const _raw=params.get("ca")||params.get("token")||""
+const ca=CA_RE.test(_raw)?_raw:""
 document.getElementById("ca-disp").textContent=ca?ca.slice(0,8)+"..."+ca.slice(-6):"—"
+
+function setLoadingStatus(msg) {
+  const el = document.getElementById('loading-status')
+  if (el) el.textContent = msg
+}
+
+function showError(msg) {
+  document.getElementById("loading").style.display="none"
+  const errEl = document.getElementById("err")
+  const msgEl = document.getElementById("err-msg")
+  if (msgEl) msgEl.textContent = msg || "Failed to load analysis. Please try again."
+  errEl.style.display="block"
+  const retryBtn = document.getElementById("err-retry")
+  if (retryBtn) retryBtn.style.display = "inline-block"
+}
+
+async function fetchWithRetry(url, attempt) {
+  attempt = attempt || 1
+  try {
+    const r = await fetch(url)
+    if (!r.ok) throw new Error('HTTP ' + r.status)
+    return await r.json()
+  } catch(e) {
+    if (attempt >= MAX_RETRIES) throw e
+    const delay = RETRY_DELAYS[attempt - 1] || 2000
+    setLoadingStatus('Retrying... (' + attempt + '/' + MAX_RETRIES + ')')
+    await new Promise(res => setTimeout(res, delay))
+    return fetchWithRetry(url, attempt + 1)
+  }
+}
 
 if(!ca){
   document.getElementById("loading").style.display="none"
-  const e=document.getElementById("err")
-  e.style.display="block";e.textContent="No token address provided."
-}else{
-  fetch(`${API}?ca=${ca}`)
-    .then(r=>{if(!r.ok)throw Error(r.status);return r.json()})
-    .then(d=>render(d,ca))
-    .catch(()=>{
-      document.getElementById("loading").style.display="none"
-      document.getElementById("err").style.display="block"
-    })
+  showError("No token address provided.")
+} else {
+  document.getElementById('err-retry').addEventListener('click', function() {
+    document.getElementById('err').style.display = 'none'
+    document.getElementById('loading').style.display = 'flex'
+    setLoadingStatus('')
+    fetchWithRetry(`${API}?ca=${ca}`)
+      .then(d => render(d, ca))
+      .catch(() => showError("Analysis failed after multiple attempts. Please try again later."))
+  })
+
+  fetchWithRetry(`${API}?ca=${ca}`)
+    .then(d => render(d, ca))
+    .catch(() => showError("Failed to load analysis. Please try again."))
 }
 
 function render(d,ca){
@@ -585,19 +636,57 @@ function render(d,ca){
     </div>
   `
 
-  // ── AI Summary card (après le verdict, avant les flags)
+  // ── AI Analysis card — toujours affichée, contenu selon disponibilité
+  const aiSection = document.createElement('div')
+  aiSection.className = 'card ai-card'
+  aiSection.id = 'ai-section'
+  if (d.aiSummary) {
+    aiSection.innerHTML = `<div class="card-title"><span class="ai-icon">⬡</span> AI Analysis</div><p class="ai-body">${escapeHtml(d.aiSummary)}</p>`
+  } else {
+    aiSection.innerHTML = `<div class="card-title"><span class="ai-icon">⬡</span> AI Analysis</div><p class="ai-loading">Generating analysis…</p>`
+    // Tentative de récupération asynchrone si l'AI summary n'est pas dans la réponse initiale
+    // (cas où Gemini a timeout côté serveur mais les données scan sont OK)
+    fetch(`${API}?ca=${ca}&ai=1`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data && data.aiSummary) {
+          const p = aiSection.querySelector('.ai-loading, .ai-body')
+          if (p) {
+            p.className = 'ai-body'
+            p.textContent = data.aiSummary
+          }
+        } else {
+          const p = aiSection.querySelector('.ai-loading')
+          if (p) {
+            p.className = 'ai-body'
+            p.style.animation = 'none'
+            p.style.color = '#444'
+            p.textContent = 'AI analysis unavailable for this token.'
+          }
+        }
+      })
+      .catch(() => {
+        const p = aiSection.querySelector('.ai-loading')
+        if (p) {
+          p.className = 'ai-body'
+          p.style.animation = 'none'
+          p.style.color = '#444'
+          p.textContent = 'AI analysis unavailable for this token.'
+        }
+      })
+  }
+  // Insérer après le bloc risque, avant les cards
+  const firstCard = wrap.querySelector('.card')
+  if (firstCard) {
+    wrap.insertBefore(aiSection, firstCard)
+  } else {
+    wrap.appendChild(aiSection)
+  }
+
+  // ── Flags card
   const flagsSection = document.createElement('div')
   flagsSection.className = 'card'
   flagsSection.innerHTML = `<div class="card-title">Flags</div><div class="flag-list">${noFlags}</div>`
-
-  if (d.aiSummary) {
-    const aiSection = document.createElement('div')
-    aiSection.className = 'card ai-card'
-    aiSection.innerHTML = `<div class="card-title"><span class="ai-icon">⬡</span> AI Analysis</div><p class="ai-body">${escapeHtml(d.aiSummary)}</p>`
-    wrap.insertBefore(aiSection, wrap.querySelector('.card:nth-child(3)'))
-  }
-
-  // Insert flags card after security card
   const secCard = wrap.querySelector('.card:nth-child(3)')
   if (secCard) {
     secCard.after(flagsSection)

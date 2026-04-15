@@ -91,13 +91,13 @@ export function attachClose(aiSummary?: string | null) {
     () => { state.manuallyDismissed = true; hideBox() },
     { once: true }
   )
+  // AI Summary button: toujours actif, jamais disabled
   const aiBtn = state.shadow?.querySelector("#ant-ai-summary-btn")
   if (aiBtn) {
     const fresh = aiBtn.cloneNode(true) as HTMLElement
     aiBtn.parentNode?.replaceChild(fresh, aiBtn)
-    if (!fresh.hasAttribute("disabled")) {
-      fresh.addEventListener("click", () => toggleAiSummary(aiSummary ?? null))
-    }
+    // Attacher le listener quel que soit l'état de aiSummary
+    fresh.addEventListener("click", () => toggleAiSummary(aiSummary ?? null))
   }
 }
 
@@ -264,10 +264,8 @@ export function buildResult(data: ScanResponseData, ca: string): string {
     : ""
   const analysisLink = `<a href="#" id="ant-full-analysis" data-ca="${encodeURIComponent(mint)}"${isDangerous ? ' class="warn"' : ''}>Full Analysis \u2192</a>`
 
-  const hasAI = !!data.aiSummary
-  const aiBtn = hasAI
-    ? `<button class="ai-btn ai-btn--active" id="ant-ai-summary-btn">\u2b21 AI Summary</button>`
-    : `<button class="ai-btn ai-btn--disabled" id="ant-ai-summary-btn" disabled title="No AI summary available">\u2b21 AI Summary</button>`
+  // Bouton AI Summary TOUJOURS actif — jamais disabled
+  const aiBtn = `<button class="ai-btn ai-btn--active" id="ant-ai-summary-btn">\u2b21 AI Summary</button>`
 
   return `
     <div class="topbar"></div>

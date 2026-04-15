@@ -196,14 +196,16 @@ export const SHADOW_CSS = `
 }
 .tk b { color: #bbb; font-weight: 600; }
 
-.vb { padding: 0 14px 4px; position: relative; z-index: 1; }
+/* FIX: .vb padding-bottom augmenté pour séparer le verdict h1 du score */
+.vb { padding: 2px 14px 6px; position: relative; z-index: 1; }
 .vb h1 { font-family: 'Bebas Neue', 'Arial Black', sans-serif; font-size: 46px; line-height: .88; font-weight: 400; letter-spacing: .04em; }
 .box.safe    .vb h1 { color: #00e5b0; text-shadow: 0 0 30px rgba(0,229,176,.15); }
 .box.caution .vb h1 { color: #f5d000; text-shadow: 0 0 30px rgba(245,208,0,.12); }
 .box.danger  .vb h1 { color: #ff5f5f; text-shadow: 0 0 30px rgba(255,95,95,.15); }
 .box.rug     .vb h1 { color: #ff2244; text-shadow: 0 0 40px rgba(255,34,68,.2); }
 
-.sr { display: flex; align-items: center; gap: 8px; padding: 0 14px; }
+/* FIX: .sr margin-top augmenté pour éviter que le score colle au verdict */
+.sr { display: flex; align-items: center; gap: 8px; padding: 0 14px; margin-top: 10px; }
 .sr .n { font-size: 11px; color: #555; font-weight: 600; font-family: 'IBM Plex Mono', monospace; }
 .sr .n b { color: #aaa; }
 .dots { display: flex; gap: 2px; align-items: center; }
@@ -301,23 +303,20 @@ export const SHADOW_CSS = `
   text-transform: uppercase; text-align: center;
   border-radius: 2px; transition: color .2s, border-color .2s, background .2s;
   font-family: 'IBM Plex Mono', monospace; background: none; cursor: pointer;
-  color: #888; border: 1px solid #252528;
+  color: #a78bfa;
+  border: 1px solid rgba(167,139,250,.25);
+  background: rgba(167,139,250,.05);
 }
 .ai-btn--active {
   color: #a78bfa;
   border-color: rgba(167,139,250,.25);
   background: rgba(167,139,250,.05);
 }
+.ai-btn:hover,
 .ai-btn--active:hover {
   color: #c4b5fd;
   border-color: rgba(167,139,250,.5);
   background: rgba(167,139,250,.1);
-}
-.ai-btn--disabled {
-  color: #333;
-  border-color: #1c1c1e;
-  cursor: not-allowed;
-  opacity: .5;
 }
 
 /* ── AI Summary panel (inline in overlay) ───────────────────────── */
@@ -365,6 +364,17 @@ export const SHADOW_CSS = `
   line-height: 1.55;
   font-family: 'IBM Plex Mono', monospace;
   letter-spacing: .01em;
+}
+
+/* Loading state */
+.ai-panel-loading {
+  padding: 10px 12px;
+  font-size: 9px;
+  color: #555;
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: .04em;
+  text-align: center;
+  animation: ant-pulse 1.2s ease-in-out infinite;
 }
 
 /* Empty state */

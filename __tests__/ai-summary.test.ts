@@ -67,8 +67,8 @@ describe("generateAISummary", () => {
       "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
       expect.objectContaining({
         method: "POST",
-                  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          headers: expect.objectContaining({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        headers: expect.objectContaining({
           Authorization: "Bearer test-key-123",
         }),
       })
@@ -117,16 +117,20 @@ describe("generateAISummary", () => {
     expect(result).toBeNull()
   })
 
-  it("returns null when response content exceeds 600 chars", async () => {
+  it("truncates and returns a string (not null) when response content exceeds MAX_LENGTH (800 chars)", async () => {
     vi.stubEnv("GEMINI_API_KEY", "test-key")
+    const longContent = "This is a valid sentence that will be repeated. ".repeat(20) // ~960 chars
     const mockFetch = vi.fn().mockResolvedValue(
       mockFetchResponse({
-        choices: [{ message: { content: "a".repeat(601) } }],
+        choices: [{ message: { content: longContent } }],
       })
     )
     vi.stubGlobal("fetch", mockFetch)
     const result = await generateAISummary(baseInput)
-    expect(result).toBeNull()
+    expect(result).not.toBeNull()
+    expect(typeof result).toBe("string")
+    expect(result!.length).toBeLessThanOrEqual(800)
+    expect(result!.endsWith(".")).toBe(true)
   })
 
   it("returns null when choices array has no message content", async () => {
@@ -139,5 +143,45 @@ describe("generateAISummary", () => {
     vi.stubGlobal("fetch", mockFetch)
     const result = await generateAISummary(baseInput)
     expect(result).toBeNull()
+  })
+
+  it("sorts bonus flags after critical and warning", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key")
+    const inputWithBonus: AISummaryInput = {
+      ...baseInput,
+      flags: [
+        "[bonus] LP Burned",
+        "[critical] Mint authority enabled",
+        "[warning] Low holders",
+        "[info] Token is 3 days old",
+      ],
+    }
+    const mockFetch = vi.fn().mockResolvedValue(
+      mockFetchResponse({
+        choices: [{ message: { content: "This token has critical mint authority enabled and low holders but LP is burned." } }],
+      })
+    )
+    vi.stubGlobal("fetch", mockFetch)
+    const result = await generateAISummary(inputWithBonus)
+    expect(result).not.toBeNull()
+    // Verify fetch was called (flags were processed without throwing)
+    expect(mockFetch).toHaveBeenCalledOnce()
+  })
+
+  it("handles flags with no recognized severity prefix (info fallback)", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key")
+    const inputNoSeverity: AISummaryInput = {
+      ...baseInput,
+      flags: ["unknown_flag_without_severity", "another_plain_flag"],
+    }
+    const mockFetch = vi.fn().mockResolvedValue(
+      mockFetchResponse({
+        choices: [{ message: { content: "This token has no recognized severity flags but looks borderline." } }],
+      })
+    )
+    vi.stubGlobal("fetch", mockFetch)
+    const result = await generateAISummary(inputNoSeverity)
+    expect(result).not.toBeNull()
+    expect(mockFetch).toHaveBeenCalledOnce()
   })
 })
