@@ -67,7 +67,8 @@ describe("generateAISummary", () => {
       "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
       expect.objectContaining({
         method: "POST",
-        headers: expect.objectContaining({
+                  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          headers: expect.objectContaining({
           Authorization: "Bearer test-key-123",
         }),
       })
