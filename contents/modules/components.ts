@@ -6,7 +6,7 @@ import { initDrag } from "./drag"
 import { encodeHashPayload } from "../../shared/hash-payload"
 import { toggleAiSummary } from "./ai-summary"
 
-// ─── HTML ESCAPE UTILITY ──────────────────────────────────────────────────────
+// ── HTML ESCAPE UTILITY ─────────────────────────────────────────────────────────────────────────────────
 const HTML_ESCAPE: Record<string, string> = {
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
 }
@@ -86,22 +86,27 @@ export function resetState() {
   hideBox()
 }
 
-export function attachClose() {
-  state.shadow?.querySelector("#ant-close")?.addEventListener("click", () => { state.manuallyDismissed = true; hideBox() }, { once: true })
-  state.shadow?.querySelector("#ant-ai-summary-btn")?.addEventListener("click", toggleAiSummary)
+/**
+ * Attaches close button + AI Summary button handlers.
+ * aiSummary is passed so the panel can be populated on first open.
+ */
+export function attachClose(aiSummary?: string | null) {
+  state.shadow?.querySelector("#ant-close")?.addEventListener(
+    "click",
+    () => { state.manuallyDismissed = true; hideBox() },
+    { once: true }
+  )
+  const aiBtn = state.shadow?.querySelector("#ant-ai-summary-btn")
+  if (aiBtn) {
+    // Remove any previous listener by cloning
+    const fresh = aiBtn.cloneNode(true) as HTMLElement
+    aiBtn.parentNode?.replaceChild(fresh, aiBtn)
+    fresh.addEventListener("click", () => toggleAiSummary(aiSummary ?? null))
+  }
 }
 
 /**
  * Attaches the smart-tab handler to the Full Analysis button.
- *
- * New behaviour (Solution 4):
- * 1. Encode the cached scan result as a base64url hash payload
- * 2. Look for an existing tab already open on this token's analysis page
- *    - If found: focus it and reload with the fresh hash (0 extra tabs)
- *    - If not found: open exactly one new tab with the hash embedded
- *
- * The token.html page reads this hash and renders instantly at 0ms,
- * no network request needed.
  */
 export function attachAnalysisBtn(mint: string) {
   const btn = state.shadow?.querySelector("#ant-full-analysis")
@@ -112,8 +117,9 @@ export function attachAnalysisBtn(mint: string) {
     const hashFragment = cacheEntry ? encodeHashPayload(cacheEntry.data as unknown as Record<string, unknown>) : ""
     const baseUrl = `${ANALYSIS_PAGE}?ca=${encodeURIComponent(mint)}`
     const urlWithHash = hashFragment ? `${baseUrl}#data=${hashFragment}` : baseUrl
+    const TAB_PATTERN = "https://antares-extension.vercel.app/token.html*"
     try {
-      chrome.tabs.query({ url: `${ANALYSIS_PAGE}*` }, (tabs) => {
+      chrome.tabs.query({ url: TAB_PATTERN }, (tabs) => {
         if (chrome.runtime.lastError) {
           void chrome.tabs.create({ url: urlWithHash })
           return
@@ -134,10 +140,6 @@ export function attachAnalysisBtn(mint: string) {
   }, { once: true })
 }
 
-/**
- * Injects a subtle 'CACHED · Xm ago' badge in the overlay footer
- * to inform the user that the result came from local storage, not a live API call.
- */
 export function showCachedBadge(ageMs: number) {
   const fo = state.shadow?.querySelector(".fo")
   if (!fo) return
@@ -245,24 +247,31 @@ export function buildResult(data: ScanResponseData, ca: string): string {
   const siSell = `<div class="si"><span>Sell</span><b class="${data.honeypot ? "n" : "y"}">${data.honeypot ? "\u2717" : "\u2713"}</b></div>`
   const siMint = boolSI("Mint", data.mintAuthority, true)
   const siFreeze = boolSI("Freeze", data.freezeAuthority, true)
-      const liqDisplay = liq !== null ? formatMcap(liq) : "\u2014"
+  const liqDisplay = liq !== null ? formatMcap(liq) : "\u2014"
   const siLiq = `<div class="si"><span>Liq</span><b${liq !== null && liq < 5000 ? ' class="n"' : liq !== null && liq > 50000 ? ' class="y"' : ""}>${liqDisplay}</b></div>`
 
-    const siLP = (() => {
-      if (data.lpBurned) return `<div class="si"><span>LP Burned</span><b class="y">\u2713</b></div>`
-      if (data.lpLocked) {
-        const pct = data.lpLockedPct != null ? ` ${data.lpLockedPct}%` : ""
-        const dur = data.lpLockDurationDays != null ? ` (${data.lpLockDurationDays}d)` : ""
-        return `<div class="si"><span>LP Locked${escapeHtml(pct + dur)}</span><b class="y">\u2713</b></div>`
-      }
-      return `<div class="si"><span>LP Lock</span><b class="n">\u2717</b></div>`
-    })()
-      const rawDexUrl = data.pair?.url || `https://dexscreener.com/solana/${mint}`
+  const siLP = (() => {
+    if (data.lpBurned) return `<div class="si"><span>LP Burned</span><b class="y">\u2713</b></div>`
+    if (data.lpLocked) {
+      const pct = data.lpLockedPct != null ? ` ${data.lpLockedPct}%` : ""
+      const dur = data.lpLockDurationDays != null ? ` (${data.lpLockDurationDays}d)` : ""
+      return `<div class="si"><span>LP Locked${escapeHtml(pct + dur)}</span><b class="y">\u2713</b></div>`
+    }
+    return `<div class="si"><span>LP Lock</span><b class="n">\u2717</b></div>`
+  })()
+
+  const rawDexUrl = data.pair?.url || `https://dexscreener.com/solana/${mint}`
   const safeDexUrl = rawDexUrl && /^https?:\/\//i.test(rawDexUrl) ? rawDexUrl : ""
   const dexLink = safeDexUrl
     ? `<a href="${escapeHtml(safeDexUrl)}" target="_blank" rel="noopener noreferrer">DexScreener</a>`
     : ""
   const analysisLink = `<a href="#" id="ant-full-analysis" data-ca="${encodeURIComponent(mint)}"${isDangerous ? ' class="warn"' : ''}>Full Analysis \u2192</a>`
+
+  // AI Summary button: active (purple) if summary available, greyed out if not
+  const hasAI = !!data.aiSummary
+  const aiBtn = hasAI
+    ? `<button class="ai-btn ai-btn--active" id="ant-ai-summary-btn">\u2b21 AI Summary</button>`
+    : `<button class="ai-btn ai-btn--disabled" id="ant-ai-summary-btn" disabled>\u2b21 AI Summary</button>`
 
   return `
     <div class="topbar"></div>
@@ -272,10 +281,9 @@ export function buildResult(data: ScanResponseData, ca: string): string {
     <div class="sr"><span class="n"><b class="ant-score" data-target="${score}">0</b> / 1000</span><div class="dots">${dots}</div></div>
     <div class="sbar"><div class="sbar-fill" data-w="${barW}"></div></div>
     <div class="sum">${summary}</div>
-    ${data.aiSummary ? `<div class="antares-ai-summary" style="margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;opacity:0.7"><div style="font-size:9px;text-transform:uppercase;letter-spacing:0.05em;color:#888;margin-bottom:2px">AI Summary</div>${escapeHtml(data.aiSummary)}</div>` : ""}
     <div class="sep"></div>
     <div class="ss">${siSell}${siMint}${siFreeze}${siLP}${siLiq}</div>
     <div class="ai-panel" id="ant-ai-summary"></div>
-    <div class="fo">${dexLink}${analysisLink}<button class="ai-btn" id="ant-ai-summary-btn">AI Summary</button></div>
+    <div class="fo">${dexLink}${analysisLink}${aiBtn}</div>
   `
 }
