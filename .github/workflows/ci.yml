@@ -5,6 +5,8 @@ on:
     branches: [master, "fix/**", "feat/**"]
   pull_request:
     branches: [master]
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 jobs:
   build:
     runs-on: ubuntu-latest
