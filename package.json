@@ -44,7 +44,8 @@
       "storage",
       "notifications",
       "activeTab",
-      "alarms"
+      "alarms",
+      "tabs"
     ],
     "host_permissions": [
       "https://app.telemetry.io/*",
