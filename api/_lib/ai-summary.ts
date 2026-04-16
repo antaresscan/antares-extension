@@ -175,7 +175,7 @@ export async function generateAISummary(
   const userPrompt = buildUserPrompt(input, topFlags)
 
   // Attempt 1: primary model
-constlet result = await callGemini(apiKey, primaryModel, SYSTEM_PROMPT, userPrompt)
+const result = await callGemini(apiKey, primaryModel, SYSTEM_PROMPT, userPrompt)
 
 
   if (result === "__RETRY__") return null
