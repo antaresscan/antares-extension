@@ -317,15 +317,28 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       allLayers.map(l => [l.source, { trust: +l.trust.toFixed(3), available: l.available }])
     );
 
+    // Compute top holder percentage for AI context
+    const topHolderPct: number | null = (() => {
+      if (resolvedHolderAccounts.length === 0 || totalSupplyUi <= 0) return null;
+      const topAmt = asNumber(resolvedHolderAccounts[0]?.uiAmount);
+      return topAmt > 0 ? (topAmt / totalSupplyUi) * 100 : null;
+    })();
+
     const aiSummary = await generateAISummary({
-      score,       risk,       flags: flags.map(f => `[${f.severity}] ${f.label}`),
+      score, risk,
+      flags: flags.map(f => ({ label: f.label, severity: f.severity, impact: f.impact })),
       tokenSymbol: sanitizeString(pair?.baseToken?.symbol) ?? null,
-      holders, marketCap, liquidity, lpBurned: rugData?.lpBurned === true,
+      holders, marketCap, liquidity,
+      lpBurned: rugData?.lpBurned === true,
+      lpLocked: rugData?.lpLocked === true,
       mintAuthority: allLayers.some(l => l.flags.some(f => /mint authority/i.test(f.label) && f.severity === "critical")),
       freezeAuthority: allLayers.some(l => l.flags.some(f => /freeze authority/i.test(f.label) && f.severity === "critical")),
       honeypot: l3.available && l3.trust === 0 && l3.flags.some(f => /honeypot/i.test(f.label)),
       tokenAgeHours: solscanTokenAgeHours ?? dexTokenAgeHours ?? null,
       sourcesUsed: sources_used,
+      topHolderPct,
+      volume24h,
+      priceChange1h,
     }).catch(() => null);
 
     const result: ScanResult = {
