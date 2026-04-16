@@ -196,71 +196,28 @@ describe("generateAISummary", () => {
   })
 
   // ---------------------------------------------------------------------------
-  // Retry logic tests
+  // No-retry behavior tests (single attempt only)
   // ---------------------------------------------------------------------------
 
-  it("retries once on 429 and returns summary on second attempt", async () => {
+  it("returns null on 429 without retrying", async () => {
     vi.stubEnv("GEMINI_API_KEY", "test-key")
-    vi.useFakeTimers()
-    const mockFetch = vi.fn()
-      .mockResolvedValueOnce(mockFetchResponse({ error: "rate limit" }, 429))
-      .mockResolvedValue(mockFetchResponse({
-        choices: [{ message: { content: "Bundle activity means coordinated wallets bought together at launch." } }],
-      }))
-    vi.stubGlobal("fetch", mockFetch)
-    const promise = generateAISummary(baseInput)
-    await vi.runAllTimersAsync()
-    const result = await promise
-    expect(result).not.toBeNull()
-    expect(mockFetch).toHaveBeenCalledTimes(2)
-  })
-
-  it("falls back to gemini-2.0-flash when primary fails with 429 twice", async () => {
-    vi.stubEnv("GEMINI_API_KEY", "test-key")
-    vi.useFakeTimers()
-    const mockFetch = vi.fn()
-      .mockResolvedValueOnce(mockFetchResponse({ error: "rate limit" }, 429))
-      .mockResolvedValueOnce(mockFetchResponse({ error: "rate limit" }, 429))
-      .mockResolvedValue(mockFetchResponse({
-        choices: [{ message: { content: "LP not locked means the dev can pull liquidity at any time." } }],
-      }))
-    vi.stubGlobal("fetch", mockFetch)
-    const promise = generateAISummary(baseInput)
-    await vi.runAllTimersAsync()
-    const result = await promise
-    expect(result).not.toBeNull()
-    expect(mockFetch).toHaveBeenCalledTimes(3)
-  })
-
-  it("returns null when all 4 attempts fail with 429", async () => {
-    vi.stubEnv("GEMINI_API_KEY", "test-key")
-    vi.useFakeTimers()
     const mockFetch = vi.fn().mockResolvedValue(
       mockFetchResponse({ error: "rate limit" }, 429)
     )
     vi.stubGlobal("fetch", mockFetch)
-    const promise = generateAISummary(baseInput)
-    await vi.runAllTimersAsync()
-    const result = await promise
+    const result = await generateAISummary(baseInput)
     expect(result).toBeNull()
-    expect(mockFetch).toHaveBeenCalledTimes(4)
+    expect(mockFetch).toHaveBeenCalledTimes(1)
   })
 
-  it("retries on AbortError (timeout) and returns summary on second attempt", async () => {
+  it("returns null on AbortError (timeout) without retrying", async () => {
     vi.stubEnv("GEMINI_API_KEY", "test-key")
-    vi.useFakeTimers()
     const abortError = new Error("timeout")
     abortError.name = "AbortError"
-    const mockFetch = vi.fn()
-      .mockRejectedValueOnce(abortError)
-      .mockResolvedValue(mockFetchResponse({
-        choices: [{ message: { content: "Wash trading means the volume you see is fake -- bots trading with themselves." } }],
-      }))
+    const mockFetch = vi.fn().mockRejectedValue(abortError)
     vi.stubGlobal("fetch", mockFetch)
-    const promise = generateAISummary(baseInput)
-    await vi.runAllTimersAsync()
-    const result = await promise
-    expect(result).not.toBeNull()
-    expect(mockFetch).toHaveBeenCalledTimes(2)
+    const result = await generateAISummary(baseInput)
+    expect(result).toBeNull()
+    expect(mockFetch).toHaveBeenCalledTimes(1)
   })
 })
