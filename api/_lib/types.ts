@@ -240,7 +240,7 @@ export interface SafeGateInput {
   safeBlockedReasons: SafeBlockedReason[];
   forceRug: boolean;
   holders: number | null;
-  lpBurned: boolean;
+  lpBurned: boolean | null;
   goPlusClean: boolean;
   tokenAgeHours: number | null;
   sourcesAvailableCount: number;
@@ -250,7 +250,7 @@ export interface EstablishedBonusInput {
   score: number;
   tokenAgeHours: number | null;
   holders: number | null;
-  lpBurned: boolean;
+  lpBurned: boolean | null;
   goPlusClean: boolean;
 }
 
