@@ -274,7 +274,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     if (postLayerResult.safeBlocked) safeBlocked = true;
 
     const safeBlockedReasons = classifySafeBlockedReasons(allLayers);
-    const lpBurned = rugData?.lpBurned === true;
+    const _gpBP = (goplus?.dex && Array.isArray(goplus.dex) && goplus.dex.length > 0) ? Math.max(...goplus.dex.map((d: any) => typeof d.burn_percent === "number" ? d.burn_percent : 0)) : 0; const lpBurned = _gpBP >= 50 || rugData?.lpBurned === true;
     const goPlusClean = l3.available && l3.trust >= 0.95 && !l3.forceRug;
     const tokenAgeHours = solscanTokenAgeHours ?? dexTokenAgeHours ?? null;
     const sourcesAvailableCount = allLayers
@@ -329,8 +329,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       flags: flags.map(f => ({ label: f.label, severity: f.severity, impact: f.impact })),
       tokenSymbol: sanitizeString(pair?.baseToken?.symbol) ?? null,
       holders, marketCap, liquidity,
-      lpBurned: rugData ? rugData.lpBurned === true : null,
-      lpLocked: rugData ? rugData.lpLocked === true : null,
+      lpBurned,
+      lpLocked: false,
       mintAuthority: allLayers.some(l => l.flags.some(f => /mint authority/i.test(f.label) && f.severity === "critical")),
       freezeAuthority: allLayers.some(l => l.flags.some(f => /freeze authority/i.test(f.label) && f.severity === "critical")),
       honeypot: l3.available && l3.trust === 0 && l3.flags.some(f => /honeypot/i.test(f.label)),
@@ -355,9 +355,9 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       honeypot: l3.available && l3.trust === 0 && l3.flags.some(f => /honeypot/i.test(f.label)),
       mintAuthority: allLayers.some(l => l.flags.some(f => /mint authority/i.test(f.label) && f.severity === "critical")),
       freezeAuthority: allLayers.some(l => l.flags.some(f => /freeze authority/i.test(f.label) && f.severity === "critical")),
-      lpBurned: rugData ? rugData.lpBurned === true : null,
-      lpLocked: rugData ? rugData.lpLocked === true : null,
-      lpLockedPct: typeof rugData?.lpLockDurationDays === "number" ? rugData.lpLockDurationDays : typeof rugData?.lpLockDuration === "number" ? rugData.lpLockDuration : null,
+      lpBurned,
+      lpLocked: false,
+      lpLockedPct: _gpBP > 0 ? _gpBP : null,
       candles: candles.slice(-20).map(c => ({ close: c.c })),
       scoring_version: SCORING_VERSION,
       fetchedAt: Date.now(),
