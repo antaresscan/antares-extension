@@ -182,7 +182,45 @@ export function layerRugCheck(
     flags.push(makeFlag("Bundler detected (RugCheck summary)", "critical", 0));
     penalties.push(0.15); forceRug = true; safeBlocked = true;
   }
-        // LP burn/lock detection moved to layerGoPlus (uses GoPlus dex[].burn_percent)
+            if (rugData.lpBurned === true) {
+        flags.push(makeFlag("LP Burned ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.10);
+    } else if (rugData.lpLocked === true) {
+        const days = getLpLockDurationDays(rugData);
+        if (days > 180) { flags.push(makeFlag("LP Locked > 180 days ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.05); }
+        else if (days > 0 && days < 30) { flags.push(makeFlag("LP lock duration < 30 days", "warning", 0)); penalties.push(0.75); }
+    } else {
+        const lpDataPresent =
+            rugData.lpBurned === false ||
+            rugData.lpLocked === false ||
+            typeof rugData.lpLockDurationDays === "number" ||
+            typeof rugData.lpLockDuration === "number" ||
+            typeof rugData.lockDurationDays === "number";
+        const isOfficialMint = OFFICIAL_MINTS.has(resolvedMint);
+        if (lpDataPresent && !isOfficialMint) {
+            // Fix(LP_SAFE_BLOCK): LP not burned or locked MUST block SAFE verdict.
+            // Previously penalty-only — rug pulls like VDOR passed through with accessible LP.
+            // Smart LP classification: mature tokens get lp_unverified instead of hard lp block
+            const ctx = maturityContext;
+            const isMature = ctx
+                && (ctx.holders ?? 0) >= LP_UNVERIFIED_MIN_HOLDERS
+                && ctx.liquidity >= LP_UNVERIFIED_MIN_LIQUIDITY
+                && (ctx.tokenAgeHours ?? 0) >= LP_UNVERIFIED_MIN_AGE_HOURS
+                && !ctx.mintAuthority && !ctx.freezeAuthority && !ctx.honeypot;
+            if (isMature) {
+                flags.push(makeFlag("LP not burned but token is mature and liquid (unverified LP)", "warning", 0));
+                penalties.push(0.85);
+                safeBlocked = true;
+            } else {
+                flags.push(makeFlag("LP not burned or locked — dev can rug liquidity", "warning", 0));
+                penalties.push(0.70);
+                safeBlocked = true;
+            }
+        }
+    }
+    if (rugData.metaMutable === true) {
+        flags.push(makeFlag("Metadata mutable", "warning", 0));
+        penalties.push(0.82);
+    }
 const top10 = asNumber(rugData?.topHolders?.top10Percentage);
   const top1 = asNumber(rugData?.topHolders?.top1Percentage ?? rugData?.topHolders?.top1HolderPercentage);
   if (top10 > 70) { flags.push(makeFlag("Top 10 holders > 70%", "critical", 0)); penalties.push(0.45); }
