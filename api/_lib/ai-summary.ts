@@ -23,6 +23,8 @@ const MAX_FLAGS = 8
 const TIMEOUT_MS = 8000
 const MIN_LENGTH = 20
 const MAX_LENGTH = 1200
+const MAX_RETRIES = 2
+const RETRY_DELAYS = [1500, 3000]
 
 const SEVERITY_ORDER: Record<string, number> = {
   critical: 0,
@@ -32,9 +34,40 @@ const SEVERITY_ORDER: Record<string, number> = {
 }
 
 /**
+ * Local flag explanation dictionary.
+ * Used as fallback when Gemini is unavailable.
+ */
+const FLAG_EXPLANATIONS: Record<string, string> = {
+  "Bundle activity detected": "Coordinated wallets bought together at launch to inflate the price. They hold a large share and can dump simultaneously, crashing the price.",
+  "Wash trading detected": "The trading volume is fake. Bots are trading with themselves to create the illusion of demand. Real buyers are scarce.",
+  "Honeypot detected": "This token prevents you from selling. Once you buy, your funds are trapped and the developer keeps all the liquidity.",
+  "Mint authority enabled": "The developer can create unlimited new tokens at any time, diluting your holdings to zero.",
+  "Freeze authority enabled": "The developer can freeze your wallet, preventing you from selling or transferring your tokens.",
+  "LP not locked or burned": "The developer can remove all liquidity in one transaction. When that happens, the token price drops to zero and nobody can sell.",
+  "Very low liquidity": "There is almost no real money backing this token. Even a small sell order will crash the price significantly.",
+  "Very few holders": "Extreme concentration of ownership. A single wallet selling can collapse the entire market.",
+  "Top holder concentration": "A small number of wallets control most of the supply. They can coordinate a dump at any time.",
+  "Token is very new": "This token was just created. New tokens have the highest rug pull rate as developers often abandon them after extracting liquidity.",
+  "Copycat token name": "This token copies the name of a popular project to trick buyers into thinking it is legitimate.",
+  "High sell tax": "A large percentage of every sell is taken as tax, making it nearly impossible to exit profitably.",
+  "Ownership not renounced": "The developer retains admin control and can change contract rules, add taxes, or drain liquidity.",
+}
+
+function getFlagExplanation(label: string): string | null {
+  // Exact match
+  if (FLAG_EXPLANATIONS[label]) return FLAG_EXPLANATIONS[label]
+  // Partial match
+  const lowerLabel = label.toLowerCase()
+  for (const [key, val] of Object.entries(FLAG_EXPLANATIONS)) {
+    if (lowerLabel.includes(key.toLowerCase().split(" ")[0]) && lowerLabel.includes(key.toLowerCase().split(" ").slice(-1)[0])) {
+      return val
+    }
+  }
+  return null
+}
+
+/**
  * Build a structured explanation prompt from the scan data.
- * The goal: Gemini must explain WHY the token is dangerous (or safe)
- * using the actual flags and numbers, not just repeat the verdict.
  */
 function buildUserPrompt(input: AISummaryInput, topFlags: Array<{ label: string; severity: string; impact: number }>): string {
   const lines: string[] = []
@@ -42,7 +75,6 @@ function buildUserPrompt(input: AISummaryInput, topFlags: Array<{ label: string;
   lines.push(`Score: ${input.score}/1000, Verdict: ${input.risk}`)
   lines.push(`Sources used: ${input.sourcesUsed.join(", ") || "none"}`)
 
-  // Key metrics
   const metrics: string[] = []
   if (input.holders !== null) metrics.push(`holders: ${input.holders}`)
   if (input.marketCap !== null) metrics.push(`mcap: $${input.marketCap.toLocaleString()}`)
@@ -53,7 +85,6 @@ function buildUserPrompt(input: AISummaryInput, topFlags: Array<{ label: string;
   if (input.topHolderPct !== null) metrics.push(`top holder owns ${input.topHolderPct.toFixed(1)}% of supply`)
   if (metrics.length > 0) lines.push(`Metrics: ${metrics.join(", ")}`)
 
-  // Boolean flags
   const bools: string[] = []
   if (input.lpBurned) bools.push("LP burned")
   else if (input.lpLocked) bools.push("LP locked")
@@ -63,7 +94,6 @@ function buildUserPrompt(input: AISummaryInput, topFlags: Array<{ label: string;
   if (input.honeypot) bools.push("HONEYPOT detected")
   lines.push(`Status: ${bools.join(", ")}`)
 
-  // Flags with severity and impact
   if (topFlags.length > 0) {
     lines.push("")
     lines.push("Detected flags (most critical first):")
@@ -97,11 +127,15 @@ const SYSTEM_PROMPT =
   "- If the token is SAFE, explain what passed (LP burned, clean holders, good score) in the same concrete style. " +
   "- Never use markdown, emojis, bullet points, or generic disclaimers. Output only the sentences."
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 /**
  * Single Gemini call. Returns:
  * - the summary string on success
- * - "__RETRY__" if the error is recoverable (429 rate-limit or AbortError timeout)
- * - null for all other errors (network failure, 5xx, bad payload, etc.)
+ * - "__RETRY__" if the error is recoverable (429 or timeout)
+ * - null for all other errors
  */
 async function callGemini(
   apiKey: string,
@@ -130,10 +164,8 @@ async function callGemini(
       }),
       signal: controller.signal,
     })
-
     clearTimeout(timeout)
 
-    // 429 = rate-limit -> recoverable
     if (response.status === 429) {
       console.log("[ai-summary] Gemini returned 429 rate-limit")
       return "__RETRY__"
@@ -146,8 +178,6 @@ async function callGemini(
     }
 
     const raw = await response.text()
-    console.log(`[ai-summary] Gemini raw response (first 800 chars): ${raw.slice(0, 800)}`)
-
     let data: { choices?: Array<{ message?: { content?: string } }> }
     try {
       data = JSON.parse(raw) as { choices?: Array<{ message?: { content?: string } }> }
@@ -157,22 +187,14 @@ async function callGemini(
     }
 
     const msg = data?.choices?.[0]?.message?.content?.trim()
-    console.log(`[ai-summary] Extracted message content: ${typeof msg === "string" ? msg.slice(0, 200) : "null/undefined"}`)
-
     if (typeof msg !== "string") return null
-    if (msg.length < MIN_LENGTH) {
-      console.log(`[ai-summary] Message too short: ${msg.length} chars`)
-      return null
-    }
-
+    if (msg.length < MIN_LENGTH) return null
     if (msg.length > MAX_LENGTH) return msg.slice(0, MAX_LENGTH).replace(/\s+\S*$/, "") + "."
     return msg
-
   } catch (err: unknown) {
     clearTimeout(timeout)
-    // Only retry on AbortError (our own timeout signal) -- not on network errors
     if (err instanceof Error && err.name === "AbortError") {
-      console.log("[ai-summary] Gemini call timed out (AbortError)")
+      console.log("[ai-summary] Gemini call timed out")
       return "__RETRY__"
     }
     console.log(`[ai-summary] Gemini call error: ${err instanceof Error ? err.message : String(err)}`)
@@ -180,13 +202,71 @@ async function callGemini(
   }
 }
 
+/**
+ * Generate a deterministic local fallback summary when Gemini is unavailable.
+ * Uses the FLAG_EXPLANATIONS dictionary to explain the most critical flags.
+ */
+function generateLocalFallback(
+  input: AISummaryInput,
+  topFlags: Array<{ label: string; severity: string; impact: number }>,
+): string | null {
+  const parts: string[] = []
+
+  // Try to explain the top 1-2 flags
+  for (const flag of topFlags.slice(0, 2)) {
+    const explanation = getFlagExplanation(flag.label)
+    if (explanation) {
+      parts.push(explanation)
+    }
+  }
+
+  // Add context from boolean checks if no flag explanations found
+  if (parts.length === 0) {
+    if (input.honeypot) {
+      parts.push("This token is a honeypot. You will not be able to sell after buying. Your funds will be permanently trapped.")
+    }
+    if (input.mintAuthority) {
+      parts.push("Mint authority is still enabled, meaning the developer can create unlimited new tokens and crash the price to zero.")
+    }
+    if (input.freezeAuthority) {
+      parts.push("Freeze authority is enabled. The developer can freeze any wallet, preventing holders from selling.")
+    }
+    if (!input.lpBurned && !input.lpLocked) {
+      parts.push("Liquidity is not locked or burned. The developer can pull all liquidity at any moment, making the token worthless.")
+    }
+  }
+
+  // Add metrics context
+  if (input.topHolderPct !== null && input.topHolderPct > 20) {
+    parts.push(`The top wallet holds ${input.topHolderPct.toFixed(1)}% of supply${input.holders !== null ? " with only " + input.holders + " holders" : ""}, creating extreme dump risk.`)
+  }
+
+  // For safe tokens
+  if (parts.length === 0 && input.risk === "SAFE") {
+    const safePoints: string[] = []
+    if (input.lpBurned) safePoints.push("LP is burned")
+    else if (input.lpLocked) safePoints.push("LP is locked")
+    if (!input.mintAuthority) safePoints.push("mint authority is disabled")
+    if (!input.freezeAuthority) safePoints.push("freeze authority is disabled")
+    if (input.holders !== null && input.holders > 100) safePoints.push(`${input.holders} holders show organic distribution`)
+    if (safePoints.length > 0) {
+      parts.push(`Score ${input.score}/1000. ${safePoints.join(", ")}. No critical risks were detected in the contract or holder analysis.`)
+    }
+  }
+
+  if (parts.length === 0) return null
+
+  const result = parts.join(" ")
+  console.log(`[ai-summary] Local fallback generated (${result.length} chars)`)
+  return result.length > MAX_LENGTH ? result.slice(0, MAX_LENGTH).replace(/\s+\S*$/, "") + "." : result
+}
+
 export async function generateAISummary(
   input: AISummaryInput
 ): Promise<string | null> {
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey || apiKey === "") {
-    console.log("[ai-summary] No GEMINI_API_KEY found")
-    return null
+    console.log("[ai-summary] No GEMINI_API_KEY found, using local fallback")
   }
 
   const primaryModel = process.env.AI_MODEL || "gemini-2.5-flash"
@@ -205,16 +285,43 @@ export async function generateAISummary(
 
   const userPrompt = buildUserPrompt(input, topFlags)
 
-  console.log(`[ai-summary] Calling Gemini model=${primaryModel} timeout=${TIMEOUT_MS}ms`)
+  // Try Gemini with retries
+  if (apiKey && apiKey !== "") {
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      if (attempt > 0) {
+        const delay = RETRY_DELAYS[attempt - 1] || 3000
+        console.log(`[ai-summary] Retry ${attempt}/${MAX_RETRIES} after ${delay}ms`)
+        await sleep(delay)
+      }
 
-  // Single attempt
-  const result = await callGemini(apiKey, primaryModel, SYSTEM_PROMPT, userPrompt)
+      console.log(`[ai-summary] Calling Gemini model=${primaryModel} attempt=${attempt + 1}/${MAX_RETRIES + 1}`)
+      const result = await callGemini(apiKey, primaryModel, SYSTEM_PROMPT, userPrompt)
 
-  if (result === "__RETRY__") {
-    console.log("[ai-summary] Got __RETRY__, returning null (no retry logic)")
-    return null
+      if (result === "__RETRY__") {
+        // Continue to next retry attempt
+        continue
+      }
+
+      if (result !== null) {
+        console.log(`[ai-summary] Gemini success on attempt ${attempt + 1} (${result.length} chars)`)
+        return result
+      }
+
+      // null = non-recoverable error, fall through to fallback
+      console.log("[ai-summary] Gemini returned non-recoverable error, using fallback")
+      break
+    }
+
+    console.log("[ai-summary] All Gemini attempts exhausted, using local fallback")
   }
 
-  console.log(`[ai-summary] Final result: ${result ? "success (" + result.length + " chars)" : "null"}`)
-  return result
+  // Local fallback: generate summary from flag dictionary
+  const fallback = generateLocalFallback(input, topFlags)
+  if (fallback) {
+    console.log(`[ai-summary] Returning local fallback (${fallback.length} chars)`)
+    return fallback
+  }
+
+  console.log("[ai-summary] No fallback could be generated either")
+  return null
 }
