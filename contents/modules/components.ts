@@ -254,7 +254,8 @@ export function buildResult(data: ScanResponseData, ca: string): string {
       const dur = data.lpLockDurationDays != null ? ` (${data.lpLockDurationDays}d)` : ""
       return `<div class="si"><span>LP Locked${escapeHtml(pct + dur)}</span><b class="y">\u2713</b></div>`
     }
-        return `<div class="si"><span>LP Lock</span><b class="n">✗</b></div>`
+            if (data.lpBurned == null && data.lpLocked == null) return `<div class="si"><span>LP Lock</span><b style="color:#555">—</b></div>`
+    return `<div class="si"><span>LP Lock</span><b class="n">✗</b></div>`
   })()
 
   const rawDexUrl = data.pair?.url || `https://dexscreener.com/solana/${mint}`
