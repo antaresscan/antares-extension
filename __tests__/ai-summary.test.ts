@@ -338,7 +338,7 @@ describe("generateAISummary", () => {
     }
     const result = await generateAISummary(mintInput)
     expect(result).not.toBeNull()
-    expect(result).toContain("mint")
+    expect(result).toContain("Mint")
   })
 
   it("fallback covers LP not locked or burned", async () => {
@@ -351,7 +351,7 @@ describe("generateAISummary", () => {
     }
     const result = await generateAISummary(lpInput)
     expect(result).not.toBeNull()
-    expect(result).toContain("liquidity")
+    expect(result).toContain("Liquidity")
   })
 
   it("fallback covers top holder concentration above 20%", async () => {
