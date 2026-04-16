@@ -245,7 +245,7 @@ export function buildResult(data: ScanResponseData, ca: string): string {
   const siMint = boolSI("Mint", data.mintAuthority, true)
   const siFreeze = boolSI("Freeze", data.freezeAuthority, true)
   const liqDisplay = liq !== null ? formatMcap(liq) : "\u2014"
-  const siLiq = `<div class="si"><span>Liq</span><b${liq !== null && liq < 5000 ? ' class="n"' : liq !== null && liq > 50000 ? ' class="y"' : ""}>${liqDisplay}</b></div>`
+  const siLiq = `<div class="si"><span>Liq</span><b${liq !== null && liq < 5000 ? ' class="n"' : liq !== null && liq > 50000 ? ' class="y"' : ' class="w"'}>${liqDisplay}</b></div>`
 
   const siLP = (() => {
     if (data.lpBurned) return `<div class="si"><span>LP Burned</span><b class="y">\u2713</b></div>`
@@ -254,7 +254,7 @@ export function buildResult(data: ScanResponseData, ca: string): string {
       const dur = data.lpLockDurationDays != null ? ` (${data.lpLockDurationDays}d)` : ""
       return `<div class="si"><span>LP Locked${escapeHtml(pct + dur)}</span><b class="y">\u2713</b></div>`
     }
-    return `<div class="si"><span>LP Lock</span><b class="n">\u2717</b></div>`
+        return `<div class="si"><span>LP Lock</span><b class="n">✗</b></div>`
   })()
 
   const rawDexUrl = data.pair?.url || `https://dexscreener.com/solana/${mint}`
