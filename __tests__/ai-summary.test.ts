@@ -29,6 +29,7 @@ function mockFetchResponse(body: unknown, status = 200): Response {
 afterEach(() => {
   vi.unstubAllEnvs()
   vi.unstubAllGlobals()
+  vi.useRealTimers()
 })
 
 describe("generateAISummary", () => {
@@ -119,7 +120,7 @@ describe("generateAISummary", () => {
 
   it("truncates and returns a string (not null) when response content exceeds MAX_LENGTH (1200 chars)", async () => {
     vi.stubEnv("GEMINI_API_KEY", "test-key")
-    const longContent = "This is a valid sentence that will be repeated. ".repeat(30) // ~1440 chars
+    const longContent = "This is a valid sentence that will be repeated. ".repeat(30)
     const mockFetch = vi.fn().mockResolvedValue(
       mockFetchResponse({
         choices: [{ message: { content: longContent } }],
@@ -164,7 +165,6 @@ describe("generateAISummary", () => {
     vi.stubGlobal("fetch", mockFetch)
     const result = await generateAISummary(inputWithBonus)
     expect(result).not.toBeNull()
-    // Verify fetch was called (flags were processed without throwing)
     expect(mockFetch).toHaveBeenCalledOnce()
   })
 
@@ -183,5 +183,74 @@ describe("generateAISummary", () => {
     const result = await generateAISummary(inputNoSeverity)
     expect(result).not.toBeNull()
     expect(mockFetch).toHaveBeenCalledOnce()
+  })
+
+  // ---------------------------------------------------------------------------
+  // Retry logic tests
+  // ---------------------------------------------------------------------------
+
+  it("retries once on 429 and returns summary on second attempt", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key")
+    vi.useFakeTimers()
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce(mockFetchResponse({ error: "rate limit" }, 429))
+      .mockResolvedValue(mockFetchResponse({
+        choices: [{ message: { content: "Bundle activity means coordinated wallets bought together at launch." } }],
+      }))
+    vi.stubGlobal("fetch", mockFetch)
+    const promise = generateAISummary(baseInput)
+    await vi.runAllTimersAsync()
+    const result = await promise
+    expect(result).not.toBeNull()
+    expect(mockFetch).toHaveBeenCalledTimes(2)
+  })
+
+  it("falls back to gemini-2.0-flash when primary fails with 429 twice", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key")
+    vi.useFakeTimers()
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce(mockFetchResponse({ error: "rate limit" }, 429))
+      .mockResolvedValueOnce(mockFetchResponse({ error: "rate limit" }, 429))
+      .mockResolvedValue(mockFetchResponse({
+        choices: [{ message: { content: "LP not locked means the dev can pull liquidity at any time." } }],
+      }))
+    vi.stubGlobal("fetch", mockFetch)
+    const promise = generateAISummary(baseInput)
+    await vi.runAllTimersAsync()
+    const result = await promise
+    expect(result).not.toBeNull()
+    expect(mockFetch).toHaveBeenCalledTimes(3)
+  })
+
+  it("returns null when all 4 attempts fail with 429", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key")
+    vi.useFakeTimers()
+    const mockFetch = vi.fn().mockResolvedValue(
+      mockFetchResponse({ error: "rate limit" }, 429)
+    )
+    vi.stubGlobal("fetch", mockFetch)
+    const promise = generateAISummary(baseInput)
+    await vi.runAllTimersAsync()
+    const result = await promise
+    expect(result).toBeNull()
+    expect(mockFetch).toHaveBeenCalledTimes(4)
+  })
+
+  it("retries on AbortError (timeout) and returns summary on second attempt", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key")
+    vi.useFakeTimers()
+    const abortError = new Error("timeout")
+    abortError.name = "AbortError"
+    const mockFetch = vi.fn()
+      .mockRejectedValueOnce(abortError)
+      .mockResolvedValue(mockFetchResponse({
+        choices: [{ message: { content: "Wash trading means the volume you see is fake — bots trading with themselves." } }],
+      }))
+    vi.stubGlobal("fetch", mockFetch)
+    const promise = generateAISummary(baseInput)
+    await vi.runAllTimersAsync()
+    const result = await promise
+    expect(result).not.toBeNull()
+    expect(mockFetch).toHaveBeenCalledTimes(2)
   })
 })

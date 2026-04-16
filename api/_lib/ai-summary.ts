@@ -16,7 +16,8 @@ export type AISummaryInput = {
 
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
 const MAX_FLAGS = 8
-const TIMEOUT_MS = 8000
+const TIMEOUT_MS = 6000
+const RETRY_DELAY_MS = 1200
 const MIN_LENGTH = 20
 const MAX_LENGTH = 1200
 
@@ -86,15 +87,68 @@ const SYSTEM_PROMPT =
   "- If the token is SAFE, explain what passed (LP burned, clean holders, good score) in the same concrete style. " +
   "- Never use markdown, emojis, bullet points, or generic disclaimers. Output only the sentences."
 
+/**
+ * Single Gemini call. Returns:
+ *   - the summary string on success
+ *   - "__RETRY__" if the error is recoverable (429 rate-limit or AbortError timeout)
+ *   - null for all other errors (network failure, 5xx, bad payload, etc.)
+ */
+async function callGemini(
+  apiKey: string,
+  model: string,
+  context: object,
+): Promise<string | "__RETRY__" | null> {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS)
+  try {
+    const response = await fetch(GEMINI_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 350,
+        temperature: 0.35,
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: JSON.stringify(context) },
+        ],
+      }),
+      signal: controller.signal,
+    })
+    clearTimeout(timeout)
+
+    // 429 = rate-limit → recoverable
+    if (response.status === 429) return "__RETRY__"
+    if (!response.ok) return null
+
+    const data = (await response.json()) as {
+      choices?: Array<{ message?: { content?: string } }>
+    }
+    const msg = data?.choices?.[0]?.message?.content?.trim()
+    if (typeof msg !== "string") return null
+    if (msg.length < MIN_LENGTH) return null
+    if (msg.length > MAX_LENGTH) return msg.slice(0, MAX_LENGTH).replace(/\s+\S*$/, "") + "."
+    return msg
+  } catch (err: unknown) {
+    clearTimeout(timeout)
+    // Only retry on AbortError (our own timeout signal) — not on network errors
+    if (err instanceof Error && err.name === "AbortError") return "__RETRY__"
+    return null
+  }
+}
+
 export async function generateAISummary(
   input: AISummaryInput
 ): Promise<string | null> {
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey || apiKey === "") return null
 
-  const model = process.env.AI_MODEL || "gemini-2.5-flash"
+  const primaryModel = process.env.AI_MODEL || "gemini-2.5-flash"
+  const fallbackModel = "gemini-2.0-flash"
 
-  // Include ALL flags sorted by severity (no restrictive keyword filter)
   const topFlags = input.flags
     .slice()
     .sort((a: string, b: string) => {
@@ -129,42 +183,26 @@ export async function generateAISummary(
     sourcesUsed: input.sourcesUsed,
   }
 
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS)
+  // Attempt 1: primary model
+  let result = await callGemini(apiKey, primaryModel, context)
 
-  try {
-    const response = await fetch(GEMINI_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 350,
-        temperature: 0.35,
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: JSON.stringify(context) },
-        ],
-      }),
-      signal: controller.signal,
-    })
-
-    clearTimeout(timeout)
-    if (!response.ok) return null
-
-    const data = (await response.json()) as {
-      choices?: Array<{ message?: { content?: string } }>
-    }
-
-    const msg = data?.choices?.[0]?.message?.content?.trim()
-    if (typeof msg !== "string") return null
-    if (msg.length < MIN_LENGTH) return null
-    if (msg.length > MAX_LENGTH) return msg.slice(0, MAX_LENGTH).replace(/\s+\S*$/, "") + "."
-    return msg
-  } catch {
-    clearTimeout(timeout)
-    return null
+  // Retry once on recoverable error (429 or timeout), then try fallback
+  if (result === "__RETRY__") {
+    await new Promise(r => setTimeout(r, RETRY_DELAY_MS))
+    result = await callGemini(apiKey, primaryModel, context)
   }
+
+  // If still failing, switch to fallback model
+  if (result === "__RETRY__" || result === null) {
+    result = await callGemini(apiKey, fallbackModel, context)
+  }
+
+  // Last chance: retry fallback on recoverable error
+  if (result === "__RETRY__") {
+    await new Promise(r => setTimeout(r, RETRY_DELAY_MS))
+    result = await callGemini(apiKey, fallbackModel, context)
+  }
+
+  if (result === "__RETRY__") return null
+  return result
 }
