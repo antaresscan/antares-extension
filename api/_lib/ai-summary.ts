@@ -20,8 +20,7 @@ export type AISummaryInput = {
 
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
 const MAX_FLAGS = 8
-const TIMEOUT_MS = 6000
-const RETRY_DELAY_MS = 1200
+const TIMEOUT_MS = 3000
 const MIN_LENGTH = 20
 const MAX_LENGTH = 1200
 
@@ -159,7 +158,7 @@ export async function generateAISummary(
   if (!apiKey || apiKey === "") return null
 
   const primaryModel = process.env.AI_MODEL || "gemini-2.5-flash"
-  const fallbackModel = "gemini-2.0-flash"
+
 
   // Sort flags by severity then impact
   const topFlags = input.flags
@@ -176,24 +175,8 @@ export async function generateAISummary(
   const userPrompt = buildUserPrompt(input, topFlags)
 
   // Attempt 1: primary model
-  let result = await callGemini(apiKey, primaryModel, SYSTEM_PROMPT, userPrompt)
+constlet result = await callGemini(apiKey, primaryModel, SYSTEM_PROMPT, userPrompt)
 
-  // Retry once on recoverable error (429 or timeout), then try fallback
-  if (result === "__RETRY__") {
-    await new Promise(r => setTimeout(r, RETRY_DELAY_MS))
-    result = await callGemini(apiKey, primaryModel, SYSTEM_PROMPT, userPrompt)
-  }
-
-  // If still failing, switch to fallback model
-  if (result === "__RETRY__" || result === null) {
-    result = await callGemini(apiKey, fallbackModel, SYSTEM_PROMPT, userPrompt)
-  }
-
-  // Last chance: retry fallback on recoverable error
-  if (result === "__RETRY__") {
-    await new Promise(r => setTimeout(r, RETRY_DELAY_MS))
-    result = await callGemini(apiKey, fallbackModel, SYSTEM_PROMPT, userPrompt)
-  }
 
   if (result === "__RETRY__") return null
   return result
