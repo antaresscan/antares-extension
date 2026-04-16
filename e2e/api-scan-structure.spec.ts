@@ -65,7 +65,7 @@ test.describe('/api/scan Response Structure Validation', () => {
     test.skip(!scanData, 'Skipped: no scan data (rate limited)');
     const sources = scanData!.sources_used as string[];
         // dexscreener is always expected; rugcheck may be unavailable for native tokens
-        ct(sources, 'Missing source: dexscreener').toContain('dexscreener');
+        expect(sources, 'Missing source: dexscreener').toContain('dexscreener');
     // At least 2 sources should be available for a valid scan
     expect(sources.length, `Only ${sources.length} source(s)`).toBeGreaterThanOrEqual(2);
     // All returned sources must be known providers
