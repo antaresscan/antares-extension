@@ -35,7 +35,7 @@ import {
 import { computeFinalScore, classifySafeBlockedReasons } from "./_lib/scoring";
 import { evaluatePostLayerFlags, applySafeGateOverride, applyEstablishedBonus, determineVerdict } from "./_lib/pipeline";
 import { setCorsHeaders, getClientIp, checkRateLimit, validateCA, initRateLimiters } from "./_lib/middleware";
-import { initCache, getCachedResult, setCachedResult } from "./_lib/cache";
+import { initCache, getCachedResult, setCachedResult, getCacheRedis } from "./_lib/cache";
 import * as Sentry from "@sentry/node";
 import { generateAISummary } from "./_lib/ai-summary";
 
@@ -75,8 +75,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const ca = validateCA(req.query.ca);
   if (!ca) return apiError(res, 400, "Invalid token address.");
 
-  const cached = await getCachedResult(ca, requestId);
-  if (cached) return res.json(cached);
+  // Only serve cache if it has a valid aiSummary — otherwise re-run analysis to get one
+  const cached = await getCachedResult<ScanResult>(ca, requestId);
+  if (cached && cached.aiSummary) return res.json(cached);
 
   const timeoutPromise = new Promise<never>((_, reject) =>
     setTimeout(() => reject(new Error("Global timeout")), GLOBAL_TIMEOUT_MS)
@@ -137,8 +138,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     if (pair?.baseToken?.address) resolvedMint = pair.baseToken.address;
 
     if (resolvedMint !== ca) {
-      const cachedByMint = await getCachedResult(resolvedMint, requestId);
-      if (cachedByMint) return res.json(cachedByMint);
+      const cachedByMint = await getCachedResult<ScanResult>(resolvedMint, requestId);
+      if (cachedByMint && cachedByMint.aiSummary) return res.json(cachedByMint);
     }
     if (dexData?.pairs && dexData.pairs.length > 1) {
       pair = dexData.pairs.reduce((best: DexScreenerPair, p: DexScreenerPair) =>
@@ -245,7 +246,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       tokenAgeHours: solscanTokenAgeHours,
       mintAuthority: rugData?.mintAuthorityEnabled === true,
       freezeAuthority: rugData?.freezeAuthorityEnabled === true,
-      honeypot: false, // GoPlus not yet processed; RugCheck mint/freeze covers this
+      honeypot: false,
     });
     const l3 = layerGoPlus(goplus);
     const l4 = layerHelius(resolvedHolderAccounts, totalSupplyUi);
@@ -342,8 +343,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       mintAuthority: allLayers.some(l => l.flags.some(f => /mint authority/i.test(f.label) && f.severity === "critical")),
       freezeAuthority: allLayers.some(l => l.flags.some(f => /freeze authority/i.test(f.label) && f.severity === "critical")),
       lpBurned: rugData?.lpBurned === true,
-          lpLocked: rugData?.lpLocked === true,
-    lpLockedPct: typeof rugData?.lpLockDurationDays === "number" ? rugData.lpLockDurationDays : typeof rugData?.lpLockDuration === "number" ? rugData.lpLockDuration : null,
+      lpLocked: rugData?.lpLocked === true,
+      lpLockedPct: typeof rugData?.lpLockDurationDays === "number" ? rugData.lpLockDurationDays : typeof rugData?.lpLockDuration === "number" ? rugData.lpLockDuration : null,
       candles: candles.slice(-20).map(c => ({ close: c.c })),
       scoring_version: SCORING_VERSION,
       fetchedAt: Date.now(),
@@ -351,8 +352,20 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       aiSummary: aiSummary ?? null,
     };
 
-    setCachedResult(ca, result, tokenAgeMinutes);
-    if (resolvedMint !== ca) setCachedResult(resolvedMint, result, tokenAgeMinutes);
+    // Only cache if aiSummary was successfully generated — otherwise next request will retry
+    if (result.aiSummary) {
+      setCachedResult(ca, result, tokenAgeMinutes);
+      if (resolvedMint !== ca) setCachedResult(resolvedMint, result, tokenAgeMinutes);
+    } else {
+      // Cache without aiSummary only briefly (30s) so score/risk are still served fast
+      // but the next full request will re-attempt AI generation
+      const redis = getCacheRedis();
+      if (redis) {
+        redis.setex(`antares:v2:${ca}`, 30, result).catch(() => {});
+        if (resolvedMint !== ca) redis.setex(`antares:v2:${resolvedMint}`, 30, result).catch(() => {});
+      }
+    }
+
     void recordRug({ mint: resolvedMint, symbol: sanitizeString(pair?.baseToken?.symbol) ?? null, score, risk, flags, creator: tokenCreator });
     return res.json(result);
   } catch (e) {
