@@ -220,13 +220,10 @@ export function buildResult(data: ScanResponseData, ca: string): string {
 
   if (state.boxEl) state.boxEl.className = `box ${riskClass}`
 
-  const dotsCount = Math.round((score / 1000) * 5)
-  const dots = Array.from({length: 5}, (_, i) =>
-    `<div class="dt ${i < dotsCount ? 'on' : 'off'}"></div>`
-  ).join("")
-
-  const allFlags = (data.flags || []).filter((f: ScanResponseFlag) => f.severity !== "bonus")
-  const flagCount = allFlags.length
+return `<div class="si"><span>LP Lock</span><b class="n">    `<div class="dt ${i < dotsCount ? 'on' : 'off'}"></div>`
+class="y"' : ' class="w"'}>${liqDisplay}
+if (data.lpBurned == null && data.lpLocked == null) return `<div class="si"><span>LP Lock</span><b style="color:#555">\u2014</b></div>`
+    return `<div class="si"><span>LP Lock</span><b class="n">  const flagCount = allFlags.length
   const critCount = allFlags.filter((f: ScanResponseFlag) => f.severity === "critical").length
 
   let summary = ""
