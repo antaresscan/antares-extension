@@ -183,7 +183,7 @@ export function layerRugCheck(
     penalties.push(0.15); forceRug = true; safeBlocked = true;
   }
         // LP burn/lock detection moved to layerGoPlus (uses GoPlus dex[].burn_percent)
-nst top10 = asNumber(rugData?.topHolders?.top10Percentage);
+const top10 = asNumber(rugData?.topHolders?.top10Percentage);
   const top1 = asNumber(rugData?.topHolders?.top1Percentage ?? rugData?.topHolders?.top1HolderPercentage);
   if (top10 > 70) { flags.push(makeFlag("Top 10 holders > 70%", "critical", 0)); penalties.push(0.45); }
   else if (top10 > 50) { flags.push(makeFlag("Top 10 holders > 50%", "warning", 0)); penalties.push(0.70); }
