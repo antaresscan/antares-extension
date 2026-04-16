@@ -274,7 +274,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     if (postLayerResult.safeBlocked) safeBlocked = true;
 
     const safeBlockedReasons = classifySafeBlockedReasons(allLayers);
-    const _gpBP = (goplus?.dex && Array.isArray(goplus.dex) && goplus.dex.length > 0) ? Math.max(...goplus.dex.map((d: any) => typeof d.burn_percent === "number" ? d.burn_percent : 0)) : 0; const lpBurned = _gpBP >= 50 || rugData?.lpBurned === true;
+    const _gpBP = (goplus?.dex && Array.isArray(goplus.dex) && goplus.dex.length > 0) ? Math.max(...goplus.dex.map((d: { burn_percent?: number }) => typeof d.burn_percent === "number" ? d.burn_percent : 0)) : 0; const lpBurned = _gpBP >= 50 || rugData?.lpBurned === true;
     const goPlusClean = l3.available && l3.trust >= 0.95 && !l3.forceRug;
     const tokenAgeHours = solscanTokenAgeHours ?? dexTokenAgeHours ?? null;
     const sourcesAvailableCount = allLayers
