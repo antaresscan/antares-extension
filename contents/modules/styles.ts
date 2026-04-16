@@ -264,7 +264,7 @@ export const SHADOW_CSS = `
   letter-spacing: .12em; text-transform: uppercase; margin-bottom: 3px;
   font-family: 'IBM Plex Mono', monospace;
 }
-.si b { font-size: 10px; letter-spacing: .02em; font-weight: 700; font-family: 'IBM Plex Mono', monospace; }
+.si b { font-size: 10px; letter-spacing: .02em; font-weight: 700; font-family: 'IBM Plex Mono', monospace; color: #e0e0e0; }
 .si b.y { color: #00e5b0; }
 .si b.n { color: #ff5f5f; }
 .si b.w { color: #f5d000; }
