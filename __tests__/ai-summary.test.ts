@@ -117,9 +117,9 @@ describe("generateAISummary", () => {
     expect(result).toBeNull()
   })
 
-  it("truncates and returns a string (not null) when response content exceeds MAX_LENGTH (800 chars)", async () => {
+  it("truncates and returns a string (not null) when response content exceeds MAX_LENGTH (1200 chars)", async () => {
     vi.stubEnv("GEMINI_API_KEY", "test-key")
-    const longContent = "This is a valid sentence that will be repeated. ".repeat(20) // ~960 chars
+    const longContent = "This is a valid sentence that will be repeated. ".repeat(30) // ~1440 chars
     const mockFetch = vi.fn().mockResolvedValue(
       mockFetchResponse({
         choices: [{ message: { content: longContent } }],
@@ -129,7 +129,7 @@ describe("generateAISummary", () => {
     const result = await generateAISummary(baseInput)
     expect(result).not.toBeNull()
     expect(typeof result).toBe("string")
-    expect(result!.length).toBeLessThanOrEqual(800)
+    expect(result!.length).toBeLessThanOrEqual(1200)
     expect(result!.endsWith(".")).toBe(true)
   })
 
