@@ -301,4 +301,128 @@ describe("generateAISummary", () => {
     expect(mockFetch).toHaveBeenCalledTimes(2)
     expect(result).toBe("This is a valid summary returned on the second attempt after retry.")
   })
+
+  // ---------------------------------------------------------------------------
+  // Local fallback coverage tests
+  // ---------------------------------------------------------------------------
+  it("fallback covers honeypot detection", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "")
+    delete process.env.GEMINI_API_KEY
+    const honeypotInput: AISummaryInput = {
+      ...noFlagInput,
+      honeypot: true,
+    }
+    const result = await generateAISummary(honeypotInput)
+    expect(result).not.toBeNull()
+    expect(result).toContain("honeypot")
+  })
+
+  it("fallback covers freeze authority", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "")
+    delete process.env.GEMINI_API_KEY
+    const freezeInput: AISummaryInput = {
+      ...noFlagInput,
+      freezeAuthority: true,
+    }
+    const result = await generateAISummary(freezeInput)
+    expect(result).not.toBeNull()
+    expect(result).toContain("freeze")
+  })
+
+  it("fallback covers mint authority from boolean", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "")
+    delete process.env.GEMINI_API_KEY
+    const mintInput: AISummaryInput = {
+      ...noFlagInput,
+      mintAuthority: true,
+    }
+    const result = await generateAISummary(mintInput)
+    expect(result).not.toBeNull()
+    expect(result).toContain("mint" || "Mint")
+  })
+
+  it("fallback covers LP not locked or burned", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "")
+    delete process.env.GEMINI_API_KEY
+    const lpInput: AISummaryInput = {
+      ...noFlagInput,
+      lpBurned: false,
+      lpLocked: false,
+    }
+    const result = await generateAISummary(lpInput)
+    expect(result).not.toBeNull()
+    expect(result).toContain("liquidity" || "Liquidity")
+  })
+
+  it("fallback covers top holder concentration above 20%", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "")
+    delete process.env.GEMINI_API_KEY
+    const topHolderInput: AISummaryInput = {
+      ...noFlagInput,
+      topHolderPct: 45,
+      holders: 12,
+      lpBurned: true,
+    }
+    const result = await generateAISummary(topHolderInput)
+    expect(result).not.toBeNull()
+    expect(result).toContain("45.0%")
+  })
+
+  it("fallback covers safe token with clean profile", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "")
+    delete process.env.GEMINI_API_KEY
+    const safeInput: AISummaryInput = {
+      ...noFlagInput,
+      risk: "SAFE",
+      score: 850,
+      lpBurned: true,
+      mintAuthority: false,
+      freezeAuthority: false,
+      holders: 200,
+      honeypot: false,
+    }
+    const result = await generateAISummary(safeInput)
+    expect(result).not.toBeNull()
+    expect(result).toContain("850")
+  })
+
+  it("fallback covers safe token with LP locked (not burned)", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "")
+    delete process.env.GEMINI_API_KEY
+    const safeLpLockedInput: AISummaryInput = {
+      ...noFlagInput,
+      risk: "SAFE",
+      score: 800,
+      lpBurned: false,
+      lpLocked: true,
+      mintAuthority: false,
+      freezeAuthority: false,
+      holders: 150,
+      honeypot: false,
+    }
+    const result = await generateAISummary(safeLpLockedInput)
+    expect(result).not.toBeNull()
+    expect(result).toContain("locked")
+  })
+
+  it("fallback truncates very long output", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "")
+    delete process.env.GEMINI_API_KEY
+    // Create input that will generate a very long fallback
+    const longInput: AISummaryInput = {
+      ...noFlagInput,
+      honeypot: true,
+      mintAuthority: true,
+      freezeAuthority: true,
+      lpBurned: false,
+      lpLocked: false,
+      topHolderPct: 90,
+      holders: 3,
+    }
+    const result = await generateAISummary(longInput)
+    expect(result).not.toBeNull()
+    if (result) {
+      expect(result.length).toBeLessThanOrEqual(1200)
+    }
+  })
 })
