@@ -92,8 +92,8 @@ export interface RugCheckTopHolders {
 }
 
 export interface RugCheckSummary {
-  lpBurned?: boolean;
-  lpLocked?: boolean;
+  lpBurned?: boolean | null;
+  lpLocked?: boolean | null;
   lpLockDurationDays?: number;
   lpLockDuration?: number;
   lockDurationDays?: number;
@@ -306,10 +306,10 @@ export interface ScanResult {
   mintAuthority?: boolean;
   freezeAuthority?: boolean;
   requestId: string;
-  lpBurned?: boolean;
+  lpBurned?: boolean | null;
   candles?: Array<{ close: number }>;
   aiSummary?: string | null;
-      lpLocked?: boolean;
+      lpLocked?: boolean | null;
   lpLockedPct?: number | null;
   lpLockDurationDays?: number | null;
 }
