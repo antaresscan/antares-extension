@@ -131,6 +131,7 @@ export interface GoPlusTokenResult {
   is_anti_whale_modifiable?: string | number | boolean;
   trading_cooldown?: string | number | boolean;
   is_whitelisted?: string | number | boolean;
+    dex?: Array<{ burn_percent?: number; dex_name?: string; lp_amount?: string | null; tvl?: string | number; type?: string }>;
 }
 
 export interface GoPlusResponse {
