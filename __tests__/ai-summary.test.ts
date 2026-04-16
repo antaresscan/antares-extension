@@ -5,17 +5,24 @@ import type { AISummaryInput } from "../api/_lib/ai-summary"
 const baseInput: AISummaryInput = {
   score: 750,
   risk: "SAFE",
-  flags: ["[critical] Mint authority enabled", "[warning] Low holders"],
+  flags: [
+    { label: "Mint authority enabled", severity: "critical", impact: 200 },
+    { label: "Low holders", severity: "warning", impact: 80 },
+  ],
   tokenSymbol: "TEST",
   holders: 500,
   marketCap: 100000,
   liquidity: 50000,
   lpBurned: true,
+  lpLocked: false,
   mintAuthority: false,
   freezeAuthority: false,
   honeypot: false,
   tokenAgeHours: 48,
   sourcesUsed: ["dexscreener", "rugcheck", "goplus"],
+  topHolderPct: 12.5,
+  volume24h: 25000,
+  priceChange1h: -3.2,
 }
 
 function mockFetchResponse(body: unknown, status = 200): Response {
@@ -151,10 +158,10 @@ describe("generateAISummary", () => {
     const inputWithBonus: AISummaryInput = {
       ...baseInput,
       flags: [
-        "[bonus] LP Burned",
-        "[critical] Mint authority enabled",
-        "[warning] Low holders",
-        "[info] Token is 3 days old",
+        { label: "LP Burned", severity: "bonus", impact: 50 },
+        { label: "Mint authority enabled", severity: "critical", impact: 200 },
+        { label: "Low holders", severity: "warning", impact: 80 },
+        { label: "Token is 3 days old", severity: "info", impact: 10 },
       ],
     }
     const mockFetch = vi.fn().mockResolvedValue(
@@ -168,11 +175,14 @@ describe("generateAISummary", () => {
     expect(mockFetch).toHaveBeenCalledOnce()
   })
 
-  it("handles flags with no recognized severity prefix (info fallback)", async () => {
+  it("handles flags with unknown severity", async () => {
     vi.stubEnv("GEMINI_API_KEY", "test-key")
-    const inputNoSeverity: AISummaryInput = {
+    const inputUnknown: AISummaryInput = {
       ...baseInput,
-      flags: ["unknown_flag_without_severity", "another_plain_flag"],
+      flags: [
+        { label: "Unknown flag", severity: "unknown", impact: 30 },
+        { label: "Another plain flag", severity: "info", impact: 10 },
+      ],
     }
     const mockFetch = vi.fn().mockResolvedValue(
       mockFetchResponse({
@@ -180,7 +190,7 @@ describe("generateAISummary", () => {
       })
     )
     vi.stubGlobal("fetch", mockFetch)
-    const result = await generateAISummary(inputNoSeverity)
+    const result = await generateAISummary(inputUnknown)
     expect(result).not.toBeNull()
     expect(mockFetch).toHaveBeenCalledOnce()
   })
@@ -244,7 +254,7 @@ describe("generateAISummary", () => {
     const mockFetch = vi.fn()
       .mockRejectedValueOnce(abortError)
       .mockResolvedValue(mockFetchResponse({
-        choices: [{ message: { content: "Wash trading means the volume you see is fake — bots trading with themselves." } }],
+        choices: [{ message: { content: "Wash trading means the volume you see is fake -- bots trading with themselves." } }],
       }))
     vi.stubGlobal("fetch", mockFetch)
     const promise = generateAISummary(baseInput)
