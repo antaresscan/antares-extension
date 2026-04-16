@@ -18,7 +18,7 @@ const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat
 const MAX_FLAGS = 8
 const TIMEOUT_MS = 8000
 const MIN_LENGTH = 20
-const MAX_LENGTH = 800
+const MAX_LENGTH = 1200
 
 const FLAG_LABELS: Record<string, string> = {
   "mint_authority_enabled": "Mint authority is enabled",
@@ -68,11 +68,23 @@ const SEVERITY_ORDER: Record<string, number> = {
 }
 
 const SYSTEM_PROMPT =
-  "You are a concise crypto risk analyst explaining a Solana token scan result to a retail user. " +
-  "Write 2 to 4 plain-text sentences explaining whether this token looks safe or dangerous and why, " +
-  "based strictly on the data provided. Be direct and specific: mention the actual flags, score, and " +
-  "key on-chain facts. If the token is dangerous, say clearly why. If it looks safe, say why it passed. " +
-  "Never use markdown, emojis, bullet points, or generic disclaimers. Output only the sentences."
+  "You are a crypto risk analyst explaining a Solana token scan to a retail user in plain English. " +
+  "Your job is NOT to repeat the verdict — the user already sees SAFE / DANGER / RUG PULL on screen. " +
+  "Your job is to explain WHY: pick the 1 or 2 most important flags from the data and describe " +
+  "the exact mechanism of danger in concrete terms. " +
+  "Examples of good explanations: " +
+  "'Bundle activity means a group of coordinated wallets bought together at launch to inflate the price — " +
+  "they now hold a large share and can dump simultaneously, crashing the price instantly.' " +
+  "'Wash trading means the volume you see is fake — bots are trading with themselves to create the " +
+  "illusion of demand. Real buyers are scarce, and the price can collapse once the bots stop.' " +
+  "'LP not locked means the developer can remove all liquidity in one transaction — when that happens, " +
+  "the token price drops to zero and nobody can sell.' " +
+  "Rules: " +
+  "- Start directly with the flag name or the danger, never with 'This token is' or 'Based on the data'. " +
+  "- Write 2 to 4 sentences max. " +
+  "- Be specific: use numbers from the data when available (e.g. score, liquidity, holders). " +
+  "- If the token is SAFE, explain what passed (LP burned, clean holders, good score) in the same concrete style. " +
+  "- Never use markdown, emojis, bullet points, or generic disclaimers. Output only the sentences."
 
 export async function generateAISummary(
   input: AISummaryInput
@@ -129,7 +141,7 @@ export async function generateAISummary(
       },
       body: JSON.stringify({
         model,
-        max_tokens: 200,
+        max_tokens: 350,
         temperature: 0.35,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },

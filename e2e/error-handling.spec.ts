@@ -40,7 +40,8 @@ test.describe('Error Handling & Edge Cases', () => {
   test.describe('Token page edge cases', () => {
     test('token page without hash shows error message', async ({ page }) => {
       await page.goto(`${BASE}/token.html`);
-      const errorText = page.locator('text=No token address provided');
+      // Use regex to match regardless of trailing punctuation (e.g. "No token address provided.")
+      const errorText = page.locator('text=/No token address provided/i');
       await expect(errorText).toBeVisible({ timeout: 5000 });
     });
 
