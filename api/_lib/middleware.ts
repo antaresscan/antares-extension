@@ -48,25 +48,8 @@ export function initRateLimiters(redis: Redis): void {
 export function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean {
   const origin = (req.headers.origin as string) || "";
 
-  // chrome-extension:// origins: allow via rate limiting.
-  // If ANTARES_EXT_TOKEN is configured, validate it. Otherwise allow all extensions.
-  if (origin.startsWith("chrome-extension://")) {
-    const expectedToken = process.env.ANTARES_EXT_TOKEN || "";
-
-    // DEPLOY GUARD: reject all requests if token not configured on any Vercel deployment
-    if (!expectedToken && process.env.VERCEL_ENV) {
-      logger.error("middleware", "ANTARES_EXT_TOKEN is not set on Vercel deployment!");
-      res.status(503).json({ error: "Service misconfigured" });
-      return false;
-    }
-
-    if (expectedToken) {
-      const extToken = (req.headers["x-antares-token"] as string) || "";
-      if (extToken !== expectedToken) {
-        return false;
-      }
-    }
-
+      // chrome-extension:// origins: allow all extensions via rate limiting
+    if (origin.startsWith("chrome-extension://")) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Antares-Token");
