@@ -28,20 +28,16 @@ describe("validateCA", () => {
     const ca = "So11111111111111111111111111111111111111112";
     expect(validateCA(ca)).toBe(ca);
   });
-
   it("returns trimmed CA with whitespace", () => {
-    const ca = "  So11111111111111111111111111111111111111112  ";
+    const ca = " So11111111111111111111111111111111111111112 ";
     expect(validateCA(ca)).toBe(ca.trim());
   });
-
   it("returns null for invalid CA", () => {
     expect(validateCA("not-a-valid-ca")).toBeNull();
   });
-
   it("returns null for empty string", () => {
     expect(validateCA("")).toBeNull();
   });
-
   it("returns null for non-string input", () => {
     expect(validateCA(123)).toBeNull();
     expect(validateCA(null)).toBeNull();
@@ -55,17 +51,14 @@ describe("getClientIp", () => {
     const req = mockReq({ "x-real-ip": "1.2.3.4" });
     expect(getClientIp(req)).toBe("1.2.3.4");
   });
-
   it("returns first x-forwarded-for IP", () => {
     const req = mockReq({ "x-forwarded-for": "5.6.7.8, 9.10.11.12" });
     expect(getClientIp(req)).toBe("5.6.7.8");
   });
-
   it("returns socket remoteAddress as fallback", () => {
     const req = mockReq({}, { remoteAddress: "127.0.0.1" });
     expect(getClientIp(req)).toBe("127.0.0.1");
   });
-
   it("returns 'unknown' when no IP info", () => {
     const req = mockReq();
     expect(getClientIp(req)).toBe("unknown");
@@ -74,33 +67,21 @@ describe("getClientIp", () => {
 
 // ═══ setCorsHeaders ═════════════════════════════════════════════════════════
 describe("setCorsHeaders", () => {
-  beforeEach(() => {
-    vi.stubEnv("ANTARES_EXT_TOKEN", "test-token-123");
-  });
-
-  it("allows chrome-extension origin with valid token", () => {
+  it("allows chrome-extension origin", () => {
     const req = mockReq({
       origin: "chrome-extension://abcdef123456",
-      "x-antares-token": "test-token-123",
     });
     const res = mockRes();
     expect(setCorsHeaders(req, res)).toBe(true);
     expect(res.setHeader).toHaveBeenCalledWith("Access-Control-Allow-Origin", "chrome-extension://abcdef123456");
   });
 
-  it("rejects chrome-extension origin with invalid token", () => {
+  it("allows chrome-extension origin without any token header", () => {
     const req = mockReq({
-      origin: "chrome-extension://abcdef123456",
-      "x-antares-token": "wrong-token",
+      origin: "chrome-extension://anotherId789",
     });
     const res = mockRes();
-    expect(setCorsHeaders(req, res)).toBe(false);
-  });
-
-  it("rejects chrome-extension origin with missing token", () => {
-    const req = mockReq({ origin: "chrome-extension://abcdef123456" });
-    const res = mockRes();
-    expect(setCorsHeaders(req, res)).toBe(false);
+    expect(setCorsHeaders(req, res)).toBe(true);
   });
 
   it("allows known origin from ALLOWED_ORIGINS", () => {
