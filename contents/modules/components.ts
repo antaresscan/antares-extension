@@ -254,6 +254,7 @@ export function buildResult(data: ScanResponseData, ca: string): string {
       const dur = data.lpLockDurationDays != null ? ` (${data.lpLockDurationDays}d)` : ""
       return `<div class="si"><span>LP Locked${escapeHtml(pct + dur)}</span><b class="y">\u2713</b></div>`
     }
+        if (data.lpBurned == null && data.lpLocked == null) return `<div class="si"><span>LP Lock</span><b style="color:#555">\u2014</b></div>`
     return `<div class="si"><span>LP Lock</span><b class="n">\u2717</b></div>`
   })()
 
