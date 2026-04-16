@@ -25,10 +25,34 @@ const baseInput: AISummaryInput = {
   priceChange1h: -3.2,
 }
 
+// Input with no recognizable flags for fallback (should return null when Gemini fails)
+const noFlagInput: AISummaryInput = {
+  score: 500,
+  risk: "WARNING",
+  flags: [
+    { label: "Unusual xyz pattern", severity: "info", impact: 10 },
+  ],
+  tokenSymbol: "NOFLAG",
+  holders: 50,
+  marketCap: 5000,
+  liquidity: 2000,
+  lpBurned: true,
+  lpLocked: false,
+  mintAuthority: false,
+  freezeAuthority: false,
+  honeypot: false,
+  tokenAgeHours: 2,
+  sourcesUsed: ["dexscreener"],
+  topHolderPct: 10,
+  volume24h: 500,
+  priceChange1h: -1,
+}
+
 function mockFetchResponse(body: unknown, status = 200): Response {
   return {
     ok: status >= 200 && status < 300,
     status,
+    text: async () => JSON.stringify(body),
     json: async () => body,
   } as Response
 }
@@ -40,16 +64,21 @@ afterEach(() => {
 })
 
 describe("generateAISummary", () => {
-  it("returns null when GEMINI_API_KEY is undefined", async () => {
+  // ---------------------------------------------------------------------------
+  // No API key tests: fallback kicks in
+  // ---------------------------------------------------------------------------
+  it("returns local fallback (not null) when GEMINI_API_KEY is undefined and flags are recognized", async () => {
     vi.stubEnv("GEMINI_API_KEY", "")
     delete process.env.GEMINI_API_KEY
     const result = await generateAISummary(baseInput)
-    expect(result).toBeNull()
+    expect(result).not.toBeNull()
+    expect(typeof result).toBe("string")
   })
 
-  it("returns null when GEMINI_API_KEY is an empty string", async () => {
+  it("returns null when GEMINI_API_KEY is missing and no flags are recognized", async () => {
     vi.stubEnv("GEMINI_API_KEY", "")
-    const result = await generateAISummary(baseInput)
+    delete process.env.GEMINI_API_KEY
+    const result = await generateAISummary(noFlagInput)
     expect(result).toBeNull()
   })
 
@@ -62,6 +91,9 @@ describe("generateAISummary", () => {
     expect(mockFetch).not.toHaveBeenCalled()
   })
 
+  // ---------------------------------------------------------------------------
+  // Successful Gemini responses
+  // ---------------------------------------------------------------------------
   it("calls fetch with correct URL and Authorization header when key is present", async () => {
     vi.stubEnv("GEMINI_API_KEY", "test-key-123")
     const mockFetch = vi.fn().mockResolvedValue(
@@ -95,25 +127,39 @@ describe("generateAISummary", () => {
     expect(result).toBe("This token appears safe with strong liquidity and burned LP.")
   })
 
-  it("returns null when fetch throws a network error", async () => {
+  // ---------------------------------------------------------------------------
+  // Gemini failures with fallback
+  // ---------------------------------------------------------------------------
+  it("returns local fallback when fetch throws a network error and flags are recognized", async () => {
     vi.stubEnv("GEMINI_API_KEY", "test-key")
     const mockFetch = vi.fn().mockRejectedValue(new Error("network error"))
     vi.stubGlobal("fetch", mockFetch)
     const result = await generateAISummary(baseInput)
+    // Fallback should return something for "Mint authority enabled"
+    expect(result).not.toBeNull()
+    expect(typeof result).toBe("string")
+  })
+
+  it("returns null when fetch throws a network error and no flags are recognized", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key")
+    const mockFetch = vi.fn().mockRejectedValue(new Error("network error"))
+    vi.stubGlobal("fetch", mockFetch)
+    const result = await generateAISummary(noFlagInput)
     expect(result).toBeNull()
   })
 
-  it("returns null when API returns HTTP 500", async () => {
+  it("returns local fallback when API returns HTTP 500 and flags are recognized", async () => {
     vi.stubEnv("GEMINI_API_KEY", "test-key")
     const mockFetch = vi.fn().mockResolvedValue(
       mockFetchResponse({ error: "internal server error" }, 500)
     )
     vi.stubGlobal("fetch", mockFetch)
     const result = await generateAISummary(baseInput)
-    expect(result).toBeNull()
+    expect(result).not.toBeNull()
+    expect(typeof result).toBe("string")
   })
 
-  it("returns null when response content is empty or shorter than 20 chars", async () => {
+  it("returns local fallback when response content is too short", async () => {
     vi.stubEnv("GEMINI_API_KEY", "test-key")
     const mockFetch = vi.fn().mockResolvedValue(
       mockFetchResponse({
@@ -122,10 +168,12 @@ describe("generateAISummary", () => {
     )
     vi.stubGlobal("fetch", mockFetch)
     const result = await generateAISummary(baseInput)
-    expect(result).toBeNull()
+    // Gemini returned too-short content -> falls back to local
+    expect(result).not.toBeNull()
+    expect(typeof result).toBe("string")
   })
 
-  it("truncates and returns a string (not null) when response content exceeds MAX_LENGTH (1200 chars)", async () => {
+  it("truncates and returns a string when response content exceeds MAX_LENGTH (1200 chars)", async () => {
     vi.stubEnv("GEMINI_API_KEY", "test-key")
     const longContent = "This is a valid sentence that will be repeated. ".repeat(30)
     const mockFetch = vi.fn().mockResolvedValue(
@@ -141,7 +189,7 @@ describe("generateAISummary", () => {
     expect(result!.endsWith(".")).toBe(true)
   })
 
-  it("returns null when choices array has no message content", async () => {
+  it("returns local fallback when choices array has no message content", async () => {
     vi.stubEnv("GEMINI_API_KEY", "test-key")
     const mockFetch = vi.fn().mockResolvedValue(
       mockFetchResponse({
@@ -150,9 +198,13 @@ describe("generateAISummary", () => {
     )
     vi.stubGlobal("fetch", mockFetch)
     const result = await generateAISummary(baseInput)
-    expect(result).toBeNull()
+    expect(result).not.toBeNull()
+    expect(typeof result).toBe("string")
   })
 
+  // ---------------------------------------------------------------------------
+  // Flag sorting
+  // ---------------------------------------------------------------------------
   it("sorts bonus flags after critical and warning", async () => {
     vi.stubEnv("GEMINI_API_KEY", "test-key")
     const inputWithBonus: AISummaryInput = {
@@ -196,28 +248,57 @@ describe("generateAISummary", () => {
   })
 
   // ---------------------------------------------------------------------------
-  // No-retry behavior tests (single attempt only)
+  // Retry behavior tests
   // ---------------------------------------------------------------------------
-
-  it("returns null on 429 without retrying", async () => {
+  it("retries on 429 and returns fallback after all retries exhausted", async () => {
     vi.stubEnv("GEMINI_API_KEY", "test-key")
     const mockFetch = vi.fn().mockResolvedValue(
       mockFetchResponse({ error: "rate limit" }, 429)
     )
     vi.stubGlobal("fetch", mockFetch)
     const result = await generateAISummary(baseInput)
-    expect(result).toBeNull()
-    expect(mockFetch).toHaveBeenCalledTimes(1)
+    // Should have retried: 1 initial + 2 retries = 3 calls
+    expect(mockFetch).toHaveBeenCalledTimes(3)
+    // Falls back to local
+    expect(result).not.toBeNull()
+    expect(typeof result).toBe("string")
   })
 
-  it("returns null on AbortError (timeout) without retrying", async () => {
+  it("retries on AbortError (timeout) and returns fallback after exhaustion", async () => {
     vi.stubEnv("GEMINI_API_KEY", "test-key")
     const abortError = new Error("timeout")
     abortError.name = "AbortError"
     const mockFetch = vi.fn().mockRejectedValue(abortError)
     vi.stubGlobal("fetch", mockFetch)
     const result = await generateAISummary(baseInput)
+    expect(mockFetch).toHaveBeenCalledTimes(3)
+    expect(result).not.toBeNull()
+    expect(typeof result).toBe("string")
+  })
+
+  it("returns null on 429 when no flags are recognized for fallback", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key")
+    const mockFetch = vi.fn().mockResolvedValue(
+      mockFetchResponse({ error: "rate limit" }, 429)
+    )
+    vi.stubGlobal("fetch", mockFetch)
+    const result = await generateAISummary(noFlagInput)
+    expect(mockFetch).toHaveBeenCalledTimes(3)
     expect(result).toBeNull()
-    expect(mockFetch).toHaveBeenCalledTimes(1)
+  })
+
+  it("succeeds on second attempt after initial 429", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key")
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce(mockFetchResponse({ error: "rate limit" }, 429))
+      .mockResolvedValueOnce(
+        mockFetchResponse({
+          choices: [{ message: { content: "This is a valid summary returned on the second attempt after retry." } }],
+        })
+      )
+    vi.stubGlobal("fetch", mockFetch)
+    const result = await generateAISummary(baseInput)
+    expect(mockFetch).toHaveBeenCalledTimes(2)
+    expect(result).toBe("This is a valid summary returned on the second attempt after retry.")
   })
 })
