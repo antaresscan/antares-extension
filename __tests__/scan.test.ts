@@ -31,11 +31,13 @@ vi.mock("../api/_lib/middleware", async () => {
   };
 });
 
-// Mock cache — no-op
+// Mock cache — includes getCacheRedis returning a mock redis with setex
+const mockSetex = vi.fn().mockResolvedValue("OK");
 vi.mock("../api/_lib/cache", () => ({
   initCache: vi.fn(),
   getCachedResult: vi.fn().mockResolvedValue(null),
   setCachedResult: vi.fn(),
+  getCacheRedis: vi.fn().mockReturnValue({ setex: mockSetex }),
 }));
 
 // Mock @sentry/node
@@ -305,7 +307,6 @@ describe("scan handler", () => {
     expect(layers.dexscreener).toBeDefined();
     expect(layers.rugcheck).toBeDefined();
     expect(layers.goplus).toBeDefined();
-    // identity layer removed — no longer present in pipeline
     expect(layers.identity).toBeUndefined();
   });
 
@@ -332,5 +333,25 @@ describe("scan handler", () => {
     const res = createMockRes();
     await handler(req, res);
     expect(res.json).toHaveBeenCalled();
+  });
+
+  it("uses short TTL cache when aiSummary is null", async () => {
+    setupGoodTokenMocks();
+    // Force generateAISummary to return null
+    vi.mock("../api/_lib/ai-summary", () => ({
+      generateAISummary: vi.fn().mockResolvedValue(null),
+    }));
+    const req = createMockReq({ ca: "So11111111111111111111111111111111111111112" });
+    const res = createMockRes();
+    await handler(req, res);
+    expect(res.json).toHaveBeenCalled();
+    // setCachedResult should NOT have been called (we use redis.setex directly for short TTL)
+    const { setCachedResult } = await import("../api/_lib/cache");
+    expect(setCachedResult).not.toHaveBeenCalled();
+    expect(mockSetex).toHaveBeenCalledWith(
+      expect.stringContaining("So11111111111111111111111111111111111111112"),
+      30,
+      expect.any(Object)
+    );
   });
 });
