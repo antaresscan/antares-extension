@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   validateCA,
   getClientIp,
@@ -8,7 +8,6 @@ import {
 } from "../api/_lib/middleware";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mockReq(headers: Record<string, string> = {}, socket?: Record<string, unknown>): VercelRequest {
   return { headers, socket: socket ?? {} } as unknown as VercelRequest;
 }
