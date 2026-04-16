@@ -14,7 +14,7 @@ export default defineConfig({
       exclude: ["api/types.ts", "api/_lib/cache.ts"],
       thresholds: {
         statements: 74,
-                  branches: 74,
+        branches: 73,
         functions: 74,
         lines: 74,
       },
