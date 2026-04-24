@@ -4,7 +4,7 @@ import {
   apiError, isCorsAllowed, isValidDexScreenerResponse, isValidRugCheckSummary,
   isHeliusLargestAccountsResponse, isHeliusSupplyResponse,
   isSolscanMarketsResponse, isSolscanMeta, isSolscanTransfersResponse,
-  isRugCheckReport, withBudget,
+  isRugCheckReport, withBudget, pickGoPlusResult,
 } from "../api/_lib/helpers";
 import { CA_RE } from "../api/_lib/constants";
 
@@ -297,5 +297,73 @@ describe("CA_RE consistency", () => {
     expect(CA_RE.test("short")).toBe(false);
     expect(CA_RE.test("")).toBe(false);
     expect(CA_RE.test("invalid!@#$%^&*()characters1234567890ab")).toBe(false);
+  });
+});
+
+// ─── Zod runtime validation (PR #4) ──────────────────────────────────────────
+// These tests prove the upstream schemas catch wrong-type fields that the
+// previous shallow type guards would silently accept. Each test represents
+// a real failure mode: an API changing a field's type without telling us.
+describe("upstream schema enforcement", () => {
+  describe("isValidRugCheckSummary", () => {
+    it("rejects lpBurned as a string (wrong type)", () => {
+      expect(isValidRugCheckSummary({ lpBurned: "true", risks: [] })).toBe(false);
+    });
+    it("rejects risks as an object (wrong type)", () => {
+      expect(isValidRugCheckSummary({ risks: { not: "an array" } })).toBe(false);
+    });
+    it("rejects risks[0].score as a string (wrong type)", () => {
+      expect(isValidRugCheckSummary({ risks: [{ name: "x", score: "10" }] })).toBe(false);
+    });
+    it("still accepts a well-formed summary with unknown extra fields", () => {
+      expect(
+        isValidRugCheckSummary({ lpBurned: true, risks: [], someNewFieldUpstreamAdded: 42 }),
+      ).toBe(true);
+    });
+  });
+
+  describe("isHeliusLargestAccountsResponse", () => {
+    it("rejects when holder uiAmount is a string (wrong type)", () => {
+      expect(
+        isHeliusLargestAccountsResponse({
+          result: { value: [{ address: "a", owner: "b", uiAmount: "100" }] },
+        }),
+      ).toBe(false);
+    });
+    it("rejects when holder is missing address", () => {
+      expect(
+        isHeliusLargestAccountsResponse({
+          result: { value: [{ owner: "b", uiAmount: 100 }] },
+        }),
+      ).toBe(false);
+    });
+  });
+
+  describe("pickGoPlusResult", () => {
+    it("returns the token result when fields are well-typed", () => {
+      const raw = {
+        result: {
+          So11111111111111111111111111111111111111112: {
+            is_honeypot: "0",
+            buy_tax: "0.05",
+            mint_authority: "",
+          },
+        },
+      };
+      const r = pickGoPlusResult(raw, "So11111111111111111111111111111111111111112");
+      expect(r).not.toBeNull();
+      expect(r?.is_honeypot).toBe("0");
+    });
+    it("returns null when the token result has a wrong-type field", () => {
+      const raw = {
+        result: {
+          So11111111111111111111111111111111111111112: {
+            // buy_tax must be string | number, not an object
+            buy_tax: { nested: true },
+          },
+        },
+      };
+      expect(pickGoPlusResult(raw, "So11111111111111111111111111111111111111112")).toBeNull();
+    });
   });
 });

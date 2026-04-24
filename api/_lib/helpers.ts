@@ -7,6 +7,13 @@ import type {
   GoPlusTokenResult, GoPlusResponse,
   DexScreenerResponse, RugCheckSummary, RugCheckReport, RugCheckRisk,
 } from "./types";
+import {
+  GoPlusTokenResultSchema,
+  RugCheckSummarySchema,
+  RugCheckReportSchema,
+  HeliusLargestAccountsResponseSchema,
+  HeliusSupplyResponseSchema,
+} from "./upstream-schemas";
 
 // Re-export split modules
 export { asNumber, _mean, _std, _pct } from "./math";
@@ -23,7 +30,12 @@ export function pickGoPlusResult(raw: unknown, ca: string): GoPlusTokenResult | 
   if (!isObject(raw)) return null;
   const result = (raw as GoPlusResponse)?.result;
   if (!result || typeof result !== "object") return null;
-  return result[ca] || result[ca.toLowerCase()] || result[ca.toUpperCase()] || null;
+  const picked = result[ca] || result[ca.toLowerCase()] || result[ca.toUpperCase()] || null;
+  if (!picked) return null;
+  // Validate shape at runtime — if upstream changes a type unexpectedly,
+  // drop the result instead of feeding malformed data to the scoring layer.
+  const parsed = GoPlusTokenResultSchema.safeParse(picked);
+  return parsed.success ? parsed.data : null;
 }
 
 export function goPlusBool(val: unknown): boolean {
@@ -93,21 +105,25 @@ export function isValidDexScreenerResponse(data: unknown): data is DexScreenerRe
 
 export function isValidRugCheckSummary(data: unknown): data is RugCheckSummary {
   if (!isObject(data)) return false;
-  return "lpBurned" in data || "risks" in data || "error" in data;
+  // Preserve the original "at least one of these keys is present" gate so
+  // an empty response still fails fast. Zod adds the per-field type check.
+  if (!("lpBurned" in data) && !("risks" in data) && !("error" in data)) return false;
+  return RugCheckSummarySchema.safeParse(data).success;
 }
 
 // ─── RUNTIME TYPE GUARDS ─────────────────────────────────────────────────────
 
 export function isHeliusLargestAccountsResponse(data: unknown): data is import("./types").HeliusLargestAccountsResponse {
-  if (!isObject(data)) return false;
-  if (!("result" in data) || !isObject(data.result)) return false;
-  return Array.isArray((data.result as Record<string, unknown>).value);
+  const parsed = HeliusLargestAccountsResponseSchema.safeParse(data);
+  // The scoring layer expects `result.value` to be an array before it reads
+  // holders from it. An empty/missing value is valid for Zod but useless to
+  // us, so keep the stricter check here.
+  return parsed.success && Array.isArray(parsed.data.result?.value);
 }
 
 export function isHeliusSupplyResponse(data: unknown): data is import("./types").HeliusSupplyResponse {
-  if (!isObject(data)) return false;
-  if (!("result" in data) || !isObject(data.result)) return false;
-  return "value" in (data.result as Record<string, unknown>);
+  const parsed = HeliusSupplyResponseSchema.safeParse(data);
+  return parsed.success && parsed.data.result !== undefined;
 }
 
 export function isSolscanMarketsResponse(data: unknown): data is import("./types").SolscanMarketsResponse {
@@ -127,7 +143,8 @@ export function isSolscanTransfersResponse(data: unknown): data is import("./typ
 
 export function isRugCheckReport(data: unknown): data is import("./types").RugCheckReport {
   if (!isObject(data)) return false;
-  return "risks" in data || "topHolders" in data || "totalHolders" in data;
+  if (!("risks" in data) && !("topHolders" in data) && !("totalHolders" in data)) return false;
+  return RugCheckReportSchema.safeParse(data).success;
 }
 
 // ─── XSS SANITIZATION ────────────────────────────────────────────────────────
