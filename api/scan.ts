@@ -59,6 +59,7 @@ const GLOBAL_TIMEOUT_MS = Number(process.env.VERCEL_TIMEOUT) || 9000;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const requestId = randomUUID();
+  const startTime = Date.now();
   res.setHeader("X-Request-Id", requestId);
 
   const corsOk = setCorsHeaders(req, res);
@@ -78,14 +79,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Only serve cache when aiSummary is present — avoids serving stale null-summary results
   const cached = await getCachedResult<ScanResult>(ca, requestId);
-  if (cached && cached.aiSummary) return res.json(cached);
+  if (cached && cached.aiSummary) {
+    logger.metric("scan.cache_hit", {
+      requestId,
+      mint: ca,
+      verdict: cached.risk,
+      score: cached.score,
+      latencyMs: Date.now() - startTime,
+      hitKey: "ca",
+    });
+    return res.json(cached);
+  }
 
   const timeoutPromise = new Promise<never>((_, reject) =>
     setTimeout(() => reject(new Error("Global timeout")), GLOBAL_TIMEOUT_MS)
   );
 
   try {
-    const result = await Promise.race([runAnalysis(req, res, requestId, ca), timeoutPromise]);
+    const result = await Promise.race([runAnalysis(req, res, requestId, ca, startTime), timeoutPromise]);
     return result;
   } catch (e: unknown) {
     if (e instanceof Error && e.message === "Global timeout") {
@@ -95,9 +106,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 }
 
-async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: string, ca: string) {
+async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: string, ca: string, startTime: number = Date.now()) {
   const HELIUS_API_KEY = process.env.HELIUS_API_KEY || "";
-  const startTime = Date.now();
 
   // Dynamic per-fetch budget: each external call is capped by the time
   // remaining until the scan deadline. Ensures one slow upstream can't make
@@ -148,7 +158,17 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
 
     if (resolvedMint !== ca) {
       const cachedByMint = await getCachedResult<ScanResult>(resolvedMint, requestId);
-      if (cachedByMint && cachedByMint.aiSummary) return res.json(cachedByMint);
+      if (cachedByMint && cachedByMint.aiSummary) {
+        logger.metric("scan.cache_hit", {
+          requestId,
+          mint: resolvedMint,
+          verdict: cachedByMint.risk,
+          score: cachedByMint.score,
+          latencyMs: Date.now() - startTime,
+          hitKey: "resolvedMint",
+        });
+        return res.json(cachedByMint);
+      }
     }
     if (dexData?.pairs && dexData.pairs.length > 1) {
       pair = dexData.pairs.reduce((best: DexScreenerPair, p: DexScreenerPair) =>
