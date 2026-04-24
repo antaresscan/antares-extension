@@ -96,12 +96,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: string, ca: string) {
   const HELIUS_API_KEY = process.env.HELIUS_API_KEY || "";
+  const startTime = Date.now();
 
   // Dynamic per-fetch budget: each external call is capped by the time
   // remaining until the scan deadline. Ensures one slow upstream can't make
   // the whole pipeline hit the global 9s timeout — scoring still runs with
   // whatever data came back in time.
-  const scanDeadline = Date.now() + (GLOBAL_TIMEOUT_MS - 500);
+  const scanDeadline = startTime + (GLOBAL_TIMEOUT_MS - 500);
   const remainingMs = () => Math.max(200, scanDeadline - Date.now());
 
   try {
@@ -386,6 +387,22 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     }
 
     void recordRug({ mint: resolvedMint, symbol: sanitizeString(pair?.baseToken?.symbol) ?? null, score, risk, flags, creator: tokenCreator });
+
+    // Emit a structured outcome event for every completed scan. Downstream
+    // log aggregators can chart verdict distribution, layer availability,
+    // and latency distribution without needing to re-derive them from logs.
+    logger.metric("scan.outcome", {
+      requestId,
+      mint: resolvedMint,
+      verdict: risk,
+      score,
+      layers: result.layers,
+      latencyMs: Date.now() - startTime,
+      sourcesUsed: sources_used.length,
+      partial: sources_used.length < Object.keys(LAYER_WEIGHTS).length,
+      scoringVersion: SCORING_VERSION,
+    });
+
     return res.json(result);
   } catch (e) {
     logger.error("scan", "analysis error", { requestId, version: SCORING_VERSION, error: String(e) });

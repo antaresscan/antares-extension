@@ -22,6 +22,15 @@ function formatMessage(level: LogLevel, module: string, message: string, data?: 
   });
 }
 
+function formatMetric(event: string, data: Record<string, unknown>): string {
+  return JSON.stringify({
+    level: "metric",
+    event,
+    ...data,
+    ts: new Date().toISOString(),
+  });
+}
+
 export const logger = {
   info(module: string, message: string, data?: Record<string, unknown>): void {
     if (shouldLog("info")) console.log(formatMessage("info", module, message, data));
@@ -31,5 +40,13 @@ export const logger = {
   },
   error(module: string, message: string, data?: Record<string, unknown>): void {
     if (shouldLog("error")) console.error(formatMessage("error", module, message, data));
+  },
+  // Always-on structured event emitter for telemetry (scan outcomes, layer
+  // availability, verdict distribution). Intentionally bypasses LOG_LEVEL so
+  // production logs remain queryable even when general info logs are
+  // silenced. Downstream aggregators (Vercel Logs, Sentry Logs, OTel) can
+  // filter on `level: "metric"` or on the specific event name.
+  metric(event: string, data: Record<string, unknown>): void {
+    console.log(formatMetric(event, data));
   },
 };
