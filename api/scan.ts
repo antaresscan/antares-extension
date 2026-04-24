@@ -101,7 +101,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const [dexRes, rugRes, rugReportRes] = await Promise.all([
       settled(fetchJson(`${DEXSCREENER_BASE}/tokens/${ca}`, {}, 5000)),
       settled(fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report/summary`, {}, 5000)),
-      settled(fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report`, {}, 8000)),
+      settled(fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report`, {}, 5000)),
     ]);
 
     let dexData = isValidDexScreenerResponse(dexRes) ? dexRes : null;
