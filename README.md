@@ -16,6 +16,29 @@
 - Cross-validates data across sources to flag conflicts
 - Displays a verdict — **SAFE / CAUTION / DANGER / RUG** — with a score out of 1000
 
+## Supported platforms
+
+Antares injects a floating scanner overlay on the following trading
+platforms. Each host is listed in `host_permissions` in `package.json`
+solely to allow the content script to run on that origin; no user data
+from those pages is collected or transmitted — only the Solana contract
+address visible in the URL or page DOM.
+
+| Host | Purpose | Adapter |
+|---|---|---|
+| `dexscreener.com` | Pair / token pages — extract CA from URL or fallback to Solscan links | `DexScreenerAdapter` |
+| `birdeye.so` | Token pages with `/token/{CA}?chain=solana` | `BirdeyeAdapter` |
+| `pump.fun` | Pump.fun token pages | `PumpAdapter` |
+| `photon-sol.tinyastro.io` | Photon trading interface | `PhotonAdapter` |
+| `axiom.trade` | Axiom trading interface | `AxiomAdapter` |
+| `gmgn.ai` | GMGN token pages (`/sol/token/{CA}`) | `GMGNAdapter` |
+| `app.telemetry.io` | Telemetry trading dashboard | `TelemetryAdapter` |
+| `www.geckoterminal.com` | GeckoTerminal pool pages | `GeckoTerminalAdapter` |
+
+The extension does **not** run on any other site. Adding a new platform
+requires adding both a host to `host_permissions` and a matching adapter
+in `contents/modules/adapters/`.
+
 ## Scoring
 
 Score starts at **1000** and is reduced by weighted penalties across **6 layers**:

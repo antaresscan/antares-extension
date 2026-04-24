@@ -16,7 +16,6 @@ export const ALLOWED_ORIGINS = [
   "https://solscan.io",
   "https://www.geckoterminal.com",
   "https://photon-sol.tinyastro.io",
-  "https://neo.bullx.io",
   "https://gmgn.ai",
   "https://app.telemetry.io",
   "https://antares-extension.vercel.app",
