@@ -4,9 +4,30 @@ import {
   apiError, isCorsAllowed, isValidDexScreenerResponse, isValidRugCheckSummary,
   isHeliusLargestAccountsResponse, isHeliusSupplyResponse,
   isSolscanMarketsResponse, isSolscanMeta, isSolscanTransfersResponse,
-  isRugCheckReport,
+  isRugCheckReport, withBudget,
 } from "../api/_lib/helpers";
 import { CA_RE } from "../api/_lib/constants";
+
+describe("withBudget", () => {
+  it("returns the promise value when it resolves within budget", async () => {
+    const p = Promise.resolve("ok");
+    expect(await withBudget(p, 1000)).toBe("ok");
+  });
+
+  it("returns null when the promise rejects", async () => {
+    const p = Promise.reject(new Error("boom"));
+    expect(await withBudget(p, 1000)).toBeNull();
+  });
+
+  it("returns null when the budget fires before the promise resolves", async () => {
+    const slow = new Promise<string>((resolve) => setTimeout(() => resolve("late"), 200));
+    const start = Date.now();
+    const result = await withBudget(slow, 50);
+    const elapsed = Date.now() - start;
+    expect(result).toBeNull();
+    expect(elapsed).toBeLessThan(150);
+  });
+});
 
 describe("asNumber", () => {
   it("returns number directly", () => {
