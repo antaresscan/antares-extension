@@ -17,7 +17,7 @@ const heliusHeaders = (key: string) => ({ "Authorization": "Bearer " + key });
 export async function heliusGetLargestAccounts(mint: string, key: string) {
     return fetchJsonPost(HELIUS_BASE, {
         jsonrpc: "2.0", id: "holders", method: "getTokenLargestAccounts", params: [mint],
-    }, 6000, 2, heliusHeaders(key));
+    }, 6000, 1, heliusHeaders(key));
 }
 
 
@@ -32,7 +32,7 @@ export async function heliusResolveAccountOwners(
         const res = await fetchJsonPost(HELIUS_BASE, {
             jsonrpc: "2.0", id: "owners", method: "getMultipleAccounts",
             params: [addresses, { encoding: "jsonParsed" }],
-        }, 6000, 2, heliusHeaders(key));
+        }, 6000, 1, heliusHeaders(key));
                 type RpcAccount = { data?: { parsed?: { info?: { owner?: string } } } };
             const rpcRes = res as { result?: { value?: RpcAccount[] } } | null;
             const accounts = rpcRes?.result?.value ?? [];
@@ -48,7 +48,7 @@ export async function heliusResolveAccountOwners(
 export async function heliusGetTokenSupply(mint: string, key: string) {
     return fetchJsonPost(HELIUS_BASE, {
         jsonrpc: "2.0", id: "supply", method: "getTokenSupply", params: [mint],
-    }, 6000, 2, heliusHeaders(key));
+    }, 6000, 1, heliusHeaders(key));
 }
 
 export async function heliusGetHoldersCount(mint: string, key: string): Promise<number | null> {
@@ -56,7 +56,7 @@ export async function heliusGetHoldersCount(mint: string, key: string): Promise<
         jsonrpc: "2.0", id: "holders-count",
         method: "getTokenAccounts",
         params: { mint, limit: 1, page: 1 },
-    }, 6000, 2, heliusHeaders(key)) as HeliusTokenAccountsResponse | null;
+    }, 6000, 1, heliusHeaders(key)) as HeliusTokenAccountsResponse | null;
     const total = res?.result?.total ?? res?.total;
     return typeof total === "number" ? total : null;
 }
