@@ -34,7 +34,7 @@ import {
 } from "./_lib/layers";
 import { computeFinalScore, classifySafeBlockedReasons } from "./_lib/scoring";
 import { evaluatePostLayerFlags, applySafeGateOverride, applyEstablishedBonus, determineVerdict } from "./_lib/pipeline";
-import { setCorsHeaders, getClientIp, checkRateLimit, validateCA, initRateLimiters } from "./_lib/middleware";
+import { setCorsHeaders, getClientIp, getInstallId, checkRateLimit, validateCA, initRateLimiters } from "./_lib/middleware";
 import { initCache, getCachedResult, setCachedResult, getCacheRedis } from "./_lib/cache";
 import * as Sentry from "@sentry/node";
 import { generateAISummary } from "./_lib/ai-summary";
@@ -69,7 +69,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const ip = getClientIp(req);
-  const rateLimitOk = await checkRateLimit(res, ip);
+  const installId = getInstallId(req);
+  const rateLimitOk = await checkRateLimit(res, ip, installId);
   if (!rateLimitOk) return;
 
   const ca = validateCA(req.query.ca);

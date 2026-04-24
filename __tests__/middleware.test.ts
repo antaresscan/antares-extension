@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import {
   validateCA,
   getClientIp,
+  getInstallId,
   setCorsHeaders,
   checkRateLimit,
   ALLOWED_ORIGINS,
@@ -126,5 +127,54 @@ describe("checkRateLimit", () => {
     const res = mockRes();
     const result = await checkRateLimit(res, "1.2.3.4");
     expect(result).toBe(true);
+  });
+
+  it("accepts an optional installId argument without changing success path", async () => {
+    const res = mockRes();
+    const result = await checkRateLimit(res, "1.2.3.4", "abcdef12-install-id");
+    expect(result).toBe(true);
+  });
+});
+
+// ═══ getInstallId ═══════════════════════════════════════════════════════════
+describe("getInstallId", () => {
+  it("returns a valid UUIDv4-shaped header", () => {
+    const req = mockReq({ "x-antares-install": "a1b2c3d4-1234-4abc-9def-0123456789ab" });
+    expect(getInstallId(req)).toBe("a1b2c3d4-1234-4abc-9def-0123456789ab");
+  });
+
+  it("accepts a short opaque token (8 chars minimum)", () => {
+    const req = mockReq({ "x-antares-install": "abc12345" });
+    expect(getInstallId(req)).toBe("abc12345");
+  });
+
+  it("trims surrounding whitespace", () => {
+    const req = mockReq({ "x-antares-install": "   abc12345   " });
+    expect(getInstallId(req)).toBe("abc12345");
+  });
+
+  it("returns null when header is missing", () => {
+    const req = mockReq({});
+    expect(getInstallId(req)).toBeNull();
+  });
+
+  it("returns null when header is too short (<8 chars)", () => {
+    const req = mockReq({ "x-antares-install": "abc" });
+    expect(getInstallId(req)).toBeNull();
+  });
+
+  it("returns null when header is too long (>128 chars)", () => {
+    const req = mockReq({ "x-antares-install": "a".repeat(200) });
+    expect(getInstallId(req)).toBeNull();
+  });
+
+  it("returns null when header contains invalid characters", () => {
+    const req = mockReq({ "x-antares-install": "abc<script>attack" });
+    expect(getInstallId(req)).toBeNull();
+  });
+
+  it("returns null for non-string values", () => {
+    const req = { headers: { "x-antares-install": 12345 }, socket: {} } as unknown as VercelRequest;
+    expect(getInstallId(req)).toBeNull();
   });
 });

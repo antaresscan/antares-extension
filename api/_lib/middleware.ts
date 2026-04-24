@@ -52,7 +52,7 @@ export function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean
     if (origin.startsWith("chrome-extension://")) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Antares-Token");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Antares-Token, X-Antares-Install");
     res.setHeader("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
     return true;
   }
@@ -71,7 +71,7 @@ export function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean
   const corsOk = isCorsAllowed(origin, ALLOWED_ORIGINS);
   if (corsOk) res.setHeader("Access-Control-Allow-Origin", origin);
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Antares-Key, X-Antares-Token, Authorization");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Antares-Key, X-Antares-Token, X-Antares-Install, Authorization");
   res.setHeader("Access-Control-Max-Age", "86400");
   res.setHeader("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
   return corsOk;
@@ -86,7 +86,27 @@ export function getClientIp(req: VercelRequest): string {
   );
 }
 
-export async function checkRateLimit(res: VercelResponse, ip: string): Promise<boolean> {
+// Matches UUIDv4-style install identifiers plus short opaque tokens up to
+// 128 chars. Strict validation here is deliberate: the id becomes part of a
+// Redis key, so we must bound its shape to prevent key-space explosion from
+// a malicious client supplying arbitrary-length garbage.
+const INSTALL_ID_RE = /^[a-zA-Z0-9_-]{8,128}$/;
+
+// Reads an optional X-Antares-Install header. When an extension supplies a
+// stable per-install identifier we use it alongside the IP for rate-limiting.
+// That closes the shared-IP gap: multiple users on the same corporate NAT
+// each get their own quota, and a single abusive installation can be rate-
+// limited without punishing the whole IP. Missing/invalid header falls back
+// to IP-only, preserving behaviour for legacy clients and web requests.
+export function getInstallId(req: VercelRequest): string | null {
+  const raw = req.headers["x-antares-install"];
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return INSTALL_ID_RE.test(trimmed) ? trimmed : null;
+}
+
+export async function checkRateLimit(res: VercelResponse, ip: string, installId: string | null = null): Promise<boolean> {
   // Fail-closed: if Redis was configured but limiters are null (init failed), block requests
   if (redisConfigured && !ratelimit) {
     logger.warn("middleware", "Rate limiter unavailable — fail-closed");
@@ -94,8 +114,12 @@ export async function checkRateLimit(res: VercelResponse, ip: string): Promise<b
     return false;
   }
 
+  // When an install id is present we key by (ip, install) so each install
+  // gets its own window. Without one we fall back to IP-only.
+  const key = installId ? `${ip}:${installId}` : ip;
+
   if (ratelimit) {
-    const { success, remaining } = await ratelimit.limit(ip);
+    const { success, remaining } = await ratelimit.limit(key);
     res.setHeader("X-RateLimit-Limit", "30");
     res.setHeader("X-RateLimit-Remaining", String(remaining));
     if (!success) {
@@ -105,7 +129,7 @@ export async function checkRateLimit(res: VercelResponse, ip: string): Promise<b
   }
 
   if (burstRatelimit) {
-    const { success } = await burstRatelimit.limit(ip);
+    const { success } = await burstRatelimit.limit(key);
     if (!success) {
       res.setHeader("Retry-After", "10");
       apiError(res, 429, "Burst limit exceeded. Retry in 10 seconds.");
