@@ -48,6 +48,20 @@ export function settled<T>(p: Promise<T>): Promise<T | null> {
   return p.then(v => v).catch(() => null);
 }
 
+// Cap a promise at a fixed duration. If it resolves within budget, returns its
+// value (or null on rejection). If the timer fires first, returns null so the
+// caller can proceed with partial data instead of hanging the whole pipeline.
+//
+// Used in scan.ts to bound each upstream fetch: when one source (e.g. Helius)
+// is slow, the others still return real data and scoring can degrade
+// gracefully instead of hitting the global 9s timeout and returning 504.
+export function withBudget<T>(p: Promise<T>, ms: number): Promise<T | null> {
+  return Promise.race([
+    p.then(v => v).catch(() => null),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
+  ]);
+}
+
 export function computeCacheTTL(tokenAgeMinutes: number | null): number {
     if (tokenAgeMinutes === null) return 60;    // 1 minute (unknown age)
   if (tokenAgeMinutes < 30) return 20;          // 20s for <30min tokens (fast-moving)

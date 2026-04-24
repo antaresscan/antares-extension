@@ -11,7 +11,7 @@ import type {
 } from "./_lib/types";
 import {
   fetchJson, asNumber, pickGoPlusResult,
-  settled, apiError,
+  withBudget, apiError,
   isValidDexScreenerResponse, isValidRugCheckSummary,
   isHeliusLargestAccountsResponse, isHeliusSupplyResponse,
   isSolscanMarketsResponse, isSolscanMeta, isSolscanTransfersResponse,
@@ -97,11 +97,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: string, ca: string) {
   const HELIUS_API_KEY = process.env.HELIUS_API_KEY || "";
 
+  // Dynamic per-fetch budget: each external call is capped by the time
+  // remaining until the scan deadline. Ensures one slow upstream can't make
+  // the whole pipeline hit the global 9s timeout — scoring still runs with
+  // whatever data came back in time.
+  const scanDeadline = Date.now() + (GLOBAL_TIMEOUT_MS - 500);
+  const remainingMs = () => Math.max(200, scanDeadline - Date.now());
+
   try {
     const [dexRes, rugRes, rugReportRes] = await Promise.all([
-      settled(fetchJson(`${DEXSCREENER_BASE}/tokens/${ca}`, {}, 5000)),
-      settled(fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report/summary`, {}, 5000)),
-      settled(fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report`, {}, 5000)),
+      withBudget(fetchJson(`${DEXSCREENER_BASE}/tokens/${ca}`, {}, 5000), remainingMs()),
+      withBudget(fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report/summary`, {}, 5000), remainingMs()),
+      withBudget(fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report`, {}, 5000), remainingMs()),
     ]);
 
     let dexData = isValidDexScreenerResponse(dexRes) ? dexRes : null;
@@ -115,7 +122,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       rugData?.message?.toLowerCase?.().includes("not found");
 
     if (!pair || !rugData || rugMissing) {
-      const pairDataRaw = await settled(fetchJson(`${DEXSCREENER_BASE}/pairs/solana/${ca}`, {}, 5000));
+      const pairDataRaw = await withBudget(fetchJson(`${DEXSCREENER_BASE}/pairs/solana/${ca}`, {}, 5000), remainingMs());
       const pairData = isValidDexScreenerResponse(pairDataRaw) ? pairDataRaw : null;
       const resolvedPair = pairData?.pairs?.[0] ?? pairData?.pair ?? null;
       const baseMint = resolvedPair?.baseToken?.address;
@@ -123,8 +130,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       if (baseMint && baseMint !== ca) {
         resolvedMint = baseMint;
         const [dexRetry, rugRetry] = await Promise.all([
-          settled(fetchJson(`${DEXSCREENER_BASE}/tokens/${resolvedMint}`, {}, 5000)),
-          settled(fetchJson(`${RUGCHECK_BASE}/tokens/${resolvedMint}/report/summary`, {}, 5000)),
+          withBudget(fetchJson(`${DEXSCREENER_BASE}/tokens/${resolvedMint}`, {}, 5000), remainingMs()),
+          withBudget(fetchJson(`${RUGCHECK_BASE}/tokens/${resolvedMint}/report/summary`, {}, 5000), remainingMs()),
         ]);
         const dexRetryTyped = isValidDexScreenerResponse(dexRetry) ? dexRetry : null;
         const rugRetryTyped = isValidRugCheckSummary(rugRetry) ? rugRetry : null;
@@ -157,14 +164,14 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       solscanHoldersCount,
       solMeta, solTransfers, solMarkets,
     ] = await Promise.all([
-      settled(fetchDexCandles(pairAddress)),
-      settled(fetchJson(`${GOPLUS_BASE}/solana/token_security?contract_addresses=${resolvedMint}`, {}, 4000)),
-      HELIUS_API_KEY ? settled(heliusGetLargestAccounts(resolvedMint, HELIUS_API_KEY)) : null,
-      HELIUS_API_KEY ? settled(heliusGetTokenSupply(resolvedMint, HELIUS_API_KEY)) : null,
-      settled(solscanGetHoldersCount(resolvedMint)),
-      settled(fetchSolscan(`/token/meta?address=${resolvedMint}`)),
-      settled(fetchSolscan(`/token/transfer?address=${resolvedMint}&page=1&page_size=10`)),
-      settled(fetchSolscan(`/token/markets?address=${resolvedMint}&page=1&page_size=1`)),
+      withBudget(fetchDexCandles(pairAddress), remainingMs()),
+      withBudget(fetchJson(`${GOPLUS_BASE}/solana/token_security?contract_addresses=${resolvedMint}`, {}, 4000), remainingMs()),
+      HELIUS_API_KEY ? withBudget(heliusGetLargestAccounts(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
+      HELIUS_API_KEY ? withBudget(heliusGetTokenSupply(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
+      withBudget(solscanGetHoldersCount(resolvedMint), remainingMs()),
+      withBudget(fetchSolscan(`/token/meta?address=${resolvedMint}`), remainingMs()),
+      withBudget(fetchSolscan(`/token/transfer?address=${resolvedMint}&page=1&page_size=10`), remainingMs()),
+      withBudget(fetchSolscan(`/token/markets?address=${resolvedMint}&page=1&page_size=1`), remainingMs()),
     ]);
 
     const candles: OHLCVCandle[] = Array.isArray(candlesRaw) ? candlesRaw : [];
@@ -176,7 +183,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
 
     const solMarketsData = isSolscanMarketsResponse(solMarkets) ? solMarkets : null;
     const resolvedHolderAccounts: HeliusHolder[] = HELIUS_API_KEY && rawHolderAccounts.length > 0
-      ? await settled(heliusResolveAccountOwners(rawHolderAccounts, HELIUS_API_KEY)) ?? rawHolderAccounts.map(h => ({ ...h, owner: h.owner ?? h.address }))
+      ? await withBudget(heliusResolveAccountOwners(rawHolderAccounts, HELIUS_API_KEY), remainingMs()) ?? rawHolderAccounts.map(h => ({ ...h, owner: h.owner ?? h.address }))
       : rawHolderAccounts.map(h => ({ ...h, owner: h.owner ?? h.address }));
     const solMarketPool: SolscanMarketPool | null =
       Array.isArray(solMarketsData?.data) && solMarketsData!.data!.length > 0
@@ -201,7 +208,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const tokenCreator = solMetaData?.data?.creator || null;
 
     const creatorReputation: CreatorReputation | null = tokenCreator && HELIUS_API_KEY
-      ? await settled(heliusGetCreatorReputation(tokenCreator, HELIUS_API_KEY))
+      ? await withBudget(heliusGetCreatorReputation(tokenCreator, HELIUS_API_KEY), remainingMs())
       : null;
 
     const tokenDecimals = solMetaData?.data?.decimals ?? null;
