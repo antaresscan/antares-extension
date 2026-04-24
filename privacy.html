@@ -4,10 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Antares — Privacy Policy</title>
-<meta name="description" content="Privacy policy for the Antares Chrome extension.">
+<meta name="description" content="Privacy policy for the Antares Chrome extension — data collected, processors used, and user rights under GDPR and CCPA.">
 <meta property="og:title" content="Antares — Privacy Policy">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://antares-extension.vercel.app/privacy.html">
+<link rel="canonical" href="https://antares-extension.vercel.app/privacy.html">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -17,11 +18,16 @@ body{background:#0a0a0f;color:#c4c4cc;font-family:"IBM Plex Mono",monospace;font
 h1{font-family:"Bebas Neue",sans-serif;font-size:2.6rem;color:#00ffa3;margin-bottom:.5rem;letter-spacing:2px}
 .updated{color:#666;font-size:.8rem;margin-bottom:2rem}
 h2{font-family:"Bebas Neue",sans-serif;font-size:1.5rem;color:#e0e0e0;margin:2rem 0 .8rem;letter-spacing:1px}
-p,ul{margin-bottom:1rem}
+h3{font-size:1rem;color:#e0e0e0;margin:1.2rem 0 .4rem}
+p,ul,table{margin-bottom:1rem}
 ul{padding-left:1.5rem}
 li{margin-bottom:.4rem}
 a{color:#00ffa3;text-decoration:none}
 a:hover{text-decoration:underline}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid #222;vertical-align:top}
+th{color:#e0e0e0;background:#111;font-family:"Bebas Neue",sans-serif;letter-spacing:1px}
+code{background:#111;padding:.1rem .35rem;border-radius:3px;font-size:.85em}
 .back{display:inline-block;margin-top:2rem;padding:.6rem 1.4rem;border:1px solid #00ffa3;color:#00ffa3;border-radius:4px;font-size:.85rem;transition:all .2s}
 .back:hover{background:#00ffa3;color:#0a0a0f;text-decoration:none}
 </style>
@@ -29,57 +35,120 @@ a:hover{text-decoration:underline}
 <body>
 <div class="container">
 <h1>Privacy Policy</h1>
-<p class="updated">Last updated: April 8, 2025</p>
+<p class="updated">Last updated: April 24, 2026 · Effective from install</p>
 
 <h2>1. Overview</h2>
-<p>Antares (“the Extension”) is a browser extension that scans Solana token pages for potential scam indicators. Your privacy is important to us. This policy explains what data we collect, how we use it, and your rights.</p>
+<p>Antares (“the Extension”) is a browser extension that scans Solana token addresses on supported trading platforms and returns a risk assessment. This policy explains exactly what we process, which third parties are involved, where data goes, and the rights you can exercise.</p>
+<p>The short version: we process Solana contract addresses you look at, plus the technical metadata any HTTPS service inherently sees (your IP, your browser user-agent). We do not collect names, emails, wallet addresses, or browsing history beyond the single page where an address is detected.</p>
 
-<h2>2. Data We Collect</h2>
-<p>Antares collects <strong>only</strong> the following data:</p>
+<h2>2. Who we are</h2>
+<p>The Extension is operated by the <strong>COMEALAMAISONGROUPE</strong> open-source project. Source code and issue tracker: <a href="https://github.com/COMEALAMAISONGROUPE/antares-extension">github.com/COMEALAMAISONGROUPE/antares-extension</a>. For privacy questions, see the Contact section.</p>
+
+<h2>3. Data we process</h2>
+<h3>3.1 Solana contract addresses</h3>
+<p>When the Extension detects a Solana contract address (base58, 32–44 characters) on a supported page, that address is sent to our API (<code>antares-extension.vercel.app/api/scan</code>) together with the request. The address is public blockchain data. Our legal basis for processing it is <strong>legitimate interest</strong>: it is the minimum data needed to deliver the risk assessment the user explicitly requested.</p>
+<h3>3.2 Technical request metadata</h3>
+<p>Any HTTPS request to our API is received via Vercel's edge network. Vercel sees and may log:</p>
 <ul>
-<li><strong>Solana token contract addresses</strong> detected on pages you visit (e.g. pump.fun, Raydium, Jupiter). These addresses are sent to our API to run security analysis.</li>
-<li><strong>No personal data</strong> is collected: no names, emails, wallet addresses, IP addresses, or browsing history.</li>
-<li><strong>No cookies or trackers</strong> are used.</li>
+<li>Your IP address (used transiently for <strong>rate limiting</strong> in Upstash Redis and for platform abuse protection).</li>
+<li>A user-agent string (standard browser header).</li>
+<li>Timestamp and URL of the request.</li>
+</ul>
+<p>We do not correlate this metadata with an identity. We do not use it for analytics, profiling, or advertising.</p>
+<h3>3.3 Optional install identifier</h3>
+<p>If the Extension sends an <code>X-Antares-Install</code> header (a random opaque identifier generated by your browser on first install), we use it alongside your IP as a rate-limit key so multiple users sharing a corporate NAT each get a fair quota. The identifier is opaque — we cannot derive any personal information from it — and you may clear it at any time by uninstalling and reinstalling the Extension.</p>
+<h3>3.4 What we do NOT collect</h3>
+<ul>
+<li>Names, email addresses, phone numbers.</li>
+<li>Wallet addresses or private keys.</li>
+<li>Full browsing history — only pages on the supported platforms listed below.</li>
+<li>Cookies or tracking pixels. The Extension sets no cookies.</li>
+<li>Persistent analytics identifiers.</li>
 </ul>
 
-<h2>3. How We Use Data</h2>
-<p>Token addresses are used exclusively to:</p>
+<h2>4. Where the Extension injects</h2>
+<p>The Extension's content script runs only on the following trading platforms, each declared in the manifest's <code>host_permissions</code>. On any other site the Extension is dormant.</p>
 <ul>
-<li>Query public blockchain APIs (GoPlus, RugCheck, Helius, DexScreener, Solscan) for security data.</li>
-<li>Compute a risk score displayed in the extension popup.</li>
-<li>Cache results temporarily (up to 5 minutes) to reduce API calls.</li>
+<li><code>dexscreener.com</code></li>
+<li><code>birdeye.so</code></li>
+<li><code>pump.fun</code></li>
+<li><code>photon-sol.tinyastro.io</code></li>
+<li><code>axiom.trade</code></li>
+<li><code>gmgn.ai</code></li>
+<li><code>app.telemetry.io</code></li>
+<li><code>www.geckoterminal.com</code></li>
 </ul>
-<p>We do not sell, share, or monetize any data.</p>
+<p>On these sites the Extension reads the URL and the visible page DOM to find a Solana contract address. It does not read form fields, credentials, cookies, or other page content.</p>
 
-<h2>4. Third-Party APIs</h2>
-<p>The Extension sends token addresses to the following third-party services:</p>
+<h2>5. Third-party processors</h2>
+<p>To deliver the scan, the API forwards the contract address (not your IP) to a small set of external services, each with its own privacy policy linked below.</p>
+<table>
+<thead><tr><th>Processor</th><th>Purpose</th><th>Data shared</th><th>Policy</th></tr></thead>
+<tbody>
+<tr><td>Vercel</td><td>API hosting and edge network</td><td>Request metadata (IP, UA)</td><td><a href="https://vercel.com/legal/privacy-policy">policy</a></td></tr>
+<tr><td>Upstash (Redis)</td><td>Cache and rate limiting</td><td>Hashed IP + optional install ID, cached scan results</td><td><a href="https://upstash.com/trust/privacy.pdf">policy</a></td></tr>
+<tr><td>DexScreener</td><td>Price / liquidity / OHLCV data</td><td>Contract address</td><td><a href="https://dexscreener.com/privacy-policy">policy</a></td></tr>
+<tr><td>RugCheck</td><td>LP burn status, risk flags</td><td>Contract address</td><td><a href="https://rugcheck.xyz">site</a></td></tr>
+<tr><td>GoPlus Security</td><td>Honeypot and contract permissions</td><td>Contract address</td><td><a href="https://gopluslabs.io/privacy-policy">policy</a></td></tr>
+<tr><td>Helius</td><td>On-chain holder and supply data</td><td>Contract address</td><td><a href="https://www.helius.dev/privacy-policy">policy</a></td></tr>
+<tr><td>Solscan</td><td>Token metadata, age, transfers</td><td>Contract address</td><td><a href="https://solscan.io/privacy">policy</a></td></tr>
+<tr><td>GeckoTerminal</td><td>OHLCV candles for chart layer</td><td>Pair address</td><td><a href="https://www.coingecko.com/privacy">policy</a></td></tr>
+<tr><td>Google (Gemini API)</td><td>Natural-language summary of scan results</td><td>Anonymised scan flags and scoring outputs. No contract address or user identifier is sent.</td><td><a href="https://policies.google.com/privacy">policy</a></td></tr>
+<tr><td>Sentry</td><td>Error and performance monitoring</td><td>Error stack traces, occasional IP (Sentry default)</td><td><a href="https://sentry.io/privacy/">policy</a></td></tr>
+<tr><td>GitHub</td><td>Source code and Private Vulnerability Reporting</td><td>Only what a reporter includes in their advisory</td><td><a href="https://docs.github.com/en/site-policy/privacy-policies">policy</a></td></tr>
+</tbody>
+</table>
+<p>We do not sell, rent, or share your data for advertising. We do not use processors beyond this list.</p>
+
+<h2>6. International transfers</h2>
+<p>Our infrastructure (Vercel, Upstash, Sentry) operates primarily from data centres in the United States. If you access the Extension from the European Economic Area, the United Kingdom, or Switzerland, technical request metadata is transferred outside your region. We rely on the processors' Standard Contractual Clauses where available. You can find each processor's transfer mechanism in their privacy policy linked above.</p>
+
+<h2>7. Data retention</h2>
 <ul>
-<li>GoPlus Security API</li>
-<li>RugCheck API</li>
-<li>Helius RPC</li>
-<li>DexScreener API</li>
-<li>Solscan Public API</li>
+<li><strong>Cache (Upstash Redis):</strong> adaptive TTL between 20 seconds (fast-moving new tokens) and 10 minutes (established tokens). Never indefinite.</li>
+<li><strong>Rate-limit counters (Upstash Redis):</strong> 60-second sliding window plus a 10-second burst window. Counters expire automatically.</li>
+<li><strong>Rug database (Upstash Redis):</strong> contract addresses of tokens we have already flagged as RUG or DANGER, kept as a lookup index. No user data is stored in this dataset.</li>
+<li><strong>API access logs (Vercel):</strong> per Vercel's retention (typically hours to days).</li>
+<li><strong>Error reports (Sentry):</strong> per Sentry's default retention (90 days) unless the maintainer deletes them sooner.</li>
+<li><strong>On-device (Chrome storage):</strong> user preferences (theme, stealth toggle, recent scan list). Stays on your machine until you uninstall or clear extension data.</li>
 </ul>
-<p>Each service has its own privacy policy. No user-identifiable information is included in these requests.</p>
 
-<h2>5. Data Storage</h2>
-<p>Antares does not store any data on your device beyond the default Chrome extension storage for user preferences (theme, settings). Server-side caching is ephemeral (max 5 minutes) and contains only token analysis results, not user data.</p>
-
-<h2>6. Permissions</h2>
-<p>The Extension requests the following Chrome permissions:</p>
+<h2>8. Chrome permissions</h2>
+<p>The Extension requests the following permissions, declared in <code>package.json</code>:</p>
 <ul>
-<li><strong>activeTab</strong>: To detect Solana token addresses on the current page.</li>
-<li><strong>storage</strong>: To save user preferences locally.</li>
+<li><strong>activeTab</strong> — run the content script on the current tab when a supported site is active.</li>
+<li><strong>storage</strong> — save your preferences and recent scan history locally.</li>
+<li><strong>notifications</strong> — optionally surface a DANGER verdict as a native OS notification.</li>
+<li><strong>alarms</strong> — schedule the service worker periodically so Manifest V3 does not tear it down mid-scan.</li>
+<li><strong>tabs</strong> — open the full-analysis page in a new tab when the user clicks through.</li>
+<li><strong>host_permissions</strong> — only the 8 trading platforms enumerated in section 4.</li>
 </ul>
 
-<h2>7. Children’s Privacy</h2>
-<p>Antares is not directed at children under 13. We do not knowingly collect data from children.</p>
+<h2>9. Your rights</h2>
+<p>Under GDPR (EEA / UK / Switzerland), CCPA (California), and similar laws, you have the right to:</p>
+<ul>
+<li><strong>Access</strong> — request a copy of any data tied to you.</li>
+<li><strong>Rectification</strong> — ask us to correct inaccurate data.</li>
+<li><strong>Erasure</strong> — ask us to delete your data.</li>
+<li><strong>Restriction</strong> — ask us to stop using your data while a dispute is resolved.</li>
+<li><strong>Portability</strong> — ask for your data in a common, machine-readable format.</li>
+<li><strong>Objection</strong> — object to processing based on legitimate interest.</li>
+<li><strong>Complaint</strong> — file a complaint with your local data-protection authority (e.g. the CNIL in France, the ICO in the UK).</li>
+</ul>
+<p>In practice, because we do not store an identifier tied to you beyond transient rate-limit windows, there is typically no data to access or delete. If you want to be certain no request metadata persists, the fastest action is to uninstall the Extension and (optionally) clear your Chrome extension data.</p>
+<p>To make a formal request, email the address in section 12 with a description of the right you are exercising. We will respond within <strong>30 days</strong>.</p>
 
-<h2>8. Changes</h2>
-<p>We may update this policy. Changes will be posted on this page with a revised date.</p>
+<h2>10. Children's privacy</h2>
+<p>The Extension is not directed at children under 13 (US) or 16 (EEA). We do not knowingly collect data from children.</p>
 
-<h2>9. Contact</h2>
-<p>Questions? Reach us at <a href="mailto:lennypierrepro@gmail.com">lennypierrepro@gmail.com</a>.</p>
+<h2>11. Security and disclosure</h2>
+<p>Security issues should be reported via GitHub's Private Vulnerability Reporting as described in <a href="https://github.com/COMEALAMAISONGROUPE/antares-extension/blob/master/SECURITY.md">SECURITY.md</a>. If a data breach affects you, we will notify you without undue delay and no later than 72 hours after becoming aware of it, in line with GDPR Article 33.</p>
+
+<h2>12. Contact</h2>
+<p>For privacy requests or questions, email <a href="mailto:lennypierrepro@gmail.com">lennypierrepro@gmail.com</a> or open a non-sensitive issue at <a href="https://github.com/COMEALAMAISONGROUPE/antares-extension/issues">github.com/COMEALAMAISONGROUPE/antares-extension/issues</a>. For security reports, use the Private Vulnerability Reporting flow linked in SECURITY.md instead — do not include exploitable details in a public issue.</p>
+
+<h2>13. Changes to this policy</h2>
+<p>If we materially change how the Extension processes data, we will update the date at the top of this page and publish a note in the repository's <code>CHANGELOG.md</code>. Continuing to use the Extension after a change means you accept the updated policy.</p>
 
 <a href="/token.html" class="back">&larr; Back to Antares</a>
 </div>
