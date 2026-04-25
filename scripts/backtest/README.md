@@ -21,9 +21,33 @@ any third party can reproduce them.
 |---|---|
 | `types.ts` | Pure type contract: `TokenSnapshot`, `CorpusEntry`, `GroundTruthLabel`, `BacktestSummary`. Touch this to evolve the schema. |
 | `auto-label.ts` | Pure functions that derive a ground-truth verdict from two snapshots + optional external oracles. No I/O. |
-| (later) `ingest.ts` | Hits DexScreener / Helius / RugCheck to build `CorpusEntry` rows from a list of mints. Run manually or on a cron. |
+| `fetch-snapshot.ts` | Builds a `TokenSnapshot` for one mint by hitting DexScreener + Helius + GoPlus + RugCheck. Pure data-in / data-out — `fetch` is injected so it's mockable. |
+| `ingest.ts` | CLI entrypoint. Reads `corpus/mints.txt`, calls `fetchSnapshot` sequentially (rate-limited), writes one JSON per mint to `corpus/snapshots/{bucket}/{mint}.json`. |
 | (later) `score.ts` | Replays the scoring engine on each entry's `initial` snapshot and records the verdict. |
 | (later) `run.ts` | Orchestrates ingest → score → summarise and writes the bench JSON. |
+
+## Running the ingestion (J2)
+
+The CLI captures a snapshot of every mint listed in `corpus/mints.txt`. Run
+it once to seed `initial` (right after a token launches), then again later
+to seed `current` (used to derive ground truth).
+
+```bash
+# Initial snapshot (fresh tokens you want to backtest)
+HELIUS_KEY=xxx npx tsx scripts/backtest/ingest.ts initial
+
+# Current snapshot (run 7-90 days later on the same mints)
+HELIUS_KEY=xxx npx tsx scripts/backtest/ingest.ts current
+```
+
+Snapshots land in `corpus/snapshots/initial/<mint>.json` and
+`corpus/snapshots/current/<mint>.json`. J3 will pair them up into
+`CorpusEntry` rows automatically.
+
+`HELIUS_KEY` is optional — without it, `top1HolderPct` and `holderCount`
+are recorded as `null`. The auto-label rules treat missing data as
+"abstain", so a partial corpus stays correctly classified (it just has
+fewer HIGH-confidence rows).
 
 ## Ground-truth methodology
 
@@ -92,13 +116,12 @@ Pass an array of these to `summariseCorpus()` from `auto-label.ts` to
 get the headline metrics. Every step is a pure function — no API keys
 or network needed at this stage.
 
-## What this PR does NOT include
+## Roadmap
 
-- Live ingestion scripts (`ingest.ts`) — coming in J2.
-- Time-travel scoring runner (`score.ts`) — coming in J3.
-- Lead-time / counterfactual-savings calculations — coming in J4.
-- Public `/api/bench-stats` endpoint and bench page — coming in J5.
-- CI gate that fails a PR if detection rate drops > 2pp — coming with J5.
-
-J1 (this PR) only ships the type contract, the labelling rules, and
-their tests. It is the foundation everything else builds on.
+- ✅ **J1** — type contract, labelling rules, 34 tests.
+- ✅ **J2** — `fetch-snapshot.ts` + `ingest.ts` CLI (this PR).
+- **J3** — Time-travel scoring runner (`score.ts`): replay the engine
+  on each entry's `initial` snapshot and record the verdict.
+- **J4** — Lead-time + counterfactual-savings calculations.
+- **J5** — Public `/api/bench-stats` endpoint, bench page, and a CI
+  gate that fails a PR if detection rate drops > 2pp.
