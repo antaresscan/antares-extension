@@ -4,6 +4,13 @@
 
 **Antares** is a Chrome extension that automatically detects the Solana token address on any page you visit and runs a real-time multi-source security scan.
 
+> **Marketing landing site lives in a separate repo:**
+> [github.com/COMEALAMAISONGROUPE/antares-website](https://github.com/COMEALAMAISONGROUPE/antares-website) → deployed at <https://antares-website.vercel.app/>.
+> This repo only ships the extension itself, the backend API at
+> `antares-extension.vercel.app/api/*`, and the in-extension utility
+> pages (`/privacy.html`, `/token.html`). The bare `/` here 301-redirects
+> to the marketing site.
+
 > **Supported chain: Solana only.** Ethereum and BNB chain support is on the roadmap — see [#120](https://github.com/COMEALAMAISONGROUPE/antares-extension/issues/120).
 
 ## What it does

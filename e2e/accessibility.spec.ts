@@ -2,8 +2,9 @@ import { test, expect } from '@playwright/test';
 
 const BASE = process.env.E2E_BASE_URL || 'https://antares-extension.vercel.app';
 
+// `/` on this deployment is a 301 to antares-website.vercel.app, so we
+// only meaningfully test the pages this Vercel project actually serves.
 const PAGES = [
-  { name: 'Landing', path: '/' },
   { name: 'Token', path: '/token.html' },
   { name: 'Privacy', path: '/privacy.html' },
 ];
@@ -83,37 +84,7 @@ test.describe('Accessibility (a11y)', () => {
     });
   }
 
-  test.describe('Landing Page Specific', () => {
-    test('CTA buttons have sufficient size for touch', async ({ page }) => {
-      await page.goto(BASE);
-      const cta = page.locator('a.cta, a[href*="chrome"], .cta');
-      const count = await cta.count();
-      for (let i = 0; i < count; i++) {
-        const box = await cta.nth(i).boundingBox();
-        if (box) {
-          expect(box.height).toBeGreaterThanOrEqual(40);
-          expect(box.width).toBeGreaterThanOrEqual(44);
-        }
-      }
-    });
-
-    test('skip-to-content or proper landmark structure', async ({ page }) => {
-      await page.goto(BASE);
-      const header = page.locator('header');
-      const main = page.locator('main, [role="main"], .container');
-      const footer = page.locator('footer');
-      // At minimum, should have header and some main content area
-      const hasStructure =
-        (await header.count()) > 0 || (await main.count()) > 0 || (await footer.count()) > 0;
-      expect(hasStructure).toBeTruthy();
-    });
-
-    test('font size is readable (min 12px)', async ({ page }) => {
-      await page.goto(BASE);
-      const bodyFontSize = await page.locator('body').evaluate((el) => {
-        return parseFloat(window.getComputedStyle(el).fontSize);
-      });
-      expect(bodyFontSize).toBeGreaterThanOrEqual(12);
-    });
-  });
+  // The "Landing Page Specific" describe block was removed: `/` on this
+  // deployment 301s to antares-website.vercel.app, so landing-page a11y
+  // belongs in that repo's tests, not here.
 });

@@ -2,8 +2,9 @@ import { test, expect } from '@playwright/test';
 
 const BASE = process.env.E2E_BASE_URL || 'https://antares-extension.vercel.app';
 
+// `/` on this deployment is a 301 to antares-website.vercel.app, so we
+// only meaningfully test the pages this Vercel project actually serves.
 const PAGES = [
-  { name: 'Landing', path: '/' },
   { name: 'Token', path: '/token.html' },
   { name: 'Privacy', path: '/privacy.html' },
 ];
@@ -50,9 +51,9 @@ test.describe('SEO & Meta Tags', () => {
     });
   }
 
-  test.describe('Landing Page OG & Twitter Tags', () => {
+  test.describe('Token page OG & Twitter Tags', () => {
     test.beforeEach(async ({ page }) => {
-      await page.goto(BASE);
+      await page.goto(`${BASE}/token.html`);
     });
 
     test('has og:title', async ({ page }) => {
@@ -104,24 +105,20 @@ test.describe('SEO & Meta Tags', () => {
   });
 
   test.describe('Canonical & Structured Data', () => {
-    test('no duplicate meta descriptions on landing', async ({ page }) => {
-      await page.goto(BASE);
+    // The bare `/` here 301s to antares-website.vercel.app, so duplicate /
+    // canonical / favicon checks for a "landing page" don't apply to this
+    // deployment. The pages this Vercel project actually serves
+    // (privacy.html, token.html) are covered by the per-page suite above.
+    test('token page has exactly one meta description', async ({ page }) => {
+      await page.goto(`${BASE}/token.html`);
       const descs = page.locator('meta[name="description"]');
       await expect(descs).toHaveCount(1);
     });
 
-    test('no duplicate title tags on landing', async ({ page }) => {
-      await page.goto(BASE);
+    test('token page has exactly one title tag', async ({ page }) => {
+      await page.goto(`${BASE}/token.html`);
       const titles = page.locator('title');
       await expect(titles).toHaveCount(1);
-    });
-
-    test('favicon or icon link exists', async ({ page }) => {
-      await page.goto(BASE);
-      const icon = page.locator('link[rel="icon"], link[rel="shortcut icon"]');
-      const count = await icon.count();
-      // Favicon is recommended but not blocking
-      expect(count).toBeGreaterThanOrEqual(0);
     });
   });
 });
