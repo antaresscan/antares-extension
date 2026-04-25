@@ -400,6 +400,60 @@ function render(d, ca) {
       }).join('')
     : ''
 
+  // ── Holders concentration: extract Top-N percentages from flag labels
+  // and split the supply into top1 / top2-10 / top11-50 / rest segments.
+  // The API doesn't return a granular distribution, but flag thresholds
+  // give us actionable estimates: "Top 10 holders > 70%" → 70%, etc.
+  function extractPctFromFlag(flags, regex) {
+    for (const f of (flags || [])) {
+      const label = String(f.label || '')
+      const m = label.match(regex)
+      if (m) return Math.min(100, Math.max(0, parseInt(m[1])))
+    }
+    return null
+  }
+  const top10Pct = extractPctFromFlag(d.flags, /Top\s*10\s*holders\s*[>≥]\s*(\d+)\s*%/i)
+  const top1Pct = extractPctFromFlag(d.flags, /Single\s*wallet\s*holds\s*(\d+)\s*%/i)
+    ?? extractPctFromFlag(d.flags, /(?:Owner|Creator)\s*holds\s*[>≥]\s*(\d+)\s*%/i)
+
+  let holdersHtml = ''
+  if (top10Pct !== null && d.holders != null) {
+    // Build 4-segment bar. If top1 is known explicitly use it; else
+    // estimate at ~30% of top10 weight (typical concentration profile).
+    // top11-50 estimated at ~half of remaining-after-top10.
+    const t1 = top1Pct !== null ? Math.min(top1Pct, top10Pct) : Math.round(top10Pct * 0.3)
+    const t10 = top10Pct - t1
+    const remainder = 100 - top10Pct
+    const t50 = Math.round(remainder * 0.5)
+    const rest = 100 - t1 - t10 - t50
+    holdersHtml = `
+      <div class="section-label reveal"><span>Holder Concentration</span></div>
+      <div class="holders-card reveal">
+        <div class="lbl">${escapeHtml(d.holders.toLocaleString())} holders · top wallets dominate supply</div>
+        <div class="hbar">
+          <div class="seg top1" style="width:${t1}%">${t1 >= 6 ? t1 + '%' : ''}</div>
+          <div class="seg top10" style="width:${t10}%">${t10 >= 6 ? t10 + '%' : ''}</div>
+          <div class="seg top50" style="width:${t50}%">${t50 >= 6 ? t50 + '%' : ''}</div>
+          <div class="seg rest" style="width:${rest}%">${rest >= 6 ? rest + '%' : ''}</div>
+        </div>
+        <div class="hbar-legend">
+          <span><span class="dot top1"></span>Top 1${top1Pct !== null ? '' : ' (est.)'}</span>
+          <span><span class="dot top10"></span>Top 2–10</span>
+          <span><span class="dot top50"></span>Top 11–50 (est.)</span>
+          <span><span class="dot rest"></span>Rest</span>
+        </div>
+      </div>
+    `
+  } else if (d.holders != null) {
+    // No flag-extracted threshold — show count only with a neutral label
+    holdersHtml = `
+      <div class="section-label reveal"><span>Holder Concentration</span></div>
+      <div class="holders-card reveal">
+        <div class="lbl">${escapeHtml(d.holders.toLocaleString())} holders · distribution data unavailable</div>
+      </div>
+    `
+  }
+
   // ── Sources marquee (deduplicated)
   const FIXED_SOURCES = ["DexScreener", "RugCheck", "GoPlus", "Helius", "Solscan", "Chart Analysis"]
   const apiSources = Array.isArray(d.sources_used) ? d.sources_used : []
@@ -440,11 +494,6 @@ function render(d, ca) {
             </div>
             ${priceCardHtml}
           </div>
-
-          <div class="ai-card" id="ai-section">
-            <div class="ai-head"><span class="icon">⬡</span><h3>AI Verdict</h3></div>
-            ${aiBodyHtml}
-          </div>
         </div>
 
         <div class="right-block">
@@ -456,10 +505,16 @@ function render(d, ca) {
             ${flagsRowsHtml}
           </div>
           <div class="sec-strip">${secStripHtml}</div>
+          <div class="ai-card" id="ai-section">
+            <div class="ai-head"><span class="icon">⬡</span><h3>AI Verdict</h3></div>
+            ${aiBodyHtml}
+          </div>
         </div>
 
       </div>
     </section>
+
+    ${holdersHtml}
 
     ${mktCellsHtml ? `
       <div class="section-label reveal"><span>Market Data</span></div>
