@@ -281,7 +281,11 @@ function buildSiLp(data: ScanResponseData): HTMLElement {
   )
 }
 
-export function buildResult(data: ScanResponseData, ca: string): string {
+// Build the overlay's result tree as a live DOM node. Preferred over the
+// legacy string variant — callers should use replaceChildren(node) instead
+// of `el.innerHTML = string` so the surrounding container never has to
+// re-parse markup at all.
+export function buildResultNode(data: ScanResponseData, ca: string): HTMLElement {
   const riskClass = RISK_CLASS[data.risk] || "danger"
   const label = LABELS[data.risk] || data.risk
   const mint = data.resolvedMint || ca
@@ -384,5 +388,13 @@ export function buildResult(data: ScanResponseData, ca: string): string {
     foNode,
   )
 
-  return root.innerHTML
+  return root
+}
+
+// Backward-compatible string variant. Kept because xss-regression tests
+// (PR #283) and any future caller that legitimately needs serialised HTML
+// (e.g. for postMessage / saveToHistory) can rely on it. Callers writing
+// into the live DOM should prefer buildResultNode + replaceChildren.
+export function buildResult(data: ScanResponseData, ca: string): string {
+  return buildResultNode(data, ca).innerHTML
 }
