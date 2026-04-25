@@ -396,9 +396,12 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
 
     // Cache only if aiSummary was generated — otherwise keep TTL short (30s) so the
     // next request retries AI generation instead of serving a null-summary forever.
+    // The verdict is passed so computeCacheTTL can apply asymmetric caching:
+    // bad verdicts cache long (stale-RUG is safe), good verdicts on young
+    // tokens cache short (stale-SAFE is dangerous).
     if (result.aiSummary) {
-      setCachedResult(ca, result, tokenAgeMinutes);
-      if (resolvedMint !== ca) setCachedResult(resolvedMint, result, tokenAgeMinutes);
+      setCachedResult(ca, result, tokenAgeMinutes, result.risk);
+      if (resolvedMint !== ca) setCachedResult(resolvedMint, result, tokenAgeMinutes, result.risk);
     } else {
       const redis = getCacheRedis();
       if (redis) {

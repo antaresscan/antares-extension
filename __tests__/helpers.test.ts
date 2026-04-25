@@ -85,17 +85,59 @@ describe("makeFlag", () => {
 });
 
 describe("computeCacheTTL", () => {
-      it("returns 60 for null", () => {
-          expect(computeCacheTTL(null)).toBe(60);
+  // ─── Age-based TTL (no verdict supplied) ──────────────────────────
+  it("returns 60 for null age", () => {
+    expect(computeCacheTTL(null)).toBe(60);
   });
-      it("returns 45 for age < 60", () => {
+  it("returns 45 for age < 60", () => {
     expect(computeCacheTTL(30)).toBe(45);
   });
-      it("returns 120 for age 60-1440", () => {
-          expect(computeCacheTTL(120)).toBe(120);
+  it("returns 120 for age 60-1440", () => {
+    expect(computeCacheTTL(120)).toBe(120);
   });
-      it("returns 300 for age > 1440", () => {
-          expect(computeCacheTTL(2000)).toBe(300);
+  it("returns 300 for age > 1440", () => {
+    expect(computeCacheTTL(2000)).toBe(300);
+  });
+
+  // ─── Verdict-aware TTL (PR #298) ──────────────────────────────────
+  // Bad verdicts get a long TTL irrespective of age — stale-RUG is safe,
+  // stale-SAFE is dangerous. This is the asymmetry that protects users
+  // from buying tokens on stale "safe" verdicts after a rug event.
+  describe("verdict-aware TTL", () => {
+    it("RUG verdict caches 30 min regardless of token age", () => {
+      expect(computeCacheTTL(5, "RUG")).toBe(1800);
+      expect(computeCacheTTL(2000, "RUG")).toBe(1800);
+      expect(computeCacheTTL(null, "RUG")).toBe(1800);
+    });
+
+    it("DANGER verdict caches 10 min regardless of token age", () => {
+      expect(computeCacheTTL(5, "DANGER")).toBe(600);
+      expect(computeCacheTTL(2000, "DANGER")).toBe(600);
+      expect(computeCacheTTL(null, "DANGER")).toBe(600);
+    });
+
+    it("SAFE verdict on YOUNG token still gets short age-based TTL", () => {
+      // Critical safety property: if the engine says SAFE on a 10-minute
+      // token and the token rugs 30s later, we must not serve that stale
+      // SAFE for 30 min. Age-based 20s applies.
+      expect(computeCacheTTL(10, "SAFE")).toBe(20);
+    });
+
+    it("CAUTION verdict on YOUNG token still gets short age-based TTL", () => {
+      expect(computeCacheTTL(10, "CAUTION")).toBe(20);
+    });
+
+    it("SAFE verdict on ESTABLISHED token gets long age-based TTL", () => {
+      // Established + safe is the only case where a long TTL on a "good"
+      // verdict is acceptable: state is empirically stable.
+      expect(computeCacheTTL(20000, "SAFE")).toBe(600);
+    });
+
+    it("never returns less than 20s — protects upstream from thundering herd", () => {
+      // Spot-check the floor on the lowest-bucket case.
+      expect(computeCacheTTL(1, "SAFE")).toBeGreaterThanOrEqual(20);
+      expect(computeCacheTTL(1, "CAUTION")).toBeGreaterThanOrEqual(20);
+    });
   });
 });
 

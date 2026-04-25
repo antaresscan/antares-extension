@@ -74,13 +74,45 @@ export function withBudget<T>(p: Promise<T>, ms: number): Promise<T | null> {
   ]);
 }
 
-export function computeCacheTTL(tokenAgeMinutes: number | null): number {
-    if (tokenAgeMinutes === null) return 60;    // 1 minute (unknown age)
-  if (tokenAgeMinutes < 30) return 20;          // 20s for <30min tokens (fast-moving)
-  if (tokenAgeMinutes < 60) return 45;          // 45s for <1h tokens
-  if (tokenAgeMinutes < 1440) return 120;       // 2 minutes for <1 day tokens
-  if (tokenAgeMinutes < 10080) return 300;      // 5 minutes for <1 week tokens
-  return 600;                                    // 10 minutes for established tokens (>1 week)
+/**
+ * Cache TTL is asymmetric by verdict — that's deliberate, not a bug:
+ *
+ * Bad verdicts (RUG / DANGER) get a LONG TTL. The reasoning is one-sided:
+ * if we serve a stale RUG verdict for the next 30 minutes, the worst case
+ * is the user does not buy a possibly-now-fine token — annoying but safe.
+ *
+ * Good verdicts (SAFE / CAUTION) on a young token get a SHORT TTL.
+ * If we serve a stale SAFE verdict for 10 minutes and the token rugs in
+ * that window, the user buys based on the stale verdict and loses money.
+ * Conservative bias here is non-negotiable for a security product.
+ *
+ * For SAFE / CAUTION on established tokens, age-based TTL kicks in: state
+ * is empirically stable, so we save Helius / DexScreener quota by caching
+ * longer. This is the only case where a long TTL is allowed for a "good"
+ * verdict.
+ *
+ * The function never returns less than 20s — protecting upstream APIs
+ * from a thundering herd if the same volatile token is scanned by many
+ * users in seconds.
+ */
+export function computeCacheTTL(
+  tokenAgeMinutes: number | null,
+  verdict?: "SAFE" | "CAUTION" | "DANGER" | "RUG",
+): number {
+  // Bad verdicts get a long TTL irrespective of age. Stale-bad is safe;
+  // stale-good is dangerous.
+  if (verdict === "RUG") return 1800;     // 30 min — rug is permanent, conservative cache OK
+  if (verdict === "DANGER") return 600;   // 10 min — danger is sticky
+
+  // Good (or unknown) verdict: fall back to age-based TTL. Short TTL on
+  // young tokens because a SAFE verdict on a 10-minute-old token can flip
+  // to RUG within seconds — we must not serve that stale.
+  if (tokenAgeMinutes === null) return 60;
+  if (tokenAgeMinutes < 30) return 20;
+  if (tokenAgeMinutes < 60) return 45;
+  if (tokenAgeMinutes < 1440) return 120;     // < 1 day
+  if (tokenAgeMinutes < 10080) return 300;    // < 1 week
+  return 600;                                  // established
 }
 
 export function apiError(res: VercelResponse, status: number, message: string, details?: Record<string, unknown>): void {
