@@ -112,7 +112,7 @@ export async function scan(ca: string) {
     el.replaceChildren(buildResultNode(cached, ca))
     showBox()
     triggerResultAnimations(el)
-    attachClose(cached.aiSummary ?? null)
+    attachClose(cached.aiSummary ?? null, cached.flags ?? null)
     attachAnalysisBtn(ca)
     chrome.storage.local.get(["autoRescan"], (prefs) => {
       if (prefs.autoRescan !== false) scheduleRescanIfPriceCrash(cached, ca)
@@ -141,7 +141,7 @@ export async function scan(ca: string) {
     el.replaceChildren(buildResultNode(data, ca))
     showBox()
     triggerResultAnimations(el)
-    attachClose(data.aiSummary ?? null)
+    attachClose(data.aiSummary ?? null, data.flags ?? null)
     attachAnalysisBtn(ca)
     chrome.storage.local.get(["autoRescan"], (prefs) => {
       if (prefs.autoRescan !== false) scheduleRescanIfPriceCrash(data, ca)

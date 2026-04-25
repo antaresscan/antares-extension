@@ -401,4 +401,106 @@ export const SHADOW_CSS = `
 .ai-risk.rug { color: #ff2244; }
 .ai-score { color: #555; }
 .ai-time { color: #444; font-size: 8px; }
+
+/* ── Critical Flags button + panel (inline, replaces DexScreener) ─── */
+.cf-btn {
+  flex: 1; display: block; padding: 8px;
+  font-size: 8px; letter-spacing: .12em;
+  text-transform: uppercase; text-align: center;
+  border-radius: 2px; transition: color .2s, border-color .2s, background .2s;
+  font-family: 'IBM Plex Mono', monospace; background: rgba(255,95,95,.05);
+  cursor: pointer;
+  color: #cc7070;
+  border: 1px solid rgba(255,95,95,.25);
+}
+.cf-btn:hover {
+  color: #ff5f5f;
+  border-color: rgba(255,95,95,.5);
+  background: rgba(255,95,95,.1);
+}
+
+@keyframes cf-panel-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.cf-panel {
+  display: none;
+  margin: 0 14px 2px;
+  border: 1px solid rgba(255,95,95,.15);
+  border-radius: 3px;
+  background: rgba(255,95,95,.04);
+  overflow: hidden;
+}
+.cf-panel.open {
+  display: block;
+  animation: cf-panel-in .18s ease;
+}
+
+.cf-panel-inner {
+  padding: 10px 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cf-flag {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 4px 0;
+}
+.cf-flag + .cf-flag {
+  border-top: 1px solid rgba(255,255,255,.04);
+  padding-top: 8px;
+}
+
+.cf-flag-icon {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px; font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.cf-flag-icon-r { background: rgba(255,60,80,.15); color: #ff5f5f; }
+.cf-flag-icon-y { background: rgba(245,208,0,.12); color: #f5d000; }
+.cf-flag-icon-g { background: rgba(136,136,136,.1); color: #888; }
+
+.cf-flag-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.cf-flag-label {
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.4;
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: .01em;
+}
+.cf-flag-cr .cf-flag-label { color: #cc7070; }
+.cf-flag-wr .cf-flag-label { color: #c8a840; }
+.cf-flag-in .cf-flag-label { color: #888; }
+
+.cf-flag-desc {
+  font-size: 9px;
+  color: #777;
+  line-height: 1.5;
+  font-style: italic;
+  letter-spacing: .01em;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.cf-panel-empty {
+  padding: 10px 12px;
+  font-size: 9px;
+  color: #444;
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: .04em;
+  text-align: center;
+}
 `
