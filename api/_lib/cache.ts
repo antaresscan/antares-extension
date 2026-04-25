@@ -24,9 +24,14 @@ export async function getCachedResult<T = unknown>(ca: string, requestId: string
   }
 }
 
-export function setCachedResult(ca: string, result: object, tokenAgeMinutes: number | null): void {
+export function setCachedResult(
+  ca: string,
+  result: object,
+  tokenAgeMinutes: number | null,
+  verdict?: "SAFE" | "CAUTION" | "DANGER" | "RUG",
+): void {
   if (!scanCacheRedis) return;
-  const ttl = computeCacheTTL(tokenAgeMinutes);
+  const ttl = computeCacheTTL(tokenAgeMinutes, verdict);
   scanCacheRedis.setex(`antares:v2:${ca}`, ttl, result).catch((e: unknown) => {
         logger.warn("cache", "Redis cache write failed", { error: String(e) });
   });
