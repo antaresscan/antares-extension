@@ -92,6 +92,12 @@ export async function recordRug(data: {
 
 /**
  * Get recent rugs from the database (for Wall of Shame endpoint).
+ *
+ * Uses MGET so the N keys round-trip as a single Redis command instead
+ * of N pipelined GETs. Same number of HTTP requests as the previous
+ * pipeline (Upstash batches both into one), but MGET is one command
+ * instead of N — fewer parser invocations server-side and the canonical
+ * idiom for "fetch multiple keys at once".
  */
 export async function getRecentRugs(limit = 50): Promise<RugEntry[]> {
   if (!redis) return [];
@@ -99,13 +105,9 @@ export async function getRecentRugs(limit = 50): Promise<RugEntry[]> {
     const mints = await redis.zrange(RUG_INDEX, 0, limit - 1, { rev: true });
     if (!mints.length) return [];
 
-    const pipeline = redis.pipeline();
-    for (const mint of mints) {
-      pipeline.get(`${RUG_PREFIX}${mint}`);
-    }
-    const results = await pipeline.exec();
-    return (results as (RugEntry | null)[])
-      .filter((r): r is RugEntry => r !== null);
+    const keys = (mints as string[]).map(mint => `${RUG_PREFIX}${mint}`);
+    const results = await redis.mget<RugEntry[]>(...keys);
+    return results.filter((r): r is RugEntry => r !== null);
   } catch {
     return [];
   }

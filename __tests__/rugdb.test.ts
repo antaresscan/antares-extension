@@ -9,8 +9,7 @@ const mockZadd = vi.fn();
 const mockZcard = vi.fn();
 const mockZrange = vi.fn();
 const mockZremrangebyrank = vi.fn();
-const mockPipelineGet = vi.fn();
-const mockPipelineExec = vi.fn();
+const mockMget = vi.fn();
 
 const mockRedis = {
   get: mockGet,
@@ -19,10 +18,7 @@ const mockRedis = {
   zcard: mockZcard,
   zrange: mockZrange,
   zremrangebyrank: mockZremrangebyrank,
-  pipeline: () => ({
-    get: mockPipelineGet,
-    exec: mockPipelineExec,
-  }),
+  mget: mockMget,
 } as any;
 
 beforeEach(() => {
@@ -203,7 +199,7 @@ describe("rugdb", () => {
         mint: "mint2", symbol: "B", score: 30, risk: "DANGER",
         flags: [], creator: null, flaggedAt: 2000, scanCount: 2,
       };
-      mockPipelineExec.mockResolvedValueOnce([entry1, entry2]);
+      mockMget.mockResolvedValueOnce([entry1, entry2]);
       const result = await getRecentRugs(2);
       expect(result).toEqual([entry1, entry2]);
     });
@@ -211,7 +207,7 @@ describe("rugdb", () => {
     it("filters out null entries", async () => {
       initRugDb(mockRedis);
       mockZrange.mockResolvedValueOnce(["mint1", "mint2"]);
-      mockPipelineExec.mockResolvedValueOnce([null, { mint: "mint2" }]);
+      mockMget.mockResolvedValueOnce([null, { mint: "mint2" }]);
       const result = await getRecentRugs();
       expect(result).toHaveLength(1);
     });
@@ -221,6 +217,20 @@ describe("rugdb", () => {
       mockZrange.mockRejectedValueOnce(new Error("fail"));
       const result = await getRecentRugs();
       expect(result).toEqual([]);
+    });
+
+    it("uses a single MGET call with the prefixed keys (no per-key pipelined GETs)", async () => {
+      // Locks in the rugdb.ts:99 refactor — fetching N entries must be one
+      // Redis command (MGET) instead of N pipelined GETs. A regression here
+      // would silently restore the old N-command pattern.
+      initRugDb(mockRedis);
+      mockZrange.mockResolvedValueOnce(["mintA", "mintB", "mintC"]);
+      mockMget.mockResolvedValueOnce([null, null, null]);
+
+      await getRecentRugs(3);
+
+      expect(mockMget).toHaveBeenCalledTimes(1);
+      expect(mockMget).toHaveBeenCalledWith("rug:mintA", "rug:mintB", "rug:mintC");
     });
   });
 });
