@@ -55,13 +55,7 @@ test.describe('Scan Integration \u2014 Full Flow E2E', () => {
     expect(body).toBeTruthy();
   });
 
-  test('landing page CTA links to Chrome Web Store or valid target', async ({ page }) => {
-    await page.goto(BASE);
-    const cta = page.getByRole('link', { name: /install|get started|chrome|download/i }).first();
-    if (await cta.count() > 0) {
-      const href = await cta.getAttribute('href');
-      expect(href).toBeTruthy();
-      expect(href).toMatch(/chrome\.google\.com|github\.com|#|\//i);
-    }
-  });
+  // The landing-page CTA test was removed: `/` on this deployment now
+  // 301s to antares-website.vercel.app, where the CTA belongs and is
+  // tested separately. Asserting it from here would test the wrong project.
 });

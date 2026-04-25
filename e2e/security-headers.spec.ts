@@ -5,9 +5,13 @@ const BASE = process.env.E2E_BASE_URL || 'https://antares-extension.vercel.app';
 /**
  * Verify all security headers from vercel.json are applied
  * on every route category (pages, API endpoints).
+ *
+ * `/` is intentionally excluded: this deployment 301-redirects it to
+ * antares-website.vercel.app, which is a separate Vercel project with
+ * its own header policy. Asserting headers there would test the wrong
+ * project.
  */
 const ROUTES = [
-  { path: '/', label: 'Landing page' },
   { path: '/privacy.html', label: 'Privacy page' },
   { path: '/token.html', label: 'Token page' },
   { path: '/api/health', label: 'API health' },
@@ -59,8 +63,9 @@ test.describe('CSP contains default-src directive', () => {
 });
 
 test.describe('Page-specific CSP', () => {
-  test('pages allow self scripts and styles', async ({ request }) => {
-    const r = await request.get(`${BASE}/`);
+  test('static pages allow self scripts and styles', async ({ request }) => {
+    // Probe an actual page this deployment serves, not the redirect at /.
+    const r = await request.get(`${BASE}/privacy.html`);
     const csp = r.headers()['content-security-policy'];
     expect(csp).toContain("default-src 'self'");
     expect(csp).toContain('script-src');
