@@ -88,7 +88,8 @@ const params=new URLSearchParams(location.search)
 const CA_RE=/^[1-9A-HJ-NP-Za-km-z]{32,44}$/
 const _raw=params.get("ca")||params.get("token")||""
 const ca=CA_RE.test(_raw)?_raw:""
-document.getElementById("ca-disp").textContent=ca?ca.slice(0,8)+"..."+ca.slice(-6):"—"
+const caShort = ca ? ca.slice(0,6) + "…" + ca.slice(-4) : "—"
+document.getElementById("ca-disp").textContent = caShort
 
 function setLoadingStatus(msg) {
   const el = document.getElementById('loading-status')
@@ -138,315 +139,375 @@ if(!ca){
     .catch(() => showError("Analysis failed after multiple attempts. Please try again later."))
 }
 
-function render(d,ca){
-  document.getElementById("loading").style.display="none"
-  const wrap=document.getElementById("content")
-  wrap.style.display="block"
+// ──────────────────────────────────────────────────────────────────────
+// Sparkline: builds an inline SVG polyline from candle close prices.
+// Returns "" if not enough data so callers can conditionally render.
+// Color follows the verdict via the --risk CSS variable.
+// ──────────────────────────────────────────────────────────────────────
+function buildSparkline(candles) {
+  if (!Array.isArray(candles) || candles.length < 2) return ""
+  const closes = candles.map(c => c && typeof c.close === 'number' ? c.close : null).filter(v => v != null)
+  if (closes.length < 2) return ""
+  const w = 200, h = 32
+  const min = Math.min(...closes), max = Math.max(...closes)
+  const range = max - min || 1
+  const points = closes.map((v, i) => {
+    const x = (i / (closes.length - 1)) * w
+    const y = h - ((v - min) / range) * (h - 4) - 2
+    return `${x.toFixed(1)},${y.toFixed(1)}`
+  }).join(" ")
+  return `<svg class="spark" width="100%" height="32" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+    <polyline points="${points}" fill="none" stroke="var(--risk)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`
+}
 
-  const RC={SAFE:"safe",CAUTION:"caution",DANGER:"danger",RUG:"rug"}
-  const LB={SAFE:"SAFE",CAUTION:"CAUTION",DANGER:"DANGER",RUG:"RUG PULL"}
-  const rc=RC[d.risk]||"danger"
-  const lb=LB[d.risk]||d.risk
-  const score=d.score||0
-  const barW=Math.min(100,Math.round(score/10))
-  const conf=typeof d.confidence==="number"?d.confidence:null
+// ──────────────────────────────────────────────────────────────────────
+// One-time setup for animations that should fire on first render and not
+// again on retry. Guarded by window flags so re-renders are no-ops.
+// ──────────────────────────────────────────────────────────────────────
+function setupCursorGlow() {
+  if (window.__cgInit) return
+  window.__cgInit = true
+  const cg = document.getElementById('cursor-glow')
+  if (!cg) return
+  document.addEventListener('mousemove', e => {
+    cg.style.opacity = '1'
+    cg.style.left = e.clientX + 'px'
+    cg.style.top = e.clientY + 'px'
+  })
+  document.addEventListener('mouseleave', () => { cg.style.opacity = '0' })
+}
 
-  const mc=d.marketCap??d.pair?.marketCap??null
-  const liq=d.liquidity??d.pair?.liquidity?.usd??null
-  const vol24=d.volume24h??d.pair?.volume?.h24??null
-  const vol1h=d.volume1h??d.pair?.volume?.h1??null
-  const priceUsd=d.priceUsd??d.pair?.priceUsd??null
-  const priceNative=d.pair?.priceNative??null
+function setupStickyNav() {
+  if (window.__navInit) return
+  window.__navInit = true
+  const nav = document.getElementById('nav')
+  if (!nav) return
+  const onScroll = () => nav.classList.toggle('compact', window.scrollY > 360)
+  window.addEventListener('scroll', onScroll, { passive: true })
+  onScroll()
+}
 
-  const pc5m=d.priceChange5m??d.pair?.priceChange?.m5??null
-  const pc1h=d.priceChange1h??d.pair?.priceChange?.h1??null
-  const pc6h=d.pair?.priceChange?.h6??null
-  const pc24h=d.priceChange24h??d.pair?.priceChange?.h24??null
+function setupRevealObserver() {
+  if (window.__obsInit) return
+  window.__obsInit = true
+  const obs = new IntersectionObserver(entries => entries.forEach(e => {
+    if (!e.isIntersecting) return
+    e.target.classList.add('visible')
+    // Layer bars: animate width from 0 to data-w% on first reveal
+    if (e.target.id === 'layers') {
+      e.target.querySelectorAll('.layer-bar[data-w]').forEach(b => {
+        setTimeout(() => { b.style.width = b.dataset.w + '%' }, 100)
+      })
+    }
+    obs.unobserve(e.target)
+  }), { threshold: 0.1 })
+  document.querySelectorAll('.reveal').forEach(el => obs.observe(el))
+}
 
-  const txH1=d.pair?.txns?.h1??null
-  const txH6=d.pair?.txns?.h6??null
-  const txH24=d.pair?.txns?.h24??null
+function render(d, ca) {
+  document.getElementById("loading").style.display = "none"
 
-  const name=d.tokenName||d.pair?.baseToken?.name||""
-  const sym=d.tokenSymbol||d.pair?.baseToken?.symbol||""
-  const mint=d.resolvedMint||ca
-  const logo=d.tokenLogo??d.pair?.info?.imageUrl??null
-  const ageStr=age(d.solscanTokenAgeHours)
-  const pairCreated=d.pairCreatedAt??d.pair?.pairCreatedAt??null
+  const RC = { SAFE: "safe", CAUTION: "caution", DANGER: "danger", RUG: "rug" }
+  const LB = { SAFE: "SAFE", CAUTION: "CAUTION", DANGER: "DANGER", RUG: "RUG PULL" }
+  const rc = RC[d.risk] || "danger"
+  const lb = LB[d.risk] || d.risk
+  document.body.className = `risk-${rc}`
 
-  const websites=d.pair?.info?.websites||[]
-  const socials=d.pair?.info?.socials||[]
+  const score = d.score || 0
+  const barW = Math.min(100, Math.round(score / 10))
+  const conf = typeof d.confidence === "number" ? d.confidence : null
 
-  const mintAuth=d.mintAuthority??null
-  const freezeAuth=d.freezeAuthority??null
-  const lpStatus=d.lpBurned===true?"BURN":d.lpLocked?"LOCK":"NO"
-  const sellOk=d.honeypot===false||d.risk!=="RUG"
+  const mc = d.marketCap ?? d.pair?.marketCap ?? null
+  const liq = d.liquidity ?? d.pair?.liquidity?.usd ?? null
+  const vol24 = d.volume24h ?? d.pair?.volume?.h24 ?? null
+  const vol1h = d.volume1h ?? d.pair?.volume?.h1 ?? null
+  const priceUsd = d.priceUsd ?? d.pair?.priceUsd ?? null
+  const priceNative = d.pair?.priceNative ?? null
 
-  const fAll=(d.flags||[]).filter(f=>f.severity!=="bonus")
-  const fCrit=fAll.filter(f=>f.severity==="critical")
-  let summary=fAll.length===0
-    ?"All sources agree — no issues found"
-    :fCrit.length>0
-      ?`${fAll.length} flags — ${fCrit.length} critical — Conf. ${conf??""}%`
-      :`${fAll.length} flags detected — Conf. ${conf??""}%`
+  const pc5m = d.priceChange5m ?? d.pair?.priceChange?.m5 ?? null
+  const pc1h = d.priceChange1h ?? d.pair?.priceChange?.h1 ?? null
+  const pc6h = d.pair?.priceChange?.h6 ?? null
+  const pc24h = d.priceChange24h ?? d.pair?.priceChange?.h24 ?? null
 
-  const flagsHtml=(d.flags||[])
-    .filter(f=>{const l=f.label||f;return!l.toLowerCase().includes("unavailable")&&f.severity!=="bonus"})
-    .map(f=>{
-      const sev=f.severity||"warning"
-      const isCrit=sev==="critical"
-      const isBonus=sev==="bonus"
-      const cls=isCrit?"cr":isBonus?"ok":"wr"
-      const ic=isCrit?"r":isBonus?"g":"y"
-      const ico=isCrit?"✕":isBonus?"✓":"!"
-      const desc=getFlagDescription(f.label||f)
-      return`<div class="fl ${cls}"><div class="fic ${ic}">${ico}</div><div class="f-body"><span class="fl-txt">${escapeHtml(f.label||f)}</span>${desc?`<div class="flag-desc">${escapeHtml(desc)}</div>`:''}</div></div>`
-    }).join("")
-  const noFlags=flagsHtml===""
-    ?`<div class="fl ok"><div class="fic g">✓</div><div class="f-body"><span class="fl-txt">No critical flags detected</span></div></div>`
-    :flagsHtml
+  const name = d.tokenName || d.pair?.baseToken?.name || ""
+  const sym = d.tokenSymbol || d.pair?.baseToken?.symbol || ""
+  const mint = d.resolvedMint || ca
+  const logo = d.tokenLogo ?? d.pair?.info?.imageUrl ?? null
+  const ageStr = age(d.solscanTokenAgeHours)
+  const pairCreated = d.pairCreatedAt ?? d.pair?.pairCreatedAt ?? null
+  const pairDate = pairCreated
+    ? new Date(pairCreated).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    : null
 
-  const c5=pct(pc5m),c1=pct(pc1h),c6=pct(pc6h),c24=pct(pc24h)
-  const changesHtml=`
-    <div class="changes">
-      <div class="ch"><span>5 min</span><b class="${c5.cls}">${c5.txt}</b></div>
-      <div class="ch"><span>1 hour</span><b class="${c1.cls}">${c1.txt}</b></div>
-      <div class="ch"><span>6 hours</span><b class="${c6.cls}">${c6.txt}</b></div>
-      <div class="ch"><span>24 hours</span><b class="${c24.cls}">${c24.txt}</b></div>
-    </div>`
+  const websites = d.pair?.info?.websites || []
+  const socials = d.pair?.info?.socials || []
+  const candles = d.candles || []
 
-  function txnCard(label,txObj){
-    if(!txObj)return""
-    const total=txObj.buys+txObj.sells||1
-    const buyPct=Math.round(txObj.buys/total*100)
-    const sellPct=100-buyPct
-    return`<div class="txn">
-      <span>${label}</span>
-      <div class="txn-line"><span class="txn-buy">${txObj.buys}B</span><span class="txn-sep">/</span><span class="txn-sell">${txObj.sells}S</span></div>
-      <div class="txn-bar-wrap"><div class="txn-bar-buy" style="width:${buyPct}%"></div><div class="txn-bar-sell" style="width:${sellPct}%"></div></div>
-    </div>`
+  const mintAuth = d.mintAuthority ?? null
+  const freezeAuth = d.freezeAuthority ?? null
+  const lpStatus = d.lpBurned === true ? "BURN" : d.lpLocked ? "LOCK" : "NO"
+  const sellOk = d.honeypot === false || d.risk !== "RUG"
+
+  const fAll = (d.flags || []).filter(f => f.severity !== "bonus")
+  const fCrit = fAll.filter(f => f.severity === "critical")
+  const flagSummary = fAll.length === 0
+    ? "No issues found"
+    : fCrit.length > 0
+      ? `${fAll.length} flags — ${fCrit.length} critical`
+      : `${fAll.length} flags detected`
+
+  // ── Update sticky nav (visible on scroll past hero)
+  document.getElementById('nav-ticker').innerHTML = sym
+    ? `<b>${escapeHtml(sym)}</b>${priceUsd ? ' · ' + escapeHtml(fmtPrice(priceUsd)) : ''}`
+    : '—'
+  document.getElementById('nav-verdict').textContent = lb
+  document.getElementById('nav-score').textContent = `${score}/1000`
+
+  function safeUrl(u) { return typeof u === 'string' && /^https?:\/\//i.test(u) ? u : '#' }
+  const dexUrl = d.pair?.url || `https://dexscreener.com/solana/${mint}`
+  document.getElementById('nav-actions').innerHTML = `
+    <span class="ca-pill" id="ca-disp" style="font-size:9px;color:#777;background:#0e0e10;border:1px solid #1e1e22;border-radius:2px;padding:6px 12px;letter-spacing:.06em">${escapeHtml(caShort)}</span>
+    <a href="${safeUrl(dexUrl)}" target="_blank" rel="noopener noreferrer">↗ DexScreener</a>
+    <a href="https://solscan.io/token/${encodeURIComponent(mint)}" target="_blank" rel="noopener noreferrer">↗ Solscan</a>
+    <a href="https://rugcheck.xyz/tokens/${encodeURIComponent(mint)}" target="_blank" rel="noopener noreferrer" class="warn">⚠ RugCheck</a>
+  `
+
+  // ── Build flag rows (or empty state)
+  const flagsRowsHtml = fAll.length === 0
+    ? `<div class="flag-row"><div class="flag-icon g">✓</div><div class="flag-body"><div class="flag-label ok">No critical flags detected</div><div class="flag-desc">All sources agree — this token has no automated red flags.</div></div></div>`
+    : fAll
+        .filter(f => { const l = f.label || f; return !String(l).toLowerCase().includes("unavailable") })
+        .map(f => {
+          const sev = f.severity || "warning"
+          const isCrit = sev === "critical"
+          const cls = isCrit ? "cr" : "wr"
+          const ic = isCrit ? "r" : "y"
+          const ico = isCrit ? "✕" : "!"
+          const desc = getFlagDescription(f.label || f)
+          return `<div class="flag-row">
+            <div class="flag-icon ${ic}">${ico}</div>
+            <div class="flag-body">
+              <div class="flag-label ${cls}">${escapeHtml(f.label || f)}</div>
+              ${desc ? `<div class="flag-desc">${escapeHtml(desc)}</div>` : ''}
+            </div>
+          </div>`
+        }).join("")
+
+  const flagsCount = fAll.length === 0
+    ? "0 detected"
+    : `${fAll.length} detected`
+
+  // ── Security strip cells
+  function siBool(label, val, invert) {
+    if (val == null) return `<div class="sec-cell"><div class="lbl">${label}</div><div class="val neu">—</div></div>`
+    const yes = invert ? !val : !!val
+    return `<div class="sec-cell"><div class="lbl">${label}</div><div class="val ${yes ? 'y' : 'n'}">${yes ? '✓' : '✕'}</div></div>`
   }
+  const lpCell = (() => {
+    if (d.lpBurned) return `<div class="sec-cell"><div class="lbl">LP</div><div class="val y">BURN</div></div>`
+    if (d.lpLocked) return `<div class="sec-cell"><div class="lbl">LP</div><div class="val w">LOCK</div></div>`
+    if (d.lpBurned == null && d.lpLocked == null) return `<div class="sec-cell"><div class="lbl">LP</div><div class="val neu">—</div></div>`
+    return `<div class="sec-cell"><div class="lbl">LP</div><div class="val n">✕</div></div>`
+  })()
+  const liqCell = liq != null
+    ? `<div class="sec-cell"><div class="lbl">Liq</div><div class="val ${liq < 5000 ? 'n' : liq > 50000 ? 'y' : 'w'}">${escapeHtml(fmt(liq))}</div></div>`
+    : `<div class="sec-cell"><div class="lbl">Liq</div><div class="val neu">—</div></div>`
+  const secStripHtml = `
+    <div class="sec-cell"><div class="lbl">Sell</div><div class="val ${sellOk ? 'y' : 'n'}">${sellOk ? '✓' : '✕'}</div></div>
+    ${siBool('Mint', mintAuth, true)}
+    ${siBool('Freeze', freezeAuth, true)}
+    ${lpCell}
+    ${liqCell}
+  `
 
-  const dotsCount=Math.round((score/1000)*5)
-  const dotsHtml=Array.from({length:5},(_,i)=>`<div class="dt ${i<dotsCount?'on':'off'}"></div>`).join("")
+  // ── Hero + above-fold
+  const tkLineHtml = sym
+    ? `<div class="tk-line"><b>${escapeHtml(sym)}</b>${name ? ' ' + escapeHtml(name) : ''}</div>`
+    : ''
+  const ageBadgeHtml = ageStr
+    ? `<span class="age-badge">${escapeHtml(ageStr)}${d.holders != null ? ' · ' + d.holders.toLocaleString() + ' holders' : ''}</span>`
+    : pairDate
+      ? `<span class="age-badge">Pair: ${escapeHtml(pairDate)}</span>`
+      : ''
+  const tokenLogoHtml = logo
+    ? `<img class="token-logo" src="${safeUrl(logo)}" alt="${escapeHtml(sym)}" onerror="this.style.display='none'"/>`
+    : sym
+      ? `<div class="token-logo-fallback">${escapeHtml(sym.slice(0, 4))}</div>`
+      : ''
 
-  const siSell=`<div class="si"><span>Sell</span><b class="${sellOk?'y':'n'}">${sellOk?'✓':'✕'}</b></div>`
-  const siMint=`<div class="si"><span>Mint</span><b class="${mintAuth?'n':'y'}">${mintAuth?'ON':'OFF'}</b></div>`
-  const siFreeze=`<div class="si"><span>Freeze</span><b class="${freezeAuth?'n':'y'}">${freezeAuth?'ON':'OFF'}</b></div>`
-  const siLP=`<div class="si"><span>LP</span><b class="${lpStatus==='NO'?'n':lpStatus==='BURN'?'y':'w'}">${lpStatus}</b></div>`
-  const siLiq=liq?`<div class="si"><span>Liq</span><b class="${liq<5000?'n':liq<30000?'w':'y'}">${fmt(liq)}</b></div>`:""
-  const siConf=conf!==null?`<div class="si"><span>Conf.</span><b class="${conf<50?'n':conf<80?'w':'y'}">${conf}%</b></div>`:""
+  const socialsHtml = [
+    ...websites.map(w => `<a class="soc" href="${safeUrl(w.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(w.label || 'Website')}</a>`),
+    ...socials.map(s => `<a class="soc" href="${safeUrl(s.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(s.type || 'Social')}</a>`),
+  ].join('')
 
-  const FIXED_SOURCES=["DexScreener","RugCheck","GoPlus","Helius"]
-  const apiSources=Array.isArray(d.sources_used)?d.sources_used:[]
-  const allSources=[...new Map([...FIXED_SOURCES,...apiSources].map(s=>[s.toLowerCase(),s])).values()]
-  const sourcesHtml=allSources
-    .map(s=>`<div class="src-row"><span>${s}</span><span>✓ used</span></div>`).join("")
-
-  function safeUrl(u){return typeof u==='string'&&/^https?:\/\//i.test(u)?u:'#'}
-  const socialsHtml=[
-    ...websites.map(w=>`<a class="soc" href="${safeUrl(w.url)}" target="_blank" rel="noopener">${w.label||'Website'}</a>`),
-    ...socials.map(s=>`<a class="soc" href="${safeUrl(s.url)}" target="_blank" rel="noopener">${s.type}</a>`)
-  ].join("")
-
-  const pairDate=pairCreated?new Date(pairCreated).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):null
-  const dexUrl=d.pair?.url||`https://dexscreener.com/solana/${ca}`
-
-  window.__riskClass=rc
-
-  // ── Logo token (top-right) — shown if available
-  const logoHtml=logo
-    ?`<img class="token-logo" src="${logo}" alt="${escapeHtml(sym)}" onerror="this.style.display='none'"/>`
-    :""
-
-  // ── tk-name: symbol + full name, properly closed
-  const tkNameHtml=sym
-    ?`<div class="tk-name"><b>${escapeHtml(sym)}</b>${name?' '+escapeHtml(name):''}</div>`
-    :""
-
-  // ── age badge
-  const ageBadgeHtml=ageStr
-    ?`<div class="age-badge">${ageStr}</div>`
-    :pairDate?`<div class="age-badge">Pair: ${pairDate}</div>`:""
-
-  wrap.innerHTML=`
-    <div class="${rc}">
-      <div class="risk-wrap ${rc}">
-        <div class="topbar"></div>
-
-        <!-- verdict + name + age on the left, token logo on the right -->
-        <div class="token-header">
-          <div class="token-header-text">
-            <div class="vt" data-label="${escapeHtml(lb)}">${lb}</div>
-            ${tkNameHtml}
-            ${ageBadgeHtml}
-          </div>
-          ${logoHtml}
-        </div>
-
-        <!-- price, score bar and confidence BELOW the header row, full width -->
-        ${priceUsd?`<div class="price-big">${fmtPrice(priceUsd)} <span>${priceNative?priceNative+' SOL':''}</span></div>`:""}
-        <div class="score-row">
-          <span class="sc-num"><b>${score}</b> / 1000</span>
-          <div class="dots">${dotsHtml}</div>
-          <div class="sbar"><div class="sbar-f" id="sbarf"></div></div>
-        </div>
-        <div class="conf-line">${summary}</div>
-        ${socialsHtml?`<div class="socials">${socialsHtml}</div>`:""}
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">Market Data</div>
-      <div class="grid g4">
-        ${mc?`<div class="stat"><span>Market Cap</span><strong>${fmt(mc)}</strong></div>`:""}
-        ${liq?`<div class="stat"><span>Liquidity</span><strong>${fmt(liq)}</strong></div>`:""}
-        ${vol24?`<div class="stat"><span>Volume 24h</span><strong>${fmt(vol24)}</strong></div>`:""}
-        ${vol1h?`<div class="stat"><span>Volume 1h</span><strong>${fmt(vol1h)}</strong></div>`:""}
-      </div>
-      ${changesHtml}
-    </div>
-
-    <div class="card">
-      <div class="card-title">Security</div>
-      <div class="strip">${siSell}${siMint}${siFreeze}${siLP}${siLiq}${siConf}</div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">Sources</div>
-      <div>${sourcesHtml}</div>
-    </div>
-
-    <div class="footer">
-      <a class="btn" href="${dexUrl}" target="_blank" rel="noopener">↗ DexScreener</a>
-      <a class="btn" href="https://solscan.io/token/${mint}" target="_blank" rel="noopener">↗ Solscan</a>
-      <a class="btn warn" href="https://rugcheck.xyz/tokens/${mint}" target="_blank" rel="noopener">⚠ RugCheck</a>
+  // Price card: sparkline if candles, change% sub-label
+  const sparklineHtml = buildSparkline(candles)
+  const change24 = pc24h != null ? pct(pc24h) : null
+  const priceCardHtml = `
+    <div class="m-card">
+      <div class="m-label">Price USD</div>
+      <div class="m-big alt">${escapeHtml(priceUsd ? fmtPrice(priceUsd) : '—')}</div>
+      ${sparklineHtml}
+      ${change24 ? `<div class="m-sub ${change24.cls}">${escapeHtml(change24.txt)} · 24h</div>` : (priceNative ? `<div class="m-sub">${escapeHtml(priceNative + ' SOL')}</div>` : '')}
     </div>
   `
 
-  // ── AI Analysis card
-  const aiSection = document.createElement('div')
-  aiSection.className = 'card ai-card'
-  aiSection.id = 'ai-section'
-  if (d.aiSummary) {
-    aiSection.innerHTML = `<div class="card-title"><span class="ai-icon">⬡</span> AI Analysis</div><p class="ai-body">${escapeHtml(d.aiSummary)}</p>`
-  } else {
-    aiSection.innerHTML = `<div class="card-title"><span class="ai-icon">⬡</span> AI Analysis</div><p class="ai-loading">Generating analysis…</p>`
+  // ── Market grid (compact, 4 cells max)
+  const c5 = pct(pc5m), c1 = pct(pc1h), c6 = pct(pc6h), c24 = pct(pc24h)
+  const mktCellsHtml = [
+    mc != null && `<div class="mkt-cell"><div class="lbl">Market Cap</div><div class="val">${escapeHtml(fmt(mc))}</div>${c1.txt !== '—' ? `<div class="delta ${c1.cls}">${escapeHtml(c1.txt)}</div>` : ''}</div>`,
+    liq != null && `<div class="mkt-cell"><div class="lbl">Liquidity</div><div class="val">${escapeHtml(fmt(liq))}</div></div>`,
+    vol24 != null && `<div class="mkt-cell"><div class="lbl">Vol 24h</div><div class="val">${escapeHtml(fmt(vol24))}</div>${c24.txt !== '—' ? `<div class="delta ${c24.cls}">${escapeHtml(c24.txt)}</div>` : ''}</div>`,
+    vol1h != null && `<div class="mkt-cell"><div class="lbl">Vol 1h</div><div class="val">${escapeHtml(fmt(vol1h))}</div>${c5.txt !== '—' ? `<div class="delta ${c5.cls}">${escapeHtml(c5.txt)}</div>` : ''}</div>`,
+    c6.txt !== '—' && `<div class="mkt-cell"><div class="lbl">Chg 6h</div><div class="val ${c6.cls === 'up' ? 'val' : ''}" style="color:${c6.cls === 'up' ? '#00e5b0' : c6.cls === 'dn' ? '#ff5f5f' : '#ddd'}">${escapeHtml(c6.txt)}</div></div>`,
+  ].filter(Boolean).join('')
+
+  // ── On-Chain grid
+  const onChainCells = [
+    d.holders != null && ['Holders', d.holders.toLocaleString()],
+    d.solscanTrades24h != null && ['Trades 24h', d.solscanTrades24h.toLocaleString()],
+    d.solscanTraders24h != null && ['Traders 24h', d.solscanTraders24h.toLocaleString()],
+    d.solscanTokenAgeHours != null && ['Token Age', formatAge(d.solscanTokenAgeHours)],
+    d.tokenSupply != null && ['Supply', fmt(d.tokenSupply).replace('$', '')],
+    d.tokenCreator && ['Creator', `<a href="https://solscan.io/account/${encodeURIComponent(d.tokenCreator)}" target="_blank" rel="noopener noreferrer">${escapeHtml(d.tokenCreator.slice(0, 6) + '…' + d.tokenCreator.slice(-4))}<span class="ext">↗</span></a>`],
+  ].filter(Boolean)
+
+  const onChainHtml = onChainCells.length > 0
+    ? onChainCells.map(([label, val]) => `<div class="oc-cell"><div class="lbl">${escapeHtml(label)}</div><div class="val">${val}</div></div>`).join('')
+    : ''
+
+  // ── Layer breakdown
+  const SOURCE_LABELS = {
+    dexscreener: 'DexScreener', rugcheck: 'RugCheck', goplus: 'GoPlus',
+    helius: 'Helius', solscan: 'Solscan', chart: 'Chart',
+    crossvalidation: 'Cross-validation',
+  }
+  const layerEntries = d.layers ? Object.entries(d.layers) : []
+  const layerRowsHtml = layerEntries.length > 0
+    ? layerEntries.map(([src, l]) => {
+        const label = SOURCE_LABELS[src] || src
+        if (!l || !l.available) {
+          return `<div class="layer-row"><div class="layer-name">${escapeHtml(label)}</div><div class="layer-unavail">Unavailable</div></div>`
+        }
+        const p = Math.round((l.trust || 0) * 100)
+        const cls = p >= 75 ? 'ok' : p >= 40 ? 'warn' : 'bad'
+        return `<div class="layer-row">
+          <div class="layer-name">${escapeHtml(label)}</div>
+          <div class="layer-bar-wrap"><div class="layer-bar ${cls}" data-w="${p}"></div></div>
+          <div class="layer-pct ${cls}">${p}</div>
+        </div>`
+      }).join('')
+    : ''
+
+  // ── Sources marquee (deduplicated)
+  const FIXED_SOURCES = ["DexScreener", "RugCheck", "GoPlus", "Helius", "Solscan", "Chart Analysis"]
+  const apiSources = Array.isArray(d.sources_used) ? d.sources_used : []
+  const allSources = [...new Map([...FIXED_SOURCES, ...apiSources].map(s => [String(s).toLowerCase(), s])).values()]
+  const marqueeItem = (s) => `<div class="mi"><span class="ok">✓</span>${escapeHtml(s)}</div>`
+  const marqueeOnce = allSources.map(marqueeItem).join('')
+  const marqueeHtml = marqueeOnce + marqueeOnce  // double for seamless scroll
+
+  // ── AI summary state: render now if available, else placeholder + async fetch
+  const aiBodyHtml = d.aiSummary
+    ? `<div class="ai-body">${escapeHtml(d.aiSummary)}</div>`
+    : `<div class="ai-loading">Generating analysis…</div>`
+
+  // ── Compose the page
+  const wrap = document.getElementById('content')
+  wrap.innerHTML = `
+    <section class="hero" data-verdict="${escapeHtml(lb)}">
+      <div class="hero-eye">Token Analysis${conf !== null ? ' · Conf ' + conf + '%' : ''}</div>
+      <div class="above">
+
+        <div class="verdict-block">
+          <div class="verdict-row">
+            <div style="min-width:0;flex:1">
+              <h1>${escapeHtml(lb)}</h1>
+              ${tkLineHtml}
+              ${ageBadgeHtml}
+              ${socialsHtml ? `<div class="socials">${socialsHtml}</div>` : ''}
+            </div>
+            ${tokenLogoHtml}
+          </div>
+
+          <div class="metrics-row">
+            <div class="m-card">
+              <div class="m-label">Risk Score</div>
+              <div class="m-big">${score}<span class="denom">/ 1000</span></div>
+              <div class="sbar"><div class="sbar-fill" id="sbarf"></div></div>
+              <div class="m-sub risk">${escapeHtml(flagSummary)}${conf !== null ? ' · Conf ' + conf + '%' : ''}</div>
+            </div>
+            ${priceCardHtml}
+          </div>
+
+          <div class="ai-card" id="ai-section">
+            <div class="ai-head"><span class="icon">⬡</span><h3>AI Verdict</h3></div>
+            ${aiBodyHtml}
+          </div>
+        </div>
+
+        <div class="right-block">
+          <div class="flags-card">
+            <div class="flags-head">
+              <span class="lbl">Critical Flags</span>
+              <span class="count">${escapeHtml(flagsCount)}</span>
+            </div>
+            ${flagsRowsHtml}
+          </div>
+          <div class="sec-strip">${secStripHtml}</div>
+        </div>
+
+      </div>
+    </section>
+
+    ${mktCellsHtml ? `
+      <div class="section-label reveal"><span>Market Data</span></div>
+      <div class="mkt-grid reveal">${mktCellsHtml}</div>
+    ` : ''}
+
+    ${onChainHtml ? `
+      <div class="section-label reveal"><span>On-Chain</span></div>
+      <div class="oc-grid reveal">${onChainHtml}</div>
+    ` : ''}
+
+    ${layerRowsHtml ? `
+      <div class="section-label reveal"><span>Layer Breakdown</span></div>
+      <div class="layers reveal" id="layers">${layerRowsHtml}</div>
+    ` : ''}
+
+    <div class="marquee-wrap reveal">
+      <div class="marquee-inner">${marqueeHtml}</div>
+    </div>
+  `
+
+  // Wire up animations + reveal observer (one-shot init guarded inside)
+  setupCursorGlow()
+  setupStickyNav()
+  setupRevealObserver()
+
+  // Score bar animation
+  setTimeout(() => {
+    const b = document.getElementById('sbarf')
+    if (b) b.style.width = barW + '%'
+  }, 350)
+
+  // Async-load AI summary if not in initial response
+  if (!d.aiSummary) {
     fetch(`${API}?ca=${ca}&ai=1`)
       .then(r => r.ok ? r.json() : null)
       .then(data => {
+        const slot = document.querySelector('#ai-section .ai-loading, #ai-section .ai-body')
+        if (!slot) return
         if (data && data.aiSummary) {
-          const p = aiSection.querySelector('.ai-loading, .ai-body')
-          if (p) { p.className = 'ai-body'; p.textContent = data.aiSummary }
+          slot.outerHTML = `<div class="ai-body">${escapeHtml(data.aiSummary)}</div>`
         } else {
-          const p = aiSection.querySelector('.ai-loading')
-          if (p) { p.className = 'ai-body'; p.style.animation = 'none'; p.style.color = '#444'; p.textContent = 'AI analysis unavailable for this token.' }
+          slot.outerHTML = `<div class="ai-body" style="color:#444">AI analysis unavailable for this token.</div>`
         }
       })
       .catch(() => {
-        const p = aiSection.querySelector('.ai-loading')
-        if (p) { p.className = 'ai-body'; p.style.animation = 'none'; p.style.color = '#444'; p.textContent = 'AI analysis unavailable for this token.' }
+        const slot = document.querySelector('#ai-section .ai-loading, #ai-section .ai-body')
+        if (slot) slot.outerHTML = `<div class="ai-body" style="color:#444">AI analysis unavailable for this token.</div>`
       })
   }
-  const firstCard = wrap.querySelector('.card')
-  if (firstCard) { wrap.insertBefore(aiSection, firstCard) } else { wrap.appendChild(aiSection) }
-
-  // ── Flags card
-  const flagsSection = document.createElement('div')
-  flagsSection.className = 'card'
-  flagsSection.innerHTML = `<div class="card-title">Flags</div><div class="flag-list">${noFlags}</div>`
-  const secCard = wrap.querySelector('.card:nth-child(3)')
-  if (secCard) { secCard.after(flagsSection) } else { wrap.insertBefore(flagsSection, wrap.querySelector('.footer')) }
-
-  // ── On-Chain Data
-  const onchainRows = [
-    d.holders         != null && ['Holders',      d.holders.toLocaleString()],
-    d.marketCap       != null && ['Market Cap',    fmt(d.marketCap)],
-    d.liquidity       != null && ['Liquidity',     fmt(d.liquidity)],
-    d.volume24h       != null && ['Volume 24h',    fmt(d.volume24h)],
-    d.solscanTrades24h  != null && ['Trades 24h',  d.solscanTrades24h.toLocaleString()],
-    d.solscanTraders24h != null && ['Traders 24h', d.solscanTraders24h.toLocaleString()],
-    d.solscanTokenAgeHours != null && ['Token Age', formatAge(d.solscanTokenAgeHours)],
-    d.priceChange1h   != null && ['Chg 1h',  (d.priceChange1h  >= 0 ? '+' : '') + d.priceChange1h.toFixed(1)  + '%'],
-    d.priceChange24h  != null && ['Chg 24h', (d.priceChange24h >= 0 ? '+' : '') + d.priceChange24h.toFixed(1) + '%'],
-  ].filter(Boolean)
-
-  if (onchainRows.length > 0) {
-    const ocCard = document.createElement('div')
-    ocCard.className = 'card'
-    ocCard.innerHTML = `
-      <div class="card-title">On-Chain Data</div>
-      <div class="oc-grid">
-        ${onchainRows.map(([label, val]) => `
-          <div class="oc-item">
-            <span class="oc-label">${label}</span>
-            <strong class="oc-val">${val}</strong>
-          </div>`).join('')}
-      </div>`
-    wrap.insertBefore(ocCard, wrap.querySelector('.footer'))
-  }
-
-  // ── Creator
-  if (d.tokenCreator) {
-    const creatorCard = document.createElement('div')
-    creatorCard.className = 'card'
-    const solscanUrl = `https://solscan.io/account/${d.tokenCreator}`
-    creatorCard.innerHTML = `
-      <div class="card-title">Token Creator</div>
-      <a href="${solscanUrl}" target="_blank" rel="noopener noreferrer" class="creator-link">
-        <span class="creator-addr">${d.tokenCreator.slice(0,8)}…${d.tokenCreator.slice(-8)}</span>
-        <span class="creator-ext">↗ Solscan</span>
-      </a>`
-    wrap.insertBefore(creatorCard, wrap.querySelector('.footer'))
-  }
-
-  // ── Layers / Trust par Source
-  const SOURCE_LABELS = {
-    dexscreener: 'DexScreener', rugcheck: 'RugCheck', goplus: 'GoPlus',
-    helius: 'Helius', solscan: 'Solscan', chart: 'Chart'
-  }
-
-  if (d.layers) {
-    const layerEntries = Object.entries(d.layers).filter(([src]) => src !== 'crossvalidation')
-    if (layerEntries.length > 0) {
-      const layersCard = document.createElement('div')
-      layersCard.className = 'card'
-      const rows = layerEntries.map(([src, l]) => {
-        const pct = Math.round(l.trust * 100)
-        const colorCls = !l.available ? 'layer-na' : pct >= 75 ? 'layer-ok' : pct >= 40 ? 'layer-warn' : 'layer-bad'
-        const label = SOURCE_LABELS[src] || src
-        if (!l.available) {
-          return `<div class="layer-row">
-            <span class="layer-name">${label}</span>
-            <span class="layer-unavail">Unavailable</span>
-          </div>`
-        }
-        return `<div class="layer-row">
-          <span class="layer-name">${label}</span>
-          <div class="layer-bar-wrap">
-            <div class="layer-bar ${colorCls}" style="width:0%" data-w="${pct}"></div>
-          </div>
-          <span class="layer-pct ${colorCls}">${pct}%</span>
-        </div>`
-      }).join('')
-      layersCard.innerHTML = `<div class="card-title">Trust par Source</div>${rows}`
-      wrap.insertBefore(layersCard, wrap.querySelector('.footer'))
-
-      requestAnimationFrame(() => {
-        layersCard.querySelectorAll('.layer-bar[data-w]').forEach(bar => {
-          setTimeout(() => { bar.style.width = bar.dataset.w + '%' }, 300)
-        })
-      })
-    }
-  }
-
-  const logoColors={safe:'#00c890',caution:'#c8a800',danger:'#cc5555',rug:'#cc3344'}
-  const logoGlow={safe:'rgba(0,229,176,.4)',caution:'rgba(245,208,0,.35)',danger:'rgba(255,95,95,.4)',rug:'rgba(255,34,68,.5)'}
-  const logoEl=document.querySelector('.logo')
-  if(logoEl){logoEl.style.color=logoColors[rc]||'#444';logoEl.style.textShadow=`0 0 10px ${logoGlow[rc]||'transparent'}`}
-
-  setTimeout(()=>{
-    const b=document.getElementById("sbarf")
-    if(b)b.style.width=barW+"%"
-  },300)
 }
