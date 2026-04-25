@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Antares — Solana Token Security Scanner</title>
+<meta name="description" content="Antares scans Solana tokens in real time — detects rug pulls, honeypots, bundlers and chart manipulation directly in your browser.">
+<meta property="og:title" content="Antares — Solana Token Security Scanner">
+<meta property="og:description" content="Real-time Solana token security scanner. Detects rug pulls, honeypots, bundlers and chart manipulation.">
+<meta property="og:type" content="website">
+    <meta property="og:image" content="https://antares-extension.vercel.app/og-image.png">
+  <meta name="twitter:image" content="https://antares-extension.vercel.app/og-image.png">
+    <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Antares — Solana Token Security Scanner">
+<meta name="twitter:description" content="Real-time Solana token security scanner for Solana tokens.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<script defer data-domain="antares-extension.vercel.app" src="https://plausible.io/js/script.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:#0a0a0f;color:#e0e0e0;line-height:1.6}
+a{color:#00d4aa;text-decoration:none}
+a:hover{text-decoration:underline}
+.container{max-width:960px;margin:0 auto;padding:0 24px}
+header{padding:24px 0;border-bottom:1px solid #1a1a2e}
+header .container{display:flex;justify-content:space-between;align-items:center}
+.logo{font-size:24px;font-weight:700;color:#fff}
+.hero{padding:80px 0;text-align:center}
+.hero h1{font-size:48px;font-weight:700;color:#fff;margin-bottom:16px}
+.hero p{font-size:20px;color:#888;max-width:600px;margin:0 auto 32px}
+.cta-btn{display:inline-block;padding:14px 32px;background:#00d4aa;color:#0a0a0f;font-weight:700;border-radius:8px;font-size:16px;transition:background .2s}
+.cta-btn:hover{background:#00b894;text-decoration:none}
+.features{padding:60px 0}
+.features h2{text-align:center;font-size:32px;color:#fff;margin-bottom:40px}
+.feature-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px}
+.feature-card{background:#12121f;border:1px solid #1a1a2e;border-radius:12px;padding:24px}
+.feature-card h3{color:#00d4aa;margin-bottom:8px}
+.comparison{padding:60px 0}
+.comparison h2{text-align:center;font-size:32px;color:#fff;margin-bottom:40px}
+table{width:100%;border-collapse:collapse;background:#12121f;border-radius:12px;overflow:hidden}
+th,td{padding:12px 16px;text-align:center;border-bottom:1px solid #1a1a2e}
+th{background:#1a1a2e;color:#fff;font-weight:600}
+td:first-child{text-align:left;font-weight:600}
+.check{color:#00d4aa}
+.cross{color:#555}
+footer{padding:40px 0;text-align:center;color:#555;border-top:1px solid #1a1a2e}
+</style>
+</head>
+<body>
+<header>
+<div class="container">
+<div class="logo">ANTARES</div>
+<a href="#install" class="cta-btn">Install Extension</a>
+</div>
+</header>
+<section class="hero">
+<div class="container">
+<h1>Scan Solana Tokens Before You Trade</h1>
+<p>Antares detects rug pulls, honeypots, bundlers and chart manipulation in real time — directly in your browser on Pump.fun, DexScreener, Birdeye and Photon.</p>
+<a id="install" href="#" class="cta-btn">Add to Chrome — Free</a>
+<p style="margin-top:12px;font-size:14px;color:#555">Chrome Web Store link coming soon</p>
+</div>
+</section>
+<section class="features">
+<div class="container">
+<h2>What Antares Detects</h2>
+<div class="feature-grid">
+<div class="feature-card">
+<h3>Rug Pull Detection</h3>
+<p>Analyzes creator wallet history, LP locks, and mint authority to identify potential rug pulls before they happen.</p>
+</div>
+<div class="feature-card">
+<h3>Honeypot Scanner</h3>
+<p>Checks if token contracts prevent selling, have hidden fees, or contain malicious code patterns.</p>
+</div>
+<div class="feature-card">
+<h3>Bundler Detection</h3>
+<p>Identifies coordinated buying from multiple wallets to detect artificial volume and price manipulation.</p>
+</div>
+<div class="feature-card">
+<h3>Chart Manipulation</h3>
+<p>Detects wash trading, fake volume, and suspicious candlestick patterns that indicate market manipulation.</p>
+</div>
+<div class="feature-card">
+<h3>Multi-Source Scoring</h3>
+<p>Aggregates data from Helius, Solscan, Birdeye, DexScreener and RugCheck for a comprehensive trust score.</p>
+</div>
+<div class="feature-card">
+<h3>Real-Time Alerts</h3>
+<p>Get instant overlay alerts on Pump.fun, DexScreener, Birdeye and Photon while you browse.</p>
+</div>
+</div>
+</div>
+</section>
+<section class="comparison">
+<div class="container">
+<h2>How Antares Compares</h2>
+<table>
+<thead>
+<tr><th>Feature</th><th>Antares</th><th>RugCheck</th><th>Birdeye</th><th>DexScreener</th></tr>
+</thead>
+<tbody>
+<tr><td>Browser extension overlay</td><td class="check">✓</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td></tr>
+<tr><td>Multi-source trust score</td><td class="check">✓</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td></tr>
+<tr><td>Rug pull detection</td><td class="check">✓</td><td class="check">✓</td><td class="cross">✗</td><td class="cross">✗</td></tr>
+<tr><td>Creator reputation</td><td class="check">✓</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td></tr>
+<tr><td>Bundler detection</td><td class="check">✓</td><td class="check">✓</td><td class="cross">✗</td><td class="cross">✗</td></tr>
+<tr><td>Chart manipulation alerts</td><td class="check">✓</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td></tr>
+<tr><td>Free to use</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+<footer>
+<div class="container">
+<p>&copy; 2026 Antares. Open source on <a href="https://github.com/COMEALAMAISONGROUPE/antares-extension">GitHub</a>.</p>
+</div>
+</footer>
+</body>
+</html>
