@@ -6,6 +6,7 @@ import { getCached, saveToLS } from "./cache"
 import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimations, buildHeader, buildResult } from "./components"
 import { scanRateLimiter } from "../../shared/rate-limit"
 import { logger } from "../../shared/logger"
+import { getInstallId } from "../../shared/install-id"
 
 export function isValid(addr: string): boolean {
   if (addr.length < 32 || addr.length > 44) return false
@@ -48,13 +49,14 @@ function isRetryable(e: unknown): boolean {
 async function fetchWithRetry(
   url: string,
   signal: AbortSignal,
+  headers: Record<string, string> = {},
   retries = MAX_RETRIES
 ): Promise<Response> {
   let lastError: unknown
   for (let attempt = 0; attempt <= retries; attempt++) {
     if (signal.aborted) throw new DOMException("Aborted", "AbortError")
     try {
-      const res = await fetch(url, { signal })
+      const res = await fetch(url, { signal, headers })
       if (!res.ok) {
         const status = res.status
         if ((status === 429 || status >= 500) && attempt < retries) {
@@ -134,7 +136,9 @@ export async function scan(ca: string) {
   attachClose(null)
 
   try {
-    const res = await fetchWithRetry(`${API}?ca=${ca}`, controller.signal)
+    const installId = await getInstallId()
+    const headers: Record<string, string> = installId ? { "X-Antares-Install": installId } : {}
+    const res = await fetchWithRetry(`${API}?ca=${ca}`, controller.signal, headers)
     if (controller.signal.aborted) return
     const data = await res.json() as ScanResponseData
     if (controller.signal.aborted) return

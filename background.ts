@@ -5,6 +5,7 @@ import type { HistoryEntry } from "./shared/types"
 import { CA_RE } from "./shared/constants"
 import { config } from "./shared/config"
 import { logger } from "./shared/logger"
+import { getInstallId } from "./shared/install-id"
 
 // ─── SENTRY INITIALIZATION ───────────────────────────────────────────────────
 if (config.sentryDsn) {
@@ -144,7 +145,11 @@ const handlers: Record<string, MessageHandler> = {
     const ctrl = new AbortController()
     const timer = setTimeout(() => ctrl.abort(), config.fetchTimeoutMs)
 
-    void fetch(`${config.apiBase}/api/scan?ca=${ca}`, { signal: ctrl.signal })
+    void getInstallId()
+      .then((installId) => {
+        const headers: Record<string, string> = installId ? { "X-Antares-Install": installId } : {}
+        return fetch(`${config.apiBase}/api/scan?ca=${ca}`, { signal: ctrl.signal, headers })
+      })
       .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() })
       .then((data: Record<string, unknown>) => {
         clearTimeout(timer)
