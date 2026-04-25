@@ -240,6 +240,27 @@ export function buildHeader(): string {
   return buildHeaderNode().outerHTML
 }
 
+// Loading-state skeleton injected while a scan is in-flight. Exported as
+// a Node so callers can `replaceChildren(buildSkeletonNode())` instead of
+// stringifying — keeps the dynamic render path innerHTML-free, matching
+// the pattern established in #292 for buildResultNode.
+export function buildSkeletonNode(): DocumentFragment {
+  const frag = document.createDocumentFragment()
+  frag.appendChild(el("div", {
+    class: "topbar",
+    style: "background:linear-gradient(90deg,transparent,#3a3a3f,transparent)",
+  }))
+  frag.appendChild(buildHeaderNode())
+  frag.appendChild(el("div", { class: "skel" },
+    el("div", { class: "skel-verdict" }),
+    el("div", { class: "skel-bar" }),
+    el("div", { class: "skel-line" }),
+    el("div", { class: "skel-line" }),
+    el("div", { class: "skel-line" }),
+  ))
+  return frag
+}
+
 function buildSiBool(siLabel: string, val: unknown, invert = false): HTMLElement {
   if (val == null) {
     return el("div", { class: "si" },

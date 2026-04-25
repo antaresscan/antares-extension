@@ -3,7 +3,7 @@ import * as Sentry from "@sentry/browser"
 import { API, LS_PREFIX, IGNORE } from "./constants"
 import { state, scanCache } from "./state"
 import { getCached, saveToLS } from "./cache"
-import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimations, buildHeader, buildResultNode } from "./components"
+import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimations, buildResultNode, buildSkeletonNode } from "./components"
 import { scanRateLimiter } from "../../shared/rate-limit"
 import { logger } from "../../shared/logger"
 import { getInstallId } from "../../shared/install-id"
@@ -125,17 +125,7 @@ export async function scan(ca: string) {
   state.currentScanController = controller
   if (state.boxEl) state.boxEl.className = "box"
 
-  el.innerHTML = `
-  <div class="topbar" style="background:linear-gradient(90deg,transparent,#3a3a3f,transparent)"></div>
-  ${buildHeader()}
-  <div class="skel">
-    <div class="skel-verdict"></div>
-    <div class="skel-bar"></div>
-    <div class="skel-line"></div>
-    <div class="skel-line"></div>
-    <div class="skel-line"></div>
-  </div>
-  `
+  el.replaceChildren(buildSkeletonNode())
   showBox()
   attachClose(null)
 
