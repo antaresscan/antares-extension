@@ -22,7 +22,7 @@ if (process.env.PLASMO_PUBLIC_SENTRY_DSN) {
 import { state } from "./modules/state"
 import { hydrateCacheFromLS } from "./modules/cache"
 import { createHost, hideBox } from "./modules/components"
-import { poll, setupNavListeners, getInitialDelay } from "./modules/address-detector"
+import { poll, setupNavListeners, cleanupNavListeners, getInitialDelay } from "./modules/address-detector"
 import { logger } from "../shared/logger"
 
 /**
@@ -48,14 +48,18 @@ if (document.documentElement.hasAttribute(GUARD)) {
   hydrateCacheFromLS()
 
   
-  // MutationObserver to re-inject host if removed
-  new MutationObserver(() => {
+  // MutationObserver to re-inject host if the page strips it. Reference is
+  // held on `state` so the EXTENSION_TOGGLE handler below can disconnect it
+  // when the user disables the extension — otherwise the observer keeps
+  // firing on every DOM mutation forever.
+  state.hostObserver = new MutationObserver(() => {
     if (!state.host || !document.documentElement.contains(state.host)) {
       if (state.isInjecting) return
       state.isInjecting = true
       setTimeout(() => { createHost(); state.isInjecting = false }, 150)
     }
-  }).observe(document.documentElement, { childList: true, subtree: false })
+  })
+  state.hostObserver.observe(document.documentElement, { childList: true, subtree: false })
 
   // Init
   state.lastNavPath = window.location.pathname
@@ -77,17 +81,27 @@ chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type !== "EXTENSION_TOGGLE") return
   state.enabled = !!msg.enabled
   if (!state.enabled) {
-    // Disable: hide box, abort any in-flight scan
+    // Disable: hide box, abort any in-flight scan, and tear down the SPA
+    // listeners so we stop wrapping the host page's history APIs and stop
+    // observing DOM mutations entirely.
     hideBox()
     if (state.currentScanController) {
       state.currentScanController.abort()
       state.currentScanController = null
     }
     if (state.rescanTimer) { clearTimeout(state.rescanTimer); state.rescanTimer = null }
+    cleanupNavListeners()
+    if (state.hostObserver) {
+      state.hostObserver.disconnect()
+      state.hostObserver = null
+    }
   } else {
-    // Re-enable: reset lastCA so poll() will re-scan the current page
+    // Re-enable: reset lastCA so poll() will re-scan the current page, and
+    // reinstall the SPA listeners we tore down on disable. setupNavListeners
+    // is idempotent so a stray re-enable without prior disable is a no-op.
     state.lastCA = ""
     state.manuallyDismissed = false
+    setupNavListeners()
     poll()
   }
 })
