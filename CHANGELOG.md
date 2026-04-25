@@ -6,8 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-Merged to `master` since the 1.1.0 release. These will ship in the next
-tagged version (planned: 1.2.0).
+## [1.2.0] - 2026-04-25
 
 ### Added — scale & resilience
 - Per-fetch deadline with graceful degradation when one upstream stalls;
@@ -31,6 +30,11 @@ tagged version (planned: 1.2.0).
 - Security policy switched to GitHub Private Vulnerability Reporting
   with a real intake URL and concrete SLAs ([#281](https://github.com/COMEALAMAISONGROUPE/antares-extension/pull/281))
 
+### Added — backtest harness
+- J1 scaffold: type contract for time-travel scoring, auto-label rules
+  (RUG / DANGER / SAFE) with multi-oracle ground-truth confidence, and
+  34 unit tests covering the labeling logic ([#296](https://github.com/COMEALAMAISONGROUPE/antares-extension/pull/296))
+
 ### Changed
 - Default `fetchJson` / `fetchJsonPost` `maxRetries` lowered from 2 to 1
   to fit the Vercel 10s function budget ([#273](https://github.com/COMEALAMAISONGROUPE/antares-extension/pull/273))
@@ -45,6 +49,26 @@ tagged version (planned: 1.2.0).
   `cleanupNavListeners()` that disconnects the `MutationObserver` and
   restores the original `history.pushState` / `replaceState` on
   toggle-off ([#285](https://github.com/COMEALAMAISONGROUPE/antares-extension/pull/285))
+- Overlay components now build DOM via `createElement` + `replaceChildren`
+  end-to-end (skeleton + result + scanner) instead of template literal
+  `innerHTML` strings — the entire scan-result pipeline is now structurally
+  XSS-safe by construction ([#291](https://github.com/COMEALAMAISONGROUPE/antares-extension/pull/291), [#292](https://github.com/COMEALAMAISONGROUPE/antares-extension/pull/292), [#295](https://github.com/COMEALAMAISONGROUPE/antares-extension/pull/295))
+- Cache TTL is now **asymmetric by verdict**: bad verdicts (RUG / DANGER)
+  cache for 30 / 10 min, good verdicts on young tokens cache for 20 s. A
+  stale-bad verdict is safe (user does not buy); a stale-good verdict is
+  dangerous (user buys based on stale data). ([#298](https://github.com/COMEALAMAISONGROUPE/antares-extension/pull/298))
+- All 14 `console.log` calls in the AI summary path replaced with the
+  structured `logger` so production logs ship to telemetry instead of
+  the browser console ([#299](https://github.com/COMEALAMAISONGROUPE/antares-extension/pull/299))
+
+### Performance
+- `getRecentRugs` now uses Redis `MGET` instead of N pipelined `GET`s,
+  cutting the rug-DB round-trip from O(N) to O(1) ([#293](https://github.com/COMEALAMAISONGROUPE/antares-extension/pull/293))
+- Insider-graph layer caps at 20 holders + per-wallet signature cache,
+  keeping Helius parallel pressure bounded on whale-heavy tokens ([#294](https://github.com/COMEALAMAISONGROUPE/antares-extension/pull/294))
+- `token.html` extracts inline scripts to external files with a 1-year
+  immutable cache header — eliminates render-blocking inline JS and
+  enables CDN caching ([#290](https://github.com/COMEALAMAISONGROUPE/antares-extension/pull/290))
 
 ### Fixed
 - Verdict label was interpolated unescaped into `<h1>${label}</h1>`,
@@ -60,6 +84,13 @@ tagged version (planned: 1.2.0).
   surface ([#280](https://github.com/COMEALAMAISONGROUPE/antares-extension/pull/280))
 - `security@antares.boo` from `SECURITY.md` — non-resolving address
   replaced with the GitHub Private Vulnerability Reporting flow ([#281](https://github.com/COMEALAMAISONGROUPE/antares-extension/pull/281))
+- `validators.ts` and its tests — dead code superseded by the Zod
+  upstream-schemas introduced in #276 ([#297](https://github.com/COMEALAMAISONGROUPE/antares-extension/pull/297))
+- Legacy `index.html` from the extension repo; root path now redirects
+  to the marketing site at `antares-website.vercel.app` so the two
+  surfaces don't compete for SEO / canonical ([#287](https://github.com/COMEALAMAISONGROUPE/antares-extension/pull/287))
+- Dead landing-page e2e tests + scope-clarifying README pass for the
+  repo split ([#289](https://github.com/COMEALAMAISONGROUPE/antares-extension/pull/289))
 
 ### Dependencies
 - Bumped to current minor / patch ranges: `@sentry/browser` 10.50.0,
