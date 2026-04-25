@@ -4,6 +4,7 @@ import { describe, it, expect, beforeEach } from "vitest"
 import { buildResult } from "../contents/modules/components"
 import { state } from "../contents/modules/state"
 import { toggleAiSummary } from "../contents/modules/ai-summary"
+import { toggleCriticalFlags } from "../contents/modules/critical-flags"
 import type { ScanResponseData } from "../shared/types"
 
 // XSS regression suite. Every test here corresponds to a real surface
@@ -68,22 +69,22 @@ describe("buildResult — XSS regression", () => {
     expect(html).toContain("&lt;b&gt;BAD&lt;/b&gt;")
   })
 
-  it("suppresses the DexScreener link when data.pair.url has a non-http scheme", () => {
+  it("never renders data.pair.url in the overlay (cannot become an XSS sink)", () => {
+    // The DexScreener external link was removed from the overlay; pair.url
+    // is no longer read by buildResultNode. This test guards against a
+    // future regression that re-adds the link without the scheme check.
     const data = makeScanData({
       pair: { url: "javascript:alert(1)" } as ScanResponseData["pair"],
     })
 
     const html = buildResult(data, "So11111111111111111111111111111111111111112")
 
-    // Defensive: when the upstream-provided URL fails the http(s) regex
-    // gate the link is dropped entirely (no canonical fallback). The
-    // important invariant for security is that no anchor with the
-    // hostile scheme ever reaches the DOM.
     expect(html).not.toContain("javascript:alert")
     expect(html).not.toContain('href="javascript')
-    // The Full Analysis link (which uses a # href) must still be present
-    // so the panel remains functional.
+    // The remaining footer buttons must still be present.
     expect(html).toContain('id="ant-full-analysis"')
+    expect(html).toContain('id="ant-critical-flags-btn"')
+    expect(html).toContain('id="ant-ai-summary-btn"')
   })
 })
 
@@ -139,5 +140,94 @@ describe("toggleAiSummary — DOM-API rewrite", () => {
     expect(panel.firstChild).toBe(firstChild)
     expect(panel.textContent).toContain("Initial sentence.")
     expect(panel.textContent).not.toContain("This payload")
+  })
+})
+
+describe("toggleCriticalFlags — DOM-API rendering", () => {
+  beforeEach(() => {
+    document.body.innerHTML = ""
+    const root = document.createElement("div")
+    const panel = document.createElement("div")
+    panel.id = "ant-critical-flags"
+    root.appendChild(panel)
+    document.body.appendChild(root)
+    state.shadow = root as unknown as ShadowRoot
+  })
+
+  it("renders flag labels as text — never as live HTML", () => {
+    const flags = [
+      { label: "<img src=x onerror=alert(1)>", severity: "critical", impact: 200 },
+    ]
+    toggleCriticalFlags(flags)
+    const panel = document.getElementById("ant-critical-flags")!
+    expect(panel.querySelectorAll("img")).toHaveLength(0)
+    expect(panel.querySelectorAll("script")).toHaveLength(0)
+    // Payload must appear as text inside the label cell — proving it was
+    // rendered, just inertly.
+    const label = panel.querySelector(".cf-flag-label")!
+    expect(label.textContent).toBe("<img src=x onerror=alert(1)>")
+  })
+
+  it("renders the empty-state message when flags array is empty", () => {
+    toggleCriticalFlags([])
+    const panel = document.getElementById("ant-critical-flags")!
+    const empty = panel.querySelector(".cf-panel-empty")
+    expect(empty).not.toBeNull()
+    expect(empty!.textContent).toBe("No issues found.")
+  })
+
+  it("renders the empty-state message when flags is null", () => {
+    toggleCriticalFlags(null)
+    const panel = document.getElementById("ant-critical-flags")!
+    expect(panel.querySelector(".cf-panel-empty")).not.toBeNull()
+  })
+
+  it("excludes bonus flags from the panel", () => {
+    const flags = [
+      { label: "LP Burned", severity: "bonus", impact: 50 },
+      { label: "Honeypot detected — cannot sell", severity: "critical", impact: 200 },
+    ]
+    toggleCriticalFlags(flags)
+    const panel = document.getElementById("ant-critical-flags")!
+    expect(panel.querySelectorAll(".cf-flag")).toHaveLength(1)
+    expect(panel.textContent).toContain("Honeypot")
+    expect(panel.textContent).not.toContain("LP Burned")
+  })
+
+  it("sorts critical flags before warning flags", () => {
+    const flags = [
+      { label: "Low holders", severity: "warning", impact: 80 },
+      { label: "Honeypot detected — cannot sell", severity: "critical", impact: 200 },
+    ]
+    toggleCriticalFlags(flags)
+    const panel = document.getElementById("ant-critical-flags")!
+    const labels = Array.from(panel.querySelectorAll(".cf-flag-label"))
+    expect(labels[0]?.textContent).toContain("Honeypot")
+    expect(labels[1]?.textContent).toContain("Low holders")
+  })
+
+  it("renders descriptions for known flag labels", () => {
+    const flags = [
+      { label: "Honeypot detected — cannot sell", severity: "critical", impact: 200 },
+    ]
+    toggleCriticalFlags(flags)
+    const panel = document.getElementById("ant-critical-flags")!
+    const desc = panel.querySelector(".cf-flag-desc")
+    expect(desc).not.toBeNull()
+    expect(desc!.textContent).toContain("cannot sell")
+  })
+
+  it("does not re-render on subsequent open/close cycles", () => {
+    toggleCriticalFlags([{ label: "Initial flag", severity: "critical", impact: 100 }])
+    const panel = document.getElementById("ant-critical-flags")!
+    const firstChild = panel.firstChild
+
+    // Close, then re-open with a different payload
+    toggleCriticalFlags([{ label: "Initial flag", severity: "critical", impact: 100 }])
+    toggleCriticalFlags([{ label: "Different payload", severity: "critical", impact: 100 }])
+
+    expect(panel.firstChild).toBe(firstChild)
+    expect(panel.textContent).toContain("Initial flag")
+    expect(panel.textContent).not.toContain("Different payload")
   })
 })

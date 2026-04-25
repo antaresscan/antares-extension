@@ -5,6 +5,7 @@ import { SHADOW_CSS, injectFonts } from "./styles"
 import { initDrag } from "./drag"
 import { encodeHashPayload } from "../../shared/hash-payload"
 import { toggleAiSummary } from "./ai-summary"
+import { toggleCriticalFlags } from "./critical-flags"
 
 // DOM-API element builder. Used by buildResult instead of string template
 // literals so every text interpolation goes through textContent (which the
@@ -108,7 +109,10 @@ export function resetState() {
   hideBox()
 }
 
-export function attachClose(aiSummary?: string | null) {
+export function attachClose(
+  aiSummary?: string | null,
+  flags?: ScanResponseFlag[] | null,
+) {
   state.shadow?.querySelector("#ant-close")?.addEventListener(
     "click",
     () => { state.manuallyDismissed = true; hideBox() },
@@ -121,6 +125,16 @@ export function attachClose(aiSummary?: string | null) {
     aiBtn.parentNode?.replaceChild(fresh, aiBtn)
     // Attacher le listener quel que soit l'état de aiSummary
     fresh.addEventListener("click", () => toggleAiSummary(aiSummary ?? null))
+  }
+  // Critical Flags button: same toggle pattern as AI Summary, with its
+  // own panel. Replaces the old DexScreener external link — flags are
+  // now visible in-overlay so users no longer need to spawn a tab to see
+  // why the verdict was assigned.
+  const cfBtn = state.shadow?.querySelector("#ant-critical-flags-btn")
+  if (cfBtn) {
+    const fresh = cfBtn.cloneNode(true) as HTMLElement
+    cfBtn.parentNode?.replaceChild(fresh, cfBtn)
+    fresh.addEventListener("click", () => toggleCriticalFlags(flags ?? null))
   }
 }
 
@@ -145,7 +159,11 @@ export function attachAnalysisBtn(mint: string) {
       : ""
     const baseUrl = `${ANALYSIS_PAGE}?ca=${encodeURIComponent(mint)}`
     const url = hashFragment ? `${baseUrl}#data=${hashFragment}` : baseUrl
-    const reusePattern = `ca=${encodeURIComponent(mint)}`
+    // Match any analysis-page tab regardless of mint — keeps a single
+    // Antares deep-dive tab around and updates its URL on each click.
+    // Previously the pattern was per-mint so every new token spawned a
+    // fresh tab, leaving the user with stacks of stale analysis tabs.
+    const reusePattern = ANALYSIS_PAGE
 
     // Delegate to background — the only place allowed to call chrome.tabs.create in MV3
     chrome.runtime.sendMessage(
@@ -356,17 +374,16 @@ export function buildResultNode(data: ScanResponseData, ca: string): HTMLElement
     ),
   )
 
-  const rawDexUrl = data.pair?.url || `https://dexscreener.com/solana/${mint}`
-  const safeDexUrl = rawDexUrl && /^https?:\/\//i.test(rawDexUrl) ? rawDexUrl : ""
-
+  // Footer buttons. The DexScreener external link was removed in favour
+  // of an inline Critical Flags panel: traders rarely jumped out to
+  // DexScreener from here, but they always wanted to see *why* a token
+  // was flagged without losing their place. The panel mirrors AI Summary
+  // \u2014 toggled inline via toggleCriticalFlags, never opens a new tab.
   const foNode = el("div", { class: "fo" })
-  if (safeDexUrl) {
-    foNode.appendChild(el("a", {
-      href: safeDexUrl,
-      target: "_blank",
-      rel: "noopener noreferrer",
-    }, "DexScreener"))
-  }
+  foNode.appendChild(el("button", {
+    class: "cf-btn",
+    id: "ant-critical-flags-btn",
+  }, "\u26a0 Critical Flags"))
   foNode.appendChild(el("a", {
     href: "#",
     id: "ant-full-analysis",
@@ -405,6 +422,7 @@ export function buildResultNode(data: ScanResponseData, ca: string): HTMLElement
     el("div", { class: "sum" }, summary),
     el("div", { class: "sep" }),
     ssNode,
+    el("div", { class: "cf-panel", id: "ant-critical-flags" }),
     el("div", { class: "ai-panel", id: "ant-ai-summary" }),
     foNode,
   )
