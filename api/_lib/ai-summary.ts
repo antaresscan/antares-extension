@@ -1,3 +1,5 @@
+import { logger } from "./logger"
+
 export type AISummaryInput = {
   score: number
   risk: string
@@ -167,13 +169,16 @@ async function callGemini(
     clearTimeout(timeout)
 
     if (response.status === 429) {
-      console.log("[ai-summary] Gemini returned 429 rate-limit")
+      logger.warn("ai-summary", "Gemini rate-limited", { status: 429 })
       return "__RETRY__"
     }
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => "unknown")
-      console.log(`[ai-summary] Gemini HTTP ${response.status}: ${errorText.slice(0, 500)}`)
+      logger.warn("ai-summary", "Gemini HTTP error", {
+        status: response.status,
+        body: errorText.slice(0, 500),
+      })
       return null
     }
 
@@ -182,7 +187,7 @@ async function callGemini(
     try {
       data = JSON.parse(raw) as { choices?: Array<{ message?: { content?: string } }> }
     } catch {
-      console.log("[ai-summary] Failed to parse Gemini response as JSON")
+      logger.warn("ai-summary", "Failed to parse Gemini response as JSON")
       return null
     }
 
@@ -194,10 +199,12 @@ async function callGemini(
   } catch (err: unknown) {
     clearTimeout(timeout)
     if (err instanceof Error && err.name === "AbortError") {
-      console.log("[ai-summary] Gemini call timed out")
+      logger.warn("ai-summary", "Gemini call timed out")
       return "__RETRY__"
     }
-    console.log(`[ai-summary] Gemini call error: ${err instanceof Error ? err.message : String(err)}`)
+    logger.warn("ai-summary", "Gemini call error", {
+      error: err instanceof Error ? err.message : String(err),
+    })
     return null
   }
 }
@@ -257,7 +264,7 @@ function generateLocalFallback(
   if (parts.length === 0) return null
 
   const result = parts.join(" ")
-  console.log(`[ai-summary] Local fallback generated (${result.length} chars)`)
+  logger.info("ai-summary", "Local fallback generated", { chars: result.length })
   return result.length > MAX_LENGTH ? result.slice(0, MAX_LENGTH).replace(/\s+\S*$/, "") + "." : result
 }
 
@@ -266,7 +273,7 @@ export async function generateAISummary(
 ): Promise<string | null> {
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey || apiKey === "") {
-    console.log("[ai-summary] No GEMINI_API_KEY found, using local fallback")
+    logger.info("ai-summary", "No GEMINI_API_KEY found, using local fallback")
   }
 
   const primaryModel = process.env.AI_MODEL || "gemini-2.5-flash"
@@ -290,11 +297,19 @@ export async function generateAISummary(
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       if (attempt > 0) {
         const delay = RETRY_DELAYS[attempt - 1] || 3000
-        console.log(`[ai-summary] Retry ${attempt}/${MAX_RETRIES} after ${delay}ms`)
+        logger.info("ai-summary", "Retrying Gemini call", {
+          attempt,
+          maxRetries: MAX_RETRIES,
+          delayMs: delay,
+        })
         await sleep(delay)
       }
 
-      console.log(`[ai-summary] Calling Gemini model=${primaryModel} attempt=${attempt + 1}/${MAX_RETRIES + 1}`)
+      logger.info("ai-summary", "Calling Gemini", {
+        model: primaryModel,
+        attempt: attempt + 1,
+        totalAttempts: MAX_RETRIES + 1,
+      })
       const result = await callGemini(apiKey, primaryModel, SYSTEM_PROMPT, userPrompt)
 
       if (result === "__RETRY__") {
@@ -303,25 +318,25 @@ export async function generateAISummary(
       }
 
       if (result !== null) {
-        console.log(`[ai-summary] Gemini success on attempt ${attempt + 1} (${result.length} chars)`)
+        logger.info("ai-summary", "Gemini success", { attempt: attempt + 1, chars: result.length })
         return result
       }
 
       // null = non-recoverable error, fall through to fallback
-      console.log("[ai-summary] Gemini returned non-recoverable error, using fallback")
+      logger.warn("ai-summary", "Gemini returned non-recoverable error, using fallback")
       break
     }
 
-    console.log("[ai-summary] All Gemini attempts exhausted, using local fallback")
+    logger.warn("ai-summary", "All Gemini attempts exhausted, using local fallback")
   }
 
   // Local fallback: generate summary from flag dictionary
   const fallback = generateLocalFallback(input, topFlags)
   if (fallback) {
-    console.log(`[ai-summary] Returning local fallback (${fallback.length} chars)`)
+    logger.info("ai-summary", "Returning local fallback", { chars: fallback.length })
     return fallback
   }
 
-  console.log("[ai-summary] No fallback could be generated either")
+  logger.error("ai-summary", "No fallback could be generated either")
   return null
 }
