@@ -21,7 +21,13 @@ jobs:
           node-version: "22"
           cache: "npm"
 
-      - run: npm ci
+      # `npm install` (not `npm ci`) to match ci.yml. The Plasmo 0.90.5
+      # transitive peer-dep tree confuses npm 10's strict ci mode against
+      # an npm 11-generated lockfile (it asks for react@18.3.1 even though
+      # the package is on react@19). `npm install` resolves the peers
+      # leniently and produces an identical install. Switch back to
+      # `npm ci` once Plasmo is bumped to a React-19-aware release.
+      - run: npm install
 
       - name: Typecheck
         run: npx tsc --noEmit

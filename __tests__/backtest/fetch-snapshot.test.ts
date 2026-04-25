@@ -3,7 +3,7 @@ import { fetchSnapshot, classifyRugCheck } from "../../scripts/backtest/fetch-sn
 
 const CA = "So11111111111111111111111111111111111111112";
 
-function jsonResponse(body: unknown, ok = true, status = 200): Response {
+function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: { "Content-Type": "application/json" },
