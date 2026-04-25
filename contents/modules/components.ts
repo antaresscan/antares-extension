@@ -354,8 +354,6 @@ export function buildResultNode(data: ScanResponseData, ca: string): HTMLElement
   else if (critCount > 0) summary = `${flagCount} flags \u2014 ${critCount} critical`
   else summary = `${flagCount} flags detected`
 
-  const isDangerous = data.risk === "RUG" || data.risk === "DANGER"
-
   const liqDisplay = liq !== null ? formatMcap(liq) : "\u2014"
   const liqClass: string | undefined =
     liq !== null && liq < 5000 ? "n" : liq !== null && liq > 50000 ? "y" : undefined
@@ -384,11 +382,14 @@ export function buildResultNode(data: ScanResponseData, ca: string): HTMLElement
     class: "cf-btn",
     id: "ant-critical-flags-btn",
   }, "\u26a0 Critical Flags"))
+  // Always neutral gray \u2014 verdict color is communicated by the verdict
+  // headline and the Critical Flags panel; tinting the deep-dive button
+  // red on RUG was confusing (read as "dangerous to click" instead of
+  // "the token is dangerous").
   foNode.appendChild(el("a", {
     href: "#",
     id: "ant-full-analysis",
     "data-ca": encodeURIComponent(mint),
-    class: isDangerous ? "warn" : undefined,
   }, "Full Analysis \u2192"))
   foNode.appendChild(el("button", {
     class: "ai-btn ai-btn--active",
