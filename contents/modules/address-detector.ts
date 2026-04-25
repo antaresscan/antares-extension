@@ -92,31 +92,78 @@ export function onNav(): void {
   }, 800)
 }
 
+// Module-level handles to every side-effect setupNavListeners installs on
+// the host page. Tracking them lets us disconnect / restore on extension
+// disable so we never leave the host with a permanently-wrapped
+// history.pushState or an orphaned MutationObserver firing on every DOM
+// mutation. The audit flagged both as real memory / perf leaks on SPAs
+// (Birdeye, DexScreener) where the page can stay loaded across many
+// navigations.
+let navObserver: MutationObserver | null = null
+let originalPushState: typeof history.pushState | null = null
+let originalReplaceState: typeof history.replaceState | null = null
+const popstateHandler: EventListener = () => onNav()
+
 /**
- * Set up SPA navigation listeners.
- * MutationObserver + history API interception detects URL changes,
- * then delegates to the adapter's isNewToken() to filter noise.
+ * Set up SPA navigation listeners. Idempotent: calling twice is a no-op
+ * unless cleanupNavListeners() was called in between.
+ *
+ * MutationObserver + history API interception detects URL changes, then
+ * delegates to the adapter's isNewToken() to filter noise.
  */
 export function setupNavListeners(): void {
+  if (navObserver) return  // already installed
+
   state.lastUrl = window.location.href
 
   // Track last href to avoid redundant onNav calls from MutationObserver
   let lastHref = window.location.href
 
-  new MutationObserver(() => {
+  navObserver = new MutationObserver(() => {
     const cur = window.location.href
     if (cur !== lastHref) {
       lastHref = cur
       onNav()
     }
-  }).observe(document.documentElement, { childList: true, subtree: true })
+  })
+  navObserver.observe(document.documentElement, { childList: true, subtree: true })
 
-  const _push = history.pushState.bind(history)
-  const _replace = history.replaceState.bind(history)
+  originalPushState = history.pushState
+  originalReplaceState = history.replaceState
+  const push = originalPushState.bind(history)
+  const replace = originalReplaceState.bind(history)
 
-  history.pushState = (...args) => { _push(...args); onNav() }
-  history.replaceState = (...args) => { _replace(...args); onNav() }
-  window.addEventListener("popstate", onNav)
+  history.pushState = function patched(...args) { push(...args); onNav() }
+  history.replaceState = function patched(...args) { replace(...args); onNav() }
+  window.addEventListener("popstate", popstateHandler)
+}
+
+/**
+ * Tear down everything setupNavListeners installed: disconnect the
+ * MutationObserver, restore the original history APIs (so the host page
+ * isn't left with a wrapper indefinitely), remove the popstate listener.
+ *
+ * Safe to call when nothing is installed — becomes a no-op.
+ */
+export function cleanupNavListeners(): void {
+  if (navObserver) {
+    navObserver.disconnect()
+    navObserver = null
+  }
+  if (originalPushState) {
+    history.pushState = originalPushState
+    originalPushState = null
+  }
+  if (originalReplaceState) {
+    history.replaceState = originalReplaceState
+    originalReplaceState = null
+  }
+  window.removeEventListener("popstate", popstateHandler)
+
+  if (state.navDebounce) {
+    clearTimeout(state.navDebounce)
+    state.navDebounce = null
+  }
 }
 
 /** Get the initial delay for the current adapter */

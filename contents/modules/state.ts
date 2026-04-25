@@ -13,6 +13,10 @@ export const state = {
   currentScanController: null as AbortController | null,
   isInjecting: false,
   rescanTimer: null as ReturnType<typeof setTimeout> | null,
+  // Reference to the host-reinjection MutationObserver so we can disconnect
+  // it on extension disable. Audit flagged the previous unreferenced
+  // observer as a permanent listener leaking on every DOM mutation.
+  hostObserver: null as MutationObserver | null,
   // drag state
   dragOX: 0,
   dragOY: 0,
