@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" aria-label="Antares">
-  <style>
-    .ant { fill: #000; }
-    @media (prefers-color-scheme: dark) { .ant { fill: #fff; } }
-  </style>
-  <path class="ant" fill-rule="evenodd" d="M5 50 Q 50 25 95 50 Q 50 75 5 50 Z M 50 36 A 14 14 0 1 0 50 64 A 14 14 0 1 0 50 36 Z"/>
-  <path class="ant" d="M 50 42 L 52.5 48 L 58 50 L 52.5 52 L 50 58 L 47.5 52 L 42 50 L 47.5 48 Z"/>
-</svg>
