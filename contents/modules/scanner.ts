@@ -3,7 +3,7 @@ import * as Sentry from "@sentry/browser"
 import { API, LS_PREFIX, IGNORE } from "./constants"
 import { state, scanCache } from "./state"
 import { getCached, saveToLS } from "./cache"
-import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimations, buildHeader, buildResult } from "./components"
+import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimations, buildHeader, buildResultNode } from "./components"
 import { scanRateLimiter } from "../../shared/rate-limit"
 import { logger } from "../../shared/logger"
 import { getInstallId } from "../../shared/install-id"
@@ -105,7 +105,11 @@ export async function scan(ca: string) {
 
   // ── Cached path ──────────────────────────────────────────────────────────────
   if (cached) {
-    el.innerHTML = buildResult(cached, ca)
+    // replaceChildren swaps the subtree atomically — never round-trips
+    // markup through the parser, so a malformed cached payload cannot
+    // re-introduce HTML interpretation. buildResultNode constructs the
+    // tree via DOM API only.
+    el.replaceChildren(buildResultNode(cached, ca))
     showBox()
     triggerResultAnimations(el)
     attachClose(cached.aiSummary ?? null)
@@ -144,7 +148,7 @@ export async function scan(ca: string) {
     if (controller.signal.aborted) return
     scanCache.set(ca, { data, ts: Date.now() })
     saveToLS(ca, data)
-    el.innerHTML = buildResult(data, ca)
+    el.replaceChildren(buildResultNode(data, ca))
     showBox()
     triggerResultAnimations(el)
     attachClose(data.aiSummary ?? null)
