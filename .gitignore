@@ -41,3 +41,6 @@ scan.json
 *.patch
 *.log
 .env
+
+# Claude Code local settings (per-machine, never commit)
+.claude/
