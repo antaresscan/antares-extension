@@ -16,8 +16,6 @@ const RUGCHECK_BASE = "https://api.rugcheck.xyz/v1";
 const GOPLUS_BASE = "https://api.gopluslabs.io/api/v1";
 const HELIUS_BASE = "https://mainnet.helius-rpc.com";
 
-const SOLANA_CHAIN_ID = "101";
-
 export type FetchLike = typeof fetch;
 
 export interface FetchSnapshotEnv {

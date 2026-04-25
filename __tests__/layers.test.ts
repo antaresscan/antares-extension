@@ -498,7 +498,6 @@ describe("layerChart", () => {
       const base = 1 + i * 0.01;
       return mkCandle(base, base + 0.02, base - 0.01, base + 0.005, 1000);
     });
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const pair = { liquidity: { usd: 500 }, fdv: 100000 } as unknown as Parameters<typeof layerChart>[1];
     const r = layerChart(candles, pair, 1440);
     expect(r.available).toBe(true);
