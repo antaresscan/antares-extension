@@ -2,8 +2,9 @@ import { test, expect } from '@playwright/test';
 
 const BASE = process.env.E2E_BASE_URL || 'https://antares-extension.vercel.app';
 
+// `/` on this deployment is a 301 to antares-website.vercel.app, so we
+// only meaningfully test the pages this Vercel project actually serves.
 const PAGES = [
-  { name: 'Landing', path: '/' },
   { name: 'Token', path: '/token.html' },
   { name: 'Privacy', path: '/privacy.html' },
 ];

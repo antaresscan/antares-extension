@@ -2,10 +2,12 @@ import { test, expect } from '@playwright/test';
 
 const BASE = process.env.E2E_BASE_URL || 'https://antares-extension.vercel.app';
 
+// `/` on this deployment is a 301 to antares-website.vercel.app, so the
+// pages we performance-test here are the ones this Vercel project actually
+// serves. Landing-page perf belongs in the antares-website repo.
 test.describe('Performance', () => {
   test.describe('Page Load Times', () => {
     const PAGES = [
-      { name: 'Landing', path: '/' },
       { name: 'Token', path: '/token.html' },
       { name: 'Privacy', path: '/privacy.html' },
     ];
@@ -48,16 +50,15 @@ test.describe('Performance', () => {
     });
   });
 
-  test.describe('Resource Optimization', () => {
-    test('landing page total transfer < 2MB', async ({ page }) => {
+  test.describe('Resource Optimization — token.html', () => {
+    test('token page total transfer < 2MB', async ({ page }) => {
       let totalBytes = 0;
       page.on('response', (response) => {
         const headers = response.headers();
         const cl = headers['content-length'];
         if (cl) totalBytes += parseInt(cl);
       });
-      await page.goto(BASE, { waitUntil: 'load' });
-      // 2MB limit
+      await page.goto(`${BASE}/token.html`, { waitUntil: 'load' });
       expect(totalBytes).toBeLessThan(2 * 1024 * 1024);
     });
 
@@ -72,7 +73,7 @@ test.describe('Performance', () => {
           }
         }
       });
-      await page.goto(BASE, { waitUntil: 'load' });
+      await page.goto(`${BASE}/token.html`, { waitUntil: 'load' });
       expect(largeSources).toHaveLength(0);
     });
 
@@ -87,7 +88,7 @@ test.describe('Performance', () => {
           }
         }
       });
-      await page.goto(BASE, { waitUntil: 'load' });
+      await page.goto(`${BASE}/token.html`, { waitUntil: 'load' });
       expect(largeImages).toHaveLength(0);
     });
 
@@ -98,7 +99,7 @@ test.describe('Performance', () => {
           fontRequests.push(req.url());
         }
       });
-      await page.goto(BASE, { waitUntil: 'load' });
+      await page.goto(`${BASE}/token.html`, { waitUntil: 'load' });
       for (const url of fontRequests) {
         expect(url).toContain('display=swap');
       }
@@ -106,13 +107,6 @@ test.describe('Performance', () => {
   });
 
   test.describe('No Console Errors', () => {
-    test('landing page has no JS errors', async ({ page }) => {
-      const errors: string[] = [];
-      page.on('pageerror', (err) => errors.push(err.message));
-      await page.goto(BASE, { waitUntil: 'load' });
-      expect(errors).toHaveLength(0);
-    });
-
     test('token page has no JS errors', async ({ page }) => {
       const errors: string[] = [];
       page.on('pageerror', (err) => errors.push(err.message));
@@ -129,12 +123,6 @@ test.describe('Performance', () => {
   });
 
   test.describe('Caching Headers', () => {
-    test('static assets have cache headers', async ({ request }) => {
-      const r = await request.get(BASE);
-      // Vercel typically adds cache headers
-      expect(r.status()).toBe(200);
-    });
-
     test('API responses have proper content-type', async ({ request }) => {
       const r = await request.get(`${BASE}/api/health`);
       const ct = r.headers()['content-type'] || '';
