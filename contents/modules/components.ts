@@ -6,15 +6,38 @@ import { initDrag } from "./drag"
 import { encodeHashPayload } from "../../shared/hash-payload"
 import { toggleAiSummary } from "./ai-summary"
 
-const HTML_ESCAPE: Record<string, string> = {
-  "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+// DOM-API element builder. Used by buildResult instead of string template
+// literals so every text interpolation goes through textContent (which the
+// browser cannot parse as HTML), making script-bearing input structurally
+// inert. Replaces the previous escapeHtml / safeText helpers — they're
+// gone because no caller still needs them. See PR #283 for the audit.
+function el<K extends keyof HTMLElementTagNameMap>(
+  tag: K,
+  attrs?: Record<string, string | undefined>,
+  ...children: (Node | string | null | undefined)[]
+): HTMLElementTagNameMap[K] {
+  const node = document.createElement(tag)
+  if (attrs) {
+    for (const [k, v] of Object.entries(attrs)) {
+      if (v != null) node.setAttribute(k, v)
+    }
+  }
+  for (const child of children) {
+    if (child == null) continue
+    if (typeof child === "string") {
+      node.appendChild(document.createTextNode(child))
+    } else {
+      node.appendChild(child)
+    }
+  }
+  return node
 }
-function escapeHtml(str: string): string {
-  return str.replace(/[&<>"']/g, ch => HTML_ESCAPE[ch] || ch)
-}
-function safeText(val: string | null | undefined): string {
-  if (!val) return ""
-  return escapeHtml(String(val))
+
+// Inserts an SVG icon string into a parent element. The only callers pass
+// the static SVG_MOVE / SVG_CLOSE constants from constants.ts, never user
+// input — innerHTML here is safe by construction.
+function setStaticSvg(parent: HTMLElement, svg: string): void {
+  parent.innerHTML = svg
 }
 
 export function formatMcap(mc: number | null | undefined): string {
@@ -202,8 +225,60 @@ export function formatTimeAgo(ts: number): string {
   return `${Math.floor(hrs / 24)}d ago`
 }
 
+function buildHeaderNode(): HTMLElement {
+  const dragIcon = el("span", { class: "drag-icon" })
+  setStaticSvg(dragIcon, SVG_MOVE)
+  const closeBtn = el("button", { class: "x", id: "ant-close" })
+  setStaticSvg(closeBtn, SVG_CLOSE)
+  return el("div", { class: "hd" },
+    el("span", { class: "brand" }, "ANTARES"),
+    el("div", { class: "hd-right" }, dragIcon, closeBtn),
+  )
+}
+
 export function buildHeader(): string {
-  return `<div class="hd"><span class="brand">ANTARES</span><div class="hd-right"><span class="drag-icon">${SVG_MOVE}</span><button class="x" id="ant-close">${SVG_CLOSE}</button></div></div>`
+  return buildHeaderNode().outerHTML
+}
+
+function buildSiBool(siLabel: string, val: unknown, invert = false): HTMLElement {
+  if (val == null) {
+    return el("div", { class: "si" },
+      el("span", undefined, siLabel),
+      el("b", { style: "color:#333" }, "\u2014"),
+    )
+  }
+  const yes = invert ? !val : !!val
+  return el("div", { class: "si" },
+    el("span", undefined, siLabel),
+    el("b", { class: yes ? "y" : "n" }, yes ? "\u2713" : "\u2717"),
+  )
+}
+
+function buildSiLp(data: ScanResponseData): HTMLElement {
+  if (data.lpBurned) {
+    return el("div", { class: "si" },
+      el("span", undefined, "LP Burned"),
+      el("b", { class: "y" }, "\u2713"),
+    )
+  }
+  if (data.lpLocked) {
+    const pct = data.lpLockedPct != null ? ` ${data.lpLockedPct}%` : ""
+    const dur = data.lpLockDurationDays != null ? ` (${data.lpLockDurationDays}d)` : ""
+    return el("div", { class: "si" },
+      el("span", undefined, "LP Locked" + pct + dur),
+      el("b", { class: "y" }, "\u2713"),
+    )
+  }
+  if (data.lpBurned == null && data.lpLocked == null) {
+    return el("div", { class: "si" },
+      el("span", undefined, "LP Lock"),
+      el("b", { style: "color:#555" }, "\u2014"),
+    )
+  }
+  return el("div", { class: "si" },
+    el("span", undefined, "LP Lock"),
+    el("b", { class: "n" }, "\u2717"),
+  )
 }
 
 export function buildResult(data: ScanResponseData, ca: string): string {
@@ -215,15 +290,17 @@ export function buildResult(data: ScanResponseData, ca: string): string {
   const score = data.score || 0
   const barW = Math.min(100, Math.round(score / 10))
 
-  const tokenName = safeText(data.tokenName || data.pair?.baseToken?.name || "")
-  const tokenSymbol = safeText(data.tokenSymbol || data.pair?.baseToken?.symbol || "")
+  const tokenName = data.tokenName || data.pair?.baseToken?.name || ""
+  const tokenSymbol = data.tokenSymbol || data.pair?.baseToken?.symbol || ""
 
   if (state.boxEl) state.boxEl.className = `box ${riskClass}`
 
   const dotsCount = Math.round((score / 1000) * 5)
-  const dots = Array.from({length: 5}, (_, i) =>
-    `<div class="dt ${i < dotsCount ? 'on' : 'off'}"></div>`
-  ).join("")
+  const dotsNode = el("div", { class: "dots" },
+    ...Array.from({ length: 5 }, (_, i) =>
+      el("div", { class: `dt ${i < dotsCount ? "on" : "off"}` }),
+    ),
+  )
 
   const allFlags = (data.flags || []).filter((f: ScanResponseFlag) => f.severity !== "bonus")
   const flagCount = allFlags.length
@@ -236,49 +313,76 @@ export function buildResult(data: ScanResponseData, ca: string): string {
 
   const isDangerous = data.risk === "RUG" || data.risk === "DANGER"
 
-  const boolSI = (siLabel: string, val: unknown, invert = false) => {
-    if (val === null || val === undefined) return `<div class="si"><span>${escapeHtml(siLabel)}</span><b style="color:#333">\u2014</b></div>`
-    const yes = invert ? !val : !!val
-    return `<div class="si"><span>${escapeHtml(siLabel)}</span><b class="${yes ? "y" : "n"}">${yes ? "\u2713" : "\u2717"}</b></div>`
-  }
-  const siSell = `<div class="si"><span>Sell</span><b class="${data.honeypot ? "n" : "y"}">${data.honeypot ? "\u2717" : "\u2713"}</b></div>`
-  const siMint = boolSI("Mint", data.mintAuthority, true)
-  const siFreeze = boolSI("Freeze", data.freezeAuthority, true)
   const liqDisplay = liq !== null ? formatMcap(liq) : "\u2014"
-  const siLiq = `<div class="si"><span>Liq</span><b${liq !== null && liq < 5000 ? ' class="n"' : liq !== null && liq > 50000 ? ' class="y"' : ""}>${liqDisplay}</b></div>`
+  const liqClass: string | undefined =
+    liq !== null && liq < 5000 ? "n" : liq !== null && liq > 50000 ? "y" : undefined
 
-  const siLP = (() => {
-    if (data.lpBurned) return `<div class="si"><span>LP Burned</span><b class="y">\u2713</b></div>`
-    if (data.lpLocked) {
-      const pct = data.lpLockedPct != null ? ` ${data.lpLockedPct}%` : ""
-      const dur = data.lpLockDurationDays != null ? ` (${data.lpLockDurationDays}d)` : ""
-      return `<div class="si"><span>LP Locked${escapeHtml(pct + dur)}</span><b class="y">\u2713</b></div>`
-    }
-        if (data.lpBurned == null && data.lpLocked == null) return `<div class="si"><span>LP Lock</span><b style="color:#555">\u2014</b></div>`
-    return `<div class="si"><span>LP Lock</span><b class="n">\u2717</b></div>`
-  })()
+  const ssNode = el("div", { class: "ss" },
+    el("div", { class: "si" },
+      el("span", undefined, "Sell"),
+      el("b", { class: data.honeypot ? "n" : "y" }, data.honeypot ? "\u2717" : "\u2713"),
+    ),
+    buildSiBool("Mint", data.mintAuthority, true),
+    buildSiBool("Freeze", data.freezeAuthority, true),
+    buildSiLp(data),
+    el("div", { class: "si" },
+      el("span", undefined, "Liq"),
+      el("b", { class: liqClass }, liqDisplay),
+    ),
+  )
 
   const rawDexUrl = data.pair?.url || `https://dexscreener.com/solana/${mint}`
   const safeDexUrl = rawDexUrl && /^https?:\/\//i.test(rawDexUrl) ? rawDexUrl : ""
-  const dexLink = safeDexUrl
-    ? `<a href="${escapeHtml(safeDexUrl)}" target="_blank" rel="noopener noreferrer">DexScreener</a>`
-    : ""
-  const analysisLink = `<a href="#" id="ant-full-analysis" data-ca="${encodeURIComponent(mint)}"${isDangerous ? ' class="warn"' : ''}>Full Analysis \u2192</a>`
 
-  // Bouton AI Summary TOUJOURS actif — jamais disabled
-  const aiBtn = `<button class="ai-btn ai-btn--active" id="ant-ai-summary-btn">\u2b21 AI Summary</button>`
+  const foNode = el("div", { class: "fo" })
+  if (safeDexUrl) {
+    foNode.appendChild(el("a", {
+      href: safeDexUrl,
+      target: "_blank",
+      rel: "noopener noreferrer",
+    }, "DexScreener"))
+  }
+  foNode.appendChild(el("a", {
+    href: "#",
+    id: "ant-full-analysis",
+    "data-ca": encodeURIComponent(mint),
+    class: isDangerous ? "warn" : undefined,
+  }, "Full Analysis \u2192"))
+  foNode.appendChild(el("button", {
+    class: "ai-btn ai-btn--active",
+    id: "ant-ai-summary-btn",
+  }, "\u2b21 AI Summary"))
 
-  return `
-    <div class="topbar"></div>
-    ${buildHeader()}
-    ${tokenSymbol ? `<div class="tk"><b>${tokenSymbol}</b> ${tokenName}</div>` : ""}
-    <div class="vb"><h1>${escapeHtml(label)}</h1></div>
-    <div class="sr"><span class="n"><b class="ant-score" data-target="${score}">0</b> / 1000</span><div class="dots">${dots}</div></div>
-    <div class="sbar"><div class="sbar-fill" data-w="${barW}"></div></div>
-    <div class="sum">${summary}</div>
-    <div class="sep"></div>
-    <div class="ss">${siSell}${siMint}${siFreeze}${siLP}${siLiq}</div>
-    <div class="ai-panel" id="ant-ai-summary"></div>
-    <div class="fo">${dexLink}${analysisLink}${aiBtn}</div>
-  `
+  const tkNode = tokenSymbol
+    ? el("div", { class: "tk" },
+        el("b", undefined, tokenSymbol),
+        tokenName ? " " + tokenName : "",
+      )
+    : null
+
+  const root = el("div", undefined,
+    el("div", { class: "topbar" }),
+    buildHeaderNode(),
+    tkNode,
+    el("div", { class: "vb" },
+      el("h1", undefined, label),
+    ),
+    el("div", { class: "sr" },
+      el("span", { class: "n" },
+        el("b", { class: "ant-score", "data-target": String(score) }, "0"),
+        " / 1000",
+      ),
+      dotsNode,
+    ),
+    el("div", { class: "sbar" },
+      el("div", { class: "sbar-fill", "data-w": String(barW) }),
+    ),
+    el("div", { class: "sum" }, summary),
+    el("div", { class: "sep" }),
+    ssNode,
+    el("div", { class: "ai-panel", id: "ant-ai-summary" }),
+    foNode,
+  )
+
+  return root.innerHTML
 }
