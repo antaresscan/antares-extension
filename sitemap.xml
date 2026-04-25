@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Sitemap for the antares-extension Vercel deployment, NOT for the
+  marketing landing site. The landing lives in the antares-website repo
+  and has its own sitemap. This deployment only serves the privacy
+  policy and the noindex token-analysis page (the latter is intentionally
+  excluded from this sitemap).
+-->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://antares-website.vercel.app/</loc>
-    <changefreq>monthly</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://antares-website.vercel.app/privacy.html</loc>
+    <loc>https://antares-extension.vercel.app/privacy.html</loc>
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
   </url>

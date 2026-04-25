@@ -7,6 +7,13 @@
       "maxDuration": 60
     }
   },
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "https://antares-website.vercel.app/",
+      "permanent": true
+    }
+  ],
   "headers": [
     {
       "source": "/api/(.*)",
