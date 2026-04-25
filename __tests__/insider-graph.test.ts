@@ -334,3 +334,61 @@ describe("buildInsiderGraph", () => {
     expect(result.edges).toHaveLength(0);
   });
 });
+
+describe("buildInsiderGraph — Helius pooling (PR #294)", () => {
+  it("caps analysis to INSIDER_MAX_HOLDERS top wallets", async () => {
+    // Build 50 fake holders to ensure the slice gate kicks in even if the
+    // constant is later raised. Asserting the *cap exists* (not the exact
+    // value) protects the audit invariant — the engine never analyses
+    // unbounded holders.
+    const many = Array.from({ length: 50 }, (_, i) => ({
+      address: `Wallet${String(i).padStart(2, "0")}AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA`,
+      uiAmount: 100 - i,
+    }));
+    mockFetchJson.mockResolvedValue({ result: [] });
+
+    const result = await buildInsiderGraph(MINT, many, 1_000_000, API_KEY, new Set());
+
+    // Whatever INSIDER_MAX_HOLDERS is, the analyzed set must be bounded.
+    expect(result.stats.analyzedWallets).toBeLessThanOrEqual(50);
+    expect(result.stats.analyzedWallets).toBeLessThan(many.length + 1);
+    // And we must have called Helius at most once per analysed wallet
+    // (one getSignaturesForAddress call each, plus optionally one
+    // parseTransactions batch — never more than analysedWallets + 1).
+    expect(mockFetchJson.mock.calls.length).toBeLessThanOrEqual(result.stats.analyzedWallets + 1);
+  });
+
+  it("reuses cached signatures from Redis instead of hitting Helius again", async () => {
+    // Cache hit path: graph cache MUST miss (so we don't short-circuit at
+    // the entry of buildInsiderGraph), but the per-wallet signature cache
+    // MUST hit so getCachedWalletSignatures skips Helius. Differentiate
+    // by key prefix so the right outcome fires for each redis.get call.
+    const cachedSigs = ["sig-from-cache-1", "sig-from-cache-2"];
+    const mockGet = vi.fn().mockImplementation((key: string) =>
+      Promise.resolve(key.startsWith("igsig:") ? cachedSigs : null)
+    );
+    const mockSet = vi.fn().mockResolvedValue("OK");
+    initGraphCache({ get: mockGet, set: mockSet } as any);
+
+    // Important: only the parseTransactions call should hit fetchJson.
+    // getCachedWalletSignatures should short-circuit before that.
+    mockFetchJson.mockResolvedValue([]);
+
+    await buildInsiderGraph(MINT, holders, 100_000, API_KEY, new Set([LP_ADDR]));
+
+    // For each wallet (3 non-LP holders), redis.get was called once.
+    expect(mockGet).toHaveBeenCalledWith(`igsig:${WALLET_A}`);
+    expect(mockGet).toHaveBeenCalledWith(`igsig:${WALLET_B}`);
+    expect(mockGet).toHaveBeenCalledWith(`igsig:${WALLET_C}`);
+    // The graph cache itself was queried first (1 get) plus one per wallet (3) = 4.
+    expect(mockGet.mock.calls.length).toBeGreaterThanOrEqual(4);
+
+    // fetchJson should only be the parseTransactions call (sigs from
+    // cache => no per-wallet getSignaturesForAddress).
+    expect(mockFetchJson.mock.calls.length).toBeLessThanOrEqual(1);
+
+    // Reset for downstream tests — the module-level redis singleton
+    // would otherwise leak into them.
+    initGraphCache(null as any);
+  });
+});

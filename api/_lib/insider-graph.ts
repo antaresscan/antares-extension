@@ -1,7 +1,12 @@
 // api/_lib/insider-graph.ts — Insider Network Graph builder
 // Analyzes top holder wallets to detect coordinated clusters
 import { fetchJson } from "./helpers";
-import { HELIUS_BASE, HELIUS_REST_BASE, INSIDER_MAX_HOLDERS, INSIDER_MAX_SIGNATURES, INSIDER_GRAPH_CACHE_TTL, INSIDER_GRAPH_CACHE_PREFIX } from "./constants";
+import {
+  HELIUS_BASE, HELIUS_REST_BASE,
+  INSIDER_MAX_HOLDERS, INSIDER_MAX_SIGNATURES,
+  INSIDER_GRAPH_CACHE_TTL, INSIDER_GRAPH_CACHE_PREFIX,
+  INSIDER_SIG_CACHE_TTL, INSIDER_SIG_CACHE_PREFIX,
+} from "./constants";
 import type { Redis } from "@upstash/redis";
 
 // Constants imported from constants.ts
@@ -9,6 +14,8 @@ const MAX_HOLDERS = INSIDER_MAX_HOLDERS;
 const MAX_SIGNATURES = INSIDER_MAX_SIGNATURES;
 const GRAPH_CACHE_TTL = INSIDER_GRAPH_CACHE_TTL;
 const GRAPH_CACHE_PREFIX = INSIDER_GRAPH_CACHE_PREFIX;
+const SIG_CACHE_TTL = INSIDER_SIG_CACHE_TTL;
+const SIG_CACHE_PREFIX = INSIDER_SIG_CACHE_PREFIX;
 
 // ─── TYPES ─────────────────────────────────────────────────────────────
 export interface GraphNode {
@@ -125,6 +132,32 @@ async function getWalletSignatures(
   }
 }
 
+// Per-wallet signature cache. Skips the Helius round-trip when the same
+// wallet was already queried within SIG_CACHE_TTL — useful because top
+// holders often overlap across consecutive scans of the same token (and
+// occasionally across different tokens). Cache failure is non-blocking;
+// we always fall back to a live Helius call.
+async function getCachedWalletSignatures(
+  wallet: string, apiKey: string
+): Promise<string[]> {
+  if (redis) {
+    try {
+      const cached = await redis.get<string[]>(`${SIG_CACHE_PREFIX}${wallet}`);
+      if (Array.isArray(cached)) return cached;
+    } catch { /* fall through to live fetch */ }
+  }
+
+  const sigs = await getWalletSignatures(wallet, apiKey);
+
+  if (redis && sigs.length > 0) {
+    try {
+      await redis.set(`${SIG_CACHE_PREFIX}${wallet}`, sigs, { ex: SIG_CACHE_TTL });
+    } catch { /* non-critical */ }
+  }
+
+  return sigs;
+}
+
 async function parseTransactions(
   signatures: string[], apiKey: string
 ): Promise<HeliusParsedTx[]> {
@@ -173,10 +206,12 @@ export async function buildInsiderGraph(
     isLP: lpAddresses.has(h.address),
   }));
 
-  // Fetch transaction signatures for each top holder (parallel, limited)
+  // Fetch transaction signatures for each top holder (parallel, limited).
+  // Goes through the per-wallet cache so repeat scans of overlapping
+  // holders skip Helius entirely.
   const walletAddresses = topHolders.map(h => h.address);
   const sigResults = await Promise.all(
-    walletAddresses.map(w => getWalletSignatures(w, apiKey))
+    walletAddresses.map(w => getCachedWalletSignatures(w, apiKey))
   );
 
   // Parse transactions to find transfers between holders
