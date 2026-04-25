@@ -1,0 +1,9 @@
+# Robots policy for the antares-extension Vercel deployment.
+# The marketing landing lives at antares-website.vercel.app (separate repo,
+# separate robots.txt). The root path here is a 301 redirect to that site.
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /token.html
+
+Sitemap: https://antares-extension.vercel.app/sitemap.xml
