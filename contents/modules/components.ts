@@ -272,7 +272,7 @@ export function buildResult(data: ScanResponseData, ca: string): string {
     <div class="topbar"></div>
     ${buildHeader()}
     ${tokenSymbol ? `<div class="tk"><b>${tokenSymbol}</b> ${tokenName}</div>` : ""}
-    <div class="vb"><h1>${label}</h1></div>
+    <div class="vb"><h1>${escapeHtml(label)}</h1></div>
     <div class="sr"><span class="n"><b class="ant-score" data-target="${score}">0</b> / 1000</span><div class="dots">${dots}</div></div>
     <div class="sbar"><div class="sbar-fill" data-w="${barW}"></div></div>
     <div class="sum">${summary}</div>
