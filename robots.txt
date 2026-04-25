@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /token.html
+
+Sitemap: https://antares-website.vercel.app/sitemap.xml
