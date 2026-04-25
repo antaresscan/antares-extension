@@ -160,7 +160,17 @@ export const SOFT_REASONS: Record<string, boolean> = { age: true, holders: true,
 export const MAX_RUG_INDEX = 5000;  // increased from 500 for production scale
 
 // ── INSIDER GRAPH CONSTANTS ─────────────────────────────────────────
-export const INSIDER_MAX_HOLDERS = 100;
+// Lowered from 100 → 20 in PR #294. Each top holder costs one Helius
+// getSignaturesForAddress RPC call per uncached graph build. At 100 the
+// graph endpoint was the audit's #1 Helius-quota risk on popular
+// tokens (200 calls per request). Top-20 captures the meaningful
+// concentration / coordination patterns; the long tail (#21–#100) was
+// rarely participating in the clusters the engine actually surfaced.
+export const INSIDER_MAX_HOLDERS = 20;
 export const INSIDER_MAX_SIGNATURES = 50;
 export const INSIDER_GRAPH_CACHE_TTL = 300; // 5 minutes
 export const INSIDER_GRAPH_CACHE_PREFIX = "ig:";
+// Per-wallet signature cache: same TTL as the graph, separate prefix.
+// Lets repeat scans of overlapping holders skip the Helius round-trip.
+export const INSIDER_SIG_CACHE_TTL = 300; // 5 minutes
+export const INSIDER_SIG_CACHE_PREFIX = "igsig:";
