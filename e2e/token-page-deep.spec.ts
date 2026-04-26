@@ -1,7 +1,10 @@
 import { test, expect } from '@playwright/test';
 
 const BASE = process.env.E2E_BASE_URL || 'https://antares-extension.vercel.app';
-const SOL_WRAPPED = 'So11111111111111111111111111111111111111112';
+// POPCAT instead of WSOL — see api-scan.spec.ts for rationale (WSOL
+// times out the prod /api/scan budget). Variable name kept for diff
+// continuity.
+const SOL_WRAPPED = 'ukHH6c7mMyiWCf1b9pnWe25TSpkDDt3H5pQZgZ74J82';
 const INVALID_CA = 'notavalidaddress';
 const RANDOM_CA = '11111111111111111111111111111111';
 

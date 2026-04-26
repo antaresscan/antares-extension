@@ -2,8 +2,13 @@ import { test, expect } from '@playwright/test';
 
 const BASE = process.env.E2E_BASE_URL || 'https://antares-extension.vercel.app';
 
-// Well-known Solana addresses for testing
-const SOL_WRAPPED = 'So11111111111111111111111111111111111111112';
+// Well-known Solana addresses for testing.
+// SOL_WRAPPED uses POPCAT, not actual wrapped SOL — the variable name is
+// kept for diff-friendliness but the mint is POPCAT (ukHH6...) because
+// genuine wrapped SOL has so much trading data that the production
+// /api/scan times out at the 10s function budget. POPCAT has manageable
+// holder count + stable verdict and returns in ~9s, fitting the budget.
+const SOL_WRAPPED = 'ukHH6c7mMyiWCf1b9pnWe25TSpkDDt3H5pQZgZ74J82';
 const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
 const INVALID_CA = 'not-a-valid-solana-address';
 const SHORT_CA = 'abc123';
