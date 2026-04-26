@@ -22,11 +22,13 @@ import {
   heliusGetLargestAccounts, heliusGetTokenSupply, heliusGetCreatorReputation,
   heliusGetHoldersCount,
   heliusResolveAccountOwners,
+  publicRpcGetLargestAccounts, publicRpcGetTokenSupply, publicRpcGetMintInfo,
   solscanGetHoldersCount, fetchSolscan, fetchDexCandles,
   type CreatorReputation,
 } from "./_lib/fetchers";
 import {
   DEXSCREENER_BASE, RUGCHECK_BASE, GOPLUS_BASE, LAYER_WEIGHTS, SCORING_VERSION,
+  LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS,
 } from "./_lib/constants";
 import {
   layerDexScreener, layerRugCheck, layerGoPlus, layerHelius,
@@ -182,7 +184,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
 
     const [
       candlesRaw, goplusRaw,
-      heliusHoldersRaw, heliusSupplyRaw,
+      heliusHoldersRaw, heliusSupplyRaw, heliusHoldersCountRaw,
       solscanHoldersCount,
       solMeta, solTransfers, solMarkets,
     ] = await Promise.all([
@@ -190,6 +192,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       withBudget(fetchJson(`${GOPLUS_BASE}/solana/token_security?contract_addresses=${resolvedMint}`, {}, 4000), remainingMs()),
       HELIUS_API_KEY ? withBudget(heliusGetLargestAccounts(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
       HELIUS_API_KEY ? withBudget(heliusGetTokenSupply(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
+      HELIUS_API_KEY ? withBudget(heliusGetHoldersCount(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
       withBudget(solscanGetHoldersCount(resolvedMint), remainingMs()),
       withBudget(fetchSolscan(`/token/meta?address=${resolvedMint}`), remainingMs()),
       withBudget(fetchSolscan(`/token/transfer?address=${resolvedMint}&page=1&page_size=10`), remainingMs()),
@@ -199,9 +202,39 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const candles: OHLCVCandle[] = Array.isArray(candlesRaw) ? candlesRaw : [];
     const goplus = pickGoPlusResult(goplusRaw, resolvedMint);
     const heliusResponse = isHeliusLargestAccountsResponse(heliusHoldersRaw) ? heliusHoldersRaw : null;
-    const rawHolderAccounts: HeliusHolder[] = heliusResponse?.result?.value ?? [];
+    let rawHolderAccounts: HeliusHolder[] = heliusResponse?.result?.value ?? [];
     const supplyResponse = isHeliusSupplyResponse(heliusSupplyRaw) ? heliusSupplyRaw : null;
-    const totalSupplyUi: number = asNumber(supplyResponse?.result?.value?.uiAmount);
+    let totalSupplyUi: number = asNumber(supplyResponse?.result?.value?.uiAmount);
+
+    // Free public Solana RPC fallback for the two Helius RPC calls that
+    // matter for holder concentration. Same JSON-RPC interface, same
+    // response shape, no API key. Triggered when Helius is unset or
+    // returned no usable data — gives a token-distribution signal even
+    // for users running without a paid Helius tier.
+    if (rawHolderAccounts.length === 0) {
+      try {
+        const fallback = await withBudget(publicRpcGetLargestAccounts(resolvedMint), remainingMs());
+        const parsed = isHeliusLargestAccountsResponse(fallback) ? fallback : null;
+        rawHolderAccounts = parsed?.result?.value ?? [];
+      } catch { /* keep empty — section will gracefully degrade */ }
+    }
+    if (totalSupplyUi <= 0) {
+      try {
+        const fallback = await withBudget(publicRpcGetTokenSupply(resolvedMint), remainingMs());
+        const parsed = isHeliusSupplyResponse(fallback) ? fallback : null;
+        totalSupplyUi = asNumber(parsed?.result?.value?.uiAmount);
+      } catch { /* keep 0 — try next fallback */ }
+    }
+    // Last-resort: getAccountInfo on the mint reads the SPL-Token mint state
+    // directly. Always works on free public RPCs (cheap call) and gives both
+    // raw supply and decimals — we divide to get uiAmount. Triggers only if
+    // the dedicated getTokenSupply path returned 0.
+    if (totalSupplyUi <= 0) {
+      try {
+        const mintInfo = await withBudget(publicRpcGetMintInfo(resolvedMint), remainingMs());
+        if (mintInfo) totalSupplyUi = mintInfo.supplyUi;
+      } catch { /* keep 0 — concentration calc will be null */ }
+    }
 
     const solMarketsData = isSolscanMarketsResponse(solMarkets) ? solMarkets : null;
     const resolvedHolderAccounts: HeliusHolder[] = HELIUS_API_KEY && rawHolderAccounts.length > 0
@@ -213,15 +246,33 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       : null;
     const solMetaData = isSolscanMeta(solMeta) ? solMeta : null;
     const solscanCreatedTime: number | null = solMetaData?.data?.created_time ?? null;
-    const solscanTokenAgeHours: number | null =
-      solscanCreatedTime !== null
-      ? Math.floor((Date.now() / 1000 - solscanCreatedTime) / 3600)
-      : pair?.pairCreatedAt
-      ? Math.floor((Date.now() - pair.pairCreatedAt) / 3_600_000)
-      : null;
+    // Token age: take the MAX of Solscan token-mint time and DexScreener
+    // pair-creation time. The two measure different events (mint vs pair
+    // listing) and either source can fail or return stale data; the older
+    // is the safer floor on actual token age. Previously we took whichever
+    // came first which would underreport age when Solscan was rate-limited.
     const dexTokenAgeHours: number | null = pair?.pairCreatedAt
       ? Math.floor((Date.now() - pair.pairCreatedAt) / 3_600_000)
       : null;
+    const solscanOnlyAge: number | null = solscanCreatedTime !== null
+      ? Math.floor((Date.now() / 1000 - solscanCreatedTime) / 3600)
+      : null;
+    const solscanTokenAgeHours: number | null = (() => {
+      if (solscanOnlyAge === null && dexTokenAgeHours === null) return null;
+      if (solscanOnlyAge === null) return dexTokenAgeHours;
+      if (dexTokenAgeHours === null) return solscanOnlyAge;
+      return Math.max(solscanOnlyAge, dexTokenAgeHours);
+    })();
+
+    // Last-resort supply fallback from Solscan Pro meta when both Helius and
+    // public RPC failed — only effective if SOLSCAN_API_KEY is set. The
+    // earlier Helius → public-RPC chain covers free deployments.
+    if (totalSupplyUi <= 0 && solMetaData?.data?.supply && typeof solMetaData.data.decimals === "number") {
+      const rawSupply = asNumber(solMetaData.data.supply);
+      if (rawSupply > 0) {
+        totalSupplyUi = rawSupply / Math.pow(10, solMetaData.data.decimals);
+      }
+    }
     const solscanVolume24h: number | null  = asNumber(solMarketPool?.volume)    || asNumber(pair?.volume?.h24) || null;
     const solscanTrades24h: number | null  = asNumber(solMarketPool?.trade)     || null;
     const solscanTraders24h: number | null = asNumber(solMarketPool?.trader)    || null;
@@ -247,13 +298,16 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // the first non-null value, which meant a stale Solscan returning 1
     // would override Helius reporting 50,000. Always-call Helius is fine
     // because the fallback path was already paying that latency anyway.
-    let heliusHoldersCount: number | null = null;
-    if (HELIUS_API_KEY) {
-      try {
-        heliusHoldersCount = await heliusGetHoldersCount(resolvedMint, HELIUS_API_KEY);
-      } catch { /* silent — keep null */ }
-    }
-    const holderCandidates = [solscanHoldersCount, rugTotalHolders, heliusHoldersCount]
+    // Holders count: take MAX across Solscan, RugCheck, Helius DAS.
+    // Plus a sanity floor: holders cannot be smaller than the number of
+    // non-zero-balance addresses we already see in the top-20 from
+    // getTokenLargestAccounts. This catches the common bug where a
+    // single stale source returns 1 while the on-chain top-20 obviously
+    // contains many real holders — without it the page would lie.
+    const heliusHoldersCount: number | null = typeof heliusHoldersCountRaw === "number" && heliusHoldersCountRaw > 0
+      ? heliusHoldersCountRaw : null;
+    const top20NonZero = rawHolderAccounts.filter(h => asNumber(h?.uiAmount) > 0).length;
+    const holderCandidates = [solscanHoldersCount, rugTotalHolders, heliusHoldersCount, top20NonZero > 0 ? top20NonZero : null]
       .filter((n): n is number => typeof n === "number" && n > 0);
     const holders: number | null = holderCandidates.length > 0 ? Math.max(...holderCandidates) : null;
 
@@ -355,19 +409,23 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     );
 
     // Compute holder concentration: top1 + top10 percentages of total supply.
-    // resolvedHolderAccounts comes from getTokenLargestAccounts (top 20),
-    // so top10 is just the first 10 entries summed. Both fields are exposed
-    // in the API response (not just passed to the AI summary) so the
-    // frontend can render the concentration bar with real numbers instead
-    // of regex-extracting thresholds from flag labels.
+    // CRITICAL: filter out LP program accounts and foundation wallets first
+    // — they hold large amounts on behalf of pools (Raydium, Orca, PumpSwap…)
+    // and are not real holders. Without this filter, "Single wallet holds X%"
+    // would fire for the LP itself and the concentration bar would show the
+    // LP balance as user concentration. Same filter as layerHelius for
+    // consistency between the flags and the displayed numbers.
+    const realHolderAccounts: HeliusHolder[] = resolvedHolderAccounts.filter(
+      h => !LP_PROGRAM_ADDRESSES.has(h.owner) && !FOUNDATION_WALLETS.has(h.owner),
+    );
     const topHolderPct: number | null = (() => {
-      if (resolvedHolderAccounts.length === 0 || totalSupplyUi <= 0) return null;
-      const topAmt = asNumber(resolvedHolderAccounts[0]?.uiAmount);
+      if (realHolderAccounts.length === 0 || totalSupplyUi <= 0) return null;
+      const topAmt = asNumber(realHolderAccounts[0]?.uiAmount);
       return topAmt > 0 ? (topAmt / totalSupplyUi) * 100 : null;
     })();
     const top10HolderPct: number | null = (() => {
-      if (resolvedHolderAccounts.length === 0 || totalSupplyUi <= 0) return null;
-      const top10Sum = resolvedHolderAccounts.slice(0, 10)
+      if (realHolderAccounts.length === 0 || totalSupplyUi <= 0) return null;
+      const top10Sum = realHolderAccounts.slice(0, 10)
         .reduce((sum, h) => sum + asNumber(h?.uiAmount), 0);
       return top10Sum > 0 ? Math.min(100, (top10Sum / totalSupplyUi) * 100) : null;
     })();

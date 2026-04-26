@@ -51,20 +51,28 @@ const mockHeliusGetLargestAccounts = vi.fn();
 const mockHeliusGetTokenSupply = vi.fn();
 const mockHeliusGetCreatorReputation = vi.fn();
 const mockHeliusGetHoldersCount = vi.fn();
+const mockHeliusGetProgramAccountHolderCount = vi.fn();
 const mockSolscanGetHoldersCount = vi.fn();
 const mockFetchSolscan = vi.fn();
 const mockFetchDexCandles = vi.fn();
 const mockHeliusResolveAccountOwners = vi.fn();
+const mockPublicRpcGetLargestAccounts = vi.fn();
+const mockPublicRpcGetTokenSupply = vi.fn();
+const mockPublicRpcGetMintInfo = vi.fn();
 
 vi.mock("../api/_lib/fetchers", () => ({
   heliusGetLargestAccounts: (...args: unknown[]) => mockHeliusGetLargestAccounts(...args),
   heliusGetTokenSupply: (...args: unknown[]) => mockHeliusGetTokenSupply(...args),
   heliusGetCreatorReputation: (...args: unknown[]) => mockHeliusGetCreatorReputation(...args),
   heliusGetHoldersCount: (...args: unknown[]) => mockHeliusGetHoldersCount(...args),
+  heliusGetProgramAccountHolderCount: (...args: unknown[]) => mockHeliusGetProgramAccountHolderCount(...args),
   solscanGetHoldersCount: (...args: unknown[]) => mockSolscanGetHoldersCount(...args),
   fetchSolscan: (...args: unknown[]) => mockFetchSolscan(...args),
   fetchDexCandles: (...args: unknown[]) => mockFetchDexCandles(...args),
   heliusResolveAccountOwners: (...args: unknown[]) => mockHeliusResolveAccountOwners(...args),
+  publicRpcGetLargestAccounts: (...args: unknown[]) => mockPublicRpcGetLargestAccounts(...args),
+  publicRpcGetTokenSupply: (...args: unknown[]) => mockPublicRpcGetTokenSupply(...args),
+  publicRpcGetMintInfo: (...args: unknown[]) => mockPublicRpcGetMintInfo(...args),
 }));
 
 // Mock global fetch for DexScreener, RugCheck, GoPlus
@@ -190,7 +198,11 @@ function setupGoodTokenMocks() {
   });
   mockHeliusGetCreatorReputation.mockResolvedValue(null);
   mockHeliusGetHoldersCount.mockResolvedValue(null);
+  mockHeliusGetProgramAccountHolderCount.mockResolvedValue(null);
   mockSolscanGetHoldersCount.mockResolvedValue(5000);
+  mockPublicRpcGetLargestAccounts.mockResolvedValue(null);
+  mockPublicRpcGetTokenSupply.mockResolvedValue(null);
+  mockPublicRpcGetMintInfo.mockResolvedValue(null);
   mockFetchSolscan.mockImplementation((endpoint: string) => {
     if (endpoint.includes("meta")) {
       return Promise.resolve({
@@ -325,9 +337,13 @@ describe("scan handler", () => {
     mockHeliusGetTokenSupply.mockResolvedValue(null);
     mockHeliusGetCreatorReputation.mockResolvedValue(null);
     mockHeliusGetHoldersCount.mockResolvedValue(null);
+    mockHeliusGetProgramAccountHolderCount.mockResolvedValue(null);
     mockSolscanGetHoldersCount.mockResolvedValue(null);
     mockFetchSolscan.mockResolvedValue(null);
     mockFetchDexCandles.mockResolvedValue([]);
+    mockPublicRpcGetLargestAccounts.mockResolvedValue(null);
+    mockPublicRpcGetTokenSupply.mockResolvedValue(null);
+    mockPublicRpcGetMintInfo.mockResolvedValue(null);
 
     const req = createMockReq({ ca: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263" });
     const res = createMockRes();

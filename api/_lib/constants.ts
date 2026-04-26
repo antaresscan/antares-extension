@@ -4,6 +4,26 @@ export const DEXSCREENER_BASE = "https://api.dexscreener.com/latest/dex";
 export const RUGCHECK_BASE = "https://api.rugcheck.xyz/v1";
 export const GOPLUS_BASE = "https://api.gopluslabs.io/api/v1";
 export const HELIUS_BASE = "https://mainnet.helius-rpc.com";
+// Free public Solana RPC pool — tried in order until one responds. Same
+// JSON-RPC interface as Helius so the existing isHelius* type guards work
+// on the result.
+//
+// IMPORTANT: only the cheap methods (`getTokenSupply`, `getAccountInfo`)
+// reliably work on free tier. `getTokenLargestAccounts` is heavy and gets
+// rate-limited (429) on Solana Foundation and explicitly BLOCKED on
+// PublicNode. Top-holder concentration therefore still requires Helius
+// in practice; the public-RPC fallback exists for the supply path only.
+//
+// Tested 2026-04-26:
+//   - api.mainnet-beta.solana.com: Solana Foundation, getTokenSupply OK,
+//     getTokenLargestAccounts 429 on real tokens
+//   - solana-rpc.publicnode.com: getTokenSupply OK, getTokenLargestAccounts
+//     blocked with -32602 "Request blocked"
+//   - rpc.ankr.com/solana: now requires an API key (used to be free)
+export const PUBLIC_SOLANA_RPCS = [
+  "https://api.mainnet-beta.solana.com",
+  "https://solana-rpc.publicnode.com",
+] as const;
 export const SOLSCAN_PUBLIC_BASE = "https://public-api.solscan.io";
 export const SOLSCAN_BASE = "https://pro-api.solscan.io/v2.0";
 

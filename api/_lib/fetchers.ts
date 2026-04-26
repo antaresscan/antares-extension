@@ -6,7 +6,7 @@ import type {
     OHLCVCandle, GeckoTerminalOHLCVResponse,
     RugCheckReport, RugCheckRisk,
 } from "./types";
-import { HELIUS_BASE, SOLSCAN_PUBLIC_BASE, SOLSCAN_BASE, HELIUS_REST_BASE } from "./constants";
+import { HELIUS_BASE, PUBLIC_SOLANA_RPCS, SOLSCAN_PUBLIC_BASE, SOLSCAN_BASE, HELIUS_REST_BASE } from "./constants";
 import { fetchJson, fetchJsonPost } from "./http";
 import { asNumber } from "./math";
 import { logger } from "./logger";
@@ -61,6 +61,50 @@ export async function heliusGetHoldersCount(mint: string, key: string): Promise<
     return typeof total === "number" ? total : null;
 }
 
+// Canonical holder-count via getProgramAccounts on the SPL Token Program,
+// filtered by mint. Same approach every Solana indexer uses. Returns the
+// count of token accounts ever created for this mint; slightly inflated
+// vs active holders because closed empty accounts persist on chain, but
+// for rug detection the difference is negligible and the result matches
+// what the user sees on DexScreener.
+//
+// `dataSlice: {offset: 0, length: 0}` skips the per-account payload so
+// only addresses come back. For high-holder tokens (BONK, WIF) the
+// response is still tens of megabytes and Helius itself takes seconds to
+// build it — for those the call simply times out and the chain falls
+// back to the lighter sources. A 5s timeout keeps the whole scan within
+// the Vercel 10s function budget when this is run in parallel with
+// everything else.
+const SPL_TOKEN_PROGRAM = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
+const TOKEN_ACCOUNT_DATA_SIZE = 165;
+export async function heliusGetProgramAccountHolderCount(
+    mint: string,
+    key: string,
+): Promise<number | null> {
+    try {
+        const res = await fetchJsonPost(HELIUS_BASE, {
+            jsonrpc: "2.0",
+            id: "holders-pa",
+            method: "getProgramAccounts",
+            params: [
+                SPL_TOKEN_PROGRAM,
+                {
+                    encoding: "base64",
+                    filters: [
+                        { dataSize: TOKEN_ACCOUNT_DATA_SIZE },
+                        { memcmp: { offset: 0, bytes: mint } },
+                    ],
+                    dataSlice: { offset: 0, length: 0 },
+                },
+            ],
+        }, 5000, 1, heliusHeaders(key)) as { result?: unknown[] } | null;
+        if (!res || !Array.isArray(res.result)) return null;
+        return res.result.length;
+    } catch {
+        return null;
+    }
+}
+
 // ─── [5.1] CREATOR REPUTATION ─────────────────────────────────────────────
 export interface CreatorReputation {
     priorTokens: number;
@@ -92,6 +136,71 @@ export async function heliusGetCreatorReputation(
         return { priorTokens, flagged: true, reason: "Creator launched " + priorTokens + "+ tokens \u2014 serial deployer" };
     }
     return { priorTokens, flagged: false, reason: null };
+}
+
+// ─── PUBLIC SOLANA RPC POOL (free fallback) ────────────────────────────────
+// Iterates the PUBLIC_SOLANA_RPCS pool until one provider answers. Same
+// JSON-RPC interface as Helius so the existing isHelius*Response type
+// guards work on the return value. The per-call timeout is short (4s) so a
+// single dead RPC doesn't blow the whole scan budget; the fast iteration
+// also means we can survive one provider being down or rate-limited
+// without the user noticing — combining multiple free providers gives an
+// effective rate budget several times higher than any single one.
+async function publicRpcCall(method: string, params: unknown[]) {
+    for (const rpc of PUBLIC_SOLANA_RPCS) {
+        try {
+            const res = await fetchJsonPost(rpc, {
+                jsonrpc: "2.0", id: method, method, params,
+            }, 4000, 1);
+            // Skip RPC-level errors (rate limit, method forbidden) and
+            // try the next provider in the pool.
+            const r = res as { result?: unknown; error?: unknown } | null;
+            if (r && r.result !== undefined) return res;
+        } catch { /* try next provider */ }
+    }
+    return null;
+}
+
+export async function publicRpcGetLargestAccounts(mint: string) {
+    return publicRpcCall("getTokenLargestAccounts", [mint]);
+}
+
+export async function publicRpcGetTokenSupply(mint: string) {
+    return publicRpcCall("getTokenSupply", [mint]);
+}
+
+// getAccountInfo on the mint address returns the SPL-Token mint state:
+// decimals, raw supply (string), mintAuthority, freezeAuthority. This is a
+// cheap RPC call that works on every free public Solana RPC tested, so it
+// is the most reliable fallback for supply when getTokenSupply is rate-
+// limited. Caller divides supply by 10^decimals to get the uiAmount.
+interface MintAccountInfo {
+    result?: {
+        value?: {
+            data?: {
+                parsed?: {
+                    info?: {
+                        decimals?: number;
+                        supply?: string;
+                        mintAuthority?: string | null;
+                        freezeAuthority?: string | null;
+                    };
+                };
+            };
+        };
+    };
+}
+export async function publicRpcGetMintInfo(mint: string): Promise<{
+    supplyUi: number;
+    decimals: number | null;
+} | null> {
+    const res = await publicRpcCall("getAccountInfo", [mint, { encoding: "jsonParsed" }]) as MintAccountInfo | null;
+    const info = res?.result?.value?.data?.parsed?.info;
+    if (!info) return null;
+    const decimals = typeof info.decimals === "number" ? info.decimals : null;
+    const rawSupply = typeof info.supply === "string" ? parseFloat(info.supply) : NaN;
+    if (!Number.isFinite(rawSupply) || rawSupply <= 0 || decimals === null) return null;
+    return { supplyUi: rawSupply / Math.pow(10, decimals), decimals };
 }
 
 // ─── SOLSCAN HELPERS ───────────────────────────────────────────────────────
