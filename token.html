@@ -90,18 +90,21 @@ nav .actions a.warn:hover{color:var(--orange);border-color:rgba(255,95,95,.4);ba
 .verdict-info{grid-column:1;grid-row:1;display:flex;flex-direction:column;gap:8px;min-width:0}
 @media(max-width:900px){.verdict-info{grid-row:1}}
 
-/* Verdict h1 + token logo side-by-side: visually anchors the verdict to
-   the token identity. Logo size set so it matches the cap-height of the
-   first line of the headline. */
-.verdict-row{display:flex;justify-content:flex-start;align-items:flex-start;gap:24px}
-.verdict-row h1{font:400 clamp(64px,8.5vw,108px)/.86 'Bebas Neue',sans-serif;letter-spacing:.04em;color:var(--risk);text-shadow:0 0 60px var(--risk-glow);word-break:break-word;flex:1;min-width:0}
+/* Verdict h1 + token logo side-by-side. align-items:center pins the
+   logo to the verdict's vertical mid-line; the logo is sized to match
+   the h1's max line-box (108px) so the two read as a balanced pair
+   rather than a tiny circle floating beside a giant headline. No
+   flex:1 on the h1 so the logo sits right next to the verdict text,
+   not pushed to the right edge of the cell. */
+.verdict-row{display:flex;justify-content:flex-start;align-items:center;gap:28px;flex-wrap:wrap}
+.verdict-row h1{font:400 clamp(64px,8.5vw,108px)/.86 'Bebas Neue',sans-serif;letter-spacing:.04em;color:var(--risk);text-shadow:0 0 60px var(--risk-glow);word-break:break-word;min-width:0}
 .tk-line{font-size:13px;color:#777;letter-spacing:.06em;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tk-line b{color:#ddd;font-weight:700;font-size:14px}
 .age-badge{display:inline-block;font-size:10px;color:#666;background:#0e0e10;border:1px solid var(--border);border-radius:2px;padding:4px 10px;letter-spacing:.08em;margin-top:6px;align-self:flex-start}
 
-.token-logo,.token-logo-fallback{width:72px;height:72px;border-radius:50%;border:1.5px solid var(--risk-border);box-shadow:0 0 24px var(--risk-glow);background:#111;flex-shrink:0;margin-top:10px}
+.token-logo,.token-logo-fallback{width:108px;height:108px;border-radius:50%;border:1.5px solid var(--risk-border);box-shadow:0 0 32px var(--risk-glow);background:#111;flex-shrink:0}
 .token-logo{object-fit:cover}
-.token-logo-fallback{display:flex;align-items:center;justify-content:center;font:600 14px 'IBM Plex Mono',monospace;color:#888}
+.token-logo-fallback{display:flex;align-items:center;justify-content:center;font:600 18px 'IBM Plex Mono',monospace;color:#aaa}
 
 .flags-card{grid-column:2;grid-row:1;align-self:start}
 @media(max-width:900px){.flags-card{grid-column:1;grid-row:3}}
@@ -283,6 +286,6 @@ footer span{color:var(--c)}
 
 </div>
 
-<script defer src="/js/token-app.js?v=20260426d"></script>
-<script defer src="/js/token-bg.js?v=20260426d"></script>
+<script defer src="/js/token-app.js?v=20260426e"></script>
+<script defer src="/js/token-bg.js?v=20260426e"></script>
 </body></html>
