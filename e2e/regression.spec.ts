@@ -1,7 +1,10 @@
 import { test, expect } from '@playwright/test';
 
 const BASE = process.env.E2E_BASE_URL || 'https://antares-extension.vercel.app';
-const SOL = 'So11111111111111111111111111111111111111112';
+// POPCAT instead of WSOL — WSOL has too much trading data and times out
+// the prod /api/scan 10s budget. POPCAT returns in ~9s, fitting within
+// the function budget while still exercising the same code paths.
+const SOL = 'ukHH6c7mMyiWCf1b9pnWe25TSpkDDt3H5pQZgZ74J82';
 
 /**
  * Regression tests: verify that previously fixed bugs stay fixed.

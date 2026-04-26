@@ -79,8 +79,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const ca = validateCA(req.query.ca);
   if (!ca) return apiError(res, 400, "Invalid token address.");
 
+  // ?fresh=1 bypasses the Redis cache so users can manually trigger a
+  // fresh scan from the page — the front-end refresh button passes this
+  // flag. The result still gets written to cache for the next request,
+  // so the bypass costs one upstream batch and benefits everyone after.
+  const fresh = req.query?.fresh === "1" || req.query?.fresh === "true";
+
   // Only serve cache when aiSummary is present — avoids serving stale null-summary results
-  const cached = await getCachedResult<ScanResult>(ca, requestId);
+  const cached = fresh ? null : await getCachedResult<ScanResult>(ca, requestId);
   if (cached && cached.aiSummary) {
     logger.metric("scan.cache_hit", {
       requestId,
@@ -158,8 +164,9 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
 
     if (pair?.baseToken?.address) resolvedMint = pair.baseToken.address;
 
+    const fresh = req.query?.fresh === "1" || req.query?.fresh === "true";
     if (resolvedMint !== ca) {
-      const cachedByMint = await getCachedResult<ScanResult>(resolvedMint, requestId);
+      const cachedByMint = !fresh ? await getCachedResult<ScanResult>(resolvedMint, requestId) : null;
       if (cachedByMint && cachedByMint.aiSummary) {
         logger.metric("scan.cache_hit", {
           requestId,
@@ -298,17 +305,27 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // the first non-null value, which meant a stale Solscan returning 1
     // would override Helius reporting 50,000. Always-call Helius is fine
     // because the fallback path was already paying that latency anyway.
-    // Holders count: take MAX across Solscan, RugCheck, Helius DAS.
-    // Plus a sanity floor: holders cannot be smaller than the number of
-    // non-zero-balance addresses we already see in the top-20 from
-    // getTokenLargestAccounts. This catches the common bug where a
-    // single stale source returns 1 while the on-chain top-20 obviously
-    // contains many real holders — without it the page would lie.
+    // Holders count: take MAX across every free source we have. GoPlus
+    // exposes `holder_count` directly in the same payload we already
+    // fetch for honeypot detection — they index this themselves and
+    // their number matches DexScreener / Solscan. That made the
+    // previous "1 holder" lie disappear on real tokens.
     const heliusHoldersCount: number | null = typeof heliusHoldersCountRaw === "number" && heliusHoldersCountRaw > 0
       ? heliusHoldersCountRaw : null;
     const top20NonZero = rawHolderAccounts.filter(h => asNumber(h?.uiAmount) > 0).length;
-    const holderCandidates = [solscanHoldersCount, rugTotalHolders, heliusHoldersCount, top20NonZero > 0 ? top20NonZero : null]
-      .filter((n): n is number => typeof n === "number" && n > 0);
+    const goplusHolderCount: number | null = (() => {
+      const raw = goplus?.holder_count;
+      if (raw == null) return null;
+      const n = typeof raw === "number" ? raw : parseInt(String(raw), 10);
+      return Number.isFinite(n) && n > 0 ? n : null;
+    })();
+    const holderCandidates = [
+      solscanHoldersCount,
+      rugTotalHolders,
+      heliusHoldersCount,
+      goplusHolderCount,
+      top20NonZero > 0 ? top20NonZero : null,
+    ].filter((n): n is number => typeof n === "number" && n > 0);
     const holders: number | null = holderCandidates.length > 0 ? Math.max(...holderCandidates) : null;
 
     const priceUsd: number | null = (() => {
@@ -484,8 +501,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     } else {
       const redis = getCacheRedis();
       if (redis) {
-        redis.setex(`antares:v2:${ca}`, 30, result).catch(() => {});
-        if (resolvedMint !== ca) redis.setex(`antares:v2:${resolvedMint}`, 30, result).catch(() => {});
+        redis.setex(`antares:v3:${ca}`, 30, result).catch(() => {});
+        if (resolvedMint !== ca) redis.setex(`antares:v3:${resolvedMint}`, 30, result).catch(() => {});
       }
     }
 

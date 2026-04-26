@@ -2,7 +2,12 @@ import { test, expect } from '@playwright/test';
 import type { APIRequestContext, APIResponse } from '@playwright/test';
 
 const BASE = process.env.E2E_BASE_URL || 'https://antares-extension.vercel.app';
-const SOL_WRAPPED = 'So11111111111111111111111111111111111111112';
+// POPCAT — stable established meme with manageable holder count, returns
+// in <9s on prod. Wrapped SOL was used previously but has so much trading
+// data that the API consistently 504s — the production /api/scan budget
+// (10s) can't accommodate Helius getTokenLargestAccounts on multi-million-
+// holder mints. POPCAT keeps the test reliable without losing meaning.
+const SOL_WRAPPED = 'ukHH6c7mMyiWCf1b9pnWe25TSpkDDt3H5pQZgZ74J82';
 
 /** Retry a GET request up to `retries` times with exponential backoff on 429/5xx */
 async function fetchWithRetry(
