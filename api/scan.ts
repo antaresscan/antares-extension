@@ -20,7 +20,7 @@ import {
 } from "./_lib/helpers";
 import {
   heliusGetLargestAccounts, heliusGetTokenSupply, heliusGetCreatorReputation,
-  heliusGetHoldersCount, heliusGetProgramAccountHolderCount,
+  heliusGetHoldersCount,
   heliusResolveAccountOwners,
   publicRpcGetLargestAccounts, publicRpcGetTokenSupply, publicRpcGetMintInfo,
   solscanGetHoldersCount, fetchSolscan, fetchDexCandles,
@@ -184,7 +184,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
 
     const [
       candlesRaw, goplusRaw,
-      heliusHoldersRaw, heliusSupplyRaw, heliusHoldersCountRaw, heliusPaHolderCountRaw,
+      heliusHoldersRaw, heliusSupplyRaw, heliusHoldersCountRaw,
       solscanHoldersCount,
       solMeta, solTransfers, solMarkets,
     ] = await Promise.all([
@@ -192,14 +192,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       withBudget(fetchJson(`${GOPLUS_BASE}/solana/token_security?contract_addresses=${resolvedMint}`, {}, 4000), remainingMs()),
       HELIUS_API_KEY ? withBudget(heliusGetLargestAccounts(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
       HELIUS_API_KEY ? withBudget(heliusGetTokenSupply(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
-      // Run both holder-count methods in parallel with the rest of the
-      // batch so we never sequentially burn budget. The PA variant is
-      // expensive — its own 5s internal timeout is the cap; if the token
-      // is too big (>200k accounts) it falls through and we use the
-      // other sources. The DAS variant complements it for tokens where
-      // PA scan is rate-limited.
       HELIUS_API_KEY ? withBudget(heliusGetHoldersCount(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
-      HELIUS_API_KEY ? withBudget(heliusGetProgramAccountHolderCount(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
       withBudget(solscanGetHoldersCount(resolvedMint), remainingMs()),
       withBudget(fetchSolscan(`/token/meta?address=${resolvedMint}`), remainingMs()),
       withBudget(fetchSolscan(`/token/transfer?address=${resolvedMint}&page=1&page_size=10`), remainingMs()),
@@ -305,16 +298,16 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // the first non-null value, which meant a stale Solscan returning 1
     // would override Helius reporting 50,000. Always-call Helius is fine
     // because the fallback path was already paying that latency anyway.
-    // Holders count chain — 4 independent sources, take the MAX. Each
-    // source can flake to 0/1/null but the chance of all four agreeing
-    // on a low value is negligible. The getProgramAccounts variant is
-    // the canonical method every indexer uses; when it succeeds it
-    // matches what DexScreener / Solscan show.
+    // Holders count: take MAX across Solscan, RugCheck, Helius DAS.
+    // Plus a sanity floor: holders cannot be smaller than the number of
+    // non-zero-balance addresses we already see in the top-20 from
+    // getTokenLargestAccounts. This catches the common bug where a
+    // single stale source returns 1 while the on-chain top-20 obviously
+    // contains many real holders — without it the page would lie.
     const heliusHoldersCount: number | null = typeof heliusHoldersCountRaw === "number" && heliusHoldersCountRaw > 0
       ? heliusHoldersCountRaw : null;
-    const heliusPaHolderCount: number | null = typeof heliusPaHolderCountRaw === "number" && heliusPaHolderCountRaw > 0
-      ? heliusPaHolderCountRaw : null;
-    const holderCandidates = [solscanHoldersCount, rugTotalHolders, heliusHoldersCount, heliusPaHolderCount]
+    const top20NonZero = rawHolderAccounts.filter(h => asNumber(h?.uiAmount) > 0).length;
+    const holderCandidates = [solscanHoldersCount, rugTotalHolders, heliusHoldersCount, top20NonZero > 0 ? top20NonZero : null]
       .filter((n): n is number => typeof n === "number" && n > 0);
     const holders: number | null = holderCandidates.length > 0 ? Math.max(...holderCandidates) : null;
 
