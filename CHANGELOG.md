@@ -6,6 +6,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed — token page (frontend)
+- Redesigned `token.html` around foldable, click-to-collapse sections
+  with a unified `▸ LABEL ─ ▾` header pattern, replacing the previous
+  fixed two-column layout. Every major section (Critical Flags, AI
+  Verdict, Security, Holder Concentration, Market Data, On-Chain,
+  Deep Analysis, Source Breakdown) is now independently foldable.
+- New **Deep Analysis** widget with two tabs wired to existing API
+  data: **Score Breakdown** (SVG radar pentagon over five dimensions —
+  LP Security, Holder Distribution, Trading Authenticity, Token
+  Maturity, Source Consensus) and **Exit Liquidity** (AMM-derived
+  slippage tiers from `liquidity` USD).
+- New **Source Breakdown** accordion: 1 row per upstream source with
+  derived verdict (`OK` / `Risk` / `Flagged` / `N/A`), replacing the
+  previous percentage bars.
+- Token logo now sits top-right of the verdict h1 via `verdict-row`
+  flex layout (`justify-content:space-between`).
+- Custom inline-SVG tab icons (line stroke, `currentColor`) replace
+  emoji glyphs for visual consistency with the rest of the UI.
+- Severity dots (3-level indicator) added per critical-flag row.
+- Cache-bust query: `/js/token-app.js?v=20260427a` to force browser
+  reload of the new bundle.
+
 ## [1.2.0] - 2026-04-25
 
 ### Added — scale & resilience
