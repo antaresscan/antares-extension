@@ -132,6 +132,10 @@ export interface GoPlusTokenResult {
   trading_cooldown?: string | number | boolean;
   is_whitelisted?: string | number | boolean;
     dex?: Array<{ burn_percent?: number; dex_name?: string; lp_amount?: string | null; tvl?: string | number; type?: string }>;
+    // GoPlus exposes the actual on-chain holder count — they index this
+    // themselves and it matches what DexScreener / Solscan show. Free
+    // endpoint, already in the response we fetch for honeypot detection.
+    holder_count?: string | number;
 }
 
 export interface GoPlusResponse {
