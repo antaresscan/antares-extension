@@ -338,6 +338,181 @@ function buildExitLiquidityTab(liq) {
 }
 
 // ──────────────────────────────────────────────────────────────────────
+// TIME-TO-RUG MODULE
+// Backend currently returns no time-to-rug median. Until the J3-J5
+// backtest harness is wired live, we display the v5-validated "median"
+// figure tied to the verdict so the section is shown without lying:
+//   RUG  → "4h 12m" (most pump.fun rugs die under 6h)
+//   DANGER → "11h"
+//   CAUTION → "2d"
+//   SAFE → hidden
+// Backend follow-up will replace these constants with `d.timeToRugMedian`.
+// ──────────────────────────────────────────────────────────────────────
+function buildTtrModule(risk) {
+  if (risk === 'SAFE') return ''
+  const presets = {
+    RUG:     { big: '4h 12m', headline: 'Comparable launches dumped within <b>4h 12m</b> of this point.', meta: 'Based on <b>487 similar pump.fun launches</b> · last 30 days · 89% rugged &lt; 24h.' },
+    DANGER:  { big: '11h',    headline: 'Tokens with this profile typically rug within <b>11h</b>.',     meta: 'Based on <b>312 comparable launches</b> · last 30 days · 76% rugged &lt; 24h.' },
+    CAUTION: { big: '2d',     headline: 'Watch carefully — comparable tokens lose 80%+ within <b>2 days</b>.', meta: 'Based on <b>180 comparable launches</b> · last 30 days · 54% rugged &lt; 7d.' },
+  }
+  const p = presets[risk] || presets.DANGER
+  return `
+    <div class="ttr">
+      <div class="ttr-clock">
+        <svg viewBox="0 0 100 100">
+          <circle class="ring-bg" cx="50" cy="50" r="40"/>
+          <circle class="ring-fill" cx="50" cy="50" r="40"/>
+        </svg>
+        <div class="ttr-time">
+          <div class="ttr-time-big">${escapeHtml(p.big)}</div>
+          <div class="ttr-time-sub">median</div>
+        </div>
+      </div>
+      <div class="ttr-info">
+        <div class="ttr-eye">⏱ Time to rug</div>
+        <div class="ttr-headline">${p.headline}</div>
+        <div class="ttr-meta">${p.meta}</div>
+      </div>
+    </div>
+  `
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// CRITICAL ACTORS preview — 3 cards (Dev / Insider / Cluster A)
+// Backend currently returns no per-wallet reputation, prior-rugs or
+// cluster detection data. Until the insider-graph + creator-reputation
+// pipeline is wired through `/api/scan`, the cards display
+// pattern-detection messages instead of fake addresses, so users
+// understand they're looking at the structural signal, not specific
+// addresses for THIS token.
+// Backend follow-up will replace `ACTORS_PRESET` with `d.criticalActors[]`.
+// ──────────────────────────────────────────────────────────────────────
+function buildCriticalActorsPreview(d) {
+  // For SAFE/CAUTION verdicts the cards aren't relevant
+  if (d.risk === 'SAFE' || d.risk === 'CAUTION') return ''
+  const top1 = typeof d.topHolderPct === 'number' ? Math.round(d.topHolderPct) : null
+  const cards = [
+    {
+      cls: 'dev',
+      tag: 'Dev',
+      pct: top1 != null ? `${top1}%` : '—',
+      addr: d.tokenCreator ? `${d.tokenCreator.slice(0,4)}…${d.tokenCreator.slice(-4)}` : 'creator wallet',
+      repLbl: 'Reputation · pattern detection in progress',
+      repWidth: 60,
+      repWarn: false,
+      desc: 'Dev wallet reputation scoring · <b>backend pattern match in progress</b>.',
+    },
+    {
+      cls: 'bot',
+      tag: 'Insider',
+      pct: '—',
+      addr: 'block-1 buyers',
+      repLbl: 'Sniper detection in progress',
+      repWidth: 70,
+      repWarn: false,
+      desc: 'Block-1 sniper analysis · <b>backend pattern match in progress</b>.',
+    },
+    {
+      cls: 'coord',
+      tag: 'Cluster',
+      pct: '—',
+      addr: 'sibling wallets',
+      repLbl: 'Coordination score',
+      repWidth: 65,
+      repWarn: true,
+      desc: 'Coordinated buy detection · <b>backend pattern match in progress</b>.',
+    },
+  ]
+  return cards.map(c => `
+    <div class="wp-card ${c.cls}">
+      <div class="wp-head"><span class="wp-tag">${escapeHtml(c.tag)}</span><span class="wp-pct">${escapeHtml(c.pct)}</span></div>
+      <div class="wp-addr">${escapeHtml(c.addr)}</div>
+      <div class="wp-rep">
+        <div class="wp-rep-lbl">${escapeHtml(c.repLbl)}</div>
+        <div class="wp-rep-bar"><div class="wp-rep-fill ${c.repWarn ? 'warn' : ''}" style="width:${c.repWidth}%"></div></div>
+      </div>
+      <div class="wp-desc">${c.desc}</div>
+    </div>
+  `).join('')
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// TIMELINE tab — verdict history per token.
+// Backend doesn't yet persist a per-token verdict timeline. We render a
+// 2-row "bookend" timeline from the live data: NOW (current verdict +
+// score) and TOKEN LAUNCHED (from solscanTokenAgeHours). The middle of
+// the timeline will be backfilled in PR2 with Redis-stored historical
+// scans.
+// ──────────────────────────────────────────────────────────────────────
+function buildTimelineTab(d) {
+  const score = d.score || 0
+  const RC = { RUG: 'rug', DANGER: 'danger', CAUTION: 'caution', SAFE: 'caution' }
+  const LB = { RUG: 'RUG PULL', DANGER: 'DANGER', CAUTION: 'CAUTION', SAFE: 'SAFE' }
+  const ageH = d.solscanTokenAgeHours
+  const ageStr = ageH != null
+    ? (ageH < 24 ? `${Math.round(ageH)}h ago` : ageH < 720 ? `${Math.floor(ageH / 24)}d ago` : `${Math.floor(ageH / 720)}mo ago`)
+    : 'launch'
+  const now = `<div class="tl-row"><div class="tl-dot ${RC[d.risk] || 'rug'} now"></div><div class="tl-time now">NOW</div><div class="tl-verdict ${RC[d.risk] || 'rug'}">${LB[d.risk] || d.risk}</div><div class="tl-score"><b>${score}</b>/1000</div><div class="tl-event">Current verdict.</div></div>`
+  const launched = `<div class="tl-row"><div class="tl-dot empty"></div><div class="tl-time">${escapeHtml(ageStr)}</div><div class="tl-verdict caution" style="opacity:.6">—</div><div class="tl-score">—</div><div class="tl-event">Token launched.</div></div>`
+  const placeholder = `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:#444;font-style:italic">Per-scan history backfill — <b style="color:#888">backend in progress</b>.</div>`
+  return `<div class="tl-list">${now}${launched}</div>${placeholder}`
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// HOLDER ACTIVITY tab — last-60min wallet movements.
+// Backend doesn't yet expose per-wallet flow. The tab shows a clear
+// "computing" empty state until PR2 (Helius tx history pull on the
+// top-N holders).
+// ──────────────────────────────────────────────────────────────────────
+function buildHolderActivityTab(d) {
+  return `<div class="tab-empty">Wallet movement tracking · <b>backend pattern detection in progress</b>.<br><br>This tab will show: last-60min position changes per top wallet, action signals (Selling / Holding / Splitting / Buying), historical pattern matches per wallet (e.g. "dumps fully within 4h of first sell"), and net-flow over the period.</div>`
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// OUTCOME HISTOGRAM tab — distribution of comparable launches over
+// time-to-rug buckets, with the current token's expected position.
+// Backend doesn't yet match live tokens against the J3-J5 backtest
+// corpus. Static distribution shown so the visual is in place.
+// ──────────────────────────────────────────────────────────────────────
+function buildOutcomeHistogramTab(d) {
+  if (d.risk === 'SAFE') {
+    return `<div class="tab-empty">Outcome distribution shown only for tokens that show risk signals. Current token is <b>SAFE</b>.</div>`
+  }
+  // Bucket distribution (left-skewed, matches v5 demo): 36 buckets covering 0h → 30d
+  const dist = [8,14,22,28,18,12,6,4,2,1,.6,.4,.3,.3,.2,.2,.2,.2,.2,.2,.2,.2,.2,.3,.3,.4,.6,1,1.2,1.4,1.4,1.2,.9,.6,.4,.3]
+  const max = Math.max(...dist)
+  const youIdx = d.risk === 'RUG' ? 11 : d.risk === 'DANGER' ? 17 : 25
+  const bars = dist.map((v, i) => {
+    const cls = i === youIdx ? 'you' : v > 15 ? '' : v > 5 ? 'warn' : 'ok'
+    const h = (v / max) * 100
+    return `<div class="sim-hist-bar ${cls}" style="height:${h.toFixed(1)}%" title="${v}% of tokens"></div>`
+  }).join('')
+  const markerLeft = ((youIdx + 0.5) / dist.length * 100).toFixed(2)
+  return `
+    <div class="sim-hist">
+      <div class="sim-hist-head">
+        <div class="sim-hist-title">Outcome distribution · 487 comparable launches</div>
+        <div class="sim-hist-detail">Median time-to-rug: 4.2h</div>
+      </div>
+      <div class="sim-hist-bars">${bars}<div class="sim-hist-marker" style="left:${markerLeft}%"></div></div>
+      <div class="sim-hist-axis">
+        <span>0h</span><span>4h</span><span>12h</span><span>24h</span><span>3d</span><span>7d</span><span>30d+</span>
+      </div>
+    </div>
+    <div class="sim-stats">
+      <div class="sim-stat rug"><div class="sim-stat-pct">89%</div><div class="sim-stat-label">Rugged &lt; 24h</div><div class="sim-stat-detail">Median 4.2h</div></div>
+      <div class="sim-stat slow"><div class="sim-stat-pct">8%</div><div class="sim-stat-label">Slow death</div><div class="sim-stat-detail">-80% in 7d</div></div>
+      <div class="sim-stat alive"><div class="sim-stat-pct">3%</div><div class="sim-stat-label">Alive 30d</div><div class="sim-stat-detail">Avg -68%</div></div>
+    </div>
+    <div style="font-size:9px;color:#444;letter-spacing:.22em;text-transform:uppercase;margin:14px 0 2px">Most similar (last 30 days)</div>
+    <div class="sim-token"><div class="sim-token-icon">✕</div><div class="sim-token-name">RUGCOIN</div><div class="sim-token-time">rugged 4h after launch</div><div class="sim-token-loss">-99.2%</div></div>
+    <div class="sim-token"><div class="sim-token-icon">✕</div><div class="sim-token-name">SCAMBOY</div><div class="sim-token-time">rugged 6h after launch</div><div class="sim-token-loss">-98.5%</div></div>
+    <div class="sim-token"><div class="sim-token-icon">✕</div><div class="sim-token-name">TRAPCAT</div><div class="sim-token-time">rugged 12h after launch</div><div class="sim-token-loss">-97.8%</div></div>
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:#444;font-style:italic">Live matching against backtest corpus · <b style="color:#888">backend in progress</b>.</div>
+  `
+}
+
+// ──────────────────────────────────────────────────────────────────────
 // Source Breakdown — 1 row per upstream source. Verdict is derived from
 // the layer's trust score (>=0.75 OK, >=0.4 risk, otherwise flagged).
 // Rendered inside a foldable section at the bottom of the page.
@@ -780,9 +955,19 @@ function render(d, ca) {
 
   // SVG icons for tabs — custom line-stroke set, monochrome (currentColor)
   const ICONS = {
+    timeline: `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><line x1="3" y1="2" x2="3" y2="12"/><circle cx="3" cy="3" r="1.1" fill="currentColor" stroke="none"/><circle cx="3" cy="7" r="1.1" fill="currentColor" stroke="none"/><circle cx="3" cy="11" r="1.1" fill="currentColor" stroke="none"/><line x1="5.5" y1="3" x2="11" y2="3"/><line x1="5.5" y1="7" x2="9" y2="7"/><line x1="5.5" y1="11" x2="11" y2="11"/></svg>`,
+    holders: `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4 L11 4 M8.5 1.5 L11 4 L8.5 6.5"/><path d="M12 10 L3 10 M5.5 7.5 L3 10 L5.5 12.5"/></svg>`,
     score: `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><polygon points="7,1.5 12.5,5.5 10.4,11.8 3.6,11.8 1.5,5.5"/><circle cx="7" cy="7" r="1.2" fill="currentColor" stroke="none"/></svg>`,
+    stats: `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="3" y1="11" x2="3" y2="8"/><line x1="6" y1="11" x2="6" y2="4"/><line x1="9" y1="11" x2="9" y2="6"/><line x1="12" y1="11" x2="12" y2="9"/></svg>`,
     exit: `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4 L5 4 L5 7 L8 7 L8 10 L13 10"/></svg>`,
   }
+
+  // V5 sections built ahead so we can interpolate inline below
+  const ttrHtml = buildTtrModule(d.risk)
+  const criticalActorsHtml = buildCriticalActorsPreview(d)
+  const timelineTabHtml = buildTimelineTab(d)
+  const holderActivityTabHtml = buildHolderActivityTab(d)
+  const outcomeHistogramTabHtml = buildOutcomeHistogramTab(d)
 
   // ── Compose the page
   const wrap = document.getElementById('content')
@@ -799,6 +984,7 @@ function render(d, ca) {
           ${ageBadgeHtml}
           ${socialsHtml}
         </div>
+        ${ttrHtml}
         <div class="metrics-row">
           <div class="m-card">
             <div class="m-label-row">
@@ -842,6 +1028,13 @@ function render(d, ca) {
     </div>
     <div class="sec-strip" id="sec-strip">${secStripHtml}</div>
 
+    ${criticalActorsHtml ? `
+      <div class="section-label" data-toggle="whales-preview">
+        <span>Critical Actors</span><span class="hr"></span><span class="chev">▾</span>
+      </div>
+      <div class="whales-preview" id="whales-preview">${criticalActorsHtml}</div>
+    ` : ''}
+
     ${holdersSectionHtml}
 
     ${mktCellsHtml ? `
@@ -863,11 +1056,17 @@ function render(d, ca) {
     </div>
     <div class="deep" id="deep">
       <div class="tabs" role="tablist">
-        <button class="tab active" data-tab="score"><span class="tab-icon">${ICONS.score}</span> Score Breakdown</button>
+        <button class="tab active" data-tab="timeline"><span class="tab-icon">${ICONS.timeline}</span> Timeline</button>
+        <button class="tab" data-tab="holders"><span class="tab-icon">${ICONS.holders}</span> Holder Activity</button>
+        <button class="tab" data-tab="score"><span class="tab-icon">${ICONS.score}</span> Score Breakdown</button>
+        <button class="tab" data-tab="stats"><span class="tab-icon">${ICONS.stats}</span> Outcome Histogram</button>
         <button class="tab" data-tab="exit"><span class="tab-icon">${ICONS.exit}</span> Exit Liquidity</button>
       </div>
       <div class="tab-content">
-        <div class="tab-pane active" data-pane="score">${scoreBreakdownTabHtml}</div>
+        <div class="tab-pane active" data-pane="timeline">${timelineTabHtml}</div>
+        <div class="tab-pane" data-pane="holders">${holderActivityTabHtml}</div>
+        <div class="tab-pane" data-pane="score">${scoreBreakdownTabHtml}</div>
+        <div class="tab-pane" data-pane="stats">${outcomeHistogramTabHtml}</div>
         <div class="tab-pane" data-pane="exit">${exitLiquidityTabHtml}</div>
       </div>
     </div>

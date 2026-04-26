@@ -98,6 +98,23 @@ nav .actions a.warn:hover{color:var(--orange);border-color:rgba(255,95,95,.4);ba
 .token-logo-fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:600 16px 'IBM Plex Mono',monospace;color:#aaa}
 .token-logo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}
 
+/* ── TIME-TO-RUG MODULE (atypical urgency indicator) ── */
+.ttr{display:grid;grid-template-columns:auto 1fr;gap:22px;align-items:center;background:linear-gradient(135deg,var(--risk-soft),rgba(0,0,0,.02));border:1px solid var(--risk-border);border-left:3px solid var(--risk);padding:18px 22px;position:relative;overflow:hidden;margin-top:6px}
+.ttr::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--risk),transparent);opacity:.6}
+.ttr-clock{position:relative;width:88px;height:88px;flex-shrink:0}
+.ttr-clock svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ttr-clock .ring-bg{stroke:rgba(255,34,68,.12);fill:none;stroke-width:3}
+.ttr-clock .ring-fill{stroke:var(--risk);fill:none;stroke-width:3;stroke-linecap:round;stroke-dasharray:251.3;stroke-dashoffset:75;filter:drop-shadow(0 0 6px var(--risk-glow))}
+.ttr-clock .ttr-time{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ttr-clock .ttr-time-big{font:400 20px/1 'Bebas Neue',sans-serif;color:var(--risk);letter-spacing:.02em;text-shadow:0 0 12px var(--risk-glow)}
+.ttr-clock .ttr-time-sub{font-size:7px;color:#999;letter-spacing:.16em;text-transform:uppercase;margin-top:3px}
+.ttr-info{display:flex;flex-direction:column;gap:4px;min-width:0}
+.ttr-eye{font-size:9px;color:var(--risk);letter-spacing:.28em;text-transform:uppercase;font-weight:700}
+.ttr-headline{font-size:14px;color:#ddd;font-weight:600;line-height:1.4}
+.ttr-headline b{color:var(--risk)}
+.ttr-meta{font-size:11px;color:#666;font-style:italic}
+.ttr-meta b{color:#aaa;font-style:normal;font-weight:600}
+
 /* ── Score + price metrics ── */
 .metrics-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
 .m-card{background:var(--card);border:1px solid var(--border);padding:14px 16px;position:relative;overflow:hidden}
@@ -135,8 +152,8 @@ nav .actions a.warn:hover{color:var(--orange);border-color:rgba(255,95,95,.4);ba
 .section-label.closed .chev{transform:rotate(180deg)}
 
 /* foldable bodies — uniform spacing whether folded or expanded */
-.flags-card,.ai-card,.sec-strip,.deep,.holders-card,.mkt-grid,.oc-grid,.src-list{transition:max-height .35s ease,opacity .2s,padding .25s,border-width .2s;max-height:5000px;overflow:hidden}
-.flags-card.collapsed,.ai-card.collapsed,.sec-strip.collapsed,.deep.collapsed,.holders-card.collapsed,.mkt-grid.collapsed,.oc-grid.collapsed,.src-list.collapsed{max-height:0;opacity:0;border-width:0;padding-top:0!important;padding-bottom:0!important}
+.flags-card,.ai-card,.sec-strip,.deep,.holders-card,.mkt-grid,.oc-grid,.src-list,.whales-preview{transition:max-height .35s ease,opacity .2s,padding .25s,border-width .2s;max-height:5000px;overflow:hidden}
+.flags-card.collapsed,.ai-card.collapsed,.sec-strip.collapsed,.deep.collapsed,.holders-card.collapsed,.mkt-grid.collapsed,.oc-grid.collapsed,.src-list.collapsed,.whales-preview.collapsed{max-height:0;opacity:0;border-width:0;padding-top:0!important;padding-bottom:0!important}
 
 /* ── FLAGS card ── */
 .flags-card{background:var(--risk-soft);border:1px solid var(--risk-border)}
@@ -199,6 +216,119 @@ nav .actions a.warn:hover{color:var(--orange);border-color:rgba(255,95,95,.4);ba
 @keyframes tab-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 .tab-empty{padding:40px 20px;text-align:center;color:#555;font-size:11px;letter-spacing:.04em;line-height:1.7}
 .tab-empty b{color:#888;font-weight:600}
+
+/* === Critical Actors preview (3 cards) === */
+.whales-preview{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.wp-card{background:var(--card);border:1px solid var(--border);padding:14px 16px;position:relative;overflow:hidden;transition:.2s;cursor:default}
+.wp-card:hover{border-color:rgba(255,255,255,.1)}
+.wp-card.dev{border-color:rgba(167,139,250,.18)}
+.wp-card.bot{border-color:rgba(255,95,95,.22)}
+.wp-card.coord{border-color:rgba(245,208,0,.18)}
+.wp-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;opacity:.6}
+.wp-card.dev::before{background:linear-gradient(90deg,transparent,var(--purple),transparent)}
+.wp-card.bot::before{background:linear-gradient(90deg,transparent,var(--orange),transparent)}
+.wp-card.coord::before{background:linear-gradient(90deg,transparent,var(--yellow),transparent)}
+.wp-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.wp-tag{font-size:8px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;padding:3px 8px;border:1px solid currentColor;border-radius:2px}
+.wp-card.dev .wp-tag{color:var(--purple)}
+.wp-card.bot .wp-tag{color:var(--orange)}
+.wp-card.coord .wp-tag{color:var(--yellow)}
+.wp-pct{font:400 22px/1 'Bebas Neue',sans-serif;letter-spacing:.02em}
+.wp-card.dev .wp-pct{color:#c4b5fd}
+.wp-card.bot .wp-pct{color:#e07070}
+.wp-card.coord .wp-pct{color:#d4b040}
+.wp-addr{font:600 11px 'IBM Plex Mono',monospace;color:#bbb;margin-bottom:8px}
+.wp-rep{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+.wp-rep-lbl{font-size:8px;color:#555;letter-spacing:.16em;text-transform:uppercase}
+.wp-rep-bar{height:4px;background:#181820;border-radius:2px;overflow:hidden;position:relative}
+.wp-rep-fill{height:100%;background:linear-gradient(90deg,var(--risk-fill),var(--risk));box-shadow:0 0 6px var(--risk-glow)}
+.wp-rep-fill.warn{background:linear-gradient(90deg,rgba(245,208,0,.4),var(--yellow));box-shadow:0 0 6px rgba(245,208,0,.4)}
+.wp-desc{font-size:10.5px;color:#666;line-height:1.5;font-style:italic}
+.wp-desc b{color:#bbb;font-style:normal;font-weight:600}
+.whales-preview.collapsed{max-height:0;opacity:0;overflow:hidden;transition:max-height .35s ease,opacity .2s}
+.whales-preview{transition:max-height .35s ease,opacity .2s;max-height:5000px}
+@media(max-width:780px){.whales-preview{grid-template-columns:1fr}}
+
+/* === TAB Timeline === */
+.tl-list{position:relative}
+.tl-list::before{content:'';position:absolute;left:13px;top:14px;bottom:14px;width:1px;background:linear-gradient(180deg,var(--risk) 0%,var(--yellow) 50%,#444 100%);opacity:.3}
+.tl-row{display:grid;grid-template-columns:28px 80px 130px 80px 1fr;align-items:center;gap:14px;padding:10px 0;position:relative;z-index:1}
+.tl-dot{width:14px;height:14px;border-radius:50%;justify-self:center;border:2px solid var(--bg);box-shadow:0 0 0 1px currentColor}
+.tl-dot.now{animation:tl-pulse 2s ease-in-out infinite}
+@keyframes tl-pulse{0%,100%{box-shadow:0 0 0 1px currentColor,0 0 0 4px transparent}50%{box-shadow:0 0 0 1px currentColor,0 0 0 6px var(--risk-soft)}}
+.tl-dot.rug{background:var(--orange);color:var(--orange)}
+.tl-dot.danger{background:var(--orange);color:var(--orange);opacity:.65}
+.tl-dot.caution{background:var(--yellow);color:var(--yellow)}
+.tl-dot.empty{background:transparent;color:#444}
+.tl-time{font-size:11px;color:#666;letter-spacing:.06em}
+.tl-time.now{color:var(--risk);font-weight:700;letter-spacing:.1em}
+.tl-verdict{font:400 18px/1 'Bebas Neue',sans-serif;letter-spacing:.06em}
+.tl-verdict.rug{color:var(--orange)}
+.tl-verdict.danger{color:var(--orange);opacity:.8}
+.tl-verdict.caution{color:var(--yellow)}
+.tl-score{font:600 13px 'IBM Plex Mono',monospace;color:#888}
+.tl-score b{color:#ddd}
+.tl-event{font-size:11px;color:#777;font-style:italic;line-height:1.5}
+.tl-event b{color:#bbb;font-style:normal;font-weight:600}
+@media(max-width:700px){.tl-row{grid-template-columns:24px 60px 1fr;gap:10px}.tl-row .tl-score,.tl-row .tl-event{display:none}}
+
+/* === TAB Holder Activity === */
+.whale-list{display:flex;flex-direction:column;gap:1px;background:var(--border)}
+.whale{display:grid;grid-template-columns:92px 60px 92px 1fr;align-items:center;gap:12px;padding:12px 16px;background:var(--card)}
+.whale-avatar{font:700 10px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;text-align:center;padding:7px 6px;border:1px solid currentColor;border-radius:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.whale.bot .whale-avatar{color:var(--orange);background:rgba(255,95,95,.05)}
+.whale.coord .whale-avatar{color:var(--yellow);background:rgba(245,208,0,.04)}
+.whale.real .whale-avatar{color:var(--c);background:rgba(0,229,176,.04)}
+.whale.whale-big .whale-avatar{color:var(--cyan);background:rgba(34,211,238,.04)}
+.whale.dev .whale-avatar{color:var(--purple);background:rgba(167,139,250,.05)}
+.whale-pct{font:400 18px/1 'Bebas Neue',sans-serif;text-align:center}
+.whale.bot .whale-pct{color:#e07070}
+.whale.coord .whale-pct{color:#d4b040}
+.whale.real .whale-pct{color:#559970}
+.whale.whale-big .whale-pct{color:var(--cyan)}
+.whale.dev .whale-pct{color:#c4b5fd}
+.whale-tag{font-size:8px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:4px 6px;border-radius:2px;text-align:center;border:1px solid currentColor;white-space:nowrap}
+.whale.bot .whale-tag{color:var(--orange);background:rgba(255,95,95,.08)}
+.whale.coord .whale-tag{color:var(--yellow);background:rgba(245,208,0,.06)}
+.whale.real .whale-tag{color:var(--c);background:rgba(0,229,176,.06)}
+.whale.whale-big .whale-tag{color:var(--cyan);background:rgba(34,211,238,.06)}
+.whale.dev .whale-tag{color:var(--purple);background:rgba(167,139,250,.06)}
+.whale-info{min-width:0}
+.whale-addr{font:600 11px 'IBM Plex Mono',monospace;color:#bbb;margin-bottom:3px}
+.whale-desc{font-size:10.5px;color:#666;line-height:1.5;font-style:italic}
+.whale-desc b{color:#999;font-style:normal;font-weight:600}
+@media(max-width:700px){.whale{grid-template-columns:80px 1fr}.whale .whale-pct,.whale .whale-tag{display:none}}
+
+/* === TAB Outcome Histogram === */
+.sim-hist{margin-bottom:20px}
+.sim-hist-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:10px}
+.sim-hist-title{font-size:9px;color:#444;letter-spacing:.22em;text-transform:uppercase}
+.sim-hist-detail{font-size:10px;color:#666;font-style:italic}
+.sim-hist-bars{display:flex;align-items:flex-end;gap:2px;height:80px;padding:0;border-bottom:1px solid var(--border);position:relative}
+.sim-hist-bar{flex:1;background:linear-gradient(180deg,var(--risk) 0%,rgba(255,34,68,.3) 100%);border-radius:1px 1px 0 0;min-height:4px;position:relative;transition:.2s}
+.sim-hist-bar.warn{background:linear-gradient(180deg,var(--yellow) 0%,rgba(245,208,0,.3) 100%)}
+.sim-hist-bar.ok{background:linear-gradient(180deg,var(--c) 0%,rgba(0,229,176,.3) 100%)}
+.sim-hist-bar.you{background:linear-gradient(180deg,#fff 0%,var(--risk-fill) 100%);box-shadow:0 0 12px rgba(255,255,255,.4)}
+.sim-hist-axis{display:flex;justify-content:space-between;margin-top:8px;font-size:9px;color:#444;letter-spacing:.1em;text-transform:uppercase}
+.sim-hist-marker{position:absolute;bottom:0;width:1px;height:100%;background:#fff;opacity:.6}
+.sim-hist-marker::after{content:'YOU';position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-size:8px;color:#fff;letter-spacing:.18em;font-weight:700;background:#0a0a0c;border:1px solid #fff;padding:2px 5px}
+.sim-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border);margin-bottom:18px}
+.sim-stat{background:var(--card);padding:14px 16px;text-align:center;position:relative}
+.sim-stat::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;opacity:.5}
+.sim-stat.rug::before{background:linear-gradient(90deg,transparent,var(--orange),transparent)}
+.sim-stat.slow::before{background:linear-gradient(90deg,transparent,var(--yellow),transparent)}
+.sim-stat.alive::before{background:linear-gradient(90deg,transparent,var(--c),transparent)}
+.sim-stat-pct{font:400 32px/1 'Bebas Neue',sans-serif;margin-bottom:4px}
+.sim-stat.rug .sim-stat-pct{color:var(--orange)}
+.sim-stat.slow .sim-stat-pct{color:var(--yellow)}
+.sim-stat.alive .sim-stat-pct{color:var(--c)}
+.sim-stat-label{font-size:9px;color:#888;letter-spacing:.14em;text-transform:uppercase;margin-bottom:2px}
+.sim-stat-detail{font-size:9px;color:#555;font-style:italic}
+.sim-token{display:grid;grid-template-columns:24px 1fr 100px 80px;align-items:center;gap:12px;padding:8px 0;border-top:1px dashed #16161a}
+.sim-token-icon{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;background:rgba(255,95,95,.12);color:var(--orange)}
+.sim-token-name{font:600 12px 'IBM Plex Mono',monospace;color:#aaa}
+.sim-token-time{font-size:10px;color:#666;text-align:right}
+.sim-token-loss{font:600 13px 'IBM Plex Mono',monospace;color:var(--orange);text-align:right}
 
 /* === TAB Score Breakdown — RADAR + BARS === */
 .bd-wrap{display:grid;grid-template-columns:280px 1fr;gap:32px;align-items:center}
@@ -338,6 +468,6 @@ footer span{color:var(--c)}
 
 </div>
 
-<script defer src="/js/token-app.js?v=20260427a"></script>
-<script defer src="/js/token-bg.js?v=20260427a"></script>
+<script defer src="/js/token-app.js?v=20260427b"></script>
+<script defer src="/js/token-bg.js?v=20260427b"></script>
 </body></html>
