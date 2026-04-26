@@ -62,17 +62,19 @@ export async function heliusGetHoldersCount(mint: string, key: string): Promise<
 }
 
 // Canonical holder-count via getProgramAccounts on the SPL Token Program,
-// filtered by mint. Same approach used by every Solana indexer (Solscan,
-// DexScreener, Birdeye). Returns the count of token accounts ever created
-// for this mint — slightly inflated vs active holders because closed empty
-// accounts persist on chain, but for the rug-detection use case the
-// difference is negligible and the answer matches what the user sees on
-// DexScreener.
+// filtered by mint. Same approach every Solana indexer uses. Returns the
+// count of token accounts ever created for this mint; slightly inflated
+// vs active holders because closed empty accounts persist on chain, but
+// for rug detection the difference is negligible and the result matches
+// what the user sees on DexScreener.
 //
 // `dataSlice: {offset: 0, length: 0}` skips the per-account payload so
-// only addresses come back; for high-holder tokens this still yields a
-// few-MB response — caller should pass a generous budget. The 12s
-// timeout reflects that this is the heaviest RPC we make.
+// only addresses come back. For high-holder tokens (BONK, WIF) the
+// response is still tens of megabytes and Helius itself takes seconds to
+// build it — for those the call simply times out and the chain falls
+// back to the lighter sources. A 5s timeout keeps the whole scan within
+// the Vercel 10s function budget when this is run in parallel with
+// everything else.
 const SPL_TOKEN_PROGRAM = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
 const TOKEN_ACCOUNT_DATA_SIZE = 165;
 export async function heliusGetProgramAccountHolderCount(
@@ -95,7 +97,7 @@ export async function heliusGetProgramAccountHolderCount(
                     dataSlice: { offset: 0, length: 0 },
                 },
             ],
-        }, 12000, 1, heliusHeaders(key)) as { result?: unknown[] } | null;
+        }, 5000, 1, heliusHeaders(key)) as { result?: unknown[] } | null;
         if (!res || !Array.isArray(res.result)) return null;
         return res.result.length;
     } catch {
