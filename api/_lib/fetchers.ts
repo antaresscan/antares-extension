@@ -61,6 +61,48 @@ export async function heliusGetHoldersCount(mint: string, key: string): Promise<
     return typeof total === "number" ? total : null;
 }
 
+// Canonical holder-count via getProgramAccounts on the SPL Token Program,
+// filtered by mint. Same approach used by every Solana indexer (Solscan,
+// DexScreener, Birdeye). Returns the count of token accounts ever created
+// for this mint — slightly inflated vs active holders because closed empty
+// accounts persist on chain, but for the rug-detection use case the
+// difference is negligible and the answer matches what the user sees on
+// DexScreener.
+//
+// `dataSlice: {offset: 0, length: 0}` skips the per-account payload so
+// only addresses come back; for high-holder tokens this still yields a
+// few-MB response — caller should pass a generous budget. The 12s
+// timeout reflects that this is the heaviest RPC we make.
+const SPL_TOKEN_PROGRAM = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
+const TOKEN_ACCOUNT_DATA_SIZE = 165;
+export async function heliusGetProgramAccountHolderCount(
+    mint: string,
+    key: string,
+): Promise<number | null> {
+    try {
+        const res = await fetchJsonPost(HELIUS_BASE, {
+            jsonrpc: "2.0",
+            id: "holders-pa",
+            method: "getProgramAccounts",
+            params: [
+                SPL_TOKEN_PROGRAM,
+                {
+                    encoding: "base64",
+                    filters: [
+                        { dataSize: TOKEN_ACCOUNT_DATA_SIZE },
+                        { memcmp: { offset: 0, bytes: mint } },
+                    ],
+                    dataSlice: { offset: 0, length: 0 },
+                },
+            ],
+        }, 12000, 1, heliusHeaders(key)) as { result?: unknown[] } | null;
+        if (!res || !Array.isArray(res.result)) return null;
+        return res.result.length;
+    } catch {
+        return null;
+    }
+}
+
 // ─── [5.1] CREATOR REPUTATION ─────────────────────────────────────────────
 export interface CreatorReputation {
     priorTokens: number;

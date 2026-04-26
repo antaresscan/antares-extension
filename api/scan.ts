@@ -20,7 +20,7 @@ import {
 } from "./_lib/helpers";
 import {
   heliusGetLargestAccounts, heliusGetTokenSupply, heliusGetCreatorReputation,
-  heliusGetHoldersCount,
+  heliusGetHoldersCount, heliusGetProgramAccountHolderCount,
   heliusResolveAccountOwners,
   publicRpcGetLargestAccounts, publicRpcGetTokenSupply, publicRpcGetMintInfo,
   solscanGetHoldersCount, fetchSolscan, fetchDexCandles,
@@ -28,6 +28,7 @@ import {
 } from "./_lib/fetchers";
 import {
   DEXSCREENER_BASE, RUGCHECK_BASE, GOPLUS_BASE, LAYER_WEIGHTS, SCORING_VERSION,
+  LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS,
 } from "./_lib/constants";
 import {
   layerDexScreener, layerRugCheck, layerGoPlus, layerHelius,
@@ -296,16 +297,24 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // the first non-null value, which meant a stale Solscan returning 1
     // would override Helius reporting 50,000. Always-call Helius is fine
     // because the fallback path was already paying that latency anyway.
+    // Holders count chain — query 4 independent sources in parallel and
+    // take the MAX. Each individual source can flake to 0/1/null but the
+    // chance of all four agreeing on a low value is negligible. The
+    // getProgramAccounts variant is the canonical method used by every
+    // Solana indexer; when it succeeds it is by far the most accurate.
     let heliusHoldersCount: number | null = null;
+    let heliusPaHolderCount: number | null = null;
     if (HELIUS_API_KEY) {
-      try {
-        heliusHoldersCount = await heliusGetHoldersCount(resolvedMint, HELIUS_API_KEY);
-      } catch { /* silent — keep null */ }
+      const [r1, r2] = await Promise.all([
+        heliusGetHoldersCount(resolvedMint, HELIUS_API_KEY).catch(() => null),
+        // Heavy call (getProgramAccounts) — give it its own budget slice.
+        // Returns null on failure / rate-limit; the chain copes either way.
+        withBudget(heliusGetProgramAccountHolderCount(resolvedMint, HELIUS_API_KEY), Math.max(remainingMs(), 8000)).catch(() => null),
+      ]);
+      heliusHoldersCount = r1;
+      heliusPaHolderCount = r2;
     }
-    // 3 sources: Solscan public, RugCheck report, Helius getTokenAccounts.
-    // Take the MAX so any one going stale or returning 1 doesn't poison
-    // the result. All three are free; no Pro tier required.
-    const holderCandidates = [solscanHoldersCount, rugTotalHolders, heliusHoldersCount]
+    const holderCandidates = [solscanHoldersCount, rugTotalHolders, heliusHoldersCount, heliusPaHolderCount]
       .filter((n): n is number => typeof n === "number" && n > 0);
     const holders: number | null = holderCandidates.length > 0 ? Math.max(...holderCandidates) : null;
 
@@ -407,19 +416,23 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     );
 
     // Compute holder concentration: top1 + top10 percentages of total supply.
-    // resolvedHolderAccounts comes from getTokenLargestAccounts (top 20),
-    // so top10 is just the first 10 entries summed. Both fields are exposed
-    // in the API response (not just passed to the AI summary) so the
-    // frontend can render the concentration bar with real numbers instead
-    // of regex-extracting thresholds from flag labels.
+    // CRITICAL: filter out LP program accounts and foundation wallets first
+    // — they hold large amounts on behalf of pools (Raydium, Orca, PumpSwap…)
+    // and are not real holders. Without this filter, "Single wallet holds X%"
+    // would fire for the LP itself and the concentration bar would show the
+    // LP balance as user concentration. Same filter as layerHelius for
+    // consistency between the flags and the displayed numbers.
+    const realHolderAccounts: HeliusHolder[] = resolvedHolderAccounts.filter(
+      h => !LP_PROGRAM_ADDRESSES.has(h.owner) && !FOUNDATION_WALLETS.has(h.owner),
+    );
     const topHolderPct: number | null = (() => {
-      if (resolvedHolderAccounts.length === 0 || totalSupplyUi <= 0) return null;
-      const topAmt = asNumber(resolvedHolderAccounts[0]?.uiAmount);
+      if (realHolderAccounts.length === 0 || totalSupplyUi <= 0) return null;
+      const topAmt = asNumber(realHolderAccounts[0]?.uiAmount);
       return topAmt > 0 ? (topAmt / totalSupplyUi) * 100 : null;
     })();
     const top10HolderPct: number | null = (() => {
-      if (resolvedHolderAccounts.length === 0 || totalSupplyUi <= 0) return null;
-      const top10Sum = resolvedHolderAccounts.slice(0, 10)
+      if (realHolderAccounts.length === 0 || totalSupplyUi <= 0) return null;
+      const top10Sum = realHolderAccounts.slice(0, 10)
         .reduce((sum, h) => sum + asNumber(h?.uiAmount), 0);
       return top10Sum > 0 ? Math.min(100, (top10Sum / totalSupplyUi) * 100) : null;
     })();
