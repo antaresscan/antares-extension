@@ -4,20 +4,24 @@ export const DEXSCREENER_BASE = "https://api.dexscreener.com/latest/dex";
 export const RUGCHECK_BASE = "https://api.rugcheck.xyz/v1";
 export const GOPLUS_BASE = "https://api.gopluslabs.io/api/v1";
 export const HELIUS_BASE = "https://mainnet.helius-rpc.com";
-// Free public Solana RPC pool — tried in order until one responds. Each
-// provider has its own rate limit per IP, so combining several effectively
-// multiplies the budget for the fallback path. Same JSON-RPC interface as
-// Helius so callers can use the existing isHeliusLargestAccountsResponse /
-// isHeliusSupplyResponse type guards on the result.
+// Free public Solana RPC pool — tried in order until one responds. Same
+// JSON-RPC interface as Helius so the existing isHelius* type guards work
+// on the result.
 //
-// - api.mainnet-beta.solana.com: Solana Foundation, ~100 req/10s
-// - rpc.ankr.com/solana: Ankr public, ~50 req/sec
-// - solana-rpc.publicnode.com: PublicNode, generous free tier
-// Add more here if any one starts failing; the loop stops at the first
-// successful response.
+// IMPORTANT: only the cheap methods (`getTokenSupply`, `getAccountInfo`)
+// reliably work on free tier. `getTokenLargestAccounts` is heavy and gets
+// rate-limited (429) on Solana Foundation and explicitly BLOCKED on
+// PublicNode. Top-holder concentration therefore still requires Helius
+// in practice; the public-RPC fallback exists for the supply path only.
+//
+// Tested 2026-04-26:
+//   - api.mainnet-beta.solana.com: Solana Foundation, getTokenSupply OK,
+//     getTokenLargestAccounts 429 on real tokens
+//   - solana-rpc.publicnode.com: getTokenSupply OK, getTokenLargestAccounts
+//     blocked with -32602 "Request blocked"
+//   - rpc.ankr.com/solana: now requires an API key (used to be free)
 export const PUBLIC_SOLANA_RPCS = [
   "https://api.mainnet-beta.solana.com",
-  "https://rpc.ankr.com/solana",
   "https://solana-rpc.publicnode.com",
 ] as const;
 export const SOLSCAN_PUBLIC_BASE = "https://public-api.solscan.io";

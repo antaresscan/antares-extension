@@ -22,7 +22,7 @@ import {
   heliusGetLargestAccounts, heliusGetTokenSupply, heliusGetCreatorReputation,
   heliusGetHoldersCount,
   heliusResolveAccountOwners,
-  publicRpcGetLargestAccounts, publicRpcGetTokenSupply,
+  publicRpcGetLargestAccounts, publicRpcGetTokenSupply, publicRpcGetMintInfo,
   solscanGetHoldersCount, fetchSolscan, fetchDexCandles,
   type CreatorReputation,
 } from "./_lib/fetchers";
@@ -221,6 +221,16 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
         const fallback = await withBudget(publicRpcGetTokenSupply(resolvedMint), remainingMs());
         const parsed = isHeliusSupplyResponse(fallback) ? fallback : null;
         totalSupplyUi = asNumber(parsed?.result?.value?.uiAmount);
+      } catch { /* keep 0 — try next fallback */ }
+    }
+    // Last-resort: getAccountInfo on the mint reads the SPL-Token mint state
+    // directly. Always works on free public RPCs (cheap call) and gives both
+    // raw supply and decimals — we divide to get uiAmount. Triggers only if
+    // the dedicated getTokenSupply path returned 0.
+    if (totalSupplyUi <= 0) {
+      try {
+        const mintInfo = await withBudget(publicRpcGetMintInfo(resolvedMint), remainingMs());
+        if (mintInfo) totalSupplyUi = mintInfo.supplyUi;
       } catch { /* keep 0 — concentration calc will be null */ }
     }
 

@@ -125,6 +125,40 @@ export async function publicRpcGetTokenSupply(mint: string) {
     return publicRpcCall("getTokenSupply", [mint]);
 }
 
+// getAccountInfo on the mint address returns the SPL-Token mint state:
+// decimals, raw supply (string), mintAuthority, freezeAuthority. This is a
+// cheap RPC call that works on every free public Solana RPC tested, so it
+// is the most reliable fallback for supply when getTokenSupply is rate-
+// limited. Caller divides supply by 10^decimals to get the uiAmount.
+interface MintAccountInfo {
+    result?: {
+        value?: {
+            data?: {
+                parsed?: {
+                    info?: {
+                        decimals?: number;
+                        supply?: string;
+                        mintAuthority?: string | null;
+                        freezeAuthority?: string | null;
+                    };
+                };
+            };
+        };
+    };
+}
+export async function publicRpcGetMintInfo(mint: string): Promise<{
+    supplyUi: number;
+    decimals: number | null;
+} | null> {
+    const res = await publicRpcCall("getAccountInfo", [mint, { encoding: "jsonParsed" }]) as MintAccountInfo | null;
+    const info = res?.result?.value?.data?.parsed?.info;
+    if (!info) return null;
+    const decimals = typeof info.decimals === "number" ? info.decimals : null;
+    const rawSupply = typeof info.supply === "string" ? parseFloat(info.supply) : NaN;
+    if (!Number.isFinite(rawSupply) || rawSupply <= 0 || decimals === null) return null;
+    return { supplyUi: rawSupply / Math.pow(10, decimals), decimals };
+}
+
 // ─── SOLSCAN HELPERS ───────────────────────────────────────────────────────
 export async function solscanGetHoldersCount(mint: string): Promise<number | null> {
     const res = await fetchJson(
