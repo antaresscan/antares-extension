@@ -298,17 +298,27 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // the first non-null value, which meant a stale Solscan returning 1
     // would override Helius reporting 50,000. Always-call Helius is fine
     // because the fallback path was already paying that latency anyway.
-    // Holders count: take MAX across Solscan, RugCheck, Helius DAS.
-    // Plus a sanity floor: holders cannot be smaller than the number of
-    // non-zero-balance addresses we already see in the top-20 from
-    // getTokenLargestAccounts. This catches the common bug where a
-    // single stale source returns 1 while the on-chain top-20 obviously
-    // contains many real holders — without it the page would lie.
+    // Holders count: take MAX across every free source we have. GoPlus
+    // exposes `holder_count` directly in the same payload we already
+    // fetch for honeypot detection — they index this themselves and
+    // their number matches DexScreener / Solscan. That made the
+    // previous "1 holder" lie disappear on real tokens.
     const heliusHoldersCount: number | null = typeof heliusHoldersCountRaw === "number" && heliusHoldersCountRaw > 0
       ? heliusHoldersCountRaw : null;
     const top20NonZero = rawHolderAccounts.filter(h => asNumber(h?.uiAmount) > 0).length;
-    const holderCandidates = [solscanHoldersCount, rugTotalHolders, heliusHoldersCount, top20NonZero > 0 ? top20NonZero : null]
-      .filter((n): n is number => typeof n === "number" && n > 0);
+    const goplusHolderCount: number | null = (() => {
+      const raw = goplus?.holder_count;
+      if (raw == null) return null;
+      const n = typeof raw === "number" ? raw : parseInt(String(raw), 10);
+      return Number.isFinite(n) && n > 0 ? n : null;
+    })();
+    const holderCandidates = [
+      solscanHoldersCount,
+      rugTotalHolders,
+      heliusHoldersCount,
+      goplusHolderCount,
+      top20NonZero > 0 ? top20NonZero : null,
+    ].filter((n): n is number => typeof n === "number" && n > 0);
     const holders: number | null = holderCandidates.length > 0 ? Math.max(...holderCandidates) : null;
 
     const priceUsd: number | null = (() => {

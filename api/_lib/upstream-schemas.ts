@@ -53,6 +53,7 @@ export const GoPlusTokenResultSchema = z.object({
   trading_cooldown: GoPlusFlagSchema.optional(),
   is_whitelisted: GoPlusFlagSchema.optional(),
   dex: z.array(GoPlusDexEntrySchema).optional(),
+  holder_count: z.union([z.string(), z.number()]).optional(),
 });
 
 export const GoPlusResponseSchema = z.object({
