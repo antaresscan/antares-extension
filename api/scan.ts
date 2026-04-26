@@ -22,6 +22,7 @@ import {
   heliusGetLargestAccounts, heliusGetTokenSupply, heliusGetCreatorReputation,
   heliusGetHoldersCount,
   heliusResolveAccountOwners,
+  publicRpcGetLargestAccounts, publicRpcGetTokenSupply,
   solscanGetHoldersCount, fetchSolscan, fetchDexCandles,
   type CreatorReputation,
 } from "./_lib/fetchers";
@@ -199,9 +200,29 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const candles: OHLCVCandle[] = Array.isArray(candlesRaw) ? candlesRaw : [];
     const goplus = pickGoPlusResult(goplusRaw, resolvedMint);
     const heliusResponse = isHeliusLargestAccountsResponse(heliusHoldersRaw) ? heliusHoldersRaw : null;
-    const rawHolderAccounts: HeliusHolder[] = heliusResponse?.result?.value ?? [];
+    let rawHolderAccounts: HeliusHolder[] = heliusResponse?.result?.value ?? [];
     const supplyResponse = isHeliusSupplyResponse(heliusSupplyRaw) ? heliusSupplyRaw : null;
-    const totalSupplyUi: number = asNumber(supplyResponse?.result?.value?.uiAmount);
+    let totalSupplyUi: number = asNumber(supplyResponse?.result?.value?.uiAmount);
+
+    // Free public Solana RPC fallback for the two Helius RPC calls that
+    // matter for holder concentration. Same JSON-RPC interface, same
+    // response shape, no API key. Triggered when Helius is unset or
+    // returned no usable data — gives a token-distribution signal even
+    // for users running without a paid Helius tier.
+    if (rawHolderAccounts.length === 0) {
+      try {
+        const fallback = await withBudget(publicRpcGetLargestAccounts(resolvedMint), remainingMs());
+        const parsed = isHeliusLargestAccountsResponse(fallback) ? fallback : null;
+        rawHolderAccounts = parsed?.result?.value ?? [];
+      } catch { /* keep empty — section will gracefully degrade */ }
+    }
+    if (totalSupplyUi <= 0) {
+      try {
+        const fallback = await withBudget(publicRpcGetTokenSupply(resolvedMint), remainingMs());
+        const parsed = isHeliusSupplyResponse(fallback) ? fallback : null;
+        totalSupplyUi = asNumber(parsed?.result?.value?.uiAmount);
+      } catch { /* keep 0 — concentration calc will be null */ }
+    }
 
     const solMarketsData = isSolscanMarketsResponse(solMarkets) ? solMarkets : null;
     const resolvedHolderAccounts: HeliusHolder[] = HELIUS_API_KEY && rawHolderAccounts.length > 0
@@ -213,15 +234,33 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       : null;
     const solMetaData = isSolscanMeta(solMeta) ? solMeta : null;
     const solscanCreatedTime: number | null = solMetaData?.data?.created_time ?? null;
-    const solscanTokenAgeHours: number | null =
-      solscanCreatedTime !== null
-      ? Math.floor((Date.now() / 1000 - solscanCreatedTime) / 3600)
-      : pair?.pairCreatedAt
-      ? Math.floor((Date.now() - pair.pairCreatedAt) / 3_600_000)
-      : null;
+    // Token age: take the MAX of Solscan token-mint time and DexScreener
+    // pair-creation time. The two measure different events (mint vs pair
+    // listing) and either source can fail or return stale data; the older
+    // is the safer floor on actual token age. Previously we took whichever
+    // came first which would underreport age when Solscan was rate-limited.
     const dexTokenAgeHours: number | null = pair?.pairCreatedAt
       ? Math.floor((Date.now() - pair.pairCreatedAt) / 3_600_000)
       : null;
+    const solscanOnlyAge: number | null = solscanCreatedTime !== null
+      ? Math.floor((Date.now() / 1000 - solscanCreatedTime) / 3600)
+      : null;
+    const solscanTokenAgeHours: number | null = (() => {
+      if (solscanOnlyAge === null && dexTokenAgeHours === null) return null;
+      if (solscanOnlyAge === null) return dexTokenAgeHours;
+      if (dexTokenAgeHours === null) return solscanOnlyAge;
+      return Math.max(solscanOnlyAge, dexTokenAgeHours);
+    })();
+
+    // Last-resort supply fallback from Solscan Pro meta when both Helius and
+    // public RPC failed — only effective if SOLSCAN_API_KEY is set. The
+    // earlier Helius → public-RPC chain covers free deployments.
+    if (totalSupplyUi <= 0 && solMetaData?.data?.supply && typeof solMetaData.data.decimals === "number") {
+      const rawSupply = asNumber(solMetaData.data.supply);
+      if (rawSupply > 0) {
+        totalSupplyUi = rawSupply / Math.pow(10, solMetaData.data.decimals);
+      }
+    }
     const solscanVolume24h: number | null  = asNumber(solMarketPool?.volume)    || asNumber(pair?.volume?.h24) || null;
     const solscanTrades24h: number | null  = asNumber(solMarketPool?.trade)     || null;
     const solscanTraders24h: number | null = asNumber(solMarketPool?.trader)    || null;
@@ -253,6 +292,9 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
         heliusHoldersCount = await heliusGetHoldersCount(resolvedMint, HELIUS_API_KEY);
       } catch { /* silent — keep null */ }
     }
+    // 3 sources: Solscan public, RugCheck report, Helius getTokenAccounts.
+    // Take the MAX so any one going stale or returning 1 doesn't poison
+    // the result. All three are free; no Pro tier required.
     const holderCandidates = [solscanHoldersCount, rugTotalHolders, heliusHoldersCount]
       .filter((n): n is number => typeof n === "number" && n > 0);
     const holders: number | null = holderCandidates.length > 0 ? Math.max(...holderCandidates) : null;

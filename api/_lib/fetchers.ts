@@ -6,7 +6,7 @@ import type {
     OHLCVCandle, GeckoTerminalOHLCVResponse,
     RugCheckReport, RugCheckRisk,
 } from "./types";
-import { HELIUS_BASE, SOLSCAN_PUBLIC_BASE, SOLSCAN_BASE, HELIUS_REST_BASE } from "./constants";
+import { HELIUS_BASE, PUBLIC_SOLANA_RPCS, SOLSCAN_PUBLIC_BASE, SOLSCAN_BASE, HELIUS_REST_BASE } from "./constants";
 import { fetchJson, fetchJsonPost } from "./http";
 import { asNumber } from "./math";
 import { logger } from "./logger";
@@ -92,6 +92,37 @@ export async function heliusGetCreatorReputation(
         return { priorTokens, flagged: true, reason: "Creator launched " + priorTokens + "+ tokens \u2014 serial deployer" };
     }
     return { priorTokens, flagged: false, reason: null };
+}
+
+// ─── PUBLIC SOLANA RPC POOL (free fallback) ────────────────────────────────
+// Iterates the PUBLIC_SOLANA_RPCS pool until one provider answers. Same
+// JSON-RPC interface as Helius so the existing isHelius*Response type
+// guards work on the return value. The per-call timeout is short (4s) so a
+// single dead RPC doesn't blow the whole scan budget; the fast iteration
+// also means we can survive one provider being down or rate-limited
+// without the user noticing — combining multiple free providers gives an
+// effective rate budget several times higher than any single one.
+async function publicRpcCall(method: string, params: unknown[]) {
+    for (const rpc of PUBLIC_SOLANA_RPCS) {
+        try {
+            const res = await fetchJsonPost(rpc, {
+                jsonrpc: "2.0", id: method, method, params,
+            }, 4000, 1);
+            // Skip RPC-level errors (rate limit, method forbidden) and
+            // try the next provider in the pool.
+            const r = res as { result?: unknown; error?: unknown } | null;
+            if (r && r.result !== undefined) return res;
+        } catch { /* try next provider */ }
+    }
+    return null;
+}
+
+export async function publicRpcGetLargestAccounts(mint: string) {
+    return publicRpcCall("getTokenLargestAccounts", [mint]);
+}
+
+export async function publicRpcGetTokenSupply(mint: string) {
+    return publicRpcCall("getTokenSupply", [mint]);
 }
 
 // ─── SOLSCAN HELPERS ───────────────────────────────────────────────────────

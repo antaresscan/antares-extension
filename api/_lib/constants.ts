@@ -4,6 +4,22 @@ export const DEXSCREENER_BASE = "https://api.dexscreener.com/latest/dex";
 export const RUGCHECK_BASE = "https://api.rugcheck.xyz/v1";
 export const GOPLUS_BASE = "https://api.gopluslabs.io/api/v1";
 export const HELIUS_BASE = "https://mainnet.helius-rpc.com";
+// Free public Solana RPC pool — tried in order until one responds. Each
+// provider has its own rate limit per IP, so combining several effectively
+// multiplies the budget for the fallback path. Same JSON-RPC interface as
+// Helius so callers can use the existing isHeliusLargestAccountsResponse /
+// isHeliusSupplyResponse type guards on the result.
+//
+// - api.mainnet-beta.solana.com: Solana Foundation, ~100 req/10s
+// - rpc.ankr.com/solana: Ankr public, ~50 req/sec
+// - solana-rpc.publicnode.com: PublicNode, generous free tier
+// Add more here if any one starts failing; the loop stops at the first
+// successful response.
+export const PUBLIC_SOLANA_RPCS = [
+  "https://api.mainnet-beta.solana.com",
+  "https://rpc.ankr.com/solana",
+  "https://solana-rpc.publicnode.com",
+] as const;
 export const SOLSCAN_PUBLIC_BASE = "https://public-api.solscan.io";
 export const SOLSCAN_BASE = "https://pro-api.solscan.io/v2.0";
 
