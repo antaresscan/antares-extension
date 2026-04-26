@@ -188,6 +188,22 @@ function setupStickyNav() {
   onScroll()
 }
 
+// Wire up collapsible card heads. Each head carries `data-toggle="<id>"`
+// pointing at its own card; clicking flips the `collapsed` class on the
+// card so the body hides via CSS. Click is event-delegated once at the
+// document level so re-renders don't double-bind.
+function setupCollapsibles() {
+  if (window.__collapseInit) return
+  window.__collapseInit = true
+  document.addEventListener('click', (e) => {
+    const head = e.target.closest('[data-toggle]')
+    if (!head) return
+    const id = head.dataset.toggle
+    const card = id ? document.getElementById(id) : head.parentElement
+    if (card) card.classList.toggle('collapsed')
+  })
+}
+
 function setupRevealObserver() {
   if (window.__obsInit) return
   window.__obsInit = true
@@ -330,11 +346,17 @@ function render(d, ca) {
     : pairDate
       ? `<span class="age-badge">Pair: ${escapeHtml(pairDate)}</span>`
       : ''
-  const tokenLogoHtml = logo
-    ? `<img class="token-logo" src="${safeUrl(logo)}" alt="${escapeHtml(sym)}" onerror="this.style.display='none'"/>`
-    : sym
-      ? `<div class="token-logo-fallback">${escapeHtml(sym.slice(0, 4))}</div>`
-      : ''
+  // Logo wrap: fallback letters always rendered as the bottom layer; the
+   // <img> sits on top via z-index. If the image fails to load (CORS, 404,
+   // bad scheme) onerror removes it and the fallback shows through. Using
+   // .remove() rather than display:none so the wrap doesn't keep an empty
+   // box that some browsers still reserve space for.
+  const tokenLogoHtml = (logo || sym)
+    ? `<div class="token-logo-wrap">
+        ${sym ? `<div class="token-logo-fallback">${escapeHtml(sym.slice(0, 4))}</div>` : ''}
+        ${logo ? `<img class="token-logo" src="${safeUrl(logo)}" alt="${escapeHtml(sym)}" onerror="this.remove()"/>` : ''}
+      </div>`
+    : ''
 
   const socialsHtml = [
     ...websites.map(w => `<a class="soc" href="${safeUrl(w.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(w.label || 'Website')}</a>`),
@@ -474,37 +496,46 @@ function render(d, ca) {
       <div class="hero-eye">Token Analysis${conf !== null ? ' · Conf ' + conf + '%' : ''}</div>
       <div class="above">
 
-        <div class="verdict-info">
-          <div class="verdict-row">
-            <h1>${escapeHtml(lb)}</h1>
-            ${tokenLogoHtml}
+        <div class="verdict-block">
+          <div class="verdict-info">
+            <div class="verdict-row">
+              <h1>${escapeHtml(lb)}</h1>
+              ${tokenLogoHtml}
+            </div>
+            ${tkLineHtml}
+            ${ageBadgeHtml}
+            ${socialsHtml ? `<div class="socials">${socialsHtml}</div>` : ''}
           </div>
-          ${tkLineHtml}
-          ${ageBadgeHtml}
-          ${socialsHtml ? `<div class="socials">${socialsHtml}</div>` : ''}
+
+          <div class="metrics-row">
+            <div class="m-card">
+              <div class="m-label">Risk Score</div>
+              <div class="m-big">${score}<span class="denom">/ 1000</span></div>
+              <div class="sbar"><div class="sbar-fill" id="sbarf"></div></div>
+              <div class="m-sub risk">${escapeHtml(flagSummary)}${conf !== null ? ' · Conf ' + conf + '%' : ''}</div>
+            </div>
+            ${priceCardHtml}
+          </div>
         </div>
 
-        <div class="flags-card">
-          <div class="flags-head">
-            <span class="lbl">Critical Flags</span>
-            <span class="count">${escapeHtml(flagsCount)}</span>
+        <div class="right-block">
+          <div class="flags-card" id="flags-card">
+            <div class="flags-head" data-toggle="flags-card">
+              <span class="lbl">Critical Flags</span>
+              <span class="count">${escapeHtml(flagsCount)}</span>
+              <span class="chevron" aria-hidden="true">▾</span>
+            </div>
+            <div class="flag-rows-wrap">${flagsRowsHtml}</div>
           </div>
-          ${flagsRowsHtml}
-        </div>
 
-        <div class="metrics-row">
-          <div class="m-card">
-            <div class="m-label">Risk Score</div>
-            <div class="m-big">${score}<span class="denom">/ 1000</span></div>
-            <div class="sbar"><div class="sbar-fill" id="sbarf"></div></div>
-            <div class="m-sub risk">${escapeHtml(flagSummary)}${conf !== null ? ' · Conf ' + conf + '%' : ''}</div>
+          <div class="ai-card" id="ai-section">
+            <div class="ai-head" data-toggle="ai-section">
+              <span class="icon">⬡</span>
+              <h3>AI Verdict</h3>
+              <span class="chevron" aria-hidden="true">▾</span>
+            </div>
+            <div class="ai-body-wrap">${aiBodyHtml}</div>
           </div>
-          ${priceCardHtml}
-        </div>
-
-        <div class="ai-card" id="ai-section">
-          <div class="ai-head"><span class="icon">⬡</span><h3>AI Verdict</h3></div>
-          ${aiBodyHtml}
         </div>
 
       </div>
@@ -539,6 +570,7 @@ function render(d, ca) {
   setupCursorGlow()
   setupStickyNav()
   setupRevealObserver()
+  setupCollapsibles()
 
   // Score bar animation
   setTimeout(() => {
