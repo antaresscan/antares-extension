@@ -204,6 +204,61 @@ function setupCollapsibles() {
   })
 }
 
+// Refresh button + freshness ticker. Lets the user manually re-scan
+// the token without waiting for the Redis cache TTL. The button posts
+// `?fresh=1` which bypasses cache reads server-side. A 15s cooldown
+// between clicks keeps the upstream API budget under control while
+// still feeling responsive — long enough that no one accidentally
+// triggers two scans, short enough that the page feels live.
+const REFRESH_COOLDOWN_MS = 15000
+function setupRefreshButton(ca) {
+  if (window.__refreshInit) return
+  window.__refreshInit = true
+  const btn = document.getElementById('refresh-btn')
+  if (!btn) return
+  let lastRefresh = 0
+
+  btn.addEventListener('click', async () => {
+    const since = Date.now() - lastRefresh
+    if (since < REFRESH_COOLDOWN_MS) return
+    lastRefresh = Date.now()
+    btn.disabled = true
+    btn.classList.add('spinning')
+    try {
+      const r = await fetch(`${API}?ca=${encodeURIComponent(ca)}&fresh=1`)
+      if (r.ok) {
+        const data = await r.json()
+        // Re-render: the new payload replaces the existing content area;
+        // setupRefreshButton's __refreshInit guard means we don't double-bind.
+        render(data, ca)
+      }
+    } catch { /* silent — keep current data on the page */ }
+    btn.classList.remove('spinning')
+    // Stay disabled for the rest of the cooldown window
+    const remaining = REFRESH_COOLDOWN_MS - (Date.now() - lastRefresh)
+    setTimeout(() => { btn.disabled = false }, Math.max(0, remaining))
+  })
+}
+
+let __freshnessInterval = null
+function setupFreshnessTicker(fetchedAt) {
+  window.__lastFetchedAt = fetchedAt || Date.now()
+  if (__freshnessInterval) return // already running
+  __freshnessInterval = setInterval(() => updateFreshnessLabel(), 1000)
+  updateFreshnessLabel()
+}
+function updateFreshnessLabel() {
+  const el = document.getElementById('m-fresh')
+  if (!el || !window.__lastFetchedAt) return
+  const seconds = Math.floor((Date.now() - window.__lastFetchedAt) / 1000)
+  let label
+  if (seconds < 5) label = 'Scanned just now'
+  else if (seconds < 60) label = `Scanned ${seconds}s ago`
+  else if (seconds < 3600) label = `Scanned ${Math.floor(seconds / 60)}m ago`
+  else label = `Scanned ${Math.floor(seconds / 3600)}h ago`
+  el.textContent = label
+}
+
 function setupRevealObserver() {
   if (window.__obsInit) return
   window.__obsInit = true
@@ -513,10 +568,14 @@ function render(d, ca) {
 
           <div class="metrics-row">
             <div class="m-card">
-              <div class="m-label">Risk Score</div>
+              <div class="m-label-row">
+                <div class="m-label">Risk Score</div>
+                <button class="refresh-btn" id="refresh-btn" aria-label="Refresh scan" title="Force a fresh scan, bypassing the cache">↻</button>
+              </div>
               <div class="m-big">${score}<span class="denom">/ 1000</span></div>
               <div class="sbar"><div class="sbar-fill" id="sbarf"></div></div>
               <div class="m-sub risk">${escapeHtml(flagSummary)}${conf !== null ? ' · Conf ' + conf + '%' : ''}</div>
+              <div class="m-fresh" id="m-fresh">Scanned just now</div>
             </div>
             ${priceCardHtml}
           </div>
@@ -575,6 +634,8 @@ function render(d, ca) {
   setupStickyNav()
   setupRevealObserver()
   setupCollapsibles()
+  setupRefreshButton(ca)
+  setupFreshnessTicker(d.fetchedAt)
 
   // Score bar animation
   setTimeout(() => {

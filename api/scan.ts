@@ -79,8 +79,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const ca = validateCA(req.query.ca);
   if (!ca) return apiError(res, 400, "Invalid token address.");
 
+  // ?fresh=1 bypasses the Redis cache so users can manually trigger a
+  // fresh scan from the page — the front-end refresh button passes this
+  // flag. The result still gets written to cache for the next request,
+  // so the bypass costs one upstream batch and benefits everyone after.
+  const fresh = req.query?.fresh === "1" || req.query?.fresh === "true";
+
   // Only serve cache when aiSummary is present — avoids serving stale null-summary results
-  const cached = await getCachedResult<ScanResult>(ca, requestId);
+  const cached = fresh ? null : await getCachedResult<ScanResult>(ca, requestId);
   if (cached && cached.aiSummary) {
     logger.metric("scan.cache_hit", {
       requestId,
@@ -158,8 +164,9 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
 
     if (pair?.baseToken?.address) resolvedMint = pair.baseToken.address;
 
+    const fresh = req.query?.fresh === "1" || req.query?.fresh === "true";
     if (resolvedMint !== ca) {
-      const cachedByMint = await getCachedResult<ScanResult>(resolvedMint, requestId);
+      const cachedByMint = !fresh ? await getCachedResult<ScanResult>(resolvedMint, requestId) : null;
       if (cachedByMint && cachedByMint.aiSummary) {
         logger.metric("scan.cache_hit", {
           requestId,
