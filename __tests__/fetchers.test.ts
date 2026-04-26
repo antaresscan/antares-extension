@@ -130,8 +130,13 @@ const {
   heliusGetLargestAccounts,
   heliusGetTokenSupply,
   heliusGetCreatorReputation,
+  heliusGetHoldersCount,
+  heliusGetProgramAccountHolderCount,
   solscanGetHoldersCount,
   fetchDexCandles,
+  publicRpcGetLargestAccounts,
+  publicRpcGetTokenSupply,
+  publicRpcGetMintInfo,
 } = await import("../api/_lib/fetchers");
 
 beforeEach(() => {
@@ -248,5 +253,124 @@ describe("fetchDexCandles", () => {
     mockFetchJson.mockResolvedValue({ data: { attributes: {} } });
     const result = await fetchDexCandles("pairAddr");
     expect(result).toEqual([]);
+  });
+});
+
+// ─── Helius DAS getTokenAccounts (DAS API extension) ────────────────────────
+describe("heliusGetHoldersCount", () => {
+  it("returns total holders count from result.total", async () => {
+    mockFetchJsonPost.mockResolvedValue({ result: { total: 1234, items: [] } });
+    const result = await heliusGetHoldersCount("mintXYZ", "k");
+    expect(result).toBe(1234);
+  });
+
+  it("returns null when total is missing", async () => {
+    mockFetchJsonPost.mockResolvedValue({ result: { items: [] } });
+    expect(await heliusGetHoldersCount("mintXYZ", "k")).toBeNull();
+  });
+
+  it("returns null on null response", async () => {
+    mockFetchJsonPost.mockResolvedValue(null);
+    expect(await heliusGetHoldersCount("mintXYZ", "k")).toBeNull();
+  });
+
+  it("falls back to top-level total field", async () => {
+    mockFetchJsonPost.mockResolvedValue({ total: 42 });
+    expect(await heliusGetHoldersCount("mintXYZ", "k")).toBe(42);
+  });
+});
+
+// ─── Helius getProgramAccounts holder count (canonical method) ──────────────
+describe("heliusGetProgramAccountHolderCount", () => {
+  it("returns the length of the result array (= # of token accounts for the mint)", async () => {
+    const items = Array.from({ length: 87 }, (_, i) => ({ pubkey: `addr${i}` }));
+    mockFetchJsonPost.mockResolvedValue({ result: items });
+    expect(await heliusGetProgramAccountHolderCount("mint", "k")).toBe(87);
+  });
+
+  it("returns null when the response shape is missing result", async () => {
+    mockFetchJsonPost.mockResolvedValue({ error: { code: -32012, message: "scan aborted" } });
+    expect(await heliusGetProgramAccountHolderCount("mint", "k")).toBeNull();
+  });
+
+  it("returns null on thrown error (network / timeout)", async () => {
+    mockFetchJsonPost.mockRejectedValue(new Error("timeout"));
+    expect(await heliusGetProgramAccountHolderCount("mint", "k")).toBeNull();
+  });
+
+  it("calls getProgramAccounts on the SPL Token program with the mint memcmp filter", async () => {
+    mockFetchJsonPost.mockResolvedValue({ result: [] });
+    await heliusGetProgramAccountHolderCount("MINT_PUBKEY_42", "key");
+    const body = (mockFetchJsonPost.mock.calls[0] as [string, Record<string, unknown>, ...unknown[]])[1];
+    expect(body.method).toBe("getProgramAccounts");
+    const params = body.params as [string, { filters?: unknown[]; dataSlice?: unknown }];
+    expect(params[0]).toBe("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+    // Filters must include both the dataSize and the mint memcmp.
+    const filters = params[1].filters as Array<Record<string, unknown>>;
+    expect(filters).toEqual(expect.arrayContaining([
+      expect.objectContaining({ dataSize: 165 }),
+      expect.objectContaining({ memcmp: expect.objectContaining({ offset: 0, bytes: "MINT_PUBKEY_42" }) }),
+    ]));
+    // dataSlice {0, 0} keeps the response small — only addresses come back.
+    expect(params[1].dataSlice).toEqual({ offset: 0, length: 0 });
+  });
+});
+
+// ─── Public Solana RPC pool fallback ────────────────────────────────────────
+describe("publicRpc helpers", () => {
+  it("publicRpcGetTokenSupply returns the response when first provider answers", async () => {
+    mockFetchJsonPost.mockResolvedValue({ result: { value: { uiAmount: 1000, decimals: 9 } } });
+    const res = await publicRpcGetTokenSupply("mint") as { result?: { value?: { uiAmount?: number } } } | null;
+    expect(res?.result?.value?.uiAmount).toBe(1000);
+    expect(mockFetchJsonPost).toHaveBeenCalledTimes(1);
+  });
+
+  it("publicRpcGetTokenSupply iterates the pool until a provider returns a result", async () => {
+    mockFetchJsonPost
+      .mockResolvedValueOnce({ error: { message: "rate limit" } })
+      .mockResolvedValueOnce({ result: { value: { uiAmount: 555 } } });
+    const res = await publicRpcGetTokenSupply("mint") as { result?: { value?: { uiAmount?: number } } } | null;
+    expect(res?.result?.value?.uiAmount).toBe(555);
+    expect(mockFetchJsonPost).toHaveBeenCalledTimes(2);
+  });
+
+  it("publicRpcGetTokenSupply returns null when every provider in the pool fails", async () => {
+    mockFetchJsonPost.mockResolvedValue({ error: { message: "blocked" } });
+    const res = await publicRpcGetTokenSupply("mint");
+    expect(res).toBeNull();
+  });
+
+  it("publicRpcGetLargestAccounts uses the same pool iteration", async () => {
+    mockFetchJsonPost.mockResolvedValue({ result: { value: [{ address: "a", uiAmount: 10 }] } });
+    const res = await publicRpcGetLargestAccounts("mint") as { result?: { value?: unknown[] } } | null;
+    expect(Array.isArray(res?.result?.value)).toBe(true);
+  });
+
+  it("publicRpcGetMintInfo parses supply + decimals from getAccountInfo response", async () => {
+    mockFetchJsonPost.mockResolvedValue({
+      result: {
+        value: {
+          data: {
+            parsed: {
+              info: { decimals: 6, supply: "1000000000" }, // 1000 tokens at 6 decimals
+            },
+          },
+        },
+      },
+    });
+    const res = await publicRpcGetMintInfo("mint");
+    expect(res).toEqual({ supplyUi: 1000, decimals: 6 });
+  });
+
+  it("publicRpcGetMintInfo returns null when info missing", async () => {
+    mockFetchJsonPost.mockResolvedValue({ result: { value: null } });
+    expect(await publicRpcGetMintInfo("mint")).toBeNull();
+  });
+
+  it("publicRpcGetMintInfo returns null on zero supply", async () => {
+    mockFetchJsonPost.mockResolvedValue({
+      result: { value: { data: { parsed: { info: { decimals: 9, supply: "0" } } } } },
+    });
+    expect(await publicRpcGetMintInfo("mint")).toBeNull();
   });
 });
