@@ -112,7 +112,17 @@ nav .actions a.warn:hover{color:var(--orange);border-color:rgba(255,95,95,.4);ba
 .metrics-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .m-card{background:var(--card);border:1px solid var(--border);padding:16px 18px;position:relative;overflow:hidden}
 .m-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--risk-fill),transparent);opacity:.6}
-.m-label{font-size:9px;color:#444;letter-spacing:.18em;text-transform:uppercase;margin-bottom:8px}
+.m-label-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:10px}
+.m-label{font-size:9px;color:#444;letter-spacing:.18em;text-transform:uppercase}
+
+/* Refresh button — manual cache bypass. 15s cooldown handled in JS. */
+.refresh-btn{background:transparent;border:1px solid var(--border);color:var(--dim);width:24px;height:24px;border-radius:3px;cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;transition:color .25s,border-color .25s,background .25s,transform .3s;font-family:'IBM Plex Mono',monospace;padding:0}
+.refresh-btn:hover:not(:disabled){color:var(--c);border-color:rgba(0,229,176,.35);background:rgba(0,229,176,.04)}
+.refresh-btn:disabled{opacity:.35;cursor:not-allowed}
+.refresh-btn.spinning{animation:refresh-spin 1s linear infinite;color:var(--c);border-color:rgba(0,229,176,.35)}
+@keyframes refresh-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+
+.m-fresh{font-size:9px;color:#444;margin-top:8px;letter-spacing:.04em;font-family:'IBM Plex Mono',monospace}
 .m-big{font:400 32px/1 'Bebas Neue',sans-serif;letter-spacing:.02em;color:#ddd}
 .m-big.alt{color:var(--risk);text-shadow:0 0 20px var(--risk-glow)}
 .m-big .denom{font-size:12px;color:#444;margin-left:4px}
@@ -298,6 +308,6 @@ footer span{color:var(--c)}
 
 </div>
 
-<script defer src="/js/token-app.js?v=20260426g"></script>
-<script defer src="/js/token-bg.js?v=20260426g"></script>
+<script defer src="/js/token-app.js?v=20260426h"></script>
+<script defer src="/js/token-bg.js?v=20260426h"></script>
 </body></html>
