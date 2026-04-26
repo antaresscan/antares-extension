@@ -474,45 +474,44 @@ function render(d, ca) {
       <div class="hero-eye">Token Analysis${conf !== null ? ' · Conf ' + conf + '%' : ''}</div>
       <div class="above">
 
-        <div class="verdict-block">
+        <div class="verdict-info">
           <div class="verdict-row">
-            <div style="min-width:0;flex:1">
-              <h1>${escapeHtml(lb)}</h1>
-              ${tkLineHtml}
-              ${ageBadgeHtml}
-              ${socialsHtml ? `<div class="socials">${socialsHtml}</div>` : ''}
-            </div>
+            <h1>${escapeHtml(lb)}</h1>
             ${tokenLogoHtml}
           </div>
-
-          <div class="metrics-row">
-            <div class="m-card">
-              <div class="m-label">Risk Score</div>
-              <div class="m-big">${score}<span class="denom">/ 1000</span></div>
-              <div class="sbar"><div class="sbar-fill" id="sbarf"></div></div>
-              <div class="m-sub risk">${escapeHtml(flagSummary)}${conf !== null ? ' · Conf ' + conf + '%' : ''}</div>
-            </div>
-            ${priceCardHtml}
-          </div>
+          ${tkLineHtml}
+          ${ageBadgeHtml}
+          ${socialsHtml ? `<div class="socials">${socialsHtml}</div>` : ''}
         </div>
 
-        <div class="right-block">
-          <div class="flags-card">
-            <div class="flags-head">
-              <span class="lbl">Critical Flags</span>
-              <span class="count">${escapeHtml(flagsCount)}</span>
-            </div>
-            ${flagsRowsHtml}
+        <div class="flags-card">
+          <div class="flags-head">
+            <span class="lbl">Critical Flags</span>
+            <span class="count">${escapeHtml(flagsCount)}</span>
           </div>
-          <div class="sec-strip">${secStripHtml}</div>
-          <div class="ai-card" id="ai-section">
-            <div class="ai-head"><span class="icon">⬡</span><h3>AI Verdict</h3></div>
-            ${aiBodyHtml}
+          ${flagsRowsHtml}
+        </div>
+
+        <div class="metrics-row">
+          <div class="m-card">
+            <div class="m-label">Risk Score</div>
+            <div class="m-big">${score}<span class="denom">/ 1000</span></div>
+            <div class="sbar"><div class="sbar-fill" id="sbarf"></div></div>
+            <div class="m-sub risk">${escapeHtml(flagSummary)}${conf !== null ? ' · Conf ' + conf + '%' : ''}</div>
           </div>
+          ${priceCardHtml}
+        </div>
+
+        <div class="ai-card" id="ai-section">
+          <div class="ai-head"><span class="icon">⬡</span><h3>AI Verdict</h3></div>
+          ${aiBodyHtml}
         </div>
 
       </div>
     </section>
+
+    <div class="section-label reveal"><span>Security</span></div>
+    <div class="sec-strip reveal">${secStripHtml}</div>
 
     ${holdersHtml}
 
