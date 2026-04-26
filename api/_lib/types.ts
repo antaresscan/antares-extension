@@ -313,4 +313,9 @@ export interface ScanResult {
       lpLocked?: boolean | null;
   lpLockedPct?: number | null;
   lpLockDurationDays?: number | null;
+  // Holder concentration — computed from Helius getTokenLargestAccounts
+  // (top 20 holders) divided by total supply. Exposed so the frontend can
+  // render the concentration bar without regex-extracting from flag labels.
+  topHolderPct?: number | null;
+  top10HolderPct?: number | null;
 }

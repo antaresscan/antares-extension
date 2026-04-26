@@ -78,4 +78,6 @@ export const ScanResponseDataSchema = z.object({
   fetchedAt: z.number().optional(),
       recentTransfers: z.array(z.object({ from_address: z.string().optional(), to_address: z.string().optional(), from: z.string().optional(), to: z.string().optional(), amount: z.number().optional(), timestamp: z.number().optional(), type: z.string().optional() })).optional(),
     aiSummary: z.string().nullable().optional(),
+    topHolderPct: z.number().nullable().optional(),
+    top10HolderPct: z.number().nullable().optional(),
 })

@@ -422,10 +422,10 @@ function render(d, ca) {
       }).join('')
     : ''
 
-  // ── Holders concentration: extract Top-N percentages from flag labels
-  // and split the supply into top1 / top2-10 / top11-50 / rest segments.
-  // The API doesn't return a granular distribution, but flag thresholds
-  // give us actionable estimates: "Top 10 holders > 70%" → 70%, etc.
+  // ── Holders concentration. Prefer the direct API fields (computed from
+  // Helius getTokenLargestAccounts on the server); fall back to extracting
+  // thresholds from flag labels when the server response predates the
+  // direct fields (e.g. cached older payloads still in flight).
   function extractPctFromFlag(flags, regex) {
     for (const f of (flags || [])) {
       const label = String(f.label || '')
@@ -434,9 +434,13 @@ function render(d, ca) {
     }
     return null
   }
-  const top10Pct = extractPctFromFlag(d.flags, /Top\s*10\s*holders\s*[>≥]\s*(\d+)\s*%/i)
-  const top1Pct = extractPctFromFlag(d.flags, /Single\s*wallet\s*holds\s*(\d+)\s*%/i)
-    ?? extractPctFromFlag(d.flags, /(?:Owner|Creator)\s*holds\s*[>≥]\s*(\d+)\s*%/i)
+  const top10Pct = typeof d.top10HolderPct === 'number'
+    ? Math.round(d.top10HolderPct)
+    : extractPctFromFlag(d.flags, /Top\s*10\s*holders\s*[>≥]\s*(\d+)\s*%/i)
+  const top1Pct = typeof d.topHolderPct === 'number'
+    ? Math.round(d.topHolderPct)
+    : (extractPctFromFlag(d.flags, /Single\s*wallet\s*holds\s*(\d+)\s*%/i)
+       ?? extractPctFromFlag(d.flags, /(?:Owner|Creator)\s*holds\s*[>≥]\s*(\d+)\s*%/i))
 
   let holdersHtml = ''
   if (top10Pct !== null && d.holders != null) {

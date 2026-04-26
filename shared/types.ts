@@ -58,6 +58,8 @@ export interface ScanResponseData {
   fetchedAt?: number;
     recentTransfers?: Transfer[];
     aiSummary?: string | null;
+    topHolderPct?: number | null;
+    top10HolderPct?: number | null;
   }
 
 export interface HistoryEntry {
