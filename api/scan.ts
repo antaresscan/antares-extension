@@ -241,13 +241,21 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const rugTotalHolders: number | null =
       typeof rugReport?.totalHolders === "number" && rugReport.totalHolders > 0
       ? rugReport.totalHolders : null;
-    let holders: number | null = solscanHoldersCount ?? rugTotalHolders ?? null;
-    if ((holders === null || holders === 0) && HELIUS_API_KEY) {
+    // Holders count: query all available sources and take the MAX. Single-
+    // source failures often manifest as 0 / 1 / null (Solscan rate-limited
+    // or mid-indexing, RugCheck stale, etc.); the previous behaviour took
+    // the first non-null value, which meant a stale Solscan returning 1
+    // would override Helius reporting 50,000. Always-call Helius is fine
+    // because the fallback path was already paying that latency anyway.
+    let heliusHoldersCount: number | null = null;
+    if (HELIUS_API_KEY) {
       try {
-        const fallbackCount = await heliusGetHoldersCount(resolvedMint, HELIUS_API_KEY);
-        if (fallbackCount !== null && fallbackCount > 0) holders = fallbackCount;
-      } catch { /* silent fallback */ }
+        heliusHoldersCount = await heliusGetHoldersCount(resolvedMint, HELIUS_API_KEY);
+      } catch { /* silent — keep null */ }
     }
+    const holderCandidates = [solscanHoldersCount, rugTotalHolders, heliusHoldersCount]
+      .filter((n): n is number => typeof n === "number" && n > 0);
+    const holders: number | null = holderCandidates.length > 0 ? Math.max(...holderCandidates) : null;
 
     const priceUsd: number | null = (() => {
       const n = parseFloat(pair?.priceUsd ?? "");
@@ -346,11 +354,22 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       allLayers.map(l => [l.source, { trust: +l.trust.toFixed(3), available: l.available }])
     );
 
-    // Compute top holder percentage for AI context
+    // Compute holder concentration: top1 + top10 percentages of total supply.
+    // resolvedHolderAccounts comes from getTokenLargestAccounts (top 20),
+    // so top10 is just the first 10 entries summed. Both fields are exposed
+    // in the API response (not just passed to the AI summary) so the
+    // frontend can render the concentration bar with real numbers instead
+    // of regex-extracting thresholds from flag labels.
     const topHolderPct: number | null = (() => {
       if (resolvedHolderAccounts.length === 0 || totalSupplyUi <= 0) return null;
       const topAmt = asNumber(resolvedHolderAccounts[0]?.uiAmount);
       return topAmt > 0 ? (topAmt / totalSupplyUi) * 100 : null;
+    })();
+    const top10HolderPct: number | null = (() => {
+      if (resolvedHolderAccounts.length === 0 || totalSupplyUi <= 0) return null;
+      const top10Sum = resolvedHolderAccounts.slice(0, 10)
+        .reduce((sum, h) => sum + asNumber(h?.uiAmount), 0);
+      return top10Sum > 0 ? Math.min(100, (top10Sum / totalSupplyUi) * 100) : null;
     })();
 
     const aiSummary = await generateAISummary({
@@ -388,6 +407,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       lpLocked: false,
       lpLockedPct: _gpBP > 0 ? _gpBP : null,
       candles: candles.slice(-20).map(c => ({ close: c.c })),
+      topHolderPct,
+      top10HolderPct,
       scoring_version: SCORING_VERSION,
       fetchedAt: Date.now(),
       requestId,
