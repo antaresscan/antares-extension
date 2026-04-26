@@ -20,7 +20,7 @@
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
   --c:#00e5b0;--bg:#0a0a0c;--card:#111114;--border:#1a1a1e;--dim:#3a3a3f;--txt:#c8c8cc;
-  --red:#ff2244;--orange:#ff5f5f;--yellow:#f5d000;--purple:#a78bfa;--glow:rgba(0,229,176,.12);
+  --red:#ff2244;--orange:#ff5f5f;--yellow:#f5d000;--purple:#a78bfa;--cyan:#22d3ee;--glow:rgba(0,229,176,.12);
   /* Risk-driven design tokens — overridden per body.risk-* below */
   --risk:#00e5b0;
   --risk-soft:rgba(0,229,176,.045);
@@ -37,14 +37,10 @@ html{scroll-behavior:smooth;cursor:crosshair}
 body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Mono',monospace;min-height:100vh;overflow-x:hidden}
 body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at top,var(--risk-soft) 0%,transparent 60%);pointer-events:none;z-index:0;transition:background .6s}
 
-/* ── Brand stripe (top, animated, site signature) ── */
 .stripe{position:fixed;top:0;left:0;right:0;height:3px;z-index:999;background:linear-gradient(90deg,#c0007a,var(--c),#c8c000,#c0002a,var(--c),#c0007a);background-size:400% 100%;animation:stripe 6s linear infinite;opacity:.7}
 @keyframes stripe{0%{background-position:0% 0}100%{background-position:400% 0}}
-
 .cursor-glow{position:fixed;width:350px;height:350px;border-radius:50%;pointer-events:none;z-index:1;background:radial-gradient(circle,rgba(0,229,176,.06) 0%,transparent 70%);transform:translate(-50%,-50%);transition:opacity .3s;opacity:0}
-
 #bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.32}
-
 .shell{position:relative;z-index:2;max-width:1140px;margin:0 auto;padding:0 32px 80px}
 
 /* ── NAV (sticky, blurred, compact-mode on scroll) ── */
@@ -58,7 +54,8 @@ nav.compact .nav-mid{opacity:1;pointer-events:auto}
 .nav-ticker b{color:#ddd}
 .nav-verdict{font:400 22px/1 'Bebas Neue',sans-serif;letter-spacing:.06em;color:var(--risk);flex-shrink:0}
 .nav-score{font-size:11px;color:var(--risk);font-weight:600;letter-spacing:.04em;flex-shrink:0}
-nav .actions{display:flex;gap:6px;flex-shrink:0}
+nav .actions{display:flex;gap:6px;flex-shrink:0;align-items:center}
+.ca-pill{font-size:9px;color:#777;background:#0e0e10;border:1px solid #1e1e22;border-radius:2px;padding:6px 12px;letter-spacing:.06em}
 nav .actions a{font-size:9px;color:var(--dim);border:1px solid #1e1e22;padding:6px 12px;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;transition:all .25s;font-family:'IBM Plex Mono',monospace}
 nav .actions a:hover{color:var(--c);border-color:rgba(0,229,176,.35);background:rgba(0,229,176,.04)}
 nav .actions a.warn{color:#996060}
@@ -76,43 +73,36 @@ nav .actions a.warn:hover{color:var(--orange);border-color:rgba(255,95,95,.4);ba
 /* ── HERO with ghost background text ── */
 .hero{padding:48px 0 32px;position:relative;overflow:hidden}
 .hero::before{content:attr(data-verdict);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font:400 320px/1 'Bebas Neue',sans-serif;color:var(--risk);opacity:.012;pointer-events:none;white-space:nowrap;letter-spacing:.06em;z-index:0}
-.hero-eye{font:600 11px/1 'IBM Plex Mono',monospace;color:var(--risk);letter-spacing:.28em;text-transform:uppercase;margin-bottom:18px;display:flex;align-items:center;gap:10px;position:relative;z-index:1}
+.hero-eye{font:600 11px/1 'IBM Plex Mono',monospace;color:var(--risk);letter-spacing:.28em;text-transform:uppercase;display:flex;align-items:center;gap:10px;position:relative;z-index:1}
 .hero-eye::before{content:'';display:block;width:22px;height:2px;background:var(--risk);animation:pulse-line 2s ease infinite}
 @keyframes pulse-line{0%,100%{opacity:.5;width:22px}50%{opacity:1;width:30px}}
 
-/* ── ABOVE-FOLD: two flex columns side-by-side, each flowing naturally
-   from top to bottom. The 2×2 grid attempt was abandoned because when
-   one side has many flags the other side gets stretched and grows a
-   huge empty middle gap. With flex-columns each side just sizes to its
-   own content; the trailing whitespace below the shorter column is
-   normal page flow, not an awkward internal hole. ── */
-.above{display:grid;grid-template-columns:1.1fr .9fr;gap:32px;position:relative;z-index:1;align-items:start}
-@media(max-width:900px){.above{grid-template-columns:1fr}}
+.verdict-info{display:flex;flex-direction:column;gap:14px;min-width:0;position:relative;z-index:1;margin-top:16px}
 
-.verdict-block,.right-block{display:flex;flex-direction:column;gap:18px;min-width:0}
-.verdict-info{display:flex;flex-direction:column;gap:8px;min-width:0}
+/* Verdict h1 + token logo : justify-content:space-between → logo top-right */
+.verdict-row{display:flex;justify-content:space-between;align-items:center;gap:24px}
+.verdict-row h1{font:400 clamp(64px,8.5vw,108px)/.86 'Bebas Neue',sans-serif;letter-spacing:.04em;color:var(--risk);text-shadow:0 0 60px var(--risk-glow);word-break:break-word;flex:1;min-width:0}
+@media(max-width:600px){.verdict-row{flex-direction:column;align-items:flex-start;gap:14px}}
 
-/* Verdict h1 + token logo side-by-side. align-items:center pins the
-   logo to the verdict's vertical mid-line; logo sized to the h1 max
-   line-box (108px) so the two read as a balanced pair. */
-.verdict-row{display:flex;justify-content:flex-start;align-items:center;gap:28px;flex-wrap:wrap}
-.verdict-row h1{font:400 clamp(64px,8.5vw,108px)/.86 'Bebas Neue',sans-serif;letter-spacing:.04em;color:var(--risk);text-shadow:0 0 60px var(--risk-glow);word-break:break-word;min-width:0}
-.tk-line{font-size:13px;color:#777;letter-spacing:.06em;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tk-line{font-size:13px;color:#777;letter-spacing:.06em}
 .tk-line b{color:#ddd;font-weight:700;font-size:14px}
-.age-badge{display:inline-block;font-size:10px;color:#666;background:#0e0e10;border:1px solid var(--border);border-radius:2px;padding:4px 10px;letter-spacing:.08em;margin-top:6px;align-self:flex-start}
 
-/* Logo wrap — the fallback letters sit beneath the <img>; if the image
-   fails to load (CORS, 404, blocked schemes) the onerror handler removes
-   the img and the fallback becomes visible underneath. The CSP also has
-   to allow https: in img-src — see vercel.json. */
-.token-logo-wrap{position:relative;width:108px;height:108px;border-radius:50%;border:1.5px solid var(--risk-border);box-shadow:0 0 32px var(--risk-glow);background:#111;overflow:hidden;flex-shrink:0}
-.token-logo-fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:600 18px 'IBM Plex Mono',monospace;color:#aaa}
+.meta-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:2px}
+.age-badge{font-size:10px;color:#666;background:#0e0e10;border:1px solid var(--border);border-radius:2px;padding:4px 10px;letter-spacing:.08em}
+.soc{font-size:9px;color:#888;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;border:1px solid #1e1e22;border-radius:2px;padding:4px 10px;transition:all .2s;font-family:'IBM Plex Mono',monospace}
+.soc:hover{color:var(--risk);border-color:var(--risk-border);background:var(--risk-soft)}
+
+/* Logo wrap : fallback letters under the <img>; if image fails, onerror
+   removes it and the fallback shows through. CSP allows https: in img-src. */
+.token-logo-wrap{position:relative;width:80px;height:80px;border-radius:50%;border:1.5px solid var(--risk-border);box-shadow:0 0 28px var(--risk-glow);background:#111;overflow:hidden;flex-shrink:0}
+.token-logo-fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:600 16px 'IBM Plex Mono',monospace;color:#aaa}
 .token-logo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}
 
-.metrics-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.m-card{background:var(--card);border:1px solid var(--border);padding:16px 18px;position:relative;overflow:hidden}
-.m-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--risk-fill),transparent);opacity:.6}
-.m-label-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:10px}
+/* ── Score + price metrics ── */
+.metrics-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
+.m-card{background:var(--card);border:1px solid var(--border);padding:14px 16px;position:relative;overflow:hidden}
+.m-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--risk-fill),transparent);opacity:.5}
+.m-label-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:10px}
 .m-label{font-size:9px;color:#444;letter-spacing:.18em;text-transform:uppercase}
 
 /* Refresh button — manual cache bypass. 15s cooldown handled in JS. */
@@ -123,48 +113,37 @@ nav .actions a.warn:hover{color:var(--orange);border-color:rgba(255,95,95,.4);ba
 @keyframes refresh-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 
 .m-fresh{font-size:9px;color:#444;margin-top:8px;letter-spacing:.04em;font-family:'IBM Plex Mono',monospace}
-.m-big{font:400 32px/1 'Bebas Neue',sans-serif;letter-spacing:.02em;color:#ddd}
-.m-big.alt{color:var(--risk);text-shadow:0 0 20px var(--risk-glow)}
-.m-big .denom{font-size:12px;color:#444;margin-left:4px}
-.sbar{margin-top:10px;height:2px;background:#181818;border-radius:1px;overflow:hidden}
+.m-big{font:400 28px/1 'Bebas Neue',sans-serif;letter-spacing:.02em;color:#ddd}
+.m-big.alt{color:var(--risk);text-shadow:0 0 18px var(--risk-glow)}
+.m-big .denom{font-size:11px;color:#444;margin-left:3px}
+.sbar{margin-top:8px;height:2px;background:#181818;border-radius:1px;overflow:hidden}
 .sbar-fill{height:100%;background:linear-gradient(90deg,var(--risk-fill),var(--risk));box-shadow:0 0 6px var(--risk-glow);width:0;transition:width 1.4s cubic-bezier(.22,1,.36,1)}
-.m-sub{font-size:10px;color:#666;letter-spacing:.06em;margin-top:6px}
-.m-sub.up{color:var(--c)}
-.m-sub.dn{color:var(--orange)}
-.m-sub.risk{color:var(--risk);opacity:.85}
-.spark{margin-top:8px;display:block}
+.m-sub{font-size:10px;color:#666;letter-spacing:.04em;margin-top:5px}
+.m-sub.up{color:var(--c)}.m-sub.dn{color:var(--orange)}.m-sub.risk{color:var(--risk);opacity:.85}
+.spark{margin-top:6px;display:block}
 
-/* ── AI card ── lives inside the right-block flex column, below the
-   flags card. Click the head to collapse — useful when the AI summary
-   is long and the user just wants the flag list. ── */
-.ai-card{background:rgba(167,139,250,.04);border:1px solid rgba(167,139,250,.18);padding:18px 20px;position:relative;overflow:hidden}
-.ai-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(167,139,250,.4),transparent)}
-.ai-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;cursor:pointer;user-select:none}
-.ai-head .icon{font-size:13px;color:var(--purple)}
-.ai-head h3{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--purple);font-weight:700;flex:1}
-.ai-body{font-size:12.5px;line-height:1.7;color:#a89fc6}
+/* ── SECTION labels (foldable: click to toggle next sibling) ── */
+.section-label{display:flex;align-items:center;gap:14px;margin:40px 0 14px;cursor:pointer;user-select:none;transition:opacity .2s}
+.section-label:hover{opacity:.85}
+.section-label::before{content:'▸';font-size:9px;color:var(--c);transition:transform .25s}
+.section-label.closed::before{transform:rotate(-90deg)}
+.section-label > span:first-of-type{font-size:10px;color:#3a3a3f;letter-spacing:.24em;text-transform:uppercase;transition:color .2s}
+.section-label:hover > span:first-of-type{color:#888}
+.section-label .hr{flex:1;height:1px;background:var(--border)}
+.section-label .chev{font-size:13px;color:#666;transition:transform .25s,color .2s;letter-spacing:0;line-height:1;padding:4px 6px;border:1px solid #1e1e22;border-radius:2px;background:#0e0e10;min-width:22px;text-align:center;font-family:'IBM Plex Mono',monospace}
+.section-label:hover .chev{color:var(--c);border-color:rgba(0,229,176,.3)}
+.section-label.closed .chev{transform:rotate(180deg)}
 
-/* Collapsible chevrons + collapsed states for flags-card and ai-card.
-   The cards use display:none on their body when collapsed so the page
-   actually shrinks instead of just hiding content underneath. */
-.chevron{font-size:11px;color:#666;transition:transform .25s ease;flex-shrink:0;line-height:1}
-.collapsed .chevron{transform:rotate(-90deg)}
-.flags-head{cursor:pointer;user-select:none}
-.flags-card.collapsed .flag-rows-wrap{display:none}
-.flags-card.collapsed .flags-head{border-bottom:none}
-.ai-card.collapsed{padding-bottom:14px}
-.ai-card.collapsed .ai-head{margin-bottom:0}
-.ai-card.collapsed .ai-body-wrap{display:none}
-.ai-loading{font-size:11px;color:#555;letter-spacing:.06em;animation:pulse 1.2s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+/* foldable bodies — uniform spacing whether folded or expanded */
+.flags-card,.ai-card,.sec-strip,.deep,.holders-card,.mkt-grid,.oc-grid,.src-list{transition:max-height .35s ease,opacity .2s,padding .25s,border-width .2s;max-height:5000px;overflow:hidden}
+.flags-card.collapsed,.ai-card.collapsed,.sec-strip.collapsed,.deep.collapsed,.holders-card.collapsed,.mkt-grid.collapsed,.oc-grid.collapsed,.src-list.collapsed{max-height:0;opacity:0;border-width:0;padding-top:0!important;padding-bottom:0!important}
 
-/* ── RIGHT col: Flags + Security ── */
-.right-block{display:flex;flex-direction:column;gap:18px;min-width:0}
-.flags-card{background:var(--risk-soft);border:1px solid var(--risk-border);padding:0;overflow:hidden}
+/* ── FLAGS card ── */
+.flags-card{background:var(--risk-soft);border:1px solid var(--risk-border)}
 .flags-head{padding:14px 20px 10px;border-bottom:1px solid rgba(255,255,255,.04);display:flex;justify-content:space-between;align-items:center}
 .flags-head .lbl{font-size:9px;color:var(--risk);letter-spacing:.2em;text-transform:uppercase;font-weight:700}
 .flags-head .count{font-size:11px;color:#666;font-family:'IBM Plex Mono',monospace}
-.flag-row{display:flex;align-items:flex-start;gap:11px;padding:11px 20px;border-bottom:1px solid rgba(255,255,255,.025)}
+.flag-row{display:grid;grid-template-columns:18px 1fr 60px;gap:11px;padding:11px 20px;border-bottom:1px solid rgba(255,255,255,.025);align-items:center}
 .flag-row:last-child{border:none}
 .flag-icon{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;flex-shrink:0;margin-top:2px}
 .flag-icon.r{background:rgba(255,60,80,.18);color:var(--orange)}
@@ -172,37 +151,96 @@ nav .actions a.warn:hover{color:var(--orange);border-color:rgba(255,95,95,.4);ba
 .flag-icon.g{background:rgba(0,229,176,.12);color:var(--c)}
 .flag-body{flex:1;min-width:0}
 .flag-label{font-size:12px;font-weight:600;line-height:1.4;word-break:break-word}
-.flag-label.cr{color:#e07070}
-.flag-label.wr{color:#d4b040}
-.flag-label.ok{color:#559970}
+.flag-label.cr{color:#e07070}.flag-label.wr{color:#d4b040}.flag-label.ok{color:#559970}
 .flag-desc{font-size:10.5px;color:#666;line-height:1.5;margin-top:3px;font-style:italic}
+.sev{display:flex;gap:3px;justify-content:flex-end}
+.sev .d{width:6px;height:6px;border-radius:50%;background:#2a2a30;border:1px solid #1a1a1e}
+.sev.s3 .d:nth-child(-n+3){background:var(--risk);box-shadow:0 0 4px var(--risk-glow)}
+.sev.s2 .d:nth-child(-n+2){background:var(--orange)}
+.sev.s1 .d:nth-child(-n+1){background:var(--yellow)}
 
-/* Full-width security strip — sits below the above-fold grid as a
-   prominent horizontal band; cells use Bebas Neue for the verdict
-   values to feel like display data, not a footer summary. */
-.sec-strip{display:grid;grid-template-columns:repeat(5,1fr);background:#09090b;border:1px solid var(--border);overflow:hidden}
-.sec-cell{text-align:center;padding:22px 8px;border-right:1px solid var(--border);position:relative}
+/* ── AI verdict ── */
+.ai-card{background:rgba(167,139,250,.04);border:1px solid rgba(167,139,250,.18);padding:18px 22px;position:relative}
+.ai-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(167,139,250,.4),transparent)}
+.ai-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.ai-head .icon{font-size:14px;color:var(--purple)}
+.ai-head h3{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--purple);font-weight:700;flex:1}
+.ai-body{font-size:13px;line-height:1.7;color:#a89fc6;max-width:880px}
+.ai-body b{color:#c4b5fd;font-weight:600}
+.ai-loading{font-size:11px;color:#555;letter-spacing:.06em;animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+
+/* ── SECURITY strip ── */
+.sec-strip{display:grid;grid-template-columns:repeat(5,1fr);background:#09090b;border:1px solid var(--border)}
+.sec-cell{text-align:center;padding:18px 8px;border-right:1px solid var(--border);position:relative}
 .sec-cell:last-child{border-right:none}
-.sec-cell::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--risk-fill),transparent);opacity:.4}
-.sec-cell .lbl{font-size:9px;color:#444;letter-spacing:.22em;text-transform:uppercase;margin-bottom:10px}
-.sec-cell .val{font:400 22px/1 'Bebas Neue',sans-serif;letter-spacing:.04em}
-.sec-cell .val.y{color:var(--c)}
-.sec-cell .val.n{color:var(--orange)}
-.sec-cell .val.w{color:var(--yellow)}
-.sec-cell .val.neu{color:#555}
+.sec-cell .lbl{font-size:9px;color:#444;letter-spacing:.22em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:6px}
+.sec-cell .lbl::before{content:'';width:5px;height:5px;border-radius:50%;background:#333}
+.sec-cell.y .lbl::before{background:var(--c);box-shadow:0 0 4px rgba(0,229,176,.5)}
+.sec-cell.n .lbl::before{background:var(--orange);box-shadow:0 0 4px rgba(255,95,95,.5)}
+.sec-cell.w .lbl::before{background:var(--yellow);box-shadow:0 0 4px rgba(245,208,0,.5)}
+.sec-cell .val{font:400 20px/1 'Bebas Neue',sans-serif;letter-spacing:.04em}
+.sec-cell.y .val{color:var(--c)}.sec-cell.n .val{color:var(--orange)}.sec-cell.w .val{color:var(--yellow)}
+.sec-cell.neu .val{color:#555}
 @media(max-width:600px){.sec-strip{grid-template-columns:repeat(5,minmax(0,1fr))}.sec-cell{padding:14px 4px}.sec-cell .val{font-size:18px}}
 
-/* ── Section labels (extending line) ── */
-.section-label{display:flex;align-items:center;gap:14px;margin:48px 0 18px}
-.section-label::before{content:'▸';font-size:9px;color:var(--c)}
-.section-label span{font-size:10px;color:#3a3a3f;letter-spacing:.24em;text-transform:uppercase;white-space:nowrap}
-.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+/* ── DEEP ANALYSIS — TABS ── */
+.deep{background:var(--card);border:1px solid var(--border)}
+.tabs{display:flex;border-bottom:1px solid var(--border);background:#0a0a0c;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:1;min-width:fit-content;padding:14px 18px;font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#555;background:transparent;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;gap:8px;justify-content:center;white-space:nowrap}
+.tab:hover{color:#aaa;background:rgba(255,255,255,.02)}
+.tab.active{color:var(--c);border-bottom-color:var(--c);background:rgba(0,229,176,.03)}
+.tab-icon{display:inline-flex;width:13px;height:13px;flex-shrink:0;align-items:center;justify-content:center}
+.tab-icon svg{width:100%;height:100%;display:block}
+.tab-content{padding:24px}
+.tab-pane{display:none}
+.tab-pane.active{display:block;animation:tab-in .3s ease}
+@keyframes tab-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.tab-empty{padding:40px 20px;text-align:center;color:#555;font-size:11px;letter-spacing:.04em;line-height:1.7}
+.tab-empty b{color:#888;font-weight:600}
 
-/* ── Reveal on scroll ── */
-.reveal{opacity:0;transform:translateY(24px);transition:opacity .7s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1)}
-.reveal.visible{opacity:1;transform:translateY(0)}
+/* === TAB Score Breakdown — RADAR + BARS === */
+.bd-wrap{display:grid;grid-template-columns:280px 1fr;gap:32px;align-items:center}
+@media(max-width:780px){.bd-wrap{grid-template-columns:1fr}}
+.radar{position:relative;width:100%;max-width:280px;aspect-ratio:1}
+.radar svg{width:100%;height:100%}
+.radar .grid{stroke:#1e1e22;fill:none;stroke-width:1}
+.radar .axis{stroke:#1a1a1e;stroke-width:1}
+.radar .data-fill{fill:var(--risk-soft);stroke:var(--risk);stroke-width:1.5;filter:drop-shadow(0 0 6px var(--risk-glow))}
+.radar .data-pt{fill:var(--risk);stroke:#0a0a0c;stroke-width:1.5}
+.radar .axis-lbl{font:700 9px 'IBM Plex Mono',monospace;fill:#666;letter-spacing:.14em;text-transform:uppercase}
+.radar .axis-val{font:700 11px 'IBM Plex Mono',monospace;fill:var(--risk)}
+.bd-bars{display:flex;flex-direction:column;gap:0}
+.bd-row{display:grid;grid-template-columns:140px 1fr 50px;align-items:center;gap:16px;padding:10px 0;border-bottom:1px solid #16161a}
+.bd-row:last-of-type{border:none}
+.bd-name{font-size:12px;font-weight:600;color:#bbb}
+.bd-bar-wrap{height:5px;background:#181820;border-radius:3px;overflow:hidden}
+.bd-bar{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--risk-fill),var(--risk));box-shadow:0 0 6px var(--risk-glow);width:0;transition:width 1.2s cubic-bezier(.22,1,.36,1)}
+.bd-score{font:600 15px 'IBM Plex Mono',monospace;text-align:right;color:var(--risk)}
+.bd-score .max{font-size:9px;color:#444;font-weight:400}
+.bd-total{display:flex;justify-content:space-between;align-items:center;padding-top:14px;margin-top:8px;border-top:1px solid var(--risk-border);grid-column:1/-1}
+.bd-total-label{font-size:9px;color:#444;letter-spacing:.18em;text-transform:uppercase}
+.bd-total-value{font:400 26px/1 'Bebas Neue',sans-serif;color:var(--risk);text-shadow:0 0 16px var(--risk-glow)}
+.bd-total-value .max{font-size:11px;color:#444;margin-left:4px}
 
-/* ── Holders concentration ── */
+/* === TAB Exit Liquidity === */
+.exit-row{display:grid;grid-template-columns:90px 90px 1fr 80px;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid #16161a;font-size:12px}
+.exit-row:last-of-type{border:none}
+.exit-row.exit-head{font-size:9px;color:#444;letter-spacing:.2em;text-transform:uppercase;font-weight:700;padding:10px 0}
+.exit-amount{font:600 13px 'IBM Plex Mono',monospace;color:#ccc}
+.exit-slip{font:600 13px 'IBM Plex Mono',monospace}
+.exit-slip.ok{color:var(--c)}.exit-slip.warn{color:var(--yellow)}.exit-slip.bad{color:var(--orange)}
+.exit-wave{height:6px;background:#181820;border-radius:3px;overflow:hidden;position:relative}
+.exit-wave-fill{height:100%;border-radius:3px}
+.exit-wave-fill.ok{background:linear-gradient(90deg,rgba(0,229,176,.4),var(--c))}
+.exit-wave-fill.warn{background:linear-gradient(90deg,rgba(245,208,0,.4),var(--yellow))}
+.exit-wave-fill.bad{background:linear-gradient(90deg,rgba(255,34,68,.4),var(--orange))}
+.exit-note{color:#666;font-style:italic;font-size:10.5px;text-align:right}
+.exit-note b{color:#999;font-style:normal;font-weight:600}
+.exit-row.exit-head .exit-amount,.exit-row.exit-head .exit-slip,.exit-row.exit-head .exit-note{color:#444;font-weight:700;font-style:normal}
+
+/* ── HOLDERS concentration card (kept inside tabs or its own section) ── */
 .holders-card{background:var(--card);border:1px solid var(--border);padding:18px 20px}
 .holders-card .lbl{font-size:9px;color:#444;letter-spacing:.2em;text-transform:uppercase;margin-bottom:12px}
 .hbar{display:flex;height:16px;border-radius:3px;overflow:hidden;background:#0a0a0c;margin-bottom:12px}
@@ -219,17 +257,15 @@ nav .actions a.warn:hover{color:var(--orange);border-color:rgba(255,95,95,.4);ba
 .hbar-legend .dot.top50{background:color-mix(in srgb,var(--risk) 45%,#000)}
 .hbar-legend .dot.rest{background:#2a2a30}
 
-/* ── Market data ── */
+/* ── MARKET grid (kept for now, sits inside its own foldable section) ── */
 .mkt-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;background:var(--border);border:1px solid var(--border)}
 .mkt-cell{background:var(--card);padding:18px 16px}
 .mkt-cell .lbl{font-size:8px;color:#444;letter-spacing:.18em;text-transform:uppercase;margin-bottom:6px}
 .mkt-cell .val{font:600 18px 'IBM Plex Mono',monospace;color:#ddd;word-break:break-all}
 .mkt-cell .delta{font-size:10px;margin-top:3px;font-weight:600;letter-spacing:.04em}
-.mkt-cell .delta.up{color:var(--c)}
-.mkt-cell .delta.dn{color:var(--orange)}
-.mkt-cell .delta.neu{color:#555}
+.mkt-cell .delta.up{color:var(--c)}.mkt-cell .delta.dn{color:var(--orange)}.mkt-cell .delta.neu{color:#555}
 
-/* ── On-chain ── */
+/* ── ON-CHAIN grid ── */
 .oc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1px;background:var(--border);border:1px solid var(--border)}
 .oc-cell{background:var(--card);padding:14px 16px}
 .oc-cell .lbl{font-size:8px;color:#444;letter-spacing:.18em;text-transform:uppercase;margin-bottom:4px}
@@ -238,21 +274,22 @@ nav .actions a.warn:hover{color:var(--orange);border-color:rgba(255,95,95,.4);ba
 .oc-cell a:hover{color:var(--c)}
 .oc-cell a .ext{font-size:9px;color:#444}
 
-/* ── Layers ── */
-.layers{display:flex;flex-direction:column;gap:8px}
-.layer-row{display:flex;align-items:center;gap:14px;padding:7px 0;border-bottom:1px solid #131316}
-.layer-row:last-child{border:none}
-.layer-name{font-size:11px;color:#888;width:120px;letter-spacing:.06em;flex-shrink:0}
-.layer-bar-wrap{flex:1;height:5px;background:#1a1a1e;border-radius:3px;overflow:hidden}
-.layer-bar{height:100%;border-radius:3px;width:0;transition:width 1.2s cubic-bezier(.22,1,.36,1)}
-.layer-bar.ok{background:linear-gradient(90deg,rgba(0,229,176,.35),var(--c))}
-.layer-bar.warn{background:linear-gradient(90deg,rgba(245,208,0,.35),var(--yellow))}
-.layer-bar.bad{background:linear-gradient(90deg,rgba(255,34,68,.35),var(--orange))}
-.layer-pct{font-size:11px;width:42px;text-align:right;font-weight:600;font-family:'IBM Plex Mono',monospace;flex-shrink:0}
-.layer-pct.ok{color:var(--c)}
-.layer-pct.warn{color:var(--yellow)}
-.layer-pct.bad{color:var(--orange)}
-.layer-unavail{flex:1;font-size:10px;color:#333}
+/* ── SOURCE BREAKDOWN — 1 row par source, simple ── */
+.src-list{display:flex;flex-direction:column;gap:1px;background:var(--border);border:1px solid var(--border)}
+.src-row{display:grid;grid-template-columns:130px 100px 1fr;align-items:center;gap:16px;padding:12px 16px;background:var(--card)}
+.src-name{font:600 12px 'IBM Plex Mono',monospace;color:#ccc}
+.src-verdict{font:700 10px 'IBM Plex Mono',monospace;letter-spacing:.18em;text-transform:uppercase}
+.src-row.bad .src-verdict{color:var(--orange)}
+.src-row.warn .src-verdict{color:var(--yellow)}
+.src-row.ok .src-verdict{color:var(--c)}
+.src-row.na .src-verdict{color:#555}
+.src-note{font-size:11px;color:#777;line-height:1.5}
+.src-row.na .src-note{color:#444}
+@media(max-width:600px){.src-row{grid-template-columns:1fr}.src-name{margin-bottom:4px}.src-verdict{margin-bottom:4px}}
+
+/* ── Reveal on scroll ── */
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .7s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1)}
+.reveal.visible{opacity:1;transform:translateY(0)}
 
 /* ── Sources marquee ── */
 .marquee-wrap{overflow:hidden;border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:14px 0;margin-top:24px}
@@ -260,14 +297,7 @@ nav .actions a.warn:hover{color:var(--orange);border-color:rgba(255,95,95,.4);ba
 @keyframes scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 .mi{font:400 16px/1 'Bebas Neue',sans-serif;color:#252528;letter-spacing:.14em;padding:0 28px;display:inline-flex;align-items:center;gap:10px}
 .mi .ok{color:var(--c);font-size:10px}
-.mi .ko{color:#3a2020;font-size:10px}
 
-/* ── Socials (under hero) ── */
-.socials{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
-.soc{font-size:9px;color:#888;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;border:1px solid #1e1e22;border-radius:2px;padding:5px 11px;transition:all .25s;font-family:'IBM Plex Mono',monospace}
-.soc:hover{color:var(--risk);border-color:var(--risk-border);background:var(--risk-soft)}
-
-/* ── Footer ── */
 footer{text-align:center;padding:32px 0 20px;color:#2a2a2f;font-size:10px;letter-spacing:.15em;text-transform:uppercase;margin-top:40px;border-top:1px solid var(--border)}
 footer span{color:var(--c)}
 </style>
@@ -287,7 +317,7 @@ footer span{color:var(--c)}
     <span class="nav-score" id="nav-score">—</span>
   </div>
   <div class="actions" id="nav-actions">
-    <span class="ca-pill" id="ca-disp" style="font-size:9px;color:#777;background:#0e0e10;border:1px solid #1e1e22;border-radius:2px;padding:6px 12px;letter-spacing:.06em">—</span>
+    <span class="ca-pill" id="ca-disp">—</span>
   </div>
 </nav>
 
@@ -308,6 +338,6 @@ footer span{color:var(--c)}
 
 </div>
 
-<script defer src="/js/token-app.js?v=20260426h"></script>
-<script defer src="/js/token-bg.js?v=20260426h"></script>
+<script defer src="/js/token-app.js?v=20260427a"></script>
+<script defer src="/js/token-bg.js?v=20260427a"></script>
 </body></html>

@@ -162,6 +162,227 @@ function buildSparkline(candles) {
 }
 
 // ──────────────────────────────────────────────────────────────────────
+// Score Breakdown: derive 5 dimensions from the existing /api/scan
+// payload. No backend change needed — the dimensions are computable
+// from the data already in the response.
+//   LP Security        — 100 if burned, 70 if locked, 0 if open
+//   Holder Distribution — 100 - top10HolderPct (clamp 0-100)
+//   Trading Authenticity — vol/liq < 5 = healthy; higher = wash risk
+//   Token Maturity     — age_hours / 720 (1 month) * 100
+//   Source Consensus   — average trust across all available layers
+// Returns nullable dims so the radar can show partial data with
+// missing axes pegged to 0 visually but flagged "—" in the bars.
+// ──────────────────────────────────────────────────────────────────────
+function computeScoreBreakdown(d) {
+  let lp = null
+  if (d.lpBurned === true) lp = 100
+  else if (d.lpLocked === true) lp = 70
+  else if (d.lpBurned === false || d.lpLocked === false) lp = 0
+
+  const top10 = typeof d.top10HolderPct === 'number' ? d.top10HolderPct : null
+  const holders = top10 != null ? Math.max(0, Math.min(100, Math.round(100 - top10))) : null
+
+  const liq = d.liquidity ?? d.pair?.liquidity?.usd ?? null
+  const vol = d.volume24h ?? d.pair?.volume?.h24 ?? null
+  let trading = null
+  if (liq && vol && liq > 0) {
+    const ratio = vol / liq
+    trading = ratio < 5 ? 100 : Math.max(0, Math.round(100 - (ratio - 5) * 8))
+  }
+
+  const ageH = d.solscanTokenAgeHours ?? null
+  const maturity = ageH != null ? Math.min(100, Math.round((ageH / 720) * 100)) : null
+
+  const layers = d.layers || {}
+  const layerArr = Object.values(layers).filter(l => l && l.available)
+  const sources = layerArr.length > 0
+    ? Math.round((layerArr.reduce((a, l) => a + (l.trust || 0), 0) / layerArr.length) * 100)
+    : null
+
+  return { lp, holders, trading, maturity, sources, total: d.score || 0 }
+}
+
+// Radar pentagon — 5 axes laid out at 72° intervals starting at top.
+// Coordinates are normalized to [-100, 100] and the SVG viewBox is
+// -150 to 150 to leave room for axis labels outside the polygon.
+function buildRadarSvg(s) {
+  const v = {
+    lp: s.lp ?? 0,
+    holders: s.holders ?? 0,
+    trading: s.trading ?? 0,
+    maturity: s.maturity ?? 0,
+    sources: s.sources ?? 0,
+  }
+  const offsets = {
+    lp: [0, -1],
+    holders: [0.951, -0.309],
+    trading: [0.588, 0.809],
+    maturity: [-0.588, 0.809],
+    sources: [-0.951, -0.309],
+  }
+  const order = ['lp', 'holders', 'trading', 'maturity', 'sources']
+  const polyPts = order.map(a => {
+    const [ox, oy] = offsets[a]
+    return `${(v[a] * ox).toFixed(1)},${(v[a] * oy).toFixed(1)}`
+  }).join(' ')
+  const dataPts = order.map(a => {
+    const [ox, oy] = offsets[a]
+    return `<circle class="data-pt" cx="${(v[a] * ox).toFixed(1)}" cy="${(v[a] * oy).toFixed(1)}" r="3"/>`
+  }).join('')
+  const dispVal = (n) => n === 0 && s[order.find(k => offsets[k] && k)] === null ? '—' : n
+  return `<svg viewBox="-150 -150 300 300">
+    <polygon class="grid" points="0,-100 95.1,-30.9 58.8,80.9 -58.8,80.9 -95.1,-30.9"/>
+    <polygon class="grid" points="0,-80 76.1,-24.7 47,64.7 -47,64.7 -76.1,-24.7"/>
+    <polygon class="grid" points="0,-60 57,-18.5 35.3,48.5 -35.3,48.5 -57,-18.5"/>
+    <polygon class="grid" points="0,-40 38,-12.4 23.5,32.4 -23.5,32.4 -38,-12.4"/>
+    <polygon class="grid" points="0,-20 19,-6.2 11.8,16.2 -11.8,16.2 -19,-6.2"/>
+    <line class="axis" x1="0" y1="0" x2="0" y2="-100"/>
+    <line class="axis" x1="0" y1="0" x2="95.1" y2="-30.9"/>
+    <line class="axis" x1="0" y1="0" x2="58.8" y2="80.9"/>
+    <line class="axis" x1="0" y1="0" x2="-58.8" y2="80.9"/>
+    <line class="axis" x1="0" y1="0" x2="-95.1" y2="-30.9"/>
+    <polygon class="data-fill" points="${polyPts}"/>
+    ${dataPts}
+    <text class="axis-lbl" text-anchor="middle" x="0" y="-118">LP Sec</text>
+    <text class="axis-val" text-anchor="middle" x="0" y="-105">${s.lp ?? '—'}</text>
+    <text class="axis-lbl" text-anchor="start" x="105" y="-32">Holders</text>
+    <text class="axis-val" text-anchor="start" x="105" y="-20">${s.holders ?? '—'}</text>
+    <text class="axis-lbl" text-anchor="start" x="65" y="92">Trading</text>
+    <text class="axis-val" text-anchor="start" x="65" y="104">${s.trading ?? '—'}</text>
+    <text class="axis-lbl" text-anchor="end" x="-65" y="92">Maturity</text>
+    <text class="axis-val" text-anchor="end" x="-65" y="104">${s.maturity ?? '—'}</text>
+    <text class="axis-lbl" text-anchor="end" x="-105" y="-32">Sources</text>
+    <text class="axis-val" text-anchor="end" x="-105" y="-20">${s.sources ?? '—'}</text>
+  </svg>`
+}
+
+function buildScoreBreakdownTab(d) {
+  const s = computeScoreBreakdown(d)
+  const dims = [
+    { key: 'lp', label: 'LP Security', value: s.lp },
+    { key: 'holders', label: 'Holder Distribution', value: s.holders },
+    { key: 'trading', label: 'Trading Authenticity', value: s.trading },
+    { key: 'maturity', label: 'Token Maturity', value: s.maturity },
+    { key: 'sources', label: 'Source Consensus', value: s.sources },
+  ]
+  const barRows = dims.map(dim => {
+    const v = dim.value
+    const pctW = v == null ? 0 : v
+    const display = v == null ? '—' : v
+    return `<div class="bd-row">
+      <div class="bd-name">${escapeHtml(dim.label)}</div>
+      <div class="bd-bar-wrap"><div class="bd-bar" data-w="${pctW}"></div></div>
+      <div class="bd-score">${display}<span class="max">/100</span></div>
+    </div>`
+  }).join('')
+  return `<div class="bd-wrap">
+    <div class="radar">${buildRadarSvg(s)}</div>
+    <div class="bd-bars">
+      ${barRows}
+      <div class="bd-total">
+        <div class="bd-total-label">Weighted Total</div>
+        <div class="bd-total-value">${s.total}<span class="max">/ 1000</span></div>
+      </div>
+    </div>
+  </div>`
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Exit Liquidity: AMM constant-product slippage estimate from the
+// liquidity USD figure. Computed client-side so no backend change is
+// needed. If liquidity is unknown we hide the tab via the caller.
+// ──────────────────────────────────────────────────────────────────────
+function computeExitLiquidity(liqUsd) {
+  if (!liqUsd || liqUsd <= 0) return null
+  const tiers = [100, 1000, 5000, 10000, 20000]
+  return tiers.map(amount => {
+    // Constant-product AMM: slippage ~= X / (X + reserve). With L being
+    // total USD liquidity (both sides), reserve_quote ≈ L/2.
+    const slippagePct = (amount / (amount + liqUsd / 2)) * 100
+    const lostUsd = amount * (slippagePct / 100)
+    let cls, note
+    if (slippagePct < 3) { cls = 'ok'; note = 'Easy exit' }
+    else if (slippagePct < 8) { cls = 'ok'; note = 'Acceptable' }
+    else if (slippagePct < 20) { cls = 'warn'; note = `<b>${fmt(lostUsd)} lost</b>` }
+    else if (slippagePct < 50) { cls = 'warn'; note = `<b>${fmt(lostUsd)} lost</b> · split your sell` }
+    else { cls = 'bad'; note = '<b>You\'d crash the price</b>' }
+    const slipDisplay = slippagePct > 50 ? '~ DUMPS' : `${slippagePct.toFixed(1)}%`
+    const widthPct = Math.min(100, slippagePct * 1.6)
+    return { amount, slipDisplay, widthPct, cls, note }
+  })
+}
+
+function buildExitLiquidityTab(liq) {
+  const tiers = computeExitLiquidity(liq)
+  if (!tiers) {
+    return `<div class="tab-empty">Exit liquidity unavailable — <b>liquidity figure not provided</b> by upstream sources.</div>`
+  }
+  const rows = tiers.map(t => `
+    <div class="exit-row">
+      <div class="exit-amount">${escapeHtml(fmt(t.amount))}</div>
+      <div class="exit-slip ${t.cls}">${escapeHtml(t.slipDisplay)}</div>
+      <div class="exit-wave"><div class="exit-wave-fill ${t.cls}" style="width:${t.widthPct}%"></div></div>
+      <div class="exit-note">${t.note}</div>
+    </div>
+  `).join('')
+  return `
+    <div class="exit-row exit-head">
+      <div class="exit-amount">Sell amount</div>
+      <div class="exit-slip">Slippage</div>
+      <div>Visual</div>
+      <div class="exit-note">Outcome</div>
+    </div>
+    ${rows}
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:11px;color:#666">Total LP available: <b style="color:#aaa">${escapeHtml(fmt(liq))}</b></div>
+  `
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Source Breakdown — 1 row per upstream source. Verdict is derived from
+// the layer's trust score (>=0.75 OK, >=0.4 risk, otherwise flagged).
+// Rendered inside a foldable section at the bottom of the page.
+// ──────────────────────────────────────────────────────────────────────
+function buildSourceListRows(d) {
+  const layers = d.layers || {}
+  const order = ['rugcheck', 'helius', 'solscan', 'chart', 'dexscreener']
+  const labels = {
+    rugcheck: 'RugCheck',
+    helius: 'Helius',
+    solscan: 'Solscan',
+    chart: 'Chart Engine',
+    dexscreener: 'DexScreener',
+  }
+  return order.map(key => {
+    const l = layers[key]
+    if (!l) return null
+    if (!l.available) {
+      return `<div class="src-row na">
+        <div class="src-name">${escapeHtml(labels[key])}</div>
+        <div class="src-verdict">N/A</div>
+        <div class="src-note">Source unavailable for this token.</div>
+      </div>`
+    }
+    const trust = l.trust || 0
+    let cls, verdict, note
+    if (trust >= 0.75) {
+      cls = 'ok'; verdict = 'OK'
+      note = `${labels[key]} reports no critical issues.`
+    } else if (trust >= 0.4) {
+      cls = 'warn'; verdict = 'Risk'
+      note = `${labels[key]} flagged moderate concerns.`
+    } else {
+      cls = 'bad'; verdict = 'Flagged'
+      note = `${labels[key]} flagged significant concerns.`
+    }
+    return `<div class="src-row ${cls}">
+      <div class="src-name">${escapeHtml(labels[key])}</div>
+      <div class="src-verdict">${escapeHtml(verdict)}</div>
+      <div class="src-note">${escapeHtml(note)}</div>
+    </div>`
+  }).filter(Boolean).join('')
+}
+
+// ──────────────────────────────────────────────────────────────────────
 // One-time setup for animations that should fire on first render and not
 // again on retry. Guarded by window flags so re-renders are no-ops.
 // ──────────────────────────────────────────────────────────────────────
@@ -188,10 +409,11 @@ function setupStickyNav() {
   onScroll()
 }
 
-// Wire up collapsible card heads. Each head carries `data-toggle="<id>"`
-// pointing at its own card; clicking flips the `collapsed` class on the
-// card so the body hides via CSS. Click is event-delegated once at the
-// document level so re-renders don't double-bind.
+// Wire up collapsibles. Two flavours share the same handler:
+//   - section-label[data-toggle=ID] : also gets `.closed` for chevron rotation
+//   - any other [data-toggle=ID]    : just toggles `.collapsed` on target
+// Click is event-delegated once at document level so re-renders don't
+// double-bind.
 function setupCollapsibles() {
   if (window.__collapseInit) return
   window.__collapseInit = true
@@ -201,6 +423,23 @@ function setupCollapsibles() {
     const id = head.dataset.toggle
     const card = id ? document.getElementById(id) : head.parentElement
     if (card) card.classList.toggle('collapsed')
+    if (head.classList.contains('section-label')) head.classList.toggle('closed')
+  })
+}
+
+// Tab switcher — scoped to each .deep widget so multiple tab groups on
+// the same page (future-proof) stay independent.
+function setupTabs() {
+  if (window.__tabsInit) return
+  window.__tabsInit = true
+  document.addEventListener('click', (e) => {
+    const tab = e.target.closest('.tab[data-tab]')
+    if (!tab) return
+    const target = tab.dataset.tab
+    const deep = tab.closest('.deep')
+    if (!deep) return
+    deep.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === tab))
+    deep.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.dataset.pane === target))
   })
 }
 
@@ -208,8 +447,7 @@ function setupCollapsibles() {
 // the token without waiting for the Redis cache TTL. The button posts
 // `?fresh=1` which bypasses cache reads server-side. A 15s cooldown
 // between clicks keeps the upstream API budget under control while
-// still feeling responsive — long enough that no one accidentally
-// triggers two scans, short enough that the page feels live.
+// still feeling responsive.
 const REFRESH_COOLDOWN_MS = 15000
 function setupRefreshButton(ca) {
   if (window.__refreshInit) return
@@ -228,13 +466,10 @@ function setupRefreshButton(ca) {
       const r = await fetch(`${API}?ca=${encodeURIComponent(ca)}&fresh=1`)
       if (r.ok) {
         const data = await r.json()
-        // Re-render: the new payload replaces the existing content area;
-        // setupRefreshButton's __refreshInit guard means we don't double-bind.
         render(data, ca)
       }
     } catch { /* silent — keep current data on the page */ }
     btn.classList.remove('spinning')
-    // Stay disabled for the rest of the cooldown window
     const remaining = REFRESH_COOLDOWN_MS - (Date.now() - lastRefresh)
     setTimeout(() => { btn.disabled = false }, Math.max(0, remaining))
   })
@@ -243,7 +478,7 @@ function setupRefreshButton(ca) {
 let __freshnessInterval = null
 function setupFreshnessTicker(fetchedAt) {
   window.__lastFetchedAt = fetchedAt || Date.now()
-  if (__freshnessInterval) return // already running
+  if (__freshnessInterval) return
   __freshnessInterval = setInterval(() => updateFreshnessLabel(), 1000)
   updateFreshnessLabel()
 }
@@ -265,12 +500,10 @@ function setupRevealObserver() {
   const obs = new IntersectionObserver(entries => entries.forEach(e => {
     if (!e.isIntersecting) return
     e.target.classList.add('visible')
-    // Layer bars: animate width from 0 to data-w% on first reveal
-    if (e.target.id === 'layers') {
-      e.target.querySelectorAll('.layer-bar[data-w]').forEach(b => {
-        setTimeout(() => { b.style.width = b.dataset.w + '%' }, 100)
-      })
-    }
+    // Score breakdown bars: animate width from 0 to data-w% on first reveal
+    e.target.querySelectorAll('.bd-bar[data-w]').forEach(b => {
+      setTimeout(() => { b.style.width = b.dataset.w + '%' }, 100)
+    })
     obs.unobserve(e.target)
   }), { threshold: 0.1 })
   document.querySelectorAll('.reveal').forEach(el => obs.observe(el))
@@ -317,11 +550,11 @@ function render(d, ca) {
 
   const mintAuth = d.mintAuthority ?? null
   const freezeAuth = d.freezeAuthority ?? null
-  const lpStatus = d.lpBurned === true ? "BURN" : d.lpLocked ? "LOCK" : "NO"
   const sellOk = d.honeypot === false || d.risk !== "RUG"
 
   const fAll = (d.flags || []).filter(f => f.severity !== "bonus")
   const fCrit = fAll.filter(f => f.severity === "critical")
+  const fWarn = fAll.filter(f => f.severity !== "critical")
   const flagSummary = fAll.length === 0
     ? "No issues found"
     : fCrit.length > 0
@@ -338,15 +571,20 @@ function render(d, ca) {
   function safeUrl(u) { return typeof u === 'string' && /^https?:\/\//i.test(u) ? u : '#' }
   const dexUrl = d.pair?.url || `https://dexscreener.com/solana/${mint}`
   document.getElementById('nav-actions').innerHTML = `
-    <span class="ca-pill" id="ca-disp" style="font-size:9px;color:#777;background:#0e0e10;border:1px solid #1e1e22;border-radius:2px;padding:6px 12px;letter-spacing:.06em">${escapeHtml(caShort)}</span>
+    <span class="ca-pill" id="ca-disp">${escapeHtml(caShort)}</span>
     <a href="${safeUrl(dexUrl)}" target="_blank" rel="noopener noreferrer">↗ DexScreener</a>
     <a href="https://solscan.io/token/${encodeURIComponent(mint)}" target="_blank" rel="noopener noreferrer">↗ Solscan</a>
     <a href="https://rugcheck.xyz/tokens/${encodeURIComponent(mint)}" target="_blank" rel="noopener noreferrer" class="warn">⚠ RugCheck</a>
   `
 
-  // ── Build flag rows (or empty state)
+  // ── Build flag rows with severity dots
+  function severityClass(sev) {
+    if (sev === 'critical') return 's3'
+    if (sev === 'warning' || sev === 'high') return 's2'
+    return 's1'
+  }
   const flagsRowsHtml = fAll.length === 0
-    ? `<div class="flag-row"><div class="flag-icon g">✓</div><div class="flag-body"><div class="flag-label ok">No critical flags detected</div><div class="flag-desc">All sources agree — this token has no automated red flags.</div></div></div>`
+    ? `<div class="flag-row"><div class="flag-icon g">✓</div><div class="flag-body"><div class="flag-label ok">No critical flags detected</div><div class="flag-desc">All sources agree — this token has no automated red flags.</div></div><div></div></div>`
     : fAll
         .filter(f => { const l = f.label || f; return !String(l).toLowerCase().includes("unavailable") })
         .map(f => {
@@ -362,37 +600,43 @@ function render(d, ca) {
               <div class="flag-label ${cls}">${escapeHtml(f.label || f)}</div>
               ${desc ? `<div class="flag-desc">${escapeHtml(desc)}</div>` : ''}
             </div>
+            <div class="sev ${severityClass(sev)}"><div class="d"></div><div class="d"></div><div class="d"></div></div>
           </div>`
         }).join("")
 
   const flagsCount = fAll.length === 0
-    ? "0 detected"
-    : `${fAll.length} detected`
+    ? '0 flags detected'
+    : fCrit.length > 0
+      ? `${fAll.length} flags detected`
+      : `${fAll.length} flags detected`
+  const critWarnText = fCrit.length > 0 || fWarn.length > 0
+    ? `${fCrit.length} critical · ${fWarn.length} warning`
+    : ''
 
   // ── Security strip cells
   function siBool(label, val, invert) {
-    if (val == null) return `<div class="sec-cell"><div class="lbl">${label}</div><div class="val neu">—</div></div>`
+    if (val == null) return `<div class="sec-cell neu"><div class="lbl">${label}</div><div class="val">—</div></div>`
     const yes = invert ? !val : !!val
-    return `<div class="sec-cell"><div class="lbl">${label}</div><div class="val ${yes ? 'y' : 'n'}">${yes ? '✓' : '✕'}</div></div>`
+    return `<div class="sec-cell ${yes ? 'y' : 'n'}"><div class="lbl">${label}</div><div class="val">${yes ? '✓' : '✕'}</div></div>`
   }
   const lpCell = (() => {
-    if (d.lpBurned) return `<div class="sec-cell"><div class="lbl">LP</div><div class="val y">BURN</div></div>`
-    if (d.lpLocked) return `<div class="sec-cell"><div class="lbl">LP</div><div class="val w">LOCK</div></div>`
-    if (d.lpBurned == null && d.lpLocked == null) return `<div class="sec-cell"><div class="lbl">LP</div><div class="val neu">—</div></div>`
-    return `<div class="sec-cell"><div class="lbl">LP</div><div class="val n">✕</div></div>`
+    if (d.lpBurned) return `<div class="sec-cell y"><div class="lbl">LP</div><div class="val">BURN</div></div>`
+    if (d.lpLocked) return `<div class="sec-cell w"><div class="lbl">LP</div><div class="val">LOCK</div></div>`
+    if (d.lpBurned == null && d.lpLocked == null) return `<div class="sec-cell neu"><div class="lbl">LP</div><div class="val">—</div></div>`
+    return `<div class="sec-cell n"><div class="lbl">LP</div><div class="val">✕</div></div>`
   })()
   const liqCell = liq != null
-    ? `<div class="sec-cell"><div class="lbl">Liq</div><div class="val ${liq < 5000 ? 'n' : liq > 50000 ? 'y' : 'w'}">${escapeHtml(fmt(liq))}</div></div>`
-    : `<div class="sec-cell"><div class="lbl">Liq</div><div class="val neu">—</div></div>`
+    ? `<div class="sec-cell ${liq < 5000 ? 'n' : liq > 50000 ? 'y' : 'w'}"><div class="lbl">Liq</div><div class="val">${escapeHtml(fmt(liq))}</div></div>`
+    : `<div class="sec-cell neu"><div class="lbl">Liq</div><div class="val">—</div></div>`
   const secStripHtml = `
-    <div class="sec-cell"><div class="lbl">Sell</div><div class="val ${sellOk ? 'y' : 'n'}">${sellOk ? '✓' : '✕'}</div></div>
+    <div class="sec-cell ${sellOk ? 'y' : 'n'}"><div class="lbl">Sell</div><div class="val">${sellOk ? '✓' : '✕'}</div></div>
     ${siBool('Mint', mintAuth, true)}
     ${siBool('Freeze', freezeAuth, true)}
     ${lpCell}
     ${liqCell}
   `
 
-  // ── Hero + above-fold
+  // ── Hero pieces
   const tkLineHtml = sym
     ? `<div class="tk-line"><b>${escapeHtml(sym)}</b>${name ? ' ' + escapeHtml(name) : ''}</div>`
     : ''
@@ -401,11 +645,9 @@ function render(d, ca) {
     : pairDate
       ? `<span class="age-badge">Pair: ${escapeHtml(pairDate)}</span>`
       : ''
-  // Logo wrap: fallback letters always rendered as the bottom layer; the
-   // <img> sits on top via z-index. If the image fails to load (CORS, 404,
-   // bad scheme) onerror removes it and the fallback shows through. Using
-   // .remove() rather than display:none so the wrap doesn't keep an empty
-   // box that some browsers still reserve space for.
+  // Logo wrap : fallback letters always rendered as the bottom layer; the
+  // <img> sits on top via z-index. If the image fails to load (CORS, 404,
+  // bad scheme) onerror removes it and the fallback shows through.
   const tokenLogoHtml = (logo || sym)
     ? `<div class="token-logo-wrap">
         ${sym ? `<div class="token-logo-fallback">${escapeHtml(sym.slice(0, 4))}</div>` : ''}
@@ -418,7 +660,7 @@ function render(d, ca) {
     ...socials.map(s => `<a class="soc" href="${safeUrl(s.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(s.type || 'Social')}</a>`),
   ].join('')
 
-  // Price card: sparkline if candles, change% sub-label
+  // Price card with sparkline + 24h delta
   const sparklineHtml = buildSparkline(candles)
   const change24 = pc24h != null ? pct(pc24h) : null
   const priceCardHtml = `
@@ -430,57 +672,7 @@ function render(d, ca) {
     </div>
   `
 
-  // ── Market grid (compact, 4 cells max)
-  const c5 = pct(pc5m), c1 = pct(pc1h), c6 = pct(pc6h), c24 = pct(pc24h)
-  const mktCellsHtml = [
-    mc != null && `<div class="mkt-cell"><div class="lbl">Market Cap</div><div class="val">${escapeHtml(fmt(mc))}</div>${c1.txt !== '—' ? `<div class="delta ${c1.cls}">${escapeHtml(c1.txt)}</div>` : ''}</div>`,
-    liq != null && `<div class="mkt-cell"><div class="lbl">Liquidity</div><div class="val">${escapeHtml(fmt(liq))}</div></div>`,
-    vol24 != null && `<div class="mkt-cell"><div class="lbl">Vol 24h</div><div class="val">${escapeHtml(fmt(vol24))}</div>${c24.txt !== '—' ? `<div class="delta ${c24.cls}">${escapeHtml(c24.txt)}</div>` : ''}</div>`,
-    vol1h != null && `<div class="mkt-cell"><div class="lbl">Vol 1h</div><div class="val">${escapeHtml(fmt(vol1h))}</div>${c5.txt !== '—' ? `<div class="delta ${c5.cls}">${escapeHtml(c5.txt)}</div>` : ''}</div>`,
-    c6.txt !== '—' && `<div class="mkt-cell"><div class="lbl">Chg 6h</div><div class="val ${c6.cls === 'up' ? 'val' : ''}" style="color:${c6.cls === 'up' ? '#00e5b0' : c6.cls === 'dn' ? '#ff5f5f' : '#ddd'}">${escapeHtml(c6.txt)}</div></div>`,
-  ].filter(Boolean).join('')
-
-  // ── On-Chain grid
-  const onChainCells = [
-    d.holders != null && ['Holders', d.holders.toLocaleString()],
-    d.solscanTrades24h != null && ['Trades 24h', d.solscanTrades24h.toLocaleString()],
-    d.solscanTraders24h != null && ['Traders 24h', d.solscanTraders24h.toLocaleString()],
-    d.solscanTokenAgeHours != null && ['Token Age', formatAge(d.solscanTokenAgeHours)],
-    d.tokenSupply != null && ['Supply', fmt(d.tokenSupply).replace('$', '')],
-    d.tokenCreator && ['Creator', `<a href="https://solscan.io/account/${encodeURIComponent(d.tokenCreator)}" target="_blank" rel="noopener noreferrer">${escapeHtml(d.tokenCreator.slice(0, 6) + '…' + d.tokenCreator.slice(-4))}<span class="ext">↗</span></a>`],
-  ].filter(Boolean)
-
-  const onChainHtml = onChainCells.length > 0
-    ? onChainCells.map(([label, val]) => `<div class="oc-cell"><div class="lbl">${escapeHtml(label)}</div><div class="val">${val}</div></div>`).join('')
-    : ''
-
-  // ── Layer breakdown
-  const SOURCE_LABELS = {
-    dexscreener: 'DexScreener', rugcheck: 'RugCheck', goplus: 'GoPlus',
-    helius: 'Helius', solscan: 'Solscan', chart: 'Chart',
-    crossvalidation: 'Cross-validation',
-  }
-  const layerEntries = d.layers ? Object.entries(d.layers) : []
-  const layerRowsHtml = layerEntries.length > 0
-    ? layerEntries.map(([src, l]) => {
-        const label = SOURCE_LABELS[src] || src
-        if (!l || !l.available) {
-          return `<div class="layer-row"><div class="layer-name">${escapeHtml(label)}</div><div class="layer-unavail">Unavailable</div></div>`
-        }
-        const p = Math.round((l.trust || 0) * 100)
-        const cls = p >= 75 ? 'ok' : p >= 40 ? 'warn' : 'bad'
-        return `<div class="layer-row">
-          <div class="layer-name">${escapeHtml(label)}</div>
-          <div class="layer-bar-wrap"><div class="layer-bar ${cls}" data-w="${p}"></div></div>
-          <div class="layer-pct ${cls}">${p}</div>
-        </div>`
-      }).join('')
-    : ''
-
-  // ── Holders concentration. Prefer the direct API fields (computed from
-  // Helius getTokenLargestAccounts on the server); fall back to extracting
-  // thresholds from flag labels when the server response predates the
-  // direct fields (e.g. cached older payloads still in flight).
+  // ── Holder concentration card (only if data present)
   function extractPctFromFlag(flags, regex) {
     for (const f of (flags || [])) {
       const label = String(f.label || '')
@@ -497,19 +689,18 @@ function render(d, ca) {
     : (extractPctFromFlag(d.flags, /Single\s*wallet\s*holds\s*(\d+)\s*%/i)
        ?? extractPctFromFlag(d.flags, /(?:Owner|Creator)\s*holds\s*[>≥]\s*(\d+)\s*%/i))
 
-  let holdersHtml = ''
+  let holdersSectionHtml = ''
   if (top10Pct !== null && d.holders != null) {
-    // Build 4-segment bar. If top1 is known explicitly use it; else
-    // estimate at ~30% of top10 weight (typical concentration profile).
-    // top11-50 estimated at ~half of remaining-after-top10.
     const t1 = top1Pct !== null ? Math.min(top1Pct, top10Pct) : Math.round(top10Pct * 0.3)
     const t10 = top10Pct - t1
     const remainder = 100 - top10Pct
     const t50 = Math.round(remainder * 0.5)
     const rest = 100 - t1 - t10 - t50
-    holdersHtml = `
-      <div class="section-label reveal"><span>Holder Concentration</span></div>
-      <div class="holders-card reveal">
+    holdersSectionHtml = `
+      <div class="section-label" data-toggle="holders-card">
+        <span>Holder Concentration</span><span class="hr"></span><span class="chev">▾</span>
+      </div>
+      <div class="holders-card" id="holders-card">
         <div class="lbl">${escapeHtml(d.holders.toLocaleString())} holders · top wallets dominate supply</div>
         <div class="hbar">
           <div class="seg top1" style="width:${t1}%">${t1 >= 6 ? t1 + '%' : ''}</div>
@@ -526,105 +717,169 @@ function render(d, ca) {
       </div>
     `
   } else if (d.holders != null) {
-    // No flag-extracted threshold — show count only with a neutral label
-    holdersHtml = `
-      <div class="section-label reveal"><span>Holder Concentration</span></div>
-      <div class="holders-card reveal">
+    holdersSectionHtml = `
+      <div class="section-label" data-toggle="holders-card">
+        <span>Holder Concentration</span><span class="hr"></span><span class="chev">▾</span>
+      </div>
+      <div class="holders-card" id="holders-card">
         <div class="lbl">${escapeHtml(d.holders.toLocaleString())} holders · distribution data unavailable</div>
       </div>
     `
   }
 
+  // ── Market grid (only if data present)
+  const c5 = pct(pc5m), c1 = pct(pc1h), c6 = pct(pc6h), c24 = pct(pc24h)
+  const mktCellsHtml = [
+    mc != null && `<div class="mkt-cell"><div class="lbl">Market Cap</div><div class="val">${escapeHtml(fmt(mc))}</div>${c1.txt !== '—' ? `<div class="delta ${c1.cls}">${escapeHtml(c1.txt)}</div>` : ''}</div>`,
+    liq != null && `<div class="mkt-cell"><div class="lbl">Liquidity</div><div class="val">${escapeHtml(fmt(liq))}</div></div>`,
+    vol24 != null && `<div class="mkt-cell"><div class="lbl">Vol 24h</div><div class="val">${escapeHtml(fmt(vol24))}</div>${c24.txt !== '—' ? `<div class="delta ${c24.cls}">${escapeHtml(c24.txt)}</div>` : ''}</div>`,
+    vol1h != null && `<div class="mkt-cell"><div class="lbl">Vol 1h</div><div class="val">${escapeHtml(fmt(vol1h))}</div>${c5.txt !== '—' ? `<div class="delta ${c5.cls}">${escapeHtml(c5.txt)}</div>` : ''}</div>`,
+    c6.txt !== '—' && `<div class="mkt-cell"><div class="lbl">Chg 6h</div><div class="val" style="color:${c6.cls === 'up' ? '#00e5b0' : c6.cls === 'dn' ? '#ff5f5f' : '#ddd'}">${escapeHtml(c6.txt)}</div></div>`,
+  ].filter(Boolean).join('')
+
+  // ── On-chain grid
+  const onChainCells = [
+    d.holders != null && ['Holders', d.holders.toLocaleString()],
+    d.solscanTrades24h != null && ['Trades 24h', d.solscanTrades24h.toLocaleString()],
+    d.solscanTraders24h != null && ['Traders 24h', d.solscanTraders24h.toLocaleString()],
+    d.solscanTokenAgeHours != null && ['Token Age', formatAge(d.solscanTokenAgeHours)],
+    d.tokenSupply != null && ['Supply', fmt(d.tokenSupply).replace('$', '')],
+    d.tokenCreator && ['Creator', `<a href="https://solscan.io/account/${encodeURIComponent(d.tokenCreator)}" target="_blank" rel="noopener noreferrer">${escapeHtml(d.tokenCreator.slice(0, 6) + '…' + d.tokenCreator.slice(-4))}<span class="ext">↗</span></a>`],
+  ].filter(Boolean)
+  const onChainHtml = onChainCells.length > 0
+    ? onChainCells.map(([label, val]) => `<div class="oc-cell"><div class="lbl">${escapeHtml(label)}</div><div class="val">${val}</div></div>`).join('')
+    : ''
+
+  // ── Deep Analysis tabs (Score Breakdown + Exit Liquidity wired today;
+  // Timeline / Holder Activity / Outcome Histogram tabs are scaffolded
+  // with empty states pending the backend work in PR2+.)
+  const scoreBreakdownTabHtml = buildScoreBreakdownTab(d)
+  const exitLiquidityTabHtml = buildExitLiquidityTab(liq)
+
+  // ── Source breakdown rows
+  const sourceListHtml = buildSourceListRows(d)
+  const layerEntries = d.layers ? Object.entries(d.layers).filter(([, l]) => l && l.available) : []
+  const flaggedSources = layerEntries.filter(([, l]) => (l.trust || 0) < 0.75).length
+  const totalSources = layerEntries.length
+  const sourceConsensusText = totalSources > 0
+    ? `${flaggedSources}/${totalSources} sources flag risk`
+    : 'No source data'
+
   // ── Sources marquee (deduplicated)
-  const FIXED_SOURCES = ["DexScreener", "RugCheck", "GoPlus", "Helius", "Solscan", "Chart Analysis"]
+  const FIXED_SOURCES = ["DexScreener", "RugCheck", "Helius", "Solscan", "Chart Analysis"]
   const apiSources = Array.isArray(d.sources_used) ? d.sources_used : []
   const allSources = [...new Map([...FIXED_SOURCES, ...apiSources].map(s => [String(s).toLowerCase(), s])).values()]
   const marqueeItem = (s) => `<div class="mi"><span class="ok">✓</span>${escapeHtml(s)}</div>`
   const marqueeOnce = allSources.map(marqueeItem).join('')
-  const marqueeHtml = marqueeOnce + marqueeOnce  // double for seamless scroll
+  const marqueeHtml = marqueeOnce + marqueeOnce
 
   // ── AI summary state: render now if available, else placeholder + async fetch
   const aiBodyHtml = d.aiSummary
     ? `<div class="ai-body">${escapeHtml(d.aiSummary)}</div>`
     : `<div class="ai-loading">Generating analysis…</div>`
 
+  // SVG icons for tabs — custom line-stroke set, monochrome (currentColor)
+  const ICONS = {
+    score: `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><polygon points="7,1.5 12.5,5.5 10.4,11.8 3.6,11.8 1.5,5.5"/><circle cx="7" cy="7" r="1.2" fill="currentColor" stroke="none"/></svg>`,
+    exit: `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4 L5 4 L5 7 L8 7 L8 10 L13 10"/></svg>`,
+  }
+
   // ── Compose the page
   const wrap = document.getElementById('content')
   wrap.innerHTML = `
     <section class="hero" data-verdict="${escapeHtml(lb)}">
-      <div class="hero-eye">Token Analysis${conf !== null ? ' · Conf ' + conf + '%' : ''}</div>
-      <div class="above">
-
-        <div class="verdict-block">
-          <div class="verdict-info">
-            <div class="verdict-row">
-              <h1>${escapeHtml(lb)}</h1>
-              ${tokenLogoHtml}
-            </div>
-            ${tkLineHtml}
-            ${ageBadgeHtml}
-            ${socialsHtml ? `<div class="socials">${socialsHtml}</div>` : ''}
-          </div>
-
-          <div class="metrics-row">
-            <div class="m-card">
-              <div class="m-label-row">
-                <div class="m-label">Risk Score</div>
-                <button class="refresh-btn" id="refresh-btn" aria-label="Refresh scan" title="Force a fresh scan, bypassing the cache">↻</button>
-              </div>
-              <div class="m-big">${score}<span class="denom">/ 1000</span></div>
-              <div class="sbar"><div class="sbar-fill" id="sbarf"></div></div>
-              <div class="m-sub risk">${escapeHtml(flagSummary)}${conf !== null ? ' · Conf ' + conf + '%' : ''}</div>
-              <div class="m-fresh" id="m-fresh">Scanned just now</div>
-            </div>
-            ${priceCardHtml}
-          </div>
+      <div class="verdict-info">
+        <div class="hero-eye">Token Analysis${conf !== null ? ' · Conf ' + conf + '%' : ''}</div>
+        <div class="verdict-row">
+          <h1>${escapeHtml(lb)}</h1>
+          ${tokenLogoHtml}
         </div>
-
-        <div class="right-block">
-          <div class="flags-card" id="flags-card">
-            <div class="flags-head" data-toggle="flags-card">
-              <span class="lbl">Critical Flags</span>
-              <span class="count">${escapeHtml(flagsCount)}</span>
-              <span class="chevron" aria-hidden="true">▾</span>
-            </div>
-            <div class="flag-rows-wrap">${flagsRowsHtml}</div>
-          </div>
-
-          <div class="ai-card" id="ai-section">
-            <div class="ai-head" data-toggle="ai-section">
-              <span class="icon">⬡</span>
-              <h3>AI Verdict</h3>
-              <span class="chevron" aria-hidden="true">▾</span>
-            </div>
-            <div class="ai-body-wrap">${aiBodyHtml}</div>
-          </div>
+        ${tkLineHtml}
+        <div class="meta-row">
+          ${ageBadgeHtml}
+          ${socialsHtml}
         </div>
-
+        <div class="metrics-row">
+          <div class="m-card">
+            <div class="m-label-row">
+              <div class="m-label">Risk Score</div>
+              <button class="refresh-btn" id="refresh-btn" aria-label="Refresh scan" title="Force a fresh scan, bypassing the cache">↻</button>
+            </div>
+            <div class="m-big">${score}<span class="denom">/ 1000</span></div>
+            <div class="sbar"><div class="sbar-fill" id="sbarf"></div></div>
+            <div class="m-sub risk">${escapeHtml(flagSummary)}${conf !== null ? ' · Conf ' + conf + '%' : ''}</div>
+            <div class="m-fresh" id="m-fresh">Scanned just now</div>
+          </div>
+          ${priceCardHtml}
+        </div>
       </div>
     </section>
 
-    <div class="section-label reveal"><span>Security</span></div>
-    <div class="sec-strip reveal">${secStripHtml}</div>
+    <div class="section-label" data-toggle="flags-card">
+      <span>Critical Flags</span><span class="hr"></span><span class="chev">▾</span>
+    </div>
+    <div class="flags-card" id="flags-card">
+      <div class="flags-head">
+        <span class="lbl">${escapeHtml(flagsCount)}</span>
+        ${critWarnText ? `<span class="count">${escapeHtml(critWarnText)}</span>` : ''}
+      </div>
+      ${flagsRowsHtml}
+    </div>
 
-    ${holdersHtml}
+    <div class="section-label" data-toggle="ai-section">
+      <span>AI Verdict</span><span class="hr"></span><span class="chev">▾</span>
+    </div>
+    <div class="ai-card" id="ai-section">
+      <div class="ai-head">
+        <span class="icon">⬡</span>
+        <h3>Synthesis</h3>
+      </div>
+      <div class="ai-body-wrap">${aiBodyHtml}</div>
+    </div>
+
+    <div class="section-label" data-toggle="sec-strip">
+      <span>Security</span><span class="hr"></span><span class="chev">▾</span>
+    </div>
+    <div class="sec-strip" id="sec-strip">${secStripHtml}</div>
+
+    ${holdersSectionHtml}
 
     ${mktCellsHtml ? `
-      <div class="section-label reveal"><span>Market Data</span></div>
-      <div class="mkt-grid reveal">${mktCellsHtml}</div>
+      <div class="section-label" data-toggle="mkt-grid">
+        <span>Market Data</span><span class="hr"></span><span class="chev">▾</span>
+      </div>
+      <div class="mkt-grid" id="mkt-grid">${mktCellsHtml}</div>
     ` : ''}
 
     ${onChainHtml ? `
-      <div class="section-label reveal"><span>On-Chain</span></div>
-      <div class="oc-grid reveal">${onChainHtml}</div>
+      <div class="section-label" data-toggle="oc-grid">
+        <span>On-Chain</span><span class="hr"></span><span class="chev">▾</span>
+      </div>
+      <div class="oc-grid" id="oc-grid">${onChainHtml}</div>
     ` : ''}
 
-    ${layerRowsHtml ? `
-      <div class="section-label reveal"><span>Layer Breakdown</span></div>
-      <div class="layers reveal" id="layers">${layerRowsHtml}</div>
+    <div class="section-label" data-toggle="deep">
+      <span>Deep Analysis</span><span class="hr"></span><span class="chev">▾</span>
+    </div>
+    <div class="deep" id="deep">
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-tab="score"><span class="tab-icon">${ICONS.score}</span> Score Breakdown</button>
+        <button class="tab" data-tab="exit"><span class="tab-icon">${ICONS.exit}</span> Exit Liquidity</button>
+      </div>
+      <div class="tab-content">
+        <div class="tab-pane active" data-pane="score">${scoreBreakdownTabHtml}</div>
+        <div class="tab-pane" data-pane="exit">${exitLiquidityTabHtml}</div>
+      </div>
+    </div>
+
+    ${sourceListHtml ? `
+      <div class="section-label closed" data-toggle="src-list">
+        <span>Source Breakdown</span><span class="hr"></span><span class="chev">▾</span>
+      </div>
+      <div class="src-list collapsed" id="src-list">${sourceListHtml}</div>
     ` : ''}
 
-    <div class="marquee-wrap reveal">
+    <div class="marquee-wrap">
       <div class="marquee-inner">${marqueeHtml}</div>
     </div>
   `
@@ -634,6 +889,7 @@ function render(d, ca) {
   setupStickyNav()
   setupRevealObserver()
   setupCollapsibles()
+  setupTabs()
   setupRefreshButton(ca)
   setupFreshnessTicker(d.fetchedAt)
 
@@ -642,6 +898,13 @@ function render(d, ca) {
     const b = document.getElementById('sbarf')
     if (b) b.style.width = barW + '%'
   }, 350)
+
+  // Score Breakdown bars: animate width on render (deep analysis tab is open by default)
+  setTimeout(() => {
+    document.querySelectorAll('.bd-bar[data-w]').forEach(b => {
+      b.style.width = b.dataset.w + '%'
+    })
+  }, 400)
 
   // Async-load AI summary if not in initial response
   if (!d.aiSummary) {
