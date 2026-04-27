@@ -45,6 +45,7 @@ import { initRugDb, recordRug } from "./_lib/rugdb";
 import { logger } from "./_lib/logger";
 import { composeCriticalActors } from "./_lib/critical-actors";
 import { buildInsiderGraph, initGraphCache } from "./_lib/insider-graph";
+import { initHistoryCache, pushVerdictHistory, getVerdictHistory, deriveEvent } from "./_lib/verdict-history";
 if (process.env.SENTRY_DSN) {
   Sentry.init({ dsn: process.env.SENTRY_DSN, tracesSampleRate: 0.1 });
 }
@@ -58,6 +59,7 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
   initRateLimiters(redis);
   initRugDb(redis);
   initGraphCache(redis);
+  initHistoryCache(redis);
 }
 
 const GLOBAL_TIMEOUT_MS = Number(process.env.VERCEL_TIMEOUT) || 9000;
@@ -493,6 +495,23 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       priceChange1h,
     }).catch(() => null);
 
+    // ─── V5 Verdict Timeline ──────────────────────────────────────────
+    // Append the current scan to the per-token history ZSET (deduped on
+    // tight refresh windows + identical verdict/score) and read back
+    // the last N entries so the Timeline tab on the page can show real
+    // verdict progression instead of a static mock.
+    const currentEntry = {
+      ts: Date.now(),
+      verdict: risk,
+      score,
+      event: deriveEvent(risk, flags),
+    };
+    void pushVerdictHistory(resolvedMint, currentEntry);
+    const verdictHistory = await getVerdictHistory(resolvedMint).catch(() => []);
+    // First scan or Redis unavailable — synthesize a single "now" entry
+    // so the timeline is never empty when the section is open.
+    const finalHistory = verdictHistory.length > 0 ? verdictHistory : [currentEntry];
+
     const result: ScanResult = {
       score, risk, flags, pair, resolvedMint, confidence, sources_used,
       holders, marketCap, priceUsd, liquidity,
@@ -514,6 +533,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       topHolderPct,
       top10HolderPct,
       criticalActors,
+      verdictHistory: finalHistory,
       scoring_version: SCORING_VERSION,
       fetchedAt: Date.now(),
       requestId,

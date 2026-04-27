@@ -452,9 +452,47 @@ function buildCriticalActorsPreview(d) {
 // scans.
 // ──────────────────────────────────────────────────────────────────────
 function buildTimelineTab(d) {
-  const score = d.score || 0
   const RC = { RUG: 'rug', DANGER: 'danger', CAUTION: 'caution', SAFE: 'caution' }
   const LB = { RUG: 'RUG PULL', DANGER: 'DANGER', CAUTION: 'CAUTION', SAFE: 'SAFE' }
+  // Backend (verdict-history) returns oldest→newest; the most recent
+  // entry is "NOW" and gets the pulse animation. Real history when
+  // present, falls back to v5 mock so pages from cache hits or first
+  // scans aren't empty.
+  const real = Array.isArray(d.verdictHistory) ? d.verdictHistory : []
+  if (real.length > 0) {
+    const now = Date.now()
+    function timeAgo(ts) {
+      const diff = Math.max(0, now - ts)
+      const s = Math.floor(diff / 1000)
+      if (s < 60) return s <= 5 ? 'NOW' : `${s}s ago`
+      const m = Math.floor(s / 60)
+      if (m < 60) return `${m}m ago`
+      const h = Math.floor(m / 60)
+      if (h < 24) return `${h}h ago`
+      const days = Math.floor(h / 24)
+      return `${days}d ago`
+    }
+    // Render newest first (the API returns oldest→newest, so reverse)
+    const ordered = real.slice().reverse()
+    return `<div class="tl-list">
+      ${ordered.map((e, i) => {
+        const cls = RC[e.verdict] || 'rug'
+        const lb = LB[e.verdict] || e.verdict
+        const isNow = i === 0
+        const time = isNow ? 'NOW' : timeAgo(e.ts)
+        return `<div class="tl-row">
+          <div class="tl-dot ${cls}${isNow ? ' now' : ''}"></div>
+          <div class="tl-time${isNow ? ' now' : ''}">${escapeHtml(time)}</div>
+          <div class="tl-verdict ${cls}">${escapeHtml(lb)}</div>
+          <div class="tl-score"><b>${e.score}</b>/1000</div>
+          <div class="tl-event">${isNow ? '<b>' + escapeHtml(e.event) + '</b>' : escapeHtml(e.event)}</div>
+        </div>`
+      }).join('')}
+    </div>`
+  }
+  // V5 mock fallback — kept verbatim since the backend wasn't able to
+  // produce real history (Redis unavailable, first-ever scan, etc.).
+  const score = d.score || 0
   const ageH = d.solscanTokenAgeHours
   const ageStr = ageH != null
     ? (ageH < 24 ? `${Math.round(ageH)}h ago` : ageH < 720 ? `${Math.floor(ageH / 24)}d ago` : `${Math.floor(ageH / 720)}mo ago`)

@@ -194,3 +194,21 @@ export const INSIDER_GRAPH_CACHE_PREFIX = "ig:";
 // Lets repeat scans of overlapping holders skip the Helius round-trip.
 export const INSIDER_SIG_CACHE_TTL = 300; // 5 minutes
 export const INSIDER_SIG_CACHE_PREFIX = "igsig:";
+
+// ═══ VERDICT HISTORY (per-token timeline) ═══════════════════════════════
+// Each scan pushes one entry into a Redis ZSET keyed `vh:{ca}`. Score is
+// the timestamp; member is a JSON-serialized {ts, verdict, score, event}.
+// Cap retained entries to MAX so the ZSET stays bounded; older entries
+// fall off via ZREMRANGEBYRANK after each push. TTL on the key itself is
+// generous so a token that hasn't been scanned in a while still keeps
+// some history when it is scanned again.
+export const VERDICT_HISTORY_PREFIX = "vh:";
+export const VERDICT_HISTORY_MAX_ENTRIES = 50;
+export const VERDICT_HISTORY_TTL = 60 * 60 * 24 * 30; // 30 days
+// How many entries to return on the API response. Frontend renders the
+// last 6 (one per row of the v5 timeline).
+export const VERDICT_HISTORY_RESPONSE_LIMIT = 6;
+// Don't push a new entry if the same scan key was hit within this window —
+// avoids polluting the timeline when the page is refreshed in a tight
+// loop (auto-refresh, multiple tabs).
+export const VERDICT_HISTORY_DEDUPE_WINDOW_MS = 60_000; // 1 minute
