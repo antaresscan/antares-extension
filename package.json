@@ -1,7 +1,7 @@
 {
   "name": "antares-extension",
   "displayName": "Antares — Anti-Scam Scanner for Solana",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Antares scans Solana tokens in real time and detects rug pulls, honeypots, bundlers and chart manipulation — directly in your browser.",
   "author": "COMEALAMAISONGROUPE",
   "scripts": {

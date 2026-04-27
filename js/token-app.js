@@ -383,7 +383,9 @@ function buildTtrModule(_risk) {
 // Backend follow-up will replace `ACTORS_PRESET` with `d.criticalActors[]`.
 // ──────────────────────────────────────────────────────────────────────
 function buildCriticalActorsPreview(d) {
-  if (d.risk === 'SAFE' || d.risk === 'CAUTION') return ''
+  // Always rendered — v5 design treats Critical Actors as a core
+  // structural signal regardless of verdict. Backend follow-up will
+  // populate real data; until then the section shows the v5 mock.
   const top1 = typeof d.topHolderPct === 'number' ? Math.round(d.topHolderPct * 10) / 10 : 13.2
   const top10 = typeof d.top10HolderPct === 'number' ? d.top10HolderPct : 41
   const remaining = Math.max(0, top10 - top1)
@@ -857,15 +859,17 @@ function render(d, ca) {
     ...socials.map(s => `<a class="soc" href="${safeUrl(s.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(s.type || 'Social')}</a>`),
   ].join('')
 
-  // Price card with sparkline + 24h delta
+  // Market Cap card — sparkline still uses price candles (live signal),
+  // but the headline metric is FDV market cap. Sub-line keeps the unit
+  // price as secondary context.
   const sparklineHtml = buildSparkline(candles)
   const change24 = pc24h != null ? pct(pc24h) : null
   const priceCardHtml = `
     <div class="m-card">
-      <div class="m-label">Price USD</div>
-      <div class="m-big alt">${escapeHtml(priceUsd ? fmtPrice(priceUsd) : '—')}</div>
+      <div class="m-label">Market Cap</div>
+      <div class="m-big alt">${escapeHtml(mc != null ? fmt(mc) : '—')}</div>
       ${sparklineHtml}
-      ${change24 ? `<div class="m-sub ${change24.cls}">${escapeHtml(change24.txt)} · 24h</div>` : (priceNative ? `<div class="m-sub">${escapeHtml(priceNative + ' SOL')}</div>` : '')}
+      ${change24 ? `<div class="m-sub ${change24.cls}">${escapeHtml(change24.txt)} · 24h</div>` : (priceUsd ? `<div class="m-sub">${escapeHtml(fmtPrice(priceUsd))} per token</div>` : '')}
     </div>
   `
 
