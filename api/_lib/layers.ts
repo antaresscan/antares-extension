@@ -236,7 +236,15 @@ const top10 = asNumber(rugData?.topHolders?.top10Percentage);
 }
 
 // ═══ LAYER 3 — GoPlus ═════════════════════════════════════════════════════════
-export function layerGoPlus(goplus: GoPlusTokenResult | null): LayerResult {
+export function layerGoPlus(
+  goplus: GoPlusTokenResult | null,
+  // Mirror layerRugCheck: when LP is unburned, mature tokens deserve the
+  // soft 'unverified LP' flag (CAUTION) instead of the hard 'dev can rug'
+  // flag (DANGER). Without this context, every legit established token
+  // with team-managed LP collapsed to DANGER on the goplus path even
+  // though rugcheck classified it as soft.
+  maturityContext?: { holders: number | null; liquidity: number; tokenAgeHours: number | null; mintAuthority: boolean; freezeAuthority: boolean; honeypot: boolean }
+): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
   const penalties: number[] = [];
@@ -312,9 +320,29 @@ export function layerGoPlus(goplus: GoPlusTokenResult | null): LayerResult {
             flags.push(makeFlag(`LP partially burned ${Math.round(maxBurnPct)}% — not fully secured`, "warning", 0));
             penalties.push(0.80);
         } else {
-            flags.push(makeFlag("LP not burned or locked — dev can rug liquidity", "warning", 0));
-            penalties.push(0.70);
-            safeBlocked = true;
+            // Same maturity classification as layerRugCheck. A mature,
+            // liquid, well-distributed token whose LP isn't burned still
+            // carries rug-able liquidity, but the operational risk is
+            // qualitatively different from a fresh launch — flag it as
+            // 'unverified LP' (soft, CAUTION) rather than 'dev can rug'
+            // (hard, DANGER). Keep both arms safeBlocked so the safe
+            // gate still trips; the soft reason just reroutes the gate
+            // to the CAUTION branch in scoring.classifySafeBlockedReasons.
+            const ctx = maturityContext;
+            const isMature = ctx
+                && (ctx.holders ?? 0) >= LP_UNVERIFIED_MIN_HOLDERS
+                && ctx.liquidity >= LP_UNVERIFIED_MIN_LIQUIDITY
+                && (ctx.tokenAgeHours ?? 0) >= LP_UNVERIFIED_MIN_AGE_HOURS
+                && !ctx.mintAuthority && !ctx.freezeAuthority && !ctx.honeypot;
+            if (isMature) {
+                flags.push(makeFlag("LP not burned but token is mature and liquid (unverified LP)", "warning", 0));
+                penalties.push(0.85);
+                safeBlocked = true;
+            } else {
+                flags.push(makeFlag("LP not burned or locked — dev can rug liquidity", "warning", 0));
+                penalties.push(0.70);
+                safeBlocked = true;
+            }
         }
     }
   trust = applyDiminishingPenalties(trust, penalties);

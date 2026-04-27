@@ -355,15 +355,20 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
 
     // 7 layers
     const l1 = layerDexScreener(pair, marketCap, tokenAgeMinutes);
-    const l2 = layerRugCheck(rugData, rugReport, resolvedMint, tokenName, {
+    // Shared maturity context — both rugcheck and goplus need it now to
+    // classify unburned-LP as soft (CAUTION) for established tokens
+    // instead of hard (DANGER). Building it once here keeps the two
+    // layer calls strictly in sync.
+    const maturityCtx = {
       holders: solscanHoldersCount ?? rugTotalHolders ?? null,
       liquidity: asNumber(pair?.liquidity?.usd),
       tokenAgeHours: solscanTokenAgeHours,
       mintAuthority: rugData?.mintAuthorityEnabled === true,
       freezeAuthority: rugData?.freezeAuthorityEnabled === true,
       honeypot: false,
-    });
-    const l3 = layerGoPlus(goplus);
+    };
+    const l2 = layerRugCheck(rugData, rugReport, resolvedMint, tokenName, maturityCtx);
+    const l3 = layerGoPlus(goplus, maturityCtx);
     const l4 = layerHelius(resolvedHolderAccounts, totalSupplyUi);
     const l5 = layerSolscan(solscanHoldersCount, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h);
     const l6 = layerChart(candles, pair, tokenAgeMinutes);
