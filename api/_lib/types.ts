@@ -329,6 +329,25 @@ export interface ScanResult {
   // V5 Verdict Timeline — last N scan snapshots persisted in Redis ZSET
   // `vh:{ca}`. Oldest first; the most recent is the current scan.
   verdictHistory?: VerdictHistoryEntry[];
+  // V5 Holder Activity — derived from recentTransfers (last 60min window
+  // per top holder). Composed at scan-time, not persisted.
+  holderActivity?: HolderActivityPayload;
+}
+
+export interface HolderActivityRow {
+  role: "dev" | "bot" | "coord" | "real" | "whale-big";
+  label: "Holding" | "Selling" | "Buying" | "Splitting" | "Static" | "Reducing";
+  avatar: string;
+  pctChange: number;
+  pctChangeDisp: string;
+  addr: string;
+  desc: string;
+}
+
+export interface HolderActivityPayload {
+  rows: HolderActivityRow[];
+  netFlowPct: number;
+  netFlowDirection: "in" | "out" | "flat";
 }
 
 export interface VerdictHistoryEntry {
