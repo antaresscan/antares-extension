@@ -349,13 +349,11 @@ function buildExitLiquidityTab(liq) {
 // Backend follow-up will replace these constants with `d.timeToRugMedian`.
 // ──────────────────────────────────────────────────────────────────────
 function buildTtrModule(d) {
-  // Backend-driven (composeOutcomeStats). The TTR ring is hidden for
-  // SAFE tokens — there is no rug to time. Two paths:
-  //   1. Backend explicitly returns null (`outcomeStats === null`) →
-  //      hide regardless of verdict.
-  //   2. Verdict is SAFE on a cached payload that pre-dates PR4 (no
-  //      outcomeStats field) → also hide (don't show the mock).
-  if (!d || d.risk === 'SAFE') return ''
+  // Backend-driven (composeOutcomeStats). The TTR ring renders ONLY
+  // for RUG and DANGER verdicts — there is no rug to time on SAFE or
+  // CAUTION tokens, and the urgency framing ("comparable launches
+  // dumped within 4h 12m") would be misleading on milder verdicts.
+  if (!d || (d.risk !== 'RUG' && d.risk !== 'DANGER')) return ''
   const o = d.outcomeStats
   if (o === null) return ''
   if (o && typeof o === 'object') {
