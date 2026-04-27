@@ -43,6 +43,8 @@ import { generateAISummary } from "./_lib/ai-summary";
 
 import { initRugDb, recordRug } from "./_lib/rugdb";
 import { logger } from "./_lib/logger";
+import { composeCriticalActors } from "./_lib/critical-actors";
+import { buildInsiderGraph, initGraphCache } from "./_lib/insider-graph";
 if (process.env.SENTRY_DSN) {
   Sentry.init({ dsn: process.env.SENTRY_DSN, tracesSampleRate: 0.1 });
 }
@@ -55,6 +57,7 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
   initCache(redis);
   initRateLimiters(redis);
   initRugDb(redis);
+  initGraphCache(redis);
 }
 
 const GLOBAL_TIMEOUT_MS = Number(process.env.VERCEL_TIMEOUT) || 9000;
@@ -447,6 +450,32 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       return top10Sum > 0 ? Math.min(100, (top10Sum / totalSupplyUi) * 100) : null;
     })();
 
+    // ─── V5 Critical Actors preview ───────────────────────────────────
+    // Compose the 3 hero cards (Dev / Insider / Cluster). The cluster
+    // detection requires `buildInsiderGraph` which makes Helius RPC
+    // calls — guarded by withBudget so a tight scan budget skips
+    // gracefully and we still emit Dev + Insider cards. Subsequent
+    // scans benefit from the graph cache (INSIDER_GRAPH_CACHE_TTL).
+    const insiderGraphResult = (HELIUS_API_KEY && realHolderAccounts.length >= 3 && totalSupplyUi > 0)
+      ? await withBudget(
+          buildInsiderGraph(
+            resolvedMint,
+            realHolderAccounts.map(h => ({ address: h.owner, uiAmount: h.uiAmount })),
+            totalSupplyUi,
+            HELIUS_API_KEY,
+            new Set(LP_PROGRAM_ADDRESSES),
+          ),
+          remainingMs(),
+        ).catch(() => null)
+      : null;
+    const criticalActors = composeCriticalActors({
+      tokenCreator,
+      creatorReputation,
+      realHolderAccounts,
+      totalSupplyUi,
+      insiderGraph: insiderGraphResult,
+    });
+
     const aiSummary = await generateAISummary({
       score, risk,
       flags: flags.map(f => ({ label: f.label, severity: f.severity, impact: f.impact })),
@@ -484,6 +513,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       candles: candles.slice(-20).map(c => ({ close: c.c })),
       topHolderPct,
       top10HolderPct,
+      criticalActors,
       scoring_version: SCORING_VERSION,
       fetchedAt: Date.now(),
       requestId,
