@@ -518,6 +518,36 @@ function buildTimelineTab(d) {
 // top-N holders).
 // ──────────────────────────────────────────────────────────────────────
 function buildHolderActivityTab(d) {
+  // Backend (composeHolderActivity) returns { rows, netFlowPct,
+  // netFlowDirection } derived from recentTransfers + top holders.
+  // Real data when present, v5 mock fallback for cache hits or when
+  // recentTransfers is empty.
+  const ha = d.holderActivity
+  if (ha && Array.isArray(ha.rows) && ha.rows.length > 0) {
+    const rows = ha.rows.map(r => `
+      <div class="whale ${r.role}">
+        <div class="whale-avatar">${escapeHtml(r.avatar || '')}</div>
+        <div class="whale-pct">${escapeHtml(r.pctChangeDisp || '±0%')}</div>
+        <div class="whale-tag">${escapeHtml(r.label || '')}</div>
+        <div class="whale-info">
+          <div class="whale-addr">${escapeHtml(r.addr || '')}</div>
+          <div class="whale-desc">${r.desc || ''}</div>
+        </div>
+      </div>
+    `).join('')
+    const netCls = ha.netFlowDirection === 'in' ? 'var(--c)' :
+                   ha.netFlowDirection === 'out' ? 'var(--orange)' : '#888'
+    const netSign = ha.netFlowPct > 0 ? '+' : ''
+    const netLabel = ha.netFlowDirection === 'out'
+      ? 'pre-dump signature' : ha.netFlowDirection === 'in'
+        ? 'accumulation phase' : 'no significant flow'
+    return `
+      <div style="font-size:9px;color:#444;letter-spacing:.22em;text-transform:uppercase;margin-bottom:10px">Wallet movements — last 60 minutes</div>
+      <div class="whale-list">${rows}</div>
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:11px;color:#666">Net flow last 1h: <b style="color:${netCls}">${netSign}${(ha.netFlowPct || 0).toFixed(1)}%</b> · ${netLabel}</div>
+    `
+  }
+  // V5 mock fallback for cache hits / pre-PR3 era.
   return `
     <div style="font-size:9px;color:#444;letter-spacing:.22em;text-transform:uppercase;margin-bottom:10px">Wallet movements — last 60 minutes</div>
     <div class="whale-list">

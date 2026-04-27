@@ -46,6 +46,7 @@ import { logger } from "./_lib/logger";
 import { composeCriticalActors } from "./_lib/critical-actors";
 import { buildInsiderGraph, initGraphCache } from "./_lib/insider-graph";
 import { initHistoryCache, pushVerdictHistory, getVerdictHistory, deriveEvent } from "./_lib/verdict-history";
+import { composeHolderActivity } from "./_lib/holder-activity";
 if (process.env.SENTRY_DSN) {
   Sentry.init({ dsn: process.env.SENTRY_DSN, tracesSampleRate: 0.1 });
 }
@@ -478,6 +479,17 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       insiderGraph: insiderGraphResult,
     });
 
+    // ─── V5 Holder Activity ───────────────────────────────────────────
+    // Derived in-process from recentTransfers (Solscan, last ~50 txs)
+    // and the top realHolderAccounts. No extra RPC calls.
+    const holderActivity = composeHolderActivity({
+      realHolderAccounts,
+      tokenCreator,
+      totalSupplyUi,
+      recentTransfers,
+      insiderGraph: insiderGraphResult,
+    });
+
     const aiSummary = await generateAISummary({
       score, risk,
       flags: flags.map(f => ({ label: f.label, severity: f.severity, impact: f.impact })),
@@ -534,6 +546,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       top10HolderPct,
       criticalActors,
       verdictHistory: finalHistory,
+      holderActivity,
       scoring_version: SCORING_VERSION,
       fetchedAt: Date.now(),
       requestId,
