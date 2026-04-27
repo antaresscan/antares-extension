@@ -138,10 +138,22 @@ export const HARD_BLOCK_REASONS = new Set([
   "bundle", "rug_pattern", "wash_trading", "sniper", "pump", "chart", "low_holders",
 ]);
 
+// ── LP-UNVERIFIED MATURITY THRESHOLDS ────────────────────────
+// A token that meets all three of these thresholds (plus no mint /
+// freeze / honeypot) gets the soft "unverified LP" flag (CAUTION)
+// instead of the hard "dev can rug" flag (DANGER) when its LP isn't
+// burned or locked. Previous values (10k holders / $1M liq / 30d)
+// were too strict — well-established mid-cap tokens like NEET
+// (~16k holders, 30d+, $1.3M liq, clean contract, well-distributed)
+// were collapsing straight to DANGER even though their operational
+// profile is closer to "established memecoin with team-managed LP"
+// than "fresh rug setup". The relaxed values pick up that mid-cap
+// band while still gating fresh launches and tiny tokens.
+export const LP_UNVERIFIED_MIN_HOLDERS   = 5000;
+export const LP_UNVERIFIED_MIN_LIQUIDITY = 500_000;
+export const LP_UNVERIFIED_MIN_AGE_HOURS = 336; // 14 days
+
 // ── EXTERNAL API BASE URLs ───────────────────────────────────
-export const LP_UNVERIFIED_MIN_HOLDERS = 10000;
-export const LP_UNVERIFIED_MIN_LIQUIDITY = 1000000;
-export const LP_UNVERIFIED_MIN_AGE_HOURS = 720;
 
 export const HELIUS_REST_BASE = "https://api.helius.xyz";
 
