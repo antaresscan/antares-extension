@@ -19,6 +19,7 @@ export const ALLOWED_ORIGINS = [
   "https://gmgn.ai",
   "https://app.telemetry.io",
   "https://antares-extension.vercel.app",
+  "https://antares-website.vercel.app",
 ];
 
 // ——— RATE LIMITERS ————————————————————————————————————————————————————————————
