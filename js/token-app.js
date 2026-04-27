@@ -338,71 +338,6 @@ function buildExitLiquidityTab(liq) {
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// TIME-TO-RUG MODULE
-// Backend currently returns no time-to-rug median. Until the J3-J5
-// backtest harness is wired live, we display the v5-validated "median"
-// figure tied to the verdict so the section is shown without lying:
-//   RUG  → "4h 12m" (most pump.fun rugs die under 6h)
-//   DANGER → "11h"
-//   CAUTION → "2d"
-//   SAFE → hidden
-// Backend follow-up will replace these constants with `d.timeToRugMedian`.
-// ──────────────────────────────────────────────────────────────────────
-function buildTtrModule(d) {
-  // Backend-driven (composeOutcomeStats). The TTR ring renders ONLY
-  // for RUG and DANGER verdicts — there is no rug to time on SAFE or
-  // CAUTION tokens, and the urgency framing ("comparable launches
-  // dumped within 4h 12m") would be misleading on milder verdicts.
-  if (!d || (d.risk !== 'RUG' && d.risk !== 'DANGER')) return ''
-  const o = d.outcomeStats
-  if (o === null) return ''
-  if (o && typeof o === 'object') {
-    const median = o.timeToRugMedianDisp || '—'
-    const n = o.timeToRugSampleSize || 0
-    const pct = o.pctRugged24h || 0
-    return `
-      <div class="ttr">
-        <div class="ttr-clock">
-          <svg viewBox="0 0 100 100">
-            <circle class="ring-bg" cx="50" cy="50" r="40"/>
-            <circle class="ring-fill" cx="50" cy="50" r="40"/>
-          </svg>
-          <div class="ttr-time">
-            <div class="ttr-time-big">${escapeHtml(median)}</div>
-            <div class="ttr-time-sub">median</div>
-          </div>
-        </div>
-        <div class="ttr-info">
-          <div class="ttr-eye">⏱ Time to rug</div>
-          <div class="ttr-headline">Comparable launches dumped within <b>${escapeHtml(median)}</b> of this point.</div>
-          <div class="ttr-meta">Based on <b>${n} similar pump.fun launches</b> · last 30 days · ${pct}% rugged &lt; 24h.</div>
-        </div>
-      </div>
-    `
-  }
-  // Pre-PR4 fallback (v5 reference values).
-  return `
-    <div class="ttr">
-      <div class="ttr-clock">
-        <svg viewBox="0 0 100 100">
-          <circle class="ring-bg" cx="50" cy="50" r="40"/>
-          <circle class="ring-fill" cx="50" cy="50" r="40"/>
-        </svg>
-        <div class="ttr-time">
-          <div class="ttr-time-big">4h 12m</div>
-          <div class="ttr-time-sub">median</div>
-        </div>
-      </div>
-      <div class="ttr-info">
-        <div class="ttr-eye">⏱ Time to rug</div>
-        <div class="ttr-headline">Comparable launches dumped within <b>4h 12m</b> of this point.</div>
-        <div class="ttr-meta">Based on <b>487 similar pump.fun launches</b> · last 30 days · 89% rugged &lt; 24h.</div>
-      </div>
-    </div>
-  `
-}
-
-// ──────────────────────────────────────────────────────────────────────
 // CRITICAL ACTORS preview — 3 cards (Dev / Insider / Cluster A)
 // Backend currently returns no per-wallet reputation, prior-rugs or
 // cluster detection data. Until the insider-graph + creator-reputation
@@ -1145,8 +1080,12 @@ function render(d, ca) {
     exit: `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4 L5 4 L5 7 L8 7 L8 10 L13 10"/></svg>`,
   }
 
-  // V5 sections built ahead so we can interpolate inline below
-  const ttrHtml = buildTtrModule(d)
+  // V5 sections built ahead so we can interpolate inline below.
+  // TTR ring removed — heuristic profile match against pump.fun
+  // historical clusters surfaced numbers like "4h 12m median" with
+  // implied precision the underlying signal does not have. Verdict
+  // band + Outcome Histogram cover the same urgency intent without
+  // pretending to time the dump.
   const criticalActorsHtml = buildCriticalActorsPreview(d)
   const timelineTabHtml = buildTimelineTab(d)
   const holderActivityTabHtml = buildHolderActivityTab(d)
@@ -1167,7 +1106,6 @@ function render(d, ca) {
           ${ageBadgeHtml}
           ${socialsHtml}
         </div>
-        ${ttrHtml}
         <div class="metrics-row">
           <div class="m-card">
             <div class="m-label-row">
