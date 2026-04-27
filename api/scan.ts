@@ -47,6 +47,7 @@ import { composeCriticalActors } from "./_lib/critical-actors";
 import { buildInsiderGraph, initGraphCache } from "./_lib/insider-graph";
 import { initHistoryCache, pushVerdictHistory, getVerdictHistory, deriveEvent } from "./_lib/verdict-history";
 import { composeHolderActivity } from "./_lib/holder-activity";
+import { composeOutcomeStats } from "./_lib/outcome-stats";
 if (process.env.SENTRY_DSN) {
   Sentry.init({ dsn: process.env.SENTRY_DSN, tracesSampleRate: 0.1 });
 }
@@ -490,6 +491,20 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       insiderGraph: insiderGraphResult,
     });
 
+    // ─── V5 Outcome Stats (TTR ring + Outcome Histogram) ──────────────
+    // Heuristic profile-match v1: pick fast-rug / high-risk / slow-death
+    // distribution from current verdict + age + concentration + vol/liq.
+    // The corpus-backed KNN matcher (J3-J5 backtest harness) replaces
+    // pickProfile in a follow-up; the response shape is stable.
+    const outcomeStats = composeOutcomeStats({
+      risk,
+      tokenAgeHours: solscanTokenAgeHours ?? dexTokenAgeHours ?? null,
+      top10HolderPct,
+      liquidity,
+      volume24h,
+      flags,
+    });
+
     const aiSummary = await generateAISummary({
       score, risk,
       flags: flags.map(f => ({ label: f.label, severity: f.severity, impact: f.impact })),
@@ -547,6 +562,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       criticalActors,
       verdictHistory: finalHistory,
       holderActivity,
+      outcomeStats,
       scoring_version: SCORING_VERSION,
       fetchedAt: Date.now(),
       requestId,

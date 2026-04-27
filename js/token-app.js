@@ -348,9 +348,38 @@ function buildExitLiquidityTab(liq) {
 //   SAFE → hidden
 // Backend follow-up will replace these constants with `d.timeToRugMedian`.
 // ──────────────────────────────────────────────────────────────────────
-function buildTtrModule(_risk) {
-  // V5-validated copy, shown on every verdict until backend wires
-  // `d.timeToRugMedian` + `d.timeToRugSampleSize` from the J3-J5 harness.
+function buildTtrModule(d) {
+  // Backend-driven (composeOutcomeStats). When the heuristic profile
+  // matcher returns null (SAFE token) the module is hidden entirely.
+  // The v5 strings remain as the rendered defaults when backend hasn't
+  // emitted outcomeStats yet (cache hit pre-PR4).
+  const o = d && d.outcomeStats
+  if (o === null) return '' // SAFE — explicitly suppressed
+  if (o && typeof o === 'object') {
+    const median = o.timeToRugMedianDisp || '—'
+    const n = o.timeToRugSampleSize || 0
+    const pct = o.pctRugged24h || 0
+    return `
+      <div class="ttr">
+        <div class="ttr-clock">
+          <svg viewBox="0 0 100 100">
+            <circle class="ring-bg" cx="50" cy="50" r="40"/>
+            <circle class="ring-fill" cx="50" cy="50" r="40"/>
+          </svg>
+          <div class="ttr-time">
+            <div class="ttr-time-big">${escapeHtml(median)}</div>
+            <div class="ttr-time-sub">median</div>
+          </div>
+        </div>
+        <div class="ttr-info">
+          <div class="ttr-eye">⏱ Time to rug</div>
+          <div class="ttr-headline">Comparable launches dumped within <b>${escapeHtml(median)}</b> of this point.</div>
+          <div class="ttr-meta">Based on <b>${n} similar pump.fun launches</b> · last 30 days · ${pct}% rugged &lt; 24h.</div>
+        </div>
+      </div>
+    `
+  }
+  // Pre-PR4 fallback (v5 reference values).
   return `
     <div class="ttr">
       <div class="ttr-clock">
@@ -569,24 +598,58 @@ function buildHolderActivityTab(d) {
 // corpus. Static distribution shown so the visual is in place.
 // ──────────────────────────────────────────────────────────────────────
 function buildOutcomeHistogramTab(d) {
-  if (d.risk === 'SAFE') {
+  // Backend (composeOutcomeStats) returns null for SAFE; otherwise a
+  // typed payload with distribution / mostSimilar / pct stats. v5 mock
+  // values remain as the fallback for cache hits pre-PR4.
+  const o = d.outcomeStats
+  if (o === null) {
     return `<div class="tab-empty">Outcome distribution shown only for tokens that show risk signals. Current token is <b>SAFE</b>.</div>`
   }
-  // Bucket distribution (left-skewed, matches v5 demo): 36 buckets covering 0h → 30d
-  const dist = [8,14,22,28,18,12,6,4,2,1,.6,.4,.3,.3,.2,.2,.2,.2,.2,.2,.2,.2,.2,.3,.3,.4,.6,1,1.2,1.4,1.4,1.2,.9,.6,.4,.3]
+  let dist, sampleSize, medianHours, pctRugged, pctSlow, pctAlive, similar, youIdx
+  if (o && typeof o === 'object') {
+    dist = Array.isArray(o.distribution) ? o.distribution : []
+    sampleSize = o.timeToRugSampleSize || 0
+    medianHours = o.timeToRugMedianHours || 0
+    pctRugged = o.pctRugged24h || 0
+    pctSlow = o.pctSlowDeath || 0
+    pctAlive = o.pctAlive30d || 0
+    similar = Array.isArray(o.mostSimilar) ? o.mostSimilar : []
+    youIdx = typeof o.youBucketIndex === 'number' ? o.youBucketIndex : 11
+  } else {
+    // Pre-PR4 fallback: keep v5 reference distribution.
+    dist = [8,14,22,28,18,12,6,4,2,1,.6,.4,.3,.3,.2,.2,.2,.2,.2,.2,.2,.2,.2,.3,.3,.4,.6,1,1.2,1.4,1.4,1.2,.9,.6,.4,.3]
+    sampleSize = 487
+    medianHours = 4.2
+    pctRugged = 89; pctSlow = 8; pctAlive = 3
+    youIdx = d.risk === 'RUG' ? 11 : d.risk === 'DANGER' ? 17 : 25
+    similar = [
+      { symbol: 'RUGCOIN', ruggedAfterHours: 4,  loss: -99.2 },
+      { symbol: 'SCAMBOY', ruggedAfterHours: 6,  loss: -98.5 },
+      { symbol: 'TRAPCAT', ruggedAfterHours: 12, loss: -97.8 },
+    ]
+  }
+  if (!dist.length) return `<div class="tab-empty">Outcome distribution unavailable.</div>`
   const max = Math.max(...dist)
-  const youIdx = d.risk === 'RUG' ? 11 : d.risk === 'DANGER' ? 17 : 25
   const bars = dist.map((v, i) => {
     const cls = i === youIdx ? 'you' : v > 15 ? '' : v > 5 ? 'warn' : 'ok'
     const h = (v / max) * 100
     return `<div class="sim-hist-bar ${cls}" style="height:${h.toFixed(1)}%" title="${v}% of tokens"></div>`
   }).join('')
   const markerLeft = ((youIdx + 0.5) / dist.length * 100).toFixed(2)
+  const fmtMedian = medianHours < 24
+    ? `${medianHours.toFixed(1)}h`
+    : `${(medianHours / 24).toFixed(1)}d`
+  const simHtml = similar.map(s => {
+    const after = s.ruggedAfterHours < 24
+      ? `rugged ${s.ruggedAfterHours}h after launch`
+      : `rugged ${(s.ruggedAfterHours / 24).toFixed(0)}d after launch`
+    return `<div class="sim-token"><div class="sim-token-icon">✕</div><div class="sim-token-name">${escapeHtml(s.symbol)}</div><div class="sim-token-time">${escapeHtml(after)}</div><div class="sim-token-loss">${s.loss.toFixed(1)}%</div></div>`
+  }).join('')
   return `
     <div class="sim-hist">
       <div class="sim-hist-head">
-        <div class="sim-hist-title">Outcome distribution · 487 comparable launches</div>
-        <div class="sim-hist-detail">Median time-to-rug: 4.2h</div>
+        <div class="sim-hist-title">Outcome distribution · ${sampleSize} comparable launches</div>
+        <div class="sim-hist-detail">Median time-to-rug: ${escapeHtml(fmtMedian)}</div>
       </div>
       <div class="sim-hist-bars">${bars}<div class="sim-hist-marker" style="left:${markerLeft}%"></div></div>
       <div class="sim-hist-axis">
@@ -594,15 +657,12 @@ function buildOutcomeHistogramTab(d) {
       </div>
     </div>
     <div class="sim-stats">
-      <div class="sim-stat rug"><div class="sim-stat-pct">89%</div><div class="sim-stat-label">Rugged &lt; 24h</div><div class="sim-stat-detail">Median 4.2h</div></div>
-      <div class="sim-stat slow"><div class="sim-stat-pct">8%</div><div class="sim-stat-label">Slow death</div><div class="sim-stat-detail">-80% in 7d</div></div>
-      <div class="sim-stat alive"><div class="sim-stat-pct">3%</div><div class="sim-stat-label">Alive 30d</div><div class="sim-stat-detail">Avg -68%</div></div>
+      <div class="sim-stat rug"><div class="sim-stat-pct">${pctRugged}%</div><div class="sim-stat-label">Rugged &lt; 24h</div><div class="sim-stat-detail">Median ${escapeHtml(fmtMedian)}</div></div>
+      <div class="sim-stat slow"><div class="sim-stat-pct">${pctSlow}%</div><div class="sim-stat-label">Slow death</div><div class="sim-stat-detail">-80% in 7d</div></div>
+      <div class="sim-stat alive"><div class="sim-stat-pct">${pctAlive}%</div><div class="sim-stat-label">Alive 30d</div><div class="sim-stat-detail">Survived</div></div>
     </div>
     <div style="font-size:9px;color:#444;letter-spacing:.22em;text-transform:uppercase;margin:14px 0 2px">Most similar (last 30 days)</div>
-    <div class="sim-token"><div class="sim-token-icon">✕</div><div class="sim-token-name">RUGCOIN</div><div class="sim-token-time">rugged 4h after launch</div><div class="sim-token-loss">-99.2%</div></div>
-    <div class="sim-token"><div class="sim-token-icon">✕</div><div class="sim-token-name">SCAMBOY</div><div class="sim-token-time">rugged 6h after launch</div><div class="sim-token-loss">-98.5%</div></div>
-    <div class="sim-token"><div class="sim-token-icon">✕</div><div class="sim-token-name">TRAPCAT</div><div class="sim-token-time">rugged 12h after launch</div><div class="sim-token-loss">-97.8%</div></div>
-    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:#444;font-style:italic">Live matching against backtest corpus · <b style="color:#888">backend in progress</b>.</div>
+    ${simHtml}
   `
 }
 
@@ -1077,7 +1137,7 @@ function render(d, ca) {
   }
 
   // V5 sections built ahead so we can interpolate inline below
-  const ttrHtml = buildTtrModule(d.risk)
+  const ttrHtml = buildTtrModule(d)
   const criticalActorsHtml = buildCriticalActorsPreview(d)
   const timelineTabHtml = buildTimelineTab(d)
   const holderActivityTabHtml = buildHolderActivityTab(d)
