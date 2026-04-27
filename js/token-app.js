@@ -383,9 +383,29 @@ function buildTtrModule(_risk) {
 // Backend follow-up will replace `ACTORS_PRESET` with `d.criticalActors[]`.
 // ──────────────────────────────────────────────────────────────────────
 function buildCriticalActorsPreview(d) {
-  // Always rendered — v5 design treats Critical Actors as a core
-  // structural signal regardless of verdict. Backend follow-up will
-  // populate real data; until then the section shows the v5 mock.
+  // Backend (composeCriticalActors) returns up to 3 cards composed from
+  // creatorReputation + filtered top holders + insider-graph clusters.
+  // When the array is present and non-empty, render real data; otherwise
+  // fall through to the v5 mock so the section never goes empty on
+  // tokens where the heavy upstream calls couldn't run within budget.
+  if (Array.isArray(d.criticalActors) && d.criticalActors.length > 0) {
+    return d.criticalActors.map(a => {
+      const cls = a.type === 'dev' ? 'dev' : a.type === 'cluster' ? 'coord' : 'bot'
+      const pctDisp = typeof a.pct === 'number' && a.pct > 0 ? a.pct.toFixed(1) + '%' : '—'
+      return `
+        <div class="wp-card ${cls}">
+          <div class="wp-head"><span class="wp-tag">${escapeHtml(a.tag || '')}</span><span class="wp-pct">${escapeHtml(pctDisp)}</span></div>
+          <div class="wp-addr">${escapeHtml(a.addr || '')}</div>
+          <div class="wp-rep">
+            <div class="wp-rep-lbl">${escapeHtml(a.repLbl || '')}</div>
+            <div class="wp-rep-bar"><div class="wp-rep-fill ${a.repWarn ? 'warn' : ''}" style="width:${Math.max(0, Math.min(100, a.repWidth || 0))}%"></div></div>
+          </div>
+          <div class="wp-desc">${a.desc || ''}</div>
+        </div>
+      `
+    }).join('')
+  }
+  // Fallback v5 mock — used when backend hasn't emitted criticalActors yet.
   const top1 = typeof d.topHolderPct === 'number' ? Math.round(d.topHolderPct * 10) / 10 : 13.2
   const top10 = typeof d.top10HolderPct === 'number' ? d.top10HolderPct : 41
   const remaining = Math.max(0, top10 - top1)

@@ -322,4 +322,21 @@ export interface ScanResult {
   // render the concentration bar without regex-extracting from flag labels.
   topHolderPct?: number | null;
   top10HolderPct?: number | null;
+  // V5 Critical Actors preview — composed from creatorReputation + filtered
+  // top holders + (optional) insider-graph cluster detection. Each card
+  // describes one structural risk vector (Dev / Insider / Cluster).
+  criticalActors?: CriticalActor[];
+}
+
+// ─── V5 CRITICAL ACTORS ────────────────────────────────────────────────
+export type CriticalActorType = "dev" | "insider" | "cluster";
+export interface CriticalActor {
+  type: CriticalActorType;
+  tag: string;
+  pct: number;
+  addr: string;
+  repLbl: string;
+  repWidth: number;
+  repWarn: boolean;
+  desc: string;
 }
