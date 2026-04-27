@@ -345,7 +345,16 @@ export function buildResultNode(data: ScanResponseData, ca: string): HTMLElement
     ),
   )
 
-  const allFlags = (data.flags || []).filter((f: ScanResponseFlag) => f.severity !== "bonus")
+  // Same filter rules as the Critical Flags panel: drop bonus + info +
+  // legacy "unavailable" warnings. Without this the summary shows
+  // "1 flags detected" for tokens whose only flag is "Helius unavailable",
+  // which scares users about token risk when only our pipeline is degraded.
+  // Conf X% in the header already conveys upstream availability.
+  const allFlags = (data.flags || []).filter((f: ScanResponseFlag) => {
+    if (f.severity === "bonus" || f.severity === "info") return false
+    if (typeof f.label === "string" && /\bunavailable\b/i.test(f.label)) return false
+    return true
+  })
   const flagCount = allFlags.length
   const critCount = allFlags.filter((f: ScanResponseFlag) => f.severity === "critical").length
 

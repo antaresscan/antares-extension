@@ -57,6 +57,12 @@ export const HARD_BLOCK_PATTERNS: Array<[RegExp, SafeBlockedReason]> = [
   [/chart|blow-off|stair-step|volume exhaustion|liquidity mirage/i, "chart"],
   [/deceptive name/i, "deceptive_name"],                         // FIX: deceptive names are hard
     [/very few holders|few holders|<15|<50/i, "low_holders"], // FIX: very low holders is a HARD reason
+  // Single-wallet concentration of 15% or more cannot soft-unlock.
+  // Layers.ts emits the flag as critical at this threshold; we trap
+  // it here as a hard reason so applySafeGateOverride keeps the gate
+  // closed and verdict.ts routes the score band to DANGER/RUG.
+  [/single wallet holds (1[5-9]|[2-9]\d|\d{3,})% of supply/i, "concentration"],
+  [/top 1 holder > 20%/i, "concentration"],
 ];
 
 export function classifySafeBlockedReasons(layers: LayerResult[]): SafeBlockedReason[] {

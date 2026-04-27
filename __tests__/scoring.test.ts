@@ -192,10 +192,27 @@ describe("classifySafeBlockedReasons", () => {
     expect(classifySafeBlockedReasons(layers)).toContain("age");
   });
 
-  it("detects holders reason from helius", () => {
+  it("detects concentration reason from helius single-wallet flag (>=15%)", () => {
+    // Single-wallet holdings >=15% now route to the dedicated
+    // "concentration" hard reason rather than the generic "holders"
+    // soft reason. The safe-gate stays closed even on mature, high-
+    // holder-count tokens — a 60%-concentrated wallet can rug
+    // regardless of how established the token looks.
     const layers: LayerResult[] = [
       makeLayer("helius", 0.5, true, [
         { label: "Single wallet holds 60% of supply", severity: "critical", impact: 0 }
+      ], false, true),
+    ];
+    expect(classifySafeBlockedReasons(layers)).toContain("concentration");
+  });
+
+  it("keeps soft holders reason for sub-15% single-wallet flags", () => {
+    // 10-14% concentration stays soft so an established-bonus token
+    // can land on CAUTION rather than DANGER. The fallback layer-
+    // source mapping in classifySafeBlockedReasons handles this.
+    const layers: LayerResult[] = [
+      makeLayer("helius", 0.5, true, [
+        { label: "Single wallet holds 11% of supply", severity: "warning", impact: 0 }
       ], false, true),
     ];
     expect(classifySafeBlockedReasons(layers)).toContain("holders");

@@ -29,6 +29,7 @@ export type SafeBlockedReason =
   | "sniper"          // HARD
     | "chart"            // HARD
   | "low_holders"     // HARD — tokens with <50 holders
+  | "concentration"   // HARD — single wallet holds >=15% of supply
   | "lp_unverified"; // SOFT - LP not burned but token is mature and clean
 
 // ─── LAYER RESULT ────────────────────────────────────────────────────────────────────

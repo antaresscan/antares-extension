@@ -80,7 +80,24 @@ export function toggleCriticalFlags(flags: ScanResponseFlag[] | null | undefined
 function renderPanel(panel: HTMLElement, flags: ScanResponseFlag[] | null | undefined): void {
   panel.replaceChildren()
 
-  const filtered = (flags ?? []).filter((f) => f.severity !== "bonus")
+  // Filter rules:
+  //   bonus      → already excluded (these are positives, not "issues")
+  //   info       → infrastructure status, e.g. "Helius unavailable" or
+  //                "GoPlus unavailable". They tell the user *we* couldn't
+  //                reach a source, not that there's a problem with the
+  //                token. Showing them in the Critical Flags panel is
+  //                noise — users read "1 flag detected" and assume the
+  //                token is risky when in fact only our pipeline is
+  //                degraded. The reduced confidence already surfaces
+  //                upstream availability via the Conf X% header.
+  //   "unavailable"-shaped warnings → legacy: some sources still emit
+  //                outage notices at "warning" severity. Catch those by
+  //                label until each source is migrated to "info".
+  const filtered = (flags ?? []).filter((f) => {
+    if (f.severity === "bonus" || f.severity === "info") return false
+    if (typeof f.label === "string" && /\bunavailable\b/i.test(f.label)) return false
+    return true
+  })
 
   if (filtered.length === 0) {
     const empty = document.createElement("div")

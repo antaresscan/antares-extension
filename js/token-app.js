@@ -908,7 +908,16 @@ function render(d, ca) {
   const freezeAuth = d.freezeAuthority ?? null
   const sellOk = d.honeypot === false || d.risk !== "RUG"
 
-  const fAll = (d.flags || []).filter(f => f.severity !== "bonus")
+  // Drop bonus + info + legacy "unavailable" warnings from every count
+  // and listing on this page. info-severity flags (e.g. "Helius
+  // unavailable", "GoPlus unavailable") describe pipeline health, not
+  // token risk — they show up under Conf X% already, no need to also
+  // appear in flag totals or the Critical Flags expansion.
+  const fAll = (d.flags || []).filter(f => {
+    if (f.severity === "bonus" || f.severity === "info") return false
+    if (typeof f.label === "string" && /\bunavailable\b/i.test(f.label)) return false
+    return true
+  })
   const fCrit = fAll.filter(f => f.severity === "critical")
   const fWarn = fAll.filter(f => f.severity !== "critical")
   const flagSummary = fAll.length === 0
