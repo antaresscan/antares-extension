@@ -326,6 +326,16 @@ export interface ScanResult {
   // top holders + (optional) insider-graph cluster detection. Each card
   // describes one structural risk vector (Dev / Insider / Cluster).
   criticalActors?: CriticalActor[];
+  // V5 Verdict Timeline — last N scan snapshots persisted in Redis ZSET
+  // `vh:{ca}`. Oldest first; the most recent is the current scan.
+  verdictHistory?: VerdictHistoryEntry[];
+}
+
+export interface VerdictHistoryEntry {
+  ts: number;
+  verdict: Verdict;
+  score: number;
+  event: string;
 }
 
 // ─── V5 CRITICAL ACTORS ────────────────────────────────────────────────
