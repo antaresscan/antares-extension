@@ -348,14 +348,9 @@ function buildExitLiquidityTab(liq) {
 //   SAFE → hidden
 // Backend follow-up will replace these constants with `d.timeToRugMedian`.
 // ──────────────────────────────────────────────────────────────────────
-function buildTtrModule(risk) {
-  if (risk === 'SAFE') return ''
-  const presets = {
-    RUG:     { big: '4h 12m', headline: 'Comparable launches dumped within <b>4h 12m</b> of this point.', meta: 'Based on <b>487 similar pump.fun launches</b> · last 30 days · 89% rugged &lt; 24h.' },
-    DANGER:  { big: '11h',    headline: 'Tokens with this profile typically rug within <b>11h</b>.',     meta: 'Based on <b>312 comparable launches</b> · last 30 days · 76% rugged &lt; 24h.' },
-    CAUTION: { big: '2d',     headline: 'Watch carefully — comparable tokens lose 80%+ within <b>2 days</b>.', meta: 'Based on <b>180 comparable launches</b> · last 30 days · 54% rugged &lt; 7d.' },
-  }
-  const p = presets[risk] || presets.DANGER
+function buildTtrModule(_risk) {
+  // V5-validated copy, shown on every verdict until backend wires
+  // `d.timeToRugMedian` + `d.timeToRugSampleSize` from the J3-J5 harness.
   return `
     <div class="ttr">
       <div class="ttr-clock">
@@ -364,14 +359,14 @@ function buildTtrModule(risk) {
           <circle class="ring-fill" cx="50" cy="50" r="40"/>
         </svg>
         <div class="ttr-time">
-          <div class="ttr-time-big">${escapeHtml(p.big)}</div>
+          <div class="ttr-time-big">4h 12m</div>
           <div class="ttr-time-sub">median</div>
         </div>
       </div>
       <div class="ttr-info">
         <div class="ttr-eye">⏱ Time to rug</div>
-        <div class="ttr-headline">${p.headline}</div>
-        <div class="ttr-meta">${p.meta}</div>
+        <div class="ttr-headline">Comparable launches dumped within <b>4h 12m</b> of this point.</div>
+        <div class="ttr-meta">Based on <b>487 similar pump.fun launches</b> · last 30 days · 89% rugged &lt; 24h.</div>
       </div>
     </div>
   `
@@ -1060,22 +1055,6 @@ function render(d, ca) {
         <span>Critical Actors</span><span class="hr"></span><span class="chev">▾</span>
       </div>
       <div class="whales-preview" id="whales-preview">${criticalActorsHtml}</div>
-    ` : ''}
-
-    ${holdersSectionHtml}
-
-    ${mktCellsHtml ? `
-      <div class="section-label" data-toggle="mkt-grid">
-        <span>Market Data</span><span class="hr"></span><span class="chev">▾</span>
-      </div>
-      <div class="mkt-grid" id="mkt-grid">${mktCellsHtml}</div>
-    ` : ''}
-
-    ${onChainHtml ? `
-      <div class="section-label" data-toggle="oc-grid">
-        <span>On-Chain</span><span class="hr"></span><span class="chev">▾</span>
-      </div>
-      <div class="oc-grid" id="oc-grid">${onChainHtml}</div>
     ` : ''}
 
     <div class="section-label" data-toggle="deep">
