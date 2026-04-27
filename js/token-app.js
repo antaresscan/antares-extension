@@ -349,12 +349,15 @@ function buildExitLiquidityTab(liq) {
 // Backend follow-up will replace these constants with `d.timeToRugMedian`.
 // ──────────────────────────────────────────────────────────────────────
 function buildTtrModule(d) {
-  // Backend-driven (composeOutcomeStats). When the heuristic profile
-  // matcher returns null (SAFE token) the module is hidden entirely.
-  // The v5 strings remain as the rendered defaults when backend hasn't
-  // emitted outcomeStats yet (cache hit pre-PR4).
-  const o = d && d.outcomeStats
-  if (o === null) return '' // SAFE — explicitly suppressed
+  // Backend-driven (composeOutcomeStats). The TTR ring is hidden for
+  // SAFE tokens — there is no rug to time. Two paths:
+  //   1. Backend explicitly returns null (`outcomeStats === null`) →
+  //      hide regardless of verdict.
+  //   2. Verdict is SAFE on a cached payload that pre-dates PR4 (no
+  //      outcomeStats field) → also hide (don't show the mock).
+  if (!d || d.risk === 'SAFE') return ''
+  const o = d.outcomeStats
+  if (o === null) return ''
   if (o && typeof o === 'object') {
     const median = o.timeToRugMedianDisp || '—'
     const n = o.timeToRugSampleSize || 0
@@ -548,10 +551,18 @@ function buildTimelineTab(d) {
 // ──────────────────────────────────────────────────────────────────────
 function buildHolderActivityTab(d) {
   // Backend (composeHolderActivity) returns { rows, netFlowPct,
-  // netFlowDirection } derived from recentTransfers + top holders.
-  // Real data when present, v5 mock fallback for cache hits or when
-  // recentTransfers is empty.
+  // netFlowDirection }.
+  //   - rows present + non-empty  → render real data
+  //   - rows present but empty    → real empty-state ("no top holder
+  //                                  data available") rather than the
+  //                                  v5 mock — refusing to show fake
+  //                                  whales is more honest
+  //   - holderActivity undefined  → cache hit pre-PR3, fall through
+  //                                  to v5 mock
   const ha = d.holderActivity
+  if (ha && Array.isArray(ha.rows) && ha.rows.length === 0) {
+    return `<div class="tab-empty">No top-holder data available for this token. Helius did not return holder accounts in time, or the token has no on-chain holders indexed yet.</div>`
+  }
   if (ha && Array.isArray(ha.rows) && ha.rows.length > 0) {
     const rows = ha.rows.map(r => `
       <div class="whale ${r.role}">
