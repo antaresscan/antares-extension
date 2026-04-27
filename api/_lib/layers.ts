@@ -370,11 +370,25 @@ export function layerHelius(
   const top1Pct = top1Amount / totalSupplyUi;
   const top10Amount = accounts.slice(0, 10).reduce((s, h) => s + asNumber(h.uiAmount), 0);
   const top10Pct = top10Amount / totalSupplyUi;
+  // Single-wallet concentration ladder. Tightened from the previous
+  // 30/20/10% bands because an 11%-concentrated supply was sliding
+  // through to SAFE on established tokens via the established-bonus
+  // unlock — the "Single wallet holds 11%" warning had penalty 0.50
+  // which got geometrically averaged away by bonuses on other layers.
+  // New bands:
+  //   >30% → forceRug (the wallet alone can crash the market)
+  //   >20% → critical, hard concentration block (catches "concentration"
+  //          HARD_BLOCK_PATTERN in scoring.ts → DANGER/RUG verdict)
+  //   >15% → critical, hard concentration block (DANGER/RUG)
+  //   >10% → warning, soft block + heavy trust penalty (CAUTION). The
+  //          0.30 trust multiplier here is intentionally aggressive so
+  //          score drops below 900 even with bonuses on other layers.
   if (top1Pct > 0.3) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "critical", 0)); penalties.push(0.08); forceRug = true; }
-  else if (top1Pct > 0.2) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "critical", 0)); penalties.push(0.25); safeBlocked = true; }
-  else if (top1Pct > 0.1) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "warning", 0)); penalties.push(0.50); safeBlocked = true; }
-  if (top10Pct > 0.8) { flags.push(makeFlag(`Top 10 wallets hold ${Math.round(top10Pct*100)}% of supply`, "critical", 0)); penalties.push(0.35); safeBlocked = true; }
-  else if (top10Pct > 0.6) { flags.push(makeFlag(`Top 10 wallets hold ${Math.round(top10Pct*100)}% of supply`, "warning", 0)); penalties.push(0.55); safeBlocked = true; }
+  else if (top1Pct > 0.2) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "critical", 0)); penalties.push(0.20); safeBlocked = true; }
+  else if (top1Pct > 0.15) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "critical", 0)); penalties.push(0.35); safeBlocked = true; }
+  else if (top1Pct > 0.1) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "warning", 0)); penalties.push(0.30); safeBlocked = true; }
+  if (top10Pct > 0.8) { flags.push(makeFlag(`Top 10 wallets hold ${Math.round(top10Pct*100)}% of supply`, "critical", 0)); penalties.push(0.30); safeBlocked = true; }
+  else if (top10Pct > 0.6) { flags.push(makeFlag(`Top 10 wallets hold ${Math.round(top10Pct*100)}% of supply`, "warning", 0)); penalties.push(0.45); safeBlocked = true; }
   else if (top10Pct < 0.3) { flags.push(makeFlag("Well distributed supply ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.05); }
   trust = applyDiminishingPenalties(trust, penalties);
   return { source: "helius", trust: Math.max(0, trust), available: true, flags, forceRug, safeBlocked };

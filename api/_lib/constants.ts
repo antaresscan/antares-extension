@@ -136,6 +136,11 @@ export const TRUST_FLOOR = 0.001;
 export const HARD_BLOCK_REASONS = new Set([
   "lp", "deceptive_name", "honeypot", "mint", "freeze",
   "bundle", "rug_pattern", "wash_trading", "sniper", "pump", "chart", "low_holders",
+  // High single-wallet concentration (>=15%) cannot be soft-unlocked
+  // by the established-bonus. A wallet with that share can crash the
+  // market irrespective of holder count or token age, so we never let
+  // the verdict pass through to SAFE while concentration is severe.
+  "concentration",
 ]);
 
 // ── LP-UNVERIFIED MATURITY THRESHOLDS ────────────────────────
