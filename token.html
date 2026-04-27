@@ -81,7 +81,13 @@ nav .actions a.warn:hover{color:var(--orange);border-color:rgba(255,95,95,.4);ba
 
 /* Verdict h1 + token logo : justify-content:space-between → logo top-right */
 .verdict-row{display:flex;justify-content:space-between;align-items:center;gap:24px}
-.verdict-row h1{font:400 clamp(64px,8.5vw,108px)/.86 'Bebas Neue',sans-serif;letter-spacing:.04em;color:var(--risk);text-shadow:0 0 60px var(--risk-glow);word-break:break-word;flex:1;min-width:0}
+.verdict-row h1{font:400 clamp(64px,8.5vw,108px)/.86 'Bebas Neue',sans-serif;letter-spacing:.04em;color:var(--risk);text-shadow:0 0 60px var(--risk-glow);word-break:break-word;flex:1;min-width:0;position:relative;animation:glitch-base 7s ease-in-out infinite}
+.verdict-row h1::before,.verdict-row h1::after{content:attr(data-verdict);position:absolute;top:0;left:0;width:100%;height:100%;color:var(--risk);opacity:0;pointer-events:none}
+.verdict-row h1::before{animation:glitch-r 7s ease-in-out infinite;color:var(--cyan);mix-blend-mode:screen}
+.verdict-row h1::after{animation:glitch-l 7s ease-in-out infinite;color:var(--orange);mix-blend-mode:screen}
+@keyframes glitch-base{0%,92%,100%{transform:translate(0)}93%{transform:translate(-1px,1px)}94%{transform:translate(1px,-1px)}95%{transform:translate(0,0)}}
+@keyframes glitch-r{0%,92%,100%{opacity:0;transform:translate(0)}93%{opacity:.6;transform:translate(-3px,0)}94%{opacity:0;transform:translate(0)}}
+@keyframes glitch-l{0%,92%,100%{opacity:0;transform:translate(0)}93%{opacity:.5;transform:translate(3px,0)}94%{opacity:0;transform:translate(0)}}
 @media(max-width:600px){.verdict-row{flex-direction:column;align-items:flex-start;gap:14px}}
 
 .tk-line{font-size:13px;color:#777;letter-spacing:.06em}
@@ -95,6 +101,8 @@ nav .actions a.warn:hover{color:var(--orange);border-color:rgba(255,95,95,.4);ba
 /* Logo wrap : fallback letters under the <img>; if image fails, onerror
    removes it and the fallback shows through. CSP allows https: in img-src. */
 .token-logo-wrap{position:relative;width:80px;height:80px;border-radius:50%;border:1.5px solid var(--risk-border);box-shadow:0 0 28px var(--risk-glow);background:#111;overflow:hidden;flex-shrink:0}
+.token-logo-wrap::after{content:'';position:absolute;inset:0;background:linear-gradient(120deg,transparent 30%,var(--risk-soft) 50%,transparent 70%);animation:logo-shimmer 4s ease-in-out infinite;pointer-events:none;z-index:2}
+@keyframes logo-shimmer{0%,100%{transform:translateX(-100%)}50%{transform:translateX(100%)}}
 .token-logo-fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:600 16px 'IBM Plex Mono',monospace;color:#aaa}
 .token-logo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}
 
@@ -430,6 +438,17 @@ nav .actions a.warn:hover{color:var(--orange);border-color:rgba(255,95,95,.4);ba
 
 footer{text-align:center;padding:32px 0 20px;color:#2a2a2f;font-size:10px;letter-spacing:.15em;text-transform:uppercase;margin-top:40px;border-top:1px solid var(--border)}
 footer span{color:var(--c)}
+
+/* ── Ask Antares FAB + contextual pills (bottom-right) ── */
+.ask-fab-wrap{position:fixed;bottom:24px;right:24px;z-index:200}
+.ask-fab{width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--cyan));border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;box-shadow:0 8px 32px rgba(167,139,250,.4),0 0 0 1px rgba(255,255,255,.1) inset;transition:transform .25s;animation:fab-glow 3s ease-in-out infinite}
+@keyframes fab-glow{0%,100%{box-shadow:0 8px 32px rgba(167,139,250,.4),0 0 0 1px rgba(255,255,255,.1) inset}50%{box-shadow:0 8px 48px rgba(167,139,250,.6),0 0 0 1px rgba(255,255,255,.15) inset,0 0 60px rgba(34,211,238,.2)}}
+.ask-fab:hover{transform:scale(1.1)}
+.fab-pills{position:absolute;bottom:64px;right:0;display:flex;flex-direction:column;gap:8px;align-items:flex-end;opacity:0;pointer-events:none;transform:translateY(8px);transition:.3s}
+.ask-fab-wrap:hover .fab-pills,.ask-fab-wrap.open .fab-pills{opacity:1;pointer-events:auto;transform:translateY(0)}
+.fab-pill{display:inline-flex;align-items:center;gap:6px;background:#1a1a1e;color:#ccc;padding:8px 14px;border-radius:20px;font-size:11px;letter-spacing:.04em;border:1px solid #2a2a30;cursor:pointer;transition:.2s;white-space:nowrap;font-family:'IBM Plex Mono',monospace}
+.fab-pill:hover{border-color:var(--purple);color:var(--purple);transform:translateX(-2px)}
+.fab-pill .ico{font-size:11px;color:var(--purple)}
 </style>
 </head>
 <body>
@@ -468,6 +487,15 @@ footer span{color:var(--c)}
 
 </div>
 
-<script defer src="/js/token-app.js?v=20260427b"></script>
-<script defer src="/js/token-bg.js?v=20260427b"></script>
+<div class="ask-fab-wrap" id="ask-fab-wrap" aria-hidden="true">
+  <div class="fab-pills">
+    <button class="fab-pill" data-q="why"><span class="ico">▸</span> Why this verdict?</button>
+    <button class="fab-pill" data-q="sell"><span class="ico">▸</span> Should I sell now or wait?</button>
+    <button class="fab-pill" data-q="recent"><span class="ico">▸</span> What changed in the last hour?</button>
+  </div>
+  <button class="ask-fab" aria-label="Ask Antares AI">✦</button>
+</div>
+
+<script defer src="/js/token-app.js?v=20260427c"></script>
+<script defer src="/js/token-bg.js?v=20260427c"></script>
 </body></html>
