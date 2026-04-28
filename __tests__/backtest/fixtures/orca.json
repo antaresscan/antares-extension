@@ -1,10 +1,15 @@
 {
-  "score": 525,
-  "risk": "DANGER",
+  "score": 738,
+  "risk": "CAUTION",
   "flags": [
     {
       "label": "Single wallet holds 19% of supply",
       "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Buy/sell imbalance (coordinated pump)",
+      "severity": "warning",
       "impact": 0
     },
     {
@@ -41,50 +46,50 @@
       "name": "USD Coin",
       "symbol": "USDC"
     },
-    "priceNative": "1.6943",
-    "priceUsd": "1.69",
+    "priceNative": "1.7855",
+    "priceUsd": "1.78",
     "txns": {
       "m5": {
-        "buys": 2,
-        "sells": 18
+        "buys": 117,
+        "sells": 15
       },
       "h1": {
-        "buys": 96,
-        "sells": 187
+        "buys": 232,
+        "sells": 99
       },
       "h6": {
-        "buys": 1448,
-        "sells": 1123
+        "buys": 1365,
+        "sells": 1091
       },
       "h24": {
-        "buys": 10330,
-        "sells": 7908
+        "buys": 10321,
+        "sells": 7910
       }
     },
     "volume": {
-      "h24": 2164399.19,
-      "h6": 331980.63,
-      "h1": 36361.37,
-      "m5": 4674.01
+      "h24": 2150636.88,
+      "h6": 324343.99,
+      "h1": 53605.08,
+      "m5": 18174
     },
     "priceChange": {
-      "m5": -1.69,
-      "h1": -3.94,
-      "h6": 11.87,
-      "h24": 42.19
+      "m5": 3.53,
+      "h1": 5.72,
+      "h6": 10.95,
+      "h24": 31.94
     },
     "liquidity": {
-      "usd": 999494.69,
-      "base": 294312,
-      "quote": 500823
+      "usd": 1026128.84,
+      "base": 287014,
+      "quote": 513662
     },
-    "fdv": 169435142,
-    "marketCap": 103014813,
+    "fdv": 178549979,
+    "marketCap": 108556539,
     "pairCreatedAt": 1669602431000,
     "info": {
       "imageUrl": "https://cdn.dexscreener.com/cms/images/bfd0d54a2ff7a764291354b848f3f05c8b6b89213b16b240807e9cb9a78dd128?width=800&height=800&quality=95&format=auto",
       "header": "https://cdn.dexscreener.com/cms/images/8044fef53efe70415cc4b3fa387f9df339f208c0e1a5f91f9d38c8a0556722e2?width=1500&height=500&quality=95&format=auto",
-      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE?timestamp=1777383900000",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE?timestamp=1777385700000",
       "websites": [
         {
           "url": "https://www.orca.so/",
@@ -118,18 +123,18 @@
     "chart"
   ],
   "holders": 90191,
-  "marketCap": 103014813,
-  "priceUsd": 1.69,
-  "liquidity": 999494.69,
-  "volume24h": 2164399.19,
-  "volume1h": 36361.37,
-  "priceChange5m": -1.69,
-  "priceChange1h": -3.94,
-  "priceChange24h": 42.19,
+  "marketCap": 108556539,
+  "priceUsd": 1.78,
+  "liquidity": 1026128.84,
+  "volume24h": 2150636.88,
+  "volume1h": 53605.08,
+  "priceChange5m": 3.53,
+  "priceChange1h": 5.72,
+  "priceChange24h": 31.94,
   "tokenSymbol": "ORCA",
   "tokenName": "Orca",
   "pairCreatedAt": 1669602431000,
-  "safeBlocked": true,
+  "safeBlocked": false,
   "safeBlockedReasons": [
     "concentration"
   ],
@@ -139,12 +144,12 @@
   "tokenSupply": null,
   "recentTransfers": "[0 transfers, redacted for fixture]",
   "solscanTokenAgeHours": 29939,
-  "solscanVolume24h": 2164399.19,
+  "solscanVolume24h": 2150636.88,
   "solscanTrades24h": null,
   "solscanTraders24h": null,
   "layers": {
     "dexscreener": {
-      "trust": 1,
+      "trust": 0.85,
       "available": true
     },
     "rugcheck": {
@@ -180,7 +185,7 @@
   "lpLockedPct": 100,
   "candles": "[20 candles, redacted for fixture]",
   "topHolderPct": 18.93446919102587,
-  "top10HolderPct": 64.38741669925562,
+  "top10HolderPct": 64.4212798053461,
   "criticalActors": [
     {
       "type": "insider",
@@ -262,71 +267,71 @@
     "netFlowDirection": "flat"
   },
   "outcomeStats": {
-    "timeToRugMedianDisp": "11h",
-    "timeToRugMedianHours": 11,
-    "timeToRugSampleSize": 312,
-    "pctRugged24h": 76,
-    "pctSlowDeath": 16,
-    "pctAlive30d": 8,
+    "timeToRugMedianDisp": "2d",
+    "timeToRugMedianHours": 48,
+    "timeToRugSampleSize": 180,
+    "pctRugged24h": 54,
+    "pctSlowDeath": 30,
+    "pctAlive30d": 16,
     "distribution": [
-      3,
-      5,
-      8,
-      11,
-      14,
-      12,
-      9,
-      7,
-      5,
-      4,
-      3,
-      2.5,
-      2,
-      1.8,
-      1.6,
-      1.4,
-      1.2,
       1,
-      0.9,
-      0.8,
-      0.7,
-      0.7,
-      0.6,
-      0.6,
-      0.5,
-      0.5,
-      0.4,
-      0.4,
-      0.3,
-      0.3,
-      0.3,
-      0.3,
-      0.4,
-      0.5,
-      0.7,
-      0.9
+      1.5,
+      2,
+      2.5,
+      3,
+      3.5,
+      4,
+      4.5,
+      5,
+      5,
+      4.5,
+      4,
+      3.5,
+      3,
+      2.7,
+      2.5,
+      2.3,
+      2.1,
+      2,
+      1.9,
+      1.8,
+      1.7,
+      1.6,
+      1.5,
+      1.4,
+      1.3,
+      1.2,
+      1.2,
+      1.1,
+      1.1,
+      1,
+      1,
+      1.1,
+      1.5,
+      2,
+      2.5
     ],
-    "youBucketIndex": 17,
+    "youBucketIndex": 25,
     "mostSimilar": [
       {
-        "symbol": "PUMPDUMP",
-        "ruggedAfterHours": 18,
-        "loss": -94.1
+        "symbol": "FORGOTBOY",
+        "ruggedAfterHours": 72,
+        "loss": -78.2
       },
       {
-        "symbol": "FAKEMOON",
-        "ruggedAfterHours": 28,
-        "loss": -91.6
+        "symbol": "DEADCOIN",
+        "ruggedAfterHours": 168,
+        "loss": -82.5
       },
       {
-        "symbol": "SLOWBLEED",
-        "ruggedAfterHours": 48,
-        "loss": -85.4
+        "symbol": "BLEEDR",
+        "ruggedAfterHours": 240,
+        "loss": -88
       }
     ]
   },
   "scoring_version": "7.3.0",
-  "fetchedAt": 1777383963561,
-  "requestId": "e37be325-6640-473b-8938-9c7876a79a2b",
+  "fetchedAt": 1777385644326,
+  "requestId": "c810bf63-8107-44af-9ec3-4619262d0ad1",
   "aiSummary": null
 }

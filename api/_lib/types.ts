@@ -250,6 +250,12 @@ export interface SafeGateInput {
   goPlusClean: boolean;
   tokenAgeHours: number | null;
   sourcesAvailableCount: number;
+  // Optional. When present, the safe gate consults the
+  // known-treasuries allowlist as a data-quality fallback for Path 3.
+  // Tokens like JTO (whose holder count can collapse to 20 when
+  // upstream sources are simultaneously degraded) get the blue-chip
+  // exemption based on mint identity instead of inferred metrics.
+  mint?: string | null;
 }
 
 export interface EstablishedBonusInput {
