@@ -365,10 +365,18 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
 
     // 7 layers
     const l1 = layerDexScreener(pair, marketCap, tokenAgeMinutes);
-    // Shared maturity context — both rugcheck and goplus need it now to
-    // classify unburned-LP as soft (CAUTION) for established tokens
-    // instead of hard (DANGER). Building it once here keeps the two
-    // layer calls strictly in sync.
+    // Shared maturity context — rugcheck, goplus, and helius all need
+    // the same view of "is this an established token" so soft signals
+    // (unburned LP, top-1 concentration on a 100k-holder memecoin) get
+    // the established-context treatment consistently. Building once.
+    //
+    // lpBurned is computed early here from rugcheck data alone — goplus
+    // burn data is also incorporated below in `lpBurned`, but the
+    // helius layer runs BEFORE goplus is fully consumed, so we use
+    // the rugcheck signal as a conservative pre-check.
+    const _earlyLpBurned = rugData?.lpBurned === true ? true
+      : rugData?.lpBurned === false ? false
+      : null;
     const maturityCtx = {
       holders: solscanHoldersCount ?? rugTotalHolders ?? null,
       liquidity: asNumber(pair?.liquidity?.usd),
@@ -376,10 +384,11 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       mintAuthority: rugData?.mintAuthorityEnabled === true,
       freezeAuthority: rugData?.freezeAuthorityEnabled === true,
       honeypot: false,
+      lpBurned: _earlyLpBurned,
     };
     const l2 = layerRugCheck(rugData, rugReport, resolvedMint, tokenName, maturityCtx);
     const l3 = layerGoPlus(goplus, maturityCtx);
-    const l4 = layerHelius(resolvedHolderAccounts, totalSupplyUi);
+    const l4 = layerHelius(resolvedHolderAccounts, totalSupplyUi, maturityCtx);
     const l5 = layerSolscan(solscanHoldersCount, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h);
     const l6 = layerChart(candles, pair, tokenAgeMinutes);
     const l7 = layerCrossValidation(rugData, resolvedHolderAccounts, goplus, solscanTokenAgeHours, dexTokenAgeHours, totalSupplyUi);
@@ -664,8 +673,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     } else {
       const redis = getCacheRedis();
       if (redis) {
-        redis.setex(`antares:v10:${ca}`, 30, result).catch(() => {});
-        if (resolvedMint !== ca) redis.setex(`antares:v10:${resolvedMint}`, 30, result).catch(() => {});
+        redis.setex(`antares:v11:${ca}`, 30, result).catch(() => {});
+        if (resolvedMint !== ca) redis.setex(`antares:v11:${resolvedMint}`, 30, result).catch(() => {});
       }
     }
 

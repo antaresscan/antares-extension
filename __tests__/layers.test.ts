@@ -366,6 +366,97 @@ describe("layerHelius", () => {
     expect(result.trust).toBe(1.0);
     expect(result.flags.some(f => /well distributed/i.test(f.label))).toBe(true);
   });
+
+  it("mature dampening: 35% top-1 on 100k+ holders + LP burned + 30d gets trust ≥ 0.65", () => {
+    // Reproduce MEW: top-1 35%, top-10 65%, mature memecoin profile.
+    // Without dampening trust collapses to ~0.046 → DANGER score.
+    // With dampening trust floored at 0.65 → SAFE-band score.
+    const holders: HeliusHolder[] = [
+      { address: "whale", owner: "whale", uiAmount: 35_000 },
+      ...Array.from({ length: 9 }, (_, i) => ({
+        address: `top${i+2}`, owner: `top${i+2}`, uiAmount: 3_300,
+      })),
+      ...Array.from({ length: 90 }, (_, i) => ({
+        address: `r${i}`, owner: `r${i}`, uiAmount: 35,
+      })),
+    ];
+    const ctx = {
+      holders: 164_000,
+      liquidity: 9_000_000,
+      tokenAgeHours: 760 * 24,
+      mintAuthority: false,
+      freezeAuthority: false,
+      honeypot: false,
+      lpBurned: true,
+    };
+    const result = layerHelius(holders, 100_000, ctx);
+    expect(result.trust).toBeGreaterThanOrEqual(0.65);
+    // Concentration flag still emitted so reviewers see the whale.
+    expect(result.flags.some(f => /35%/.test(f.label))).toBe(true);
+    // safeBlocked still set so Path 3 / DAO allowlist can decide.
+    expect(result.safeBlocked).toBe(true);
+  });
+
+  it("mature dampening: same profile WITHOUT lpBurned does not get the floor", () => {
+    const holders: HeliusHolder[] = [
+      { address: "whale", owner: "whale", uiAmount: 35_000 },
+      ...Array.from({ length: 9 }, (_, i) => ({
+        address: `top${i+2}`, owner: `top${i+2}`, uiAmount: 3_300,
+      })),
+      ...Array.from({ length: 90 }, (_, i) => ({
+        address: `r${i}`, owner: `r${i}`, uiAmount: 35,
+      })),
+    ];
+    const ctx = {
+      holders: 164_000,
+      liquidity: 9_000_000,
+      tokenAgeHours: 760 * 24,
+      mintAuthority: false, freezeAuthority: false, honeypot: false,
+      lpBurned: false,  // ← mature but LP not burned, no floor
+    };
+    const result = layerHelius(holders, 100_000, ctx);
+    expect(result.trust).toBeLessThan(0.2);  // back to vanilla penalty
+  });
+
+  it("data-quality fallback: <200 reported holders + $250k+ liq + 30d+ floors trust at 0.4", () => {
+    // Reproduce GOAT/PNUT: solscan only sees 20 wallets but the pair is
+    // mature with deep liquidity → holder data is broken, don't drag the
+    // score on a broken signal.
+    const holders: HeliusHolder[] = [
+      { address: "lp-ata-misclassified", owner: "lp-ata-misclassified", uiAmount: 99_000 },
+      { address: "tail", owner: "tail", uiAmount: 100 },
+    ];
+    const ctx = {
+      holders: 20,           // broken — real GOAT/PNUT have 100k+
+      liquidity: 1_000_000,
+      tokenAgeHours: 350 * 24,
+      mintAuthority: false, freezeAuthority: false, honeypot: false,
+      lpBurned: null,        // unknown
+    };
+    const result = layerHelius(holders, 100_000, ctx);
+    expect(result.trust).toBeGreaterThanOrEqual(0.4);
+    expect(result.flags.some(f => /Holder data looks incomplete/i.test(f.label))).toBe(true);
+  });
+
+  it("data-quality fallback does NOT trigger on real fresh-launch DANGER", () => {
+    // 30 holders, $30k liq, 1 day old — real fresh-launch danger profile.
+    // We must NOT dampen trust here.
+    const holders: HeliusHolder[] = [
+      { address: "whale", owner: "whale", uiAmount: 80_000 },
+      ...Array.from({ length: 9 }, (_, i) => ({
+        address: `t${i}`, owner: `t${i}`, uiAmount: 1_500,
+      })),
+    ];
+    const ctx = {
+      holders: 30,
+      liquidity: 30_000,    // thin
+      tokenAgeHours: 24,    // fresh
+      mintAuthority: false, freezeAuthority: false, honeypot: false,
+      lpBurned: null,
+    };
+    const result = layerHelius(holders, 100_000, ctx);
+    expect(result.trust).toBeLessThan(0.2);
+  });
 });
 
 // ═══ LAYER 5 — Solscan ═══════════════════════════════════════════════════════
