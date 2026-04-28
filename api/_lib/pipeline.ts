@@ -58,6 +58,41 @@ export function applySafeGateOverride(input: SafeGateInput): boolean {
   if (!input.safeBlocked) return false;
   if (input.forceRug) return true;
 
+  const hasEnoughSources = input.sourcesAvailableCount >= 5;
+
+  // Path 3: BLUE-CHIP CONCENTRATION EXEMPTION ─────────────────────────
+  // Established DAO tokens (ORCA, JTO and similar) carry team multi-
+  // sigs that hold 15-25% of supply by design — locked under DAO
+  // governance rules, not a rug setup. Without this exemption every
+  // such token gets DANGER because `concentration` is a hard reason.
+  //
+  // Only fires when the ONLY hard reason is concentration AND the
+  // token shows every other strong blue-chip signal (50k+ holders,
+  // LP burned, GoPlus clean, contract-level clean). Sub-blue-chip
+  // tokens with concentration stay DANGER as before.
+  //
+  // Limitation: relies on holder count from the upstream sources.
+  // When Solscan/RugCheck/GoPlus are simultaneously down, holder
+  // count can collapse to the Helius top-20 view (=20) and the
+  // exemption misses. The hardcoded-treasury allowlist (planned
+  // follow-up) will handle that data-quality fallback.
+  const onlyConcentrationHard =
+    input.safeBlockedReasons.length > 0 &&
+    input.safeBlockedReasons.every(r =>
+      r === "concentration" || SOFT_REASONS[r] === true,
+    );
+  const looksLikeBlueChipDao =
+    hasEnoughSources &&
+    (input.holders ?? 0) >= 50_000 &&
+    input.lpBurned === true &&
+    input.goPlusClean &&
+    // age unknown is OK if every other strong signal is true — Solscan
+    // age is the most data-quality-fragile field, so we don't gate on it
+    (input.tokenAgeHours === null || input.tokenAgeHours >= 30 * 24);
+  if (onlyConcentrationHard && looksLikeBlueChipDao) {
+    return false;
+  }
+
   // HARD reasons can NEVER be soft-unlocked regardless of age, holders, or source count.
   // 'lp': dev can pull liquidity at any time — fundamentally unacceptable for SAFE verdict.
   // 'deceptive_name': intentional fraud signal, not a maturity issue.
@@ -72,7 +107,6 @@ export function applySafeGateOverride(input: SafeGateInput): boolean {
   if (onlySoftReasons) {
     const ageHours = input.tokenAgeHours ?? 0;
     if (input.tokenAgeHours !== null && ageHours < 48) return true;
-    const hasEnoughSources = input.sourcesAvailableCount >= 5;
     // Path 1: Standard unlock — ALL conditions including LP burn
     if (
       (input.tokenAgeHours === null || ageHours > 48) &&

@@ -277,6 +277,83 @@ describe("safe gate unlock paths", () => {
     expect(blocked).toBe(true)
   })
 
+  // Path 3 — Blue-chip concentration exemption.
+  // Lets DAO tokens with team multi-sigs at 15-25% land on SAFE/CAUTION
+  // instead of DANGER, but only under strict blue-chip conditions.
+  it("Path 3: blue-chip with only concentration hard + 50k holders + LP burned → unlocks", () => {
+    const blocked = applySafeGateOverride({
+      safeBlocked: true,
+      safeBlockedReasons: ["concentration"] as SafeBlockedReason[],
+      forceRug: false,
+      holders: 90_000,
+      lpBurned: true,
+      goPlusClean: true,
+      tokenAgeHours: null, // age unknown is OK with other strong signals
+      sourcesAvailableCount: 6,
+    })
+    expect(blocked).toBe(false)
+  })
+
+  it("Path 3: still blocked when holders < 50k even with LP burned + clean", () => {
+    const blocked = applySafeGateOverride({
+      safeBlocked: true,
+      safeBlockedReasons: ["concentration"] as SafeBlockedReason[],
+      forceRug: false,
+      holders: 30_000, // below blue-chip threshold
+      lpBurned: true,
+      goPlusClean: true,
+      tokenAgeHours: 365 * 24,
+      sourcesAvailableCount: 6,
+    })
+    expect(blocked).toBe(true)
+  })
+
+  it("Path 3: still blocked when LP NOT burned, even with massive holders", () => {
+    const blocked = applySafeGateOverride({
+      safeBlocked: true,
+      safeBlockedReasons: ["concentration"] as SafeBlockedReason[],
+      forceRug: false,
+      holders: 200_000,
+      lpBurned: false, // LP burn is non-negotiable for blue-chip exemption
+      goPlusClean: true,
+      tokenAgeHours: 365 * 24,
+      sourcesAvailableCount: 6,
+    })
+    expect(blocked).toBe(true)
+  })
+
+  it("Path 3: does NOT unlock when other hard reasons are present alongside concentration", () => {
+    // Multiple hard reasons → not eligible for blue-chip exemption.
+    // Concentration alone is the only hard reason this path forgives.
+    const blocked = applySafeGateOverride({
+      safeBlocked: true,
+      safeBlockedReasons: ["concentration", "honeypot"] as SafeBlockedReason[],
+      forceRug: false,
+      holders: 100_000,
+      lpBurned: true,
+      goPlusClean: true,
+      tokenAgeHours: 365 * 24,
+      sourcesAvailableCount: 6,
+    })
+    expect(blocked).toBe(true)
+  })
+
+  it("Path 3: concentration + soft reasons together (e.g. lp_unverified) still unlocks if blue-chip", () => {
+    // soft reasons coexisting with concentration are allowed — what
+    // matters is that no OTHER hard reason is present.
+    const blocked = applySafeGateOverride({
+      safeBlocked: true,
+      safeBlockedReasons: ["concentration", "lp_unverified"] as SafeBlockedReason[],
+      forceRug: false,
+      holders: 90_000,
+      lpBurned: true,
+      goPlusClean: true,
+      tokenAgeHours: 365 * 24,
+      sourcesAvailableCount: 6,
+    })
+    expect(blocked).toBe(false)
+  })
+
   it("soft-only with NO LP burn unlocks ONLY via Path 2 blue-chip override", () => {
     const blockedWithBigHolders = applySafeGateOverride({
       safeBlocked: true,
