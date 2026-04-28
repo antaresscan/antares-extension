@@ -427,21 +427,29 @@ export function layerHelius(
   else if (top10Pct < 0.3) { flags.push(makeFlag("Well distributed supply ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.05); }
   trust = applyDiminishingPenalties(trust, penalties);
 
-  // ── Concentration kill-switch — top1 > 40% on non-mature tokens ──
-  // A single wallet holding more than 40% of supply on a token without
-  // strong maturity signals (LP burned + many holders) is the textbook
-  // rug-set-up: HAWK (44%, post-pump dump), HORNY (similar). PR #339
-  // removed forceRug from concentration entirely, but the floor was
-  // too lenient for the truly extreme cases. Re-enable forceRug ONLY
-  // when concentration is extreme AND maturity signals are absent —
-  // MEW/GOAT/PNUT (mature blue-chips with high concentration) still
-  // get the dampened-CAUTION path.
-  if (top1Pct > 0.4) {
+  // ── Concentration kill-switch — top1 > 30% on non-blue-chip tokens ─
+  // ALSO triggers on extreme top10 concentration (>80%) — a token
+  // where 10 wallets control 80%+ of supply is structurally a rug.
+  //
+  // Reference cases:
+  //   HAWK (top-1 31%, top-10 87%, 7k holders) → forceRug ✓
+  //   HORNY (similar profile) → forceRug ✓
+  //   PIPPIN (27% top-1, ~10k holders) → stays DANGER (under threshold)
+  //   MEW (35% top-1, 164k holders) → blue-chip shield, no forceRug ✓
+  //
+  // The 50k-holder cutoff protects real established memecoins (MEW
+  // has a 35% top-1 wallet that's an exchange / treasury, not a rug
+  // operator). For everything below that, top-1 > 30% OR top-10 > 80%
+  // IS the rug pattern.
+  //
+  // GOAT/PNUT (broken-data 20-holder reports from Solscan) are caught
+  // by the data-quality fallback below which clears forceRug too.
+  {
     const mcRug = maturityContext;
-    const lookslikeRealRug = !mcRug?.lpBurned ||
-      (mcRug.holders ?? 0) < 1000 ||
-      (mcRug.tokenAgeHours ?? 0) < 7 * 24;
-    if (lookslikeRealRug) {
+    const isBlueChipDistribution = (mcRug?.holders ?? 0) >= 50_000;
+    const extremeTop1 = top1Pct > 0.3;
+    const extremeTop10 = top10Pct > 0.8;
+    if ((extremeTop1 || extremeTop10) && !isBlueChipDistribution) {
       forceRug = true;
     }
   }
@@ -500,6 +508,7 @@ export function layerHelius(
       flags.push(makeFlag("Holder data unreliable (broken upstream view) — mature pair, deep liquidity", "info", 0));
       trust = Math.max(trust, 0.40);
       safeBlocked = false; // We can't trust the broken concentration signal.
+      forceRug = false;    // Same — broken concentration data must not slam the verdict to RUG.
     }
   }
 
