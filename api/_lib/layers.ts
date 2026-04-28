@@ -448,10 +448,14 @@ export function layerHelius(
     // tokens that DexScreener shows as $10M+ market cap with deep
     // liquidity — that's structurally impossible for a real low-
     // holder shitcoin (you can't have $50M mcap with 20 holders),
-    // so the holder/concentration view is BROKEN, not damning. Trust
-    // the macro signals (high mcap + deep liq + multi-month age) over
-    // the broken holder snapshot. Floor the trust at 0.4 to keep the
-    // geometric mean reachable; flags stay so reviewers see both.
+    // so the holder/concentration view is BROKEN, not damning.
+    //
+    // When the data is broken we MUST suppress the concentration
+    // flag too — emitting "Single wallet holds 99% of supply" is
+    // factually wrong on a token with 100k+ real holders, and the
+    // text gets classified as `concentration` (hard) by scoring.ts,
+    // capping the score to 500. We replace it with an info flag and
+    // clear safeBlocked so Path 1/2 can evaluate the macro signals.
     //
     // Triggers on tokens like GOAT/PNUT where Solscan/Helius only see
     // pump.fun bonding-curve survivors (~20 wallets) instead of all
@@ -461,8 +465,14 @@ export function layerHelius(
       (mc.tokenAgeHours ?? 0) >= 30 * 24;
     const reportedHoldersTooLow = (mc.holders ?? Infinity) < 200;
     if (macroLooksBig && reportedHoldersTooLow) {
-      flags.push(makeFlag("Holder data looks incomplete (mature pair, low reported holders)", "info", 0));
+      // Drop the misleading concentration flags; emit one info flag.
+      const concentrationLabel = /supply/i;
+      for (let i = flags.length - 1; i >= 0; i--) {
+        if (concentrationLabel.test(flags[i].label)) flags.splice(i, 1);
+      }
+      flags.push(makeFlag("Holder data unreliable (broken upstream view) — mature pair, deep liquidity", "info", 0));
       trust = Math.max(trust, 0.40);
+      safeBlocked = false; // We can't trust the broken concentration signal.
     }
   }
 
@@ -526,7 +536,14 @@ export function layerSolscan(
 export function layerChart(
   candles: OHLCVCandle[],
   pair: DexScreenerPair | null,
-  tokenAgeMinutes: number | null
+  tokenAgeMinutes: number | null,
+  // Maturity context lets layerChart suppress safeBlock on chart
+  // patterns that are common in established memecoins during
+  // consolidation phases (rug staircase, slow bleed). Without this,
+  // legit blue-chips like FWOG/NEET get capped at score 500 because
+  // chart pattern detectors mistake quiet sideways trading for
+  // controlled dumps.
+  maturityContext?: { holders: number | null; liquidity: number; tokenAgeHours: number | null; mintAuthority: boolean; freezeAuthority: boolean; honeypot: boolean; lpBurned?: boolean | null }
 ): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
@@ -644,15 +661,28 @@ export function layerChart(
     }
   }
 
-  // Pattern 4: Rug staircase — volume decaying 3 consecutive windows while price holds
+  // Pattern 4: Rug staircase — volume decaying 3 consecutive windows while price holds.
+  // For established memecoins (5k+ holders OR (90d+ AND $500k+ liq)),
+  // a slow volume decay during consolidation is normal market behaviour,
+  // not a controlled dump. Demote to soft flag (no safeBlock) so the
+  // score isn't clipped to 500 on FWOG/NEET-style mature consolidations.
   if (volumes.length >= 15) {
     const v1 = _mean(volumes.slice(-15, -10));
     const v2 = _mean(volumes.slice(-10, -5));
     const v3 = _mean(volumes.slice(-5));
     const priceFlat = Math.abs(_pct(closes[closes.length - 15] ?? closes[0], last)) < 15;
     if (v1 > 0 && v2 < v1 * 0.60 && v3 < v2 * 0.60 && priceFlat) {
-      flags.push(makeFlag("Rug staircase: volume collapsing while price held flat — controlled dump", "warning", 0));
-      penalties.push(0.55); safeBlocked = true;
+      const mc = maturityContext;
+      const looksMature =
+        (mc?.holders ?? 0) >= 5_000 ||
+        ((mc?.tokenAgeHours ?? 0) >= 90 * 24 && (mc?.liquidity ?? 0) >= 500_000);
+      if (looksMature) {
+        flags.push(makeFlag("Volume tapering during consolidation (mature pair)", "info", 0));
+        penalties.push(0.85);
+      } else {
+        flags.push(makeFlag("Rug staircase: volume collapsing while price held flat — controlled dump", "warning", 0));
+        penalties.push(0.55); safeBlocked = true;
+      }
     }
   }
 

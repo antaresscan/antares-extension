@@ -399,7 +399,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const l3 = layerGoPlus(goplus, maturityCtx);
     const l4 = layerHelius(resolvedHolderAccounts, totalSupplyUi, maturityCtx);
     const l5 = layerSolscan(solscanHoldersCount, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h);
-    const l6 = layerChart(candles, pair, tokenAgeMinutes);
+    const l6 = layerChart(candles, pair, tokenAgeMinutes, maturityCtx);
     const l7 = layerCrossValidation(rugData, resolvedHolderAccounts, goplus, solscanTokenAgeHours, dexTokenAgeHours, totalSupplyUi);
 
     const allLayers = [l1, l2, l3, l4, l5, l6, l7];
@@ -682,8 +682,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     } else {
       const redis = getCacheRedis();
       if (redis) {
-        redis.setex(`antares:v12:${ca}`, 30, result).catch(() => {});
-        if (resolvedMint !== ca) redis.setex(`antares:v12:${resolvedMint}`, 30, result).catch(() => {});
+        redis.setex(`antares:v13:${ca}`, 30, result).catch(() => {});
+        if (resolvedMint !== ca) redis.setex(`antares:v13:${resolvedMint}`, 30, result).catch(() => {});
       }
     }
 

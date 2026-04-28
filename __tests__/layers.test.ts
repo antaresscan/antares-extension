@@ -435,7 +435,12 @@ describe("layerHelius", () => {
     };
     const result = layerHelius(holders, 100_000, ctx);
     expect(result.trust).toBeGreaterThanOrEqual(0.4);
-    expect(result.flags.some(f => /Holder data looks incomplete/i.test(f.label))).toBe(true);
+    expect(result.flags.some(f => /Holder data unreliable/i.test(f.label))).toBe(true);
+    // Misleading concentration flags are stripped — broken upstream
+    // view shouldn't masquerade as a 99% whale.
+    expect(result.flags.some(f => /supply/i.test(f.label))).toBe(false);
+    // safeBlocked cleared because we don't trust the broken signal.
+    expect(result.safeBlocked).toBe(false);
   });
 
   it("data-quality fallback does NOT trigger on real fresh-launch DANGER", () => {
