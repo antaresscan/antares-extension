@@ -130,7 +130,6 @@ export const SEED_CORPUS: CorpusEntry[] = [
     expectedScore: [700, 850],
     why: "Established memecoin, 1B+ mcap, BUT single wallet holds ~11% — concentration is concentration regardless of how blue-chip the rest looks. CAUTION is the right band.",
     source: "live",
-    skipFixture: true, // pending recapture after concentration-gate fix deploys
   },
   {
     ca: "Ce2gx9KGXJ6C9Mp5b5x1sn9Mg87JwEbrQby4Zqo3pump",
@@ -209,7 +208,6 @@ export const SEED_CORPUS: CorpusEntry[] = [
     expectedScore: [0, 350],
     why: "Hawk Tuah. One of the most well-documented rugs in Solana memecoin history — single wallet 44%, post-launch coordinated dump, ~70k liquidity. The verdict MUST be RUG, not DANGER.",
     source: "live",
-    skipFixture: true, // pending recapture after forceRug-on-extreme-concentration fix deploys
   },
   {
     ca: "69HZnSz3XDHyTeBrrsn5NFbjpiryhHbYJZUGDx3QXH69",

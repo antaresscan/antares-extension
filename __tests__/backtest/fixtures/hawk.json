@@ -1,0 +1,333 @@
+{
+  "score": 105,
+  "risk": "RUG",
+  "flags": [
+    {
+      "label": "Single wallet holds 44% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "LP Burned 100% (GoPlus) ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Established token (30d+) ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "raydium",
+    "url": "https://dexscreener.com/solana/errdtwwykdz37ogvjdruq2txnc9ntx78x32pnxwpeq7l",
+    "pairAddress": "ErRdtWwYKdz37oGVjdruq2tXNC9NTX78x32pnXWPeQ7L",
+    "baseToken": {
+      "address": "4GFe6MBDorSy5bLbiUMrgETr6pZcjyfxMDm5ehSgpump",
+      "name": "Hawk Tuah",
+      "symbol": "HawkTuah"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.000002033",
+    "priceUsd": "0.0001702",
+    "txns": {
+      "m5": {
+        "buys": 0,
+        "sells": 0
+      },
+      "h1": {
+        "buys": 0,
+        "sells": 1
+      },
+      "h6": {
+        "buys": 0,
+        "sells": 1
+      },
+      "h24": {
+        "buys": 0,
+        "sells": 2
+      }
+    },
+    "volume": {
+      "h24": 39.33,
+      "h6": 11.92,
+      "h1": 11.92,
+      "m5": 0
+    },
+    "priceChange": {
+      "h1": -0.3,
+      "h6": -0.3,
+      "h24": -0.3
+    },
+    "liquidity": {
+      "usd": 70520.92,
+      "base": 206829127,
+      "quote": 421.5264
+    },
+    "fdv": 155682,
+    "marketCap": 155682,
+    "pairCreatedAt": 1718823889000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/17c35e4d62131992b5c58bf5cb9d9878a64828389eddc2416416ffac68b38d25?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/f997f7c645bfaef25d9def2c19a971b862dc08bdb6e0e8fb084a79f8d1cf2642?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/4GFe6MBDorSy5bLbiUMrgETr6pZcjyfxMDm5ehSgpump?timestamp=1777415100000",
+      "websites": [
+        {
+          "url": "https://hawktuah.vip/",
+          "label": "Website"
+        },
+        {
+          "url": "https://coinmarketcap.com/currencies/hawk-tuah",
+          "label": "CMC"
+        },
+        {
+          "url": "https://www.coingecko.com/en/coins/hawk-tuah",
+          "label": "Coin Gecko"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/solhawktuah",
+          "type": "twitter"
+        },
+        {
+          "url": "https://t.me/hawktuah_sol",
+          "type": "telegram"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "4GFe6MBDorSy5bLbiUMrgETr6pZcjyfxMDm5ehSgpump",
+  "confidence": 100,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "goplus",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 7430,
+  "marketCap": 155682,
+  "priceUsd": 0.0001702,
+  "liquidity": 70520.92,
+  "volume24h": 39.33,
+  "volume1h": 11.92,
+  "priceChange5m": null,
+  "priceChange1h": -0.3,
+  "priceChange24h": -0.3,
+  "tokenSymbol": "HawkTuah",
+  "tokenName": "Hawk Tuah",
+  "pairCreatedAt": 1718823889000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "concentration"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/17c35e4d62131992b5c58bf5cb9d9878a64828389eddc2416416ffac68b38d25?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 16275,
+  "solscanVolume24h": 39.33,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 1,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": true
+    },
+    "helius": {
+      "trust": 0.08,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": true,
+  "lpLocked": false,
+  "lpLockedPct": 100,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 43.979877408990376,
+  "top10HolderPct": 53.635704160118344,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 44,
+      "addr": "HsXp…wG31",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 95,
+      "repWarn": false,
+      "desc": "Holds <b>44.0%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777333692803,
+      "verdict": "RUG",
+      "score": 105,
+      "event": "Single wallet holds 44% of supply"
+    },
+    {
+      "ts": 1777398603310,
+      "verdict": "DANGER",
+      "score": 525,
+      "event": "Single wallet holds 44% of supply"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "HsXp…wG31",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "CcSX…1e82",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "9eop…AjHo",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "2dEy…FRpQ",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "FKwU…rypd",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "9SF6…QMhy",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "11h",
+    "timeToRugMedianHours": 11,
+    "timeToRugSampleSize": 312,
+    "pctRugged24h": 76,
+    "pctSlowDeath": 16,
+    "pctAlive30d": 8,
+    "distribution": [
+      3,
+      5,
+      8,
+      11,
+      14,
+      12,
+      9,
+      7,
+      5,
+      4,
+      3,
+      2.5,
+      2,
+      1.8,
+      1.6,
+      1.4,
+      1.2,
+      1,
+      0.9,
+      0.8,
+      0.7,
+      0.7,
+      0.6,
+      0.6,
+      0.5,
+      0.5,
+      0.4,
+      0.4,
+      0.3,
+      0.3,
+      0.3,
+      0.3,
+      0.4,
+      0.5,
+      0.7,
+      0.9
+    ],
+    "youBucketIndex": 17,
+    "mostSimilar": [
+      {
+        "symbol": "PUMPDUMP",
+        "ruggedAfterHours": 18,
+        "loss": -94.1
+      },
+      {
+        "symbol": "FAKEMOON",
+        "ruggedAfterHours": 28,
+        "loss": -91.6
+      },
+      {
+        "symbol": "SLOWBLEED",
+        "ruggedAfterHours": 48,
+        "loss": -85.4
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777415004742,
+  "requestId": "b4264678-6d68-4d90-849f-74415b24a289",
+  "aiSummary": "The top wallet holds 44.0% of supply with only 7430 holders, creating extreme dump risk."
+}
