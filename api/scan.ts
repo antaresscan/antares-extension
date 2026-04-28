@@ -370,15 +370,24 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // (unburned LP, top-1 concentration on a 100k-holder memecoin) get
     // the established-context treatment consistently. Building once.
     //
-    // lpBurned is computed early here from rugcheck data alone — goplus
-    // burn data is also incorporated below in `lpBurned`, but the
-    // helius layer runs BEFORE goplus is fully consumed, so we use
-    // the rugcheck signal as a conservative pre-check.
+    // We use the unified `holders` value (max of all sources) so the
+    // helius dampening sees the same holder count the response reports.
+    // Earlier version restricted to solscan+rugcheck only, which made
+    // the maturity dampening miss every token where Helius/GoPlus
+    // were the only sources reporting holders (most blue-chips).
+    //
+    // _earlyLpBurned ORs rugcheck and goplus signals so MEW/FARTCOIN
+    // (LP burn confirmed by GoPlus only) get the established-context
+    // treatment in helius, not just in rugcheck/goplus.
+    const _gpEarlyBurnPct = (goplus?.dex && Array.isArray(goplus.dex) && goplus.dex.length > 0)
+      ? Math.max(...goplus.dex.map((d: { burn_percent?: number }) => typeof d.burn_percent === "number" ? d.burn_percent : 0))
+      : 0;
     const _earlyLpBurned = rugData?.lpBurned === true ? true
+      : _gpEarlyBurnPct >= 50 ? true
       : rugData?.lpBurned === false ? false
       : null;
     const maturityCtx = {
-      holders: solscanHoldersCount ?? rugTotalHolders ?? null,
+      holders: holders,
       liquidity: asNumber(pair?.liquidity?.usd),
       tokenAgeHours: solscanTokenAgeHours,
       mintAuthority: rugData?.mintAuthorityEnabled === true,
@@ -673,8 +682,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     } else {
       const redis = getCacheRedis();
       if (redis) {
-        redis.setex(`antares:v11:${ca}`, 30, result).catch(() => {});
-        if (resolvedMint !== ca) redis.setex(`antares:v11:${resolvedMint}`, 30, result).catch(() => {});
+        redis.setex(`antares:v12:${ca}`, 30, result).catch(() => {});
+        if (resolvedMint !== ca) redis.setex(`antares:v12:${resolvedMint}`, 30, result).catch(() => {});
       }
     }
 
