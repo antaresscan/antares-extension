@@ -317,13 +317,15 @@ describe("layerHelius", () => {
     expect(result.available).toBe(false);
   });
 
-  it("penalty for top holder > 50% (concentration hard block, NOT forceRug)", () => {
-    // Top1 > 30% used to trigger forceRug → RUG slam, which over-
-    // flagged legitimate blue-chip memecoins like MEW (164k holders +
-    // LP burned + a 35% whale) as RUG. Now it sets safeBlocked +
-    // hard concentration reason, letting Path 3 decide whether
-    // blue-chip signals warrant CAUTION rather than RUG. forceRug
-    // stays reserved for honeypot / deceptive-name patterns.
+  it("penalty for top holder > 60% triggers forceRug on non-mature tokens (HAWK case)", () => {
+    // Concentration > 40% on a token without strong maturity signals
+    // (LP burned + many holders) is the textbook rug set-up — HAWK
+    // (44%, post-pump dump), HORNY, etc. PR #339 had removed forceRug
+    // from concentration entirely; now it's re-enabled selectively
+    // for tokens that don't look like established blue-chips. MEW
+    // (164k holders, LP burned) is shielded by the mature-context
+    // gate and does NOT get forceRug. forceRug also stays reserved
+    // for honeypot / deceptive-name patterns alongside.
     const holders: HeliusHolder[] = [
       { address: "wallet1abc", owner: "wallet1abc", uiAmount: 600 },
       { address: "wallet2abc", owner: "wallet2abc", uiAmount: 100 },
@@ -331,10 +333,33 @@ describe("layerHelius", () => {
       { address: "wallet4abc", owner: "wallet4abc", uiAmount: 100 },
       { address: "wallet5abc", owner: "wallet5abc", uiAmount: 100 },
     ];
+    // No maturity context → forceRug fires on top-1 60% (>40% threshold).
     const result = layerHelius(holders, 1000);
     expect(result.trust).toBeLessThan(0.15);
-    expect(result.forceRug).toBe(false);
+    expect(result.forceRug).toBe(true); // HAWK-style extreme concentration
     expect(result.safeBlocked).toBe(true);
+  });
+
+  it("top1 > 40% on MATURE token (LP burned + 100k holders + 30d) does NOT forceRug", () => {
+    // MEW-style profile: heavy whale but on a mature blue-chip. The
+    // concentration penalty stays (safeBlocked + hard reason for Path 3
+    // to evaluate) but forceRug is suppressed.
+    const holders: HeliusHolder[] = [
+      { address: "whale", owner: "whale", uiAmount: 45_000 },
+      ...Array.from({ length: 9 }, (_, i) => ({
+        address: `top${i+2}`, owner: `top${i+2}`, uiAmount: 3_000,
+      })),
+    ];
+    const ctx = {
+      holders: 164_000,
+      liquidity: 9_000_000,
+      tokenAgeHours: 760 * 24,
+      mintAuthority: false, freezeAuthority: false, honeypot: false,
+      lpBurned: true,
+    };
+    const result = layerHelius(holders, 100_000, ctx);
+    expect(result.forceRug).toBe(false);  // mature shield
+    expect(result.safeBlocked).toBe(true); // but concentration still gates Path 3
   });
 
   it("foundation wallet detection — excludes foundation wallets from holder analysis", () => {
@@ -367,17 +392,18 @@ describe("layerHelius", () => {
     expect(result.flags.some(f => /well distributed/i.test(f.label))).toBe(true);
   });
 
-  it("mature dampening: 35% top-1 on 100k+ holders + LP burned + 30d gets trust ≥ 0.65", () => {
-    // Reproduce MEW: top-1 35%, top-10 65%, mature memecoin profile.
-    // Without dampening trust collapses to ~0.046 → DANGER score.
-    // With dampening trust floored at 0.65 → SAFE-band score.
+  it("mature dampening: top-1 < 10% on 100k+ holders + LP burned + 30d gets trust ≥ 0.65", () => {
+    // Mature blue-chip with WELL-DISTRIBUTED supply gets the lift.
+    // Top-1 must stay below 10% — above that, even on a mature token,
+    // a single wallet at 11%+ can still crash the price and the user
+    // expectation is CAUTION (not SAFE).
     const holders: HeliusHolder[] = [
-      { address: "whale", owner: "whale", uiAmount: 35_000 },
+      { address: "lead", owner: "lead", uiAmount: 8_000 }, // 8% — well-distributed
       ...Array.from({ length: 9 }, (_, i) => ({
-        address: `top${i+2}`, owner: `top${i+2}`, uiAmount: 3_300,
+        address: `top${i+2}`, owner: `top${i+2}`, uiAmount: 2_000,
       })),
       ...Array.from({ length: 90 }, (_, i) => ({
-        address: `r${i}`, owner: `r${i}`, uiAmount: 35,
+        address: `r${i}`, owner: `r${i}`, uiAmount: 800,
       })),
     ];
     const ctx = {
@@ -391,10 +417,38 @@ describe("layerHelius", () => {
     };
     const result = layerHelius(holders, 100_000, ctx);
     expect(result.trust).toBeGreaterThanOrEqual(0.65);
-    // Concentration flag still emitted so reviewers see the whale.
-    expect(result.flags.some(f => /35%/.test(f.label))).toBe(true);
-    // safeBlocked still set so Path 3 / DAO allowlist can decide.
+  });
+
+  it("mature dampening BLOCKED: top-1 ≥ 10% does NOT lift to SAFE even on 100k+ holders + LP burned (FARTCOIN case)", () => {
+    // FARTCOIN: 11% top-1, 164k holders, LP burned. Used to lift to
+    // SAFE 963 because mature dampening fired regardless. Now the
+    // dampening is gated on top-1 < 10% — concentration that real
+    // even on a mature blue-chip stays as a CAUTION-band penalty.
+    const holders: HeliusHolder[] = [
+      { address: "whale", owner: "whale", uiAmount: 11_000 }, // 11% — elevated
+      ...Array.from({ length: 9 }, (_, i) => ({
+        address: `top${i+2}`, owner: `top${i+2}`, uiAmount: 2_000,
+      })),
+      ...Array.from({ length: 90 }, (_, i) => ({
+        address: `r${i}`, owner: `r${i}`, uiAmount: 700,
+      })),
+    ];
+    const ctx = {
+      holders: 164_000,
+      liquidity: 9_000_000,
+      tokenAgeHours: 760 * 24,
+      mintAuthority: false,
+      freezeAuthority: false,
+      honeypot: false,
+      lpBurned: true,
+    };
+    const result = layerHelius(holders, 100_000, ctx);
+    // Trust stays low — no lift to 0.65. Geometric mean × 1000 lands
+    // in CAUTION (700-849) or low-end SAFE band, NOT clean SAFE 950+.
+    expect(result.trust).toBeLessThan(0.40);
+    expect(result.flags.some(f => /11%/.test(f.label))).toBe(true);
     expect(result.safeBlocked).toBe(true);
+    expect(result.forceRug).toBe(false);
   });
 
   it("mature dampening: same profile WITHOUT lpBurned does not get the floor", () => {
