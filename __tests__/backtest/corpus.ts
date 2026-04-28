@@ -60,7 +60,6 @@ export const SEED_CORPUS: CorpusEntry[] = [
     expectedScore: [780, 1000],
     why: "BONK. Largest Solana memecoin by holder count. Multi-year history.",
     source: "live",
-    skipFixture: true, // /api/scan 504 on cold start with v9s budget — re-enable post v25s deploy
   },
   {
     ca: "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm",
@@ -78,7 +77,6 @@ export const SEED_CORPUS: CorpusEntry[] = [
     expectedScore: [800, 1000],
     why: "Pudgy Penguins. Backed by established NFT brand, multi-million mcap.",
     source: "live",
-    skipFixture: true, // /api/scan 504 on cold start with v9s budget — re-enable post v25s deploy
   },
   {
     ca: "7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr",
@@ -194,12 +192,11 @@ export const SEED_CORPUS: CorpusEntry[] = [
   {
     ca: "6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN",
     symbol: "TRUMP",
-    expectedVerdict: "RUG",
-    tolerated: ["DANGER"],
-    expectedScore: [0, 350],
-    why: "Post-rug state — 77% concentrated, 20 holders left. Coordinated dump confirmed.",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER"],
+    expectedScore: [400, 950],
+    why: "Stabilised post-pump (~$574M mcap, $42M liq, 465d age). Was originally labelled RUG when coordinated dump bottomed out near zero — token has since recovered as a real established memecoin.",
     source: "live",
-    skipFixture: true, // /api/scan 504 on cold start with v9s budget — re-enable post v25s deploy
   },
 
   // ─── CONFIRMED RUGS — must surface DANGER or RUG ──────────────────

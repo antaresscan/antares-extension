@@ -39,28 +39,27 @@
         "sells": 0
       },
       "h1": {
-        "buys": 3,
-        "sells": 3
+        "buys": 0,
+        "sells": 0
       },
       "h6": {
-        "buys": 14,
-        "sells": 17
+        "buys": 10,
+        "sells": 15
       },
       "h24": {
-        "buys": 51,
+        "buys": 47,
         "sells": 56
       }
     },
     "volume": {
-      "h24": 331.74,
-      "h6": 105.72,
-      "h1": 15.08,
+      "h24": 324.56,
+      "h6": 75.72,
+      "h1": 0,
       "m5": 0
     },
     "priceChange": {
-      "h1": 0.02,
-      "h6": 2.31,
-      "h24": 3.64
+      "h6": -0.2,
+      "h24": 3.71
     },
     "liquidity": {
       "usd": 9083893.76,
@@ -73,7 +72,7 @@
     "info": {
       "imageUrl": "https://cdn.dexscreener.com/cms/images/9d5188f603b49ab02f7a75e5d2c2959ec2947c98181501fb11688672e9394efd?width=800&height=800&quality=95&format=auto",
       "header": "https://cdn.dexscreener.com/cms/images/5c3d41eabf98b63ce56ca14ca3ffe42c7426e0f1680647011d5991456516ba57?width=1500&height=500&quality=95&format=auto",
-      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/2zMMhcVQEXDtdE6vsFS7S7D5oUodfJHE8vd1gnBouauv?timestamp=1777403400000",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/2zMMhcVQEXDtdE6vsFS7S7D5oUodfJHE8vd1gnBouauv?timestamp=1777407000000",
       "websites": [
         {
           "url": "https://www.pudgypenguins.com",
@@ -105,11 +104,11 @@
   "marketCap": 639294195,
   "priceUsd": 0.01017,
   "liquidity": 9083893.76,
-  "volume24h": 331.74,
-  "volume1h": 15.08,
+  "volume24h": 324.56,
+  "volume1h": null,
   "priceChange5m": null,
-  "priceChange1h": 0.02,
-  "priceChange24h": 3.64,
+  "priceChange1h": null,
+  "priceChange24h": 3.71,
   "tokenSymbol": "PENGU",
   "tokenName": "Pudgy Penguins",
   "pairCreatedAt": 1776912333000,
@@ -120,8 +119,8 @@
   "tokenDecimals": null,
   "tokenSupply": null,
   "recentTransfers": "[0 transfers, redacted for fixture]",
-  "solscanTokenAgeHours": 136,
-  "solscanVolume24h": 331.74,
+  "solscanTokenAgeHours": 137,
+  "solscanVolume24h": 324.56,
   "solscanTrades24h": null,
   "solscanTraders24h": null,
   "layers": {
@@ -191,7 +190,7 @@
   },
   "outcomeStats": null,
   "scoring_version": "7.3.0",
-  "fetchedAt": 1777403467807,
-  "requestId": "4bf23c57-3b63-4db1-a367-f97402e235dd",
+  "fetchedAt": 1777406952614,
+  "requestId": "e78a2e11-7a55-4593-bb7a-7bb7584e51b3",
   "aiSummary": "Score 1000/1000. LP is burned, mint authority is disabled, freeze authority is disabled, 544390 holders show organic distribution. No critical risks were detected in the contract or holder analysis."
 }
