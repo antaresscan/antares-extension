@@ -1,0 +1,322 @@
+{
+  "score": 500,
+  "risk": "DANGER",
+  "flags": [
+    {
+      "label": "Single wallet holds 18% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "LP Burned 100% (GoPlus) ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Established token (30d+) ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "meteora",
+    "url": "https://dexscreener.com/solana/6bh2zl833tog7tnbbn2hei6vlbbmtewrek6ypzyqthdk",
+    "pairAddress": "6bh2zL833toG7TnbBn2HEi6vLBbMTEwREk6YPZYQThDK",
+    "labels": [
+      "DLMM"
+    ],
+    "baseToken": {
+      "address": "CreiuhfwdWCN5mJbMJtA9bBpYQrQF2tCBuZwSPWfpump",
+      "name": "PYTHIA",
+      "symbol": "PYTHIA"
+    },
+    "quoteToken": {
+      "address": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+      "name": "USDT",
+      "symbol": "USDT"
+    },
+    "priceNative": "0.05757",
+    "priceUsd": "0.05757",
+    "txns": {
+      "m5": {
+        "buys": 0,
+        "sells": 3
+      },
+      "h1": {
+        "buys": 11,
+        "sells": 16
+      },
+      "h6": {
+        "buys": 91,
+        "sells": 257
+      },
+      "h24": {
+        "buys": 7943,
+        "sells": 8434
+      }
+    },
+    "volume": {
+      "h24": 745042.69,
+      "h6": 94762.45,
+      "h1": 8132.06,
+      "m5": 182.02
+    },
+    "priceChange": {
+      "m5": -0.4,
+      "h6": -0.79,
+      "h24": -0.79
+    },
+    "liquidity": {
+      "usd": 3249975.42,
+      "base": 31522468,
+      "quote": 1434960
+    },
+    "fdv": 57577431,
+    "marketCap": 57577431,
+    "pairCreatedAt": 1771955585000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/f8b6bdc1ff962f2935c1734e857b317b181f7c7449475e8e27da061133523f6c?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/527c2d801997f34ceea41559f28f09d757cea696ca715df5386d1841c771959f?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/CreiuhfwdWCN5mJbMJtA9bBpYQrQF2tCBuZwSPWfpump?timestamp=1777403700000",
+      "websites": [
+        {
+          "url": "https://ratpythia.ai/",
+          "label": "Website "
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/neirylab",
+          "type": "twitter"
+        },
+        {
+          "url": "https://t.me/pythiaportal",
+          "type": "telegram"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "CreiuhfwdWCN5mJbMJtA9bBpYQrQF2tCBuZwSPWfpump",
+  "confidence": 100,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "goplus",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 22584,
+  "marketCap": 57577431,
+  "priceUsd": 0.05757,
+  "liquidity": 3249975.42,
+  "volume24h": 745042.69,
+  "volume1h": 8132.06,
+  "priceChange5m": -0.4,
+  "priceChange1h": null,
+  "priceChange24h": -0.79,
+  "tokenSymbol": "PYTHIA",
+  "tokenName": "PYTHIA",
+  "pairCreatedAt": 1771955585000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "concentration"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/f8b6bdc1ff962f2935c1734e857b317b181f7c7449475e8e27da061133523f6c?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 1513,
+  "solscanVolume24h": 745042.69,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 1,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": true
+    },
+    "helius": {
+      "trust": 0.35,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": true,
+  "lpLocked": false,
+  "lpLockedPct": 99.97,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 17.501449220658046,
+  "top10HolderPct": 40.35001230854259,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 17.5,
+      "addr": "9ZPs…E4Y4",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 95,
+      "repWarn": false,
+      "desc": "Holds <b>17.5%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777403663312,
+      "verdict": "DANGER",
+      "score": 500,
+      "event": "Single wallet holds 18% of supply"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "9ZPs…E4Y4",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "H9Yb…YTaq",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "6bh2…ThDK",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "GSFJ…J6F9",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "AVSY…k5Bx",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "GpMZ…xFbL",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "11h",
+    "timeToRugMedianHours": 11,
+    "timeToRugSampleSize": 312,
+    "pctRugged24h": 76,
+    "pctSlowDeath": 16,
+    "pctAlive30d": 8,
+    "distribution": [
+      3,
+      5,
+      8,
+      11,
+      14,
+      12,
+      9,
+      7,
+      5,
+      4,
+      3,
+      2.5,
+      2,
+      1.8,
+      1.6,
+      1.4,
+      1.2,
+      1,
+      0.9,
+      0.8,
+      0.7,
+      0.7,
+      0.6,
+      0.6,
+      0.5,
+      0.5,
+      0.4,
+      0.4,
+      0.3,
+      0.3,
+      0.3,
+      0.3,
+      0.4,
+      0.5,
+      0.7,
+      0.9
+    ],
+    "youBucketIndex": 17,
+    "mostSimilar": [
+      {
+        "symbol": "PUMPDUMP",
+        "ruggedAfterHours": 18,
+        "loss": -94.1
+      },
+      {
+        "symbol": "FAKEMOON",
+        "ruggedAfterHours": 28,
+        "loss": -91.6
+      },
+      {
+        "symbol": "SLOWBLEED",
+        "ruggedAfterHours": 48,
+        "loss": -85.4
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777403663401,
+  "requestId": "6bd9368d-06d9-4d48-baef-504c64909f0f",
+  "aiSummary": null
+}
