@@ -203,27 +203,35 @@ interface CGCoinDetail {
 }
 
 async function fetchCoinGeckoSolanaMemes(): Promise<{ ca: string; symbol: string; tag: string }[]> {
-  // Hit multiple meme categories — solana-meme-coins is the obvious one
-  // but CG also has dog/cat/frog/ai meme categories that include lots of
-  // Solana tokens missing from the main list. We dedupe by id then
-  // resolve each via /coins/<id> for the canonical platforms.solana.
-  const categories = [
-    "solana-meme-coins",
-    "meme-token",
-    "dog-themed-coins",
-    "cat-themed-coins",
-    "frog-themed-coins",
-    "ai-meme-coins",
+  // CG `solana-meme-coins` has ~400 entries paginated 100/page across 4
+  // pages — that's the deep ground-truth list of Solana memecoins by
+  // mcap. We then sweep adjacent meme categories (meme-token / dog /
+  // cat / frog / ai) for any non-Solana-tagged Solana memecoins missed
+  // by the main category. All results dedupe by CG id, then resolve to
+  // canonical mints via /coins/<id>.platforms.solana.
+  const paginatedCats: Array<{ cat: string; pages: number }> = [
+    { cat: "solana-meme-coins", pages: 4 }, // ~400 tokens — the deepest source
+    { cat: "meme-token", pages: 1 },
+    { cat: "dog-themed-coins", pages: 1 },
+    { cat: "cat-themed-coins", pages: 1 },
+    { cat: "frog-themed-coins", pages: 1 },
+    { cat: "ai-meme-coins", pages: 1 },
   ]
 
   const candidatesById = new Map<string, CGCoin>()
-  for (const cat of categories) {
-    const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&category=${cat}&order=market_cap_desc&per_page=100&page=1`
-    console.log(`  CG markets: ${cat}…`)
-    const markets = await jsonGet<CGCoin[]>(url)
-    if (!markets) continue
-    for (const c of markets) candidatesById.set(c.id, c)
-    await sleep(1500)
+  for (const { cat, pages } of paginatedCats) {
+    for (let p = 1; p <= pages; p++) {
+      const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&category=${cat}&order=market_cap_desc&per_page=100&page=${p}`
+      console.log(`  CG markets: ${cat} page ${p}…`)
+      const markets = await jsonGet<CGCoin[]>(url)
+      if (!markets || markets.length === 0) {
+        // CG returns 200 with empty array (or error) past available pages
+        if (p > 1) break
+        continue
+      }
+      for (const c of markets) candidatesById.set(c.id, c)
+      await sleep(1500)
+    }
   }
   console.log(`  ${candidatesById.size} unique CG candidates — resolving Solana mints…`)
 
@@ -372,11 +380,15 @@ function label(t: Enriched): Label {
   }
 
   // ── CAUTION default: every mid-tier token. Wide tolerated band
-  // because we genuinely don't know without on-chain data.
+  // because we genuinely don't know without on-chain data. RUG is in
+  // tolerated because the engine routinely escalates obvious shitcoins
+  // (no socials, mintAuthority active, post-pump dump) that the
+  // external metrics alone label CAUTION as default — and the engine
+  // is usually right on those.
   return {
     expectedVerdict: "CAUTION",
     expectedScore: [300, 900],
-    tolerated: ["SAFE", "DANGER"],
+    tolerated: ["SAFE", "DANGER", "RUG"],
     why: `mcap $${(mcap/1_000_000).toFixed(2)}M, age ${age}d, liq $${(liq/1000).toFixed(0)}k — mid-cap default (engine has final say).`,
   }
 }

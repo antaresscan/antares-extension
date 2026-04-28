@@ -67,7 +67,12 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
   initHistoryCache(redis);
 }
 
-const GLOBAL_TIMEOUT_MS = Number(process.env.VERCEL_TIMEOUT) || 9000;
+// 24s internal budget against the 25s vercel.json maxDuration. The 9s
+// previous limit timed out heavy blue-chips like BONK/PENGU/TRUMP on
+// cold starts (millions of holders + many candles + multi-source
+// enrich). 25s is enough headroom even for the heaviest tokens while
+// still bounding worst-case wait for users on warm calls.
+const GLOBAL_TIMEOUT_MS = Number(process.env.VERCEL_TIMEOUT) || 24000;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const requestId = randomUUID();
