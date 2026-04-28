@@ -369,7 +369,14 @@ export function layerGoPlus(
 // ═══ LAYER 4 — Helius ═════════════════════════════════════════════════════════
 export function layerHelius(
   rawHolderAccounts: HeliusHolder[],
-  totalSupplyUi: number
+  totalSupplyUi: number,
+  // Maturity context lets layerHelius soften the concentration trust
+  // penalty for established memecoins. A 35% top-1 wallet on a token
+  // with 164k holders + LP burned + 2 years on chain is virtually
+  // never a rug pattern — it's an exchange / treasury / legit whale.
+  // Without context, the geometric-mean dragged MEW (and other blue
+  // chips) into DANGER even when every other layer was clean.
+  maturityContext?: { holders: number | null; liquidity: number; tokenAgeHours: number | null; mintAuthority: boolean; freezeAuthority: boolean; honeypot: boolean; lpBurned?: boolean | null }
 ): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
@@ -412,6 +419,53 @@ export function layerHelius(
   else if (top10Pct > 0.6) { flags.push(makeFlag(`Top 10 wallets hold ${Math.round(top10Pct*100)}% of supply`, "warning", 0)); penalties.push(0.45); safeBlocked = true; }
   else if (top10Pct < 0.3) { flags.push(makeFlag("Well distributed supply ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.05); }
   trust = applyDiminishingPenalties(trust, penalties);
+
+  // ── Maturity dampening ────────────────────────────────────────────
+  // For established memecoins (50k+ holders, 30d+, LP burned), the
+  // concentration penalty above is over-stated: a 35%-top-1 on MEW
+  // (164k holders, LP burned, 2y) is structurally different from a
+  // 35%-top-1 on a fresh-launch shitcoin. Both deserve the safeBlocked
+  // flag (so Path 3 can decide), but the trust penalty for the geometric
+  // mean must be capped or the score collapses to DANGER even when
+  // every other layer is green. Floors:
+  //   holders ≥ 100k + LP burned + 30d   → trust ≥ 0.65 (≈ score 920+)
+  //   holders ≥ 50k  + LP burned + 30d   → trust ≥ 0.50 (≈ score 880+)
+  //   holders ≥ 10k  + LP burned + 30d   → trust ≥ 0.35 (≈ score 825+)
+  // The flags + safeBlocked stay so Path 3 / DAO allowlist still gates
+  // the safe verdict on additional signals; we're only protecting the
+  // geometric-mean score from collapsing on a single concentration cue.
+  const mc = maturityContext;
+  if (mc) {
+    const looksMatureBase = (mc.tokenAgeHours ?? 0) >= 30 * 24 && mc.lpBurned === true;
+    if (looksMatureBase) {
+      if ((mc.holders ?? 0) >= 100_000) trust = Math.max(trust, 0.65);
+      else if ((mc.holders ?? 0) >= 50_000) trust = Math.max(trust, 0.50);
+      else if ((mc.holders ?? 0) >= 10_000) trust = Math.max(trust, 0.35);
+    }
+
+    // ── Data-quality fallback ──────────────────────────────────────
+    // Some upstream sources report a tiny holder count (<200) on
+    // tokens that DexScreener shows as $10M+ market cap with deep
+    // liquidity — that's structurally impossible for a real low-
+    // holder shitcoin (you can't have $50M mcap with 20 holders),
+    // so the holder/concentration view is BROKEN, not damning. Trust
+    // the macro signals (high mcap + deep liq + multi-month age) over
+    // the broken holder snapshot. Floor the trust at 0.4 to keep the
+    // geometric mean reachable; flags stay so reviewers see both.
+    //
+    // Triggers on tokens like GOAT/PNUT where Solscan/Helius only see
+    // pump.fun bonding-curve survivors (~20 wallets) instead of all
+    // 100k+ holders post-AMM-migration.
+    const macroLooksBig =
+      (mc.liquidity ?? 0) >= 250_000 &&
+      (mc.tokenAgeHours ?? 0) >= 30 * 24;
+    const reportedHoldersTooLow = (mc.holders ?? Infinity) < 200;
+    if (macroLooksBig && reportedHoldersTooLow) {
+      flags.push(makeFlag("Holder data looks incomplete (mature pair, low reported holders)", "info", 0));
+      trust = Math.max(trust, 0.40);
+    }
+  }
+
   return { source: "helius", trust: Math.max(0, trust), available: true, flags, forceRug, safeBlocked };
 }
 

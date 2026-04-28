@@ -14,6 +14,7 @@
     "test:e2e": "playwright test",
     "corpus:capture": "tsx scripts/corpus-capture.ts",
     "corpus:refresh": "tsx scripts/corpus-capture.ts --refresh",
+    "corpus:discover": "tsx scripts/corpus-discover.ts",
     "test:corpus": "vitest run __tests__/backtest"
   },
   "dependencies": {

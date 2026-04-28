@@ -31,6 +31,7 @@
 //   3. npm run test:corpus (verifies)
 
 import type { Verdict } from "../../api/_lib/types"
+import { DISCOVERED } from "./corpus-discovered"
 
 export interface CorpusEntry {
   ca: string
@@ -43,7 +44,11 @@ export interface CorpusEntry {
   skipFixture?: boolean
 }
 
-export const CORPUS: CorpusEntry[] = [
+// Hand-vetted memecoin entries with tight score bands. These are the
+// spine of the corpus — every change to scoring should preserve or
+// improve their match rate. They were picked manually to cover each
+// verdict band with known-good representatives.
+export const SEED_CORPUS: CorpusEntry[] = [
   // ─── BLUE-CHIP MEMECOINS — top mcap, multi-month history ──────────
   // Established Solana memecoins traders consider "safer" within the
   // memecoin asset class. The engine should not flag them DANGER.
@@ -245,6 +250,18 @@ export const CORPUS: CorpusEntry[] = [
     source: "live",
   },
 ]
+
+// ─── MERGED CORPUS ───────────────────────────────────────────────────
+// The full corpus is SEED_CORPUS (hand-vetted spine) + DISCOVERED
+// (auto-labelled wave from scripts/corpus-discover.ts). The discovered
+// entries have wide tolerated bands because external metrics alone
+// can't see concentration / LP burn / honeypot — the engine has the
+// final say.
+//
+// To grow the corpus: run `npm run corpus:discover` to refresh the
+// DISCOVERED list, then `npm run corpus:capture` to fetch fixtures
+// for any new entries. The accuracy backtest surfaces divergences.
+export const CORPUS: CorpusEntry[] = [...SEED_CORPUS, ...DISCOVERED]
 
 // ─── HELPERS ─────────────────────────────────────────────────────────
 
