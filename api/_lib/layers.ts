@@ -427,24 +427,29 @@ export function layerHelius(
   else if (top10Pct < 0.3) { flags.push(makeFlag("Well distributed supply ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.05); }
   trust = applyDiminishingPenalties(trust, penalties);
 
-  // ── Concentration kill-switch — top1 > 40% on non-blue-chip tokens ─
-  // A single wallet holding more than 40% of supply is the textbook
-  // rug structure: HAWK (44%, post-pump dump, ~7k holders left),
-  // HORNY (similar). PR #339 removed forceRug from concentration
-  // entirely, but the floor was too lenient — HAWK kept landing
-  // DANGER instead of the user-expected RUG.
+  // ── Concentration kill-switch — top1 > 30% on non-blue-chip tokens ─
+  // ALSO triggers on extreme top10 concentration (>80%) — a token
+  // where 10 wallets control 80%+ of supply is structurally a rug.
   //
-  // Re-enable forceRug ONLY when concentration is extreme AND the
-  // token does NOT look like a true blue-chip. The threshold is
-  // 50k+ holders: under that, top1>40% IS a rug pattern; above it,
-  // it's an oddity on a real established memecoin (e.g. exchange
-  // wallet, treasury) and the dampened-CAUTION path applies.
-  // GOAT/PNUT (broken-data 20-holder reports) are caught by the
-  // data-quality fallback below which clears forceRug too.
-  if (top1Pct > 0.4) {
+  // Reference cases:
+  //   HAWK (top-1 31%, top-10 87%, 7k holders) → forceRug ✓
+  //   HORNY (similar profile) → forceRug ✓
+  //   PIPPIN (27% top-1, ~10k holders) → stays DANGER (under threshold)
+  //   MEW (35% top-1, 164k holders) → blue-chip shield, no forceRug ✓
+  //
+  // The 50k-holder cutoff protects real established memecoins (MEW
+  // has a 35% top-1 wallet that's an exchange / treasury, not a rug
+  // operator). For everything below that, top-1 > 30% OR top-10 > 80%
+  // IS the rug pattern.
+  //
+  // GOAT/PNUT (broken-data 20-holder reports from Solscan) are caught
+  // by the data-quality fallback below which clears forceRug too.
+  {
     const mcRug = maturityContext;
     const isBlueChipDistribution = (mcRug?.holders ?? 0) >= 50_000;
-    if (!isBlueChipDistribution) {
+    const extremeTop1 = top1Pct > 0.3;
+    const extremeTop10 = top10Pct > 0.8;
+    if ((extremeTop1 || extremeTop10) && !isBlueChipDistribution) {
       forceRug = true;
     }
   }
