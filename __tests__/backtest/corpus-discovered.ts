@@ -10,16 +10,6 @@ import type { CorpusEntry } from "./corpus"
 
 export const DISCOVERED: CorpusEntry[] = [
   {
-    ca: "7EV9ShfBB5NGtGcFVBQPVUVVtW3D6Emr3dPmh8rBpump",
-    symbol: "PEEWELL",
-    expectedVerdict: "DANGER",
-    tolerated: ["RUG", "CAUTION"],
-    expectedScore: [100, 600],
-    why: "liq $10.5k, age 2d — fresh-launch thin liquidity.",
-    source: "external",
-    skipFixture: true, // pending first capture
-  },
-  {
     ca: "FU9s7E8zSczG1GXuy2u9n3VNgH6scJz9AprbxNtZpump",
     symbol: "SVE",
     expectedVerdict: "RUG",
@@ -30,12 +20,32 @@ export const DISCOVERED: CorpusEntry[] = [
     skipFixture: true, // pending first capture
   },
   {
-    ca: "HDCaUHXLRsZCwdkgx7kM23ggojN5s6LagKLv8TEapump",
-    symbol: "SCAMODEI",
+    ca: "DzEdjffc7JkbkuDUkrf98njJ7KBVzabqUw5hej4Epump",
+    symbol: "KILLGPT",
     expectedVerdict: "CAUTION",
     tolerated: ["SAFE", "DANGER"],
     expectedScore: [300, 900],
-    why: "mcap $0.29M, age 0d, liq $44k — mid-cap default (engine has final say).",
+    why: "mcap $0.60M, age 0d, liq $63k — mid-cap default (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HDCaUHXLRsZCwdkgx7kM23ggojN5s6LagKLv8TEapump",
+    symbol: "SCAMODEI",
+    expectedVerdict: "RUG",
+    tolerated: ["DANGER"],
+    expectedScore: [0, 400],
+    why: "24h drop -95%, liq $4.7k — textbook rug.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "7EV9ShfBB5NGtGcFVBQPVUVVtW3D6Emr3dPmh8rBpump",
+    symbol: "PEEWELL",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "liq $11.8k, age 2d — fresh-launch thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
   },
@@ -45,17 +55,17 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedVerdict: "CAUTION",
     tolerated: ["SAFE", "DANGER"],
     expectedScore: [300, 900],
-    why: "mcap $0.32M, age 7d, liq $72k — mid-cap default (engine has final say).",
+    why: "mcap $0.33M, age 7d, liq $72k — mid-cap default (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
   },
   {
     ca: "E4xqRvahx9UdN5Unc2v5fmrkSK35UYZqi4gGJsbDpump",
     symbol: "SCAMPOWEL",
-    expectedVerdict: "RUG",
-    tolerated: ["DANGER"],
-    expectedScore: [0, 400],
-    why: "24h drop -94%, liq $3.6k — textbook rug.",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "liq $8.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
   },
@@ -65,7 +75,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedVerdict: "CAUTION",
     tolerated: ["SAFE", "DANGER"],
     expectedScore: [300, 900],
-    why: "mcap $0.41M, age 0d, liq $52k — mid-cap default (engine has final say).",
+    why: "mcap $0.58M, age 0d, liq $67k — mid-cap default (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
   },
@@ -75,7 +85,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedVerdict: "CAUTION",
     tolerated: ["SAFE", "DANGER"],
     expectedScore: [300, 900],
-    why: "mcap $16.64M, age 66d, liq $430k — mid-cap default (engine has final say).",
+    why: "mcap $16.87M, age 66d, liq $434k — mid-cap default (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
   },
@@ -85,7 +95,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedVerdict: "DANGER",
     tolerated: ["RUG", "CAUTION"],
     expectedScore: [100, 600],
-    why: "liq $10.2k, age 0d — fresh-launch thin liquidity.",
+    why: "liq $6.5k, age 0d — fresh-launch thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
   },
@@ -105,17 +115,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedVerdict: "RUG",
     tolerated: ["DANGER"],
     expectedScore: [0, 400],
-    why: "24h drop -95%, liq $3.4k — textbook rug.",
-    source: "external",
-    skipFixture: true, // pending first capture
-  },
-  {
-    ca: "34q2KmCvapecJgR6ZrtbCTrzZVtkt3a5mHEA3TuEsWYb",
-    symbol: "LOL",
-    expectedVerdict: "CAUTION",
-    tolerated: ["SAFE", "DANGER"],
-    expectedScore: [300, 900],
-    why: "mcap $2.45M, age 40d, liq $249k — mid-cap default (engine has final say).",
+    why: "24h drop -95%, liq $3.5k — textbook rug.",
     source: "external",
     skipFixture: true, // pending first capture
   },
@@ -125,7 +125,17 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedVerdict: "RUG",
     tolerated: ["DANGER"],
     expectedScore: [0, 400],
-    why: "24h drop -94%, liq $3.7k — textbook rug.",
+    why: "24h drop -94%, liq $3.8k — textbook rug.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3M3E4gf17jjeeZomna61H4rhMs5HVY8ypD7mUdZRpump",
+    symbol: "WLD",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER"],
+    expectedScore: [300, 900],
+    why: "mcap $0.05M, age 0d, liq $19k — mid-cap default (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
   },
@@ -135,7 +145,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedVerdict: "RUG",
     tolerated: ["DANGER"],
     expectedScore: [0, 400],
-    why: "24h drop -94%, liq $3.7k — textbook rug.",
+    why: "24h drop -94%, liq $3.8k — textbook rug.",
     source: "external",
     skipFixture: true, // pending first capture
   },
@@ -155,17 +165,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedVerdict: "CAUTION",
     tolerated: ["SAFE", "DANGER"],
     expectedScore: [300, 900],
-    why: "mcap $5.37M, age 36d, liq $289k — mid-cap default (engine has final say).",
-    source: "external",
-    skipFixture: true, // pending first capture
-  },
-  {
-    ca: "3M3E4gf17jjeeZomna61H4rhMs5HVY8ypD7mUdZRpump",
-    symbol: "WLD",
-    expectedVerdict: "CAUTION",
-    tolerated: ["SAFE", "DANGER"],
-    expectedScore: [300, 900],
-    why: "mcap $0.06M, age 0d, liq $21k — mid-cap default (engine has final say).",
+    why: "mcap $5.13M, age 36d, liq $284k — mid-cap default (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
   },
@@ -175,7 +175,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedVerdict: "CAUTION",
     tolerated: ["SAFE", "DANGER"],
     expectedScore: [300, 900],
-    why: "mcap $0.21M, age 0d, liq $36k — mid-cap default (engine has final say).",
+    why: "mcap $0.22M, age 0d, liq $37k — mid-cap default (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
   },
@@ -195,7 +195,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedVerdict: "RUG",
     tolerated: ["DANGER"],
     expectedScore: [0, 400],
-    why: "24h drop -95%, liq $3.3k — textbook rug.",
+    why: "24h drop -95%, liq $3.2k — textbook rug.",
     source: "external",
     skipFixture: true, // pending first capture
   },
@@ -205,7 +205,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedVerdict: "CAUTION",
     tolerated: ["SAFE", "DANGER"],
     expectedScore: [300, 900],
-    why: "mcap $11.09M, age 20d, liq $381k — mid-cap default (engine has final say).",
+    why: "mcap $10.50M, age 20d, liq $372k — mid-cap default (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
   },
@@ -215,7 +215,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedVerdict: "RUG",
     tolerated: ["DANGER"],
     expectedScore: [0, 400],
-    why: "24h drop -95%, liq $3.2k — textbook rug.",
+    why: "24h drop -95%, liq $3.3k — textbook rug.",
     source: "external",
     skipFixture: true, // pending first capture
   },
@@ -225,7 +225,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedVerdict: "CAUTION",
     tolerated: ["SAFE", "DANGER"],
     expectedScore: [300, 900],
-    why: "mcap $0.42M, age 4d, liq $60k — mid-cap default (engine has final say).",
+    why: "mcap $0.40M, age 4d, liq $58k — mid-cap default (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
   },
@@ -235,7 +235,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedVerdict: "CAUTION",
     tolerated: ["SAFE", "DANGER"],
     expectedScore: [300, 900],
-    why: "mcap $0.68M, age 0d, liq $42k — mid-cap default (engine has final say).",
+    why: "mcap $0.56M, age 0d, liq $37k — mid-cap default (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
   },
@@ -245,17 +245,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedVerdict: "CAUTION",
     tolerated: ["SAFE", "DANGER"],
     expectedScore: [300, 900],
-    why: "mcap $0.56M, age 2d, liq $166k — mid-cap default (engine has final say).",
-    source: "external",
-    skipFixture: true, // pending first capture
-  },
-  {
-    ca: "CAjtTHvC878f8cZ4zEwdvgjkjFM7rbYN8Mb1go1cpump",
-    symbol: "DUMBMONEY",
-    expectedVerdict: "CAUTION",
-    tolerated: ["SAFE", "DANGER"],
-    expectedScore: [300, 900],
-    why: "mcap $0.28M, age 14d, liq $63k — mid-cap default (engine has final say).",
+    why: "mcap $0.61M, age 2d, liq $174k — mid-cap default (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
   },
@@ -270,6 +260,26 @@ export const DISCOVERED: CorpusEntry[] = [
     skipFixture: true, // pending first capture
   },
   {
+    ca: "CAjtTHvC878f8cZ4zEwdvgjkjFM7rbYN8Mb1go1cpump",
+    symbol: "DUMBMONEY",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER"],
+    expectedScore: [300, 900],
+    why: "mcap $0.31M, age 14d, liq $67k — mid-cap default (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "7nZuYZYZnof9gF3zr9QhdnxpQ1mTM8LN3VaJuhrGbonk",
+    symbol: "RCON",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER"],
+    expectedScore: [300, 900],
+    why: "mcap $0.39M, age 234d, liq $61k — mid-cap default (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
     ca: "23SSf55rhFSadnESqVtnb7KW5AjdW19X3i2M9Bvupump",
     symbol: "ELANVSSCAM",
     expectedVerdict: "DANGER",
@@ -280,58 +290,38 @@ export const DISCOVERED: CorpusEntry[] = [
     skipFixture: true, // pending first capture
   },
   {
-    ca: "7nZuYZYZnof9gF3zr9QhdnxpQ1mTM8LN3VaJuhrGbonk",
-    symbol: "RCON",
+    ca: "4syGYCWUrRU8po4DQZgPgpzhZG8nZXQoGu4Jf7fppump",
+    symbol: "SCAMUSK",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HmBdm8vbisABUjkxms6ZUnoaXbfwFM6ymxShWfAENaoi",
+    symbol: "EITHER",
     expectedVerdict: "CAUTION",
     tolerated: ["SAFE", "DANGER"],
     expectedScore: [300, 900],
-    why: "mcap $0.38M, age 233d, liq $61k — mid-cap default (engine has final say).",
+    why: "mcap $25.70M, age 35d, liq $429k — mid-cap default (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
   },
   {
-    ca: "DhLS8o4f86zVs66J1Ma1cb1x2C2KaBHKxJ8xjpV8uzLR",
-    symbol: "5",
-    expectedVerdict: "DANGER",
-    tolerated: ["RUG", "CAUTION"],
-    expectedScore: [100, 600],
-    why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
-    source: "external",
-    skipFixture: true, // pending first capture
-  },
-  {
-    ca: "EqYU36vG9xrhuhLvqRiA4HpqrQcXquxyAE3BzZ7rXJNE",
-    symbol: "ERIC",
-    expectedVerdict: "DANGER",
-    tolerated: ["RUG", "CAUTION"],
-    expectedScore: [100, 600],
-    why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
-    source: "external",
-    skipFixture: true, // pending first capture
-  },
-  {
-    ca: "ncSWfH7ZjTK5Ebo43YekNBHLQJwwhypb97Ta3Qupump",
-    symbol: "BEEPE",
-    expectedVerdict: "DANGER",
-    tolerated: ["RUG", "CAUTION"],
-    expectedScore: [100, 600],
-    why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
-    source: "external",
-    skipFixture: true, // pending first capture
-  },
-  {
-    ca: "7mJ4tTSsL63fa69qkdDbw4fhx6SPzfA8uS4bVisStfi4",
-    symbol: "BEEKEEPER",
+    ca: "9oxGicd5KXNcthYM6yD23X9zcznQVnHjrAEN38fFpump",
+    symbol: "BIOLLM",
     expectedVerdict: "CAUTION",
     tolerated: ["SAFE", "DANGER"],
     expectedScore: [300, 900],
-    why: "mcap $0.27M, age 0d, liq $44k — mid-cap default (engine has final say).",
+    why: "mcap $0.55M, age 56d, liq $83k — mid-cap default (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
   },
   {
-    ca: "GC3T8XboCofhBPs5U48DJgp6cxxMeu1CBZXgB2dopump",
-    symbol: "LITH",
+    ca: "96qJmCKtj9E5fiehGToQ69bwyiw9q86y7q4gAGznpump",
+    symbol: "MESSI",
     expectedVerdict: "DANGER",
     tolerated: ["RUG", "CAUTION"],
     expectedScore: [100, 600],
@@ -340,148 +330,38 @@ export const DISCOVERED: CorpusEntry[] = [
     skipFixture: true, // pending first capture
   },
   {
-    ca: "DTfN4DotNupzDbqpg6dX4jfXekB5vVkePxjuyivJpump",
-    symbol: "BEE",
+    ca: "tUAxFzG84g9X8rXkk2KWgrKdaVSsc59KrDEPiv3pump",
+    symbol: "DOGMCOIN",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9QLrH5vE51uNavc9VWAA5GgjXzXDLNk1va6iWYJyEPt3",
+    symbol: "WXG",
     expectedVerdict: "CAUTION",
     tolerated: ["SAFE", "DANGER"],
     expectedScore: [300, 900],
-    why: "mcap $1.01M, age 0d, liq $131k — mid-cap default (engine has final say).",
+    why: "mcap $0.10M, age 135d, liq $18k — mid-cap default (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
   },
   {
-    ca: "BDsKirdnNnqcMLpdMTnwXqNPfMWyMLQpxBu9D4zYpump",
-    symbol: "CHUDGPT",
+    ca: "3ZcEqsgJZxy5pER4XBfa2UbjBmRAgG96nUrTATfMpump",
+    symbol: "WHITEBOY",
     expectedVerdict: "DANGER",
     tolerated: ["RUG", "CAUTION"],
     expectedScore: [100, 600],
-    why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
+    why: "liq $0.0k, age 4d — fresh-launch thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
   },
   {
-    ca: "WaYLBx42GBPHbvP8Mt2vKrJ4ofriaBnAmAEWP2Spump",
-    symbol: "TUK",
-    expectedVerdict: "DANGER",
-    tolerated: ["RUG", "CAUTION"],
-    expectedScore: [100, 600],
-    why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
-    source: "external",
-    skipFixture: true, // pending first capture
-  },
-  {
-    ca: "4vuGayUwhShVJUZqBcAMSv92mTLjasu9mCwbGr7Tbonk",
-    symbol: "POOF",
-    expectedVerdict: "DANGER",
-    tolerated: ["RUG", "CAUTION"],
-    expectedScore: [100, 600],
-    why: "liq $13.8k, age 0d — fresh-launch thin liquidity.",
-    source: "external",
-    skipFixture: true, // pending first capture
-  },
-  {
-    ca: "HJXaVnpSptn4YWvTK4EjpsoEvFdMzK5XPEAE9CC1pump",
-    symbol: "DADI",
-    expectedVerdict: "DANGER",
-    tolerated: ["RUG", "CAUTION"],
-    expectedScore: [100, 600],
-    why: "liq $9.9k, age 0d — fresh-launch thin liquidity.",
-    source: "external",
-    skipFixture: true, // pending first capture
-  },
-  {
-    ca: "3twD5YXtXDaPHPucNFp8Qu8cSmG7EDELmwxUMoNYpump",
-    symbol: "LACHACHU",
-    expectedVerdict: "RUG",
-    tolerated: ["DANGER"],
-    expectedScore: [0, 400],
-    why: "24h drop -95%, liq $3.2k — textbook rug.",
-    source: "external",
-    skipFixture: true, // pending first capture
-  },
-  {
-    ca: "7UFSoXdgwyzRha6gaUKvj97my2244HtSTh3u1jwGpump",
-    symbol: "67SCAM",
-    expectedVerdict: "CAUTION",
-    tolerated: ["SAFE", "DANGER"],
-    expectedScore: [300, 900],
-    why: "mcap $0.22M, age 0d, liq $37k — mid-cap default (engine has final say).",
-    source: "external",
-    skipFixture: true, // pending first capture
-  },
-  {
-    ca: "3WtsmC5wbrptHnSv59HX5vYzzCUs4FJSVk7gC1ofMMS7",
-    symbol: "WLD_3WTS",
-    expectedVerdict: "DANGER",
-    tolerated: ["RUG", "CAUTION"],
-    expectedScore: [100, 600],
-    why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
-    source: "external",
-    skipFixture: true, // pending first capture
-  },
-  {
-    ca: "BZHkLAqtevfSmb4BABBhJaUKkFiUe7mGnqW3oAtdpump",
-    symbol: "BOP",
-    expectedVerdict: "RUG",
-    tolerated: ["DANGER"],
-    expectedScore: [0, 400],
-    why: "24h drop -95%, liq $3.3k — textbook rug.",
-    source: "external",
-    skipFixture: true, // pending first capture
-  },
-  {
-    ca: "4wPP2Vc4S9CV24Zb3R5RGqdvRgfuR1vZtuLEVc3Rpump",
-    symbol: "BOBBY",
-    expectedVerdict: "DANGER",
-    tolerated: ["RUG", "CAUTION"],
-    expectedScore: [100, 600],
-    why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
-    source: "external",
-    skipFixture: true, // pending first capture
-  },
-  {
-    ca: "2iB7DnDBLFKRTVShXdcyX9jS8S5gWRicEbu3e2Uypump",
-    symbol: "ZUMI",
-    expectedVerdict: "DANGER",
-    tolerated: ["RUG", "CAUTION"],
-    expectedScore: [100, 600],
-    why: "liq $6.0k, age 0d — fresh-launch thin liquidity.",
-    source: "external",
-    skipFixture: true, // pending first capture
-  },
-  {
-    ca: "HmnHcCkzbF3Wh4TGhmmgJNuLRSHTSzsjk6axAkiEbrrr",
-    symbol: "GOYFATHER",
-    expectedVerdict: "DANGER",
-    tolerated: ["RUG", "CAUTION"],
-    expectedScore: [100, 600],
-    why: "liq $5.3k, age 0d — fresh-launch thin liquidity.",
-    source: "external",
-    skipFixture: true, // pending first capture
-  },
-  {
-    ca: "9yYaETW5zePWSpNQyrS1hHXggsH33b3cGQo2o94Ypump",
-    symbol: "ISO",
-    expectedVerdict: "DANGER",
-    tolerated: ["RUG", "CAUTION"],
-    expectedScore: [100, 600],
-    why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
-    source: "external",
-    skipFixture: true, // pending first capture
-  },
-  {
-    ca: "2iFuvGw8tno9Z1Jy7esgQsVpz42zdy91LtpGjdQcpump",
-    symbol: "CAPSHIT",
-    expectedVerdict: "DANGER",
-    tolerated: ["RUG", "CAUTION"],
-    expectedScore: [100, 600],
-    why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
-    source: "external",
-    skipFixture: true, // pending first capture
-  },
-  {
-    ca: "6TrbqHdEfaDuR29idj76ZD95fn3UUFc9UTK7jTJCpump",
-    symbol: "DRILLPIG",
+    ca: "APJ8ovk6mqScmtezgtMcMGxkiB5PGwcLmgz343Rkpump",
+    symbol: "SCAMCOIN",
     expectedVerdict: "DANGER",
     tolerated: ["RUG", "CAUTION"],
     expectedScore: [100, 600],
@@ -492,70 +372,480 @@ export const DISCOVERED: CorpusEntry[] = [
   {
     ca: "7soYuSPe1LaJ9V37W7ZGDB5Xwxi41LUWjRT3AEQGpump",
     symbol: "WOLVERINE",
-    expectedVerdict: "CAUTION",
-    tolerated: ["SAFE", "DANGER"],
-    expectedScore: [300, 900],
-    why: "mcap $0.05M, age 0d, liq $17k — mid-cap default (engine has final say).",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "liq $10.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
   },
   {
-    ca: "2kCrLcnZ7wx6waUgeo9PR6o7EGzmr2Ee9ZuKZuRRpump",
-    symbol: "POOF_2KCR",
+    ca: "52nVoVk3BimAtvu2y9q1gnxqgR8pmjcc3v3byGnCuBa",
+    symbol: "SCUBA",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER"],
+    expectedScore: [300, 900],
+    why: "mcap $0.32M, age 54d, liq $66k — mid-cap default (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GC3T8XboCofhBPs5U48DJgp6cxxMeu1CBZXgB2dopump",
+    symbol: "LITH",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "liq $6.6k, age 0d — fresh-launch thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "7UFSoXdgwyzRha6gaUKvj97my2244HtSTh3u1jwGpump",
+    symbol: "67SCAM",
     expectedVerdict: "RUG",
     tolerated: ["DANGER"],
     expectedScore: [0, 400],
-    why: "24h drop -90%, liq $4.5k — textbook rug.",
+    why: "24h drop -96%, liq $3.4k — textbook rug.",
     source: "external",
     skipFixture: true, // pending first capture
   },
   {
-    ca: "8KQhezEXnYzBG1i9Tb2GZ9e1E1msSJsmBa71C3XN6hRY",
-    symbol: "ANONYMOOS",
+    ca: "2JEQfsUPkc3ozgQwnubvaeQJs139ufAm3YSWTY1spump",
+    symbol: "ELON",
     expectedVerdict: "DANGER",
     tolerated: ["RUG", "CAUTION"],
     expectedScore: [100, 600],
-    why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
+    why: "liq $6.6k, age 1d — fresh-launch thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
   },
   {
-    ca: "3oTVMdh67zyyg67BCoP7AyGaM6Rj8i4jUzpJoKtwpump",
-    symbol: "MEMESCORE",
-    expectedVerdict: "DANGER",
-    tolerated: ["RUG", "CAUTION"],
-    expectedScore: [100, 600],
-    why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
-    source: "external",
-    skipFixture: true, // pending first capture
-  },
-  {
-    ca: "Gx5ut9ZMkdpmoimFgpqT8ndiD2irdFwtRhz6n54Gpump",
-    symbol: "NEXRGE",
-    expectedVerdict: "DANGER",
-    tolerated: ["RUG", "CAUTION"],
-    expectedScore: [100, 600],
-    why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
-    source: "external",
-    skipFixture: true, // pending first capture
-  },
-  {
-    ca: "FcckraqMQvG3z7q3AeJqNqusDrm5xTK1Wzvfvetdpump",
-    symbol: "RAFF",
-    expectedVerdict: "DANGER",
-    tolerated: ["RUG", "CAUTION"],
-    expectedScore: [100, 600],
-    why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
-    source: "external",
-    skipFixture: true, // pending first capture
-  },
-  {
-    ca: "CTdf33YuD1dueyTmf8JNKHvC6yitsnPEpH9FqmRJpump",
-    symbol: "POOF_CTDF",
+    ca: "GUfyGEF62BUUqj5f5PveZknhBQMWWFSXm2jqAdikpump",
+    symbol: "MUSK",
     expectedVerdict: "CAUTION",
     tolerated: ["SAFE", "DANGER"],
     expectedScore: [300, 900],
-    why: "mcap $0.04M, age 0d, liq $16k — mid-cap default (engine has final say).",
+    why: "mcap $0.06M, age 0d, liq $22k — mid-cap default (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Gq32ooCHXFPzjWnDz4ZFpdoaAfLewyGEZNa2mSKCpump",
+    symbol: "RUSTFANG",
+    expectedVerdict: "RUG",
+    tolerated: ["DANGER"],
+    expectedScore: [0, 400],
+    why: "24h drop -95%, liq $3.3k — textbook rug.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DXcwhg1MwrResr1CoaBuhnnHmcx222ntZAgRd28Jpump",
+    symbol: "SCAM_DXCW",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER"],
+    expectedScore: [300, 900],
+    why: "mcap $0.26M, age 1d, liq $46k — mid-cap default (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "6CB7zLaYvkHUDYcccDFWgi9wK5a7M9yz1Ph6JsTHpump",
+    symbol: "GFYS",
+    expectedVerdict: "RUG",
+    tolerated: ["DANGER"],
+    expectedScore: [0, 400],
+    why: "24h drop -95%, liq $3.4k — textbook rug.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AdSmSiEDQQjzpgBHKn8kY5sWfv5HfnSVRRcSDoWZpump",
+    symbol: "WHEN",
+    expectedVerdict: "RUG",
+    tolerated: ["DANGER"],
+    expectedScore: [0, 400],
+    why: "24h drop -93%, liq $3.7k — textbook rug.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FFvp48WygUSxCCNP3n9Zu5G7F2yatwXQHbpD2Mkkpump",
+    symbol: "SKIBIDI",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER"],
+    expectedScore: [300, 900],
+    why: "mcap $0.70M, age 17d, liq $94k — mid-cap default (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9tCjcZFwaqMFSFkiYDRAGd3kxChxVguHDCREb6eSpump",
+    symbol: "WIF2",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER"],
+    expectedScore: [300, 900],
+    why: "mcap $0.04M, age 7d, liq $20k — mid-cap default (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BU9NRdPU4JnLEzBcYjzyGNBUzzXhCaU6nfEWnQYpump",
+    symbol: "GEMINI",
+    expectedVerdict: "RUG",
+    tolerated: ["DANGER"],
+    expectedScore: [0, 400],
+    why: "24h drop -92%, liq $4.0k — textbook rug.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "54y9dpTbM2KccpybBwFzCxCQ6ey2E7mRT6SY5pScpump",
+    symbol: "100",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "liq $10.1k, age 0d — fresh-launch thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2agXhep8J9sa5kQNNQzzE9JYDVNQgV3DUiWRazAQDckV",
+    symbol: "AGUNT",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "liq $10.0k, age 0d — fresh-launch thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "A7NQr2P7SXZBxVTnAT2NG2tiko1Kt9gNrb5SjB9xiStu",
+    symbol: "BEEKEEPER",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER"],
+    expectedScore: [300, 900],
+    why: "mcap $97.99M, age 0d, liq $182k — mid-cap default (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "B4yPHT6LHHWaVYzF4ahVNH7aDNWsX6soaKEcPEeQpump",
+    symbol: "PULYMERKET",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "4gA2TTibyLhLHrwkAZgsqCfmQ5jRKbzEVoDdn4k9pump",
+    symbol: "APHEX",
+    expectedVerdict: "RUG",
+    tolerated: ["DANGER"],
+    expectedScore: [0, 400],
+    why: "24h drop -95%, liq $3.5k — textbook rug.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "7bTj4pu4mzwx1Gn9obxStyUoJzdNk53UDhTYgyAupump",
+    symbol: "COLOSSUS",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GmdK57mqDyPPgh5Un8ajangHtNH8P1kqPYKvA48gpump",
+    symbol: "SCAMTIDE",
+    expectedVerdict: "RUG",
+    tolerated: ["DANGER"],
+    expectedScore: [0, 400],
+    why: "24h drop -95%, liq $3.2k — textbook rug.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Cnfqg24RwATQFZke94xfAJ1bAYGkz1u1BgaHkswwpump",
+    symbol: "UWU",
+    expectedVerdict: "RUG",
+    tolerated: ["DANGER"],
+    expectedScore: [0, 400],
+    why: "24h drop -85%, liq $5.6k — textbook rug.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "4Zn4ZtZEPo9Eud5s23PZtF19ostY5FBRs6Pf5cJSpump",
+    symbol: "APHEX_4ZN4",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER"],
+    expectedScore: [300, 900],
+    why: "mcap $0.05M, age 0d, liq $19k — mid-cap default (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "25XNzUz9spyy8W4KFeH6CugVotzLE3iAueNyRxBQpump",
+    symbol: "BIOHEKUR",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "6sg2nHWqZBX5bXXfm2LwxZhdPiLhois688bPAtmTpump",
+    symbol: "CAR",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "C5n2iZVhuQBLdkTAVppcwPWUDegWo8RoNAbaN5CoQonX",
+    symbol: "SPOK",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CN7Ws9pVfLSpfjWSxZYJm69Uqoq6PCGmMjqGYamspump",
+    symbol: "GUSTA",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FMeUYuncPhTiCV5kbCeE7g7Mo6kXRoDWMzTTngyUpump",
+    symbol: "BEE",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3BRQ9W9ZVm7qmvW9PUe2CpBHBdeKEnMLgREu7wLgpump",
+    symbol: "AI",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "liq $13.8k, age 0d — fresh-launch thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "6rv8RwPcKGjRGyiGviPqERmYnE1XLQRMm8B7BRAvbrrr",
+    symbol: "FAX",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER"],
+    expectedScore: [300, 900],
+    why: "mcap $0.13M, age 0d, liq $27k — mid-cap default (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CjECbd7FLuuY2ZCng2WDeQd1fMhKDHof9mPwtoNQpump",
+    symbol: "BEE_CJEC",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "hLJt7kmrvmiU7gpxzWkJHyxb7QaJ9qHMFmMEz3cpump",
+    symbol: "LIBERTY",
+    expectedVerdict: "RUG",
+    tolerated: ["DANGER"],
+    expectedScore: [0, 400],
+    why: "24h drop -93%, liq $4.0k — textbook rug.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5z3EqYQo9HiCEs3R84RCDMu2n7anpDMxRhdK8PSWmrRC",
+    symbol: "PONKE",
+    expectedVerdict: "SAFE",
+    tolerated: ["CAUTION", "DANGER"],
+    expectedScore: [650, 1000],
+    why: "mcap $15.1M, age 856d, liq $1413k — solid established profile.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5HV956n7UQT1XdJzv43fHPocest5YAmi9ipsuiJx7zt7",
+    symbol: "MEMECOIN",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER"],
+    expectedScore: [300, 900],
+    why: "mcap $0.06M, age 379d, liq $45k — mid-cap default (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CeK6k4BMmiqkxkzYAbQuUp3hrVFSHxuQ1LJXmNybc3vz",
+    symbol: "BINK",
+    expectedVerdict: "SAFE",
+    tolerated: ["CAUTION", "DANGER"],
+    expectedScore: [650, 1000],
+    why: "mcap $11.1M, age 771d, liq $507k — solid established profile.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HgBRWfYxEfvPhtqkaeymCQtHCrKE46qQ43pKe8HCpump",
+    symbol: "BERT",
+    expectedVerdict: "SAFE",
+    tolerated: ["CAUTION", "DANGER"],
+    expectedScore: [650, 1000],
+    why: "mcap $11.1M, age 574d, liq $816k — solid established profile.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Df6yfrKC8kZE3KNkrHERKzAetSxbrWeniQfyJY4Jpump",
+    symbol: "CHILLGUY",
+    expectedVerdict: "SAFE",
+    tolerated: ["CAUTION", "DANGER"],
+    expectedScore: [650, 1000],
+    why: "mcap $11.1M, age 528d, liq $1111k — solid established profile.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "1Qf8gESP4i6CFNWerUSDdLKJ9U1LpqTYvjJ2MM4pain",
+    symbol: "PAIN",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER"],
+    expectedScore: [300, 900],
+    why: "mcap $3.85M, age 433d, liq $2443k — mid-cap default (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AyrQpt5xsVYiN4BqgZdd2tZJAWswT9yLUZmP1jKqpump",
+    symbol: "JOBCOIN",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER"],
+    expectedScore: [300, 900],
+    why: "mcap $3.84M, age 378d, liq $297k — mid-cap default (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "mpoxP5wyoR3eRW8L9bZjGPFtCsmX8WcqU5BHxFW1xkn",
+    symbol: "POX",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER"],
+    expectedScore: [300, 900],
+    why: "mcap $1.77M, age 608d, liq $86k — mid-cap default (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "6yjNqPzTSanBWSa6dxVEgTjePXBrZ2FoHLDQwYwEsyM6",
+    symbol: "CHUD",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER"],
+    expectedScore: [300, 900],
+    why: "mcap $1.77M, age 723d, liq $307k — mid-cap default (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9raUVuzeWUk53co63M4WXLWPWE4Xc6Lpn7RS9dnkpump",
+    symbol: "V2EX",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER"],
+    expectedScore: [300, 900],
+    why: "mcap $1.73M, age 295d, liq $183k — mid-cap default (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5SVG3T9CNQsm2kEwzbRq6hASqh1oGfjqTtLXYUibpump",
+    symbol: "SIGMA",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER"],
+    expectedScore: [300, 900],
+    why: "mcap $1.71M, age 655d, liq $374k — mid-cap default (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CreiuhfwdWCN5mJbMJtA9bBpYQrQF2tCBuZwSPWfpump",
+    symbol: "PYTHIA",
+    expectedVerdict: "SAFE",
+    tolerated: ["CAUTION"],
+    expectedScore: [750, 1000],
+    why: "mcap $58M, age 63d, liq $3.3M — established blue-chip.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CTgiaZUK12kCcB8sosn4Nt2NZtzLgtPqDwyQyr2syATC",
+    symbol: "BITCOIN",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER"],
+    expectedScore: [300, 900],
+    why: "mcap $0.26M, age 530d, liq $103k — mid-cap default (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2nnrviYJRLcf2bXAxpKTRXzccoDbwaP4vzuGUG75Jo45",
+    symbol: "KENDU",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER"],
+    expectedScore: [300, 900],
+    why: "mcap $3.22M, age 470d, liq $33k — mid-cap default (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GQz5ThKHNcuAvMKA8rCPSdoFUoApk9Fi8qB9m3Gqpump",
+    symbol: "SAN",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER"],
+    expectedScore: [300, 900],
+    why: "mcap $1.26M, age 80d, liq $94k — mid-cap default (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "6iA73gWCKkLWKbVr8rgibV57MMRxzsaqS9cWpgKBpump",
+    symbol: "",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER"],
+    expectedScore: [300, 900],
+    why: "mcap $1.26M, age 62d, liq $152k — mid-cap default (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Gaqt6hKqBSRga8pfJ43CfTbc9ZGw8ostPnjytfbNpump",
+    symbol: "JINDO",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER"],
+    expectedScore: [300, 900],
+    why: "mcap $1.19M, age 155d, liq $88k — mid-cap default (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
   },

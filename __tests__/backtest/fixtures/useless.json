@@ -28,50 +28,48 @@
       "name": "USD Coin",
       "symbol": "USDC"
     },
-    "priceNative": "0.002782",
-    "priceUsd": "0.002782",
+    "priceNative": "0.002767",
+    "priceUsd": "0.002767",
     "txns": {
       "m5": {
-        "buys": 3,
+        "buys": 0,
         "sells": 0
       },
       "h1": {
-        "buys": 9,
-        "sells": 7
+        "buys": 0,
+        "sells": 0
       },
       "h6": {
-        "buys": 90,
-        "sells": 81
+        "buys": 28,
+        "sells": 22
       },
       "h24": {
-        "buys": 134,
-        "sells": 156
+        "buys": 128,
+        "sells": 140
       }
     },
     "volume": {
-      "h24": 42465.52,
-      "h6": 38072.91,
-      "h1": 565.04,
-      "m5": 1.14
+      "h24": 41954.14,
+      "h6": 1501.79,
+      "h1": 0,
+      "m5": 0
     },
     "priceChange": {
-      "m5": 0.45,
-      "h1": -0.11,
-      "h6": -3.65,
-      "h24": -4.18
+      "h6": -0.64,
+      "h24": -4.76
     },
     "liquidity": {
-      "usd": 643238.96,
-      "base": 115744892,
-      "quote": 321216
+      "usd": 641534.5,
+      "base": 115806330,
+      "quote": 321048
     },
-    "fdv": 2782077,
-    "marketCap": 2782077,
+    "fdv": 2767335,
+    "marketCap": 2767335,
     "pairCreatedAt": 1699554931000,
     "info": {
       "imageUrl": "https://cdn.dexscreener.com/cms/images/6918fd479428c8043ef3b4cb921d30b4b027012e4ed4ef311f4cc5f3eaf441aa?width=800&height=800&quality=95&format=auto",
       "header": "https://cdn.dexscreener.com/cms/images/c4bf2165dc91a1ce255466ce003b402e0eb3219149618601528bc4cc2827c834?width=1500&height=500&quality=95&format=auto",
-      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/HhJpBhRRn4g56VsyLuT8DL5Bv31HkXqsrahTTUCZeZg4?timestamp=1777384200000",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/HhJpBhRRn4g56VsyLuT8DL5Bv31HkXqsrahTTUCZeZg4?timestamp=1777402500000",
       "websites": [
         {
           "url": "http://myrothedog.com",
@@ -101,14 +99,14 @@
     "chart"
   ],
   "holders": 51650,
-  "marketCap": 2782077,
-  "priceUsd": 0.002782,
-  "liquidity": 643238.96,
-  "volume24h": 42465.52,
-  "volume1h": 565.04,
-  "priceChange5m": 0.45,
-  "priceChange1h": -0.11,
-  "priceChange24h": -4.18,
+  "marketCap": 2767335,
+  "priceUsd": 0.002767,
+  "liquidity": 641534.5,
+  "volume24h": 41954.14,
+  "volume1h": null,
+  "priceChange5m": null,
+  "priceChange1h": null,
+  "priceChange24h": -4.76,
   "tokenSymbol": "$MYRO",
   "tokenName": "Myro",
   "pairCreatedAt": 1699554931000,
@@ -119,8 +117,8 @@
   "tokenDecimals": null,
   "tokenSupply": null,
   "recentTransfers": "[0 transfers, redacted for fixture]",
-  "solscanTokenAgeHours": 21619,
-  "solscanVolume24h": 42465.52,
+  "solscanTokenAgeHours": 21624,
+  "solscanVolume24h": 41954.14,
   "solscanTrades24h": null,
   "solscanTraders24h": null,
   "layers": {
@@ -160,8 +158,8 @@
   "lpLocked": false,
   "lpLockedPct": 99.88,
   "candles": "[20 candles, redacted for fixture]",
-  "topHolderPct": 8.342878694058294,
-  "top10HolderPct": 43.35528015370858,
+  "topHolderPct": 8.330110963001783,
+  "top10HolderPct": 43.342512422652064,
   "criticalActors": [
     {
       "type": "insider",
@@ -244,7 +242,7 @@
   },
   "outcomeStats": null,
   "scoring_version": "7.3.0",
-  "fetchedAt": 1777384140184,
-  "requestId": "1bd73671-a210-4d75-82b7-4350835655e7",
+  "fetchedAt": 1777402493158,
+  "requestId": "3f98d5c4-bffa-4c83-a093-ee399272ebd8",
   "aiSummary": "Score 1000/1000. LP is burned, mint authority is disabled, freeze authority is disabled, 51650 holders show organic distribution. No critical risks were detected in the contract or holder analysis."
 }

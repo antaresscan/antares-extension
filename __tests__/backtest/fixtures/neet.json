@@ -33,50 +33,50 @@
       "name": "Wrapped SOL",
       "symbol": "SOL"
     },
-    "priceNative": "0.0003100",
-    "priceUsd": "0.02594",
+    "priceNative": "0.0002963",
+    "priceUsd": "0.02482",
     "txns": {
       "m5": {
         "buys": 1,
         "sells": 0
       },
       "h1": {
-        "buys": 31,
-        "sells": 8
+        "buys": 87,
+        "sells": 4
       },
       "h6": {
-        "buys": 72,
-        "sells": 34
+        "buys": 176,
+        "sells": 93
       },
       "h24": {
-        "buys": 695,
-        "sells": 788
+        "buys": 435,
+        "sells": 441
       }
     },
     "volume": {
-      "h24": 373638.16,
-      "h6": 29300.34,
-      "h1": 15899.88,
-      "m5": 148.89
+      "h24": 271093.44,
+      "h6": 91306.13,
+      "h1": 38997.96,
+      "m5": 8.28
     },
     "priceChange": {
-      "m5": 0.65,
-      "h1": -1.66,
-      "h6": -1.36,
-      "h24": -0.22
+      "m5": 0.07,
+      "h1": -4.62,
+      "h6": -3.71,
+      "h24": -3.34
     },
     "liquidity": {
-      "usd": 1320779.3,
-      "base": 25480410,
-      "quote": 7886.7373
+      "usd": 1293184.14,
+      "base": 26071516,
+      "quote": 7710.07723
     },
-    "fdv": 25934614,
-    "marketCap": 25934614,
+    "fdv": 24819682,
+    "marketCap": 24819682,
     "pairCreatedAt": 1745715491000,
     "info": {
       "imageUrl": "https://cdn.dexscreener.com/cms/images/d5d7bfff13c5cc762c020b4414e4493a8eb19d4bdcfb51957da58e9c471d43dd?width=800&height=800&quality=95&format=auto",
       "header": "https://cdn.dexscreener.com/cms/images/af77cab67e14823670f1f5c2a601d9e4e000f0029712bb271991955287a8b044?width=1500&height=500&quality=95&format=auto",
-      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/Ce2gx9KGXJ6C9Mp5b5x1sn9Mg87JwEbrQby4Zqo3pump?timestamp=1777383900000",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/Ce2gx9KGXJ6C9Mp5b5x1sn9Mg87JwEbrQby4Zqo3pump?timestamp=1777404600000",
       "websites": [
         {
           "url": "https://neetcoin.xyz/",
@@ -106,14 +106,14 @@
     "chart"
   ],
   "holders": 10058,
-  "marketCap": 25934614,
-  "priceUsd": 0.02594,
-  "liquidity": 1320779.3,
-  "volume24h": 373638.16,
-  "volume1h": 15899.88,
-  "priceChange5m": 0.65,
-  "priceChange1h": -1.66,
-  "priceChange24h": -0.22,
+  "marketCap": 24819682,
+  "priceUsd": 0.02482,
+  "liquidity": 1293184.14,
+  "volume24h": 271093.44,
+  "volume1h": 38997.96,
+  "priceChange5m": 0.07,
+  "priceChange1h": -4.62,
+  "priceChange24h": -3.34,
   "tokenSymbol": "neet",
   "tokenName": "NotInEmploymentEducationTraining",
   "pairCreatedAt": 1745715491000,
@@ -126,8 +126,8 @@
   "tokenDecimals": null,
   "tokenSupply": null,
   "recentTransfers": "[0 transfers, redacted for fixture]",
-  "solscanTokenAgeHours": 8796,
-  "solscanVolume24h": 373638.16,
+  "solscanTokenAgeHours": 8802,
+  "solscanVolume24h": 271093.44,
   "solscanTrades24h": null,
   "solscanTraders24h": null,
   "layers": {
@@ -167,8 +167,8 @@
   "lpLocked": false,
   "lpLockedPct": null,
   "candles": "[20 candles, redacted for fixture]",
-  "topHolderPct": 5.834835031150978,
-  "top10HolderPct": 20.19393152574733,
+  "topHolderPct": 5.834835031729032,
+  "top10HolderPct": 20.253055568878054,
   "criticalActors": [
     {
       "type": "insider",
@@ -192,6 +192,12 @@
       "ts": 1777382705182,
       "verdict": "CAUTION",
       "score": 850,
+      "event": "LP not burned but token is mature and liquid (unverified LP)"
+    },
+    {
+      "ts": 1777399137122,
+      "verdict": "DANGER",
+      "score": 500,
       "event": "LP not burned but token is mature and liquid (unverified LP)"
     }
   ],
@@ -320,7 +326,7 @@
     ]
   },
   "scoring_version": "7.3.0",
-  "fetchedAt": 1777384021924,
-  "requestId": "8cb3590a-4b89-4ab5-aeb3-f47f08905110",
+  "fetchedAt": 1777404683636,
+  "requestId": "ed29467d-7d30-40eb-9b97-ff6e076e7f15",
   "aiSummary": "The developer can remove all liquidity in one transaction. When that happens, the token price drops to zero and nobody can sell."
 }

@@ -1,0 +1,273 @@
+{
+  "score": 963,
+  "risk": "SAFE",
+  "flags": [
+    {
+      "label": "Single wallet holds 35% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Top 10 wallets hold 65% of supply",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "LP Burned 100% (GoPlus) ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Established token (30d+) ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "raydium",
+    "url": "https://dexscreener.com/solana/879f697iudjgmevrkrcnw21fcxiaeljk1ffsw2atebce",
+    "pairAddress": "879F697iuDJGMevRkRcnW21fcXiAeLJK1ffsw2ATebce",
+    "baseToken": {
+      "address": "MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5",
+      "name": "cat in a dogs world",
+      "symbol": "MEW"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.000007086",
+    "priceUsd": "0.0005932",
+    "txns": {
+      "m5": {
+        "buys": 0,
+        "sells": 0
+      },
+      "h1": {
+        "buys": 8,
+        "sells": 4
+      },
+      "h6": {
+        "buys": 223,
+        "sells": 190
+      },
+      "h24": {
+        "buys": 760,
+        "sells": 678
+      }
+    },
+    "volume": {
+      "h24": 137047.88,
+      "h6": 46276.37,
+      "h1": 46.44,
+      "m5": 0
+    },
+    "priceChange": {
+      "h1": 0.12,
+      "h6": 0.53,
+      "h24": 1.38
+    },
+    "liquidity": {
+      "usd": 9337829.41,
+      "base": 7860616575,
+      "quote": 55844
+    },
+    "fdv": 52729037,
+    "marketCap": 52729037,
+    "pairCreatedAt": 1711430534000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/33effe52dd5b1f6574ca5baaca9c02fecdecb557607a2a72889ceb0537eae9be?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/ce0ba55aae38539e728540383c3cb78974876a39be7c5b414a044b00e9552878?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5?timestamp=1777404600000",
+      "websites": [
+        {
+          "url": "https://mew.xyz/",
+          "label": "Website"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://twitter.com/MewsWorld",
+          "type": "twitter"
+        },
+        {
+          "url": "https://t.me/mewsworld",
+          "type": "telegram"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5",
+  "confidence": 100,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "goplus",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 164476,
+  "marketCap": 52729037,
+  "priceUsd": 0.0005932,
+  "liquidity": 9337829.41,
+  "volume24h": 137047.88,
+  "volume1h": 46.44,
+  "priceChange5m": null,
+  "priceChange1h": 0.12,
+  "priceChange24h": 1.38,
+  "tokenSymbol": "MEW",
+  "tokenName": "cat in a dogs world",
+  "pairCreatedAt": 1711430534000,
+  "safeBlocked": false,
+  "safeBlockedReasons": [
+    "concentration"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/33effe52dd5b1f6574ca5baaca9c02fecdecb557607a2a72889ceb0537eae9be?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 18326,
+  "solscanVolume24h": 137047.88,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 1,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": true
+    },
+    "helius": {
+      "trust": 0.65,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": true,
+  "lpLocked": false,
+  "lpLockedPct": 99.96,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 35.20341197884685,
+  "top10HolderPct": 64.57731059776663,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 35.2,
+      "addr": "555o…3ZFB",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 95,
+      "repWarn": false,
+      "desc": "Holds <b>35.2%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777386529959,
+      "verdict": "RUG",
+      "score": 105,
+      "event": "Single wallet holds 35% of supply"
+    },
+    {
+      "ts": 1777396022888,
+      "verdict": "DANGER",
+      "score": 568,
+      "event": "Single wallet holds 35% of supply"
+    },
+    {
+      "ts": 1777399094483,
+      "verdict": "SAFE",
+      "score": 963,
+      "event": "Single wallet holds 35% of supply"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "555o…3ZFB",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "8Mm4…MZQH",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "4xLp…9Qdg",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "4TFk…BE6b",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "9QA2…GY5L",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "Dwdr…Eq1g",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": null,
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777404648912,
+  "requestId": "fbd1f485-e631-4f5e-a36e-6176271753bb",
+  "aiSummary": "The top wallet holds 35.2% of supply with only 164476 holders, creating extreme dump risk."
+}

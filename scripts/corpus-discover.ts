@@ -1,15 +1,22 @@
 // scripts/corpus-discover.ts
 //
-// Discovers candidate Solana memecoins from DexScreener and emits a
-// TS block ready to paste into __tests__/backtest/corpus.ts.
+// Discovers candidate Solana memecoins from DexScreener + CoinGecko and
+// emits a TS block ready to paste into __tests__/backtest/corpus.ts.
 //
-// Three sources are merged + de-duped:
+// Five sources are merged + de-duped:
 //   1. A hand-curated SEED list of well-known memecoins (BONK, WIF, …)
 //      that we want pinned in the corpus regardless of API state.
-//   2. DexScreener "boosted" tokens — paid promotion list, heavily
+//   2. DexScreener "boosted/top" tokens — paid promotion list, heavily
 //      shitcoin-skewed, useful for surfacing DANGER/RUG candidates.
-//   3. DexScreener "latest profiles" — recently-listed tokens with a
+//   3. DexScreener "boosted/latest" — different rotation, more fresh-
+//      launch noise.
+//   4. DexScreener "latest profiles" — recently-listed tokens with a
 //      profile, useful for fresh-launch DANGER candidates.
+//   5. CoinGecko `solana-meme-coins` category — top 100 by market cap,
+//      ground-truth for the SAFE/CAUTION bands. We resolve each
+//      CoinGecko entry to its Solana mint by symbol-searching
+//      DexScreener and picking the highest-liq Solana pair where
+//      symbols match. Avoids hitting CG detail endpoint 100x.
 //
 // For each mint we hit `/latest/dex/tokens/<mint>` to enrich with
 // mcap, liquidity, age, txns. Then we run a deterministic labeller
@@ -66,18 +73,10 @@ const SEED: { ca: string; symbol: string; tag: string }[] = [
 
   // Established memecoins to expand the SAFE/CAUTION coverage
   { ca: "ED5nyyWEzpPPiWimP8vYm7sD7TD3LAt3Q3gRTWHzPJBY", symbol: "MOODENG", tag: "blue-chip" },
-  { ca: "CzLSujWBLFsSjncfkh59rUFqvafWcY5tzedWJSuypump", symbol: "GOAT2", tag: "mid-cap" }, // alt-GOAT
   { ca: "ukHH6c7mMyiWCf1b9pnWe25TSpkDDt3H5pQZgZ74J82", symbol: "BOME", tag: "blue-chip" },
-  { ca: "27G8MtK7VtTcCHkpASjSDdkWWYfoqT6ggEuKidVJidD4", symbol: "JLP", tag: "stable-anchor" },
-  { ca: "6ogzHhzdrQr9Pgv6hZ2MNze7UrzBMAFyBBWUYp1Fhitx", symbol: "RAY", tag: "stable-anchor" },
-  { ca: "rndrizKT3MK1iimdxRdWabcF7Zg7AR5T4nud4EkHBof", symbol: "RENDER", tag: "stable-anchor" },
-  { ca: "AFbX8oGjGpmVFywbVouvhQSRmiW2aR1mohfahi4Y2AdB", symbol: "GST", tag: "mid-cap" },
   { ca: "2qEHjDLDLbuBgRYvsxhc5D6uDWAivNFZGan56P1tpump", symbol: "MELANIA", tag: "post-rug-stable" },
-  { ca: "GoLDYyyiVeXnVf9qgoK712N5esm1cCbHEK9aNJFx41nz", symbol: "GOLDY", tag: "mid-cap" },
-  { ca: "xxxUWoBWAVMP49M7xT37ywCK3aQuhTmHXHXfA21pump", symbol: "RIZZ", tag: "mid-cap" },
   { ca: "AjBT19DxbDqDcLFUbm3J3SQYDMCPhjqWHHr3D3GPpump", symbol: "MOTHER", tag: "borderline" },
   { ca: "9psiRdn9cXYVps4F1kFuoNjd1EAAGxF8JGEhbYJpump", symbol: "MOG", tag: "mid-cap" },
-  { ca: "HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3", symbol: "PYTH", tag: "stable-anchor" },
 
   // Confirmed rugs / DANGER profiles
   { ca: "Dfh5DzRgSvvCFDoYc2ciTkMrbDfRKybA4SoFbPmApump", symbol: "PIPPIN", tag: "borderline" },
@@ -167,6 +166,94 @@ async function fetchLatestProfiles(): Promise<{ ca: string; tag: string }[]> {
   return data
     .filter(d => d.chainId === "solana")
     .map(d => ({ ca: d.tokenAddress, tag: "discovered-profile" }))
+}
+
+// Boosts/latest is distinct from boosts/top — different rotation, often
+// fresh-launch tokens that haven't accumulated paid-promo enough to hit
+// the top yet. Useful for fresh-launch DANGER candidates.
+async function fetchBoostedLatest(): Promise<{ ca: string; tag: string }[]> {
+  const data = await jsonGet<DsBoosted[]>("https://api.dexscreener.com/token-boosts/latest/v1")
+  if (!data) return []
+  return data
+    .filter(d => d.chainId === "solana")
+    .map(d => ({ ca: d.tokenAddress, tag: "discovered-boosted-latest" }))
+}
+
+interface CGCoin {
+  id: string
+  symbol: string
+  name: string
+  market_cap: number | null
+  market_cap_rank: number | null
+}
+
+interface DsSearchResp { pairs: DsPair[] | null }
+
+// CoinGecko's `solana-meme-coins` category is the closest thing to a
+// ground-truth list of established Solana memecoins (top 100 by mcap).
+// We use CG's `/coins/<id>` endpoint to resolve each entry's exact
+// Solana contract via `platforms.solana` — using DexScreener symbol
+// search instead would match scam tokens stealing legit tickers (real
+// "BONK" mint vs "BONK 2.0" knockoff with $250M concentrated supply).
+// CG free tier rate limit is ~30 req/min so 100 calls take ~3.5min.
+interface CGCoinDetail {
+  id: string
+  symbol: string
+  platforms?: { solana?: string }
+}
+
+async function fetchCoinGeckoSolanaMemes(): Promise<{ ca: string; symbol: string; tag: string }[]> {
+  // Hit multiple meme categories — solana-meme-coins is the obvious one
+  // but CG also has dog/cat/frog/ai meme categories that include lots of
+  // Solana tokens missing from the main list. We dedupe by id then
+  // resolve each via /coins/<id> for the canonical platforms.solana.
+  const categories = [
+    "solana-meme-coins",
+    "meme-token",
+    "dog-themed-coins",
+    "cat-themed-coins",
+    "frog-themed-coins",
+    "ai-meme-coins",
+  ]
+
+  const candidatesById = new Map<string, CGCoin>()
+  for (const cat of categories) {
+    const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&category=${cat}&order=market_cap_desc&per_page=100&page=1`
+    console.log(`  CG markets: ${cat}…`)
+    const markets = await jsonGet<CGCoin[]>(url)
+    if (!markets) continue
+    for (const c of markets) candidatesById.set(c.id, c)
+    await sleep(1500)
+  }
+  console.log(`  ${candidatesById.size} unique CG candidates — resolving Solana mints…`)
+
+  const results: { ca: string; symbol: string; tag: string }[] = []
+  let resolved = 0
+  let skipped = 0
+  for (const coin of candidatesById.values()) {
+    if (!coin.id) { skipped++; continue }
+    // Hit /coins/<id> for the canonical platforms.solana contract.
+    // localization=false&tickers=false&community_data=false&developer_data=false
+    // strips response weight to ~2KB per call.
+    const detailUrl = `https://api.coingecko.com/api/v3/coins/${encodeURIComponent(coin.id)}?localization=false&tickers=false&community_data=false&developer_data=false&sparkline=false`
+    const detail = await jsonGet<CGCoinDetail>(detailUrl)
+    if (!detail || !detail.platforms?.solana) {
+      skipped++
+      await sleep(2200)
+      continue
+    }
+    const mint = detail.platforms.solana
+    results.push({
+      ca: mint,
+      symbol: (coin.symbol || detail.symbol || "").toUpperCase(),
+      tag: "discovered-cg-meme",
+    })
+    resolved++
+    if (resolved % 50 === 0) console.log(`    progress: ${resolved} resolved, ${skipped} skipped (non-Solana / no platform)`)
+    await sleep(2200)
+  }
+  console.log(`  resolved ${resolved}/${candidatesById.size} CG memecoins to canonical Solana mints (${skipped} skipped, non-Solana)`)
+  return results
 }
 
 // ─── ENRICHMENT (one mint at a time, picks the best Solana pair) ────
@@ -297,9 +384,10 @@ function label(t: Enriched): Label {
 // ─── MAIN ─────────────────────────────────────────────────────────────
 async function main() {
   const args = process.argv.slice(2)
-  const limit = Number(args.find(a => a.startsWith("--limit="))?.split("=")[1] ?? 250)
+  const limit = Number(args.find(a => a.startsWith("--limit="))?.split("=")[1] ?? 300)
   const noBoosted = args.includes("--no-boosted")
   const noProfiles = args.includes("--no-profiles")
+  const noCG = args.includes("--no-cg")
 
   console.log("ANTARES corpus discovery")
   console.log("─".repeat(70))
@@ -309,18 +397,32 @@ async function main() {
   for (const s of SEED) candidates.push({ ca: s.ca, symbol: s.symbol, tag: `seed-${s.tag}` })
   console.log(`seed: ${SEED.length} mints`)
 
-  // ── Source 2: boosted
+  // ── Source 2: boosted/top
   if (!noBoosted) {
     const boosted = await fetchBoosted()
     for (const b of boosted) candidates.push({ ca: b.ca, symbol: null, tag: b.tag })
-    console.log(`boosted: ${boosted.length} mints`)
+    console.log(`boosted/top: ${boosted.length} mints`)
   }
 
-  // ── Source 3: latest profiles
+  // ── Source 3: boosted/latest (different rotation)
+  if (!noBoosted) {
+    const latest = await fetchBoostedLatest()
+    for (const b of latest) candidates.push({ ca: b.ca, symbol: null, tag: b.tag })
+    console.log(`boosted/latest: ${latest.length} mints`)
+  }
+
+  // ── Source 4: latest profiles
   if (!noProfiles) {
     const profiles = await fetchLatestProfiles()
     for (const p of profiles) candidates.push({ ca: p.ca, symbol: null, tag: p.tag })
     console.log(`profiles: ${profiles.length} mints`)
+  }
+
+  // ── Source 5: CoinGecko solana-meme-coins (top 100 by mcap, ground-truth)
+  if (!noCG) {
+    const cgMemes = await fetchCoinGeckoSolanaMemes()
+    for (const c of cgMemes) candidates.push({ ca: c.ca, symbol: c.symbol, tag: c.tag })
+    console.log(`coingecko: ${cgMemes.length} mints (resolved to Solana)`)
   }
 
   // ── De-dupe by mint, prefer seed entries (they have known symbols)

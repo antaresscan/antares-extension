@@ -1,25 +1,15 @@
 {
-  "score": 100,
-  "risk": "RUG",
+  "score": 500,
+  "risk": "DANGER",
   "flags": [
     {
-      "label": "Single wallet holds 77% of supply",
+      "label": "Single wallet holds 19% of supply",
       "severity": "critical",
       "impact": 0
     },
     {
-      "label": "Top 10 wallets hold 90% of supply",
-      "severity": "critical",
-      "impact": 0
-    },
-    {
-      "label": "LP not burned but token is mature and liquid (unverified LP)",
-      "severity": "warning",
-      "impact": 0
-    },
-    {
-      "label": "GoPlus unavailable",
-      "severity": "info",
+      "label": "LP Burned 94% (GoPlus) ✓",
+      "severity": "bonus",
       "impact": 0
     },
     {
@@ -30,112 +20,116 @@
   ],
   "pair": {
     "chainId": "solana",
-    "dexId": "meteora",
-    "url": "https://dexscreener.com/solana/9d9mb8kooffad3sctgztkxqypkshx6ezhbkio89ixyy2",
-    "pairAddress": "9d9mb8kooFfaD3SctgZtkxQypkshx6ezhbKio89ixyy2",
+    "dexId": "raydium",
+    "url": "https://dexscreener.com/solana/dqnmgdl93zjinydyq8mb1jq1dqehapforqlm3hjanhiy",
+    "pairAddress": "DqNmGDL93zJiNydYQ8mb1JQ1DqehAPFoRQLm3HjAnhiy",
     "labels": [
-      "DLMM"
+      "CLMM"
     ],
     "baseToken": {
-      "address": "6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN",
-      "name": "OFFICIAL TRUMP",
-      "symbol": "TRUMP"
+      "address": "CTgiaZUK12kCcB8sosn4Nt2NZtzLgtPqDwyQyr2syATC",
+      "name": "HarryPotterObamaSonic (Wormhole)",
+      "symbol": "BITCOIN"
     },
     "quoteToken": {
-      "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-      "name": "USD Coin",
-      "symbol": "USDC"
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
     },
-    "priceNative": "2.4688",
-    "priceUsd": "2.46",
+    "priceNative": "0.0002637",
+    "priceUsd": "0.02208",
     "txns": {
       "m5": {
-        "buys": 3,
+        "buys": 0,
         "sells": 0
       },
       "h1": {
-        "buys": 25,
-        "sells": 13
+        "buys": 4,
+        "sells": 0
       },
       "h6": {
-        "buys": 89,
-        "sells": 144
+        "buys": 10,
+        "sells": 3
       },
       "h24": {
-        "buys": 249,
-        "sells": 378
+        "buys": 22,
+        "sells": 27
       }
     },
     "volume": {
-      "h24": 605444.53,
-      "h6": 157322.15,
-      "h1": 27981.16,
-      "m5": 95.96
+      "h24": 618.02,
+      "h6": 44.83,
+      "h1": 3.83,
+      "m5": 0
     },
     "priceChange": {
-      "h1": 0.21,
-      "h6": -0.3,
-      "h24": -2.95
+      "h1": 0.13,
+      "h6": 0.16,
+      "h24": 0.23
     },
     "liquidity": {
-      "usd": 42472009.56,
-      "base": 16659331,
-      "quote": 1342899
+      "usd": 103393.68,
+      "base": 2441930,
+      "quote": 590.6035
     },
-    "fdv": 2468832145,
-    "marketCap": 574000775,
-    "pairCreatedAt": 1737196771000,
+    "fdv": 262311,
+    "marketCap": 262311,
+    "pairCreatedAt": 1731536675000,
     "info": {
-      "imageUrl": "https://cdn.dexscreener.com/cms/images/85a2613c51c8ded8e51b1b3910487ab66691cb60fecec7d0905481a603bba899?width=800&height=800&quality=95&format=auto",
-      "header": "https://cdn.dexscreener.com/cms/images/ce8844d2d6478565b84fd2c13ae5e54c51dc2f4501273a68c2ab12b535e08d84?width=1500&height=500&quality=95&format=auto",
-      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN?timestamp=1777384200000",
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/ce8da3cbcc641e206ceb46d476b27be934597bae2752a72c9c5c88b73a4cf08f?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/0fcdbe26a9640fc9dfbbbdc3839fc19a39dba03c2768b767ead09eec9b547ca8?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/CTgiaZUK12kCcB8sosn4Nt2NZtzLgtPqDwyQyr2syATC?timestamp=1777403700000",
       "websites": [
         {
-          "url": "https://x.com/realDonaldTrump/status/1880446012168249386",
+          "url": "https://hpos10i.com",
           "label": "Website"
         }
       ],
       "socials": [
         {
-          "url": "https://x.com/GetTrumpMemes",
+          "url": "https://x.com/hpos10ireturns",
           "type": "twitter"
+        },
+        {
+          "url": "https://t.me/hpos10i",
+          "type": "telegram"
         }
       ]
     }
   },
-  "resolvedMint": "6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN",
-  "confidence": 80,
+  "resolvedMint": "CTgiaZUK12kCcB8sosn4Nt2NZtzLgtPqDwyQyr2syATC",
+  "confidence": 100,
   "sources_used": [
     "dexscreener",
     "rugcheck",
+    "goplus",
     "helius",
     "solscan",
     "chart"
   ],
-  "holders": 20,
-  "marketCap": 574000775,
-  "priceUsd": 2.46,
-  "liquidity": 42472009.56,
-  "volume24h": 605444.53,
-  "volume1h": 27981.16,
+  "holders": 2803,
+  "marketCap": 262311,
+  "priceUsd": 0.02208,
+  "liquidity": 103393.68,
+  "volume24h": 618.02,
+  "volume1h": 3.83,
   "priceChange5m": null,
-  "priceChange1h": 0.21,
-  "priceChange24h": -2.95,
-  "tokenSymbol": "TRUMP",
-  "tokenName": "OFFICIAL TRUMP",
-  "pairCreatedAt": 1737196771000,
+  "priceChange1h": 0.13,
+  "priceChange24h": 0.23,
+  "tokenSymbol": "BITCOIN",
+  "tokenName": "HarryPotterObamaSonic (Wormhole)",
+  "pairCreatedAt": 1731536675000,
   "safeBlocked": true,
   "safeBlockedReasons": [
-    "concentration",
-    "lp_unverified"
+    "concentration"
   ],
-  "tokenLogo": "https://cdn.dexscreener.com/cms/images/85a2613c51c8ded8e51b1b3910487ab66691cb60fecec7d0905481a603bba899?width=800&height=800&quality=95&format=auto",
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/ce8da3cbcc641e206ceb46d476b27be934597bae2752a72c9c5c88b73a4cf08f?width=800&height=800&quality=95&format=auto",
   "tokenCreator": null,
   "tokenDecimals": null,
   "tokenSupply": null,
   "recentTransfers": "[0 transfers, redacted for fixture]",
-  "solscanTokenAgeHours": 11163,
-  "solscanVolume24h": 605444.53,
+  "solscanTokenAgeHours": 12740,
+  "solscanVolume24h": 618.02,
   "solscanTrades24h": null,
   "solscanTraders24h": null,
   "layers": {
@@ -149,10 +143,10 @@
     },
     "goplus": {
       "trust": 1,
-      "available": false
+      "available": true
     },
     "helius": {
-      "trust": 0.037,
+      "trust": 0.35,
       "available": true
     },
     "solscan": {
@@ -171,30 +165,30 @@
   "honeypot": false,
   "mintAuthority": false,
   "freezeAuthority": false,
-  "lpBurned": false,
+  "lpBurned": true,
   "lpLocked": false,
-  "lpLockedPct": null,
+  "lpLockedPct": 93.51,
   "candles": "[20 candles, redacted for fixture]",
-  "topHolderPct": 76.75018639186607,
-  "top10HolderPct": 90.173993493986,
+  "topHolderPct": 18.88919897981932,
+  "top10HolderPct": 54.82853330506312,
   "criticalActors": [
     {
       "type": "insider",
       "tag": "Insider",
-      "pct": 76.8,
-      "addr": "2RH6…FFSK",
+      "pct": 18.9,
+      "addr": "DqNm…nhiy",
       "repLbl": "Concentration risk · single wallet",
       "repWidth": 95,
       "repWarn": false,
-      "desc": "Holds <b>76.8%</b> of supply — one-wallet dump would crash the price."
+      "desc": "Holds <b>18.9%</b> of supply — one-wallet dump would crash the price."
     }
   ],
   "verdictHistory": [
     {
-      "ts": 1777384129166,
-      "verdict": "RUG",
-      "score": 100,
-      "event": "Single wallet holds 77% of supply"
+      "ts": 1777403686834,
+      "verdict": "DANGER",
+      "score": 500,
+      "event": "Single wallet holds 19% of supply"
     }
   ],
   "holderActivity": {
@@ -205,7 +199,7 @@
         "avatar": "Insider",
         "pctChange": 0,
         "pctChangeDisp": "±0%",
-        "addr": "2RH6…FFSK",
+        "addr": "DqNm…nhiy",
         "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
       },
       {
@@ -214,7 +208,7 @@
         "avatar": "Whale",
         "pctChange": 0,
         "pctChangeDisp": "±0%",
-        "addr": "9WzD…AWWM",
+        "addr": "D6AV…9TTw",
         "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
       },
       {
@@ -223,34 +217,34 @@
         "avatar": "Whale",
         "pctChange": 0,
         "pctChangeDisp": "±0%",
-        "addr": "8N2s…wNnS",
+        "addr": "8CfJ…gxdW",
         "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
       },
       {
-        "role": "real",
+        "role": "whale-big",
         "label": "Static",
-        "avatar": "Retail",
+        "avatar": "Whale",
         "pctChange": 0,
         "pctChangeDisp": "±0%",
-        "addr": "51yZ…QU5j",
+        "addr": "Hkbq…v4n8",
         "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
       },
       {
-        "role": "real",
+        "role": "whale-big",
         "label": "Static",
-        "avatar": "Retail",
+        "avatar": "Whale",
         "pctChange": 0,
         "pctChangeDisp": "±0%",
-        "addr": "9d9m…xyy2",
+        "addr": "Fe7S…FA8s",
         "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
       },
       {
-        "role": "real",
+        "role": "whale-big",
         "label": "Static",
-        "avatar": "Retail",
+        "avatar": "Whale",
         "pctChange": 0,
         "pctChangeDisp": "±0%",
-        "addr": "CBEA…bkVG",
+        "addr": "5Vnn…3pgs",
         "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
       }
     ],
@@ -322,7 +316,7 @@
     ]
   },
   "scoring_version": "7.3.0",
-  "fetchedAt": 1777384129253,
-  "requestId": "ba88fdbf-54ce-4e72-830b-793bb80433b3",
-  "aiSummary": "Liquidity is not locked or burned. The developer can pull all liquidity at any moment, making the token worthless. The top wallet holds 76.8% of supply with only 20 holders, creating extreme dump risk."
+  "fetchedAt": 1777403686922,
+  "requestId": "f53c8a99-e50c-4fef-bdf8-8c3478557069",
+  "aiSummary": null
 }

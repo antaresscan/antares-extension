@@ -1,0 +1,262 @@
+{
+  "score": 1000,
+  "risk": "SAFE",
+  "flags": [
+    {
+      "label": "LP Burned 100% (GoPlus) ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Well distributed supply ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Established token (30d+) ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "raydium",
+    "url": "https://dexscreener.com/solana/3cv7z8kn21m6ur6ntekikepcjtueag87ciu6cc3grnw6",
+    "pairAddress": "3Cv7Z8KN21M6Ur6nTeKiKEPcjTuEAg87Ciu6cC3gRnw6",
+    "baseToken": {
+      "address": "6yjNqPzTSanBWSa6dxVEgTjePXBrZ2FoHLDQwYwEsyM6",
+      "name": "Chudjak",
+      "symbol": "Chud"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.00002323",
+    "priceUsd": "0.001944",
+    "txns": {
+      "m5": {
+        "buys": 0,
+        "sells": 0
+      },
+      "h1": {
+        "buys": 4,
+        "sells": 3
+      },
+      "h6": {
+        "buys": 22,
+        "sells": 20
+      },
+      "h24": {
+        "buys": 533,
+        "sells": 339
+      }
+    },
+    "volume": {
+      "h24": 67275.2,
+      "h6": 2686.04,
+      "h1": 409.19,
+      "m5": 0
+    },
+    "priceChange": {
+      "h1": -0.09,
+      "h6": -2.54,
+      "h24": -10.92
+    },
+    "liquidity": {
+      "usd": 309257.02,
+      "base": 79617975,
+      "quote": 1845.1196
+    },
+    "fdv": 1802418,
+    "marketCap": 1802418,
+    "pairCreatedAt": 1714892652000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/75f4420b3b1a0392607c2be76f47fc600c896d13e1c5a86a5d1836b9dec21c73?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/920162a0a0d7ac39a512bd7f13fc88f0e825f8bfa7b138997d641d3dd4036435?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/6yjNqPzTSanBWSa6dxVEgTjePXBrZ2FoHLDQwYwEsyM6?timestamp=1777401300000",
+      "websites": [
+        {
+          "url": "https://www.chudjaksolana.xyz/",
+          "label": "Website"
+        },
+        {
+          "url": "https://www.youtube.com/@chudjak_daily",
+          "label": "Youtube"
+        },
+        {
+          "url": "https://www.tiktok.com/@chudjaksolana.xyz",
+          "label": "TikTok"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/chudjak",
+          "type": "twitter"
+        },
+        {
+          "url": "https://t.me/chudjaksol",
+          "type": "telegram"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "6yjNqPzTSanBWSa6dxVEgTjePXBrZ2FoHLDQwYwEsyM6",
+  "confidence": 100,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "goplus",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 5082,
+  "marketCap": 1802418,
+  "priceUsd": 0.001944,
+  "liquidity": 309257.02,
+  "volume24h": 67275.2,
+  "volume1h": 409.19,
+  "priceChange5m": null,
+  "priceChange1h": -0.09,
+  "priceChange24h": -10.92,
+  "tokenSymbol": "Chud",
+  "tokenName": "Chudjak",
+  "pairCreatedAt": 1714892652000,
+  "safeBlocked": false,
+  "safeBlockedReasons": [],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/75f4420b3b1a0392607c2be76f47fc600c896d13e1c5a86a5d1836b9dec21c73?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 17363,
+  "solscanVolume24h": 67275.2,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 1,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": true
+    },
+    "helius": {
+      "trust": 1,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": true,
+  "lpLocked": false,
+  "lpLockedPct": 100,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 2.962286371624239,
+  "top10HolderPct": 23.67282544312179,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 3,
+      "addr": "4nKc…bdyg",
+      "repLbl": "Significant single-wallet position",
+      "repWidth": 54,
+      "repWarn": false,
+      "desc": "Holds <b>3.0%</b> of supply — large enough to move the chart on exit."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777401440214,
+      "verdict": "SAFE",
+      "score": 1000,
+      "event": "LP Burned 100% (GoPlus) ✓"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "4nKc…bdyg",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "5Djr…3s6y",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "EeEP…3P8D",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "4mfv…nTEC",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "9bZd…qCzh",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "Amne…YQQd",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": null,
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777401440300,
+  "requestId": "99b6083f-292d-4276-9492-a024e85cfb71",
+  "aiSummary": "Score 1000/1000. LP is burned, mint authority is disabled, freeze authority is disabled, 5082 holders show organic distribution. No critical risks were detected in the contract or holder analysis."
+}

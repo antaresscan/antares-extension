@@ -3,7 +3,7 @@
   "risk": "DANGER",
   "flags": [
     {
-      "label": "Single wallet holds 28% of supply",
+      "label": "Single wallet holds 27% of supply",
       "severity": "critical",
       "impact": 0
     },
@@ -38,50 +38,50 @@
       "name": "Wrapped SOL",
       "symbol": "SOL"
     },
-    "priceNative": "0.0003115",
-    "priceUsd": "0.02606",
+    "priceNative": "0.0003278",
+    "priceUsd": "0.02743",
     "txns": {
       "m5": {
-        "buys": 11,
-        "sells": 11
+        "buys": 12,
+        "sells": 5
       },
       "h1": {
-        "buys": 130,
-        "sells": 151
+        "buys": 195,
+        "sells": 48
       },
       "h6": {
-        "buys": 866,
-        "sells": 972
+        "buys": 1246,
+        "sells": 909
       },
       "h24": {
-        "buys": 4281,
-        "sells": 4619
+        "buys": 3880,
+        "sells": 4023
       }
     },
     "volume": {
-      "h24": 2353476.52,
-      "h6": 500031.98,
-      "h1": 28995.84,
-      "m5": 1507.73
+      "h24": 1988123.49,
+      "h6": 417644.53,
+      "h1": 51941.45,
+      "m5": 1991.24
     },
     "priceChange": {
-      "m5": 0.65,
-      "h1": 0.64,
-      "h6": 0.09,
-      "h24": -8.92
+      "m5": 0.24,
+      "h1": 2.92,
+      "h6": 6.18,
+      "h24": 6.91
     },
     "liquidity": {
-      "usd": 4408248.2,
-      "base": 84681269,
-      "quote": 26313
+      "usd": 4524036.07,
+      "base": 82556876,
+      "quote": 27001
     },
-    "fdv": 26059036,
-    "marketCap": 26059036,
+    "fdv": 27432185,
+    "marketCap": 27432185,
     "pairCreatedAt": 1731184061000,
     "info": {
       "imageUrl": "https://cdn.dexscreener.com/cms/images/d237de55618e54fd7d66593ff2adf3ad8c092398f9049a31f1dcb1b23ad1dff8?width=800&height=800&quality=95&format=auto",
       "header": "https://cdn.dexscreener.com/cms/images/8e7d8fe387c57cf2ee98f6ee9d4f7bb9434479836633206b0525a65b9046d7c9?width=1500&height=500&quality=95&format=auto",
-      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/Dfh5DzRgSvvCFDoYc2ciTkMrbDfRKybA4SoFbPmApump?timestamp=1777383900000",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/Dfh5DzRgSvvCFDoYc2ciTkMrbDfRKybA4SoFbPmApump?timestamp=1777402500000",
       "websites": [
         {
           "url": "https://pippin.love/",
@@ -111,14 +111,14 @@
     "chart"
   ],
   "holders": 26601,
-  "marketCap": 26059036,
-  "priceUsd": 0.02606,
-  "liquidity": 4408248.2,
-  "volume24h": 2353476.52,
-  "volume1h": 28995.84,
-  "priceChange5m": 0.65,
-  "priceChange1h": 0.64,
-  "priceChange24h": -8.92,
+  "marketCap": 27432185,
+  "priceUsd": 0.02743,
+  "liquidity": 4524036.07,
+  "volume24h": 1988123.49,
+  "volume1h": 51941.45,
+  "priceChange5m": 0.24,
+  "priceChange1h": 2.92,
+  "priceChange24h": 6.91,
   "tokenSymbol": "pippin",
   "tokenName": "Pippin",
   "pairCreatedAt": 1731184061000,
@@ -131,8 +131,8 @@
   "tokenDecimals": null,
   "tokenSupply": null,
   "recentTransfers": "[0 transfers, redacted for fixture]",
-  "solscanTokenAgeHours": 12833,
-  "solscanVolume24h": 2353476.52,
+  "solscanTokenAgeHours": 12838,
+  "solscanVolume24h": 1988123.49,
   "solscanTrades24h": null,
   "solscanTraders24h": null,
   "layers": {
@@ -149,7 +149,7 @@
       "available": true
     },
     "helius": {
-      "trust": 0.115,
+      "trust": 0.35,
       "available": true
     },
     "solscan": {
@@ -172,18 +172,18 @@
   "lpLocked": false,
   "lpLockedPct": 100,
   "candles": "[20 candles, redacted for fixture]",
-  "topHolderPct": 27.57561626515259,
-  "top10HolderPct": 68.20655412464994,
+  "topHolderPct": 27.44862703082885,
+  "top10HolderPct": 68.11817743168311,
   "criticalActors": [
     {
       "type": "insider",
       "tag": "Insider",
-      "pct": 27.6,
+      "pct": 27.4,
       "addr": "u6PJ…Xq2w",
       "repLbl": "Concentration risk · single wallet",
       "repWidth": 95,
       "repWarn": false,
-      "desc": "Holds <b>27.6%</b> of supply — one-wallet dump would crash the price."
+      "desc": "Holds <b>27.4%</b> of supply — one-wallet dump would crash the price."
     }
   ],
   "verdictHistory": [
@@ -319,7 +319,7 @@
     ]
   },
   "scoring_version": "7.3.0",
-  "fetchedAt": 1777384055027,
-  "requestId": "44ef150d-8dc1-4951-9d6a-c1d60cfd827d",
-  "aiSummary": "The top wallet holds 27.6% of supply with only 26601 holders, creating extreme dump risk."
+  "fetchedAt": 1777402393052,
+  "requestId": "945ba632-b5dc-48d5-83b7-593daf70a701",
+  "aiSummary": "The top wallet holds 27.4% of supply with only 26601 holders, creating extreme dump risk."
 }

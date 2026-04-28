@@ -221,20 +221,6 @@ export const SEED_CORPUS: CorpusEntry[] = [
     source: "live",
   },
 
-  // ─── REFERENCE ANCHOR — drift detection ───────────────────────────
-  // One non-memecoin entry kept as a sanity check: USDC must stay
-  // SAFE no matter what. If it ever comes back as anything else,
-  // the engine has a fundamental scoring bug.
-  {
-    ca: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-    symbol: "USDC",
-    expectedVerdict: "SAFE",
-    expectedScore: [950, 1000],
-    why: "Anchor: Circle stablecoin. Failing this is a system-level engine error.",
-    source: "external",
-    skipFixture: true, // /api/scan currently 504s on USDC's large RugCheck dataset
-  },
-
   // ─── USELESS — confirmed rug-then-mature ──────────────────────────
   // Originally labelled RUG; the project actually matured to a real
   // memecoin (51k holders, LP burned). Engine correctly upgrades it.

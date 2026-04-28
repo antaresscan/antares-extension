@@ -1,0 +1,318 @@
+{
+  "score": 786,
+  "risk": "CAUTION",
+  "flags": [
+    {
+      "label": "Single wallet holds 10% of supply",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "LP Burned 100% (GoPlus) ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Established token (30d+) ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "raydium",
+    "url": "https://dexscreener.com/solana/9ah4zpvrzdb2seilnbavaylbaq3xxwkg6fmnlrsz9ftm",
+    "pairAddress": "9Ah4ZpVRZdb2SeiLNbavAyLbAq3xXwKg6fmnLRSZ9FTM",
+    "baseToken": {
+      "address": "CeK6k4BMmiqkxkzYAbQuUp3hrVFSHxuQ1LJXmNybc3vz",
+      "name": "Big Dog Fink",
+      "symbol": "BINK"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.0000008957",
+    "priceUsd": "0.00007483",
+    "txns": {
+      "m5": {
+        "buys": 0,
+        "sells": 0
+      },
+      "h1": {
+        "buys": 0,
+        "sells": 0
+      },
+      "h6": {
+        "buys": 0,
+        "sells": 1
+      },
+      "h24": {
+        "buys": 2,
+        "sells": 6
+      }
+    },
+    "volume": {
+      "h24": 158.7,
+      "h6": 46.72,
+      "h1": 0,
+      "m5": 0
+    },
+    "priceChange": {
+      "h6": -0.99,
+      "h24": -1.06
+    },
+    "liquidity": {
+      "usd": 507471.44,
+      "base": 3386572583,
+      "quote": 3040.4535
+    },
+    "fdv": 11146196,
+    "marketCap": 11146196,
+    "pairCreatedAt": 1710740625000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/08290dd4231ef77dca8a053ed905d41b70ea1449253c12969d36fb7cff6a37fd?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/48434d1f871390bdcab342b2d5f4602bc9da50915f6c7e797b38ed9ff6545e3b?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/CeK6k4BMmiqkxkzYAbQuUp3hrVFSHxuQ1LJXmNybc3vz?timestamp=1777400400000",
+      "websites": [
+        {
+          "url": "https://bigdogfink.com/",
+          "label": "Website"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/bigdogfink",
+          "type": "twitter"
+        },
+        {
+          "url": "https://t.me/bigdogfink",
+          "type": "telegram"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "CeK6k4BMmiqkxkzYAbQuUp3hrVFSHxuQ1LJXmNybc3vz",
+  "confidence": 100,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "goplus",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 2109,
+  "marketCap": 11146196,
+  "priceUsd": 0.00007483,
+  "liquidity": 507471.44,
+  "volume24h": 158.7,
+  "volume1h": null,
+  "priceChange5m": null,
+  "priceChange1h": null,
+  "priceChange24h": -1.06,
+  "tokenSymbol": "BINK",
+  "tokenName": "Big Dog Fink",
+  "pairCreatedAt": 1710740625000,
+  "safeBlocked": false,
+  "safeBlockedReasons": [
+    "holders"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/08290dd4231ef77dca8a053ed905d41b70ea1449253c12969d36fb7cff6a37fd?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 18516,
+  "solscanVolume24h": 158.7,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 1,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": true
+    },
+    "helius": {
+      "trust": 0.3,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": true,
+  "lpLocked": false,
+  "lpLockedPct": 100,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 10.000219374449323,
+  "top10HolderPct": 49.682546213187095,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 10,
+      "addr": "FX21…oMfR",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 90,
+      "repWarn": false,
+      "desc": "Holds <b>10.0%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777400530130,
+      "verdict": "CAUTION",
+      "score": 786,
+      "event": "Single wallet holds 10% of supply"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "FX21…oMfR",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "52v6…LATS",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "6FEV…51Jy",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "FTmj…51ug",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "881V…UTdR",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "AhMt…XkBw",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "2d",
+    "timeToRugMedianHours": 48,
+    "timeToRugSampleSize": 180,
+    "pctRugged24h": 54,
+    "pctSlowDeath": 30,
+    "pctAlive30d": 16,
+    "distribution": [
+      1,
+      1.5,
+      2,
+      2.5,
+      3,
+      3.5,
+      4,
+      4.5,
+      5,
+      5,
+      4.5,
+      4,
+      3.5,
+      3,
+      2.7,
+      2.5,
+      2.3,
+      2.1,
+      2,
+      1.9,
+      1.8,
+      1.7,
+      1.6,
+      1.5,
+      1.4,
+      1.3,
+      1.2,
+      1.2,
+      1.1,
+      1.1,
+      1,
+      1,
+      1.1,
+      1.5,
+      2,
+      2.5
+    ],
+    "youBucketIndex": 25,
+    "mostSimilar": [
+      {
+        "symbol": "FORGOTBOY",
+        "ruggedAfterHours": 72,
+        "loss": -78.2
+      },
+      {
+        "symbol": "DEADCOIN",
+        "ruggedAfterHours": 168,
+        "loss": -82.5
+      },
+      {
+        "symbol": "BLEEDR",
+        "ruggedAfterHours": 240,
+        "loss": -88
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777400530213,
+  "requestId": "b5ae4421-4275-44f1-b42f-005acf50e1cd",
+  "aiSummary": null
+}
