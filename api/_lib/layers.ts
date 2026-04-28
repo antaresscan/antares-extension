@@ -381,7 +381,7 @@ export function layerHelius(
   const flags: ScanFlag[] = [];
   let trust = 1.0;
   const penalties: number[] = [];
-  const forceRug = false;
+  let forceRug = false;
   let safeBlocked = false;
   if (!rawHolderAccounts.length || !totalSupplyUi || totalSupplyUi <= 0) return {
     source: "helius", trust: 1.0, available: false,
@@ -411,33 +411,60 @@ export function layerHelius(
   //   >10% → warning, soft block + heavy trust penalty (CAUTION). The
   //          0.30 trust multiplier here is intentionally aggressive so
   //          score drops below 900 even with bonuses on other layers.
-  if (top1Pct > 0.3) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "critical", 0)); penalties.push(0.08); safeBlocked = true; }
-  else if (top1Pct > 0.2) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "critical", 0)); penalties.push(0.20); safeBlocked = true; }
-  else if (top1Pct > 0.15) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "critical", 0)); penalties.push(0.35); safeBlocked = true; }
-  else if (top1Pct > 0.1) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "warning", 0)); penalties.push(0.30); safeBlocked = true; }
+  // Track the top-1 band so the maturity dampening below knows whether
+  // it's allowed to lift the score back up to SAFE. Above 10% we keep
+  // the geometric-mean penalty regardless of holder count: a single
+  // wallet at 11% can still crash the price even on a 164k-holder token.
+  // Using string for openness — we only care about the >=10% threshold
+  // for the lift gate.
+  let top1ConcentrationBand: string = "none";
+  if (top1Pct > 0.3) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "critical", 0)); penalties.push(0.08); safeBlocked = true; top1ConcentrationBand = "extreme"; }
+  else if (top1Pct > 0.2) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "critical", 0)); penalties.push(0.20); safeBlocked = true; top1ConcentrationBand = "heavy"; }
+  else if (top1Pct > 0.15) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "critical", 0)); penalties.push(0.35); safeBlocked = true; top1ConcentrationBand = "heavy"; }
+  else if (top1Pct > 0.1) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "warning", 0)); penalties.push(0.30); safeBlocked = true; top1ConcentrationBand = "elevated"; }
   if (top10Pct > 0.8) { flags.push(makeFlag(`Top 10 wallets hold ${Math.round(top10Pct*100)}% of supply`, "critical", 0)); penalties.push(0.30); safeBlocked = true; }
   else if (top10Pct > 0.6) { flags.push(makeFlag(`Top 10 wallets hold ${Math.round(top10Pct*100)}% of supply`, "warning", 0)); penalties.push(0.45); safeBlocked = true; }
   else if (top10Pct < 0.3) { flags.push(makeFlag("Well distributed supply ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.05); }
   trust = applyDiminishingPenalties(trust, penalties);
 
+  // ── Concentration kill-switch — top1 > 40% on non-mature tokens ──
+  // A single wallet holding more than 40% of supply on a token without
+  // strong maturity signals (LP burned + many holders) is the textbook
+  // rug-set-up: HAWK (44%, post-pump dump), HORNY (similar). PR #339
+  // removed forceRug from concentration entirely, but the floor was
+  // too lenient for the truly extreme cases. Re-enable forceRug ONLY
+  // when concentration is extreme AND maturity signals are absent —
+  // MEW/GOAT/PNUT (mature blue-chips with high concentration) still
+  // get the dampened-CAUTION path.
+  if (top1Pct > 0.4) {
+    const mcRug = maturityContext;
+    const lookslikeRealRug = !mcRug?.lpBurned ||
+      (mcRug.holders ?? 0) < 1000 ||
+      (mcRug.tokenAgeHours ?? 0) < 7 * 24;
+    if (lookslikeRealRug) {
+      forceRug = true;
+    }
+  }
+
   // ── Maturity dampening ────────────────────────────────────────────
-  // For established memecoins (50k+ holders, 30d+, LP burned), the
-  // concentration penalty above is over-stated: a 35%-top-1 on MEW
-  // (164k holders, LP burned, 2y) is structurally different from a
-  // 35%-top-1 on a fresh-launch shitcoin. Both deserve the safeBlocked
-  // flag (so Path 3 can decide), but the trust penalty for the geometric
-  // mean must be capped or the score collapses to DANGER even when
-  // every other layer is green. Floors:
-  //   holders ≥ 100k + LP burned + 30d   → trust ≥ 0.65 (≈ score 920+)
-  //   holders ≥ 50k  + LP burned + 30d   → trust ≥ 0.50 (≈ score 880+)
-  //   holders ≥ 10k  + LP burned + 30d   → trust ≥ 0.35 (≈ score 825+)
+  // For established memecoins (50k+ holders, 30d+, LP burned) with
+  // WELL-DISTRIBUTED supply (top-1 < 10%), the concentration penalty
+  // above is over-stated and we let the score recover. But if top-1
+  // is ≥ 10% we KEEP the penalty: a single wallet at 11%+ can crash
+  // the price regardless of how mature the rest of the token looks
+  // — the user-facing verdict has to stay CAUTION. Floors:
+  //   holders ≥ 100k + LP burned + 30d + top1 < 10%  → trust ≥ 0.65
+  //   holders ≥ 50k  + LP burned + 30d + top1 < 10%  → trust ≥ 0.50
+  //   holders ≥ 10k  + LP burned + 30d + top1 < 10%  → trust ≥ 0.35
+  //   top1 ≥ 10% on any token                        → no dampening
   // The flags + safeBlocked stay so Path 3 / DAO allowlist still gates
   // the safe verdict on additional signals; we're only protecting the
   // geometric-mean score from collapsing on a single concentration cue.
   const mc = maturityContext;
   if (mc) {
     const looksMatureBase = (mc.tokenAgeHours ?? 0) >= 30 * 24 && mc.lpBurned === true;
-    if (looksMatureBase) {
+    const concentrationAllowsLift = top1ConcentrationBand === "none" || top1ConcentrationBand === "soft";
+    if (looksMatureBase && concentrationAllowsLift) {
       if ((mc.holders ?? 0) >= 100_000) trust = Math.max(trust, 0.65);
       else if ((mc.holders ?? 0) >= 50_000) trust = Math.max(trust, 0.50);
       else if ((mc.holders ?? 0) >= 10_000) trust = Math.max(trust, 0.35);

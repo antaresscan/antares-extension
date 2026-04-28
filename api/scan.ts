@@ -687,8 +687,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     } else {
       const redis = getCacheRedis();
       if (redis) {
-        redis.setex(`antares:v13:${ca}`, 30, result).catch(() => {});
-        if (resolvedMint !== ca) redis.setex(`antares:v13:${resolvedMint}`, 30, result).catch(() => {});
+        redis.setex(`antares:v14:${ca}`, 30, result).catch(() => {});
+        if (resolvedMint !== ca) redis.setex(`antares:v14:${resolvedMint}`, 30, result).catch(() => {});
       }
     }
 
