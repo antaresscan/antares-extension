@@ -33,50 +33,50 @@
       "name": "Wrapped SOL",
       "symbol": "SOL"
     },
-    "priceNative": "0.00005433",
-    "priceUsd": "0.004545",
+    "priceNative": "0.00005705",
+    "priceUsd": "0.004777",
     "txns": {
       "m5": {
         "buys": 1,
         "sells": 0
       },
       "h1": {
-        "buys": 16,
-        "sells": 3
+        "buys": 9,
+        "sells": 11
       },
       "h6": {
-        "buys": 56,
-        "sells": 21
+        "buys": 60,
+        "sells": 127
       },
       "h24": {
-        "buys": 273,
-        "sells": 212
+        "buys": 250,
+        "sells": 285
       }
     },
     "volume": {
-      "h24": 43309.11,
-      "h6": 5435.48,
-      "h1": 240.08,
-      "m5": 16.91
+      "h24": 50540.76,
+      "h6": 27763.21,
+      "h1": 912.54,
+      "m5": 19.1
     },
     "priceChange": {
-      "m5": 0.33,
-      "h1": 0.23,
-      "h6": -1.06,
-      "h24": -3.19
+      "m5": 0.5,
+      "h1": 0.54,
+      "h6": 6.04,
+      "h24": 4.22
     },
     "liquidity": {
-      "usd": 1246550.32,
-      "base": 137290975,
-      "quote": 7440.8745
+      "usd": 1278629.68,
+      "base": 133986606,
+      "quote": 7625.08071
     },
-    "fdv": 4434627,
-    "marketCap": 4434627,
+    "fdv": 4660924,
+    "marketCap": 4660924,
     "pairCreatedAt": 1722303257000,
     "info": {
       "imageUrl": "https://cdn.dexscreener.com/cms/images/ceccc0a74f91ec3a5f6162005af09d1f6e8bdbdd6a55f49e43ac8b217b6ec8bd?width=800&height=800&quality=95&format=auto",
       "header": "https://cdn.dexscreener.com/cms/images/843e06d17fd1f9dafbc162493e6dc679671ac501dac413be79e9870eaf49544a?width=1500&height=500&quality=95&format=auto",
-      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/A8C3xuqscfmyLrte3VmTqrAq8kgMASius9AFNANwpump?timestamp=1777383900000",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/A8C3xuqscfmyLrte3VmTqrAq8kgMASius9AFNANwpump?timestamp=1777404600000",
       "websites": [
         {
           "url": "https://itsafwog.com/",
@@ -106,14 +106,14 @@
     "chart"
   ],
   "holders": 73517,
-  "marketCap": 4434627,
-  "priceUsd": 0.004545,
-  "liquidity": 1246550.32,
-  "volume24h": 43309.11,
-  "volume1h": 240.08,
-  "priceChange5m": 0.33,
-  "priceChange1h": 0.23,
-  "priceChange24h": -3.19,
+  "marketCap": 4660924,
+  "priceUsd": 0.004777,
+  "liquidity": 1278629.68,
+  "volume24h": 50540.76,
+  "volume1h": 912.54,
+  "priceChange5m": 0.5,
+  "priceChange1h": 0.54,
+  "priceChange24h": 4.22,
   "tokenSymbol": "FWOG",
   "tokenName": "FWOG",
   "pairCreatedAt": 1722303257000,
@@ -124,8 +124,8 @@
   "tokenDecimals": null,
   "tokenSupply": null,
   "recentTransfers": "[0 transfers, redacted for fixture]",
-  "solscanTokenAgeHours": 15300,
-  "solscanVolume24h": 43309.11,
+  "solscanTokenAgeHours": 15305,
+  "solscanVolume24h": 50540.76,
   "solscanTrades24h": null,
   "solscanTraders24h": null,
   "layers": {
@@ -166,7 +166,7 @@
   "lpLockedPct": 100,
   "candles": "[20 candles, redacted for fixture]",
   "topHolderPct": 3.9260563457512982,
-  "top10HolderPct": 26.14644827858662,
+  "top10HolderPct": 26.175579781266613,
   "criticalActors": [
     {
       "type": "insider",
@@ -185,6 +185,12 @@
       "verdict": "SAFE",
       "score": 1000,
       "event": "LP Burned 100% (GoPlus) ✓"
+    },
+    {
+      "ts": 1777402335185,
+      "verdict": "DANGER",
+      "score": 525,
+      "event": "Rug staircase: volume collapsing while price held flat — controlled dump"
     }
   ],
   "holderActivity": {
@@ -249,7 +255,7 @@
   },
   "outcomeStats": null,
   "scoring_version": "7.3.0",
-  "fetchedAt": 1777384043674,
-  "requestId": "c9f45b2b-e4e8-45a7-bf36-dce4c594eec2",
+  "fetchedAt": 1777404695116,
+  "requestId": "bfd02b46-9ba5-44ed-9da7-a798520b4d20",
   "aiSummary": "Score 1000/1000. LP is burned, mint authority is disabled, freeze authority is disabled, 73517 holders show organic distribution. No critical risks were detected in the contract or holder analysis."
 }

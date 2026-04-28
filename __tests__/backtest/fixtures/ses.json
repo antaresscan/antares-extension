@@ -1,0 +1,321 @@
+{
+  "score": 500,
+  "risk": "DANGER",
+  "flags": [
+    {
+      "label": "LP not burned or locked — dev can rug liquidity",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "GoPlus unavailable",
+      "severity": "info",
+      "impact": 0
+    },
+    {
+      "label": "Well distributed supply ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "meteora",
+    "url": "https://dexscreener.com/solana/f7utneyyfstskmwrskotvxske1qghnnygrsk8gzt7bub",
+    "pairAddress": "F7UtNEyYFSTskmwrskoTVxsKe1qghnnYGRsK8GZT7bUB",
+    "labels": [
+      "DYN2"
+    ],
+    "baseToken": {
+      "address": "59Ntdzm81rWKBshmuhJmuPFzczUy5e4zow2NNrpcDXTy",
+      "name": "Strategic Energy Supply",
+      "symbol": "SES"
+    },
+    "quoteToken": {
+      "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "name": "USD Coin",
+      "symbol": "USDC"
+    },
+    "priceNative": "0.0006420",
+    "priceUsd": "0.0006420",
+    "txns": {
+      "m5": {
+        "buys": 36,
+        "sells": 24
+      },
+      "h1": {
+        "buys": 292,
+        "sells": 111
+      },
+      "h6": {
+        "buys": 736,
+        "sells": 371
+      },
+      "h24": {
+        "buys": 5971,
+        "sells": 2833
+      }
+    },
+    "volume": {
+      "h24": 191649.13,
+      "h6": 20097.57,
+      "h1": 8425.78,
+      "m5": 428.61
+    },
+    "priceChange": {
+      "m5": 1.03,
+      "h1": 9.39,
+      "h6": 2.89,
+      "h24": 70.33
+    },
+    "liquidity": {
+      "usd": 41230.44,
+      "base": 32105972,
+      "quote": 20617
+    },
+    "fdv": 642041,
+    "marketCap": 642041,
+    "pairCreatedAt": 1777321806000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/SLnpe1nc6p9Fcpse?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/OjtMw9RVR2yo3gbe?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/59Ntdzm81rWKBshmuhJmuPFzczUy5e4zow2NNrpcDXTy?timestamp=1777399500000",
+      "websites": [
+        {
+          "url": "https://strategicenergysupply.com/",
+          "label": "Website"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/sestoken_sol",
+          "type": "twitter"
+        }
+      ]
+    },
+    "boosts": {
+      "active": 100
+    }
+  },
+  "resolvedMint": "59Ntdzm81rWKBshmuhJmuPFzczUy5e4zow2NNrpcDXTy",
+  "confidence": 80,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 20,
+  "marketCap": 642041,
+  "priceUsd": 0.000642,
+  "liquidity": 41230.44,
+  "volume24h": 191649.13,
+  "volume1h": 8425.78,
+  "priceChange5m": 1.03,
+  "priceChange1h": 9.39,
+  "priceChange24h": 70.33,
+  "tokenSymbol": "SES",
+  "tokenName": "Strategic Energy Supply",
+  "pairCreatedAt": 1777321806000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "lp"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/SLnpe1nc6p9Fcpse?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 21,
+  "solscanVolume24h": 191649.13,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 1,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": false
+    },
+    "helius": {
+      "trust": 1,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": false,
+  "lpLocked": false,
+  "lpLockedPct": null,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 3.2106068819151456,
+  "top10HolderPct": 15.656098818390957,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 3.2,
+      "addr": "HLnp…TLcC",
+      "repLbl": "Significant single-wallet position",
+      "repWidth": 55.6,
+      "repWarn": false,
+      "desc": "Holds <b>3.2%</b> of supply — large enough to move the chart on exit."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777399557323,
+      "verdict": "DANGER",
+      "score": 500,
+      "event": "LP not burned or locked — dev can rug liquidity"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "HLnp…TLcC",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "6BsQ…rXev",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "2V8Y…Gtfu",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "5d3s…4HaR",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "FH3g…ckdJ",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "8LbR…NZvy",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "2d",
+    "timeToRugMedianHours": 48,
+    "timeToRugSampleSize": 180,
+    "pctRugged24h": 54,
+    "pctSlowDeath": 30,
+    "pctAlive30d": 16,
+    "distribution": [
+      1,
+      1.5,
+      2,
+      2.5,
+      3,
+      3.5,
+      4,
+      4.5,
+      5,
+      5,
+      4.5,
+      4,
+      3.5,
+      3,
+      2.7,
+      2.5,
+      2.3,
+      2.1,
+      2,
+      1.9,
+      1.8,
+      1.7,
+      1.6,
+      1.5,
+      1.4,
+      1.3,
+      1.2,
+      1.2,
+      1.1,
+      1.1,
+      1,
+      1,
+      1.1,
+      1.5,
+      2,
+      2.5
+    ],
+    "youBucketIndex": 25,
+    "mostSimilar": [
+      {
+        "symbol": "FORGOTBOY",
+        "ruggedAfterHours": 72,
+        "loss": -78.2
+      },
+      {
+        "symbol": "DEADCOIN",
+        "ruggedAfterHours": 168,
+        "loss": -82.5
+      },
+      {
+        "symbol": "BLEEDR",
+        "ruggedAfterHours": 240,
+        "loss": -88
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777399557404,
+  "requestId": "633b4694-9fa7-4f5c-855b-b2e9eafcfebe",
+  "aiSummary": "The developer can remove all liquidity in one transaction. When that happens, the token price drops to zero and nobody can sell."
+}

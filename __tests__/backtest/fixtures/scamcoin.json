@@ -1,0 +1,340 @@
+{
+  "score": 100,
+  "risk": "RUG",
+  "flags": [
+    {
+      "label": "Very low liquidity (<$1k)",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Volume with zero liquidity — abandoned pool",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Single wallet holds 79% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Top 10 wallets hold 99% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Newborn token on-chain (<30min)",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Buy/sell imbalance (coordinated pump)",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "LP not burned or locked — dev can rug liquidity",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "GoPlus unavailable",
+      "severity": "info",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "pumpfun",
+    "url": "https://dexscreener.com/solana/9xumrslcax3durtxzxzgj4anrndqdysrj11gavux7phn",
+    "pairAddress": "9xUMrsLcAx3DUrTxZXZGJ4ANrNdqDYsRj11gAVUX7Phn",
+    "baseToken": {
+      "address": "APJ8ovk6mqScmtezgtMcMGxkiB5PGwcLmgz343Rkpump",
+      "name": "Artificial Scamcoin",
+      "symbol": "Scamcoin"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.00000004278",
+    "priceUsd": "0.000003576",
+    "txns": {
+      "m5": {
+        "buys": 8,
+        "sells": 1
+      },
+      "h1": {
+        "buys": 243,
+        "sells": 164
+      },
+      "h6": {
+        "buys": 243,
+        "sells": 164
+      },
+      "h24": {
+        "buys": 243,
+        "sells": 164
+      }
+    },
+    "volume": {
+      "h24": 18758.65,
+      "h6": 18758.65,
+      "h1": 18758.65,
+      "m5": 187.39
+    },
+    "priceChange": {
+      "m5": 12.6,
+      "h1": 42.45,
+      "h6": 42.45,
+      "h24": 42.45
+    },
+    "fdv": 3576.43,
+    "marketCap": 3576.43,
+    "pairCreatedAt": 1777396735000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/Fohbcec-LxchEiXy?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/Qn42p1X5gf-ya1Nh?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/APJ8ovk6mqScmtezgtMcMGxkiB5PGwcLmgz343Rkpump?timestamp=1777399500000",
+      "websites": [
+        {
+          "url": "https://larpscam.dev/",
+          "label": "Website"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/ArtificialPonzi",
+          "type": "twitter"
+        }
+      ]
+    },
+    "boosts": {
+      "active": 10
+    }
+  },
+  "resolvedMint": "APJ8ovk6mqScmtezgtMcMGxkiB5PGwcLmgz343Rkpump",
+  "confidence": 80,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 20,
+  "marketCap": 3576.43,
+  "priceUsd": 0.000003576,
+  "liquidity": null,
+  "volume24h": 18758.65,
+  "volume1h": 18758.65,
+  "priceChange5m": 12.6,
+  "priceChange1h": 42.45,
+  "priceChange24h": 42.45,
+  "tokenSymbol": "Scamcoin",
+  "tokenName": "Artificial Scamcoin",
+  "pairCreatedAt": 1777396735000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "concentration",
+    "age",
+    "lp"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/Fohbcec-LxchEiXy?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 0,
+  "solscanVolume24h": 18758.65,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 0.038,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": false
+    },
+    "helius": {
+      "trust": 0.037,
+      "available": true
+    },
+    "solscan": {
+      "trust": 0.1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": false,
+  "lpLocked": false,
+  "lpLockedPct": null,
+  "candles": "[10 candles, redacted for fixture]",
+  "topHolderPct": 79.43877668339083,
+  "top10HolderPct": 98.51864246053769,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 79.4,
+      "addr": "9xUM…7Phn",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 95,
+      "repWarn": false,
+      "desc": "Holds <b>79.4%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777399615671,
+      "verdict": "RUG",
+      "score": 100,
+      "event": "Very low liquidity (<$1k)"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "9xUM…7Phn",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "6oX9…N9zW",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "Hi3Y…ipHP",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "RqUJ…XCTR",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "BKmz…GJ7T",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "GbDi…668g",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "4h 12m",
+    "timeToRugMedianHours": 4.2,
+    "timeToRugSampleSize": 487,
+    "pctRugged24h": 89,
+    "pctSlowDeath": 8,
+    "pctAlive30d": 3,
+    "distribution": [
+      8,
+      14,
+      22,
+      28,
+      18,
+      12,
+      6,
+      4,
+      2,
+      1,
+      0.6,
+      0.4,
+      0.3,
+      0.3,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.3,
+      0.3,
+      0.4,
+      0.6,
+      1,
+      1.2,
+      1.4,
+      1.4,
+      1.2,
+      0.9,
+      0.6,
+      0.4,
+      0.3
+    ],
+    "youBucketIndex": 11,
+    "mostSimilar": [
+      {
+        "symbol": "RUGCOIN",
+        "ruggedAfterHours": 4,
+        "loss": -99.2
+      },
+      {
+        "symbol": "SCAMBOY",
+        "ruggedAfterHours": 6,
+        "loss": -98.5
+      },
+      {
+        "symbol": "TRAPCAT",
+        "ruggedAfterHours": 12,
+        "loss": -97.8
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777399615755,
+  "requestId": "20be1ebe-1e13-4762-be05-87125d4ea6bb",
+  "aiSummary": "There is almost no real money backing this token. Even a small sell order will crash the price significantly. The top wallet holds 79.4% of supply with only 20 holders, creating extreme dump risk."
+}

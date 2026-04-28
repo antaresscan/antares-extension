@@ -1,0 +1,332 @@
+{
+  "score": 500,
+  "risk": "DANGER",
+  "flags": [
+    {
+      "label": "High vol/liquidity ratio",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Single wallet holds 11% of supply",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "LP not burned or locked — dev can rug liquidity",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Well distributed supply ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "pumpswap",
+    "url": "https://dexscreener.com/solana/8f5mzerzycj8b7whbgugtkwhdao6gtkdwtzg1unnfcqu",
+    "pairAddress": "8f5MzeRzYCJ8b7whbguGTKWhdAo6GTKdwtzg1UNnfCQU",
+    "baseToken": {
+      "address": "HdRFFy6Sm42rDAPLGRAZ1YymtpLukziwBrE9QGs4pump",
+      "name": "CrackRock",
+      "symbol": "CRACKROCK"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.000002604",
+    "priceUsd": "0.0002176",
+    "txns": {
+      "m5": {
+        "buys": 9,
+        "sells": 8
+      },
+      "h1": {
+        "buys": 94,
+        "sells": 109
+      },
+      "h6": {
+        "buys": 622,
+        "sells": 722
+      },
+      "h24": {
+        "buys": 14570,
+        "sells": 6121
+      }
+    },
+    "volume": {
+      "h24": 372977.64,
+      "h6": 66907.38,
+      "h1": 11088.93,
+      "m5": 945.74
+    },
+    "priceChange": {
+      "m5": 1.4,
+      "h1": 13.81,
+      "h6": -36.24,
+      "h24": 446
+    },
+    "liquidity": {
+      "usd": 36629.46,
+      "base": 83920654,
+      "quote": 219.6475
+    },
+    "fdv": 217695,
+    "marketCap": 217695,
+    "pairCreatedAt": 1777325266000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/uvsacU20laey5RIC?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/zyMGdQ0opi3a4Hg8?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/HdRFFy6Sm42rDAPLGRAZ1YymtpLukziwBrE9QGs4pump?timestamp=1777399500000",
+      "websites": [
+        {
+          "url": "https://crackrockdex.com",
+          "label": "Website"
+        },
+        {
+          "url": "https://trading.crackrockdex.com",
+          "label": "Trading"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/CrackRockDEX",
+          "type": "twitter"
+        },
+        {
+          "url": "https://t.me/CrackrockDex",
+          "type": "telegram"
+        }
+      ]
+    },
+    "boosts": {
+      "active": 100
+    }
+  },
+  "resolvedMint": "HdRFFy6Sm42rDAPLGRAZ1YymtpLukziwBrE9QGs4pump",
+  "confidence": 90,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "goplus",
+    "helius",
+    "solscan"
+  ],
+  "holders": 291,
+  "marketCap": 217695,
+  "priceUsd": 0.0002176,
+  "liquidity": 36629.46,
+  "volume24h": 372977.64,
+  "volume1h": 11088.93,
+  "priceChange5m": 1.4,
+  "priceChange1h": 13.81,
+  "priceChange24h": 446,
+  "tokenSymbol": "CRACKROCK",
+  "tokenName": "CrackRock",
+  "pairCreatedAt": 1777325266000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "holders",
+    "lp"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/uvsacU20laey5RIC?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 20,
+  "solscanVolume24h": 372977.64,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 0.75,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": true
+    },
+    "helius": {
+      "trust": 0.3,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": false
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": false,
+  "lpLocked": false,
+  "lpLockedPct": null,
+  "candles": "[0 candles, redacted for fixture]",
+  "topHolderPct": 10.98683739804346,
+  "top10HolderPct": 29.3418659158085,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 11,
+      "addr": "Drbp…w5br",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 93,
+      "repWarn": false,
+      "desc": "Holds <b>11.0%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777399500946,
+      "verdict": "DANGER",
+      "score": 500,
+      "event": "High vol/liquidity ratio"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "Drbp…w5br",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "8f5M…fCQU",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "GbYp…iBJC",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "69F8…oeVs",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "Djvo…LJUK",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "6FkK…YWvc",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "11h",
+    "timeToRugMedianHours": 11,
+    "timeToRugSampleSize": 312,
+    "pctRugged24h": 76,
+    "pctSlowDeath": 16,
+    "pctAlive30d": 8,
+    "distribution": [
+      3,
+      5,
+      8,
+      11,
+      14,
+      12,
+      9,
+      7,
+      5,
+      4,
+      3,
+      2.5,
+      2,
+      1.8,
+      1.6,
+      1.4,
+      1.2,
+      1,
+      0.9,
+      0.8,
+      0.7,
+      0.7,
+      0.6,
+      0.6,
+      0.5,
+      0.5,
+      0.4,
+      0.4,
+      0.3,
+      0.3,
+      0.3,
+      0.3,
+      0.4,
+      0.5,
+      0.7,
+      0.9
+    ],
+    "youBucketIndex": 17,
+    "mostSimilar": [
+      {
+        "symbol": "PUMPDUMP",
+        "ruggedAfterHours": 18,
+        "loss": -94.1
+      },
+      {
+        "symbol": "FAKEMOON",
+        "ruggedAfterHours": 28,
+        "loss": -91.6
+      },
+      {
+        "symbol": "SLOWBLEED",
+        "ruggedAfterHours": 48,
+        "loss": -85.4
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777399501028,
+  "requestId": "b1210961-ef66-4dc0-a983-ad7b71f7b572",
+  "aiSummary": "Liquidity is not locked or burned. The developer can pull all liquidity at any moment, making the token worthless."
+}

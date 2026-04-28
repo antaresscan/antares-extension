@@ -31,49 +31,49 @@
       "name": "SolDeFi",
       "symbol": "SLD"
     },
-    "priceNative": "0.0002087",
-    "priceUsd": "0.009990",
+    "priceNative": "0.0002124",
+    "priceUsd": "0.01017",
     "txns": {
       "m5": {
         "buys": 0,
         "sells": 0
       },
       "h1": {
-        "buys": 1,
-        "sells": 0
+        "buys": 3,
+        "sells": 3
       },
       "h6": {
-        "buys": 3,
-        "sells": 6
+        "buys": 14,
+        "sells": 17
       },
       "h24": {
-        "buys": 52,
-        "sells": 52
+        "buys": 51,
+        "sells": 56
       }
     },
     "volume": {
-      "h24": 332.16,
-      "h6": 29.84,
-      "h1": 7.37,
+      "h24": 331.74,
+      "h6": 105.72,
+      "h1": 15.08,
       "m5": 0
     },
     "priceChange": {
-      "h1": 0.51,
-      "h6": -0.42,
-      "h24": 0.96
+      "h1": 0.02,
+      "h6": 2.31,
+      "h24": 3.64
     },
     "liquidity": {
-      "usd": 9083889.54,
-      "base": 23017,
+      "usd": 9083893.76,
+      "base": 23022,
       "quote": 189767
     },
-    "fdv": 888085459,
-    "marketCap": 628038098,
+    "fdv": 904002288,
+    "marketCap": 639294195,
     "pairCreatedAt": 1776912333000,
     "info": {
       "imageUrl": "https://cdn.dexscreener.com/cms/images/9d5188f603b49ab02f7a75e5d2c2959ec2947c98181501fb11688672e9394efd?width=800&height=800&quality=95&format=auto",
       "header": "https://cdn.dexscreener.com/cms/images/5c3d41eabf98b63ce56ca14ca3ffe42c7426e0f1680647011d5991456516ba57?width=1500&height=500&quality=95&format=auto",
-      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/2zMMhcVQEXDtdE6vsFS7S7D5oUodfJHE8vd1gnBouauv?timestamp=1777383900000",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/2zMMhcVQEXDtdE6vsFS7S7D5oUodfJHE8vd1gnBouauv?timestamp=1777403400000",
       "websites": [
         {
           "url": "https://www.pudgypenguins.com",
@@ -102,14 +102,14 @@
     "chart"
   ],
   "holders": 544390,
-  "marketCap": 628038098,
-  "priceUsd": 0.00999,
-  "liquidity": 9083889.54,
-  "volume24h": 332.16,
-  "volume1h": 7.37,
+  "marketCap": 639294195,
+  "priceUsd": 0.01017,
+  "liquidity": 9083893.76,
+  "volume24h": 331.74,
+  "volume1h": 15.08,
   "priceChange5m": null,
-  "priceChange1h": 0.51,
-  "priceChange24h": 0.96,
+  "priceChange1h": 0.02,
+  "priceChange24h": 3.64,
   "tokenSymbol": "PENGU",
   "tokenName": "Pudgy Penguins",
   "pairCreatedAt": 1776912333000,
@@ -120,8 +120,8 @@
   "tokenDecimals": null,
   "tokenSupply": null,
   "recentTransfers": "[0 transfers, redacted for fixture]",
-  "solscanTokenAgeHours": 131,
-  "solscanVolume24h": 332.16,
+  "solscanTokenAgeHours": 136,
+  "solscanVolume24h": 331.74,
   "solscanTrades24h": null,
   "solscanTraders24h": null,
   "layers": {
@@ -191,7 +191,7 @@
   },
   "outcomeStats": null,
   "scoring_version": "7.3.0",
-  "fetchedAt": 1777383999953,
-  "requestId": "919bd086-4ae8-49da-96cd-b95af2401b03",
+  "fetchedAt": 1777403467807,
+  "requestId": "4bf23c57-3b63-4db1-a367-f97402e235dd",
   "aiSummary": "Score 1000/1000. LP is burned, mint authority is disabled, freeze authority is disabled, 544390 holders show organic distribution. No critical risks were detected in the contract or holder analysis."
 }

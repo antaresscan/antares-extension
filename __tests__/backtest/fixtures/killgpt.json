@@ -1,0 +1,340 @@
+{
+  "score": 100,
+  "risk": "RUG",
+  "flags": [
+    {
+      "label": "Blow-off top: price collapsed >55% from peak",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "High vol/liquidity ratio",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Large 24h pump +744% on token <24h",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Fresh token on-chain (<6h)",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Liquidity mirage: volume >> liquidity (wash)",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "LP not burned or locked — dev can rug liquidity",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Well distributed supply ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "pumpswap",
+    "url": "https://dexscreener.com/solana/hdd6utntczzsc6fvbg1wvbhmuuwhdwdz3tmh4r3dklux",
+    "pairAddress": "HDD6UtntCzZsC6FVBg1wVbHmuUwhdwdZ3tMh4R3DkLUx",
+    "baseToken": {
+      "address": "DzEdjffc7JkbkuDUkrf98njJ7KBVzabqUw5hej4Epump",
+      "name": "KILLGPT",
+      "symbol": "KILLGPT"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.000006297",
+    "priceUsd": "0.0005264",
+    "txns": {
+      "m5": {
+        "buys": 381,
+        "sells": 160
+      },
+      "h1": {
+        "buys": 3723,
+        "sells": 1616
+      },
+      "h6": {
+        "buys": 7962,
+        "sells": 3249
+      },
+      "h24": {
+        "buys": 7962,
+        "sells": 3249
+      }
+    },
+    "volume": {
+      "h24": 746798.67,
+      "h6": 746798.67,
+      "h1": 396832.41,
+      "m5": 39691.63
+    },
+    "priceChange": {
+      "m5": 16.12,
+      "h1": 220,
+      "h6": 744,
+      "h24": 744
+    },
+    "liquidity": {
+      "usd": 58096.43,
+      "base": 55062251,
+      "quote": 348.2562
+    },
+    "fdv": 526417,
+    "marketCap": 526417,
+    "pairCreatedAt": 1777389948000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/z6o2VwP1Zpqp4aaM?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/rZQouLr4fFw928LY?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/DzEdjffc7JkbkuDUkrf98njJ7KBVzabqUw5hej4Epump?timestamp=1777399500000",
+      "websites": [
+        {
+          "url": "https://www.killgpt.cc",
+          "label": "Website"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/killgpt",
+          "type": "twitter"
+        }
+      ]
+    },
+    "boosts": {
+      "active": 500
+    }
+  },
+  "resolvedMint": "DzEdjffc7JkbkuDUkrf98njJ7KBVzabqUw5hej4Epump",
+  "confidence": 100,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "goplus",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 1595,
+  "marketCap": 526417,
+  "priceUsd": 0.0005264,
+  "liquidity": 58096.43,
+  "volume24h": 746798.67,
+  "volume1h": 396832.41,
+  "priceChange5m": 16.12,
+  "priceChange1h": 220,
+  "priceChange24h": 744,
+  "tokenSymbol": "KILLGPT",
+  "tokenName": "KILLGPT",
+  "pairCreatedAt": 1777389948000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "chart",
+    "lp"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/z6o2VwP1Zpqp4aaM?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 2,
+  "solscanVolume24h": 746798.67,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 0.444,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": true
+    },
+    "helius": {
+      "trust": 1,
+      "available": true
+    },
+    "solscan": {
+      "trust": 0.65,
+      "available": true
+    },
+    "chart": {
+      "trust": 0.138,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": false,
+  "lpLocked": false,
+  "lpLockedPct": null,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 5.5277710138747,
+  "top10HolderPct": 8.318532939929,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 5.5,
+      "addr": "HDD6…kLUx",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 76.5,
+      "repWarn": false,
+      "desc": "Holds <b>5.5%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777399367400,
+      "verdict": "RUG",
+      "score": 100,
+      "event": "Blow-off top: price collapsed >55% from peak"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "HDD6…kLUx",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "AgET…ogzb",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "48pZ…bgLg",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "6VEn…EzQW",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "3JDP…2vSs",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "DTyz…LPtg",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "11h",
+    "timeToRugMedianHours": 11,
+    "timeToRugSampleSize": 312,
+    "pctRugged24h": 76,
+    "pctSlowDeath": 16,
+    "pctAlive30d": 8,
+    "distribution": [
+      3,
+      5,
+      8,
+      11,
+      14,
+      12,
+      9,
+      7,
+      5,
+      4,
+      3,
+      2.5,
+      2,
+      1.8,
+      1.6,
+      1.4,
+      1.2,
+      1,
+      0.9,
+      0.8,
+      0.7,
+      0.7,
+      0.6,
+      0.6,
+      0.5,
+      0.5,
+      0.4,
+      0.4,
+      0.3,
+      0.3,
+      0.3,
+      0.3,
+      0.4,
+      0.5,
+      0.7,
+      0.9
+    ],
+    "youBucketIndex": 17,
+    "mostSimilar": [
+      {
+        "symbol": "PUMPDUMP",
+        "ruggedAfterHours": 18,
+        "loss": -94.1
+      },
+      {
+        "symbol": "FAKEMOON",
+        "ruggedAfterHours": 28,
+        "loss": -91.6
+      },
+      {
+        "symbol": "SLOWBLEED",
+        "ruggedAfterHours": 48,
+        "loss": -85.4
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777399367486,
+  "requestId": "52f613e8-c81a-4e53-8a9a-251b843c4858",
+  "aiSummary": "Liquidity is not locked or burned. The developer can pull all liquidity at any moment, making the token worthless."
+}

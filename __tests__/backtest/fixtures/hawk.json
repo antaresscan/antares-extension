@@ -1,6 +1,6 @@
 {
-  "score": 105,
-  "risk": "RUG",
+  "score": 525,
+  "risk": "DANGER",
   "flags": [
     {
       "label": "Single wallet holds 44% of supply",
@@ -46,22 +46,21 @@
       },
       "h6": {
         "buys": 0,
-        "sells": 1
+        "sells": 0
       },
       "h24": {
         "buys": 0,
-        "sells": 3
+        "sells": 2
       }
     },
     "volume": {
-      "h24": 27.45,
-      "h6": 27.41,
+      "h24": 27.43,
+      "h6": 0,
       "h1": 0,
       "m5": 0
     },
     "priceChange": {
-      "h6": -0.73,
-      "h24": -1.08
+      "h24": -0.73
     },
     "liquidity": {
       "usd": 70694.99,
@@ -74,7 +73,7 @@
     "info": {
       "imageUrl": "https://cdn.dexscreener.com/cms/images/17c35e4d62131992b5c58bf5cb9d9878a64828389eddc2416416ffac68b38d25?width=800&height=800&quality=95&format=auto",
       "header": "https://cdn.dexscreener.com/cms/images/f997f7c645bfaef25d9def2c19a971b862dc08bdb6e0e8fb084a79f8d1cf2642?width=1500&height=500&quality=95&format=auto",
-      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/4GFe6MBDorSy5bLbiUMrgETr6pZcjyfxMDm5ehSgpump?timestamp=1777384200000",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/4GFe6MBDorSy5bLbiUMrgETr6pZcjyfxMDm5ehSgpump?timestamp=1777399200000",
       "websites": [
         {
           "url": "https://hawktuah.vip/",
@@ -115,23 +114,25 @@
   "marketCap": 156153,
   "priceUsd": 0.0001708,
   "liquidity": 70694.99,
-  "volume24h": 27.45,
+  "volume24h": 27.43,
   "volume1h": null,
   "priceChange5m": null,
   "priceChange1h": null,
-  "priceChange24h": -1.08,
+  "priceChange24h": -0.73,
   "tokenSymbol": "HawkTuah",
   "tokenName": "Hawk Tuah",
   "pairCreatedAt": 1718823889000,
-  "safeBlocked": false,
-  "safeBlockedReasons": [],
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "concentration"
+  ],
   "tokenLogo": "https://cdn.dexscreener.com/cms/images/17c35e4d62131992b5c58bf5cb9d9878a64828389eddc2416416ffac68b38d25?width=800&height=800&quality=95&format=auto",
   "tokenCreator": null,
   "tokenDecimals": null,
   "tokenSupply": null,
   "recentTransfers": "[0 transfers, redacted for fixture]",
-  "solscanTokenAgeHours": 16266,
-  "solscanVolume24h": 27.45,
+  "solscanTokenAgeHours": 16270,
+  "solscanVolume24h": 27.43,
   "solscanTrades24h": null,
   "solscanTraders24h": null,
   "layers": {
@@ -190,6 +191,12 @@
       "ts": 1777333692803,
       "verdict": "RUG",
       "score": 105,
+      "event": "Single wallet holds 44% of supply"
+    },
+    {
+      "ts": 1777398603310,
+      "verdict": "DANGER",
+      "score": 525,
       "event": "Single wallet holds 44% of supply"
     }
   ],
@@ -318,7 +325,7 @@
     ]
   },
   "scoring_version": "7.3.0",
-  "fetchedAt": 1777384077900,
-  "requestId": "6c0b45d6-8a88-462d-9b3f-feb00d90d9ad",
+  "fetchedAt": 1777399259728,
+  "requestId": "45f31ce1-6edd-4a48-9df8-564ae8549b2a",
   "aiSummary": "The top wallet holds 44.0% of supply with only 7430 holders, creating extreme dump risk."
 }

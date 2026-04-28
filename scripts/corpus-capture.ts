@@ -113,6 +113,12 @@ async function main() {
       console.error(`No corpus entry matches: ${targets.join(", ")}`)
       process.exit(1)
     }
+  } else if (args.includes("--all")) {
+    // --all bypasses the skipFixture filter — useful for the first
+    // capture wave on freshly-discovered entries, all of which are
+    // marked skipFixture by the discovery script until they have a
+    // baseline fixture.
+    entries = CORPUS
   } else {
     // Default capture run skips entries flagged skipFixture so the
     // bulk run doesn't always end with the same 3 known timeouts.

@@ -1,0 +1,320 @@
+{
+  "score": 480,
+  "risk": "DANGER",
+  "flags": [
+    {
+      "label": "Single wallet holds 72% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Top 10 wallets hold 85% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "LP not burned but token is mature and liquid (unverified LP)",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Established token (30d+) ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "pumpswap",
+    "url": "https://dexscreener.com/solana/ctxhhwbovttrf1kc4zwfz8zf8bnw78n2uur3ozx5vfkb",
+    "pairAddress": "CtxHhwboVTtRf1kC4Zwfz8Zf8bNW78N2uuR3oZX5VFKb",
+    "baseToken": {
+      "address": "9raUVuzeWUk53co63M4WXLWPWE4Xc6Lpn7RS9dnkpump",
+      "name": "V2EX",
+      "symbol": "V2EX"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.00002067",
+    "priceUsd": "0.001732",
+    "txns": {
+      "m5": {
+        "buys": 0,
+        "sells": 0
+      },
+      "h1": {
+        "buys": 0,
+        "sells": 1
+      },
+      "h6": {
+        "buys": 8,
+        "sells": 2
+      },
+      "h24": {
+        "buys": 50,
+        "sells": 3
+      }
+    },
+    "volume": {
+      "h24": 2099.3,
+      "h6": 289.05,
+      "h1": 25.58,
+      "m5": 0
+    },
+    "priceChange": {
+      "h1": -0.49,
+      "h6": -0.07,
+      "h24": 1.05
+    },
+    "liquidity": {
+      "usd": 182516.31,
+      "base": 52442527,
+      "quote": 1093.2335
+    },
+    "fdv": 1732971,
+    "marketCap": 1732971,
+    "pairCreatedAt": 1751907634000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/9943b1f530fb93789ef295260635b3a28cc812fcdb47a7a3daf03478bbbb8235?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/937ef95ca6efd3f05f8383098ccceac1698d7b1bfc237eb1bd71de8289c5e6c1?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/9raUVuzeWUk53co63M4WXLWPWE4Xc6Lpn7RS9dnkpump?timestamp=1777401600000",
+      "websites": [
+        {
+          "url": "https://www.v2ex.com",
+          "label": "Website"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/V2EX",
+          "type": "twitter"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "9raUVuzeWUk53co63M4WXLWPWE4Xc6Lpn7RS9dnkpump",
+  "confidence": 90,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "goplus",
+    "helius",
+    "solscan"
+  ],
+  "holders": 3642,
+  "marketCap": 1732971,
+  "priceUsd": 0.001732,
+  "liquidity": 182516.31,
+  "volume24h": 2099.3,
+  "volume1h": 25.58,
+  "priceChange5m": null,
+  "priceChange1h": -0.49,
+  "priceChange24h": 1.05,
+  "tokenSymbol": "V2EX",
+  "tokenName": "V2EX",
+  "pairCreatedAt": 1751907634000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "concentration",
+    "lp_unverified"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/9943b1f530fb93789ef295260635b3a28cc812fcdb47a7a3daf03478bbbb8235?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 7081,
+  "solscanVolume24h": 2099.3,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 1,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": true
+    },
+    "helius": {
+      "trust": 0.037,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": false
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": false,
+  "lpLocked": false,
+  "lpLockedPct": null,
+  "candles": "[0 candles, redacted for fixture]",
+  "topHolderPct": 72.00009186085158,
+  "top10HolderPct": 84.76472978411806,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 72,
+      "addr": "Fw39…ohhp",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 95,
+      "repWarn": false,
+      "desc": "Holds <b>72.0%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777401486184,
+      "verdict": "DANGER",
+      "score": 480,
+      "event": "Single wallet holds 72% of supply"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "Fw39…ohhp",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "CtxH…VFKb",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "A6QV…j9kj",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "GZ7z…gWb5",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "DdGV…aRkf",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "5wTL…bsS5",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "11h",
+    "timeToRugMedianHours": 11,
+    "timeToRugSampleSize": 312,
+    "pctRugged24h": 76,
+    "pctSlowDeath": 16,
+    "pctAlive30d": 8,
+    "distribution": [
+      3,
+      5,
+      8,
+      11,
+      14,
+      12,
+      9,
+      7,
+      5,
+      4,
+      3,
+      2.5,
+      2,
+      1.8,
+      1.6,
+      1.4,
+      1.2,
+      1,
+      0.9,
+      0.8,
+      0.7,
+      0.7,
+      0.6,
+      0.6,
+      0.5,
+      0.5,
+      0.4,
+      0.4,
+      0.3,
+      0.3,
+      0.3,
+      0.3,
+      0.4,
+      0.5,
+      0.7,
+      0.9
+    ],
+    "youBucketIndex": 17,
+    "mostSimilar": [
+      {
+        "symbol": "PUMPDUMP",
+        "ruggedAfterHours": 18,
+        "loss": -94.1
+      },
+      {
+        "symbol": "FAKEMOON",
+        "ruggedAfterHours": 28,
+        "loss": -91.6
+      },
+      {
+        "symbol": "SLOWBLEED",
+        "ruggedAfterHours": 48,
+        "loss": -85.4
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777401486282,
+  "requestId": "c37beb0e-12aa-4144-bfcd-968eb13866c7",
+  "aiSummary": "Liquidity is not locked or burned. The developer can pull all liquidity at any moment, making the token worthless. The top wallet holds 72.0% of supply with only 3642 holders, creating extreme dump risk."
+}

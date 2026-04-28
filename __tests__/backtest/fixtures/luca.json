@@ -1,0 +1,352 @@
+{
+  "score": 100,
+  "risk": "RUG",
+  "flags": [
+    {
+      "label": "Wash trading detected (vol/liq > 20) — bundler dump",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Slow rug detected: -50% on 6h + -15% on 1h",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Single wallet holds 48% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Active dump: -60% 24h + -20% 1h (slow rug)",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Top 10 wallets hold 67% of supply",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Liquidity mirage: volume >> liquidity (wash)",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "LP not burned or locked — dev can rug liquidity",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Liquidity < $20k",
+      "severity": "info",
+      "impact": 0
+    },
+    {
+      "label": "GoPlus unavailable",
+      "severity": "info",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "pumpswap",
+    "url": "https://dexscreener.com/solana/6enlbd9r43xu2qac6n2rkkz86vwg3k3gfhv68axpc6q4",
+    "pairAddress": "6ENLBd9r43xU2Qac6n2rKkZ86vwG3K3GFhv68AXPc6q4",
+    "baseToken": {
+      "address": "97tBZooZkwM1VfuCHYqhaAzZ2Y7TEAfVhJEW9MLbpump",
+      "name": "Justice For Luca Cella Walker",
+      "symbol": "LUCA"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.00000009229",
+    "priceUsd": "0.000007715",
+    "txns": {
+      "m5": {
+        "buys": 5,
+        "sells": 10
+      },
+      "h1": {
+        "buys": 76,
+        "sells": 103
+      },
+      "h6": {
+        "buys": 625,
+        "sells": 589
+      },
+      "h24": {
+        "buys": 15564,
+        "sells": 13245
+      }
+    },
+    "volume": {
+      "h24": 1673516.7,
+      "h6": 57185.74,
+      "h1": 7150.49,
+      "m5": 551.66
+    },
+    "priceChange": {
+      "m5": -18.54,
+      "h1": -55.9,
+      "h6": -79.47,
+      "h24": -78.04
+    },
+    "liquidity": {
+      "usd": 7536.54,
+      "base": 484404573,
+      "quote": 45.451
+    },
+    "fdv": 7714,
+    "marketCap": 7714,
+    "pairCreatedAt": 1777355424000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/CBipjaE94NJts3m9?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/Igu_hGUwcdalfehL?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/97tBZooZkwM1VfuCHYqhaAzZ2Y7TEAfVhJEW9MLbpump?timestamp=1777399500000",
+      "websites": [
+        {
+          "url": "https://lucacellawalker.muchloved.com/",
+          "label": "Website"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/i/communities/1974311845633696226",
+          "type": "twitter"
+        }
+      ]
+    },
+    "boosts": {
+      "active": 130
+    }
+  },
+  "resolvedMint": "97tBZooZkwM1VfuCHYqhaAzZ2Y7TEAfVhJEW9MLbpump",
+  "confidence": 80,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 20,
+  "marketCap": 7714,
+  "priceUsd": 0.000007715,
+  "liquidity": 7536.54,
+  "volume24h": 1673516.7,
+  "volume1h": 7150.49,
+  "priceChange5m": -18.54,
+  "priceChange1h": -55.9,
+  "priceChange24h": -78.04,
+  "tokenSymbol": "LUCA",
+  "tokenName": "Justice For Luca Cella Walker",
+  "pairCreatedAt": 1777355424000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "wash_trading",
+    "bundle",
+    "concentration",
+    "chart",
+    "lp"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/CBipjaE94NJts3m9?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 12,
+  "solscanVolume24h": 1673516.7,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 0.054,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": false
+    },
+    "helius": {
+      "trust": 0.046,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 0.173,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": false,
+  "lpLocked": false,
+  "lpLockedPct": null,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 48.44939021938709,
+  "top10HolderPct": 67.04107700372035,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 48.4,
+      "addr": "6ENL…c6q4",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 95,
+      "repWarn": false,
+      "desc": "Holds <b>48.4%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777399424957,
+      "verdict": "RUG",
+      "score": 100,
+      "event": "Wash trading detected (vol/liq > 20) — bundler dump"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "6ENL…c6q4",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "DRvJ…wRS8",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "6hPi…Uyu2",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "EHP4…PUCB",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "C1rc…HUDm",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "2HJk…sVqZ",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "4h 12m",
+    "timeToRugMedianHours": 4.2,
+    "timeToRugSampleSize": 487,
+    "pctRugged24h": 89,
+    "pctSlowDeath": 8,
+    "pctAlive30d": 3,
+    "distribution": [
+      8,
+      14,
+      22,
+      28,
+      18,
+      12,
+      6,
+      4,
+      2,
+      1,
+      0.6,
+      0.4,
+      0.3,
+      0.3,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.3,
+      0.3,
+      0.4,
+      0.6,
+      1,
+      1.2,
+      1.4,
+      1.4,
+      1.2,
+      0.9,
+      0.6,
+      0.4,
+      0.3
+    ],
+    "youBucketIndex": 11,
+    "mostSimilar": [
+      {
+        "symbol": "RUGCOIN",
+        "ruggedAfterHours": 4,
+        "loss": -99.2
+      },
+      {
+        "symbol": "SCAMBOY",
+        "ruggedAfterHours": 6,
+        "loss": -98.5
+      },
+      {
+        "symbol": "TRAPCAT",
+        "ruggedAfterHours": 12,
+        "loss": -97.8
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777399425044,
+  "requestId": "dd774e12-a281-45e9-953e-58f0bb81ce27",
+  "aiSummary": "Coordinated wallets bought together at launch to inflate the price. They hold a large share and can dump simultaneously, crashing the price. The top wallet holds 48.4% of supply with only 20 holders, creating extreme dump risk."
+}

@@ -1,0 +1,252 @@
+{
+  "score": 963,
+  "risk": "SAFE",
+  "flags": [
+    {
+      "label": "Single wallet holds 12% of supply",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "LP Burned 100% (GoPlus) ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Established token (30d+) ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "raydium",
+    "url": "https://dexscreener.com/solana/93tjgwff5ac5thymi8c4wejvvqq4tumemuyw1leyz7bu",
+    "pairAddress": "93tjgwff5Ac5ThyMi8C4WejVVQq4tuMeMuYW1LEYZ7bu",
+    "baseToken": {
+      "address": "Df6yfrKC8kZE3KNkrHERKzAetSxbrWeniQfyJY4Jpump",
+      "name": "Just a chill guy",
+      "symbol": "CHILLGUY"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.0001328",
+    "priceUsd": "0.01112",
+    "txns": {
+      "m5": {
+        "buys": 0,
+        "sells": 1
+      },
+      "h1": {
+        "buys": 7,
+        "sells": 4
+      },
+      "h6": {
+        "buys": 118,
+        "sells": 180
+      },
+      "h24": {
+        "buys": 418,
+        "sells": 726
+      }
+    },
+    "volume": {
+      "h24": 187097.92,
+      "h6": 48940.06,
+      "h1": 1836.89,
+      "m5": 15.62
+    },
+    "priceChange": {
+      "m5": 0.06,
+      "h1": 0.74,
+      "h6": -3.04,
+      "h24": -0.06
+    },
+    "liquidity": {
+      "usd": 1113529.79,
+      "base": 50005665,
+      "quote": 6660.1422
+    },
+    "fdv": 11119760,
+    "marketCap": 11119760,
+    "pairCreatedAt": 1731701302000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/20ae19e21d577f3aead6ae8722a7a3a66c5376cbf11f10d278807bef32551b46?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/d420fa03cf0ded8133b0bdbd44e6da7bf6e23ea8999a9fdf1ee9abd918192760?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/Df6yfrKC8kZE3KNkrHERKzAetSxbrWeniQfyJY4Jpump?timestamp=1777400400000",
+      "websites": [],
+      "socials": [
+        {
+          "url": "https://x.com/chillguycto",
+          "type": "twitter"
+        },
+        {
+          "url": "https://t.me/chillguycto",
+          "type": "telegram"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "Df6yfrKC8kZE3KNkrHERKzAetSxbrWeniQfyJY4Jpump",
+  "confidence": 100,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "goplus",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 120696,
+  "marketCap": 11119760,
+  "priceUsd": 0.01112,
+  "liquidity": 1113529.79,
+  "volume24h": 187097.92,
+  "volume1h": 1836.89,
+  "priceChange5m": 0.06,
+  "priceChange1h": 0.74,
+  "priceChange24h": -0.06,
+  "tokenSymbol": "CHILLGUY",
+  "tokenName": "Just a chill guy",
+  "pairCreatedAt": 1731701302000,
+  "safeBlocked": false,
+  "safeBlockedReasons": [
+    "holders"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/20ae19e21d577f3aead6ae8722a7a3a66c5376cbf11f10d278807bef32551b46?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 12694,
+  "solscanVolume24h": 187097.92,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 1,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": true
+    },
+    "helius": {
+      "trust": 0.65,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": true,
+  "lpLocked": false,
+  "lpLockedPct": 100,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 11.755087478928568,
+  "top10HolderPct": 51.85352277988304,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 11.8,
+      "addr": "5LZk…boT2",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 95,
+      "repWarn": false,
+      "desc": "Holds <b>11.8%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777400542731,
+      "verdict": "SAFE",
+      "score": 963,
+      "event": "Single wallet holds 12% of supply"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "5LZk…boT2",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "u6PJ…Xq2w",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "FixD…uuph",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "5LHU…3Qef",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "A77H…4RiR",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "M2St…Dtxp",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": null,
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777400542813,
+  "requestId": "86ba15a6-280f-474f-b36d-5a0f43da91f8",
+  "aiSummary": "Score 963/1000. LP is burned, mint authority is disabled, freeze authority is disabled, 120696 holders show organic distribution. No critical risks were detected in the contract or holder analysis."
+}

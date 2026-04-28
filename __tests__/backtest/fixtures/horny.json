@@ -8,6 +8,11 @@
       "impact": 0
     },
     {
+      "label": "Wick trap: 3+ candles with dominant upper wick — repeated selling at highs",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
       "label": "LP not burned or locked — dev can rug liquidity",
       "severity": "warning",
       "impact": 0
@@ -38,50 +43,49 @@
       "name": "Wrapped SOL",
       "symbol": "SOL"
     },
-    "priceNative": "0.000003266",
-    "priceUsd": "0.0002737",
+    "priceNative": "0.000003177",
+    "priceUsd": "0.0002658",
     "txns": {
       "m5": {
-        "buys": 37,
-        "sells": 37
+        "buys": 0,
+        "sells": 0
       },
       "h1": {
-        "buys": 568,
-        "sells": 506
+        "buys": 2,
+        "sells": 4
       },
       "h6": {
-        "buys": 4038,
-        "sells": 3616
+        "buys": 2186,
+        "sells": 2064
       },
       "h24": {
-        "buys": 15161,
-        "sells": 13977
+        "buys": 13674,
+        "sells": 12703
       }
     },
     "volume": {
-      "h24": 399006.9,
-      "h6": 121539.73,
-      "h1": 16231.7,
-      "m5": 803.54
+      "h24": 315656.67,
+      "h6": 37369.14,
+      "h1": 439.17,
+      "m5": 0
     },
     "priceChange": {
-      "m5": -1.12,
-      "h1": -19.25,
-      "h6": -12.91,
-      "h24": -25.22
+      "h1": -3.51,
+      "h6": -28.17,
+      "h24": -34.13
     },
     "liquidity": {
-      "usd": 42153.85,
-      "base": 76580575,
-      "quote": 252.9055
+      "usd": 41532.62,
+      "base": 78140905,
+      "quote": 248.009883
     },
-    "fdv": 273107,
-    "marketCap": 273107,
+    "fdv": 265297,
+    "marketCap": 265297,
     "pairCreatedAt": 1777241904000,
     "info": {
       "imageUrl": "https://cdn.dexscreener.com/cms/images/4S9MEfJSGBzmdNH5?width=800&height=800&quality=95&format=auto",
       "header": "https://cdn.dexscreener.com/cms/images/97KX6C79XTmz0j2W?width=1500&height=500&quality=95&format=auto",
-      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/69HZnSz3XDHyTeBrrsn5NFbjpiryhHbYJZUGDx3QXH69?timestamp=1777384200000",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/69HZnSz3XDHyTeBrrsn5NFbjpiryhHbYJZUGDx3QXH69?timestamp=1777399200000",
       "websites": [
         {
           "url": "https://horny.vip/",
@@ -113,14 +117,14 @@
     "chart"
   ],
   "holders": 20,
-  "marketCap": 273107,
-  "priceUsd": 0.0002737,
-  "liquidity": 42153.85,
-  "volume24h": 399006.9,
-  "volume1h": 16231.7,
-  "priceChange5m": -1.12,
-  "priceChange1h": -19.25,
-  "priceChange24h": -25.22,
+  "marketCap": 265297,
+  "priceUsd": 0.0002658,
+  "liquidity": 41532.62,
+  "volume24h": 315656.67,
+  "volume1h": 439.17,
+  "priceChange5m": null,
+  "priceChange1h": -3.51,
+  "priceChange24h": -34.13,
   "tokenSymbol": "HORNY",
   "tokenName": "HORNY",
   "pairCreatedAt": 1777241904000,
@@ -133,8 +137,8 @@
   "tokenDecimals": null,
   "tokenSupply": null,
   "recentTransfers": "[0 transfers, redacted for fixture]",
-  "solscanTokenAgeHours": 39,
-  "solscanVolume24h": 399006.9,
+  "solscanTokenAgeHours": 43,
+  "solscanVolume24h": 315656.67,
   "solscanTrades24h": null,
   "solscanTraders24h": null,
   "layers": {
@@ -159,7 +163,7 @@
       "available": true
     },
     "chart": {
-      "trust": 1,
+      "trust": 0.65,
       "available": true
     },
     "crossvalidation": {
@@ -174,18 +178,18 @@
   "lpLocked": false,
   "lpLockedPct": null,
   "candles": "[20 candles, redacted for fixture]",
-  "topHolderPct": 7.675010535686471,
-  "top10HolderPct": 19.620311695344895,
+  "topHolderPct": 7.83148767251466,
+  "top10HolderPct": 19.776917999190946,
   "criticalActors": [
     {
       "type": "insider",
       "tag": "Insider",
-      "pct": 7.7,
+      "pct": 7.8,
       "addr": "CGcZ…7nHp",
       "repLbl": "Concentration risk · single wallet",
-      "repWidth": 83.1,
+      "repWidth": 83.4,
       "repWarn": false,
-      "desc": "Holds <b>7.7%</b> of supply — one-wallet dump would crash the price."
+      "desc": "Holds <b>7.8%</b> of supply — one-wallet dump would crash the price."
     }
   ],
   "verdictHistory": [
@@ -333,7 +337,7 @@
     ]
   },
   "scoring_version": "7.3.0",
-  "fetchedAt": 1777384087148,
-  "requestId": "af6070db-59c7-4334-91f6-60061d9a7e82",
-  "aiSummary": "The developer can remove all liquidity in one transaction. When that happens, the token price drops to zero and nobody can sell."
+  "fetchedAt": 1777399269185,
+  "requestId": "754931fa-fd69-4edd-bd95-00fd9981878e",
+  "aiSummary": "Liquidity is not locked or burned. The developer can pull all liquidity at any moment, making the token worthless."
 }

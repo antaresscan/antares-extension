@@ -13,6 +13,11 @@
       "impact": 0
     },
     {
+      "label": "Holder data looks incomplete (mature pair, low reported holders)",
+      "severity": "info",
+      "impact": 0
+    },
+    {
       "label": "Established token (30d+) ✓",
       "severity": "bonus",
       "impact": 0
@@ -33,50 +38,50 @@
       "name": "Wrapped SOL",
       "symbol": "SOL"
     },
-    "priceNative": "0.0002149",
-    "priceUsd": "0.01798",
+    "priceNative": "0.0002115",
+    "priceUsd": "0.01768",
     "txns": {
       "m5": {
         "buys": 1,
-        "sells": 1
+        "sells": 0
       },
       "h1": {
-        "buys": 14,
-        "sells": 27
+        "buys": 16,
+        "sells": 12
       },
       "h6": {
-        "buys": 154,
-        "sells": 111
+        "buys": 250,
+        "sells": 137
       },
       "h24": {
-        "buys": 1075,
-        "sells": 683
+        "buys": 994,
+        "sells": 612
       }
     },
     "volume": {
-      "h24": 568080.23,
-      "h6": 76637.9,
-      "h1": 13005.03,
-      "m5": 606.68
+      "h24": 514582.44,
+      "h6": 98504.67,
+      "h1": 7276.96,
+      "m5": 8.88
     },
     "priceChange": {
-      "m5": 0.23,
-      "h1": -0.74,
-      "h6": 1.04,
-      "h24": -8.19
+      "m5": 0.41,
+      "h1": -0.52,
+      "h6": -2.41,
+      "h24": -4.97
     },
     "liquidity": {
-      "usd": 1483163.04,
-      "base": 41269157,
-      "quote": 8855.9716
+      "usd": 1470262.05,
+      "base": 41613666,
+      "quote": 8784.7018
     },
-    "fdv": 17966022,
-    "marketCap": 17966022,
+    "fdv": 17663386,
+    "marketCap": 17663386,
     "pairCreatedAt": 1745173826000,
     "info": {
       "imageUrl": "https://cdn.dexscreener.com/cms/images/tLIgpz8Fa_O1THOX?width=800&height=800&quality=95&format=auto",
       "header": "https://cdn.dexscreener.com/cms/images/hEtV7zbR7T_wxfy_?width=1500&height=500&quality=95&format=auto",
-      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/5UUH9RTDiSpq6HKS6bp4NdU9PNJpXRXuiw6ShBTBhgH2?timestamp=1777383900000",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/5UUH9RTDiSpq6HKS6bp4NdU9PNJpXRXuiw6ShBTBhgH2?timestamp=1777402200000",
       "websites": [
         {
           "url": "https://trololol.io",
@@ -105,14 +110,14 @@
     "chart"
   ],
   "holders": 20,
-  "marketCap": 17966022,
-  "priceUsd": 0.01798,
-  "liquidity": 1483163.04,
-  "volume24h": 568080.23,
-  "volume1h": 13005.03,
-  "priceChange5m": 0.23,
-  "priceChange1h": -0.74,
-  "priceChange24h": -8.19,
+  "marketCap": 17663386,
+  "priceUsd": 0.01768,
+  "liquidity": 1470262.05,
+  "volume24h": 514582.44,
+  "volume1h": 7276.96,
+  "priceChange5m": 0.41,
+  "priceChange1h": -0.52,
+  "priceChange24h": -4.97,
   "tokenSymbol": "TROLL",
   "tokenName": "TROLL",
   "pairCreatedAt": 1745173826000,
@@ -125,8 +130,8 @@
   "tokenDecimals": null,
   "tokenSupply": null,
   "recentTransfers": "[0 transfers, redacted for fixture]",
-  "solscanTokenAgeHours": 8947,
-  "solscanVolume24h": 568080.23,
+  "solscanTokenAgeHours": 8952,
+  "solscanVolume24h": 514582.44,
   "solscanTrades24h": null,
   "solscanTraders24h": null,
   "layers": {
@@ -166,8 +171,8 @@
   "lpLocked": false,
   "lpLockedPct": null,
   "candles": "[20 candles, redacted for fixture]",
-  "topHolderPct": 8.92588891740039,
-  "top10HolderPct": 30.383759209316608,
+  "topHolderPct": 8.925888973009226,
+  "top10HolderPct": 30.443956550368213,
   "criticalActors": [
     {
       "type": "insider",
@@ -337,7 +342,7 @@
     ]
   },
   "scoring_version": "7.3.0",
-  "fetchedAt": 1777384031939,
-  "requestId": "aea6510a-8707-41d1-8fec-164cd2fdc913",
+  "fetchedAt": 1777402322968,
+  "requestId": "4dde7b87-f92f-4926-bdb4-10a26abbacd4",
   "aiSummary": "The developer can remove all liquidity in one transaction. When that happens, the token price drops to zero and nobody can sell."
 }

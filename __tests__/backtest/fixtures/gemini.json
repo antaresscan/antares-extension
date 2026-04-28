@@ -1,0 +1,357 @@
+{
+  "score": 100,
+  "risk": "RUG",
+  "flags": [
+    {
+      "label": "Slow rug detected: -50% on 6h + -15% on 1h",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Brutal dump 24h (-80%)",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Single wallet holds 80% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Top 10 wallets hold 97% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Newborn token on-chain (<30min)",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Active dump: -60% 24h + -20% 1h (slow rug)",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Low liquidity (<$5k)",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "High vol/liquidity ratio",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Liquidity mirage: volume >> liquidity (wash)",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "LP not burned or locked — dev can rug liquidity",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "GoPlus unavailable",
+      "severity": "info",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "pumpswap",
+    "url": "https://dexscreener.com/solana/6pp4y3kd5cgnzupccmgxktmw36vmuchuaezxp8ekgppj",
+    "pairAddress": "6Pp4Y3KD5cgNZupCcMGxktmW36VmuchuAeZXP8ekGpPJ",
+    "baseToken": {
+      "address": "BU9NRdPU4JnLEzBcYjzyGNBUzzXhCaU6nfEWnQYpump",
+      "name": "DogeShibWifElonBonkPopcatMoodeng",
+      "symbol": "GEMINI"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.00000002838",
+    "priceUsd": "0.000002379",
+    "txns": {
+      "m5": {
+        "buys": 4,
+        "sells": 18
+      },
+      "h1": {
+        "buys": 596,
+        "sells": 595
+      },
+      "h6": {
+        "buys": 596,
+        "sells": 595
+      },
+      "h24": {
+        "buys": 596,
+        "sells": 595
+      }
+    },
+    "volume": {
+      "h24": 43414.12,
+      "h6": 43414.12,
+      "h1": 43414.12,
+      "m5": 247.19
+    },
+    "priceChange": {
+      "m5": -15.23,
+      "h1": -93.19,
+      "h6": -93.19,
+      "h24": -93.19
+    },
+    "liquidity": {
+      "usd": 3749.47,
+      "base": 783320961,
+      "quote": 22.4997
+    },
+    "fdv": 2379,
+    "marketCap": 2379,
+    "pairCreatedAt": 1777402665000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/wMuozSNrmQdt8hkc?width=800&height=800&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/BU9NRdPU4JnLEzBcYjzyGNBUzzXhCaU6nfEWnQYpump?timestamp=1777403400000",
+      "websites": [
+        {
+          "url": "https://developer.gemini.com/trading/trading#agentic",
+          "label": "Website"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/AInvestorPF_/status/2049200047418401192",
+          "type": "twitter"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "BU9NRdPU4JnLEzBcYjzyGNBUzzXhCaU6nfEWnQYpump",
+  "confidence": 80,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 20,
+  "marketCap": 2379,
+  "priceUsd": 0.000002379,
+  "liquidity": 3749.47,
+  "volume24h": 43414.12,
+  "volume1h": 43414.12,
+  "priceChange5m": -15.23,
+  "priceChange1h": -93.19,
+  "priceChange24h": -93.19,
+  "tokenSymbol": "GEMINI",
+  "tokenName": "DogeShibWifElonBonkPopcatMoodeng",
+  "pairCreatedAt": 1777402665000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "concentration",
+    "age",
+    "chart",
+    "lp"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/wMuozSNrmQdt8hkc?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 0,
+  "solscanVolume24h": 43414.12,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 0.051,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": false
+    },
+    "helius": {
+      "trust": 0.037,
+      "available": true
+    },
+    "solscan": {
+      "trust": 0.1,
+      "available": true
+    },
+    "chart": {
+      "trust": 0.173,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": false,
+  "lpLocked": false,
+  "lpLockedPct": null,
+  "candles": "[4 candles, redacted for fixture]",
+  "topHolderPct": 80.38692138410592,
+  "top10HolderPct": 97.06168539368709,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 80.4,
+      "addr": "6Pp4…GpPJ",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 95,
+      "repWarn": false,
+      "desc": "Holds <b>80.4%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777403535413,
+      "verdict": "RUG",
+      "score": 100,
+      "event": "Slow rug detected: -50% on 6h + -15% on 1h"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "6Pp4…GpPJ",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "3eBT…tJj2",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "EUQg…n6KG",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "8YZc…71x2",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "44my…uwSg",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "HLnp…TLcC",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "4h 12m",
+    "timeToRugMedianHours": 4.2,
+    "timeToRugSampleSize": 487,
+    "pctRugged24h": 89,
+    "pctSlowDeath": 8,
+    "pctAlive30d": 3,
+    "distribution": [
+      8,
+      14,
+      22,
+      28,
+      18,
+      12,
+      6,
+      4,
+      2,
+      1,
+      0.6,
+      0.4,
+      0.3,
+      0.3,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.3,
+      0.3,
+      0.4,
+      0.6,
+      1,
+      1.2,
+      1.4,
+      1.4,
+      1.2,
+      0.9,
+      0.6,
+      0.4,
+      0.3
+    ],
+    "youBucketIndex": 11,
+    "mostSimilar": [
+      {
+        "symbol": "RUGCOIN",
+        "ruggedAfterHours": 4,
+        "loss": -99.2
+      },
+      {
+        "symbol": "SCAMBOY",
+        "ruggedAfterHours": 6,
+        "loss": -98.5
+      },
+      {
+        "symbol": "TRAPCAT",
+        "ruggedAfterHours": 12,
+        "loss": -97.8
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777403535499,
+  "requestId": "4482bf0d-9936-45da-b826-cdc23df6dce8",
+  "aiSummary": "Liquidity is not locked or burned. The developer can pull all liquidity at any moment, making the token worthless. The top wallet holds 80.4% of supply with only 20 holders, creating extreme dump risk."
+}
