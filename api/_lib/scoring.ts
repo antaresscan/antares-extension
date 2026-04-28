@@ -52,8 +52,17 @@ export const HARD_BLOCK_PATTERNS: Array<[RegExp, SafeBlockedReason]> = [
   [/wash trading/i, "wash_trading"],
   [/bundle|bundler/i, "bundle"],
   [/sniper/i, "sniper"],
-  [/rug|dump|exit trap/i, "rug_pattern"],
-  [/pump|parabolic/i, "pump"],
+  // rug_pattern matches actual chart/behaviour patterns, NOT every flag
+  // that happens to contain the word "rug". Previous regex /rug|dump|.../
+  // false-positive-classified the LP flag "LP not burned or locked — dev
+  // can rug liquidity" as both "lp" AND "rug_pattern", which double-
+  // counted hard reasons and made it impossible to soft-unlock even
+  // mature tokens whose only real issue was unverified LP.
+  // New regex requires specific pattern names rather than the bare word.
+  [/rug staircase|rug pattern|coordinated dump|dump and run|exit trap|exit liquidity/i, "rug_pattern"],
+  // pump pattern: same caveat. Bare /pump/ matched legitimate flags like
+  // "Pump.fun launch" which is informational, not a hard exit-trap signal.
+  [/(?:extreme |coordinated )?pump pattern|parabolic|pump.fun.*exit trap|pump.*newborn/i, "pump"],
   [/chart|blow-off|stair-step|volume exhaustion|liquidity mirage/i, "chart"],
   [/deceptive name/i, "deceptive_name"],                         // FIX: deceptive names are hard
     [/very few holders|few holders|<15|<50/i, "low_holders"], // FIX: very low holders is a HARD reason

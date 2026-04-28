@@ -197,16 +197,27 @@ export function layerRugCheck(
             typeof rugData.lockDurationDays === "number";
         const isOfficialMint = OFFICIAL_MINTS.has(resolvedMint);
         if (lpDataPresent && !isOfficialMint) {
-            // Fix(LP_SAFE_BLOCK): LP not burned or locked MUST block SAFE verdict.
-            // Previously penalty-only — rug pulls like VDOR passed through with accessible LP.
-            // Smart LP classification: mature tokens get lp_unverified instead of hard lp block
+            // Mature classification with OR'd maturity signals. Previous
+            // gate AND'd holders + liq + age, which collapsed mid-cap
+            // tokens like NEET (10k holders + $1.34M liq + age unknown)
+            // straight to DANGER because tokenAgeHours was undefined.
+            // The OR-gate keeps the strict-on-fresh-launches behaviour
+            // (a token with <5k holders AND <$500k liq AND <14d age
+            // still hits the hard branch) while letting any single
+            // strong maturity signal route to soft lp_unverified
+            // (CAUTION ceiling).
+            //
+            // The contract-clean check (no mint/freeze/honeypot) still
+            // ANDs because those are real exit attacks — never let them
+            // soft-unlock regardless of age/size.
             const ctx = maturityContext;
-            const isMature = ctx
-                && (ctx.holders ?? 0) >= LP_UNVERIFIED_MIN_HOLDERS
-                && ctx.liquidity >= LP_UNVERIFIED_MIN_LIQUIDITY
-                && (ctx.tokenAgeHours ?? 0) >= LP_UNVERIFIED_MIN_AGE_HOURS
-                && !ctx.mintAuthority && !ctx.freezeAuthority && !ctx.honeypot;
-            if (isMature) {
+            const contractClean = !ctx || (!ctx.mintAuthority && !ctx.freezeAuthority && !ctx.honeypot);
+            const looksMature = !!ctx && contractClean && (
+                (ctx.holders ?? 0) >= LP_UNVERIFIED_MIN_HOLDERS ||
+                ctx.liquidity >= LP_UNVERIFIED_MIN_LIQUIDITY ||
+                (ctx.tokenAgeHours ?? 0) >= LP_UNVERIFIED_MIN_AGE_HOURS
+            );
+            if (looksMature) {
                 flags.push(makeFlag("LP not burned but token is mature and liquid (unverified LP)", "warning", 0));
                 penalties.push(0.85);
                 safeBlocked = true;
@@ -328,13 +339,19 @@ export function layerGoPlus(
             // (hard, DANGER). Keep both arms safeBlocked so the safe
             // gate still trips; the soft reason just reroutes the gate
             // to the CAUTION branch in scoring.classifySafeBlockedReasons.
+            // Mirrors layerRugCheck: OR'd maturity gate. Single strong
+            // signal (5k+ holders OR $500k+ liq OR 14d+ age) is enough
+            // to route LP-unverified to the soft path, provided the
+            // contract itself is clean. See the comment in layerRugCheck
+            // for the full rationale.
             const ctx = maturityContext;
-            const isMature = ctx
-                && (ctx.holders ?? 0) >= LP_UNVERIFIED_MIN_HOLDERS
-                && ctx.liquidity >= LP_UNVERIFIED_MIN_LIQUIDITY
-                && (ctx.tokenAgeHours ?? 0) >= LP_UNVERIFIED_MIN_AGE_HOURS
-                && !ctx.mintAuthority && !ctx.freezeAuthority && !ctx.honeypot;
-            if (isMature) {
+            const contractClean = !ctx || (!ctx.mintAuthority && !ctx.freezeAuthority && !ctx.honeypot);
+            const looksMature = !!ctx && contractClean && (
+                (ctx.holders ?? 0) >= LP_UNVERIFIED_MIN_HOLDERS ||
+                ctx.liquidity >= LP_UNVERIFIED_MIN_LIQUIDITY ||
+                (ctx.tokenAgeHours ?? 0) >= LP_UNVERIFIED_MIN_AGE_HOURS
+            );
+            if (looksMature) {
                 flags.push(makeFlag("LP not burned but token is mature and liquid (unverified LP)", "warning", 0));
                 penalties.push(0.85);
                 safeBlocked = true;
