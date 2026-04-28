@@ -24,7 +24,11 @@ const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat
 const MAX_FLAGS = 8
 const TIMEOUT_MS = 8000
 const MIN_LENGTH = 20
-const MAX_LENGTH = 1200
+// Bumped 1200→1800 so we never have to truncate a complete Gemini
+// output mid-sentence. Gemini under the new max_tokens=600 budget
+// (see callGemini) can land at ~1500 chars on dense scans; 1800
+// gives a comfortable safety margin without ballooning UI height.
+const MAX_LENGTH = 1800
 const MAX_RETRIES = 2
 const RETRY_DELAYS = [1500, 3000]
 
@@ -157,8 +161,19 @@ async function callGemini(
       },
       body: JSON.stringify({
         model,
-        max_tokens: 350,
-        temperature: 0.35,
+        // max_tokens 350→600. The previous ceiling was hitting mid-
+        // sentence on dense-flag scans (e.g. the user-reported Luca
+        // RUG that ended at "...remove all $5" — Gemini was
+        // budgeting "$52.7K of liquidity" but ran out of tokens
+        // mid-number). 600 gives 4 full sentences of headroom even
+        // when the system prompt + 8 flags + metrics line bloat the
+        // input. Still well under Gemini's per-call cost ceiling.
+        max_tokens: 600,
+        // temperature 0.35→0.25. Lower temp keeps the output focused
+        // on the concrete numbers we feed in (top holder %, holders,
+        // liquidity, age) instead of drifting into generic risk
+        // narratives. Same model, sharper output.
+        temperature: 0.25,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
