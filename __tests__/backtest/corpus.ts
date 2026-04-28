@@ -1,9 +1,11 @@
 // __tests__/backtest/corpus.ts
 //
-// The Antares scoring corpus. Every token here is a labelled data point
-// the engine must classify correctly. The corpus is the project's
-// ground truth — if a code change degrades verdict accuracy on these
-// tokens, CI fails.
+// The Antares scoring corpus. Memecoin-focused — Antares is a
+// Solana memecoin scanner, so the corpus reflects what users
+// actually scan: pump.fun launches, established memecoins, known
+// rugs. DAO / DEX tokens (JTO, RAY, USDC, etc.) are out of scope
+// for the primary corpus; they get isolated coverage where their
+// edge-case behaviour matters but they don't drive the scoring.
 //
 // Each entry:
 //   ca:               Solana mint address
@@ -16,19 +18,17 @@
 //                     the test but will print a warning. Used for
 //                     borderline tokens that legitimately float
 //                     between two bands depending on market state.
-//   why:              one-line justification for the label. Forces
-//                     reviewers to articulate why each token is here.
+//   why:              one-line justification for the label.
 //   source:           how the label was established. "live" = scanned
 //                     live and the verdict was vetted; "external" =
-//                     ground truth from off-chain knowledge (rug
-//                     post-mortems, market-cap registries, etc.).
+//                     ground truth from off-chain knowledge.
+//   skipFixture:      mark when /api/scan currently 504s on this
+//                     token's large dataset — captured separately.
 //
 // Adding a token:
-//   1. Add an entry below with the expected verdict and a why.
-//   2. Run: npm run corpus:capture <CA> (writes the fixture).
-//   3. Run: npm run test -- backtest/accuracy (verifies the fixture
-//      matches the expected verdict).
-//   4. Open a PR. CI runs the corpus on every push.
+//   1. Add the entry below with the expected verdict + a why
+//   2. npm run corpus:capture <SYMBOL> (writes the fixture)
+//   3. npm run test:corpus (verifies)
 
 import type { Verdict } from "../../api/_lib/types"
 
@@ -40,85 +40,20 @@ export interface CorpusEntry {
   tolerated?: Verdict[]
   why: string
   source: "live" | "external"
-  // Set when the live /api/scan currently 504s on this token because
-  // its upstream dataset (RugCheck / Helius accounts) is too large to
-  // fit within the function's 10s budget. Test prints a warning but
-  // does NOT fail on missing fixture for these. Tracked as a separate
-  // backend issue. Remove the flag once the timeout is fixed and
-  // re-capture the fixture.
   skipFixture?: boolean
 }
 
 export const CORPUS: CorpusEntry[] = [
-  // ─── BLUE-CHIP SAFE ───────────────────────────────────────────────
-  // High-mcap Solana tokens with multi-month history and clean
-  // contract posture. The engine MUST not flag them DANGER/RUG.
+  // ─── BLUE-CHIP MEMECOINS — top mcap, multi-month history ──────────
+  // Established Solana memecoins traders consider "safer" within the
+  // memecoin asset class. The engine should not flag them DANGER.
   {
-    ca: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-    symbol: "USDC",
+    ca: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+    symbol: "BONK",
     expectedVerdict: "SAFE",
-    expectedScore: [950, 1000],
-    why: "Circle stablecoin. Maximum trust signal. Failing this is a system error.",
-    source: "external",
-    skipFixture: true, // /api/scan currently 504s on USDC due to large RugCheck dataset
-  },
-  {
-    ca: "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
-    symbol: "USDT",
-    expectedVerdict: "SAFE",
-    expectedScore: [950, 1000],
-    why: "Tether stablecoin on Solana. Same trust profile as USDC.",
-    source: "external",
-    skipFixture: true, // same large-dataset 504 as USDC
-  },
-  {
-    ca: "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN",
-    symbol: "JUP",
-    expectedVerdict: "SAFE",
-    expectedScore: [880, 1000],
-    why: "Jupiter aggregator token. Established 1y+, top-10 Solana market cap.",
-    source: "external",
-    skipFixture: true, // same large-dataset 504
-  },
-  {
-    ca: "jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL",
-    symbol: "JTO",
-    expectedVerdict: "DANGER",
     tolerated: ["CAUTION"],
-    expectedScore: [350, 700],
-    // KNOWN-LIMITATION case (same shape as ORCA below). Jito is a
-    // legitimate validator-staking DAO with multi-year history, but
-    // the team multi-sig holds 21% of supply — trips the >=15%
-    // concentration hard block. Engine's current behaviour is
-    // "structurally correct, practically over-flagging". Encoded as
-    // expected DANGER so CI doesn't silently regress; the future
-    // DAO-multi-sig allowlist work will flip this back to SAFE
-    // once that detection lands.
-    why: "Team multi-sig at 21% trips concentration hard block. Same DAO-treasury limitation as ORCA.",
-    source: "live",
-  },
-  {
-    ca: "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R",
-    symbol: "RAY",
-    expectedVerdict: "SAFE",
-    expectedScore: [880, 1000],
-    why: "Raydium DEX token. Years of established trading.",
-    source: "external",
-  },
-  {
-    ca: "orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE",
-    symbol: "ORCA",
-    expectedVerdict: "CAUTION",
-    tolerated: ["SAFE"],
-    expectedScore: [600, 900],
-    // FIXED in PR #337 (blue-chip concentration exemption / Path 3).
-    // ORCA has team multi-sig at 19% which used to trip the
-    // concentration hard block → DANGER 525. With Path 3 active,
-    // the engine recognises (90k+ holders, LP burned, GoPlus clean)
-    // → unlocks the gate → score (738) lands in the CAUTION band.
-    // Concentration is still surfaced via the warning flag — we just
-    // don't slam the verdict to DANGER on a legitimate DAO treasury.
-    why: "Path 3 blue-chip exemption. 90k+ holders, LP burned, GoPlus clean → CAUTION instead of DANGER.",
+    expectedScore: [780, 1000],
+    why: "BONK. Largest Solana memecoin by holder count. Multi-year history.",
     source: "live",
   },
   {
@@ -127,39 +62,69 @@ export const CORPUS: CorpusEntry[] = [
     expectedVerdict: "SAFE",
     tolerated: ["CAUTION"],
     expectedScore: [800, 1000],
-    why: "dogwifhat. Top Solana memecoin, 18+ months trading. SAFE in normal market state.",
-    source: "external",
-  },
-  {
-    ca: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
-    symbol: "BONK",
-    expectedVerdict: "SAFE",
-    tolerated: ["CAUTION"],
-    expectedScore: [780, 1000],
-    why: "BONK. Largest Solana memecoin by holder count. Some concentration but otherwise pristine.",
-    source: "external",
+    why: "dogwifhat. Top-3 Solana memecoin by mcap, 18 months trading history.",
+    source: "live",
   },
   {
     ca: "2zMMhcVQEXDtdE6vsFS7S7D5oUodfJHE8vd1gnBouauv",
     symbol: "PENGU",
     expectedVerdict: "SAFE",
     expectedScore: [800, 1000],
-    why: "Pudgy Penguins. Backed by established NFT brand, large mcap.",
+    why: "Pudgy Penguins. Backed by established NFT brand, multi-million mcap.",
     source: "live",
   },
+  {
+    ca: "7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr",
+    symbol: "POPCAT",
+    expectedVerdict: "SAFE",
+    tolerated: ["CAUTION"],
+    expectedScore: [750, 1000],
+    why: "Popcat. Top-tier Solana memecoin, multi-month history, deep liquidity.",
+    source: "live",
+  },
+  {
+    ca: "MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5",
+    symbol: "MEW",
+    expectedVerdict: "SAFE",
+    tolerated: ["CAUTION"],
+    expectedScore: [750, 1000],
+    why: "Cat in a dogs world. Established memecoin, $9M+ liquidity.",
+    source: "live",
+    skipFixture: true, // pending recapture after forceRug fix deploy (PR #...)
+  },
+  {
+    ca: "7tGwuFAyV3xQjYGdGDwXzxegx419WgE4WwtEbJq9x1Es",
+    symbol: "GOAT",
+    expectedVerdict: "SAFE",
+    tolerated: ["CAUTION"],
+    expectedScore: [750, 1000],
+    why: "Goatseus Maximus. AI-narrative memecoin, deep liquidity, established trading.",
+    source: "live",
+    skipFixture: true, // pending recapture after forceRug fix deploy
+  },
+  {
+    ca: "Dn3DFUNDKEyMJGrEsuzTiYrfEwtPo86iH5qTKzbbtiag",
+    symbol: "PNUT",
+    expectedVerdict: "SAFE",
+    tolerated: ["CAUTION"],
+    expectedScore: [750, 1000],
+    why: "Peanut the Squirrel. Viral-launch memecoin, large liquidity pool.",
+    source: "live",
+    skipFixture: true, // pending recapture after forceRug fix deploy
+  },
 
-  // ─── ESTABLISHED MEMECOINS — typically CAUTION ────────────────────
+  // ─── ESTABLISHED MID-CAP MEMECOINS — typically CAUTION ────────────
   // Mature trading history but missing one or more SAFE prerequisites
   // (LP not formally locked, mild concentration, etc.). Should land
-  // in CAUTION band — not DANGER (would be a false positive) and not
-  // SAFE (would be a false negative on real risk).
+  // in CAUTION — not DANGER (false positive) and not SAFE (the risk
+  // is real even if not extreme).
   {
     ca: "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump",
     symbol: "FARTCOIN",
     expectedVerdict: "CAUTION",
     tolerated: ["SAFE"],
     expectedScore: [700, 950],
-    why: "Established memecoin (1B+ mcap), but single wallet holds ~11% of supply. Concentration soft-block routes to CAUTION.",
+    why: "Established memecoin, 1B+ mcap, but single wallet holds ~11% — concentration soft block.",
     source: "live",
   },
   {
@@ -167,7 +132,7 @@ export const CORPUS: CorpusEntry[] = [
     symbol: "NEET",
     expectedVerdict: "CAUTION",
     expectedScore: [700, 900],
-    why: "10k+ holders, $1.3M liq, 30d+ established, but LP not burned. Mature lp_unverified path.",
+    why: "10k+ holders, $1.3M liq, 30d+ established, LP not burned. Mature lp_unverified path.",
     source: "live",
   },
   {
@@ -184,14 +149,33 @@ export const CORPUS: CorpusEntry[] = [
     expectedVerdict: "SAFE",
     tolerated: ["CAUTION"],
     expectedScore: [800, 1000],
-    why: "Established 30d+, LP burned, well distributed. Genuine SAFE profile.",
+    why: "Established 30d+, LP burned, well distributed. Genuine SAFE memecoin profile.",
+    source: "live",
+  },
+  {
+    ca: "GJAFwWjJ3vnTsrQVabjBVK2TYB1YtRCQXRDfDgUnpump",
+    symbol: "ACT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER"],
+    expectedScore: [400, 950],
+    why: "Act I AI Prophecy. AI-narrative memecoin, established mcap. Borderline.",
+    source: "live",
+    skipFixture: true, // pending recapture after forceRug fix deploy
+  },
+  {
+    ca: "63LfDmNb3MQ8mw9MtZ2To9bEA2M71kZUUGq5tiJxcqj9",
+    symbol: "GIGA",
+    expectedVerdict: "CAUTION",
+    tolerated: ["DANGER"],
+    expectedScore: [400, 800],
+    why: "Gigachad. Established memecoin but past its peak — concentration + chart-pattern signals possible.",
     source: "live",
   },
 
-  // ─── MID-CAP DANGER — concentration / structural ──────────────────
-  // Tokens that look established but carry concrete dump risk via
-  // wallet concentration. Must surface DANGER, not CAUTION (would
-  // miss the risk) and not RUG (the rest of the profile is clean).
+  // ─── DANGER — concentration / structural risk ─────────────────────
+  // Memecoins where the engine should surface DANGER, not CAUTION
+  // (would miss the risk) and not RUG (the rest of the profile is
+  // clean enough that "absolute kill" isn't warranted).
   {
     ca: "Dfh5DzRgSvvCFDoYc2ciTkMrbDfRKybA4SoFbPmApump",
     symbol: "PIPPIN",
@@ -200,12 +184,19 @@ export const CORPUS: CorpusEntry[] = [
     why: "Single wallet 27%, top10 67%. Stacked concentration triggers hard concentration block.",
     source: "live",
   },
+  {
+    ca: "6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN",
+    symbol: "TRUMP",
+    expectedVerdict: "RUG",
+    tolerated: ["DANGER"],
+    expectedScore: [0, 350],
+    why: "Post-rug state — 77% concentrated, 20 holders left. Coordinated dump confirmed.",
+    source: "live",
+  },
 
   // ─── CONFIRMED RUGS — must surface DANGER or RUG ──────────────────
   // The hardest-cost failure mode: rugs slipping past as SAFE/CAUTION
-  // would damage user trust the most. We accept either DANGER or RUG
-  // here because the system intentionally gates very-low-mcap RUGs at
-  // a higher floor than the score-based RUG band suggests.
+  // would damage user trust the most. We accept either DANGER or RUG.
   {
     ca: "4GFe6MBDorSy5bLbiUMrgETr6pZcjyfxMDm5ehSgpump",
     symbol: "HAWK",
@@ -225,33 +216,31 @@ export const CORPUS: CorpusEntry[] = [
     source: "live",
   },
 
-  // ─── ANCHOR TOKENS for verdict-band edges ─────────────────────────
-  // Pre-selected tokens we use to detect drift at band boundaries.
-  // If TRUMP starts coming back as SAFE or PENGU as DANGER, scoring
-  // has shifted in a way the rest of the corpus might miss.
+  // ─── REFERENCE ANCHOR — drift detection ───────────────────────────
+  // One non-memecoin entry kept as a sanity check: USDC must stay
+  // SAFE no matter what. If it ever comes back as anything else,
+  // the engine has a fundamental scoring bug.
   {
-    ca: "6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN",
-    symbol: "TRUMP",
-    expectedVerdict: "RUG",
-    tolerated: ["DANGER"],
-    expectedScore: [0, 350],
-    // Was DANGER originally; on-chain state shifted to coordinated
-    // dump territory: 77% concentration in one wallet, 20 active
-    // holders left, multi-month bleed. Engine correctly catches this.
-    why: "Post-rug state — 77% concentrated, 20 holders left. Coordinated dump confirmed.",
-    source: "live",
+    ca: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    symbol: "USDC",
+    expectedVerdict: "SAFE",
+    expectedScore: [950, 1000],
+    why: "Anchor: Circle stablecoin. Failing this is a system-level engine error.",
+    source: "external",
+    skipFixture: true, // /api/scan currently 504s on USDC's large RugCheck dataset
   },
+
+  // ─── USELESS — confirmed rug-then-mature ──────────────────────────
+  // Originally labelled RUG; the project actually matured to a real
+  // memecoin (51k holders, LP burned). Engine correctly upgrades it.
+  // Kept in the corpus as a "label-evolution test case" — proves the
+  // corpus encodes reality, not priors.
   {
     ca: "HhJpBhRRn4g56VsyLuT8DL5Bv31HkXqsrahTTUCZeZg4",
     symbol: "USELESS",
     expectedVerdict: "SAFE",
     tolerated: ["CAUTION"],
     expectedScore: [800, 1000],
-    // Originally labelled RUG based on the joke premise of the token,
-    // but the project actually matured: 51k holders, LP burned, 30d+
-    // established, no critical flags. The engine correctly upgrades
-    // it to SAFE. Ground truth wins over preconceived labels — the
-    // corpus is supposed to encode reality, not our priors.
     why: "Matured into legit memecoin: 51k holders, LP burned, 30d+, clean contract.",
     source: "live",
   },

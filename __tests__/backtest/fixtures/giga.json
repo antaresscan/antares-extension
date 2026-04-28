@@ -1,24 +1,24 @@
 {
-  "score": 738,
+  "score": 777,
   "risk": "CAUTION",
   "flags": [
     {
-      "label": "Single wallet holds 19% of supply",
-      "severity": "critical",
-      "impact": 0
-    },
-    {
-      "label": "Buy/sell imbalance (coordinated pump)",
+      "label": "Single wallet holds 12% of supply",
       "severity": "warning",
       "impact": 0
     },
     {
-      "label": "Top 10 wallets hold 64% of supply",
-      "severity": "warning",
+      "label": "RugCheck unavailable",
+      "severity": "info",
       "impact": 0
     },
     {
       "label": "LP Burned 100% (GoPlus) ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Well distributed supply ✓",
       "severity": "bonus",
       "impact": 0
     },
@@ -30,138 +30,129 @@
   ],
   "pair": {
     "chainId": "solana",
-    "dexId": "orca",
-    "url": "https://dexscreener.com/solana/2p7nybtpbgtmy69nse8daw6szprjn7tqvdnqvoewqvjy",
-    "pairAddress": "2p7nYbtPBgtmY69NsE8DAW6szpRJn7tQvDnqvoEWQvjY",
-    "labels": [
-      "v2"
-    ],
+    "dexId": "raydium",
+    "url": "https://dexscreener.com/solana/4xxm4cdb6mescxm52xvyqknbzvdewwspdzrbctqvguar",
+    "pairAddress": "4xxM4cdb6MEsCxM52xvYqkNbzvdeWWsPDZrBcTqVGUar",
     "baseToken": {
-      "address": "orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE",
-      "name": "Orca",
-      "symbol": "ORCA"
+      "address": "63LfDmNb3MQ8mw9MtZ2To9bEA2M71kZUUGq5tiJxcqj9",
+      "name": "GIGACHAD",
+      "symbol": "GIGA"
     },
     "quoteToken": {
-      "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-      "name": "USD Coin",
-      "symbol": "USDC"
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
     },
-    "priceNative": "1.7855",
-    "priceUsd": "1.78",
+    "priceNative": "0.00002041",
+    "priceUsd": "0.001703",
     "txns": {
       "m5": {
-        "buys": 117,
-        "sells": 15
+        "buys": 0,
+        "sells": 0
       },
       "h1": {
-        "buys": 232,
-        "sells": 99
+        "buys": 11,
+        "sells": 80
       },
       "h6": {
-        "buys": 1365,
-        "sells": 1091
+        "buys": 113,
+        "sells": 176
       },
       "h24": {
-        "buys": 10321,
-        "sells": 7910
+        "buys": 667,
+        "sells": 833
       }
     },
     "volume": {
-      "h24": 2150636.88,
-      "h6": 324343.99,
-      "h1": 53605.08,
-      "m5": 18174
+      "h24": 248081.42,
+      "h6": 32167.59,
+      "h1": 16789.63,
+      "m5": 0
     },
     "priceChange": {
-      "m5": 3.53,
-      "h1": 5.72,
-      "h6": 10.95,
-      "h24": 31.94
+      "h1": 0.89,
+      "h6": -0.28,
+      "h24": -2.76
     },
     "liquidity": {
-      "usd": 1026128.84,
-      "base": 287014,
-      "quote": 513662
+      "usd": 1190104.13,
+      "base": 349943709,
+      "quote": 7120.8957
     },
-    "fdv": 178549979,
-    "marketCap": 108556539,
-    "pairCreatedAt": 1669602431000,
+    "fdv": 16356937,
+    "marketCap": 16356937,
+    "pairCreatedAt": 1704403186000,
     "info": {
-      "imageUrl": "https://cdn.dexscreener.com/cms/images/bfd0d54a2ff7a764291354b848f3f05c8b6b89213b16b240807e9cb9a78dd128?width=800&height=800&quality=95&format=auto",
-      "header": "https://cdn.dexscreener.com/cms/images/8044fef53efe70415cc4b3fa387f9df339f208c0e1a5f91f9d38c8a0556722e2?width=1500&height=500&quality=95&format=auto",
-      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE?timestamp=1777385700000",
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/102ba1dee6cf6239b293dbd86e0e11ddf78e74cdce00030c4511096bd2480e26?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/28cf7165568652941fc087ebdef804e25ba4677de99452845d8298414ce0f641?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/63LfDmNb3MQ8mw9MtZ2To9bEA2M71kZUUGq5tiJxcqj9?timestamp=1777386600000",
       "websites": [
         {
-          "url": "https://www.orca.so/",
+          "url": "https://gigachadsolana.com/",
           "label": "Website"
-        },
-        {
-          "url": "https://docs.orca.so/",
-          "label": "Docs"
         }
       ],
       "socials": [
         {
-          "url": "https://x.com/orca_so",
+          "url": "https://x.com/gigachad",
           "type": "twitter"
         },
         {
-          "url": "https://discord.gg/a2SSVmYX7T",
-          "type": "discord"
+          "url": "https://t.me/gigachadsol",
+          "type": "telegram"
         }
       ]
     }
   },
-  "resolvedMint": "orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE",
-  "confidence": 100,
+  "resolvedMint": "63LfDmNb3MQ8mw9MtZ2To9bEA2M71kZUUGq5tiJxcqj9",
+  "confidence": 80,
   "sources_used": [
     "dexscreener",
-    "rugcheck",
     "goplus",
     "helius",
     "solscan",
     "chart"
   ],
-  "holders": 90191,
-  "marketCap": 108556539,
-  "priceUsd": 1.78,
-  "liquidity": 1026128.84,
-  "volume24h": 2150636.88,
-  "volume1h": 53605.08,
-  "priceChange5m": 3.53,
-  "priceChange1h": 5.72,
-  "priceChange24h": 31.94,
-  "tokenSymbol": "ORCA",
-  "tokenName": "Orca",
-  "pairCreatedAt": 1669602431000,
+  "holders": 84364,
+  "marketCap": 16356937,
+  "priceUsd": 0.001703,
+  "liquidity": 1190104.13,
+  "volume24h": 248081.42,
+  "volume1h": 16789.63,
+  "priceChange5m": null,
+  "priceChange1h": 0.89,
+  "priceChange24h": -2.76,
+  "tokenSymbol": "GIGA",
+  "tokenName": "GIGACHAD",
+  "pairCreatedAt": 1704403186000,
   "safeBlocked": false,
   "safeBlockedReasons": [
-    "concentration"
+    "holders"
   ],
-  "tokenLogo": "https://cdn.dexscreener.com/cms/images/bfd0d54a2ff7a764291354b848f3f05c8b6b89213b16b240807e9cb9a78dd128?width=800&height=800&quality=95&format=auto",
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/102ba1dee6cf6239b293dbd86e0e11ddf78e74cdce00030c4511096bd2480e26?width=800&height=800&quality=95&format=auto",
   "tokenCreator": null,
   "tokenDecimals": null,
   "tokenSupply": null,
   "recentTransfers": "[0 transfers, redacted for fixture]",
-  "solscanTokenAgeHours": 29939,
-  "solscanVolume24h": 2150636.88,
+  "solscanTokenAgeHours": 20273,
+  "solscanVolume24h": 248081.42,
   "solscanTrades24h": null,
   "solscanTraders24h": null,
   "layers": {
     "dexscreener": {
-      "trust": 0.85,
+      "trust": 1,
       "available": true
     },
     "rugcheck": {
       "trust": 1,
-      "available": true
+      "available": false
     },
     "goplus": {
       "trust": 1,
       "available": true
     },
     "helius": {
-      "trust": 0.202,
+      "trust": 0.3,
       "available": true
     },
     "solscan": {
@@ -184,26 +175,38 @@
   "lpLocked": false,
   "lpLockedPct": 100,
   "candles": "[20 candles, redacted for fixture]",
-  "topHolderPct": 18.93446919102587,
-  "top10HolderPct": 64.4212798053461,
+  "topHolderPct": 12.290493233010679,
+  "top10HolderPct": 29.413610083819393,
   "criticalActors": [
     {
       "type": "insider",
       "tag": "Insider",
-      "pct": 18.9,
-      "addr": "GwH3…x4PV",
+      "pct": 12.3,
+      "addr": "3CYE…9d8C",
       "repLbl": "Concentration risk · single wallet",
       "repWidth": 95,
       "repWarn": false,
-      "desc": "Holds <b>18.9%</b> of supply — one-wallet dump would crash the price."
+      "desc": "Holds <b>12.3%</b> of supply — one-wallet dump would crash the price."
     }
   ],
   "verdictHistory": [
     {
-      "ts": 1777383963469,
+      "ts": 1777379484935,
+      "verdict": "CAUTION",
+      "score": 825,
+      "event": "Single wallet holds 12% of supply"
+    },
+    {
+      "ts": 1777380812766,
       "verdict": "DANGER",
       "score": 525,
-      "event": "Single wallet holds 19% of supply"
+      "event": "Buy/sell imbalance (coordinated pump)"
+    },
+    {
+      "ts": 1777386570185,
+      "verdict": "CAUTION",
+      "score": 803,
+      "event": "Single wallet holds 12% of supply"
     }
   ],
   "holderActivity": {
@@ -214,7 +217,7 @@
         "avatar": "Insider",
         "pctChange": 0,
         "pctChangeDisp": "±0%",
-        "addr": "GwH3…x4PV",
+        "addr": "3CYE…9d8C",
         "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
       },
       {
@@ -223,7 +226,7 @@
         "avatar": "Whale",
         "pctChange": 0,
         "pctChangeDisp": "±0%",
-        "addr": "CSqK…ixBK",
+        "addr": "2wJ8…2NqX",
         "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
       },
       {
@@ -232,34 +235,34 @@
         "avatar": "Whale",
         "pctChange": 0,
         "pctChangeDisp": "±0%",
-        "addr": "DbfG…J74v",
+        "addr": "5gS2…WYQd",
         "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
       },
       {
-        "role": "whale-big",
+        "role": "real",
         "label": "Static",
-        "avatar": "Whale",
+        "avatar": "Retail",
         "pctChange": 0,
         "pctChangeDisp": "±0%",
-        "addr": "5Je5…5Uxd",
+        "addr": "6LY1…zkzF",
         "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
       },
       {
-        "role": "whale-big",
+        "role": "real",
         "label": "Static",
-        "avatar": "Whale",
+        "avatar": "Retail",
         "pctChange": 0,
         "pctChangeDisp": "±0%",
-        "addr": "5tzF…uAi9",
+        "addr": "E2Rv…atYy",
         "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
       },
       {
-        "role": "whale-big",
+        "role": "real",
         "label": "Static",
-        "avatar": "Whale",
+        "avatar": "Retail",
         "pctChange": 0,
         "pctChangeDisp": "±0%",
-        "addr": "7NQr…fwML",
+        "addr": "u6PJ…Xq2w",
         "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
       }
     ],
@@ -331,7 +334,7 @@
     ]
   },
   "scoring_version": "7.3.0",
-  "fetchedAt": 1777385644326,
-  "requestId": "c810bf63-8107-44af-9ec3-4619262d0ad1",
+  "fetchedAt": 1777386575517,
+  "requestId": "022691e2-b819-47d9-8630-618c0f100a97",
   "aiSummary": null
 }

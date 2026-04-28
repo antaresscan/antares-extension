@@ -317,7 +317,13 @@ describe("layerHelius", () => {
     expect(result.available).toBe(false);
   });
 
-  it("penalty for top holder > 50%", () => {
+  it("penalty for top holder > 50% (concentration hard block, NOT forceRug)", () => {
+    // Top1 > 30% used to trigger forceRug → RUG slam, which over-
+    // flagged legitimate blue-chip memecoins like MEW (164k holders +
+    // LP burned + a 35% whale) as RUG. Now it sets safeBlocked +
+    // hard concentration reason, letting Path 3 decide whether
+    // blue-chip signals warrant CAUTION rather than RUG. forceRug
+    // stays reserved for honeypot / deceptive-name patterns.
     const holders: HeliusHolder[] = [
       { address: "wallet1abc", owner: "wallet1abc", uiAmount: 600 },
       { address: "wallet2abc", owner: "wallet2abc", uiAmount: 100 },
@@ -327,7 +333,8 @@ describe("layerHelius", () => {
     ];
     const result = layerHelius(holders, 1000);
     expect(result.trust).toBeLessThan(0.15);
-    expect(result.forceRug).toBe(true);
+    expect(result.forceRug).toBe(false);
+    expect(result.safeBlocked).toBe(true);
   });
 
   it("foundation wallet detection — excludes foundation wallets from holder analysis", () => {
