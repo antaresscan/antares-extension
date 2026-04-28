@@ -30,6 +30,8 @@ import {
 import {
   DEXSCREENER_BASE, RUGCHECK_BASE, GOPLUS_BASE, LAYER_WEIGHTS, SCORING_VERSION,
   LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS,
+  LP_UNVERIFIED_MIN_HOLDERS, LP_UNVERIFIED_MIN_LIQUIDITY, LP_UNVERIFIED_MIN_AGE_HOURS,
+  HARD_BLOCK_REASONS,
 } from "./_lib/constants";
 import {
   layerDexScreener, layerRugCheck, layerGoPlus, layerHelius,
@@ -408,32 +410,58 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // RugCheck reported a real lock — which read like a contradiction
     // when the verdict surfaced LP-locked bonuses elsewhere.
     const lpLocked = rugData?.lpLocked === true;
-
-    // ─── LP fail-closed safety net ────────────────────────────────────
-    // If neither RugCheck nor GoPlus can confirm LP is burned or
-    // locked, AND no layer has emitted an LP-related flag, force the
-    // safe gate closed. Without this, brand-new tokens (low holders,
-    // RugCheck has no record yet) where GoPlus is also rate-limited
-    // slip through with SAFE verdicts despite the front-end correctly
-    // showing "LP LOCK ✗" — exactly the user-reported HORNY/MAGA case
-    // (SAFE 931 with 20 holders, $48K liq, no LP data from any source).
-    // Treat unverified LP as not-burned by default — fail-closed.
-    if (!lpBurned && !lpLocked) {
-      const anyLpFlag = allLayers.some(l =>
-        l.flags.some(f => /\bLP\b|liquidity (?:not|is)|dev can rug/i.test(f.label))
-      );
-      if (!anyLpFlag) {
-        postLayerFlags.push(makeFlag(
-          "LP not burned or locked — dev can rug liquidity",
-          "warning",
-          0
-        ));
-        safeBlocked = true;
-        if (!safeBlockedReasons.includes("lp")) safeBlockedReasons.push("lp");
-      }
-    }
     const goPlusClean = l3.available && l3.trust >= 0.95 && !l3.forceRug;
     const tokenAgeHours = solscanTokenAgeHours ?? dexTokenAgeHours ?? null;
+
+    // ─── LP fail-closed safety net ────────────────────────────────────
+    // When neither RugCheck nor GoPlus can confirm LP is burned or
+    // locked AND no layer has emitted an LP-related flag, force the
+    // safe gate closed. Without this, brand-new tokens (low holders,
+    // RugCheck has no record yet, GoPlus rate-limited) slip through
+    // with SAFE verdicts despite the front-end correctly showing
+    // "LP LOCK ✗" — exactly the user-reported HORNY/MAGA case.
+    //
+    // Maturity gate is intentionally LENIENT here (OR'd, not AND'd
+    // like in the layer-level checks) because this branch only runs
+    // when we have NO source-level LP signal. Failing CAUTION on a
+    // mature-looking token whose API metadata happens to be missing
+    // (e.g. age unknown when Solscan is degraded) is far worse for
+    // the user than failing DANGER on a clean-but-tiny token. We
+    // reserve hard 'lp' for tokens that score "young AND small AND
+    // unknown-age" on every available signal.
+    if (!lpBurned && !lpLocked) {
+      const anyLpFlag = allLayers.some(l =>
+        l.flags.some(f => /\bLP\b|liquidity (?:not|is)|dev can rug|unverified LP/i.test(f.label))
+      );
+      if (!anyLpFlag) {
+        const liqNum = asNumber(pair?.liquidity?.usd);
+        const looksMature =
+          (holders ?? 0) >= LP_UNVERIFIED_MIN_HOLDERS ||
+          liqNum >= LP_UNVERIFIED_MIN_LIQUIDITY ||
+          (tokenAgeHours !== null && tokenAgeHours >= LP_UNVERIFIED_MIN_AGE_HOURS);
+        if (looksMature) {
+          // Soft reason → CAUTION ceiling via the score-clip change
+          // below. Mirrors layerRugCheck's mature-LP soft path.
+          postLayerFlags.push(makeFlag(
+            "LP not burned but token is mature and liquid (unverified LP)",
+            "warning",
+            0
+          ));
+          safeBlocked = true;
+          if (!safeBlockedReasons.includes("lp_unverified")) safeBlockedReasons.push("lp_unverified");
+        } else {
+          // Hard reason → DANGER. Genuinely young/small token with
+          // unverified LP — exit-liquidity risk is real here.
+          postLayerFlags.push(makeFlag(
+            "LP not burned or locked — dev can rug liquidity",
+            "warning",
+            0
+          ));
+          safeBlocked = true;
+          if (!safeBlockedReasons.includes("lp")) safeBlockedReasons.push("lp");
+        }
+      }
+    }
     const sourcesAvailableCount = allLayers
       .filter(l => l.available && l.source !== "crossvalidation")
       .length;
@@ -448,8 +476,21 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     }
     safeBlocked = newSafeBlocked;
 
-    if (safeBlocked) score = Math.min(score, 500);
-    if (forceRug) score = Math.min(score, 100);
+    // Reason-aware score clipping. Splitting hard from soft reasons
+    // here is what lets a mature token with only `lp_unverified` /
+    // `holders` reasons land on CAUTION (≥700) instead of being
+    // forced to DANGER (<700) by a blanket cap at 500.
+    //   forceRug          → 100 (RUG)
+    //   hard reason       → 500 (DANGER)
+    //   soft reason only  → 850 (high CAUTION ceiling, lets the
+    //                       layer geometric mean express how good
+    //                       the rest of the profile actually is)
+    if (forceRug) {
+      score = Math.min(score, 100);
+    } else if (safeBlocked) {
+      const hasHardReasonForClip = safeBlockedReasons.some(r => HARD_BLOCK_REASONS.has(r));
+      score = Math.min(score, hasHardReasonForClip ? 500 : 850);
+    }
 
     const newScore = applyEstablishedBonus({ score, tokenAgeHours, holders, lpBurned, goPlusClean });
     if (newScore !== score) {
@@ -622,8 +663,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     } else {
       const redis = getCacheRedis();
       if (redis) {
-        redis.setex(`antares:v5:${ca}`, 30, result).catch(() => {});
-        if (resolvedMint !== ca) redis.setex(`antares:v5:${resolvedMint}`, 30, result).catch(() => {});
+        redis.setex(`antares:v6:${ca}`, 30, result).catch(() => {});
+        if (resolvedMint !== ca) redis.setex(`antares:v6:${resolvedMint}`, 30, result).catch(() => {});
       }
     }
 
