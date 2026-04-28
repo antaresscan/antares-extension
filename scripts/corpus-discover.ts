@@ -187,7 +187,6 @@ interface CGCoin {
   market_cap_rank: number | null
 }
 
-interface DsSearchResp { pairs: DsPair[] | null }
 
 // CoinGecko's `solana-meme-coins` category is the closest thing to a
 // ground-truth list of established Solana memecoins (top 100 by mcap).
