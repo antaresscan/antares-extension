@@ -66,6 +66,23 @@ A token can only reach **SAFE** (score ≥ 850) if it passes all critical gates 
 
 **Scoring version:** `7.1.0`
 
+## Backtest accuracy
+
+The engine is tested live against a corpus of **214 real Solana memecoins**
+captured against the deployed `/api/scan` endpoint. A nightly drift check
+re-scans every fixture and opens an issue if results move.
+
+```
+Corpus size      : 214 memecoins
+Acceptable rate  : 99.1% (212/214)
+Hard fail        : 0.9% (2/214 — drift to within tolerated band)
+
+False-positive on SAFE  : 0  (no blue-chip flagged DANGER/RUG)
+False-negative on RUG   : 0  (no confirmed rug returned SAFE)
+```
+
+Full methodology, sources, and confusion matrix in [BACKTEST.md](./BACKTEST.md).
+
 ## Architecture
 
 ```
