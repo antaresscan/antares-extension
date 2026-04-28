@@ -173,9 +173,12 @@ describe("generateAISummary", () => {
     expect(typeof result).toBe("string")
   })
 
-  it("truncates and returns a string when response content exceeds MAX_LENGTH (1200 chars)", async () => {
+  it("truncates and returns a string when response content exceeds MAX_LENGTH (1800 chars)", async () => {
+    // MAX_LENGTH bumped 1200→1800 alongside max_tokens 350→600 so
+    // dense Gemini outputs no longer hit the truncation path mid-
+    // sentence. Repeat the sentence enough to overflow the new bound.
     vi.stubEnv("GEMINI_API_KEY", "test-key")
-    const longContent = "This is a valid sentence that will be repeated. ".repeat(30)
+    const longContent = "This is a valid sentence that will be repeated. ".repeat(45)
     const mockFetch = vi.fn().mockResolvedValue(
       mockFetchResponse({
         choices: [{ message: { content: longContent } }],
@@ -185,7 +188,7 @@ describe("generateAISummary", () => {
     const result = await generateAISummary(baseInput)
     expect(result).not.toBeNull()
     expect(typeof result).toBe("string")
-    expect(result!.length).toBeLessThanOrEqual(1200)
+    expect(result!.length).toBeLessThanOrEqual(1800)
     expect(result!.endsWith(".")).toBe(true)
   })
 
@@ -422,7 +425,7 @@ describe("generateAISummary", () => {
     const result = await generateAISummary(longInput)
     expect(result).not.toBeNull()
     if (result) {
-      expect(result.length).toBeLessThanOrEqual(1200)
+      expect(result.length).toBeLessThanOrEqual(1800)
     }
   })
 })

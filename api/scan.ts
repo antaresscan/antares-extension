@@ -209,7 +209,14 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       HELIUS_API_KEY ? withBudget(heliusGetHoldersCount(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
       withBudget(solscanGetHoldersCount(resolvedMint), remainingMs()),
       withBudget(fetchSolscan(`/token/meta?address=${resolvedMint}`), remainingMs()),
-      withBudget(fetchSolscan(`/token/transfer?address=${resolvedMint}&page=1&page_size=10`), remainingMs()),
+      // page_size=50 (was 10): the Holder Activity tab classifies the
+      // last hour of activity per top-6 holder. With only 10 token-wide
+      // transfers we frequently saw all holders rendered Static because
+      // none of those 10 transfers happened to involve any of the 6
+      // tracked wallets — even on liquid tokens. 50 covers ~6-12 hours
+      // of typical-volume tokens, plenty for a 1h-window classifier,
+      // and stays well within Solscan's free-tier per-page cap.
+      withBudget(fetchSolscan(`/token/transfer?address=${resolvedMint}&page=1&page_size=50`), remainingMs()),
       withBudget(fetchSolscan(`/token/markets?address=${resolvedMint}&page=1&page_size=1`), remainingMs()),
     ]);
 
