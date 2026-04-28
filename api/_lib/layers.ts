@@ -374,7 +374,8 @@ export function layerHelius(
   const flags: ScanFlag[] = [];
   let trust = 1.0;
   const penalties: number[] = [];
-  let forceRug = false, safeBlocked = false;
+  const forceRug = false;
+  let safeBlocked = false;
   if (!rawHolderAccounts.length || !totalSupplyUi || totalSupplyUi <= 0) return {
     source: "helius", trust: 1.0, available: false,
     flags: [makeFlag("Helius unavailable", "info", 0)],
@@ -387,20 +388,23 @@ export function layerHelius(
   const top1Pct = top1Amount / totalSupplyUi;
   const top10Amount = accounts.slice(0, 10).reduce((s, h) => s + asNumber(h.uiAmount), 0);
   const top10Pct = top10Amount / totalSupplyUi;
-  // Single-wallet concentration ladder. Tightened from the previous
-  // 30/20/10% bands because an 11%-concentrated supply was sliding
-  // through to SAFE on established tokens via the established-bonus
-  // unlock — the "Single wallet holds 11%" warning had penalty 0.50
-  // which got geometrically averaged away by bonuses on other layers.
-  // New bands:
-  //   >30% → forceRug (the wallet alone can crash the market)
-  //   >20% → critical, hard concentration block (catches "concentration"
-  //          HARD_BLOCK_PATTERN in scoring.ts → DANGER/RUG verdict)
+  // Single-wallet concentration ladder. Bands map to scoring outcomes
+  // via the safe-gate path:
+  //   >30% → critical, hard concentration block, very heavy penalty.
+  //          Concentration alone is no longer forceRug — the
+  //          forceRug slam was over-flagging legitimate blue-chip
+  //          memecoins like MEW (164k holders + LP burned + a 35%
+  //          whale) as RUG. Keep the safeBlocked + hard reason so
+  //          the safe gate trips, but let Path 3 decide whether
+  //          blue-chip signals warrant CAUTION rather than RUG.
+  //          forceRug stays reserved for honeypot / deceptive-name
+  //          patterns (absolute kills regardless of context).
+  //   >20% → critical, hard concentration block (DANGER/RUG)
   //   >15% → critical, hard concentration block (DANGER/RUG)
   //   >10% → warning, soft block + heavy trust penalty (CAUTION). The
   //          0.30 trust multiplier here is intentionally aggressive so
   //          score drops below 900 even with bonuses on other layers.
-  if (top1Pct > 0.3) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "critical", 0)); penalties.push(0.08); forceRug = true; }
+  if (top1Pct > 0.3) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "critical", 0)); penalties.push(0.08); safeBlocked = true; }
   else if (top1Pct > 0.2) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "critical", 0)); penalties.push(0.20); safeBlocked = true; }
   else if (top1Pct > 0.15) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "critical", 0)); penalties.push(0.35); safeBlocked = true; }
   else if (top1Pct > 0.1) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "warning", 0)); penalties.push(0.30); safeBlocked = true; }
