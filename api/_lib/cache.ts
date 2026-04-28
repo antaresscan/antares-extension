@@ -16,7 +16,7 @@ export function getCacheRedis(): Redis | null {
 export async function getCachedResult<T = unknown>(ca: string, requestId: string): Promise<T | null> {
   if (!scanCacheRedis) return null;
   try {
-    const result = await scanCacheRedis.get<T>(`antares:v5:${ca}`);
+    const result = await scanCacheRedis.get<T>(`antares:v6:${ca}`);
     return result ?? null;
   } catch (e: unknown) {
         logger.warn("cache", "cache miss or Redis error", { requestId, error: String(e) });
@@ -32,7 +32,7 @@ export function setCachedResult(
 ): void {
   if (!scanCacheRedis) return;
   const ttl = computeCacheTTL(tokenAgeMinutes, verdict);
-  scanCacheRedis.setex(`antares:v5:${ca}`, ttl, result).catch((e: unknown) => {
+  scanCacheRedis.setex(`antares:v6:${ca}`, ttl, result).catch((e: unknown) => {
         logger.warn("cache", "Redis cache write failed", { error: String(e) });
   });
 }
