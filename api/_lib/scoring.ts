@@ -89,9 +89,14 @@ export function classifySafeBlockedReasons(layers: LayerResult[]): SafeBlockedRe
     }
     if (!matched) {
       if (layer.source === "dexscreener") {
+        // Per-source fallback heuristics. The patterns here mirror the
+        // tightened HARD_BLOCK_PATTERNS regexes — bare /pump/ and /rug/
+        // were matching legitimate flags like "Pump.fun launch" and
+        // "...dev can rug liquidity" (which already classify as `lp`).
+        // Tighten to the same specific pattern names.
         for (const f of layer.flags) {
-          if (/pump|exit trap/i.test(f.label)) add("pump");
-          if (/rug|dump/i.test(f.label)) add("rug_pattern");
+          if (/(?:extreme |coordinated )?pump pattern|parabolic|pump.fun.*exit trap|pump.*newborn/i.test(f.label)) add("pump");
+          if (/rug staircase|rug pattern|coordinated dump|dump and run|exit trap|exit liquidity/i.test(f.label)) add("rug_pattern");
           if (/wash/i.test(f.label)) add("wash_trading");
         }
       }
