@@ -60,7 +60,6 @@ export const SEED_CORPUS: CorpusEntry[] = [
     expectedScore: [780, 1000],
     why: "BONK. Largest Solana memecoin by holder count. Multi-year history.",
     source: "live",
-    skipFixture: true, // /api/scan 504 on cold start with v9s budget — re-enable post v25s deploy
   },
   {
     ca: "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm",
@@ -78,7 +77,6 @@ export const SEED_CORPUS: CorpusEntry[] = [
     expectedScore: [800, 1000],
     why: "Pudgy Penguins. Backed by established NFT brand, multi-million mcap.",
     source: "live",
-    skipFixture: true, // /api/scan 504 on cold start with v9s budget — re-enable post v25s deploy
   },
   {
     ca: "7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr",
