@@ -1,0 +1,345 @@
+{
+  "score": 100,
+  "risk": "RUG",
+  "flags": [
+    {
+      "label": "Wash trading detected (vol/liq > 20) — bundler dump",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Brutal dump 24h (-80%)",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Single wallet holds 95% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Top 10 wallets hold 99% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Low liquidity (<$5k)",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Liquidity mirage: volume >> liquidity (wash)",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Rug staircase: volume collapsing while price held flat — controlled dump",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "LP not burned or locked — dev can rug liquidity",
+      "severity": "warning",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "pumpswap",
+    "url": "https://dexscreener.com/solana/72zsex9mevpvga4hekzj7wpdvrwj9tmtcvlrmrwqf4xh",
+    "pairAddress": "72ZsEx9MeVpVGA4HeKzj7wPdVRWj9TMTCvLrmRWQf4xH",
+    "baseToken": {
+      "address": "GKY46UqorCSuu984t4ZjaiDgf97pGMFtEUNfGgLqpump",
+      "name": "Scammurz",
+      "symbol": "SCAMMURZ"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.00000002624",
+    "priceUsd": "0.000002201",
+    "txns": {
+      "m5": {
+        "buys": 0,
+        "sells": 0
+      },
+      "h1": {
+        "buys": 3,
+        "sells": 1
+      },
+      "h6": {
+        "buys": 11,
+        "sells": 4
+      },
+      "h24": {
+        "buys": 24109,
+        "sells": 16819
+      }
+    },
+    "volume": {
+      "h24": 1628882.48,
+      "h6": 3.94,
+      "h1": 1.99,
+      "m5": 0
+    },
+    "priceChange": {
+      "h1": 0.28,
+      "h6": 2.26,
+      "h24": -96.13
+    },
+    "liquidity": {
+      "usd": 4165.26,
+      "base": 945933915,
+      "quote": 24.839
+    },
+    "fdv": 2201,
+    "marketCap": 2201,
+    "pairCreatedAt": 1777321293000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/qL_gGqhkfYi2vfal?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/6Y_-ySR6-hLjDGUA?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/GKY46UqorCSuu984t4ZjaiDgf97pGMFtEUNfGgLqpump?timestamp=1777409400000",
+      "websites": [
+        {
+          "url": "https://www.scammurz.lol/",
+          "label": "Website"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/ScammurzUS",
+          "type": "twitter"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "GKY46UqorCSuu984t4ZjaiDgf97pGMFtEUNfGgLqpump",
+  "confidence": 100,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "goplus",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 145,
+  "marketCap": 2201,
+  "priceUsd": 0.000002201,
+  "liquidity": 4165.26,
+  "volume24h": 1628882.48,
+  "volume1h": 1.99,
+  "priceChange5m": null,
+  "priceChange1h": 0.28,
+  "priceChange24h": -96.13,
+  "tokenSymbol": "SCAMMURZ",
+  "tokenName": "Scammurz",
+  "pairCreatedAt": 1777321293000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "wash_trading",
+    "bundle",
+    "concentration",
+    "chart",
+    "rug_pattern",
+    "lp"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/qL_gGqhkfYi2vfal?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 24,
+  "solscanVolume24h": 1628882.48,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 0.078,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": true
+    },
+    "helius": {
+      "trust": 0.037,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 0.381,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": false,
+  "lpLocked": false,
+  "lpLockedPct": null,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 94.59475133391992,
+  "top10HolderPct": 98.83831597023236,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 94.6,
+      "addr": "72Zs…f4xH",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 95,
+      "repWarn": false,
+      "desc": "Holds <b>94.6%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777409303121,
+      "verdict": "RUG",
+      "score": 100,
+      "event": "Wash trading detected (vol/liq > 20) — bundler dump"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "72Zs…f4xH",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "GSeR…jbuo",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "3Y9D…js27",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "8yfF…QLzY",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "8wum…v1oq",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "7s1t…rPCQ",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "4h 12m",
+    "timeToRugMedianHours": 4.2,
+    "timeToRugSampleSize": 487,
+    "pctRugged24h": 89,
+    "pctSlowDeath": 8,
+    "pctAlive30d": 3,
+    "distribution": [
+      8,
+      14,
+      22,
+      28,
+      18,
+      12,
+      6,
+      4,
+      2,
+      1,
+      0.6,
+      0.4,
+      0.3,
+      0.3,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.3,
+      0.3,
+      0.4,
+      0.6,
+      1,
+      1.2,
+      1.4,
+      1.4,
+      1.2,
+      0.9,
+      0.6,
+      0.4,
+      0.3
+    ],
+    "youBucketIndex": 11,
+    "mostSimilar": [
+      {
+        "symbol": "RUGCOIN",
+        "ruggedAfterHours": 4,
+        "loss": -99.2
+      },
+      {
+        "symbol": "SCAMBOY",
+        "ruggedAfterHours": 6,
+        "loss": -98.5
+      },
+      {
+        "symbol": "TRAPCAT",
+        "ruggedAfterHours": 12,
+        "loss": -97.8
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777409303201,
+  "requestId": "9709789b-e15e-4ffb-a80f-646179c36897",
+  "aiSummary": "Coordinated wallets bought together at launch to inflate the price. They hold a large share and can dump simultaneously, crashing the price. The top wallet holds 94.6% of supply with only 145 holders, creating extreme dump risk."
+}

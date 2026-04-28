@@ -44,7 +44,7 @@
         "sells": 0
       },
       "h1": {
-        "buys": 13,
+        "buys": 7,
         "sells": 0
       },
       "h6": {
@@ -52,20 +52,20 @@
         "sells": 10
       },
       "h24": {
-        "buys": 106,
+        "buys": 104,
         "sells": 75
       }
     },
     "volume": {
-      "h24": 2978.82,
+      "h24": 2971.71,
       "h6": 840.59,
-      "h1": 118.57,
+      "h1": 51.15,
       "m5": 0
     },
     "priceChange": {
-      "h1": 0.5,
+      "h1": 0.34,
       "h6": 2.05,
-      "h24": 2.08
+      "h24": 2.68
     },
     "liquidity": {
       "usd": 889491.68,
@@ -78,7 +78,7 @@
     "info": {
       "imageUrl": "https://cdn.dexscreener.com/cms/images/ba03c0370670d176dc33bbd212eb023337a460ad7edfa053ca96ae22f31c3dcf?width=800&height=800&quality=95&format=auto",
       "header": "https://cdn.dexscreener.com/cms/images/e2667fc59737e727f0fd18e7e534c67e371ee40689068e72d30b5bc12bf63c2d?width=1500&height=500&quality=95&format=auto",
-      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263?timestamp=1777407000000",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263?timestamp=1777408200000",
       "websites": [
         {
           "url": "https://www.bonkcoin.com",
@@ -114,11 +114,11 @@
   "marketCap": 558894056,
   "priceUsd": 0.000006289,
   "liquidity": 889491.68,
-  "volume24h": 2978.82,
-  "volume1h": 118.57,
+  "volume24h": 2971.71,
+  "volume1h": 51.15,
   "priceChange5m": null,
-  "priceChange1h": 0.5,
-  "priceChange24h": 2.08,
+  "priceChange1h": 0.34,
+  "priceChange24h": 2.68,
   "tokenSymbol": "Bonk",
   "tokenName": "Bonk",
   "pairCreatedAt": 1671900044000,
@@ -130,7 +130,7 @@
   "tokenSupply": null,
   "recentTransfers": "[0 transfers, redacted for fixture]",
   "solscanTokenAgeHours": 29307,
-  "solscanVolume24h": 2978.82,
+  "solscanVolume24h": 2971.71,
   "solscanTrades24h": null,
   "solscanTraders24h": null,
   "layers": {
@@ -188,7 +188,7 @@
   },
   "outcomeStats": null,
   "scoring_version": "7.3.0",
-  "fetchedAt": 1777406939980,
-  "requestId": "ca4b1395-7641-4b51-86c5-cff3f0bfce53",
+  "fetchedAt": 1777408265210,
+  "requestId": "7aca9ef6-a6d9-4334-b437-8f1bed3d7250",
   "aiSummary": "Score 1000/1000. LP is burned, mint authority is disabled, freeze authority is disabled, 974945 holders show organic distribution. No critical risks were detected in the contract or holder analysis."
 }

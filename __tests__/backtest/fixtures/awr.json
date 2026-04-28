@@ -1,0 +1,276 @@
+{
+  "score": 1000,
+  "risk": "SAFE",
+  "flags": [
+    {
+      "label": "LP Burned 100% (GoPlus) ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Well distributed supply ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Established token (30d+) ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "raydium",
+    "url": "https://dexscreener.com/solana/fo7vnhaddvnmx4axjo7cc1wwb9ko2pk2dfdzl3dybxkp",
+    "pairAddress": "Fo7VNHaddVnMX4Axjo7CC1wWb9Ko2Pk2dFDzL3dYbXKp",
+    "baseToken": {
+      "address": "Ai4CL1SAxVRigxQFwBH8S2JkuL7EqrdiGwTC7JpCpump",
+      "name": "All Will Retire",
+      "symbol": "AWR"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.000006544",
+    "priceUsd": "0.0005482",
+    "txns": {
+      "m5": {
+        "buys": 0,
+        "sells": 0
+      },
+      "h1": {
+        "buys": 0,
+        "sells": 0
+      },
+      "h6": {
+        "buys": 3,
+        "sells": 3
+      },
+      "h24": {
+        "buys": 55,
+        "sells": 45
+      }
+    },
+    "volume": {
+      "h24": 4193.98,
+      "h6": 243.53,
+      "h1": 0,
+      "m5": 0
+    },
+    "priceChange": {
+      "h6": -0.98,
+      "h24": 0.23
+    },
+    "liquidity": {
+      "usd": 103072.22,
+      "base": 93877164,
+      "quote": 615.9058
+    },
+    "fdv": 548111,
+    "marketCap": 528869,
+    "pairCreatedAt": 1736114493000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/c8b08cfd31956fc3a9941e380d53ce1cda304913fa70593514e7e1d1e19c6bf5?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/43586ddead3ebfee9c6cbc09e43d0bccb5d556965df027a08d0ad088f63fd6bc?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/Ai4CL1SAxVRigxQFwBH8S2JkuL7EqrdiGwTC7JpCpump?timestamp=1777408800000",
+      "websites": [
+        {
+          "url": "https://www.allwillretire.com/",
+          "label": "Website"
+        },
+        {
+          "url": "https://www.tiktok.com/@allwillretire",
+          "label": "TikTok"
+        },
+        {
+          "url": "https://www.instagram.com/allwillretire/",
+          "label": "Instagram"
+        },
+        {
+          "url": "https://www.youtube.com/@allwillretire",
+          "label": "YouTube"
+        },
+        {
+          "url": "https://truthsocial.com/@allwillretire",
+          "label": "Truth Social"
+        },
+        {
+          "url": "https://medium.com/@allwillretire",
+          "label": "Medium"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/allwillretire",
+          "type": "twitter"
+        },
+        {
+          "url": "https://t.me/allwillretire",
+          "type": "telegram"
+        },
+        {
+          "url": "https://discord.com/invite/v7GdKzfcKd",
+          "type": "discord"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "Ai4CL1SAxVRigxQFwBH8S2JkuL7EqrdiGwTC7JpCpump",
+  "confidence": 90,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "goplus",
+    "helius",
+    "solscan"
+  ],
+  "holders": 7298,
+  "marketCap": 528869,
+  "priceUsd": 0.0005482,
+  "liquidity": 103072.22,
+  "volume24h": 4193.98,
+  "volume1h": null,
+  "priceChange5m": null,
+  "priceChange1h": null,
+  "priceChange24h": 0.23,
+  "tokenSymbol": "AWR",
+  "tokenName": "All Will Retire",
+  "pairCreatedAt": 1736114493000,
+  "safeBlocked": false,
+  "safeBlockedReasons": [],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/c8b08cfd31956fc3a9941e380d53ce1cda304913fa70593514e7e1d1e19c6bf5?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 11470,
+  "solscanVolume24h": 4193.98,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 1,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": true
+    },
+    "helius": {
+      "trust": 1,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": false
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": true,
+  "lpLocked": false,
+  "lpLockedPct": 100,
+  "candles": "[0 candles, redacted for fixture]",
+  "topHolderPct": 2.635518567964933,
+  "top10HolderPct": 16.63456096004982,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 2.6,
+      "addr": "6QVX…j5Kz",
+      "repLbl": "Significant single-wallet position",
+      "repWidth": 50.8,
+      "repWarn": false,
+      "desc": "Holds <b>2.6%</b> of supply — large enough to move the chart on exit."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777408818006,
+      "verdict": "SAFE",
+      "score": 1000,
+      "event": "LP Burned 100% (GoPlus) ✓"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "6QVX…j5Kz",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "dQ4V…8mJc",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "3WRr…YgWc",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "Bsh5…yM2h",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "Dkmp…SA5G",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "3ffB…iRxs",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": null,
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777408818090,
+  "requestId": "a4662f7e-07fd-4e02-a09b-08c9bba5f728",
+  "aiSummary": "Score 1000/1000. LP is burned, mint authority is disabled, freeze authority is disabled, 7298 holders show organic distribution. No critical risks were detected in the contract or holder analysis."
+}

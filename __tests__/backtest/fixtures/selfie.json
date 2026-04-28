@@ -1,0 +1,253 @@
+{
+  "score": 1000,
+  "risk": "SAFE",
+  "flags": [
+    {
+      "label": "LP Burned 100% (GoPlus) ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Well distributed supply ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Established token (30d+) ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "raydium",
+    "url": "https://dexscreener.com/solana/dfk133hhxjaa1yprynkopergj5dmputm79yey1p1wiyh",
+    "pairAddress": "Dfk133hHxjAA1yPryNkoPERGJ5DMpUtm79YeY1p1Wiyh",
+    "baseToken": {
+      "address": "9WPTUkh8fKuCnepRWoPYLH3aK9gSjPHFDenBq2X1Czdp",
+      "name": "SelfieDogCoin",
+      "symbol": "SELFIE"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.000003117",
+    "priceUsd": "0.0002609",
+    "txns": {
+      "m5": {
+        "buys": 0,
+        "sells": 0
+      },
+      "h1": {
+        "buys": 0,
+        "sells": 0
+      },
+      "h6": {
+        "buys": 2,
+        "sells": 9
+      },
+      "h24": {
+        "buys": 8,
+        "sells": 22
+      }
+    },
+    "volume": {
+      "h24": 2444.93,
+      "h6": 1353.82,
+      "h1": 0,
+      "m5": 0
+    },
+    "priceChange": {
+      "h6": -0.42,
+      "h24": -2.15
+    },
+    "liquidity": {
+      "usd": 151304.88,
+      "base": 289719646,
+      "quote": 904.5158
+    },
+    "fdv": 260863,
+    "marketCap": 260863,
+    "pairCreatedAt": 1715493436000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/2d48e015aac39d817bff68026c9856fb98bb70e7cca6005e5f6c3c02fcbb88c9?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/d30b1dd9b0be2c8d8881eda3eb5917d851fb3f29d291ea4e101b3db6fba87fa1?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/9WPTUkh8fKuCnepRWoPYLH3aK9gSjPHFDenBq2X1Czdp?timestamp=1777408800000",
+      "websites": [
+        {
+          "url": "https://selfiedogsol.io/",
+          "label": "Website"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/selfiedog_sol?s=21&t=Fw7BWMWy0FH438GbN4yBSg",
+          "type": "twitter"
+        },
+        {
+          "url": "http://t.me/selfiedog_sol",
+          "type": "telegram"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "9WPTUkh8fKuCnepRWoPYLH3aK9gSjPHFDenBq2X1Czdp",
+  "confidence": 100,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "goplus",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 12493,
+  "marketCap": 260863,
+  "priceUsd": 0.0002609,
+  "liquidity": 151304.88,
+  "volume24h": 2444.93,
+  "volume1h": null,
+  "priceChange5m": null,
+  "priceChange1h": null,
+  "priceChange24h": -2.15,
+  "tokenSymbol": "SELFIE",
+  "tokenName": "SelfieDogCoin",
+  "pairCreatedAt": 1715493436000,
+  "safeBlocked": false,
+  "safeBlockedReasons": [],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/2d48e015aac39d817bff68026c9856fb98bb70e7cca6005e5f6c3c02fcbb88c9?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 17198,
+  "solscanVolume24h": 2444.93,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 1,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": true
+    },
+    "helius": {
+      "trust": 1,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": true,
+  "lpLocked": false,
+  "lpLockedPct": 100,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 3.370884417910985,
+  "top10HolderPct": 16.0131773882833,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 3.4,
+      "addr": "Et6D…FbNu",
+      "repLbl": "Significant single-wallet position",
+      "repWidth": 57.2,
+      "repWarn": false,
+      "desc": "Holds <b>3.4%</b> of supply — large enough to move the chart on exit."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777408919519,
+      "verdict": "SAFE",
+      "score": 1000,
+      "event": "LP Burned 100% (GoPlus) ✓"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "Et6D…FbNu",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "DSwu…GSTT",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "Fe7S…FA8s",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "HtvE…H2Mf",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "DBx5…jytZ",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "aoSw…KZX7",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": null,
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777408919601,
+  "requestId": "782f0997-8a22-44f4-bf33-cf9a615c2e35",
+  "aiSummary": "Score 1000/1000. LP is burned, mint authority is disabled, freeze authority is disabled, 12493 holders show organic distribution. No critical risks were detected in the contract or holder analysis."
+}

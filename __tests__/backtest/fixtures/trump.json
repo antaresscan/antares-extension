@@ -1,5 +1,5 @@
 {
-  "score": 795,
+  "score": 850,
   "risk": "CAUTION",
   "flags": [
     {
@@ -13,7 +13,7 @@
       "impact": 0
     },
     {
-      "label": "Holder data unreliable (broken upstream view) — mature pair, deep liquidity",
+      "label": "Helius unavailable",
       "severity": "info",
       "impact": 0
     },
@@ -41,7 +41,7 @@
       "name": "USD Coin",
       "symbol": "USDC"
     },
-    "priceNative": "2.5126",
+    "priceNative": "2.5135",
     "priceUsd": "2.51",
     "txns": {
       "m5": {
@@ -49,41 +49,41 @@
         "sells": 0
       },
       "h1": {
-        "buys": 28,
-        "sells": 49
+        "buys": 32,
+        "sells": 52
       },
       "h6": {
-        "buys": 93,
-        "sells": 85
+        "buys": 95,
+        "sells": 79
       },
       "h24": {
-        "buys": 246,
-        "sells": 362
+        "buys": 250,
+        "sells": 365
       }
     },
     "volume": {
-      "h24": 403904.56,
-      "h6": 105954.99,
-      "h1": 44016.88,
+      "h24": 415091.96,
+      "h6": 111267.7,
+      "h1": 55204.29,
       "m5": 0
     },
     "priceChange": {
-      "h1": 1.71,
-      "h6": 1.79,
-      "h24": -0.24
+      "h1": 1.75,
+      "h6": 2.32,
+      "h24": -0.2
     },
     "liquidity": {
-      "usd": 43201113.18,
-      "base": 16652587,
-      "quote": 1359737
+      "usd": 43217217.1,
+      "base": 16652589,
+      "quote": 1359742
     },
-    "fdv": 2512603966,
-    "marketCap": 584177676,
+    "fdv": 2513570408,
+    "marketCap": 584402373,
     "pairCreatedAt": 1737196771000,
     "info": {
       "imageUrl": "https://cdn.dexscreener.com/cms/images/85a2613c51c8ded8e51b1b3910487ab66691cb60fecec7d0905481a603bba899?width=800&height=800&quality=95&format=auto",
       "header": "https://cdn.dexscreener.com/cms/images/ce8844d2d6478565b84fd2c13ae5e54c51dc2f4501273a68c2ab12b535e08d84?width=1500&height=500&quality=95&format=auto",
-      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN?timestamp=1777407000000",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN?timestamp=1777408200000",
       "websites": [
         {
           "url": "https://x.com/realDonaldTrump/status/1880446012168249386",
@@ -99,23 +99,22 @@
     }
   },
   "resolvedMint": "6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN",
-  "confidence": 80,
+  "confidence": 60,
   "sources_used": [
     "dexscreener",
     "rugcheck",
-    "helius",
     "solscan",
     "chart"
   ],
-  "holders": 20,
-  "marketCap": 584177676,
+  "holders": 1,
+  "marketCap": 584402373,
   "priceUsd": 2.51,
-  "liquidity": 43201113.18,
-  "volume24h": 403904.56,
-  "volume1h": 44016.88,
+  "liquidity": 43217217.1,
+  "volume24h": 415091.96,
+  "volume1h": 55204.29,
   "priceChange5m": null,
-  "priceChange1h": 1.71,
-  "priceChange24h": -0.24,
+  "priceChange1h": 1.75,
+  "priceChange24h": -0.2,
   "tokenSymbol": "TRUMP",
   "tokenName": "OFFICIAL TRUMP",
   "pairCreatedAt": 1737196771000,
@@ -129,7 +128,7 @@
   "tokenSupply": null,
   "recentTransfers": "[0 transfers, redacted for fixture]",
   "solscanTokenAgeHours": 11169,
-  "solscanVolume24h": 403904.56,
+  "solscanVolume24h": 415091.96,
   "solscanTrades24h": null,
   "solscanTraders24h": null,
   "layers": {
@@ -146,8 +145,8 @@
       "available": false
     },
     "helius": {
-      "trust": 0.4,
-      "available": true
+      "trust": 1,
+      "available": false
     },
     "solscan": {
       "trust": 1,
@@ -169,85 +168,25 @@
   "lpLocked": false,
   "lpLockedPct": null,
   "candles": "[20 candles, redacted for fixture]",
-  "topHolderPct": 76.7501863977634,
-  "top10HolderPct": 90.16695902294686,
-  "criticalActors": [
-    {
-      "type": "insider",
-      "tag": "Insider",
-      "pct": 76.8,
-      "addr": "2RH6…FFSK",
-      "repLbl": "Concentration risk · single wallet",
-      "repWidth": 95,
-      "repWarn": false,
-      "desc": "Holds <b>76.8%</b> of supply — one-wallet dump would crash the price."
-    }
-  ],
+  "topHolderPct": null,
+  "top10HolderPct": null,
+  "criticalActors": [],
   "verdictHistory": [
     {
       "ts": 1777384129166,
       "verdict": "RUG",
       "score": 100,
       "event": "Single wallet holds 77% of supply"
+    },
+    {
+      "ts": 1777406993137,
+      "verdict": "CAUTION",
+      "score": 795,
+      "event": "LP not burned but token is mature and liquid (unverified LP)"
     }
   ],
   "holderActivity": {
-    "rows": [
-      {
-        "role": "bot",
-        "label": "Static",
-        "avatar": "Insider",
-        "pctChange": 0,
-        "pctChangeDisp": "±0%",
-        "addr": "2RH6…FFSK",
-        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
-      },
-      {
-        "role": "whale-big",
-        "label": "Static",
-        "avatar": "Whale",
-        "pctChange": 0,
-        "pctChangeDisp": "±0%",
-        "addr": "9WzD…AWWM",
-        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
-      },
-      {
-        "role": "whale-big",
-        "label": "Static",
-        "avatar": "Whale",
-        "pctChange": 0,
-        "pctChangeDisp": "±0%",
-        "addr": "8N2s…wNnS",
-        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
-      },
-      {
-        "role": "real",
-        "label": "Static",
-        "avatar": "Retail",
-        "pctChange": 0,
-        "pctChangeDisp": "±0%",
-        "addr": "51yZ…QU5j",
-        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
-      },
-      {
-        "role": "real",
-        "label": "Static",
-        "avatar": "Retail",
-        "pctChange": 0,
-        "pctChangeDisp": "±0%",
-        "addr": "9d9m…xyy2",
-        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
-      },
-      {
-        "role": "real",
-        "label": "Static",
-        "avatar": "Retail",
-        "pctChange": 0,
-        "pctChangeDisp": "±0%",
-        "addr": "CBEA…bkVG",
-        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
-      }
-    ],
+    "rows": [],
     "netFlowPct": 0,
     "netFlowDirection": "flat"
   },
@@ -316,7 +255,7 @@
     ]
   },
   "scoring_version": "7.3.0",
-  "fetchedAt": 1777406993230,
-  "requestId": "ba99a843-a3ce-43db-9127-e4746af11fe2",
-  "aiSummary": "The developer can remove all liquidity in one transaction. When that happens, the token price drops to zero and nobody can sell. The top wallet holds 76.8% of supply with only 20 holders, creating extreme dump risk."
+  "fetchedAt": 1777408283202,
+  "requestId": "4888c16c-bb49-425a-969b-c90b237fa567",
+  "aiSummary": "The developer can remove all liquidity in one transaction. When that happens, the token price drops to zero and nobody can sell."
 }

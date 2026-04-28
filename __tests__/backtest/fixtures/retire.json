@@ -1,0 +1,251 @@
+{
+  "score": 1000,
+  "risk": "SAFE",
+  "flags": [
+    {
+      "label": "LP Burned 100% (GoPlus) ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Well distributed supply ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Established token (30d+) ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "raydium",
+    "url": "https://dexscreener.com/solana/6hfajiuutxfzefmdkqsnbvfe6i95nh2wuvj5dwmf7gtw",
+    "pairAddress": "6HfaJiUuTXFZEfmdkQSNbvfe6i95Nh2wUVJ5dWMf7gtw",
+    "baseToken": {
+      "address": "zGh48JtNHVBb5evgoZLXwgPD2Qu4MhkWdJLGDAupump",
+      "name": "The Last Play",
+      "symbol": "retire"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.00004766",
+    "priceUsd": "0.003995",
+    "txns": {
+      "m5": {
+        "buys": 2,
+        "sells": 0
+      },
+      "h1": {
+        "buys": 25,
+        "sells": 10
+      },
+      "h6": {
+        "buys": 208,
+        "sells": 207
+      },
+      "h24": {
+        "buys": 360,
+        "sells": 339
+      }
+    },
+    "volume": {
+      "h24": 113925.29,
+      "h6": 68142.62,
+      "h1": 2950.23,
+      "m5": 327.23
+    },
+    "priceChange": {
+      "m5": 0.56,
+      "h1": 0.51,
+      "h6": 5.38,
+      "h24": 2.1
+    },
+    "liquidity": {
+      "usd": 571301.82,
+      "base": 71539476,
+      "quote": 3405.1911
+    },
+    "fdv": 3995027,
+    "marketCap": 3995027,
+    "pairCreatedAt": 1728864267000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/faa3911a969533460f81dc357ad2d5538a30467b2fcf65170d55a33ced35b6d7?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/3c3656d07a0b47d3c848809d42cd0095c72a9fb252cd0871dab8379518b952e2?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/zGh48JtNHVBb5evgoZLXwgPD2Qu4MhkWdJLGDAupump?timestamp=1777408500000",
+      "websites": [
+        {
+          "url": "https://linktr.ee/thelastplaysol",
+          "label": "Website"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/thelastplaysol",
+          "type": "twitter"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "zGh48JtNHVBb5evgoZLXwgPD2Qu4MhkWdJLGDAupump",
+  "confidence": 100,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "goplus",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 13822,
+  "marketCap": 3995027,
+  "priceUsd": 0.003995,
+  "liquidity": 571301.82,
+  "volume24h": 113925.29,
+  "volume1h": 2950.23,
+  "priceChange5m": 0.56,
+  "priceChange1h": 0.51,
+  "priceChange24h": 2.1,
+  "tokenSymbol": "retire",
+  "tokenName": "The Last Play",
+  "pairCreatedAt": 1728864267000,
+  "safeBlocked": false,
+  "safeBlockedReasons": [],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/faa3911a969533460f81dc357ad2d5538a30467b2fcf65170d55a33ced35b6d7?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 13484,
+  "solscanVolume24h": 113925.29,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 1,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": true
+    },
+    "helius": {
+      "trust": 1,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": true,
+  "lpLocked": false,
+  "lpLockedPct": 100,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 1.8481651520090354,
+  "top10HolderPct": 13.015040390685261,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 1.8,
+      "addr": "LiNo…ptcY",
+      "repLbl": "Top non-dev holder",
+      "repWidth": 45,
+      "repWarn": false,
+      "desc": "Holds <b>1.8%</b> of supply — moderate position, watch for accumulation."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777400907610,
+      "verdict": "SAFE",
+      "score": 1000,
+      "event": "LP Burned 100% (GoPlus) ✓"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "LiNo…ptcY",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "EppJ…MMWX",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "4z29…cqWG",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "7xmt…HNBB",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "5MGv…Fgi3",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "DEyW…Piq1",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": null,
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777408666551,
+  "requestId": "518ab050-e1c0-49cf-b38c-815b010f5253",
+  "aiSummary": "Score 1000/1000. LP is burned, mint authority is disabled, freeze authority is disabled, 13822 holders show organic distribution. No critical risks were detected in the contract or holder analysis."
+}

@@ -1,0 +1,257 @@
+{
+  "score": 1000,
+  "risk": "SAFE",
+  "flags": [
+    {
+      "label": "LP Burned 94% (GoPlus) ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Well distributed supply ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Established token (30d+) ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "raydium",
+    "url": "https://dexscreener.com/solana/4ycwqxr7eoh29rf2g7u9ymtzct1n7tyhcywg3emif85s",
+    "pairAddress": "4YcwqxR7eoH29rF2G7U9YmtzCt1n7tyHcywg3Emif85s",
+    "baseToken": {
+      "address": "F9CpWoyeBJfoRB8f2pBe2ZNPbPsEE76mWZWme3StsvHK",
+      "name": "Pepe",
+      "symbol": "PEPE"
+    },
+    "quoteToken": {
+      "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "name": "USD Coin",
+      "symbol": "USDC"
+    },
+    "priceNative": "0.0001930",
+    "priceUsd": "0.0001930",
+    "txns": {
+      "m5": {
+        "buys": 0,
+        "sells": 0
+      },
+      "h1": {
+        "buys": 0,
+        "sells": 0
+      },
+      "h6": {
+        "buys": 1,
+        "sells": 1
+      },
+      "h24": {
+        "buys": 1,
+        "sells": 6
+      }
+    },
+    "volume": {
+      "h24": 235.33,
+      "h6": 116.11,
+      "h1": 0,
+      "m5": 0
+    },
+    "priceChange": {
+      "h6": -0.07,
+      "h24": -0.53
+    },
+    "liquidity": {
+      "usd": 60907.91,
+      "base": 157907997,
+      "quote": 30425
+    },
+    "fdv": 123357,
+    "marketCap": 123357,
+    "pairCreatedAt": 1674311403000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/84b44896010601e1a968fc9f61d9b78a5c3e25db87db35f83fe01d927760ee3c?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/06f7d253d1a706ecd83f1c5b6ddef5cb21bddab627bb9de5cd364e1364f15a39?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/F9CpWoyeBJfoRB8f2pBe2ZNPbPsEE76mWZWme3StsvHK?timestamp=1777408800000",
+      "websites": [
+        {
+          "url": "https://pepesol.io",
+          "label": "Website"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://twitter.com/PepeOnSOL",
+          "type": "twitter"
+        },
+        {
+          "url": "https://t.me/PepeOnSol",
+          "type": "telegram"
+        },
+        {
+          "url": "https://discord.com/invite/N8z3dQVwsp",
+          "type": "discord"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "F9CpWoyeBJfoRB8f2pBe2ZNPbPsEE76mWZWme3StsvHK",
+  "confidence": 100,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "goplus",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 23497,
+  "marketCap": 123357,
+  "priceUsd": 0.000193,
+  "liquidity": 60907.91,
+  "volume24h": 235.33,
+  "volume1h": null,
+  "priceChange5m": null,
+  "priceChange1h": null,
+  "priceChange24h": -0.53,
+  "tokenSymbol": "PEPE",
+  "tokenName": "Pepe",
+  "pairCreatedAt": 1674311403000,
+  "safeBlocked": false,
+  "safeBlockedReasons": [],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/84b44896010601e1a968fc9f61d9b78a5c3e25db87db35f83fe01d927760ee3c?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 28638,
+  "solscanVolume24h": 235.33,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 1,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": true
+    },
+    "helius": {
+      "trust": 1,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": true,
+  "lpLocked": false,
+  "lpLockedPct": 93.5,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 8.766464502982902,
+  "top10HolderPct": 22.620585070787804,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 8.8,
+      "addr": "CViC…xMbB",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 86.4,
+      "repWarn": false,
+      "desc": "Holds <b>8.8%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777408966836,
+      "verdict": "SAFE",
+      "score": 1000,
+      "event": "LP Burned 94% (GoPlus) ✓"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "CViC…xMbB",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "3nB5…nEek",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "BqSZ…dyz1",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "8Kuv…sdrT",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "7vSZ…ZvXc",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "Did1…QtLp",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": null,
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777408966918,
+  "requestId": "3deddee1-f18c-4a48-954a-1d9e1a34f4cf",
+  "aiSummary": "Score 1000/1000. LP is burned, mint authority is disabled, freeze authority is disabled, 23497 holders show organic distribution. No critical risks were detected in the contract or holder analysis."
+}

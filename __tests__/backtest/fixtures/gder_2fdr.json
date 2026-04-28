@@ -1,0 +1,315 @@
+{
+  "score": 283,
+  "risk": "RUG",
+  "flags": [
+    {
+      "label": "Very low liquidity (<$1k)",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "No website / Twitter / Telegram — high rug risk",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Single wallet holds 88% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Top 10 wallets hold 100% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "LP not burned or locked — dev can rug liquidity",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "GoPlus unavailable",
+      "severity": "info",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "meteora",
+    "url": "https://dexscreener.com/solana/3xjllj8nde5g1zngtg2lyugtmnqrkkencd3azradljcl",
+    "pairAddress": "3xJLLJ8ndE5G1ZNgTg2LyugtMnQRkkEnCD3AzRaDLJCL",
+    "labels": [
+      "DYN2"
+    ],
+    "baseToken": {
+      "address": "2fdRrEgb5tRK3RwAr9bgoKSXgP8xfxKdnZmbeHT7DRTh",
+      "name": "Global Digital Energy Reserve",
+      "symbol": "GDER"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.0000004637",
+    "priceUsd": "0.00003888",
+    "txns": {
+      "m5": {
+        "buys": 0,
+        "sells": 0
+      },
+      "h1": {
+        "buys": 0,
+        "sells": 0
+      },
+      "h6": {
+        "buys": 17,
+        "sells": 3
+      },
+      "h24": {
+        "buys": 21,
+        "sells": 3
+      }
+    },
+    "volume": {
+      "h24": 31.77,
+      "h6": 31.43,
+      "h1": 0,
+      "m5": 0
+    },
+    "priceChange": {
+      "h6": -55.54,
+      "h24": -11.68
+    },
+    "liquidity": {
+      "usd": 72.02,
+      "base": 939483,
+      "quote": 0.4234
+    },
+    "fdv": 38881,
+    "marketCap": 38881,
+    "pairCreatedAt": 1777378000000
+  },
+  "resolvedMint": "2fdRrEgb5tRK3RwAr9bgoKSXgP8xfxKdnZmbeHT7DRTh",
+  "confidence": 80,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 20,
+  "marketCap": 38881,
+  "priceUsd": 0.00003888,
+  "liquidity": 72.02,
+  "volume24h": 31.77,
+  "volume1h": null,
+  "priceChange5m": null,
+  "priceChange1h": null,
+  "priceChange24h": -11.68,
+  "tokenSymbol": "GDER",
+  "tokenName": "Global Digital Energy Reserve",
+  "pairCreatedAt": 1777378000000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "concentration",
+    "lp"
+  ],
+  "tokenLogo": null,
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 8,
+  "solscanVolume24h": 31.77,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 0.173,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": false
+    },
+    "helius": {
+      "trust": 0.037,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": false,
+  "lpLocked": false,
+  "lpLockedPct": null,
+  "candles": "[8 candles, redacted for fixture]",
+  "topHolderPct": 87.98706283633719,
+  "top10HolderPct": 99.99853939968818,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 88,
+      "addr": "DNHx…yT1u",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 95,
+      "repWarn": false,
+      "desc": "Holds <b>88.0%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777409153817,
+      "verdict": "RUG",
+      "score": 283,
+      "event": "Very low liquidity (<$1k)"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "DNHx…yT1u",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "JCRG…4JeU",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "HLnp…TLcC",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "4t1a…ZJ7v",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "HLnp…TLcC",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "4nos…LaEq",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "4h 12m",
+    "timeToRugMedianHours": 4.2,
+    "timeToRugSampleSize": 487,
+    "pctRugged24h": 89,
+    "pctSlowDeath": 8,
+    "pctAlive30d": 3,
+    "distribution": [
+      8,
+      14,
+      22,
+      28,
+      18,
+      12,
+      6,
+      4,
+      2,
+      1,
+      0.6,
+      0.4,
+      0.3,
+      0.3,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.3,
+      0.3,
+      0.4,
+      0.6,
+      1,
+      1.2,
+      1.4,
+      1.4,
+      1.2,
+      0.9,
+      0.6,
+      0.4,
+      0.3
+    ],
+    "youBucketIndex": 11,
+    "mostSimilar": [
+      {
+        "symbol": "RUGCOIN",
+        "ruggedAfterHours": 4,
+        "loss": -99.2
+      },
+      {
+        "symbol": "SCAMBOY",
+        "ruggedAfterHours": 6,
+        "loss": -98.5
+      },
+      {
+        "symbol": "TRAPCAT",
+        "ruggedAfterHours": 12,
+        "loss": -97.8
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777409153903,
+  "requestId": "4444dc55-e3e5-485f-8266-8314ad84a71a",
+  "aiSummary": "There is almost no real money backing this token. Even a small sell order will crash the price significantly. The top wallet holds 88.0% of supply with only 20 holders, creating extreme dump risk."
+}

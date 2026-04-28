@@ -1,0 +1,253 @@
+{
+  "score": 1000,
+  "risk": "SAFE",
+  "flags": [
+    {
+      "label": "LP Burned 100% (GoPlus) ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Well distributed supply ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Established token (30d+) ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "raydium",
+    "url": "https://dexscreener.com/solana/a9eutfmmr4kszwjiebps9t6febrvc2f8t49pzlf8xiyi",
+    "pairAddress": "A9EUTFmmr4kszWjiebpS9t6FEbrVc2f8T49PZLf8xiYi",
+    "baseToken": {
+      "address": "AYABiqKuTh9Va5Aqc6AujFevHwDGmECGQiFmKW5g3K4Z",
+      "name": "Nobiko Coin",
+      "symbol": "LONG"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.000002320",
+    "priceUsd": "0.0001938",
+    "txns": {
+      "m5": {
+        "buys": 0,
+        "sells": 0
+      },
+      "h1": {
+        "buys": 0,
+        "sells": 0
+      },
+      "h6": {
+        "buys": 0,
+        "sells": 1
+      },
+      "h24": {
+        "buys": 0,
+        "sells": 4
+      }
+    },
+    "volume": {
+      "h24": 95.23,
+      "h6": 25.61,
+      "h1": 0,
+      "m5": 0
+    },
+    "priceChange": {
+      "h6": -0.27,
+      "h24": -1.54
+    },
+    "liquidity": {
+      "usd": 42871.01,
+      "base": 110486798,
+      "quote": 256.7266
+    },
+    "fdv": 193562,
+    "marketCap": 193562,
+    "pairCreatedAt": 1711325629000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/9666cb132056d69df35c7e41fcfc06e9c7a7d1dd182b0fd7ada30b25b615a1f1?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/d55fabead2bd3b9fed3d69fee7df3cf2b0dbf3e152165f672624163d0556c4ef?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/AYABiqKuTh9Va5Aqc6AujFevHwDGmECGQiFmKW5g3K4Z?timestamp=1777408800000",
+      "websites": [
+        {
+          "url": "https://nobikolongcat.com/",
+          "label": "Website"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/NobikoCTO",
+          "type": "twitter"
+        },
+        {
+          "url": "https://t.me/nobikocoin",
+          "type": "telegram"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "AYABiqKuTh9Va5Aqc6AujFevHwDGmECGQiFmKW5g3K4Z",
+  "confidence": 100,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "goplus",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 4140,
+  "marketCap": 193562,
+  "priceUsd": 0.0001938,
+  "liquidity": 42871.01,
+  "volume24h": 95.23,
+  "volume1h": null,
+  "priceChange5m": null,
+  "priceChange1h": null,
+  "priceChange24h": -1.54,
+  "tokenSymbol": "LONG",
+  "tokenName": "Nobiko Coin",
+  "pairCreatedAt": 1711325629000,
+  "safeBlocked": false,
+  "safeBlockedReasons": [],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/9666cb132056d69df35c7e41fcfc06e9c7a7d1dd182b0fd7ada30b25b615a1f1?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 18356,
+  "solscanVolume24h": 95.23,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 1,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": true
+    },
+    "helius": {
+      "trust": 1,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": true,
+  "lpLocked": false,
+  "lpLockedPct": 100,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 6.466339608731138,
+  "top10HolderPct": 26.2995005728111,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 6.5,
+      "addr": "Fv7L…eg5V",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 79.5,
+      "repWarn": false,
+      "desc": "Holds <b>6.5%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777408953367,
+      "verdict": "SAFE",
+      "score": 1000,
+      "event": "LP Burned 100% (GoPlus) ✓"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "Fv7L…eg5V",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "CW4i…L8d9",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "2NsS…Lyvb",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "JAbg…zjvg",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "Gxbp…8Sxg",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "7Nwn…MxSC",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": null,
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777408953453,
+  "requestId": "e2c46d7b-0a70-4334-b214-87846ee2c2d5",
+  "aiSummary": "Score 1000/1000. LP is burned, mint authority is disabled, freeze authority is disabled, 4140 holders show organic distribution. No critical risks were detected in the contract or holder analysis."
+}

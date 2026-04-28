@@ -1,0 +1,342 @@
+{
+  "score": 100,
+  "risk": "RUG",
+  "flags": [
+    {
+      "label": "Very low liquidity (<$1k)",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Volume with zero liquidity — abandoned pool",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Single wallet holds 68% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Top 10 wallets hold 89% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Blow-off top: price collapsed >55% from peak",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Post-ATH dump -71% — rug exit in progress",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Fresh token on-chain (<6h)",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "LP not burned or locked — dev can rug liquidity",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "GoPlus unavailable",
+      "severity": "info",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "pumpfun",
+    "url": "https://dexscreener.com/solana/hwm1yoyphkjrmjqwphuh632rqnmuvncvqu3sxrymkxjz",
+    "pairAddress": "HWM1YoYpHkjRmJqwpHuh632RQNmuVncvqu3SXRyMkxjz",
+    "baseToken": {
+      "address": "5ZSi1AV7Zg2RU3EHjJ2FroW3GXWHtFX8CtDCW933pump",
+      "name": "Schrödinger's Cat",
+      "symbol": "SC"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.00000005669",
+    "priceUsd": "0.000004753",
+    "txns": {
+      "m5": {
+        "buys": 6,
+        "sells": 6
+      },
+      "h1": {
+        "buys": 34,
+        "sells": 43
+      },
+      "h6": {
+        "buys": 423,
+        "sells": 365
+      },
+      "h24": {
+        "buys": 423,
+        "sells": 365
+      }
+    },
+    "volume": {
+      "h24": 34161.67,
+      "h6": 34161.67,
+      "h1": 4079.26,
+      "m5": 636.89
+    },
+    "priceChange": {
+      "m5": 9.69,
+      "h1": -17.5,
+      "h6": 102,
+      "h24": 102
+    },
+    "fdv": 4753.14,
+    "marketCap": 4753.14,
+    "pairCreatedAt": 1777402488000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/P_Suff_7doiCIeIO?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/Bs_L1VoqY2Yf2mdF?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/5ZSi1AV7Zg2RU3EHjJ2FroW3GXWHtFX8CtDCW933pump?timestamp=1777408500000",
+      "websites": [
+        {
+          "url": "https://www.courtlistener.com/docket/69013420/289/2/musk-v-altman/",
+          "label": "Website"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/i/communities/1964292864919097726",
+          "type": "twitter"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "5ZSi1AV7Zg2RU3EHjJ2FroW3GXWHtFX8CtDCW933pump",
+  "confidence": 80,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 20,
+  "marketCap": 4753.14,
+  "priceUsd": 0.000004753,
+  "liquidity": null,
+  "volume24h": 34161.67,
+  "volume1h": 4079.26,
+  "priceChange5m": 9.69,
+  "priceChange1h": -17.5,
+  "priceChange24h": 102,
+  "tokenSymbol": "SC",
+  "tokenName": "Schrödinger&#39;s Cat",
+  "pairCreatedAt": 1777402488000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "concentration",
+    "chart",
+    "lp"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/P_Suff_7doiCIeIO?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 1,
+  "solscanVolume24h": 34161.67,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 0.042,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": false
+    },
+    "helius": {
+      "trust": 0.037,
+      "available": true
+    },
+    "solscan": {
+      "trust": 0.65,
+      "available": true
+    },
+    "chart": {
+      "trust": 0.038,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": false,
+  "lpLocked": false,
+  "lpLockedPct": null,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 67.97192863101701,
+  "top10HolderPct": 89.09467137500361,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 68,
+      "addr": "HWM1…kxjz",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 95,
+      "repWarn": false,
+      "desc": "Holds <b>68.0%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777408612602,
+      "verdict": "RUG",
+      "score": 100,
+      "event": "Very low liquidity (<$1k)"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "HWM1…kxjz",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "CxiX…3z8D",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "Dn7D…eKYe",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "GLoT…QVPT",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "GFF9…C3Xh",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "CHxG…PL5w",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "4h 12m",
+    "timeToRugMedianHours": 4.2,
+    "timeToRugSampleSize": 487,
+    "pctRugged24h": 89,
+    "pctSlowDeath": 8,
+    "pctAlive30d": 3,
+    "distribution": [
+      8,
+      14,
+      22,
+      28,
+      18,
+      12,
+      6,
+      4,
+      2,
+      1,
+      0.6,
+      0.4,
+      0.3,
+      0.3,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.3,
+      0.3,
+      0.4,
+      0.6,
+      1,
+      1.2,
+      1.4,
+      1.4,
+      1.2,
+      0.9,
+      0.6,
+      0.4,
+      0.3
+    ],
+    "youBucketIndex": 11,
+    "mostSimilar": [
+      {
+        "symbol": "RUGCOIN",
+        "ruggedAfterHours": 4,
+        "loss": -99.2
+      },
+      {
+        "symbol": "SCAMBOY",
+        "ruggedAfterHours": 6,
+        "loss": -98.5
+      },
+      {
+        "symbol": "TRAPCAT",
+        "ruggedAfterHours": 12,
+        "loss": -97.8
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777408612687,
+  "requestId": "68dbf331-74ed-47df-ad95-4eb2fe4fd230",
+  "aiSummary": "There is almost no real money backing this token. Even a small sell order will crash the price significantly. The top wallet holds 68.0% of supply with only 20 holders, creating extreme dump risk."
+}

@@ -1,0 +1,262 @@
+{
+  "score": 1000,
+  "risk": "SAFE",
+  "flags": [
+    {
+      "label": "RugCheck unavailable",
+      "severity": "info",
+      "impact": 0
+    },
+    {
+      "label": "LP Burned 100% (GoPlus) ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Well distributed supply ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Established token (30d+) ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "raydium",
+    "url": "https://dexscreener.com/solana/3k8efqc3nu2cdqxluojxajq3fyhnxxatf4hgk2a4bz8n",
+    "pairAddress": "3k8EFqC3NU2cdqxLuoJxaJq3FYhNXXATf4hGK2A4BZ8N",
+    "baseToken": {
+      "address": "HwPtbFpd3VTe3tfyosoVtPf9WPuSk5gAKkN5xp6Npump",
+      "name": "🟥🟪🟦🟩🟨🟧",
+      "symbol": "🟥🟩"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.000004228",
+    "priceUsd": "0.0003547",
+    "txns": {
+      "m5": {
+        "buys": 0,
+        "sells": 0
+      },
+      "h1": {
+        "buys": 0,
+        "sells": 1
+      },
+      "h6": {
+        "buys": 2,
+        "sells": 2
+      },
+      "h24": {
+        "buys": 14,
+        "sells": 7
+      }
+    },
+    "volume": {
+      "h24": 472.49,
+      "h6": 242.22,
+      "h1": 0.54,
+      "m5": 0
+    },
+    "priceChange": {
+      "h1": 0.01,
+      "h6": 0.29,
+      "h24": 0.04
+    },
+    "liquidity": {
+      "usd": 109351.22,
+      "base": 153913926,
+      "quote": 652.4882
+    },
+    "fdv": 354673,
+    "marketCap": 354673,
+    "pairCreatedAt": 1731847341000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/58bc494dbb4566961ccb17f81fd7ed8742c75b834e0ef649ce49283a6f592e80?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/01b080df33970140a700a71282806a72f387bc1c7d77994dfb7a08a27e295c19?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/HwPtbFpd3VTe3tfyosoVtPf9WPuSk5gAKkN5xp6Npump?timestamp=1777408800000",
+      "websites": [
+        {
+          "url": "https://epileptic.meme",
+          "label": "Website"
+        },
+        {
+          "url": "https://www.youtube.com/@Epileptic_CULT",
+          "label": "YouTube"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/Epileptic_CULT",
+          "type": "twitter"
+        },
+        {
+          "url": "https://t.me/EpilepticCultCommunity",
+          "type": "telegram"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "HwPtbFpd3VTe3tfyosoVtPf9WPuSk5gAKkN5xp6Npump",
+  "confidence": 80,
+  "sources_used": [
+    "dexscreener",
+    "goplus",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 18709,
+  "marketCap": 354673,
+  "priceUsd": 0.0003547,
+  "liquidity": 109351.22,
+  "volume24h": 472.49,
+  "volume1h": 0.54,
+  "priceChange5m": null,
+  "priceChange1h": 0.01,
+  "priceChange24h": 0.04,
+  "tokenSymbol": "🟥🟩",
+  "tokenName": "🟥🟪🟦🟩🟨🟧",
+  "pairCreatedAt": 1731847341000,
+  "safeBlocked": false,
+  "safeBlockedReasons": [],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/58bc494dbb4566961ccb17f81fd7ed8742c75b834e0ef649ce49283a6f592e80?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 12655,
+  "solscanVolume24h": 472.49,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 1,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": false
+    },
+    "goplus": {
+      "trust": 1,
+      "available": true
+    },
+    "helius": {
+      "trust": 1,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": true,
+  "lpLocked": false,
+  "lpLockedPct": 99.98,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 9.327859637048238,
+  "top10HolderPct": 20.369262696832813,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 9.3,
+      "addr": "ASTy…iaJZ",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 87.9,
+      "repWarn": false,
+      "desc": "Holds <b>9.3%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777408838074,
+      "verdict": "SAFE",
+      "score": 1000,
+      "event": "RugCheck unavailable"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "ASTy…iaJZ",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "EWd8…KDpw",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "CUMU…cyuW",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "6aD9…n3fe",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "FCwN…JkR9",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "FBdT…grUf",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": null,
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777408838156,
+  "requestId": "888003b4-6a41-4141-aa4c-996a20b2f02e",
+  "aiSummary": "Score 1000/1000. LP is burned, mint authority is disabled, freeze authority is disabled, 18709 holders show organic distribution. No critical risks were detected in the contract or holder analysis."
+}

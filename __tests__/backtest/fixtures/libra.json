@@ -1,0 +1,321 @@
+{
+  "score": 525,
+  "risk": "DANGER",
+  "flags": [
+    {
+      "label": "Single wallet holds 50% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Top 10 wallets hold 99% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Volume tapering during consolidation (mature pair)",
+      "severity": "info",
+      "impact": 0
+    },
+    {
+      "label": "LP Burned 100% (GoPlus) ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Established token (30d+) ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "meteora",
+    "url": "https://dexscreener.com/solana/bzzmnvfm7t6zsgfelxzermrxfkanldo4fszvsisxcszz",
+    "pairAddress": "BzzMNvfm7T6zSGFeLXzERmRxfKaNLdo4fSzvsisxcSzz",
+    "labels": [
+      "DLMM"
+    ],
+    "baseToken": {
+      "address": "Bo9jh3wsmcC2AjakLWzNmKJ3SgtZmXEcSaW7L2FAvUsU",
+      "name": "LIBRA",
+      "symbol": "LIBRA"
+    },
+    "quoteToken": {
+      "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "name": "USD Coin",
+      "symbol": "USDC"
+    },
+    "priceNative": "0.004569",
+    "priceUsd": "0.004569",
+    "txns": {
+      "m5": {
+        "buys": 0,
+        "sells": 0
+      },
+      "h1": {
+        "buys": 0,
+        "sells": 0
+      },
+      "h6": {
+        "buys": 0,
+        "sells": 2
+      },
+      "h24": {
+        "buys": 1,
+        "sells": 5
+      }
+    },
+    "volume": {
+      "h24": 5.21,
+      "h6": 1.03,
+      "h1": 0,
+      "m5": 0
+    },
+    "priceChange": {
+      "h24": -0.99
+    },
+    "liquidity": {
+      "usd": 5487734.98,
+      "base": 204340866,
+      "quote": 4553944
+    },
+    "fdv": 4569762,
+    "marketCap": 1171783,
+    "pairCreatedAt": 1739570460000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/f9d0264efe0384c3dd6c0c0284f6c68f41085fa01e00ae01f61f931931698551?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/24f99c358a7c73fddd957b2665edc482c1621c39edfae709734594d8d620b2cc?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/Bo9jh3wsmcC2AjakLWzNmKJ3SgtZmXEcSaW7L2FAvUsU?timestamp=1777408800000",
+      "websites": [],
+      "socials": [
+        {
+          "url": "https://x.com/JMilei/status/1890521742961156552",
+          "type": "twitter"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "Bo9jh3wsmcC2AjakLWzNmKJ3SgtZmXEcSaW7L2FAvUsU",
+  "confidence": 100,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "goplus",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 23658,
+  "marketCap": 1171783,
+  "priceUsd": 0.004569,
+  "liquidity": 5487734.98,
+  "volume24h": 5.21,
+  "volume1h": null,
+  "priceChange5m": null,
+  "priceChange1h": null,
+  "priceChange24h": -0.99,
+  "tokenSymbol": "LIBRA",
+  "tokenName": "LIBRA",
+  "pairCreatedAt": 1739570460000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "concentration"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/f9d0264efe0384c3dd6c0c0284f6c68f41085fa01e00ae01f61f931931698551?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 10510,
+  "solscanVolume24h": 5.21,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 1,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": true
+    },
+    "helius": {
+      "trust": 0.35,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 0.85,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": true,
+  "lpLocked": false,
+  "lpLockedPct": 100,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 50.00068772394373,
+  "top10HolderPct": 98.75925076310284,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 50,
+      "addr": "42re…2Tgn",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 95,
+      "repWarn": false,
+      "desc": "Holds <b>50.0%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777408691310,
+      "verdict": "DANGER",
+      "score": 525,
+      "event": "Single wallet holds 50% of supply"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "42re…2Tgn",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "BzzM…cSzz",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "Gj9e…CNwT",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "FKp1…dNX7",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "61yK…5M4C",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "2bFs…tLeW",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "11h",
+    "timeToRugMedianHours": 11,
+    "timeToRugSampleSize": 312,
+    "pctRugged24h": 76,
+    "pctSlowDeath": 16,
+    "pctAlive30d": 8,
+    "distribution": [
+      3,
+      5,
+      8,
+      11,
+      14,
+      12,
+      9,
+      7,
+      5,
+      4,
+      3,
+      2.5,
+      2,
+      1.8,
+      1.6,
+      1.4,
+      1.2,
+      1,
+      0.9,
+      0.8,
+      0.7,
+      0.7,
+      0.6,
+      0.6,
+      0.5,
+      0.5,
+      0.4,
+      0.4,
+      0.3,
+      0.3,
+      0.3,
+      0.3,
+      0.4,
+      0.5,
+      0.7,
+      0.9
+    ],
+    "youBucketIndex": 17,
+    "mostSimilar": [
+      {
+        "symbol": "PUMPDUMP",
+        "ruggedAfterHours": 18,
+        "loss": -94.1
+      },
+      {
+        "symbol": "FAKEMOON",
+        "ruggedAfterHours": 28,
+        "loss": -91.6
+      },
+      {
+        "symbol": "SLOWBLEED",
+        "ruggedAfterHours": 48,
+        "loss": -85.4
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777408691393,
+  "requestId": "abdee21f-8c96-4bff-b5b8-bbe1ce776c23",
+  "aiSummary": "The top wallet holds 50.0% of supply with only 23658 holders, creating extreme dump risk."
+}

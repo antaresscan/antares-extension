@@ -1,0 +1,327 @@
+{
+  "score": 325,
+  "risk": "RUG",
+  "flags": [
+    {
+      "label": "Very low liquidity (<$1k)",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Single wallet holds 32% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Newborn token on-chain (<30min)",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "LP not burned or locked — dev can rug liquidity",
+      "severity": "warning",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "meteora",
+    "url": "https://dexscreener.com/solana/7my2nqnd6zfvrtsdj9yvvr7gkrpxab23nc4cdkyoqdsw",
+    "pairAddress": "7my2nQnd6zFvRtsDJ9YVVR7gKRPxaB23NC4Cdkyoqdsw",
+    "labels": [
+      "DYN2"
+    ],
+    "baseToken": {
+      "address": "EcnakfbboQMVPZj8ynfALxngQ3Y6MnVrfr5A5HdPpump",
+      "name": "Scam Trump",
+      "symbol": "SCAMTRUMP"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.0000001004",
+    "priceUsd": "0.000008429",
+    "txns": {
+      "m5": {
+        "buys": 0,
+        "sells": 0
+      },
+      "h1": {
+        "buys": 1,
+        "sells": 0
+      },
+      "h6": {
+        "buys": 1,
+        "sells": 0
+      },
+      "h24": {
+        "buys": 1,
+        "sells": 0
+      }
+    },
+    "volume": {
+      "h24": 0,
+      "h6": 0,
+      "h1": 0,
+      "m5": 0
+    },
+    "priceChange": {},
+    "liquidity": {
+      "usd": 34.73,
+      "base": 2055183,
+      "quote": 0.2076
+    },
+    "fdv": 8430,
+    "marketCap": 8430,
+    "pairCreatedAt": 1777407078000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/6vnqBnmyz0VW7kC1?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/0xox5cZsFvph1jk5?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/EcnakfbboQMVPZj8ynfALxngQ3Y6MnVrfr5A5HdPpump?timestamp=1777408200000",
+      "websites": [
+        {
+          "url": "http://scamtrump.fun/",
+          "label": "Website"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/scamtrump_sol",
+          "type": "twitter"
+        },
+        {
+          "url": "https://t.me/ScamTrump_OnSol",
+          "type": "telegram"
+        }
+      ]
+    },
+    "boosts": {
+      "active": 50
+    }
+  },
+  "resolvedMint": "EcnakfbboQMVPZj8ynfALxngQ3Y6MnVrfr5A5HdPpump",
+  "confidence": 90,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "goplus",
+    "helius",
+    "solscan"
+  ],
+  "holders": 125,
+  "marketCap": 8430,
+  "priceUsd": 0.000008429,
+  "liquidity": 34.73,
+  "volume24h": null,
+  "volume1h": null,
+  "priceChange5m": null,
+  "priceChange1h": null,
+  "priceChange24h": null,
+  "tokenSymbol": "SCAMTRUMP",
+  "tokenName": "Scam Trump",
+  "pairCreatedAt": 1777407078000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "concentration",
+    "age",
+    "lp"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/6vnqBnmyz0VW7kC1?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 0,
+  "solscanVolume24h": null,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 0.25,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": true
+    },
+    "helius": {
+      "trust": 0.08,
+      "available": true
+    },
+    "solscan": {
+      "trust": 0.1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": false
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": false,
+  "lpLocked": false,
+  "lpLockedPct": null,
+  "candles": "[1 candles, redacted for fixture]",
+  "topHolderPct": 32.28389700187147,
+  "top10HolderPct": 47.07233214297379,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 32.3,
+      "addr": "4AXT…KTS4",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 95,
+      "repWarn": false,
+      "desc": "Holds <b>32.3%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777408379858,
+      "verdict": "RUG",
+      "score": 325,
+      "event": "Very low liquidity (<$1k)"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "4AXT…KTS4",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "Bgm2…vZHw",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "4wne…5R4r",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "52YE…1U8u",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "CSfy…cb3T",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "BUR4…XCW9",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "4h 12m",
+    "timeToRugMedianHours": 4.2,
+    "timeToRugSampleSize": 487,
+    "pctRugged24h": 89,
+    "pctSlowDeath": 8,
+    "pctAlive30d": 3,
+    "distribution": [
+      8,
+      14,
+      22,
+      28,
+      18,
+      12,
+      6,
+      4,
+      2,
+      1,
+      0.6,
+      0.4,
+      0.3,
+      0.3,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.3,
+      0.3,
+      0.4,
+      0.6,
+      1,
+      1.2,
+      1.4,
+      1.4,
+      1.2,
+      0.9,
+      0.6,
+      0.4,
+      0.3
+    ],
+    "youBucketIndex": 11,
+    "mostSimilar": [
+      {
+        "symbol": "RUGCOIN",
+        "ruggedAfterHours": 4,
+        "loss": -99.2
+      },
+      {
+        "symbol": "SCAMBOY",
+        "ruggedAfterHours": 6,
+        "loss": -98.5
+      },
+      {
+        "symbol": "TRAPCAT",
+        "ruggedAfterHours": 12,
+        "loss": -97.8
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777408379940,
+  "requestId": "54e5c7bc-644e-4db5-a012-e5e3e8369c41",
+  "aiSummary": "There is almost no real money backing this token. Even a small sell order will crash the price significantly. The top wallet holds 32.3% of supply with only 125 holders, creating extreme dump risk."
+}

@@ -1,0 +1,309 @@
+{
+  "score": 100,
+  "risk": "RUG",
+  "flags": [
+    {
+      "label": "Very low liquidity (<$1k)",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Volume with zero liquidity — abandoned pool",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Slow rug detected: -50% on 6h + -15% on 1h",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Single wallet holds 99% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Top 10 wallets hold 100% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Newborn token on-chain (<30min)",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Active dump: -60% 24h + -20% 1h (slow rug)",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "LP not burned or locked — dev can rug liquidity",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "GoPlus unavailable",
+      "severity": "info",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "pumpfun",
+    "url": "https://dexscreener.com/solana/aqmopirpnyhqerxqpbceevvn2vdbrxvxeta8b8hpzxvx",
+    "pairAddress": "AQmoPiRPnYhqErxqPBCeeVVn2vdbrxvxETA8B8hpZXVX",
+    "baseToken": {
+      "address": "CPqPxhXo4pWyfLa21G2rR1YxUqdaiJgKjFRgGmxnpump",
+      "name": "World Liberty Financial USD",
+      "symbol": "USD1"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.00000002831",
+    "priceUsd": "0.000002375",
+    "txns": {
+      "m5": {
+        "buys": 0,
+        "sells": 0
+      },
+      "h1": {
+        "buys": 554,
+        "sells": 527
+      },
+      "h6": {
+        "buys": 554,
+        "sells": 527
+      },
+      "h24": {
+        "buys": 554,
+        "sells": 527
+      }
+    },
+    "volume": {
+      "h24": 53906.31,
+      "h6": 53906.31,
+      "h1": 53906.31,
+      "m5": 0
+    },
+    "priceChange": {
+      "h1": -60.02,
+      "h6": -60.02,
+      "h24": -60.02
+    },
+    "fdv": 2375.61,
+    "marketCap": 2375.61,
+    "pairCreatedAt": 1777405065000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/l2P58gYrMV0Paeb3?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/aGvbS9xvhBwredLw?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/CPqPxhXo4pWyfLa21G2rR1YxUqdaiJgKjFRgGmxnpump?timestamp=1777408500000",
+      "websites": [],
+      "socials": [
+        {
+          "url": "https://x.com/i/communities/2039062402738823653",
+          "type": "twitter"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "CPqPxhXo4pWyfLa21G2rR1YxUqdaiJgKjFRgGmxnpump",
+  "confidence": 80,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 3,
+  "marketCap": 2375.61,
+  "priceUsd": 0.000002375,
+  "liquidity": null,
+  "volume24h": 53906.31,
+  "volume1h": 53906.31,
+  "priceChange5m": null,
+  "priceChange1h": -60.02,
+  "priceChange24h": -60.02,
+  "tokenSymbol": "USD1",
+  "tokenName": "World Liberty Financial USD",
+  "pairCreatedAt": 1777405065000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "concentration",
+    "age",
+    "lp"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/l2P58gYrMV0Paeb3?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 0,
+  "solscanVolume24h": 53906.31,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 0.018,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": false
+    },
+    "helius": {
+      "trust": 0.037,
+      "available": true
+    },
+    "solscan": {
+      "trust": 0.1,
+      "available": true
+    },
+    "chart": {
+      "trust": 0.25,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": false,
+  "lpLocked": false,
+  "lpLockedPct": null,
+  "candles": "[5 candles, redacted for fixture]",
+  "topHolderPct": 99.32601255439542,
+  "top10HolderPct": 100,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 99.3,
+      "addr": "AQmo…ZXVX",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 95,
+      "repWarn": false,
+      "desc": "Holds <b>99.3%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777408574848,
+      "verdict": "RUG",
+      "score": 100,
+      "event": "Very low liquidity (<$1k)"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "AQmo…ZXVX",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "djh1…fPyo",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "6jDF…dJm6",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "4h 12m",
+    "timeToRugMedianHours": 4.2,
+    "timeToRugSampleSize": 487,
+    "pctRugged24h": 89,
+    "pctSlowDeath": 8,
+    "pctAlive30d": 3,
+    "distribution": [
+      8,
+      14,
+      22,
+      28,
+      18,
+      12,
+      6,
+      4,
+      2,
+      1,
+      0.6,
+      0.4,
+      0.3,
+      0.3,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.3,
+      0.3,
+      0.4,
+      0.6,
+      1,
+      1.2,
+      1.4,
+      1.4,
+      1.2,
+      0.9,
+      0.6,
+      0.4,
+      0.3
+    ],
+    "youBucketIndex": 11,
+    "mostSimilar": [
+      {
+        "symbol": "RUGCOIN",
+        "ruggedAfterHours": 4,
+        "loss": -99.2
+      },
+      {
+        "symbol": "SCAMBOY",
+        "ruggedAfterHours": 6,
+        "loss": -98.5
+      },
+      {
+        "symbol": "TRAPCAT",
+        "ruggedAfterHours": 12,
+        "loss": -97.8
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777408574931,
+  "requestId": "8762c2a6-f035-4efc-8999-09d542fa8a92",
+  "aiSummary": "There is almost no real money backing this token. Even a small sell order will crash the price significantly. The top wallet holds 99.3% of supply with only 3 holders, creating extreme dump risk."
+}

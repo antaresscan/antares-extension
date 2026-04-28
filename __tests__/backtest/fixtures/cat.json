@@ -1,0 +1,254 @@
+{
+  "score": 1000,
+  "risk": "SAFE",
+  "flags": [
+    {
+      "label": "LP Burned 100% (GoPlus) ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Well distributed supply ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Established token (30d+) ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "raydium",
+    "url": "https://dexscreener.com/solana/gykdfe5xuvawvq5ecwc7cncrkgu3pjgb87pgwah5qmhz",
+    "pairAddress": "GYKDfe5xuvAwvq5ECWC7cNCRkGU3Pjgb87pgWah5QmHZ",
+    "baseToken": {
+      "address": "7hWcHohzwtLddDUG81H2PkWq6KEkMtSDNkYXsso18Fy3",
+      "name": "Catcoin",
+      "symbol": "CAT"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.0000000000003882",
+    "priceUsd": "0.00000000003257",
+    "txns": {
+      "m5": {
+        "buys": 0,
+        "sells": 0
+      },
+      "h1": {
+        "buys": 4,
+        "sells": 3
+      },
+      "h6": {
+        "buys": 4,
+        "sells": 16
+      },
+      "h24": {
+        "buys": 26,
+        "sells": 22
+      }
+    },
+    "volume": {
+      "h24": 3668.97,
+      "h6": 1896.61,
+      "h1": 295.95,
+      "m5": 0
+    },
+    "priceChange": {
+      "h1": 0.02,
+      "h6": -4,
+      "h24": -1.81
+    },
+    "liquidity": {
+      "usd": 152489.27,
+      "base": 2343174938459736,
+      "quote": 907.5172
+    },
+    "fdv": 325756,
+    "marketCap": 325756,
+    "pairCreatedAt": 1703729856000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/4b7b336c54f34392e34f5a95de5d593926453743bc656e1e5b702ed5eddeb89c?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/619648bd0566d70bd63c84e03b84facb42e76aaf0f5ee1d8d9feb6b518260894?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/7hWcHohzwtLddDUG81H2PkWq6KEkMtSDNkYXsso18Fy3?timestamp=1777408800000",
+      "websites": [
+        {
+          "url": "https://catcoin.com/",
+          "label": "Website"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://twitter.com/catcoin",
+          "type": "twitter"
+        },
+        {
+          "url": "http://t.me/catcoincash",
+          "type": "telegram"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "7hWcHohzwtLddDUG81H2PkWq6KEkMtSDNkYXsso18Fy3",
+  "confidence": 100,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "goplus",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 13386,
+  "marketCap": 325756,
+  "priceUsd": 3.257e-11,
+  "liquidity": 152489.27,
+  "volume24h": 3668.97,
+  "volume1h": 295.95,
+  "priceChange5m": null,
+  "priceChange1h": 0.02,
+  "priceChange24h": -1.81,
+  "tokenSymbol": "CAT",
+  "tokenName": "Catcoin",
+  "pairCreatedAt": 1703729856000,
+  "safeBlocked": false,
+  "safeBlockedReasons": [],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/4b7b336c54f34392e34f5a95de5d593926453743bc656e1e5b702ed5eddeb89c?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 20466,
+  "solscanVolume24h": 3668.97,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 1,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": true
+    },
+    "helius": {
+      "trust": 1,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": true,
+  "lpLocked": false,
+  "lpLockedPct": 100,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 4.140990385697831,
+  "top10HolderPct": 20.741998762655147,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 4.1,
+      "addr": "u6PJ…Xq2w",
+      "repLbl": "Significant single-wallet position",
+      "repWidth": 62.8,
+      "repWarn": false,
+      "desc": "Holds <b>4.1%</b> of supply — large enough to move the chart on exit."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777408702192,
+      "verdict": "SAFE",
+      "score": 1000,
+      "event": "LP Burned 100% (GoPlus) ✓"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "u6PJ…Xq2w",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "B1PU…a1Ad",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "Cw4v…MjQR",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "4FTv…PjXs",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "6xBT…bWUU",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "EwRM…daQn",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": null,
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777408702266,
+  "requestId": "0612dee9-795f-4766-abb0-b9e54ce3d494",
+  "aiSummary": "Score 1000/1000. LP is burned, mint authority is disabled, freeze authority is disabled, 13386 holders show organic distribution. No critical risks were detected in the contract or holder analysis."
+}
