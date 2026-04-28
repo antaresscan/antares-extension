@@ -427,21 +427,24 @@ export function layerHelius(
   else if (top10Pct < 0.3) { flags.push(makeFlag("Well distributed supply ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.05); }
   trust = applyDiminishingPenalties(trust, penalties);
 
-  // ── Concentration kill-switch — top1 > 40% on non-mature tokens ──
-  // A single wallet holding more than 40% of supply on a token without
-  // strong maturity signals (LP burned + many holders) is the textbook
-  // rug-set-up: HAWK (44%, post-pump dump), HORNY (similar). PR #339
-  // removed forceRug from concentration entirely, but the floor was
-  // too lenient for the truly extreme cases. Re-enable forceRug ONLY
-  // when concentration is extreme AND maturity signals are absent —
-  // MEW/GOAT/PNUT (mature blue-chips with high concentration) still
-  // get the dampened-CAUTION path.
+  // ── Concentration kill-switch — top1 > 40% on non-blue-chip tokens ─
+  // A single wallet holding more than 40% of supply is the textbook
+  // rug structure: HAWK (44%, post-pump dump, ~7k holders left),
+  // HORNY (similar). PR #339 removed forceRug from concentration
+  // entirely, but the floor was too lenient — HAWK kept landing
+  // DANGER instead of the user-expected RUG.
+  //
+  // Re-enable forceRug ONLY when concentration is extreme AND the
+  // token does NOT look like a true blue-chip. The threshold is
+  // 50k+ holders: under that, top1>40% IS a rug pattern; above it,
+  // it's an oddity on a real established memecoin (e.g. exchange
+  // wallet, treasury) and the dampened-CAUTION path applies.
+  // GOAT/PNUT (broken-data 20-holder reports) are caught by the
+  // data-quality fallback below which clears forceRug too.
   if (top1Pct > 0.4) {
     const mcRug = maturityContext;
-    const lookslikeRealRug = !mcRug?.lpBurned ||
-      (mcRug.holders ?? 0) < 1000 ||
-      (mcRug.tokenAgeHours ?? 0) < 7 * 24;
-    if (lookslikeRealRug) {
+    const isBlueChipDistribution = (mcRug?.holders ?? 0) >= 50_000;
+    if (!isBlueChipDistribution) {
       forceRug = true;
     }
   }
@@ -500,6 +503,7 @@ export function layerHelius(
       flags.push(makeFlag("Holder data unreliable (broken upstream view) — mature pair, deep liquidity", "info", 0));
       trust = Math.max(trust, 0.40);
       safeBlocked = false; // We can't trust the broken concentration signal.
+      forceRug = false;    // Same — broken concentration data must not slam the verdict to RUG.
     }
   }
 
