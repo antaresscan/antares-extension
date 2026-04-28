@@ -17,6 +17,7 @@ import {
   isSolscanMarketsResponse, isSolscanMeta, isSolscanTransfersResponse,
   isRugCheckReport,
   sanitizeString, sanitizeUrl,
+  makeFlag,
 } from "./_lib/helpers";
 import {
   heliusGetLargestAccounts, heliusGetTokenSupply, heliusGetCreatorReputation,
@@ -402,6 +403,35 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
 
     const safeBlockedReasons = classifySafeBlockedReasons(allLayers);
     const _gpBP = (goplus?.dex && Array.isArray(goplus.dex) && goplus.dex.length > 0) ? Math.max(...goplus.dex.map((d: { burn_percent?: number }) => typeof d.burn_percent === "number" ? d.burn_percent : 0)) : 0; const lpBurned = _gpBP >= 50 || rugData?.lpBurned === true;
+    // Surface lpLocked from RugCheck instead of hard-wiring false. The
+    // response was previously claiming "LP not locked" even when
+    // RugCheck reported a real lock — which read like a contradiction
+    // when the verdict surfaced LP-locked bonuses elsewhere.
+    const lpLocked = rugData?.lpLocked === true;
+
+    // ─── LP fail-closed safety net ────────────────────────────────────
+    // If neither RugCheck nor GoPlus can confirm LP is burned or
+    // locked, AND no layer has emitted an LP-related flag, force the
+    // safe gate closed. Without this, brand-new tokens (low holders,
+    // RugCheck has no record yet) where GoPlus is also rate-limited
+    // slip through with SAFE verdicts despite the front-end correctly
+    // showing "LP LOCK ✗" — exactly the user-reported HORNY/MAGA case
+    // (SAFE 931 with 20 holders, $48K liq, no LP data from any source).
+    // Treat unverified LP as not-burned by default — fail-closed.
+    if (!lpBurned && !lpLocked) {
+      const anyLpFlag = allLayers.some(l =>
+        l.flags.some(f => /\bLP\b|liquidity (?:not|is)|dev can rug/i.test(f.label))
+      );
+      if (!anyLpFlag) {
+        postLayerFlags.push(makeFlag(
+          "LP not burned or locked — dev can rug liquidity",
+          "warning",
+          0
+        ));
+        safeBlocked = true;
+        if (!safeBlockedReasons.includes("lp")) safeBlockedReasons.push("lp");
+      }
+    }
     const goPlusClean = l3.available && l3.trust >= 0.95 && !l3.forceRug;
     const tokenAgeHours = solscanTokenAgeHours ?? dexTokenAgeHours ?? null;
     const sourcesAvailableCount = allLayers
@@ -523,7 +553,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       tokenSymbol: sanitizeString(pair?.baseToken?.symbol) ?? null,
       holders, marketCap, liquidity,
       lpBurned,
-      lpLocked: false,
+      lpLocked,
       mintAuthority: allLayers.some(l => l.flags.some(f => /mint authority/i.test(f.label) && f.severity === "critical")),
       freezeAuthority: allLayers.some(l => l.flags.some(f => /freeze authority/i.test(f.label) && f.severity === "critical")),
       honeypot: l3.available && l3.trust === 0 && l3.flags.some(f => /honeypot/i.test(f.label)),
@@ -566,7 +596,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       mintAuthority: allLayers.some(l => l.flags.some(f => /mint authority/i.test(f.label) && f.severity === "critical")),
       freezeAuthority: allLayers.some(l => l.flags.some(f => /freeze authority/i.test(f.label) && f.severity === "critical")),
       lpBurned,
-      lpLocked: false,
+      lpLocked,
       lpLockedPct: _gpBP > 0 ? _gpBP : null,
       candles: candles.slice(-20).map(c => ({ close: c.c })),
       topHolderPct,
