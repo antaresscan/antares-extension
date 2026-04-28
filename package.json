@@ -11,7 +11,10 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "corpus:capture": "tsx scripts/corpus-capture.ts",
+    "corpus:refresh": "tsx scripts/corpus-capture.ts --refresh",
+    "test:corpus": "vitest run __tests__/backtest"
   },
   "dependencies": {
     "@sentry/browser": "^10.50.0",
@@ -37,6 +40,7 @@
     "globals": "^16.0.0",
     "happy-dom": "^20.9.0",
     "prettier": "^3.8.3",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.58.1",
     "vitest": "^4.1.0"

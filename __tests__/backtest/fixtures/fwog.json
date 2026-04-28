@@ -1,0 +1,255 @@
+{
+  "score": 1000,
+  "risk": "SAFE",
+  "flags": [
+    {
+      "label": "LP Burned 100% (GoPlus) ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Well distributed supply ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Established token (30d+) ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "raydium",
+    "url": "https://dexscreener.com/solana/ab1eu2l1jr3nfeft85aud2zgksubam1kr8mr3um2sjwt",
+    "pairAddress": "AB1eu2L1Jr3nfEft85AuD2zGksUbam1Kr8MR3uM2sjwt",
+    "baseToken": {
+      "address": "A8C3xuqscfmyLrte3VmTqrAq8kgMASius9AFNANwpump",
+      "name": "FWOG",
+      "symbol": "FWOG"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.00005433",
+    "priceUsd": "0.004545",
+    "txns": {
+      "m5": {
+        "buys": 1,
+        "sells": 0
+      },
+      "h1": {
+        "buys": 16,
+        "sells": 3
+      },
+      "h6": {
+        "buys": 56,
+        "sells": 21
+      },
+      "h24": {
+        "buys": 273,
+        "sells": 212
+      }
+    },
+    "volume": {
+      "h24": 43309.11,
+      "h6": 5435.48,
+      "h1": 240.08,
+      "m5": 16.91
+    },
+    "priceChange": {
+      "m5": 0.33,
+      "h1": 0.23,
+      "h6": -1.06,
+      "h24": -3.19
+    },
+    "liquidity": {
+      "usd": 1246550.32,
+      "base": 137290975,
+      "quote": 7440.8745
+    },
+    "fdv": 4434627,
+    "marketCap": 4434627,
+    "pairCreatedAt": 1722303257000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/ceccc0a74f91ec3a5f6162005af09d1f6e8bdbdd6a55f49e43ac8b217b6ec8bd?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/843e06d17fd1f9dafbc162493e6dc679671ac501dac413be79e9870eaf49544a?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/A8C3xuqscfmyLrte3VmTqrAq8kgMASius9AFNANwpump?timestamp=1777383900000",
+      "websites": [
+        {
+          "url": "https://itsafwog.com/",
+          "label": "Website"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/itsafwog",
+          "type": "twitter"
+        },
+        {
+          "url": "https://t.me/justfwogs",
+          "type": "telegram"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "A8C3xuqscfmyLrte3VmTqrAq8kgMASius9AFNANwpump",
+  "confidence": 100,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "goplus",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 73517,
+  "marketCap": 4434627,
+  "priceUsd": 0.004545,
+  "liquidity": 1246550.32,
+  "volume24h": 43309.11,
+  "volume1h": 240.08,
+  "priceChange5m": 0.33,
+  "priceChange1h": 0.23,
+  "priceChange24h": -3.19,
+  "tokenSymbol": "FWOG",
+  "tokenName": "FWOG",
+  "pairCreatedAt": 1722303257000,
+  "safeBlocked": false,
+  "safeBlockedReasons": [],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/ceccc0a74f91ec3a5f6162005af09d1f6e8bdbdd6a55f49e43ac8b217b6ec8bd?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 15300,
+  "solscanVolume24h": 43309.11,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 1,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": true
+    },
+    "helius": {
+      "trust": 1,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": true,
+  "lpLocked": false,
+  "lpLockedPct": 100,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 3.9260563457512982,
+  "top10HolderPct": 26.14644827858662,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 3.9,
+      "addr": "EFE3…ewqR",
+      "repLbl": "Significant single-wallet position",
+      "repWidth": 61.2,
+      "repWarn": false,
+      "desc": "Holds <b>3.9%</b> of supply — large enough to move the chart on exit."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777330495496,
+      "verdict": "SAFE",
+      "score": 1000,
+      "event": "LP Burned 100% (GoPlus) ✓"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "EFE3…ewqR",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "22Wn…zkBa",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "6FEV…51Jy",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "5PAh…PRj5",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "6kXn…9rqq",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "E2Rv…atYy",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": null,
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777384043674,
+  "requestId": "c9f45b2b-e4e8-45a7-bf36-dce4c594eec2",
+  "aiSummary": "Score 1000/1000. LP is burned, mint authority is disabled, freeze authority is disabled, 73517 holders show organic distribution. No critical risks were detected in the contract or holder analysis."
+}

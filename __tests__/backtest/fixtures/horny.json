@@ -1,0 +1,339 @@
+{
+  "score": 500,
+  "risk": "DANGER",
+  "flags": [
+    {
+      "label": "High vol/liquidity ratio",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "LP not burned or locked — dev can rug liquidity",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "GoPlus unavailable",
+      "severity": "info",
+      "impact": 0
+    },
+    {
+      "label": "Well distributed supply ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "pumpswap",
+    "url": "https://dexscreener.com/solana/cgczjhjqi6cafijwqrbhd2pgvgzfhewxd9opsrxm7nhp",
+    "pairAddress": "CGcZJHjQi6CAfiJwQRbhd2pgvGzFhewXD9oPsRXm7nHp",
+    "baseToken": {
+      "address": "69HZnSz3XDHyTeBrrsn5NFbjpiryhHbYJZUGDx3QXH69",
+      "name": "HORNY",
+      "symbol": "HORNY"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.000003266",
+    "priceUsd": "0.0002737",
+    "txns": {
+      "m5": {
+        "buys": 37,
+        "sells": 37
+      },
+      "h1": {
+        "buys": 568,
+        "sells": 506
+      },
+      "h6": {
+        "buys": 4038,
+        "sells": 3616
+      },
+      "h24": {
+        "buys": 15161,
+        "sells": 13977
+      }
+    },
+    "volume": {
+      "h24": 399006.9,
+      "h6": 121539.73,
+      "h1": 16231.7,
+      "m5": 803.54
+    },
+    "priceChange": {
+      "m5": -1.12,
+      "h1": -19.25,
+      "h6": -12.91,
+      "h24": -25.22
+    },
+    "liquidity": {
+      "usd": 42153.85,
+      "base": 76580575,
+      "quote": 252.9055
+    },
+    "fdv": 273107,
+    "marketCap": 273107,
+    "pairCreatedAt": 1777241904000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/4S9MEfJSGBzmdNH5?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/97KX6C79XTmz0j2W?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/69HZnSz3XDHyTeBrrsn5NFbjpiryhHbYJZUGDx3QXH69?timestamp=1777384200000",
+      "websites": [
+        {
+          "url": "https://horny.vip/",
+          "label": "Website"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/HornySolCoin",
+          "type": "twitter"
+        },
+        {
+          "url": "https://t.me/hornysoltg",
+          "type": "telegram"
+        }
+      ]
+    },
+    "boosts": {
+      "active": 100
+    }
+  },
+  "resolvedMint": "69HZnSz3XDHyTeBrrsn5NFbjpiryhHbYJZUGDx3QXH69",
+  "confidence": 80,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 20,
+  "marketCap": 273107,
+  "priceUsd": 0.0002737,
+  "liquidity": 42153.85,
+  "volume24h": 399006.9,
+  "volume1h": 16231.7,
+  "priceChange5m": -1.12,
+  "priceChange1h": -19.25,
+  "priceChange24h": -25.22,
+  "tokenSymbol": "HORNY",
+  "tokenName": "HORNY",
+  "pairCreatedAt": 1777241904000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "lp"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/4S9MEfJSGBzmdNH5?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 39,
+  "solscanVolume24h": 399006.9,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 0.75,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": false
+    },
+    "helius": {
+      "trust": 1,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": false,
+  "lpLocked": false,
+  "lpLockedPct": null,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 7.675010535686471,
+  "top10HolderPct": 19.620311695344895,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 7.7,
+      "addr": "CGcZ…7nHp",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 83.1,
+      "repWarn": false,
+      "desc": "Holds <b>7.7%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777320876470,
+      "verdict": "DANGER",
+      "score": 500,
+      "event": "High vol/liquidity ratio"
+    },
+    {
+      "ts": 1777378948438,
+      "verdict": "SAFE",
+      "score": 931,
+      "event": "High vol/liquidity ratio"
+    },
+    {
+      "ts": 1777380507911,
+      "verdict": "DANGER",
+      "score": 500,
+      "event": "High vol/liquidity ratio"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "CGcZ…7nHp",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "8iCz…RE52",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "7ApE…KA4E",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "EXYe…3Kjq",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "HU3X…kMuv",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "2FC6…GAQW",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "11h",
+    "timeToRugMedianHours": 11,
+    "timeToRugSampleSize": 312,
+    "pctRugged24h": 76,
+    "pctSlowDeath": 16,
+    "pctAlive30d": 8,
+    "distribution": [
+      3,
+      5,
+      8,
+      11,
+      14,
+      12,
+      9,
+      7,
+      5,
+      4,
+      3,
+      2.5,
+      2,
+      1.8,
+      1.6,
+      1.4,
+      1.2,
+      1,
+      0.9,
+      0.8,
+      0.7,
+      0.7,
+      0.6,
+      0.6,
+      0.5,
+      0.5,
+      0.4,
+      0.4,
+      0.3,
+      0.3,
+      0.3,
+      0.3,
+      0.4,
+      0.5,
+      0.7,
+      0.9
+    ],
+    "youBucketIndex": 17,
+    "mostSimilar": [
+      {
+        "symbol": "PUMPDUMP",
+        "ruggedAfterHours": 18,
+        "loss": -94.1
+      },
+      {
+        "symbol": "FAKEMOON",
+        "ruggedAfterHours": 28,
+        "loss": -91.6
+      },
+      {
+        "symbol": "SLOWBLEED",
+        "ruggedAfterHours": 48,
+        "loss": -85.4
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777384087148,
+  "requestId": "af6070db-59c7-4334-91f6-60061d9a7e82",
+  "aiSummary": "The developer can remove all liquidity in one transaction. When that happens, the token price drops to zero and nobody can sell."
+}

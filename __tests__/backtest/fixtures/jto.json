@@ -1,0 +1,313 @@
+{
+  "score": 500,
+  "risk": "DANGER",
+  "flags": [
+    {
+      "label": "No website / Twitter / Telegram — high rug risk",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Single wallet holds 21% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "LP not burned but token is mature and liquid (unverified LP)",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "GoPlus unavailable",
+      "severity": "info",
+      "impact": 0
+    },
+    {
+      "label": "Established token (30d+) ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "orca",
+    "url": "https://dexscreener.com/solana/g2fie1yn9n9zjx5e1e2lxxmnhvb1h3hcuhlpfkj98sma",
+    "pairAddress": "G2FiE1yn9N9ZJx5e1E2LxxMnHvb1H3hCuHLPfKJ98smA",
+    "labels": [
+      "wp"
+    ],
+    "baseToken": {
+      "address": "jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL",
+      "name": "JITO",
+      "symbol": "JTO"
+    },
+    "quoteToken": {
+      "address": "J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn",
+      "name": "Jito Staked SOL",
+      "symbol": "JitoSOL"
+    },
+    "priceNative": "0.003160",
+    "priceUsd": "0.3370",
+    "txns": {
+      "m5": {
+        "buys": 0,
+        "sells": 2
+      },
+      "h1": {
+        "buys": 12,
+        "sells": 5
+      },
+      "h6": {
+        "buys": 34,
+        "sells": 29
+      },
+      "h24": {
+        "buys": 280,
+        "sells": 275
+      }
+    },
+    "volume": {
+      "h24": 48564.96,
+      "h6": 3656.07,
+      "h1": 1178.79,
+      "m5": 197.81
+    },
+    "priceChange": {
+      "m5": 0.29,
+      "h1": -0.23,
+      "h6": -0.49,
+      "h24": -0.32
+    },
+    "liquidity": {
+      "usd": 787385.1,
+      "base": 1309907,
+      "quote": 3244.1513
+    },
+    "fdv": 337014425,
+    "marketCap": 156413510,
+    "pairCreatedAt": 1701918160000
+  },
+  "resolvedMint": "jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL",
+  "confidence": 80,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 20,
+  "marketCap": 156413510,
+  "priceUsd": 0.337,
+  "liquidity": 787385.1,
+  "volume24h": 48564.96,
+  "volume1h": 1178.79,
+  "priceChange5m": 0.29,
+  "priceChange1h": -0.23,
+  "priceChange24h": -0.32,
+  "tokenSymbol": "JTO",
+  "tokenName": "JITO",
+  "pairCreatedAt": 1701918160000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "rug_pattern",
+    "concentration",
+    "lp_unverified"
+  ],
+  "tokenLogo": null,
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 20962,
+  "solscanVolume24h": 48564.96,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 0.6,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": false
+    },
+    "helius": {
+      "trust": 0.2,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": false,
+  "lpLocked": false,
+  "lpLockedPct": null,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 21.228296724806846,
+  "top10HolderPct": 48.44660756062459,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 21.2,
+      "addr": "5eos…mGTF",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 95,
+      "repWarn": false,
+      "desc": "Holds <b>21.2%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777383941377,
+      "verdict": "DANGER",
+      "score": 500,
+      "event": "No website / Twitter / Telegram — high rug risk"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "5eos…mGTF",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "5Syb…T8ey",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "ESnL…m9Yg",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "3mv8…v1uA",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "MbzL…FQHN",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "FQnV…Y8ud",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "11h",
+    "timeToRugMedianHours": 11,
+    "timeToRugSampleSize": 312,
+    "pctRugged24h": 76,
+    "pctSlowDeath": 16,
+    "pctAlive30d": 8,
+    "distribution": [
+      3,
+      5,
+      8,
+      11,
+      14,
+      12,
+      9,
+      7,
+      5,
+      4,
+      3,
+      2.5,
+      2,
+      1.8,
+      1.6,
+      1.4,
+      1.2,
+      1,
+      0.9,
+      0.8,
+      0.7,
+      0.7,
+      0.6,
+      0.6,
+      0.5,
+      0.5,
+      0.4,
+      0.4,
+      0.3,
+      0.3,
+      0.3,
+      0.3,
+      0.4,
+      0.5,
+      0.7,
+      0.9
+    ],
+    "youBucketIndex": 17,
+    "mostSimilar": [
+      {
+        "symbol": "PUMPDUMP",
+        "ruggedAfterHours": 18,
+        "loss": -94.1
+      },
+      {
+        "symbol": "FAKEMOON",
+        "ruggedAfterHours": 28,
+        "loss": -91.6
+      },
+      {
+        "symbol": "SLOWBLEED",
+        "ruggedAfterHours": 48,
+        "loss": -85.4
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777383941471,
+  "requestId": "156dbc92-ffec-4b65-8c3f-7fa6fb37bb7c",
+  "aiSummary": "Liquidity is not locked or burned. The developer can pull all liquidity at any moment, making the token worthless. The top wallet holds 21.2% of supply with only 20 holders, creating extreme dump risk."
+}

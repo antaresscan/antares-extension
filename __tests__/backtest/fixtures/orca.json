@@ -1,0 +1,332 @@
+{
+  "score": 525,
+  "risk": "DANGER",
+  "flags": [
+    {
+      "label": "Single wallet holds 19% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Top 10 wallets hold 64% of supply",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "LP Burned 100% (GoPlus) ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Established token (30d+) ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "orca",
+    "url": "https://dexscreener.com/solana/2p7nybtpbgtmy69nse8daw6szprjn7tqvdnqvoewqvjy",
+    "pairAddress": "2p7nYbtPBgtmY69NsE8DAW6szpRJn7tQvDnqvoEWQvjY",
+    "labels": [
+      "v2"
+    ],
+    "baseToken": {
+      "address": "orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE",
+      "name": "Orca",
+      "symbol": "ORCA"
+    },
+    "quoteToken": {
+      "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "name": "USD Coin",
+      "symbol": "USDC"
+    },
+    "priceNative": "1.6943",
+    "priceUsd": "1.69",
+    "txns": {
+      "m5": {
+        "buys": 2,
+        "sells": 18
+      },
+      "h1": {
+        "buys": 96,
+        "sells": 187
+      },
+      "h6": {
+        "buys": 1448,
+        "sells": 1123
+      },
+      "h24": {
+        "buys": 10330,
+        "sells": 7908
+      }
+    },
+    "volume": {
+      "h24": 2164399.19,
+      "h6": 331980.63,
+      "h1": 36361.37,
+      "m5": 4674.01
+    },
+    "priceChange": {
+      "m5": -1.69,
+      "h1": -3.94,
+      "h6": 11.87,
+      "h24": 42.19
+    },
+    "liquidity": {
+      "usd": 999494.69,
+      "base": 294312,
+      "quote": 500823
+    },
+    "fdv": 169435142,
+    "marketCap": 103014813,
+    "pairCreatedAt": 1669602431000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/bfd0d54a2ff7a764291354b848f3f05c8b6b89213b16b240807e9cb9a78dd128?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/8044fef53efe70415cc4b3fa387f9df339f208c0e1a5f91f9d38c8a0556722e2?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE?timestamp=1777383900000",
+      "websites": [
+        {
+          "url": "https://www.orca.so/",
+          "label": "Website"
+        },
+        {
+          "url": "https://docs.orca.so/",
+          "label": "Docs"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/orca_so",
+          "type": "twitter"
+        },
+        {
+          "url": "https://discord.gg/a2SSVmYX7T",
+          "type": "discord"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE",
+  "confidence": 100,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "goplus",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 90191,
+  "marketCap": 103014813,
+  "priceUsd": 1.69,
+  "liquidity": 999494.69,
+  "volume24h": 2164399.19,
+  "volume1h": 36361.37,
+  "priceChange5m": -1.69,
+  "priceChange1h": -3.94,
+  "priceChange24h": 42.19,
+  "tokenSymbol": "ORCA",
+  "tokenName": "Orca",
+  "pairCreatedAt": 1669602431000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "concentration"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/bfd0d54a2ff7a764291354b848f3f05c8b6b89213b16b240807e9cb9a78dd128?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 29939,
+  "solscanVolume24h": 2164399.19,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 1,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": true
+    },
+    "helius": {
+      "trust": 0.202,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": true,
+  "lpLocked": false,
+  "lpLockedPct": 100,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 18.93446919102587,
+  "top10HolderPct": 64.38741669925562,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 18.9,
+      "addr": "GwH3…x4PV",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 95,
+      "repWarn": false,
+      "desc": "Holds <b>18.9%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777383963469,
+      "verdict": "DANGER",
+      "score": 525,
+      "event": "Single wallet holds 19% of supply"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "GwH3…x4PV",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "CSqK…ixBK",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "DbfG…J74v",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "5Je5…5Uxd",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "5tzF…uAi9",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "7NQr…fwML",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "11h",
+    "timeToRugMedianHours": 11,
+    "timeToRugSampleSize": 312,
+    "pctRugged24h": 76,
+    "pctSlowDeath": 16,
+    "pctAlive30d": 8,
+    "distribution": [
+      3,
+      5,
+      8,
+      11,
+      14,
+      12,
+      9,
+      7,
+      5,
+      4,
+      3,
+      2.5,
+      2,
+      1.8,
+      1.6,
+      1.4,
+      1.2,
+      1,
+      0.9,
+      0.8,
+      0.7,
+      0.7,
+      0.6,
+      0.6,
+      0.5,
+      0.5,
+      0.4,
+      0.4,
+      0.3,
+      0.3,
+      0.3,
+      0.3,
+      0.4,
+      0.5,
+      0.7,
+      0.9
+    ],
+    "youBucketIndex": 17,
+    "mostSimilar": [
+      {
+        "symbol": "PUMPDUMP",
+        "ruggedAfterHours": 18,
+        "loss": -94.1
+      },
+      {
+        "symbol": "FAKEMOON",
+        "ruggedAfterHours": 28,
+        "loss": -91.6
+      },
+      {
+        "symbol": "SLOWBLEED",
+        "ruggedAfterHours": 48,
+        "loss": -85.4
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777383963561,
+  "requestId": "e37be325-6640-473b-8938-9c7876a79a2b",
+  "aiSummary": null
+}
