@@ -1,0 +1,255 @@
+{
+  "score": 1000,
+  "risk": "SAFE",
+  "flags": [
+    {
+      "label": "LP Burned 100% (GoPlus) ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Well distributed supply ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Established token (30d+) ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "raydium",
+    "url": "https://dexscreener.com/solana/2bjky9pnztdvmpdhjhv8qbwejkilzebd7i2tatyjxaze",
+    "pairAddress": "2BJKy9pnzTDvMPdHJhv8qbWejKiLzebD7i2taTyJxAze",
+    "baseToken": {
+      "address": "Fch1oixTPri8zxBnmdCEADoJW2toyFHxqDZacQkwdvSP",
+      "name": "HARAMBE",
+      "symbol": "HARAMBE"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.000009012",
+    "priceUsd": "0.0007556",
+    "txns": {
+      "m5": {
+        "buys": 0,
+        "sells": 2
+      },
+      "h1": {
+        "buys": 1,
+        "sells": 15
+      },
+      "h6": {
+        "buys": 11,
+        "sells": 36
+      },
+      "h24": {
+        "buys": 43,
+        "sells": 74
+      }
+    },
+    "volume": {
+      "h24": 6187.68,
+      "h6": 2802.27,
+      "h1": 1003,
+      "m5": 9.79
+    },
+    "priceChange": {
+      "m5": -0.04,
+      "h1": 1.57,
+      "h6": 4.56,
+      "h24": 4.92
+    },
+    "liquidity": {
+      "usd": 258870.4,
+      "base": 171072587,
+      "quote": 1545.5633
+    },
+    "fdv": 752733,
+    "marketCap": 752733,
+    "pairCreatedAt": 1705454007000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/4a17b4c7a1aa4c6fc9b71cc2420341eec4050990cc0649b15534e09d294c317d?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/619582c59c19c212aaf7e8169a079478df1c5e5ff27f0d18256e6bffae2e1de7?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/Fch1oixTPri8zxBnmdCEADoJW2toyFHxqDZacQkwdvSP?timestamp=1777408800000",
+      "websites": [
+        {
+          "url": "https://www.dicksoutforharambe.org/",
+          "label": "Website"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/solanaharambe",
+          "type": "twitter"
+        },
+        {
+          "url": "https://t.me/HarambeCommunity",
+          "type": "telegram"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "Fch1oixTPri8zxBnmdCEADoJW2toyFHxqDZacQkwdvSP",
+  "confidence": 100,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "goplus",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 18595,
+  "marketCap": 752733,
+  "priceUsd": 0.0007556,
+  "liquidity": 258870.4,
+  "volume24h": 6187.68,
+  "volume1h": 1003,
+  "priceChange5m": -0.04,
+  "priceChange1h": 1.57,
+  "priceChange24h": 4.92,
+  "tokenSymbol": "HARAMBE",
+  "tokenName": "HARAMBE",
+  "pairCreatedAt": 1705454007000,
+  "safeBlocked": false,
+  "safeBlockedReasons": [],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/4a17b4c7a1aa4c6fc9b71cc2420341eec4050990cc0649b15534e09d294c317d?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 19987,
+  "solscanVolume24h": 6187.68,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 1,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": true
+    },
+    "helius": {
+      "trust": 1,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": true,
+  "lpLocked": false,
+  "lpLockedPct": 99.91,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 2.0079836495816514,
+  "top10HolderPct": 14.326153368497465,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 2,
+      "addr": "G6p8…yarK",
+      "repLbl": "Significant single-wallet position",
+      "repWidth": 46,
+      "repWarn": false,
+      "desc": "Holds <b>2.0%</b> of supply — large enough to move the chart on exit."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777408766424,
+      "verdict": "SAFE",
+      "score": 1000,
+      "event": "LP Burned 100% (GoPlus) ✓"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "G6p8…yarK",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "Ed1g…UgBJ",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "Fe7S…FA8s",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "FGMn…hwTm",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "B8Hb…3nme",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "x6CF…ftQJ",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": null,
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777408766509,
+  "requestId": "75334337-608f-48b5-9d59-50b068ff5628",
+  "aiSummary": "Score 1000/1000. LP is burned, mint authority is disabled, freeze authority is disabled, 18595 holders show organic distribution. No critical risks were detected in the contract or holder analysis."
+}

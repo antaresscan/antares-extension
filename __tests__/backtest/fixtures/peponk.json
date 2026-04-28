@@ -1,0 +1,328 @@
+{
+  "score": 786,
+  "risk": "CAUTION",
+  "flags": [
+    {
+      "label": "Single wallet holds 11% of supply",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "LP not burned but token is mature and liquid (unverified LP)",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Established token (30d+) ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "pumpswap",
+    "url": "https://dexscreener.com/solana/gzmszwrsgjfk7aeeml2ucinalgug6gwmpnh5r7y6vqpu",
+    "pairAddress": "GZMszWrSGJfK7aeEML2UcinaLguG6GWmpnh5R7Y6vQPu",
+    "baseToken": {
+      "address": "Gqqdgfkn7bcsuBQZEk9oMBkqCv1bRXvPmTLs3sQ9pump",
+      "name": "Peponk",
+      "symbol": "PEPONK"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.000003558",
+    "priceUsd": "0.0002985",
+    "txns": {
+      "m5": {
+        "buys": 0,
+        "sells": 0
+      },
+      "h1": {
+        "buys": 0,
+        "sells": 2
+      },
+      "h6": {
+        "buys": 2,
+        "sells": 7
+      },
+      "h24": {
+        "buys": 14,
+        "sells": 17
+      }
+    },
+    "volume": {
+      "h24": 604.65,
+      "h6": 465.36,
+      "h1": 394.25,
+      "m5": 0
+    },
+    "priceChange": {
+      "h1": -1.77,
+      "h6": -1.58,
+      "h24": -2.06
+    },
+    "liquidity": {
+      "usd": 42733.58,
+      "base": 71683040,
+      "quote": 254.2072
+    },
+    "fdv": 294100,
+    "marketCap": 260958,
+    "pairCreatedAt": 1767300044000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/0b469a9cf8b6420107f3eaf669dfb80636563ab0b23d1d151780e936da625209?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/MsJLvxlNsd1tsUtd?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/Gqqdgfkn7bcsuBQZEk9oMBkqCv1bRXvPmTLs3sQ9pump?timestamp=1777408800000",
+      "websites": [
+        {
+          "url": "https://peponk.io",
+          "label": "Website"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/peponkwtf",
+          "type": "twitter"
+        },
+        {
+          "url": "https://t.me/peponkofficial",
+          "type": "telegram"
+        },
+        {
+          "url": "https://tiktok.com/@peponksol",
+          "type": "tiktok"
+        },
+        {
+          "url": "https://www.reddit.com/r/peponk",
+          "type": "reddit"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "Gqqdgfkn7bcsuBQZEk9oMBkqCv1bRXvPmTLs3sQ9pump",
+  "confidence": 100,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "goplus",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 65,
+  "marketCap": 260958,
+  "priceUsd": 0.0002985,
+  "liquidity": 42733.58,
+  "volume24h": 604.65,
+  "volume1h": 394.25,
+  "priceChange5m": null,
+  "priceChange1h": -1.77,
+  "priceChange24h": -2.06,
+  "tokenSymbol": "PEPONK",
+  "tokenName": "Peponk",
+  "pairCreatedAt": 1767300044000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "holders",
+    "lp_unverified"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/0b469a9cf8b6420107f3eaf669dfb80636563ab0b23d1d151780e936da625209?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 2808,
+  "solscanVolume24h": 604.65,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 1,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": true
+    },
+    "helius": {
+      "trust": 0.3,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": false,
+  "lpLocked": false,
+  "lpLockedPct": null,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 11.269047105030735,
+  "top10HolderPct": 33.13489028698,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 11.3,
+      "addr": "Fz9n…HCQA",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 93.9,
+      "repWarn": false,
+      "desc": "Holds <b>11.3%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777408902946,
+      "verdict": "CAUTION",
+      "score": 786,
+      "event": "Single wallet holds 11% of supply"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "Fz9n…HCQA",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "GZMs…vQPu",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "Fkfj…uVcY",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "Andq…aMng",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "2TCw…cy2q",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "4CM6…3LWF",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "2d",
+    "timeToRugMedianHours": 48,
+    "timeToRugSampleSize": 180,
+    "pctRugged24h": 54,
+    "pctSlowDeath": 30,
+    "pctAlive30d": 16,
+    "distribution": [
+      1,
+      1.5,
+      2,
+      2.5,
+      3,
+      3.5,
+      4,
+      4.5,
+      5,
+      5,
+      4.5,
+      4,
+      3.5,
+      3,
+      2.7,
+      2.5,
+      2.3,
+      2.1,
+      2,
+      1.9,
+      1.8,
+      1.7,
+      1.6,
+      1.5,
+      1.4,
+      1.3,
+      1.2,
+      1.2,
+      1.1,
+      1.1,
+      1,
+      1,
+      1.1,
+      1.5,
+      2,
+      2.5
+    ],
+    "youBucketIndex": 25,
+    "mostSimilar": [
+      {
+        "symbol": "FORGOTBOY",
+        "ruggedAfterHours": 72,
+        "loss": -78.2
+      },
+      {
+        "symbol": "DEADCOIN",
+        "ruggedAfterHours": 168,
+        "loss": -82.5
+      },
+      {
+        "symbol": "BLEEDR",
+        "ruggedAfterHours": 240,
+        "loss": -88
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777408903031,
+  "requestId": "f80bb647-88ba-44eb-9042-ff2037fa0691",
+  "aiSummary": "The developer can remove all liquidity in one transaction. When that happens, the token price drops to zero and nobody can sell."
+}

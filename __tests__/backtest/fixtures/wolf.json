@@ -1,0 +1,323 @@
+{
+  "score": 525,
+  "risk": "DANGER",
+  "flags": [
+    {
+      "label": "Single wallet holds 20% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "RugCheck unavailable",
+      "severity": "info",
+      "impact": 0
+    },
+    {
+      "label": "LP Burned 100% (GoPlus) ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Established token (30d+) ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "raydium",
+    "url": "https://dexscreener.com/solana/eskps4o6swfamf7w8pdwwjqfx8lru7hhmjpxccyx4eq1",
+    "pairAddress": "EskpS4o6sWFAmf7w8PDwWJQfx8LRU7hHMjPxCcyX4Eq1",
+    "baseToken": {
+      "address": "Faf89929Ni9fbg4gmVZTca7eW6NFg877Jqn6MizT3Gvw",
+      "name": "LandWolf",
+      "symbol": "WOLF"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.0000004109",
+    "priceUsd": "0.00003448",
+    "txns": {
+      "m5": {
+        "buys": 0,
+        "sells": 0
+      },
+      "h1": {
+        "buys": 1,
+        "sells": 0
+      },
+      "h6": {
+        "buys": 1,
+        "sells": 2
+      },
+      "h24": {
+        "buys": 3,
+        "sells": 5
+      }
+    },
+    "volume": {
+      "h24": 224.41,
+      "h6": 199.18,
+      "h1": 197.33,
+      "m5": 0
+    },
+    "priceChange": {
+      "h1": 0.91,
+      "h6": 0.5,
+      "h24": 0.73
+    },
+    "liquidity": {
+      "usd": 137338.68,
+      "base": 1991101339,
+      "quote": 818.522
+    },
+    "fdv": 344804,
+    "marketCap": 344804,
+    "pairCreatedAt": 1718320479000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/6e30a7c17a1b11b15b86cfe24c09d66ab886270da4e8bf9086f4da2592845495?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/d42d75519c9bc80f3e36f84ef6dc51175760d1b258e8c73565d023594f8dfe03?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/Faf89929Ni9fbg4gmVZTca7eW6NFg877Jqn6MizT3Gvw?timestamp=1777408800000",
+      "websites": [
+        {
+          "url": "https://solanaslandwolf.com/",
+          "label": "Website"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/TheBoysClubWolf",
+          "type": "twitter"
+        },
+        {
+          "url": "https://t.me/LandWolfSolPortal",
+          "type": "telegram"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "Faf89929Ni9fbg4gmVZTca7eW6NFg877Jqn6MizT3Gvw",
+  "confidence": 80,
+  "sources_used": [
+    "dexscreener",
+    "goplus",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 36181,
+  "marketCap": 344804,
+  "priceUsd": 0.00003448,
+  "liquidity": 137338.68,
+  "volume24h": 224.41,
+  "volume1h": 197.33,
+  "priceChange5m": null,
+  "priceChange1h": 0.91,
+  "priceChange24h": 0.73,
+  "tokenSymbol": "WOLF",
+  "tokenName": "LandWolf",
+  "pairCreatedAt": 1718320479000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "concentration"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/6e30a7c17a1b11b15b86cfe24c09d66ab886270da4e8bf9086f4da2592845495?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 16413,
+  "solscanVolume24h": 224.41,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 1,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": false
+    },
+    "goplus": {
+      "trust": 1,
+      "available": true
+    },
+    "helius": {
+      "trust": 0.35,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": true,
+  "lpLocked": false,
+  "lpLockedPct": 100,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 20.223415913963816,
+  "top10HolderPct": 36.218189643288774,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 20.2,
+      "addr": "4TYF…xvz7",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 95,
+      "repWarn": false,
+      "desc": "Holds <b>20.2%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777408848350,
+      "verdict": "DANGER",
+      "score": 525,
+      "event": "Single wallet holds 20% of supply"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "4TYF…xvz7",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "8Czz…RKdr",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "38cj…1zbY",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "H9y1…tgUj",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "6rK8…NgtB",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "GGvB…WUBw",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "11h",
+    "timeToRugMedianHours": 11,
+    "timeToRugSampleSize": 312,
+    "pctRugged24h": 76,
+    "pctSlowDeath": 16,
+    "pctAlive30d": 8,
+    "distribution": [
+      3,
+      5,
+      8,
+      11,
+      14,
+      12,
+      9,
+      7,
+      5,
+      4,
+      3,
+      2.5,
+      2,
+      1.8,
+      1.6,
+      1.4,
+      1.2,
+      1,
+      0.9,
+      0.8,
+      0.7,
+      0.7,
+      0.6,
+      0.6,
+      0.5,
+      0.5,
+      0.4,
+      0.4,
+      0.3,
+      0.3,
+      0.3,
+      0.3,
+      0.4,
+      0.5,
+      0.7,
+      0.9
+    ],
+    "youBucketIndex": 17,
+    "mostSimilar": [
+      {
+        "symbol": "PUMPDUMP",
+        "ruggedAfterHours": 18,
+        "loss": -94.1
+      },
+      {
+        "symbol": "FAKEMOON",
+        "ruggedAfterHours": 28,
+        "loss": -91.6
+      },
+      {
+        "symbol": "SLOWBLEED",
+        "ruggedAfterHours": 48,
+        "loss": -85.4
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777408848433,
+  "requestId": "e272db8c-bb56-4d43-a6ad-a385b97b0fdf",
+  "aiSummary": "The top wallet holds 20.2% of supply with only 36181 holders, creating extreme dump risk."
+}

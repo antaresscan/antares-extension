@@ -1,0 +1,339 @@
+{
+  "score": 100,
+  "risk": "RUG",
+  "flags": [
+    {
+      "label": "Wash trading detected (vol/liq > 20) — bundler dump",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Single wallet holds 45% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Top 10 wallets hold 69% of supply",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Fresh token on-chain (<6h)",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Liquidity mirage: volume >> liquidity (wash)",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "LP not burned or locked — dev can rug liquidity",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Liquidity < $20k",
+      "severity": "info",
+      "impact": 0
+    },
+    {
+      "label": "RugCheck unavailable",
+      "severity": "info",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "pumpswap",
+    "url": "https://dexscreener.com/solana/3hav5louppwyxhpqcz76u2gkai4c8rhhfrjxjs8vpgbb",
+    "pairAddress": "3hAV5LouppWYxhpqCZ76u2GKAi4C8rhHFRJxJS8vPgBB",
+    "baseToken": {
+      "address": "2KztYDCf3vYtm8QHibXt7uxdjt47oxEi8ZTihEYApump",
+      "name": "Flying Ketamine Musk",
+      "symbol": "FKM"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.00000009195",
+    "priceUsd": "0.000007708",
+    "txns": {
+      "m5": {
+        "buys": 7,
+        "sells": 13
+      },
+      "h1": {
+        "buys": 342,
+        "sells": 340
+      },
+      "h6": {
+        "buys": 5224,
+        "sells": 6163
+      },
+      "h24": {
+        "buys": 5224,
+        "sells": 6163
+      }
+    },
+    "volume": {
+      "h24": 534354.37,
+      "h6": 534354.37,
+      "h1": 23266.06,
+      "m5": 286.55
+    },
+    "priceChange": {
+      "m5": -12.41,
+      "h1": 52.85,
+      "h6": -77.88,
+      "h24": -77.88
+    },
+    "liquidity": {
+      "usd": 7006.27,
+      "base": 451609582,
+      "quote": 42.05112
+    },
+    "fdv": 7708,
+    "marketCap": 7708,
+    "pairCreatedAt": 1777403917000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/mzyc03x2-HuyDKvM?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/xa4AK5RkvX-4XAfJ?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/2KztYDCf3vYtm8QHibXt7uxdjt47oxEi8ZTihEYApump?timestamp=1777408500000",
+      "websites": [],
+      "socials": [
+        {
+          "url": "https://x.com/i/communities/2015744198650036458",
+          "type": "twitter"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "2KztYDCf3vYtm8QHibXt7uxdjt47oxEi8ZTihEYApump",
+  "confidence": 80,
+  "sources_used": [
+    "dexscreener",
+    "goplus",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 695,
+  "marketCap": 7708,
+  "priceUsd": 0.000007708,
+  "liquidity": 7006.27,
+  "volume24h": 534354.37,
+  "volume1h": 23266.06,
+  "priceChange5m": -12.41,
+  "priceChange1h": 52.85,
+  "priceChange24h": -77.88,
+  "tokenSymbol": "FKM",
+  "tokenName": "Flying Ketamine Musk",
+  "pairCreatedAt": 1777403917000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "wash_trading",
+    "bundle",
+    "concentration",
+    "chart",
+    "lp"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/mzyc03x2-HuyDKvM?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 1,
+  "solscanVolume24h": 534354.37,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 0.185,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": false
+    },
+    "goplus": {
+      "trust": 1,
+      "available": true
+    },
+    "helius": {
+      "trust": 0.046,
+      "available": true
+    },
+    "solscan": {
+      "trust": 0.65,
+      "available": true
+    },
+    "chart": {
+      "trust": 0.6,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": false,
+  "lpLocked": false,
+  "lpLockedPct": null,
+  "candles": "[16 candles, redacted for fixture]",
+  "topHolderPct": 45.16126324594262,
+  "top10HolderPct": 68.63078311314139,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 45.2,
+      "addr": "3hAV…PgBB",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 95,
+      "repWarn": false,
+      "desc": "Holds <b>45.2%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777408429331,
+      "verdict": "RUG",
+      "score": 100,
+      "event": "Wash trading detected (vol/liq > 20) — bundler dump"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "3hAV…PgBB",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "44my…uwSg",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "9mzh…t91T",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "7WpU…SxRF",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "jyS6…9kDQ",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "CsCo…Ww6q",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "4h 12m",
+    "timeToRugMedianHours": 4.2,
+    "timeToRugSampleSize": 487,
+    "pctRugged24h": 89,
+    "pctSlowDeath": 8,
+    "pctAlive30d": 3,
+    "distribution": [
+      8,
+      14,
+      22,
+      28,
+      18,
+      12,
+      6,
+      4,
+      2,
+      1,
+      0.6,
+      0.4,
+      0.3,
+      0.3,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.3,
+      0.3,
+      0.4,
+      0.6,
+      1,
+      1.2,
+      1.4,
+      1.4,
+      1.2,
+      0.9,
+      0.6,
+      0.4,
+      0.3
+    ],
+    "youBucketIndex": 11,
+    "mostSimilar": [
+      {
+        "symbol": "RUGCOIN",
+        "ruggedAfterHours": 4,
+        "loss": -99.2
+      },
+      {
+        "symbol": "SCAMBOY",
+        "ruggedAfterHours": 6,
+        "loss": -98.5
+      },
+      {
+        "symbol": "TRAPCAT",
+        "ruggedAfterHours": 12,
+        "loss": -97.8
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777408429414,
+  "requestId": "7d29623c-34c7-4f13-88d2-7e7c9feb4825",
+  "aiSummary": "Coordinated wallets bought together at launch to inflate the price. They hold a large share and can dump simultaneously, crashing the price. The top wallet holds 45.2% of supply with only 695 holders, creating extreme dump risk."
+}

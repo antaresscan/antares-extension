@@ -1,0 +1,325 @@
+{
+  "score": 100,
+  "risk": "RUG",
+  "flags": [
+    {
+      "label": "Wash trading detected (vol/liq > 20) — bundler dump",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Slow rug detected: -50% on 6h + -15% on 1h",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Single wallet holds 17% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "LP not burned or locked — dev can rug liquidity",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Liquidity mirage: volume >> liquidity (wash)",
+      "severity": "warning",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "pumpswap",
+    "url": "https://dexscreener.com/solana/9rnwpkdd5dlnujmqr5d7jidunewzixgadzdxbbuocbi1",
+    "pairAddress": "9rNWPkDD5dLnujmqR5d7jiDuNEWZiXGADZdxbBUocBi1",
+    "baseToken": {
+      "address": "BZ1avfKCfJKNgsDeXHNkPku5GcWVzi2Aw2HesHcrpump",
+      "name": "Justice For Luca Cella Walker",
+      "symbol": "LUCA"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.0000009756",
+    "priceUsd": "0.00008179",
+    "txns": {
+      "m5": {
+        "buys": 8,
+        "sells": 8
+      },
+      "h1": {
+        "buys": 131,
+        "sells": 146
+      },
+      "h6": {
+        "buys": 2643,
+        "sells": 2491
+      },
+      "h24": {
+        "buys": 38803,
+        "sells": 35351
+      }
+    },
+    "volume": {
+      "h24": 5257030.29,
+      "h6": 300454.43,
+      "h1": 10484.42,
+      "m5": 477.99
+    },
+    "priceChange": {
+      "m5": 3.3,
+      "h1": -19,
+      "h6": -59.39,
+      "h24": 136
+    },
+    "liquidity": {
+      "usd": 27480.19,
+      "base": 166996938,
+      "quote": 164.8729
+    },
+    "fdv": 81786,
+    "marketCap": 81786,
+    "pairCreatedAt": 1777355019000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/xwV5wbVjsKZD_BSJ?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/t77Mf46EQ6hnLKu8?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/BZ1avfKCfJKNgsDeXHNkPku5GcWVzi2Aw2HesHcrpump?timestamp=1777409100000",
+      "websites": [],
+      "socials": [
+        {
+          "url": "https://x.com/i/communities/2027641306978079037",
+          "type": "twitter"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "BZ1avfKCfJKNgsDeXHNkPku5GcWVzi2Aw2HesHcrpump",
+  "confidence": 100,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "goplus",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 1916,
+  "marketCap": 81786,
+  "priceUsd": 0.00008179,
+  "liquidity": 27480.19,
+  "volume24h": 5257030.29,
+  "volume1h": 10484.42,
+  "priceChange5m": 3.3,
+  "priceChange1h": -19,
+  "priceChange24h": 136,
+  "tokenSymbol": "LUCA",
+  "tokenName": "Justice For Luca Cella Walker",
+  "pairCreatedAt": 1777355019000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "wash_trading",
+    "bundle",
+    "lp",
+    "concentration",
+    "chart"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/xwV5wbVjsKZD_BSJ?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 15,
+  "solscanVolume24h": 5257030.29,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 0.058,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 0.7,
+      "available": true
+    },
+    "helius": {
+      "trust": 0.35,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 0.6,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": false,
+  "lpLocked": false,
+  "lpLockedPct": null,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 16.700693381371696,
+  "top10HolderPct": 31.269034600280694,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 16.7,
+      "addr": "9rNW…cBi1",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 95,
+      "repWarn": false,
+      "desc": "Holds <b>16.7%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777377125501,
+      "verdict": "RUG",
+      "score": 100,
+      "event": "Wash trading detected (vol/liq > 20) — bundler dump"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "9rNW…cBi1",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "61qY…xCxJ",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "JB2R…mJiE",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "7pRd…MwDz",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "25kr…67Su",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "DKr5…35gS",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "4h 12m",
+    "timeToRugMedianHours": 4.2,
+    "timeToRugSampleSize": 487,
+    "pctRugged24h": 89,
+    "pctSlowDeath": 8,
+    "pctAlive30d": 3,
+    "distribution": [
+      8,
+      14,
+      22,
+      28,
+      18,
+      12,
+      6,
+      4,
+      2,
+      1,
+      0.6,
+      0.4,
+      0.3,
+      0.3,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.3,
+      0.3,
+      0.4,
+      0.6,
+      1,
+      1.2,
+      1.4,
+      1.4,
+      1.2,
+      0.9,
+      0.6,
+      0.4,
+      0.3
+    ],
+    "youBucketIndex": 11,
+    "mostSimilar": [
+      {
+        "symbol": "RUGCOIN",
+        "ruggedAfterHours": 4,
+        "loss": -99.2
+      },
+      {
+        "symbol": "SCAMBOY",
+        "ruggedAfterHours": 6,
+        "loss": -98.5
+      },
+      {
+        "symbol": "TRAPCAT",
+        "ruggedAfterHours": 12,
+        "loss": -97.8
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777409108502,
+  "requestId": "2564b68c-b964-4ac2-9a45-aba18f5efd94",
+  "aiSummary": "Coordinated wallets bought together at launch to inflate the price. They hold a large share and can dump simultaneously, crashing the price."
+}

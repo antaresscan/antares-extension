@@ -1,0 +1,323 @@
+{
+  "score": 353,
+  "risk": "RUG",
+  "flags": [
+    {
+      "label": "Very low liquidity (<$1k)",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Single wallet holds 65% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Top 10 wallets hold 100% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "LP not burned but token is mature and liquid (unverified LP)",
+      "severity": "warning",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "pumpfun",
+    "url": "https://dexscreener.com/solana/2nex7kusknbrdbidjbv5abczbbm3hwpmenah9kwsn5mt",
+    "pairAddress": "2NeX7kUsknBRdBiDjbv5AbCZbbm3HwpMenAH9KWsn5mT",
+    "baseToken": {
+      "address": "HkdF4pYRnPfwRPJ7pXzh3MuzMeqz7rnkzfG5qTDhpump",
+      "name": "official Maktuson",
+      "symbol": "$MAKTS"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.00000006127",
+    "priceUsd": "0.000005136",
+    "txns": {
+      "m5": {
+        "buys": 60,
+        "sells": 31
+      },
+      "h1": {
+        "buys": 302,
+        "sells": 150
+      },
+      "h6": {
+        "buys": 316,
+        "sells": 158
+      },
+      "h24": {
+        "buys": 317,
+        "sells": 158
+      }
+    },
+    "volume": {
+      "h24": 2108.51,
+      "h6": 1519.24,
+      "h1": 1027.21,
+      "m5": 86.92
+    },
+    "priceChange": {
+      "m5": -0.18,
+      "h1": 33.83,
+      "h6": 38.34,
+      "h24": 38.34
+    },
+    "fdv": 5136.85,
+    "marketCap": 5136.85,
+    "pairCreatedAt": 1775433523000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/eHZaN0z0PTrNYSRU?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/nq8wOTd2z5mzUauJ?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/HkdF4pYRnPfwRPJ7pXzh3MuzMeqz7rnkzfG5qTDhpump?timestamp=1777408500000",
+      "websites": [
+        {
+          "url": "https://maktuson1.hodl.fyi/",
+          "label": "Website"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/ycyabi?s=21",
+          "type": "twitter"
+        },
+        {
+          "url": "https://t.me/officialMaktuson",
+          "type": "telegram"
+        }
+      ]
+    },
+    "boosts": {
+      "active": 10
+    }
+  },
+  "resolvedMint": "HkdF4pYRnPfwRPJ7pXzh3MuzMeqz7rnkzfG5qTDhpump",
+  "confidence": 90,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "goplus",
+    "helius",
+    "solscan"
+  ],
+  "holders": 15,
+  "marketCap": 5136.85,
+  "priceUsd": 0.000005136,
+  "liquidity": null,
+  "volume24h": 2108.51,
+  "volume1h": 1027.21,
+  "priceChange5m": -0.18,
+  "priceChange1h": 33.83,
+  "priceChange24h": 38.34,
+  "tokenSymbol": "$MAKTS",
+  "tokenName": "official Maktuson",
+  "pairCreatedAt": 1775433523000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "concentration",
+    "lp_unverified"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/eHZaN0z0PTrNYSRU?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 548,
+  "solscanVolume24h": 2108.51,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 0.25,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": true
+    },
+    "helius": {
+      "trust": 0.037,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": false
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": false,
+  "lpLocked": false,
+  "lpLockedPct": null,
+  "candles": "[0 candles, redacted for fixture]",
+  "topHolderPct": 65.18038733175105,
+  "top10HolderPct": 99.78958922809991,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 65.2,
+      "addr": "2NeX…n5mT",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 95,
+      "repWarn": false,
+      "desc": "Holds <b>65.2%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777408410408,
+      "verdict": "RUG",
+      "score": 353,
+      "event": "Very low liquidity (<$1k)"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "2NeX…n5mT",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "2GJ2…VKSX",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "FsbA…unXz",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "7jUd…Hfc1",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "9kpF…5Ezi",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "5VZc…7ped",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "11h",
+    "timeToRugMedianHours": 11,
+    "timeToRugSampleSize": 312,
+    "pctRugged24h": 76,
+    "pctSlowDeath": 16,
+    "pctAlive30d": 8,
+    "distribution": [
+      3,
+      5,
+      8,
+      11,
+      14,
+      12,
+      9,
+      7,
+      5,
+      4,
+      3,
+      2.5,
+      2,
+      1.8,
+      1.6,
+      1.4,
+      1.2,
+      1,
+      0.9,
+      0.8,
+      0.7,
+      0.7,
+      0.6,
+      0.6,
+      0.5,
+      0.5,
+      0.4,
+      0.4,
+      0.3,
+      0.3,
+      0.3,
+      0.3,
+      0.4,
+      0.5,
+      0.7,
+      0.9
+    ],
+    "youBucketIndex": 17,
+    "mostSimilar": [
+      {
+        "symbol": "PUMPDUMP",
+        "ruggedAfterHours": 18,
+        "loss": -94.1
+      },
+      {
+        "symbol": "FAKEMOON",
+        "ruggedAfterHours": 28,
+        "loss": -91.6
+      },
+      {
+        "symbol": "SLOWBLEED",
+        "ruggedAfterHours": 48,
+        "loss": -85.4
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777408410493,
+  "requestId": "3643778d-bbf1-4883-b184-ed56a786c266",
+  "aiSummary": "There is almost no real money backing this token. Even a small sell order will crash the price significantly. The top wallet holds 65.2% of supply with only 15 holders, creating extreme dump risk."
+}

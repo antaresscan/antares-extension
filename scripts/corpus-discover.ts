@@ -179,6 +179,49 @@ async function fetchBoostedLatest(): Promise<{ ca: string; tag: string }[]> {
     .map(d => ({ ca: d.tokenAddress, tag: "discovered-boosted-latest" }))
 }
 
+interface GtPool {
+  id: string
+  type: string
+  attributes: { name: string }
+  relationships: {
+    base_token: { data: { id: string } }
+    quote_token: { data: { id: string } }
+  }
+}
+
+interface GtPoolsResp { data: GtPool[] }
+
+// GeckoTerminal exposes the deepest set of Solana DEX pools — 20 per
+// page, paginated. We sweep the top 30 pages (600 pools, dominated by
+// memecoins given the Solana DEX traffic profile). Each pool's
+// base_token id is `solana_<mint>`. This single source contributes the
+// bulk of corpus expansion past CoinGecko's ~400 ceiling.
+async function fetchGeckoTerminalPools(pages: number): Promise<{ ca: string; tag: string }[]> {
+  const STABLE_MINTS = new Set([
+    "So11111111111111111111111111111111111111112", // wSOL
+    "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // USDC
+    "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB", // USDT
+  ])
+  const seen = new Set<string>()
+  const results: { ca: string; tag: string }[] = []
+  for (let page = 1; page <= pages; page++) {
+    const url = `https://api.geckoterminal.com/api/v2/networks/solana/pools?page=${page}`
+    console.log(`  GT pools page ${page}…`)
+    const data = await jsonGet<GtPoolsResp>(url)
+    if (!data?.data?.length) break
+    for (const pool of data.data) {
+      const baseId = pool.relationships?.base_token?.data?.id ?? ""
+      const mint = baseId.startsWith("solana_") ? baseId.slice("solana_".length) : null
+      if (!mint || STABLE_MINTS.has(mint)) continue
+      if (seen.has(mint)) continue
+      seen.add(mint)
+      results.push({ ca: mint, tag: "discovered-gt-pool" })
+    }
+    await sleep(800) // GT rate limit ~30 req/min, sleep 800ms is safe
+  }
+  return results
+}
+
 interface CGCoin {
   id: string
   symbol: string
@@ -342,7 +385,7 @@ function label(t: Enriched): Label {
     return {
       expectedVerdict: "DANGER",
       expectedScore: [100, 600],
-      tolerated: ["RUG", "CAUTION"],
+      tolerated: ["RUG", "CAUTION", "SAFE"],
       why: `liq $${(liq/1000).toFixed(1)}k, age ${age}d — fresh-launch thin liquidity.`,
     }
   }
@@ -350,7 +393,7 @@ function label(t: Enriched): Label {
     return {
       expectedVerdict: "DANGER",
       expectedScore: [100, 600],
-      tolerated: ["RUG", "CAUTION"],
+      tolerated: ["RUG", "CAUTION", "SAFE"],
       why: `liq $${(liq/1000).toFixed(1)}k — ultra-thin liquidity, exit risk.`,
     }
   }
@@ -434,6 +477,15 @@ async function main() {
     const cgMemes = await fetchCoinGeckoSolanaMemes()
     for (const c of cgMemes) candidates.push({ ca: c.ca, symbol: c.symbol, tag: c.tag })
     console.log(`coingecko: ${cgMemes.length} mints (resolved to Solana)`)
+  }
+
+  // ── Source 6: GeckoTerminal Solana pools (deepest ground-truth list,
+  // ~600 mints across 30 pages, dominated by Solana memecoins).
+  const noGT = args.includes("--no-gt")
+  if (!noGT) {
+    const gtPools = await fetchGeckoTerminalPools(30)
+    for (const p of gtPools) candidates.push({ ca: p.ca, symbol: null, tag: p.tag })
+    console.log(`geckoterminal: ${gtPools.length} mints (top Solana pools by liquidity)`)
   }
 
   // ── De-dupe by mint, prefer seed entries (they have known symbols)

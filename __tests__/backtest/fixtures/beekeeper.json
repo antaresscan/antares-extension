@@ -3,33 +3,13 @@
   "risk": "RUG",
   "flags": [
     {
-      "label": "Extreme 24h pump +23338% — exit liquidity trap",
+      "label": "Wash trading detected (vol/liq > 20) — bundler dump",
       "severity": "critical",
       "impact": 0
     },
     {
-      "label": "Single wallet holds 99% of supply",
+      "label": "Single wallet holds 20% of supply",
       "severity": "critical",
-      "impact": 0
-    },
-    {
-      "label": "Top 10 wallets hold 100% of supply",
-      "severity": "critical",
-      "impact": 0
-    },
-    {
-      "label": "Blow-off top: price collapsed >55% from peak",
-      "severity": "critical",
-      "impact": 0
-    },
-    {
-      "label": "High vol/liquidity ratio",
-      "severity": "warning",
-      "impact": 0
-    },
-    {
-      "label": "LP not burned or locked — dev can rug liquidity",
-      "severity": "warning",
       "impact": 0
     },
     {
@@ -41,18 +21,20 @@
       "label": "Liquidity mirage: volume >> liquidity (wash)",
       "severity": "warning",
       "impact": 0
+    },
+    {
+      "label": "LP not burned or locked — dev can rug liquidity",
+      "severity": "warning",
+      "impact": 0
     }
   ],
   "pair": {
     "chainId": "solana",
-    "dexId": "raydium",
-    "url": "https://dexscreener.com/solana/4duwg2gpltrdryzy6lijzbvcefdu38qq67c1gu6gwh1w",
-    "pairAddress": "4DuWG2GpLtRdrYzy6LiJzbvceFdu38qQ67c1Gu6GwH1W",
-    "labels": [
-      "CLMM"
-    ],
+    "dexId": "pumpswap",
+    "url": "https://dexscreener.com/solana/1vvcgzmqw1vz3pp9om4bm6vtukhtcttzgway14kwl4n",
+    "pairAddress": "1vVcgZMQw1Vz3Pp9om4bM6vtuKHtCTtzGway14kWL4n",
     "baseToken": {
-      "address": "A7NQr2P7SXZBxVTnAT2NG2tiko1Kt9gNrb5SjB9xiStu",
+      "address": "7mJ4tTSsL63fa69qkdDbw4fhx6SPzfA8uS4bVisStfi4",
       "name": "The Beekeeper",
       "symbol": "BEEKEEPER"
     },
@@ -61,60 +43,60 @@
       "name": "Wrapped SOL",
       "symbol": "SOL"
     },
-    "priceNative": "0.001180",
-    "priceUsd": "0.09892",
+    "priceNative": "0.0000006018",
+    "priceUsd": "0.00005045",
     "txns": {
       "m5": {
-        "buys": 129,
-        "sells": 56
+        "buys": 26,
+        "sells": 15
       },
       "h1": {
-        "buys": 4860,
-        "sells": 4382
+        "buys": 327,
+        "sells": 160
       },
       "h6": {
-        "buys": 5258,
-        "sells": 4702
+        "buys": 23888,
+        "sells": 20213
       },
       "h24": {
-        "buys": 5258,
-        "sells": 4702
+        "buys": 23888,
+        "sells": 20213
       }
     },
     "volume": {
-      "h24": 3430226.79,
-      "h6": 3430226.79,
-      "h1": 3134861.66,
-      "m5": 13384.61
+      "h24": 3259532.34,
+      "h6": 3259532.34,
+      "h1": 16344.06,
+      "m5": 2393.31
     },
     "priceChange": {
-      "m5": 0.39,
-      "h1": 104,
-      "h6": 23338,
-      "h24": 23338
+      "m5": -15.15,
+      "h1": 78.83,
+      "h6": 45.1,
+      "h24": 45.1
     },
     "liquidity": {
-      "usd": 182500.92,
-      "base": 922836,
-      "quote": 1088.7164
+      "usd": 20382.52,
+      "base": 202184015,
+      "quote": 121.4549
     },
-    "fdv": 98921394,
-    "marketCap": 98921394,
-    "pairCreatedAt": 1777399699000,
+    "fdv": 50453,
+    "marketCap": 50453,
+    "pairCreatedAt": 1777395227000,
     "info": {
-      "imageUrl": "https://cdn.dexscreener.com/cms/images/x8SgO6iWkq3A8mE3?width=800&height=800&quality=95&format=auto",
-      "header": "https://cdn.dexscreener.com/cms/images/j8Eo04-Yd-hnI5gi?width=1500&height=500&quality=95&format=auto",
-      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/A7NQr2P7SXZBxVTnAT2NG2tiko1Kt9gNrb5SjB9xiStu?timestamp=1777403400000",
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/rSeWEGnAYuNi_EI7?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/qtY8XlGx5dSRFDCb?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/7mJ4tTSsL63fa69qkdDbw4fhx6SPzfA8uS4bVisStfi4?timestamp=1777409400000",
       "websites": [],
       "socials": [
         {
-          "url": "https://x.com/QuachL52063",
+          "url": "https://x.com/WhiteHouse/status/2049170209169195026?s=20",
           "type": "twitter"
         }
       ]
     }
   },
-  "resolvedMint": "A7NQr2P7SXZBxVTnAT2NG2tiko1Kt9gNrb5SjB9xiStu",
+  "resolvedMint": "7mJ4tTSsL63fa69qkdDbw4fhx6SPzfA8uS4bVisStfi4",
   "confidence": 100,
   "sources_used": [
     "dexscreener",
@@ -124,37 +106,38 @@
     "solscan",
     "chart"
   ],
-  "holders": 20,
-  "marketCap": 98921394,
-  "priceUsd": 0.09892,
-  "liquidity": 182500.92,
-  "volume24h": 3430226.79,
-  "volume1h": 3134861.66,
-  "priceChange5m": 0.39,
-  "priceChange1h": 104,
-  "priceChange24h": 23338,
+  "holders": 1954,
+  "marketCap": 50453,
+  "priceUsd": 0.00005045,
+  "liquidity": 20382.52,
+  "volume24h": 3259532.34,
+  "volume1h": 16344.06,
+  "priceChange5m": -15.15,
+  "priceChange1h": 78.83,
+  "priceChange24h": 45.1,
   "tokenSymbol": "BEEKEEPER",
   "tokenName": "The Beekeeper",
-  "pairCreatedAt": 1777399699000,
+  "pairCreatedAt": 1777395227000,
   "safeBlocked": true,
   "safeBlockedReasons": [
-    "rug_pattern",
-    "lp",
+    "wash_trading",
+    "bundle",
     "concentration",
-    "chart"
+    "chart",
+    "lp"
   ],
-  "tokenLogo": "https://cdn.dexscreener.com/cms/images/x8SgO6iWkq3A8mE3?width=800&height=800&quality=95&format=auto",
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/rSeWEGnAYuNi_EI7?width=800&height=800&quality=95&format=auto",
   "tokenCreator": null,
   "tokenDecimals": null,
   "tokenSupply": null,
   "recentTransfers": "[0 transfers, redacted for fixture]",
-  "solscanTokenAgeHours": 1,
-  "solscanVolume24h": 3430226.79,
+  "solscanTokenAgeHours": 3,
+  "solscanVolume24h": 3259532.34,
   "solscanTrades24h": null,
   "solscanTraders24h": null,
   "layers": {
     "dexscreener": {
-      "trust": 0.04,
+      "trust": 0.2,
       "available": true
     },
     "rugcheck": {
@@ -162,11 +145,11 @@
       "available": true
     },
     "goplus": {
-      "trust": 0.7,
+      "trust": 1,
       "available": true
     },
     "helius": {
-      "trust": 0.037,
+      "trust": 0.2,
       "available": true
     },
     "solscan": {
@@ -174,7 +157,7 @@
       "available": true
     },
     "chart": {
-      "trust": 0.138,
+      "trust": 0.6,
       "available": true
     },
     "crossvalidation": {
@@ -188,27 +171,27 @@
   "lpBurned": false,
   "lpLocked": false,
   "lpLockedPct": null,
-  "candles": "[14 candles, redacted for fixture]",
-  "topHolderPct": 98.5902011824337,
-  "top10HolderPct": 99.8894281030862,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 20.157166097156633,
+  "top10HolderPct": 34.29124314715415,
   "criticalActors": [
     {
       "type": "insider",
       "tag": "Insider",
-      "pct": 98.6,
-      "addr": "GDf9…yqEH",
+      "pct": 20.2,
+      "addr": "1vVc…WL4n",
       "repLbl": "Concentration risk · single wallet",
       "repWidth": 95,
       "repWarn": false,
-      "desc": "Holds <b>98.6%</b> of supply — one-wallet dump would crash the price."
+      "desc": "Holds <b>20.2%</b> of supply — one-wallet dump would crash the price."
     }
   ],
   "verdictHistory": [
     {
-      "ts": 1777403566179,
+      "ts": 1777399982037,
       "verdict": "RUG",
       "score": 100,
-      "event": "Extreme 24h pump +23338% — exit liquidity trap"
+      "event": "Wash trading detected (vol/liq > 20) — bundler dump"
     }
   ],
   "holderActivity": {
@@ -219,7 +202,34 @@
         "avatar": "Insider",
         "pctChange": 0,
         "pctChangeDisp": "±0%",
-        "addr": "GDf9…yqEH",
+        "addr": "1vVc…WL4n",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "AVQT…ftKx",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "DApE…MSHF",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "9Qdo…s6z2",
         "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
       },
       {
@@ -228,7 +238,7 @@
         "avatar": "Retail",
         "pctChange": 0,
         "pctChangeDisp": "±0%",
-        "addr": "8oag…z6Nf",
+        "addr": "Szrt…SwTP",
         "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
       },
       {
@@ -237,34 +247,7 @@
         "avatar": "Retail",
         "pctChange": 0,
         "pctChangeDisp": "±0%",
-        "addr": "DFXf…CGo3",
-        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
-      },
-      {
-        "role": "real",
-        "label": "Static",
-        "avatar": "Retail",
-        "pctChange": 0,
-        "pctChangeDisp": "±0%",
-        "addr": "7MyQ…fh6F",
-        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
-      },
-      {
-        "role": "real",
-        "label": "Static",
-        "avatar": "Retail",
-        "pctChange": 0,
-        "pctChangeDisp": "±0%",
-        "addr": "4DuW…wH1W",
-        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
-      },
-      {
-        "role": "real",
-        "label": "Static",
-        "avatar": "Retail",
-        "pctChange": 0,
-        "pctChangeDisp": "±0%",
-        "addr": "VgwB…c9BR",
+        "addr": "FX1c…4RkY",
         "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
       }
     ],
@@ -336,7 +319,7 @@
     ]
   },
   "scoring_version": "7.3.0",
-  "fetchedAt": 1777403566261,
-  "requestId": "a5c93135-cdcc-4113-87c5-3c41d70ef0c7",
-  "aiSummary": "Liquidity is not locked or burned. The developer can pull all liquidity at any moment, making the token worthless. The top wallet holds 98.6% of supply with only 20 holders, creating extreme dump risk."
+  "fetchedAt": 1777409412143,
+  "requestId": "4361bad1-8522-486a-b8f5-8ee59135013d",
+  "aiSummary": "Coordinated wallets bought together at launch to inflate the price. They hold a large share and can dump simultaneously, crashing the price. The top wallet holds 20.2% of supply with only 1954 holders, creating extreme dump risk."
 }

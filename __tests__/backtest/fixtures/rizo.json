@@ -1,0 +1,272 @@
+{
+  "score": 1000,
+  "risk": "SAFE",
+  "flags": [
+    {
+      "label": "Volume tapering during consolidation (mature pair)",
+      "severity": "info",
+      "impact": 0
+    },
+    {
+      "label": "LP Burned 100% (GoPlus) ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Well distributed supply ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Established token (30d+) ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "raydium",
+    "url": "https://dexscreener.com/solana/6nmicc4qsxqjsnywgprbvtij7gdhfdtud71eegqapqav",
+    "pairAddress": "6nmiCc4QSXqjsNYWgPRBVtij7GdHfDTud71eEGqApqav",
+    "baseToken": {
+      "address": "rizo34MUwbCBqpSTSfnEktdWB4CTByqqYh8zBxL3WAR",
+      "name": "HahaYes",
+      "symbol": "RIZO"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.00000002219",
+    "priceUsd": "0.000001860",
+    "txns": {
+      "m5": {
+        "buys": 0,
+        "sells": 1
+      },
+      "h1": {
+        "buys": 2,
+        "sells": 3
+      },
+      "h6": {
+        "buys": 38,
+        "sells": 14
+      },
+      "h24": {
+        "buys": 59,
+        "sells": 36
+      }
+    },
+    "volume": {
+      "h24": 10445.98,
+      "h6": 6463.72,
+      "h1": 45.96,
+      "m5": 0.75
+    },
+    "priceChange": {
+      "m5": -0.52,
+      "h1": 0.05,
+      "h6": 6.56,
+      "h24": 7.93
+    },
+    "liquidity": {
+      "usd": 195252.7,
+      "base": 52399690255,
+      "quote": 1165.7503
+    },
+    "fdv": 782747,
+    "marketCap": 782747,
+    "pairCreatedAt": 1722472356000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/d6f37f150fb1d7c7a0cd127eeaa0177e05c3801a3ccc5ebfb8c9a734a5dc5159?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/b1aee7129f55dd21e4a10f6b88e8ba7386e8e80e27d77c79b02e852f8fa29642?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/rizo34MUwbCBqpSTSfnEktdWB4CTByqqYh8zBxL3WAR?timestamp=1777408800000",
+      "websites": [
+        {
+          "url": "https://hahayes.com",
+          "label": "Website"
+        },
+        {
+          "url": "https://www.instagram.com/hahayessol",
+          "label": "Instagram"
+        },
+        {
+          "url": "https://www.tiktok.com/@hahayessol",
+          "label": "TikTok"
+        },
+        {
+          "url": "https://www.youtube.com/@hahayessol",
+          "label": "YouTube"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/hahayes",
+          "type": "twitter"
+        },
+        {
+          "url": "https://t.me/hahayesonsol",
+          "type": "telegram"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "rizo34MUwbCBqpSTSfnEktdWB4CTByqqYh8zBxL3WAR",
+  "confidence": 100,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "goplus",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 32483,
+  "marketCap": 782747,
+  "priceUsd": 0.00000186,
+  "liquidity": 195252.7,
+  "volume24h": 10445.98,
+  "volume1h": 45.96,
+  "priceChange5m": -0.52,
+  "priceChange1h": 0.05,
+  "priceChange24h": 7.93,
+  "tokenSymbol": "RIZO",
+  "tokenName": "HahaYes",
+  "pairCreatedAt": 1722472356000,
+  "safeBlocked": false,
+  "safeBlockedReasons": [],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/d6f37f150fb1d7c7a0cd127eeaa0177e05c3801a3ccc5ebfb8c9a734a5dc5159?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 15260,
+  "solscanVolume24h": 10445.98,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 1,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": true
+    },
+    "helius": {
+      "trust": 1,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 0.85,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": true,
+  "lpLocked": false,
+  "lpLockedPct": 100,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 3.0617060083215732,
+  "top10HolderPct": 18.625746065387393,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 3.1,
+      "addr": "Aw6g…B88s",
+      "repLbl": "Significant single-wallet position",
+      "repWidth": 54.8,
+      "repWarn": false,
+      "desc": "Holds <b>3.1%</b> of supply — large enough to move the chart on exit."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777408734782,
+      "verdict": "SAFE",
+      "score": 1000,
+      "event": "Volume tapering during consolidation (mature pair)"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "Aw6g…B88s",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "ASTy…iaJZ",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "5PAh…PRj5",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "9VJT…Xk1K",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "9s2w…CU2P",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "HDmz…1dpD",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": null,
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777408734867,
+  "requestId": "de2949b1-524f-4c5d-ab60-401ce76b6c00",
+  "aiSummary": "Score 1000/1000. LP is burned, mint authority is disabled, freeze authority is disabled, 32483 holders show organic distribution. No critical risks were detected in the contract or holder analysis."
+}

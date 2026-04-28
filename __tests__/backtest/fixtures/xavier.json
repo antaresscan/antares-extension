@@ -1,0 +1,271 @@
+{
+  "score": 1000,
+  "risk": "SAFE",
+  "flags": [
+    {
+      "label": "LP Burned 100% (GoPlus) ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Well distributed supply ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Established token (30d+) ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "raydium",
+    "url": "https://dexscreener.com/solana/6g65drfejv98ba1lyqav44z5qmzax4mzxhybqsflz6zz",
+    "pairAddress": "6g65Drfejv98Ba1LYQAV44z5QmZAX4MzxhyBqsfLz6ZZ",
+    "baseToken": {
+      "address": "69G8CpUVZAxbPMiEBrfCCCH445NwFxH6PzVL693Xpump",
+      "name": "Xavier: Renegade Angel",
+      "symbol": "xavier"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.00001322",
+    "priceUsd": "0.001108",
+    "txns": {
+      "m5": {
+        "buys": 0,
+        "sells": 1
+      },
+      "h1": {
+        "buys": 1,
+        "sells": 3
+      },
+      "h6": {
+        "buys": 38,
+        "sells": 13
+      },
+      "h24": {
+        "buys": 126,
+        "sells": 65
+      }
+    },
+    "volume": {
+      "h24": 5457.23,
+      "h6": 539.92,
+      "h1": 307.46,
+      "m5": 5.57
+    },
+    "priceChange": {
+      "m5": -0.58,
+      "h1": -1.17,
+      "h6": -0.14,
+      "h24": -7.9
+    },
+    "liquidity": {
+      "usd": 144338.89,
+      "base": 65038346,
+      "quote": 861.9465
+    },
+    "fdv": 1108180,
+    "marketCap": 1108180,
+    "pairCreatedAt": 1730072882000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/776b4066315824c0c18b9ec65e9e8536861462b9a2976caa53f0ec9deb4bb080?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/864c87b29f7de18bd200167268117f7da78b3edcee282d66314730b4ec08ec71?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/69G8CpUVZAxbPMiEBrfCCCH445NwFxH6PzVL693Xpump?timestamp=1777408800000",
+      "websites": [
+        {
+          "url": "https://www.xavieronsol.lol/",
+          "label": "Website"
+        },
+        {
+          "url": "https://www.tiktok.com/@xavieronsol",
+          "label": "TikTok"
+        },
+        {
+          "url": "https://odysee.com/@ryry:c?view=content",
+          "label": "Lore"
+        },
+        {
+          "url": "https://www.tensor.trade/trade/chomsky_honks",
+          "label": "NFTs"
+        },
+        {
+          "url": "https://www.xillions.org/",
+          "label": "Xillions"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/xavieronsolami",
+          "type": "twitter"
+        },
+        {
+          "url": "https://t.me/XRAPortal",
+          "type": "telegram"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "69G8CpUVZAxbPMiEBrfCCCH445NwFxH6PzVL693Xpump",
+  "confidence": 100,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "goplus",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 2913,
+  "marketCap": 1108180,
+  "priceUsd": 0.001108,
+  "liquidity": 144338.89,
+  "volume24h": 5457.23,
+  "volume1h": 307.46,
+  "priceChange5m": -0.58,
+  "priceChange1h": -1.17,
+  "priceChange24h": -7.9,
+  "tokenSymbol": "xavier",
+  "tokenName": "Xavier: Renegade Angel",
+  "pairCreatedAt": 1730072882000,
+  "safeBlocked": false,
+  "safeBlockedReasons": [],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/776b4066315824c0c18b9ec65e9e8536861462b9a2976caa53f0ec9deb4bb080?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 13148,
+  "solscanVolume24h": 5457.23,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 1,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": true
+    },
+    "helius": {
+      "trust": 1,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": true,
+  "lpLocked": false,
+  "lpLockedPct": 100,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 2.994351912567759,
+  "top10HolderPct": 20.722356590171007,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 3,
+      "addr": "4J5r…KHoT",
+      "repLbl": "Significant single-wallet position",
+      "repWidth": 54,
+      "repWarn": false,
+      "desc": "Holds <b>3.0%</b> of supply — large enough to move the chart on exit."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777408713065,
+      "verdict": "SAFE",
+      "score": 1000,
+      "event": "LP Burned 100% (GoPlus) ✓"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "4J5r…KHoT",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "ASSo…EwTy",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "9wf6…43et",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "F3qx…zjLe",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "9ERA…Q8Yc",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "3occ…rxYb",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": null,
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777408713150,
+  "requestId": "0ab5c625-5942-4f4c-b0c5-34a65b4ed42d",
+  "aiSummary": "Score 1000/1000. LP is burned, mint authority is disabled, freeze authority is disabled, 2913 holders show organic distribution. No critical risks were detected in the contract or holder analysis."
+}
