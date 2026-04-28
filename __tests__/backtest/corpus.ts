@@ -108,22 +108,17 @@ export const CORPUS: CorpusEntry[] = [
   {
     ca: "orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE",
     symbol: "ORCA",
-    expectedVerdict: "DANGER",
-    tolerated: ["CAUTION"],
-    expectedScore: [350, 700],
-    // KNOWN-LIMITATION case. Orca is a top-tier Solana DEX with 90k+
-    // holders, $1M+ liquidity and LP burned, but the team multi-sig
-    // holds ~19% of supply — which trips the concentration hard
-    // block (>=15%). The engine's current behaviour is technically
-    // correct (the wallet *can* dump) but in practice the multi-sig
-    // is locked under DAO governance.
-    //
-    // Encoding the current engine output as the expected verdict so
-    // CI doesn't regress, but flagging this as a borderline case in
-    // the why field. Future improvement: detect known-DAO multi-sigs
-    // (governance-program-controlled) and exempt them from the
-    // concentration check.
-    why: "Team multi-sig at 19% trips concentration hard block. Borderline — DAO treasury vs. dump risk.",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE"],
+    expectedScore: [600, 900],
+    // FIXED in PR #337 (blue-chip concentration exemption / Path 3).
+    // ORCA has team multi-sig at 19% which used to trip the
+    // concentration hard block → DANGER 525. With Path 3 active,
+    // the engine recognises (90k+ holders, LP burned, GoPlus clean)
+    // → unlocks the gate → score (738) lands in the CAUTION band.
+    // Concentration is still surfaced via the warning flag — we just
+    // don't slam the verdict to DANGER on a legitimate DAO treasury.
+    why: "Path 3 blue-chip exemption. 90k+ holders, LP burned, GoPlus clean → CAUTION instead of DANGER.",
     source: "live",
   },
   {

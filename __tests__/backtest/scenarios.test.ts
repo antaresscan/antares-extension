@@ -338,6 +338,59 @@ describe("safe gate unlock paths", () => {
     expect(blocked).toBe(true)
   })
 
+  it("Path 3 allowlist: known DAO mint unlocks even when holders < 50k (data quality fallback)", () => {
+    // JTO is the canonical case — holders count collapses to the
+    // Helius top-20 view (=20) when Solscan/RugCheck/GoPlus are
+    // simultaneously degraded. The metric-based heuristic misses,
+    // but the allowlist catches it based on mint identity.
+    const blocked = applySafeGateOverride({
+      safeBlocked: true,
+      safeBlockedReasons: ["concentration"] as SafeBlockedReason[],
+      forceRug: false,
+      holders: 20, // collapsed due to data quality
+      lpBurned: false, // also unknown / failed to confirm
+      goPlusClean: false,
+      tokenAgeHours: null,
+      sourcesAvailableCount: 6,
+      mint: "jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL",
+    })
+    expect(blocked).toBe(false)
+  })
+
+  it("Path 3 allowlist: unknown mint with bad signals stays blocked", () => {
+    // Same bad signals as JTO test, but the mint is NOT on the
+    // allowlist. Stays DANGER. Allowlist must NOT generalise.
+    const blocked = applySafeGateOverride({
+      safeBlocked: true,
+      safeBlockedReasons: ["concentration"] as SafeBlockedReason[],
+      forceRug: false,
+      holders: 20,
+      lpBurned: false,
+      goPlusClean: false,
+      tokenAgeHours: null,
+      sourcesAvailableCount: 6,
+      mint: "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump", // FARTCOIN — not allowlisted
+    })
+    expect(blocked).toBe(true)
+  })
+
+  it("Path 3 allowlist: even known DAOs stay blocked if other hard reason present", () => {
+    // Allowlist only forgives concentration. If JTO somehow gets
+    // a honeypot flag, it must NOT be auto-unlocked.
+    const blocked = applySafeGateOverride({
+      safeBlocked: true,
+      safeBlockedReasons: ["concentration", "honeypot"] as SafeBlockedReason[],
+      forceRug: false,
+      holders: 50_000,
+      lpBurned: true,
+      goPlusClean: true,
+      tokenAgeHours: 365 * 24,
+      sourcesAvailableCount: 6,
+      mint: "jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL",
+    })
+    expect(blocked).toBe(true)
+  })
+
   it("Path 3: concentration + soft reasons together (e.g. lp_unverified) still unlocks if blue-chip", () => {
     // soft reasons coexisting with concentration are allowed — what
     // matters is that no OTHER hard reason is present.

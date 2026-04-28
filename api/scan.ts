@@ -470,6 +470,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       safeBlocked, safeBlockedReasons, forceRug,
       holders, lpBurned, goPlusClean,
       tokenAgeHours, sourcesAvailableCount,
+      mint: resolvedMint,
     });
     if (newSafeBlocked !== safeBlocked) {
       logger.info("scan", "safe gate override", { requestId, ca: resolvedMint, reasons: safeBlockedReasons });
@@ -663,8 +664,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     } else {
       const redis = getCacheRedis();
       if (redis) {
-        redis.setex(`antares:v8:${ca}`, 30, result).catch(() => {});
-        if (resolvedMint !== ca) redis.setex(`antares:v8:${resolvedMint}`, 30, result).catch(() => {});
+        redis.setex(`antares:v9:${ca}`, 30, result).catch(() => {});
+        if (resolvedMint !== ca) redis.setex(`antares:v9:${resolvedMint}`, 30, result).catch(() => {});
       }
     }
 

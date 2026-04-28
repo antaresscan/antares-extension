@@ -7,6 +7,7 @@ import type {
 } from "./types";
 import { makeFlag } from "./helpers";
 import { HARD_BLOCK_REASONS, SOFT_REASONS } from "./constants";
+import { isKnownDaoTreasury } from "./known-treasuries";
 
 export function evaluatePostLayerFlags(input: PostLayerFlagsInput): PostLayerFlagsResult {
   const flags: ScanFlag[] = [];
@@ -89,7 +90,13 @@ export function applySafeGateOverride(input: SafeGateInput): boolean {
     // age unknown is OK if every other strong signal is true — Solscan
     // age is the most data-quality-fragile field, so we don't gate on it
     (input.tokenAgeHours === null || input.tokenAgeHours >= 30 * 24);
-  if (onlyConcentrationHard && looksLikeBlueChipDao) {
+  // Data-quality fallback: when the mint is on the known-DAO-treasury
+  // allowlist we accept the blue-chip exemption regardless of the
+  // metric-based heuristic. Covers cases where Solscan/RugCheck/GoPlus
+  // are simultaneously degraded and the holder count collapses to the
+  // Helius top-20 view (=20). JTO is the canonical case.
+  const isKnownDao = isKnownDaoTreasury(input.mint);
+  if (onlyConcentrationHard && (looksLikeBlueChipDao || isKnownDao)) {
     return false;
   }
 
