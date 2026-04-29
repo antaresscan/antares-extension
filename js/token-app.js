@@ -455,23 +455,32 @@ function buildTimelineTab(d) {
       }).join('')}
     </div>`
   }
-  // V5 mock fallback — kept verbatim since the backend wasn't able to
-  // produce real history (Redis unavailable, first-ever scan, etc.).
+  // No real history available. The previous build shipped a hardcoded
+  // mock timeline ("LP not burned confirmed 30m ago", "Wash trading
+  // detected 2h ago", etc.) which read as "fake / nothing works" to
+  // users — every scan showed the same fabricated history regardless
+  // of the actual token. Surface an honest empty state instead.
+  // The backend (verdict-history) returns oldest→newest from Redis
+  // ZSET vh:{ca}; an empty array means either Redis is unavailable
+  // for this scan or this is the very first time the token gets
+  // scanned through Antares.
   const score = d.score || 0
-  const ageH = d.solscanTokenAgeHours
-  const ageStr = ageH != null
-    ? (ageH < 24 ? `${Math.round(ageH)}h ago` : ageH < 720 ? `${Math.floor(ageH / 24)}d ago` : `${Math.floor(ageH / 720)}mo ago`)
-    : '6h ago'
   const cls = RC[d.risk] || 'rug'
   const lb = LB[d.risk] || d.risk
   return `
     <div class="tl-list">
-      <div class="tl-row"><div class="tl-dot ${cls} now"></div><div class="tl-time now">NOW</div><div class="tl-verdict ${cls}">${escapeHtml(lb)}</div><div class="tl-score"><b>${score}</b>/1000</div><div class="tl-event"><b>Current verdict.</b></div></div>
-      <div class="tl-row"><div class="tl-dot rug"></div><div class="tl-time">30m ago</div><div class="tl-verdict rug">RUG PULL</div><div class="tl-score"><b>150</b>/1000</div><div class="tl-event"><b>LP not burned</b> confirmed.</div></div>
-      <div class="tl-row"><div class="tl-dot danger"></div><div class="tl-time">2h ago</div><div class="tl-verdict danger">DANGER</div><div class="tl-score"><b>250</b>/1000</div><div class="tl-event"><b>Wash trading detected</b> — Vol/Liq 20×+.</div></div>
-      <div class="tl-row"><div class="tl-dot danger"></div><div class="tl-time">4h ago</div><div class="tl-verdict danger">DANGER</div><div class="tl-score"><b>380</b>/1000</div><div class="tl-event"><b>Top 1 reached 10%</b> of supply.</div></div>
-      <div class="tl-row"><div class="tl-dot caution"></div><div class="tl-time">5h ago</div><div class="tl-verdict caution">CAUTION</div><div class="tl-score"><b>540</b>/1000</div><div class="tl-event">Concentration starting to grow.</div></div>
-      <div class="tl-row"><div class="tl-dot empty"></div><div class="tl-time">${escapeHtml(ageStr)}</div><div class="tl-verdict caution" style="opacity:.6">CAUTION</div><div class="tl-score"><b>580</b>/1000</div><div class="tl-event">Token launched.</div></div>
+      <div class="tl-row">
+        <div class="tl-dot ${cls} now"></div>
+        <div class="tl-time now">NOW</div>
+        <div class="tl-verdict ${cls}">${escapeHtml(lb)}</div>
+        <div class="tl-score"><b>${score}</b>/1000</div>
+        <div class="tl-event"><b>Current scan.</b></div>
+      </div>
+    </div>
+    <div class="tab-empty" style="margin-top:14px">
+      First scan recorded for this token. The verdict timeline populates
+      after subsequent scans — re-open this token later to see how the
+      verdict trajectory evolves.
     </div>
   `
 }
@@ -493,45 +502,53 @@ function buildHolderActivityTab(d) {
   //   - holderActivity undefined  → cache hit pre-PR3, fall through
   //                                  to v5 mock
   const ha = d.holderActivity
-  if (ha && Array.isArray(ha.rows) && ha.rows.length === 0) {
+  if (!ha || !Array.isArray(ha.rows)) {
+    // No payload at all (cache hit pre-PR3 or backend didn't ship the
+    // field on this scan). Previous build shipped a hardcoded mock
+    // here — six fake whales like "DEV", "Insider", "Cluster A" that
+    // were identical for every token. Refusing to show fabricated
+    // data is more honest than filling space with it.
+    return `<div class="tab-empty">Holder Activity is not available for this scan. Re-scan the token to populate the last-60-minute movement classifier.</div>`
+  }
+  if (ha.rows.length === 0) {
     return `<div class="tab-empty">No top-holder data available for this token. Helius did not return holder accounts in time, or the token has no on-chain holders indexed yet.</div>`
   }
-  if (ha && Array.isArray(ha.rows) && ha.rows.length > 0) {
-    const rows = ha.rows.map(r => `
-      <div class="whale ${r.role}">
-        <div class="whale-avatar">${escapeHtml(r.avatar || '')}</div>
-        <div class="whale-pct">${escapeHtml(r.pctChangeDisp || '±0%')}</div>
-        <div class="whale-tag">${escapeHtml(r.label || '')}</div>
-        <div class="whale-info">
-          <div class="whale-addr">${escapeHtml(r.addr || '')}</div>
-          <div class="whale-desc">${r.desc || ''}</div>
-        </div>
-      </div>
-    `).join('')
-    const netCls = ha.netFlowDirection === 'in' ? 'var(--c)' :
-                   ha.netFlowDirection === 'out' ? 'var(--orange)' : '#888'
-    const netSign = ha.netFlowPct > 0 ? '+' : ''
-    const netLabel = ha.netFlowDirection === 'out'
-      ? 'pre-dump signature' : ha.netFlowDirection === 'in'
-        ? 'accumulation phase' : 'no significant flow'
-    return `
-      <div style="font-size:9px;color:#444;letter-spacing:.22em;text-transform:uppercase;margin-bottom:10px">Wallet movements — last 60 minutes</div>
-      <div class="whale-list">${rows}</div>
-      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:11px;color:#666">Net flow last 1h: <b style="color:${netCls}">${netSign}${(ha.netFlowPct || 0).toFixed(1)}%</b> · ${netLabel}</div>
-    `
+  // Filter out rows that are simultaneously Static + ±0% + empty
+  // description. The backend produces these for top holders that
+  // exist on-chain but had zero activity in the 60-minute window;
+  // surfacing six identical "Static · ±0%" rows reads as "the section
+  // doesn't work" to the user even though the data is technically
+  // populated.
+  const activeRows = ha.rows.filter(r => {
+    const isStatic = String(r.label || '').toLowerCase() === 'static'
+    const hasPct = typeof r.pctChange === 'number' && Math.abs(r.pctChange) >= 0.05
+    const hasDesc = typeof r.desc === 'string' && r.desc.length > 0
+    return !isStatic || hasPct || hasDesc
+  })
+  if (activeRows.length === 0) {
+    return `<div class="tab-empty">All top holders are static in the last 60 minutes — no transfers in or out. This section populates when top wallets actively move during the window.</div>`
   }
-  // V5 mock fallback for cache hits / pre-PR3 era.
+  const rows = activeRows.map(r => `
+    <div class="whale ${r.role}">
+      <div class="whale-avatar">${escapeHtml(r.avatar || '')}</div>
+      <div class="whale-pct">${escapeHtml(r.pctChangeDisp || '±0%')}</div>
+      <div class="whale-tag">${escapeHtml(r.label || '')}</div>
+      <div class="whale-info">
+        <div class="whale-addr">${escapeHtml(r.addr || '')}</div>
+        <div class="whale-desc">${r.desc || ''}</div>
+      </div>
+    </div>
+  `).join('')
+  const netCls = ha.netFlowDirection === 'in' ? 'var(--c)' :
+                 ha.netFlowDirection === 'out' ? 'var(--orange)' : '#888'
+  const netSign = ha.netFlowPct > 0 ? '+' : ''
+  const netLabel = ha.netFlowDirection === 'out'
+    ? 'pre-dump signature' : ha.netFlowDirection === 'in'
+      ? 'accumulation phase' : 'no significant flow'
   return `
     <div style="font-size:9px;color:#444;letter-spacing:.22em;text-transform:uppercase;margin-bottom:10px">Wallet movements — last 60 minutes</div>
-    <div class="whale-list">
-      <div class="whale dev"><div class="whale-avatar">DEV</div><div class="whale-pct">+0%</div><div class="whale-tag">Holding</div><div class="whale-info"><div class="whale-addr">7Hg2…zX9q</div><div class="whale-desc">No on-chain move <b>last 6h</b>. Tx history: 2 SOL transfer to fresh wallet <b>2h ago</b> (<b>typical pre-rug pattern</b>).</div></div></div>
-      <div class="whale bot"><div class="whale-avatar">Insider</div><div class="whale-pct">-1.2%</div><div class="whale-tag">Selling</div><div class="whale-info"><div class="whale-addr">8dxX…abc4</div><div class="whale-desc">Started exiting <b>18 min ago</b>. Sold <b>0.4 SOL</b> in 3 tx. Historical pattern: dumps fully within 4h of first sell.</div></div></div>
-      <div class="whale coord"><div class="whale-avatar">Cluster A</div><div class="whale-pct">-0.3%</div><div class="whale-tag">Splitting</div><div class="whale-info"><div class="whale-addr">7 sibling wallets</div><div class="whale-desc"><b>2 of 7</b> wallets started moving in last <b>30 min</b>. Distribution shifting — coordinated exit may be starting.</div></div></div>
-      <div class="whale coord"><div class="whale-avatar">Cluster B</div><div class="whale-pct">±0%</div><div class="whale-tag">Static</div><div class="whale-info"><div class="whale-addr">3 siblings</div><div class="whale-desc">Dormant since launch. <b>BunnyRug-like</b> clusters typically wake up <b>~6h after launch</b>.</div></div></div>
-      <div class="whale whale-big"><div class="whale-avatar">Whale</div><div class="whale-pct">-2.1%</div><div class="whale-tag">Reducing</div><div class="whale-info"><div class="whale-addr">JYn7…vK9w</div><div class="whale-desc">Sold <b>$1.8K</b> across 5 tx in last hour. Typical of diversified holders cutting losses early.</div></div></div>
-      <div class="whale real"><div class="whale-avatar">Retail</div><div class="whale-pct">+0.4%</div><div class="whale-tag">Buying</div><div class="whale-info"><div class="whale-addr">3ePm…kT8x</div><div class="whale-desc"><b>Late buyer</b> — added <b>$200</b> 12 min ago. Average loss for this profile: <b>-94%</b>.</div></div></div>
-    </div>
-    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:11px;color:#666">Net flow last 1h: <b style="color:var(--orange)">-3.2%</b> · pre-dump signature detected</div>
+    <div class="whale-list">${rows}</div>
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:11px;color:#666">Net flow last 1h: <b style="color:${netCls}">${netSign}${(ha.netFlowPct || 0).toFixed(1)}%</b> · ${netLabel}</div>
   `
 }
 
@@ -542,37 +559,41 @@ function buildHolderActivityTab(d) {
 // corpus. Static distribution shown so the visual is in place.
 // ──────────────────────────────────────────────────────────────────────
 function buildOutcomeHistogramTab(d) {
-  // Backend (composeOutcomeStats) returns null for SAFE; otherwise a
-  // typed payload with distribution / mostSimilar / pct stats. v5 mock
-  // values remain as the fallback for cache hits pre-PR4.
+  // Verdict gate: show only for RUG / DANGER. The backend's heuristic
+  // composeOutcomeStats falls through to a slow-death cluster for any
+  // non-RUG verdict (api/_lib/outcome-stats.ts:159), which produced
+  // misleading "median time-to-rug 2d" stats on bluechip CAUTION
+  // tokens (FARTCOIN, score 825, year-old established memecoin). Hide
+  // the section entirely for SAFE / CAUTION until the corpus-based
+  // KNN matcher ships and can produce meaningful distributions for
+  // those bands.
+  const verdictUpper = String(d.risk || '').toUpperCase()
+  const showOutcome = verdictUpper === 'RUG' || verdictUpper === 'RUG PULL' || verdictUpper === 'DANGER'
+  if (!showOutcome) {
+    return `<div class="tab-empty">Outcome distribution is shown only for tokens flagged as <b>RUG</b> or <b>DANGER</b>. The current verdict is <b>${escapeHtml(verdictUpper || '—')}</b> — there is no historical cluster of comparable launches that justifies a time-to-rug forecast.</div>`
+  }
+
   const o = d.outcomeStats
-  if (o === null) {
-    return `<div class="tab-empty">Outcome distribution shown only for tokens that show risk signals. Current token is <b>SAFE</b>.</div>`
+  // Strict gate: backend payload must be present and well-shaped. The
+  // previous build shipped a hardcoded fallback (RUGCOIN / SCAMBOY /
+  // TRAPCAT distributions) when the backend didn't provide stats —
+  // users saw the same fake "similar tokens" on every scan, which
+  // read as "fake / nothing works". Show an honest empty state
+  // instead.
+  if (!o || typeof o !== 'object') {
+    return `<div class="tab-empty">Outcome Histogram is not available for this scan. Re-scan the token to populate the historical distribution.</div>`
   }
-  let dist, sampleSize, medianHours, pctRugged, pctSlow, pctAlive, similar, youIdx
-  if (o && typeof o === 'object') {
-    dist = Array.isArray(o.distribution) ? o.distribution : []
-    sampleSize = o.timeToRugSampleSize || 0
-    medianHours = o.timeToRugMedianHours || 0
-    pctRugged = o.pctRugged24h || 0
-    pctSlow = o.pctSlowDeath || 0
-    pctAlive = o.pctAlive30d || 0
-    similar = Array.isArray(o.mostSimilar) ? o.mostSimilar : []
-    youIdx = typeof o.youBucketIndex === 'number' ? o.youBucketIndex : 11
-  } else {
-    // Pre-PR4 fallback: keep v5 reference distribution.
-    dist = [8,14,22,28,18,12,6,4,2,1,.6,.4,.3,.3,.2,.2,.2,.2,.2,.2,.2,.2,.2,.3,.3,.4,.6,1,1.2,1.4,1.4,1.2,.9,.6,.4,.3]
-    sampleSize = 487
-    medianHours = 4.2
-    pctRugged = 89; pctSlow = 8; pctAlive = 3
-    youIdx = d.risk === 'RUG' ? 11 : d.risk === 'DANGER' ? 17 : 25
-    similar = [
-      { symbol: 'RUGCOIN', ruggedAfterHours: 4,  loss: -99.2 },
-      { symbol: 'SCAMBOY', ruggedAfterHours: 6,  loss: -98.5 },
-      { symbol: 'TRAPCAT', ruggedAfterHours: 12, loss: -97.8 },
-    ]
+  const dist = Array.isArray(o.distribution) ? o.distribution : []
+  if (!dist.length) {
+    return `<div class="tab-empty">Outcome distribution unavailable for this token.</div>`
   }
-  if (!dist.length) return `<div class="tab-empty">Outcome distribution unavailable.</div>`
+  const sampleSize = o.timeToRugSampleSize || 0
+  const medianHours = o.timeToRugMedianHours || 0
+  const pctRugged = o.pctRugged24h || 0
+  const pctSlow = o.pctSlowDeath || 0
+  const pctAlive = o.pctAlive30d || 0
+  const similar = Array.isArray(o.mostSimilar) ? o.mostSimilar : []
+  const youIdx = typeof o.youBucketIndex === 'number' ? o.youBucketIndex : -1
   const max = Math.max(...dist)
   const bars = dist.map((v, i) => {
     const cls = i === youIdx ? 'you' : v > 15 ? '' : v > 5 ? 'warn' : 'ok'
