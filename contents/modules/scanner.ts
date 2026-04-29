@@ -17,12 +17,36 @@ export function isValid(addr: string): boolean {
 }
 
 // [5.2] Price-based forced rescan
+//
+// If a token has dropped >30% in the last hour we re-fetch the verdict
+// after a short delay so the overlay reflects post-crash state. Side
+// effect we have to manage: the rescan calls scan() which replaces
+// the box subtree via el.replaceChildren(buildResultNode(...)) and
+// wipes the .open class on whichever disclosure panel the user might
+// be reading at that moment. The user-reported "panel refreshes
+// itself every 5 seconds and closes" symptom on volatile RUG tokens
+// (e.g. AMC at -52%/1h) was exactly this — they'd open Critical
+// Flags or AI Summary and the rescan timer would fire under them.
+//
+// Fix: if a panel is open when the rescan timer fires, skip the
+// rescan and re-arm. The overlay stays stable as long as the user
+// is actively reading; once they close the panel the rescan resumes
+// on its normal cadence.
 export function scheduleRescanIfPriceCrash(data: ScanResponseData, ca: string) {
   if (state.rescanTimer) { clearTimeout(state.rescanTimer); state.rescanTimer = null }
   const pc1h = typeof data.priceChange1h === "number" ? data.priceChange1h : null
   if (pc1h !== null && pc1h < -30) {
     state.rescanTimer = setTimeout(() => {
       state.rescanTimer = null
+      // Postpone the rescan if the user has a disclosure panel open
+      // — re-rendering the overlay underneath them would close the
+      // panel and feel like a refresh bug.
+      const aiOpen = state.shadow?.querySelector("#ant-ai-summary.open")
+      const cfOpen = state.shadow?.querySelector("#ant-critical-flags.open")
+      if (aiOpen || cfOpen) {
+        scheduleRescanIfPriceCrash(data, ca)
+        return
+      }
       scanCache.delete(ca)
       try { localStorage.removeItem(LS_PREFIX + ca) } catch (e: unknown) { logger.warn("scanner", "Failed to remove LS cache", e) }
       state.lastCA = ""
