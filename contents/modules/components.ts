@@ -118,13 +118,21 @@ export function attachClose(
     () => { state.manuallyDismissed = true; hideBox() },
     { once: true }
   )
-  // AI Summary button: toujours actif, jamais disabled
+  // AI Summary button. Listener wraps stopPropagation + preventDefault
+  // so the click never bubbles to the drag/scan handlers attached
+  // higher in the overlay tree. Without this, the user-reported
+  // "click panel button → overlay refreshes and panels collapse" race
+  // was caused by the click reaching the drag layer, which in turn
+  // re-rendered the box and wiped the panels' .open state.
   const aiBtn = state.shadow?.querySelector("#ant-ai-summary-btn")
   if (aiBtn) {
     const fresh = aiBtn.cloneNode(true) as HTMLElement
     aiBtn.parentNode?.replaceChild(fresh, aiBtn)
-    // Attacher le listener quel que soit l'état de aiSummary
-    fresh.addEventListener("click", () => toggleAiSummary(aiSummary ?? null))
+    fresh.addEventListener("click", (e) => {
+      e.stopPropagation()
+      e.preventDefault()
+      toggleAiSummary(aiSummary ?? null)
+    })
   }
   // Critical Flags button: same toggle pattern as AI Summary, with its
   // own panel. Replaces the old DexScreener external link — flags are
@@ -134,7 +142,11 @@ export function attachClose(
   if (cfBtn) {
     const fresh = cfBtn.cloneNode(true) as HTMLElement
     cfBtn.parentNode?.replaceChild(fresh, cfBtn)
-    fresh.addEventListener("click", () => toggleCriticalFlags(flags ?? null))
+    fresh.addEventListener("click", (e) => {
+      e.stopPropagation()
+      e.preventDefault()
+      toggleCriticalFlags(flags ?? null)
+    })
   }
 }
 
