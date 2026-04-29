@@ -689,6 +689,115 @@ describe("generateAISummary", () => {
       expect(paragraphs[2].length).toBeLessThan(80)
     })
 
+    it("BUNDLE flag beats top-1 concentration — bundle is Antares's signature edge and should lead the verdict reason", async () => {
+      // Reproduces a scenario where BOTH a bundle flag AND a high
+      // visible top-1 holder are present. Without the priority logic,
+      // the deterministic fallback would pick the top-1 concentration
+      // ("textbook concentration rug"). The new priority order moves
+      // bundle to slot #2 (right after honeypot) because invisible
+      // concentration via coordinated wallets is harder to detect
+      // with standard scanners and is the higher-value signal Antares
+      // adds.
+      vi.stubEnv("GEMINI_API_KEY", "")
+      delete process.env.GEMINI_API_KEY
+      const bundlePlusTopHolder: AISummaryInput = {
+        score: 90,
+        risk: "RUG",
+        flags: [
+          { label: "Bundle holds ~37% of supply — coordinated buy/dump", severity: "critical", impact: 400 },
+          { label: "Single wallet holds 28% of supply", severity: "critical", impact: 350 },
+        ],
+        tokenSymbol: "STEALTH",
+        holders: 5200,
+        marketCap: 1.2e6,
+        liquidity: 35000,
+        lpBurned: true,
+        lpLocked: false,
+        mintAuthority: false,
+        freezeAuthority: false,
+        honeypot: false,
+        tokenAgeHours: 24 * 14,
+        sourcesUsed: ["dexscreener", "rugcheck", "goplus", "helius", "solscan"],
+        topHolderPct: 28,
+        volume24h: 200000,
+        priceChange1h: -12,
+      }
+      const result = await generateAISummary(bundlePlusTopHolder)
+      goldenStructuralChecks(result)
+      const para1 = result!.split(/\n\s*\n/)[0]
+      // Para 1 must lead with bundle, NOT with "concentration rug"
+      expect(para1).toContain("bundle rug")
+      expect(para1.toLowerCase()).toContain("coordinated wallets")
+      expect(para1).toContain("37%")
+      // Para 1 must NOT lead with the visible-concentration template
+      expect(para1).not.toContain("textbook concentration rug")
+    })
+
+    it("BUNDLE leads on a DANGER scenario where the bundle flag fires alongside other concerns", async () => {
+      vi.stubEnv("GEMINI_API_KEY", "")
+      delete process.env.GEMINI_API_KEY
+      const bundleDanger: AISummaryInput = {
+        score: 480,
+        risk: "DANGER",
+        flags: [
+          { label: "Bundle activity detected (RugCheck)", severity: "critical", impact: 250 },
+          { label: "Single wallet holds 22% of supply", severity: "critical", impact: 200 },
+        ],
+        tokenSymbol: "STEALTHY",
+        holders: 3000,
+        marketCap: 5e6,
+        liquidity: 800_000,
+        lpBurned: true,
+        lpLocked: false,
+        mintAuthority: false,
+        freezeAuthority: false,
+        honeypot: false,
+        tokenAgeHours: 24 * 60,
+        sourcesUsed: ["dexscreener", "rugcheck", "goplus", "helius", "solscan"],
+        topHolderPct: 22,
+        volume24h: 500_000,
+        priceChange1h: -2,
+      }
+      const result = await generateAISummary(bundleDanger)
+      goldenStructuralChecks(result)
+      const para1 = result!.split(/\n\s*\n/)[0]
+      expect(para1).toContain("DANGER")
+      expect(para1).toContain("bundle activity")
+      expect(para1).not.toContain("stacked concentration risk")
+    })
+
+    it("HONEYPOT still beats BUNDLE — total-loss on entry is even more critical than invisible concentration", async () => {
+      vi.stubEnv("GEMINI_API_KEY", "")
+      delete process.env.GEMINI_API_KEY
+      const honeypotBundle: AISummaryInput = {
+        score: 50,
+        risk: "RUG",
+        flags: [
+          { label: "Bundle holds ~30% of supply", severity: "critical", impact: 400 },
+          { label: "Honeypot detected", severity: "critical", impact: 500 },
+        ],
+        tokenSymbol: "TRAP",
+        holders: 800,
+        marketCap: 2e5,
+        liquidity: 12000,
+        lpBurned: false,
+        lpLocked: false,
+        mintAuthority: true,
+        freezeAuthority: true,
+        honeypot: true,
+        tokenAgeHours: 6,
+        sourcesUsed: ["dexscreener", "rugcheck", "goplus"],
+        topHolderPct: 30,
+        volume24h: 50000,
+        priceChange1h: -15,
+      }
+      const result = await generateAISummary(honeypotBundle)
+      goldenStructuralChecks(result)
+      const para1 = result!.split(/\n\s*\n/)[0]
+      expect(para1.toLowerCase()).toContain("honeypot")
+      expect(para1).not.toContain("bundle rug")
+    })
+
     it("all four golden scans land in the 30–80 word band — same length envelope", async () => {
       vi.stubEnv("GEMINI_API_KEY", "")
       delete process.env.GEMINI_API_KEY
