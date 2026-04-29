@@ -126,10 +126,32 @@ const SYSTEM_PROMPT =
   "\u2022 Plain text only. No markdown, no emoji, no bullets, no headers. " +
   "\n\n" +
   "PARAGRAPH 1 \u2014 VERDICT REASON (exactly 1 sentence, \u226425 words). " +
-  "Open with the token name. State the verdict and the dominant mechanism with one concrete number. Templates: " +
-  "\u2022 RUG: \"{Symbol} is the textbook concentration rug \u2014 a single wallet holds X% of total supply, \u2026\" (or honeypot rug, exit-scam rug, etc.) " +
-  "\u2022 DANGER: \"{Symbol} lands on DANGER because {mechanism with numbers}.\" " +
-  "\u2022 CAUTION: \"{Symbol} lands on CAUTION because {mechanism with numbers} \u2014 a meaningful risk even with otherwise solid fundamentals.\" " +
+  "Open with the token name. State the verdict and the dominant mechanism with one concrete number. " +
+  "\n\n" +
+  "PRIORITY when picking the dominant mechanism (highest first):" +
+  "\n" +
+  "1. Honeypot \u2014 total loss on entry, no recovery." +
+  "\n" +
+  "2. Bundle / coordinated wallets \u2014 Antares's signature flag. INVISIBLE concentration via multiple addresses controlled by a single entity. " +
+  "More dangerous than visible top-holder concentration because the user has no surface cue (Helius shows healthy distribution). " +
+  "If the data shows a Bundle / Bundler / coordinated-wallet flag, lead with it." +
+  "\n" +
+  "3. Visible top-1 wallet concentration (\u226510% of supply)." +
+  "\n" +
+  "4. LP not locked or burned." +
+  "\n" +
+  "5. Mint or freeze authority enabled." +
+  "\n" +
+  "6. Other dominant flag (whatever is the top-severity item)." +
+  "\n\n" +
+  "Templates per verdict: " +
+  "\u2022 RUG (bundle): \"{Symbol} is a bundle rug \u2014 coordinated wallets hold ~X% of supply across multiple addresses, invisible to top-holder metrics but acting as a single seller.\" " +
+  "\u2022 RUG (concentration): \"{Symbol} is the textbook concentration rug \u2014 a single wallet holds X% of total supply, \u2026\" " +
+  "\u2022 RUG (honeypot): \"{Symbol} is a honeypot \u2014 once you buy, the contract blocks every sell, trapping your funds permanently.\" " +
+  "\u2022 DANGER (bundle): \"{Symbol} lands on DANGER because of bundle activity \u2014 coordinated wallets hold ~X% of supply, masking concentration that visible top-holder metrics don't catch.\" " +
+  "\u2022 DANGER (other): \"{Symbol} lands on DANGER because {mechanism with numbers}.\" " +
+  "\u2022 CAUTION (bundle): \"{Symbol} lands on CAUTION because of bundle activity \u2014 coordinated wallets hold ~X% of supply, invisible to standard concentration metrics even with otherwise solid fundamentals.\" " +
+  "\u2022 CAUTION (other): \"{Symbol} lands on CAUTION because {mechanism with numbers} \u2014 a meaningful risk even with otherwise solid fundamentals.\" " +
   "\u2022 SAFE: \"{Symbol} shows a SAFE profile with {primary positive signal}.\" " +
   "\n\n" +
   "PARAGRAPH 2 \u2014 COUNTER-CONTEXT (1 or 2 sentences, \u226435 words). " +
@@ -333,6 +355,24 @@ function buildStructuredFallback(
   // present (rare — usually only on SAFE).
   const dominantFlag = topFlags.length > 0 ? topFlags[0].label.toLowerCase() : null
 
+  // Detect bundle / coordinated-wallet activity. This is Antares's
+  // signature edge over RugCheck and visible-concentration scanners:
+  // a single entity holding the supply across multiple wallets is
+  // INVISIBLE to top-N holder metrics, but acts as a single seller
+  // when the dump fires. The /scan code emits labels like:
+  //   "Bundle holds ~37% of supply — coordinated buy/dump"
+  //   "Bundle detected (~22% of supply)"
+  //   "Bundle activity detected (RugCheck)"
+  //   "Bundler detected (RugCheck summary)"
+  //   "Wash trading detected (vol/liq > 20) — bundler dump"
+  //   "Buy/sell imbalance (coordinated pump)"
+  //   "Coordinated pump pattern"
+  // The /bundl|coordinated/i regex catches all of these.
+  const bundleFlag = topFlags.find((f) => /bundl|coordinated/i.test(f.label))
+  // Try to extract the bundled-supply percentage if the flag has one.
+  const bundlePctMatch = bundleFlag ? bundleFlag.label.match(/~?(\d+(?:\.\d+)?)\s*%/) : null
+  const bundlePct = bundlePctMatch ? bundlePctMatch[1] : null
+
   // top1 is in PERCENTAGE form (0–100), as set by api/scan.ts:
   //   `(topAmt / totalSupplyUi) * 100`
   // i.e. a 44% wallet arrives as 44, not 0.44. All thresholds and
@@ -340,12 +380,21 @@ function buildStructuredFallback(
 
   // ── PARA 1 ── verdict reason. Branch order matters — we pick the
   // dominant cause-of-verdict first, falling through to less
-  // distinctive ones. honeypot > concentration > LP-not-locked >
-  // mint authority > generic.
+  // distinctive ones. Priority hierarchy:
+  //   1. honeypot         — total loss on entry, no recovery
+  //   2. bundle           — INVISIBLE concentration via coordinated wallets
+  //                         (Antares's signature edge — what other scanners miss)
+  //   3. concentration    — visible top1 holding (Helius shows it directly)
+  //   4. LP not locked    — exit-scam surface
+  //   5. mint authority   — dilution-rug surface
+  //   6. generic          — fall-through to dominant flag label
   let para1: string
   if (verdict === "RUG") {
     if (input.honeypot) {
       para1 = `${sym} is a honeypot — once you buy, the contract blocks every sell, trapping your funds permanently.`
+    } else if (bundleFlag) {
+      const pctClause = bundlePct ? `roughly ${bundlePct}% of supply` : "a meaningful share of supply"
+      para1 = `${sym} is a bundle rug — coordinated wallets quietly hold ${pctClause} across multiple addresses, invisible to top-holder metrics but acting as a single coordinated seller.`
     } else if (top1 !== null && top1 >= 25) {
       para1 = `${sym} is the textbook concentration rug — a single wallet holds ${top1.toFixed(1)}% of total supply, more than enough to crash the price to zero in one transaction.`
     } else if (!lpProtected) {
@@ -358,7 +407,10 @@ function buildStructuredFallback(
       para1 = `${sym} lands on RUG with ${input.score}/1000 — multiple critical flags confirm the verdict.`
     }
   } else if (verdict === "DANGER") {
-    if (top1 !== null && top1 >= 20) {
+    if (bundleFlag) {
+      const pctClause = bundlePct ? `roughly ${bundlePct}% of supply` : "a meaningful share of supply"
+      para1 = `${sym} lands on DANGER because of bundle activity — coordinated wallets hold ${pctClause}, masking concentration that visible top-holder metrics don't catch.`
+    } else if (top1 !== null && top1 >= 20) {
       para1 = `${sym} lands on DANGER because of stacked concentration risk — a single wallet holds ${top1.toFixed(1)}% of supply, enough to dictate price action on its own.`
     } else if (!lpProtected) {
       para1 = `${sym} lands on DANGER because liquidity is neither locked nor burned — the dev retains the option to drain the pool whenever they choose.`
@@ -371,7 +423,10 @@ function buildStructuredFallback(
       para1 = `${sym} lands on DANGER with ${input.score}/1000 — multiple structural concerns aggregate to a high-risk verdict.`
     }
   } else if (verdict === "CAUTION") {
-    if (top1 !== null && top1 >= 8) {
+    if (bundleFlag) {
+      const pctClause = bundlePct ? `roughly ${bundlePct}% of supply` : "a meaningful share of supply"
+      para1 = `${sym} lands on CAUTION because of bundle activity — coordinated wallets hold ${pctClause}, invisible to standard concentration metrics even with otherwise solid fundamentals.`
+    } else if (top1 !== null && top1 >= 8) {
       para1 = `${sym} lands on CAUTION because a single wallet holds ${top1.toFixed(1)}% of supply — a meaningful concentration risk even with otherwise solid fundamentals.`
     } else if (dominantFlag) {
       para1 = `${sym} lands on CAUTION because of ${dominantFlag} — a meaningful risk even with otherwise solid fundamentals.`
