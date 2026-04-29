@@ -1,0 +1,345 @@
+{
+  "score": 100,
+  "risk": "RUG",
+  "flags": [
+    {
+      "label": "Single wallet holds 57% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Top 10 wallets hold 78% of supply",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "LP not burned but token is mature and liquid (unverified LP)",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Liquidity < $20k",
+      "severity": "info",
+      "impact": 0
+    },
+    {
+      "label": "GoPlus unavailable",
+      "severity": "info",
+      "impact": 0
+    },
+    {
+      "label": "Established token (30d+) ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "pumpswap",
+    "url": "https://dexscreener.com/solana/ajglpdcdzfgjgpxytf64d8j4b4iwofm348kzcejvsv9h",
+    "pairAddress": "AJgLpDCDZFgJGpxyTf64D8j4b4iWoFM348KzcEJVSv9H",
+    "baseToken": {
+      "address": "2vtuXdpMKHx8CsdeU1y2rr3tfyhPD51B2t5WTbUUpump",
+      "name": "RAGE",
+      "symbol": "RAGE"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.0000001584",
+    "priceUsd": "0.00001313",
+    "txns": {
+      "m5": {
+        "buys": 0,
+        "sells": 0
+      },
+      "h1": {
+        "buys": 11,
+        "sells": 2
+      },
+      "h6": {
+        "buys": 41,
+        "sells": 14
+      },
+      "h24": {
+        "buys": 63,
+        "sells": 17
+      }
+    },
+    "volume": {
+      "h24": 3406.83,
+      "h6": 3184.67,
+      "h1": 822.36,
+      "m5": 0
+    },
+    "priceChange": {
+      "h1": 13.03,
+      "h6": 28.81,
+      "h24": 28.98
+    },
+    "liquidity": {
+      "usd": 14956.63,
+      "base": 569285505,
+      "quote": 90.1721
+    },
+    "fdv": 13038,
+    "marketCap": 13038,
+    "pairCreatedAt": 1774866323000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/Zpe2UjHCLGfHnQqO?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/hpR5yHLLRevlZ2Jn?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/2vtuXdpMKHx8CsdeU1y2rr3tfyhPD51B2t5WTbUUpump?timestamp=1777506300000",
+      "websites": [
+        {
+          "url": "https://ragecto.onsol.wtf",
+          "label": "Website"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/i/communities/1931528565159342175",
+          "type": "twitter"
+        },
+        {
+          "url": "https://t.me/ragectoo",
+          "type": "telegram"
+        },
+        {
+          "url": "https://discord.gg/2JkRPDyr",
+          "type": "discord"
+        },
+        {
+          "url": "https://www.reddit.com/r/RAGECTO/",
+          "type": "reddit"
+        }
+      ]
+    },
+    "boosts": {
+      "active": 10
+    }
+  },
+  "resolvedMint": "2vtuXdpMKHx8CsdeU1y2rr3tfyhPD51B2t5WTbUUpump",
+  "confidence": 80,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 20,
+  "marketCap": 13038,
+  "priceUsd": 0.00001313,
+  "liquidity": 14956.63,
+  "volume24h": 3406.83,
+  "volume1h": 822.36,
+  "priceChange5m": null,
+  "priceChange1h": 13.03,
+  "priceChange24h": 28.98,
+  "tokenSymbol": "RAGE",
+  "tokenName": "RAGE",
+  "pairCreatedAt": 1774866323000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "concentration",
+    "lp_unverified"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/Zpe2UjHCLGfHnQqO?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 733,
+  "solscanVolume24h": 3406.83,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 0.9,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": false
+    },
+    "helius": {
+      "trust": 0.046,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": false,
+  "lpLocked": false,
+  "lpLockedPct": null,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 57.36077210810564,
+  "top10HolderPct": 77.73607059202837,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 57.4,
+      "addr": "AJgL…Sv9H",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 95,
+      "repWarn": false,
+      "desc": "Holds <b>57.4%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777506295652,
+      "verdict": "RUG",
+      "score": 100,
+      "event": "Single wallet holds 57% of supply"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "AJgL…Sv9H",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "Am4a…Yiok",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "H2SE…XX9K",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "6MsU…oiU7",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "6XjW…hPai",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "6hAd…sgYg",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "11h",
+    "timeToRugMedianHours": 11,
+    "timeToRugSampleSize": 312,
+    "pctRugged24h": 76,
+    "pctSlowDeath": 16,
+    "pctAlive30d": 8,
+    "distribution": [
+      3,
+      5,
+      8,
+      11,
+      14,
+      12,
+      9,
+      7,
+      5,
+      4,
+      3,
+      2.5,
+      2,
+      1.8,
+      1.6,
+      1.4,
+      1.2,
+      1,
+      0.9,
+      0.8,
+      0.7,
+      0.7,
+      0.6,
+      0.6,
+      0.5,
+      0.5,
+      0.4,
+      0.4,
+      0.3,
+      0.3,
+      0.3,
+      0.3,
+      0.4,
+      0.5,
+      0.7,
+      0.9
+    ],
+    "youBucketIndex": 17,
+    "mostSimilar": [
+      {
+        "symbol": "PUMPDUMP",
+        "ruggedAfterHours": 18,
+        "loss": -94.1
+      },
+      {
+        "symbol": "FAKEMOON",
+        "ruggedAfterHours": 28,
+        "loss": -91.6
+      },
+      {
+        "symbol": "SLOWBLEED",
+        "ruggedAfterHours": 48,
+        "loss": -85.4
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777506295734,
+  "requestId": "599c7551-cefe-44be-b7f4-067c32bf4d67",
+  "aiSummary": "RAGE is the textbook concentration rug — a single wallet holds 57.4% of total supply, more than enough to crash the price to zero in one transaction.\n\nMint and freeze authorities are revoked, no honeypot, and 30d+ trading history, but those signals are completely overridden by the dominant flag — the dev (or whoever controls that wallet) can collapse the price at any moment.\n\nHard kill. Treat any remaining liquidity as exit-only."
+}

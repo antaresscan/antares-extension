@@ -1,0 +1,317 @@
+{
+  "score": 500,
+  "risk": "DANGER",
+  "flags": [
+    {
+      "label": "LP not burned or locked — dev can rug liquidity",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "GoPlus unavailable",
+      "severity": "info",
+      "impact": 0
+    },
+    {
+      "label": "Well distributed supply ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "pumpswap",
+    "url": "https://dexscreener.com/solana/s2kpna1idwmdt1nqx3g4bqpsnyhqmx2fg25paeqw76n",
+    "pairAddress": "s2kPNa1idwmDT1nqX3G4bqpSNyhqmX2FG25pAeqW76N",
+    "baseToken": {
+      "address": "3pCyU31quPpsVYaC5TxtXpe6sR1KXSLzk5TkZgXGpump",
+      "name": "Global Overwatch Protocol",
+      "symbol": "GOP"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.000002929",
+    "priceUsd": "0.0002429",
+    "txns": {
+      "m5": {
+        "buys": 0,
+        "sells": 1
+      },
+      "h1": {
+        "buys": 54,
+        "sells": 32
+      },
+      "h6": {
+        "buys": 302,
+        "sells": 204
+      },
+      "h24": {
+        "buys": 752,
+        "sells": 512
+      }
+    },
+    "volume": {
+      "h24": 82189.59,
+      "h6": 40473.39,
+      "h1": 5389.64,
+      "m5": 29.7
+    },
+    "priceChange": {
+      "m5": -1.4,
+      "h1": -2.02,
+      "h6": 35.96,
+      "h24": 15.94
+    },
+    "liquidity": {
+      "usd": 37991.45,
+      "base": 77823264,
+      "quote": 230.1444
+    },
+    "fdv": 242928,
+    "marketCap": 242928,
+    "pairCreatedAt": 1777346136000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/SEZRbDvoeLljowx5?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/UTojUEqYVP2uQ2oY?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/3pCyU31quPpsVYaC5TxtXpe6sR1KXSLzk5TkZgXGpump?timestamp=1777506300000",
+      "websites": [
+        {
+          "url": "https://goptoken.live/",
+          "label": "Website"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/goponsolana?s=21",
+          "type": "twitter"
+        }
+      ]
+    },
+    "boosts": {
+      "active": 30
+    }
+  },
+  "resolvedMint": "3pCyU31quPpsVYaC5TxtXpe6sR1KXSLzk5TkZgXGpump",
+  "confidence": 70,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "helius",
+    "solscan"
+  ],
+  "holders": 20,
+  "marketCap": 242928,
+  "priceUsd": 0.0002429,
+  "liquidity": 37991.45,
+  "volume24h": 82189.59,
+  "volume1h": 5389.64,
+  "priceChange5m": -1.4,
+  "priceChange1h": -2.02,
+  "priceChange24h": 15.94,
+  "tokenSymbol": "GOP",
+  "tokenName": "Global Overwatch Protocol",
+  "pairCreatedAt": 1777346136000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "lp"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/SEZRbDvoeLljowx5?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 44,
+  "solscanVolume24h": 82189.59,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 1,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": false
+    },
+    "helius": {
+      "trust": 1,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": false
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": false,
+  "lpLocked": false,
+  "lpLockedPct": null,
+  "candles": "[0 candles, redacted for fixture]",
+  "topHolderPct": 7.782366299056465,
+  "top10HolderPct": 27.19798152774994,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 7.8,
+      "addr": "s2kP…W76N",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 83.4,
+      "repWarn": false,
+      "desc": "Holds <b>7.8%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777399804052,
+      "verdict": "DANGER",
+      "score": 500,
+      "event": "Low 5m transactions vs market cap"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "s2kP…W76N",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "8rwK…WqU1",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "GtJL…jnQd",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "27As…6BaA",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "Csof…mPy7",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "3WCM…sEwM",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "11h",
+    "timeToRugMedianHours": 11,
+    "timeToRugSampleSize": 312,
+    "pctRugged24h": 76,
+    "pctSlowDeath": 16,
+    "pctAlive30d": 8,
+    "distribution": [
+      3,
+      5,
+      8,
+      11,
+      14,
+      12,
+      9,
+      7,
+      5,
+      4,
+      3,
+      2.5,
+      2,
+      1.8,
+      1.6,
+      1.4,
+      1.2,
+      1,
+      0.9,
+      0.8,
+      0.7,
+      0.7,
+      0.6,
+      0.6,
+      0.5,
+      0.5,
+      0.4,
+      0.4,
+      0.3,
+      0.3,
+      0.3,
+      0.3,
+      0.4,
+      0.5,
+      0.7,
+      0.9
+    ],
+    "youBucketIndex": 17,
+    "mostSimilar": [
+      {
+        "symbol": "PUMPDUMP",
+        "ruggedAfterHours": 18,
+        "loss": -94.1
+      },
+      {
+        "symbol": "FAKEMOON",
+        "ruggedAfterHours": 28,
+        "loss": -91.6
+      },
+      {
+        "symbol": "SLOWBLEED",
+        "ruggedAfterHours": 48,
+        "loss": -85.4
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777506250123,
+  "requestId": "2328aa92-b8cc-4b79-be60-b148d71368b6",
+  "aiSummary": "GOP lands on DANGER because liquidity is neither locked nor burned — the dev retains the option to drain the pool whenever they choose.\n\nMint and freeze authorities are revoked and no honeypot — the contract surface itself is clean, which is why the verdict does not collapse all the way to RUG.\n\nBut the holder structure alone is enough to treat this as exit-liquidity risk."
+}

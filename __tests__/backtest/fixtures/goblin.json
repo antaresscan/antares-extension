@@ -1,0 +1,319 @@
+{
+  "score": 100,
+  "risk": "RUG",
+  "flags": [
+    {
+      "label": "Wash trading detected (vol/liq > 20) — bundler dump",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "LP not burned or locked — dev can rug liquidity",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "GoPlus unavailable",
+      "severity": "info",
+      "impact": 0
+    },
+    {
+      "label": "Well distributed supply ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "pumpswap",
+    "url": "https://dexscreener.com/solana/bjt1j9bqcgghlmfmmcwyvd5aapseut1mvfcr64xmrayv",
+    "pairAddress": "BJt1j9BqcGGHLmFMmCwYvD5aapSEut1MvFCR64xmrAYV",
+    "baseToken": {
+      "address": "3KHMZhpthXuiCcgfTv7vVu9PpEz64KAEURFwi6Lopump",
+      "name": "GoblinCoin",
+      "symbol": "Goblin"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.00001365",
+    "priceUsd": "0.001132",
+    "txns": {
+      "m5": {
+        "buys": 64,
+        "sells": 56
+      },
+      "h1": {
+        "buys": 577,
+        "sells": 370
+      },
+      "h6": {
+        "buys": 5239,
+        "sells": 4160
+      },
+      "h24": {
+        "buys": 27176,
+        "sells": 22316
+      }
+    },
+    "volume": {
+      "h24": 6374115.46,
+      "h6": 1178151.25,
+      "h1": 115007.52,
+      "m5": 13648.58
+    },
+    "priceChange": {
+      "m5": 9.77,
+      "h1": -13.97,
+      "h6": -46.45,
+      "h24": 544
+    },
+    "liquidity": {
+      "usd": 103154.6,
+      "base": 45579056,
+      "quote": 621.7139
+    },
+    "fdv": 861616,
+    "marketCap": 861616,
+    "pairCreatedAt": 1777131426000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/rF-Ifag8tzwmrnXT?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/fHPex67G3eH7VaL1?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/3KHMZhpthXuiCcgfTv7vVu9PpEz64KAEURFwi6Lopump?timestamp=1777506300000",
+      "websites": [],
+      "socials": [
+        {
+          "url": "https://x.com/GoblinCoinOnSol?s=20",
+          "type": "twitter"
+        }
+      ]
+    },
+    "boosts": {
+      "active": 20
+    }
+  },
+  "resolvedMint": "3KHMZhpthXuiCcgfTv7vVu9PpEz64KAEURFwi6Lopump",
+  "confidence": 70,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "helius",
+    "solscan"
+  ],
+  "holders": 20,
+  "marketCap": 861616,
+  "priceUsd": 0.001132,
+  "liquidity": 103154.6,
+  "volume24h": 6374115.46,
+  "volume1h": 115007.52,
+  "priceChange5m": 9.77,
+  "priceChange1h": -13.97,
+  "priceChange24h": 544,
+  "tokenSymbol": "Goblin",
+  "tokenName": "GoblinCoin",
+  "pairCreatedAt": 1777131426000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "wash_trading",
+    "bundle",
+    "lp"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/rF-Ifag8tzwmrnXT?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 104,
+  "solscanVolume24h": 6374115.46,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 0.2,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": false
+    },
+    "helius": {
+      "trust": 1,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": false
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": false,
+  "lpLocked": false,
+  "lpLockedPct": null,
+  "candles": "[0 candles, redacted for fixture]",
+  "topHolderPct": 6.038827695490475,
+  "top10HolderPct": 23.177080379189185,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 6,
+      "addr": "BJt1…rAYV",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 78,
+      "repWarn": false,
+      "desc": "Holds <b>6.0%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777496071865,
+      "verdict": "RUG",
+      "score": 100,
+      "event": "Wash trading detected (vol/liq > 20) — bundler dump"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "BJt1…rAYV",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "RwT8…pGit",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "68Xi…PvHj",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "BEfA…Jwss",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "BC8y…Z9TW",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "HXgv…zHEq",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "4h 12m",
+    "timeToRugMedianHours": 4.2,
+    "timeToRugSampleSize": 487,
+    "pctRugged24h": 89,
+    "pctSlowDeath": 8,
+    "pctAlive30d": 3,
+    "distribution": [
+      8,
+      14,
+      22,
+      28,
+      18,
+      12,
+      6,
+      4,
+      2,
+      1,
+      0.6,
+      0.4,
+      0.3,
+      0.3,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.3,
+      0.3,
+      0.4,
+      0.6,
+      1,
+      1.2,
+      1.4,
+      1.4,
+      1.2,
+      0.9,
+      0.6,
+      0.4,
+      0.3
+    ],
+    "youBucketIndex": 11,
+    "mostSimilar": [
+      {
+        "symbol": "RUGCOIN",
+        "ruggedAfterHours": 4,
+        "loss": -99.2
+      },
+      {
+        "symbol": "SCAMBOY",
+        "ruggedAfterHours": 6,
+        "loss": -98.5
+      },
+      {
+        "symbol": "TRAPCAT",
+        "ruggedAfterHours": 12,
+        "loss": -97.8
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777506401354,
+  "requestId": "104d04d7-4a6d-474b-8e76-0e622fbb83cd",
+  "aiSummary": "Goblin is a bundle rug — coordinated wallets quietly hold a meaningful share of supply across multiple addresses, invisible to top-holder metrics but acting as a single coordinated seller.\n\nMint and freeze authorities are revoked and no honeypot, but those signals are completely overridden by the dominant flag — the dev (or whoever controls that wallet) can collapse the price at any moment.\n\nHard kill. Treat any remaining liquidity as exit-only."
+}

@@ -1,0 +1,329 @@
+{
+  "score": 500,
+  "risk": "DANGER",
+  "flags": [
+    {
+      "label": "Single wallet holds 24% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Newborn token on-chain (<30min)",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "High vol/liquidity ratio",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Liquidity mirage: volume >> liquidity (wash)",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "LP not burned or locked — dev can rug liquidity",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Liquidity < $20k",
+      "severity": "info",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "pumpswap",
+    "url": "https://dexscreener.com/solana/gjus3sqfg149lx2dvgpmw2exkahwpfqpu3fkku5osxeq",
+    "pairAddress": "GJus3sQfg149LX2DVGPMW2ExkahWpFqPU3fkKu5oSXeq",
+    "baseToken": {
+      "address": "Jfu3UhZ5T82CBexCokL2f8235JcbWGgA8tjMx6tpump",
+      "name": "charititty",
+      "symbol": "charititty"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.0000003081",
+    "priceUsd": "0.00002555",
+    "txns": {
+      "m5": {
+        "buys": 31,
+        "sells": 35
+      },
+      "h1": {
+        "buys": 2368,
+        "sells": 2607
+      },
+      "h6": {
+        "buys": 2368,
+        "sells": 2607
+      },
+      "h24": {
+        "buys": 2368,
+        "sells": 2607
+      }
+    },
+    "volume": {
+      "h24": 165056.8,
+      "h6": 165056.8,
+      "h1": 165056.8,
+      "m5": 2387.98
+    },
+    "priceChange": {
+      "m5": -6.08,
+      "h1": -25.22,
+      "h6": -25.22,
+      "h24": -25.22
+    },
+    "liquidity": {
+      "usd": 12411.43,
+      "base": 241378864,
+      "quote": 75.2715
+    },
+    "fdv": 25558,
+    "marketCap": 25558,
+    "pairCreatedAt": 1777503682000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/ahTgB3mF51Nui_BQ?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/Gl6c-1VgSFJ_7dU2?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/Jfu3UhZ5T82CBexCokL2f8235JcbWGgA8tjMx6tpump?timestamp=1777506600000",
+      "websites": [],
+      "socials": [
+        {
+          "url": "https://x.com/i/communities/2022833829157691677",
+          "type": "twitter"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "Jfu3UhZ5T82CBexCokL2f8235JcbWGgA8tjMx6tpump",
+  "confidence": 100,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "goplus",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 23,
+  "marketCap": 25558,
+  "priceUsd": 0.00002555,
+  "liquidity": 12411.43,
+  "volume24h": 165056.8,
+  "volume1h": 165056.8,
+  "priceChange5m": -6.08,
+  "priceChange1h": -25.22,
+  "priceChange24h": -25.22,
+  "tokenSymbol": "charititty",
+  "tokenName": "charititty",
+  "pairCreatedAt": 1777503682000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "concentration",
+    "age",
+    "chart",
+    "lp"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/ahTgB3mF51Nui_BQ?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 0,
+  "solscanVolume24h": 165056.8,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 0.692,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": true
+    },
+    "helius": {
+      "trust": 0.2,
+      "available": true
+    },
+    "solscan": {
+      "trust": 0.1,
+      "available": true
+    },
+    "chart": {
+      "trust": 0.6,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": false,
+  "lpLocked": false,
+  "lpLockedPct": null,
+  "candles": "[10 candles, redacted for fixture]",
+  "topHolderPct": 24.14478591304064,
+  "top10HolderPct": 43.42936896784647,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 24.1,
+      "addr": "GJus…SXeq",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 95,
+      "repWarn": false,
+      "desc": "Holds <b>24.1%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777506535176,
+      "verdict": "DANGER",
+      "score": 500,
+      "event": "Single wallet holds 24% of supply"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "GJus…SXeq",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "4hSX…upzD",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "6G8C…MvJk",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "5B79…9q2X",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "CzQF…Mxar",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "6i7g…xefU",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "11h",
+    "timeToRugMedianHours": 11,
+    "timeToRugSampleSize": 312,
+    "pctRugged24h": 76,
+    "pctSlowDeath": 16,
+    "pctAlive30d": 8,
+    "distribution": [
+      3,
+      5,
+      8,
+      11,
+      14,
+      12,
+      9,
+      7,
+      5,
+      4,
+      3,
+      2.5,
+      2,
+      1.8,
+      1.6,
+      1.4,
+      1.2,
+      1,
+      0.9,
+      0.8,
+      0.7,
+      0.7,
+      0.6,
+      0.6,
+      0.5,
+      0.5,
+      0.4,
+      0.4,
+      0.3,
+      0.3,
+      0.3,
+      0.3,
+      0.4,
+      0.5,
+      0.7,
+      0.9
+    ],
+    "youBucketIndex": 17,
+    "mostSimilar": [
+      {
+        "symbol": "PUMPDUMP",
+        "ruggedAfterHours": 18,
+        "loss": -94.1
+      },
+      {
+        "symbol": "FAKEMOON",
+        "ruggedAfterHours": 28,
+        "loss": -91.6
+      },
+      {
+        "symbol": "SLOWBLEED",
+        "ruggedAfterHours": 48,
+        "loss": -85.4
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777506535257,
+  "requestId": "dbfe6f92-514e-487d-ae16-5c596cef6fc9",
+  "aiSummary": "charititty lands on DANGER because of stacked concentration risk — a single wallet holds 24.1% of supply, enough to dictate price action on its own.\n\nMint and freeze authorities are revoked and no honeypot — the contract surface itself is clean, which is why the verdict does not collapse all the way to RUG.\n\nBut the holder structure alone is enough to treat this as exit-liquidity risk."
+}

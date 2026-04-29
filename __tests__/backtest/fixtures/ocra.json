@@ -1,0 +1,338 @@
+{
+  "score": 100,
+  "risk": "RUG",
+  "flags": [
+    {
+      "label": "Very low liquidity (<$1k)",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Volume with zero liquidity — abandoned pool",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Pump +234% on <30min token + structural weakness — exit trap",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Single wallet holds 54% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Newborn token on-chain (<30min)",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Top 10 wallets hold 76% of supply",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "LP not burned or locked — dev can rug liquidity",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "GoPlus unavailable",
+      "severity": "info",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "pumpfun",
+    "url": "https://dexscreener.com/solana/6rufijmrewwftrpb1yunf93rcclgupapg43sp5ckmn1g",
+    "pairAddress": "6rUfiJmREwwFtrpb1yUnF93RCcLGUPapG43sP5cKMn1g",
+    "baseToken": {
+      "address": "DAPMSW9XZPMmTr3TeAbwrYjeQdGSyjmTAQqdzMyhpump",
+      "name": "OvarianCancerResearchAlliance",
+      "symbol": "OCRA"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.00000009643",
+    "priceUsd": "0.000007997",
+    "txns": {
+      "m5": {
+        "buys": 52,
+        "sells": 31
+      },
+      "h1": {
+        "buys": 500,
+        "sells": 298
+      },
+      "h6": {
+        "buys": 500,
+        "sells": 298
+      },
+      "h24": {
+        "buys": 500,
+        "sells": 298
+      }
+    },
+    "volume": {
+      "h24": 28593.23,
+      "h6": 28593.23,
+      "h1": 28593.23,
+      "m5": 588.13
+    },
+    "priceChange": {
+      "m5": -14.98,
+      "h1": 234,
+      "h6": 234,
+      "h24": 234
+    },
+    "fdv": 7997.13,
+    "marketCap": 7997.13,
+    "pairCreatedAt": 1777504804000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/-JsB76SkG5kxaN1L?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/p4MAi-_b96L9F-NP?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/DAPMSW9XZPMmTr3TeAbwrYjeQdGSyjmTAQqdzMyhpump?timestamp=1777506300000",
+      "websites": [
+        {
+          "url": "https://ocrahope.org/",
+          "label": "Website"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/i/communities/2027076670889533775",
+          "type": "twitter"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "DAPMSW9XZPMmTr3TeAbwrYjeQdGSyjmTAQqdzMyhpump",
+  "confidence": 80,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 20,
+  "marketCap": 7997.13,
+  "priceUsd": 0.000007997,
+  "liquidity": null,
+  "volume24h": 28593.23,
+  "volume1h": 28593.23,
+  "priceChange5m": -14.98,
+  "priceChange1h": 234,
+  "priceChange24h": 234,
+  "tokenSymbol": "OCRA",
+  "tokenName": "OvarianCancerResearchAlliance",
+  "pairCreatedAt": 1777504804000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "rug_pattern",
+    "concentration",
+    "age",
+    "lp"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/-JsB76SkG5kxaN1L?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 0,
+  "solscanVolume24h": 28593.23,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 0.008,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": false
+    },
+    "helius": {
+      "trust": 0.046,
+      "available": true
+    },
+    "solscan": {
+      "trust": 0.1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": false,
+  "lpLocked": false,
+  "lpLockedPct": null,
+  "candles": "[6 candles, redacted for fixture]",
+  "topHolderPct": 53.578833222615195,
+  "top10HolderPct": 76.13835913419902,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 53.6,
+      "addr": "6rUf…Mn1g",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 95,
+      "repWarn": false,
+      "desc": "Holds <b>53.6%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777506412360,
+      "verdict": "RUG",
+      "score": 100,
+      "event": "Very low liquidity (<$1k)"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "6rUf…Mn1g",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "4qYu…S9ij",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "2rc3…ULxH",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "6Ch6…8BK3",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "BJ3W…BtZp",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "FKdG…8U3n",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "4h 12m",
+    "timeToRugMedianHours": 4.2,
+    "timeToRugSampleSize": 487,
+    "pctRugged24h": 89,
+    "pctSlowDeath": 8,
+    "pctAlive30d": 3,
+    "distribution": [
+      8,
+      14,
+      22,
+      28,
+      18,
+      12,
+      6,
+      4,
+      2,
+      1,
+      0.6,
+      0.4,
+      0.3,
+      0.3,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.3,
+      0.3,
+      0.4,
+      0.6,
+      1,
+      1.2,
+      1.4,
+      1.4,
+      1.2,
+      0.9,
+      0.6,
+      0.4,
+      0.3
+    ],
+    "youBucketIndex": 11,
+    "mostSimilar": [
+      {
+        "symbol": "RUGCOIN",
+        "ruggedAfterHours": 4,
+        "loss": -99.2
+      },
+      {
+        "symbol": "SCAMBOY",
+        "ruggedAfterHours": 6,
+        "loss": -98.5
+      },
+      {
+        "symbol": "TRAPCAT",
+        "ruggedAfterHours": 12,
+        "loss": -97.8
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777506412442,
+  "requestId": "7cf71c02-1920-4c5c-9252-964ad1f3e52a",
+  "aiSummary": "OCRA is the textbook concentration rug — a single wallet holds 53.6% of total supply, more than enough to crash the price to zero in one transaction.\n\nMint and freeze authorities are revoked and no honeypot, but those signals are completely overridden by the dominant flag — the dev (or whoever controls that wallet) can collapse the price at any moment.\n\nHard kill. Treat any remaining liquidity as exit-only."
+}

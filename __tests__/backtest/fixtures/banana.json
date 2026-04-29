@@ -1,0 +1,329 @@
+{
+  "score": 500,
+  "risk": "DANGER",
+  "flags": [
+    {
+      "label": "Single wallet holds 21% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Top 10 wallets hold 66% of supply",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Rug staircase: volume collapsing while price held flat — controlled dump",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "LP Burned 100% (GoPlus) ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Established token (30d+) ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "raydium",
+    "url": "https://dexscreener.com/solana/b8ykzfssfsbagdecxhurzhbylwleeqq3gnagjcajmjjp",
+    "pairAddress": "B8yKzFssFSbAGDeCxhUrzHbyLWLeeQQ3GnAgJcaJMJJp",
+    "baseToken": {
+      "address": "7wQZHSLTxR1vj49BiVcrBCiUGYYPPxdAwnWT1UtZpump",
+      "name": "Banana Sir Coin",
+      "symbol": "BANANA"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.0000008916",
+    "priceUsd": "0.00007399",
+    "txns": {
+      "m5": {
+        "buys": 0,
+        "sells": 0
+      },
+      "h1": {
+        "buys": 0,
+        "sells": 0
+      },
+      "h6": {
+        "buys": 2,
+        "sells": 1
+      },
+      "h24": {
+        "buys": 493049,
+        "sells": 325570
+      }
+    },
+    "volume": {
+      "h24": 73285.55,
+      "h6": 3.36,
+      "h1": 0,
+      "m5": 0
+    },
+    "priceChange": {
+      "h6": -0.62,
+      "h24": 123
+    },
+    "liquidity": {
+      "usd": 21415.44,
+      "base": 144524316,
+      "quote": 129.1855
+    },
+    "fdv": 73996,
+    "marketCap": 73996,
+    "pairCreatedAt": 1736225823000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/9971e09c55e619aac23bb7fc76c48bebb13a562ea3ce9eb11b7bbbc11529cfd4?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/ef80bc068f03c3aa096b21fa745834e89960ca7aa457eb79098911311c56d657?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/7wQZHSLTxR1vj49BiVcrBCiUGYYPPxdAwnWT1UtZpump?timestamp=1777506600000",
+      "websites": [
+        {
+          "url": "https://bananasir.fun/",
+          "label": "Website"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/BananaSir_Coin",
+          "type": "twitter"
+        },
+        {
+          "url": "https://t.me/BananaSir_Coin",
+          "type": "telegram"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "7wQZHSLTxR1vj49BiVcrBCiUGYYPPxdAwnWT1UtZpump",
+  "confidence": 100,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "goplus",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 307,
+  "marketCap": 73996,
+  "priceUsd": 0.00007399,
+  "liquidity": 21415.44,
+  "volume24h": 73285.55,
+  "volume1h": null,
+  "priceChange5m": null,
+  "priceChange1h": null,
+  "priceChange24h": 123,
+  "tokenSymbol": "BANANA",
+  "tokenName": "Banana Sir Coin",
+  "pairCreatedAt": 1736225823000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "concentration",
+    "rug_pattern"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/9971e09c55e619aac23bb7fc76c48bebb13a562ea3ce9eb11b7bbbc11529cfd4?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 11466,
+  "solscanVolume24h": 73285.55,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 1,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": true
+    },
+    "helius": {
+      "trust": 0.115,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 0.55,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": true,
+  "lpLocked": false,
+  "lpLockedPct": 100,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 21.377982877644463,
+  "top10HolderPct": 65.63441828403623,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 21.4,
+      "addr": "6zML…1XNJ",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 95,
+      "repWarn": false,
+      "desc": "Holds <b>21.4%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777506685817,
+      "verdict": "DANGER",
+      "score": 500,
+      "event": "Single wallet holds 21% of supply"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "6zML…1XNJ",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "9hxh…zMdQ",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "HEsH…XnY9",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "3wo1…8w17",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "F1kD…2Fo6",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "GhZX…7os4",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "11h",
+    "timeToRugMedianHours": 11,
+    "timeToRugSampleSize": 312,
+    "pctRugged24h": 76,
+    "pctSlowDeath": 16,
+    "pctAlive30d": 8,
+    "distribution": [
+      3,
+      5,
+      8,
+      11,
+      14,
+      12,
+      9,
+      7,
+      5,
+      4,
+      3,
+      2.5,
+      2,
+      1.8,
+      1.6,
+      1.4,
+      1.2,
+      1,
+      0.9,
+      0.8,
+      0.7,
+      0.7,
+      0.6,
+      0.6,
+      0.5,
+      0.5,
+      0.4,
+      0.4,
+      0.3,
+      0.3,
+      0.3,
+      0.3,
+      0.4,
+      0.5,
+      0.7,
+      0.9
+    ],
+    "youBucketIndex": 17,
+    "mostSimilar": [
+      {
+        "symbol": "PUMPDUMP",
+        "ruggedAfterHours": 18,
+        "loss": -94.1
+      },
+      {
+        "symbol": "FAKEMOON",
+        "ruggedAfterHours": 28,
+        "loss": -91.6
+      },
+      {
+        "symbol": "SLOWBLEED",
+        "ruggedAfterHours": 48,
+        "loss": -85.4
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777506685899,
+  "requestId": "3ebdd7c4-cf04-4a5a-abf4-c02e9ac813be",
+  "aiSummary": "BANANA lands on DANGER because of stacked concentration risk — a single wallet holds 21.4% of supply, enough to dictate price action on its own.\n\nLP is burned, mint and freeze authorities are revoked, no honeypot, and 30d+ trading history — the contract surface itself is clean, which is why the verdict does not collapse all the way to RUG.\n\nBut the holder structure alone is enough to treat this as exit-liquidity risk."
+}

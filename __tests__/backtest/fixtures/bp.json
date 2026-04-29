@@ -1,0 +1,338 @@
+{
+  "score": 100,
+  "risk": "RUG",
+  "flags": [
+    {
+      "label": "Blow-off top: price collapsed >55% from peak",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "High vol/liquidity ratio",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Large 24h pump +528% on token <24h",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Fresh token on-chain (<6h)",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Liquidity mirage: volume >> liquidity (wash)",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "LP not burned or locked — dev can rug liquidity",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "GoPlus unavailable",
+      "severity": "info",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "pumpswap",
+    "url": "https://dexscreener.com/solana/ehjys3zxtujopbszqgycg783gzcx8mkuggfvkzxgaxyf",
+    "pairAddress": "EhjYs3ZxTUjopbSZQgycg783gZcx8mkugGfvkzxgAXyf",
+    "baseToken": {
+      "address": "JB8rMqyFmypiMqjiJ13bitubssM6aYDdq5ndUF5Wpump",
+      "name": "Barking Puppy - kg",
+      "symbol": "BP"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.000002578",
+    "priceUsd": "0.0002138",
+    "txns": {
+      "m5": {
+        "buys": 63,
+        "sells": 59
+      },
+      "h1": {
+        "buys": 1148,
+        "sells": 913
+      },
+      "h6": {
+        "buys": 3888,
+        "sells": 3296
+      },
+      "h24": {
+        "buys": 3888,
+        "sells": 3296
+      }
+    },
+    "volume": {
+      "h24": 550672.67,
+      "h6": 550672.67,
+      "h1": 140839.12,
+      "m5": 8874.76
+    },
+    "priceChange": {
+      "m5": 2.58,
+      "h1": 31,
+      "h6": 528,
+      "h24": 528
+    },
+    "liquidity": {
+      "usd": 36581.64,
+      "base": 85565317,
+      "quote": 220.5027
+    },
+    "fdv": 213809,
+    "marketCap": 213809,
+    "pairCreatedAt": 1777498387000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/aoR1lkrOabBC7Ove?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/NDAqp0CnCmR9gmf1?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/JB8rMqyFmypiMqjiJ13bitubssM6aYDdq5ndUF5Wpump?timestamp=1777506000000",
+      "websites": [],
+      "socials": [
+        {
+          "url": "https://x.com/i/status/2049585983054655820",
+          "type": "twitter"
+        },
+        {
+          "url": "https://t.me/BarkingPuppyToken",
+          "type": "telegram"
+        }
+      ]
+    },
+    "boosts": {
+      "active": 130
+    }
+  },
+  "resolvedMint": "JB8rMqyFmypiMqjiJ13bitubssM6aYDdq5ndUF5Wpump",
+  "confidence": 80,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 20,
+  "marketCap": 213809,
+  "priceUsd": 0.0002138,
+  "liquidity": 36581.64,
+  "volume24h": 550672.67,
+  "volume1h": 140839.12,
+  "priceChange5m": 2.58,
+  "priceChange1h": 31,
+  "priceChange24h": 528,
+  "tokenSymbol": "BP",
+  "tokenName": "Barking Puppy - kg",
+  "pairCreatedAt": 1777498387000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "chart",
+    "lp"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/aoR1lkrOabBC7Ove?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 2,
+  "solscanVolume24h": 550672.67,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 0.444,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": false
+    },
+    "helius": {
+      "trust": 1,
+      "available": true
+    },
+    "solscan": {
+      "trust": 0.65,
+      "available": true
+    },
+    "chart": {
+      "trust": 0.138,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": false,
+  "lpLocked": false,
+  "lpLockedPct": null,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 8.54670696599107,
+  "top10HolderPct": 37.58476713037736,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 8.5,
+      "addr": "EhjY…AXyf",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 85.5,
+      "repWarn": false,
+      "desc": "Holds <b>8.5%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777506037721,
+      "verdict": "RUG",
+      "score": 100,
+      "event": "Blow-off top: price collapsed >55% from peak"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "EhjY…AXyf",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "H6Ha…YZU6",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "BjDk…Kp7s",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "C3JG…qG67",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "3EQj…NV1y",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "FKFy…ZLSk",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "4h 12m",
+    "timeToRugMedianHours": 4.2,
+    "timeToRugSampleSize": 487,
+    "pctRugged24h": 89,
+    "pctSlowDeath": 8,
+    "pctAlive30d": 3,
+    "distribution": [
+      8,
+      14,
+      22,
+      28,
+      18,
+      12,
+      6,
+      4,
+      2,
+      1,
+      0.6,
+      0.4,
+      0.3,
+      0.3,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.3,
+      0.3,
+      0.4,
+      0.6,
+      1,
+      1.2,
+      1.4,
+      1.4,
+      1.2,
+      0.9,
+      0.6,
+      0.4,
+      0.3
+    ],
+    "youBucketIndex": 11,
+    "mostSimilar": [
+      {
+        "symbol": "RUGCOIN",
+        "ruggedAfterHours": 4,
+        "loss": -99.2
+      },
+      {
+        "symbol": "SCAMBOY",
+        "ruggedAfterHours": 6,
+        "loss": -98.5
+      },
+      {
+        "symbol": "TRAPCAT",
+        "ruggedAfterHours": 12,
+        "loss": -97.8
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777506037795,
+  "requestId": "966bc299-30a6-4877-8163-3cc372ca7b3b",
+  "aiSummary": "BP is an exit-scam pattern — liquidity is unlocked and the dev can drain the entire pool in a single transaction.\n\nMint and freeze authorities are revoked and no honeypot, but those signals are completely overridden by the dominant flag — the dev (or whoever controls that wallet) can collapse the price at any moment.\n\nHard kill. Treat any remaining liquidity as exit-only."
+}
