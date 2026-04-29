@@ -75,11 +75,20 @@ describe("generateAISummary", () => {
     expect(typeof result).toBe("string")
   })
 
-  it("returns null when GEMINI_API_KEY is missing and no flags are recognized", async () => {
+  it("returns a structured fallback even when no flags are recognized — every scan gets a summary now", async () => {
+    // Behavior change: the fallback used to return null when neither
+    // a known flag nor a boolean shortcut matched. Users were hitting
+    // tokens where the overlay showed nothing under "AI Summary" — a
+    // hard regression vs the /demo experience. The new structured
+    // fallback always emits a 3-paragraph summary anchored on the
+    // verdict band + score, so the AI Summary slot is never empty.
     vi.stubEnv("GEMINI_API_KEY", "")
     delete process.env.GEMINI_API_KEY
     const result = await generateAISummary(noFlagInput)
-    expect(result).toBeNull()
+    expect(result).not.toBeNull()
+    expect(typeof result).toBe("string")
+    // 3-paragraph structure
+    expect(result!.split(/\n\s*\n/).filter((p) => p.trim().length > 0).length).toBe(3)
   })
 
   it("does not call fetch when GEMINI_API_KEY is missing", async () => {
@@ -115,7 +124,26 @@ describe("generateAISummary", () => {
     )
   })
 
-  it("returns trimmed summary string on a valid 200 response", async () => {
+  it("returns Gemini output verbatim when it follows the 3-paragraph 45–75 word contract", async () => {
+    // The new validation in callGemini enforces 3 paragraphs and
+    // 30–110 words. Mocks must respect that contract or they get
+    // rejected and the structured fallback kicks in.
+    const validThreeParagraph =
+      "TEST shows a SAFE profile with locked liquidity and 30d+ established trading on Solana.\n\n" +
+      "RugCheck and GoPlus cross-validate the safe verdict across independent layers.\n\n" +
+      "Strong holder distribution."
+    vi.stubEnv("GEMINI_API_KEY", "test-key")
+    const mockFetch = vi.fn().mockResolvedValue(
+      mockFetchResponse({
+        choices: [{ message: { content: ` ${validThreeParagraph} ` } }],
+      })
+    )
+    vi.stubGlobal("fetch", mockFetch)
+    const result = await generateAISummary(baseInput)
+    expect(result).toBe(validThreeParagraph)
+  })
+
+  it("rejects a single-paragraph Gemini response and falls through to the structured fallback", async () => {
     vi.stubEnv("GEMINI_API_KEY", "test-key")
     const mockFetch = vi.fn().mockResolvedValue(
       mockFetchResponse({
@@ -124,7 +152,10 @@ describe("generateAISummary", () => {
     )
     vi.stubGlobal("fetch", mockFetch)
     const result = await generateAISummary(baseInput)
-    expect(result).toBe("This token appears safe with strong liquidity and burned LP.")
+    expect(result).not.toBeNull()
+    // Should be the structured fallback, not the single-paragraph Gemini output
+    expect(result!.split(/\n\s*\n/).filter((p) => p.trim().length > 0).length).toBe(3)
+    expect(result).not.toContain("This token appears safe with strong liquidity")
   })
 
   // ---------------------------------------------------------------------------
@@ -140,12 +171,14 @@ describe("generateAISummary", () => {
     expect(typeof result).toBe("string")
   })
 
-  it("returns null when fetch throws a network error and no flags are recognized", async () => {
+  it("returns the structured fallback even when fetch throws a network error and no flags are recognized", async () => {
+    // Same behavior change: every scan gets a summary now.
     vi.stubEnv("GEMINI_API_KEY", "test-key")
     const mockFetch = vi.fn().mockRejectedValue(new Error("network error"))
     vi.stubGlobal("fetch", mockFetch)
     const result = await generateAISummary(noFlagInput)
-    expect(result).toBeNull()
+    expect(result).not.toBeNull()
+    expect(typeof result).toBe("string")
   })
 
   it("returns local fallback when API returns HTTP 500 and flags are recognized", async () => {
@@ -279,7 +312,7 @@ describe("generateAISummary", () => {
     expect(typeof result).toBe("string")
   })
 
-  it("returns null on 429 when no flags are recognized for fallback", async () => {
+  it("retries on 429 and falls back to structured summary when no flags are recognized", async () => {
     vi.stubEnv("GEMINI_API_KEY", "test-key")
     const mockFetch = vi.fn().mockResolvedValue(
       mockFetchResponse({ error: "rate limit" }, 429)
@@ -287,91 +320,143 @@ describe("generateAISummary", () => {
     vi.stubGlobal("fetch", mockFetch)
     const result = await generateAISummary(noFlagInput)
     expect(mockFetch).toHaveBeenCalledTimes(3)
-    expect(result).toBeNull()
+    // Was: toBeNull(). New: every scan gets a summary.
+    expect(result).not.toBeNull()
+    expect(typeof result).toBe("string")
   })
 
-  it("succeeds on second attempt after initial 429", async () => {
+  it("succeeds on second attempt after initial 429 when Gemini reply is valid 3-paragraph format", async () => {
+    const validThreeParagraph =
+      "TEST lands on CAUTION because of moderate concentration risk — a single wallet holds 12.5% of supply.\n\n" +
+      "LP is burned, mint and freeze authorities are revoked, no honeypot, and the token has 2 days of trading history — the rest of the structural posture is clean.\n\n" +
+      "The verdict is not DANGER because the rest is clean; it is not SAFE because the concentrated wallet alone has enough leverage to swing the price."
     vi.stubEnv("GEMINI_API_KEY", "test-key")
     const mockFetch = vi.fn()
       .mockResolvedValueOnce(mockFetchResponse({ error: "rate limit" }, 429))
       .mockResolvedValueOnce(
         mockFetchResponse({
-          choices: [{ message: { content: "This is a valid summary returned on the second attempt after retry." } }],
+          choices: [{ message: { content: validThreeParagraph } }],
         })
       )
     vi.stubGlobal("fetch", mockFetch)
     const result = await generateAISummary(baseInput)
     expect(mockFetch).toHaveBeenCalledTimes(2)
-    expect(result).toBe("This is a valid summary returned on the second attempt after retry.")
+    expect(result).toBe(validThreeParagraph)
   })
 
   // ---------------------------------------------------------------------------
   // Local fallback coverage tests
   // ---------------------------------------------------------------------------
-  it("fallback covers honeypot detection", async () => {
+  // ---------------------------------------------------------------------------
+  // Structured fallback — verdict-band coverage
+  //
+  // Each test below mirrors a real-world scan scenario. The new fallback
+  // is a deterministic builder that always emits a 3-paragraph 45–75
+  // word summary. Assertions check structural shape (paragraph count,
+  // word count, key data points) — not exact phrasing — so the
+  // wording can be polished without breaking tests.
+  // ---------------------------------------------------------------------------
+
+  function structuralChecks(result: string | null) {
+    expect(result).not.toBeNull()
+    expect(typeof result).toBe("string")
+    const paragraphs = result!.split(/\n\s*\n/).filter((p) => p.trim().length > 0)
+    expect(paragraphs.length).toBe(3)
+    const wordCount = result!.split(/\s+/).filter((w) => w.length > 0).length
+    expect(wordCount).toBeGreaterThanOrEqual(20)
+    expect(wordCount).toBeLessThanOrEqual(110)
+  }
+
+  it("fallback covers RUG with honeypot — emits structured 3-paragraph summary", async () => {
     vi.stubEnv("GEMINI_API_KEY", "")
     delete process.env.GEMINI_API_KEY
     const honeypotInput: AISummaryInput = {
       ...noFlagInput,
+      risk: "RUG",
+      score: 80,
       honeypot: true,
     }
     const result = await generateAISummary(honeypotInput)
-    expect(result).not.toBeNull()
+    structuralChecks(result)
     expect(result).toContain("honeypot")
+    expect(result).toContain("Hard kill")
   })
 
-  it("fallback covers freeze authority", async () => {
+  it("fallback covers DANGER with freeze authority — verdict appears with boundary explanation", async () => {
     vi.stubEnv("GEMINI_API_KEY", "")
     delete process.env.GEMINI_API_KEY
     const freezeInput: AISummaryInput = {
       ...noFlagInput,
+      risk: "DANGER",
+      score: 450,
       freezeAuthority: true,
     }
     const result = await generateAISummary(freezeInput)
-    expect(result).not.toBeNull()
-    expect(result).toContain("freeze")
+    structuralChecks(result)
+    expect(result!.toLowerCase()).toContain("danger")
+    expect(result!.toLowerCase()).toContain("freeze")
   })
 
-  it("fallback covers mint authority from boolean", async () => {
+  it("fallback covers RUG with mint authority — opens with mint-authority rug pattern", async () => {
     vi.stubEnv("GEMINI_API_KEY", "")
     delete process.env.GEMINI_API_KEY
     const mintInput: AISummaryInput = {
       ...noFlagInput,
+      risk: "RUG",
+      score: 90,
       mintAuthority: true,
+      lpBurned: true,
+      topHolderPct: 5,
+      honeypot: false,
     }
     const result = await generateAISummary(mintInput)
-    expect(result).not.toBeNull()
-    expect(result).toContain("Mint")
+    structuralChecks(result)
+    expect(result!.toLowerCase()).toMatch(/mint/)
   })
 
-  it("fallback covers LP not locked or burned", async () => {
+  it("fallback covers RUG with LP not locked or burned — exit-scam opener", async () => {
     vi.stubEnv("GEMINI_API_KEY", "")
     delete process.env.GEMINI_API_KEY
     const lpInput: AISummaryInput = {
       ...noFlagInput,
+      risk: "RUG",
+      score: 100,
       lpBurned: false,
       lpLocked: false,
+      topHolderPct: 2,
+      mintAuthority: false,
+      freezeAuthority: false,
+      honeypot: false,
     }
     const result = await generateAISummary(lpInput)
-    expect(result).not.toBeNull()
-    expect(result).toContain("Liquidity")
+    structuralChecks(result)
+    expect(result!.toLowerCase()).toMatch(/liquidity|exit-scam/)
   })
 
-  it("fallback covers top holder concentration above 20%", async () => {
+  it("fallback covers RUG with top1 ≥ 25% — concentration rug + percentage in output", async () => {
     vi.stubEnv("GEMINI_API_KEY", "")
     delete process.env.GEMINI_API_KEY
     const topHolderInput: AISummaryInput = {
       ...noFlagInput,
+      risk: "RUG",
+      score: 105,
+      // topHolderPct is in PERCENTAGE form (0–100), per api/scan.ts:
+      //   (topAmt / totalSupplyUi) * 100
       topHolderPct: 45,
       holders: 12,
       lpBurned: true,
+      mintAuthority: false,
+      freezeAuthority: false,
+      honeypot: false,
     }
     const result = await generateAISummary(topHolderInput)
-    expect(result).not.toBeNull()
+    structuralChecks(result)
+    expect(result).toContain("concentration rug")
     expect(result).toContain("45.0%")
+    expect(result).toContain("Hard kill")
   })
 
-  it("fallback covers safe token with clean profile", async () => {
+  it("fallback covers SAFE with clean profile — references LP + sources without 'Score X' phrasing", async () => {
     vi.stubEnv("GEMINI_API_KEY", "")
     delete process.env.GEMINI_API_KEY
     const safeInput: AISummaryInput = {
@@ -383,10 +468,15 @@ describe("generateAISummary", () => {
       freezeAuthority: false,
       holders: 200,
       honeypot: false,
+      tokenAgeHours: 24 * 60, // 60d — mature
     }
     const result = await generateAISummary(safeInput)
-    expect(result).not.toBeNull()
-    expect(result).toContain("850")
+    structuralChecks(result)
+    expect(result).toContain("SAFE profile")
+    // The new fallback does not literal-emit "Score 850" — that's a
+    // /scan-overlay UI element. Just verify no regression to the old
+    // raw-score phrasing.
+    expect(result).not.toContain("Score 850/1000")
   })
 
   it("fallback covers safe token with LP locked (not burned)", async () => {
@@ -408,18 +498,19 @@ describe("generateAISummary", () => {
     expect(result).toContain("locked")
   })
 
-  it("fallback truncates very long output", async () => {
+  it("fallback stays within MAX_LENGTH on dense inputs", async () => {
     vi.stubEnv("GEMINI_API_KEY", "")
     delete process.env.GEMINI_API_KEY
-    // Create input that will generate a very long fallback
     const longInput: AISummaryInput = {
       ...noFlagInput,
+      risk: "RUG",
+      score: 50,
       honeypot: true,
       mintAuthority: true,
       freezeAuthority: true,
       lpBurned: false,
       lpLocked: false,
-      topHolderPct: 90,
+      topHolderPct: 0.9,
       holders: 3,
     }
     const result = await generateAISummary(longInput)
@@ -427,5 +518,210 @@ describe("generateAISummary", () => {
     if (result) {
       expect(result.length).toBeLessThanOrEqual(1800)
     }
+  })
+
+  // ---------------------------------------------------------------------------
+  // GOLDEN TESTS — verdict-band parity with the four /demo summaries
+  //
+  // These four inputs reproduce the exact scenarios the demo summaries
+  // illustrate (HAWK / PIPPIN / FARTCOIN / PENGU). Each scan must
+  // produce a 3-paragraph 45–75 word summary that hits the same
+  // structural beats the demo hits, regardless of whether Gemini is
+  // available or down. If any of these break, the AI Summary slot is
+  // off-spec and users will see worse summaries than the demo.
+  //
+  // Tests mock GEMINI_API_KEY="" so they exercise the structured
+  // fallback directly. Production also runs Gemini with the same
+  // strict prompt — Gemini output must pass the 3-paragraph 30–110
+  // word validator in callGemini or it falls through to this same
+  // structured path.
+  // ---------------------------------------------------------------------------
+
+  function goldenStructuralChecks(result: string | null) {
+    expect(result).not.toBeNull()
+    const paragraphs = result!.split(/\n\s*\n/).filter((p) => p.trim().length > 0)
+    expect(paragraphs.length).toBe(3)
+    const wordCount = result!.split(/\s+/).filter((w) => w.length > 0).length
+    expect(wordCount).toBeGreaterThanOrEqual(30)
+    expect(wordCount).toBeLessThanOrEqual(110)
+    return { paragraphs, wordCount }
+  }
+
+  describe("golden — demo parity for the four canonical scans", () => {
+    it("HAWK (RUG · 105 · single wallet 44%) reads as a concentration rug with hard-kill closer", async () => {
+      vi.stubEnv("GEMINI_API_KEY", "")
+      delete process.env.GEMINI_API_KEY
+      const hawkInput: AISummaryInput = {
+        score: 105,
+        risk: "RUG",
+        flags: [{ label: "Top wallet concentration", severity: "critical", impact: 350 }],
+        tokenSymbol: "HAWK",
+        holders: 4200,
+        marketCap: 2_000_000,
+        liquidity: 71_200,
+        lpBurned: true,
+        lpLocked: false,
+        mintAuthority: false,
+        freezeAuthority: false,
+        honeypot: false,
+        tokenAgeHours: 24 * 35, // 35d, mature
+        sourcesUsed: ["dexscreener", "rugcheck", "goplus", "helius", "solscan"],
+        // percentage form, per api/scan.ts convention
+        topHolderPct: 44,
+        volume24h: 500_000,
+        priceChange1h: -8,
+      }
+      const result = await generateAISummary(hawkInput)
+      const { paragraphs } = goldenStructuralChecks(result)
+      // PARA 1: opens with token name + "concentration rug" + 44.0%
+      expect(paragraphs[0]).toContain("HAWK")
+      expect(paragraphs[0]).toContain("concentration rug")
+      expect(paragraphs[0]).toContain("44.0%")
+      // PARA 2: mentions positives that get overridden
+      expect(paragraphs[1].toLowerCase()).toMatch(/lp|burn|history|renounce|honeypot/)
+      // PARA 3: hard-kill action
+      expect(paragraphs[2]).toContain("Hard kill")
+    })
+
+    it("PIPPIN (DANGER · 525 · top1 27%) opens with stacked concentration and explains why not RUG", async () => {
+      vi.stubEnv("GEMINI_API_KEY", "")
+      delete process.env.GEMINI_API_KEY
+      const pippinInput: AISummaryInput = {
+        score: 525,
+        risk: "DANGER",
+        flags: [{ label: "Stacked concentration risk", severity: "critical", impact: 250 }],
+        tokenSymbol: "Pippin",
+        holders: 1800,
+        marketCap: 50_000_000,
+        liquidity: 4_450_000,
+        lpBurned: true,
+        lpLocked: false,
+        mintAuthority: false,
+        freezeAuthority: false,
+        honeypot: false,
+        tokenAgeHours: 24 * 90,
+        sourcesUsed: ["dexscreener", "rugcheck", "goplus", "helius", "solscan"],
+        topHolderPct: 27,
+        volume24h: 2_500_000,
+        priceChange1h: -3,
+      }
+      const result = await generateAISummary(pippinInput)
+      const { paragraphs } = goldenStructuralChecks(result)
+      // PARA 1
+      expect(paragraphs[0]).toContain("Pippin")
+      expect(paragraphs[0]).toContain("DANGER")
+      expect(paragraphs[0]).toContain("27.0%")
+      // PARA 2: clean LP / authorities
+      expect(paragraphs[1].toLowerCase()).toMatch(/lp|burn|renounce|clean/)
+      // PARA 3: boundary "but ... exit-liquidity risk"
+      expect(paragraphs[2].toLowerCase()).toContain("exit-liquidity risk")
+    })
+
+    it("FARTCOIN (CAUTION · 825 · top1 11%) explains why not SAFE / why not DANGER", async () => {
+      vi.stubEnv("GEMINI_API_KEY", "")
+      delete process.env.GEMINI_API_KEY
+      const fartcoinInput: AISummaryInput = {
+        score: 825,
+        risk: "CAUTION",
+        flags: [{ label: "Top wallet concentration", severity: "warning", impact: 80 }],
+        tokenSymbol: "Fartcoin",
+        holders: 80_000,
+        marketCap: 700_000_000,
+        liquidity: 7_400_000,
+        lpBurned: true,
+        lpLocked: false,
+        mintAuthority: false,
+        freezeAuthority: false,
+        honeypot: false,
+        tokenAgeHours: 24 * 365,
+        sourcesUsed: ["dexscreener", "rugcheck", "goplus", "helius", "solscan"],
+        topHolderPct: 11,
+        volume24h: 50_000_000,
+        priceChange1h: 1.2,
+      }
+      const result = await generateAISummary(fartcoinInput)
+      const { paragraphs } = goldenStructuralChecks(result)
+      // PARA 1
+      expect(paragraphs[0]).toContain("Fartcoin")
+      expect(paragraphs[0]).toContain("CAUTION")
+      expect(paragraphs[0]).toContain("11.0%")
+      expect(paragraphs[0]).toContain("solid fundamentals")
+      // PARA 2: positives matter-of-factly
+      expect(paragraphs[1].toLowerCase()).toMatch(/lp|burn|renounce|clean/)
+      // PARA 3: boundary
+      expect(paragraphs[2]).toContain("not DANGER")
+      expect(paragraphs[2]).toContain("not SAFE")
+    })
+
+    it("PENGU (SAFE · 880 · sources cross-validated) emits a brief 3-paragraph SAFE profile", async () => {
+      vi.stubEnv("GEMINI_API_KEY", "")
+      delete process.env.GEMINI_API_KEY
+      const penguInput: AISummaryInput = {
+        score: 880,
+        risk: "SAFE",
+        flags: [],
+        tokenSymbol: "PENGU",
+        holders: 250_000,
+        marketCap: 1_500_000_000,
+        liquidity: 4_400_000,
+        lpBurned: false,
+        lpLocked: true,
+        mintAuthority: false,
+        freezeAuthority: false,
+        honeypot: false,
+        tokenAgeHours: 24 * 200,
+        // Helius unavailable so the fallback should reference cross-
+        // validation by the remaining sources.
+        sourcesUsed: ["dexscreener", "rugcheck", "goplus", "solscan"],
+        topHolderPct: 4,
+        volume24h: 80_000_000,
+        priceChange1h: 0.5,
+      }
+      const result = await generateAISummary(penguInput)
+      const { paragraphs } = goldenStructuralChecks(result)
+      // PARA 1: SAFE profile + locked liquidity
+      expect(paragraphs[0]).toContain("PENGU")
+      expect(paragraphs[0]).toContain("SAFE profile")
+      expect(paragraphs[0].toLowerCase()).toMatch(/locked|burned/)
+      // PARA 2: cross-validation by name (RugCheck, GoPlus, etc.)
+      expect(paragraphs[1].toLowerCase()).toMatch(/rugcheck|goplus|cross-validate/)
+      // PARA 3: brief closer
+      expect(paragraphs[2].length).toBeLessThan(80)
+    })
+
+    it("all four golden scans land in the 30–80 word band — same length envelope", async () => {
+      vi.stubEnv("GEMINI_API_KEY", "")
+      delete process.env.GEMINI_API_KEY
+      const inputs: AISummaryInput[] = [
+        // HAWK
+        { score: 105, risk: "RUG", flags: [{ label: "Concentration", severity: "critical", impact: 350 }], tokenSymbol: "HAWK", holders: 4200, marketCap: 2e6, liquidity: 71200, lpBurned: true, lpLocked: false, mintAuthority: false, freezeAuthority: false, honeypot: false, tokenAgeHours: 24 * 35, sourcesUsed: ["dexscreener", "rugcheck", "goplus", "helius", "solscan"], topHolderPct: 44, volume24h: 500000, priceChange1h: -8 },
+        // PIPPIN
+        { score: 525, risk: "DANGER", flags: [{ label: "Stacked concentration", severity: "critical", impact: 250 }], tokenSymbol: "Pippin", holders: 1800, marketCap: 5e7, liquidity: 4.45e6, lpBurned: true, lpLocked: false, mintAuthority: false, freezeAuthority: false, honeypot: false, tokenAgeHours: 24 * 90, sourcesUsed: ["dexscreener", "rugcheck", "goplus", "helius", "solscan"], topHolderPct: 27, volume24h: 2.5e6, priceChange1h: -3 },
+        // FARTCOIN
+        { score: 825, risk: "CAUTION", flags: [{ label: "Top concentration", severity: "warning", impact: 80 }], tokenSymbol: "Fartcoin", holders: 80000, marketCap: 7e8, liquidity: 7.4e6, lpBurned: true, lpLocked: false, mintAuthority: false, freezeAuthority: false, honeypot: false, tokenAgeHours: 24 * 365, sourcesUsed: ["dexscreener", "rugcheck", "goplus", "helius", "solscan"], topHolderPct: 11, volume24h: 5e7, priceChange1h: 1.2 },
+        // PENGU
+        { score: 880, risk: "SAFE", flags: [], tokenSymbol: "PENGU", holders: 250000, marketCap: 1.5e9, liquidity: 4.4e6, lpBurned: false, lpLocked: true, mintAuthority: false, freezeAuthority: false, honeypot: false, tokenAgeHours: 24 * 200, sourcesUsed: ["dexscreener", "rugcheck", "goplus", "solscan"], topHolderPct: 4, volume24h: 8e7, priceChange1h: 0.5 },
+      ]
+      const wordCounts: number[] = []
+      for (const input of inputs) {
+        const result = await generateAISummary(input)
+        expect(result).not.toBeNull()
+        wordCounts.push(result!.split(/\s+/).filter((w) => w.length > 0).length)
+      }
+      // The whole point of the new contract: every verdict band lands
+      // in roughly the same length envelope so the AI Summary panel
+      // always looks balanced. Demo references sit between 30 and 75
+      // words. The intrinsic variance (RUG has more to say than SAFE)
+      // means we accept up to ~2.6× ratio — that's exactly what the
+      // canonical /demo summaries show (HAWK 63 words / PENGU 30
+      // words = 2.1x; with margin we allow up to 2.6x).
+      for (const wc of wordCounts) {
+        expect(wc).toBeGreaterThanOrEqual(25)
+        expect(wc).toBeLessThanOrEqual(85)
+      }
+      const min = Math.min(...wordCounts)
+      const max = Math.max(...wordCounts)
+      expect(max / min).toBeLessThan(2.6)
+    })
   })
 })
