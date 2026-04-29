@@ -69,13 +69,21 @@ export function toggleCriticalFlags(flags: ScanResponseFlag[] | null | undefined
     return
   }
 
-  // Mutex: close the AI Summary panel before opening this one. With both
-  // open the overlay overflows the viewport on shorter screens (the
-  // user-reported case was a 900px-tall window where the bottom of the
-  // box was clipped by the page chrome). One-at-a-time also matches
-  // standard accordion behavior.
-  const siblingPanel = state.shadow?.querySelector("#ant-ai-summary") as HTMLElement | null
-  siblingPanel?.classList.remove("open")
+  // Mutex: close every sibling disclosure panel before opening this
+  // one. The footer now hosts up to 5 panels (Critical Flags, AI
+  // Summary, Holder Activity, Verdict Timeline, Outcome Histogram)
+  // and they all share the same vertical real-estate inside the
+  // overlay; with more than one open the box overflows the viewport.
+  const SIBLING_PANEL_IDS = [
+    "ant-ai-summary",
+    "ant-holder-activity",
+    "ant-verdict-timeline",
+    "ant-outcome-histogram",
+  ]
+  for (const id of SIBLING_PANEL_IDS) {
+    const node = state.shadow?.querySelector("#" + id) as HTMLElement | null
+    node?.classList.remove("open")
+  }
 
   if (!panel.dataset.loaded) {
     panel.dataset.loaded = "1"

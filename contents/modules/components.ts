@@ -6,6 +6,9 @@ import { initDrag } from "./drag"
 import { encodeHashPayload } from "../../shared/hash-payload"
 import { toggleAiSummary } from "./ai-summary"
 import { toggleCriticalFlags } from "./critical-flags"
+import { toggleHolderActivity } from "./holder-activity"
+import { toggleVerdictTimeline } from "./verdict-timeline"
+import { toggleOutcomeHistogram, shouldShowOutcomeHistogram } from "./outcome-histogram"
 
 // DOM-API element builder. Used by buildResult instead of string template
 // literals so every text interpolation goes through textContent (which the
@@ -112,6 +115,7 @@ export function resetState() {
 export function attachClose(
   aiSummary?: string | null,
   flags?: ScanResponseFlag[] | null,
+  scanData?: ScanResponseData | null,
 ) {
   state.shadow?.querySelector("#ant-close")?.addEventListener(
     "click",
@@ -146,6 +150,45 @@ export function attachClose(
       e.stopPropagation()
       e.preventDefault()
       toggleCriticalFlags(flags ?? null)
+    })
+  }
+
+  // Holder Activity button: same toggle pattern, fed from
+  // scanData.holderActivity which the API already populates.
+  const haBtn = state.shadow?.querySelector("#ant-holder-activity-btn")
+  if (haBtn) {
+    const fresh = haBtn.cloneNode(true) as HTMLElement
+    haBtn.parentNode?.replaceChild(fresh, haBtn)
+    fresh.addEventListener("click", (e) => {
+      e.stopPropagation()
+      e.preventDefault()
+      toggleHolderActivity(scanData?.holderActivity ?? null)
+    })
+  }
+
+  // Verdict Timeline button.
+  const vtBtn = state.shadow?.querySelector("#ant-verdict-timeline-btn")
+  if (vtBtn) {
+    const fresh = vtBtn.cloneNode(true) as HTMLElement
+    vtBtn.parentNode?.replaceChild(fresh, vtBtn)
+    fresh.addEventListener("click", (e) => {
+      e.stopPropagation()
+      e.preventDefault()
+      toggleVerdictTimeline(scanData?.verdictHistory ?? null)
+    })
+  }
+
+  // Outcome Histogram button (only present in the DOM for RUG /
+  // DANGER tokens; SAFE / CAUTION skip the button entirely so the
+  // querySelector returns null here and we no-op).
+  const ohBtn = state.shadow?.querySelector("#ant-outcome-histogram-btn")
+  if (ohBtn) {
+    const fresh = ohBtn.cloneNode(true) as HTMLElement
+    ohBtn.parentNode?.replaceChild(fresh, ohBtn)
+    fresh.addEventListener("click", (e) => {
+      e.stopPropagation()
+      e.preventDefault()
+      toggleOutcomeHistogram(scanData?.outcomeStats ?? null)
     })
   }
 }
@@ -393,29 +436,52 @@ export function buildResultNode(data: ScanResponseData, ca: string): HTMLElement
     ),
   )
 
-  // Footer buttons. The DexScreener external link was removed in favour
-  // of an inline Critical Flags panel: traders rarely jumped out to
-  // DexScreener from here, but they always wanted to see *why* a token
-  // was flagged without losing their place. The panel mirrors AI Summary
-  // \u2014 toggled inline via toggleCriticalFlags, never opens a new tab.
-  const foNode = el("div", { class: "fo" })
-  foNode.appendChild(el("button", {
+  // Footer buttons. Two rows:
+  //   Row 1 (verdict-explainers): Critical Flags / AI Summary
+  //   Row 2 (deep-analysis):     Holders / Timeline / Histogram / Full Analysis
+  //
+  // The Outcome Histogram button is hidden for SAFE / CAUTION because
+  // the backend's heuristic profile-matcher only produces meaningful
+  // output for RUG / DANGER (api/_lib/outcome-stats.ts:159). When the
+  // corpus-based KNN matcher ships we can drop the gate.
+  const foNode = el("div", { class: "fo fo-multirow" })
+  const fo1 = el("div", { class: "fo-row" })
+  fo1.appendChild(el("button", {
     class: "cf-btn",
     id: "ant-critical-flags-btn",
+    type: "button",
   }, "\u26a0 Critical Flags"))
-  // Always neutral gray \u2014 verdict color is communicated by the verdict
-  // headline and the Critical Flags panel; tinting the deep-dive button
-  // red on RUG was confusing (read as "dangerous to click" instead of
-  // "the token is dangerous").
-  foNode.appendChild(el("a", {
+  fo1.appendChild(el("button", {
+    class: "ai-btn ai-btn--active",
+    id: "ant-ai-summary-btn",
+    type: "button",
+  }, "\u2b21 AI Summary"))
+  foNode.appendChild(fo1)
+
+  const fo2 = el("div", { class: "fo-row" })
+  fo2.appendChild(el("button", {
+    class: "ha-btn",
+    id: "ant-holder-activity-btn",
+    type: "button",
+  }, "\u25cb Holders"))
+  fo2.appendChild(el("button", {
+    class: "vt-btn",
+    id: "ant-verdict-timeline-btn",
+    type: "button",
+  }, "\u2933 Timeline"))
+  if (shouldShowOutcomeHistogram(data.risk)) {
+    fo2.appendChild(el("button", {
+      class: "oh-btn",
+      id: "ant-outcome-histogram-btn",
+      type: "button",
+    }, "\u25b0 Outcome"))
+  }
+  fo2.appendChild(el("a", {
     href: "#",
     id: "ant-full-analysis",
     "data-ca": encodeURIComponent(mint),
-  }, "Full Analysis \u2192"))
-  foNode.appendChild(el("button", {
-    class: "ai-btn ai-btn--active",
-    id: "ant-ai-summary-btn",
-  }, "\u2b21 AI Summary"))
+  }, "Full \u2192"))
+  foNode.appendChild(fo2)
 
   const tkNode = tokenSymbol
     ? el("div", { class: "tk" },
@@ -446,6 +512,9 @@ export function buildResultNode(data: ScanResponseData, ca: string): HTMLElement
     ssNode,
     el("div", { class: "cf-panel", id: "ant-critical-flags" }),
     el("div", { class: "ai-panel", id: "ant-ai-summary" }),
+    el("div", { class: "ha-panel", id: "ant-holder-activity" }),
+    el("div", { class: "vt-panel", id: "ant-verdict-timeline" }),
+    el("div", { class: "oh-panel", id: "ant-outcome-histogram" }),
     foNode,
   )
 

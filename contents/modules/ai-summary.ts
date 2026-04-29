@@ -28,9 +28,21 @@ export function toggleAiSummary(aiSummary: string | null | undefined): void {
     return
   }
 
-  // Mutex: close the sibling panel before opening this one.
-  const siblingPanel = state.shadow?.querySelector("#ant-critical-flags") as HTMLElement | null
-  siblingPanel?.classList.remove("open")
+  // Mutex: close every sibling disclosure panel before opening this
+  // one (Critical Flags, Holder Activity, Verdict Timeline, Outcome
+  // Histogram). One-at-a-time matches the accordion-style behavior
+  // users expect and prevents the overlay from overflowing the
+  // viewport on shorter screens.
+  const SIBLING_PANEL_IDS = [
+    "ant-critical-flags",
+    "ant-holder-activity",
+    "ant-verdict-timeline",
+    "ant-outcome-histogram",
+  ]
+  for (const id of SIBLING_PANEL_IDS) {
+    const node = state.shadow?.querySelector("#" + id) as HTMLElement | null
+    node?.classList.remove("open")
+  }
 
   // Inject content only once
   if (!panel.dataset.loaded) {

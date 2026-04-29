@@ -38,12 +38,15 @@ export function scheduleRescanIfPriceCrash(data: ScanResponseData, ca: string) {
   if (pc1h !== null && pc1h < -30) {
     state.rescanTimer = setTimeout(() => {
       state.rescanTimer = null
-      // Postpone the rescan if the user has a disclosure panel open
+      // Postpone the rescan if the user has any disclosure panel open
       // — re-rendering the overlay underneath them would close the
-      // panel and feel like a refresh bug.
-      const aiOpen = state.shadow?.querySelector("#ant-ai-summary.open")
-      const cfOpen = state.shadow?.querySelector("#ant-critical-flags.open")
-      if (aiOpen || cfOpen) {
+      // panel and feel like a refresh bug. Five panels share this
+      // gate (Critical Flags, AI Summary, Holder Activity, Verdict
+      // Timeline, Outcome Histogram).
+      const anyPanelOpen = !!state.shadow?.querySelector(
+        "#ant-ai-summary.open, #ant-critical-flags.open, #ant-holder-activity.open, #ant-verdict-timeline.open, #ant-outcome-histogram.open",
+      )
+      if (anyPanelOpen) {
         scheduleRescanIfPriceCrash(data, ca)
         return
       }
@@ -136,7 +139,7 @@ export async function scan(ca: string) {
     el.replaceChildren(buildResultNode(cached, ca))
     showBox()
     triggerResultAnimations(el)
-    attachClose(cached.aiSummary ?? null, cached.flags ?? null)
+    attachClose(cached.aiSummary ?? null, cached.flags ?? null, cached)
     attachAnalysisBtn(ca)
     chrome.storage.local.get(["autoRescan"], (prefs) => {
       if (prefs.autoRescan !== false) scheduleRescanIfPriceCrash(cached, ca)
@@ -165,7 +168,7 @@ export async function scan(ca: string) {
     el.replaceChildren(buildResultNode(data, ca))
     showBox()
     triggerResultAnimations(el)
-    attachClose(data.aiSummary ?? null, data.flags ?? null)
+    attachClose(data.aiSummary ?? null, data.flags ?? null, data)
     attachAnalysisBtn(ca)
     chrome.storage.local.get(["autoRescan"], (prefs) => {
       if (prefs.autoRescan !== false) scheduleRescanIfPriceCrash(data, ca)

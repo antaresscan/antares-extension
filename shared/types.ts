@@ -60,7 +60,54 @@ export interface ScanResponseData {
     aiSummary?: string | null;
     topHolderPct?: number | null;
     top10HolderPct?: number | null;
+    // V5 disclosure-panel payloads. Mirror the shapes produced by the
+    // API in api/_lib/{holder-activity,outcome-stats,verdict-history}.ts.
+    // The extension overlay reads these directly; no extra round-trip.
+    holderActivity?: HolderActivityPayload | null;
+    outcomeStats?: OutcomeStatsPayload | null;
+    verdictHistory?: VerdictHistoryEntry[] | null;
   }
+
+export interface HolderActivityRow {
+  role: "dev" | "bot" | "coord" | "real" | "whale-big";
+  label: "Holding" | "Selling" | "Buying" | "Splitting" | "Static" | "Reducing";
+  avatar: string;
+  pctChange: number;
+  pctChangeDisp: string;
+  addr: string;
+  desc: string;
+}
+
+export interface HolderActivityPayload {
+  rows: HolderActivityRow[];
+  netFlowPct: number;
+  netFlowDirection: "in" | "out" | "flat";
+}
+
+export interface OutcomeSimilarTokenEntry {
+  symbol: string;
+  ruggedAfterHours: number;
+  loss: number;
+}
+
+export interface OutcomeStatsPayload {
+  timeToRugMedianDisp: string;
+  timeToRugMedianHours: number;
+  timeToRugSampleSize: number;
+  pctRugged24h: number;
+  pctSlowDeath: number;
+  pctAlive30d: number;
+  distribution: number[];
+  youBucketIndex: number;
+  mostSimilar: OutcomeSimilarTokenEntry[];
+}
+
+export interface VerdictHistoryEntry {
+  ts: number;
+  verdict: string;
+  score: number;
+  event: string;
+}
 
 export interface HistoryEntry {
   ca: string;
