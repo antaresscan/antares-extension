@@ -11,6 +11,12 @@ import { state } from "./state"
  * previous approach and one missed call site was enough for an XSS.
  *
  * Subsequent clicks just toggle the .open class without re-rendering.
+ *
+ * Mutex behavior: opening this panel always closes the Critical Flags
+ * panel first. The two panels share the same vertical real estate inside
+ * the overlay; with both open the box overflowed off-screen on shorter
+ * viewports. One-at-a-time also matches the pattern users expect from
+ * accordion-style disclosure.
  */
 export function toggleAiSummary(aiSummary: string | null | undefined): void {
   const panel = state.shadow?.querySelector("#ant-ai-summary") as HTMLElement | null
@@ -21,6 +27,10 @@ export function toggleAiSummary(aiSummary: string | null | undefined): void {
     panel.classList.remove("open")
     return
   }
+
+  // Mutex: close the sibling panel before opening this one.
+  const siblingPanel = state.shadow?.querySelector("#ant-critical-flags") as HTMLElement | null
+  siblingPanel?.classList.remove("open")
 
   // Inject content only once
   if (!panel.dataset.loaded) {

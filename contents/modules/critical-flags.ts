@@ -69,6 +69,14 @@ export function toggleCriticalFlags(flags: ScanResponseFlag[] | null | undefined
     return
   }
 
+  // Mutex: close the AI Summary panel before opening this one. With both
+  // open the overlay overflows the viewport on shorter screens (the
+  // user-reported case was a 900px-tall window where the bottom of the
+  // box was clipped by the page chrome). One-at-a-time also matches
+  // standard accordion behavior.
+  const siblingPanel = state.shadow?.querySelector("#ant-ai-summary") as HTMLElement | null
+  siblingPanel?.classList.remove("open")
+
   if (!panel.dataset.loaded) {
     panel.dataset.loaded = "1"
     renderPanel(panel, flags)
