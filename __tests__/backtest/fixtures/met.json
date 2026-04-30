@@ -1,0 +1,29 @@
+{
+  "score": 100,
+  "risk": "RUG",
+  "flags": [
+    {
+      "label": "Single wallet holds 32% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Top 10 wallets hold 71% of supply",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "LP not burned but token is mature and liquid (unverified LP)",
+      "severity": "warning",
+      "impact": 0
+    }
+  ],
+  "safeBlockedReasons": [
+    "concentration",
+    "lp_unverified"
+  ],
+  "lpBurned": false,
+  "lpLocked": false,
+  "holders": 20,
+  "liquidity": 9368699.45
+}
