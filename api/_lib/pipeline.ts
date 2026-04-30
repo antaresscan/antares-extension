@@ -16,11 +16,23 @@ export function evaluatePostLayerFlags(input: PostLayerFlagsInput): PostLayerFla
 
   const totalTxns5m = (input.buys5m ?? 0) + (input.sells5m ?? 0);
 
+  // Social honeypot pattern: a fresh token where coordinated buyers all
+  // pile in but the contract blocks sells (or sells are otherwise faked).
+  // The signature is: brand-new token + thin scammer-controlled liquidity
+  // + many buys + zero sells. We require BOTH lower AND upper bounds on
+  // age and liquidity, otherwise the check misfires on established tokens
+  // that simply happen to have a buy-only 5-minute window (e.g. FARTCOIN
+  // with $7.5M liq and 18+ months age was getting flagged as RUG when a
+  // quiet 5-min slice showed only buys — the kind of normal noise an
+  // actively-traded mid-cap produces).
+  const ageInHoneypotWindow = input.ageMin > 30 && input.ageMin < 720;
+  const liqInHoneypotWindow = input.liqUsd > 5000 && input.liqUsd < 80_000;
+
   if (
     input.sells5m === 0 &&
     input.buys5m > 10 &&
-    input.liqUsd > 5000 &&
-    input.ageMin > 30 &&
+    liqInHoneypotWindow &&
+    ageInHoneypotWindow &&
     totalTxns5m > 5
   ) {
     flags.push(makeFlag("Sells blocked (social honeypot)", "critical", 0));

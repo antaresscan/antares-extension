@@ -122,6 +122,40 @@ describe("evaluatePostLayerFlags", () => {
     expect(result.forceRug).toBe(false);
   });
 
+  it("6a. Social honeypot UPPER bound: ageMin=720 -> NOT triggered (needs <720)", () => {
+    // Established tokens shouldn't trip the honeypot check just because
+    // a 5-min slice happened to contain only buys. Real social honeypots
+    // are fresh launches, not 12+ hour old tokens.
+    const result = evaluatePostLayerFlags(makePostLayerFlagsInput({
+      sells5m: 0, buys5m: 15, liqUsd: 10000, ageMin: 720,
+    }));
+    expect(result.forceRug).toBe(false);
+    expect(result.flags.some(f => /social honeypot/i.test(f.label))).toBe(false);
+  });
+
+  it("6b. Social honeypot UPPER bound: liqUsd=80000 -> NOT triggered (needs <80000)", () => {
+    // Real social honeypots have small scammer-controlled liquidity,
+    // not multi-million pools. Mid-cap and large-cap tokens should pass
+    // the check even on buy-only 5-min slices.
+    const result = evaluatePostLayerFlags(makePostLayerFlagsInput({
+      sells5m: 0, buys5m: 15, liqUsd: 80000, ageMin: 60,
+    }));
+    expect(result.forceRug).toBe(false);
+    expect(result.flags.some(f => /social honeypot/i.test(f.label))).toBe(false);
+  });
+
+  it("6c. FARTCOIN-shaped regression: $7.5M liq, 18 months old -> NOT triggered", () => {
+    // Real reproducer: FARTCOIN with ~$7.5M liquidity, ~600 days age,
+    // happened to have a buy-only 5-minute window during scan. Used to
+    // trigger 'social honeypot' and force RUG. After the upper bound
+    // fix, doesn't trip.
+    const result = evaluatePostLayerFlags(makePostLayerFlagsInput({
+      sells5m: 0, buys5m: 15, liqUsd: 7_500_000, ageMin: 600 * 24 * 60,
+    }));
+    expect(result.forceRug).toBe(false);
+    expect(result.flags.some(f => /social honeypot/i.test(f.label))).toBe(false);
+  });
+
   it("7. Wash trading: 10 transfers, 2 unique wallets -> forceRug=true", () => {
     const result = evaluatePostLayerFlags(makePostLayerFlagsInput({
       recentTransfers: makeDiverseTransfers(10, 2),
