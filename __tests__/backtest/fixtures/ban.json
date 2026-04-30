@@ -1,0 +1,33 @@
+{
+  "score": 105,
+  "risk": "RUG",
+  "flags": [
+    {
+      "label": "No website / Twitter / Telegram — high rug risk",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Single wallet holds 50% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "LP Burned 100% (GoPlus) ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Established token (30d+) ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "safeBlockedReasons": [
+    "concentration"
+  ],
+  "lpBurned": true,
+  "lpLocked": false,
+  "holders": 19910,
+  "liquidity": 2553436.89
+}

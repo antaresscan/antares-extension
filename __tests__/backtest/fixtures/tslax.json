@@ -1,0 +1,34 @@
+{
+  "score": 659,
+  "risk": "DANGER",
+  "flags": [
+    {
+      "label": "No website / Twitter / Telegram — high rug risk",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "LP not burned but token is mature and liquid (unverified LP)",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Single wallet holds 12% of supply",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Established token (30d+) ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "safeBlockedReasons": [
+    "lp_unverified",
+    "holders"
+  ],
+  "lpBurned": false,
+  "lpLocked": false,
+  "holders": 11103,
+  "liquidity": 1992351.7
+}

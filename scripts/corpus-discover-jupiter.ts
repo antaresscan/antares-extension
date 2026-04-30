@@ -76,13 +76,16 @@ function label(t: JupToken): Label {
       why: `24h drop ${drop24h.toFixed(0)}%, liq $${(liq/1000).toFixed(1)}k — textbook rug.`,
     }
   }
-  // Big-mcap + deep liq + many holders → SAFE
+  // Big-mcap + deep liq + many holders → SAFE-leaning (auto-label heuristic;
+  // engine has final say since the labeler can't distinguish memecoins
+  // from tokenized stocks / LSDs / stablecoins which all pass the threshold
+  // but score very differently in the engine).
   if (mcap >= 30_000_000 && liq >= 500_000 && holders >= 5_000) {
     return {
       expectedVerdict: "SAFE",
       expectedScore: [700, 1000],
-      tolerated: ["CAUTION"],
-      why: `mcap $${(mcap/1_000_000).toFixed(0)}M, liq $${(liq/1_000_000).toFixed(1)}M, ${holders.toLocaleString()} holders — established Solana memecoin.`,
+      tolerated: ["CAUTION", "DANGER", "RUG"],
+      why: `mcap $${(mcap/1_000_000).toFixed(0)}M, liq $${(liq/1_000_000).toFixed(1)}M, ${holders.toLocaleString()} holders — Jupiter-verified mid/large-cap (engine has final say).`,
     }
   }
   // Mid-cap with thin liq → DANGER
