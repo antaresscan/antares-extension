@@ -1,0 +1,336 @@
+{
+  "score": 480,
+  "risk": "DANGER",
+  "flags": [
+    {
+      "label": "Single wallet holds 16% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Newborn token on-chain (<30min)",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Pump.fun-style launch: <1h + vol/liq >15 — DANGER",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "High vol/liquidity ratio",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "LP not burned or locked — dev can rug liquidity",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Liquidity < $20k",
+      "severity": "info",
+      "impact": 0
+    },
+    {
+      "label": "GoPlus unavailable",
+      "severity": "info",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "pumpswap",
+    "url": "https://dexscreener.com/solana/3gtbzbgxjho1mf15i9frj2umdrxjgjd7s1yh5epazaym",
+    "pairAddress": "3gTbzBGxjho1MF15i9frJ2umDrxJGJD7s1yh5ePAzayM",
+    "baseToken": {
+      "address": "BhCuLLN38Ru7qBkXBmGzNeG6ipiAcqvywpvNjQW7pump",
+      "name": "Gamblers Anonymous",
+      "symbol": "GA"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.0000007293",
+    "priceUsd": "0.00006048",
+    "txns": {
+      "m5": {
+        "buys": 517,
+        "sells": 412
+      },
+      "h1": {
+        "buys": 4580,
+        "sells": 3699
+      },
+      "h6": {
+        "buys": 4580,
+        "sells": 3699
+      },
+      "h24": {
+        "buys": 4580,
+        "sells": 3699
+      }
+    },
+    "volume": {
+      "h24": 373648.59,
+      "h6": 373648.59,
+      "h1": 373648.59,
+      "m5": 42578.89
+    },
+    "priceChange": {
+      "m5": -9.93,
+      "h1": 75.32,
+      "h6": 75.32,
+      "h24": 75.32
+    },
+    "liquidity": {
+      "usd": 19466.05,
+      "base": 160678995,
+      "quote": 117.5307
+    },
+    "fdv": 60489,
+    "marketCap": 60489,
+    "pairCreatedAt": 1777504583000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/slyogd7aX2DM6Sh3?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/qL-xzXjkzbvFfoo0?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/BhCuLLN38Ru7qBkXBmGzNeG6ipiAcqvywpvNjQW7pump?timestamp=1777506300000",
+      "websites": [
+        {
+          "url": "https://gamblersanonymous.org/",
+          "label": "Website"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/i/communities/1974295413734645998",
+          "type": "twitter"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "BhCuLLN38Ru7qBkXBmGzNeG6ipiAcqvywpvNjQW7pump",
+  "confidence": 70,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "helius",
+    "solscan"
+  ],
+  "holders": 20,
+  "marketCap": 60489,
+  "priceUsd": 0.00006048,
+  "liquidity": 19466.05,
+  "volume24h": 373648.59,
+  "volume1h": 373648.59,
+  "priceChange5m": -9.93,
+  "priceChange1h": 75.32,
+  "priceChange24h": 75.32,
+  "tokenSymbol": "GA",
+  "tokenName": "Gamblers Anonymous",
+  "pairCreatedAt": 1777504583000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "concentration",
+    "age",
+    "lp"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/slyogd7aX2DM6Sh3?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 0,
+  "solscanVolume24h": 373648.59,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 0.692,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": false
+    },
+    "helius": {
+      "trust": 0.35,
+      "available": true
+    },
+    "solscan": {
+      "trust": 0.1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": false
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": false,
+  "lpLocked": false,
+  "lpLockedPct": null,
+  "candles": "[0 candles, redacted for fixture]",
+  "topHolderPct": 15.80257421379964,
+  "top10HolderPct": 34.137352748010485,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 15.8,
+      "addr": "3gTb…zayM",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 95,
+      "repWarn": false,
+      "desc": "Holds <b>15.8%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777506450490,
+      "verdict": "DANGER",
+      "score": 480,
+      "event": "Single wallet holds 16% of supply"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "3gTb…zayM",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "HxEj…J72j",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "8fSn…EyLJ",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "FyNr…mSro",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "BPvg…M8Mz",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "a1RT…Satu",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "11h",
+    "timeToRugMedianHours": 11,
+    "timeToRugSampleSize": 312,
+    "pctRugged24h": 76,
+    "pctSlowDeath": 16,
+    "pctAlive30d": 8,
+    "distribution": [
+      3,
+      5,
+      8,
+      11,
+      14,
+      12,
+      9,
+      7,
+      5,
+      4,
+      3,
+      2.5,
+      2,
+      1.8,
+      1.6,
+      1.4,
+      1.2,
+      1,
+      0.9,
+      0.8,
+      0.7,
+      0.7,
+      0.6,
+      0.6,
+      0.5,
+      0.5,
+      0.4,
+      0.4,
+      0.3,
+      0.3,
+      0.3,
+      0.3,
+      0.4,
+      0.5,
+      0.7,
+      0.9
+    ],
+    "youBucketIndex": 17,
+    "mostSimilar": [
+      {
+        "symbol": "PUMPDUMP",
+        "ruggedAfterHours": 18,
+        "loss": -94.1
+      },
+      {
+        "symbol": "FAKEMOON",
+        "ruggedAfterHours": 28,
+        "loss": -91.6
+      },
+      {
+        "symbol": "SLOWBLEED",
+        "ruggedAfterHours": 48,
+        "loss": -85.4
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777506450570,
+  "requestId": "5c327d69-6868-4333-bd46-8cc55d542f55",
+  "aiSummary": "GA lands on DANGER because liquidity is neither locked nor burned — the dev retains the option to drain the pool whenever they choose.\n\nMint and freeze authorities are revoked and no honeypot — the contract surface itself is clean, which is why the verdict does not collapse all the way to RUG.\n\nBut the holder structure alone is enough to treat this as exit-liquidity risk."
+}

@@ -1,0 +1,340 @@
+{
+  "score": 100,
+  "risk": "RUG",
+  "flags": [
+    {
+      "label": "Wash trading detected (vol/liq > 20) — bundler dump",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Extreme 24h pump +9916% — exit liquidity trap",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Single wallet holds 11% of supply",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Liquidity mirage: volume >> liquidity (wash)",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "LP not burned but token is mature and liquid (unverified LP)",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Well distributed supply ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Established token (30d+) ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "pumpswap",
+    "url": "https://dexscreener.com/solana/ebnktmyx3ur2juhkvhk1sr86elv6xvuawvr6jzpnarnf",
+    "pairAddress": "EbnKTMYx3UR2jUhkVhK1sR86eLV6xVUAwVr6jZpNARnf",
+    "baseToken": {
+      "address": "E95sJahssFKUk6jcWYbyfmjtcCsr4Z226HD9Qbjupump",
+      "name": "Rocket Frog",
+      "symbol": "Hoppy"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.000002305",
+    "priceUsd": "0.0001914",
+    "txns": {
+      "m5": {
+        "buys": 15,
+        "sells": 11
+      },
+      "h1": {
+        "buys": 109,
+        "sells": 87
+      },
+      "h6": {
+        "buys": 1413,
+        "sells": 1145
+      },
+      "h24": {
+        "buys": 26770,
+        "sells": 23832
+      }
+    },
+    "volume": {
+      "h24": 4960285.72,
+      "h6": 231139.89,
+      "h1": 19883.66,
+      "m5": 3129.9
+    },
+    "priceChange": {
+      "m5": 1.33,
+      "h1": 2.42,
+      "h6": -23.21,
+      "h24": 9916
+    },
+    "liquidity": {
+      "usd": 41010.6,
+      "base": 107215726,
+      "quote": 246.7235
+    },
+    "fdv": 191350,
+    "marketCap": 191350,
+    "pairCreatedAt": 1757172270000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/ttMV-951fKy4OTxT?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/3cg7ScRFFko3wMbZ?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/E95sJahssFKUk6jcWYbyfmjtcCsr4Z226HD9Qbjupump?timestamp=1777506900000",
+      "websites": [],
+      "socials": [
+        {
+          "url": "https://x.com/hoppyrocketfrog",
+          "type": "twitter"
+        },
+        {
+          "url": "https://www.instagram.com/p/DORAFrujG_2",
+          "type": "instagram"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "E95sJahssFKUk6jcWYbyfmjtcCsr4Z226HD9Qbjupump",
+  "confidence": 100,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "goplus",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 20,
+  "marketCap": 191350,
+  "priceUsd": 0.0001914,
+  "liquidity": 41010.6,
+  "volume24h": 4960285.72,
+  "volume1h": 19883.66,
+  "priceChange5m": 1.33,
+  "priceChange1h": 2.42,
+  "priceChange24h": 9916,
+  "tokenSymbol": "Hoppy",
+  "tokenName": "Rocket Frog",
+  "pairCreatedAt": 1757172270000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "wash_trading",
+    "bundle",
+    "rug_pattern",
+    "holders",
+    "chart",
+    "lp_unverified"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/ttMV-951fKy4OTxT?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 5648,
+  "solscanVolume24h": 4960285.72,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 0.019,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": true
+    },
+    "helius": {
+      "trust": 0.3,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 0.6,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": false,
+  "lpLocked": false,
+  "lpLockedPct": null,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 10.725231893994437,
+  "top10HolderPct": 22.22702067007324,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 10.7,
+      "addr": "EbnK…ARnf",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 92.1,
+      "repWarn": false,
+      "desc": "Holds <b>10.7%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777506992712,
+      "verdict": "RUG",
+      "score": 100,
+      "event": "Wash trading detected (vol/liq > 20) — bundler dump"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "EbnK…ARnf",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "G1pR…yFcc",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "AKdS…Pzx7",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "5B52…vyxG",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "BSu8…qtcY",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "8xcD…H4UK",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "4h 12m",
+    "timeToRugMedianHours": 4.2,
+    "timeToRugSampleSize": 487,
+    "pctRugged24h": 89,
+    "pctSlowDeath": 8,
+    "pctAlive30d": 3,
+    "distribution": [
+      8,
+      14,
+      22,
+      28,
+      18,
+      12,
+      6,
+      4,
+      2,
+      1,
+      0.6,
+      0.4,
+      0.3,
+      0.3,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.3,
+      0.3,
+      0.4,
+      0.6,
+      1,
+      1.2,
+      1.4,
+      1.4,
+      1.2,
+      0.9,
+      0.6,
+      0.4,
+      0.3
+    ],
+    "youBucketIndex": 11,
+    "mostSimilar": [
+      {
+        "symbol": "RUGCOIN",
+        "ruggedAfterHours": 4,
+        "loss": -99.2
+      },
+      {
+        "symbol": "SCAMBOY",
+        "ruggedAfterHours": 6,
+        "loss": -98.5
+      },
+      {
+        "symbol": "TRAPCAT",
+        "ruggedAfterHours": 12,
+        "loss": -97.8
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777506992790,
+  "requestId": "e405ff9b-c602-4eef-8712-7e91b9a6e1be",
+  "aiSummary": "Hoppy is a bundle rug — coordinated wallets quietly hold a meaningful share of supply across multiple addresses, invisible to top-holder metrics but acting as a single coordinated seller.\n\nMint and freeze authorities are revoked, no honeypot, and 30d+ trading history, but those signals are completely overridden by the dominant flag — the dev (or whoever controls that wallet) can collapse the price at any moment.\n\nHard kill. Treat any remaining liquidity as exit-only."
+}

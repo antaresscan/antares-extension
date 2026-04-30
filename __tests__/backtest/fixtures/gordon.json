@@ -1,0 +1,331 @@
+{
+  "score": 100,
+  "risk": "RUG",
+  "flags": [
+    {
+      "label": "Extreme pump +604% in 1h — bundler exit trap",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "High vol/liquidity ratio",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Single wallet holds 10% of supply",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Fresh token on-chain (<6h)",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "LP not burned or locked — dev can rug liquidity",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "GoPlus unavailable",
+      "severity": "info",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "pumpswap",
+    "url": "https://dexscreener.com/solana/5unyuqs3nrjd8vcgu7ue3ihfshkcuypfgz9jvwjesevp",
+    "pairAddress": "5unYUqS3NrJD8VcGU7ue3ihfShKcUYPFGZ9jVwjESEvp",
+    "baseToken": {
+      "address": "3CCJDEZWH5fd6nBHLNMkP5wtDvDP8EVwiEPJAaxEpump",
+      "name": "Wheelchair Pup",
+      "symbol": "GORDON"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.000001741",
+    "priceUsd": "0.0001444",
+    "txns": {
+      "m5": {
+        "buys": 1127,
+        "sells": 978
+      },
+      "h1": {
+        "buys": 3366,
+        "sells": 2912
+      },
+      "h6": {
+        "buys": 3771,
+        "sells": 3261
+      },
+      "h24": {
+        "buys": 3771,
+        "sells": 3261
+      }
+    },
+    "volume": {
+      "h24": 403371.71,
+      "h6": 403371.71,
+      "h1": 375071.63,
+      "m5": 157970.53
+    },
+    "priceChange": {
+      "m5": 32.7,
+      "h1": 604,
+      "h6": 319,
+      "h24": 319
+    },
+    "liquidity": {
+      "usd": 29833.31,
+      "base": 99877831,
+      "quote": 185.7754
+    },
+    "fdv": 144446,
+    "marketCap": 144446,
+    "pairCreatedAt": 1777502805000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/J2urALNdcBHI6zy_?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/FqjeJ89MNMG-n9lY?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/3CCJDEZWH5fd6nBHLNMkP5wtDvDP8EVwiEPJAaxEpump?timestamp=1777506600000",
+      "websites": [],
+      "socials": [
+        {
+          "url": "https://x.com/henry1995063969/status/2049620860252631457",
+          "type": "twitter"
+        },
+        {
+          "url": "https://www.instagram.com/p/DQwuo3nlC5T/",
+          "type": "instagram"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "3CCJDEZWH5fd6nBHLNMkP5wtDvDP8EVwiEPJAaxEpump",
+  "confidence": 70,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "helius",
+    "solscan"
+  ],
+  "holders": 20,
+  "marketCap": 144446,
+  "priceUsd": 0.0001444,
+  "liquidity": 29833.31,
+  "volume24h": 403371.71,
+  "volume1h": 375071.63,
+  "priceChange5m": 32.7,
+  "priceChange1h": 604,
+  "priceChange24h": 319,
+  "tokenSymbol": "GORDON",
+  "tokenName": "Wheelchair Pup",
+  "pairCreatedAt": 1777502805000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "bundle",
+    "rug_pattern",
+    "holders",
+    "lp"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/J2urALNdcBHI6zy_?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 1,
+  "solscanVolume24h": 403371.71,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 0.04,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": false
+    },
+    "helius": {
+      "trust": 0.3,
+      "available": true
+    },
+    "solscan": {
+      "trust": 0.65,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": false
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": false,
+  "lpLocked": false,
+  "lpLockedPct": null,
+  "candles": "[0 candles, redacted for fixture]",
+  "topHolderPct": 10.453315754103896,
+  "top10HolderPct": 32.306281832632,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 10.5,
+      "addr": "5unY…SEvp",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 91.5,
+      "repWarn": false,
+      "desc": "Holds <b>10.5%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777506544594,
+      "verdict": "RUG",
+      "score": 100,
+      "event": "Extreme pump +604% in 1h — bundler exit trap"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "5unY…SEvp",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "EP5m…pDvG",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "DGKG…63Xi",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "FTCU…gebe",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "Gqn9…Ks8Y",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "afVd…y8Ug",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "4h 12m",
+    "timeToRugMedianHours": 4.2,
+    "timeToRugSampleSize": 487,
+    "pctRugged24h": 89,
+    "pctSlowDeath": 8,
+    "pctAlive30d": 3,
+    "distribution": [
+      8,
+      14,
+      22,
+      28,
+      18,
+      12,
+      6,
+      4,
+      2,
+      1,
+      0.6,
+      0.4,
+      0.3,
+      0.3,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.3,
+      0.3,
+      0.4,
+      0.6,
+      1,
+      1.2,
+      1.4,
+      1.4,
+      1.2,
+      0.9,
+      0.6,
+      0.4,
+      0.3
+    ],
+    "youBucketIndex": 11,
+    "mostSimilar": [
+      {
+        "symbol": "RUGCOIN",
+        "ruggedAfterHours": 4,
+        "loss": -99.2
+      },
+      {
+        "symbol": "SCAMBOY",
+        "ruggedAfterHours": 6,
+        "loss": -98.5
+      },
+      {
+        "symbol": "TRAPCAT",
+        "ruggedAfterHours": 12,
+        "loss": -97.8
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777506544677,
+  "requestId": "c736d145-4ca5-47e9-a1e9-2df43cf7e399",
+  "aiSummary": "GORDON is a bundle rug — coordinated wallets quietly hold roughly 604% of supply across multiple addresses, invisible to top-holder metrics but acting as a single coordinated seller.\n\nMint and freeze authorities are revoked and no honeypot, but those signals are completely overridden by the dominant flag — the dev (or whoever controls that wallet) can collapse the price at any moment.\n\nHard kill. Treat any remaining liquidity as exit-only."
+}

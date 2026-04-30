@@ -1,0 +1,33 @@
+{
+  "score": 850,
+  "risk": "CAUTION",
+  "flags": [
+    {
+      "label": "LP not burned but token is mature and liquid (unverified LP)",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Helius unavailable",
+      "severity": "info",
+      "impact": 0
+    },
+    {
+      "label": "Volume tapering during consolidation (mature pair)",
+      "severity": "info",
+      "impact": 0
+    },
+    {
+      "label": "Established token (30d+) ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "safeBlockedReasons": [
+    "lp_unverified"
+  ],
+  "lpBurned": false,
+  "lpLocked": false,
+  "holders": 333204,
+  "liquidity": 268474.89
+}

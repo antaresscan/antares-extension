@@ -1,0 +1,322 @@
+{
+  "score": 850,
+  "risk": "CAUTION",
+  "flags": [
+    {
+      "label": "LP not burned but token is mature and liquid (unverified LP)",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "GoPlus unavailable",
+      "severity": "info",
+      "impact": 0
+    },
+    {
+      "label": "Well distributed supply ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "pumpswap",
+    "url": "https://dexscreener.com/solana/6zzhqtpqibzwm4qr21bhakp5vjeyhzjccamfd6x8cjsp",
+    "pairAddress": "6zZHQtPqiBzwm4qR21BHaKp5VJEYhzjccamfd6x8cjsP",
+    "baseToken": {
+      "address": "CAjtTHvC878f8cZ4zEwdvgjkjFM7rbYN8Mb1go1cpump",
+      "name": "Dumb Money",
+      "symbol": "DUMBMONEY"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.000004801",
+    "priceUsd": "0.0003981",
+    "txns": {
+      "m5": {
+        "buys": 4,
+        "sells": 2
+      },
+      "h1": {
+        "buys": 55,
+        "sells": 55
+      },
+      "h6": {
+        "buys": 576,
+        "sells": 480
+      },
+      "h24": {
+        "buys": 2288,
+        "sells": 2079
+      }
+    },
+    "volume": {
+      "h24": 300166.15,
+      "h6": 62045.78,
+      "h1": 6665.55,
+      "m5": 452.83
+    },
+    "priceChange": {
+      "m5": -0.96,
+      "h1": 0.32,
+      "h6": -12.46,
+      "h24": 31.73
+    },
+    "liquidity": {
+      "usd": 75420.42,
+      "base": 94799647,
+      "quote": 454.271
+    },
+    "fdv": 395315,
+    "marketCap": 395315,
+    "pairCreatedAt": 1776122269000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/olWlBGDg8RFIuk5u?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/7AJWTagsod-Z8N1J?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/CAjtTHvC878f8cZ4zEwdvgjkjFM7rbYN8Mb1go1cpump?timestamp=1777506000000",
+      "websites": [
+        {
+          "url": "https://dumbmoneycoin.org/",
+          "label": "Website"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/Dumb__Money",
+          "type": "twitter"
+        },
+        {
+          "url": "https://t.me/DUMBMONEY_ENTRY",
+          "type": "telegram"
+        }
+      ]
+    },
+    "boosts": {
+      "active": 100
+    }
+  },
+  "resolvedMint": "CAjtTHvC878f8cZ4zEwdvgjkjFM7rbYN8Mb1go1cpump",
+  "confidence": 80,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 20,
+  "marketCap": 395315,
+  "priceUsd": 0.0003981,
+  "liquidity": 75420.42,
+  "volume24h": 300166.15,
+  "volume1h": 6665.55,
+  "priceChange5m": -0.96,
+  "priceChange1h": 0.32,
+  "priceChange24h": 31.73,
+  "tokenSymbol": "DUMBMONEY",
+  "tokenName": "Dumb Money",
+  "pairCreatedAt": 1776122269000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "lp_unverified"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/olWlBGDg8RFIuk5u?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 384,
+  "solscanVolume24h": 300166.15,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 1,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": false
+    },
+    "helius": {
+      "trust": 1,
+      "available": true
+    },
+    "solscan": {
+      "trust": 1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": false,
+  "lpLocked": false,
+  "lpLockedPct": null,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 9.550204556385482,
+  "top10HolderPct": 20.571383199640366,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 9.6,
+      "addr": "6zZH…cjsP",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 88.8,
+      "repWarn": false,
+      "desc": "Holds <b>9.6%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777399577282,
+      "verdict": "CAUTION",
+      "score": 709,
+      "event": "Single wallet holds 11% of supply"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "6zZH…cjsP",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "6DtE…Dokm",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "7AH3…vaXN",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "Cfki…oJU6",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "G1ok…2a21",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "real",
+        "label": "Static",
+        "avatar": "Retail",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "215A…modX",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "2d",
+    "timeToRugMedianHours": 48,
+    "timeToRugSampleSize": 180,
+    "pctRugged24h": 54,
+    "pctSlowDeath": 30,
+    "pctAlive30d": 16,
+    "distribution": [
+      1,
+      1.5,
+      2,
+      2.5,
+      3,
+      3.5,
+      4,
+      4.5,
+      5,
+      5,
+      4.5,
+      4,
+      3.5,
+      3,
+      2.7,
+      2.5,
+      2.3,
+      2.1,
+      2,
+      1.9,
+      1.8,
+      1.7,
+      1.6,
+      1.5,
+      1.4,
+      1.3,
+      1.2,
+      1.2,
+      1.1,
+      1.1,
+      1,
+      1,
+      1.1,
+      1.5,
+      2,
+      2.5
+    ],
+    "youBucketIndex": 25,
+    "mostSimilar": [
+      {
+        "symbol": "FORGOTBOY",
+        "ruggedAfterHours": 72,
+        "loss": -78.2
+      },
+      {
+        "symbol": "DEADCOIN",
+        "ruggedAfterHours": 168,
+        "loss": -82.5
+      },
+      {
+        "symbol": "BLEEDR",
+        "ruggedAfterHours": 240,
+        "loss": -88
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777506145096,
+  "requestId": "3f4b9681-7c14-411c-8e90-cc4b90d7f7e5",
+  "aiSummary": "DUMBMONEY lands on CAUTION because a single wallet holds 9.6% of supply — a meaningful concentration risk even with otherwise solid fundamentals.\n\nMint and freeze authorities are revoked and no honeypot — the rest of the structural posture is clean.\n\nThe verdict is not DANGER because the rest is clean; it is not SAFE because the dominant flag alone has enough leverage to swing the price."
+}

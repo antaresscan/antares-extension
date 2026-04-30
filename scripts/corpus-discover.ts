@@ -483,7 +483,7 @@ async function main() {
   // ~600 mints across 30 pages, dominated by Solana memecoins).
   const noGT = args.includes("--no-gt")
   if (!noGT) {
-    const gtPools = await fetchGeckoTerminalPools(30)
+    const gtPools = await fetchGeckoTerminalPools(100)
     for (const p of gtPools) candidates.push({ ca: p.ca, symbol: null, tag: p.tag })
     console.log(`geckoterminal: ${gtPools.length} mints (top Solana pools by liquidity)`)
   }

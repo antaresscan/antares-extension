@@ -1,0 +1,322 @@
+{
+  "score": 488,
+  "risk": "DANGER",
+  "flags": [
+    {
+      "label": "Single wallet holds 23% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "Newborn token on-chain (<30min)",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "LP not burned or locked — dev can rug liquidity",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Liquidity < $20k",
+      "severity": "info",
+      "impact": 0
+    },
+    {
+      "label": "GoPlus unavailable",
+      "severity": "info",
+      "impact": 0
+    }
+  ],
+  "pair": {
+    "chainId": "solana",
+    "dexId": "pumpswap",
+    "url": "https://dexscreener.com/solana/bj9yrc3w1fx1mxpxslehgcvk1wmkwkjwfw9indzc2jte",
+    "pairAddress": "BJ9YRc3W1fx1MxpxsLehGcvk1WmKWkJwFw9inDZC2jTe",
+    "baseToken": {
+      "address": "AfQnzZy6JQzsCGF993Zzj8Lv8gNyxYN49GNLxwXpump",
+      "name": "It only takes one",
+      "symbol": "One"
+    },
+    "quoteToken": {
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
+    },
+    "priceNative": "0.0000003025",
+    "priceUsd": "0.00002509",
+    "txns": {
+      "m5": {
+        "buys": 19,
+        "sells": 9
+      },
+      "h1": {
+        "buys": 385,
+        "sells": 198
+      },
+      "h6": {
+        "buys": 385,
+        "sells": 198
+      },
+      "h24": {
+        "buys": 385,
+        "sells": 198
+      }
+    },
+    "volume": {
+      "h24": 13898.59,
+      "h6": 13898.59,
+      "h1": 13898.59,
+      "m5": 497.51
+    },
+    "priceChange": {
+      "m5": -0.43,
+      "h1": -26.53,
+      "h6": -26.53,
+      "h24": -26.53
+    },
+    "liquidity": {
+      "usd": 12101.93,
+      "base": 239629410,
+      "quote": 73.4176
+    },
+    "fdv": 25095,
+    "marketCap": 25095,
+    "pairCreatedAt": 1777504673000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/uatRP_SiNkN7BrRK?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/vIwWo2Xy_OhGr1fM?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/AfQnzZy6JQzsCGF993Zzj8Lv8gNyxYN49GNLxwXpump?timestamp=1777506300000",
+      "websites": [],
+      "socials": [
+        {
+          "url": "https://x.com/i/communities/2020237980464726142",
+          "type": "twitter"
+        }
+      ]
+    }
+  },
+  "resolvedMint": "AfQnzZy6JQzsCGF993Zzj8Lv8gNyxYN49GNLxwXpump",
+  "confidence": 80,
+  "sources_used": [
+    "dexscreener",
+    "rugcheck",
+    "helius",
+    "solscan",
+    "chart"
+  ],
+  "holders": 20,
+  "marketCap": 25095,
+  "priceUsd": 0.00002509,
+  "liquidity": 12101.93,
+  "volume24h": 13898.59,
+  "volume1h": 13898.59,
+  "priceChange5m": -0.43,
+  "priceChange1h": -26.53,
+  "priceChange24h": -26.53,
+  "tokenSymbol": "One",
+  "tokenName": "It only takes one",
+  "pairCreatedAt": 1777504673000,
+  "safeBlocked": true,
+  "safeBlockedReasons": [
+    "concentration",
+    "age",
+    "lp"
+  ],
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/uatRP_SiNkN7BrRK?width=800&height=800&quality=95&format=auto",
+  "tokenCreator": null,
+  "tokenDecimals": null,
+  "tokenSupply": null,
+  "recentTransfers": "[0 transfers, redacted for fixture]",
+  "solscanTokenAgeHours": 0,
+  "solscanVolume24h": 13898.59,
+  "solscanTrades24h": null,
+  "solscanTraders24h": null,
+  "layers": {
+    "dexscreener": {
+      "trust": 0.9,
+      "available": true
+    },
+    "rugcheck": {
+      "trust": 1,
+      "available": true
+    },
+    "goplus": {
+      "trust": 1,
+      "available": false
+    },
+    "helius": {
+      "trust": 0.2,
+      "available": true
+    },
+    "solscan": {
+      "trust": 0.1,
+      "available": true
+    },
+    "chart": {
+      "trust": 1,
+      "available": true
+    },
+    "crossvalidation": {
+      "trust": 1,
+      "available": true
+    }
+  },
+  "honeypot": false,
+  "mintAuthority": false,
+  "freezeAuthority": false,
+  "lpBurned": false,
+  "lpLocked": false,
+  "lpLockedPct": null,
+  "candles": "[7 candles, redacted for fixture]",
+  "topHolderPct": 23.0804279038449,
+  "top10HolderPct": 46.536507637039,
+  "criticalActors": [
+    {
+      "type": "insider",
+      "tag": "Insider",
+      "pct": 23.1,
+      "addr": "BJ9Y…2jTe",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 95,
+      "repWarn": false,
+      "desc": "Holds <b>23.1%</b> of supply — one-wallet dump would crash the price."
+    }
+  ],
+  "verdictHistory": [
+    {
+      "ts": 1777506459880,
+      "verdict": "DANGER",
+      "score": 488,
+      "event": "Single wallet holds 23% of supply"
+    }
+  ],
+  "holderActivity": {
+    "rows": [
+      {
+        "role": "bot",
+        "label": "Static",
+        "avatar": "Insider",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "BJ9Y…2jTe",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "2aZo…awsw",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "C6U6…odb2",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "5pUa…dS9W",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "6FMu…sjUD",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "8sFz…7LbT",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      }
+    ],
+    "netFlowPct": 0,
+    "netFlowDirection": "flat"
+  },
+  "outcomeStats": {
+    "timeToRugMedianDisp": "11h",
+    "timeToRugMedianHours": 11,
+    "timeToRugSampleSize": 312,
+    "pctRugged24h": 76,
+    "pctSlowDeath": 16,
+    "pctAlive30d": 8,
+    "distribution": [
+      3,
+      5,
+      8,
+      11,
+      14,
+      12,
+      9,
+      7,
+      5,
+      4,
+      3,
+      2.5,
+      2,
+      1.8,
+      1.6,
+      1.4,
+      1.2,
+      1,
+      0.9,
+      0.8,
+      0.7,
+      0.7,
+      0.6,
+      0.6,
+      0.5,
+      0.5,
+      0.4,
+      0.4,
+      0.3,
+      0.3,
+      0.3,
+      0.3,
+      0.4,
+      0.5,
+      0.7,
+      0.9
+    ],
+    "youBucketIndex": 17,
+    "mostSimilar": [
+      {
+        "symbol": "PUMPDUMP",
+        "ruggedAfterHours": 18,
+        "loss": -94.1
+      },
+      {
+        "symbol": "FAKEMOON",
+        "ruggedAfterHours": 28,
+        "loss": -91.6
+      },
+      {
+        "symbol": "SLOWBLEED",
+        "ruggedAfterHours": 48,
+        "loss": -85.4
+      }
+    ]
+  },
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777506459960,
+  "requestId": "a0cfa2f0-0b9a-421a-b6f7-87c9559850c2",
+  "aiSummary": "One lands on DANGER because of stacked concentration risk — a single wallet holds 23.1% of supply, enough to dictate price action on its own.\n\nMint and freeze authorities are revoked and no honeypot — the contract surface itself is clean, which is why the verdict does not collapse all the way to RUG.\n\nBut the holder structure alone is enough to treat this as exit-liquidity risk."
+}
