@@ -19,14 +19,25 @@ const FIXTURES_DIR = join(__dirname, "..", "__tests__", "backtest", "fixtures")
 const TARGET = join(__dirname, "..", "__tests__", "backtest", "corpus-discovered.ts")
 
 async function main() {
-  let marked = 0
+  let added = 0
+  let stripped = 0
   const updated = await Promise.all(DISCOVERED.map(async (e) => {
     const path = join(FIXTURES_DIR, `${e.symbol.toLowerCase()}.json`)
     let exists = false
     try { await fs.access(path); exists = true } catch { /* missing */ }
     if (!exists && !e.skipFixture) {
-      marked++
+      added++
       return { ...e, skipFixture: true }
+    }
+    if (exists && e.skipFixture) {
+      // Bidirectional sync: a fixture has landed for this entry, so it
+      // is no longer pending capture. Strip the flag so the accuracy
+      // test grades the entry against the live fixture instead of
+      // skipping it as a warning.
+      stripped++
+      const next = { ...e }
+      delete next.skipFixture
+      return next
     }
     return e
   }))
@@ -70,7 +81,7 @@ async function main() {
   await fs.writeFile(TARGET, lines.join("\n"))
   const skipped = updated.filter(e => e.skipFixture).length
   const ready = updated.length - skipped
-  console.log(`Touched up: ${marked} entries newly marked skipFixture`)
+  console.log(`Touched up: +${added} marked skipFixture, -${stripped} stripped (fixture landed)`)
   console.log(`Total: ${updated.length} (${ready} fixtures ready, ${skipped} pending capture)`)
 }
 

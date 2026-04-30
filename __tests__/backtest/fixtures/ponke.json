@@ -1,0 +1,28 @@
+{
+  "score": 852,
+  "risk": "CAUTION",
+  "flags": [
+    {
+      "label": "Single wallet holds 17% of supply",
+      "severity": "critical",
+      "impact": 0
+    },
+    {
+      "label": "LP Burned 99% (GoPlus) ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Established token (30d+) ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "safeBlockedReasons": [
+    "concentration"
+  ],
+  "lpBurned": true,
+  "lpLocked": false,
+  "holders": 72443,
+  "liquidity": 1413558.66
+}
