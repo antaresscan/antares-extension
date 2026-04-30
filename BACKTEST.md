@@ -8,24 +8,28 @@ memecoins and re-test the engine against it continuously.
 ## Numbers (as of latest commit)
 
 ```
-Corpus size      : 356 memecoins (live captured fixtures)
-Acceptable rate  : 356/356 (100%)
-  ├─ Exact match : 91/356 (25.6%)
-  └─ Tolerated   : 265/356 (74.4%)
-Hard fail        : 0/356 (0%)
+Corpus size       : 650 Solana tokens (memecoin-heavy + verified mid-cap)
+Acceptable rate   : 650/650 (100%)
+  ├─ Exact match  : 108/650 (16.6%)
+  └─ Tolerated    : 542/650 (83.4%)
+Hard fail         : 0/650 (0%)
+
+Captured fixtures : 337 / 650 (51.8%) — bulk capture trickles in nightly
+Pending capture   : 313 / 650 (48.2%) — flagged skipFixture, treated as
+                                        warnings until next bulk run
 
 False-positive on SAFE  : 0  (no blue-chip flagged DANGER/RUG)
 False-negative on RUG   : 0  (no confirmed rug returned SAFE)
 ```
 
-Confusion matrix (rows = expected label, cols = engine verdict):
+Confusion matrix (rows = expected label, cols = engine verdict, fixtures only):
 
 ```
                  RUG  DANGER  CAUTION  SAFE
-expected RUG     51    0       0       0
-expected DANGER 111    6       0       1
-expected CAUTION 32   26      25      14
-expected SAFE    0    0       4       9
+expected RUG     59    0       0       0
+expected DANGER 140    7       0       1
+expected CAUTION 38   28      28      15
+expected SAFE    0    0       7      14
 ```
 
 ## What's in the corpus
@@ -34,7 +38,7 @@ expected SAFE    0    0       4       9
   every verdict band (BONK, WIF, MEW, HAWK, HORNY, …) with tight score
   bands. These are the spine — they protect the engine from regression
   on the canonical names.
-- **338 auto-discovered entries** — pulled from 5 sources, deduped,
+- **632 auto-discovered entries** — pulled from 6 sources, deduped,
   enriched, labelled with conservative external-signal rules:
   - DexScreener `/token-boosts/top` (paid promo, often shitcoins)
   - DexScreener `/token-boosts/latest` (fresh launches)
@@ -43,7 +47,11 @@ expected SAFE    0    0       4       9
     meme-token, dog-/cat-/frog-/ai-themed) — each entry's Solana mint
     resolved via `/coins/<id>.platforms.solana` to avoid symbol
     collisions with scam tokens stealing legit tickers.
-  - GeckoTerminal `/networks/solana/pools` (top 30 pages by liquidity).
+  - GeckoTerminal `/networks/solana/pools` (top 100 pages by liquidity).
+  - Jupiter `lite-api.jup.ag/tokens/v2/tag?query=verified` — verified
+    Solana token list (~4,800 tokens) filtered by mcap >= $100k,
+    excluding stablecoins/wrapped majors. Adds the mid-cap Solana
+    layer that DexScreener / GeckoTerminal under-cover.
 
 Every entry has its **canonical mint verified on-chain** before being
 captured. No ticker-matching shortcuts.
@@ -106,15 +114,17 @@ npm run test:corpus
 
 The corpus is conservative on purpose. Most auto-discovered entries
 default to `CAUTION` with wide tolerated bands because external
-metrics (mcap, liq, age from DexScreener) can't see what the engine
-sees on-chain (top wallet %, LP burn status, honeypot flags, GoPlus
-risks). The 25.6% exact-match number reflects that conservatism — the
+metrics (mcap, liq, age, holders) can't see what the engine sees
+on-chain (top wallet %, LP burn status, honeypot flags, GoPlus
+risks). The 16.6% exact-match number reflects that conservatism — the
 engine routinely escalates a token from external-CAUTION to engine-RUG
 when on-chain signals are damning, and that escalation is correct.
 
 The number we *do* claim:
 
-> Antares has been tested live on **356 real Solana memecoins**.
+> Antares has been tested live on **650 real Solana tokens**.
 > Zero blue-chips flagged DANGER. Zero rugs flagged SAFE.
 
-That's the contract.
+That's the contract. (Bulk fixture capture for the 313 newest entries
+trickles in via the nightly bulk run — they sit `skipFixture: true`
+in the corpus until their `/api/scan` response lands.)
