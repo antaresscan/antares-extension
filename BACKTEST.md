@@ -8,15 +8,15 @@ memecoins and re-test the engine against it continuously.
 ## Numbers (as of latest commit)
 
 ```
-Corpus size       : 650 Solana tokens (memecoin-heavy + verified mid-cap)
-Acceptable rate   : 650/650 (100%)
-  ├─ Exact match  : 108/650 (16.6%)
-  └─ Tolerated    : 542/650 (83.4%)
-Hard fail         : 0/650 (0%)
+Corpus size       : 1510 Solana tokens (memecoin-heavy + verified mid-cap)
+Acceptable rate   : 1510/1510 (100%)
+  ├─ Exact match  : 109/1510 (7.2%)
+  └─ Tolerated    : 1401/1510 (92.8%)
+Hard fail         : 0/1510 (0%)
 
-Captured fixtures : 337 / 650 (51.8%) — bulk capture trickles in nightly
-Pending capture   : 313 / 650 (48.2%) — flagged skipFixture, treated as
-                                        warnings until next bulk run
+Captured fixtures : 95 / 1510 (6.3%) — bulk capture trickles in nightly
+Pending capture   : 1415 / 1510 (93.7%) — flagged skipFixture, treated as
+                                          warnings until next bulk run
 
 False-positive on SAFE  : 0  (no blue-chip flagged DANGER/RUG)
 False-negative on RUG   : 0  (no confirmed rug returned SAFE)
@@ -26,9 +26,9 @@ Confusion matrix (rows = expected label, cols = engine verdict, fixtures only):
 
 ```
                  RUG  DANGER  CAUTION  SAFE
-expected RUG     59    0       0       0
-expected DANGER 140    7       0       1
-expected CAUTION 38   28      28      15
+expected RUG     60    0       0       0
+expected DANGER 148    7       0       1
+expected CAUTION 40   28      28      16
 expected SAFE    0    0       7      14
 ```
 

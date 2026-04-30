@@ -6258,4 +6258,8602 @@ export const DISCOVERED: CorpusEntry[] = [
     source: "external",
     skipFixture: true, // pending first capture
   },
+  {
+    ca: "A8C3xuqscfmyLrte3VmTqrAq8kgMASius9AFNANwpump",
+    symbol: "FWOG",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $4.40M, liq $621k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+  },
+  {
+    ca: "BPSoLzmLQn47EP5aa7jmFngRL8KC3TWAeAwXwZD8ip3P",
+    symbol: "BPSOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $4.38M, liq $4383k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CDCSoLckzozyktpAp9FWT3w92KFJVEUxAU7cNu2Jn3aX",
+    symbol: "CDCSOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $4.24M, liq $4243k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "cJpUMp5R7rZ6fGeLHbHhrRuJzK9mkyKDjZqNpT3ondo",
+    symbol: "INTCON",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $4.18M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Fz9edBpaURPPzpKVRR1A8PENYDEgHqwx5D5th28ondo",
+    symbol: "MUON",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $4.15M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Ea5SjE2Y6yvCeW5dYTn7PYMuW5ikXkvbGdcmSnXeaLjS",
+    symbol: "PAI",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $4.11M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "LnTRntk2kTfWEY6cVB8K9649pgJbt6dJLS1Ns1GZCWg",
+    symbol: "LANTERNSOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $4.07M, liq $4073k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AUSD1jCcCyPLybk1YnvPWsHQSrZ46dxwoMniN4N2UEB9",
+    symbol: "AUSD",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $4.04M, liq $503k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8wXtPeU6557ETkp9WHFY1n1EcU6NxDvbAggHGsMYiHsB",
+    symbol: "GME",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.96M, liq $569k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "STREAMribRwybYpMmSYoCsQUdr6MZNXEqHgm7p1gu9M",
+    symbol: "STREAM",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.94M, liq $11k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9McvH6w97oewLmPxqQEoHUAv3u5iYMyQ9AeZZhguYf1T",
+    symbol: "ANON",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.91M, liq $120k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FQgtfugBdpFN7PZ6NdPrZpVLDBrPGxXesi4gVu3vErhY",
+    symbol: "BMT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.91M, liq $81k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8ZHE4ow1a2jjxuoMfyExuNamQNALv5ekZhsBn5nMDf5e",
+    symbol: "MORI",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.88M, liq $169k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "6HHzBVkxtoz86Bjy2duaUw77hVfJzQkuoLizWeEMBLEM",
+    symbol: "EMBLEM",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.81M, liq $116k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "WENWENvqqNya429ubCdR81ZmD69brwQaaBYY6p3LCpk",
+    symbol: "WEN",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.81M, liq $61k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Cz7LGKdZPpAxonXx23ZYPW3RtDQvjcf17ZDCZEzFpump",
+    symbol: "401JK",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.76M, liq $122k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "C29ebrgYjYoJPMGPnPSGY1q3mMGk4iDSqnQeQQA7moon",
+    symbol: "NOBODY",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.75M, liq $292k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FAFxVxnkzZHMCodkWyoccgUNgVScqMw2mhhQBYDFjFAF",
+    symbol: "FAF",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.68M, liq $257k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "SCSuPPNUSypLBsV4darsrYNg4ANPgaGhKhsA3GmMyjz",
+    symbol: "SCS",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.64M, liq $172k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CorvuSSoLxPKLoXWXSfn8pFSMhCRHhe7Uwqe874cmwvg",
+    symbol: "CORVUSSOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.61M, liq $3607k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CgnTSoL3DgY9SFHxcLj6CgCgKKoTBr6tp4CPAEWy25DE",
+    symbol: "CGNTSOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.56M, liq $3560k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "J8PSdNP3QewKq2Z1JJJFDMaqF7KcaiJhR7gbr5KZpump",
+    symbol: "TRIPLET",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.55M, liq $429k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9zqre5sRRdFvKqyTyvEd1jcKDRF4g47s7mZSGUnQpump",
+    symbol: "BOOB",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.52M, liq $95k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "4UeLCRqARmfb6e6KQijtiktqqXUxbfk6jZng7DhuBAGS",
+    symbol: "ASTEROID_4UEL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.47M, liq $491k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "ACtfUWtgvaXrQGNMiohTusi5jcx5RJf5zwu9aAxkpump",
+    symbol: "UNC",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.37M, liq $352k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "dmfunVbjA71VZu2L1h74Exji6Avs9tsL63uneCDLocX",
+    symbol: "FUN",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.34M, liq $3k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9999FVbjHioTcoJpoBiSjpxHW6xEn3witVuXKqBh2RFQ",
+    symbol: "SLERF",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.32M, liq $314k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DEkqHyPN7GMRJ5cArtQFAWefqbZb33Hyf6s5iCwjEonT",
+    symbol: "USDE",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.29M, liq $2497k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8J69rbLTzWWgUJziFY8jeu5tDwEPBwUz4pKBMr5rpump",
+    symbol: "WOJAK",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.25M, liq $347k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "picobAEvs6w7QEknPce34wAE4gknZA9v5tTonnmHYdX",
+    symbol: "PICOSOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.17M, liq $3171k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "SNS8DJbHc34nKySHVhLGMUUE72ho6igvJaxtq9T3cX3",
+    symbol: "SNS",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.17M, liq $9k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "mtnc7NNSpAJuvYNmayXU63WhWZGgFzwQ2yeYWqemeta",
+    symbol: "MTN",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.16M, liq $2k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "yUSDX7W89jXWn4zzDPLnhykDymSjQSmpaJ8e4fjC1fg",
+    symbol: "YUSD",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.16M, liq $43k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "G6mNZN8o16QBcTqfuEx6FzjiWa94B1XWhfyDxjDibrrr",
+    symbol: "OOO_G6MN",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.15M, liq $135k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "6dKCoWjpj5MFU5gWDEFdpUUeBasBLK3wLEwhUzQPAa1e",
+    symbol: "CHEX",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.11M, liq $24k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FqGxVMsvqxchQWRD5CyQpPK1aW13Db8EvC7PvxwVpk3w",
+    symbol: "LOVE",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.10M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "WFRGSWjaz8tbAxsJitmbfRuFV2mSNwy7BMWcCwaA28U",
+    symbol: "WFRAGSOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.10M, liq $55k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BktHEAc2WS8TQi2vmavn1rA4L1WJuwF3Vkk3DnwwARti",
+    symbol: "ENRON_BKTH",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.09M, liq $2k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3JgFwoYV74f6LwWjQWnr3YDPFnmBdwQfNyubv99jqUoq",
+    symbol: "WPOND",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.06M, liq $46k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "SW1TCHLmRGTfW5xZknqQdpdarB8PD95sJYWpNp9TbFx",
+    symbol: "SWTCH",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.06M, liq $18k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "F35yYmTR6PqkbTx449P1eGhB57mRhWAdYs93eCo2dMZR",
+    symbol: "PBUSDC",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.03M, liq $31k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Ex5DaKYMCN6QWFA4n67TmMwsH8MJV68RX6YXTmVM532C",
+    symbol: "USDV",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.02M, liq $251k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9f52wiW2zrt2497HroMHtZtuj7VzWu4AsEusmW3pump",
+    symbol: "$NRG",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $3.00M, liq $98k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DNhQZ1CE9qZ2FNrVhsCXwQJ2vZG8ufZkcYakTS5Jpump",
+    symbol: "ZAUTH",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.98M, liq $94k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CcLd8HTAKLWtQHatqPwBQjtuCA72FNB9E1ckRTEzpump",
+    symbol: "ALTSZN",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.97M, liq $71k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "C9dJfTGUzhuqPWxh9mcDr66JZN4uzXh2gh9EWnEdpump",
+    symbol: "WAR",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.96M, liq $104k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "4SoQ8UkWfeDH47T56PA53CZCeW4KytYCiU65CwBWoJUt",
+    symbol: "MNT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.96M, liq $162k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "4h49hPGphLNJNDRyiBwzvKoasR3rw1WJCEv19PhUbSS4",
+    symbol: "HELLO",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.95M, liq $10k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GDfnEsia2WLAW5t8yx2X5j2mkfA74i5kwGdDuZHt7XmG",
+    symbol: "CROWN",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.93M, liq $9k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8Aq4fWMgPqJbF3w8w8PnLDRVUAFe4mzsCvPKxAArbonk",
+    symbol: "REAL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.93M, liq $105k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "x95HN3DWvbfCBtTjGm587z8suK3ec6cwQwgZNLbWKyp",
+    symbol: "$HACHI",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.91M, liq $79k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AT79ReYU9XtHUTF5vM6Q4oa9K8w7918Fp5SU7G1MDMQY",
+    symbol: "SPDR",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.89M, liq $66k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BMBtwz6LFDJVJd2aZvL5F64fdvWP3RPn4NP5q9Xe15UD",
+    symbol: "BMB",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.89M, liq $1k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3xvLSHrLcM7246X1vu34cM9gNX741kQrzqj6T2HhLvXp",
+    symbol: "COIN",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.86M, liq $10k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HVbpJAQGNpkgBaYBZQBR1t7yFdvaYVp2vCQQfKKEN4tM",
+    symbol: "USDP",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.86M, liq $2k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "43YakhC3TcSuTgSXnxFgw8uKL8VkuLuFa4M6Bninpump",
+    symbol: "LC",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.85M, liq $124k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Hh3oTaqDCKKfdBgsQEvxp9sUwyNf8x9qmKqEMLBWpump",
+    symbol: "HODL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.85M, liq $244k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HZG1RVn4zcRM7zEFEVGYPGoPzPAWAj2AAdvQivfmLYNK",
+    symbol: "LYNK",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.82M, liq $145k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GpmmQBjXxoppbELykD2PGQ4wwVR74o5sSZXVW6hVpump",
+    symbol: "EYED",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.82M, liq $67k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "4G86CMxGsMdLETrYnavMFKPhQzKTvDBYGMRAdVtr72nu",
+    symbol: "$NAP",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.81M, liq $2545k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2oGLxYuNBJRcepT1mEV6KnETaLD7Bf6qq3CM6skasBfe",
+    symbol: "PUPS",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.80M, liq $46k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BorGY4ub2Fz4RLboGxnuxWdZts7EKhUTB624AFmfCgX",
+    symbol: "BORGY",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.79M, liq $7k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GoLDppdjB1vDTPSGxyMJFqdnj134yH6Prg9eqsGDiw6A",
+    symbol: "GOLD",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.78M, liq $95k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GkyPYa7NnCFbduLknCfBfP7p8564X1VZhwZYJ6CZpump",
+    symbol: "CHILLHOUSE",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.78M, liq $250k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8avjtjHAHFqp4g2RR9ALAGBpSTqKPZR8nRbzSTwZERA",
+    symbol: "ZERA",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.77M, liq $114k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "yso11zxLbHA3wBJ9HAtVu6wnesqz9A2qxnhxanasZ4N",
+    symbol: "YSOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.74M, liq $90k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HMaJxXp3Ja81jSwigF6zGaMt79hNZuczrw6i7LjTbonk",
+    symbol: "🎒",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.72M, liq $94k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DQnkBM4eYYMnVE8Qy2K3BB7uts1fh2EwBVktEz6jpump",
+    symbol: "DJI6930",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.72M, liq $111k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3B1ijcocM5EDga6XxQ7JLW7weocQPWWjuhBYG8Vepump",
+    symbol: "BP_3B1I",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.69M, liq $148k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GMzuntWYJLpNuCizrSR7ZXggiMdDzTNiEmSNHHunpump",
+    symbol: "DREAMS",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.68M, liq $160k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8SkfuQkYNTskoQUbbjr2JbZQeqQV9egnJXgfMXf5bonk",
+    symbol: "FIH",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.68M, liq $161k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "PAYmo6moDF3Ro3X6bU2jwe2UdBnBhv8YjLgL1j4DxGu",
+    symbol: "PAYAI",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.66M, liq $167k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GdZ9rwHyKcriLdbSzhtEFLe5MLs7Vk6AY1aE5ei7nsmP",
+    symbol: "AVO",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.65M, liq $114k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HhJpBhRRn4g56VsyLuT8DL5Bv31HkXqsrahTTUCZeZg4",
+    symbol: "$MYRO",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.64M, liq $322k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "jUpa2aDCzvdR9EF4fqDXmuyMUkonPTohphABLmRkRFj",
+    symbol: "RIFT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.63M, liq $79k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AAASV2sCaykNGdEQzJ1mMVNfJMsgEtR7PJaqrCuk4bq6",
+    symbol: "DEJAAA",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.62M, liq $71k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AUuCEHQ7sm2i5GmaHrpE961voWcTY8U6mgrkhcV7pump",
+    symbol: "QST",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.61M, liq $89k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "32CdQdBUxbCsLy5AUHWmyidfwhgGUr9N573NBUrDpump",
+    symbol: "MAXXING",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.59M, liq $312k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8Jx8AAHj86wbQgUTjGuj6GTTL5Ps3cqxKRTvpaJApump",
+    symbol: "PENGUIN",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.57M, liq $169k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2nP9yKQNSGQy851iyawDvBkzkK2R2aqKArQCKc2gpump",
+    symbol: "PSYOPANIME",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.57M, liq $190k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BDCs2xEqzXyRpp9P6uPDnAvERpLKBfzHPEzbe3BfCxDY",
+    symbol: "BDC",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.56M, liq $1k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "69kdRLyP5DTRkpHraaSZAQbWmAwzF9guKjZfzMXzcbAs",
+    symbol: "USA",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.50M, liq $269k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AURYydfxJib1ZkTir1Jn1J9ECYUtjb6rKQVmtYaixWPP",
+    symbol: "AURY",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.45M, liq $133k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Ra1so1sTkvX3PorAM9ewqrsUMz9sPSbfFZ5oZUjN4oc",
+    symbol: "RAISOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.44M, liq $2444k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3wtGGWZ8wLWW6BqtC5rxmkHdqvM62atUcGTH4cw3pump",
+    symbol: "ALPHA",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.43M, liq $65k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "25hAyBQfoDhfWx9ay6rarbgvWGwDdNqcHsXS3jQ3mTDJ",
+    symbol: "MANEKI",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.42M, liq $2244k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "J9BcrQfX4p9D1bvLzRNCbMDv8f44a9LFdeqNE4Yk2WMD",
+    symbol: "ISC",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.42M, liq $55k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "iotEVVZLEywoTn1QdwNPddxPWszn3zFhEot3MfL9fns",
+    symbol: "IOT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.39M, liq $1k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DpBzjtgGLF7QA9Ug3eUVGbnqa6j3jvYBn1XuQuktvfhm",
+    symbol: "DOGE-1",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.38M, liq $92k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HxhWkVpk5NS4Ltg5nij2G671CKXFRKPK8vy271Ub4uEK",
+    symbol: "HXRO",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.37M, liq $4k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "PreweJYECqtQwBtpxHL171nL2K6umo692gTm7Q3rpgF",
+    symbol: "OPENAI",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.35M, liq $607k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "XAnDeUmMcqFyCdef9jzpNgtZPjTj3xUMj9eXKn2reFN",
+    symbol: "XANDSOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.33M, liq $2331k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "ENcwYGVhRsEqKpH4SzRH4mcYSGc9Cb6s4WJGS9ojpump",
+    symbol: "KOKOP",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.32M, liq $61k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "PresTj4Yc2bAR197Er7wz4UUKSfqt6FryBEdAriBoQB",
+    symbol: "ANDURIL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.32M, liq $270k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "spinezMPKxkBpf4Q9xET2587fehM3LuKe4xoAoXtSjR",
+    symbol: "SPINE",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.31M, liq $9k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "7oBYdEhV4GkXC19ZfgAvXpJWp2Rn9pm1Bx2cVNxFpump",
+    symbol: "CAR",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.31M, liq $118k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AZbem4s8iLJE5eniDZJ7c8q1ahbfMwWgCA8TxVW2tDUB",
+    symbol: "VIBECOIN",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.28M, liq $60k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "sonickAJFiVLcYXx25X9vpF293udaWqDMUCiGtk7dg2",
+    symbol: "SONICSOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.25M, liq $2k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9ezFthWrDUpSSeMdpLW6SDD9TJigHdc4AuQ5QN5bpump",
+    symbol: "XERIS",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.24M, liq $76k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9hX59xHHnaZXLU6quvm5uGY2iDiT3jczaReHy6A6TYKw",
+    symbol: "ZENBTC",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.24M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CRAMvzDsSpXYsFpcoDr6vFLJMBeftez1E7277xwPpump",
+    symbol: "PEPECAT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.23M, liq $71k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "NomuBwKJEvJ8d4dsaq7NZoHaXWXzKcfke1c7Y8ruFYL",
+    symbol: "NOMU",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.20M, liq $23k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "omfgRBnxHsNJh6YeGbGAmWenNkenzsXyBXm3WDhmeta",
+    symbol: "OMFG",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.20M, liq $324k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "bbahNA5vT9WJeYft8tALrH1LXWffjwqVoUbqYa1ondo",
+    symbol: "GOOGLON",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.20M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CoRAitPvr9seu5F9Hk39vbjqA1o1XuoryHjSk1Z1q2mo",
+    symbol: "CORAL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.15M, liq $98k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BBKPiLM9KjdJW7oQSKt99RVWcZdhF6sEHRKnwqeBGHST",
+    symbol: "GHOST",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.12M, liq $84k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "degod39zqQWzpG6h4b7SJLLTCFE6FeZnZD8BwHBFxaN",
+    symbol: "DEGOD",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.12M, liq $104k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+    symbol: "SAMO",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.09M, liq $9k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "69LjZUUzxj3Cb3Fxeo1X4QpYEQTboApkhXTysPpbpump",
+    symbol: "CODEC",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.08M, liq $114k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DitHyRMQiSDhn5cnKMJV2CDDt6sVct96YrECiM49pump",
+    symbol: "HOUSE",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.06M, liq $228k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "iy11ytbSGcUnrjE6Lfv78TFqxKyUESfku1FugS9ondo",
+    symbol: "SLVON",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.00M, liq $50k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "kLqMvUm1p4pRbxU4r8kWCTVAuWMJLtcTJqGb4b5pump",
+    symbol: "BRENT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.00M, liq $63k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "G85CQEBqwsoe3qkb5oXXpdZFh7uhYXhDRsQAM4aJuBLV",
+    symbol: "ORGO",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $2.00M, liq $60k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "YAFAJvjUv9MVAKcTE7Y8ouo45QNKVK6fCMzdxt2tjPs",
+    symbol: "YAFA",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.99M, liq $126k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "yLdBrBJAYYkNMNSE48BAXYLTXhZsbHWtmWEFHgHSD6a",
+    symbol: "YIELDSOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.97M, liq $1974k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "sTorERYB6xAZ1SSbwpK3zoK2EEwbBrc7TZAzg1uCGiH",
+    symbol: "STORE",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $1957k, liq $13.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CudisfkgWvMKnZ3TWf6iCuHm8pN2ikXhDcWytwz6f6RN",
+    symbol: "CUDIS",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.94M, liq $49k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "svy5ErijNYy9hEVzxknCdwWdZ3NeXJTdpb9Ndnso17f",
+    symbol: "GBOY",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.92M, liq $302k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CrAr4RRJMBVwRsZtT62pEhfA9H5utymC2mVx8e7FreP2",
+    symbol: "MON",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.92M, liq $152k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CRTx1JouZhzSU6XytsE42UQraoGqiHgxabocVfARTy2s",
+    symbol: "CRT",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $1921k, liq $0.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FRAGMEWj2z65qM62zqKhNtwNFskdfKs4ekDUDX3b4VD5",
+    symbol: "FRAG",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $1911k, liq $3.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "6DNSN2BJsaPFdFFc1zP37kkeNe4Usc1Sqkzr9C9vPWcU",
+    symbol: "TBTC",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.90M, liq $37k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "sctmTAsDn4tLUcemqoqYijfuRkiEfAMPi84PNq2EueR",
+    symbol: "NXSOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.90M, liq $1896k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "LYLikzBQtpa9ZgVrJsqYGQpR3cC1WMJrBHaXGrQmeta",
+    symbol: "LOYAL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.86M, liq $389k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AMjzRn1TBQwQfNAjHFeBb7uGbbqbJB7FzXAnGgdFPk6K",
+    symbol: "SOLCEX",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.86M, liq $114k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3AJYCjrhKitmBd8tRUurPA5dGHCAQh6A8L9DkuSC37Rm",
+    symbol: "USD*-J",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $1859k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "34q2KmCvapecJgR6ZrtbCTrzZVtkt3a5mHEA3TuEsWYb",
+    symbol: "LOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.85M, liq $159k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3vgopg7xm3EWkXfxmWPUpcf7g939hecfqg18sLuXDzVt",
+    symbol: "HAROLD",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.83M, liq $123k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "QdyjMr627PR7NtWdcEcgFmDm5haBVUWEcj4jdM4boop",
+    symbol: "KUMA",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.81M, liq $53k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "NV2RYH954cTJ3ckFUpvfqaQXU4ARqqDH3562nFSpump",
+    symbol: "PUNCH",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.79M, liq $224k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "H8xQ6poBjB9DTPMDTKWzWPrnxu4bDEhybxiouF8Ppump",
+    symbol: "TOKABU",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.78M, liq $156k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "XBGdqJ9P175hCC1LangCEyXWNeCPHaKWA17tymz2PrY",
+    symbol: "XBG",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $1779k, liq $9.9k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "MangmsBgFqJhW4cLUR9LxfVgMboY1xAoP8UUBiWwwuY",
+    symbol: "MANGOSOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.77M, liq $1768k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "ETAtLmCmsoiEEKfNrHKJ2kYy3MoABhU6NQvpSfij5tDs",
+    symbol: "MEDIA",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $1745k, liq $16.9k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "PrekqLJvJ3qVdXmBGDiexvwUTF4rLFDa6HWS4HJbw9S",
+    symbol: "NEURALINK",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.74M, liq $223k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HCgvbV9Qcf9TVGPGKMGbVEj8WwwVD6HhTt5E2i3qkeN9",
+    symbol: "METAV",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.70M, liq $1629k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "61Wj56QgGyyB966T7YsMzEAKRLcMvJpDbPzjkrCZc4Bi",
+    symbol: "COPPERINU",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.69M, liq $113k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Fh7mLxtPAysdvHcMcJ37A3vc6WvBVh7JVDwxmwk6pump",
+    symbol: "GBACK",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.69M, liq $53k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HUPfpnsaJtJGpJxAPNX1vXah7BgYiQYt1c2JMgMumvPs",
+    symbol: "MPST",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.69M, liq $64k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9doRRAik5gvhbEwjbZDbZR6GxXSAfdoomyJR57xKpump",
+    symbol: "GRPH",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.66M, liq $135k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CB9dDufT3ZuQXqqSfa1c5kY935TEreyBw9XJXxHKpump",
+    symbol: "USDUC",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.66M, liq $142k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "C7heQqfNzdMbUFQwcHkL9FvdwsFsDRBnfwZDDyWYCLTZ",
+    symbol: "$COLLAT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.66M, liq $161k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5SVG3T9CNQsm2kEwzbRq6hASqh1oGfjqTtLXYUibpump",
+    symbol: "SIGMA",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.65M, liq $184k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HALALGvdNJ8u1J3uFFSsba1tyYPRF3vnYfCQ3CpJasfD",
+    symbol: "IASOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.64M, liq $1639k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "D25bi7oHQjqkVrzbfuM6k2gzVNHTSpBLhtakDCzCCDUB",
+    symbol: "ANONCOIN",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.64M, liq $51k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9AvytnUKsLxPxFHFqS6VLxaxt5p6BhYNr53SD2Chpump",
+    symbol: "67",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.63M, liq $156k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3Gdx9LmKZJyciSz3mbge3YKLqskiMG71m1iDMPAwpump",
+    symbol: "ARMY",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.63M, liq $63k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "kinXdEcpDQeHPEuQnqmUgtYykqKGVFq6CeVX5iAHJq6",
+    symbol: "KIN",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $1627k, liq $3.4k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "G4uJcvo5UAJ3fU1gj96e5DjBJU2RDDPx9Txzbjw6Y3LA",
+    symbol: "CAESAR",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $1624k, liq $11.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "6ogzHhzdrQr9Pgv6hZ2MNze7UrzBMAFyBBWUYp1Fhitx",
+    symbol: "RETARDIO",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.62M, liq $159k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GodL6KZ9uuUoQwELggtVzQkKmU1LfqmDokPibPeDKkhF",
+    symbol: "GODL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.61M, liq $149k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Dxg9cLvssqb1WEMpyynjf17kGRc4UTNyUqjzNj99opus",
+    symbol: "OPUS",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.60M, liq $135k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GmDADFpfwjfzZq9MfCafMDTS69MgVjtzD7Fd9a4ondo",
+    symbol: "ORCLON",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $1582k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Gj4TowizfdkRJNsTgBEkj2WpBZZmGE7o9nN8q6RhBAGS",
+    symbol: "LORIA",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.58M, liq $52k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DeaKMzAeZja3Mh5okZE6WUvygLP3Lfuvm6Rg78HqXTz9",
+    symbol: "SOLNIC",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.56M, liq $80k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "usdsfJbX78ktZUnoRC7dwvvQz7xH3WdkpGne76gdUia",
+    symbol: "USD+",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.56M, liq $104k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BLiUhfaUFbSoMVeRqq3QYTA1eJsTsB3ZDEYtUsGGQ9em",
+    symbol: "SFG",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.55M, liq $47k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "NUZ3FDWTtN5SP72BsefbsqpnbAY5oe21LE8bCSkqsEK",
+    symbol: "FLP.1",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $1541k, liq $2.6k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AhhdRu5YZdjVkKR3wbnUDaymVQL2ucjMQ63sZ3LFHsch",
+    symbol: "VCHF",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.54M, liq $306k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "gEGtLTPNQ7jcg25zTetkbmF7teoDLcrfTnQfmn2ondo",
+    symbol: "NVDAON",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $1519k, liq $4.6k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "G7iK3prSzAA4vzcJWvsLUEsdCqzR7PnMzJV61vSdFSNW",
+    symbol: "NST",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.49M, liq $103k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3DFnwGLJUfxc4eMxDgQwW6oWaeKBrJ1iwA26YjTfpump",
+    symbol: "STKR",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.49M, liq $58k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HyLXondhNhGkvWPXr8z4EPSgZNRRs4j8BHdyqMdVpump",
+    symbol: "MOLT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.49M, liq $61k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Cy1GS2FqefgaMbi45UunrUzin1rfEmTUYnomddzBpump",
+    symbol: "MOBY",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.48M, liq $144k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8XtRWb4uAAJFMP4QQhoYYCWR6XXb7ybcCdiqPwz9s5WS",
+    symbol: "ALON",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.48M, liq $170k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AVF9F4C4j8b1Kh4BmNHqybDaHgnZpJ7W7yLvL7hUpump",
+    symbol: "LOBSTAR",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.47M, liq $187k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FRmH6iRkMr33DLG6zVLR7EM4LojBFAuq6NtFzG6ondo",
+    symbol: "MSFTON",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $1466k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FLUXBmPhT3Fd1EDVFdg46YREqHBeNypn1h4EbnTzWERX",
+    symbol: "FLUXB",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $1458k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "jucy5XJ76pHVvtPZb5TKRcGQExkwit2P5s4vY8UzmpC",
+    symbol: "JUCYSOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.45M, liq $1452k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CniPCE4b3s8gSUPhUiyMjXnytrEqUrMfSsnbBjLCpump",
+    symbol: "PWEASE",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.45M, liq $224k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BpdHpqznEgYPXZNrJVRZvBhdWoafYLVVuLxTQo34pump",
+    symbol: "SSR",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.44M, liq $46k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "YUYAiJo8KVbnc6Fb6h3MnH2VGND4uGWDH4iLnw7DLEu",
+    symbol: "YU",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $1434k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "H6qnGp5anYgMJYAaPXKSqKVYa6mKDrn1ruAeK5Dmbonk",
+    symbol: "SERIOUS",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.43M, liq $66k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "38PgzpJYu2HkiYvV8qePFakB8tuobPdGm2FFEn7Dpump",
+    symbol: "GORK",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.43M, liq $211k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AT13ipG8K4HDyEJm3H1ZVQV2Bw8sihewoLQReSMsYo3o",
+    symbol: "AU79",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.42M, liq $106k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "EXoMAHnw2Gw5fXJTektedLJDVn9vn8tLTEQX7gHccQKR",
+    symbol: "EXO",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $1408k, liq $9.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AywAYdNJnSLSXwKWYxDciPjqGRnwp4iZdQptuuQTpump",
+    symbol: "MICHI",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.41M, liq $47k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Dx2bQe2UPv4k3BmcW8G2KhaL5oKsxduM5XxLSV3Sbonk",
+    symbol: "HOSICO",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.39M, liq $64k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "29CWsqH84TykHDDwA6DtETUtXQPuKbVgKCmxtkBsbrrr",
+    symbol: "BELIEF",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.36M, liq $103k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9se6kma7LeGcQWyRBNcYzyxZPE3r9t9qWZ8SnjnN3jJ7",
+    symbol: "LUNA",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.36M, liq $85k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BFgdzMkTPdKKJeTipv2njtDEwhKxkgFueJQfJGt1jups",
+    symbol: "URANUS",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.35M, liq $88k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8c71AvjQeKKeWRe8jtTGG1bJ2WiYXQdbjqFbUfhHgSVk",
+    symbol: "$GARY",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $1345k, liq $27.2k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "ch7rTovcUK7C1zNFM7F93kXU2CByYUsJT4pwYx7pump",
+    symbol: "PP_CH7R",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.34M, liq $57k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GMai1NvHreNe135cvxya1gHaUJZiT1NAvbJkF4hPHQJ9",
+    symbol: "GM",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.33M, liq $223k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GtDZKAqvMZMnti46ZewMiXCa4oXF4bZxwQPoKzXPFxZn",
+    symbol: "NUB",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.32M, liq $240k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9TPL8droGJ7jThsq4momaoz6uhTcvX2SeMqipoPmNa8R",
+    symbol: "VNXAU",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.31M, liq $82k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "463SK47VkB7uE7XenTHKiVcMtxRsfNE2X4Q9wByaURVA",
+    symbol: "TSUKI",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.30M, liq $81k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "D1wZHkfk8d6QsCjF3NTiYHLzsZJ2Qb4Q7WBFFbGuzBLV",
+    symbol: "INFRA",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.29M, liq $86k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "soKqZS9pASwBNS46G388nhK7XVtPaTyReffXEd3zora",
+    symbol: "ZORA",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $1283k, liq $6.5k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DLUNTKRQt7CrpqSX1naHUYoBznJ9pvMP65uCeWQgYnRK",
+    symbol: "SOLC",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.27M, liq $80k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "C2omVhcvt3DDY77S2KZzawFJQeETZofgZ4eNWWkXpump",
+    symbol: "BULLISH",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.26M, liq $60k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "sc1dNAxRBj5CNWaGC26AR7PEW75R36Umzt1V8vuP8kZ",
+    symbol: "SCLOUD",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $1255k, liq $0.2k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2ocYd9f3564zUL1j6zUi8FR6Rn4Yo76BvXoZwLYASYFR",
+    symbol: "SYFR",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.25M, liq $62k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2giC2MXhhENo4jkbRjfAgNAZboTJtXZTsSFbMZKwpump",
+    symbol: "KERMIT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.24M, liq $47k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9UNqoPEXXxEnEphmyYsZYdL5dnmAUtdiKRUchpnUF5Ph",
+    symbol: "$WHISKEY",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.23M, liq $63k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "4ikwYoNvoGEwtMbziUyYBTz1zRM6nmxspsfw9G7Bpump",
+    symbol: "CRYPTO",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.22M, liq $64k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5csfa95Xf8ebiCwP9joQ7mtC8KwFvnnejnYx5FbYpump",
+    symbol: "XMONEY",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.20M, liq $63k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AAqZ6CECabwnYLm3FDqPrVQotXLPGQ3BJSfecYmXeJU5",
+    symbol: "GOTM",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $1193k, liq $17.9k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9mNjA6BizTwpvd4DS3o7BjwZ6aPM9DC2jLHS7JFGbonk",
+    symbol: "SCAM_9MNJ",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.19M, liq $58k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "kedoobK2qe2f1V8ee5vDXFr3H7gKnhQVNJXA3Ltcyai",
+    symbol: "U1",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.18M, liq $57k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8Ki8DpuWNxu9VsS3kQbarsCWMcFGWkzzA8pUPto9zBd5",
+    symbol: "LOCKIN",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.17M, liq $129k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5LafQUrVco6o7KMz42eqVEJ9LW31StPyGjeeu5sKoMtA",
+    symbol: "MUMU",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.17M, liq $182k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2oQNkePakuPbHzrVVkQ875WHeewLHCd2cAwfwiLQbonk",
+    symbol: "AOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.16M, liq $88k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "hy1opf2bqRDwAxoktyWAj6f3UpeHcLydzEdKjMYGs2u",
+    symbol: "HYLOSOL+",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.16M, liq $1158k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GTH3wG3NErjwcf7VGCoXEXkgXSHvYhx5gtATeeM5JAS1",
+    symbol: "WHALES",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.14M, liq $66k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "6UpQcMAb5xMzxc7ZfPaVMgx3KqsvKZdT5U718BzD5We2",
+    symbol: "WXRP",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.13M, liq $490k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "PreC1KtJ1sBPPqaeeqL6Qb15GTLCYVvyYEwxhdfTwfx",
+    symbol: "XAI",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $1130k, liq $0.9k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "EFFECT1A1R3Dz8Hg4q5SXKjkiPc6KDRUWQ7Czjvy4H7E",
+    symbol: "EFFECT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.13M, liq $38k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DgNsbf4wFQJNss6MKfdr5sSAb3Mn7m9HmYwemgXFjupx",
+    symbol: "CFG",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $1114k, liq $12.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "ibRLJrmgVuZh3tdDpjGgU5CQCCxpxuer7B7ckjGdLsv",
+    symbol: "IBRL",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $1111k, liq $0.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "6iA73gWCKkLWKbVr8rgibV57MMRxzsaqS9cWpgKBpump",
+    symbol: "我的刀盾",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.11M, liq $137k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "LiGHtkg3uTa9836RaNkKLLriqTNRcMdRAhqjGWNv777",
+    symbol: "LIGHT",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $1094k, liq $0.5k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AuQaustGiaqxRvj2gtCdrd22PBzTn8kM3kEPEkZCtuDw",
+    symbol: "ADX",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $1091k, liq $3.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "F3nefJBcejYbtdREjui1T9DPh5dBgpkKq7u2GAAMXs5B",
+    symbol: "AART",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $1086k, liq $11.5k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Saber2gLauYim4Mvftnrasomsv6NvAuncvMEZwcLpD1",
+    symbol: "SBR",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $1080k, liq $2.4k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "6MQpbiTC2YcogidTmKqMLK82qvE9z5QEm7EP3AEDpump",
+    symbol: "MASK",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.07M, liq $100k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GnM6XZ7DN9KSPW2ZVMNqCggsxjnxHMGb2t4kiWrUpump",
+    symbol: "WAGMI",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.06M, liq $64k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "85cQsFgbi8mBZxiPppbpPXuV7j1hA8tBwhjF4gKW6mHg",
+    symbol: "RIZZMAS",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.06M, liq $146k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "G4zwEA9NSd3nMBbEj31MMPq2853Brx2oGsKzex3ebonk",
+    symbol: "MOMO",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.05M, liq $69k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "MpsoLp1YBDqeiuSrVrYH4DoAGJ3myAMmMy6crYNVSTo",
+    symbol: "MPSOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.04M, liq $1038k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CrdMPbjooMmz6RoVgUnczWoeZka2QF14pikcCTpzRMxz",
+    symbol: "SFLP.2",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $1023k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "mntAk89WGn1YacVFxzU84tVbn3zFYf1LVXMxMjhpTjC",
+    symbol: "BERRIE",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $1020k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AxriehR6Xw3adzHopnvMn7GcpRFcD41ddpiTWMg6pump",
+    symbol: "JAILSTOOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.00M, liq $204k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DLGRpmkMGr7J4KD1xR5x2XjaGeQH64PLFQkyxNNSpump",
+    symbol: "TCG",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $1.00M, liq $46k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BLZEEuZUBVqFhj8adcCFPJvPVCiCyVmh3hkJMrU8KuJA",
+    symbol: "BLZE",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $990k, liq $4.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3ZLekZYq2qkZiSpnSvabjit34tUkjSwD1JFuW9as9wBG",
+    symbol: "WNEAR",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.99M, liq $264k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "73xsLcBnLnc9bh81cqVKqj8uEyiarXng5ZwJuTbnVebG",
+    symbol: "WUF",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.99M, liq $75k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "yoSoLJkgRYFwmt8apEDVKxHy6FktjYEWLvxB6NyJuNj",
+    symbol: "YOSOL",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $982k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HAWKThXRcNL9ZGZKqgUXLm4W8tnRZ7U6MVdEepSutj34",
+    symbol: "HAWK",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.98M, liq $107k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+  },
+  {
+    ca: "2JcXacFwt9mVAwBQ5nZkYwCyXQkRcdsYrDXn6hj22SbP",
+    symbol: "MINI",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.98M, liq $187k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9mV4WUukVsva5wYcYW4veo34CNDiF44sh3Ji65JNdvh5",
+    symbol: "TRUNK",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.98M, liq $573k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "SoLiDMWBct5TurG1LNcocemBK7QmTn4P33GSrRrcd2n",
+    symbol: "SOLID",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $969k, liq $4.2k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "B89Hd5Juz7JP2dxCZXFJWk4tMTcbw7feDhuWGb3kq5qE",
+    symbol: "NC",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $966k, liq $15.2k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "76VxJbMFoCXBcn2rqPQX2UsUfpupq2gVwGSq5LyYMhr2",
+    symbol: "GMRX",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $959k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Ax8PSfCXxmxb8C8kYTzN5CPpTe6PyeZfFf8rrXNCjupx",
+    symbol: "MM",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.96M, liq $34k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AGdGTQa8iRnSx4fQJehWo4Xwbh1bzTazs55R6Jwupump",
+    symbol: "114514",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.95M, liq $80k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HrYNm6jTQ71LoFphjVKBTdAE4uja7WsmLG8VxB8ondo",
+    symbol: "QQQON",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $950k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GKHgTd6tqvycgG3mqcZraSZDFR32hXhRgo6sZQtudMsC",
+    symbol: "ALL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.95M, liq $52k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GMvCfcZg8YvkkQmwDaAzCtHDrrEtgE74nQpQ7xNabonk",
+    symbol: "1",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.94M, liq $128k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GACpABn18xqiSJbD9ZEyArJDT9RHRMUut5nK9Z9Spump",
+    symbol: "TRENCH",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.94M, liq $62k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BLVxek8YMXUQhcKmMvrFTrzh5FXg8ec88Crp6otEaCMf",
+    symbol: "BELIEVE",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.94M, liq $39k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3E7nd9oom8Wdvc6jdHWRSLhpZ6kymd8oYXT5zaU2pump",
+    symbol: "M2M",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.94M, liq $41k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HQ7DaoiUxzC2K1Dr7KXRHccNtXvEYgNvoUextXe8dmBh",
+    symbol: "SLOTH",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.93M, liq $105k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2xpoapWZuP4sRHnAxtXHibe57RhKDLVo7a3a3MEqpump",
+    symbol: "BREW",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.93M, liq $41k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9LzCMqDgTKYz9Drzqnpgee3SGa89up3a247ypMj2xrqM",
+    symbol: "AUDIO",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.92M, liq $556k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "EPCz5LK372vmvCkZH3HgSuGNKACJJwwxsofW6fypCPZL",
+    symbol: "RKSOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.92M, liq $921k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2Bwbeh361ywi1PpypDHabDb8VphNKCQt9ht2CRzFsYAE",
+    symbol: "HABITAT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.92M, liq $111k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HaP8r3ksG76PhQLTqR8FYBeNiQpejcFbQmiHbg787Ut1",
+    symbol: "TRUMP_HAP8",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $917k, liq $8.5k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL",
+    symbol: "MLG",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.91M, liq $142k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "tTJj3mquBmzSYM8VwCxmp1c2AhQCjidQ5DdCdL4pump",
+    symbol: "NEMOCLAW",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.91M, liq $40k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "haioZJAWTMaR4SFhZRwFBBejnGDPiwLTqrDiKpwH31h",
+    symbol: "HAIO",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $902k, liq $0.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AZsHEMXd36Bj1EMNXhowJajpUXzrKcK57wW4ZGXVa7yR",
+    symbol: "GUAC",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.90M, liq $115k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "M77ZvkZ8zW5udRbuJCbuwSwavRa7bGAZYMTwru8ondo",
+    symbol: "IAUON",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $900k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "71Jvq4Epe2FCJ7JFSF7jLXdNk1Wy4Bhqd9iL6bEFELvg",
+    symbol: "GOR",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.90M, liq $110k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "PAYZP1W3UmdEsNLJwmH61TNqACYJTvhXy8SCN4Tmeta",
+    symbol: "PAYS",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.90M, liq $120k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "VNo7EjR3XVzvbjUgQrFAXNwSms34fHwHBt1Xoaopump",
+    symbol: "CHUDHOUSE",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.90M, liq $124k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "J27UYHX5oeaG1YbUGQc8BmJySXDjNWChdGB2Pi2TMDAq",
+    symbol: "PMX",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.89M, liq $150k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "dTzEP9JU2NRDPuWtM32gaVKip2fTHBqjheU1APBpump",
+    symbol: "BITTY",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.89M, liq $71k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "ELSoL1owwMWQ9foMsutweCsMKbTPVBD9pFqxQGidTaMC",
+    symbol: "ELSOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.89M, liq $891k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Pre8AREmFPtoJFT8mQSXQLh56cwJmM7CFDRuoGBZiUP",
+    symbol: "POLYMARKET",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.88M, liq $327k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CJjraBaedPnKzjnag12i7PVo5pSP6cB9heV8zr89bonk",
+    symbol: "PROJECT89",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.87M, liq $104k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "EsP4kJfKUDLfX274WoBSiiEy74Sh4tZKUCDjfULHpump",
+    symbol: "FRIC",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.87M, liq $111k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "WCTk5xWdn5SYg56twGj32sUF3W4WFQ48ogezLBuYTBY",
+    symbol: "WCT",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $863k, liq $18.8k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "k18WJUULWheRkSpSquYGdNNmtuE2Vbw1hpuUi92ondo",
+    symbol: "SPYON",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $855k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BreuhVohXX5fv6q41uyb3sojtAuGoGaiAhKBMtcrpump",
+    symbol: "HEHE",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.84M, liq $80k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3qq54YqAKG3TcrwNHXFSpMCWoL8gmMuPceJ4FG9npump",
+    symbol: "CLANKER",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.84M, liq $76k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "LhcykxUt6xVdiSZyWyaGdNHE3W8sAEmdnEjpMdkpump",
+    symbol: "GG",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.83M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5kkkNahbYVYZUQthCZCU6ax4zkcN622jAMTnAvJApump",
+    symbol: "BER",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.83M, liq $35k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "C4Kkr9NZU3VbyedcgutU6LKmi6MKz81sx6gRmk5pX519",
+    symbol: "VEUR",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.82M, liq $227k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9dXSV8VWuYvGfTzqvkBeoFwH9ihVTybDuWo5VaJPCNDL",
+    symbol: "CNDL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.82M, liq $46k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "qnko6WJGEwEU3JYQFZakLe9V8dmS4YAXFARHeRipump",
+    symbol: "LIL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.82M, liq $46k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8PzFWyLpCVEmbZmVJcaRTU5r69XKJx1rd7YGpWvnpump",
+    symbol: "PERCOLATOR",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.82M, liq $68k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CRWNYkqdgvhGGae9CKfNka58j6QQkaD5bLhKXvUYqnc1",
+    symbol: "CRWNY",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $819k, liq $28.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GHichsGq8aPnqJyz6Jp1ASTK4PNLpB5KrD6XrfDjpump",
+    symbol: "$1",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.82M, liq $156k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FtUEW73K6vEYHfbkfpdBZfWpxgQar2HipGdbutEhpump",
+    symbol: "TITCOIN",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.81M, liq $155k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "ULwSJmmpxmnRfpu6BjnK6rprKXqD5jXUmPpS1FxHXFy",
+    symbol: "HEGE",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.81M, liq $107k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "E65CoK961Rs5LzKhGZxbKsB7xpFhYhXogH8nhr8zamTK",
+    symbol: "PBSPYX",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $808k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CTAyri1T4d1QRfnmtSRpEsPS5tyH6shA1WTskhybmrMT",
+    symbol: "CTA",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $807k, liq $5.4k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FFvp48WygUSxCCNP3n9Zu5G7F2yatwXQHbpD2Mkkpump",
+    symbol: "SKIBIDI",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.79M, liq $53k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BeFtLwLtS9Rva12KrHKRMY1H5WoeM1Y2ULMnNJKopump",
+    symbol: "BINDER",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.79M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "PreLWGkkeqG1s4HEfFZSy9moCrJ7btsHuUtfcCeoRua",
+    symbol: "KALSHI",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.79M, liq $112k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "739dnZEG4yaBWFsY8L8ZwrfhGG6dhtCSercW8Umspump",
+    symbol: "CLAW",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.78M, liq $40k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3S8qX1MsMqRbiwKg2cQyx7nis1oHMgaCuc9c4VfvVdPN",
+    symbol: "MOTHER",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.78M, liq $166k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "TSPXcLV76s6V2zDiZQ18kBfcbnjaE2ZzNT3ga2Pd99v",
+    symbol: "TSPACEX",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.78M, liq $393k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HRw8mqK8N3ASKFKJGMJpy4FodwR3GKvCFKPDQNqUNuEP",
+    symbol: "DJT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.78M, liq $79k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5PwsE1yXAvANamqbYwM6zoWrYkNw8RZ74TZSsxnGu4vq",
+    symbol: "BLACK",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.78M, liq $39k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3tMdx4g4grCgqHjELqALfTPnZnG1BLwsPntD3tGREgvp",
+    symbol: "SUSDC",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $772k, liq $10.9k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "7d1vpt5eri79nETcL74Punhp3mGkeBgUkMdPWep6pump",
+    symbol: "SHY",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.76M, liq $75k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "NFTUkR4u7wKxy9QLaX2TGvd9oZSWoMo4jqSJqdMb7Nk",
+    symbol: "BLOCK_NFTU",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.75M, liq $41k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3psH1Mj1f7yUfaD5gh6Zj7epE8hhrMkMETgv5TshQA4o",
+    symbol: "BODEN",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.75M, liq $128k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "APbVLtq66bKBpUUdncHtVSab9TM1UrcqZ9wodXzmpump",
+    symbol: "SNAI",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.75M, liq $34k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BeGY8KqKxboEwRbJd1q9H2K829jS4Rc5dEyNMYXCbV5p",
+    symbol: "NPC",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.75M, liq $232k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "F5tfztTnE4sYsMhZT5KrFpWvHmYSfJZoRjCuxKPbpump",
+    symbol: "ALIENS",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.74M, liq $82k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "fDxs5y12E7x7jBwCKBXGqt71uJmCWsAQ3Srkte6ondo",
+    symbol: "METAON",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $726k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "7b36cKRYFZsMp3vLByVwfVQxW2ndcYth5rhPnyypump",
+    symbol: "PINO",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.73M, liq $70k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "66bHtzcXqmLgkn668EG4ETzHL3RLz5ybdckqvrPppump",
+    symbol: "VANKEDISI",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.72M, liq $120k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "62CsquahdQ3J286G9UTqV6whxryfihdV4yg7kSJnpump",
+    symbol: "BGG1",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.72M, liq $90k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "4fSWEw2wbYEUCcMtitzmeGUfqinoafXxkhqZrA9Gpump",
+    symbol: "PIGEON",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.72M, liq $81k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9223LqDuoJXyhCtvi54DUQPGS8Xf29kUEQRr7Sfhmoon",
+    symbol: "LOOK",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $719k, liq $22.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "phaseZSfPxTDBpiVb96H4XFSD8xHeHxZre5HerehBJG",
+    symbol: "YIELD",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.72M, liq $715k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9JK2U7aEkp3tWaFNuaJowWRgNys5DVaKGxWk73VT5ray",
+    symbol: "NUMMUS",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.71M, liq $46k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "B1rGc4HM4Q6q4nU78ADM7fGguxqiasH53fh6ViDXpump",
+    symbol: "BLOXX",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.70M, liq $43k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9voQQTTdfbqfXwc9rZAdJEeXXjUWjHnB4wkShMT8pump",
+    symbol: "LAYOFF",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.69M, liq $41k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "SoLvHDFVstC74Jr9eNLTDoG4goSUsn1RENmjNtFKZvW",
+    symbol: "SOLVBTC",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $690k, liq $2.7k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "JB2wezZLdzWfnaCfHxLg193RS3Rh51ThiXxEDWQDpump",
+    symbol: "LABUBU",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.68M, liq $149k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AujTJJ7aMS8LDo3bFzoyXDwT3jBALUbu4VZhzZdTZLmG",
+    symbol: "$BEER",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.68M, liq $307k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "xxxxa1sKNGwFtw2kFn8XauW9xq8hBZ5kVtcSesTT9fW",
+    symbol: "SLIM",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.68M, liq $203k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "G8aVC4nk5oPWzTHp4PDm3kAuixCebv9WRQMD93h9pump",
+    symbol: "RWA",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.67M, liq $44k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5yC9BM8KUsJTPbWPLfA2N8qH1s9V8DQ3Vcw1G6Jdpump",
+    symbol: "AGENC",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.67M, liq $51k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "StargWr5r6r8gZSjmEKGZ1dmvKWkj79r2z1xqjFstar",
+    symbol: "STAR",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.67M, liq $86k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "6NX2MWBuJM2Fn63K4hUgMPivLXHV8pwsU1yTdmjKpump",
+    symbol: "PSOQ",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.67M, liq $44k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2wzVMXhLypmP92mXNCq4fuFcd9TCC972AbMfuiH3pump",
+    symbol: "AISLOP",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.66M, liq $72k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "EfPoo4wWgxKVToit7yX5VtXXBrhao4G8L7vrbKy6pump",
+    symbol: "DEXTER",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.66M, liq $61k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FKNfAwb8TmjYkj11V4NiTz4TgrLWTWgm2NRwAD9epump",
+    symbol: "TASSHUB",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.66M, liq $39k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2FcsqRrhvgSfYxJWh32xW873vyqBZ9jmMyXqYSPgNtuZ",
+    symbol: "LUCIA",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.65M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FoxYewmpjh66W6PFA38k2JRYea22mxnwLLMkVmu5bNU",
+    symbol: "FOXYSOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.65M, liq $650k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CKfatsPMUf8SkiURsDXs7eK6GWb4Jsd6UDbs7twMCWxo",
+    symbol: "BERN",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $646k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "92cRC6kV5D7TiHX1j56AbkPbffo9jwcXxSDQZ8Mopump",
+    symbol: "FXN",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.65M, liq $65k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9RjwNo6hBPkxayWHCqQD1VjaH8igSizEseNZNbddpump",
+    symbol: "STUPID",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.65M, liq $113k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HausGKcq9G9zM3azwNmgZyzUvYeeqR8h8663PmZpxuDj",
+    symbol: "HAUSSOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.64M, liq $644k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "chipCAT7vi5CZtbZsn9z7iMPXvFwyAnKz3QFu8XVuHm",
+    symbol: "CHIP",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.64M, liq $509k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "C3DwDjT17gDvvCYC2nsdGHxDHVmQRdhKfpAdqQ29pump",
+    symbol: "RFC",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.64M, liq $116k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9GhjesUhxmVo9x4UHpdS6NVi4TGzcx8BtGckUqFrjupx",
+    symbol: "HOOPX",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.64M, liq $99k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Bhu2wBWxfWkRJ6pFn5NodnEvMCqj9DLfCU5qMvt7pump",
+    symbol: "CHATOSHI",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.63M, liq $144k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2bNQko1C2wYfexfe9MBnd7SwwaQC6vyEXdhMkhBWEN4d",
+    symbol: "$FROGE",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.63M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2xm2WZ9krE2YAArRC6S6ZzJAYgN813K6hh2dawKjpump",
+    symbol: "PANDU",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.63M, liq $33k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9dLuVbJMd4ZpTpFgmaFHAGSsFwVjtcnzFWaLAA1expHg",
+    symbol: "HEEHEE",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.63M, liq $47k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "F7pB3ZdfBnyFw2LRHydWEn9BmhEa5XihXLjhySFRpump",
+    symbol: "NOTHING",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.62M, liq $61k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "6D7NaB2xsLd7cauWu1wKk6KBsJohJmP2qZH9GEfVi5Ui",
+    symbol: "SC_6D7N",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.62M, liq $123k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2fUFhZyd47Mapv9wcfXh5gnQwFXtqcYu9xAN4THBpump",
+    symbol: "RNT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.62M, liq $143k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "STBuyENwJ1GP4yNZCjwavn92wYLEY3t5S1kVS5kwyS1",
+    symbol: "STB",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $615k, liq $3.4k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "C4j7kPx9PqDnfvxe2uycJQRTAeyGwmU4DyGf21Xgpump",
+    symbol: "MD",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.61M, liq $55k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "kyJtowDDACsJDm2jr3VZdpCA6pZcKAaNftQwrJ8KBQP",
+    symbol: "KYJTO",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $614k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3bRTivrVsitbmCTGtqwp7hxXPsybkjn4XLNtPsHqa3zR",
+    symbol: "LIKE",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.61M, liq $48k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8NCievmJCg2d9Vc2TWgz2HkE6ANeSX7kwvdq5AL7pump",
+    symbol: "BUNKER",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.61M, liq $50k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5HsZR8eG7QpQcN8Mnp8oFdENRkJMP9ZkcKhPSCKTJSWh",
+    symbol: "MRC",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.60M, liq $45k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9DHe3pycTuymFk4H4bbPoAJ4hQrr2kaLDF6J6aAKpump",
+    symbol: "BUZZ",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.60M, liq $132k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HBRPNwdcT67cadiBS8VNP4mRt8ornngLF34TZXthrust",
+    symbol: "N3ON",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.59M, liq $230k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "7voKerVHPvbXde3bEpyNcdodVEufq17tW6eZLUUkpump",
+    symbol: "Y2K",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $589k, liq $29.7k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "E1kvzJNxShvvWTrudokpzuc789vRiDXfXG3duCuY6ooE",
+    symbol: "DITH",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.59M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "UwU8RVXB69Y6Dcju6cN2Qef6fykkq6UUNpB15rZku6Z",
+    symbol: "UWU",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.58M, liq $144k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3B5wuUrMEi5yATD7on46hKfej3pfmd7t1RKgrsN3pump",
+    symbol: "BILLY",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.58M, liq $178k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5cL3TVJ7p5ZKqyx16DXwpdcNx5u19vQtWujA9vYindi",
+    symbol: "VALAN",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $583k, liq $18.4k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "uniBKsEV37qLRFZD7v3Z9drX6voyiCM8WcaePqeSSLc",
+    symbol: "UNIBTC",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $582k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "madHpjRn6bd8t78Rsy7NuSuNwWa2HU8ByPobZprHbHv",
+    symbol: "MAD",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.58M, liq $65k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BQQzEvYT4knThhkSPBvSKBLg1LEczisWLhx5ydJipump",
+    symbol: "BUCKAZOIDS",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.58M, liq $77k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "PRSMNsEPqhGVCH1TtWiJqPjJyh2cKrLostPZTNy1o5x",
+    symbol: "PRISM",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $578k, liq $13.9k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8116V1BW9zaXUM6pVhWVaAduKrLcEBi3RGXedKTrBAGS",
+    symbol: "GSD",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.57M, liq $42k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9qriMjPPAJTMCtfQnz7Mo9BsV2jAWTr2ff7yc3JWpump",
+    symbol: "9QRI",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.57M, liq $90k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "VaxZxmFXV8tmsd72hUn22ex6GFzZ5uq9DVJ5wA5pump",
+    symbol: "OIIAOIIA",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.57M, liq $80k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "X7j77hTmjZJbepkXXBcsEapM8qNgdfihkFj6CZ5ondo",
+    symbol: "COPXON",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $567k, liq $1.8k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BiDB55p4G3n1fGhwKFpxsokBMqgctL4qnZpDH1bVQxMD",
+    symbol: "DIO",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $566k, liq $21.4k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "SLNDpmoWTVADgEdndyvWzroNL7zSi1dF9PC3xHGtPwp",
+    symbol: "SLND",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $565k, liq $15.4k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FThrNpdic79XRV6i9aCWQ2UTp7oRQuCXAgUWtZR2cs42",
+    symbol: "KM",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.56M, liq $62k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "4YK1njyeCkBuXG6phNtidJWKCbBhB659iwGkUJx98P5Z",
+    symbol: "DOLAN",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.56M, liq $68k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CVfniqNEj2f4Yd8Z4TEtaTU49gWNTwUyCiDDUbsZpump",
+    symbol: "KNS",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.55M, liq $31k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2eXamy7t3kvKhfV6aJ6Uwe3eh8cuREFcTKs1mFKZpump",
+    symbol: "NUIT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.55M, liq $69k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC",
+    symbol: "AI16Z",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.55M, liq $37k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "A9E2AopuG56LWYiXsvGLLTcLjUjQ539PY6k5Fhfepump",
+    symbol: "KABUTO",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.54M, liq $60k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "4tARAT4ssRYhrENCTxxZrmjL741eE2G23Q1zLPDW2ipf",
+    symbol: "LRTSSOL",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $544k, liq $1.7k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FaxYQ3LVXP51rDP2yWGLWVrFAAHeSdFF8SGZxwj2dvor",
+    symbol: "SWAG",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.54M, liq $46k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HUBsveNpjo5pWqNkH57QzxjQASdTVXcSK7bVKTSZtcSX",
+    symbol: "RASOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.54M, liq $541k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8EZqVPJdEWt754S17nghfa4Y4jQJ7tigBwsGbo1Tpump",
+    symbol: "SOLARIS",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $537k, liq $28.2k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "ATRLuHph8dxnPny4WSNW7fxkhbeivBrtWbY6BfB4xpLj",
+    symbol: "ATR",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.54M, liq $46k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DuEy8wWrzCUun5ZbbG9hkVqXqqicpTQw8gB7nEAzpCHQ",
+    symbol: "FLUID",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.53M, liq $145k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5HkhVG2bSb5PGjhX5QHm9urUquD7tx5eAau5Fonq78zc",
+    symbol: "KOKOK",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.52M, liq $46k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "6eftxVbSAunVEoxUWdGhPdxg5UdsJ8Wkwy5w5YFuxouw",
+    symbol: "CHZ",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.52M, liq $177k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "4FdojUmXeaFMBG6yUaoufAC5Bz7u9AwnSAMizkx5pump",
+    symbol: "CORE",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.52M, liq $40k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Dn4noZ5jgGfkntzcQSUZ8czkreiZ1ForXYoV2H8Dm7S1",
+    symbol: "USDTET",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $523k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HsRpHQn6VbyMs5b5j5SV6xQ2VvpvvCCzu19GjytVSCoz",
+    symbol: "STRK",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.52M, liq $92k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CY1P83KnKwFYostvjQcoR2HJLyEJWRBRaVQmYyyD3cR8",
+    symbol: "索拉拉",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $519k, liq $27.8k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FJug3z58gssSTDhVNkTse5fP8GRZzuidf9SRtfB2RhDe",
+    symbol: "TSLAR",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.52M, liq $31k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5evN2exivZXJfLaA1KhHfiJKWfwH8znqyH36w1SFz89Y",
+    symbol: "MIRAI",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.51M, liq $154k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FU1q8vJpZNUrmqsciSjp8bAKKidGsLmouB8CBdf8TKQv",
+    symbol: "TREMP",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.51M, liq $114k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "EjmyN6qEC1Tf1JxiG1ae7UTJhUxSwk1TCWNWqxWV4J6o",
+    symbol: "DAI",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $509k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DEJqUhPTarcaNqhT7c6fktUszcJWN6skqyWSxXchpJNm",
+    symbol: "MATTLE",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $508k, liq $17.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "7a8JSTTMnynE689y1AvxHTywdQVFdpfdE61rPvgzpump",
+    symbol: "EAI",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.51M, liq $32k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2PzS5SYYWjUFvzXNFaMmRkpjkxGX6R5v8DnKYtdcpump",
+    symbol: "OPAL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.51M, liq $43k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "octo82drBEdm8CSDaEKBymVn86TBtgmPnDdmE64PTqJ",
+    symbol: "OTK",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $503k, liq $5.2k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "C3VLBJB2FhEb47s1WEgroyn3BnSYXaezqtBuu5WNmUGw",
+    symbol: "CPERR",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.50M, liq $71k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HAPPYwgFcjEJDzRtfWE6tiHE9zGdzpNky2FvjPHsvvGZ",
+    symbol: "HAPPY",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.50M, liq $54k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CgGWS19zR5xTzgCEcW5Svsuon4hBZwzBwUFimoJStCf2",
+    symbol: "FOXSY",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.50M, liq $60k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FoRGERiW7odcCBGU1bztZi16osPBHjxharvDathL5eds",
+    symbol: "FORGE",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $497k, liq $15.7k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CboMcTUYUcy9E6B3yGdFn6aEsGUnYV6yWeoeukw6pump",
+    symbol: "BUTTHOLE",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.49M, liq $105k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "ASRRjA1R4RHVk5H9QKKm1jaQqMkxvv6nh5EypPrvwmxQ",
+    symbol: "ASRR",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $487k, liq $12.8k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "7D1iYWfhw2cr9yBZBFE6nZaaSUvXHqG5FizFFEZwpump",
+    symbol: "YNE",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.48M, liq $90k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "4yCLi5yWGzpTWMQ1iWHG5CrGYAdBkhyEdsuSugjDUqwj",
+    symbol: "ALP",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $479k, liq $1.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "keybg184d4vyXeQdFqs4o99YsMg7xBthxTJ6Ky3ondo",
+    symbol: "TSMON",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $476k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HaCUz8NfR9LqWVQvXqYxR2ast9BHsEScdgS941LKeBLV",
+    symbol: "VIVA",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.48M, liq $51k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9XWWHExgN4yvyLRskzzfcr5AcBaqQ6UtwcDSVpUBsoar",
+    symbol: "CPT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.47M, liq $55k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AavE1kKKnesPw4MuRJmJ9jZs9QzEE8CPxQ3ViczUDfc1",
+    symbol: "AAVE",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.47M, liq $148k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "4Uf883orBx89VQZiV4EoRpNqUWYN5ZuEvC4PCpQ9moon",
+    symbol: "SPLAT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.47M, liq $86k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3BgwJ8b7b9hHX4sgfZ2KJhv9496CoVfsMK2YePevsBRw",
+    symbol: "EPIK",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.47M, liq $70k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AdsLPtW1KvKAw3QQLDST3M9cm57TeXZpbAhiKS27xbt",
+    symbol: "XBT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.46M, liq $305k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FViMp5phQH2bX81S7Yyn1yXjj3BRddFBNcMCbTH8FCze",
+    symbol: "$TOAD",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.46M, liq $56k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "4TBi66vi32S7J8X1A6eWfaLHYmUXu7CStcEmsJQdpump",
+    symbol: "GHIBLI",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.46M, liq $86k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Bz7Nx1F3Mti1BVS7ZAVDLSKGEaejufxvX2DPdjpf8PqT",
+    symbol: "CHIPPY",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.46M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BqPqrrQuoQXFGGEAEMnPmDgZ6RWQCajWnY3V6Yp4DZWP",
+    symbol: "ES",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.45M, liq $93k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5dpN5wMH8j8au29Rp91qn4WfNq6t6xJfcjQNcFeDJ8Ct",
+    symbol: "SANA",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.45M, liq $46k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CQMBR2vnAuMj7beoHn5aKztNQHXUrkikFVjnn7kqjupx",
+    symbol: "KOHAI",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.45M, liq $148k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HfJvxwLQeHeiDz8e91RWSwMm3R1pLh1vyjLoSr5gpump",
+    symbol: "SYNAPZ",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $450k, liq $27.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CBdCxKo9QavR9hfShgpEBG3zekorAeD7W1jfq2o3pump",
+    symbol: "LUCE",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.45M, liq $133k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CKaKtYvz6dKPyMvYq9Rh3UBrnNqYZAyd7iF4hJtjUvks",
+    symbol: "GARI",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $449k, liq $21.8k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5TfqNKZbn9AnNtzq8bbkyhKgcPGTfNDc9wNzFrTBpump",
+    symbol: "PFP_5TFQ",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.45M, liq $49k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CNvitvFnSM5ed6K28RUNSaAjqqz5tX1rA5HgaBN9pump",
+    symbol: "FRED",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.45M, liq $134k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8ncucXv6U6epZKHPbgaEBcEK399TpHGKCquSt4RnmX4f",
+    symbol: "TRENCHER",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.44M, liq $86k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FogoWVkKbu7K5TE23B7VvpuSNbjV2HKpBm8hNaVY6Rkg",
+    symbol: "FOGO",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.44M, liq $292k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FWAr6oWa6CHg6WUcXu8CqkmsdbhtEqL8t31QTonppump",
+    symbol: "PVS",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.44M, liq $79k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FbmmdcCYHL7WETG89xtWmNFMzQAaQ8Zs9NXVbimibonk",
+    symbol: "DONT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.44M, liq $54k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "kyrosJC2dtm6EoLV5wffZsS4RZVm2hRafKZCLsc38JE",
+    symbol: "KYROS",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $438k, liq $15.4k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AXQyzYRdk6ebp3VdwSNNNFR5Ssm5rMVTP84EEg98pump",
+    symbol: "DCA",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $432k, liq $25.8k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CDBdbNqmrLu1PcgjrFG52yxg71QnFhBZcUE6PSFdbonk",
+    symbol: "LETSBONK",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.43M, liq $88k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HLptm5e6rTgh4EKgDpYFrnRHbjpkMyVdEeREEa2G7rf9",
+    symbol: "DUKO",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.42M, liq $74k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "7ZCm8WBN9aLa3o47SoYctU6iLdj7wkGG5SV2hE5CgtD5",
+    symbol: "ELON",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.42M, liq $35k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BP8RUdhLKBL2vgVXc3n7oTSZKWaQVbD8S6QcPaMVBAPo",
+    symbol: "FAFO",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.42M, liq $101k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3ag1Mj9AKz9FAkCQ6gAEhpLSX8B2pUbPdkb9iBsDLZNB",
+    symbol: "HONK",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.42M, liq $63k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "21CnrFRqvEVkQZUTFmTXjcsJTLZhRY51ohoaCPwRpump",
+    symbol: "DOG_21CN",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.42M, liq $161k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8doS8nzmgVZEaACxALkbK5fZtw4UuoRp4Yt8NEaXfDMb",
+    symbol: "$WAFFLES",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.42M, liq $49k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "E3yUqBNTZxV8ELvW99oRLC7z4ddbJqqR4NphwrMug9zu",
+    symbol: "COAL",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $414k, liq $16.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DcoCE6yfxviowUKT91qKTbr31kQnFaWFAVXCTHgvJ1Tk",
+    symbol: "MAMMAMIA",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.41M, liq $62k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FLqmVrv6cp7icjobpRMQJMEyjF3kF84QmC4HXpySpump",
+    symbol: "BUCK",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.41M, liq $78k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AUdUEc98MGfEHJiJfCgMaW8gKdcfNDio8BFzGKBwjztC",
+    symbol: "DIGI",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.41M, liq $45k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5XqzzdodsNtAM8TtQyiqGVbD7GwLBBN7oVnRA3hLpump",
+    symbol: "PILL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.41M, liq $60k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "PoRTjZMPXb9T7dyU7tpLEZRQj7e6ssfAE62j2oQuc6y",
+    symbol: "PORT",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $400k, liq $2.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DVYcTNFVGxePLgK8rUjViJvurRmTnD1FZUBR7puADymT",
+    symbol: "DVY",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $400k, liq $0.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "6d5zHW5B8RkGKd51Lpb9RqFQSqDudr9GJgZ1SgQZpump",
+    symbol: "AVB",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.40M, liq $95k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DdcvRiEs4k2fXbHqeJBS5jgGD93rj1wu6u8WTL4vmBLV",
+    symbol: "VIRUS",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.40M, liq $33k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "jcztDWkrkxyMorbBVd4Amm7PbGHafCLMN94aAKZdrug",
+    symbol: "VENOM",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $398k, liq $21.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GiG7Hr61RVm4CSUxJmgiCoySFQtdiwxtqf64MsRppump",
+    symbol: "SCF",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.40M, liq $94k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "B8GKqTDGYc7F6udTHjYeazZ4dFCRkrwK2mBQNS4igqTv",
+    symbol: "MSTRR",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $397k, liq $7.7k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5fKr9joRHpioriGmMgRVFdmZge8EVUTbrWyxDVdSrcuG",
+    symbol: "CRCLR",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $396k, liq $7.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "G5bStqnKXv11fmPvMaagUbZi86BGnpf9zZtyPQtAdaos",
+    symbol: "ICM",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.40M, liq $40k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2akXpuyFXAVN5YofZpZMfBp2Vxognpmv9NooBMuHpump",
+    symbol: "ELON_2AKX",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.39M, liq $54k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2LzLh5pHg3nDQz6goTLAvDXfDbSBgAR8qem3bdXdpump",
+    symbol: "JUICE",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.39M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8MgghUHzWyCXSQb4ReqrYQZ9rL8cQNaZ84GsqWhTB4Uu",
+    symbol: "$UNFK",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $392k, liq $20.2k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "G4QRtYNRPyxdKwcAqqW3xSeEynDDxEyRvrDT9FJEpump",
+    symbol: "FORG",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $391k, liq $27.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "14zP2ToQ79XWvc7FQpm4bRnp9d6Mp1rFfsUW3gpLcRX",
+    symbol: "AIXBT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.39M, liq $52k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HfYFjMKNZygfMC8LsQ8LtpPsPxEJoXJx4M6tqi75Hajo",
+    symbol: "CWAR",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $389k, liq $16.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "4Aar9R14YMbEie6yh8WcH1gWXrBtfucoFjw6SpjXpump",
+    symbol: "OMEGAX",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $388k, liq $24.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CmUnSFZCKUFGs2L8eZGQukAj833Y8r2SiJav55Nnrihd",
+    symbol: "KARMA",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.39M, liq $43k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "znv3FZt2HFAvzYf5LxzVyryh3mBXWuTRRng25gEZAjh",
+    symbol: "IMG",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.38M, liq $52k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Axo7inGzj9dhTH4R4LHxC3kxuRq7uxhiuxLqqLZeBAGS",
+    symbol: "CALVIN",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $383k, liq $21.4k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5EkcKr582FkAPVnRmaDdnkekTtnNRzNNSxmQxqrFpump",
+    symbol: "AQC",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.38M, liq $34k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2MwjFE1zbXyNKw6VjzGWa3BhPtFcs8htuX2xwRAtbonk",
+    symbol: "CHONKY",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.38M, liq $53k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3uXACfojUrya7VH51jVC1DCHq3uzK4A7g469Q954LABS",
+    symbol: "IQ",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.38M, liq $34k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GENEtH5amGSi8kHAtQoezp1XEXwZJ8vcuePYnXdKrMYz",
+    symbol: "GENE",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $377k, liq $3.4k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "vQoYWru2pbUdcVkUrRH74ktQDJgVjRcDvsoDbUzM5n9",
+    symbol: "REKT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.38M, liq $31k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "EdhTCqUxXRWQcUd5Fonyz9rapHAB6mABAuVkmPrtpump",
+    symbol: "UNITY",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.37M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HEYKwDJRoSsiLNQ9F9bZFKo7yxum1WbTFCgiHTX5h6tb",
+    symbol: "HEY",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $371k, liq $24.7k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "EikyJKSVWPK28rX5FG8KyJcSzv3D2b2Qg7VodzqQoobe",
+    symbol: "OOBE",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $370k, liq $17.7k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GpXv1GNGMzrKXCNnYFbZk5TaZXUdKJNu5cmtiUyBdoge",
+    symbol: "$SUS",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.37M, liq $37k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "4JFcUJ1HfFKz2F8thdu2frk558EjrLvKEmeMq1ZM2xBP",
+    symbol: "VNTR",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $369k, liq $2.4k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5mbK36SZ7J19An8jFochhQS4of8g6BwUjbeCSxBSoWdp",
+    symbol: "$MICHI",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.37M, liq $344k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FS66v5XYtJAFo14LiPz5HT93EUMAHmYipCfQhLpU4ss8",
+    symbol: "SMOG",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.37M, liq $45k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "MAtesZXcU38mgPuteRFo9ApCauYRRuwn3xf1cs5y7ZX",
+    symbol: "MATES",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $366k, liq $21.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Gbu7JAKhTVtGyRryg8cYPiKNhonXpUqbrZuCDjfUpump",
+    symbol: "SNOWBALL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.37M, liq $57k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AjgSvYmJLhvt3FteiyTqQf8XBj1SVs6T6AmSUfkHpump",
+    symbol: "GROYPER",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.36M, liq $43k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "6W8FHYE6jnw1dktabRRiZpQRQFPSFhTeLczdvBNPzVeo",
+    symbol: "GOKU",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.36M, liq $32k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5cbq1HriesW4zHpFEk9Gc8UT4ccmfHcBTDCa2XcBduTo",
+    symbol: "ELIX",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $363k, liq $7.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "6uiCqsZ66eNEp7cJBVRGiZKDQmmQLLXaV2RwXvJdtsig",
+    symbol: "TRISIG",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.36M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "6NcdiK8B5KK2DzKvzvCfqi8EHaEqu48fyEzC8Mm9pump",
+    symbol: "STONKS",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.36M, liq $99k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DEf93bSt8dx58gDFCcz4CwbjYZzjwaRBYAciJYLfdCA9",
+    symbol: "KWEEN",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.36M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "7BeoEbgJepbf4mAyw4PZ48TcgrDK25kR7zexV42Apump",
+    symbol: "LOLA",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.35M, liq $34k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AQYSxfK5N9gDV6gtqXig5s43QVTkAKbHKpCMGjw8WRgQ",
+    symbol: "ENERGY",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $349k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "wo1zgt8rfrYpvdVi4nidoj1SYfcR4pQx69bmNv2JLhQ",
+    symbol: "EGG",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.35M, liq $79k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "EcQCUYv57C4V6RoPxkVUiDwtX1SP8y8FP5AEToYL8Az",
+    symbol: "WLKN",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $347k, liq $14.4k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GaRph5BcLZZ4sRh6EXKS6V7dicVanhcwa5iWEE6AbEYR",
+    symbol: "TRADEBOT",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $346k, liq $22.7k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2AEU9yWk3dEGnVwRaKv4div5TarC4dn7axFLyz6zG4Pf",
+    symbol: "DIS",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.35M, liq $159k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "B9u8h65uM1oifqmP82VyUDb68iG2fKfZiyubmNMtu3h7",
+    symbol: "DOG_B9U8",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.35M, liq $308k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "sGzragYKDrmRgCGvJUn9WKwrmnUZwfmkNQLTSPfdMNq",
+    symbol: "MOJO",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $344k, liq $25.2k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CPFZ7wUFpg5obsGB2GKXQ8rPY5ALuxs87dEjQjsrVxWw",
+    symbol: "USD*-P",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $340k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "7s9c1qjxnwLE8Yksjec56mxeC1GdAb5bpFqBueRU5C7A",
+    symbol: "UT-SFLP-#1",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $339k, liq $17.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3f7wfg9yHLtGKvy75MmqsVT1ueTFoqyySQbusrX1YAQ4",
+    symbol: "PBP",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $337k, liq $11.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "6NwarBvDkXhByqVp2Qkq5i9XbtA2B3Bwe8SWGu9vpump",
+    symbol: "CUPSEY",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $337k, liq $24.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AbVzeRUss8QJYzv2WDizDJ2RtsD1jkVyRjNdAzX94JhG",
+    symbol: "FLP.2",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $337k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "moon3CP11XLvrAxUPBnPtueDEJvmjqAyZwPuq7wBC1y",
+    symbol: "MROCKS",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $337k, liq $14.8k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "L33mHftsNpaj39z1omnGbGbuA5eKqSsbmr91rjTod48",
+    symbol: "INDIESOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.34M, liq $336k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5ToDNkiBAK6k697RRyngTburU7yZNFZFx7jzsD1Uc7pK",
+    symbol: "NPCS",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.33M, liq $41k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3WPep4ufaToK1aS5s8BL9inzeUrt4DYaQCiic6ZkkC1U",
+    symbol: "GIKO",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.33M, liq $43k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "EMeugag3yfyvKqNKknGDWAudNALafZjbv9ByzCE8pump",
+    symbol: "SIMD",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $333k, liq $25.8k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "48eKhwwadm7LJ57msuDYdq36CXx23Ratdbu74Pa1NULL",
+    symbol: "NULL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.33M, liq $30k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HnKkzR1YtFbUUxM6g3iVRS2RY68KHhGV7bNdfF1GCsJB",
+    symbol: "KAMA",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.33M, liq $31k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GnHpRsrcyfHSMZNzmpjAzTFQA26vnbRMzbKQ11ZKpump",
+    symbol: "ACE",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $327k, liq $25.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "ARTtpGGVYbVH5LwPNgD7Kta5U4fMNAPNoJcge7iadTL6",
+    symbol: "ART",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $326k, liq $16.5k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "H9muD33usLGYv1tHvxCVpFwwVSn27x67tBQYH1ANbonk",
+    symbol: "JIM",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $321k, liq $24.2k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8fZL148nnC168RAVCZh4PkjvMZmxMEfMLDhoziWVPnqf",
+    symbol: "NIGGABUTT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.32M, liq $41k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "6ZrYhkwvoYE4QqzpdzJ7htEHwT2u2546EkTNJ7qepump",
+    symbol: "NOMNOM",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.31M, liq $59k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "4nswj3o1Lo9iWYvvRJxUD8vbCy9ay7QQoXYcncHNbonk",
+    symbol: "SPSC",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.31M, liq $54k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "916SDKz7y5ZcEZC9CtnQ5Djs1Y8Yv3UAPb6bak8ondo",
+    symbol: "EEMON",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $310k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AqEHVh8J2nXH9saV2ciZyYwPpqWFRfD2ffcq5Z8xxqm5",
+    symbol: "YAKU",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $307k, liq $0.8k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8gHPxqgHj6JQ2sQtMSghQYVN5qRP8wm5T6HNejuwpump",
+    symbol: "RYS",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.31M, liq $45k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BEgBsVSKJSxreiCE1XmWWq8arnwit7xDqQXSWYgay9xP",
+    symbol: "WYAC",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.31M, liq $43k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "947tEoG318GUmyjVYhraNRvWpMX7fpBTDQFBoJvSkSG3",
+    symbol: "CHAT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.30M, liq $50k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CQSzJzwW5H1oyWrp6QhfUKYYwyovbSiVDKnAxNfb1tJC",
+    symbol: "STAN",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.30M, liq $107k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Ciphern9cCXtms66s8Mm6wCFC27b2JProRQLYmiLMH3N",
+    symbol: "CIPHER",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $301k, liq $29.9k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "G3FoXHoQDuGkEG8ZqQd7riC9uB1N51bg7JuxJEPNpump",
+    symbol: "RAGE_G3FO",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $301k, liq $25.8k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "63bpnCja1pGB2HSazkS8FAPAUkYgcXoDwYHfvZZveBot",
+    symbol: "BOT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.30M, liq $34k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GJtJuWD9qYcCkrwMBmtY1tpapV1sKfB2zUv9Q4aqpump",
+    symbol: "$RIF",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.30M, liq $171k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "7kbnvuGBxxj8AG9qp8Scn56muWGaRaFqxg1FsRp3PaFT",
+    symbol: "UXD",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.30M, liq $47k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GJvLcMvQwznh1gAonWnqbqdSRrNCQmVzhfsZVvQdtM4b",
+    symbol: "VWA",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $298k, liq $26.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BAsnXPVYuvZDfEFR7tmu9sG9gPyHy58Jpjs2AuUw1FLx",
+    symbol: "NX",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.30M, liq $35k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "mkvXiNBpa8uiSApe5BrhWVJaT87pJFTZxRy7zFapump",
+    symbol: "NAILONG",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.29M, liq $63k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "tiitb2Z1HtpB2DpVr6V7tdCFS3jmTinLeuGj9EVondo",
+    symbol: "REMXON",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $291k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5goWRao6a3yNC4d6UjMdQxonkCMvKBwdpubU3qhfcdf1",
+    symbol: "USDTPO",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $290k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9VxExA1iRPbuLLdSJ2rB3nyBxsyLReT4aqzZBMaBaY1p",
+    symbol: "REVS",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.29M, liq $32k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "suifhC9gU1VbJAPYPTBkHJyyyStKGLLYPVDTmPoqbvA",
+    symbol: "SUI",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.29M, liq $180k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BbbwE8rudhjK4husSRc37X54mYyDBRcykJ7fk5oHpump",
+    symbol: "TBC",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.29M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "A9mUU4qviSctJVPJdBJWkb28deg915LYJKrzQ19ji3FM",
+    symbol: "USDCET",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $286k, liq $0.8k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "genMsDWwH9WuuosGJyfEi4yn9rDc1boG6TNafMfFc43",
+    symbol: "GENSOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.28M, liq $285k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "73UdJevxaNKXARgkvPHQGKuv8HCZARszuKW2LTL3pump",
+    symbol: "ZARA",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.28M, liq $57k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "ENTxR2RP8NtvhXzMNFCxE1HazzdV9x7SuZqGyAb4jdED",
+    symbol: "ENT",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $285k, liq $19.2k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CTgiaZUK12kCcB8sosn4Nt2NZtzLgtPqDwyQyr2syATC",
+    symbol: "BITCOIN",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.28M, liq $58k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3bfv2scCdbvumVBc3Sar5QhYXx7Ecsi8EFF2akjxe329",
+    symbol: "DIGITALSOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.28M, liq $283k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9S8edqWxoWz5LYLnxWUmWBJnePg35WfdYQp7HQkUpump",
+    symbol: "GOYIM",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.28M, liq $46k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "E5ZVeBMazQAYq4UEiSNRLxfMeRds9SKL31yPan7j5GJK",
+    symbol: "LDZ",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $282k, liq $27.5k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "JE8zmsKRivXggZsJxXHBdCkako85YawNtU5hqS4upump",
+    symbol: "PAX",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $281k, liq $23.2k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BWsnyEa1XtsNRdgPaDoA1WVUonF7BBGZTd2zc72NQsWT",
+    symbol: "BLEND_BWSN",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.28M, liq $121k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "KMnDBXcPXoz6oMJW5XG4tXdwSWpmWEP2RQM1Uujpump",
+    symbol: "FIGHT_KMND",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.28M, liq $86k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5zCETicUCJqJ5Z3wbfFPZqtSpHPYqnggs1wX7ZRpump",
+    symbol: "SPARK",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.28M, liq $62k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "A3gMddXMAhmc3P9dLjHv2n6ywWWzpGZbRCH6y8sta8ug",
+    symbol: "CTAN",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.28M, liq $35k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump",
+    symbol: "DEGENAI",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.28M, liq $76k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Gka1TQEevBbVw4W9K15ER96ZzKByMTb6TBMQzWFEpump",
+    symbol: "MINER",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.28M, liq $35k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "EJZJpNa4tDZ3kYdcRZgaAtaKm3fLJ5akmyPkCaKmfWvd",
+    symbol: "LOUD",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $276k, liq $14.7k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GmbC2HgWpHpq9SHnmEXZNT5e1zgcU9oASDqbAkGTpump",
+    symbol: "CATANA",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.27M, liq $57k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8i51XNNpGaKaj4G4nDdmQh95v4FKAxw8mhtaRoKd9tE8",
+    symbol: "TETSUO",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.27M, liq $82k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "4qQeZ5LwSz6HuupUu8jCtgXyW1mYQcNbFAW1sWZp89HL",
+    symbol: "CAKE",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.27M, liq $51k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Gk2kRrwNMBU4Dn9JhC1Dks8G5X9nqi4ZE5jMvK6bdgEd",
+    symbol: "$PTRUMP",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.27M, liq $32k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CfgmB9iTWABdYh3CHQQDUGtWy18rMNAEEqyp4GrJpump",
+    symbol: "ASS",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.27M, liq $44k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "6afu2XRPMg8JAhzBsJ9DXsQRCFhkzbC4UaFMZepm6AHb",
+    symbol: "SFLP.3",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $273k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5QmbJw7mM6tcCdXVy8ftc2bu8izded7Etc57TMA2pump",
+    symbol: "INCOME",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.27M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2SN5omCCJPzseBpm7t38Qt2muy8gd4oknbF34tzLpump",
+    symbol: "HAMSTER",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $272k, liq $28.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3EH7ZAVLSHUWdWsmaLNqEsDwHJxz8eQDaJXPwgvSpump",
+    symbol: "TAPPY",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $272k, liq $20.4k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "B5WTLaRwaUQpKk7ir1wniNB6m5o8GgMrimhKMYan2R6B",
+    symbol: "PEPE_B5WT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.27M, liq $67k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "EhzVcKKmGjLk6pD5gLT6ZrTg62bMgPgTSCXXmANnSyQA",
+    symbol: "SANTA",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $271k, liq $28.8k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "fuseYvhNJbSzdDByyTCrLcogsoNwAviB1WeewhbqgFc",
+    symbol: "FUSESOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.27M, liq $270k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AVw2QGVkXJPRPRjLAceXVoLqU5DVtJ53mdgMXp14yGit",
+    symbol: "SPYR",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $270k, liq $2.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DLMmRN9rbZspAAC3a1HgDHMC893Y2Ca9GjoNh9StwnYG",
+    symbol: "DLMM",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $269k, liq $29.7k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9jaZhJM6nMHTo4hY9DGabQ1HNuUWhJtm7js1fmKMVpkN",
+    symbol: "AMC_9JAZ",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.27M, liq $75k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3BWA5RBXyPXuMGZmVL8Snefu573FMJNGpsVi79baiBLV",
+    symbol: "PM",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.27M, liq $55k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "EfgEGG9PxLhyk1wqtqgGnwgfVC7JYic3vC9BCWLvpump",
+    symbol: "GYAT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.27M, liq $48k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3joMReCCSESngJEpFLoKR2dNcChjSRCDtybQet5uSpse",
+    symbol: "CAT_3JOM",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $265k, liq $15.6k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "ATBR4i19gcQ31Rfr7ymA2XvkCQEAkNFGBtVKTmdqpump",
+    symbol: "MACHI",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.26M, liq $32k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "D1gittVxgtszzY4fMwiTfM4Hp7uL5Tdi1S9LYaepAUUm",
+    symbol: "DIGITSOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.26M, liq $262k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2ZiSPGncrkwWa6GBZB4EDtsfq7HEWwkwsPFzEXieXjNL",
+    symbol: "FDRY",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.26M, liq $37k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9F6VbPeM8xR9Nkntyjp5nPY52w9YG9331bLuyhe3pump",
+    symbol: "AKA",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $259k, liq $20.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "UVcu7kbVKW6Rs5PKzuwVSbm8ukvrWByS3hBXqHapump",
+    symbol: "PNP",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $258k, liq $19.7k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "7C56WnJ94iEP7YeH2iKiYpvsS5zkcpP9rJBBEBoUGdzj",
+    symbol: "SLVR",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.26M, liq $118k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GGJzGSdJBUZ7jexM9rmjB4G9jNVute5WJK1CmuxRpump",
+    symbol: "FIG",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $257k, liq $20.2k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "F1ppSHedBsGGwEKH78JVgoqr4xkQHswtsGGLpgM7bCP2",
+    symbol: "ASTEROID_F1PP",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.26M, liq $45k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Comp4ssDzXcLeu2MnLuGNNFC4cmLPMng8qWHPvzAMU1h",
+    symbol: "COMPASSSOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.26M, liq $256k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9j6twpYWrV1ueJok76D9YK8wJTVoG9Zy8spC7wnTpump",
+    symbol: "URMOM",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.25M, liq $52k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Ai3eKAWjzKMV8wRwd41nVP83yqfbAVJykhvJVPxspump",
+    symbol: "MOONPIG",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.25M, liq $63k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "4y3oUrsJfSp431R3wJrWiaLxRPsnYtpkVJmoV2bYpBiy",
+    symbol: "WIFE",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $253k, liq $27.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3BRC7ZfRXXfXNFwYkQr1dJCPNZKDRYc4n7KGwrtzpump",
+    symbol: "MIRUMI",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $253k, liq $24.4k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BQX1cjcRHXmrqNtoFWwmE5bZj7RPneTmqXB979b2pump",
+    symbol: "ITALIANROT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.25M, liq $61k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "SurfwRjQQFV6P7JdhxSptf4CjWU8sb88rUiaLCystar",
+    symbol: "SURF",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.25M, liq $34k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "21nnfR4TkbZNLwvRrqEseAbz7P3kxKjaV7KuboLJpump",
+    symbol: "WEEDCOIN",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.25M, liq $30k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3nq9YFTdHhaSYTkrftJYBfzbQj8MAkm2tvLCBy7EpHRJ",
+    symbol: "RGUSD",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $250k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "7df5p5aoW787CqUWGU2cwtdmtjd5Eiy3oJTbSpeRjupx",
+    symbol: "OUTLAW",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $250k, liq $12.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3FoUAsGDbvTD6YZ4wVKJgTB76onJUKz7GPEBNiR5b8wc",
+    symbol: "CHEEMS",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $249k, liq $20.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "foRgE7d5FRtvQ2jf9yhV9Cnd1LMB3rxk6dpE7HYdzGk",
+    symbol: "FORGE_FORG",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $247k, liq $23.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CTg3ZgYx79zrE1MteDVkmkcGniiFrK1hJ6yiabropump",
+    symbol: "NEIRO",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.25M, liq $103k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AWc8uws9nh7pYjFQ8FzxavmP8WTUPwmQZAvK2yAPBAGS",
+    symbol: "ZHC",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $246k, liq $17.4k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "G2pMCBjRQHHCkE79r9KAESvdhUCieWPZvX5GRFa3jCLg",
+    symbol: "SUBY",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.25M, liq $30k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8",
+    symbol: "HYPER",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $245k, liq $18.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "89S7oVB4hui8ceJqhHreWB7fcxdthfvoB7z2pfJtpump",
+    symbol: "ABCDEFG",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.24M, liq $51k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FQ1tyso61AH1tzodyJfSwmzsD3GToybbRNoZxUBz21p8",
+    symbol: "VVAIFU",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.24M, liq $71k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2G8LH53fcr3aCrEsmAo73eunbZRbyjKrGH5qmur6pump",
+    symbol: "SUPERCYCLE",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.24M, liq $46k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "TuLipcqtGVXP9XR62wM8WWCm6a9vhLs7T1uoWBk6FDs",
+    symbol: "TULIP",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $240k, liq $3.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AXNgt2tyXdoNR3VaXqtN8E91m9ZwKCJrVHAX6r7Dpump",
+    symbol: "G",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.24M, liq $39k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "7oLWGMuGbBm9uwDmffSdxLE98YChFAH1UdY5XpKYLff8",
+    symbol: "WOJAK_7OLW",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.24M, liq $56k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DPaQfq5sFnoqw2Sh9WMmmASFL9LNu6RdtDqwE1tab2tB",
+    symbol: "SKBDI",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.24M, liq $42k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2yd2Suus3YY4Sa7LHhn1PSHkjXj3XKrars4cCog2tGU8",
+    symbol: "$INA",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $238k, liq $24.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "65nTNuJGHme4PQvKQyJykKp1bJAkK4A8Q66sd2yBWugf",
+    symbol: "RBT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.24M, liq $53k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8ryRQD6jWfxnSdvvVbQ8Tzwo1NgGP7w1X1nQPpb4pump",
+    symbol: "MEOWL",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $235k, liq $25.2k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2k8yZaJjf61unHriuqdmvbxe7CUhEYML5kVJDbcotKjU",
+    symbol: "BFS",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $230k, liq $29.8k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FSTRgYfDaudjDwFg5A9LQpDMq5vxqhskHq4rkjUMwERE",
+    symbol: "FSTR",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $227k, liq $26.8k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "71mfKdePwyWXtiF1mqu2aaCdMKnKuN664z2vEM2Xpump",
+    symbol: "LIQUID",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $224k, liq $27.2k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DEADsWJZaonaiZPFkrqEEBGf43mzA5uHeHpwgy9dW666",
+    symbol: "DEADS",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $224k, liq $11.8k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AnXE9mZYWReqBw4v5HrY2S2utt42uEtcBGmuCXASvRAi",
+    symbol: "ANITA",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $224k, liq $21.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "iTHSaXjdqFtcnLK4EFEs7mqYQbJb6B7GostqWbBQwaV",
+    symbol: "ITHEUM",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $223k, liq $6.9k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "A7n89LqW67HJKzJkdWZa2xojuK4N5GBKHz3dfjATCZPz",
+    symbol: "DEGEN",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $222k, liq $16.7k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GyuP7chtXSRB6erApifBxFvuTtz94x3zQo3JdWofBTgy",
+    symbol: "D2X",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $222k, liq $2.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GUUFsneDFrEgYwV2ngpvpMdAmwFjhFknA5eL7ehkeFf8",
+    symbol: "TANUKI",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $220k, liq $8.2k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "axUxN2q4AWzHaU6LXmjqQh7KEjaXDPKScjmzwEBpump",
+    symbol: "GRANDMA",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $220k, liq $29.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FkBF9u1upwEMUPxnXjcydxxVSxgr8f3k1YXbz7G7bmtA",
+    symbol: "GLORP",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.22M, liq $38k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DRtvTCzfiKGhCVREmBbZdN9sB8PHeq9KdRZ3VmFhpump",
+    symbol: "CHIEFPUSSY",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $220k, liq $22.4k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5UAMZkfNmuVcKzr2wo8Jqw4R1k8vfdAVJNN6h3bVpump",
+    symbol: "LIMBO",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.22M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "ALTP6gug9wv5mFtx2tSU1YYZ1NrEc2chDdMPoJA8f8pu",
+    symbol: "NVDAR",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $218k, liq $0.8k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "4yDSFNMitxy6waXPTkPyyVvbbQSiqe7zD1VxnzEypump",
+    symbol: "MOTION",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $218k, liq $20.6k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "goodX4LG92UAcRdFRUykfP2fAfzQAVttrToEPxtxSkp",
+    symbol: "GOOD",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.22M, liq $65k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "7NQSHjuEGENZDWfSvPZz7oP2D6c5Jc3LjFC6uh179ufr",
+    symbol: "MOAI",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.22M, liq $32k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "J7tYmq2JnQPvxyhcXpCDrvJnc9R5ts8rv7tgVHDPsw7U",
+    symbol: "FLOYDAI",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.22M, liq $42k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "uPtSoL2qszk4SuPHNE2zqk1gDtqCq21ZE1yZCqvFTqq",
+    symbol: "UPTSOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.22M, liq $215k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Gbz4HzY4KunK96e8dART7GhbV4bEjYSUXEA2cy2qpump",
+    symbol: "HERO",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $215k, liq $19.7k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "26KMQVgDUoB6rEfnJ51yAABWWJND8uMtpnQgsHQ64Udr",
+    symbol: "HAMMY",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.21M, liq $47k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FVGdJQVzAdKr8ZH7ahyhp4cvDszX3N8QYGSdzueopump",
+    symbol: "ATTN",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $213k, liq $18.8k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BJ5PW3Qoxz3BgLrnZrQTgd93i6WiK8P6g9chTPZFP5g3",
+    symbol: "JCO",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $213k, liq $1.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "pTA4St7D5WshfLUPBXoaxn5m8e3k2ort2DVt3gUTa17",
+    symbol: "SUSDV",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $213k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2nCeHpECQvnMfzjU5fDMAKws1vBxMzxvWr6qqLpApump",
+    symbol: "SUEDE",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.21M, liq $31k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BHhYx1h3mwiQLcYdD2N9tG6nRFcn6pmwwtzS5XMvBAGS",
+    symbol: "HUBZZ",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $212k, liq $15.9k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "F9mv7XXbrXZb1sP2JUoswbCB3WHQM4QGMFDTVfnRZMnP",
+    symbol: "FRA",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $210k, liq $26.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DF4zASfiDBr3uuAz4s2Sxtsjo7tDFZiQ2nLeKJGfBAGS",
+    symbol: "RECAP",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $210k, liq $17.7k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DUAL6T9pATmQUFPYmrWq2BkkGdRxLtERySGScYmbHMER",
+    symbol: "DUALSOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.21M, liq $209k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "G9ivB7K41a4G8m1k4QdxxN4L5eGKL7Mr12S26B85pump",
+    symbol: "PIZZA",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $208k, liq $25.7k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FvgqHMfL9yn39V79huDPy3YUNDoYJpuLWng2JfmQpump",
+    symbol: "$URO",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.21M, liq $62k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "J4ywFdm8H7hjwKzCaEQujhkDRfCnRviVnHMvFNDAoLNQ",
+    symbol: "SOUL",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $207k, liq $19.8k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2x8o3hA5S5fBxCSE9hzVTf3RohcMWHqkDNKNEPuzprD5",
+    symbol: "STBOT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.21M, liq $41k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8G5ayEsJF4Q7FEWEGeF4jtnUWZBEKCqhySTFQf9Ppump",
+    symbol: "HEAVYPULP",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.21M, liq $32k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BWXrrYFhT7bMHmNBFoQFWdsSgA3yXoAnMhDK6Fn1eSEn",
+    symbol: "HADES",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $204k, liq $29.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "4Hcm1TfA1MvVhCQHvJCcKL7ymUhJZAV7P439H5ZHnKRh",
+    symbol: "TEST",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.20M, liq $42k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BnXWvsVZYgBxTUDyDqHZjvFbQGvEZeipY4ZdmqCbpump",
+    symbol: "ASSFACE",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.20M, liq $30k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Amyv5r77rhmDGMnsAHMxghMrJVGYitQDmkKt7wjdoge",
+    symbol: "420BLAZEIT",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $202k, liq $17.7k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DFL1zNkaGPWm1BqAVqRjCZvHmwTFrEaJtbzJWgseoNJh",
+    symbol: "DFL",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $202k, liq $9.8k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FBaQqJAuYkuKQpAcDuHtuupSPpqi33fbTxKXSjLDQory",
+    symbol: "ORY",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $202k, liq $18.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2u98MM7DMtVmNG4iAKRNMtynjmkzgD6fXAzB3wVfhQvg",
+    symbol: "LFGO",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $201k, liq $29.9k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "B82yjD7yiWS5BkKRNmfLABdYNma3vxz18L4sAkhxpump",
+    symbol: "XERO",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $201k, liq $19.5k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "13QHuepdhtJ3urNsV9i1hdL8nQoca2G7ZaLzb5FYondo",
+    symbol: "IRENON",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $201k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "nn944oFMxsHg9AnEuBHWxtBpGjRX3DRxx86PseuDrPJ",
+    symbol: "VALEO",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $200k, liq $22.9k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GekTNfm84QfyP2GdAHZ5AgACBRd69aNmgA5FDhZupump",
+    symbol: "GRIFT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.20M, liq $65k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HCgybxq5Upy8Mccihrp7EsmwwFqYZtrHrsmsKwtGXLgW",
+    symbol: "STARS",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $199k, liq $12.5k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BwUTq7fS6sfUmHDwAiCQZ3asSiPEapW5zDrsbwtapump",
+    symbol: "SOLFUNMEME",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.20M, liq $39k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Av6qVigkb7USQyPXJkUvAEm4f599WTRvd75PUWBA9eNm",
+    symbol: "COST",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.20M, liq $41k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "7XdCaKpqLmKE2K7yr9xaeWB1H2CVZ1oGwxB6hmd9pump",
+    symbol: "WIZARD",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $198k, liq $24.5k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "inxKXw9V2NDZE7hDijzpJaKKUb97NEPJDTCEEiYg4yY",
+    symbol: "INFINEX",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.20M, liq $50k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Dnb9dLSXxAarXVexehzeH8W8nFmLMNJSuGoaddZSwtog",
+    symbol: "COK",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.20M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "6Bp9LWtyVXcEATi5nuquX5p1hPGUg1cVoUuXGN9Epump",
+    symbol: "AIFRUITS",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.20M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "A3eME5CetyZPBoWbRUwY3tSe25S6tb18ba9ZPbWk9eFJ",
+    symbol: "PENG",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.20M, liq $55k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GPrg1CgbBvAJS2SCuf9gF7NmQYsWudfyfWy5SUzypump",
+    symbol: "EDWIN",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $195k, liq $27.9k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "4sp2EUDrQf46rZun6sYAWzjrXwUpx2T3njuoKmV766RJ",
+    symbol: "HAMI",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $195k, liq $27.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5voS9evDjxF589WuEub5i4ti7FWQmZCsAsyD5ucbuRqM",
+    symbol: "ELIZA",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.19M, liq $64k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GJ9LEQZgoxW487LRaRnajr6DWzouswd29EruRqwZBAGS",
+    symbol: "NIKITA",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $194k, liq $18.6k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "C8cNX2D1y3jqKpMFkQhP1gGbfvTEdeckZXLBKSN5z5KF",
+    symbol: "MAIL",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $194k, liq $27.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "pathdXw4He1Xk3eX84pDdDZnGKEme3GivBamGCVPZ5a",
+    symbol: "PATHSOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.19M, liq $193k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "25p2BoNp6qrJH5As6ek6H7Ei495oSkyZd3tGb97sqFmH",
+    symbol: "SOBA",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $193k, liq $25.4k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CFYhdWXsYfS7swnJgHRwb5toTHMEQD7Ljd5gGwKLpump",
+    symbol: "KILROY",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $192k, liq $24.7k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "usd63SVWcKqLeyNHpmVhZGYAqfE5RHE8jwqjRA2ida2",
+    symbol: "USDC+",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $191k, liq $0.5k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "J2LWsSXx4r3pYbJ1fwuX5Nqo7PPxjcGPpUb2zHNadWKa",
+    symbol: "DPLN",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $191k, liq $12.5k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GFreY9SAUz96P7qkF19A4dtA4TmZgtL9Gmu8gV9Kpump",
+    symbol: "JELLYFC",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $186k, liq $17.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "4PX31xRA1BaAyb2Js45ZKYp92VGWGp47yWeVs5CGVKbf",
+    symbol: "ZDLT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.19M, liq $31k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "4BBjpGwLgGmUxtT82YFK9xMhcvyy3zgf3HpxTRip1YoU",
+    symbol: "MUNDI",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.19M, liq $31k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "sntn1oVhhKuytG42jyjneMYnGAtzkpJsBxHNEskTfGp",
+    symbol: "JPHASELST",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.19M, liq $185k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "7G5DM7Jy7TMWKgH313tA3vF6AqHpbHP4TWZzpTVLWv9c",
+    symbol: "RTR",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.19M, liq $162k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "7m2TUkpPZCScBhPJnGjWjbh75KkDNnwAdd7i74m8awad",
+    symbol: "WW3",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.18M, liq $40k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "A8YHuvQBMAxXoZAZE72FyC8B7jKHo8RJyByXRRffpump",
+    symbol: "XBT_A8YH",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.18M, liq $45k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "B1KrhWbacPi3tpjWqnsbjKQJEkp3RvWppGxNzUYBpump",
+    symbol: "CHEESE",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $183k, liq $22.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2ru87k7yAZnDRsnqVpgJYETFgqVApuBcwB2xDb19pump",
+    symbol: "BIAO",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.18M, liq $37k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FXJAdx38aXJdQd3ABAVu7fQ7Bjh9oMN92eTxszFNpump",
+    symbol: "CDOGE",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $182k, liq $17.5k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3ADvYyTbmQcLMiqdFSo1m2KpQWxYg9X6wW4N8viRTNf9",
+    symbol: "TRIAD",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $181k, liq $17.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2XPqoKfJitk8YcMDGBKy7CMzRRyF2X9PniZeCykDUZev",
+    symbol: "HUND",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.18M, liq $33k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "EicWvteVi2fWepEzS3FYWsnuPoP6caZfjnKqNvydLjCH",
+    symbol: "LIT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.18M, liq $76k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "myrcAs6bpP2g5oGHZ3qpgrfZQAFkbo9KUHdqYDXMjGv",
+    symbol: "MYRC",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.18M, liq $76k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "LABSh5DTebUcUbEoLzXKCiXFJLecDFiDWiBGUU1GpxR",
+    symbol: "LABS",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $178k, liq $22.9k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "26VfKb7jjtdEdvfovoBijScoZmJbWWasFZkgfUD5w7cy",
+    symbol: "MOG",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $175k, liq $14.2k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "ZKFHiLAfAFMTcDAuCtjNW54VzpERvoe7PBF9mYgmeta",
+    symbol: "ZKFG",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.17M, liq $56k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DPdNMhjBnftREwT82KXytQBk7zd5RBkRrG41L795pump",
+    symbol: "QE",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $175k, liq $17.5k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AGRidUXLeDij9CJprkZx7WBXtTQC67jtfiwz293mVrJ",
+    symbol: "AGRI",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $174k, liq $2.2k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DeoP2swMNa9d4SGcQkR82j4RYYeNhDjcTCwyzEhKwfAf",
+    symbol: "DEO",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $173k, liq $8.2k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "gcho94FhdhJNDhVEnHHskXP7PcSKDqCs3GKEj5zrewn",
+    symbol: "GCHO",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $172k, liq $15.2k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump",
+    symbol: "BULLY",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.17M, liq $56k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Taki7fi3Zicv7Du1xNAWLaf6mRK7ikdn77HeGzgwvo4",
+    symbol: "TAKI",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $171k, liq $0.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "moLtguTf84g34S34PbnJDRKR1FXb5di1UCRsnB7hKjE",
+    symbol: "MOLTID",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $170k, liq $25.5k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "147uk4CFxsppdmKZUAakfLvduo4x459HiJ5Ct6MzJory",
+    symbol: "MGN",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $170k, liq $21.6k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FDEF2U9geiWS7sdGPCUo2r1wGswkJr2mmVTECiH6pump",
+    symbol: "MITCH",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $169k, liq $19.4k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2DfBjrPFZjDTiCY6pxchS6aSdUdEpkm7PdqpovHjBAGS",
+    symbol: "PRIMIS",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $169k, liq $14.7k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "pepo1CFNU2RXf7yXX7HNXazXwxsq8WrPvDHpHriwoLY",
+    symbol: "PEPO",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $169k, liq $27.9k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FasH397CeZLNYWkd3wWK9vrmjd1z93n3b59DssRXpump",
+    symbol: "BUTTCOIN_FASH",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.17M, liq $71k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Lrxqnh6ZHKbGy3dcrCED43nsoLkM1LTzU2jRfWe8qUC",
+    symbol: "LARIX",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $168k, liq $6.8k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HHjoYwUp5aU6pnrvN4s2pwEErwXNZKhxKGYjRJMoBjLw",
+    symbol: "PIP",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $168k, liq $8.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "H7bTHGb5Cvo5fGe5jBDNDPUv8KykQnzyZA3qZ8sH7yxw",
+    symbol: "GUMMY",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.17M, liq $59k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "72FkeF1cpBMtbordhTVNVbBGdaN5DfHcchstHwPWpump",
+    symbol: "PUMPVILLE",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $165k, liq $18.9k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "EPeUFDgHRxs9xxEPVaL6kfGQvCon7jmAWKVUHuux1Tpz",
+    symbol: "BAT",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $164k, liq $14.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GPwwihLa1w9Qsz27SmNrj7aLVnE7pr2cAvHe6aVVpump",
+    symbol: "DANK",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $163k, liq $24.4k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5XyKkFaJpAmsH4Tf2EFj3S61W3hC5cJhxNZQQ5h1pump",
+    symbol: "LUIGI",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.16M, liq $50k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Eh1fXbAipe4k7CYR9UMb2bbWmBcpU3HcyX3LWuRVFBLz",
+    symbol: "FM",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $162k, liq $5.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3o2ySLzzvf94VwGnqhNqxHx3Bq4NNimTVr9UKuksTHRT",
+    symbol: "THRT",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $161k, liq $14.2k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FCPMdpvwxtWBvgDDsPuBb6wyf41ik2gtPqNN9jWSBAGS",
+    symbol: "PPW",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $161k, liq $15.4k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FsA54yL49WKs7rWoGv9sUcbSGWCWV756jTD349e6H2yW",
+    symbol: "KOKO",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $161k, liq $18.9k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "7Y6Rix8X2botuMaJ2mno4UqSWdQZqU4RezY6qp7zpump",
+    symbol: "BOLT",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $159k, liq $22.4k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "EATGZHJViJsk7nEKkrdJicwNbfpkJfAtmrEmrjXR8NBj",
+    symbol: "POPDOG",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $159k, liq $20.9k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "JDwzFSxcUvLubUb9xAuuZNvh4bbcEJcuM9TezpmRHVWF",
+    symbol: "DOODOO",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $159k, liq $1.4k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9So52ugZh2BLBT3f7p61947q91uQh2DyvbfyMDeRpump",
+    symbol: "MUSKIT",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $159k, liq $29.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "H5b4iYiZYycr7fmQ1dMj7hdfLGAEPcDH261K4hugpump",
+    symbol: "MONEROCHAN",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $159k, liq $26.4k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3vJenGaGsuKG5shPhi7rjnuy3MV6xjmBTGjYqYzXpump",
+    symbol: "RAT",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $158k, liq $17.9k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HJ39rRZ6ys22KdB3USxDgNsL7RKiQmsC3yL8AS3Suuku",
+    symbol: "UPDOG",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $158k, liq $26.8k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "ADNScivK6Pt2XsfsufuyUiZaKbRww5JANDvZ7texDid1",
+    symbol: "ADNS",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $157k, liq $12.7k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9HHrikqNLYvfXzxtNV8pvPLrWbDGG4mZkVpaKBcvgLyu",
+    symbol: "BUDDY",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $156k, liq $19.6k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "ACXK4KmfXrf93e3AEo1ZiGDDDpcBpNEnWVxy9BHFpump",
+    symbol: "MHGA",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $154k, liq $15.6k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "89BZ5RU212yKr3iFdJHyn3ZsR37bS4s8TbmVb2yApump",
+    symbol: "MIM",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $154k, liq $18.8k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DxtssVdyYe4wWE5f5zEgx2NqtDFbVL3ABGY62WCycHWg",
+    symbol: "BRETT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.15M, liq $32k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "X69GKB2fLN8tSUxNTMneGAQw79qDw9KcPQp3RoAk9cf",
+    symbol: "$GREMLY",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $153k, liq $26.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "sctmWXGT7L75psrUHV2xxyTQKndE7ZcCQRHy2z6D5ER",
+    symbol: "HONESTSOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.15M, liq $153k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8D9foi1nqfabp8D3uNJCrzt1xkvxq8xHYH8Lxb4fbonk",
+    symbol: "MEMESAI",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.15M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "qGDGw7T1XtWn7cd75EkoreoJfLfJwamQRDuJSPLBAGS",
+    symbol: "FITTED",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $152k, liq $13.5k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "7EW5dDD6MYJK4PcZ89MGApJQwWeDEeNgH4NCVU4qpump",
+    symbol: "PURCH",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.15M, liq $31k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "C1MHyoTJpRTeS9AQCyspNVu2EWAYCZwmJ1jNkEArFP1f",
+    symbol: "APE",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.15M, liq $31k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GFJbQ7WDQry73iTaGkJcXKjvi1ViFTFmHSENgz92jFPP",
+    symbol: "SECURE",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $151k, liq $19.6k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2jvsWRkT17ofmv9pkW7ofqAFWSCNyJYdykJ7kPKbmoon",
+    symbol: "AIR3",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $150k, liq $14.8k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9EQSeWY7pDB7MYoSFr8QJ19onGS1ehDmLbSGT2b3pump",
+    symbol: "MONKE",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $150k, liq $28.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9X2RHtKrBzw3SLYe9E88cBd1kz5RfU1f4JTSn4aRH43d",
+    symbol: "SKID",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $150k, liq $20.2k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CPcf58MNikQw2G23kTVWQevRDeFDpdxMH7KkR7Lhpump",
+    symbol: "DOBBY",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $150k, liq $25.7k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "g2M4twkhi5uGMdHQS8RbugciyABB2CmngqSUBDupump",
+    symbol: "AISI",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $149k, liq $17.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "4rwPNRSFgcS7EGphFdX7VwXuhjZGxph7gYyb7Zp2pump",
+    symbol: "AURAFARM",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.15M, liq $34k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "SNSNkV9zfG5ZKWQs6x4hxvBRV6s8SqMfSGCtECDvdMd",
+    symbol: "SNS_SNSN",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $147k, liq $20.5k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "F5qFr17LeunQk5ikRM9hseSi2bbZYXYRum8zaTegtrnd",
+    symbol: "MODRIC",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.15M, liq $86k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "H2yHLoC24dM5v1Vjh2Poqx7fZ9mp8EfR2MYseXScpump",
+    symbol: "BOXABL",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $146k, liq $19.5k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CfVs3waH2Z9TM397qSkaipTDhA9wWgtt8UchZKfwkYiu",
+    symbol: "KNET",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $146k, liq $26.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CozoH5HBTyyeYSQxHcWpGzd4Sq5XBaKzBzvTtN3ondo",
+    symbol: "INTUON",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $146k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "eEUiUs4JWYZrp72djAGF1A8PhpR6rHphGeGN7GbVLp6",
+    symbol: "GALA",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.14M, liq $47k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "ESBCnCXtEZDmX8QnHU6qMZXd9mvjSAZVoYaLKKADBAGS",
+    symbol: "BTH",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $145k, liq $13.5k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GnxdTsSQNQ3FF72nTyWo4SUt59Tt1MqDkRRfoPtKjMvJ",
+    symbol: "SFLP.4",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $145k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "E2gLkTXSbbTMmJM19xkquawun2ShJSi7G59A8c2PtbFa",
+    symbol: "WEED",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $143k, liq $19.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "F8Pz2mx7V8exRkBNFzvpkZAwjNPxWPGqzYJL2ckrpump",
+    symbol: "PERK",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $143k, liq $17.7k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CX9YDTED9TWgVXVoFy8JL9gSSAEWcTv4mzjLSv17LQsj",
+    symbol: "DRUGS",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $142k, liq $18.6k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9nEqaUcb16sQ3Tn1psbkWqyhPdLmfHWjKGymREjsAgTE",
+    symbol: "WOOF",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $142k, liq $2.4k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "chSoLyETGSZpdpAk4TKfRWw5kyuHkzt5WaQ2kiJYJun",
+    symbol: "CHSOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.14M, liq $142k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump",
+    symbol: "LLM",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.14M, liq $59k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DubwWZNWiNGMMeeQHPnMATNj77YZPZSAz2WVR5WjLJqz",
+    symbol: "CRP",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $141k, liq $0.2k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Ew8KqgSitYucieR5KnSAL2SUFspcwA8AgSuZ5xWspump",
+    symbol: "KURUMI",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $140k, liq $24.9k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "vLieQF5eDqUuuk8RzRaqgAHkXr7bSEBZaWk9Zfibonk",
+    symbol: "DEBT",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $139k, liq $14.5k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Huh3G975pLP3WTXKDnsaCTu7enAoFsHMFJCbFLeNpump",
+    symbol: "FOMO",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $139k, liq $22.6k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3UCMiSnkcnkPE1pgQ5ggPCBv6dXgVUy16TmMUe1WpG9x",
+    symbol: "ALEPH",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $139k, liq $9.5k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8oosbx7jJrZxm5m4ThKhBpvwwG4QpoAe6i4GiG19pump",
+    symbol: "WIZARD_8OOS",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.14M, liq $47k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "57dYAUq7Y4hiCSdAB7iBDg4gcYFq7HeUaEs3XnNkbrrr",
+    symbol: "发财",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $139k, liq $19.9k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3ywtR9qQH4BuA7LSfLvEuW1gh6ha7EK18XwLbHvhryPZ",
+    symbol: "DIME",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $138k, liq $2.2k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2MDr15dTn6km3NWusFcnZyhq3vWpYDg7vWprghpzbonk",
+    symbol: "NOM",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $138k, liq $29.4k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "n54ZwXEcLnc3o7zK48nhrLV4KTU5wWD4iq7Gvdt5tik",
+    symbol: "PEEP",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $138k, liq $19.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8bdhP1UQMevciC9oJ7NrvgDfoW8XPXPfbkkm6vKtMS7N",
+    symbol: "SPORE",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $137k, liq $25.8k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HkBWJJiaUW5Kod4HpHWZiGD9PQVipmMiPDgiRPcNpump",
+    symbol: "CRUST",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $137k, liq $25.5k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "4AjvPXMn8YZG9saAVJvcWspg73oTFf2JmU4in4Xgpump",
+    symbol: "STABLE",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $137k, liq $17.9k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5sMyPtYRcrEVt27DW3xhGVVha3zCXLv4caVt88PXjBgV",
+    symbol: "SCP",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $137k, liq $3.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "kiraZUmSnzgfVfhrdvNj6hxHFaPFTTUk8ioY98cbh6G",
+    symbol: "TAP",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $136k, liq $4.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "pumpkinsEq8xENVZE6QgTS93EN4r9iKvNxNALS1ooyp",
+    symbol: "PUMPKINSOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.14M, liq $136k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AvoecWraqX969kfXUF5XCCDz59sjRjiDa1KUDyj225t8",
+    symbol: "MINT",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $136k, liq $1.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "LoL1RDQiUfifC2BX28xaef6r2G8ES8SEzgrzThJemMv",
+    symbol: "LOL_LOL1",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.14M, liq $34k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "camaK1kryp4KJ2jS1HDiZuxmK7S6dyEtr9DA7NsuAAB",
+    symbol: "CAMAOSOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.14M, liq $136k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BS7HxRitaY5ipGfbek1nmatWLbaS9yoWRSEQzCb3pump",
+    symbol: "DOGGY",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $135k, liq $21.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "MonkeD3uUj5c1w5tW8tJeTe5fX1jkpkdtD3dTibnidx",
+    symbol: "MONKESOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.13M, liq $134k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BGSo18NXTWGtyNa5DBBP1ZCfUFRPWj6bECrPKakn8qN",
+    symbol: "BGSOL",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $134k, liq $0.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HBB111SCo9jkCejsZfz8Ec8nH7T6THF8KEKSnvwT6XK6",
+    symbol: "HBB",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $134k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FV56CmR7fhEyPkymKfmviKV48uPo51ti9kAxssQqTDLu",
+    symbol: "WALTER",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.13M, liq $34k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "4CoTCzobYt38zVbSieZxcmz2CCs8kmZJ6wnbj8HWocto",
+    symbol: "OCTO",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.13M, liq $58k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "412zDygnwP9DzitnQVgRKUFFTDmrYScFch6P2k39pump",
+    symbol: "JELLYBEAN",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $132k, liq $28.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GxdTh6udNstGmLLk9ztBb6bkrms7oLbrJp5yzUaVpump",
+    symbol: "SCIHUB",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.13M, liq $32k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AK9yVoXKK1Cjww7HDyjYNyW5FujD3FJ2xbjMUStspump",
+    symbol: "$SITCOM",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.13M, liq $32k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "7UN8WkBumTUCofVPXCPjNWQ6msQhzrg9tFQRP48Nmw5V",
+    symbol: "XENCAT",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $131k, liq $18.7k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "6Rwcmkz9yiYVM5EzyMcr4JsQPGEAWhcUvLvfBperYnUt",
+    symbol: "KWIF",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $131k, liq $24.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CShLzWUWGRQiYsQfCwiR2jjDBo1iRJ1qMc9185zindi",
+    symbol: "TASM",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $130k, liq $10.6k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "iceSdwqztAQFuH6En49HWwMxwthKMnGzLFQcMN3Bqhj",
+    symbol: "ICESOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.13M, liq $130k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BrYANThKaAbjZZH5XWLrw26NzMbfUNmBwbZiMe4Fj5Mk",
+    symbol: "BRYAN",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $130k, liq $10.8k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AATECgWF4KjALbpgUXjabqFKHmdtjWdfdFNzCH3ipump",
+    symbol: "ITMT",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $129k, liq $15.6k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8FU95xFJhUUkyyCLU13HSzDLs7oC4QZdXQHL6SCeab36",
+    symbol: "UNI",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $129k, liq $5.6k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "J1ow1c3ExcJYQmgNFRPfCp1LMYRf6P3A33isDcBmpump",
+    symbol: "ZODS",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $129k, liq $28.6k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "4q3Z58YxrZEAVMLtMwnm7eHtodSD3LSpSNt3pDnqpump",
+    symbol: "KOLIN",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $129k, liq $26.8k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CH74tuRLTYcxG7qNJCsV9rghfLXJCQJbsu7i52a8F1Gn",
+    symbol: "SOLX",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $129k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "gotMd6mpiWE4RWTv3eH3SrYjAXpxkQiZYY1zFKCNRq9",
+    symbol: "GOTMSOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.13M, liq $129k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8CkiSHHJDHJV4LUoiRMLUhqG58cUkbyJRtcP4Z3mCXNf",
+    symbol: "POWSCHE",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $129k, liq $18.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Ckit5s1Cpc3RdMh1HrhfW2nAy4PnkkgjXgXMeykbpump",
+    symbol: "XONA",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $128k, liq $15.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "jkAWzPumRhJE2KyqVy4kB7m9KwXBeSEXnFAGoWtpump",
+    symbol: "CLAUDE",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $128k, liq $19.4k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "52Rh8epudA3qvLmyP1YCavRWrNV8As1JcW5xMU7mJEj9",
+    symbol: "CHRONO",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $128k, liq $2.4k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9EYScpiysGnEimnQPzazr7Jn9GVfxFYzgTEj85hV9L6U",
+    symbol: "TOOKER",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $128k, liq $29.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8NwtzwGm4CV8Hm4fJXR69ac1MxDYuSaN3A9HVyikpump",
+    symbol: "ASTROID",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $128k, liq $23.7k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CWX6t6pGJ1zsnuywnyd2ZMZJ7inB2sWuPdsteoT6pump",
+    symbol: "ETF500",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.13M, liq $34k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "7woCERDM7WV4XaBLfdGwvHBX3EJHQqp8XjArrgSFKkpL",
+    symbol: "DUBCAT",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $127k, liq $16.7k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8SpPaFLycx897D6sowPZkEkcNdDahzRZb5itr6D8pump",
+    symbol: "LEA",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.13M, liq $31k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8BtoThi2ZoXnF7QQK1Wjmh2JuBw9FjVvhnGMVZ2vpump",
+    symbol: "DARK",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.13M, liq $50k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CyUgNnKPQLqFcheyGV8wmypnJqojA7NzsdJjTS4nUT2j",
+    symbol: "GIL",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $126k, liq $26.8k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DUhWgHD3KgHHmsYdQdJHDv359bySNzigYcqJ45Gcpump",
+    symbol: "GRRR",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $125k, liq $22.6k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "coqRkaaKeUygDPhuS3mrmrj6DiHjeQJc2rFbT2YfxWn",
+    symbol: "BCOQ",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.12M, liq $47k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BoAQaykj3LtkM2Brevc7cQcRAzpqcsP47nJ2rkyopump",
+    symbol: "FOREST",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.12M, liq $42k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2wP76beSJ8NB8bgFEkZkQCGtWErxqkxTYEGjx9jYpump",
+    symbol: "BOOTSTRAP",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $124k, liq $18.6k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "E4Q5pLaEiejwEQHcM9GeYSQfMyGy8DJ4bPWgeYthn24v",
+    symbol: "ADA",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.12M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "7ZqzGzTNg5tjK1CHTBdGFHyKjBtXdfvAobuGgdt4pump",
+    symbol: "BARSIK",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.12M, liq $33k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5H4voZhzySsVvwVYDAKku8MZGuYBC7cXaBKDPW4YHWW1",
+    symbol: "VGBP",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $123k, liq $29.7k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DEEZgP19ZPovNeWRJZw7KuNbkLH6xjNjZ4HsUJnmZv7J",
+    symbol: "NUTS_DEEZ",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $123k, liq $6.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DUr5rZAfYduvihaiyMnfqgnhqYWbPWJXvK954qyTpump",
+    symbol: "SOLINU",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $123k, liq $16.4k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GhBPHgnNF99EThYxt4bxUfPX1hCPyAS72RCBgLjLpump",
+    symbol: "ARIA",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $123k, liq $19.6k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "vybe5DgwzGdvJMi4oH7TiQpubJd4QSDuGmbvWfACeb8",
+    symbol: "VYBESOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.12M, liq $122k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CAW777xcHVTQZ4CRwVQGB8CV1BVKPm5bNVxFJHWFKiH8",
+    symbol: "CAW",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $122k, liq $14.6k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8biqsLDiRPaPM11S42zKtNaC3WWKF64PNoPG9htzy99n",
+    symbol: "OK",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.12M, liq $32k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "F6qoefQq4iCBLoNZ34RjEqHjHkD8vtmoRSdw9Nd55J1k",
+    symbol: "SHIB",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $121k, liq $26.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CPLTbYbtDMKZtHBaPqdDmHjxNwESCEB14gm6VuoDpump",
+    symbol: "DTV",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $121k, liq $20.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5yxNbU8DgYJZNi3mPD9rs4XLh9ckXrhPjJ5VCujUWg5H",
+    symbol: "FRONK",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $121k, liq $8.4k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9gwTegFJJErDpWJKjPfLr2g2zrE3nL1v5zpwbtsk3c6P",
+    symbol: "USEDCAR",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.12M, liq $37k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "4GJ3TCt5mTgQT5BRKb14AkjddpFQqKVfphxzS3t4foZ9",
+    symbol: "JENNER",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.12M, liq $42k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "7Tx8qTXSakpfaSFjdztPGQ9n2uyT1eUkYz7gYxxopump",
+    symbol: "ASSDAQ",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.12M, liq $31k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "ARiZfq6dK19uNqxWyRudhbM2MswLyYhVUHdndGkffdGc",
+    symbol: "GEMINI",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $119k, liq $9.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AtortPA9SVbkKmdzu5zg4jxgkR4howvPshorA9jYbonk",
+    symbol: "IKUN",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.12M, liq $39k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "EtTQ2QRyf33bd6B2uk7nm1nkinrdGKza66EGdjEY4s7o",
+    symbol: "PPLTR",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $119k, liq $14.8k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FrSFwE2BxWADEyUWFXDMAeomzuB4r83ZvzdG9sevpump",
+    symbol: "NORMIE",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $119k, liq $13.9k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GRJQtWwdJmp5LLpy8JWjPgn5FnLyqSJGNhn5ZnCTFUwM",
+    symbol: "CLOCKSOL",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.12M, liq $119k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9yZ5Ru8pbmJZ6Q2DKLCGXkaLNwkm83cnJ4QCw4PFpump",
+    symbol: "WOBBLES",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $119k, liq $18.9k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "71S9cppWipeUEQDFngYwxjoxB6Sz1MUqX72byLsVYJqy",
+    symbol: "XSGD",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $118k, liq $2.5k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "SPQkEcsdALLLn4MqCb3XH64hYTmdD4fZZk9CF5LiQV8",
+    symbol: "SPICE",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $118k, liq $0.6k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9nD29a6TMDFHqAXS3iJ6nwLByLBS1gx2664ieQf7Zo7H",
+    symbol: "FUELX",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $118k, liq $3.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GdbJgfLXG5pBEibnrpSvfmXfbNKvyZkLQoTiQLoJpump",
+    symbol: "FLIP",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $118k, liq $13.5k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "6cvrZWgEUkr82yKAmxp5cQu7wgYYBPULf16EUBp4pump",
+    symbol: "MANIFEST",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.12M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "EKwF2HD6X4rHHr4322EJeK9QBGkqhpHZQSanSUmWkecG",
+    symbol: "BIGTROUT",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $118k, liq $26.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GEYrotdkRitGUK5UMv3aMttEhVAZLhRJMcG82zKYsaWB",
+    symbol: "POTATO",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $118k, liq $0.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FWoGYRhR6YagBSqncPSdn43GHNikSPw1ggrGzyM3H5rE",
+    symbol: "COW",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $117k, liq $14.2k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "88881Hu2jGMfCs9tMu5Rr7Ah7WBNBuXqde4nR5ZmKYYy",
+    symbol: "SUSDC-8",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $117k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "kyKYFGGhy5YAg6Yotedj7ZtByUBepsraT4BFkF3Uxmk",
+    symbol: "KYKYROS",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $116k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9XRpjZjhJPeWtUymiEWn3FW7uAnMeQca14ucTWWWyP2g",
+    symbol: "ARG",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $116k, liq $20.8k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2wme8EVkw8qsfSk2B3QeX4S64ac6wxHPXb3GrdckEkio",
+    symbol: "SOLS",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $115k, liq $0.7k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5Ke381D44MEQg3BQarWhAwhj1xbdNvXe2KHkTiZzw7r5",
+    symbol: "LUCI",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $114k, liq $14.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8upjSpvjcdpuzhfR1zriwg5NXkwDruejqNE9WNbPRtyA",
+    symbol: "GRAPE",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $114k, liq $4.5k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5JnZ667P3VcjDinkJFysWh2K2KtViy63FZ3oL5YghEhW",
+    symbol: "APYS",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $114k, liq $13.2k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DcRnZGtuPaFfj8MdWXqTBu5kL9Brvhjd2gC5rJF56XDn",
+    symbol: "$BRIT",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $113k, liq $9.7k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Be78Ld3SpYMif5YgxM4ipJx2eGSDcAaaCkHUzcV5pump",
+    symbol: "42069K",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $113k, liq $19.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DUSTawucrTsGU8hcqRdHDCbuYhCPADMLM2VcCb8VnFnQ",
+    symbol: "DUST",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $113k, liq $7.6k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DXBYAw9aQheMdujaLZYnVSpKSK4n8jMS7HfLbiv5RWnS",
+    symbol: "BRETTA",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $113k, liq $12.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8NfK7b9u1RvMpHJnAnZki4mNQwjhvzrVZs7bRQatpump",
+    symbol: "LION",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $113k, liq $23.5k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2nnrviYJRLcf2bXAxpKTRXzccoDbwaP4vzuGUG75Jo45",
+    symbol: "KENDU",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $113k, liq $16.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "J3NrhzUeKBSA3tJQjNq77zqpWJNz3FS9TrX7H7SLKcom",
+    symbol: "COM",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $112k, liq $21.6k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "7RDvypx3p9EWq4nZZKux1ZQAc7DUWXpHTVKxCCnupump",
+    symbol: "KNOT",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $112k, liq $20.5k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "bGxHNbsacaVL35pkYWae5PYQDZXSpuQb3QDyW31pump",
+    symbol: "PEANUT",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.11M, liq $38k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "mo7mapMrCsyci5w1td1wgrKPtNeCfjfkKi96DknWi5N",
+    symbol: "CATBAT",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $112k, liq $14.6k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "ALR5X2H6THn2VDPoMtkVwxVktcN1kQGvxCwLfejzpump",
+    symbol: "WURK",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $111k, liq $19.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DDAjZFshfVvdRew1LjYSPMB3mgDD9vSW74eQouaJnray",
+    symbol: "HINEY",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $111k, liq $10.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BnszRWbs9LxSzsCUUS57HMTNNtyDHFsnmZ1mVhAYdaos",
+    symbol: "LLM_BNSZ",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $111k, liq $11.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "59nzDoRyJ1QcLcFYFs4GVdeZ4qUEb16T2KNuHPWMpump",
+    symbol: "UNTIL",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $111k, liq $25.6k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "yLUD35WTiPLEY6DUqEj5W2JVXF2DfKB5arPkKJXpump",
+    symbol: "APY",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $110k, liq $18.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "9hdynudAhhWzuNFAnpz7NjvdKMfh9z8mcZKNYHuAUgJQ",
+    symbol: "SWIF",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $110k, liq $25.5k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5552z6Qp2xr596ox1UVN4ppDwwyjCfY8cXwzHMXgMcaS",
+    symbol: "MOLTING",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $110k, liq $13.9k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GRUmPYbiTpq9ZPy5LAqBMMze7kErf5dEX2i9qYfwoSmR",
+    symbol: "GRUMPY",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $110k, liq $17.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "SHARKSYJjqaNyxVfrpnBN9pjgkhwDhatnMyicWPnr1s",
+    symbol: "SHARK",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $110k, liq $7.8k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "2wqkw3idoEYFV8fyM54PvS5BYHieT8rAZqzdHg6aqZby",
+    symbol: "PEPEAI",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $109k, liq $15.4k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CyRbC97yrkUB31sv9PLw5Hw8276zXH4sRoTE1KcDpump",
+    symbol: "LOOBY",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $109k, liq $18.2k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Goatm5cqggssKRUwbMnPhHXKtN5SDGEP57qjwTSHD1Xf",
+    symbol: "AIAI",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $109k, liq $15.4k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "6VHL2vMKgrF1YQFSv29Rs1pj9VCRK29bD11NtDqerqHA",
+    symbol: "$SSHIB",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.11M, liq $39k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "7Pnqg1S6MYrL6AP1ZXcToTHfdBbTB77ze6Y33qBBpump",
+    symbol: "BAGWORK",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $109k, liq $26.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AD27ov5fVU2XzwsbvnFvb1JpCBaCB5dRXrczV9CqSVGb",
+    symbol: "REAL_AD27",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $109k, liq $25.6k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "DFVeSFxNohR5CVuReaXSz6rGuJ62LsKhxFpWsDbbjups",
+    symbol: "VIBE",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.11M, liq $52k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GYKmdfcUmZVrqfcH1g579BGjuzSRijj3LBuwv79rpump",
+    symbol: "WDOG",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.11M, liq $46k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FyPDfX92B4uEk4zZouy96d1Kk1LgnCznBpzAFSsZpump",
+    symbol: "MIA",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $108k, liq $20.9k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HeJUFDxfJSzYFUuHLxkMqCgytU31G6mjP4wKviwqpump",
+    symbol: "GNON",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.11M, liq $55k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "96ugdN1zEe1RShH1xWsMLBbopDvS96WXfvxwRELqUwqk",
+    symbol: "GAK",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $108k, liq $15.5k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HGTXnhgyast5fJKhMcE4VgyeEVWhYKEsHxpZtpjhrYqA",
+    symbol: "UTCC",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $108k, liq $15.6k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "HPueqQjSgaSatMBKrvBvAnRmc6jnr51cPM1EjUJVpump",
+    symbol: "TOBI",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $108k, liq $24.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "G8dUSvywefr4GvfFZBZiLHmbjnwjrrJPAnVifjj7pump",
+    symbol: "MONITOR",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $107k, liq $24.4k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GGEikGvJgRqgoFajyfMAsha5GjKg6suAmhBVW91zjupx",
+    symbol: "BALLS",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $107k, liq $15.8k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "Afo4NumBNHDXc7m7p6qjZ1pF3LbqYfG5k1CNrGve8rVu",
+    symbol: "FALX",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.11M, liq $83k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "14Tqdo8V1FhzKsE3W2pFsZCzYPQxxupXRcqw9jv6ondo",
+    symbol: "AMZNON",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $106k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BaDjVCpABEVCdt4LT7ivuzA4izBwJCqnDjrLa8XBtT38",
+    symbol: "GNME",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $106k, liq $15.4k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "JCeoBX79HfatfaY6xvuNyCHf86hwgkCCWDpEycVHtime",
+    symbol: "TOLY",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.11M, liq $33k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "8cn4JeRLiHTtfX6maZAsipGGyyZPdEcos3s2X3Hw3BS6",
+    symbol: "FUN_8CN4",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.11M, liq $69k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3XTp12PmKMHxB6YkejaGPUjMGBLKRGgzHWgJuVTsBCoP",
+    symbol: "BIRDDOG",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $105k, liq $17.8k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GinNabffZL4fUj9Vactxha74GDAW8kDPGaHqMtMzps2f",
+    symbol: "GINNAN",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $105k, liq $28.2k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "D8r8XTuCrUhLheWeGXSwC3G92RhASficV3YA7B2XWcLv",
+    symbol: "BAG",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $105k, liq $23.6k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "CMx7yon2cLzHcXqgHsKJhuU3MmME6noWLQk2rAycBAGS",
+    symbol: "NYAN",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $105k, liq $11.6k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "5LJMJyR8MtAkbtpf8kFUV7S9oFG3xaGDdcnFxYt9pump",
+    symbol: "FAT",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $105k, liq $26.9k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "srfmZPrbDkk9ZYvA6a9PTnzcJ7zXBnundX1PF8FT1ma",
+    symbol: "SRF",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $104k, liq $28.2k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "7EYnhQoR9YM3N7UoaKRoA44Uy8JeaZV3qyouov87awMs",
+    symbol: "SILLY",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.10M, liq $33k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "BgJW7U1u2RY5XJk9uYb5AqFRzjMtqE7pw3kaf9iw9Ntz",
+    symbol: "$PELF",
+    expectedVerdict: "CAUTION",
+    tolerated: ["SAFE", "DANGER", "RUG"],
+    expectedScore: [300, 900],
+    why: "mcap $0.10M, liq $37k — Jupiter-verified mid-cap (engine has final say).",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "7NWHifsBnn9DimUeNnsHdEXkTZhXmJTiXxcCngBondo",
+    symbol: "CEGON",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $103k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "GoDCaGctsLDnkV8T6jBAfTeMj8DesxT71CkZekV5ZXcf",
+    symbol: "GODEX",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $102k, liq $0.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "EjzzyCSiLqjFDprpZj8e1zjXmcTG5HPGFRSEoWcJWHh9",
+    symbol: "INBRED",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $102k, liq $13.8k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "3Bbj7eZTuMd2FrfeZ2degzckxhgB5b63crGoHLtrpump",
+    symbol: "BABYFWOG",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $102k, liq $16.3k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "AQuuQ4xktyzGBFnbKHnYsXHxsKVQetAoiPeCEG97NUJw",
+    symbol: "BINGUS",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $102k, liq $22.0k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
+  {
+    ca: "FLJYGHpCCcfYUdzhcfHSeSd2peb5SMajNWaCsRnhpump",
+    symbol: "STORE_FLJY",
+    expectedVerdict: "DANGER",
+    tolerated: ["RUG", "CAUTION"],
+    expectedScore: [100, 600],
+    why: "mcap $102k, liq $19.1k — high-risk thin liquidity.",
+    source: "external",
+    skipFixture: true, // pending first capture
+  },
 ]
