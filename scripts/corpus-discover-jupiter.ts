@@ -190,7 +190,7 @@ async function main() {
     lines.push(`    why: ${JSON.stringify(e.why)},`)
     lines.push(`    source: "${e.source}",`)
     lines.push(`    skipFixture: true, // pending first capture`)
-    lines.push(`  },`)
+    lines.push(`  } as CorpusEntry,`)
   }
   lines.push("]")
   lines.push("")

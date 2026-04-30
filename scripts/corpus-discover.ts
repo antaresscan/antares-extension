@@ -563,7 +563,7 @@ async function main() {
     // capture run after merge (to refresh against the deployed engine)
     // before they're CI-graded. Strip the flag once the fixture lands.
     lines.push(`    skipFixture: true, // pending first capture`)
-    lines.push(`  },`)
+    lines.push(`  } as CorpusEntry,`)
   }
   lines.push("]")
   lines.push("")

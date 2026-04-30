@@ -234,7 +234,7 @@ async function main() {
     lines.push(`    why: ${JSON.stringify(lbl.why)},`)
     lines.push(`    source: "external",`)
     lines.push(`    skipFixture: true, // pending first capture`)
-    lines.push(`  },`)
+    lines.push(`  } as CorpusEntry,`)
   }
   lines.push("]")
   lines.push("")
