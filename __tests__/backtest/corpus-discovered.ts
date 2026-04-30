@@ -21,7 +21,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.81M, age 0d, liq $75k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "FU9s7E8zSczG1GXuy2u9n3VNgH6scJz9AprbxNtZpump",
     symbol: "SVE",
@@ -30,7 +30,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -96%, liq $4.0k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "HDCaUHXLRsZCwdkgx7kM23ggojN5s6LagKLv8TEapump",
     symbol: "SCAMODEI",
@@ -39,7 +39,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -95%, liq $4.7k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "DACYVx34V5aQaehN3MZGYxPfoyQYHZSnFAFw3T2Vbonk",
     symbol: "IMOUT",
@@ -48,7 +48,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.31M, age 7d, liq $71k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "7EV9ShfBB5NGtGcFVBQPVUVVtW3D6Emr3dPmh8rBpump",
     symbol: "PEEWELL",
@@ -57,7 +57,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $11.5k, age 2d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "E4xqRvahx9UdN5Unc2v5fmrkSK35UYZqi4gGJsbDpump",
     symbol: "SCAMPOWEL",
@@ -66,7 +66,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -92%, liq $4.2k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "8SC3JXVf3UT5wEM9x48B1jVzWUeDgZiZdrrhN3zJpump",
     symbol: "SCAMDEX",
@@ -75,7 +75,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.11M, age 0d, liq $31k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Hon2rHAiqkcDtUzL5gA2vjXPr7T1MPCK2UT2AHKCpump",
     symbol: "MAGA",
@@ -84,7 +84,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $16.45M, age 66d, liq $429k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "6qbh9jzbzHwKGH5gSXkWj5R7CjnbiVLRFs55cJx2pump",
     symbol: "SUICIDEGPT",
@@ -93,7 +93,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -94%, liq $4.1k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "97tBZooZkwM1VfuCHYqhaAzZ2Y7TEAfVhJEW9MLbpump",
     symbol: "LUCA",
@@ -102,7 +102,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $6.7k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "3MZH44EYTvaStS4PtYrzkqa6FqzhhpBRXYBnnMAupump",
     symbol: "SCAMGUY",
@@ -111,7 +111,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -95%, liq $3.4k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "3M3E4gf17jjeeZomna61H4rhMs5HVY8ypD7mUdZRpump",
     symbol: "WLD",
@@ -120,7 +120,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $10.4k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "DVtBMoubZfcqLyMzM6QbVMTGigGBsS9JAqUPfLXBpump",
     symbol: "USC",
@@ -129,7 +129,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -94%, liq $3.7k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "CLVH4ob7p2afvG9fVSp5MQNw2rjXD7uR1PmfhiM7pump",
     symbol: "SCAMAI",
@@ -138,7 +138,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -94%, liq $3.7k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "HYjNV846yU9rpG2ffMG8TaHJdBUWm1tPuttj2Dmkpump",
     symbol: "UNCSCAM",
@@ -147,7 +147,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -94%, liq $3.6k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "3TYgKwkE2Y3rxdw9osLRSpxpXmSC1C1oo19W9KHspump",
     symbol: "BULL",
@@ -156,7 +156,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $4.86M, age 36d, liq $276k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "HdRFFy6Sm42rDAPLGRAZ1YymtpLukziwBrE9QGs4pump",
     symbol: "CRACKROCK",
@@ -165,7 +165,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.21M, age 0d, liq $36k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "12cNc76MT4H2F6CTndFNWpnoTwY6qz4vo2J9oGhFpump",
     symbol: "SKEM",
@@ -174,7 +174,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -95%, liq $3.5k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "9F7YBM7emfWeJUxFKdH6ECYm6tB67869EcC4qmGzpump",
     symbol: "SCAM",
@@ -183,7 +183,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -95%, liq $3.2k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "4df1wZoygsynEZ6XmpcoabrVwv7nBgjHLyCns5xApump",
     symbol: "BELKA",
@@ -192,7 +192,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $2.01M, age 3d, liq $134k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "BFiGUxnidogqcZAPVPDZRCfhx3nXnFLYqpQUaUGpump",
     symbol: "SPIKE",
@@ -201,7 +201,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $11.57M, age 20d, liq $391k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "8a5HrvhADXzBbJt95mc65fJ6YnPNuJjiDFSx9FYdpump",
     symbol: "BRUMUNZ",
@@ -210,7 +210,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.13M, age 0d, liq $29k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "BVzgTYPqV6ipEG4ixaQGfJvtYrs6kYJAt2HPBDMvpump",
     symbol: "SCAMGPT",
@@ -219,7 +219,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -95%, liq $3.3k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "7fj85y28pKMndm4So66Szkb5GMGfLHFEkwsZdDx2pump",
     symbol: "NICE",
@@ -228,7 +228,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.14M, age 70d, liq $34k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "5gTPspC2ricuGWiYQ4Ghausg8fsq7uCrGgSVACatcoin",
     symbol: "CATCOIN",
@@ -237,7 +237,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.40M, age 4d, liq $59k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "59Ntdzm81rWKBshmuhJmuPFzczUy5e4zow2NNrpcDXTy",
     symbol: "SES",
@@ -246,7 +246,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.51M, age 0d, liq $35k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "3o1UuR1awdi7FtmVeCsWqBfp3cg26Z5RQhy6EwGNpump",
     symbol: "RESET",
@@ -255,7 +255,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.15M, age 0d, liq $30k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "G1UicqDY3mSN3PKWyFLUmqhekQ5k5MwdeXyz1VCTpump",
     symbol: "UNOSOL",
@@ -264,7 +264,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.41M, age 0d, liq $51k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "AABEk6vPpgLLoGGqRC4SrSTuZYywLyyPyfcAfvRzpump",
     symbol: "BOOBIO",
@@ -273,7 +273,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.06M, age 0d, liq $19k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "B3bJNmEdfMNGMf4D4P8GErzkbkdmuz1KFmn92iAhRCgC",
     symbol: "HIRO",
@@ -282,7 +282,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.06M, age 0d, liq $22k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "6Pt4PjcjSThQLyw5ye1qEtV877ubFSVqS8P4rC6Qpump",
     symbol: "BEE",
@@ -291,7 +291,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "HJ1Lk7qsamHNkuoNMhZbzMRGSHswstw5LCLvacj6pump",
     symbol: "SCAMMOR",
@@ -300,7 +300,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "BwUgJBQffm4HM49W7nsMphStJm4DbA5stuo4w7iwpump",
     symbol: "ELO",
@@ -309,7 +309,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.07M, age 2d, liq $22k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "EcnakfbboQMVPZj8ynfALxngQ3Y6MnVrfr5A5HdPpump",
     symbol: "SCAMTRUMP",
@@ -318,7 +318,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "6HXCCASZxmv5jnExJDoe7TTQJMu6kfctRotVmtHGpump",
     symbol: "ELUN",
@@ -327,7 +327,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.09M, age 24d, liq $32k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "tUAxFzG84g9X8rXkk2KWgrKdaVSsc59KrDEPiv3pump",
     symbol: "DOGMCOIN",
@@ -336,7 +336,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $7.6k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "8RFoNyED7nx8LCS2mAehsocGqViZUsHb784KUA9UD6p2",
     symbol: "OPENLIE",
@@ -345,7 +345,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.06M, age 0d, liq $22k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "HkdF4pYRnPfwRPJ7pXzh3MuzMeqz7rnkzfG5qTDhpump",
     symbol: "MAKTS",
@@ -354,7 +354,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k — ultra-thin liquidity, exit risk.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "4mYUGV7AaMw5HFefpCrsjotnu99KZKn4VKxYYZwdpump",
     symbol: "BEAR",
@@ -363,7 +363,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "4syGYCWUrRU8po4DQZgPgpzhZG8nZXQoGu4Jf7fppump",
     symbol: "SCAMUSK",
@@ -372,7 +372,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "HmBdm8vbisABUjkxms6ZUnoaXbfwFM6ymxShWfAENaoi",
     symbol: "EITHER",
@@ -381,7 +381,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $26.47M, age 35d, liq $438k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "9oxGicd5KXNcthYM6yD23X9zcznQVnHjrAEN38fFpump",
     symbol: "BIOLLM",
@@ -390,7 +390,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.45M, age 56d, liq $75k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "96qJmCKtj9E5fiehGToQ69bwyiw9q86y7q4gAGznpump",
     symbol: "MESSI",
@@ -399,7 +399,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "9QLrH5vE51uNavc9VWAA5GgjXzXDLNk1va6iWYJyEPt3",
     symbol: "WXG",
@@ -408,7 +408,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.12M, age 135d, liq $20k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "3ZcEqsgJZxy5pER4XBfa2UbjBmRAgG96nUrTATfMpump",
     symbol: "WHITEBOY",
@@ -417,7 +417,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 5d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "APJ8ovk6mqScmtezgtMcMGxkiB5PGwcLmgz343Rkpump",
     symbol: "SCAMCOIN",
@@ -426,7 +426,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "7soYuSPe1LaJ9V37W7ZGDB5Xwxi41LUWjRT3AEQGpump",
     symbol: "WOLVERINE",
@@ -435,7 +435,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $11.6k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "52nVoVk3BimAtvu2y9q1gnxqgR8pmjcc3v3byGnCuBa",
     symbol: "SCUBA",
@@ -444,7 +444,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.34M, age 54d, liq $68k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "GC3T8XboCofhBPs5U48DJgp6cxxMeu1CBZXgB2dopump",
     symbol: "LITH",
@@ -453,7 +453,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -88%, liq $5.0k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "2KztYDCf3vYtm8QHibXt7uxdjt47oxEi8ZTihEYApump",
     symbol: "FKM",
@@ -462,7 +462,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $7.5k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "CCuxEcR8EM8AJbBKMrSUErzwMtxGSo49xnqMJntvpump",
     symbol: "TIM",
@@ -471,7 +471,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "6DZr2Q87FVSzQ4EjyvWTph1VhtjtPaEyGksVUoxGpump",
     symbol: "ALTMAN",
@@ -480,7 +480,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Aq4jqvy6bBjNccXdim54TWVNRpDw4Dkw4PYWMj3Mpump",
     symbol: "TRUTHCOIN",
@@ -489,7 +489,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "FKF2G1C7gWQnUySzGcxWwTa7EGKevHMK7JNy1ejopump",
     symbol: "8647",
@@ -498,7 +498,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "CU8dnZ4Vv7G1QdtTxnykL9o4xJDhaDVCjES4vsXhXxoD",
     symbol: "TMT",
@@ -507,7 +507,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $5.7k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "3nhngTxdduSp73koJWCqsEux2JP5ACHtLYkxLxYfpump",
     symbol: "BACK",
@@ -516,7 +516,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "UshSHTbdyCRBuPvxXx8SL5PDsKSB3BS7X71TC1Gpump",
     symbol: "PAY",
@@ -525,7 +525,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "UBYLGDdZc1HNspordhmn5UCA9WxweTwCp9AYDoQscwu",
     symbol: "CWF",
@@ -534,7 +534,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -95%, liq $3.1k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "AwuYdKH1yynRKxWcZMVfXMyh3ySgX7RHjq6q9h5zbrrr",
     symbol: "PEPE",
@@ -543,7 +543,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "8m1RhToZLEEYiE3nBsyHvJRr7fPh5McMMHiiC9LAKqyX",
     symbol: "PONZI",
@@ -552,7 +552,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -86%, liq $5.6k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "95b6yjAbankmzFu26xEvowHuGqctf4q56GRQZcGEpump",
     symbol: "APOLLO",
@@ -561,7 +561,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -91%, liq $4.3k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "BMRMVjoA3tf4B3fByMayWbBQEjFTtxQw5Awf3Upvpump",
     symbol: "HIRO_BMRM",
@@ -570,7 +570,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -96%, liq $3.2k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "5p2Uoo171giWk3SU2PaqkhPaJQv6aAasR2vDxs5jpump",
     symbol: "RETA",
@@ -579,7 +579,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "CPqPxhXo4pWyfLa21G2rR1YxUqdaiJgKjFRgGmxnpump",
     symbol: "USD1",
@@ -588,7 +588,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "9D9N9cPgwL856jJuCo4EhrAicHjBNWwucopFZEvMpump",
     symbol: "GORGON",
@@ -597,7 +597,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $6.9k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "AkPrQJfU6MGUdcT2JtZA1jJMcgZ1bjidzLicwJuHpump",
     symbol: "KOTUS",
@@ -606,7 +606,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $6.3k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "GhEG5jiw3sCjS8rR5t1RPLdvo5nk89Qb3CAeyCDvpump",
     symbol: "UP",
@@ -615,7 +615,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $11.2k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "5ZSi1AV7Zg2RU3EHjJ2FroW3GXWHtFX8CtDCW933pump",
     symbol: "SC",
@@ -624,7 +624,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "7hTNy5n3NtEAAeuc58UkuSCBiSvyHvyzxzVKf7sepump",
     symbol: "FEETALIK",
@@ -633,7 +633,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "G8gDPKuk2FwddhDjSGhQ1ZuKeNAPUez2Cr3VUN35pump",
     symbol: "BEAR_G8GD",
@@ -642,7 +642,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -88%, liq $4.9k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "arDE6soJwuHKsZUbJsXCkSKzUNzi8dVETRhPEySpump",
     symbol: "GECKO",
@@ -651,7 +651,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -95%, liq $3.2k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "5HV956n7UQT1XdJzv43fHPocest5YAmi9ipsuiJx7zt7",
     symbol: "MEMECOIN",
@@ -660,7 +660,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.06M, age 379d, liq $45k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "43VWkd99HjqkhFTZbWBpMpRhjG469nWa7x7uEsgSH7We",
     symbol: "STNK",
@@ -669,7 +669,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $4.04M, age 521d, liq $284k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "zGh48JtNHVBb5evgoZLXwgPD2Qu4MhkWdJLGDAupump",
     symbol: "RETIRE",
@@ -678,7 +678,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $3.96M, age 561d, liq $569k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "1Qf8gESP4i6CFNWerUSDdLKJ9U1LpqTYvjJ2MM4pain",
     symbol: "PAIN",
@@ -687,7 +687,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $3.85M, age 433d, liq $2443k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "AyrQpt5xsVYiN4BqgZdd2tZJAWswT9yLUZmP1jKqpump",
     symbol: "JOBCOIN",
@@ -696,7 +696,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $3.84M, age 378d, liq $297k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "H74CYmXgMkYHYuSRsZt6RJb4NYp2u72Vw8BS5huApump",
     symbol: "LMAO",
@@ -705,7 +705,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $1.82M, age 192d, liq $182k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "mpoxP5wyoR3eRW8L9bZjGPFtCsmX8WcqU5BHxFW1xkn",
     symbol: "POX",
@@ -714,7 +714,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $1.77M, age 608d, liq $86k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "6yjNqPzTSanBWSa6dxVEgTjePXBrZ2FoHLDQwYwEsyM6",
     symbol: "CHUD",
@@ -723,7 +723,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $1.77M, age 723d, liq $307k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "9raUVuzeWUk53co63M4WXLWPWE4Xc6Lpn7RS9dnkpump",
     symbol: "V2EX",
@@ -732,7 +732,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $1.73M, age 295d, liq $182k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Bo9jh3wsmcC2AjakLWzNmKJ3SgtZmXEcSaW7L2FAvUsU",
     symbol: "LIBRA",
@@ -741,7 +741,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $1.17M, age 437d, liq $5488k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "7hWcHohzwtLddDUG81H2PkWq6KEkMtSDNkYXsso18Fy3",
     symbol: "CAT",
@@ -750,7 +750,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.33M, age 852d, liq $152k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "69G8CpUVZAxbPMiEBrfCCCH445NwFxH6PzVL693Xpump",
     symbol: "XAVIER",
@@ -759,7 +759,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $1.11M, age 547d, liq $145k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "HtTYHz1Kf3rrQo6AqDLmss7gq5WrkWAaXn3tupUZbonk",
     symbol: "KORI",
@@ -768,7 +768,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $1.11M, age 350d, liq $244k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "rizo34MUwbCBqpSTSfnEktdWB4CTByqqYh8zBxL3WAR",
     symbol: "RIZO",
@@ -777,7 +777,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.79M, age 635d, liq $196k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "H2c31USxu35MDkBrGph8pUDUnmzo2e4Rf4hnvL2Upump",
     symbol: "SHOGGOTH",
@@ -786,7 +786,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.79M, age 556d, liq $253k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "9tqjeRS1swj36Ee5C1iGiwAxjQJNGAVCzaTLwFY8bonk",
     symbol: "ANI",
@@ -795,7 +795,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.79M, age 288d, liq $177k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Fch1oixTPri8zxBnmdCEADoJW2toyFHxqDZacQkwdvSP",
     symbol: "HARAMBE",
@@ -804,7 +804,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.74M, age 832d, liq $257k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "8vGr1eX9vfpootWiUPYa5kYoGx9bTuRy2Xc4dNMrpump",
     symbol: "FAPCOIN",
@@ -813,7 +813,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.73M, age 192d, liq $86k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "F2k82EcxLtzekq1bfoGVdgp6EXZ5dLT1jE7g3LvQpump",
     symbol: "PENGO",
@@ -822,7 +822,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.73M, age 200d, liq $74k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "bobaM3u8QmqZhY1HwAtnvze9DLXvkgKYk3td3t8MLva",
     symbol: "BOBAOPPA",
@@ -831,7 +831,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $2.36M, age 759d, liq $28k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "AVLhahDcDQ4m4vHM4ug63oh7xc8Jtk49Dm5hoe9Sazqr",
     symbol: "SOLAMA",
@@ -840,7 +840,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.55M, age 847d, liq $130k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Ai4CL1SAxVRigxQFwBH8S2JkuL7EqrdiGwTC7JpCpump",
     symbol: "AWR",
@@ -849,7 +849,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.53M, age 477d, liq $103k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "4bY7N2hPq4aHQJwbhawceNqS5ksyQAayiLEsjNMwpump",
     symbol: "COMAT",
@@ -858,7 +858,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.35M, age 164d, liq $56k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "HwPtbFpd3VTe3tfyosoVtPf9WPuSk5gAKkN5xp6Npump",
     symbol: "",
@@ -867,7 +867,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.35M, age 527d, liq $109k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Faf89929Ni9fbg4gmVZTca7eW6NFg877Jqn6MizT3Gvw",
     symbol: "WOLF",
@@ -876,7 +876,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.34M, age 683d, liq $137k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "GQe8DCQTBkuX5E2sjvwuKDZsjGYhU8k3DN5dkSbQLfqJ",
     symbol: "BURN",
@@ -885,7 +885,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $6.5k — ultra-thin liquidity, exit risk.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "CF5VehjuZvxZZQFP5tybGra6ts574FAwt6Z7GuX9pump",
     symbol: "ELLA",
@@ -894,7 +894,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.27M, age 316d, liq $40k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "EJPtJEDogxzDbvM8qvAsqYbLmPj5n1vQeqoAzj9Yfv3q",
     symbol: "BOZO",
@@ -903,7 +903,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.28M, age 850d, liq $15k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Gqqdgfkn7bcsuBQZEk9oMBkqCv1bRXvPmTLs3sQ9pump",
     symbol: "PEPONK",
@@ -912,7 +912,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.26M, age 116d, liq $43k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "9WPTUkh8fKuCnepRWoPYLH3aK9gSjPHFDenBq2X1Czdp",
     symbol: "SELFIE",
@@ -921,7 +921,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.26M, age 716d, liq $151k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "21rweMLGYeMNonHW7H3xa5py17X6ZFRcHirCp9inRBQA",
     symbol: "IQ50",
@@ -930,7 +930,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.20M, age 773d, liq $120k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "AYABiqKuTh9Va5Aqc6AujFevHwDGmECGQiFmKW5g3K4Z",
     symbol: "LONG",
@@ -939,7 +939,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.19M, age 764d, liq $43k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "F9CpWoyeBJfoRB8f2pBe2ZNPbPsEE76mWZWme3StsvHK",
     symbol: "PEPE_F9CP",
@@ -948,7 +948,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.12M, age 1193d, liq $61k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "CJUrENDAuSm4FxxziUgftnUJqqXjm4VL1zhJgwXupump",
     symbol: "HENRY",
@@ -957,7 +957,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.16M, age 2d, liq $45k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "38fXPsdJz2jo2KE1GM5b6N8f7d4ARDDnLyB8EH2npump",
     symbol: "BABYAI16Z",
@@ -966,7 +966,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -93%, liq $3.0k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "FG3nFQMjs2b3igfttsSstsxMWwsWaUp495fSPU3Gpump",
     symbol: "PFP",
@@ -975,7 +975,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.05M, age 569d, liq $18k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "6AVAUKa9uxQpruHZUinFECpXEh1usRVtzQWK8N2wpump",
     symbol: "SCAM_6AVA",
@@ -984,7 +984,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $5.50M, age 1d, liq $320k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "USD1ttGY1N17NEEHLmELoaybftRBUSErhqYiQzvEmuB",
     symbol: "USD1_USD1",
@@ -993,7 +993,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [750, 1000],
     why: "mcap $158M, age 241d, liq $9.9M — established blue-chip.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE",
     symbol: "ORCA",
@@ -1002,7 +1002,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [750, 1000],
     why: "mcap $102M, age 844d, liq $1.0M — established blue-chip.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "4jqoY1hhHPJFFCt3UcXJe7eVJsHn7ArphnGk5VBBJ4rr",
     symbol: "GDER",
@@ -1011,7 +1011,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "DTfN4DotNupzDbqpg6dX4jfXekB5vVkePxjuyivJpump",
     symbol: "BEE_DTFN",
@@ -1020,7 +1020,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.11M, age 0d, liq $32k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "7NCaYBNGLjtRyj8AkvTmUdjH18fkSURWNqcZCWQZVjVC",
     symbol: "RCSC",
@@ -1029,7 +1029,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -100%, liq $0.1k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "BZ1avfKCfJKNgsDeXHNkPku5GcWVzi2Aw2HesHcrpump",
     symbol: "LUCA_BZ1A",
@@ -1038,7 +1038,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.09M, age 0d, liq $28k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "GU8u7Ebp583iEZJHTvYtEntM8nEaqpA3RJiWfRJo2ZQW",
     symbol: "XCHAT",
@@ -1047,7 +1047,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "2EnVBvD1FA7hX3B81K9kFfcyNz44m75WQYMrXAXUf1jw",
     symbol: "GOAL",
@@ -1056,7 +1056,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "2fdRrEgb5tRK3RwAr9bgoKSXgP8xfxKdnZmbeHT7DRTh",
     symbol: "GDER_2FDR",
@@ -1065,7 +1065,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.1k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "hhZJNUeEQcfeGwb3HSCwZczjBwjit5GktbmXPNVtYWX",
     symbol: "HRP",
@@ -1074,7 +1074,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.1k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "DUVHLxLFkC5Ks1poMkmiHqhKhwPdbaXMV2c3GRshmha1",
     symbol: "CR7",
@@ -1083,7 +1083,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "8J2AuCgwW5W68K6B2rDqZpurWQLLjGG2jLmenu1gUrfv",
     symbol: "RCSC_8J2A",
@@ -1092,7 +1092,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -99%, liq $0.0k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "35AC1pdHfpxAGEscDGieia99g9npD71A1Yc7th4hwQoD",
     symbol: "SCAM_35AC",
@@ -1101,7 +1101,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "ciZhNMrdcEACxwuj23mofjCixZ5dh77fU2xfoj1oHRx",
     symbol: "GOAL_CIZH",
@@ -1110,7 +1110,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 1d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "HBDViVBPEqRYrCsF4qbFmF98M7KwmuPup7eFz5vXpump",
     symbol: "QOTUS",
@@ -1119,7 +1119,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.04M, age 462d, liq $15k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "8RgCnFUJa4FAConij8dyetMrbdU7zQKrjCvxCVGk5Ek2",
     symbol: "GDER_8RGC",
@@ -1128,7 +1128,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.1k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "CgrPuM6TuiQtrtdqbHAZoncmKJ2XiQw1c4QWWGxKj45L",
     symbol: "RCSC_CGRP",
@@ -1137,7 +1137,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -97%, liq $0.0k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "9jkEmTxtj1pFchbQRNWKWBLYBje6GdT7zsAtSWCVc44Q",
     symbol: "MEMEMEMORY",
@@ -1146,7 +1146,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.1k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "CnyZhb9SF8xLJ4pMimgNVSfKNQcox8WnkUhhbm87K4VV",
     symbol: "OVPP",
@@ -1155,7 +1155,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "FfqMruBcAY8hnz1My9aueFEwp6jKegduESUWtXXE2Lvg",
     symbol: "ASTEROID",
@@ -1164,7 +1164,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 1d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "DURxAQdFPmUg2CzDWYCuVDxL2vAPhQManMaoP4GoYyPN",
     symbol: "PROS",
@@ -1173,7 +1173,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.1k, age 1d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "8wTQqaf4Fjop1v2hui8o1G4BoW94HGH32nKLAjQ3BmzR",
     symbol: "GDER_8WTQ",
@@ -1182,7 +1182,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "54Uu4ovrNha2GubRiomfgeWSv38PTF9ZDoPScHJGNM75",
     symbol: "GDER_54UU",
@@ -1191,7 +1191,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.1k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "GKY46UqorCSuu984t4ZjaiDgf97pGMFtEUNfGgLqpump",
     symbol: "SCAMMURZ",
@@ -1200,7 +1200,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -96%, liq $4.2k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "kMKX8hBaj3BTRBbeYix9c16EieBP5dih8DTSSwCpump",
     symbol: "AFK",
@@ -1209,7 +1209,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $2.74M, age 93d, liq $166k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "31zYBHmHiQ1JNnHY8L2tnyzxwAjSBa1uNgSnkT2YRN9y",
     symbol: "WLD_31ZY",
@@ -1218,7 +1218,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "7uhtZyHfFAyCyqPrQgRBQiXJLNLSDHZPTZoXDziHy3iB",
     symbol: "PRESPAX",
@@ -1227,7 +1227,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "FZqjTtgjTRUj5Y7PD1TVN4cCom5jmw1q6Xy148EyhKFX",
     symbol: "PSTR",
@@ -1236,7 +1236,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "4y1gkKzCb4qAiH8pH8ft2xvezf6sazurmYDajWXwpump",
     symbol: "CREATURES",
@@ -1245,7 +1245,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.36M, age 0d, liq $63k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "9b9H3GCm72NajcJizDxattZxg3hgA7m1Rm5zsFzthrt6",
     symbol: "SCAM_9B9H",
@@ -1254,7 +1254,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "HGEdtFd7DBeoYYufq6jEsCQsSsqDvCfLVcCwBYLEAgRF",
     symbol: "SCAM_HGED",
@@ -1263,7 +1263,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -94%, liq $0.0k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "FUW25PNvN5jSavdZjrXVrwVgob94iyxoB55WMZdEBdwF",
     symbol: "GOAL_FUW2",
@@ -1272,7 +1272,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "9RZ4NfBfdBBcM7y2848vGKSSwKJBFVT7zQgXiwL8jZQ4",
     symbol: "DUNALD",
@@ -1281,7 +1281,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -100%, liq $0.0k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "7mJ4tTSsL63fa69qkdDbw4fhx6SPzfA8uS4bVisStfi4",
     symbol: "BEEKEEPER",
@@ -1290,7 +1290,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.04M, age 0d, liq $18k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Ha8bNbwp1B3zwBYfi2YcccWD13x3CRshPSHv1xfrt3iv",
     symbol: "PRESPAX_HA8B",
@@ -1299,7 +1299,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "CEVjDwPxdHx3uuBNyASuWQmeBa57QJQ3PCA3UsNNjX6D",
     symbol: "ENRON",
@@ -1308,7 +1308,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.50M, age 448d, liq $54k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "c3ARD1SjjzUoXcFhY8oFiitu9V46tCdhojmuHTnevxF",
     symbol: "DBEET",
@@ -1317,7 +1317,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.2k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "6d6LCaXXeWZscKB4qxnwTyHBF3zYDF5MrPV3bjdDbonk",
     symbol: "BNX",
@@ -1326,7 +1326,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -93%, liq $3.5k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "35e4ohP3VSyZA8WLmo8wVRkLwjQ3L64XzVL1T6S6hstG",
     symbol: "SCAM_35E4",
@@ -1335,7 +1335,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -100%, liq $0.0k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "G6YuEU977AZMWnsacYDuUnAvrvMi8n8rd8wodCTVfWP3",
     symbol: "RCSC_G6YU",
@@ -1344,7 +1344,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "86YgpPC64P42imZ28n1qZUi9nLuTvetKwz8NrSMivHpA",
     symbol: "SCAM_86YG",
@@ -1353,7 +1353,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 1d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "EhmghXLRdLtsri9hvpRZ73zaHZ7YcXh86BADzxwjSFkQ",
     symbol: "MONAUNC",
@@ -1362,7 +1362,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "2DY7JMiLA6VvSJ2WmKGA7FHy1sHgrVjy91yd4q8o23JJ",
     symbol: "HRP_2DY7",
@@ -1371,7 +1371,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "6pwRXyNB6vZrGGJYromTp9zs87uBhposVMngE38uG3cL",
     symbol: "RCSC_6PWR",
@@ -1380,7 +1380,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $2.1k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "2bmXSqd8C4VBUcsDeKuDdRYFJviEBUp52rejeKFeaeiz",
     symbol: "MEGA",
@@ -1389,7 +1389,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.08M, age 0d, liq $66k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "FHMpPNaPxQJcyCJBYF7LddH9up2wDPnoGUdi1H6CFcZ6",
     symbol: "OPENLIE_FHMP",
@@ -1398,7 +1398,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -100%, liq $0.1k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "CUi5ULzTKY9P93cjkCVD8HrB6txw2v4yzQuwBJgipump",
     symbol: "PARANOID",
@@ -1407,7 +1407,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.03M, age 0d, liq $16k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "CPq6d37dyMQYR5V4cadySVagHn7VMceRgfMRZZ1xNEiv",
     symbol: "SCAM_CPQ6",
@@ -1416,7 +1416,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "5nrLD7JDem6LiJNRP43NjLAkE8WFc2WZYZafBW42smqf",
     symbol: "STOCKMAN",
@@ -1425,7 +1425,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.09M, age 1d, liq $29k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "AqEK6ioLagvjsDMfLhPtijWG6ZC8nHY32TP2gp36yoZe",
     symbol: "GOAL_AQEK",
@@ -1434,7 +1434,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "HymvY6qZXDLCRuteuATpFJYgLLTJqwbGR41Ut9NSpump",
     symbol: "MEMEMEMORY_HYMV",
@@ -1443,7 +1443,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $11.3k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "DXcwhg1MwrResr1CoaBuhnnHmcx222ntZAgRd28Jpump",
     symbol: "SCAM_DXCW",
@@ -1452,7 +1452,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.20M, age 1d, liq $41k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "9UnkAJ2A8jxKTDGzM11zPkbEgA8JVU82NckfsshAp6cs",
     symbol: "GDER_9UNK",
@@ -1461,7 +1461,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "DCNEi1eFWEFA7MQYkh8kSDeZ3bgja453j1sQ3Rn1pump",
     symbol: "ANNIE",
@@ -1470,7 +1470,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $11.4k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "pY4dq8Fz3hSeRNdWZ3nJM623TreF1S1isi19UWrpump",
     symbol: "SP500",
@@ -1479,7 +1479,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $3.2k — ultra-thin liquidity, exit risk.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "G5FYxYQCDNMSBBspnDGzRYLDdwE8stNJ7scBBme33eh2",
     symbol: "SCAM_G5FY",
@@ -1488,7 +1488,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R",
     symbol: "RAY",
@@ -1497,7 +1497,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [750, 1000],
     why: "mcap $201M, age 1247d, liq $4.0M — established blue-chip.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "STrikemJEk2tFVYpg7SMo9nGPrnJ56fHnS1K7PV2fPw",
     symbol: "STRIKE",
@@ -1506,7 +1506,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.13M, age 452d, liq $54k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "9yYkQDA9r9JjngQpVqxF4cYBHysgkVvMEnRBomBqaEcv",
     symbol: "HRP_9YYK",
@@ -1515,7 +1515,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -86%, liq $0.0k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "AGkg5XnnGHysHbSfRotWokUsAU7QqN7cL4EraHbhzUrz",
     symbol: "AIB",
@@ -1524,7 +1524,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -100%, liq $0.0k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "2rjcQydrkLN4xBgGRinobWYBJhPBz4BAjyRgEyMkkAhP",
     symbol: "RCSC_2RJC",
@@ -1533,7 +1533,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Gow1ASA17DSMBemxyGbT9spmvr8n1HQtZjupoqTjqtKg",
     symbol: "HRP_GOW1",
@@ -1542,7 +1542,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.49M, age 0d, liq $277k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "D6xWgRCSHoMEB5fqPwk3p6Stxirn5ytm2WwboSTTx4oE",
     symbol: "PYBOBO",
@@ -1551,7 +1551,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k — ultra-thin liquidity, exit risk.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "9nV5ZAVm1pyqamdMTv1MSuxXBHMChtN89JdS2gUCPPF4",
     symbol: "GMAR",
@@ -1560,7 +1560,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -95%, liq $0.0k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "41wPz6nY8m4vkzVRUVCcwUAyDdi9ae7Aj6aqaoFpLkjr",
     symbol: "CR7_41WP",
@@ -1569,7 +1569,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "By31WYNbKcYkrwWQyBzLMMtRbLWZfUkW2G4FLYjMuweK",
     symbol: "PROS_BY31",
@@ -1578,7 +1578,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "CnjPKwrftjm7Tr3t4GyfFjoqQ2tSbnHMCbvCAvVKe72z",
     symbol: "RCSC_CNJP",
@@ -1587,7 +1587,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Dju63Pa6LCR8gnxCqFQW6DQFv1a3UKSD971jVTakk78J",
     symbol: "VESTING",
@@ -1596,7 +1596,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.1k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "3WZYytFXiPAZ7CYXw2BqevhSkcNTuAziwSsEXkkNbqtc",
     symbol: "HRP_3WZY",
@@ -1605,7 +1605,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -91%, liq $0.0k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "GWfuPWmKjviN3jHXZyZxUdxLqNaL3n5rmzZUAZJFH1dN",
     symbol: "SCAM_GWFU",
@@ -1614,7 +1614,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -99%, liq $0.0k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "6RB1xAWMVy3aju243KWsH8kqWKFYCKGuEJyKNvxut3V4",
     symbol: "CREATURES_6RB1",
@@ -1623,7 +1623,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "D8nMWEaawrwhKSzqB27HvjJbDZH66NsHj1uQujenvrDS",
     symbol: "ILHEN",
@@ -1632,7 +1632,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.1k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Aaqmx8ZTgDmnNfS7QEKvRWZjwvp4xFCJ3QTMn1r8jMfG",
     symbol: "SCAM_AAQM",
@@ -1641,7 +1641,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "vRseBFqTy9QLmmo5qGiwo74AVpdqqMTnxPqWoWMpump",
     symbol: "VERSE",
@@ -1650,7 +1650,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $2.85M, age 323d, liq $547k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "GKiqDc8apRFsBkYBKGCT5Wsbacz9ixoNYSnkshoWpump",
     symbol: "JFDS",
@@ -1659,7 +1659,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $2.9k — ultra-thin liquidity, exit risk.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "7qL1hXMrfnLjjx91Cw7MFhhnH1YVj7pUaGHCEF7tL57U",
     symbol: "PP",
@@ -1668,7 +1668,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.1k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "DLizRmzmzLmuEN7S9QLCdotquQuSgupcELScsWC3AU69",
     symbol: "GDER_DLIZ",
@@ -1677,7 +1677,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "5h6UkZxYi5z1NUWuw3mLRpXuFsRcEiR4M5EZbdAE1cLx",
     symbol: "SES_5H6U",
@@ -1686,7 +1686,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "4H8URz86pnuMq5YyGvUA5W2w3d2AtVrM5gpnnpfTVBUi",
     symbol: "OPEN",
@@ -1695,7 +1695,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "GnZarwNbg9U1FJAyjsRJrb8EBZCHDyFUHHBCRUEbrHFW",
     symbol: "AIB_GNZA",
@@ -1704,7 +1704,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "6ZmGefehnaweyGv6Xmn2em44T78Uqc41kqbSyH7JBAez",
     symbol: "PRESPAX_6ZMG",
@@ -1713,7 +1713,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "GKGcyt1xsQtqaWQu6GKb8VFXRTkb5UgN3W6xdyY89D5s",
     symbol: "RCSC_GKGC",
@@ -1722,7 +1722,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "247DUfhqdPVvVgjq6zhjXmK9V4pCEr5EpEosgUVsMaTn",
     symbol: "GMAR_247D",
@@ -1731,7 +1731,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -100%, liq $0.0k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "GQfHEf7nRe9PZ8DVnYQopZvpKbKysGDZ6gSSZRyxRZRT",
     symbol: "DAND",
@@ -1740,7 +1740,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "2qTrWtpVhz6WzNWi85rkAHPp54VcUjBaHzBKW2QxRbSR",
     symbol: "WLD_2QTR",
@@ -1749,7 +1749,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "3jgqeVGAgdsD5GAQS7LtVbprVB9vvwTvTGA7Bbd6VVRr",
     symbol: "FAX",
@@ -1758,7 +1758,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "315reUAaSQHoHEzXwSbdWyxtaBiQNmzjd5FH4wvkrdBy",
     symbol: "SCAM_315R",
@@ -1767,7 +1767,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 1d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "6m28N1fAjyNpgS35oQC2yHy97EhD1asLGfkmkaYVowhJ",
     symbol: "RCSC_6M28",
@@ -1776,7 +1776,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $4.0k, age 1d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "7izjPLvyfKTnRNZX6SQyxR7r8Ki7K5x96AQD8jixpump",
     symbol: "EVM",
@@ -1785,7 +1785,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -92%, liq $6.5k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "EjvBouZn19V9chaxB66LjWZiVvgtB34G2wmG9dyxpump",
     symbol: "MAGABRUZ",
@@ -1794,7 +1794,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -89%, liq $7.3k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "J4ZSjZ34QYp4JRYbv4X2xbY8QMKQrBcXWpEVGdgYpump",
     symbol: "WARTRUMP",
@@ -1803,7 +1803,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -97%, liq $4.0k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "D6K3eYeogs6h7sW9puJkgjpv1oWKQ17bskmZB12Bpump",
     symbol: "BARNEY",
@@ -1812,7 +1812,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -95%, liq $3.4k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "JB8rMqyFmypiMqjiJ13bitubssM6aYDdq5ndUF5Wpump",
     symbol: "BP",
@@ -1821,7 +1821,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.19M, age 0d, liq $34k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "12eM87tTACWpgnwuapFUHDVDXFaZSxJqxBNj1AHB56sy",
     symbol: "EWON",
@@ -1830,7 +1830,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.32M, age 0d, liq $60k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Btddh9Xj6RAj967AHxbp8vk3juApVyJEAPP9heq3pump",
     symbol: "LEGIT",
@@ -1839,7 +1839,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.09M, age 0d, liq $27k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "57kFRAk9EH57rLcW3XoHa8ATr5zNahoQAS8NNAoKpump",
     symbol: "EVA",
@@ -1848,7 +1848,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $1.14M, age 0d, liq $95k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "rMKApubWQs48Ch97JfJdKHv6SgpkcppV4enepCFpump",
     symbol: "SUTOSHI",
@@ -1857,7 +1857,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -97%, liq $3.4k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "L7hEA1XV6MKa61cXrhcJHHAccLz35AUM6qcXYPTpump",
     symbol: "NICETRUMP",
@@ -1866,7 +1866,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -94%, liq $3.6k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "3vH3NzuHafRNvwKKzoGTWNuLtg5Kc38BxsmfUwgPpump",
     symbol: "LUNCHMONEY",
@@ -1875,7 +1875,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.66M, age 1d, liq $67k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "7vwrenUx7Cwup1M5TE37xXfMLDrMZYvaTwvdysTSpump",
     symbol: "TRUELON",
@@ -1884,7 +1884,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -97%, liq $3.5k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "agqh6qWaryiVCS7bQrU7RC36FvjAhPbyJthVGYTpump",
     symbol: "MDGA",
@@ -1893,7 +1893,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -97%, liq $4.7k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Ez7kt6vmS8Sym6sHmts6mQncxvxNe4kbba9ejHEnpump",
     symbol: "AMURECA",
@@ -1902,7 +1902,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.07M, age 0d, liq $22k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "EtqLhgDPtX1Vt34pkMpyFnaQbhVcS3ArBRUnBms9pump",
     symbol: "ELDER",
@@ -1911,7 +1911,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -95%, liq $3.3k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "CAjtTHvC878f8cZ4zEwdvgjkjFM7rbYN8Mb1go1cpump",
     symbol: "DUMBMONEY",
@@ -1920,7 +1920,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.39M, age 16d, liq $75k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "BEFGTBRvCvnoTAqsXC98EvFyBjza5tVxtMsKfFRBpump",
     symbol: "SCHIZO",
@@ -1929,7 +1929,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -93%, liq $3.6k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "7nZuYZYZnof9gF3zr9QhdnxpQ1mTM8LN3VaJuhrGbonk",
     symbol: "RCON",
@@ -1938,7 +1938,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.78M, age 235d, liq $87k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "HuaUpsznKd5YrxjBNLU7Pe8YCrUNJvNChDzu5TLjpump",
     symbol: "BUL",
@@ -1947,7 +1947,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "9eGNvjDeZzRWivmiNTaMqZb9KEzxkSPnC88e5p84pump",
     symbol: "SCAMP",
@@ -1956,7 +1956,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -94%, liq $3.5k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "88zHjd1LL7pwBjommuMdLrf9yHmH3iwcuFb3ikAvpump",
     symbol: "FX6900",
@@ -1965,7 +1965,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $10.5k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "3SDjJTCS9WydzNFPzGUt7PPsHKMHXE1yrEzbHtEkgsCs",
     symbol: "TG",
@@ -1974,7 +1974,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 1d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "BA8Pe9vy7GnybMLofZW5c8XAezJF4XGt94siHB7bpump",
     symbol: "NIGSLOP",
@@ -1983,7 +1983,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.08M, age 2d, liq $23k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "CXEGcb1BWp4grrTCDdg57XDhxrEQsuQAFT3QNvedpump",
     symbol: "TREND",
@@ -1992,7 +1992,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "FyPoqFN2d7YZ4rEfNq8SMpoSZ5DSwHaD5EcWkpTbpump",
     symbol: "GAZAFUND",
@@ -2001,7 +2001,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "3pCyU31quPpsVYaC5TxtXpe6sR1KXSLzk5TkZgXGpump",
     symbol: "GOP",
@@ -2010,7 +2010,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.24M, age 1d, liq $38k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "E335Gq1HSdfeojk8Ukfb8Dwgw7V3LJLiuPiK8k8hpump",
     symbol: "SHARKING",
@@ -2019,7 +2019,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $11.9k, age 1d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "28rNwAqGdksNTYXFf8qe7vFLU9AK6zT5Y2LD2CGepump",
     symbol: "NOAURA",
@@ -2028,7 +2028,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.54M, age 0d, liq $61k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "7AXFqa5CuzHDk8uPCfXdnXvRqxaZxCQmP1X6fYVYpump",
     symbol: "HUMAN",
@@ -2037,7 +2037,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "2vtuXdpMKHx8CsdeU1y2rr3tfyhPD51B2t5WTbUUpump",
     symbol: "RAGE",
@@ -2046,7 +2046,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.01M, age 30d, liq $15k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "2wd2aVe25A38c3KEGAXM5B2YJLQKBMqAE2j6EbDUpump",
     symbol: "GAZA",
@@ -2055,7 +2055,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -90%, liq $4.5k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "8ZALL92jEgmpJ5RwkgNZtsr3hM1BQX4sp9uE7iHJpump",
     symbol: "CHAD",
@@ -2064,7 +2064,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "B85ta9Qp7EgoVXaMka9BQYrFogSmC3PRjsxNM6HaHF41",
     symbol: "AMC",
@@ -2073,7 +2073,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.06M, age 0d, liq $22k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "2PQTSCvV3cE2tYL1d3fyKX3y8JW2SXtJneiuQiD3pump",
     symbol: "BITSHARK",
@@ -2082,7 +2082,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "BgAswdPz598kfdzNkwSjFkKPM9pdfjbctgizNZBGpump",
     symbol: "POOWEL",
@@ -2091,7 +2091,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $7.1k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "3YDTchewGLyRbyTWw2dJu8Nuzk1k61XrGAzemLuEpump",
     symbol: "WINSTON",
@@ -2100,7 +2100,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -95%, liq $3.2k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "aqQRs3UJmHs7ktoLo46HZAzvG9P3oCoZ41nENqFbory",
     symbol: "PIE",
@@ -2109,7 +2109,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.24M, age 105d, liq $53k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "C1FjBybKVyatJcJ8JDd7VunSjVkmsb3m1p6q3qvHpump",
     symbol: "1000X",
@@ -2118,7 +2118,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.18M, age 1d, liq $35k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "9WaHjdcoaNeuawmwrXHuxP9vPLhXYw7AmAqyxZPWpump",
     symbol: "ORC",
@@ -2127,7 +2127,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 2d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "3KHMZhpthXuiCcgfTv7vVu9PpEz64KAEURFwi6Lopump",
     symbol: "GOBLIN",
@@ -2136,7 +2136,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $1.01M, age 4d, liq $111k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "DAPMSW9XZPMmTr3TeAbwrYjeQdGSyjmTAQqdzMyhpump",
     symbol: "OCRA",
@@ -2145,7 +2145,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "9JaZEDXomJBNZMseQcHqzvdGfVxa3Vsh95DYTRgCpump",
     symbol: "KIND",
@@ -2154,7 +2154,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "136AgXAe8uqRiP49YUSKzKHicwzxuAeFezPkdXqfpump",
     symbol: "HUMANCOIN",
@@ -2163,7 +2163,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $12.7k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "9bZqq8jfsWpJdd7WJLxqejoy7ikD1CDikR7UV1i2pump",
     symbol: "DOGE",
@@ -2172,7 +2172,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "BhCuLLN38Ru7qBkXBmGzNeG6ipiAcqvywpvNjQW7pump",
     symbol: "GA",
@@ -2181,7 +2181,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.10M, age 0d, liq $25k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "AfQnzZy6JQzsCGF993Zzj8Lv8gNyxYN49GNLxwXpump",
     symbol: "ONE",
@@ -2190,7 +2190,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $11.5k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "GwvV4EtrBcRv7tHxHoymvK8A4E7MEjBhA8NEAScppump",
     symbol: "WORLD",
@@ -2199,7 +2199,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -94%, liq $3.5k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "BTfJCkrQ3gYMJjqaJp2butmpL2m38s9iW7jNGiBrpump",
     symbol: "FREN",
@@ -2208,7 +2208,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "2xwXbT7WbzPi24NkLs73jRPzZ9z53WmNxSddB5Twpump",
     symbol: "CHANCE",
@@ -2217,7 +2217,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "5qvquFtmmMuHjDprRZFGp25pcuvm9f4t6igFS5hApump",
     symbol: "OCRA_5QVQ",
@@ -2226,7 +2226,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "HCAT7KbJdTEeS194D78hZAXUy85JoebvyVSZhg5npump",
     symbol: "PCRF",
@@ -2235,7 +2235,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "C3MVMiw25M8WUuZKpwzbHqtjsTdHKpzJcrozBNsDpump",
     symbol: "PEMP",
@@ -2244,7 +2244,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.21M, age 0d, liq $36k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Jfu3UhZ5T82CBexCokL2f8235JcbWGgA8tjMx6tpump",
     symbol: "CHARITITTY",
@@ -2253,7 +2253,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $13.5k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "3CCJDEZWH5fd6nBHLNMkP5wtDvDP8EVwiEPJAaxEpump",
     symbol: "GORDON",
@@ -2262,7 +2262,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $7.2k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "D1RCFRw3Qiuq2WZCPZWm4avJ5HiM34xbJDuEoRu8pump",
     symbol: "NOKIDHUNGRY",
@@ -2271,7 +2271,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.07M, age 0d, liq $20k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "7vaeym21JyZ3a5WJ6StWaeWdCZeVsZvEZC4ZGhpqpump",
     symbol: "TITS",
@@ -2280,7 +2280,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -87%, liq $5.1k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "5aw9QcwBRCfKK9rrdhvPk2dL7nTyGZrZc2DZnHzTpump",
     symbol: "SCAM_5AW9",
@@ -2289,7 +2289,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "6E6odqdiyhq5NjCbz96kHzeDwGiTQCNe7P6aPxDqWeWE",
     symbol: "NUTS",
@@ -2298,7 +2298,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -92%, liq $3.9k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "2STBfWTnUgKdFmdgE6KUHa8CQma1rjACZwiPpE4Wpump",
     symbol: "WIFOUT",
@@ -2307,7 +2307,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "9ir6Y5D55qJs6REwjzPcTkBht3EWqeYtXWwjiFLQpump",
     symbol: "JEET",
@@ -2316,7 +2316,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "J3STnDXbqooCY4zWFXFQh7Xqq9FKshuaEwhsx2fUpump",
     symbol: "TAXLESS",
@@ -2325,7 +2325,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "A4QJhJ7R93WzFmhMzBxpdSfkDZ7CwXNQPwq63BfXpump",
     symbol: "NOKIDHUNGRY_A4QJ",
@@ -2334,7 +2334,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "9PZMYmCm1KpPtsJDHwK2zKJsgd72NVbzjD2W5uFBpump",
     symbol: "MHA",
@@ -2343,7 +2343,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "CWt6D1X1tUzd8CbTd8op985VoU1g4XqyiftCCDPBpump",
     symbol: "HODLHOPE",
@@ -2352,7 +2352,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "7wQZHSLTxR1vj49BiVcrBCiUGYYPPxdAwnWT1UtZpump",
     symbol: "BANANA",
@@ -2361,7 +2361,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.07M, age 477d, liq $21k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Fy1mf2pd2csFy9UTqHfy29hfsJnUaFD6SvKRUthGSQgT",
     symbol: "GDER_FY1M",
@@ -2370,7 +2370,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "E8syR4zsgQG2zo9YyiyfX4ujubByR4z6qj9stjASpump",
     symbol: "STJUDE",
@@ -2379,7 +2379,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $1.31M, age 0d, liq $118k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "j5AxdCCpnF2eaZQ2C1z1erptbx9FmBoXpmwgrSjFaGN",
     symbol: "GDER_J5AX",
@@ -2388,7 +2388,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.29M, age 0d, liq $251k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "5bjBjSEwMhENWJZgeMkeuFrCYPRgTXu1DaqqehYGSooe",
     symbol: "RCSC_5BJB",
@@ -2397,7 +2397,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "3G6jLa1RCUntasM2mpV9VNHkiyh6TazJEeWCPuDt1WkU",
     symbol: "AU",
@@ -2406,7 +2406,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -100%, liq $0.0k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "A7NQr2P7SXZBxVTnAT2NG2tiko1Kt9gNrb5SjB9xiStu",
     symbol: "BEEKEEPER_A7NQ",
@@ -2415,7 +2415,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -100%, liq $0.1k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "4Dq5aiRABPJVVMm8p4ficnjcS4aBNmGReziVJxLqpQ2k",
     symbol: "GDER_4DQ5",
@@ -2424,7 +2424,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.1k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "GZiXptRkTatMCjc9M8hqN9xL9XQMXYWrtrHCSvMZJbHH",
     symbol: "KEVIN",
@@ -2433,7 +2433,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "GpdRNotihwXZJ3z3y6yCRAhecFrALc4J8SX92pxnbonk",
     symbol: "AIRCOIN",
@@ -2442,7 +2442,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $2.26M, age 267d, liq $148k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "9LEdSuWEEnR5Ujpk3nsKtPHkbAUSVd4FucQh7s84QZGL",
     symbol: "NOXA",
@@ -2451,7 +2451,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.1k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "BzKd17UpCciwmkow7u5kVebTa2PBivqEtQ7Ywcdxvxur",
     symbol: "XCHAT_BZKD",
@@ -2460,7 +2460,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Fta7mWPddj81ztSuKGsixJrGaTD3AT1NVapStG4KCx15",
     symbol: "BOKBEAR",
@@ -2469,7 +2469,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -100%, liq $0.0k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "GiGFCuD2Ukgjy1JCgvp5vCJQqK9TdQSABtbbrBmg41cX",
     symbol: "GMAR_GIGF",
@@ -2478,7 +2478,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Dn14CTmEdmsCSAb5HhYXP9vRnmPB5uZEqoZKto9p39xX",
     symbol: "ITSCAM",
@@ -2487,7 +2487,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $1.1k, age 1d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "DMYrtE1D9B2VAo4zWjeuJS6247FUPvzzjBvzcNwrcofa",
     symbol: "HRP_DMYR",
@@ -2496,7 +2496,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "EXrPSgaWtDDvFdHicFCJTDLiqiahpxea46QDWc4Efomo",
     symbol: "HOUSTON",
@@ -2505,7 +2505,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $11.1k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "9RuvhbEDhtvV2y5xSKTbZzF2cLntACdatRcwGjnw6tLj",
     symbol: "GOBLIN_9RUV",
@@ -2514,7 +2514,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.1k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "EuDGZEwHSDZ6UnBXSU9fiY2eHKYfG3GRJU4XhN5875cd",
     symbol: "GDER_EUDG",
@@ -2523,7 +2523,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "78gaLow6zaLambeWxWh7y6WKdXJtXuz48zakxnzkYK1Y",
     symbol: "BLOCK",
@@ -2532,7 +2532,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.1k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "E95sJahssFKUk6jcWYbyfmjtcCsr4Z226HD9Qbjupump",
     symbol: "HOPPY",
@@ -2541,7 +2541,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.21M, age 235d, liq $43k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "9S5faHm7eHrgA2M1g98qnFV6gcPWKyeswpc2RjyEfddf",
     symbol: "POTENTIAL",
@@ -2550,7 +2550,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.3k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "6iCdMSQwsi7Q3ArtXHA9DgLFVxvqdhfVigSasaCCL5wW",
     symbol: "GDER_6ICD",
@@ -2559,7 +2559,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "9SJftqSZXvRhYWta32xAL35MDLpzfksnkFe8zZ6X2FQf",
     symbol: "GMAR_9SJF",
@@ -2568,7 +2568,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -86%, liq $0.0k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "G5MewvEhsHUjvzknFTryyjdoQBwbaanqozWRzXcAtEu5",
     symbol: "LUCA_G5ME",
@@ -2577,7 +2577,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -100%, liq $0.1k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "4pxbpfcck6i3Y3zj3yAHjckbs6iFUyA8pK92Pq5SpHgJ",
     symbol: "GMAR_4PXB",
@@ -2586,7 +2586,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "CL7gBjhwyX27wmVzF9wwdv1xe8gzdL5Vc33J86inaKwu",
     symbol: "RCSC_CL7G",
@@ -2595,7 +2595,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "7GAFVwLZeuop8omK16jNELtXVsjqJ8eSDy1FSSanpump",
     symbol: "GPT",
@@ -2604,7 +2604,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -95%, liq $3.6k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "79pfCccPj1pyZ4YsMxk2rBDBuCqNG8o2NhT8knjohJfZ",
     symbol: "AMC_79PF",
@@ -2613,7 +2613,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "7wANdfUfc1y7LRc9Z4g1m92oipdAxyFYi5ii4an3qTVj",
     symbol: "RLS",
@@ -2622,7 +2622,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "AYF2dpD8Dv91TpxHJfdSEJUrdmeGo7MbcGrbqoMXfoNo",
     symbol: "MOGMAN",
@@ -2631,7 +2631,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -100%, liq $0.0k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "E5TdNTxsPJ3GjoHstTVifHB9QVTKHLFF2tQm6mCHbsBq",
     symbol: "CR7_E5TD",
@@ -2640,7 +2640,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "AxkBVC6sZcFH5XQgnXV2BccT2DoA2FsHJ4wGoXzppump",
     symbol: "EVS",
@@ -2649,7 +2649,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -94%, liq $4.3k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "9gBzMZ1oJ9wDTvzVrhaA7tKMmtWqg9SEmc1UuBPbpump",
     symbol: "MOGMAN_9GBZ",
@@ -2658,7 +2658,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $10.7k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "EaCthgyRnmAiZTkcCAGTtdfu74Ut8Rcp4KMtyATZjcam",
     symbol: "RCSC_EACT",
@@ -2667,7 +2667,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "EnABiqWv4HVfRdNJ5Z6bVJvAfQ1bLAFbcQtpvZ91QYkZ",
     symbol: "GDER_ENAB",
@@ -2676,7 +2676,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.09M, age 0d, liq $129k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "FbxphsmRd1J3Jpm8V4KaVap5Hhjw33qrbNm7berbQQKP",
     symbol: "SPC",
@@ -2685,7 +2685,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "EiuC96ppWK6GkcXFDZQW33P1AhHC57MNspo48YQ8brrr",
     symbol: "DONUTS",
@@ -2694,7 +2694,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 1d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "G27DMtwx45ukbh6cU3WmTrTBfpuAnf5wbsBNbocxrR4b",
     symbol: "EWON_G27D",
@@ -2703,7 +2703,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.1k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "9Px8gq6BHDtgJ7uzUQBtKuwaH1m91MSvw8WfQU4WcuHR",
     symbol: "REALTOR",
@@ -2712,7 +2712,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.08M, age 0d, liq $64k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "9k8niP7ny84w3GRjkqCVBq4YSAQEgfPsVZ9QjA1uofFP",
     symbol: "HRP_9K8N",
@@ -2721,7 +2721,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "8bJpcUb46PqNZhq6J41z7pHW99JP75cRBB58arX8Sdoa",
     symbol: "MOONMAN",
@@ -2730,7 +2730,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.2k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "HexXsUmjyHMCrZJA7AUd2qHdu9QDgbhXqc7NtVT92GFn",
     symbol: "GREMLIN",
@@ -2739,7 +2739,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.5k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "6h5thPAXxBNU597UfETbZ6jWZSvSDu6WfSUC9SYeGcFH",
     symbol: "MYSTERIOUS",
@@ -2748,7 +2748,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.2k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "9eYXJk69M1exemmHZ4zpXBZ6oLKYehhEomjyDhnmErZr",
     symbol: "BUNK",
@@ -2757,7 +2757,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.2k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Cd22B3UYcbvk7x82BVPF8AEwhr7VJDo4SRbeZowj5VHy",
     symbol: "RCSC_CD22",
@@ -2766,7 +2766,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "GA5y9zTpRFprhrVFAgqwYeTu2bhhVXGG7n9gFRrMZpx3",
     symbol: "YAHU",
@@ -2775,7 +2775,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.1k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "CZybCGELYcoRNRaKQSzP3S9mBTJsvbpDfj9PEQP2PaPf",
     symbol: "MILLEY",
@@ -2784,7 +2784,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.1k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "2z4Uwcdtw5JjSDAZMxgn7XbU7p3cjxehjJmg2JNeADeV",
     symbol: "HRP_2Z4U",
@@ -2793,7 +2793,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.2k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "J7eC1py78Uq7i1FGH926vRE1buk2h7YtKc4FqtLLAJmb",
     symbol: "RCSC_J7EC",
@@ -2802,7 +2802,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "FymHmid5WcXeHroA6FzfooyoqbepF7h5ZBBiCL8tQRWT",
     symbol: "PROS_FYMH",
@@ -2811,7 +2811,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "CcnvgSc8rSrzCKSmCePUiWAHmtbrxMdSQ6pkspj1E6Jx",
     symbol: "GDER_CCNV",
@@ -2820,7 +2820,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.12M, age 0d, liq $194k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "DQTnRbgJmfQmUFBfy8RQU4of7oeL6XNMyKP18myLzMBQ",
     symbol: "CR7_DQTN",
@@ -2829,7 +2829,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -100%, liq $0.0k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "GUBNKcSLs8732gU3ZugCAXkgGBaUaWxNu6qUYup8omA8",
     symbol: "MEGA_GUBN",
@@ -2838,7 +2838,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.2k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "AdBzdu3Z56NQcuQuWUQNHqkipU7BksU5bi7t51xs9bpc",
     symbol: "AMC_ADBZ",
@@ -2847,7 +2847,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.3k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "FJkWf3Y9eE6YKXasKDey1So5xm3KJTf8Q9N997A2DGHq",
     symbol: "CAP",
@@ -2856,7 +2856,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.1k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Dk29goLmJMhPUr1GTmAtxxhjxn9dd8QLFqP68v4vR7SP",
     symbol: "BLEND",
@@ -2865,7 +2865,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.3k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "3si8q48a8vgx7Pq7RAZAH6PuK2bfvMUwGtrtNQ5TgvkH",
     symbol: "SLX",
@@ -2874,7 +2874,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.3k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "ERvEyseXkhx1kWzEgQqTWTRXBgnnFQAL99tKjD31Bzxa",
     symbol: "GOBLIN_ERVE",
@@ -2883,7 +2883,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "5Z2gGiE7TuXP5JgEsjSpk8E9zoQdTxAjRb3grXabdBVr",
     symbol: "KUVISOL",
@@ -2892,7 +2892,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.3k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "GNMQLbyxgA9R9X7wZ3tsW9bRQmd1JVzYgCq7BSi2Mf6F",
     symbol: "STJUDE_GNMQ",
@@ -2901,7 +2901,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -95%, liq $0.0k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "BQk4pV6xZSycTcF4gScaR6oFEsnmaLntaN4PQWVGZ24V",
     symbol: "NOHOUSE",
@@ -2910,7 +2910,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.60M, age 0d, liq $63k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "DVNKvgQeLYomcSLK3fgDeDph5kY3yxtA5qTVGd7JgZ1g",
     symbol: "AI",
@@ -2919,7 +2919,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.3k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "BdX7V759xrhB7VLtyXN5oUjNny85kuS9VsxZzD7dR9Mt",
     symbol: "FROK",
@@ -2928,7 +2928,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.1k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "FSmzaDJkwFyNBS4arvewJE334UGGb84wKvhbQP8YMpRz",
     symbol: "GDER_FSMZ",
@@ -2937,7 +2937,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "7wuCULVxNMLm1AzsED6wVB8iZTqMNXsxjaHH8AVFFykK",
     symbol: "UNICOIN",
@@ -2946,7 +2946,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.1k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "8HKcYUaSnB8c7G1mNBPQxWe6WEfmK5r3zvdzhfQPnsHu",
     symbol: "AI_8HKC",
@@ -2955,7 +2955,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "AAafWSMFRVshAeBSHQMWW4EhQeSaGd73uqTgrb8zUd1E",
     symbol: "EVS_AAAF",
@@ -2964,7 +2964,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $1.2k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "EH6PuCCpDVunLExSynDteZzQde5Bfab2LJTthtsExZ6J",
     symbol: "OOO",
@@ -2973,7 +2973,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $2.5k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "78jedvFoqLXa2v6BXNRCGXrXuvkzPzhsero6fxzkpump",
     symbol: "RETARDEBATE",
@@ -2982,7 +2982,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [0, 400],
     why: "24h drop -97%, liq $3.3k — textbook rug.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "AkgVdEH24cWSdzTf735SWESjsz4Y13m1u6AZcEmfpump",
     symbol: "GREATWHITE",
@@ -2991,7 +2991,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.27M, age 101d, liq $42k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn",
     symbol: "PUMP",
@@ -3000,7 +3000,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [750, 1000],
     why: "mcap $625M, age 289d, liq $13.4M — established blue-chip.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "GYbYzBxN3oqfoaCxonoBN86FL2DhR5ahyTrueKYoNnhs",
     symbol: "GMAR_GYBY",
@@ -3009,7 +3009,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.05M, age 0d, liq $75k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "7XD1HNr265hKEo9UgzSMoTbc4pAxuQg4anrEoJ16pump",
     symbol: "ORG",
@@ -3018,7 +3018,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.05M, age 7d, liq $17k — mid-cap default (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "FWFePBC5d9JvbjPmi94WMkzi6ga76xwELEwrojXv9qUF",
     symbol: "DOGOCAUST",
@@ -3027,7 +3027,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.2k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "2PU375xQLHp4b94FWwYVR7vd6yNMrSuW2qFEKU2LGbTf",
     symbol: "ZOE",
@@ -3036,7 +3036,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $1.9k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "2Jx3anNq4AYmiyxKpzquei3Vo8t7AMrD4Br5YoggSZsN",
     symbol: "USDAI",
@@ -3045,7 +3045,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "6wNxFngGp1qHBaAZwBhZRCCqu1tZZeiuWw8qiFFFmZ55",
     symbol: "CAP_6WNX",
@@ -3054,7 +3054,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [100, 600],
     why: "liq $0.0k, age 0d — fresh-launch thin liquidity.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "tSATdGGSLYBVCrm3pXiib8NmzKcB1iUdjRRseNGssxu",
     symbol: "TSAT",
@@ -3063,7 +3063,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $15929.47M, liq $126k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "PERLEQKUNUp1dgFZ8EvyXHdN9d6ZQqfGxALDvfs6pDs",
     symbol: "PRL",
@@ -3072,7 +3072,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $8202.25M, liq $22k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Xs8drBWy3Sd5QY3aifG9kt9KFs2K3PGZmx7jWrsrk57",
     symbol: "TMOX",
@@ -3081,7 +3081,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $3939.07M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "BNso1VUJnh4zcfpZa6986Ea66P6TCp59hvtNJ8b1X85",
     symbol: "BNSOL",
@@ -3091,7 +3091,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $877M, liq $876.8M, 14 048 holders — established Solana memecoin.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2Wu1g2ft7qZHfTpfzP3wLdfPeV1is4EwQ3CXBfRYAciD",
     symbol: "GOHOME",
@@ -3100,7 +3100,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $857.56M, liq $339k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "rndrizKT3MK1iimdxRdWabcF7Zg7AR5T4nud4EkHBof",
     symbol: "RENDER",
@@ -3109,7 +3109,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $810.36M, liq $391k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Gekfj7SL2fVpTDxJZmeC46cTYxinjB6gkAnb6EGT6mnn",
     symbol: "DZSOL",
@@ -3119,7 +3119,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $806M, liq $806.2M, 10 293 holders — established Solana memecoin.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2zMMhcVQEXDtdE6vsFS7S7D5oUodfJHE8vd1gnBouauv",
     symbol: "PENGU",
@@ -3128,7 +3128,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $744M, liq $4.2M, 535 056 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "2u1tszSeqZ3qBWF3uNGPFc8TzMk2tdiwknnRMWGWjGWH",
     symbol: "USDG",
@@ -3137,7 +3137,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $700M, liq $29.1M, 13 532 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN",
     symbol: "TRUMP",
@@ -3146,7 +3146,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $557M, liq $62.6M, 650 389 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
     symbol: "BONK",
@@ -3155,7 +3155,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $544M, liq $3.2M, 1 005 625 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "jupSoLaHXQiZZTSfEWMTRRgpnyFm8f6sZdosWBjx93v",
     symbol: "JUPSOL",
@@ -3165,7 +3165,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $418M, liq $418.0M, 33 227 holders — established Solana memecoin.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "6FrrzDk5mQARGc1TDYoyVnSyRdds1t4PbtohCD6p3tgG",
     symbol: "USX",
@@ -3174,7 +3174,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $379M, liq $26.9M, 15 674 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "9BEcn9aPEmhSPbPQeFGjidRiEKki46fVQDyPpSQXPA2D",
     symbol: "JLUSDC",
@@ -3184,7 +3184,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $368M, liq $367.9M, 11 589 holders — established Solana memecoin.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
     symbol: "ZBCN",
@@ -3193,7 +3193,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $338.41M, liq $192k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Grass7B4RdKfBCjTKgSqnXkqjwiGvQyFbuSCUJr3XXjs",
     symbol: "GRASS",
@@ -3202,7 +3202,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $338.34M, liq $55k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "8fr7WGTVFszfyNWRMXj6fRjZZAnDwmXwEpCrtzmUkdih",
     symbol: "WYLDS",
@@ -3211,7 +3211,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $330.64M, liq $1849k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "3b8X44fLF9ooXaUm3hhSgjpmVs6rZZ3pPoGnGahc3Uu7",
     symbol: "PRIME",
@@ -3220,7 +3220,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $326.27M, liq $13638k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "DrZ26cKJDksVRWib3DVVsjo9eeXccc7hKhDJviiYEEZY",
     symbol: "YZY",
@@ -3230,7 +3230,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $307M, liq $1.7M, 18 718 holders — established Solana memecoin.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "J6pQQ3FAcJQeWPPGppWRb4nM8jU3wLyYbRrLh7feMfvd",
     symbol: "2Z",
@@ -3239,7 +3239,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $285.24M, liq $376k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3",
     symbol: "PYTH",
@@ -3248,7 +3248,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $268.75M, liq $162k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij",
     symbol: "CBBTC",
@@ -3257,7 +3257,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $253M, liq $23.2M, 65 977 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Dso1bDeDjCQxTrWHqUUi63oBvV7Mdm6WaobLbQ7gnPQ",
     symbol: "DSOL",
@@ -3266,7 +3266,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $227.81M, liq $227812k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "HmMubgKx91Tpq3jmfcKQwsv5HrErqnCTTRJMB6afFR2u",
     symbol: "9BIT",
@@ -3275,7 +3275,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $204M, liq $0.7M, 33 584 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump",
     symbol: "FARTCOIN",
@@ -3284,7 +3284,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $198M, liq $6.0M, 165 143 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "A1KLoBrKBde8Ty9qtNQUtq3C2ortoC3u7twggz7sEto6",
     symbol: "USDY",
@@ -3294,7 +3294,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $181M, liq $1.1M, 7 417 holders — established Solana memecoin.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm",
     symbol: "$WIF",
@@ -3303,7 +3303,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $178M, liq $4.9M, 253 840 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "hntyVP6YFm1Hg25TN9WGLqM12b8TQmcknKrdu1oxWux",
     symbol: "HNT",
@@ -3312,7 +3312,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $172.44M, liq $449k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "AvZZF1YaZDziPY2RCK4oJrRVrbN3mTD9NL24hPeaZeUj",
     symbol: "SYRUPUSDC",
@@ -3321,7 +3321,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $169.77M, liq $23413k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "59obFNBzyTBGowrkif5uK7ojS58vsuWz3ZCvg6tfZAGw",
     symbol: "PST",
@@ -3330,7 +3330,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $155.03M, liq $3122k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "sctmAy9zFfZznZUWxEMgGtF6PHZ3gwoiCGcfwRua1AZ",
     symbol: "SCTMSOL",
@@ -3339,7 +3339,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $147.83M, liq $147831k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "BPxxfRCXkUVhig4HS1Lh7kZqV6SPJhzfEk4x6fVBjPCy",
     symbol: "BP_BPXX",
@@ -3348,7 +3348,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $143.89M, liq $146k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "5Y8NV33Vv7WbnLfq3zBcKSdYPrk7g2KoiQoe7M2tcxp5",
     symbol: "ONYC",
@@ -3358,7 +3358,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $144M, liq $6.8M, 5 561 holders — established Solana memecoin.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "XsEH7wWfJJu2ZT3UCFeVfALnVA6CP5ur7Ee11KmzVpL",
     symbol: "NFLXX",
@@ -3367,7 +3367,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $141.94M, liq $43k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "DYNoyS3x5qgbccZg7RPXagm4xQzfnm5iwd9o8pMyJtdE",
     symbol: "DYNOSOL",
@@ -3376,7 +3376,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $133.23M, liq $133234k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "EswgBj2hZKdgovX2ihWSUDnuBg9VNbGmSGoH5yjNsPRa",
     symbol: "PHY",
@@ -3385,7 +3385,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $129.08M, liq $6k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "CASHx9KJUStyftLFWGvEVf59SGeG9sh5FfcnZMVPCASH",
     symbol: "CASH",
@@ -3394,7 +3394,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $125M, liq $31.2M, 262 680 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "HzwqbKZw8HxMN6bF2yFZNrht3c2iXXzpKcFu7uBEDKtr",
     symbol: "EURC",
@@ -3404,7 +3404,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $123M, liq $0.9M, 50 188 holders — established Solana memecoin.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "pSo1f9nQXWgXibFtKf7NWYxb5enAM4qfP6UJSiXRQfL",
     symbol: "PSOL",
@@ -3413,7 +3413,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $120M, liq $120.4M, 113 064 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "3AdhVEX6k85yNivHVXDEiY3WyP2WgFQTUZCahGaeC2qm",
     symbol: "MOVEUSD",
@@ -3422,7 +3422,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $119.12M, liq $102k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "vSoLxydx6akxyMD9XEcPvGYNGq6Nn66oqVb3UkGkei7",
     symbol: "VSOL",
@@ -3432,7 +3432,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $109M, liq $108.8M, 6 556 holders — established Solana memecoin.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FUAfBo2jgks6gB4Z4LfZkqSZgzNucisEHqnNebaRxM1P",
     symbol: "MELANIA",
@@ -3442,7 +3442,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $106M, liq $2.3M, 224 047 holders — established Solana memecoin.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "7Q2afV64in6N6SeZsAAB81TJzwDoD6zpqmHkzi9Dcavn",
     symbol: "JSOL",
@@ -3451,7 +3451,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $104.69M, liq $104688k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "cPQPBN7WubB3zyQDpzTK2ormx1BMdAym9xkrYUJsctm",
     symbol: "FWDSOL",
@@ -3460,7 +3460,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $103.06M, liq $103056k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "3ThdFZQKM6kRyVGLG48kaPg5TRMhYMKY1iCRa9xop1WC",
     symbol: "EUSX",
@@ -3469,7 +3469,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $102M, liq $3.6M, 9 739 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Bybit2vBJGhPF52GBdNaQfUJ6ZpThSgHBobjWZpLPb4B",
     symbol: "BBSOL",
@@ -3479,7 +3479,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $99M, liq $99.3M, 11 857 holders — established Solana memecoin.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3",
     symbol: "SKR",
@@ -3488,7 +3488,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $99M, liq $0.9M, 37 655 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "xSoL18r4U1k2ALa4yF857VDZJqCKecLtty92nscre3o",
     symbol: "XSHIN",
@@ -3497,7 +3497,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $91.11M, liq $91111k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "KMNo3nJsBXfcpJTVhZcXLW7RmTwTt4GVFE7suUBo9sS",
     symbol: "KMNO",
@@ -3507,7 +3507,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $91M, liq $1.6M, 53 144 holders — established Solana memecoin.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "7GxATsNMnaC88vdwd2t3mwrFuQwwGvmYPrUQ4D6FotXk",
     symbol: "JUICED",
@@ -3516,7 +3516,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $91.00M, liq $91003k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "aeroXvCT6tjGVNyTvZy86tFDwE4sYsKCh7FbNDcrcxF",
     symbol: "PDSOL",
@@ -3525,7 +3525,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $89.30M, liq $89301k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "SonicxvLud67EceaEzCLRnMTBqzYUUYNr93DBkBdDES",
     symbol: "SONIC",
@@ -3534,7 +3534,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $88.71M, liq $40k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "FoXyMu5xwXre7zEoSvzViRk3nGawHUp9kUh97y2NDhcq",
     symbol: "FOXY",
@@ -3543,7 +3543,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $84.48M, liq $4k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "2bpT3ksMdwdZ6DuHyq3FDUr7HDwvZ5DRZoT1fUPALJaH",
     symbol: "RIV",
@@ -3552,7 +3552,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $83.64M, liq $279k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "LAYER4xPpTCb3QL8S9u41EAhAX7mhBn8Q6xMTwY2Yzc",
     symbol: "LAYER",
@@ -3561,7 +3561,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $82.75M, liq $5k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "SRMuApVNdxXokk5GT7XD5cUUgXMBCoAz2LHeuAoKWRt",
     symbol: "SRM",
@@ -3570,7 +3570,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $82.27M, liq $29k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "dog1viwbb2vWDpER5FrJ4YFG6gq6XuyFohUe9TXN65u",
     symbol: "DOG",
@@ -3579,7 +3579,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $79.39M, liq $53k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "METvsvVRapdj9cFLzq4Tr43xK4tAjQfwX76z3n6mWQL",
     symbol: "MET",
@@ -3588,7 +3588,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $78M, liq $1.6M, 37 149 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "J1Wpmugrooj1yMyQKrdZ2vwRXG5rhfx3vTnYE39gpump",
     symbol: "WOULD",
@@ -3597,7 +3597,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $77M, liq $0.7M, 6 335 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump",
     symbol: "ALCH",
@@ -3606,7 +3606,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $77M, liq $1.8M, 27 097 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "2FPyTwcZLUg1MDrwsyoP4D6s1tM7hAkHYRjkNb5w6Pxk",
     symbol: "SOETH",
@@ -3615,7 +3615,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $76.94M, liq $31k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "61V8vBaqAGMpgDQi4JcAwo1dmBGHsyhzodcPqnEVpump",
     symbol: "ARC",
@@ -3624,7 +3624,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $75M, liq $4.4M, 46 235 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "J1wnHdKvP34fg7TtYdX63UPJMTdXNzJGEqfNJB22vKjU",
     symbol: "RTX",
@@ -3633,7 +3633,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $72.54M, liq $1k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "85VBFQZC9TZkfaptBWjvUw7YbZjy52A6mjtPGjstQAmQ",
     symbol: "W",
@@ -3642,7 +3642,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $71.54M, liq $119k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "DBRiDgJAMsM95moTzJs7M9LnkGErpbv9v6CUR1DXnUu5",
     symbol: "DBR",
@@ -3651,7 +3651,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $72M, liq $2.5M, 86 626 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "edge86g9cVz87xcpKpy3J77vbp4wYd9idEV562CCntt",
     symbol: "EDGESOL",
@@ -3660,7 +3660,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $69.24M, liq $69235k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "9PR7nCP9DpcUotnDPVLUBUZKu5WAYkwrCUx9wDnSpump",
     symbol: "BAN",
@@ -3669,7 +3669,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $69M, liq $1.3M, 26 238 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "jag58eRBC1c88LaAsRPspTMvoKJPbnzw9p9fREzHqyV",
     symbol: "JAGSOL",
@@ -3678,7 +3678,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $65.14M, liq $65136k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "WingsAYbfs4qnEgcw8jpSvetqp8XHM3GkKvow54WLcd",
     symbol: "WINGS",
@@ -3687,7 +3687,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $64.48M, liq $223k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "stke7uu3fXHsGqKVVjKnkmj65LRPVrqr4bLG2SJg7rh",
     symbol: "STKESOL",
@@ -3696,7 +3696,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $64.33M, liq $64333k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "sctmB7GPi5L2Q5G9tUSzXvhZ4YiDMEGcRov9KfArQpx",
     symbol: "DFDVSOL",
@@ -3705,7 +3705,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $61.40M, liq $61397k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "4eDf52YYzL6i6gbZ6FXqrLUPXbtP61f1gPSFM66M4XHe",
     symbol: "SOON",
@@ -3714,7 +3714,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $59.94M, liq $21k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "JuprjznTrTSp2UFa3ZBUFgwdAmtZCq4MQCwysN55USD",
     symbol: "JUPUSD",
@@ -3723,7 +3723,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $60M, liq $11.5M, 6 556 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "WLFinEv6ypjkczcS83FZqFpgFZYwQXutRbxGe7oC16g",
     symbol: "WLFI",
@@ -3732,7 +3732,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $59.36M, liq $38k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "ED5nyyWEzpPPiWimP8vYm7sD7TD3LAt3Q3gRTWHzPJBY",
     symbol: "MOODENG",
@@ -3741,7 +3741,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $59M, liq $1.4M, 94 203 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB",
     symbol: "TSLAX",
@@ -3750,7 +3750,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $58M, liq $1.6M, 23 477 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr",
     symbol: "POPCAT",
@@ -3759,7 +3759,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $58M, liq $4.3M, 140 839 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "CreiuhfwdWCN5mJbMJtA9bBpYQrQF2tCBuZwSPWfpump",
     symbol: "PYTHIA",
@@ -3768,7 +3768,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $57M, liq $2.4M, 36 555 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1",
     symbol: "CRCLX",
@@ -3777,7 +3777,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $55M, liq $1.5M, 10 701 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "MEFNBXixkEbait3xn9bkm8WsJzXtVsaJEn4c8Sam21u",
     symbol: "ME",
@@ -3786,7 +3786,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $54.09M, liq $390k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "he1iusmfkpAdwvxLNGV8Y1iSbj4rUy6yMhEA3fotn9A",
     symbol: "HSOL",
@@ -3795,7 +3795,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $53M, liq $53.3M, 9 272 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "2qEHjDLDLbuBgRYvsxhc5D6uDWAivNFZGan56P1tpump",
     symbol: "PNUT",
@@ -3804,7 +3804,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $53M, liq $3.0M, 87 483 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "FeR8VBqNRSUD5NtXAj2n3j1dAHkZHfyDktKuLXD4pump",
     symbol: "JELLYJELLY",
@@ -3813,7 +3813,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $52M, liq $2.1M, 33 810 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5",
     symbol: "MEW",
@@ -3822,7 +3822,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $52M, liq $9.2M, 160 396 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "9ckR7pPPvyPadACDTzLwK2ZAEeUJ3qGSnzPs8bVaHrSy",
     symbol: "USDU",
@@ -3831,7 +3831,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $48.87M, liq $1427k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh",
     symbol: "NVDAX",
@@ -3840,7 +3840,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $49M, liq $2.1M, 20 189 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "METAwkXcqyXKy1AtsSgJ8JiUHwGCafnZL38n3vYmeta",
     symbol: "META",
@@ -3849,7 +3849,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $48.36M, liq $892k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "METADDFL6wWMWEoKTFJwcThTbUmtarRJZjRpzUvkxhr",
     symbol: "META_META",
@@ -3858,7 +3858,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $47.78M, liq $20k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "gateMurAxe4YFoUR6J63gXGKtkbTfdkMdLjZrCmThFP",
     symbol: "GTSOL",
@@ -3867,7 +3867,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $47.54M, liq $47544k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "6s1bPNpuZko7V1Egp2XBwwExWPcMGyuuxE4nesH2cJSS",
     symbol: "CATI",
@@ -3876,7 +3876,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $47.50M, liq $1k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "axiom1dWfDXKn6r4pn3jjaYuLTExG5TdLuAqXQohNuG",
     symbol: "AXISOL",
@@ -3885,7 +3885,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $45.57M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "J3umBWqhSjd13sag1E1aUojViWvPYA5dFNyqpKuX3WXj",
     symbol: "HOME",
@@ -3894,7 +3894,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $44.51M, liq $97k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN",
     symbol: "GOOGLX",
@@ -3903,7 +3903,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $44M, liq $0.5M, 13 121 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "9iq5Q33RSiz1WcupHAQKbHBZkpn92UxBG2HfPWAZhMCa",
     symbol: "SUSDU",
@@ -3912,7 +3912,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $44.04M, liq $4k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "LFNTYraetVioAPnGJht4yNg2aUZFXR776cMeN9VMjXp",
     symbol: "LFNTY",
@@ -3921,7 +3921,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $43.72M, liq $8k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "xLfNTYy76B8Tiix3hA51Jyvc1kMSFV4sPdR7szTZsRu",
     symbol: "XLFNTY",
@@ -3930,7 +3930,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $41.67M, liq $1k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "XshPgPdXFRWB8tP1j82rebb2Q9rPgGX37RuqzohmArM",
     symbol: "INTCX",
@@ -3939,7 +3939,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $40.90M, liq $2k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Xs8S1uUs1zvS2p7iwtsG3b6fkhpvmwz4GYU3gWAmWHZ",
     symbol: "QQQX",
@@ -3948,7 +3948,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $39M, liq $2.0M, 6 490 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "G7vQWurMkMMm2dU3iZpXYFTHT9Biio4F4gZCrwFpKNwG",
     symbol: "BIRB",
@@ -3957,7 +3957,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $38M, liq $2.3M, 15 834 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Dz9mQ9NzkBcCsuGPFJ3r1bS4wgqKMHBPiVuniW8Mbonk",
     symbol: "USELESS",
@@ -3966,7 +3966,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $38M, liq $1.0M, 36 485 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
     symbol: "SPYX",
@@ -3975,7 +3975,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $38M, liq $2.6M, 18 150 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "BZLbGTNCSFfoth2GYDtwr7e4imWzpR5jqcUuGEwr646K",
     symbol: "IO",
@@ -3984,7 +3984,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $36.98M, liq $26k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "8f62NyJGo7He5uWeveTA2JJQf4xzf8aqxkmzxRQ3mxfU",
     symbol: "FIGHT",
@@ -3993,7 +3993,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $36.65M, liq $31k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "XsP7xzNPvEHS1m6qfanPUGjNmdnmsLKEoNAnHjdxxyZ",
     symbol: "MSTRX",
@@ -4002,7 +4002,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $36M, liq $0.7M, 7 537 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "XsjQP3iMAaQ3kQScQKthQpx9ALRbjKAjQtHg6TFomoc",
     symbol: "TQQQX",
@@ -4011,7 +4011,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $35.87M, liq $4k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "HUMA1821qVDKta3u2ovmfDQeW2fSQouSKE8fkF44wvGw",
     symbol: "HUMA",
@@ -4020,7 +4020,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $35.43M, liq $388k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "AY1Ww6MxwC3cCiyrandHqLrp4FXvzgcwQTZpJ2FEpump",
     symbol: "AMIKO",
@@ -4029,7 +4029,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $35.36M, liq $282k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "J3NKxxXZcnNiMjKw9hYb2K4LUxgwB6t1FtPtQVsv3KFr",
     symbol: "SPX",
@@ -4038,7 +4038,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $35M, liq $2.4M, 69 415 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "ukHH6c7mMyiWCf1b9pnWe25TSpkDDt3H5pQZgZ74J82",
     symbol: "BOME",
@@ -4047,7 +4047,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $35M, liq $10.2M, 89 463 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "2uQsyo1fXXQkDtcpXnLofWy88PxcvnfH2L8FPSE62FVU",
     symbol: "JLWSOL",
@@ -4056,7 +4056,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [700, 1000],
     why: "mcap $34M, liq $33.8M, 6 148 holders — established Solana memecoin.",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Xs3eBt7uRfJX8QUs4suhyU8p2M6DoUDrJyWBa8LLZsg",
     symbol: "AMZNX",
@@ -4065,7 +4065,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $32.47M, liq $195k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "DvjbEsdca43oQcw2h3HW1CT7N3x5vRcr3QrvTUHnXvgV",
     symbol: "DOOD",
@@ -4074,7 +4074,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $31.76M, liq $483k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "LBTCgU4b3wsFKsPwBn1rRZDx5DoFutM6RPiEt1TPDsY",
     symbol: "LBTC",
@@ -4083,7 +4083,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $31.53M, liq $1851k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "FtgGSFADXBtroxq8VCausXRr2of47QBf5AS1NtZCu4GD",
     symbol: "BRZ",
@@ -4092,7 +4092,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $31.15M, liq $2k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "CtzPWv73Sn1dMGVU3ZtLv9yWSyUAanBni19YWDaznnkn",
     symbol: "XBTC",
@@ -4101,7 +4101,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $31.04M, liq $894k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "NeonTjSjsuo3rexg9o6vHuMXw62f9V7zvmu8M8Zut44",
     symbol: "NEON",
@@ -4110,7 +4110,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $29.03M, liq $49k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp",
     symbol: "AAPLX",
@@ -4119,7 +4119,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $28.34M, liq $268k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Eg2ymQ2aQqjMcibnmTt8erC6Tvk9PVpJZCxvVPJz2agu",
     symbol: "PUMPCADE",
@@ -4128,7 +4128,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $28.32M, liq $408k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Xs78JED6PFZxWc2wCEPspZW9kL3Se5J7L5TChKgsidH",
     symbol: "STRCX",
@@ -4137,7 +4137,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $28.03M, liq $69k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn",
     symbol: "ZEREBRO",
@@ -4146,7 +4146,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $27.39M, liq $1107k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Xsa62P5mvPszXL1krVUnU5ar38bBSVcWAB6fmPCo5Zu",
     symbol: "METAX",
@@ -4155,7 +4155,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $27.21M, liq $63k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "XsqBC5tcVQLYt8wqGCHRnAUUecbRYXoJCReD6w7QEKp",
     symbol: "TBLLX",
@@ -4164,7 +4164,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $26.41M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Dfh5DzRgSvvCFDoYc2ciTkMrbDfRKybA4SoFbPmApump",
     symbol: "PIPPIN",
@@ -4173,7 +4173,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $25.81M, liq $2225k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "7atgF8KQo4wJrD5ATGX7t1V2zVvykPJbFfNeVf1icFv1",
     symbol: "$CWIF",
@@ -4182,7 +4182,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $25.30M, liq $8k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "CmVUoJUt7hMGc9ze7s8zYdnA7enMfCAFdQCggxcbACWU",
     symbol: "CWU",
@@ -4191,7 +4191,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $25.11M, liq $196k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "74SBV4zDXxTRgv1pEMoECskKBkZHc2yGPnc7GYVepump",
     symbol: "SWARMS",
@@ -4200,7 +4200,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $24.97M, liq $1079k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Xs7ZdzSHLU9ftNJsii5fCeJhoRWSC32SQGzGQtePxNu",
     symbol: "COINX",
@@ -4209,7 +4209,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $24.95M, liq $141k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "7JA5eZdCzztSfQbJvS8aVVxMFfd81Rs9VvwnocV1mKHu",
     symbol: "GEOD",
@@ -4218,7 +4218,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $23.85M, liq $107k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "XsXcJ6GZ9kVnjqGsjBnktRcuwMBmvKWh8S93RefZ1rF",
     symbol: "AMDX",
@@ -4227,7 +4227,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $23.69M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "nosXBVoaCTtYdLvKY6Csb4AC8JCdQKKAaWYtx2ZMoo7",
     symbol: "NOS",
@@ -4236,7 +4236,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $23.40M, liq $329k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "GoATEDLwYeDQXyzcFxAgeiQd5Amu4mewU4KmbjvUWGvH",
     symbol: "GOATED",
@@ -4245,7 +4245,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $23.26M, liq $104k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "oreoU2P8bN6jkk3jbaiVxYnG1dCXcYxwhwyK9jSybcp",
     symbol: "ORE",
@@ -4254,7 +4254,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $23.24M, liq $223k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Ce2gx9KGXJ6C9Mp5b5x1sn9Mg87JwEbrQby4Zqo3pump",
     symbol: "NEET",
@@ -4263,7 +4263,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $22.54M, liq $994k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "XsuxRGDzbLjnJ72v74b7p9VY6N66uYgTCyfwwRjVCJA",
     symbol: "MRVLX",
@@ -4272,7 +4272,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $22.47M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "A7bdiYdS5GjqGFtxf17ppRHtDKPkkRqbKtR27dxvQXaS",
     symbol: "ZEC",
@@ -4281,7 +4281,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $22.24M, liq $1517k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "DEF1NXSZ8Th9n28hYBayrFtx9bj1EwwTiy3mhHEB9oyA",
     symbol: "DEFINSOL",
@@ -4290,7 +4290,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $22.11M, liq $22106k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "DriFtupJYLTosbwoN8koMbEYSx54aFAVLddWsbksjwg7",
     symbol: "DRIFT",
@@ -4299,7 +4299,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $21.77M, liq $81k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "WETZjtprkDMCcUxPi9PfWnowMRZkiGGHDb9rABuRZ2U",
     symbol: "WET",
@@ -4308,7 +4308,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $21.69M, liq $583k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "375aiUqZERLrB9sHtsArKr4nuWCgBrtqibUDBMGeLvZC",
     symbol: "EAT",
@@ -4317,7 +4317,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $21.30M, liq $49k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "XsEdDDTcVGJU6nvdRdVnj53eKTrsCkvtrVfXGmUK68V",
     symbol: "VTX",
@@ -4326,7 +4326,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $20.99M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "CLoUDKc4Ane7HeQcPpE3YHnznRxhMimJ4MyaUqyHFzAu",
     symbol: "CLOUD",
@@ -4335,7 +4335,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $20.97M, liq $455k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Cmn4v2wipYV41dkakDvCgFJpxhtaaKt11NyWV8pjSE8A",
     symbol: "JLUSDT",
@@ -4344,7 +4344,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $20.74M, liq $20742k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "XsoBhf2ufR8fTyNSjqfU71DYGaE6Z3SUGAidpzriAA4",
     symbol: "PLTRX",
@@ -4353,7 +4353,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $20.31M, liq $21k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Xsv9hRk1z5ystj9MhnA7Lq4vjSsLwzL2nxrwmwtD3re",
     symbol: "GLDX",
@@ -4362,7 +4362,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $20.23M, liq $209k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Xsr3pdLQyXvDJBFgpR5nexCEZwXvigb8wbPYp4YoNFf",
     symbol: "CSCOX",
@@ -4371,7 +4371,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $20.18M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "98sMhvDwXj1RQi5c5Mndm3vPe9cBqPrbLaufMXFNMh5g",
     symbol: "HYPE",
@@ -4380,7 +4380,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $20.10M, liq $2760k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "KENJSUYLASHUMfHyy5o4Hp2FdNqZg1AsUPhfH2kYvEP",
     symbol: "GRIFFAIN",
@@ -4389,7 +4389,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $19.98M, liq $928k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "CARDSccUMFKoPRZxt5vt3ksUbxEFEcnZ3H2pd3dKxYjp",
     symbol: "CARDS",
@@ -4398,7 +4398,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $19.93M, liq $867k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "MAPS41MDahZ9QdKXhVa4dWB9RuyfV4XqhyAZ8XcYepb",
     symbol: "MAPS",
@@ -4407,7 +4407,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $19.61M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "DBTNHU51SBFi3dsoGGCRfKbno4teZXqsDSL37s4jgRKv",
     symbol: "$DBT",
@@ -4416,7 +4416,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $19.44M, liq $44k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "XsgSaSvNSqLTtFuyWPBhK9196Xb9Bbdyjj4fH3cPJGo",
     symbol: "AVGOX",
@@ -4425,7 +4425,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $18.88M, liq $10k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "XsvNBAYkrDRNhA7wPHQfX3ZUXZyZLdnCQDfHZ56bzpg",
     symbol: "HOODX",
@@ -4434,7 +4434,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $18.86M, liq $108k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "3iQL8BFS2vE7mww4ehAqQHAsbmRNCrPxizWAT2Zfyr9y",
     symbol: "VIRTUAL",
@@ -4443,7 +4443,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $18.84M, liq $1625k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "XsAtbqkAP1HJxy7hFDeq7ok6yM43DQ9mQ1Rh861X8rw",
     symbol: "PFEX",
@@ -4452,7 +4452,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $18.68M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "XsaHND8sHyfMfsWPj6kSdd5VwvCayZvjYgKmmcNL5qh",
     symbol: "XOMX",
@@ -4461,7 +4461,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $18.63M, liq $6k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "7s9MoSt7VV1J3jVNnw2AyocsQDBdCkPYz5apQDPKy9i5",
     symbol: "PIPE",
@@ -4470,7 +4470,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $18.58M, liq $41k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "XszvaiXGPwvk2nwb3o9C1CX4K6zH8sez11E6uyup6fe",
     symbol: "UNHX",
@@ -4479,7 +4479,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $18.55M, liq $19k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Xsf9mBktVB9BSU5kf4nHxPq5hCBJ2j2ui3ecFGxPRGc",
     symbol: "GMEX",
@@ -4488,7 +4488,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $18.18M, liq $1k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "XsNNMt7WTNA2sV3jrb1NNfNgapxRF5i4i6GcnTRRHts",
     symbol: "CVXX",
@@ -4497,7 +4497,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $18.14M, liq $3k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "7i5KKsX2weiTkry7jA4ZwSuXGhs5eJBEjY8vVxR4pfRx",
     symbol: "GMT",
@@ -4506,7 +4506,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $17.93M, liq $10k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "BdMLRC2gKyFu8FRBErazzpEaKmB1jcVB9Eq1rXXFm4EV",
     symbol: "BDMLRSOL",
@@ -4515,7 +4515,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $17.37M, liq $17367k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "5UUH9RTDiSpq6HKS6bp4NdU9PNJpXRXuiw6ShBTBhgH2",
     symbol: "TROLL",
@@ -4524,7 +4524,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $17.24M, liq $793k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "FgQ3sxj54SmVzttkxuK4bdiEnUNi6kF9Hyx3ezKW72hn",
     symbol: "ROVR",
@@ -4533,7 +4533,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $17.08M, liq $14k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "CzLSujWBLFsSjncfkh59rUFqvafWcY5tzedWJSuypump",
     symbol: "GOAT",
@@ -4542,7 +4542,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $16.85M, liq $1394k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "XsGVi5eo1Dh2zUpic4qACcjuWGjNv8GCt3dm5XcX6Dn",
     symbol: "JNJX",
@@ -4551,7 +4551,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $16.84M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "XsaBXg8dU5cPM6ehmVctMkVqoiRG2ZjMo1cyBJ3AykQ",
     symbol: "KOX",
@@ -4560,7 +4560,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $16.82M, liq $2k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "hy1oXYgrBW6PVcJ4s6s2FKavRdwgWTXdfE69AxT7kPT",
     symbol: "HYLOSOL",
@@ -4569,7 +4569,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $16.76M, liq $16760k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "XsssYEQjzxBCFgvYFFNuhJFBeHNdLWYeUSP8F45cDr9",
     symbol: "VTIX",
@@ -4578,7 +4578,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $16.62M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "6nR8wBnfsmXfcdDr1hovJKjvFQxNSidN6XFyfAFZpump",
     symbol: "CLASH",
@@ -4587,7 +4587,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $16.50M, liq $213k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "XsSr8anD1hkvNMu8XQiVcmiaTP7XGvYu7Q58LdmtE8Z",
     symbol: "LINX",
@@ -4596,7 +4596,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $16.34M, liq $1k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Xs151QeqTCiuKtinzfRATnUESM2xTU6V9Wy8Vy538ci",
     symbol: "WMTX",
@@ -4605,7 +4605,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $16.19M, liq $1k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "63LfDmNb3MQ8mw9MtZ2To9bEA2M71kZUUGq5tiJxcqj9",
     symbol: "GIGA",
@@ -4614,7 +4614,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $16.18M, liq $605k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "GbbesPbaYh5uiAZSYNXTc7w9jty1rpg3P9L4JeN4LkKc",
     symbol: "TRX",
@@ -4623,7 +4623,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $16.16M, liq $3330k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Xsv99frTRUeornyvCfvhnDesQDWuvns1M852Pez91vF",
     symbol: "PEPX",
@@ -4632,7 +4632,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $15.95M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "5MAYDfq5yxtudAhtfyuMBuHZjgAbaS9tbEyEQYAhDS5y",
     symbol: "ACS",
@@ -4641,7 +4641,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $15.94M, liq $1k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "XsFnZawJdLdXfBSEt5Vw29K5vdBiHotdPLjUPafpfHs",
     symbol: "IEMGX",
@@ -4650,7 +4650,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $15.84M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "BonK1YhkXEGLZzwtcvRTip3gAL9nCeQD7ppZBLXhtTs",
     symbol: "BONKSOL",
@@ -4659,7 +4659,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $15.82M, liq $15823k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "XsnQnU7AdbRZYe2akqqpibDdXjkieGFfSkbkjX1Sd1X",
     symbol: "MRKX",
@@ -4668,7 +4668,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $15.56M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "XspzcW1PRtgf6Wj92HCiZdjzKCyFekVD8P5Ueh3dRMX",
     symbol: "MSFTX",
@@ -4677,7 +4677,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $15.44M, liq $68k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "XsYdjDjNUygZ7yGKfQaB6TxLh2gC6RRjzLtLAGJrhzV",
     symbol: "PGX",
@@ -4686,7 +4686,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $15.41M, liq $2k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "j14XLJZSVMcUYpAfajdZRpnfHUpJieZHS4aPektLWvh",
     symbol: "JLUSDS",
@@ -4695,7 +4695,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $15.31M, liq $15307k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "XsApJFV9MAktqnAc6jqzsHVujxkGm9xcSUffaBoYLKC",
     symbol: "MAX",
@@ -4704,7 +4704,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $15.22M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "XsqgsbXwWogGJsNcVZ3TyVouy2MbTkfCFhCGGGcQZ2p",
     symbol: "VX",
@@ -4713,7 +4713,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $15.18M, liq $2k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "5z3EqYQo9HiCEs3R84RCDMu2n7anpDMxRhdK8PSWmrRC",
     symbol: "PONKE",
@@ -4722,7 +4722,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $15.09M, liq $704k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "6AJcP7wuLwmRYLBNbi825wgguaPsWzPBEHcHndpRpump",
     symbol: "VINE",
@@ -4731,7 +4731,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $14.99M, liq $920k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "XsMAqkcKsUewDrzVkait4e5u4y8REgtyS7jWgCpLV2C",
     symbol: "JPMX",
@@ -4740,7 +4740,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $14.96M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "AymATz4TCL9sWNEEV9Kvyz45CHVhDZ6kUgjTJPzLpU9P",
     symbol: "XAUT0",
@@ -4749,7 +4749,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $14.92M, liq $556k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "XsqE9cRRpzxcGKDXj1BJ7Xmg4GRhZoyY1KpmGSxAWT2",
     symbol: "MCDX",
@@ -4758,7 +4758,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $14.91M, liq $35k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Ee4ooSk6GMC34T1Gbh8rRY2XLyuk2FsyiWtq3jrHUcPR",
     symbol: "VNX",
@@ -4767,7 +4767,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $14.89M, liq $35k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Xs6B6zawENwAbWVi7w92rjazLuAr5Az59qgWKcNb45x",
     symbol: "BRK.BX",
@@ -4776,7 +4776,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $14.86M, liq $10k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "XsjFwUPiLofddX5cWFHW35GCbXcSu1BCUGfxoQAQjeL",
     symbol: "ORCLX",
@@ -4785,7 +4785,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $14.79M, liq $6k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "Xs7xXqkcK7K8urEqGg52SECi79dRp2cEKKuYjUePYDw",
     symbol: "CRWDX",
@@ -4794,7 +4794,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $14.67M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "star9agSpjiFe3M49B3RniVU4CMBBEK3Qnaqn3RGiFM",
     symbol: "USD*",
@@ -4804,7 +4804,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $14.66M, liq $27k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5YMkXAYccHSGnHn9nob9xEvv6Pvka9DZWH7nTbotTu9E",
     symbol: "HYUSD",
@@ -4814,7 +4814,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $14.56M, liq $1478k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "XsfAzPzYrYjd4Dpa9BU3cusBsvWfVB9gBcyGC87S57n",
     symbol: "NVOX",
@@ -4824,7 +4824,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $14.34M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "XswbinNKyPmzTa5CskMbCPvMW6G5CMnZXZEeQSSQoie",
     symbol: "ABBVX",
@@ -4834,7 +4834,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $14.19M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Hax9LTgsQkze1YFychnBLtFH8gYbQKtKfWKKg2SP6gdD",
     symbol: "TAI",
@@ -4844,7 +4844,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $13.82M, liq $95k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "XswsQk4duEQmCbGzfqUUWYmi7pV7xpJ9eEmLHXCaEQP",
     symbol: "BACX",
@@ -4854,7 +4854,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $13.74M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "1zJX5gRnjLgmTpq5sVwkq69mNDQkCemqoasyjaPW6jm",
     symbol: "KLED",
@@ -4864,7 +4864,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $13.74M, liq $398k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "MNDEFzGvMt87ueuHvVU9VcTqsAP5b3fTGPsHuuPA5ey",
     symbol: "MNDE",
@@ -4874,7 +4874,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $13.63M, liq $8k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "4LLbsb5ReP3yEtYzmXewyGjcir5uXtKFURtaEUVC2AHs",
     symbol: "PRCL",
@@ -4884,7 +4884,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $13.59M, liq $17k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "TNSRxcUxoT9xBG3de7PiJyTDYu7kskLqcpddxnEJAS6",
     symbol: "TNSR",
@@ -4894,7 +4894,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $13.33M, liq $47k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "XspwhyYPdWVM8XBHZnpS9hgyag9MKjLRyE3tVfmCbSr",
     symbol: "IBMX",
@@ -4904,7 +4904,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $13.30M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "RoamA1USA8xjvpTJZ6RvvxyDRzNh6GCA1zVGKSiMVkn",
     symbol: "ROAM",
@@ -4914,7 +4914,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $13.05M, liq $7k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "METAewgxyPbgwsseH8T16a39CQ5VyVxZi9zXiDPY18m",
     symbol: "MPLX",
@@ -4924,7 +4924,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $12.99M, liq $757k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Xsnuv4omNoHozR6EEW5mXkw8Nrny5rB3jVfLqi6gKMH",
     symbol: "LLYX",
@@ -4934,7 +4934,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $12.98M, liq $1k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GJAFwWjJ3vnTsrQVabjBVK2TYB1YtRCQXRDfDgUnpump",
     symbol: "ACT",
@@ -4943,7 +4943,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $12.95M, liq $701k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "XsaQTCgebC2KPbf27KUhdv5JFvHhQ4GDAPURwrEhAzb",
     symbol: "AMBRX",
@@ -4953,7 +4953,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $12.89M, liq $1k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Xs3ZFkPYT2BN7qBMqf1j1bfTeTm1rFzEFSsQ1z3wAKU",
     symbol: "AZNX",
@@ -4963,7 +4963,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $12.79M, liq $1k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CGEDT9QZDvvH5GmVkWJH2BXiMJqMJySC9ihWyr7Spump",
     symbol: "BURNIE",
@@ -4973,7 +4973,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $12.71M, liq $811k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "6FVyLVhQsShWVUsCq2FJRr1MrECGShc3QxBwWtgiVFwK",
     symbol: "BWB",
@@ -4983,7 +4983,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $12.52M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "XsczbcQ3zfcgAEt9qHQES8pxKAVG5rujPSHQEXi4kaN",
     symbol: "CRMX",
@@ -4993,7 +4993,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $12.20M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "sSo1wxKKr6zW2hqf5hZrp2CawLibcwi1pMBqk5bg2G4",
     symbol: "LP-SOLAYER",
@@ -5003,7 +5003,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $12.06M, liq $12062k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "sSo14endRuUbvQaJS3dq36Q829a3A6BEfoeeRGJywEh",
     symbol: "SSOL",
@@ -5013,7 +5013,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $12.04M, liq $226k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Bb4jR951QtVjeFAYFLBYXDSMKjbTDroCLPbFLdd7pump",
     symbol: "MEMECOIN_BB4J",
@@ -5023,7 +5023,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $11.94M, liq $178k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "xorcaYqbXUNz3474ubUMJAdu2xgPsew3rUCe5ughT3N",
     symbol: "XORCA",
@@ -5033,7 +5033,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $11.70M, liq $34k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "XsHtf5RpxsQ7jeJ9ivNewouZKJHbPxhPoEy6yYvULr7",
     symbol: "ABTX",
@@ -5043,7 +5043,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $11.69M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DUSDt4AeLZHWYmcXnVGYdgAzjtzU5mXUVnTMdnSzAttM",
     symbol: "DUSD",
@@ -5053,7 +5053,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $11.53M, liq $152k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Df6yfrKC8kZE3KNkrHERKzAetSxbrWeniQfyJY4Jpump",
     symbol: "CHILLGUY",
@@ -5063,7 +5063,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $11.31M, liq $589k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "4vMsoUT2BWatFweudnQM1xedRLfJgJ7hswhcpz4xgBTy",
     symbol: "HONEY",
@@ -5073,7 +5073,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $11.28M, liq $17k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "31k88G5Mq7ptbRDf3AM13HAq6wRQHXHikR8hik7wPygk",
     symbol: "GP",
@@ -5083,7 +5083,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $10.82M, liq $255k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BULKoNSGzxtCqzwTvg5hFJg8fx6dqZRScyXe5LYMfxrn",
     symbol: "BULKSOL",
@@ -5093,7 +5093,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $10.64M, liq $10639k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HKJHsYJHMVK5VRyHHk5GhvzY9tBAAtPvDkZfDH6RLDTd",
     symbol: "READY",
@@ -5103,7 +5103,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $10.49M, liq $92k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HgBRWfYxEfvPhtqkaeymCQtHCrKE46qQ43pKe8HCpump",
     symbol: "BERT",
@@ -5113,7 +5113,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $10.33M, liq $433k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "TUNAfXDZEdQizTMTh3uEvNvYqJmqFHZbEJt8joP4cyx",
     symbol: "TUNA",
@@ -5123,7 +5123,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $10.32M, liq $16k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BANKJmvhT8tiJRsBSS1n2HryMBPvT5Ze4HU95DUAmeta",
     symbol: "AVICI",
@@ -5133,7 +5133,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $10.30M, liq $1299k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "fRfKGCriduzDwSudCwpL7ySCEiboNuryhZDVJtr1a1C",
     symbol: "DUPE",
@@ -5143,7 +5143,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $10.03M, liq $479k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Pren1FvFX6J3E4kXhJuCiAD5aDmGEb7qJRncwA8Lkhw",
     symbol: "ANTHROPIC",
@@ -5153,7 +5153,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $9.75M, liq $958k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HnnGv3HrSqjRpgdFmx7vQGjntNEoex1SU4e9Lxcxuihz",
     symbol: "SHYUSD",
@@ -5163,7 +5163,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $9.34M, liq $33k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CRXvgCjV3RTmm3nu6gJr9SgJ3X7DBXarM8GNVTj4fCRX",
     symbol: "CRX",
@@ -5173,7 +5173,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $9.30M, liq $192k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DtR4D9FtVoTX2569gaL837ZgrB6wNjj6tkmnX9Rdk9B2",
     symbol: "AURA",
@@ -5183,7 +5183,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $9.13M, liq $609k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9fvHrYNw1A8Evpcj7X2yy4k4fT7nNHcA9L6UsamNHAif",
     symbol: "JLUSDG",
@@ -5193,7 +5193,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $9.07M, liq $9072k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "LSTxxxnJzKDFSLr4dUkPcmCf5VyryEqzPLz5j4bpxFp",
     symbol: "LST",
@@ -5203,7 +5203,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $8.87M, liq $8867k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DKu9kykSfbN5LBfFXtNNDPaX35o4Fv6vJ9FKk7pZpump",
     symbol: "AVA",
@@ -5213,7 +5213,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $8.72M, liq $504k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "xNETbUB7cRb3AAu2pNG2pUwQcJ2BHcktfvSB8x1Pq6L",
     symbol: "XNET",
@@ -5223,7 +5223,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $8.60M, liq $22k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Jambjx1oJoZNBZiqbiF9TqgatEZPdyfvYa9WVsKNzUh",
     symbol: "J",
@@ -5233,7 +5233,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $8.48M, liq $41k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Xs2yquAgsHByNzx68WJC55WHjHBvG9JsMB7CWjTLyPy",
     symbol: "DFDVX",
@@ -5243,7 +5243,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $8.39M, liq $6k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "zBTCug3er3tLyffELcvDNrKkCymbPWysGcWihESYfLg",
     symbol: "ZBTC",
@@ -5253,7 +5253,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $8.13M, liq $263k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "eL5fUxj2J4CiQsmW85k5FG9DvuQjjUoBHoQBi2Kpump",
     symbol: "UFD",
@@ -5263,7 +5263,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $8.08M, liq $544k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "6Tk3uHQpLDtd4Qob5fduLjfhXxAasWgvdo8hYeswxMiL",
     symbol: "MIL",
@@ -5273,7 +5273,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $7.96M, liq $257k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "7BgBvyjrZX1YKz4oh9mjb8ZScatkkwb8DzFx7LoiVkM3",
     symbol: "OLD SLERF",
@@ -5283,7 +5283,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $7.82M, liq $13809k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "SoLo9oxzLDpcq1dpqAgMwgce5WqkRDtNXK7EPnbmeta",
     symbol: "SOLO",
@@ -5293,7 +5293,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $7.71M, liq $1455k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AFbX8oGjGpmVFywbVouvhQSRmiW2aR1mohfahi4Y2AdB",
     symbol: "GST",
@@ -5303,7 +5303,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $7.53M, liq $38k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9Ttyez3xiruyj6cqaR495hbBkJU6SUWdV6AmQ9MvbyyS",
     symbol: "SMOLE",
@@ -5313,7 +5313,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $7.40M, liq $14018k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3iC63FgnB7EhcPaiSaC51UkVweeBDkqu17SaRyy2pump",
     symbol: "RAIN",
@@ -5323,7 +5323,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $7.36M, liq $113k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "SAVEaeeqeXNKYb4Lyx28DkUms5gyZ76vGa6fCfdzWfK",
     symbol: "SAVE",
@@ -5333,7 +5333,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $7.35M, liq $30k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "kySo1nETpsZE2NWe5vj2C64mPSciH1SppmHb4XieQ7B",
     symbol: "KYSOL",
@@ -5343,7 +5343,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $7.32M, liq $263k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "VAULTVXqi93aaq9FsyPKgdgp6Ge1H1HoSvNC4ZbqFDs",
     symbol: "V",
@@ -5353,7 +5353,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $7.24M, liq $1k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Xs5UJzmCRQ8DWZjskExdSQDnbE6iLkRu2jjrRAB1JSU",
     symbol: "ACNX",
@@ -5363,7 +5363,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $7.22M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FRySi8LPkuByB7VPSCCggxpewFUeeJiwEGRKKuhwpKcX",
     symbol: "NATIX",
@@ -5373,7 +5373,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $7.05M, liq $45k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "moonThZEkkTVoNB7v6YVCQiT56JYDZ1oN185ba3WizL",
     symbol: "MF",
@@ -5383,7 +5383,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $7.03M, liq $61k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Cm6fNnMk7NfzStP9CZpsQA2v3jjzbcYGAxdJySmHpump",
     symbol: "BUTTCOIN",
@@ -5393,7 +5393,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $6.95M, liq $486k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9EaLkQrbjmbbuZG9Wdpo8qfNUEjHATJFSycEmw6f1rGX",
     symbol: "PSOL_9EAL",
@@ -5403,7 +5403,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $6.89M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "4Cnk9EPnW5ixfLZatCPJjDB1PUtcRpVVgTQukm9epump",
     symbol: "DADDY",
@@ -5413,7 +5413,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $6.70M, liq $398k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "UPTx1d24aBWuRgwxVnFmX4gNraj3QGFzL3QqBgxtWQG",
     symbol: "UPT",
@@ -5423,7 +5423,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $6.57M, liq $135k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "P2PXup1ZvMpCDkJn3PQxtBYgxeCSfH39SFeurGSmeta",
     symbol: "P2P",
@@ -5433,7 +5433,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $6.54M, liq $1163k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CvB1ztJvpYQPvdPBePtRzjL4aQidjydtUz61NWgcgQtP",
     symbol: "EPCT",
@@ -5443,7 +5443,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $6.52M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "PLAYs3GSSadH2q2JLS7djp7yzeT75NK78XgrE5YLrfq",
     symbol: "PLAY",
@@ -5453,7 +5453,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $6.44M, liq $16k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BHvPQ9dFAiZJUSYJFpEmdfMmgz48iLohyxyixBfZjups",
     symbol: "SHACK",
@@ -5463,7 +5463,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $6.39M, liq $116k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "mb1eu7TzEc71KxDpsmsKoucSSuuoGLv1drys1oP2jh6",
     symbol: "MOBILE",
@@ -5473,7 +5473,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $6.39M, liq $5k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "ZEUS1aR7aX8DFFJf5QjWj2ftDDdNTroMNGo8YoQm3Gq",
     symbol: "ZEUS",
@@ -5483,7 +5483,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $6.28M, liq $19k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5aLhp9VnUEKcsdtkfsf2DUgpJfomx7GmYVny24dHUZoB",
     symbol: "XAUM",
@@ -5493,7 +5493,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $6.25M, liq $49k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "a3W4qutoEJA4232T2gwZUfgYJTetr96pU4SJMwppump",
     symbol: "WHITEWHALE",
@@ -5503,7 +5503,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $6.17M, liq $230k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "ZDaUDL4XFdEct7UgeztrFQAptsvh4ZdhyZDZ1RpxYAK",
     symbol: "YAK",
@@ -5513,7 +5513,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $6.12M, liq $6k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "4sWNB8zGWHkh6UnmwiEtzNxL4XrN7uK9tosbESbJFfVs",
     symbol: "XSOL",
@@ -5523,7 +5523,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $6.09M, liq $58k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Eh6XEPhSwoLv5wFApukmnaVSHQ6sAnoD9BmgmwQoN2sN",
     symbol: "SUSDE",
@@ -5533,7 +5533,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $5.96M, liq $6k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "boopkpWqe68MSxLqBGogs8ZbUDN4GXaLhFwNP7mpP1i",
     symbol: "BOOP",
@@ -5543,7 +5543,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $5.94M, liq $105k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "4TyZGqRLG3VcHTGMcLBoPUmqYitMVojXinAmkL8xpump",
     symbol: "TESTICLE",
@@ -5553,7 +5553,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $5.88M, liq $472k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DuMbhu7mvQvqQHGcnikDgb4XegXJRyhUBfdU22uELiZA",
     symbol: "ELIZAOS",
@@ -5563,7 +5563,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $5.81M, liq $14k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "PRVT6TB7uss3FrUd2D9xs2zqDBsa3GbMJMwCQsgmeta",
     symbol: "UMBRA",
@@ -5573,7 +5573,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $5.75M, liq $799k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "PRTLSwfLzpVGSAQiUfXEenJkq1cwTsEcsn1hPL9zwwg",
     symbol: "PORTALS",
@@ -5583,7 +5583,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $5.66M, liq $41k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "haSo1Vz5aTsqEnz8nisfnEsipvbAAWpgzRDh2WhhMEh",
     symbol: "HASOL",
@@ -5593,7 +5593,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $5.64M, liq $5639k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "a11bdAAuV8iB2fu7X6AxAvDTo1QZ8FXB3kk5eecdasp",
     symbol: "ABR",
@@ -5603,7 +5603,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $5.62M, liq $1k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "ezSoL6fY1PVdJcJsUpe5CM3xkfmy3zoVCABybm5WtiC",
     symbol: "EZSOL",
@@ -5613,7 +5613,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $5.58M, liq $24k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "z3dn17yLaGMKffVogeFHQ9zWVcXgqgf3PQnDsNs2g6M",
     symbol: "OXY",
@@ -5623,7 +5623,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $5.51M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "susdabGDNbhrnCa6ncrYo81u4s9GM8ecK2UwMyZiq4X",
     symbol: "SUSD",
@@ -5633,7 +5633,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $5.45M, liq $8k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "ZEXy1pqteRu3n13kdyh4LwPQknkFk3GzmMYMuNadWPo",
     symbol: "ZEX",
@@ -5643,7 +5643,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $5.44M, liq $26k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3dQTr7ror2QPKQ3GbBCokJUmjErGg8kTJzdnYjNfvi3Z",
     symbol: "BORG",
@@ -5653,7 +5653,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $5.38M, liq $898k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "NX8DuAWprqWAYDvpkkuhKnPfGRXQQhgiw85pCkgvFYk",
     symbol: "NX8",
@@ -5663,7 +5663,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $5.27M, liq $258k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GcV9tEj62VncGithz4o4N9x6HWXARxuRgEAYk9zahNA8",
     symbol: "JLEURC",
@@ -5673,7 +5673,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $5.24M, liq $5235k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "strng7mqqc1MBJJV6vMzYbEqnwVGvKKGKedeCvtktWA",
     symbol: "STRONGSOL",
@@ -5683,7 +5683,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $5.22M, liq $5216k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "SHDWyBxihqiCj6YekG2GUr7wqKLeLAMK1gHZck9pL6y",
     symbol: "SHDW",
@@ -5693,7 +5693,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $5.17M, liq $16k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "bioJ9JTqW62MLz7UKHU69gtKhPpGi1BQhccj2kmSvUJ",
     symbol: "BIO",
@@ -5703,7 +5703,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $5.14M, liq $99k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3z2tRjNuQjoq6UDcw4zyEPD1Eb5KXMPYb4GWFzVT1DPg",
     symbol: "SURGE",
@@ -5713,7 +5713,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $5.04M, liq $195k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "EkDGB5fbPXiRmDDjxKcC7dFjzvFZj2KT9t7oeyyPx4SX",
     symbol: "PIXEL",
@@ -5723,7 +5723,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $5.03M, liq $177k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HBoNJ5v8g71s2boRivrHnfSB5MVPLDHHyVjruPfhGkvL",
     symbol: "PURPE",
@@ -5733,7 +5733,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $4.84M, liq $197k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "XANDuUoVoUqniKkpcKhrxmvYJybpJvUxJLr21Gaj3Hx",
     symbol: "XAND",
@@ -5743,7 +5743,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $4.84M, liq $22k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh",
     symbol: "SPACEX",
@@ -5753,7 +5753,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $4.81M, liq $607k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9Fzv4s5t2bNwwJoeeywMwypop3JegsuDb1eDbMnPr4TX",
     symbol: "SFLP.1",
@@ -5763,7 +5763,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $4.76M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5a6LTLwdMJBY2JDLjw8B1w4JwFRdZszGF9W56ZzrriS1",
     symbol: "VDR",
@@ -5773,7 +5773,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $4.69M, liq $41k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "LAinEtNLgpmCP9Rvsf5Hn8W6EhNiKLZQti1xfWMLy6X",
     symbol: "LAINESOL",
@@ -5783,7 +5783,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $4.58M, liq $4579k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "SarosY6Vscao718M4A778z4CGtvcwcGef5M9MEH1LGL",
     symbol: "SAROS",
@@ -5793,7 +5793,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $4.56M, liq $25k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E",
     symbol: "SOBTC",
@@ -5803,7 +5803,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $4.56M, liq $1k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AxaTJdRuuc3626FtPWdQCMcWPH6yzgxXKWbFCZN3TMgy",
     symbol: "ASV",
@@ -5813,7 +5813,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $4.50M, liq $33k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "A8C3xuqscfmyLrte3VmTqrAq8kgMASius9AFNANwpump",
     symbol: "FWOG",
@@ -5822,7 +5822,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $4.40M, liq $621k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "BPSoLzmLQn47EP5aa7jmFngRL8KC3TWAeAwXwZD8ip3P",
     symbol: "BPSOL",
@@ -5832,7 +5832,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $4.38M, liq $4383k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CDCSoLckzozyktpAp9FWT3w92KFJVEUxAU7cNu2Jn3aX",
     symbol: "CDCSOL",
@@ -5842,7 +5842,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $4.24M, liq $4243k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "cJpUMp5R7rZ6fGeLHbHhrRuJzK9mkyKDjZqNpT3ondo",
     symbol: "INTCON",
@@ -5852,7 +5852,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $4.18M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Fz9edBpaURPPzpKVRR1A8PENYDEgHqwx5D5th28ondo",
     symbol: "MUON",
@@ -5862,7 +5862,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $4.15M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Ea5SjE2Y6yvCeW5dYTn7PYMuW5ikXkvbGdcmSnXeaLjS",
     symbol: "PAI",
@@ -5872,7 +5872,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $4.11M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "LnTRntk2kTfWEY6cVB8K9649pgJbt6dJLS1Ns1GZCWg",
     symbol: "LANTERNSOL",
@@ -5882,7 +5882,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $4.07M, liq $4073k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AUSD1jCcCyPLybk1YnvPWsHQSrZ46dxwoMniN4N2UEB9",
     symbol: "AUSD",
@@ -5892,7 +5892,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $4.04M, liq $503k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8wXtPeU6557ETkp9WHFY1n1EcU6NxDvbAggHGsMYiHsB",
     symbol: "GME",
@@ -5902,7 +5902,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.96M, liq $569k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "STREAMribRwybYpMmSYoCsQUdr6MZNXEqHgm7p1gu9M",
     symbol: "STREAM",
@@ -5912,7 +5912,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.94M, liq $11k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9McvH6w97oewLmPxqQEoHUAv3u5iYMyQ9AeZZhguYf1T",
     symbol: "ANON",
@@ -5922,7 +5922,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.91M, liq $120k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FQgtfugBdpFN7PZ6NdPrZpVLDBrPGxXesi4gVu3vErhY",
     symbol: "BMT",
@@ -5932,7 +5932,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.91M, liq $81k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8ZHE4ow1a2jjxuoMfyExuNamQNALv5ekZhsBn5nMDf5e",
     symbol: "MORI",
@@ -5942,7 +5942,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.88M, liq $169k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "6HHzBVkxtoz86Bjy2duaUw77hVfJzQkuoLizWeEMBLEM",
     symbol: "EMBLEM",
@@ -5952,7 +5952,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.81M, liq $116k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "WENWENvqqNya429ubCdR81ZmD69brwQaaBYY6p3LCpk",
     symbol: "WEN",
@@ -5962,7 +5962,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.81M, liq $61k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Cz7LGKdZPpAxonXx23ZYPW3RtDQvjcf17ZDCZEzFpump",
     symbol: "401JK",
@@ -5972,7 +5972,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.76M, liq $122k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "C29ebrgYjYoJPMGPnPSGY1q3mMGk4iDSqnQeQQA7moon",
     symbol: "NOBODY",
@@ -5982,7 +5982,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.75M, liq $292k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FAFxVxnkzZHMCodkWyoccgUNgVScqMw2mhhQBYDFjFAF",
     symbol: "FAF",
@@ -5992,7 +5992,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.68M, liq $257k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "SCSuPPNUSypLBsV4darsrYNg4ANPgaGhKhsA3GmMyjz",
     symbol: "SCS",
@@ -6002,7 +6002,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.64M, liq $172k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CorvuSSoLxPKLoXWXSfn8pFSMhCRHhe7Uwqe874cmwvg",
     symbol: "CORVUSSOL",
@@ -6012,7 +6012,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.61M, liq $3607k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CgnTSoL3DgY9SFHxcLj6CgCgKKoTBr6tp4CPAEWy25DE",
     symbol: "CGNTSOL",
@@ -6022,7 +6022,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.56M, liq $3560k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "J8PSdNP3QewKq2Z1JJJFDMaqF7KcaiJhR7gbr5KZpump",
     symbol: "TRIPLET",
@@ -6032,7 +6032,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.55M, liq $429k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9zqre5sRRdFvKqyTyvEd1jcKDRF4g47s7mZSGUnQpump",
     symbol: "BOOB",
@@ -6042,7 +6042,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.52M, liq $95k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "4UeLCRqARmfb6e6KQijtiktqqXUxbfk6jZng7DhuBAGS",
     symbol: "ASTEROID_4UEL",
@@ -6052,7 +6052,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.47M, liq $491k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "ACtfUWtgvaXrQGNMiohTusi5jcx5RJf5zwu9aAxkpump",
     symbol: "UNC",
@@ -6062,7 +6062,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.37M, liq $352k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "dmfunVbjA71VZu2L1h74Exji6Avs9tsL63uneCDLocX",
     symbol: "FUN",
@@ -6072,7 +6072,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.34M, liq $3k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9999FVbjHioTcoJpoBiSjpxHW6xEn3witVuXKqBh2RFQ",
     symbol: "SLERF",
@@ -6082,7 +6082,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.32M, liq $314k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DEkqHyPN7GMRJ5cArtQFAWefqbZb33Hyf6s5iCwjEonT",
     symbol: "USDE",
@@ -6092,7 +6092,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.29M, liq $2497k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8J69rbLTzWWgUJziFY8jeu5tDwEPBwUz4pKBMr5rpump",
     symbol: "WOJAK",
@@ -6102,7 +6102,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.25M, liq $347k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "picobAEvs6w7QEknPce34wAE4gknZA9v5tTonnmHYdX",
     symbol: "PICOSOL",
@@ -6112,7 +6112,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.17M, liq $3171k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "SNS8DJbHc34nKySHVhLGMUUE72ho6igvJaxtq9T3cX3",
     symbol: "SNS",
@@ -6122,7 +6122,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.17M, liq $9k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "mtnc7NNSpAJuvYNmayXU63WhWZGgFzwQ2yeYWqemeta",
     symbol: "MTN",
@@ -6132,7 +6132,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.16M, liq $2k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "yUSDX7W89jXWn4zzDPLnhykDymSjQSmpaJ8e4fjC1fg",
     symbol: "YUSD",
@@ -6142,7 +6142,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.16M, liq $43k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "G6mNZN8o16QBcTqfuEx6FzjiWa94B1XWhfyDxjDibrrr",
     symbol: "OOO_G6MN",
@@ -6152,7 +6152,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.15M, liq $135k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "6dKCoWjpj5MFU5gWDEFdpUUeBasBLK3wLEwhUzQPAa1e",
     symbol: "CHEX",
@@ -6162,7 +6162,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.11M, liq $24k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FqGxVMsvqxchQWRD5CyQpPK1aW13Db8EvC7PvxwVpk3w",
     symbol: "LOVE",
@@ -6172,7 +6172,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.10M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "WFRGSWjaz8tbAxsJitmbfRuFV2mSNwy7BMWcCwaA28U",
     symbol: "WFRAGSOL",
@@ -6182,7 +6182,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.10M, liq $55k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BktHEAc2WS8TQi2vmavn1rA4L1WJuwF3Vkk3DnwwARti",
     symbol: "ENRON_BKTH",
@@ -6192,7 +6192,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.09M, liq $2k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3JgFwoYV74f6LwWjQWnr3YDPFnmBdwQfNyubv99jqUoq",
     symbol: "WPOND",
@@ -6202,7 +6202,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.06M, liq $46k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "SW1TCHLmRGTfW5xZknqQdpdarB8PD95sJYWpNp9TbFx",
     symbol: "SWTCH",
@@ -6212,7 +6212,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.06M, liq $18k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "F35yYmTR6PqkbTx449P1eGhB57mRhWAdYs93eCo2dMZR",
     symbol: "PBUSDC",
@@ -6222,7 +6222,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.03M, liq $31k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Ex5DaKYMCN6QWFA4n67TmMwsH8MJV68RX6YXTmVM532C",
     symbol: "USDV",
@@ -6232,7 +6232,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.02M, liq $251k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9f52wiW2zrt2497HroMHtZtuj7VzWu4AsEusmW3pump",
     symbol: "$NRG",
@@ -6242,7 +6242,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $3.00M, liq $98k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DNhQZ1CE9qZ2FNrVhsCXwQJ2vZG8ufZkcYakTS5Jpump",
     symbol: "ZAUTH",
@@ -6252,7 +6252,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.98M, liq $94k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CcLd8HTAKLWtQHatqPwBQjtuCA72FNB9E1ckRTEzpump",
     symbol: "ALTSZN",
@@ -6262,7 +6262,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.97M, liq $71k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "C9dJfTGUzhuqPWxh9mcDr66JZN4uzXh2gh9EWnEdpump",
     symbol: "WAR",
@@ -6272,7 +6272,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.96M, liq $104k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "4SoQ8UkWfeDH47T56PA53CZCeW4KytYCiU65CwBWoJUt",
     symbol: "MNT",
@@ -6282,7 +6282,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.96M, liq $162k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "4h49hPGphLNJNDRyiBwzvKoasR3rw1WJCEv19PhUbSS4",
     symbol: "HELLO",
@@ -6292,7 +6292,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.95M, liq $10k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GDfnEsia2WLAW5t8yx2X5j2mkfA74i5kwGdDuZHt7XmG",
     symbol: "CROWN",
@@ -6302,7 +6302,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.93M, liq $9k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8Aq4fWMgPqJbF3w8w8PnLDRVUAFe4mzsCvPKxAArbonk",
     symbol: "REAL",
@@ -6312,7 +6312,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.93M, liq $105k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "x95HN3DWvbfCBtTjGm587z8suK3ec6cwQwgZNLbWKyp",
     symbol: "$HACHI",
@@ -6322,7 +6322,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.91M, liq $79k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AT79ReYU9XtHUTF5vM6Q4oa9K8w7918Fp5SU7G1MDMQY",
     symbol: "SPDR",
@@ -6332,7 +6332,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.89M, liq $66k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BMBtwz6LFDJVJd2aZvL5F64fdvWP3RPn4NP5q9Xe15UD",
     symbol: "BMB",
@@ -6342,7 +6342,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.89M, liq $1k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3xvLSHrLcM7246X1vu34cM9gNX741kQrzqj6T2HhLvXp",
     symbol: "COIN",
@@ -6352,7 +6352,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.86M, liq $10k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HVbpJAQGNpkgBaYBZQBR1t7yFdvaYVp2vCQQfKKEN4tM",
     symbol: "USDP",
@@ -6362,7 +6362,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.86M, liq $2k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "43YakhC3TcSuTgSXnxFgw8uKL8VkuLuFa4M6Bninpump",
     symbol: "LC",
@@ -6372,7 +6372,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.85M, liq $124k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Hh3oTaqDCKKfdBgsQEvxp9sUwyNf8x9qmKqEMLBWpump",
     symbol: "HODL",
@@ -6382,7 +6382,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.85M, liq $244k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HZG1RVn4zcRM7zEFEVGYPGoPzPAWAj2AAdvQivfmLYNK",
     symbol: "LYNK",
@@ -6392,7 +6392,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.82M, liq $145k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GpmmQBjXxoppbELykD2PGQ4wwVR74o5sSZXVW6hVpump",
     symbol: "EYED",
@@ -6402,7 +6402,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.82M, liq $67k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "4G86CMxGsMdLETrYnavMFKPhQzKTvDBYGMRAdVtr72nu",
     symbol: "$NAP",
@@ -6412,7 +6412,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.81M, liq $2545k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2oGLxYuNBJRcepT1mEV6KnETaLD7Bf6qq3CM6skasBfe",
     symbol: "PUPS",
@@ -6422,7 +6422,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.80M, liq $46k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BorGY4ub2Fz4RLboGxnuxWdZts7EKhUTB624AFmfCgX",
     symbol: "BORGY",
@@ -6432,7 +6432,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.79M, liq $7k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GoLDppdjB1vDTPSGxyMJFqdnj134yH6Prg9eqsGDiw6A",
     symbol: "GOLD",
@@ -6442,7 +6442,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.78M, liq $95k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GkyPYa7NnCFbduLknCfBfP7p8564X1VZhwZYJ6CZpump",
     symbol: "CHILLHOUSE",
@@ -6452,7 +6452,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.78M, liq $250k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8avjtjHAHFqp4g2RR9ALAGBpSTqKPZR8nRbzSTwZERA",
     symbol: "ZERA",
@@ -6462,7 +6462,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.77M, liq $114k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "yso11zxLbHA3wBJ9HAtVu6wnesqz9A2qxnhxanasZ4N",
     symbol: "YSOL",
@@ -6472,7 +6472,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.74M, liq $90k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HMaJxXp3Ja81jSwigF6zGaMt79hNZuczrw6i7LjTbonk",
     symbol: "🎒",
@@ -6482,7 +6482,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.72M, liq $94k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DQnkBM4eYYMnVE8Qy2K3BB7uts1fh2EwBVktEz6jpump",
     symbol: "DJI6930",
@@ -6492,7 +6492,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.72M, liq $111k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3B1ijcocM5EDga6XxQ7JLW7weocQPWWjuhBYG8Vepump",
     symbol: "BP_3B1I",
@@ -6502,7 +6502,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.69M, liq $148k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GMzuntWYJLpNuCizrSR7ZXggiMdDzTNiEmSNHHunpump",
     symbol: "DREAMS",
@@ -6512,7 +6512,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.68M, liq $160k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8SkfuQkYNTskoQUbbjr2JbZQeqQV9egnJXgfMXf5bonk",
     symbol: "FIH",
@@ -6522,7 +6522,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.68M, liq $161k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "PAYmo6moDF3Ro3X6bU2jwe2UdBnBhv8YjLgL1j4DxGu",
     symbol: "PAYAI",
@@ -6532,7 +6532,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.66M, liq $167k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GdZ9rwHyKcriLdbSzhtEFLe5MLs7Vk6AY1aE5ei7nsmP",
     symbol: "AVO",
@@ -6542,7 +6542,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.65M, liq $114k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HhJpBhRRn4g56VsyLuT8DL5Bv31HkXqsrahTTUCZeZg4",
     symbol: "$MYRO",
@@ -6552,7 +6552,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.64M, liq $322k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "jUpa2aDCzvdR9EF4fqDXmuyMUkonPTohphABLmRkRFj",
     symbol: "RIFT",
@@ -6562,7 +6562,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.63M, liq $79k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AAASV2sCaykNGdEQzJ1mMVNfJMsgEtR7PJaqrCuk4bq6",
     symbol: "DEJAAA",
@@ -6572,7 +6572,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.62M, liq $71k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AUuCEHQ7sm2i5GmaHrpE961voWcTY8U6mgrkhcV7pump",
     symbol: "QST",
@@ -6582,7 +6582,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.61M, liq $89k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "32CdQdBUxbCsLy5AUHWmyidfwhgGUr9N573NBUrDpump",
     symbol: "MAXXING",
@@ -6592,7 +6592,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.59M, liq $312k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8Jx8AAHj86wbQgUTjGuj6GTTL5Ps3cqxKRTvpaJApump",
     symbol: "PENGUIN",
@@ -6602,7 +6602,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.57M, liq $169k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2nP9yKQNSGQy851iyawDvBkzkK2R2aqKArQCKc2gpump",
     symbol: "PSYOPANIME",
@@ -6612,7 +6612,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.57M, liq $190k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BDCs2xEqzXyRpp9P6uPDnAvERpLKBfzHPEzbe3BfCxDY",
     symbol: "BDC",
@@ -6622,7 +6622,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.56M, liq $1k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "69kdRLyP5DTRkpHraaSZAQbWmAwzF9guKjZfzMXzcbAs",
     symbol: "USA",
@@ -6632,7 +6632,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.50M, liq $269k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AURYydfxJib1ZkTir1Jn1J9ECYUtjb6rKQVmtYaixWPP",
     symbol: "AURY",
@@ -6642,7 +6642,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.45M, liq $133k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Ra1so1sTkvX3PorAM9ewqrsUMz9sPSbfFZ5oZUjN4oc",
     symbol: "RAISOL",
@@ -6652,7 +6652,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.44M, liq $2444k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3wtGGWZ8wLWW6BqtC5rxmkHdqvM62atUcGTH4cw3pump",
     symbol: "ALPHA",
@@ -6662,7 +6662,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.43M, liq $65k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "25hAyBQfoDhfWx9ay6rarbgvWGwDdNqcHsXS3jQ3mTDJ",
     symbol: "MANEKI",
@@ -6672,7 +6672,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.42M, liq $2244k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "J9BcrQfX4p9D1bvLzRNCbMDv8f44a9LFdeqNE4Yk2WMD",
     symbol: "ISC",
@@ -6682,7 +6682,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.42M, liq $55k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "iotEVVZLEywoTn1QdwNPddxPWszn3zFhEot3MfL9fns",
     symbol: "IOT",
@@ -6692,7 +6692,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.39M, liq $1k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DpBzjtgGLF7QA9Ug3eUVGbnqa6j3jvYBn1XuQuktvfhm",
     symbol: "DOGE-1",
@@ -6702,7 +6702,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.38M, liq $92k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HxhWkVpk5NS4Ltg5nij2G671CKXFRKPK8vy271Ub4uEK",
     symbol: "HXRO",
@@ -6712,7 +6712,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.37M, liq $4k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "PreweJYECqtQwBtpxHL171nL2K6umo692gTm7Q3rpgF",
     symbol: "OPENAI",
@@ -6722,7 +6722,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.35M, liq $607k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "XAnDeUmMcqFyCdef9jzpNgtZPjTj3xUMj9eXKn2reFN",
     symbol: "XANDSOL",
@@ -6732,7 +6732,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.33M, liq $2331k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "ENcwYGVhRsEqKpH4SzRH4mcYSGc9Cb6s4WJGS9ojpump",
     symbol: "KOKOP",
@@ -6742,7 +6742,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.32M, liq $61k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "PresTj4Yc2bAR197Er7wz4UUKSfqt6FryBEdAriBoQB",
     symbol: "ANDURIL",
@@ -6752,7 +6752,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.32M, liq $270k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "spinezMPKxkBpf4Q9xET2587fehM3LuKe4xoAoXtSjR",
     symbol: "SPINE",
@@ -6762,7 +6762,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.31M, liq $9k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "7oBYdEhV4GkXC19ZfgAvXpJWp2Rn9pm1Bx2cVNxFpump",
     symbol: "CAR",
@@ -6772,7 +6772,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.31M, liq $118k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AZbem4s8iLJE5eniDZJ7c8q1ahbfMwWgCA8TxVW2tDUB",
     symbol: "VIBECOIN",
@@ -6782,7 +6782,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.28M, liq $60k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "sonickAJFiVLcYXx25X9vpF293udaWqDMUCiGtk7dg2",
     symbol: "SONICSOL",
@@ -6792,7 +6792,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.25M, liq $2k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9ezFthWrDUpSSeMdpLW6SDD9TJigHdc4AuQ5QN5bpump",
     symbol: "XERIS",
@@ -6802,7 +6802,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.24M, liq $76k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9hX59xHHnaZXLU6quvm5uGY2iDiT3jczaReHy6A6TYKw",
     symbol: "ZENBTC",
@@ -6812,7 +6812,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.24M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CRAMvzDsSpXYsFpcoDr6vFLJMBeftez1E7277xwPpump",
     symbol: "PEPECAT",
@@ -6822,7 +6822,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.23M, liq $71k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "NomuBwKJEvJ8d4dsaq7NZoHaXWXzKcfke1c7Y8ruFYL",
     symbol: "NOMU",
@@ -6832,7 +6832,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.20M, liq $23k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "omfgRBnxHsNJh6YeGbGAmWenNkenzsXyBXm3WDhmeta",
     symbol: "OMFG",
@@ -6842,7 +6842,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.20M, liq $324k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "bbahNA5vT9WJeYft8tALrH1LXWffjwqVoUbqYa1ondo",
     symbol: "GOOGLON",
@@ -6852,7 +6852,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.20M, liq $0k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CoRAitPvr9seu5F9Hk39vbjqA1o1XuoryHjSk1Z1q2mo",
     symbol: "CORAL",
@@ -6862,7 +6862,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.15M, liq $98k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BBKPiLM9KjdJW7oQSKt99RVWcZdhF6sEHRKnwqeBGHST",
     symbol: "GHOST",
@@ -6872,7 +6872,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.12M, liq $84k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "degod39zqQWzpG6h4b7SJLLTCFE6FeZnZD8BwHBFxaN",
     symbol: "DEGOD",
@@ -6882,7 +6882,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.12M, liq $104k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
     symbol: "SAMO",
@@ -6892,7 +6892,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.09M, liq $9k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "69LjZUUzxj3Cb3Fxeo1X4QpYEQTboApkhXTysPpbpump",
     symbol: "CODEC",
@@ -6902,7 +6902,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.08M, liq $114k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DitHyRMQiSDhn5cnKMJV2CDDt6sVct96YrECiM49pump",
     symbol: "HOUSE",
@@ -6912,7 +6912,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.06M, liq $228k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "iy11ytbSGcUnrjE6Lfv78TFqxKyUESfku1FugS9ondo",
     symbol: "SLVON",
@@ -6922,7 +6922,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.00M, liq $50k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "kLqMvUm1p4pRbxU4r8kWCTVAuWMJLtcTJqGb4b5pump",
     symbol: "BRENT",
@@ -6932,7 +6932,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.00M, liq $63k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "G85CQEBqwsoe3qkb5oXXpdZFh7uhYXhDRsQAM4aJuBLV",
     symbol: "ORGO",
@@ -6942,7 +6942,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $2.00M, liq $60k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "YAFAJvjUv9MVAKcTE7Y8ouo45QNKVK6fCMzdxt2tjPs",
     symbol: "YAFA",
@@ -6952,7 +6952,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.99M, liq $126k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "yLdBrBJAYYkNMNSE48BAXYLTXhZsbHWtmWEFHgHSD6a",
     symbol: "YIELDSOL",
@@ -6962,7 +6962,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.97M, liq $1974k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "sTorERYB6xAZ1SSbwpK3zoK2EEwbBrc7TZAzg1uCGiH",
     symbol: "STORE",
@@ -6972,7 +6972,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1957k, liq $13.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CudisfkgWvMKnZ3TWf6iCuHm8pN2ikXhDcWytwz6f6RN",
     symbol: "CUDIS",
@@ -6982,7 +6982,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.94M, liq $49k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "svy5ErijNYy9hEVzxknCdwWdZ3NeXJTdpb9Ndnso17f",
     symbol: "GBOY",
@@ -6992,7 +6992,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.92M, liq $302k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CrAr4RRJMBVwRsZtT62pEhfA9H5utymC2mVx8e7FreP2",
     symbol: "MON",
@@ -7002,7 +7002,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.92M, liq $152k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CRTx1JouZhzSU6XytsE42UQraoGqiHgxabocVfARTy2s",
     symbol: "CRT",
@@ -7012,7 +7012,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1921k, liq $0.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FRAGMEWj2z65qM62zqKhNtwNFskdfKs4ekDUDX3b4VD5",
     symbol: "FRAG",
@@ -7022,7 +7022,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1911k, liq $3.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "6DNSN2BJsaPFdFFc1zP37kkeNe4Usc1Sqkzr9C9vPWcU",
     symbol: "TBTC",
@@ -7032,7 +7032,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.90M, liq $37k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "sctmTAsDn4tLUcemqoqYijfuRkiEfAMPi84PNq2EueR",
     symbol: "NXSOL",
@@ -7042,7 +7042,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.90M, liq $1896k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "LYLikzBQtpa9ZgVrJsqYGQpR3cC1WMJrBHaXGrQmeta",
     symbol: "LOYAL",
@@ -7052,7 +7052,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.86M, liq $389k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AMjzRn1TBQwQfNAjHFeBb7uGbbqbJB7FzXAnGgdFPk6K",
     symbol: "SOLCEX",
@@ -7062,7 +7062,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.86M, liq $114k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3AJYCjrhKitmBd8tRUurPA5dGHCAQh6A8L9DkuSC37Rm",
     symbol: "USD*-J",
@@ -7072,7 +7072,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1859k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "34q2KmCvapecJgR6ZrtbCTrzZVtkt3a5mHEA3TuEsWYb",
     symbol: "LOL",
@@ -7082,7 +7082,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.85M, liq $159k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3vgopg7xm3EWkXfxmWPUpcf7g939hecfqg18sLuXDzVt",
     symbol: "HAROLD",
@@ -7092,7 +7092,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.83M, liq $123k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "QdyjMr627PR7NtWdcEcgFmDm5haBVUWEcj4jdM4boop",
     symbol: "KUMA",
@@ -7102,7 +7102,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.81M, liq $53k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "NV2RYH954cTJ3ckFUpvfqaQXU4ARqqDH3562nFSpump",
     symbol: "PUNCH",
@@ -7112,7 +7112,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.79M, liq $224k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "H8xQ6poBjB9DTPMDTKWzWPrnxu4bDEhybxiouF8Ppump",
     symbol: "TOKABU",
@@ -7122,7 +7122,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.78M, liq $156k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "XBGdqJ9P175hCC1LangCEyXWNeCPHaKWA17tymz2PrY",
     symbol: "XBG",
@@ -7132,7 +7132,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1779k, liq $9.9k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "MangmsBgFqJhW4cLUR9LxfVgMboY1xAoP8UUBiWwwuY",
     symbol: "MANGOSOL",
@@ -7142,7 +7142,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.77M, liq $1768k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "ETAtLmCmsoiEEKfNrHKJ2kYy3MoABhU6NQvpSfij5tDs",
     symbol: "MEDIA",
@@ -7152,7 +7152,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1745k, liq $16.9k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "PrekqLJvJ3qVdXmBGDiexvwUTF4rLFDa6HWS4HJbw9S",
     symbol: "NEURALINK",
@@ -7162,7 +7162,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.74M, liq $223k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HCgvbV9Qcf9TVGPGKMGbVEj8WwwVD6HhTt5E2i3qkeN9",
     symbol: "METAV",
@@ -7172,7 +7172,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.70M, liq $1629k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "61Wj56QgGyyB966T7YsMzEAKRLcMvJpDbPzjkrCZc4Bi",
     symbol: "COPPERINU",
@@ -7182,7 +7182,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.69M, liq $113k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Fh7mLxtPAysdvHcMcJ37A3vc6WvBVh7JVDwxmwk6pump",
     symbol: "GBACK",
@@ -7192,7 +7192,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.69M, liq $53k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HUPfpnsaJtJGpJxAPNX1vXah7BgYiQYt1c2JMgMumvPs",
     symbol: "MPST",
@@ -7202,7 +7202,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.69M, liq $64k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9doRRAik5gvhbEwjbZDbZR6GxXSAfdoomyJR57xKpump",
     symbol: "GRPH",
@@ -7212,7 +7212,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.66M, liq $135k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CB9dDufT3ZuQXqqSfa1c5kY935TEreyBw9XJXxHKpump",
     symbol: "USDUC",
@@ -7222,7 +7222,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.66M, liq $142k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "C7heQqfNzdMbUFQwcHkL9FvdwsFsDRBnfwZDDyWYCLTZ",
     symbol: "$COLLAT",
@@ -7232,7 +7232,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.66M, liq $161k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5SVG3T9CNQsm2kEwzbRq6hASqh1oGfjqTtLXYUibpump",
     symbol: "SIGMA",
@@ -7242,7 +7242,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.65M, liq $184k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HALALGvdNJ8u1J3uFFSsba1tyYPRF3vnYfCQ3CpJasfD",
     symbol: "IASOL",
@@ -7252,7 +7252,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.64M, liq $1639k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "D25bi7oHQjqkVrzbfuM6k2gzVNHTSpBLhtakDCzCCDUB",
     symbol: "ANONCOIN",
@@ -7262,7 +7262,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.64M, liq $51k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9AvytnUKsLxPxFHFqS6VLxaxt5p6BhYNr53SD2Chpump",
     symbol: "67",
@@ -7272,7 +7272,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.63M, liq $156k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3Gdx9LmKZJyciSz3mbge3YKLqskiMG71m1iDMPAwpump",
     symbol: "ARMY",
@@ -7282,7 +7282,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.63M, liq $63k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "kinXdEcpDQeHPEuQnqmUgtYykqKGVFq6CeVX5iAHJq6",
     symbol: "KIN",
@@ -7292,7 +7292,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1627k, liq $3.4k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "G4uJcvo5UAJ3fU1gj96e5DjBJU2RDDPx9Txzbjw6Y3LA",
     symbol: "CAESAR",
@@ -7302,7 +7302,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1624k, liq $11.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "6ogzHhzdrQr9Pgv6hZ2MNze7UrzBMAFyBBWUYp1Fhitx",
     symbol: "RETARDIO",
@@ -7312,7 +7312,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.62M, liq $159k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GodL6KZ9uuUoQwELggtVzQkKmU1LfqmDokPibPeDKkhF",
     symbol: "GODL",
@@ -7322,7 +7322,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.61M, liq $149k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Dxg9cLvssqb1WEMpyynjf17kGRc4UTNyUqjzNj99opus",
     symbol: "OPUS",
@@ -7332,7 +7332,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.60M, liq $135k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GmDADFpfwjfzZq9MfCafMDTS69MgVjtzD7Fd9a4ondo",
     symbol: "ORCLON",
@@ -7342,7 +7342,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1582k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Gj4TowizfdkRJNsTgBEkj2WpBZZmGE7o9nN8q6RhBAGS",
     symbol: "LORIA",
@@ -7352,7 +7352,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.58M, liq $52k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DeaKMzAeZja3Mh5okZE6WUvygLP3Lfuvm6Rg78HqXTz9",
     symbol: "SOLNIC",
@@ -7362,7 +7362,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.56M, liq $80k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "usdsfJbX78ktZUnoRC7dwvvQz7xH3WdkpGne76gdUia",
     symbol: "USD+",
@@ -7372,7 +7372,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.56M, liq $104k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BLiUhfaUFbSoMVeRqq3QYTA1eJsTsB3ZDEYtUsGGQ9em",
     symbol: "SFG",
@@ -7382,7 +7382,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.55M, liq $47k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "NUZ3FDWTtN5SP72BsefbsqpnbAY5oe21LE8bCSkqsEK",
     symbol: "FLP.1",
@@ -7392,7 +7392,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1541k, liq $2.6k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AhhdRu5YZdjVkKR3wbnUDaymVQL2ucjMQ63sZ3LFHsch",
     symbol: "VCHF",
@@ -7402,7 +7402,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.54M, liq $306k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "gEGtLTPNQ7jcg25zTetkbmF7teoDLcrfTnQfmn2ondo",
     symbol: "NVDAON",
@@ -7412,7 +7412,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1519k, liq $4.6k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "G7iK3prSzAA4vzcJWvsLUEsdCqzR7PnMzJV61vSdFSNW",
     symbol: "NST",
@@ -7422,7 +7422,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.49M, liq $103k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3DFnwGLJUfxc4eMxDgQwW6oWaeKBrJ1iwA26YjTfpump",
     symbol: "STKR",
@@ -7432,7 +7432,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.49M, liq $58k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HyLXondhNhGkvWPXr8z4EPSgZNRRs4j8BHdyqMdVpump",
     symbol: "MOLT",
@@ -7442,7 +7442,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.49M, liq $61k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Cy1GS2FqefgaMbi45UunrUzin1rfEmTUYnomddzBpump",
     symbol: "MOBY",
@@ -7452,7 +7452,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.48M, liq $144k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8XtRWb4uAAJFMP4QQhoYYCWR6XXb7ybcCdiqPwz9s5WS",
     symbol: "ALON",
@@ -7462,7 +7462,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.48M, liq $170k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AVF9F4C4j8b1Kh4BmNHqybDaHgnZpJ7W7yLvL7hUpump",
     symbol: "LOBSTAR",
@@ -7472,7 +7472,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.47M, liq $187k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FRmH6iRkMr33DLG6zVLR7EM4LojBFAuq6NtFzG6ondo",
     symbol: "MSFTON",
@@ -7482,7 +7482,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1466k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FLUXBmPhT3Fd1EDVFdg46YREqHBeNypn1h4EbnTzWERX",
     symbol: "FLUXB",
@@ -7492,7 +7492,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1458k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "jucy5XJ76pHVvtPZb5TKRcGQExkwit2P5s4vY8UzmpC",
     symbol: "JUCYSOL",
@@ -7502,7 +7502,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.45M, liq $1452k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CniPCE4b3s8gSUPhUiyMjXnytrEqUrMfSsnbBjLCpump",
     symbol: "PWEASE",
@@ -7512,7 +7512,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.45M, liq $224k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BpdHpqznEgYPXZNrJVRZvBhdWoafYLVVuLxTQo34pump",
     symbol: "SSR",
@@ -7522,7 +7522,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.44M, liq $46k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "YUYAiJo8KVbnc6Fb6h3MnH2VGND4uGWDH4iLnw7DLEu",
     symbol: "YU",
@@ -7532,7 +7532,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1434k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "H6qnGp5anYgMJYAaPXKSqKVYa6mKDrn1ruAeK5Dmbonk",
     symbol: "SERIOUS",
@@ -7542,7 +7542,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.43M, liq $66k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "38PgzpJYu2HkiYvV8qePFakB8tuobPdGm2FFEn7Dpump",
     symbol: "GORK",
@@ -7552,7 +7552,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.43M, liq $211k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AT13ipG8K4HDyEJm3H1ZVQV2Bw8sihewoLQReSMsYo3o",
     symbol: "AU79",
@@ -7562,7 +7562,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.42M, liq $106k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "EXoMAHnw2Gw5fXJTektedLJDVn9vn8tLTEQX7gHccQKR",
     symbol: "EXO",
@@ -7572,7 +7572,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1408k, liq $9.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AywAYdNJnSLSXwKWYxDciPjqGRnwp4iZdQptuuQTpump",
     symbol: "MICHI",
@@ -7582,7 +7582,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.41M, liq $47k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Dx2bQe2UPv4k3BmcW8G2KhaL5oKsxduM5XxLSV3Sbonk",
     symbol: "HOSICO",
@@ -7592,7 +7592,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.39M, liq $64k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "29CWsqH84TykHDDwA6DtETUtXQPuKbVgKCmxtkBsbrrr",
     symbol: "BELIEF",
@@ -7602,7 +7602,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.36M, liq $103k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9se6kma7LeGcQWyRBNcYzyxZPE3r9t9qWZ8SnjnN3jJ7",
     symbol: "LUNA",
@@ -7612,7 +7612,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.36M, liq $85k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BFgdzMkTPdKKJeTipv2njtDEwhKxkgFueJQfJGt1jups",
     symbol: "URANUS",
@@ -7622,7 +7622,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.35M, liq $88k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8c71AvjQeKKeWRe8jtTGG1bJ2WiYXQdbjqFbUfhHgSVk",
     symbol: "$GARY",
@@ -7632,7 +7632,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1345k, liq $27.2k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "ch7rTovcUK7C1zNFM7F93kXU2CByYUsJT4pwYx7pump",
     symbol: "PP_CH7R",
@@ -7642,7 +7642,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.34M, liq $57k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GMai1NvHreNe135cvxya1gHaUJZiT1NAvbJkF4hPHQJ9",
     symbol: "GM",
@@ -7652,7 +7652,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.33M, liq $223k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GtDZKAqvMZMnti46ZewMiXCa4oXF4bZxwQPoKzXPFxZn",
     symbol: "NUB",
@@ -7662,7 +7662,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.32M, liq $240k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9TPL8droGJ7jThsq4momaoz6uhTcvX2SeMqipoPmNa8R",
     symbol: "VNXAU",
@@ -7672,7 +7672,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.31M, liq $82k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "463SK47VkB7uE7XenTHKiVcMtxRsfNE2X4Q9wByaURVA",
     symbol: "TSUKI",
@@ -7682,7 +7682,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.30M, liq $81k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "D1wZHkfk8d6QsCjF3NTiYHLzsZJ2Qb4Q7WBFFbGuzBLV",
     symbol: "INFRA",
@@ -7692,7 +7692,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.29M, liq $86k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "soKqZS9pASwBNS46G388nhK7XVtPaTyReffXEd3zora",
     symbol: "ZORA",
@@ -7702,7 +7702,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1283k, liq $6.5k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DLUNTKRQt7CrpqSX1naHUYoBznJ9pvMP65uCeWQgYnRK",
     symbol: "SOLC",
@@ -7712,7 +7712,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.27M, liq $80k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "C2omVhcvt3DDY77S2KZzawFJQeETZofgZ4eNWWkXpump",
     symbol: "BULLISH",
@@ -7722,7 +7722,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.26M, liq $60k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "sc1dNAxRBj5CNWaGC26AR7PEW75R36Umzt1V8vuP8kZ",
     symbol: "SCLOUD",
@@ -7732,7 +7732,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1255k, liq $0.2k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2ocYd9f3564zUL1j6zUi8FR6Rn4Yo76BvXoZwLYASYFR",
     symbol: "SYFR",
@@ -7742,7 +7742,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.25M, liq $62k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2giC2MXhhENo4jkbRjfAgNAZboTJtXZTsSFbMZKwpump",
     symbol: "KERMIT",
@@ -7752,7 +7752,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.24M, liq $47k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9UNqoPEXXxEnEphmyYsZYdL5dnmAUtdiKRUchpnUF5Ph",
     symbol: "$WHISKEY",
@@ -7762,7 +7762,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.23M, liq $63k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "4ikwYoNvoGEwtMbziUyYBTz1zRM6nmxspsfw9G7Bpump",
     symbol: "CRYPTO",
@@ -7772,7 +7772,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.22M, liq $64k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5csfa95Xf8ebiCwP9joQ7mtC8KwFvnnejnYx5FbYpump",
     symbol: "XMONEY",
@@ -7782,7 +7782,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.20M, liq $63k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AAqZ6CECabwnYLm3FDqPrVQotXLPGQ3BJSfecYmXeJU5",
     symbol: "GOTM",
@@ -7792,7 +7792,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1193k, liq $17.9k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9mNjA6BizTwpvd4DS3o7BjwZ6aPM9DC2jLHS7JFGbonk",
     symbol: "SCAM_9MNJ",
@@ -7802,7 +7802,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.19M, liq $58k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "kedoobK2qe2f1V8ee5vDXFr3H7gKnhQVNJXA3Ltcyai",
     symbol: "U1",
@@ -7812,7 +7812,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.18M, liq $57k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8Ki8DpuWNxu9VsS3kQbarsCWMcFGWkzzA8pUPto9zBd5",
     symbol: "LOCKIN",
@@ -7822,7 +7822,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.17M, liq $129k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5LafQUrVco6o7KMz42eqVEJ9LW31StPyGjeeu5sKoMtA",
     symbol: "MUMU",
@@ -7832,7 +7832,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.17M, liq $182k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2oQNkePakuPbHzrVVkQ875WHeewLHCd2cAwfwiLQbonk",
     symbol: "AOL",
@@ -7842,7 +7842,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.16M, liq $88k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "hy1opf2bqRDwAxoktyWAj6f3UpeHcLydzEdKjMYGs2u",
     symbol: "HYLOSOL+",
@@ -7852,7 +7852,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.16M, liq $1158k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GTH3wG3NErjwcf7VGCoXEXkgXSHvYhx5gtATeeM5JAS1",
     symbol: "WHALES",
@@ -7862,7 +7862,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.14M, liq $66k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "6UpQcMAb5xMzxc7ZfPaVMgx3KqsvKZdT5U718BzD5We2",
     symbol: "WXRP",
@@ -7872,7 +7872,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.13M, liq $490k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "PreC1KtJ1sBPPqaeeqL6Qb15GTLCYVvyYEwxhdfTwfx",
     symbol: "XAI",
@@ -7882,7 +7882,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1130k, liq $0.9k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "EFFECT1A1R3Dz8Hg4q5SXKjkiPc6KDRUWQ7Czjvy4H7E",
     symbol: "EFFECT",
@@ -7892,7 +7892,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.13M, liq $38k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DgNsbf4wFQJNss6MKfdr5sSAb3Mn7m9HmYwemgXFjupx",
     symbol: "CFG",
@@ -7902,7 +7902,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1114k, liq $12.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "ibRLJrmgVuZh3tdDpjGgU5CQCCxpxuer7B7ckjGdLsv",
     symbol: "IBRL",
@@ -7912,7 +7912,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1111k, liq $0.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "6iA73gWCKkLWKbVr8rgibV57MMRxzsaqS9cWpgKBpump",
     symbol: "我的刀盾",
@@ -7922,7 +7922,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.11M, liq $137k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "LiGHtkg3uTa9836RaNkKLLriqTNRcMdRAhqjGWNv777",
     symbol: "LIGHT",
@@ -7932,7 +7932,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1094k, liq $0.5k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AuQaustGiaqxRvj2gtCdrd22PBzTn8kM3kEPEkZCtuDw",
     symbol: "ADX",
@@ -7942,7 +7942,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1091k, liq $3.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "F3nefJBcejYbtdREjui1T9DPh5dBgpkKq7u2GAAMXs5B",
     symbol: "AART",
@@ -7952,7 +7952,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1086k, liq $11.5k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Saber2gLauYim4Mvftnrasomsv6NvAuncvMEZwcLpD1",
     symbol: "SBR",
@@ -7962,7 +7962,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1080k, liq $2.4k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "6MQpbiTC2YcogidTmKqMLK82qvE9z5QEm7EP3AEDpump",
     symbol: "MASK",
@@ -7972,7 +7972,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.07M, liq $100k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GnM6XZ7DN9KSPW2ZVMNqCggsxjnxHMGb2t4kiWrUpump",
     symbol: "WAGMI",
@@ -7982,7 +7982,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.06M, liq $64k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "85cQsFgbi8mBZxiPppbpPXuV7j1hA8tBwhjF4gKW6mHg",
     symbol: "RIZZMAS",
@@ -7992,7 +7992,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.06M, liq $146k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "G4zwEA9NSd3nMBbEj31MMPq2853Brx2oGsKzex3ebonk",
     symbol: "MOMO",
@@ -8002,7 +8002,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.05M, liq $69k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "MpsoLp1YBDqeiuSrVrYH4DoAGJ3myAMmMy6crYNVSTo",
     symbol: "MPSOL",
@@ -8012,7 +8012,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.04M, liq $1038k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CrdMPbjooMmz6RoVgUnczWoeZka2QF14pikcCTpzRMxz",
     symbol: "SFLP.2",
@@ -8022,7 +8022,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1023k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "mntAk89WGn1YacVFxzU84tVbn3zFYf1LVXMxMjhpTjC",
     symbol: "BERRIE",
@@ -8032,7 +8032,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1020k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AxriehR6Xw3adzHopnvMn7GcpRFcD41ddpiTWMg6pump",
     symbol: "JAILSTOOL",
@@ -8042,7 +8042,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.00M, liq $204k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DLGRpmkMGr7J4KD1xR5x2XjaGeQH64PLFQkyxNNSpump",
     symbol: "TCG",
@@ -8052,7 +8052,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $1.00M, liq $46k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BLZEEuZUBVqFhj8adcCFPJvPVCiCyVmh3hkJMrU8KuJA",
     symbol: "BLZE",
@@ -8062,7 +8062,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $990k, liq $4.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3ZLekZYq2qkZiSpnSvabjit34tUkjSwD1JFuW9as9wBG",
     symbol: "WNEAR",
@@ -8072,7 +8072,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.99M, liq $264k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "73xsLcBnLnc9bh81cqVKqj8uEyiarXng5ZwJuTbnVebG",
     symbol: "WUF",
@@ -8082,7 +8082,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.99M, liq $75k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "yoSoLJkgRYFwmt8apEDVKxHy6FktjYEWLvxB6NyJuNj",
     symbol: "YOSOL",
@@ -8092,7 +8092,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $982k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HAWKThXRcNL9ZGZKqgUXLm4W8tnRZ7U6MVdEepSutj34",
     symbol: "HAWK",
@@ -8101,7 +8101,7 @@ export const DISCOVERED: CorpusEntry[] = [
     expectedScore: [300, 900],
     why: "mcap $0.98M, liq $107k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
-  },
+  } as CorpusEntry,
   {
     ca: "2JcXacFwt9mVAwBQ5nZkYwCyXQkRcdsYrDXn6hj22SbP",
     symbol: "MINI",
@@ -8111,7 +8111,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.98M, liq $187k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9mV4WUukVsva5wYcYW4veo34CNDiF44sh3Ji65JNdvh5",
     symbol: "TRUNK",
@@ -8121,7 +8121,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.98M, liq $573k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "SoLiDMWBct5TurG1LNcocemBK7QmTn4P33GSrRrcd2n",
     symbol: "SOLID",
@@ -8131,7 +8131,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $969k, liq $4.2k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "B89Hd5Juz7JP2dxCZXFJWk4tMTcbw7feDhuWGb3kq5qE",
     symbol: "NC",
@@ -8141,7 +8141,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $966k, liq $15.2k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "76VxJbMFoCXBcn2rqPQX2UsUfpupq2gVwGSq5LyYMhr2",
     symbol: "GMRX",
@@ -8151,7 +8151,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $959k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Ax8PSfCXxmxb8C8kYTzN5CPpTe6PyeZfFf8rrXNCjupx",
     symbol: "MM",
@@ -8161,7 +8161,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.96M, liq $34k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AGdGTQa8iRnSx4fQJehWo4Xwbh1bzTazs55R6Jwupump",
     symbol: "114514",
@@ -8171,7 +8171,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.95M, liq $80k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HrYNm6jTQ71LoFphjVKBTdAE4uja7WsmLG8VxB8ondo",
     symbol: "QQQON",
@@ -8181,7 +8181,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $950k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GKHgTd6tqvycgG3mqcZraSZDFR32hXhRgo6sZQtudMsC",
     symbol: "ALL",
@@ -8191,7 +8191,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.95M, liq $52k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GMvCfcZg8YvkkQmwDaAzCtHDrrEtgE74nQpQ7xNabonk",
     symbol: "1",
@@ -8201,7 +8201,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.94M, liq $128k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GACpABn18xqiSJbD9ZEyArJDT9RHRMUut5nK9Z9Spump",
     symbol: "TRENCH",
@@ -8211,7 +8211,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.94M, liq $62k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BLVxek8YMXUQhcKmMvrFTrzh5FXg8ec88Crp6otEaCMf",
     symbol: "BELIEVE",
@@ -8221,7 +8221,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.94M, liq $39k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3E7nd9oom8Wdvc6jdHWRSLhpZ6kymd8oYXT5zaU2pump",
     symbol: "M2M",
@@ -8231,7 +8231,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.94M, liq $41k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HQ7DaoiUxzC2K1Dr7KXRHccNtXvEYgNvoUextXe8dmBh",
     symbol: "SLOTH",
@@ -8241,7 +8241,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.93M, liq $105k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2xpoapWZuP4sRHnAxtXHibe57RhKDLVo7a3a3MEqpump",
     symbol: "BREW",
@@ -8251,7 +8251,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.93M, liq $41k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9LzCMqDgTKYz9Drzqnpgee3SGa89up3a247ypMj2xrqM",
     symbol: "AUDIO",
@@ -8261,7 +8261,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.92M, liq $556k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "EPCz5LK372vmvCkZH3HgSuGNKACJJwwxsofW6fypCPZL",
     symbol: "RKSOL",
@@ -8271,7 +8271,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.92M, liq $921k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2Bwbeh361ywi1PpypDHabDb8VphNKCQt9ht2CRzFsYAE",
     symbol: "HABITAT",
@@ -8281,7 +8281,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.92M, liq $111k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HaP8r3ksG76PhQLTqR8FYBeNiQpejcFbQmiHbg787Ut1",
     symbol: "TRUMP_HAP8",
@@ -8291,7 +8291,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $917k, liq $8.5k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL",
     symbol: "MLG",
@@ -8301,7 +8301,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.91M, liq $142k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "tTJj3mquBmzSYM8VwCxmp1c2AhQCjidQ5DdCdL4pump",
     symbol: "NEMOCLAW",
@@ -8311,7 +8311,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.91M, liq $40k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "haioZJAWTMaR4SFhZRwFBBejnGDPiwLTqrDiKpwH31h",
     symbol: "HAIO",
@@ -8321,7 +8321,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $902k, liq $0.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AZsHEMXd36Bj1EMNXhowJajpUXzrKcK57wW4ZGXVa7yR",
     symbol: "GUAC",
@@ -8331,7 +8331,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.90M, liq $115k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "M77ZvkZ8zW5udRbuJCbuwSwavRa7bGAZYMTwru8ondo",
     symbol: "IAUON",
@@ -8341,7 +8341,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $900k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "71Jvq4Epe2FCJ7JFSF7jLXdNk1Wy4Bhqd9iL6bEFELvg",
     symbol: "GOR",
@@ -8351,7 +8351,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.90M, liq $110k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "PAYZP1W3UmdEsNLJwmH61TNqACYJTvhXy8SCN4Tmeta",
     symbol: "PAYS",
@@ -8361,7 +8361,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.90M, liq $120k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "VNo7EjR3XVzvbjUgQrFAXNwSms34fHwHBt1Xoaopump",
     symbol: "CHUDHOUSE",
@@ -8371,7 +8371,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.90M, liq $124k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "J27UYHX5oeaG1YbUGQc8BmJySXDjNWChdGB2Pi2TMDAq",
     symbol: "PMX",
@@ -8381,7 +8381,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.89M, liq $150k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "dTzEP9JU2NRDPuWtM32gaVKip2fTHBqjheU1APBpump",
     symbol: "BITTY",
@@ -8391,7 +8391,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.89M, liq $71k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "ELSoL1owwMWQ9foMsutweCsMKbTPVBD9pFqxQGidTaMC",
     symbol: "ELSOL",
@@ -8401,7 +8401,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.89M, liq $891k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Pre8AREmFPtoJFT8mQSXQLh56cwJmM7CFDRuoGBZiUP",
     symbol: "POLYMARKET",
@@ -8411,7 +8411,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.88M, liq $327k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CJjraBaedPnKzjnag12i7PVo5pSP6cB9heV8zr89bonk",
     symbol: "PROJECT89",
@@ -8421,7 +8421,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.87M, liq $104k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "EsP4kJfKUDLfX274WoBSiiEy74Sh4tZKUCDjfULHpump",
     symbol: "FRIC",
@@ -8431,7 +8431,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.87M, liq $111k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "WCTk5xWdn5SYg56twGj32sUF3W4WFQ48ogezLBuYTBY",
     symbol: "WCT",
@@ -8441,7 +8441,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $863k, liq $18.8k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "k18WJUULWheRkSpSquYGdNNmtuE2Vbw1hpuUi92ondo",
     symbol: "SPYON",
@@ -8451,7 +8451,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $855k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BreuhVohXX5fv6q41uyb3sojtAuGoGaiAhKBMtcrpump",
     symbol: "HEHE",
@@ -8461,7 +8461,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.84M, liq $80k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3qq54YqAKG3TcrwNHXFSpMCWoL8gmMuPceJ4FG9npump",
     symbol: "CLANKER",
@@ -8471,7 +8471,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.84M, liq $76k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "LhcykxUt6xVdiSZyWyaGdNHE3W8sAEmdnEjpMdkpump",
     symbol: "GG",
@@ -8481,7 +8481,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.83M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5kkkNahbYVYZUQthCZCU6ax4zkcN622jAMTnAvJApump",
     symbol: "BER",
@@ -8491,7 +8491,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.83M, liq $35k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "C4Kkr9NZU3VbyedcgutU6LKmi6MKz81sx6gRmk5pX519",
     symbol: "VEUR",
@@ -8501,7 +8501,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.82M, liq $227k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9dXSV8VWuYvGfTzqvkBeoFwH9ihVTybDuWo5VaJPCNDL",
     symbol: "CNDL",
@@ -8511,7 +8511,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.82M, liq $46k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "qnko6WJGEwEU3JYQFZakLe9V8dmS4YAXFARHeRipump",
     symbol: "LIL",
@@ -8521,7 +8521,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.82M, liq $46k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8PzFWyLpCVEmbZmVJcaRTU5r69XKJx1rd7YGpWvnpump",
     symbol: "PERCOLATOR",
@@ -8531,7 +8531,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.82M, liq $68k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CRWNYkqdgvhGGae9CKfNka58j6QQkaD5bLhKXvUYqnc1",
     symbol: "CRWNY",
@@ -8541,7 +8541,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $819k, liq $28.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GHichsGq8aPnqJyz6Jp1ASTK4PNLpB5KrD6XrfDjpump",
     symbol: "$1",
@@ -8551,7 +8551,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.82M, liq $156k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FtUEW73K6vEYHfbkfpdBZfWpxgQar2HipGdbutEhpump",
     symbol: "TITCOIN",
@@ -8561,7 +8561,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.81M, liq $155k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "ULwSJmmpxmnRfpu6BjnK6rprKXqD5jXUmPpS1FxHXFy",
     symbol: "HEGE",
@@ -8571,7 +8571,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.81M, liq $107k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "E65CoK961Rs5LzKhGZxbKsB7xpFhYhXogH8nhr8zamTK",
     symbol: "PBSPYX",
@@ -8581,7 +8581,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $808k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CTAyri1T4d1QRfnmtSRpEsPS5tyH6shA1WTskhybmrMT",
     symbol: "CTA",
@@ -8591,7 +8591,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $807k, liq $5.4k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FFvp48WygUSxCCNP3n9Zu5G7F2yatwXQHbpD2Mkkpump",
     symbol: "SKIBIDI",
@@ -8601,7 +8601,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.79M, liq $53k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BeFtLwLtS9Rva12KrHKRMY1H5WoeM1Y2ULMnNJKopump",
     symbol: "BINDER",
@@ -8611,7 +8611,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.79M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "PreLWGkkeqG1s4HEfFZSy9moCrJ7btsHuUtfcCeoRua",
     symbol: "KALSHI",
@@ -8621,7 +8621,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.79M, liq $112k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "739dnZEG4yaBWFsY8L8ZwrfhGG6dhtCSercW8Umspump",
     symbol: "CLAW",
@@ -8631,7 +8631,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.78M, liq $40k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3S8qX1MsMqRbiwKg2cQyx7nis1oHMgaCuc9c4VfvVdPN",
     symbol: "MOTHER",
@@ -8641,7 +8641,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.78M, liq $166k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "TSPXcLV76s6V2zDiZQ18kBfcbnjaE2ZzNT3ga2Pd99v",
     symbol: "TSPACEX",
@@ -8651,7 +8651,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.78M, liq $393k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HRw8mqK8N3ASKFKJGMJpy4FodwR3GKvCFKPDQNqUNuEP",
     symbol: "DJT",
@@ -8661,7 +8661,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.78M, liq $79k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5PwsE1yXAvANamqbYwM6zoWrYkNw8RZ74TZSsxnGu4vq",
     symbol: "BLACK",
@@ -8671,7 +8671,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.78M, liq $39k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3tMdx4g4grCgqHjELqALfTPnZnG1BLwsPntD3tGREgvp",
     symbol: "SUSDC",
@@ -8681,7 +8681,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $772k, liq $10.9k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "7d1vpt5eri79nETcL74Punhp3mGkeBgUkMdPWep6pump",
     symbol: "SHY",
@@ -8691,7 +8691,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.76M, liq $75k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "NFTUkR4u7wKxy9QLaX2TGvd9oZSWoMo4jqSJqdMb7Nk",
     symbol: "BLOCK_NFTU",
@@ -8701,7 +8701,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.75M, liq $41k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3psH1Mj1f7yUfaD5gh6Zj7epE8hhrMkMETgv5TshQA4o",
     symbol: "BODEN",
@@ -8711,7 +8711,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.75M, liq $128k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "APbVLtq66bKBpUUdncHtVSab9TM1UrcqZ9wodXzmpump",
     symbol: "SNAI",
@@ -8721,7 +8721,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.75M, liq $34k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BeGY8KqKxboEwRbJd1q9H2K829jS4Rc5dEyNMYXCbV5p",
     symbol: "NPC",
@@ -8731,7 +8731,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.75M, liq $232k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "F5tfztTnE4sYsMhZT5KrFpWvHmYSfJZoRjCuxKPbpump",
     symbol: "ALIENS",
@@ -8741,7 +8741,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.74M, liq $82k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "fDxs5y12E7x7jBwCKBXGqt71uJmCWsAQ3Srkte6ondo",
     symbol: "METAON",
@@ -8751,7 +8751,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $726k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "7b36cKRYFZsMp3vLByVwfVQxW2ndcYth5rhPnyypump",
     symbol: "PINO",
@@ -8761,7 +8761,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.73M, liq $70k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "66bHtzcXqmLgkn668EG4ETzHL3RLz5ybdckqvrPppump",
     symbol: "VANKEDISI",
@@ -8771,7 +8771,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.72M, liq $120k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "62CsquahdQ3J286G9UTqV6whxryfihdV4yg7kSJnpump",
     symbol: "BGG1",
@@ -8781,7 +8781,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.72M, liq $90k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "4fSWEw2wbYEUCcMtitzmeGUfqinoafXxkhqZrA9Gpump",
     symbol: "PIGEON",
@@ -8791,7 +8791,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.72M, liq $81k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9223LqDuoJXyhCtvi54DUQPGS8Xf29kUEQRr7Sfhmoon",
     symbol: "LOOK",
@@ -8801,7 +8801,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $719k, liq $22.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "phaseZSfPxTDBpiVb96H4XFSD8xHeHxZre5HerehBJG",
     symbol: "YIELD",
@@ -8811,7 +8811,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.72M, liq $715k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9JK2U7aEkp3tWaFNuaJowWRgNys5DVaKGxWk73VT5ray",
     symbol: "NUMMUS",
@@ -8821,7 +8821,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.71M, liq $46k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "B1rGc4HM4Q6q4nU78ADM7fGguxqiasH53fh6ViDXpump",
     symbol: "BLOXX",
@@ -8831,7 +8831,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.70M, liq $43k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9voQQTTdfbqfXwc9rZAdJEeXXjUWjHnB4wkShMT8pump",
     symbol: "LAYOFF",
@@ -8841,7 +8841,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.69M, liq $41k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "SoLvHDFVstC74Jr9eNLTDoG4goSUsn1RENmjNtFKZvW",
     symbol: "SOLVBTC",
@@ -8851,7 +8851,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $690k, liq $2.7k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "JB2wezZLdzWfnaCfHxLg193RS3Rh51ThiXxEDWQDpump",
     symbol: "LABUBU",
@@ -8861,7 +8861,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.68M, liq $149k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AujTJJ7aMS8LDo3bFzoyXDwT3jBALUbu4VZhzZdTZLmG",
     symbol: "$BEER",
@@ -8871,7 +8871,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.68M, liq $307k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "xxxxa1sKNGwFtw2kFn8XauW9xq8hBZ5kVtcSesTT9fW",
     symbol: "SLIM",
@@ -8881,7 +8881,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.68M, liq $203k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "G8aVC4nk5oPWzTHp4PDm3kAuixCebv9WRQMD93h9pump",
     symbol: "RWA",
@@ -8891,7 +8891,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.67M, liq $44k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5yC9BM8KUsJTPbWPLfA2N8qH1s9V8DQ3Vcw1G6Jdpump",
     symbol: "AGENC",
@@ -8901,7 +8901,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.67M, liq $51k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "StargWr5r6r8gZSjmEKGZ1dmvKWkj79r2z1xqjFstar",
     symbol: "STAR",
@@ -8911,7 +8911,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.67M, liq $86k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "6NX2MWBuJM2Fn63K4hUgMPivLXHV8pwsU1yTdmjKpump",
     symbol: "PSOQ",
@@ -8921,7 +8921,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.67M, liq $44k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2wzVMXhLypmP92mXNCq4fuFcd9TCC972AbMfuiH3pump",
     symbol: "AISLOP",
@@ -8931,7 +8931,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.66M, liq $72k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "EfPoo4wWgxKVToit7yX5VtXXBrhao4G8L7vrbKy6pump",
     symbol: "DEXTER",
@@ -8941,7 +8941,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.66M, liq $61k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FKNfAwb8TmjYkj11V4NiTz4TgrLWTWgm2NRwAD9epump",
     symbol: "TASSHUB",
@@ -8951,7 +8951,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.66M, liq $39k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2FcsqRrhvgSfYxJWh32xW873vyqBZ9jmMyXqYSPgNtuZ",
     symbol: "LUCIA",
@@ -8961,7 +8961,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.65M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FoxYewmpjh66W6PFA38k2JRYea22mxnwLLMkVmu5bNU",
     symbol: "FOXYSOL",
@@ -8971,7 +8971,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.65M, liq $650k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CKfatsPMUf8SkiURsDXs7eK6GWb4Jsd6UDbs7twMCWxo",
     symbol: "BERN",
@@ -8981,7 +8981,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $646k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "92cRC6kV5D7TiHX1j56AbkPbffo9jwcXxSDQZ8Mopump",
     symbol: "FXN",
@@ -8991,7 +8991,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.65M, liq $65k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9RjwNo6hBPkxayWHCqQD1VjaH8igSizEseNZNbddpump",
     symbol: "STUPID",
@@ -9001,7 +9001,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.65M, liq $113k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HausGKcq9G9zM3azwNmgZyzUvYeeqR8h8663PmZpxuDj",
     symbol: "HAUSSOL",
@@ -9011,7 +9011,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.64M, liq $644k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "chipCAT7vi5CZtbZsn9z7iMPXvFwyAnKz3QFu8XVuHm",
     symbol: "CHIP",
@@ -9021,7 +9021,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.64M, liq $509k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "C3DwDjT17gDvvCYC2nsdGHxDHVmQRdhKfpAdqQ29pump",
     symbol: "RFC",
@@ -9031,7 +9031,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.64M, liq $116k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9GhjesUhxmVo9x4UHpdS6NVi4TGzcx8BtGckUqFrjupx",
     symbol: "HOOPX",
@@ -9041,7 +9041,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.64M, liq $99k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Bhu2wBWxfWkRJ6pFn5NodnEvMCqj9DLfCU5qMvt7pump",
     symbol: "CHATOSHI",
@@ -9051,7 +9051,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.63M, liq $144k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2bNQko1C2wYfexfe9MBnd7SwwaQC6vyEXdhMkhBWEN4d",
     symbol: "$FROGE",
@@ -9061,7 +9061,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.63M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2xm2WZ9krE2YAArRC6S6ZzJAYgN813K6hh2dawKjpump",
     symbol: "PANDU",
@@ -9071,7 +9071,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.63M, liq $33k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9dLuVbJMd4ZpTpFgmaFHAGSsFwVjtcnzFWaLAA1expHg",
     symbol: "HEEHEE",
@@ -9081,7 +9081,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.63M, liq $47k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "F7pB3ZdfBnyFw2LRHydWEn9BmhEa5XihXLjhySFRpump",
     symbol: "NOTHING",
@@ -9091,7 +9091,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.62M, liq $61k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "6D7NaB2xsLd7cauWu1wKk6KBsJohJmP2qZH9GEfVi5Ui",
     symbol: "SC_6D7N",
@@ -9101,7 +9101,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.62M, liq $123k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2fUFhZyd47Mapv9wcfXh5gnQwFXtqcYu9xAN4THBpump",
     symbol: "RNT",
@@ -9111,7 +9111,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.62M, liq $143k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "STBuyENwJ1GP4yNZCjwavn92wYLEY3t5S1kVS5kwyS1",
     symbol: "STB",
@@ -9121,7 +9121,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $615k, liq $3.4k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "C4j7kPx9PqDnfvxe2uycJQRTAeyGwmU4DyGf21Xgpump",
     symbol: "MD",
@@ -9131,7 +9131,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.61M, liq $55k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "kyJtowDDACsJDm2jr3VZdpCA6pZcKAaNftQwrJ8KBQP",
     symbol: "KYJTO",
@@ -9141,7 +9141,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $614k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3bRTivrVsitbmCTGtqwp7hxXPsybkjn4XLNtPsHqa3zR",
     symbol: "LIKE",
@@ -9151,7 +9151,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.61M, liq $48k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8NCievmJCg2d9Vc2TWgz2HkE6ANeSX7kwvdq5AL7pump",
     symbol: "BUNKER",
@@ -9161,7 +9161,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.61M, liq $50k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5HsZR8eG7QpQcN8Mnp8oFdENRkJMP9ZkcKhPSCKTJSWh",
     symbol: "MRC",
@@ -9171,7 +9171,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.60M, liq $45k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9DHe3pycTuymFk4H4bbPoAJ4hQrr2kaLDF6J6aAKpump",
     symbol: "BUZZ",
@@ -9181,7 +9181,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.60M, liq $132k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HBRPNwdcT67cadiBS8VNP4mRt8ornngLF34TZXthrust",
     symbol: "N3ON",
@@ -9191,7 +9191,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.59M, liq $230k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "7voKerVHPvbXde3bEpyNcdodVEufq17tW6eZLUUkpump",
     symbol: "Y2K",
@@ -9201,7 +9201,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $589k, liq $29.7k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "E1kvzJNxShvvWTrudokpzuc789vRiDXfXG3duCuY6ooE",
     symbol: "DITH",
@@ -9211,7 +9211,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.59M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "UwU8RVXB69Y6Dcju6cN2Qef6fykkq6UUNpB15rZku6Z",
     symbol: "UWU",
@@ -9221,7 +9221,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.58M, liq $144k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3B5wuUrMEi5yATD7on46hKfej3pfmd7t1RKgrsN3pump",
     symbol: "BILLY",
@@ -9231,7 +9231,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.58M, liq $178k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5cL3TVJ7p5ZKqyx16DXwpdcNx5u19vQtWujA9vYindi",
     symbol: "VALAN",
@@ -9241,7 +9241,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $583k, liq $18.4k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "uniBKsEV37qLRFZD7v3Z9drX6voyiCM8WcaePqeSSLc",
     symbol: "UNIBTC",
@@ -9251,7 +9251,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $582k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "madHpjRn6bd8t78Rsy7NuSuNwWa2HU8ByPobZprHbHv",
     symbol: "MAD",
@@ -9261,7 +9261,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.58M, liq $65k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BQQzEvYT4knThhkSPBvSKBLg1LEczisWLhx5ydJipump",
     symbol: "BUCKAZOIDS",
@@ -9271,7 +9271,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.58M, liq $77k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "PRSMNsEPqhGVCH1TtWiJqPjJyh2cKrLostPZTNy1o5x",
     symbol: "PRISM",
@@ -9281,7 +9281,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $578k, liq $13.9k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8116V1BW9zaXUM6pVhWVaAduKrLcEBi3RGXedKTrBAGS",
     symbol: "GSD",
@@ -9291,7 +9291,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.57M, liq $42k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9qriMjPPAJTMCtfQnz7Mo9BsV2jAWTr2ff7yc3JWpump",
     symbol: "9QRI",
@@ -9301,7 +9301,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.57M, liq $90k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "VaxZxmFXV8tmsd72hUn22ex6GFzZ5uq9DVJ5wA5pump",
     symbol: "OIIAOIIA",
@@ -9311,7 +9311,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.57M, liq $80k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "X7j77hTmjZJbepkXXBcsEapM8qNgdfihkFj6CZ5ondo",
     symbol: "COPXON",
@@ -9321,7 +9321,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $567k, liq $1.8k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BiDB55p4G3n1fGhwKFpxsokBMqgctL4qnZpDH1bVQxMD",
     symbol: "DIO",
@@ -9331,7 +9331,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $566k, liq $21.4k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "SLNDpmoWTVADgEdndyvWzroNL7zSi1dF9PC3xHGtPwp",
     symbol: "SLND",
@@ -9341,7 +9341,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $565k, liq $15.4k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FThrNpdic79XRV6i9aCWQ2UTp7oRQuCXAgUWtZR2cs42",
     symbol: "KM",
@@ -9351,7 +9351,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.56M, liq $62k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "4YK1njyeCkBuXG6phNtidJWKCbBhB659iwGkUJx98P5Z",
     symbol: "DOLAN",
@@ -9361,7 +9361,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.56M, liq $68k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CVfniqNEj2f4Yd8Z4TEtaTU49gWNTwUyCiDDUbsZpump",
     symbol: "KNS",
@@ -9371,7 +9371,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.55M, liq $31k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2eXamy7t3kvKhfV6aJ6Uwe3eh8cuREFcTKs1mFKZpump",
     symbol: "NUIT",
@@ -9381,7 +9381,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.55M, liq $69k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC",
     symbol: "AI16Z",
@@ -9391,7 +9391,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.55M, liq $37k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "A9E2AopuG56LWYiXsvGLLTcLjUjQ539PY6k5Fhfepump",
     symbol: "KABUTO",
@@ -9401,7 +9401,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.54M, liq $60k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "4tARAT4ssRYhrENCTxxZrmjL741eE2G23Q1zLPDW2ipf",
     symbol: "LRTSSOL",
@@ -9411,7 +9411,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $544k, liq $1.7k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FaxYQ3LVXP51rDP2yWGLWVrFAAHeSdFF8SGZxwj2dvor",
     symbol: "SWAG",
@@ -9421,7 +9421,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.54M, liq $46k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HUBsveNpjo5pWqNkH57QzxjQASdTVXcSK7bVKTSZtcSX",
     symbol: "RASOL",
@@ -9431,7 +9431,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.54M, liq $541k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8EZqVPJdEWt754S17nghfa4Y4jQJ7tigBwsGbo1Tpump",
     symbol: "SOLARIS",
@@ -9441,7 +9441,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $537k, liq $28.2k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "ATRLuHph8dxnPny4WSNW7fxkhbeivBrtWbY6BfB4xpLj",
     symbol: "ATR",
@@ -9451,7 +9451,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.54M, liq $46k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DuEy8wWrzCUun5ZbbG9hkVqXqqicpTQw8gB7nEAzpCHQ",
     symbol: "FLUID",
@@ -9461,7 +9461,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.53M, liq $145k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5HkhVG2bSb5PGjhX5QHm9urUquD7tx5eAau5Fonq78zc",
     symbol: "KOKOK",
@@ -9471,7 +9471,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.52M, liq $46k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "6eftxVbSAunVEoxUWdGhPdxg5UdsJ8Wkwy5w5YFuxouw",
     symbol: "CHZ",
@@ -9481,7 +9481,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.52M, liq $177k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "4FdojUmXeaFMBG6yUaoufAC5Bz7u9AwnSAMizkx5pump",
     symbol: "CORE",
@@ -9491,7 +9491,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.52M, liq $40k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Dn4noZ5jgGfkntzcQSUZ8czkreiZ1ForXYoV2H8Dm7S1",
     symbol: "USDTET",
@@ -9501,7 +9501,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $523k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HsRpHQn6VbyMs5b5j5SV6xQ2VvpvvCCzu19GjytVSCoz",
     symbol: "STRK",
@@ -9511,7 +9511,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.52M, liq $92k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CY1P83KnKwFYostvjQcoR2HJLyEJWRBRaVQmYyyD3cR8",
     symbol: "索拉拉",
@@ -9521,7 +9521,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $519k, liq $27.8k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FJug3z58gssSTDhVNkTse5fP8GRZzuidf9SRtfB2RhDe",
     symbol: "TSLAR",
@@ -9531,7 +9531,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.52M, liq $31k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5evN2exivZXJfLaA1KhHfiJKWfwH8znqyH36w1SFz89Y",
     symbol: "MIRAI",
@@ -9541,7 +9541,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.51M, liq $154k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FU1q8vJpZNUrmqsciSjp8bAKKidGsLmouB8CBdf8TKQv",
     symbol: "TREMP",
@@ -9551,7 +9551,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.51M, liq $114k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "EjmyN6qEC1Tf1JxiG1ae7UTJhUxSwk1TCWNWqxWV4J6o",
     symbol: "DAI",
@@ -9561,7 +9561,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $509k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DEJqUhPTarcaNqhT7c6fktUszcJWN6skqyWSxXchpJNm",
     symbol: "MATTLE",
@@ -9571,7 +9571,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $508k, liq $17.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "7a8JSTTMnynE689y1AvxHTywdQVFdpfdE61rPvgzpump",
     symbol: "EAI",
@@ -9581,7 +9581,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.51M, liq $32k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2PzS5SYYWjUFvzXNFaMmRkpjkxGX6R5v8DnKYtdcpump",
     symbol: "OPAL",
@@ -9591,7 +9591,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.51M, liq $43k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "octo82drBEdm8CSDaEKBymVn86TBtgmPnDdmE64PTqJ",
     symbol: "OTK",
@@ -9601,7 +9601,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $503k, liq $5.2k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "C3VLBJB2FhEb47s1WEgroyn3BnSYXaezqtBuu5WNmUGw",
     symbol: "CPERR",
@@ -9611,7 +9611,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.50M, liq $71k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HAPPYwgFcjEJDzRtfWE6tiHE9zGdzpNky2FvjPHsvvGZ",
     symbol: "HAPPY",
@@ -9621,7 +9621,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.50M, liq $54k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CgGWS19zR5xTzgCEcW5Svsuon4hBZwzBwUFimoJStCf2",
     symbol: "FOXSY",
@@ -9631,7 +9631,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.50M, liq $60k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FoRGERiW7odcCBGU1bztZi16osPBHjxharvDathL5eds",
     symbol: "FORGE",
@@ -9641,7 +9641,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $497k, liq $15.7k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CboMcTUYUcy9E6B3yGdFn6aEsGUnYV6yWeoeukw6pump",
     symbol: "BUTTHOLE",
@@ -9651,7 +9651,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.49M, liq $105k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "ASRRjA1R4RHVk5H9QKKm1jaQqMkxvv6nh5EypPrvwmxQ",
     symbol: "ASRR",
@@ -9661,7 +9661,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $487k, liq $12.8k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "7D1iYWfhw2cr9yBZBFE6nZaaSUvXHqG5FizFFEZwpump",
     symbol: "YNE",
@@ -9671,7 +9671,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.48M, liq $90k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "4yCLi5yWGzpTWMQ1iWHG5CrGYAdBkhyEdsuSugjDUqwj",
     symbol: "ALP",
@@ -9681,7 +9681,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $479k, liq $1.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "keybg184d4vyXeQdFqs4o99YsMg7xBthxTJ6Ky3ondo",
     symbol: "TSMON",
@@ -9691,7 +9691,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $476k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HaCUz8NfR9LqWVQvXqYxR2ast9BHsEScdgS941LKeBLV",
     symbol: "VIVA",
@@ -9701,7 +9701,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.48M, liq $51k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9XWWHExgN4yvyLRskzzfcr5AcBaqQ6UtwcDSVpUBsoar",
     symbol: "CPT",
@@ -9711,7 +9711,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.47M, liq $55k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AavE1kKKnesPw4MuRJmJ9jZs9QzEE8CPxQ3ViczUDfc1",
     symbol: "AAVE",
@@ -9721,7 +9721,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.47M, liq $148k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "4Uf883orBx89VQZiV4EoRpNqUWYN5ZuEvC4PCpQ9moon",
     symbol: "SPLAT",
@@ -9731,7 +9731,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.47M, liq $86k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3BgwJ8b7b9hHX4sgfZ2KJhv9496CoVfsMK2YePevsBRw",
     symbol: "EPIK",
@@ -9741,7 +9741,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.47M, liq $70k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AdsLPtW1KvKAw3QQLDST3M9cm57TeXZpbAhiKS27xbt",
     symbol: "XBT",
@@ -9751,7 +9751,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.46M, liq $305k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FViMp5phQH2bX81S7Yyn1yXjj3BRddFBNcMCbTH8FCze",
     symbol: "$TOAD",
@@ -9761,7 +9761,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.46M, liq $56k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "4TBi66vi32S7J8X1A6eWfaLHYmUXu7CStcEmsJQdpump",
     symbol: "GHIBLI",
@@ -9771,7 +9771,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.46M, liq $86k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Bz7Nx1F3Mti1BVS7ZAVDLSKGEaejufxvX2DPdjpf8PqT",
     symbol: "CHIPPY",
@@ -9781,7 +9781,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.46M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BqPqrrQuoQXFGGEAEMnPmDgZ6RWQCajWnY3V6Yp4DZWP",
     symbol: "ES",
@@ -9791,7 +9791,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.45M, liq $93k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5dpN5wMH8j8au29Rp91qn4WfNq6t6xJfcjQNcFeDJ8Ct",
     symbol: "SANA",
@@ -9801,7 +9801,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.45M, liq $46k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CQMBR2vnAuMj7beoHn5aKztNQHXUrkikFVjnn7kqjupx",
     symbol: "KOHAI",
@@ -9811,7 +9811,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.45M, liq $148k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HfJvxwLQeHeiDz8e91RWSwMm3R1pLh1vyjLoSr5gpump",
     symbol: "SYNAPZ",
@@ -9821,7 +9821,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $450k, liq $27.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CBdCxKo9QavR9hfShgpEBG3zekorAeD7W1jfq2o3pump",
     symbol: "LUCE",
@@ -9831,7 +9831,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.45M, liq $133k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CKaKtYvz6dKPyMvYq9Rh3UBrnNqYZAyd7iF4hJtjUvks",
     symbol: "GARI",
@@ -9841,7 +9841,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $449k, liq $21.8k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5TfqNKZbn9AnNtzq8bbkyhKgcPGTfNDc9wNzFrTBpump",
     symbol: "PFP_5TFQ",
@@ -9851,7 +9851,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.45M, liq $49k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CNvitvFnSM5ed6K28RUNSaAjqqz5tX1rA5HgaBN9pump",
     symbol: "FRED",
@@ -9861,7 +9861,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.45M, liq $134k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8ncucXv6U6epZKHPbgaEBcEK399TpHGKCquSt4RnmX4f",
     symbol: "TRENCHER",
@@ -9871,7 +9871,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.44M, liq $86k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FogoWVkKbu7K5TE23B7VvpuSNbjV2HKpBm8hNaVY6Rkg",
     symbol: "FOGO",
@@ -9881,7 +9881,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.44M, liq $292k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FWAr6oWa6CHg6WUcXu8CqkmsdbhtEqL8t31QTonppump",
     symbol: "PVS",
@@ -9891,7 +9891,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.44M, liq $79k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FbmmdcCYHL7WETG89xtWmNFMzQAaQ8Zs9NXVbimibonk",
     symbol: "DONT",
@@ -9901,7 +9901,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.44M, liq $54k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "kyrosJC2dtm6EoLV5wffZsS4RZVm2hRafKZCLsc38JE",
     symbol: "KYROS",
@@ -9911,7 +9911,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $438k, liq $15.4k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AXQyzYRdk6ebp3VdwSNNNFR5Ssm5rMVTP84EEg98pump",
     symbol: "DCA",
@@ -9921,7 +9921,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $432k, liq $25.8k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CDBdbNqmrLu1PcgjrFG52yxg71QnFhBZcUE6PSFdbonk",
     symbol: "LETSBONK",
@@ -9931,7 +9931,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.43M, liq $88k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HLptm5e6rTgh4EKgDpYFrnRHbjpkMyVdEeREEa2G7rf9",
     symbol: "DUKO",
@@ -9941,7 +9941,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.42M, liq $74k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "7ZCm8WBN9aLa3o47SoYctU6iLdj7wkGG5SV2hE5CgtD5",
     symbol: "ELON",
@@ -9951,7 +9951,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.42M, liq $35k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BP8RUdhLKBL2vgVXc3n7oTSZKWaQVbD8S6QcPaMVBAPo",
     symbol: "FAFO",
@@ -9961,7 +9961,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.42M, liq $101k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3ag1Mj9AKz9FAkCQ6gAEhpLSX8B2pUbPdkb9iBsDLZNB",
     symbol: "HONK",
@@ -9971,7 +9971,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.42M, liq $63k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "21CnrFRqvEVkQZUTFmTXjcsJTLZhRY51ohoaCPwRpump",
     symbol: "DOG_21CN",
@@ -9981,7 +9981,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.42M, liq $161k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8doS8nzmgVZEaACxALkbK5fZtw4UuoRp4Yt8NEaXfDMb",
     symbol: "$WAFFLES",
@@ -9991,7 +9991,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.42M, liq $49k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "E3yUqBNTZxV8ELvW99oRLC7z4ddbJqqR4NphwrMug9zu",
     symbol: "COAL",
@@ -10001,7 +10001,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $414k, liq $16.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DcoCE6yfxviowUKT91qKTbr31kQnFaWFAVXCTHgvJ1Tk",
     symbol: "MAMMAMIA",
@@ -10011,7 +10011,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.41M, liq $62k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FLqmVrv6cp7icjobpRMQJMEyjF3kF84QmC4HXpySpump",
     symbol: "BUCK",
@@ -10021,7 +10021,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.41M, liq $78k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AUdUEc98MGfEHJiJfCgMaW8gKdcfNDio8BFzGKBwjztC",
     symbol: "DIGI",
@@ -10031,7 +10031,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.41M, liq $45k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5XqzzdodsNtAM8TtQyiqGVbD7GwLBBN7oVnRA3hLpump",
     symbol: "PILL",
@@ -10041,7 +10041,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.41M, liq $60k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "PoRTjZMPXb9T7dyU7tpLEZRQj7e6ssfAE62j2oQuc6y",
     symbol: "PORT",
@@ -10051,7 +10051,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $400k, liq $2.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DVYcTNFVGxePLgK8rUjViJvurRmTnD1FZUBR7puADymT",
     symbol: "DVY",
@@ -10061,7 +10061,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $400k, liq $0.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "6d5zHW5B8RkGKd51Lpb9RqFQSqDudr9GJgZ1SgQZpump",
     symbol: "AVB",
@@ -10071,7 +10071,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.40M, liq $95k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DdcvRiEs4k2fXbHqeJBS5jgGD93rj1wu6u8WTL4vmBLV",
     symbol: "VIRUS",
@@ -10081,7 +10081,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.40M, liq $33k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "jcztDWkrkxyMorbBVd4Amm7PbGHafCLMN94aAKZdrug",
     symbol: "VENOM",
@@ -10091,7 +10091,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $398k, liq $21.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GiG7Hr61RVm4CSUxJmgiCoySFQtdiwxtqf64MsRppump",
     symbol: "SCF",
@@ -10101,7 +10101,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.40M, liq $94k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "B8GKqTDGYc7F6udTHjYeazZ4dFCRkrwK2mBQNS4igqTv",
     symbol: "MSTRR",
@@ -10111,7 +10111,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $397k, liq $7.7k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5fKr9joRHpioriGmMgRVFdmZge8EVUTbrWyxDVdSrcuG",
     symbol: "CRCLR",
@@ -10121,7 +10121,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $396k, liq $7.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "G5bStqnKXv11fmPvMaagUbZi86BGnpf9zZtyPQtAdaos",
     symbol: "ICM",
@@ -10131,7 +10131,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.40M, liq $40k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2akXpuyFXAVN5YofZpZMfBp2Vxognpmv9NooBMuHpump",
     symbol: "ELON_2AKX",
@@ -10141,7 +10141,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.39M, liq $54k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2LzLh5pHg3nDQz6goTLAvDXfDbSBgAR8qem3bdXdpump",
     symbol: "JUICE",
@@ -10151,7 +10151,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.39M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8MgghUHzWyCXSQb4ReqrYQZ9rL8cQNaZ84GsqWhTB4Uu",
     symbol: "$UNFK",
@@ -10161,7 +10161,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $392k, liq $20.2k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "G4QRtYNRPyxdKwcAqqW3xSeEynDDxEyRvrDT9FJEpump",
     symbol: "FORG",
@@ -10171,7 +10171,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $391k, liq $27.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "14zP2ToQ79XWvc7FQpm4bRnp9d6Mp1rFfsUW3gpLcRX",
     symbol: "AIXBT",
@@ -10181,7 +10181,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.39M, liq $52k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HfYFjMKNZygfMC8LsQ8LtpPsPxEJoXJx4M6tqi75Hajo",
     symbol: "CWAR",
@@ -10191,7 +10191,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $389k, liq $16.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "4Aar9R14YMbEie6yh8WcH1gWXrBtfucoFjw6SpjXpump",
     symbol: "OMEGAX",
@@ -10201,7 +10201,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $388k, liq $24.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CmUnSFZCKUFGs2L8eZGQukAj833Y8r2SiJav55Nnrihd",
     symbol: "KARMA",
@@ -10211,7 +10211,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.39M, liq $43k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "znv3FZt2HFAvzYf5LxzVyryh3mBXWuTRRng25gEZAjh",
     symbol: "IMG",
@@ -10221,7 +10221,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.38M, liq $52k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Axo7inGzj9dhTH4R4LHxC3kxuRq7uxhiuxLqqLZeBAGS",
     symbol: "CALVIN",
@@ -10231,7 +10231,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $383k, liq $21.4k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5EkcKr582FkAPVnRmaDdnkekTtnNRzNNSxmQxqrFpump",
     symbol: "AQC",
@@ -10241,7 +10241,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.38M, liq $34k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2MwjFE1zbXyNKw6VjzGWa3BhPtFcs8htuX2xwRAtbonk",
     symbol: "CHONKY",
@@ -10251,7 +10251,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.38M, liq $53k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3uXACfojUrya7VH51jVC1DCHq3uzK4A7g469Q954LABS",
     symbol: "IQ",
@@ -10261,7 +10261,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.38M, liq $34k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GENEtH5amGSi8kHAtQoezp1XEXwZJ8vcuePYnXdKrMYz",
     symbol: "GENE",
@@ -10271,7 +10271,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $377k, liq $3.4k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "vQoYWru2pbUdcVkUrRH74ktQDJgVjRcDvsoDbUzM5n9",
     symbol: "REKT",
@@ -10281,7 +10281,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.38M, liq $31k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "EdhTCqUxXRWQcUd5Fonyz9rapHAB6mABAuVkmPrtpump",
     symbol: "UNITY",
@@ -10291,7 +10291,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.37M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HEYKwDJRoSsiLNQ9F9bZFKo7yxum1WbTFCgiHTX5h6tb",
     symbol: "HEY",
@@ -10301,7 +10301,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $371k, liq $24.7k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "EikyJKSVWPK28rX5FG8KyJcSzv3D2b2Qg7VodzqQoobe",
     symbol: "OOBE",
@@ -10311,7 +10311,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $370k, liq $17.7k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GpXv1GNGMzrKXCNnYFbZk5TaZXUdKJNu5cmtiUyBdoge",
     symbol: "$SUS",
@@ -10321,7 +10321,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.37M, liq $37k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "4JFcUJ1HfFKz2F8thdu2frk558EjrLvKEmeMq1ZM2xBP",
     symbol: "VNTR",
@@ -10331,7 +10331,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $369k, liq $2.4k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5mbK36SZ7J19An8jFochhQS4of8g6BwUjbeCSxBSoWdp",
     symbol: "$MICHI",
@@ -10341,7 +10341,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.37M, liq $344k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FS66v5XYtJAFo14LiPz5HT93EUMAHmYipCfQhLpU4ss8",
     symbol: "SMOG",
@@ -10351,7 +10351,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.37M, liq $45k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "MAtesZXcU38mgPuteRFo9ApCauYRRuwn3xf1cs5y7ZX",
     symbol: "MATES",
@@ -10361,7 +10361,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $366k, liq $21.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Gbu7JAKhTVtGyRryg8cYPiKNhonXpUqbrZuCDjfUpump",
     symbol: "SNOWBALL",
@@ -10371,7 +10371,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.37M, liq $57k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AjgSvYmJLhvt3FteiyTqQf8XBj1SVs6T6AmSUfkHpump",
     symbol: "GROYPER",
@@ -10381,7 +10381,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.36M, liq $43k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "6W8FHYE6jnw1dktabRRiZpQRQFPSFhTeLczdvBNPzVeo",
     symbol: "GOKU",
@@ -10391,7 +10391,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.36M, liq $32k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5cbq1HriesW4zHpFEk9Gc8UT4ccmfHcBTDCa2XcBduTo",
     symbol: "ELIX",
@@ -10401,7 +10401,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $363k, liq $7.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "6uiCqsZ66eNEp7cJBVRGiZKDQmmQLLXaV2RwXvJdtsig",
     symbol: "TRISIG",
@@ -10411,7 +10411,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.36M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "6NcdiK8B5KK2DzKvzvCfqi8EHaEqu48fyEzC8Mm9pump",
     symbol: "STONKS",
@@ -10421,7 +10421,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.36M, liq $99k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DEf93bSt8dx58gDFCcz4CwbjYZzjwaRBYAciJYLfdCA9",
     symbol: "KWEEN",
@@ -10431,7 +10431,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.36M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "7BeoEbgJepbf4mAyw4PZ48TcgrDK25kR7zexV42Apump",
     symbol: "LOLA",
@@ -10441,7 +10441,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.35M, liq $34k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AQYSxfK5N9gDV6gtqXig5s43QVTkAKbHKpCMGjw8WRgQ",
     symbol: "ENERGY",
@@ -10451,7 +10451,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $349k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "wo1zgt8rfrYpvdVi4nidoj1SYfcR4pQx69bmNv2JLhQ",
     symbol: "EGG",
@@ -10461,7 +10461,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.35M, liq $79k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "EcQCUYv57C4V6RoPxkVUiDwtX1SP8y8FP5AEToYL8Az",
     symbol: "WLKN",
@@ -10471,7 +10471,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $347k, liq $14.4k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GaRph5BcLZZ4sRh6EXKS6V7dicVanhcwa5iWEE6AbEYR",
     symbol: "TRADEBOT",
@@ -10481,7 +10481,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $346k, liq $22.7k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2AEU9yWk3dEGnVwRaKv4div5TarC4dn7axFLyz6zG4Pf",
     symbol: "DIS",
@@ -10491,7 +10491,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.35M, liq $159k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "B9u8h65uM1oifqmP82VyUDb68iG2fKfZiyubmNMtu3h7",
     symbol: "DOG_B9U8",
@@ -10501,7 +10501,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.35M, liq $308k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "sGzragYKDrmRgCGvJUn9WKwrmnUZwfmkNQLTSPfdMNq",
     symbol: "MOJO",
@@ -10511,7 +10511,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $344k, liq $25.2k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CPFZ7wUFpg5obsGB2GKXQ8rPY5ALuxs87dEjQjsrVxWw",
     symbol: "USD*-P",
@@ -10521,7 +10521,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $340k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "7s9c1qjxnwLE8Yksjec56mxeC1GdAb5bpFqBueRU5C7A",
     symbol: "UT-SFLP-#1",
@@ -10531,7 +10531,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $339k, liq $17.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3f7wfg9yHLtGKvy75MmqsVT1ueTFoqyySQbusrX1YAQ4",
     symbol: "PBP",
@@ -10541,7 +10541,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $337k, liq $11.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "6NwarBvDkXhByqVp2Qkq5i9XbtA2B3Bwe8SWGu9vpump",
     symbol: "CUPSEY",
@@ -10551,7 +10551,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $337k, liq $24.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AbVzeRUss8QJYzv2WDizDJ2RtsD1jkVyRjNdAzX94JhG",
     symbol: "FLP.2",
@@ -10561,7 +10561,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $337k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "moon3CP11XLvrAxUPBnPtueDEJvmjqAyZwPuq7wBC1y",
     symbol: "MROCKS",
@@ -10571,7 +10571,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $337k, liq $14.8k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "L33mHftsNpaj39z1omnGbGbuA5eKqSsbmr91rjTod48",
     symbol: "INDIESOL",
@@ -10581,7 +10581,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.34M, liq $336k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5ToDNkiBAK6k697RRyngTburU7yZNFZFx7jzsD1Uc7pK",
     symbol: "NPCS",
@@ -10591,7 +10591,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.33M, liq $41k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3WPep4ufaToK1aS5s8BL9inzeUrt4DYaQCiic6ZkkC1U",
     symbol: "GIKO",
@@ -10601,7 +10601,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.33M, liq $43k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "EMeugag3yfyvKqNKknGDWAudNALafZjbv9ByzCE8pump",
     symbol: "SIMD",
@@ -10611,7 +10611,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $333k, liq $25.8k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "48eKhwwadm7LJ57msuDYdq36CXx23Ratdbu74Pa1NULL",
     symbol: "NULL",
@@ -10621,7 +10621,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.33M, liq $30k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HnKkzR1YtFbUUxM6g3iVRS2RY68KHhGV7bNdfF1GCsJB",
     symbol: "KAMA",
@@ -10631,7 +10631,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.33M, liq $31k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GnHpRsrcyfHSMZNzmpjAzTFQA26vnbRMzbKQ11ZKpump",
     symbol: "ACE",
@@ -10641,7 +10641,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $327k, liq $25.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "ARTtpGGVYbVH5LwPNgD7Kta5U4fMNAPNoJcge7iadTL6",
     symbol: "ART",
@@ -10651,7 +10651,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $326k, liq $16.5k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "H9muD33usLGYv1tHvxCVpFwwVSn27x67tBQYH1ANbonk",
     symbol: "JIM",
@@ -10661,7 +10661,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $321k, liq $24.2k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8fZL148nnC168RAVCZh4PkjvMZmxMEfMLDhoziWVPnqf",
     symbol: "NIGGABUTT",
@@ -10671,7 +10671,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.32M, liq $41k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "6ZrYhkwvoYE4QqzpdzJ7htEHwT2u2546EkTNJ7qepump",
     symbol: "NOMNOM",
@@ -10681,7 +10681,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.31M, liq $59k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "4nswj3o1Lo9iWYvvRJxUD8vbCy9ay7QQoXYcncHNbonk",
     symbol: "SPSC",
@@ -10691,7 +10691,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.31M, liq $54k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "916SDKz7y5ZcEZC9CtnQ5Djs1Y8Yv3UAPb6bak8ondo",
     symbol: "EEMON",
@@ -10701,7 +10701,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $310k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AqEHVh8J2nXH9saV2ciZyYwPpqWFRfD2ffcq5Z8xxqm5",
     symbol: "YAKU",
@@ -10711,7 +10711,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $307k, liq $0.8k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8gHPxqgHj6JQ2sQtMSghQYVN5qRP8wm5T6HNejuwpump",
     symbol: "RYS",
@@ -10721,7 +10721,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.31M, liq $45k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BEgBsVSKJSxreiCE1XmWWq8arnwit7xDqQXSWYgay9xP",
     symbol: "WYAC",
@@ -10731,7 +10731,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.31M, liq $43k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "947tEoG318GUmyjVYhraNRvWpMX7fpBTDQFBoJvSkSG3",
     symbol: "CHAT",
@@ -10741,7 +10741,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.30M, liq $50k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CQSzJzwW5H1oyWrp6QhfUKYYwyovbSiVDKnAxNfb1tJC",
     symbol: "STAN",
@@ -10751,7 +10751,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.30M, liq $107k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Ciphern9cCXtms66s8Mm6wCFC27b2JProRQLYmiLMH3N",
     symbol: "CIPHER",
@@ -10761,7 +10761,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $301k, liq $29.9k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "G3FoXHoQDuGkEG8ZqQd7riC9uB1N51bg7JuxJEPNpump",
     symbol: "RAGE_G3FO",
@@ -10771,7 +10771,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $301k, liq $25.8k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "63bpnCja1pGB2HSazkS8FAPAUkYgcXoDwYHfvZZveBot",
     symbol: "BOT",
@@ -10781,7 +10781,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.30M, liq $34k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GJtJuWD9qYcCkrwMBmtY1tpapV1sKfB2zUv9Q4aqpump",
     symbol: "$RIF",
@@ -10791,7 +10791,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.30M, liq $171k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "7kbnvuGBxxj8AG9qp8Scn56muWGaRaFqxg1FsRp3PaFT",
     symbol: "UXD",
@@ -10801,7 +10801,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.30M, liq $47k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GJvLcMvQwznh1gAonWnqbqdSRrNCQmVzhfsZVvQdtM4b",
     symbol: "VWA",
@@ -10811,7 +10811,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $298k, liq $26.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BAsnXPVYuvZDfEFR7tmu9sG9gPyHy58Jpjs2AuUw1FLx",
     symbol: "NX",
@@ -10821,7 +10821,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.30M, liq $35k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "mkvXiNBpa8uiSApe5BrhWVJaT87pJFTZxRy7zFapump",
     symbol: "NAILONG",
@@ -10831,7 +10831,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.29M, liq $63k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "tiitb2Z1HtpB2DpVr6V7tdCFS3jmTinLeuGj9EVondo",
     symbol: "REMXON",
@@ -10841,7 +10841,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $291k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5goWRao6a3yNC4d6UjMdQxonkCMvKBwdpubU3qhfcdf1",
     symbol: "USDTPO",
@@ -10851,7 +10851,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $290k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9VxExA1iRPbuLLdSJ2rB3nyBxsyLReT4aqzZBMaBaY1p",
     symbol: "REVS",
@@ -10861,7 +10861,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.29M, liq $32k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "suifhC9gU1VbJAPYPTBkHJyyyStKGLLYPVDTmPoqbvA",
     symbol: "SUI",
@@ -10871,7 +10871,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.29M, liq $180k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BbbwE8rudhjK4husSRc37X54mYyDBRcykJ7fk5oHpump",
     symbol: "TBC",
@@ -10881,7 +10881,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.29M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "A9mUU4qviSctJVPJdBJWkb28deg915LYJKrzQ19ji3FM",
     symbol: "USDCET",
@@ -10891,7 +10891,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $286k, liq $0.8k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "genMsDWwH9WuuosGJyfEi4yn9rDc1boG6TNafMfFc43",
     symbol: "GENSOL",
@@ -10901,7 +10901,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.28M, liq $285k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "73UdJevxaNKXARgkvPHQGKuv8HCZARszuKW2LTL3pump",
     symbol: "ZARA",
@@ -10911,7 +10911,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.28M, liq $57k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "ENTxR2RP8NtvhXzMNFCxE1HazzdV9x7SuZqGyAb4jdED",
     symbol: "ENT",
@@ -10921,7 +10921,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $285k, liq $19.2k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CTgiaZUK12kCcB8sosn4Nt2NZtzLgtPqDwyQyr2syATC",
     symbol: "BITCOIN",
@@ -10931,7 +10931,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.28M, liq $58k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3bfv2scCdbvumVBc3Sar5QhYXx7Ecsi8EFF2akjxe329",
     symbol: "DIGITALSOL",
@@ -10941,7 +10941,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.28M, liq $283k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9S8edqWxoWz5LYLnxWUmWBJnePg35WfdYQp7HQkUpump",
     symbol: "GOYIM",
@@ -10951,7 +10951,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.28M, liq $46k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "E5ZVeBMazQAYq4UEiSNRLxfMeRds9SKL31yPan7j5GJK",
     symbol: "LDZ",
@@ -10961,7 +10961,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $282k, liq $27.5k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "JE8zmsKRivXggZsJxXHBdCkako85YawNtU5hqS4upump",
     symbol: "PAX",
@@ -10971,7 +10971,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $281k, liq $23.2k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BWsnyEa1XtsNRdgPaDoA1WVUonF7BBGZTd2zc72NQsWT",
     symbol: "BLEND_BWSN",
@@ -10981,7 +10981,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.28M, liq $121k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "KMnDBXcPXoz6oMJW5XG4tXdwSWpmWEP2RQM1Uujpump",
     symbol: "FIGHT_KMND",
@@ -10991,7 +10991,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.28M, liq $86k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5zCETicUCJqJ5Z3wbfFPZqtSpHPYqnggs1wX7ZRpump",
     symbol: "SPARK",
@@ -11001,7 +11001,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.28M, liq $62k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "A3gMddXMAhmc3P9dLjHv2n6ywWWzpGZbRCH6y8sta8ug",
     symbol: "CTAN",
@@ -11011,7 +11011,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.28M, liq $35k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Gu3LDkn7Vx3bmCzLafYNKcDxv2mH7YN44NJZFXnypump",
     symbol: "DEGENAI",
@@ -11021,7 +11021,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.28M, liq $76k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Gka1TQEevBbVw4W9K15ER96ZzKByMTb6TBMQzWFEpump",
     symbol: "MINER",
@@ -11031,7 +11031,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.28M, liq $35k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "EJZJpNa4tDZ3kYdcRZgaAtaKm3fLJ5akmyPkCaKmfWvd",
     symbol: "LOUD",
@@ -11041,7 +11041,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $276k, liq $14.7k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GmbC2HgWpHpq9SHnmEXZNT5e1zgcU9oASDqbAkGTpump",
     symbol: "CATANA",
@@ -11051,7 +11051,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.27M, liq $57k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8i51XNNpGaKaj4G4nDdmQh95v4FKAxw8mhtaRoKd9tE8",
     symbol: "TETSUO",
@@ -11061,7 +11061,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.27M, liq $82k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "4qQeZ5LwSz6HuupUu8jCtgXyW1mYQcNbFAW1sWZp89HL",
     symbol: "CAKE",
@@ -11071,7 +11071,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.27M, liq $51k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Gk2kRrwNMBU4Dn9JhC1Dks8G5X9nqi4ZE5jMvK6bdgEd",
     symbol: "$PTRUMP",
@@ -11081,7 +11081,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.27M, liq $32k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CfgmB9iTWABdYh3CHQQDUGtWy18rMNAEEqyp4GrJpump",
     symbol: "ASS",
@@ -11091,7 +11091,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.27M, liq $44k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "6afu2XRPMg8JAhzBsJ9DXsQRCFhkzbC4UaFMZepm6AHb",
     symbol: "SFLP.3",
@@ -11101,7 +11101,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $273k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5QmbJw7mM6tcCdXVy8ftc2bu8izded7Etc57TMA2pump",
     symbol: "INCOME",
@@ -11111,7 +11111,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.27M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2SN5omCCJPzseBpm7t38Qt2muy8gd4oknbF34tzLpump",
     symbol: "HAMSTER",
@@ -11121,7 +11121,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $272k, liq $28.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3EH7ZAVLSHUWdWsmaLNqEsDwHJxz8eQDaJXPwgvSpump",
     symbol: "TAPPY",
@@ -11131,7 +11131,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $272k, liq $20.4k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "B5WTLaRwaUQpKk7ir1wniNB6m5o8GgMrimhKMYan2R6B",
     symbol: "PEPE_B5WT",
@@ -11141,7 +11141,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.27M, liq $67k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "EhzVcKKmGjLk6pD5gLT6ZrTg62bMgPgTSCXXmANnSyQA",
     symbol: "SANTA",
@@ -11151,7 +11151,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $271k, liq $28.8k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "fuseYvhNJbSzdDByyTCrLcogsoNwAviB1WeewhbqgFc",
     symbol: "FUSESOL",
@@ -11161,7 +11161,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.27M, liq $270k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AVw2QGVkXJPRPRjLAceXVoLqU5DVtJ53mdgMXp14yGit",
     symbol: "SPYR",
@@ -11171,7 +11171,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $270k, liq $2.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DLMmRN9rbZspAAC3a1HgDHMC893Y2Ca9GjoNh9StwnYG",
     symbol: "DLMM",
@@ -11181,7 +11181,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $269k, liq $29.7k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9jaZhJM6nMHTo4hY9DGabQ1HNuUWhJtm7js1fmKMVpkN",
     symbol: "AMC_9JAZ",
@@ -11191,7 +11191,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.27M, liq $75k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3BWA5RBXyPXuMGZmVL8Snefu573FMJNGpsVi79baiBLV",
     symbol: "PM",
@@ -11201,7 +11201,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.27M, liq $55k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "EfgEGG9PxLhyk1wqtqgGnwgfVC7JYic3vC9BCWLvpump",
     symbol: "GYAT",
@@ -11211,7 +11211,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.27M, liq $48k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3joMReCCSESngJEpFLoKR2dNcChjSRCDtybQet5uSpse",
     symbol: "CAT_3JOM",
@@ -11221,7 +11221,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $265k, liq $15.6k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "ATBR4i19gcQ31Rfr7ymA2XvkCQEAkNFGBtVKTmdqpump",
     symbol: "MACHI",
@@ -11231,7 +11231,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.26M, liq $32k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "D1gittVxgtszzY4fMwiTfM4Hp7uL5Tdi1S9LYaepAUUm",
     symbol: "DIGITSOL",
@@ -11241,7 +11241,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.26M, liq $262k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2ZiSPGncrkwWa6GBZB4EDtsfq7HEWwkwsPFzEXieXjNL",
     symbol: "FDRY",
@@ -11251,7 +11251,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.26M, liq $37k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9F6VbPeM8xR9Nkntyjp5nPY52w9YG9331bLuyhe3pump",
     symbol: "AKA",
@@ -11261,7 +11261,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $259k, liq $20.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "UVcu7kbVKW6Rs5PKzuwVSbm8ukvrWByS3hBXqHapump",
     symbol: "PNP",
@@ -11271,7 +11271,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $258k, liq $19.7k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "7C56WnJ94iEP7YeH2iKiYpvsS5zkcpP9rJBBEBoUGdzj",
     symbol: "SLVR",
@@ -11281,7 +11281,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.26M, liq $118k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GGJzGSdJBUZ7jexM9rmjB4G9jNVute5WJK1CmuxRpump",
     symbol: "FIG",
@@ -11291,7 +11291,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $257k, liq $20.2k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "F1ppSHedBsGGwEKH78JVgoqr4xkQHswtsGGLpgM7bCP2",
     symbol: "ASTEROID_F1PP",
@@ -11301,7 +11301,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.26M, liq $45k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Comp4ssDzXcLeu2MnLuGNNFC4cmLPMng8qWHPvzAMU1h",
     symbol: "COMPASSSOL",
@@ -11311,7 +11311,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.26M, liq $256k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9j6twpYWrV1ueJok76D9YK8wJTVoG9Zy8spC7wnTpump",
     symbol: "URMOM",
@@ -11321,7 +11321,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.25M, liq $52k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Ai3eKAWjzKMV8wRwd41nVP83yqfbAVJykhvJVPxspump",
     symbol: "MOONPIG",
@@ -11331,7 +11331,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.25M, liq $63k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "4y3oUrsJfSp431R3wJrWiaLxRPsnYtpkVJmoV2bYpBiy",
     symbol: "WIFE",
@@ -11341,7 +11341,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $253k, liq $27.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3BRC7ZfRXXfXNFwYkQr1dJCPNZKDRYc4n7KGwrtzpump",
     symbol: "MIRUMI",
@@ -11351,7 +11351,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $253k, liq $24.4k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BQX1cjcRHXmrqNtoFWwmE5bZj7RPneTmqXB979b2pump",
     symbol: "ITALIANROT",
@@ -11361,7 +11361,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.25M, liq $61k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "SurfwRjQQFV6P7JdhxSptf4CjWU8sb88rUiaLCystar",
     symbol: "SURF",
@@ -11371,7 +11371,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.25M, liq $34k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "21nnfR4TkbZNLwvRrqEseAbz7P3kxKjaV7KuboLJpump",
     symbol: "WEEDCOIN",
@@ -11381,7 +11381,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.25M, liq $30k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3nq9YFTdHhaSYTkrftJYBfzbQj8MAkm2tvLCBy7EpHRJ",
     symbol: "RGUSD",
@@ -11391,7 +11391,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $250k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "7df5p5aoW787CqUWGU2cwtdmtjd5Eiy3oJTbSpeRjupx",
     symbol: "OUTLAW",
@@ -11401,7 +11401,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $250k, liq $12.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3FoUAsGDbvTD6YZ4wVKJgTB76onJUKz7GPEBNiR5b8wc",
     symbol: "CHEEMS",
@@ -11411,7 +11411,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $249k, liq $20.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "foRgE7d5FRtvQ2jf9yhV9Cnd1LMB3rxk6dpE7HYdzGk",
     symbol: "FORGE_FORG",
@@ -11421,7 +11421,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $247k, liq $23.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CTg3ZgYx79zrE1MteDVkmkcGniiFrK1hJ6yiabropump",
     symbol: "NEIRO",
@@ -11431,7 +11431,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.25M, liq $103k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AWc8uws9nh7pYjFQ8FzxavmP8WTUPwmQZAvK2yAPBAGS",
     symbol: "ZHC",
@@ -11441,7 +11441,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $246k, liq $17.4k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "G2pMCBjRQHHCkE79r9KAESvdhUCieWPZvX5GRFa3jCLg",
     symbol: "SUBY",
@@ -11451,7 +11451,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.25M, liq $30k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8vBMibwpn8wpfYKbQ9xqzodymg3LjmYec2tSNGRy23K8",
     symbol: "HYPER",
@@ -11461,7 +11461,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $245k, liq $18.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "89S7oVB4hui8ceJqhHreWB7fcxdthfvoB7z2pfJtpump",
     symbol: "ABCDEFG",
@@ -11471,7 +11471,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.24M, liq $51k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FQ1tyso61AH1tzodyJfSwmzsD3GToybbRNoZxUBz21p8",
     symbol: "VVAIFU",
@@ -11481,7 +11481,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.24M, liq $71k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2G8LH53fcr3aCrEsmAo73eunbZRbyjKrGH5qmur6pump",
     symbol: "SUPERCYCLE",
@@ -11491,7 +11491,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.24M, liq $46k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "TuLipcqtGVXP9XR62wM8WWCm6a9vhLs7T1uoWBk6FDs",
     symbol: "TULIP",
@@ -11501,7 +11501,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $240k, liq $3.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AXNgt2tyXdoNR3VaXqtN8E91m9ZwKCJrVHAX6r7Dpump",
     symbol: "G",
@@ -11511,7 +11511,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.24M, liq $39k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "7oLWGMuGbBm9uwDmffSdxLE98YChFAH1UdY5XpKYLff8",
     symbol: "WOJAK_7OLW",
@@ -11521,7 +11521,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.24M, liq $56k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DPaQfq5sFnoqw2Sh9WMmmASFL9LNu6RdtDqwE1tab2tB",
     symbol: "SKBDI",
@@ -11531,7 +11531,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.24M, liq $42k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2yd2Suus3YY4Sa7LHhn1PSHkjXj3XKrars4cCog2tGU8",
     symbol: "$INA",
@@ -11541,7 +11541,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $238k, liq $24.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "65nTNuJGHme4PQvKQyJykKp1bJAkK4A8Q66sd2yBWugf",
     symbol: "RBT",
@@ -11551,7 +11551,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.24M, liq $53k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8ryRQD6jWfxnSdvvVbQ8Tzwo1NgGP7w1X1nQPpb4pump",
     symbol: "MEOWL",
@@ -11561,7 +11561,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $235k, liq $25.2k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2k8yZaJjf61unHriuqdmvbxe7CUhEYML5kVJDbcotKjU",
     symbol: "BFS",
@@ -11571,7 +11571,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $230k, liq $29.8k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FSTRgYfDaudjDwFg5A9LQpDMq5vxqhskHq4rkjUMwERE",
     symbol: "FSTR",
@@ -11581,7 +11581,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $227k, liq $26.8k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "71mfKdePwyWXtiF1mqu2aaCdMKnKuN664z2vEM2Xpump",
     symbol: "LIQUID",
@@ -11591,7 +11591,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $224k, liq $27.2k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DEADsWJZaonaiZPFkrqEEBGf43mzA5uHeHpwgy9dW666",
     symbol: "DEADS",
@@ -11601,7 +11601,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $224k, liq $11.8k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AnXE9mZYWReqBw4v5HrY2S2utt42uEtcBGmuCXASvRAi",
     symbol: "ANITA",
@@ -11611,7 +11611,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $224k, liq $21.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "iTHSaXjdqFtcnLK4EFEs7mqYQbJb6B7GostqWbBQwaV",
     symbol: "ITHEUM",
@@ -11621,7 +11621,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $223k, liq $6.9k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "A7n89LqW67HJKzJkdWZa2xojuK4N5GBKHz3dfjATCZPz",
     symbol: "DEGEN",
@@ -11631,7 +11631,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $222k, liq $16.7k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GyuP7chtXSRB6erApifBxFvuTtz94x3zQo3JdWofBTgy",
     symbol: "D2X",
@@ -11641,7 +11641,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $222k, liq $2.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GUUFsneDFrEgYwV2ngpvpMdAmwFjhFknA5eL7ehkeFf8",
     symbol: "TANUKI",
@@ -11651,7 +11651,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $220k, liq $8.2k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "axUxN2q4AWzHaU6LXmjqQh7KEjaXDPKScjmzwEBpump",
     symbol: "GRANDMA",
@@ -11661,7 +11661,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $220k, liq $29.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FkBF9u1upwEMUPxnXjcydxxVSxgr8f3k1YXbz7G7bmtA",
     symbol: "GLORP",
@@ -11671,7 +11671,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.22M, liq $38k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DRtvTCzfiKGhCVREmBbZdN9sB8PHeq9KdRZ3VmFhpump",
     symbol: "CHIEFPUSSY",
@@ -11681,7 +11681,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $220k, liq $22.4k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5UAMZkfNmuVcKzr2wo8Jqw4R1k8vfdAVJNN6h3bVpump",
     symbol: "LIMBO",
@@ -11691,7 +11691,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.22M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "ALTP6gug9wv5mFtx2tSU1YYZ1NrEc2chDdMPoJA8f8pu",
     symbol: "NVDAR",
@@ -11701,7 +11701,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $218k, liq $0.8k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "4yDSFNMitxy6waXPTkPyyVvbbQSiqe7zD1VxnzEypump",
     symbol: "MOTION",
@@ -11711,7 +11711,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $218k, liq $20.6k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "goodX4LG92UAcRdFRUykfP2fAfzQAVttrToEPxtxSkp",
     symbol: "GOOD",
@@ -11721,7 +11721,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.22M, liq $65k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "7NQSHjuEGENZDWfSvPZz7oP2D6c5Jc3LjFC6uh179ufr",
     symbol: "MOAI",
@@ -11731,7 +11731,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.22M, liq $32k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "J7tYmq2JnQPvxyhcXpCDrvJnc9R5ts8rv7tgVHDPsw7U",
     symbol: "FLOYDAI",
@@ -11741,7 +11741,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.22M, liq $42k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "uPtSoL2qszk4SuPHNE2zqk1gDtqCq21ZE1yZCqvFTqq",
     symbol: "UPTSOL",
@@ -11751,7 +11751,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.22M, liq $215k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Gbz4HzY4KunK96e8dART7GhbV4bEjYSUXEA2cy2qpump",
     symbol: "HERO",
@@ -11761,7 +11761,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $215k, liq $19.7k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "26KMQVgDUoB6rEfnJ51yAABWWJND8uMtpnQgsHQ64Udr",
     symbol: "HAMMY",
@@ -11771,7 +11771,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.21M, liq $47k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FVGdJQVzAdKr8ZH7ahyhp4cvDszX3N8QYGSdzueopump",
     symbol: "ATTN",
@@ -11781,7 +11781,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $213k, liq $18.8k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BJ5PW3Qoxz3BgLrnZrQTgd93i6WiK8P6g9chTPZFP5g3",
     symbol: "JCO",
@@ -11791,7 +11791,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $213k, liq $1.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "pTA4St7D5WshfLUPBXoaxn5m8e3k2ort2DVt3gUTa17",
     symbol: "SUSDV",
@@ -11801,7 +11801,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $213k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2nCeHpECQvnMfzjU5fDMAKws1vBxMzxvWr6qqLpApump",
     symbol: "SUEDE",
@@ -11811,7 +11811,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.21M, liq $31k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BHhYx1h3mwiQLcYdD2N9tG6nRFcn6pmwwtzS5XMvBAGS",
     symbol: "HUBZZ",
@@ -11821,7 +11821,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $212k, liq $15.9k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "F9mv7XXbrXZb1sP2JUoswbCB3WHQM4QGMFDTVfnRZMnP",
     symbol: "FRA",
@@ -11831,7 +11831,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $210k, liq $26.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DF4zASfiDBr3uuAz4s2Sxtsjo7tDFZiQ2nLeKJGfBAGS",
     symbol: "RECAP",
@@ -11841,7 +11841,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $210k, liq $17.7k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DUAL6T9pATmQUFPYmrWq2BkkGdRxLtERySGScYmbHMER",
     symbol: "DUALSOL",
@@ -11851,7 +11851,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.21M, liq $209k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "G9ivB7K41a4G8m1k4QdxxN4L5eGKL7Mr12S26B85pump",
     symbol: "PIZZA",
@@ -11861,7 +11861,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $208k, liq $25.7k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FvgqHMfL9yn39V79huDPy3YUNDoYJpuLWng2JfmQpump",
     symbol: "$URO",
@@ -11871,7 +11871,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.21M, liq $62k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "J4ywFdm8H7hjwKzCaEQujhkDRfCnRviVnHMvFNDAoLNQ",
     symbol: "SOUL",
@@ -11881,7 +11881,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $207k, liq $19.8k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2x8o3hA5S5fBxCSE9hzVTf3RohcMWHqkDNKNEPuzprD5",
     symbol: "STBOT",
@@ -11891,7 +11891,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.21M, liq $41k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8G5ayEsJF4Q7FEWEGeF4jtnUWZBEKCqhySTFQf9Ppump",
     symbol: "HEAVYPULP",
@@ -11901,7 +11901,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.21M, liq $32k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BWXrrYFhT7bMHmNBFoQFWdsSgA3yXoAnMhDK6Fn1eSEn",
     symbol: "HADES",
@@ -11911,7 +11911,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $204k, liq $29.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "4Hcm1TfA1MvVhCQHvJCcKL7ymUhJZAV7P439H5ZHnKRh",
     symbol: "TEST",
@@ -11921,7 +11921,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.20M, liq $42k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BnXWvsVZYgBxTUDyDqHZjvFbQGvEZeipY4ZdmqCbpump",
     symbol: "ASSFACE",
@@ -11931,7 +11931,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.20M, liq $30k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Amyv5r77rhmDGMnsAHMxghMrJVGYitQDmkKt7wjdoge",
     symbol: "420BLAZEIT",
@@ -11941,7 +11941,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $202k, liq $17.7k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DFL1zNkaGPWm1BqAVqRjCZvHmwTFrEaJtbzJWgseoNJh",
     symbol: "DFL",
@@ -11951,7 +11951,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $202k, liq $9.8k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FBaQqJAuYkuKQpAcDuHtuupSPpqi33fbTxKXSjLDQory",
     symbol: "ORY",
@@ -11961,7 +11961,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $202k, liq $18.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2u98MM7DMtVmNG4iAKRNMtynjmkzgD6fXAzB3wVfhQvg",
     symbol: "LFGO",
@@ -11971,7 +11971,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $201k, liq $29.9k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "B82yjD7yiWS5BkKRNmfLABdYNma3vxz18L4sAkhxpump",
     symbol: "XERO",
@@ -11981,7 +11981,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $201k, liq $19.5k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "13QHuepdhtJ3urNsV9i1hdL8nQoca2G7ZaLzb5FYondo",
     symbol: "IRENON",
@@ -11991,7 +11991,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $201k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "nn944oFMxsHg9AnEuBHWxtBpGjRX3DRxx86PseuDrPJ",
     symbol: "VALEO",
@@ -12001,7 +12001,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $200k, liq $22.9k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GekTNfm84QfyP2GdAHZ5AgACBRd69aNmgA5FDhZupump",
     symbol: "GRIFT",
@@ -12011,7 +12011,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.20M, liq $65k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HCgybxq5Upy8Mccihrp7EsmwwFqYZtrHrsmsKwtGXLgW",
     symbol: "STARS",
@@ -12021,7 +12021,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $199k, liq $12.5k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BwUTq7fS6sfUmHDwAiCQZ3asSiPEapW5zDrsbwtapump",
     symbol: "SOLFUNMEME",
@@ -12031,7 +12031,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.20M, liq $39k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Av6qVigkb7USQyPXJkUvAEm4f599WTRvd75PUWBA9eNm",
     symbol: "COST",
@@ -12041,7 +12041,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.20M, liq $41k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "7XdCaKpqLmKE2K7yr9xaeWB1H2CVZ1oGwxB6hmd9pump",
     symbol: "WIZARD",
@@ -12051,7 +12051,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $198k, liq $24.5k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "inxKXw9V2NDZE7hDijzpJaKKUb97NEPJDTCEEiYg4yY",
     symbol: "INFINEX",
@@ -12061,7 +12061,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.20M, liq $50k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Dnb9dLSXxAarXVexehzeH8W8nFmLMNJSuGoaddZSwtog",
     symbol: "COK",
@@ -12071,7 +12071,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.20M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "6Bp9LWtyVXcEATi5nuquX5p1hPGUg1cVoUuXGN9Epump",
     symbol: "AIFRUITS",
@@ -12081,7 +12081,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.20M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "A3eME5CetyZPBoWbRUwY3tSe25S6tb18ba9ZPbWk9eFJ",
     symbol: "PENG",
@@ -12091,7 +12091,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.20M, liq $55k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GPrg1CgbBvAJS2SCuf9gF7NmQYsWudfyfWy5SUzypump",
     symbol: "EDWIN",
@@ -12101,7 +12101,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $195k, liq $27.9k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "4sp2EUDrQf46rZun6sYAWzjrXwUpx2T3njuoKmV766RJ",
     symbol: "HAMI",
@@ -12111,7 +12111,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $195k, liq $27.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5voS9evDjxF589WuEub5i4ti7FWQmZCsAsyD5ucbuRqM",
     symbol: "ELIZA",
@@ -12121,7 +12121,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.19M, liq $64k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GJ9LEQZgoxW487LRaRnajr6DWzouswd29EruRqwZBAGS",
     symbol: "NIKITA",
@@ -12131,7 +12131,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $194k, liq $18.6k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "C8cNX2D1y3jqKpMFkQhP1gGbfvTEdeckZXLBKSN5z5KF",
     symbol: "MAIL",
@@ -12141,7 +12141,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $194k, liq $27.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "pathdXw4He1Xk3eX84pDdDZnGKEme3GivBamGCVPZ5a",
     symbol: "PATHSOL",
@@ -12151,7 +12151,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.19M, liq $193k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "25p2BoNp6qrJH5As6ek6H7Ei495oSkyZd3tGb97sqFmH",
     symbol: "SOBA",
@@ -12161,7 +12161,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $193k, liq $25.4k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CFYhdWXsYfS7swnJgHRwb5toTHMEQD7Ljd5gGwKLpump",
     symbol: "KILROY",
@@ -12171,7 +12171,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $192k, liq $24.7k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "usd63SVWcKqLeyNHpmVhZGYAqfE5RHE8jwqjRA2ida2",
     symbol: "USDC+",
@@ -12181,7 +12181,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $191k, liq $0.5k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "J2LWsSXx4r3pYbJ1fwuX5Nqo7PPxjcGPpUb2zHNadWKa",
     symbol: "DPLN",
@@ -12191,7 +12191,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $191k, liq $12.5k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GFreY9SAUz96P7qkF19A4dtA4TmZgtL9Gmu8gV9Kpump",
     symbol: "JELLYFC",
@@ -12201,7 +12201,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $186k, liq $17.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "4PX31xRA1BaAyb2Js45ZKYp92VGWGp47yWeVs5CGVKbf",
     symbol: "ZDLT",
@@ -12211,7 +12211,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.19M, liq $31k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "4BBjpGwLgGmUxtT82YFK9xMhcvyy3zgf3HpxTRip1YoU",
     symbol: "MUNDI",
@@ -12221,7 +12221,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.19M, liq $31k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "sntn1oVhhKuytG42jyjneMYnGAtzkpJsBxHNEskTfGp",
     symbol: "JPHASELST",
@@ -12231,7 +12231,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.19M, liq $185k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "7G5DM7Jy7TMWKgH313tA3vF6AqHpbHP4TWZzpTVLWv9c",
     symbol: "RTR",
@@ -12241,7 +12241,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.19M, liq $162k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "7m2TUkpPZCScBhPJnGjWjbh75KkDNnwAdd7i74m8awad",
     symbol: "WW3",
@@ -12251,7 +12251,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.18M, liq $40k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "A8YHuvQBMAxXoZAZE72FyC8B7jKHo8RJyByXRRffpump",
     symbol: "XBT_A8YH",
@@ -12261,7 +12261,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.18M, liq $45k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "B1KrhWbacPi3tpjWqnsbjKQJEkp3RvWppGxNzUYBpump",
     symbol: "CHEESE",
@@ -12271,7 +12271,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $183k, liq $22.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2ru87k7yAZnDRsnqVpgJYETFgqVApuBcwB2xDb19pump",
     symbol: "BIAO",
@@ -12281,7 +12281,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.18M, liq $37k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FXJAdx38aXJdQd3ABAVu7fQ7Bjh9oMN92eTxszFNpump",
     symbol: "CDOGE",
@@ -12291,7 +12291,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $182k, liq $17.5k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3ADvYyTbmQcLMiqdFSo1m2KpQWxYg9X6wW4N8viRTNf9",
     symbol: "TRIAD",
@@ -12301,7 +12301,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $181k, liq $17.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2XPqoKfJitk8YcMDGBKy7CMzRRyF2X9PniZeCykDUZev",
     symbol: "HUND",
@@ -12311,7 +12311,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.18M, liq $33k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "EicWvteVi2fWepEzS3FYWsnuPoP6caZfjnKqNvydLjCH",
     symbol: "LIT",
@@ -12321,7 +12321,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.18M, liq $76k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "myrcAs6bpP2g5oGHZ3qpgrfZQAFkbo9KUHdqYDXMjGv",
     symbol: "MYRC",
@@ -12331,7 +12331,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.18M, liq $76k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "LABSh5DTebUcUbEoLzXKCiXFJLecDFiDWiBGUU1GpxR",
     symbol: "LABS",
@@ -12341,7 +12341,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $178k, liq $22.9k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "26VfKb7jjtdEdvfovoBijScoZmJbWWasFZkgfUD5w7cy",
     symbol: "MOG",
@@ -12351,7 +12351,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $175k, liq $14.2k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "ZKFHiLAfAFMTcDAuCtjNW54VzpERvoe7PBF9mYgmeta",
     symbol: "ZKFG",
@@ -12361,7 +12361,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.17M, liq $56k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DPdNMhjBnftREwT82KXytQBk7zd5RBkRrG41L795pump",
     symbol: "QE",
@@ -12371,7 +12371,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $175k, liq $17.5k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AGRidUXLeDij9CJprkZx7WBXtTQC67jtfiwz293mVrJ",
     symbol: "AGRI",
@@ -12381,7 +12381,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $174k, liq $2.2k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DeoP2swMNa9d4SGcQkR82j4RYYeNhDjcTCwyzEhKwfAf",
     symbol: "DEO",
@@ -12391,7 +12391,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $173k, liq $8.2k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "gcho94FhdhJNDhVEnHHskXP7PcSKDqCs3GKEj5zrewn",
     symbol: "GCHO",
@@ -12401,7 +12401,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $172k, liq $15.2k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump",
     symbol: "BULLY",
@@ -12411,7 +12411,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.17M, liq $56k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Taki7fi3Zicv7Du1xNAWLaf6mRK7ikdn77HeGzgwvo4",
     symbol: "TAKI",
@@ -12421,7 +12421,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $171k, liq $0.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "moLtguTf84g34S34PbnJDRKR1FXb5di1UCRsnB7hKjE",
     symbol: "MOLTID",
@@ -12431,7 +12431,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $170k, liq $25.5k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "147uk4CFxsppdmKZUAakfLvduo4x459HiJ5Ct6MzJory",
     symbol: "MGN",
@@ -12441,7 +12441,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $170k, liq $21.6k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FDEF2U9geiWS7sdGPCUo2r1wGswkJr2mmVTECiH6pump",
     symbol: "MITCH",
@@ -12451,7 +12451,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $169k, liq $19.4k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2DfBjrPFZjDTiCY6pxchS6aSdUdEpkm7PdqpovHjBAGS",
     symbol: "PRIMIS",
@@ -12461,7 +12461,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $169k, liq $14.7k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "pepo1CFNU2RXf7yXX7HNXazXwxsq8WrPvDHpHriwoLY",
     symbol: "PEPO",
@@ -12471,7 +12471,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $169k, liq $27.9k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FasH397CeZLNYWkd3wWK9vrmjd1z93n3b59DssRXpump",
     symbol: "BUTTCOIN_FASH",
@@ -12481,7 +12481,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.17M, liq $71k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Lrxqnh6ZHKbGy3dcrCED43nsoLkM1LTzU2jRfWe8qUC",
     symbol: "LARIX",
@@ -12491,7 +12491,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $168k, liq $6.8k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HHjoYwUp5aU6pnrvN4s2pwEErwXNZKhxKGYjRJMoBjLw",
     symbol: "PIP",
@@ -12501,7 +12501,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $168k, liq $8.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "H7bTHGb5Cvo5fGe5jBDNDPUv8KykQnzyZA3qZ8sH7yxw",
     symbol: "GUMMY",
@@ -12511,7 +12511,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.17M, liq $59k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "72FkeF1cpBMtbordhTVNVbBGdaN5DfHcchstHwPWpump",
     symbol: "PUMPVILLE",
@@ -12521,7 +12521,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $165k, liq $18.9k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "EPeUFDgHRxs9xxEPVaL6kfGQvCon7jmAWKVUHuux1Tpz",
     symbol: "BAT",
@@ -12531,7 +12531,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $164k, liq $14.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GPwwihLa1w9Qsz27SmNrj7aLVnE7pr2cAvHe6aVVpump",
     symbol: "DANK",
@@ -12541,7 +12541,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $163k, liq $24.4k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5XyKkFaJpAmsH4Tf2EFj3S61W3hC5cJhxNZQQ5h1pump",
     symbol: "LUIGI",
@@ -12551,7 +12551,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.16M, liq $50k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Eh1fXbAipe4k7CYR9UMb2bbWmBcpU3HcyX3LWuRVFBLz",
     symbol: "FM",
@@ -12561,7 +12561,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $162k, liq $5.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3o2ySLzzvf94VwGnqhNqxHx3Bq4NNimTVr9UKuksTHRT",
     symbol: "THRT",
@@ -12571,7 +12571,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $161k, liq $14.2k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FCPMdpvwxtWBvgDDsPuBb6wyf41ik2gtPqNN9jWSBAGS",
     symbol: "PPW",
@@ -12581,7 +12581,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $161k, liq $15.4k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FsA54yL49WKs7rWoGv9sUcbSGWCWV756jTD349e6H2yW",
     symbol: "KOKO",
@@ -12591,7 +12591,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $161k, liq $18.9k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "7Y6Rix8X2botuMaJ2mno4UqSWdQZqU4RezY6qp7zpump",
     symbol: "BOLT",
@@ -12601,7 +12601,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $159k, liq $22.4k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "EATGZHJViJsk7nEKkrdJicwNbfpkJfAtmrEmrjXR8NBj",
     symbol: "POPDOG",
@@ -12611,7 +12611,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $159k, liq $20.9k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "JDwzFSxcUvLubUb9xAuuZNvh4bbcEJcuM9TezpmRHVWF",
     symbol: "DOODOO",
@@ -12621,7 +12621,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $159k, liq $1.4k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9So52ugZh2BLBT3f7p61947q91uQh2DyvbfyMDeRpump",
     symbol: "MUSKIT",
@@ -12631,7 +12631,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $159k, liq $29.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "H5b4iYiZYycr7fmQ1dMj7hdfLGAEPcDH261K4hugpump",
     symbol: "MONEROCHAN",
@@ -12641,7 +12641,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $159k, liq $26.4k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3vJenGaGsuKG5shPhi7rjnuy3MV6xjmBTGjYqYzXpump",
     symbol: "RAT",
@@ -12651,7 +12651,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $158k, liq $17.9k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HJ39rRZ6ys22KdB3USxDgNsL7RKiQmsC3yL8AS3Suuku",
     symbol: "UPDOG",
@@ -12661,7 +12661,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $158k, liq $26.8k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "ADNScivK6Pt2XsfsufuyUiZaKbRww5JANDvZ7texDid1",
     symbol: "ADNS",
@@ -12671,7 +12671,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $157k, liq $12.7k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9HHrikqNLYvfXzxtNV8pvPLrWbDGG4mZkVpaKBcvgLyu",
     symbol: "BUDDY",
@@ -12681,7 +12681,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $156k, liq $19.6k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "ACXK4KmfXrf93e3AEo1ZiGDDDpcBpNEnWVxy9BHFpump",
     symbol: "MHGA",
@@ -12691,7 +12691,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $154k, liq $15.6k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "89BZ5RU212yKr3iFdJHyn3ZsR37bS4s8TbmVb2yApump",
     symbol: "MIM",
@@ -12701,7 +12701,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $154k, liq $18.8k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DxtssVdyYe4wWE5f5zEgx2NqtDFbVL3ABGY62WCycHWg",
     symbol: "BRETT",
@@ -12711,7 +12711,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.15M, liq $32k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "X69GKB2fLN8tSUxNTMneGAQw79qDw9KcPQp3RoAk9cf",
     symbol: "$GREMLY",
@@ -12721,7 +12721,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $153k, liq $26.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "sctmWXGT7L75psrUHV2xxyTQKndE7ZcCQRHy2z6D5ER",
     symbol: "HONESTSOL",
@@ -12731,7 +12731,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.15M, liq $153k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8D9foi1nqfabp8D3uNJCrzt1xkvxq8xHYH8Lxb4fbonk",
     symbol: "MEMESAI",
@@ -12741,7 +12741,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.15M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "qGDGw7T1XtWn7cd75EkoreoJfLfJwamQRDuJSPLBAGS",
     symbol: "FITTED",
@@ -12751,7 +12751,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $152k, liq $13.5k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "7EW5dDD6MYJK4PcZ89MGApJQwWeDEeNgH4NCVU4qpump",
     symbol: "PURCH",
@@ -12761,7 +12761,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.15M, liq $31k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "C1MHyoTJpRTeS9AQCyspNVu2EWAYCZwmJ1jNkEArFP1f",
     symbol: "APE",
@@ -12771,7 +12771,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.15M, liq $31k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GFJbQ7WDQry73iTaGkJcXKjvi1ViFTFmHSENgz92jFPP",
     symbol: "SECURE",
@@ -12781,7 +12781,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $151k, liq $19.6k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2jvsWRkT17ofmv9pkW7ofqAFWSCNyJYdykJ7kPKbmoon",
     symbol: "AIR3",
@@ -12791,7 +12791,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $150k, liq $14.8k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9EQSeWY7pDB7MYoSFr8QJ19onGS1ehDmLbSGT2b3pump",
     symbol: "MONKE",
@@ -12801,7 +12801,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $150k, liq $28.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9X2RHtKrBzw3SLYe9E88cBd1kz5RfU1f4JTSn4aRH43d",
     symbol: "SKID",
@@ -12811,7 +12811,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $150k, liq $20.2k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CPcf58MNikQw2G23kTVWQevRDeFDpdxMH7KkR7Lhpump",
     symbol: "DOBBY",
@@ -12821,7 +12821,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $150k, liq $25.7k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "g2M4twkhi5uGMdHQS8RbugciyABB2CmngqSUBDupump",
     symbol: "AISI",
@@ -12831,7 +12831,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $149k, liq $17.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "4rwPNRSFgcS7EGphFdX7VwXuhjZGxph7gYyb7Zp2pump",
     symbol: "AURAFARM",
@@ -12841,7 +12841,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.15M, liq $34k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "SNSNkV9zfG5ZKWQs6x4hxvBRV6s8SqMfSGCtECDvdMd",
     symbol: "SNS_SNSN",
@@ -12851,7 +12851,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $147k, liq $20.5k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "F5qFr17LeunQk5ikRM9hseSi2bbZYXYRum8zaTegtrnd",
     symbol: "MODRIC",
@@ -12861,7 +12861,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.15M, liq $86k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "H2yHLoC24dM5v1Vjh2Poqx7fZ9mp8EfR2MYseXScpump",
     symbol: "BOXABL",
@@ -12871,7 +12871,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $146k, liq $19.5k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CfVs3waH2Z9TM397qSkaipTDhA9wWgtt8UchZKfwkYiu",
     symbol: "KNET",
@@ -12881,7 +12881,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $146k, liq $26.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CozoH5HBTyyeYSQxHcWpGzd4Sq5XBaKzBzvTtN3ondo",
     symbol: "INTUON",
@@ -12891,7 +12891,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $146k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "eEUiUs4JWYZrp72djAGF1A8PhpR6rHphGeGN7GbVLp6",
     symbol: "GALA",
@@ -12901,7 +12901,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.14M, liq $47k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "ESBCnCXtEZDmX8QnHU6qMZXd9mvjSAZVoYaLKKADBAGS",
     symbol: "BTH",
@@ -12911,7 +12911,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $145k, liq $13.5k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GnxdTsSQNQ3FF72nTyWo4SUt59Tt1MqDkRRfoPtKjMvJ",
     symbol: "SFLP.4",
@@ -12921,7 +12921,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $145k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "E2gLkTXSbbTMmJM19xkquawun2ShJSi7G59A8c2PtbFa",
     symbol: "WEED",
@@ -12931,7 +12931,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $143k, liq $19.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "F8Pz2mx7V8exRkBNFzvpkZAwjNPxWPGqzYJL2ckrpump",
     symbol: "PERK",
@@ -12941,7 +12941,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $143k, liq $17.7k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CX9YDTED9TWgVXVoFy8JL9gSSAEWcTv4mzjLSv17LQsj",
     symbol: "DRUGS",
@@ -12951,7 +12951,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $142k, liq $18.6k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9nEqaUcb16sQ3Tn1psbkWqyhPdLmfHWjKGymREjsAgTE",
     symbol: "WOOF",
@@ -12961,7 +12961,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $142k, liq $2.4k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "chSoLyETGSZpdpAk4TKfRWw5kyuHkzt5WaQ2kiJYJun",
     symbol: "CHSOL",
@@ -12971,7 +12971,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.14M, liq $142k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "98mb39tPFKQJ4Bif8iVg9mYb9wsfPZgpgN1sxoVTpump",
     symbol: "LLM",
@@ -12981,7 +12981,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.14M, liq $59k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DubwWZNWiNGMMeeQHPnMATNj77YZPZSAz2WVR5WjLJqz",
     symbol: "CRP",
@@ -12991,7 +12991,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $141k, liq $0.2k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Ew8KqgSitYucieR5KnSAL2SUFspcwA8AgSuZ5xWspump",
     symbol: "KURUMI",
@@ -13001,7 +13001,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $140k, liq $24.9k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "vLieQF5eDqUuuk8RzRaqgAHkXr7bSEBZaWk9Zfibonk",
     symbol: "DEBT",
@@ -13011,7 +13011,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $139k, liq $14.5k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Huh3G975pLP3WTXKDnsaCTu7enAoFsHMFJCbFLeNpump",
     symbol: "FOMO",
@@ -13021,7 +13021,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $139k, liq $22.6k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3UCMiSnkcnkPE1pgQ5ggPCBv6dXgVUy16TmMUe1WpG9x",
     symbol: "ALEPH",
@@ -13031,7 +13031,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $139k, liq $9.5k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8oosbx7jJrZxm5m4ThKhBpvwwG4QpoAe6i4GiG19pump",
     symbol: "WIZARD_8OOS",
@@ -13041,7 +13041,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.14M, liq $47k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "57dYAUq7Y4hiCSdAB7iBDg4gcYFq7HeUaEs3XnNkbrrr",
     symbol: "发财",
@@ -13051,7 +13051,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $139k, liq $19.9k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3ywtR9qQH4BuA7LSfLvEuW1gh6ha7EK18XwLbHvhryPZ",
     symbol: "DIME",
@@ -13061,7 +13061,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $138k, liq $2.2k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2MDr15dTn6km3NWusFcnZyhq3vWpYDg7vWprghpzbonk",
     symbol: "NOM",
@@ -13071,7 +13071,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $138k, liq $29.4k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "n54ZwXEcLnc3o7zK48nhrLV4KTU5wWD4iq7Gvdt5tik",
     symbol: "PEEP",
@@ -13081,7 +13081,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $138k, liq $19.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8bdhP1UQMevciC9oJ7NrvgDfoW8XPXPfbkkm6vKtMS7N",
     symbol: "SPORE",
@@ -13091,7 +13091,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $137k, liq $25.8k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HkBWJJiaUW5Kod4HpHWZiGD9PQVipmMiPDgiRPcNpump",
     symbol: "CRUST",
@@ -13101,7 +13101,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $137k, liq $25.5k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "4AjvPXMn8YZG9saAVJvcWspg73oTFf2JmU4in4Xgpump",
     symbol: "STABLE",
@@ -13111,7 +13111,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $137k, liq $17.9k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5sMyPtYRcrEVt27DW3xhGVVha3zCXLv4caVt88PXjBgV",
     symbol: "SCP",
@@ -13121,7 +13121,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $137k, liq $3.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "kiraZUmSnzgfVfhrdvNj6hxHFaPFTTUk8ioY98cbh6G",
     symbol: "TAP",
@@ -13131,7 +13131,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $136k, liq $4.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "pumpkinsEq8xENVZE6QgTS93EN4r9iKvNxNALS1ooyp",
     symbol: "PUMPKINSOL",
@@ -13141,7 +13141,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.14M, liq $136k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AvoecWraqX969kfXUF5XCCDz59sjRjiDa1KUDyj225t8",
     symbol: "MINT",
@@ -13151,7 +13151,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $136k, liq $1.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "LoL1RDQiUfifC2BX28xaef6r2G8ES8SEzgrzThJemMv",
     symbol: "LOL_LOL1",
@@ -13161,7 +13161,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.14M, liq $34k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "camaK1kryp4KJ2jS1HDiZuxmK7S6dyEtr9DA7NsuAAB",
     symbol: "CAMAOSOL",
@@ -13171,7 +13171,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.14M, liq $136k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BS7HxRitaY5ipGfbek1nmatWLbaS9yoWRSEQzCb3pump",
     symbol: "DOGGY",
@@ -13181,7 +13181,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $135k, liq $21.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "MonkeD3uUj5c1w5tW8tJeTe5fX1jkpkdtD3dTibnidx",
     symbol: "MONKESOL",
@@ -13191,7 +13191,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.13M, liq $134k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BGSo18NXTWGtyNa5DBBP1ZCfUFRPWj6bECrPKakn8qN",
     symbol: "BGSOL",
@@ -13201,7 +13201,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $134k, liq $0.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HBB111SCo9jkCejsZfz8Ec8nH7T6THF8KEKSnvwT6XK6",
     symbol: "HBB",
@@ -13211,7 +13211,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $134k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FV56CmR7fhEyPkymKfmviKV48uPo51ti9kAxssQqTDLu",
     symbol: "WALTER",
@@ -13221,7 +13221,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.13M, liq $34k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "4CoTCzobYt38zVbSieZxcmz2CCs8kmZJ6wnbj8HWocto",
     symbol: "OCTO",
@@ -13231,7 +13231,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.13M, liq $58k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "412zDygnwP9DzitnQVgRKUFFTDmrYScFch6P2k39pump",
     symbol: "JELLYBEAN",
@@ -13241,7 +13241,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $132k, liq $28.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GxdTh6udNstGmLLk9ztBb6bkrms7oLbrJp5yzUaVpump",
     symbol: "SCIHUB",
@@ -13251,7 +13251,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.13M, liq $32k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AK9yVoXKK1Cjww7HDyjYNyW5FujD3FJ2xbjMUStspump",
     symbol: "$SITCOM",
@@ -13261,7 +13261,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.13M, liq $32k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "7UN8WkBumTUCofVPXCPjNWQ6msQhzrg9tFQRP48Nmw5V",
     symbol: "XENCAT",
@@ -13271,7 +13271,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $131k, liq $18.7k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "6Rwcmkz9yiYVM5EzyMcr4JsQPGEAWhcUvLvfBperYnUt",
     symbol: "KWIF",
@@ -13281,7 +13281,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $131k, liq $24.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CShLzWUWGRQiYsQfCwiR2jjDBo1iRJ1qMc9185zindi",
     symbol: "TASM",
@@ -13291,7 +13291,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $130k, liq $10.6k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "iceSdwqztAQFuH6En49HWwMxwthKMnGzLFQcMN3Bqhj",
     symbol: "ICESOL",
@@ -13301,7 +13301,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.13M, liq $130k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BrYANThKaAbjZZH5XWLrw26NzMbfUNmBwbZiMe4Fj5Mk",
     symbol: "BRYAN",
@@ -13311,7 +13311,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $130k, liq $10.8k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AATECgWF4KjALbpgUXjabqFKHmdtjWdfdFNzCH3ipump",
     symbol: "ITMT",
@@ -13321,7 +13321,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $129k, liq $15.6k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8FU95xFJhUUkyyCLU13HSzDLs7oC4QZdXQHL6SCeab36",
     symbol: "UNI",
@@ -13331,7 +13331,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $129k, liq $5.6k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "J1ow1c3ExcJYQmgNFRPfCp1LMYRf6P3A33isDcBmpump",
     symbol: "ZODS",
@@ -13341,7 +13341,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $129k, liq $28.6k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "4q3Z58YxrZEAVMLtMwnm7eHtodSD3LSpSNt3pDnqpump",
     symbol: "KOLIN",
@@ -13351,7 +13351,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $129k, liq $26.8k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CH74tuRLTYcxG7qNJCsV9rghfLXJCQJbsu7i52a8F1Gn",
     symbol: "SOLX",
@@ -13361,7 +13361,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $129k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "gotMd6mpiWE4RWTv3eH3SrYjAXpxkQiZYY1zFKCNRq9",
     symbol: "GOTMSOL",
@@ -13371,7 +13371,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.13M, liq $129k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8CkiSHHJDHJV4LUoiRMLUhqG58cUkbyJRtcP4Z3mCXNf",
     symbol: "POWSCHE",
@@ -13381,7 +13381,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $129k, liq $18.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Ckit5s1Cpc3RdMh1HrhfW2nAy4PnkkgjXgXMeykbpump",
     symbol: "XONA",
@@ -13391,7 +13391,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $128k, liq $15.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "jkAWzPumRhJE2KyqVy4kB7m9KwXBeSEXnFAGoWtpump",
     symbol: "CLAUDE",
@@ -13401,7 +13401,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $128k, liq $19.4k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "52Rh8epudA3qvLmyP1YCavRWrNV8As1JcW5xMU7mJEj9",
     symbol: "CHRONO",
@@ -13411,7 +13411,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $128k, liq $2.4k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9EYScpiysGnEimnQPzazr7Jn9GVfxFYzgTEj85hV9L6U",
     symbol: "TOOKER",
@@ -13421,7 +13421,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $128k, liq $29.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8NwtzwGm4CV8Hm4fJXR69ac1MxDYuSaN3A9HVyikpump",
     symbol: "ASTROID",
@@ -13431,7 +13431,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $128k, liq $23.7k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CWX6t6pGJ1zsnuywnyd2ZMZJ7inB2sWuPdsteoT6pump",
     symbol: "ETF500",
@@ -13441,7 +13441,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.13M, liq $34k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "7woCERDM7WV4XaBLfdGwvHBX3EJHQqp8XjArrgSFKkpL",
     symbol: "DUBCAT",
@@ -13451,7 +13451,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $127k, liq $16.7k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8SpPaFLycx897D6sowPZkEkcNdDahzRZb5itr6D8pump",
     symbol: "LEA",
@@ -13461,7 +13461,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.13M, liq $31k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8BtoThi2ZoXnF7QQK1Wjmh2JuBw9FjVvhnGMVZ2vpump",
     symbol: "DARK",
@@ -13471,7 +13471,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.13M, liq $50k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CyUgNnKPQLqFcheyGV8wmypnJqojA7NzsdJjTS4nUT2j",
     symbol: "GIL",
@@ -13481,7 +13481,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $126k, liq $26.8k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DUhWgHD3KgHHmsYdQdJHDv359bySNzigYcqJ45Gcpump",
     symbol: "GRRR",
@@ -13491,7 +13491,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $125k, liq $22.6k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "coqRkaaKeUygDPhuS3mrmrj6DiHjeQJc2rFbT2YfxWn",
     symbol: "BCOQ",
@@ -13501,7 +13501,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.12M, liq $47k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BoAQaykj3LtkM2Brevc7cQcRAzpqcsP47nJ2rkyopump",
     symbol: "FOREST",
@@ -13511,7 +13511,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.12M, liq $42k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2wP76beSJ8NB8bgFEkZkQCGtWErxqkxTYEGjx9jYpump",
     symbol: "BOOTSTRAP",
@@ -13521,7 +13521,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $124k, liq $18.6k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "E4Q5pLaEiejwEQHcM9GeYSQfMyGy8DJ4bPWgeYthn24v",
     symbol: "ADA",
@@ -13531,7 +13531,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.12M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "7ZqzGzTNg5tjK1CHTBdGFHyKjBtXdfvAobuGgdt4pump",
     symbol: "BARSIK",
@@ -13541,7 +13541,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.12M, liq $33k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5H4voZhzySsVvwVYDAKku8MZGuYBC7cXaBKDPW4YHWW1",
     symbol: "VGBP",
@@ -13551,7 +13551,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $123k, liq $29.7k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DEEZgP19ZPovNeWRJZw7KuNbkLH6xjNjZ4HsUJnmZv7J",
     symbol: "NUTS_DEEZ",
@@ -13561,7 +13561,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $123k, liq $6.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DUr5rZAfYduvihaiyMnfqgnhqYWbPWJXvK954qyTpump",
     symbol: "SOLINU",
@@ -13571,7 +13571,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $123k, liq $16.4k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GhBPHgnNF99EThYxt4bxUfPX1hCPyAS72RCBgLjLpump",
     symbol: "ARIA",
@@ -13581,7 +13581,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $123k, liq $19.6k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "vybe5DgwzGdvJMi4oH7TiQpubJd4QSDuGmbvWfACeb8",
     symbol: "VYBESOL",
@@ -13591,7 +13591,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.12M, liq $122k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CAW777xcHVTQZ4CRwVQGB8CV1BVKPm5bNVxFJHWFKiH8",
     symbol: "CAW",
@@ -13601,7 +13601,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $122k, liq $14.6k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8biqsLDiRPaPM11S42zKtNaC3WWKF64PNoPG9htzy99n",
     symbol: "OK",
@@ -13611,7 +13611,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.12M, liq $32k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "F6qoefQq4iCBLoNZ34RjEqHjHkD8vtmoRSdw9Nd55J1k",
     symbol: "SHIB",
@@ -13621,7 +13621,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $121k, liq $26.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CPLTbYbtDMKZtHBaPqdDmHjxNwESCEB14gm6VuoDpump",
     symbol: "DTV",
@@ -13631,7 +13631,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $121k, liq $20.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5yxNbU8DgYJZNi3mPD9rs4XLh9ckXrhPjJ5VCujUWg5H",
     symbol: "FRONK",
@@ -13641,7 +13641,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $121k, liq $8.4k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9gwTegFJJErDpWJKjPfLr2g2zrE3nL1v5zpwbtsk3c6P",
     symbol: "USEDCAR",
@@ -13651,7 +13651,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.12M, liq $37k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "4GJ3TCt5mTgQT5BRKb14AkjddpFQqKVfphxzS3t4foZ9",
     symbol: "JENNER",
@@ -13661,7 +13661,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.12M, liq $42k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "7Tx8qTXSakpfaSFjdztPGQ9n2uyT1eUkYz7gYxxopump",
     symbol: "ASSDAQ",
@@ -13671,7 +13671,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.12M, liq $31k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "ARiZfq6dK19uNqxWyRudhbM2MswLyYhVUHdndGkffdGc",
     symbol: "GEMINI",
@@ -13681,7 +13681,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $119k, liq $9.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AtortPA9SVbkKmdzu5zg4jxgkR4howvPshorA9jYbonk",
     symbol: "IKUN",
@@ -13691,7 +13691,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.12M, liq $39k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "EtTQ2QRyf33bd6B2uk7nm1nkinrdGKza66EGdjEY4s7o",
     symbol: "PPLTR",
@@ -13701,7 +13701,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $119k, liq $14.8k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FrSFwE2BxWADEyUWFXDMAeomzuB4r83ZvzdG9sevpump",
     symbol: "NORMIE",
@@ -13711,7 +13711,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $119k, liq $13.9k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GRJQtWwdJmp5LLpy8JWjPgn5FnLyqSJGNhn5ZnCTFUwM",
     symbol: "CLOCKSOL",
@@ -13721,7 +13721,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.12M, liq $119k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9yZ5Ru8pbmJZ6Q2DKLCGXkaLNwkm83cnJ4QCw4PFpump",
     symbol: "WOBBLES",
@@ -13731,7 +13731,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $119k, liq $18.9k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "71S9cppWipeUEQDFngYwxjoxB6Sz1MUqX72byLsVYJqy",
     symbol: "XSGD",
@@ -13741,7 +13741,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $118k, liq $2.5k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "SPQkEcsdALLLn4MqCb3XH64hYTmdD4fZZk9CF5LiQV8",
     symbol: "SPICE",
@@ -13751,7 +13751,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $118k, liq $0.6k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9nD29a6TMDFHqAXS3iJ6nwLByLBS1gx2664ieQf7Zo7H",
     symbol: "FUELX",
@@ -13761,7 +13761,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $118k, liq $3.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GdbJgfLXG5pBEibnrpSvfmXfbNKvyZkLQoTiQLoJpump",
     symbol: "FLIP",
@@ -13771,7 +13771,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $118k, liq $13.5k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "6cvrZWgEUkr82yKAmxp5cQu7wgYYBPULf16EUBp4pump",
     symbol: "MANIFEST",
@@ -13781,7 +13781,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.12M, liq $36k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "EKwF2HD6X4rHHr4322EJeK9QBGkqhpHZQSanSUmWkecG",
     symbol: "BIGTROUT",
@@ -13791,7 +13791,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $118k, liq $26.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GEYrotdkRitGUK5UMv3aMttEhVAZLhRJMcG82zKYsaWB",
     symbol: "POTATO",
@@ -13801,7 +13801,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $118k, liq $0.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FWoGYRhR6YagBSqncPSdn43GHNikSPw1ggrGzyM3H5rE",
     symbol: "COW",
@@ -13811,7 +13811,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $117k, liq $14.2k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "88881Hu2jGMfCs9tMu5Rr7Ah7WBNBuXqde4nR5ZmKYYy",
     symbol: "SUSDC-8",
@@ -13821,7 +13821,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $117k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "kyKYFGGhy5YAg6Yotedj7ZtByUBepsraT4BFkF3Uxmk",
     symbol: "KYKYROS",
@@ -13831,7 +13831,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $116k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9XRpjZjhJPeWtUymiEWn3FW7uAnMeQca14ucTWWWyP2g",
     symbol: "ARG",
@@ -13841,7 +13841,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $116k, liq $20.8k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2wme8EVkw8qsfSk2B3QeX4S64ac6wxHPXb3GrdckEkio",
     symbol: "SOLS",
@@ -13851,7 +13851,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $115k, liq $0.7k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5Ke381D44MEQg3BQarWhAwhj1xbdNvXe2KHkTiZzw7r5",
     symbol: "LUCI",
@@ -13861,7 +13861,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $114k, liq $14.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8upjSpvjcdpuzhfR1zriwg5NXkwDruejqNE9WNbPRtyA",
     symbol: "GRAPE",
@@ -13871,7 +13871,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $114k, liq $4.5k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5JnZ667P3VcjDinkJFysWh2K2KtViy63FZ3oL5YghEhW",
     symbol: "APYS",
@@ -13881,7 +13881,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $114k, liq $13.2k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DcRnZGtuPaFfj8MdWXqTBu5kL9Brvhjd2gC5rJF56XDn",
     symbol: "$BRIT",
@@ -13891,7 +13891,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $113k, liq $9.7k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Be78Ld3SpYMif5YgxM4ipJx2eGSDcAaaCkHUzcV5pump",
     symbol: "42069K",
@@ -13901,7 +13901,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $113k, liq $19.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DUSTawucrTsGU8hcqRdHDCbuYhCPADMLM2VcCb8VnFnQ",
     symbol: "DUST",
@@ -13911,7 +13911,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $113k, liq $7.6k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DXBYAw9aQheMdujaLZYnVSpKSK4n8jMS7HfLbiv5RWnS",
     symbol: "BRETTA",
@@ -13921,7 +13921,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $113k, liq $12.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8NfK7b9u1RvMpHJnAnZki4mNQwjhvzrVZs7bRQatpump",
     symbol: "LION",
@@ -13931,7 +13931,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $113k, liq $23.5k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2nnrviYJRLcf2bXAxpKTRXzccoDbwaP4vzuGUG75Jo45",
     symbol: "KENDU",
@@ -13941,7 +13941,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $113k, liq $16.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "J3NrhzUeKBSA3tJQjNq77zqpWJNz3FS9TrX7H7SLKcom",
     symbol: "COM",
@@ -13951,7 +13951,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $112k, liq $21.6k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "7RDvypx3p9EWq4nZZKux1ZQAc7DUWXpHTVKxCCnupump",
     symbol: "KNOT",
@@ -13961,7 +13961,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $112k, liq $20.5k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "bGxHNbsacaVL35pkYWae5PYQDZXSpuQb3QDyW31pump",
     symbol: "PEANUT",
@@ -13971,7 +13971,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.11M, liq $38k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "mo7mapMrCsyci5w1td1wgrKPtNeCfjfkKi96DknWi5N",
     symbol: "CATBAT",
@@ -13981,7 +13981,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $112k, liq $14.6k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "ALR5X2H6THn2VDPoMtkVwxVktcN1kQGvxCwLfejzpump",
     symbol: "WURK",
@@ -13991,7 +13991,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $111k, liq $19.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DDAjZFshfVvdRew1LjYSPMB3mgDD9vSW74eQouaJnray",
     symbol: "HINEY",
@@ -14001,7 +14001,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $111k, liq $10.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BnszRWbs9LxSzsCUUS57HMTNNtyDHFsnmZ1mVhAYdaos",
     symbol: "LLM_BNSZ",
@@ -14011,7 +14011,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $111k, liq $11.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "59nzDoRyJ1QcLcFYFs4GVdeZ4qUEb16T2KNuHPWMpump",
     symbol: "UNTIL",
@@ -14021,7 +14021,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $111k, liq $25.6k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "yLUD35WTiPLEY6DUqEj5W2JVXF2DfKB5arPkKJXpump",
     symbol: "APY",
@@ -14031,7 +14031,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $110k, liq $18.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "9hdynudAhhWzuNFAnpz7NjvdKMfh9z8mcZKNYHuAUgJQ",
     symbol: "SWIF",
@@ -14041,7 +14041,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $110k, liq $25.5k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5552z6Qp2xr596ox1UVN4ppDwwyjCfY8cXwzHMXgMcaS",
     symbol: "MOLTING",
@@ -14051,7 +14051,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $110k, liq $13.9k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GRUmPYbiTpq9ZPy5LAqBMMze7kErf5dEX2i9qYfwoSmR",
     symbol: "GRUMPY",
@@ -14061,7 +14061,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $110k, liq $17.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "SHARKSYJjqaNyxVfrpnBN9pjgkhwDhatnMyicWPnr1s",
     symbol: "SHARK",
@@ -14071,7 +14071,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $110k, liq $7.8k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "2wqkw3idoEYFV8fyM54PvS5BYHieT8rAZqzdHg6aqZby",
     symbol: "PEPEAI",
@@ -14081,7 +14081,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $109k, liq $15.4k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CyRbC97yrkUB31sv9PLw5Hw8276zXH4sRoTE1KcDpump",
     symbol: "LOOBY",
@@ -14091,7 +14091,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $109k, liq $18.2k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Goatm5cqggssKRUwbMnPhHXKtN5SDGEP57qjwTSHD1Xf",
     symbol: "AIAI",
@@ -14101,7 +14101,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $109k, liq $15.4k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "6VHL2vMKgrF1YQFSv29Rs1pj9VCRK29bD11NtDqerqHA",
     symbol: "$SSHIB",
@@ -14111,7 +14111,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.11M, liq $39k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "7Pnqg1S6MYrL6AP1ZXcToTHfdBbTB77ze6Y33qBBpump",
     symbol: "BAGWORK",
@@ -14121,7 +14121,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $109k, liq $26.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AD27ov5fVU2XzwsbvnFvb1JpCBaCB5dRXrczV9CqSVGb",
     symbol: "REAL_AD27",
@@ -14131,7 +14131,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $109k, liq $25.6k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "DFVeSFxNohR5CVuReaXSz6rGuJ62LsKhxFpWsDbbjups",
     symbol: "VIBE",
@@ -14141,7 +14141,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.11M, liq $52k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GYKmdfcUmZVrqfcH1g579BGjuzSRijj3LBuwv79rpump",
     symbol: "WDOG",
@@ -14151,7 +14151,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.11M, liq $46k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FyPDfX92B4uEk4zZouy96d1Kk1LgnCznBpzAFSsZpump",
     symbol: "MIA",
@@ -14161,7 +14161,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $108k, liq $20.9k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HeJUFDxfJSzYFUuHLxkMqCgytU31G6mjP4wKviwqpump",
     symbol: "GNON",
@@ -14171,7 +14171,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.11M, liq $55k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "96ugdN1zEe1RShH1xWsMLBbopDvS96WXfvxwRELqUwqk",
     symbol: "GAK",
@@ -14181,7 +14181,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $108k, liq $15.5k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HGTXnhgyast5fJKhMcE4VgyeEVWhYKEsHxpZtpjhrYqA",
     symbol: "UTCC",
@@ -14191,7 +14191,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $108k, liq $15.6k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "HPueqQjSgaSatMBKrvBvAnRmc6jnr51cPM1EjUJVpump",
     symbol: "TOBI",
@@ -14201,7 +14201,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $108k, liq $24.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "G8dUSvywefr4GvfFZBZiLHmbjnwjrrJPAnVifjj7pump",
     symbol: "MONITOR",
@@ -14211,7 +14211,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $107k, liq $24.4k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GGEikGvJgRqgoFajyfMAsha5GjKg6suAmhBVW91zjupx",
     symbol: "BALLS",
@@ -14221,7 +14221,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $107k, liq $15.8k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "Afo4NumBNHDXc7m7p6qjZ1pF3LbqYfG5k1CNrGve8rVu",
     symbol: "FALX",
@@ -14231,7 +14231,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.11M, liq $83k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "14Tqdo8V1FhzKsE3W2pFsZCzYPQxxupXRcqw9jv6ondo",
     symbol: "AMZNON",
@@ -14241,7 +14241,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $106k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BaDjVCpABEVCdt4LT7ivuzA4izBwJCqnDjrLa8XBtT38",
     symbol: "GNME",
@@ -14251,7 +14251,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $106k, liq $15.4k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "JCeoBX79HfatfaY6xvuNyCHf86hwgkCCWDpEycVHtime",
     symbol: "TOLY",
@@ -14261,7 +14261,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.11M, liq $33k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "8cn4JeRLiHTtfX6maZAsipGGyyZPdEcos3s2X3Hw3BS6",
     symbol: "FUN_8CN4",
@@ -14271,7 +14271,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.11M, liq $69k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3XTp12PmKMHxB6YkejaGPUjMGBLKRGgzHWgJuVTsBCoP",
     symbol: "BIRDDOG",
@@ -14281,7 +14281,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $105k, liq $17.8k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GinNabffZL4fUj9Vactxha74GDAW8kDPGaHqMtMzps2f",
     symbol: "GINNAN",
@@ -14291,7 +14291,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $105k, liq $28.2k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "D8r8XTuCrUhLheWeGXSwC3G92RhASficV3YA7B2XWcLv",
     symbol: "BAG",
@@ -14301,7 +14301,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $105k, liq $23.6k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "CMx7yon2cLzHcXqgHsKJhuU3MmME6noWLQk2rAycBAGS",
     symbol: "NYAN",
@@ -14311,7 +14311,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $105k, liq $11.6k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "5LJMJyR8MtAkbtpf8kFUV7S9oFG3xaGDdcnFxYt9pump",
     symbol: "FAT",
@@ -14321,7 +14321,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $105k, liq $26.9k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "srfmZPrbDkk9ZYvA6a9PTnzcJ7zXBnundX1PF8FT1ma",
     symbol: "SRF",
@@ -14331,7 +14331,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $104k, liq $28.2k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "7EYnhQoR9YM3N7UoaKRoA44Uy8JeaZV3qyouov87awMs",
     symbol: "SILLY",
@@ -14341,7 +14341,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.10M, liq $33k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "BgJW7U1u2RY5XJk9uYb5AqFRzjMtqE7pw3kaf9iw9Ntz",
     symbol: "$PELF",
@@ -14351,7 +14351,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $0.10M, liq $37k — Jupiter-verified mid-cap (engine has final say).",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "7NWHifsBnn9DimUeNnsHdEXkTZhXmJTiXxcCngBondo",
     symbol: "CEGON",
@@ -14361,7 +14361,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $103k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "GoDCaGctsLDnkV8T6jBAfTeMj8DesxT71CkZekV5ZXcf",
     symbol: "GODEX",
@@ -14371,7 +14371,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $102k, liq $0.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "EjzzyCSiLqjFDprpZj8e1zjXmcTG5HPGFRSEoWcJWHh9",
     symbol: "INBRED",
@@ -14381,7 +14381,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $102k, liq $13.8k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "3Bbj7eZTuMd2FrfeZ2degzckxhgB5b63crGoHLtrpump",
     symbol: "BABYFWOG",
@@ -14391,7 +14391,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $102k, liq $16.3k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "AQuuQ4xktyzGBFnbKHnYsXHxsKVQetAoiPeCEG97NUJw",
     symbol: "BINGUS",
@@ -14401,7 +14401,7 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $102k, liq $22.0k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
   {
     ca: "FLJYGHpCCcfYUdzhcfHSeSd2peb5SMajNWaCsRnhpump",
     symbol: "STORE_FLJY",
@@ -14411,5 +14411,5 @@ export const DISCOVERED: CorpusEntry[] = [
     why: "mcap $102k, liq $19.1k — high-risk thin liquidity.",
     source: "external",
     skipFixture: true, // pending first capture
-  },
+  } as CorpusEntry,
 ]

@@ -73,7 +73,11 @@ async function main() {
     lines.push(`    expectedVerdict: "${e.expectedVerdict}",${tolerated}${expectedScore}`)
     lines.push(`    why: ${JSON.stringify(e.why)},`)
     lines.push(`    source: "${e.source}",${skipFixture}`)
-    lines.push(`  },`)
+    // Per-entry cast: with 1500+ entries the union of literal-typed
+    // expectedVerdict + tolerated tuples blows up TypeScript inference
+    // (TS2590). Casting each object forces per-item check against the
+    // shared CorpusEntry — resolves linearly instead of as a giant union.
+    lines.push(`  } as CorpusEntry,`)
   }
   lines.push("]")
   lines.push("")

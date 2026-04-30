@@ -82,7 +82,7 @@ async function main() {
     lines.push(`    expectedVerdict: "${e.expectedVerdict}",${tolerated}${expectedScore}`)
     lines.push(`    why: ${JSON.stringify(e.why)},`)
     lines.push(`    source: "${e.source}",${skipFixture}`)
-    lines.push(`  },`)
+    lines.push(`  } as CorpusEntry,`)
   }
   lines.push("]")
   lines.push("")
