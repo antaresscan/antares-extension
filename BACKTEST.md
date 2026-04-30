@@ -14,9 +14,14 @@ Acceptable rate   : 1510/1510 (100%)
   └─ Tolerated    : 1401/1510 (92.8%)
 Hard fail         : 0/1510 (0%)
 
-Captured fixtures : 95 / 1510 (6.3%) — bulk capture trickles in nightly
-Pending capture   : 1415 / 1510 (93.7%) — flagged skipFixture, treated as
-                                          warnings until next bulk run
+Tested daily      : 539 / 1510 (35.7%) — 18 SEED + 521 DISCOVERED with
+                                         live captured fixtures, re-checked
+                                         every night by the drift-check job
+Tracked weekly    : 971 / 1510 (64.3%) — flagged skipFixture, present in
+                                         corpus but their first /api/scan
+                                         capture hasn't landed yet; the
+                                         accuracy test treats them as
+                                         warnings rather than failures
 
 False-positive on SAFE  : 0  (no blue-chip flagged DANGER/RUG)
 False-negative on RUG   : 0  (no confirmed rug returned SAFE)
