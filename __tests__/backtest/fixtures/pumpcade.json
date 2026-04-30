@@ -1,0 +1,34 @@
+{
+  "score": 786,
+  "risk": "CAUTION",
+  "flags": [
+    {
+      "label": "Single wallet holds 10% of supply",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "LP not burned but token is mature and liquid (unverified LP)",
+      "severity": "warning",
+      "impact": 0
+    },
+    {
+      "label": "Well distributed supply ✓",
+      "severity": "bonus",
+      "impact": 0
+    },
+    {
+      "label": "Established token (30d+) ✓",
+      "severity": "bonus",
+      "impact": 0
+    }
+  ],
+  "safeBlockedReasons": [
+    "holders",
+    "lp_unverified"
+  ],
+  "lpBurned": false,
+  "lpLocked": false,
+  "holders": 1383,
+  "liquidity": 851328.16
+}
