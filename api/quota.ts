@@ -18,6 +18,7 @@ import {
   initRateLimiters,
 } from "./_lib/middleware";
 import { initQuota, peekDailyQuota, setQuotaHeaders } from "./_lib/quota";
+import { initUserStorage } from "./_lib/user";
 import { apiError } from "./_lib/helpers";
 import { logger } from "./_lib/logger";
 
@@ -28,6 +29,7 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
   });
   initRateLimiters(redis);
   initQuota(redis);
+  initUserStorage(redis);
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

@@ -12,6 +12,7 @@ import {
   getUtcDateKey,
   _resetQuotaForTests,
 } from "../api/_lib/quota";
+import { initUserStorage, _resetUserStorageForTests } from "../api/_lib/user";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -56,6 +57,7 @@ function mockRedis(store: MockRedisStore = {}): Redis {
 
 beforeEach(() => {
   _resetQuotaForTests();
+  _resetUserStorageForTests();
 });
 
 // ─── getResetAt ───────────────────────────────────────────────────────────────
@@ -110,6 +112,7 @@ describe("checkDailyQuota — paid tiers", () => {
   it("returns unlimited result for Pro tier without touching the counter", async () => {
     const redis = mockRedis({ tier: { "install-pro": "pro" } });
     initQuota(redis);
+    initUserStorage(redis);
 
     const result = await checkDailyQuota("install-pro");
 
@@ -123,6 +126,7 @@ describe("checkDailyQuota — paid tiers", () => {
   it("returns unlimited result for Lifetime tier", async () => {
     const redis = mockRedis({ tier: { "install-lifetime": "lifetime" } });
     initQuota(redis);
+    initUserStorage(redis);
 
     const result = await checkDailyQuota("install-lifetime");
 
@@ -135,6 +139,7 @@ describe("checkDailyQuota — paid tiers", () => {
   it("treats unknown tier values as Free", async () => {
     const redis = mockRedis({ tier: { "install-x": "premium-plus-ultra" } });
     initQuota(redis);
+    initUserStorage(redis);
 
     const result = await checkDailyQuota("install-x");
 
@@ -149,6 +154,7 @@ describe("checkDailyQuota — Free tier", () => {
   it("allows the first scan and returns remaining = limit-1", async () => {
     const redis = mockRedis();
     initQuota(redis);
+    initUserStorage(redis);
 
     const result = await checkDailyQuota("install-fresh");
 
@@ -162,6 +168,7 @@ describe("checkDailyQuota — Free tier", () => {
     const counter: Record<string, number> = {};
     const redis = mockRedis({ counter });
     initQuota(redis);
+    initUserStorage(redis);
 
     // First 50 scans → all allowed
     for (let i = 1; i <= FREE_TIER_DAILY_LIMIT; i++) {
@@ -180,6 +187,7 @@ describe("checkDailyQuota — Free tier", () => {
   it("sets TTL on the first INCR of the day only", async () => {
     const redis = mockRedis();
     initQuota(redis);
+    initUserStorage(redis);
 
     await checkDailyQuota("install-ttl");
     await checkDailyQuota("install-ttl");
@@ -192,6 +200,7 @@ describe("checkDailyQuota — Free tier", () => {
     const counter: Record<string, number> = {};
     const redis = mockRedis({ counter });
     initQuota(redis);
+    initUserStorage(redis);
 
     const r1 = await checkDailyQuota(null);
     const r2 = await checkDailyQuota(null);
@@ -208,6 +217,7 @@ describe("checkDailyQuota — Free tier", () => {
     const counter: Record<string, number> = {};
     const redis = mockRedis({ counter });
     initQuota(redis);
+    initUserStorage(redis);
 
     const a = await checkDailyQuota("install-a");
     const b = await checkDailyQuota("install-b");
@@ -224,6 +234,7 @@ describe("checkDailyQuota — fail-open on Redis errors", () => {
   it("returns permissive result when INCR throws", async () => {
     const redis = mockRedis({ fail: true });
     initQuota(redis);
+    initUserStorage(redis);
 
     const result = await checkDailyQuota("install-broken");
 
@@ -248,6 +259,7 @@ describe("peekDailyQuota — read-only", () => {
     const counter: Record<string, number> = {};
     const redis = mockRedis({ counter });
     initQuota(redis);
+    initUserStorage(redis);
 
     await peekDailyQuota("install-peek");
     await peekDailyQuota("install-peek");
@@ -264,6 +276,7 @@ describe("peekDailyQuota — read-only", () => {
     };
     const redis = mockRedis({ counter });
     initQuota(redis);
+    initUserStorage(redis);
 
     const result = await peekDailyQuota("install-mid");
 
@@ -279,6 +292,7 @@ describe("peekDailyQuota — read-only", () => {
     };
     const redis = mockRedis({ counter });
     initQuota(redis);
+    initUserStorage(redis);
 
     const result = await peekDailyQuota("install-full");
 
@@ -290,18 +304,24 @@ describe("peekDailyQuota — read-only", () => {
   it("returns unlimited result for Pro tier without reading the counter", async () => {
     const redis = mockRedis({ tier: { "install-pro": "pro" } });
     initQuota(redis);
+    initUserStorage(redis);
 
     const result = await peekDailyQuota("install-pro");
 
     expect(result.tier).toBe("pro");
     expect(result.remaining).toBe(-1);
-    // get is called once for tier lookup, NOT a second time for counter
-    expect(redis.get).toHaveBeenCalledTimes(1);
+    // Tier lookup is 2 reads (tier + tierExpires for downgrade-on-expiry).
+    // The counter MUST NOT be touched — we'd be wasting a Redis op for a Pro user.
+    const counterReads = (redis.get as ReturnType<typeof vi.fn>).mock.calls.filter(
+      (call: unknown[]) => typeof call[0] === "string" && (call[0] as string).startsWith("quota:"),
+    );
+    expect(counterReads.length).toBe(0);
   });
 
   it("falls open when Redis throws", async () => {
     const redis = mockRedis({ fail: true });
     initQuota(redis);
+    initUserStorage(redis);
 
     const result = await peekDailyQuota("install-broken");
 

@@ -18,11 +18,12 @@
 import type { VercelResponse } from "@vercel/node";
 import { Redis } from "@upstash/redis";
 import { logger } from "./logger";
+import { getUserTier, type Tier } from "./user";
 
 export const FREE_TIER_DAILY_LIMIT = 50;
 
-/** -1 in remaining/limit means "unlimited" (Pro/Lifetime). */
-export type Tier = "free" | "pro" | "lifetime";
+// Re-export Tier for callers that already import from quota.ts
+export type { Tier };
 
 export interface QuotaResult {
   allowed: boolean;
@@ -64,22 +65,6 @@ export function getResetAt(now: Date = new Date()): number {
 /** Format a Date as "YYYY-MM-DD" in UTC for use in quota keys. */
 export function getUtcDateKey(now: Date = new Date()): string {
   return now.toISOString().slice(0, 10);
-}
-
-/**
- * Read the user's tier from Redis. Defaults to "free" when not set or on
- * lookup error — the failure mode here is "they're free for now", which is
- * the safe direction (we'd rather under-charge than lock a paying user out).
- */
-async function getUserTier(identityKey: string): Promise<Tier> {
-  if (!redis) return "free";
-  try {
-    const tier = await redis.get<string>(`user:${identityKey}:tier`);
-    if (tier === "pro" || tier === "lifetime") return tier;
-  } catch (err) {
-    logger.warn("quota", "Tier lookup failed", { error: String(err) });
-  }
-  return "free";
 }
 
 const UNLIMITED_RESULT = (tier: Tier): QuotaResult => ({

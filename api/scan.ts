@@ -41,6 +41,7 @@ import { computeFinalScore, classifySafeBlockedReasons } from "./_lib/scoring";
 import { evaluatePostLayerFlags, applySafeGateOverride, applyEstablishedBonus, determineVerdict } from "./_lib/pipeline";
 import { setCorsHeaders, getClientIp, getInstallId, checkRateLimit, validateCA, initRateLimiters } from "./_lib/middleware";
 import { initQuota, checkDailyQuota, setQuotaHeaders, secondsUntilReset } from "./_lib/quota";
+import { initUserStorage, pushScanHistory } from "./_lib/user";
 import { initCache, getCachedResult, setCachedResult, getCacheRedis } from "./_lib/cache";
 import * as Sentry from "@sentry/node";
 import { generateAISummary } from "./_lib/ai-summary";
@@ -64,6 +65,7 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
   initCache(redis);
   initRateLimiters(redis);
   initQuota(redis);
+  initUserStorage(redis);
   initRugDb(redis);
   initGraphCache(redis);
   initHistoryCache(redis);
@@ -130,6 +132,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       latencyMs: Date.now() - startTime,
       hitKey: "ca",
     });
+    if (installId) {
+      void pushScanHistory(installId, {
+        ca: cached.resolvedMint ?? ca,
+        score: cached.score,
+        verdict: cached.risk,
+        scannedAt: Date.now(),
+        symbol: cached.tokenSymbol ?? undefined,
+        name: cached.tokenName ?? undefined,
+      });
+    }
     return res.json(cached);
   }
 
@@ -138,7 +150,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   );
 
   try {
-    const result = await Promise.race([runAnalysis(req, res, requestId, ca, startTime), timeoutPromise]);
+    const result = await Promise.race([runAnalysis(req, res, requestId, ca, startTime, installId), timeoutPromise]);
     return result;
   } catch (e: unknown) {
     if (e instanceof Error && e.message === "Global timeout") {
@@ -148,7 +160,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 }
 
-async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: string, ca: string, startTime: number = Date.now()) {
+async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: string, ca: string, startTime: number = Date.now(), installId: string | null = null) {
   const HELIUS_API_KEY = process.env.HELIUS_API_KEY || "";
 
   // Dynamic per-fetch budget: each external call is capped by the time
@@ -210,6 +222,16 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
           latencyMs: Date.now() - startTime,
           hitKey: "resolvedMint",
         });
+        if (installId) {
+          void pushScanHistory(installId, {
+            ca: cachedByMint.resolvedMint ?? resolvedMint,
+            score: cachedByMint.score,
+            verdict: cachedByMint.risk,
+            scannedAt: Date.now(),
+            symbol: cachedByMint.tokenSymbol ?? undefined,
+            name: cachedByMint.tokenName ?? undefined,
+          });
+        }
         return res.json(cachedByMint);
       }
     }
@@ -727,6 +749,17 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       partial: sources_used.length < Object.keys(LAYER_WEIGHTS).length,
       scoringVersion: SCORING_VERSION,
     });
+
+    if (installId) {
+      void pushScanHistory(installId, {
+        ca: result.resolvedMint ?? ca,
+        score: result.score,
+        verdict: result.risk,
+        scannedAt: Date.now(),
+        symbol: result.tokenSymbol ?? undefined,
+        name: result.tokenName ?? undefined,
+      });
+    }
 
     return res.json(result);
   } catch (e) {
