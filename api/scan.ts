@@ -40,6 +40,7 @@ import {
 import { computeFinalScore, classifySafeBlockedReasons } from "./_lib/scoring";
 import { evaluatePostLayerFlags, applySafeGateOverride, applyEstablishedBonus, determineVerdict } from "./_lib/pipeline";
 import { setCorsHeaders, getClientIp, getInstallId, checkRateLimit, validateCA, initRateLimiters } from "./_lib/middleware";
+import { initQuota, checkDailyQuota, setQuotaHeaders, secondsUntilReset } from "./_lib/quota";
 import { initCache, getCachedResult, setCachedResult, getCacheRedis } from "./_lib/cache";
 import * as Sentry from "@sentry/node";
 import { generateAISummary } from "./_lib/ai-summary";
@@ -62,6 +63,7 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
   });
   initCache(redis);
   initRateLimiters(redis);
+  initQuota(redis);
   initRugDb(redis);
   initGraphCache(redis);
   initHistoryCache(redis);
@@ -93,6 +95,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const ca = validateCA(req.query.ca);
   if (!ca) return apiError(res, 400, "Invalid token address.");
+
+  // Daily quota gate — runs after CA validation (don't charge invalid CAs
+  // against the user's budget) but before the cache lookup (cache hits still
+  // count, otherwise users could spam the same token for free). install_id
+  // is the primary identity key; falling back to IP keeps anonymous traffic
+  // bounded and prevents quota-bypass via missing header.
+  const identityKey = installId ?? ip;
+  const quota = await checkDailyQuota(identityKey);
+  setQuotaHeaders(res, quota);
+  if (!quota.allowed) {
+    res.setHeader("Retry-After", String(secondsUntilReset(quota)));
+    return apiError(
+      res,
+      429,
+      `Daily limit reached (${quota.limit} scans on Free tier). Resets at midnight UTC. Upgrade to Pro for unlimited scans.`,
+    );
+  }
 
   // ?fresh=1 bypasses the Redis cache so users can manually trigger a
   // fresh scan from the page — the front-end refresh button passes this
