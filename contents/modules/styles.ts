@@ -359,6 +359,28 @@ export const SHADOW_CSS = `
 .fo a.warn  { border-color: rgba(255,95,95,.2); color: #cc5555; }
 .fo a.warn:hover { border-color: rgba(255,95,95,.4); color: #ff5f5f; background: rgba(255,95,95,.04); }
 
+/* Free-tier upgrade CTA — replaces the 3-button footer (Critical Flags /
+   Full Analysis / AI Summary) for users on the free plan. Same dimensions
+   as a regular .fo a so the footer height stays constant; brand-green
+   tint and 1-line copy because Free users see this on every scan and we
+   don't want a giant CTA fatiguing the overlay. */
+.fo .fo-upgrade {
+  flex: 1; display: block; padding: 8px;
+  font-size: 8px; letter-spacing: .12em;
+  text-transform: uppercase; text-align: center;
+  text-decoration: none; cursor: pointer;
+  border-radius: 2px; transition: color .2s, border-color .2s, background .2s;
+  font-family: 'IBM Plex Mono', monospace;
+  color: #00e5b0;
+  border: 1px solid rgba(0,229,176,.4);
+  background: rgba(0,229,176,.06);
+}
+.fo .fo-upgrade:hover {
+  color: #4ff5cc;
+  border-color: rgba(0,229,176,.7);
+  background: rgba(0,229,176,.12);
+}
+
 @keyframes ant-pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
 .scanning { display:flex; align-items:center; gap:8px; color:#777; font-size:12px; padding:12px 14px; font-family:'IBM Plex Mono',monospace; }
 .dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:#444; animation:ant-pulse 1.2s infinite; }
