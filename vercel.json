@@ -7,6 +7,12 @@
       "maxDuration": 60
     }
   },
+  "crons": [
+    {
+      "path": "/api/cron-check-payments",
+      "schedule": "* * * * *"
+    }
+  ],
   "redirects": [
     {
       "source": "/",
