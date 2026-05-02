@@ -31,6 +31,7 @@ import {
   PRO_PASS_DAYS,
   type PaymentIntent,
 } from "./_lib/solana-pay";
+import { issueLicense, INTENT_LICENSE_KEY } from "./_lib/license";
 
 function getRedis(): Redis | null {
   const url = process.env.UPSTASH_REDIS_REST_URL;
@@ -73,7 +74,33 @@ async function maybeConfirmOnChain(
         ? undefined
         : Date.now() + PRO_PASS_DAYS * 24 * 60 * 60 * 1000;
 
-    await setUserTier(intent.installId, tier, expiresAtMs);
+    // Real install — flip tier directly. Synthetic email-only ids
+    // skip this; the buyer redeems via license key instead.
+    const isSyntheticInstall = intent.installId.startsWith("email:");
+    if (!isSyntheticInstall) {
+      await setUserTier(intent.installId, tier, expiresAtMs);
+    }
+
+    // Issue the license here in the lazy path too so a buyer who
+    // closes the tab seconds after paying still has their license
+    // ready when they come back to /account.html — without waiting
+    // for the next cron tick.
+    if (intent.email) {
+      try {
+        await issueLicense(redis, {
+          email: intent.email,
+          tier: intent.tier,
+          intentReference: intent.reference,
+          amountUsd: intent.amountUsd,
+        });
+      } catch (err) {
+        logger.warn("payment-status", "license issuance failed", {
+          reference: intent.reference,
+          error: String(err),
+        });
+      }
+    }
+
     await markIntentConfirmed(redis, intent, result.txSignature);
 
     logger.metric("payment-status.tier_set", {
@@ -82,6 +109,8 @@ async function maybeConfirmOnChain(
       txSignature: result.txSignature,
       amount: intent.amount,
       via: "lazy-poll",
+      hasEmail: !!intent.email,
+      syntheticInstall: isSyntheticInstall,
     });
 
     return {
@@ -137,6 +166,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ? "expired"
       : intent.status;
 
+  // Once confirmed, surface the license key (if one was issued) so the
+  // pricing modal can display it for the buyer to copy + save. The key
+  // is keyed by intent reference, which is the secret in the URL — same
+  // trust model as the rest of the endpoint.
+  let licenseKey: string | null = null;
+  if (status === "confirmed" && intent.email) {
+    try {
+      licenseKey = (await redis.get<string>(INTENT_LICENSE_KEY(intent.reference))) ?? null;
+    } catch (err) {
+      logger.warn("payment-status", "license-key lookup failed", {
+        reference: intent.reference,
+        error: String(err),
+      });
+    }
+  }
+
   return res.json({
     status,
     expiresAt: intent.expiresAt,
@@ -144,5 +189,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     confirmedAt: intent.confirmedAt ?? null,
     tier: intent.tier,
     amount: intent.amount,
+    licenseKey,
   });
 }

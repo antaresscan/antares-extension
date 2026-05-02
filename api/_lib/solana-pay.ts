@@ -49,7 +49,22 @@ export type IntentStatus = "pending" | "confirmed" | "expired";
 
 export interface PaymentIntent {
   reference: string;
+  /**
+   * Identifier of the extension install, if the user came from the
+   * extension's quota link. Optional — direct site visitors who pay
+   * before installing won't have one. The license-key flow covers
+   * that case: at redemption time the install_id is bound to the
+   * license, not at intent time.
+   */
   installId: string;
+  /**
+   * Email of the buyer, lowercased + trimmed. Required for direct
+   * site visitors (so we can issue them a license to redeem later)
+   * and optional for extension-driven payments (we still record it
+   * if provided so the same install_id can fetch its receipts via
+   * /account.html).
+   */
+  email?: string;
   tier: Tier;
   /** Which token the user is paying with — "usdc" (stable) or "sol" (native). */
   token: PayToken;
@@ -245,7 +260,19 @@ export async function resolveAmount(
  */
 export async function createPaymentIntent(
   redis: Redis,
-  params: { installId: string; tier: Tier; token: PayToken; recipient: string },
+  params: {
+    installId: string;
+    /**
+     * Pre-normalized buyer email (lowercased + trimmed). Required for
+     * site-direct purchases so we can issue a license they can redeem
+     * later; optional for extension-driven flow but we still record it
+     * if provided so the buyer can pull receipts at /account.html.
+     */
+    email?: string;
+    tier: Tier;
+    token: PayToken;
+    recipient: string;
+  },
 ): Promise<PaymentIntent> {
   const reference = generateReferenceKey();
   const { amount, amountUsd, splTokenMint } = await resolveAmount(
@@ -258,6 +285,7 @@ export async function createPaymentIntent(
   const intent: PaymentIntent = {
     reference,
     installId: params.installId,
+    ...(params.email ? { email: params.email } : {}),
     tier: params.tier,
     token: params.token,
     recipient: params.recipient,

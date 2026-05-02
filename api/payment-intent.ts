@@ -25,6 +25,7 @@ import {
   type PayToken,
   type Tier,
 } from "./_lib/solana-pay";
+import { normalizeEmail } from "./_lib/license";
 
 const INSTALL_ID_RE = /^[a-zA-Z0-9_-]{8,128}$/;
 
@@ -66,11 +67,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const body = readBody(req);
   const tier = String(body.tier ?? "").trim().toLowerCase();
-  const installId = String(body.install_id ?? "").trim();
+  const installIdRaw = String(body.install_id ?? "").trim();
   // Default to USDC (stable pricing) when the client doesn't specify;
   // the modal exposes both options explicitly so this fallback only
   // matters for direct API consumers.
   const tokenRaw = String(body.token ?? "usdc").trim().toLowerCase();
+  // Email is optional when an install_id is present (the user came from
+  // the extension and we already know who they are), but required when
+  // it's absent (site-direct visitors who haven't installed yet — the
+  // license-key issued on payment confirm is the only handle they'll
+  // have to redeem later).
+  const emailNorm = normalizeEmail(body.email);
 
   // 'pro' is a UX alias used by the pricing page — both monthly and pro
   // route to the 30-day pass under the hood.
@@ -82,9 +89,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return apiError(res, 400, "token must be 'usdc' or 'sol'.");
   }
   const token: PayToken = tokenRaw;
-  if (!INSTALL_ID_RE.test(installId)) {
-    return apiError(res, 400, "Valid install_id required in body.");
+  // install_id is optional when email is provided. At least one of the
+  // two must be present so we have *some* identity to bind the license
+  // to.
+  const hasInstall = INSTALL_ID_RE.test(installIdRaw);
+  if (!hasInstall && !emailNorm) {
+    return apiError(res, 400, "install_id or email required.");
   }
+  if (installIdRaw && !hasInstall) {
+    return apiError(res, 400, "install_id format invalid.");
+  }
+  // When email is present but the user typed something invalid we want
+  // to fail loudly rather than silently dropping it — it's the only
+  // recovery handle for site-direct buyers.
+  if (body.email !== undefined && body.email !== "" && !emailNorm) {
+    return apiError(res, 400, "email format invalid.");
+  }
+  // Stable identity used downstream by createPaymentIntent + license
+  // issuance. When the user has no install yet, the email synthesises
+  // one (prefixed so we never collide with a real install_id).
+  const installId = hasInstall ? installIdRaw : `email:${emailNorm}`;
 
   const recipient = process.env.SOLANA_RECIPIENT_WALLET ?? "";
   if (!recipient || !isValidSolanaAddress(recipient)) {
@@ -103,6 +127,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const intent = await createPaymentIntent(redis, {
       installId,
+      ...(emailNorm ? { email: emailNorm } : {}),
       tier: normalisedTier,
       token,
       recipient,
