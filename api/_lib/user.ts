@@ -8,10 +8,6 @@
 //   user:{id}:tier        STRING   "free" | "pro" | "lifetime"
 //   user:{id}:tierExpires STRING   epoch-ms when tier downgrades to free
 //   user:{id}:history     LIST     LPUSH JSON entries, LTRIM 0 999
-//   user:{id}:watchlist   ZSET     score = addedAt epoch-ms, value = address
-//
-// History uses a LIST (chronological), watchlist uses a ZSET (ordered set
-// with addedAt as score so we can return items sorted without a second pass).
 import { Redis } from "@upstash/redis";
 import { logger } from "./logger";
 
@@ -19,12 +15,9 @@ import { logger } from "./logger";
 
 export const HISTORY_HARD_CAP = 1000;
 export const HISTORY_DAY_WINDOW = 30; // expose last 30 days on GET /api/history
-export const WATCHLIST_MAX_FREE = 5;
-export const WATCHLIST_MAX_PRO = 50;
 export const TIER_KEY = (id: string) => `user:${id}:tier`;
 export const TIER_EXPIRES_KEY = (id: string) => `user:${id}:tierExpires`;
 export const HISTORY_KEY = (id: string) => `user:${id}:history`;
-export const WATCHLIST_KEY = (id: string) => `user:${id}:watchlist`;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -37,18 +30,6 @@ export interface ScanHistoryEntry {
   scannedAt: number; // epoch ms
   symbol?: string;
   name?: string;
-}
-
-export interface WatchlistItem {
-  address: string;
-  addedAt: number; // epoch ms
-}
-
-export interface AddWatchlistResult {
-  added: boolean;
-  count: number;
-  max: number;
-  reason?: "already_present" | "limit_reached";
 }
 
 // ─── Module wiring ────────────────────────────────────────────────────────────
@@ -207,99 +188,3 @@ export async function getScanHistory(
   }
 }
 
-// ─── Watchlist ────────────────────────────────────────────────────────────────
-
-/** Tier-aware ceiling for the watchlist. */
-export function watchlistMaxFor(tier: Tier): number {
-  return tier === "free" ? WATCHLIST_MAX_FREE : WATCHLIST_MAX_PRO;
-}
-
-/**
- * Add a token to the user's watchlist if there's room under their tier cap
- * and it isn't already present. Returns the post-add count and the cap so
- * the client can render "3/5 used" without a second round-trip.
- */
-export async function addToWatchlist(
-  installId: string,
-  address: string,
-  tier: Tier,
-): Promise<AddWatchlistResult> {
-  const max = watchlistMaxFor(tier);
-
-  if (!isAvailable() || !redis) {
-    return { added: false, count: 0, max, reason: "limit_reached" };
-  }
-
-  try {
-    const key = WATCHLIST_KEY(installId);
-    const existingScore = await redis.zscore(key, address);
-    if (existingScore !== null && existingScore !== undefined) {
-      const count = (await redis.zcard(key)) ?? 0;
-      return { added: false, count, max, reason: "already_present" };
-    }
-
-    const currentCount = (await redis.zcard(key)) ?? 0;
-    if (currentCount >= max) {
-      return { added: false, count: currentCount, max, reason: "limit_reached" };
-    }
-
-    await redis.zadd(key, { score: Date.now(), member: address });
-    return { added: true, count: currentCount + 1, max };
-  } catch (err) {
-    logger.warn("user", "watchlist add failed", { error: String(err) });
-    return { added: false, count: 0, max, reason: "limit_reached" };
-  }
-}
-
-/** Remove a token from the watchlist. Returns true if a row was removed. */
-export async function removeFromWatchlist(
-  installId: string,
-  address: string,
-): Promise<boolean> {
-  if (!isAvailable() || !redis) return false;
-  try {
-    const removed = await redis.zrem(WATCHLIST_KEY(installId), address);
-    return (removed ?? 0) > 0;
-  } catch (err) {
-    logger.warn("user", "watchlist remove failed", { error: String(err) });
-    return false;
-  }
-}
-
-/**
- * Return the watchlist sorted by addedAt (oldest first by default —
- * matches what users expect when scrolling through "things I've been
- * watching").
- */
-export async function getWatchlist(installId: string): Promise<WatchlistItem[]> {
-  if (!isAvailable() || !redis) return [];
-  try {
-    const raw = await redis.zrange<string[]>(WATCHLIST_KEY(installId), 0, -1, {
-      withScores: true,
-    });
-    if (!raw) return [];
-    const items: WatchlistItem[] = [];
-    for (let i = 0; i < raw.length; i += 2) {
-      const address = raw[i];
-      const score = Number(raw[i + 1]);
-      if (typeof address === "string" && Number.isFinite(score)) {
-        items.push({ address, addedAt: score });
-      }
-    }
-    return items;
-  } catch (err) {
-    logger.warn("user", "watchlist read failed", { error: String(err) });
-    return [];
-  }
-}
-
-/** Cardinality only — cheaper than fetching the full list. */
-export async function getWatchlistCount(installId: string): Promise<number> {
-  if (!isAvailable() || !redis) return 0;
-  try {
-    return (await redis.zcard(WATCHLIST_KEY(installId))) ?? 0;
-  } catch (err) {
-    logger.warn("user", "watchlist count failed", { error: String(err) });
-    return 0;
-  }
-}

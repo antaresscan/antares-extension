@@ -12,7 +12,6 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "preview": "tsx scripts/generate-overlay-preview.ts",
     "corpus:capture": "tsx scripts/corpus-capture.ts",
     "corpus:refresh": "tsx scripts/corpus-capture.ts --refresh",
     "corpus:discover": "tsx scripts/corpus-discover.ts",

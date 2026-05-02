@@ -75,11 +75,11 @@ CE QUE TU VOIS DANS L'OVERLAY
 TARIFICATION — HONNÊTE ET PLAFONNÉE
 
   • Free      0 €         50 scans/jour (reset à 00h00 UTC)
-  • Pro       14,99 $/mo  Scans illimités, historique, watchlist (50),
+  • Pro       24,99 $/30j Scans illimités, historique (30 jours),
                           breakdown détaillé du scoring, cache prioritaire,
                           export CSV/JSON, pas de prompts affiliés
-  • Lifetime  99 $ une    Features Pro à vie, badge Sentinel Founder,
-              fois        Discord privé, vote roadmap — limité aux 1000
+  • Lifetime  149,99 $   Features Pro à vie, badge Sentinel Founder,
+              une fois    Discord privé, vote roadmap — limité aux 1000
                           premiers supporters
 
 Le tier gratuit ne sera jamais downgradé. Aucun bait-and-switch. Le cap

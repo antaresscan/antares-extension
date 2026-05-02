@@ -74,12 +74,12 @@ WHAT YOU SEE IN THE OVERLAY
 PRICING — HONEST AND CAPPED
 
   • Free      $0          50 scans/day (resets at 00:00 UTC)
-  • Pro       $14.99/mo   Unlimited scans, scan history, watchlist (50),
+  • Pro       $24.99/30d  Unlimited scans, scan history (30 days),
                           detailed scoring breakdown, priority cache,
                           export CSV/JSON, no affiliate prompts
-  • Lifetime  $99 once    Pro features forever, Sentinel Founder badge,
-                          private Discord, roadmap vote — capped at the
-                          first 1000 supporters
+  • Lifetime  $149.99 USDC Pro features forever, Sentinel Founder badge,
+              one-time     private Discord, roadmap vote — capped at the
+                           first 1000 supporters
 
 We never downgrade the Free tier. We never bait-and-switch. The 50/day
 cap is announced from day 1 — you scan as many tokens as a normal user
