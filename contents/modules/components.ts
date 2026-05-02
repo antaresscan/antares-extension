@@ -1,13 +1,13 @@
 import type { ScanResponseFlag, ScanResponseData, QuotaStatus } from "../../shared/types"
-import { RISK_CLASS, LABELS, ANALYSIS_PAGE, SVG_MOVE, SVG_CLOSE, VERDICT_COLORS, PHOTON_REF, buildPhotonUrl, PRICING_URL, WATCHLIST_API } from "./constants"
+import { RISK_CLASS, LABELS, ANALYSIS_PAGE, SVG_MOVE, SVG_CLOSE, VERDICT_COLORS, PHOTON_REF, buildPhotonUrl, PRICING_URL } from "./constants"
 import { state, scanCache } from "./state"
 import { SHADOW_CSS, injectFonts } from "./styles"
 import { initDrag } from "./drag"
 import { encodeHashPayload } from "../../shared/hash-payload"
 import { toggleAiSummary } from "./ai-summary"
 import { toggleCriticalFlags } from "./critical-flags"
+import { toggleWatchlist } from "./watchlist"
 import { getInstallId } from "../../shared/install-id"
-import { logger } from "../../shared/logger"
 
 // DOM-API element builder. Used by buildResult instead of string template
 // literals so every text interpolation goes through textContent (which the
@@ -157,111 +157,25 @@ export function attachClose(
  * Delegates tab creation to the background service worker via chrome.runtime.sendMessage
  * because chrome.tabs.create is NOT available in content scripts (MV3).
  */
-// Wires up the "+ Watch" footer button to POST to /api/watchlist. Designed as
-// a one-shot action — once the user adds a token, the button disables and
-// shows "✓ Watching" until the overlay closes. v2 will add a panel for full
-// list management; v1 just lets users build their watchlist while scanning.
-//
-// Failure modes (all visible to the user, no silent drops):
-//   - 401 / no install_id     → "✗ Anonymous"  (transient, button resets)
-//   - 402 limit_reached (Free) → "Limit → PRO"  (becomes link to /pricing)
-//   - already_present          → "✓ Already watched"  (sticky, not an error)
-//   - network / 500            → "✗ Failed"     (transient, button resets)
+/**
+ * Wires the footer "★ Watchlist" button to toggle the watchlist panel,
+ * mirroring the attach pattern of AI Summary / Critical Flags. The panel
+ * itself (rendering, fetching, add/remove) is implemented in
+ * `contents/modules/watchlist.ts`; this helper only wires the click that
+ * opens or closes it.
+ */
 export function attachWatchBtn(ca: string) {
-  const btn = state.shadow?.querySelector<HTMLButtonElement>("#ant-watch")
+  const btn = state.shadow?.querySelector<HTMLButtonElement>("#ant-watchlist-btn")
   if (!btn) return
 
-  // Clone-and-replace to drop any prior listeners — same pattern as the
-  // other attach* helpers, prevents listener accumulation on rescans.
+  // Clone-and-replace to drop any prior listeners — same pattern the
+  // sibling attach* helpers use, keeps rescans listener-leak-free.
   const fresh = btn.cloneNode(true) as HTMLButtonElement
   btn.parentNode?.replaceChild(fresh, btn)
-
-  const ORIGINAL = "+ Watch"
-
-  fresh.addEventListener("click", async (e) => {
+  fresh.addEventListener("click", (e) => {
+    e.stopPropagation()
     e.preventDefault()
-    if (fresh.disabled) return
-
-    fresh.disabled = true
-    fresh.textContent = "..."
-
-    try {
-      const installId = await getInstallId()
-      if (!installId) {
-        fresh.textContent = "✗ Anon"
-        setTimeout(() => {
-          fresh.textContent = ORIGINAL
-          fresh.disabled = false
-        }, 2000)
-        return
-      }
-
-      const res = await fetch(WATCHLIST_API, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Antares-Install": installId,
-        },
-        body: JSON.stringify({ address: ca }),
-      })
-
-      if (res.status === 200) {
-        const raw: unknown = await res.json().catch(() => ({}))
-        const body =
-          raw && typeof raw === "object"
-            ? (raw as { added?: boolean; reason?: string })
-            : {}
-        if (body.added === true) {
-          fresh.textContent = "✓ Watching"
-          fresh.classList.add("watching")
-          // Stay disabled — token is added, no further action needed
-          return
-        }
-        if (body.reason === "already_present") {
-          fresh.textContent = "✓ Watched"
-          fresh.classList.add("watching")
-          return
-        }
-        // Unexpected 200 shape — fall through to error state
-        fresh.textContent = "✗ Unknown"
-        setTimeout(() => {
-          fresh.textContent = ORIGINAL
-          fresh.disabled = false
-        }, 2000)
-        return
-      }
-
-      if (res.status === 402) {
-        // Free tier limit reached — convert button to upgrade link
-        fresh.textContent = "Limit → PRO"
-        fresh.classList.add("limit")
-        fresh.disabled = false
-        // Replace listeners again so the next click goes to pricing instead of POSTing
-        fresh.addEventListener(
-          "click",
-          (ev) => {
-            ev.preventDefault()
-            window.open(PRICING_URL, "_blank", "noopener noreferrer")
-          },
-          { once: true },
-        )
-        return
-      }
-
-      // 401 / 5xx / etc — transient failure
-      fresh.textContent = "✗ Failed"
-      setTimeout(() => {
-        fresh.textContent = ORIGINAL
-        fresh.disabled = false
-      }, 2000)
-    } catch (err) {
-      logger.warn("watch", "watchlist POST failed", err)
-      fresh.textContent = "✗ Net"
-      setTimeout(() => {
-        fresh.textContent = ORIGINAL
-        fresh.disabled = false
-      }, 2000)
-    }
+    toggleWatchlist(ca)
   })
 }
 
@@ -642,15 +556,15 @@ export function buildResultNode(data: ScanResponseData, ca: string): HTMLElement
     class: "ai-btn ai-btn--active",
     id: "ant-ai-summary-btn",
   }, "\u2b21 AI Summary"))
-  // Watchlist button \u2014 wired up by attachWatchBtn after render. Renders for
-  // every scan; the click handler resolves install_id and fails gracefully
-  // with a visible "Anon" state if absent (rare in practice \u2014 the extension
-  // installs an ID on first run).
+  // Watchlist toggle \u2014 same disclosure pattern as Critical Flags / AI Summary.
+  // The actual panel content (list, add/remove, tier indicator) is rendered
+  // lazily by toggleWatchlist on first open, then re-fetched on every reopen
+  // so the user never sees stale state across rescans or concurrent tabs.
   foNode.appendChild(el("button", {
-    class: "watch-btn",
-    id: "ant-watch",
+    class: "wl-btn",
+    id: "ant-watchlist-btn",
     type: "button",
-  }, "+ Watch"))
+  }, "\u2605 Watchlist"))
 
   const tkNode = tokenSymbol
     ? el("div", { class: "tk" },
@@ -681,6 +595,7 @@ export function buildResultNode(data: ScanResponseData, ca: string): HTMLElement
     ssNode,
     el("div", { class: "cf-panel", id: "ant-critical-flags" }),
     el("div", { class: "ai-panel", id: "ant-ai-summary" }),
+    el("div", { class: "wl-panel", id: "ant-watchlist" }),
     foNode,
     buildAffiliateRow(mint, data.risk, data._quota),
   )
