@@ -217,8 +217,12 @@ export async function scan(ca: string) {
   showBox()
   attachClose(null)
 
+  // Resolve install_id once up-front so the QuotaExhaustedError catch
+  // path can bake it into the upgrade-CTA href without an async call
+  // (async window.open after a user click gets popup-blocked).
+  const installId = await getInstallId()
+
   try {
-    const installId = await getInstallId()
     const headers: Record<string, string> = installId ? { "X-Antares-Install": installId } : {}
     const devTier = await readDevTierOverride()
     if (devTier) headers["X-Antares-Dev-Tier"] = devTier
@@ -251,7 +255,7 @@ export async function scan(ca: string) {
       })
       if (state.lastCA === ca) {
         if (state.boxEl) state.boxEl.className = "box caution"
-        el.replaceChildren(buildQuotaExhaustedNode(e.quota))
+        el.replaceChildren(buildQuotaExhaustedNode(e.quota, installId))
         showBox()
         attachClose(null)
       }

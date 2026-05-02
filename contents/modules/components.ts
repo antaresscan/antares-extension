@@ -399,62 +399,81 @@ export function buildHeader(): string {
 // signalling remaining=0. Replaces the silent box-hide that made the
 // extension look broken once the cap landed: now the user sees exactly
 // what's happening and gets a primary upgrade CTA pointing at /pricing
-// with their install_id baked in. Reset countdown updates every second.
-export function buildQuotaExhaustedNode(quota: QuotaStatus): HTMLElement {
+// with their install_id baked in.
+//
+// Design intent: compact (don't dominate the page), no redundant
+// header badge (the OUT OF SCANS message says it already), one-line
+// CTA that fits the 290px width without wrapping the arrow.
+//
+// Click reliability: the install_id is baked into href synchronously
+// at build time so the native <a target="_blank"> navigation works
+// without any JS handler — that fixes the "click does nothing"
+// regression where window.open() inside an async .then() lost its
+// user-gesture grace and got popup-blocked.
+export function buildQuotaExhaustedNode(
+  quota: QuotaStatus,
+  installId?: string | null,
+): HTMLElement {
   if (state.boxEl) state.boxEl.className = "box caution"
 
   // Reset countdown — recomputed on every render. The interval below
-  // updates the .reset-time text so the user sees the seconds tick down
-  // without us re-rendering the entire subtree.
+  // updates the .reset-time text so the user sees the minutes tick
+  // down without re-rendering the entire subtree.
   function fmtReset(): string {
     if (!quota.resetAt) return "midnight UTC"
     const ms = quota.resetAt - Date.now()
-    if (ms <= 0) return "any moment now"
+    if (ms <= 0) return "any moment"
     const totalMin = Math.floor(ms / 60000)
     const h = Math.floor(totalMin / 60)
     const m = totalMin % 60
-    if (h <= 0) return `in ${m}m`
-    return `in ${h}h ${m}m`
+    if (h <= 0) return `${m}m`
+    return `${h}h ${m}m`
   }
-
   const resetEl = el("span", { class: "qx-reset-time" }, fmtReset())
 
-  const upgradeBtn = el("a", {
-    class: "qx-cta",
-    href: PRICING_URL,
-    target: "_blank",
-    rel: "noopener noreferrer",
-  }, "⚡ Get Pro — unlimited scans →")
-  upgradeBtn.addEventListener("click", (e) => {
-    e.preventDefault()
-    void getInstallId().then((installId) => {
-      const url = installId
-        ? `${PRICING_URL}?install=${encodeURIComponent(installId)}`
-        : PRICING_URL
-      window.open(url, "_blank", "noopener noreferrer")
-    })
-  })
+  // Cap the displayed counter at the limit — `quota.used` keeps
+  // incrementing even past the cap (server INCRs first, then denies).
+  // Showing "117/25" looks broken; users care that they're at the cap,
+  // not by how much they've blown past it.
+  const usedDisplay = Math.min(quota.used, quota.limit)
+
+  // Bake install_id into href so the link works on a single user-click
+  // without async indirection. Falls back to the bare URL when the
+  // install_id is missing (rare — only on first scan before storage).
+  const href = installId
+    ? `${PRICING_URL}?install=${encodeURIComponent(installId)}`
+    : PRICING_URL
 
   const root = el("div", undefined,
     el("div", { class: "topbar" }),
-    buildHeaderNode(quota),
+    // Pass undefined to suppress the quota badge in the header — the
+    // big "OUT OF SCANS" body already conveys the same info, the
+    // duplicate badge was visual noise.
+    buildHeaderNode(undefined),
     el("div", { class: "vb qx-vb" },
       el("h1", undefined, "OUT OF SCANS"),
     ),
-    el("div", { class: "qx-counter" },
-      el("span", { class: "qx-num" }, `${quota.used} / ${quota.limit}`),
-      " today",
+    el("div", { class: "qx-line" },
+      el("span", { class: "qx-num" }, `${usedDisplay}/${quota.limit}`),
+      " today · resets in ",
+      resetEl,
     ),
-    el("div", { class: "qx-reset" }, "Resets ", resetEl),
     el("div", { class: "sep" }),
+    el("a", {
+      class: "qx-cta",
+      href,
+      target: "_blank",
+      rel: "noopener noreferrer",
+      // No JS click handler — native <a> nav is reliable, async
+      // window.open() is not.
+    }, "⚡ Go Pro — unlimited"),
     el("div", { class: "qx-pitch" },
-      "Pro = unlimited scans + AI Summary + Critical Flags + Full Analysis page.",
+      "Unlimited scans · AI Summary · Critical Flags · Full Analysis",
     ),
-    el("div", { class: "qx-cta-row" }, upgradeBtn),
   )
 
-  // Tick the reset string every 30s — fine-grained enough that the
-  // user sees progress, coarse enough that it doesn't churn the DOM.
+  // Tick the reset string every 30s — coarse enough to not churn DOM,
+  // fine enough to feel live.
   const interval = setInterval(() => {
     if (!resetEl.isConnected) {
       clearInterval(interval)
