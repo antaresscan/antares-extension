@@ -142,7 +142,7 @@ describe("POST /api/payment-intent", () => {
     expect(res.status).toHaveBeenCalledWith(503);
   });
 
-  it("creates an intent and returns the Solana Pay URL for monthly tier", async () => {
+  it("creates an intent and returns the Solana Pay URL for monthly tier (USDC default)", async () => {
     const req = mockReq({
       headers: { origin: ORIGIN },
       body: { tier: "monthly", install_id: VALID_INSTALL },
@@ -154,16 +154,82 @@ describe("POST /api/payment-intent", () => {
       reference: string;
       payUrl: string;
       recipient: string;
+      token: string;
       amount: number;
+      amountUsd: number;
       tier: string;
       expiresAt: number;
     };
     expect(payload.tier).toBe("monthly");
+    expect(payload.token).toBe("usdc");
     expect(payload.recipient).toBe(VALID_RECIPIENT);
     expect(payload.amount).toBe(24.99);
+    expect(payload.amountUsd).toBe(24.99);
     expect(payload.payUrl.startsWith(`solana:${VALID_RECIPIENT}?`)).toBe(true);
     expect(payload.payUrl).toContain(`reference=${payload.reference}`);
+    expect(payload.payUrl).toContain("spl-token=");
     expect(payload.expiresAt).toBeGreaterThan(Date.now());
+  });
+
+  it("creates a SOL-payable intent when token=sol", async () => {
+    // Mock Jupiter price endpoint
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => ({ data: { SOL: { price: 100 } } }),
+      })),
+    );
+    const req = mockReq({
+      headers: { origin: ORIGIN },
+      body: { tier: "monthly", token: "sol", install_id: VALID_INSTALL },
+    });
+    const res = mockRes();
+    await handler(req, res);
+    const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock
+      .calls[0][0] as {
+      token: string;
+      amount: number;
+      amountUsd: number;
+      payUrl: string;
+      splTokenMint: string | null;
+    };
+    expect(payload.token).toBe("sol");
+    expect(payload.amountUsd).toBe(24.99);
+    expect(payload.amount).toBe(0.2499); // 24.99 / 100
+    expect(payload.splTokenMint).toBeNull();
+    // Native SOL pay URL doesn't include spl-token
+    expect(payload.payUrl).not.toContain("spl-token");
+  });
+
+  it("rejects unknown token values with 400", async () => {
+    const req = mockReq({
+      headers: { origin: ORIGIN },
+      body: { tier: "monthly", token: "btc", install_id: VALID_INSTALL },
+    });
+    const res = mockRes();
+    await handler(req, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  it("returns 502 sol_rate_unavailable when Jupiter price fetch fails", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: false,
+        json: async () => ({}),
+      })),
+    );
+    const req = mockReq({
+      headers: { origin: ORIGIN },
+      body: { tier: "monthly", token: "sol", install_id: VALID_INSTALL },
+    });
+    const res = mockRes();
+    await handler(req, res);
+    expect(res.status).toHaveBeenCalledWith(502);
+    const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock
+      .calls[0][0] as { error: string };
+    expect(payload.error).toBe("sol_rate_unavailable");
   });
 
   it("uses lifetime price when tier=lifetime", async () => {

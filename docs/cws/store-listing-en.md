@@ -73,7 +73,7 @@ WHAT YOU SEE IN THE OVERLAY
 
 PRICING — HONEST AND CAPPED
 
-  • Free      $0          50 scans/day (resets at 00:00 UTC)
+  • Free      $0          25 scans/day (resets at 00:00 UTC)
   • Pro       $24.99/30d  Unlimited scans, scan history (30 days),
                           detailed scoring breakdown, priority cache,
                           export CSV/JSON, no affiliate prompts
@@ -81,9 +81,9 @@ PRICING — HONEST AND CAPPED
               one-time     private Discord, roadmap vote — capped at the
                            first 1000 supporters
 
-We never downgrade the Free tier. We never bait-and-switch. The 50/day
-cap is announced from day 1 — you scan as many tokens as a normal user
-needs without ever paying us a cent.
+We never downgrade the Free tier. We never bait-and-switch. The 25/day
+cap is announced from day 1 — enough to vet a research session without
+ever paying us a cent.
 
 PRIVACY
 
@@ -143,7 +143,7 @@ crypto scam, rug detector, smart contract audit
 
 Scan any Solana token in seconds. 7-layer verdict.
 Real-time holder activity. Critical-flags panel.
-50 scans/day free. Pro $14.99/mo. Lifetime $99 (1000 spots).
+25 scans/day free. Pro $24.99/30d (USDC or SOL). Lifetime $149.99 (1000 spots).
 
 No accounts. No tracking. No bullshit.
 

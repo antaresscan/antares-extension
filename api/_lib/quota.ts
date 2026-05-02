@@ -1,6 +1,6 @@
 // api/_lib/quota.ts — Daily scan quota for tiered access.
 //
-// Free tier:    50 scans / UTC day, counted per install_id (or IP fallback).
+// Free tier:    25 scans / UTC day, counted per install_id (or IP fallback).
 // Pro tier:     unlimited (still subject to the per-minute rate limit upstream).
 // Lifetime:     unlimited, same as Pro.
 //
@@ -10,7 +10,7 @@
 //
 // Behaviour:
 //   - Pro/Lifetime bypass the counter entirely.
-//   - Free hits a hard ceiling at 50; we INCR first then deny if over, so
+//   - Free hits a hard ceiling at 25; we INCR first then deny if over, so
 //     concurrent requests can't exceed by more than the in-flight count.
 //   - If Redis is misbehaving we fail open (allow the request) — locking
 //     out the entire Free tier on a transient Upstash blip would be worse
@@ -20,7 +20,7 @@ import { Redis } from "@upstash/redis";
 import { logger } from "./logger";
 import { getUserTier, type Tier } from "./user";
 
-export const FREE_TIER_DAILY_LIMIT = 50;
+export const FREE_TIER_DAILY_LIMIT = 25;
 
 // Re-export Tier for callers that already import from quota.ts
 export type { Tier };
