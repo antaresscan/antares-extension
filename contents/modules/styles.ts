@@ -261,8 +261,8 @@ export const SHADOW_CSS = `
   cursor: help;
   flex-shrink: 0;
 }
-/* Watchlist button — same flex-1 sizing as the other footer entries. */
-.watch-btn {
+/* Watchlist toggle button — same flex-1 sizing as the other footer entries. */
+.wl-btn {
   flex: 1;
   display: block;
   padding: 8px;
@@ -272,35 +272,170 @@ export const SHADOW_CSS = `
   text-align: center;
   border-radius: 2px;
   font-family: 'IBM Plex Mono', monospace;
-  background: none;
+  background: rgba(245, 208, 0, 0.04);
   cursor: pointer;
-  color: #888;
-  border: 1px solid #252528;
+  color: #d4b400;
+  border: 1px solid rgba(245, 208, 0, 0.25);
   transition: color .2s, border-color .2s, background .2s;
 }
-.watch-btn:hover {
-  color: #ccc;
-  border-color: #444;
-  background: rgba(255, 255, 255, 0.02);
+.wl-btn:hover {
+  color: #f5d000;
+  border-color: rgba(245, 208, 0, 0.5);
+  background: rgba(245, 208, 0, 0.08);
 }
-.watch-btn:disabled {
-  cursor: default;
+
+/* ── Watchlist panel ────────────────────────────────────────────────── */
+.wl-panel {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .3s ease;
+  padding: 0 14px;
+  border-top: 1px solid transparent;
 }
-.watch-btn.watching {
+.wl-panel.open {
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 10px 14px 12px;
+  border-top: 1px solid #131316;
+  margin-top: 6px;
+}
+.wl-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.wl-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  color: #aaa;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.wl-meta {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  color: #666;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.wl-meta-limit {
+  color: #ff7777;
+}
+.wl-add {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: center;
+  text-decoration: none;
   color: #00e5b0;
-  border-color: rgba(0, 229, 176, 0.3);
   background: rgba(0, 229, 176, 0.05);
+  border: 1px solid rgba(0, 229, 176, 0.3);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: color .2s, border-color .2s, background .2s;
+  margin-bottom: 8px;
 }
-.watch-btn.limit {
+.wl-add:hover {
+  color: #4dffd1;
+  border-color: rgba(0, 229, 176, 0.5);
+  background: rgba(0, 229, 176, 0.1);
+}
+.wl-add:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.wl-add-watched {
+  color: #aaa;
+  background: rgba(255, 255, 255, 0.02);
+  border-color: #2a2a30;
+}
+.wl-add-watched:hover {
+  color: #ff7777;
+  border-color: rgba(255, 95, 95, 0.4);
+  background: rgba(255, 95, 95, 0.04);
+}
+.wl-add-limit {
+  color: #ff9999;
+  background: rgba(255, 95, 95, 0.06);
+  border-color: rgba(255, 95, 95, 0.4);
+}
+.wl-add-limit:hover {
+  color: #ffb3b3;
+  border-color: rgba(255, 95, 95, 0.6);
+  background: rgba(255, 95, 95, 0.12);
+}
+.wl-divider {
+  height: 1px;
+  background: #131316;
+  margin: 6px 0;
+}
+.wl-empty,
+.wl-loading {
+  text-align: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  color: #555;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 12px 0;
+}
+.wl-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.wl-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  border-bottom: 1px solid #0e0e10;
+  font-family: 'IBM Plex Mono', monospace;
+}
+.wl-row:last-child {
+  border-bottom: none;
+}
+.wl-addr {
+  flex: 1;
+  font-size: 10px;
+  color: #aaa;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wl-age {
+  font-size: 8px;
+  color: #555;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.wl-remove {
+  background: none;
+  border: 1px solid #1a1a1e;
+  color: #555;
+  font-size: 9px;
+  cursor: pointer;
+  padding: 3px 7px;
+  border-radius: 2px;
+  font-family: 'IBM Plex Mono', monospace;
+  transition: color .2s, border-color .2s, background .2s;
+  flex-shrink: 0;
+}
+.wl-remove:hover {
   color: #ff7777;
   border-color: rgba(255, 95, 95, 0.4);
   background: rgba(255, 95, 95, 0.06);
-  cursor: pointer;
 }
-.watch-btn.limit:hover {
-  color: #ff9999;
-  border-color: rgba(255, 95, 95, 0.6);
-  background: rgba(255, 95, 95, 0.12);
+.wl-remove:disabled {
+  cursor: default;
 }
 
 .tk {
