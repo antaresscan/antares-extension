@@ -160,7 +160,7 @@ describe("POST /api/payment-intent", () => {
     };
     expect(payload.tier).toBe("monthly");
     expect(payload.recipient).toBe(VALID_RECIPIENT);
-    expect(payload.amount).toBe(14.99);
+    expect(payload.amount).toBe(24.99);
     expect(payload.payUrl.startsWith(`solana:${VALID_RECIPIENT}?`)).toBe(true);
     expect(payload.payUrl).toContain(`reference=${payload.reference}`);
     expect(payload.expiresAt).toBeGreaterThan(Date.now());
@@ -176,7 +176,7 @@ describe("POST /api/payment-intent", () => {
     const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock
       .calls[0][0] as { amount: number; tier: string };
     expect(payload.tier).toBe("lifetime");
-    expect(payload.amount).toBe(99);
+    expect(payload.amount).toBe(149.99);
   });
 
   it("treats 'pro' as alias for 'monthly'", async () => {
@@ -189,7 +189,7 @@ describe("POST /api/payment-intent", () => {
     const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock
       .calls[0][0] as { tier: string; amount: number };
     expect(payload.tier).toBe("monthly");
-    expect(payload.amount).toBe(14.99);
+    expect(payload.amount).toBe(24.99);
   });
 
   it("disables HTTP caching", async () => {

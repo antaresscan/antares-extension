@@ -123,14 +123,14 @@ describe("buildPayUrl", () => {
 // ─── priceFor ─────────────────────────────────────────────────────────────────
 
 describe("priceFor", () => {
-  it("returns 14.99 for monthly by default", () => {
+  it("returns 24.99 for monthly by default", () => {
     delete process.env.SOLANA_PRICE_PRO_USDC;
-    expect(priceFor("monthly")).toBe(14.99);
+    expect(priceFor("monthly")).toBe(24.99);
   });
 
-  it("returns 99 for lifetime by default", () => {
+  it("returns 149.99 for lifetime by default", () => {
     delete process.env.SOLANA_PRICE_LIFETIME_USDC;
-    expect(priceFor("lifetime")).toBe(99);
+    expect(priceFor("lifetime")).toBe(149.99);
   });
 
   it("honours SOLANA_PRICE_PRO_USDC env override", () => {
@@ -141,13 +141,13 @@ describe("priceFor", () => {
 
   it("falls back to default when env value is invalid", () => {
     process.env.SOLANA_PRICE_PRO_USDC = "not-a-number";
-    expect(priceFor("monthly")).toBe(14.99);
+    expect(priceFor("monthly")).toBe(24.99);
     delete process.env.SOLANA_PRICE_PRO_USDC;
   });
 
   it("falls back to default when env value is negative", () => {
     process.env.SOLANA_PRICE_PRO_USDC = "-5";
-    expect(priceFor("monthly")).toBe(14.99);
+    expect(priceFor("monthly")).toBe(24.99);
     delete process.env.SOLANA_PRICE_PRO_USDC;
   });
 });

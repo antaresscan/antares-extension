@@ -33,9 +33,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - `GET  /api/cron-check-payments` — Vercel cron, runs every minute,
     checks pending intents on-chain, sets tier on confirmation
 - **`vercel.json`** registers the cron at `* * * * *` (every minute).
-- **Lifetime stays one-time** ($99 USDC). **Pro Monthly is now a 30-day
-  Pro Pass** ($14.99 USDC equivalent) — crypto has no native auto-renewal,
-  so the user pays again to extend; `user.ts` auto-downgrades after expiry.
+- **Pricing**: 30-day Pro Pass at $24.99 USDC, Lifetime at $149.99 USDC
+  one-time. Prices are env-overridable (`SOLANA_PRICE_PRO_USDC`,
+  `SOLANA_PRICE_LIFETIME_USDC`) so they can be tweaked without a redeploy.
+- Crypto has no native auto-renewal, so the user pays again to extend the
+  Pro pass; `user.ts` auto-downgrades after expiry.
 
 ### Configuration — env var deltas
 Removed (Lemonsqueezy, never wired):
@@ -44,8 +46,8 @@ Removed (Lemonsqueezy, never wired):
 
 Added (Solana Pay):
   `SOLANA_RECIPIENT_WALLET`         — base58 address that receives USDC payments
-  `SOLANA_PRICE_PRO_USDC`           — defaults 14.99
-  `SOLANA_PRICE_LIFETIME_USDC`      — defaults 99
+  `SOLANA_PRICE_PRO_USDC`           — defaults 24.99
+  `SOLANA_PRICE_LIFETIME_USDC`      — defaults 149.99
   `CRON_SECRET`                     — manual-trigger bearer for /api/cron-check-payments
 
 Already used elsewhere, reused here:

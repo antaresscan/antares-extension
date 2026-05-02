@@ -154,11 +154,11 @@ export function buildPayUrl(params: BuildPayUrlParams): string {
 
 export function priceFor(tier: Tier): number {
   if (tier === "lifetime") {
-    const v = parseFloat(process.env.SOLANA_PRICE_LIFETIME_USDC ?? "99");
-    return Number.isFinite(v) && v > 0 ? v : 99;
+    const v = parseFloat(process.env.SOLANA_PRICE_LIFETIME_USDC ?? "149.99");
+    return Number.isFinite(v) && v > 0 ? v : 149.99;
   }
-  const v = parseFloat(process.env.SOLANA_PRICE_PRO_USDC ?? "14.99");
-  return Number.isFinite(v) && v > 0 ? v : 14.99;
+  const v = parseFloat(process.env.SOLANA_PRICE_PRO_USDC ?? "24.99");
+  return Number.isFinite(v) && v > 0 ? v : 24.99;
 }
 
 // ─── Intent CRUD ─────────────────────────────────────────────────────────────
