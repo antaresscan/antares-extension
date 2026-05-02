@@ -8,21 +8,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed — Pro v1 monetisation: AI Summary, Critical Flags, Full Analysis gated to paid tiers
 - **The 3-button overlay footer (Critical Flags / Full Analysis / AI Summary)
-  is now Pro/Lifetime only.** Free users see a single brand-green
-  `⚡ Unlock Pro features` CTA in the same slot, which deep-links to
-  `/pricing?install=<id>` so the upgrade flow keeps the user's identity.
-  The verdict + score + the 5 stat checks (Sell / Mint / Freeze / LP / Liq)
-  remain visible to Free — those are the core rug-detection signal and
-  stay free forever. The deep-dive layers (the "why" behind the verdict,
-  the AI explanation, the full token analysis page) move to paid.
+  is now Pro/Lifetime only — but stays *visible* to Free users.** Free
+  users still see all three buttons (so they know what they're missing —
+  invisible features don't sell upgrades), but the buttons are dimmed,
+  carry a small "PRO" lock-pill, and clicking any of them opens
+  `/pricing?install=<id>` instead of activating the underlying feature.
+- The verdict + score + the 5 stat checks (Sell / Mint / Freeze / LP / Liq)
+  remain visible and fully active for Free — those are the core rug-detection
+  signal and stay free forever. The deep-dive layers (the "why" behind
+  the verdict, the AI explanation, the full token analysis page) move
+  to paid.
 - Gating in `components.ts` keys on `data._quota.tier === "free"`
   specifically. Pre-quota cached responses or anonymous requests where
   `_quota` is absent default to the unlocked footer — we don't downgrade
   paying users whose response just happens to be missing the headers.
-- The empty `cf-panel` / `ai-panel` containers no longer render for Free
-  users either (no toggle button → no point keeping dead DOM).
-- 6 new tests in `xss-regression.test.ts` covering Free / Pro / Lifetime /
-  missing-quota footers + the upgrade CTA target. 779/779 passing.
+- `attachClose` and `attachAnalysisBtn` skip the clone-and-rebind path
+  when they encounter `.locked`, so the build-time upgrade redirect
+  listener stays in place and clicks short-circuit to /pricing without
+  ever reaching `toggleAiSummary` / `toggleCriticalFlags`.
+- 7 tests in `xss-regression.test.ts` covering Free / Pro / Lifetime /
+  missing-quota footers, lock-pill rendering, and panel containers
+  staying addressable for both tiers. 780/780 passing.
 
 ### Changed — Free tier quota tightened (50 → 25 scans/day)
 - **`FREE_TIER_DAILY_LIMIT` lowered from 50 to 25.** 50 was generous to the

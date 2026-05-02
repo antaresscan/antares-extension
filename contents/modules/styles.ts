@@ -359,26 +359,37 @@ export const SHADOW_CSS = `
 .fo a.warn  { border-color: rgba(255,95,95,.2); color: #cc5555; }
 .fo a.warn:hover { border-color: rgba(255,95,95,.4); color: #ff5f5f; background: rgba(255,95,95,.04); }
 
-/* Free-tier upgrade CTA — replaces the 3-button footer (Critical Flags /
-   Full Analysis / AI Summary) for users on the free plan. Same dimensions
-   as a regular .fo a so the footer height stays constant; brand-green
-   tint and 1-line copy because Free users see this on every scan and we
-   don't want a giant CTA fatiguing the overlay. */
-.fo .fo-upgrade {
-  flex: 1; display: block; padding: 8px;
-  font-size: 8px; letter-spacing: .12em;
-  text-transform: uppercase; text-align: center;
-  text-decoration: none; cursor: pointer;
-  border-radius: 2px; transition: color .2s, border-color .2s, background .2s;
-  font-family: 'IBM Plex Mono', monospace;
+/* Free-tier locked variant — Critical Flags / Full Analysis / AI Summary
+   stay visible (so users see what they're missing) but are dimmed,
+   carry a small "PRO" pill, and clicking opens /pricing instead of
+   activating the underlying feature. The wider rules above set the
+   shape; .locked just shifts colours + state. */
+.fo .locked {
+  opacity: .55;
+  cursor: pointer;
+  position: relative;
+  padding-right: 30px;
+}
+.fo .locked:hover { opacity: .85; }
+.fo .lock-pill {
+  position: absolute;
+  top: 50%;
+  right: 5px;
+  transform: translateY(-50%);
+  font-size: 6px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  padding: 2px 4px;
+  border-radius: 2px;
+  background: rgba(0,229,176,.15);
   color: #00e5b0;
   border: 1px solid rgba(0,229,176,.4);
-  background: rgba(0,229,176,.06);
+  font-family: 'IBM Plex Mono', monospace;
+  pointer-events: none;
 }
-.fo .fo-upgrade:hover {
+.fo .locked:hover .lock-pill {
+  background: rgba(0,229,176,.25);
   color: #4ff5cc;
-  border-color: rgba(0,229,176,.7);
-  background: rgba(0,229,176,.12);
 }
 
 @keyframes ant-pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
