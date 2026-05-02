@@ -1,27 +1,28 @@
-// api/checkout.ts — Build a Lemonsqueezy checkout URL with install_id baked in.
+// api/checkout.ts — Build a NOWPayments crypto checkout invoice and return
+// the hosted-payment URL for the user's chosen tier.
 //
 //   GET /api/checkout?tier=monthly|lifetime&install_id=<id>
 //
-// Returns: { url, tier, variant }
+// Returns: { url, tier }
 //
-// The pricing page calls this and either redirects the user or opens the
-// returned URL in a popup. install_id ends up in the Lemonsqueezy webhook's
-// `meta.custom_data` so we can flip the right user's tier when payment
-// completes (handled in api/webhook-lemonsqueezy.ts).
+// The pricing page calls this and redirects the browser to NP's hosted
+// checkout, where the user picks BTC / ETH / SOL / USDC / USDT / etc. and
+// pays. install_id rides through as part of `order_id` so the NP webhook
+// (api/webhook-nowpayments.ts) can map the payment back to the right user.
 //
 // Configure at deploy time:
-//   LEMONSQUEEZY_STORE_DOMAIN     e.g. "antares.lemonsqueezy.com"
-//   LEMONSQUEEZY_VARIANT_PRO      variant ID for Pro Monthly
-//   LEMONSQUEEZY_VARIANT_LIFETIME variant ID for Lifetime
+//   NOWPAYMENTS_API_KEY  — API key from https://account.nowpayments.io
 //
-// Until any of those are set the endpoint refuses with 503 "not configured" —
-// callers can branch on that to show "Coming soon" instead of a broken button.
+// Until that's set the endpoint returns 503 + machine-readable
+// {error:"checkout_not_configured"} so the frontend can show "Coming soon"
+// rather than a broken button.
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { setCorsHeaders } from "./_lib/middleware";
 import { apiError } from "./_lib/helpers";
+import { logger } from "./_lib/logger";
+import { createInvoice } from "./_lib/nowpayments";
 
-// Same install_id shape as the rate limiter / quota system. Strict to keep
-// arbitrary user input out of the URL we hand back to the browser.
+// Same install_id shape as the rate limiter / quota system.
 const INSTALL_ID_RE = /^[a-zA-Z0-9_-]{8,128}$/;
 
 const KNOWN_TIERS = ["monthly", "pro", "lifetime"] as const;
@@ -31,15 +32,18 @@ function isValidTier(v: string): v is Tier {
   return (KNOWN_TIERS as readonly string[]).includes(v);
 }
 
-function pickVariant(tier: Tier): string | null {
-  if (tier === "monthly" || tier === "pro") {
-    return process.env.LEMONSQUEEZY_VARIANT_PRO ?? null;
-  }
+function priceFor(tier: Tier): number {
   if (tier === "lifetime") {
-    return process.env.LEMONSQUEEZY_VARIANT_LIFETIME ?? null;
+    const v = parseFloat(process.env.NOWPAYMENTS_PRICE_LIFETIME ?? "99");
+    return Number.isFinite(v) && v > 0 ? v : 99;
   }
-  return null;
+  // monthly == pro alias — both go to the 30-day pass
+  const v = parseFloat(process.env.NOWPAYMENTS_PRICE_PRO ?? "14.99");
+  return Number.isFinite(v) && v > 0 ? v : 14.99;
 }
+
+const DEFAULT_API_HOST = "https://antares-extension.vercel.app";
+const DEFAULT_SITE_HOST = "https://antares-website.vercel.app";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const corsOk = setCorsHeaders(req, res);
@@ -57,28 +61,44 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return apiError(res, 400, "Valid install_id query param required.");
   }
 
-  const storeDomain = process.env.LEMONSQUEEZY_STORE_DOMAIN ?? "";
-  const variant = pickVariant(rawTier);
-  if (!storeDomain || !variant) {
-    // 503 + machine-readable code so the frontend can show a friendly
-    // "checkout coming soon" instead of a generic error.
+  const apiKey = process.env.NOWPAYMENTS_API_KEY ?? "";
+  if (!apiKey) {
     res.setHeader("Cache-Control", "no-store, max-age=0");
     return res
       .status(503)
       .json({ error: "checkout_not_configured", message: "Checkout not available yet." });
   }
 
-  // Build the LS checkout URL — install_id rides as `checkout[custom][install_id]`
-  // which Lemonsqueezy passes through to the webhook's meta.custom_data.
-  const url = new URL(`https://${storeDomain}/checkout/buy/${variant}`);
-  url.searchParams.set("checkout[custom][install_id]", rawInstallId);
-  // Optional: prefill no fields, let the user enter their own email — we
-  // never see it (LS handles billing). The custom_data is our only link.
+  // 'pro' is just a UX alias — under the hood it's the 30-day monthly pass.
+  const normalisedTier: "monthly" | "lifetime" =
+    rawTier === "lifetime" ? "lifetime" : "monthly";
 
-  res.setHeader("Cache-Control", "no-store, max-age=0");
-  return res.json({
-    url: url.toString(),
-    tier: rawTier,
-    variant,
-  });
+  const apiHost = process.env.PUBLIC_API_HOST ?? DEFAULT_API_HOST;
+  const siteHost = process.env.PUBLIC_SITE_HOST ?? DEFAULT_SITE_HOST;
+
+  try {
+    const invoice = await createInvoice(apiKey, {
+      installId: rawInstallId,
+      tier: normalisedTier,
+      priceAmount: priceFor(rawTier),
+      priceCurrency: "usd",
+      ipnCallbackUrl: `${apiHost}/api/webhook-nowpayments`,
+      successUrl: `${siteHost}/pricing.html?paid=1`,
+      cancelUrl: `${siteHost}/pricing.html`,
+    });
+
+    if (!invoice.invoice_url) {
+      logger.error("checkout", "NP invoice missing invoice_url", { invoice });
+      return apiError(res, 502, "Checkout provider returned malformed invoice.");
+    }
+
+    res.setHeader("Cache-Control", "no-store, max-age=0");
+    return res.json({
+      url: invoice.invoice_url,
+      tier: normalisedTier,
+    });
+  } catch (err) {
+    logger.error("checkout", "NP invoice creation failed", { error: String(err) });
+    return apiError(res, 502, "Could not create checkout invoice.");
+  }
 }

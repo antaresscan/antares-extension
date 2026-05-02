@@ -139,3 +139,17 @@ is *designed* to scan. It does **not** request `<all_urls>` or any wildcard.
     or for lending purposes:                               no
 
 Privacy policy URL: https://antares-website.vercel.app/privacy
+
+---
+
+## Payment processor disclosure
+
+Pro and Lifetime upgrades are processed by NOWPayments (crypto-native,
+no KYC for individuals, ~0.5% fee). Users pay in BTC, ETH, SOL, USDC,
+USDT or 200+ other cryptocurrencies; NOWPayments forwards the funds to
+the merchant's chain-specific wallet addresses.
+
+Antares stores no payment information — only an opaque install identifier
+that NOWPayments echoes back via webhook so we can flip the right user's
+tier when payment confirms on-chain. No card details, no email tied to
+payment, no link to a wallet address that is itself sensitive.

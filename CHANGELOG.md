@@ -6,6 +6,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed — payment provider migration
+- **Replaced Lemonsqueezy with NOWPayments** (crypto-only). Why: aligns
+  with Solana audience expectations, drops 5% fees to 0.5%, no KYC for
+  individuals, direct settlement to merchant wallets, supports BTC, ETH,
+  SOL, USDC, USDT (multi-chain) and 200+ other cryptos out of the box.
+- New `api/_lib/nowpayments.ts` — order_id encoding (`<install_id>:<tier>`),
+  HMAC-SHA512 signature verification with sort-keys-deep JSON canonicalisation,
+  IPN payload parsing, pure tier-resolution function, hosted-invoice creation
+  helper.
+- New `api/webhook-nowpayments.ts` (replaces `api/webhook-lemonsqueezy.ts`) —
+  POST endpoint that verifies the IPN signature, parses the payment status,
+  and flips user tiers via `setUserTier`. Acks intermediate statuses
+  (`waiting`, `confirming`, `sending`) with 200 noop so NP doesn't keep
+  retrying. Returns 500 on Redis failure so paid upgrades are never lost.
+- Rewrote `api/checkout.ts` — calls NP `/v1/invoice` to create a hosted
+  checkout, returns the invoice URL for the pricing page to redirect to.
+  Treats `tier=pro` as alias for `monthly` to keep the existing UI
+  contract intact.
+- "Pro Monthly" rebadged conceptually as "30-day Pro Pass" — crypto has
+  no native subscription auto-renewal, so the user pays again when they
+  want to extend. Lifetime stays one-time.
+- Deleted `api/_lib/lemonsqueezy.ts`, `api/webhook-lemonsqueezy.ts`,
+  and their tests. The previous Lemonsqueezy code was never wired in
+  production — no env vars set, no charges processed — so this is a
+  zero-impact swap before launch.
+- 75 new tests for NOWPayments helpers + webhook + checkout endpoint
+  (790 / 790 total passing, coverage 75.48% branches).
+
+### Configuration — env var deltas
+Removed (Lemonsqueezy):
+  `LEMONSQUEEZY_WEBHOOK_SECRET` `LEMONSQUEEZY_STORE_DOMAIN`
+  `LEMONSQUEEZY_VARIANT_PRO`    `LEMONSQUEEZY_VARIANT_LIFETIME`
+
+Added (NOWPayments):
+  `NOWPAYMENTS_API_KEY`             — invoice-creation API key
+  `NOWPAYMENTS_IPN_SECRET`          — HMAC-SHA512 signing secret
+  `NOWPAYMENTS_PRICE_PRO`           — defaults to 14.99 (USD)
+  `NOWPAYMENTS_PRICE_LIFETIME`      — defaults to 99 (USD)
+  `PUBLIC_API_HOST` (optional)      — overrides callback host for staging
+  `PUBLIC_SITE_HOST` (optional)     — overrides success/cancel host
+
 ## [1.3.0] - 2026-05-02
 
 ### Added — Pro tier launch

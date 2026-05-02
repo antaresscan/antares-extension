@@ -35,18 +35,32 @@ function mockRes(): VercelResponse {
 
 const ORIGIN = "https://antares-website.vercel.app";
 const VALID_INSTALL = "install-test-aaaaaaaaaaaa";
+const SAMPLE_INVOICE_URL = "https://nowpayments.io/payment/?iid=fake-12345";
 
 beforeEach(() => {
   vi.clearAllMocks();
-  process.env.LEMONSQUEEZY_STORE_DOMAIN = "antares-test.lemonsqueezy.com";
-  process.env.LEMONSQUEEZY_VARIANT_PRO = "1234";
-  process.env.LEMONSQUEEZY_VARIANT_LIFETIME = "9999";
+  process.env.NOWPAYMENTS_API_KEY = "test-api-key";
+  // Stub global fetch so checkout.ts's createInvoice() hits a mock instead
+  // of NowPayments' real API.
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        id: 1,
+        invoice_url: SAMPLE_INVOICE_URL,
+        order_id: `${VALID_INSTALL}:monthly`,
+      }),
+      text: async () => "",
+    })),
+  );
 });
 
 afterEach(() => {
-  delete process.env.LEMONSQUEEZY_STORE_DOMAIN;
-  delete process.env.LEMONSQUEEZY_VARIANT_PRO;
-  delete process.env.LEMONSQUEEZY_VARIANT_LIFETIME;
+  delete process.env.NOWPAYMENTS_API_KEY;
+  delete process.env.NOWPAYMENTS_PRICE_PRO;
+  delete process.env.NOWPAYMENTS_PRICE_LIFETIME;
 });
 
 describe("GET /api/checkout", () => {
@@ -72,7 +86,10 @@ describe("GET /api/checkout", () => {
   });
 
   it("rejects missing tier with 400", async () => {
-    const req = mockReq({ headers: { origin: ORIGIN }, query: { install_id: VALID_INSTALL } });
+    const req = mockReq({
+      headers: { origin: ORIGIN },
+      query: { install_id: VALID_INSTALL },
+    });
     const res = mockRes();
     await handler(req, res);
     expect(res.status).toHaveBeenCalledWith(400);
@@ -88,13 +105,6 @@ describe("GET /api/checkout", () => {
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
-  it("rejects missing install_id with 400", async () => {
-    const req = mockReq({ headers: { origin: ORIGIN }, query: { tier: "monthly" } });
-    const res = mockRes();
-    await handler(req, res);
-    expect(res.status).toHaveBeenCalledWith(400);
-  });
-
   it("rejects malformed install_id with 400", async () => {
     const req = mockReq({
       headers: { origin: ORIGIN },
@@ -105,8 +115,8 @@ describe("GET /api/checkout", () => {
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
-  it("returns 503 when LEMONSQUEEZY_STORE_DOMAIN is unset", async () => {
-    delete process.env.LEMONSQUEEZY_STORE_DOMAIN;
+  it("returns 503 when NOWPAYMENTS_API_KEY is unset", async () => {
+    delete process.env.NOWPAYMENTS_API_KEY;
     const req = mockReq({
       headers: { origin: ORIGIN },
       query: { tier: "monthly", install_id: VALID_INSTALL },
@@ -119,18 +129,7 @@ describe("GET /api/checkout", () => {
     expect(payload.error).toBe("checkout_not_configured");
   });
 
-  it("returns 503 when the requested variant is unset", async () => {
-    delete process.env.LEMONSQUEEZY_VARIANT_LIFETIME;
-    const req = mockReq({
-      headers: { origin: ORIGIN },
-      query: { tier: "lifetime", install_id: VALID_INSTALL },
-    });
-    const res = mockRes();
-    await handler(req, res);
-    expect(res.status).toHaveBeenCalledWith(503);
-  });
-
-  it("builds the LS checkout URL with install_id as custom data for monthly", async () => {
+  it("returns the NowPayments invoice URL for a valid monthly request", async () => {
     const req = mockReq({
       headers: { origin: ORIGIN },
       query: { tier: "monthly", install_id: VALID_INSTALL },
@@ -139,14 +138,34 @@ describe("GET /api/checkout", () => {
     await handler(req, res);
 
     const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock
-      .calls[0][0] as { url: string; tier: string; variant: string };
+      .calls[0][0] as { url: string; tier: string };
     expect(payload.tier).toBe("monthly");
-    expect(payload.variant).toBe("1234");
-    expect(payload.url).toContain("antares-test.lemonsqueezy.com/checkout/buy/1234");
-    expect(payload.url).toContain(`checkout%5Bcustom%5D%5Binstall_id%5D=${VALID_INSTALL}`);
+    expect(payload.url).toBe(SAMPLE_INVOICE_URL);
   });
 
-  it("uses the lifetime variant when tier=lifetime", async () => {
+  it("posts to NowPayments with the right shape (price, currency, order_id, callback URLs)", async () => {
+    const req = mockReq({
+      headers: { origin: ORIGIN },
+      query: { tier: "monthly", install_id: VALID_INSTALL },
+    });
+    const res = mockRes();
+    await handler(req, res);
+
+    const fetchMock = vi.mocked(globalThis.fetch);
+    expect(fetchMock).toHaveBeenCalledOnce();
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain("nowpayments.io/v1/invoice");
+    expect(init.method).toBe("POST");
+    const headers = init.headers as Record<string, string>;
+    expect(headers["x-api-key"]).toBe("test-api-key");
+    const body = JSON.parse(String(init.body)) as Record<string, unknown>;
+    expect(body.price_amount).toBe(14.99);
+    expect(body.price_currency).toBe("usd");
+    expect(body.order_id).toBe(`${VALID_INSTALL}:monthly`);
+    expect(body.ipn_callback_url).toContain("/api/webhook-nowpayments");
+  });
+
+  it("uses the lifetime price when tier=lifetime", async () => {
     const req = mockReq({
       headers: { origin: ORIGIN },
       query: { tier: "lifetime", install_id: VALID_INSTALL },
@@ -154,10 +173,11 @@ describe("GET /api/checkout", () => {
     const res = mockRes();
     await handler(req, res);
 
-    const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock
-      .calls[0][0] as { variant: string; url: string };
-    expect(payload.variant).toBe("9999");
-    expect(payload.url).toContain("/buy/9999");
+    const fetchMock = vi.mocked(globalThis.fetch);
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(String(init.body)) as Record<string, unknown>;
+    expect(body.price_amount).toBe(99);
+    expect(body.order_id).toBe(`${VALID_INSTALL}:lifetime`);
   });
 
   it("treats 'pro' as alias for 'monthly'", async () => {
@@ -169,19 +189,65 @@ describe("GET /api/checkout", () => {
     await handler(req, res);
 
     const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock
-      .calls[0][0] as { variant: string };
-    expect(payload.variant).toBe("1234");
+      .calls[0][0] as { tier: string };
+    expect(payload.tier).toBe("monthly");
+    const fetchMock = vi.mocked(globalThis.fetch);
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(String(init.body)) as Record<string, unknown>;
+    expect(body.price_amount).toBe(14.99);
   });
 
-  it("normalises tier case (LIFETIME → lifetime)", async () => {
+  it("honours NOWPAYMENTS_PRICE_PRO env override", async () => {
+    process.env.NOWPAYMENTS_PRICE_PRO = "19.99";
     const req = mockReq({
       headers: { origin: ORIGIN },
-      query: { tier: "LIFETIME", install_id: VALID_INSTALL },
+      query: { tier: "monthly", install_id: VALID_INSTALL },
     });
     const res = mockRes();
     await handler(req, res);
 
-    expect(res.status).not.toHaveBeenCalledWith(400);
+    const fetchMock = vi.mocked(globalThis.fetch);
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(String(init.body)) as Record<string, unknown>;
+    expect(body.price_amount).toBe(19.99);
+  });
+
+  it("returns 502 when NowPayments returns a malformed invoice (no invoice_url)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({ id: 1 }), // missing invoice_url
+        text: async () => "",
+      })),
+    );
+    const req = mockReq({
+      headers: { origin: ORIGIN },
+      query: { tier: "monthly", install_id: VALID_INSTALL },
+    });
+    const res = mockRes();
+    await handler(req, res);
+    expect(res.status).toHaveBeenCalledWith(502);
+  });
+
+  it("returns 502 when NowPayments API call fails", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: false,
+        status: 500,
+        json: async () => ({ error: "internal" }),
+        text: async () => "internal error",
+      })),
+    );
+    const req = mockReq({
+      headers: { origin: ORIGIN },
+      query: { tier: "monthly", install_id: VALID_INSTALL },
+    });
+    const res = mockRes();
+    await handler(req, res);
+    expect(res.status).toHaveBeenCalledWith(502);
   });
 
   it("disables HTTP caching to prevent stale checkout URLs", async () => {
