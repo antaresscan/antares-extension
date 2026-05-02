@@ -35,6 +35,7 @@ import {
   normalizeEmail,
   type License,
 } from "./_lib/license";
+import { getAccountFromRequest } from "./_lib/session-cookie";
 
 function getRedis(): Redis | null {
   const url = process.env.UPSTASH_REDIS_REST_URL;
@@ -102,35 +103,59 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const allowed = await checkRateLimit(res, ip);
   if (!allowed) return;
 
-  const body = readBody(req);
-  const email = normalizeEmail(body.email);
-  const proofKey = String(body.license_key ?? "").trim().toUpperCase();
-
-  if (!email) {
-    return apiError(res, 400, "Valid email required in body.");
+  // Two auth paths:
+  //   1. Session cookie (preferred) — logged-in users on /account get
+  //      the full list without needing to type a license key.
+  //   2. Legacy email + license_key — pre-account buyers who just
+  //      have the artifacts from the pricing modal can still recover
+  //      their license list. Kept for the launch window so existing
+  //      buyers aren't locked out; will be deprecated once the
+  //      account flow is universal.
+  let authedEmail: string | null = null;
+  try {
+    const account = await getAccountFromRequest(req, redis);
+    if (account) authedEmail = account.email;
+  } catch {
+    // SESSION_SECRET unset, etc. Fall through to legacy auth.
   }
-  if (!isValidLicenseKey(proofKey)) {
-    return apiError(res, 400, "Valid license_key required in body.");
+
+  let email: string | null = null;
+  // Cache the first lookup so the legacy proof-verify path doesn't
+  // double-charge Redis with two getLicensesByEmail calls.
+  let prefetched: License[] | null = null;
+  if (authedEmail) {
+    email = authedEmail;
+  } else {
+    const body = readBody(req);
+    email = normalizeEmail(body.email);
+    const proofKey = String(body.license_key ?? "").trim().toUpperCase();
+    if (!email) {
+      return apiError(res, 400, "Valid email required in body.");
+    }
+    if (!isValidLicenseKey(proofKey)) {
+      return apiError(res, 400, "Valid license_key required in body.");
+    }
+    try {
+      prefetched = await getLicensesByEmail(redis, email);
+      const matches = prefetched.find((l) => l.key === proofKey);
+      if (!matches) {
+        return res
+          .status(403)
+          .json({ ok: false, reason: "invalid_credentials" });
+      }
+    } catch (err) {
+      logger.error("account-licenses", "lookup failed", { error: String(err) });
+      return apiError(res, 500, "Could not look up licenses.");
+    }
   }
 
   try {
-    const licenses = await getLicensesByEmail(redis, email);
-    // Verify the proof: at least one of the licenses owned by this
-    // email must match the supplied key. Otherwise this is either an
-    // unknown email/key combination or someone fishing.
-    const matches = licenses.find((l) => l.key === proofKey);
-    if (!matches) {
-      // 403 not 404: we don't differentiate "no licenses for this
-      // email" from "wrong key" — that would let an attacker
-      // enumerate which emails have ever bought.
-      return res.status(403).json({ ok: false, reason: "invalid_credentials" });
-    }
-
+    const licenses = prefetched ?? (await getLicensesByEmail(redis, email));
     logger.metric("account-licenses.read", {
       email,
       count: licenses.length,
+      via: authedEmail ? "session" : "license_key",
     });
-
     return res.json({
       ok: true,
       email,
