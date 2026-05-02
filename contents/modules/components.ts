@@ -1,5 +1,5 @@
 import type { ScanResponseFlag, ScanResponseData, QuotaStatus } from "../../shared/types"
-import { RISK_CLASS, LABELS, ANALYSIS_PAGE, SVG_MOVE, SVG_CLOSE, VERDICT_COLORS } from "./constants"
+import { RISK_CLASS, LABELS, ANALYSIS_PAGE, SVG_MOVE, SVG_CLOSE, VERDICT_COLORS, PHOTON_REF, buildPhotonUrl } from "./constants"
 import { state, scanCache } from "./state"
 import { SHADOW_CSS, injectFonts } from "./styles"
 import { initDrag } from "./drag"
@@ -314,6 +314,46 @@ function buildQuotaBadge(quota?: QuotaStatus): HTMLElement | null {
   )
 }
 
+// Optional affiliate row — only rendered when:
+//   1. PHOTON_REF is non-empty (we actually have a referral relationship)
+//   2. The user is on the Free tier (Pro/Lifetime get a clean UI as part
+//      of what they pay for)
+//   3. The verdict is SAFE (don't promote trading on flagged tokens —
+//      that would destroy the brand)
+//
+// Returns null in all other cases so callers can splat it into el() and
+// the helper drops nulls automatically.
+function buildAffiliateRow(
+  ca: string,
+  risk: string,
+  quota?: QuotaStatus,
+): HTMLElement | null {
+  if (!PHOTON_REF) return null
+  if (quota && (quota.tier === "pro" || quota.tier === "lifetime")) return null
+  if (risk !== "SAFE") return null
+  const url = buildPhotonUrl(ca)
+  if (!url) return null
+
+  return el("div", { class: "aff-row" },
+    el(
+      "a",
+      {
+        class: "aff-link",
+        href: url,
+        target: "_blank",
+        rel: "noopener sponsored noreferrer",
+        title: "Open on Photon — affiliate link, we earn a small fee on trades",
+      },
+      "Trade safely on Photon →",
+    ),
+    el(
+      "span",
+      { class: "aff-disclosure", title: "We earn a referral fee. Antares stays free for everyone." },
+      "ad",
+    ),
+  )
+}
+
 function buildHeaderNode(quota?: QuotaStatus): HTMLElement {
   const dragIcon = el("span", { class: "drag-icon" })
   setStaticSvg(dragIcon, SVG_MOVE)
@@ -509,6 +549,7 @@ export function buildResultNode(data: ScanResponseData, ca: string): HTMLElement
     el("div", { class: "cf-panel", id: "ant-critical-flags" }),
     el("div", { class: "ai-panel", id: "ant-ai-summary" }),
     foNode,
+    buildAffiliateRow(mint, data.risk, data._quota),
   )
 
   return root

@@ -45,3 +45,22 @@ export const SVG_CLOSE = `<svg width="13" height="13" viewBox="0 0 13 13" fill="
 export const VERDICT_COLORS: Record<string, string> = {
   SAFE: "#00e5b0", CAUTION: "#f5d000", DANGER: "#ff5f5f", RUG: "#ff2244",
 }
+
+// ─── Affiliate ────────────────────────────────────────────────────────────────
+// Set PLASMO_PUBLIC_PHOTON_REF at build time (or hardcode here once we have a
+// real referral handle). When empty the affiliate row is hidden — no link is
+// shown to users until we actually have an upstream affiliate relationship.
+//
+// Free users only: Pro/Lifetime get a clean overlay (one of the things they
+// paid for is "no affiliate prompts"). Safe tokens only: never recommend
+// trading on a DANGER/RUG verdict, that would be reputational suicide.
+export const PHOTON_REF = process.env.PLASMO_PUBLIC_PHOTON_REF || ""
+
+/** Build a Photon trade URL with our referral handle baked in. */
+export function buildPhotonUrl(tokenAddress: string): string {
+  if (!PHOTON_REF) return ""
+  const encoded = encodeURIComponent(tokenAddress)
+  // Photon's referral URL format is `/en/r/<handle>/<token-address>` — confirm
+  // when signing up for the program and adjust if their schema differs.
+  return `https://photon-sol.tinyastro.io/en/r/${encodeURIComponent(PHOTON_REF)}/${encoded}`
+}

@@ -221,6 +221,46 @@ export const SHADOW_CSS = `
   background: rgba(0, 229, 176, 0.05);
   letter-spacing: 0.22em;
 }
+.aff-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 14px 12px;
+  border-top: 1px solid #0e0e10;
+  margin-top: 4px;
+}
+.aff-link {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: #777;
+  text-decoration: none;
+  text-transform: uppercase;
+  flex: 1;
+  text-align: center;
+  padding: 6px 8px;
+  border: 1px solid #1a1a1e;
+  border-radius: 2px;
+  transition: color .2s, border-color .2s, background .2s;
+}
+.aff-link:hover {
+  color: #00e5b0;
+  border-color: rgba(0, 229, 176, 0.3);
+  background: rgba(0, 229, 176, 0.04);
+}
+.aff-disclosure {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 7px;
+  color: #2a2a2f;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 2px 5px;
+  border: 1px solid #16161a;
+  border-radius: 2px;
+  cursor: help;
+  flex-shrink: 0;
+}
 
 .tk {
   padding: 0 14px;
