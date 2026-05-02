@@ -3,10 +3,24 @@ import * as Sentry from "@sentry/browser"
 import { API, LS_PREFIX, IGNORE } from "./constants"
 import { state, scanCache } from "./state"
 import { getCached, saveToLS } from "./cache"
-import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimations, buildResultNode, buildSkeletonNode } from "./components"
+import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimations, buildResultNode, buildSkeletonNode, buildQuotaExhaustedNode } from "./components"
 import { scanRateLimiter } from "../../shared/rate-limit"
 import { logger } from "../../shared/logger"
 import { getInstallId } from "../../shared/install-id"
+
+/**
+ * Thrown by fetchWithRetry when a 429 carries quota headers showing
+ * the user has burned their daily allowance (limit > 0, remaining = 0).
+ * Distinct from a generic 429 (rate-limit burst, which is recoverable
+ * with a retry) — quota exhaustion needs different UX: stop retrying,
+ * tell the user, point them at /pricing.
+ */
+export class QuotaExhaustedError extends Error {
+  constructor(public readonly quota: QuotaStatus) {
+    super("quota_exhausted")
+    this.name = "QuotaExhaustedError"
+  }
+}
 
 // Pull X-Antares-Quota-* headers off a /api/scan response into a structured
 // shape the overlay can render. Returns undefined when headers are missing
@@ -98,6 +112,18 @@ async function fetchWithRetry(
       const res = await fetch(url, { signal, headers })
       if (!res.ok) {
         const status = res.status
+        // Quota exhaustion vs rate-limit burst: both surface as 429,
+        // but only the second is recoverable via retry. The server
+        // sets X-Antares-Quota-Remaining=0 only when the daily limit
+        // is hit, so we use that as the discriminator. Surface as a
+        // typed error so the caller can render the right overlay
+        // instead of bouncing through MAX_RETRIES delays for nothing.
+        if (status === 429) {
+          const quota = extractQuotaFromHeaders(res.headers)
+          if (quota && quota.limit > 0 && quota.remaining === 0) {
+            throw new QuotaExhaustedError(quota)
+          }
+        }
         if ((status === 429 || status >= 500) && attempt < retries) {
           const delay = BASE_RETRY_DELAY * Math.pow(2, attempt)
           await new Promise(r => setTimeout(r, delay))
@@ -109,6 +135,8 @@ async function fetchWithRetry(
     } catch (e: unknown) {
       lastError = e
       if (signal.aborted) throw e
+      // QuotaExhaustedError is by design non-retryable — bubble up.
+      if (e instanceof QuotaExhaustedError) throw e
       if (!isRetryable(e) || attempt >= retries) throw e
       const delay = BASE_RETRY_DELAY * Math.pow(2, attempt)
       await new Promise(r => setTimeout(r, delay))
@@ -189,6 +217,23 @@ export async function scan(ca: string) {
     })
   } catch (e: unknown) {
     if (controller.signal.aborted) return
+    // Quota exhausted: render a clear "you've hit the cap" overlay
+    // with an upgrade CTA — never silently hide the box, that just
+    // makes the extension look broken on the 26th scan of the day.
+    if (e instanceof QuotaExhaustedError) {
+      logger.info("scanner", "quota exhausted", {
+        used: e.quota.used,
+        limit: e.quota.limit,
+        resetAt: e.quota.resetAt,
+      })
+      if (state.lastCA === ca) {
+        if (state.boxEl) state.boxEl.className = "box caution"
+        el.replaceChildren(buildQuotaExhaustedNode(e.quota))
+        showBox()
+        attachClose(null)
+      }
+      return
+    }
     logger.warn("scanner", "scan failed after retries", e)
     try { Sentry.captureException(e) } catch { /* Sentry not initialized */ }
     if (state.lastCA === ca && state.boxEl) {

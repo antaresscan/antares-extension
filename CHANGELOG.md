@@ -6,6 +6,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed — extension stops working when daily quota hits 25 (silent box hide)
+- **Bug**: a Free user hitting the 25-scan/day cap saw the API return
+  429, the scanner retry 3× through exponential back-off, then the
+  catch block silently hide the overlay. To the user the extension
+  just looked broken on the 26th scan with zero context.
+- **New `QuotaExhaustedError`** thrown by `fetchWithRetry` when a 429
+  carries quota headers showing `remaining=0` (vs a generic 429 burst
+  which is recoverable via retry). Distinguishes the two cases at the
+  network layer so the caller can render the right UX.
+- **New `buildQuotaExhaustedNode(quota)`** in `components.ts` — renders
+  a dedicated overlay with `OUT OF SCANS` headline, `25 / 25 today`
+  counter, a live "Resets in Xh Ym" countdown that ticks every 30s, a
+  short pitch ("Pro = unlimited scans + AI Summary + Critical Flags +
+  Full Analysis"), and a primary brand-green `⚡ Get Pro — unlimited
+  scans →` CTA opening `/pricing?install=<id>`.
+- **`scan()` catch block** now branches on `QuotaExhaustedError` to
+  render the new overlay instead of hiding the box. The box stays
+  visible, the user knows exactly why, and the upgrade link is one
+  click away.
+- 9 new tests in `quota-exhausted-overlay.test.ts` covering headline,
+  counter, reset countdown (future / past / missing), CTA target,
+  Pro-unlock copy, header badge. 837/837 passing.
+
 ### Added — license-key flow: site-direct buyers + portable Pro across installs
 - **Email + license-key model.** /api/payment-intent now accepts an
   `email` field (required for visitors who haven't installed the
