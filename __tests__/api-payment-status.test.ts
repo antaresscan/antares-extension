@@ -2,17 +2,48 @@ import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import type { PaymentIntent } from "../api/_lib/solana-pay";
 
-const mockGet = vi.fn();
+// vi.hoisted runs before vi.mock, required because mock factories reference
+// the vi.fn() values below.
+const mocks = vi.hoisted(() => ({
+  redisGet: vi.fn() as ReturnType<typeof vi.fn>,
+  redisSet: vi.fn().mockResolvedValue("OK") as ReturnType<typeof vi.fn>,
+  redisSrem: vi.fn().mockResolvedValue(1) as ReturnType<typeof vi.fn>,
+  checkOnChain: vi.fn() as ReturnType<typeof vi.fn>,
+  markConfirmed: vi.fn().mockResolvedValue(undefined) as ReturnType<typeof vi.fn>,
+  setUserTier: vi.fn().mockResolvedValue(undefined) as ReturnType<typeof vi.fn>,
+}));
 
 vi.mock("@upstash/redis", () => {
   class MockRedis {
-    get = mockGet;
-    set = vi.fn().mockResolvedValue("OK");
+    get = mocks.redisGet;
+    set = mocks.redisSet;
     sadd = vi.fn().mockResolvedValue(1);
     smembers = vi.fn().mockResolvedValue([]);
-    srem = vi.fn().mockResolvedValue(1);
+    srem = mocks.redisSrem;
   }
   return { Redis: MockRedis };
+});
+
+vi.mock("../api/_lib/solana-pay", async () => {
+  const actual = await vi.importActual<typeof import("../api/_lib/solana-pay")>(
+    "../api/_lib/solana-pay",
+  );
+  return {
+    ...actual,
+    checkIntentOnChain: mocks.checkOnChain,
+    markIntentConfirmed: mocks.markConfirmed,
+  };
+});
+
+vi.mock("../api/_lib/user", async () => {
+  const actual = await vi.importActual<typeof import("../api/_lib/user")>(
+    "../api/_lib/user",
+  );
+  return {
+    ...actual,
+    initUserStorage: vi.fn(),
+    setUserTier: mocks.setUserTier,
+  };
 });
 
 vi.mock("../api/_lib/middleware", async () => {
@@ -23,6 +54,8 @@ vi.mock("../api/_lib/middleware", async () => {
 });
 
 import handler from "../api/payment-status";
+
+const mockGet = mocks.redisGet;
 
 const ORIGIN = "https://antares-website.vercel.app";
 const VALID_REFERENCE = "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM";
@@ -70,11 +103,15 @@ beforeEach(() => {
   vi.clearAllMocks();
   process.env.UPSTASH_REDIS_REST_URL = "https://fake.upstash";
   process.env.UPSTASH_REDIS_REST_TOKEN = "fake-token";
+  // Without HELIUS_API_KEY the lazy on-chain check is a no-op — tests
+  // that don't care about confirmation default to skipping it.
+  delete process.env.HELIUS_API_KEY;
 });
 
 afterEach(() => {
   delete process.env.UPSTASH_REDIS_REST_URL;
   delete process.env.UPSTASH_REDIS_REST_TOKEN;
+  delete process.env.HELIUS_API_KEY;
 });
 
 describe("GET /api/payment-status", () => {
@@ -190,5 +227,141 @@ describe("GET /api/payment-status", () => {
     }).mock.calls.filter(([k]) => k === "Cache-Control");
     const lastValue = cacheControl[cacheControl.length - 1][1];
     expect(lastValue).toContain("no-store");
+  });
+
+  // ─── Lazy on-chain confirmation ────────────────────────────────────────────
+
+  describe("lazy on-chain check", () => {
+    beforeEach(() => {
+      process.env.HELIUS_API_KEY = "fake-helius";
+    });
+
+    it("flips the user to Pro and updates the response when payment lands", async () => {
+      mockGet.mockResolvedValueOnce(intent({ status: "pending" }));
+      mocks.checkOnChain.mockResolvedValueOnce({
+        confirmed: true,
+        txSignature: "sig-fast",
+      });
+
+      const req = mockReq({
+        headers: { origin: ORIGIN },
+        query: { reference: VALID_REFERENCE },
+      });
+      const res = mockRes();
+      await handler(req, res);
+
+      expect(mocks.setUserTier).toHaveBeenCalledWith(
+        "install-test-aaaaaaaaaaaa",
+        "pro",
+        expect.any(Number),
+      );
+      expect(mocks.markConfirmed).toHaveBeenCalled();
+      const payload = (res.json as unknown as { mock: { calls: unknown[][] } })
+        .mock.calls[0][0] as { status: string; txSignature: string };
+      expect(payload.status).toBe("confirmed");
+      expect(payload.txSignature).toBe("sig-fast");
+    });
+
+    it("flips to Lifetime without expiry on lifetime tier", async () => {
+      mockGet.mockResolvedValueOnce(intent({ status: "pending", tier: "lifetime" }));
+      mocks.checkOnChain.mockResolvedValueOnce({
+        confirmed: true,
+        txSignature: "sig-life",
+      });
+
+      const req = mockReq({
+        headers: { origin: ORIGIN },
+        query: { reference: VALID_REFERENCE },
+      });
+      const res = mockRes();
+      await handler(req, res);
+
+      expect(mocks.setUserTier).toHaveBeenCalledWith(
+        "install-test-aaaaaaaaaaaa",
+        "lifetime",
+        undefined,
+      );
+    });
+
+    it("does not run the on-chain check when intent is already confirmed", async () => {
+      mockGet.mockResolvedValueOnce(
+        intent({ status: "confirmed", txSignature: "old-sig" }),
+      );
+
+      const req = mockReq({
+        headers: { origin: ORIGIN },
+        query: { reference: VALID_REFERENCE },
+      });
+      const res = mockRes();
+      await handler(req, res);
+
+      expect(mocks.checkOnChain).not.toHaveBeenCalled();
+      expect(mocks.setUserTier).not.toHaveBeenCalled();
+    });
+
+    it("does not run the on-chain check when intent is past expiry", async () => {
+      mockGet.mockResolvedValueOnce(
+        intent({ status: "pending", expiresAt: Date.now() - 1000 }),
+      );
+
+      const req = mockReq({
+        headers: { origin: ORIGIN },
+        query: { reference: VALID_REFERENCE },
+      });
+      const res = mockRes();
+      await handler(req, res);
+
+      expect(mocks.checkOnChain).not.toHaveBeenCalled();
+    });
+
+    it("returns pending unchanged when on-chain check finds no confirming tx", async () => {
+      mockGet.mockResolvedValueOnce(intent({ status: "pending" }));
+      mocks.checkOnChain.mockResolvedValueOnce({ confirmed: false });
+
+      const req = mockReq({
+        headers: { origin: ORIGIN },
+        query: { reference: VALID_REFERENCE },
+      });
+      const res = mockRes();
+      await handler(req, res);
+
+      expect(mocks.setUserTier).not.toHaveBeenCalled();
+      const payload = (res.json as unknown as { mock: { calls: unknown[][] } })
+        .mock.calls[0][0] as { status: string };
+      expect(payload.status).toBe("pending");
+    });
+
+    it("doesn't break the polling response when Helius throws", async () => {
+      mockGet.mockResolvedValueOnce(intent({ status: "pending" }));
+      mocks.checkOnChain.mockRejectedValueOnce(new Error("helius timeout"));
+
+      const req = mockReq({
+        headers: { origin: ORIGIN },
+        query: { reference: VALID_REFERENCE },
+      });
+      const res = mockRes();
+      await handler(req, res);
+
+      // Helius failure shouldn't bubble — return the stored state and let
+      // the next poll (or the cron) catch the confirmation.
+      expect(mocks.setUserTier).not.toHaveBeenCalled();
+      const payload = (res.json as unknown as { mock: { calls: unknown[][] } })
+        .mock.calls[0][0] as { status: string };
+      expect(payload.status).toBe("pending");
+    });
+
+    it("skips the check when HELIUS_API_KEY is unset", async () => {
+      delete process.env.HELIUS_API_KEY;
+      mockGet.mockResolvedValueOnce(intent({ status: "pending" }));
+
+      const req = mockReq({
+        headers: { origin: ORIGIN },
+        query: { reference: VALID_REFERENCE },
+      });
+      const res = mockRes();
+      await handler(req, res);
+
+      expect(mocks.checkOnChain).not.toHaveBeenCalled();
+    });
   });
 });

@@ -10,7 +10,7 @@
   "crons": [
     {
       "path": "/api/cron-check-payments",
-      "schedule": "* * * * *"
+      "schedule": "0 0 * * *"
     }
   ],
   "redirects": [
