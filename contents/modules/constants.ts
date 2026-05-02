@@ -2,6 +2,18 @@
 // Plasmo exposes PLASMO_PUBLIC_* vars to content scripts at build time
 export const API           = process.env.PLASMO_PUBLIC_API_URL || "https://antares-extension.vercel.app/api/scan"
 export const ANALYSIS_PAGE = process.env.PLASMO_PUBLIC_ANALYSIS_URL || "https://antares-extension.vercel.app/token.html"
+// Derive sibling endpoints from the scan URL so all routes follow the same
+// base — keeps local dev (localhost) and prod (vercel) in sync without
+// needing extra env vars per endpoint.
+const API_ORIGIN = (() => {
+  try {
+    return new URL(API).origin
+  } catch {
+    return "https://antares-extension.vercel.app"
+  }
+})()
+export const WATCHLIST_API = `${API_ORIGIN}/api/watchlist`
+export const PRICING_URL   = "https://antares-website.vercel.app/pricing"
 export const LS_PREFIX     = "antares_scan_"
 export const CACHE_TTL    = 5 * 60 * 1000
 export const POS_KEY       = "antares_popup_pos"

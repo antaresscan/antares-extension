@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Antares overlay preview · Pro v1</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* Page chrome — not part of the extension overlay */
+    body {
+      margin: 0;
+      background: #0a0a0c;
+      color: #c8c8cc;
+      font-family: 'IBM Plex Mono', monospace;
+      padding: 40px 20px;
+    }
+    h1 {
+      font: 400 48px/1 'Bebas Neue', sans-serif;
+      letter-spacing: 0.04em;
+      color: #00e5b0;
+      text-align: center;
+      margin: 0 0 8px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #888;
+      font-size: 12px;
+      margin-bottom: 8px;
+      letter-spacing: 0.06em;
+    }
+    .meta {
+      text-align: center;
+      color: #555;
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      margin-bottom: 48px;
+      text-transform: uppercase;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(330px, 360px));
+      gap: 32px;
+      max-width: 1500px;
+      margin: 0 auto;
+      justify-content: center;
+    }
+    .variant-head {
+      margin-bottom: 14px;
+      padding: 0 4px;
+    }
+    .variant-head h3 {
+      font: 600 12px/1.2 'IBM Plex Mono', monospace;
+      color: #00e5b0;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin: 0 0 4px;
+    }
+    .variant-head p {
+      font-size: 11px;
+      color: #777;
+      line-height: 1.5;
+      margin: 0;
+    }
+    .overlay-frame {
+      background: #050507;
+      padding: 16px;
+      border: 1px solid #1a1a1e;
+      border-radius: 4px;
+    }
+    .overlay-frame .box {
+      width: 290px;
+      margin: 0 auto;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      position: relative;
+    }
+    /* Verdict-coloured topbar (matches in-extension styling) */
+    .topbar { height: 2px; }
+    .box.safe    .topbar { background: linear-gradient(90deg,transparent,#00e5b0,transparent); }
+    .box.caution .topbar { background: linear-gradient(90deg,transparent,#f5d000,transparent); }
+    .box.danger  .topbar { background: linear-gradient(90deg,transparent,#ff5f5f,transparent); }
+    .box.rug     .topbar { background: linear-gradient(90deg,transparent,#ff2244,transparent); }
+    /* Verdict-coloured background tint to match the real overlay */
+    .box.safe    { background: linear-gradient(180deg,#0b100f 0%,#090b0a 100%); }
+    .box.caution { background: linear-gradient(180deg,#0e0d0a 0%,#0a0a09 100%); }
+    .box.danger  { background: linear-gradient(180deg,#0e0a0a 0%,#0a0909 100%); }
+    .box.rug     { background: linear-gradient(180deg,#100809 0%,#0a0808 100%); }
+
+    .test-plan {
+      max-width: 900px;
+      margin: 80px auto 40px;
+      background: #111114;
+      border: 1px solid #1a1a1e;
+      padding: 32px;
+      border-radius: 4px;
+    }
+    .test-plan h2 {
+      font: 400 28px/1 'Bebas Neue', sans-serif;
+      letter-spacing: 0.04em;
+      color: #00e5b0;
+      margin: 0 0 16px;
+    }
+    .test-plan ul {
+      font-size: 12px;
+      line-height: 1.8;
+      color: #888;
+      padding-left: 20px;
+    }
+    .test-plan li code {
+      background: #0a0a0c;
+      color: #00e5b0;
+      padding: 1px 5px;
+      border-radius: 2px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+    }
+
+    /* ── Antares overlay CSS — pulled from contents/modules/styles.ts ── */
+    
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+@font-face {
+  font-family: 'Bebas Neue';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/bebasneue/v16/JTUSjIg69CK48gW7PXoo9Wlhyw.woff2) format('woff2');
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F63fjptAgt5VM-kVkqdyU8n1i8q1w.woff2) format('woff2');
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3vAOwlBFgg.woff2) format('woff2');
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3pQPwlBFgg.woff2) format('woff2');
+}
+
+:host {
+  all: initial;
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 2147483647;
+  font-family: 'IBM Plex Mono', monospace;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.box {
+  pointer-events: auto;
+  width: 290px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(255,255,255,.06);
+  box-shadow: 0 40px 80px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.02) inset;
+  display: none;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity .2s ease, transform .2s ease;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  touch-action: none;
+}
+
+.box::before {
+  content: '';
+  position: absolute;
+  top: -60px; left: 50%;
+  transform: translateX(-50%);
+  width: 180px; height: 100px;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: .08;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.box.safe   { background: linear-gradient(180deg,#0b100f 0%,#090b0a 100%); }
+.box.caution{ background: linear-gradient(180deg,#0e0d0a 0%,#0a0a09 100%); }
+.box.danger { background: linear-gradient(180deg,#0e0a0a 0%,#0a0909 100%); }
+.box.rug    { background: linear-gradient(180deg,#100809 0%,#0a0808 100%); }
+
+.box.safe::before   { background: #00e5b0; }
+.box.caution::before{ background: #f5d000; }
+.box.danger::before { background: #ff5f5f; }
+.box.rug::before    { background: #ff2244; }
+
+.topbar { height: 2px; }
+.box.safe    .topbar { background: linear-gradient(90deg,transparent,#00e5b0,transparent); }
+.box.caution .topbar { background: linear-gradient(90deg,transparent,#f5d000,transparent); }
+.box.danger  .topbar { background: linear-gradient(90deg,transparent,#ff5f5f,transparent); }
+.box.rug     .topbar { background: linear-gradient(90deg,transparent,#ff2244,transparent); }
+
+.hd {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px 0;
+  cursor: grab;
+  touch-action: none;
+}
+.hd:active { cursor: grabbing; }
+.hd-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.brand {
+  font-size: 7px;
+  color: #555;
+  letter-spacing: .55em;
+  text-transform: uppercase;
+  font-family: 'IBM Plex Mono', monospace;
+}
+.drag-icon {
+  display: flex;
+  align-items: center;
+  color: #3a3a42;
+  transition: color .2s;
+  pointer-events: none;
+}
+.hd:hover .drag-icon { color: #777; }
+.stealth-btn {
+  color: #3a3a42;
+  cursor: pointer;
+  transition: color .2s;
+  background: none;
+  border: none;
+  font-size: 11px;
+  line-height: 1;
+  padding: 0 2px;
+}
+.stealth-btn:hover { color: #00e5b0; }
+.x {
+  color: #3a3a42;
+  cursor: pointer;
+  transition: color .2s;
+  background: none;
+  border: none;
+  width: 13px;
+  height: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+}
+.x:hover { color: #777; }
+.quota-badge {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 7px;
+  letter-spacing: 0.18em;
+  font-weight: 600;
+  color: #555;
+  padding: 3px 7px;
+  border: 1px solid #1a1a1e;
+  border-radius: 2px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-decoration: none;
+  flex-shrink: 0;
+  margin: 0 8px;
+  transition: color .2s, border-color .2s, background .2s;
+}
+.quota-badge.warn {
+  color: #f5d000;
+  border-color: rgba(245, 208, 0, 0.3);
+  background: rgba(245, 208, 0, 0.04);
+}
+.quota-badge.danger {
+  color: #ff5f5f;
+  border-color: rgba(255, 95, 95, 0.4);
+  background: rgba(255, 95, 95, 0.06);
+  cursor: pointer;
+  letter-spacing: 0.16em;
+}
+.quota-badge.danger:hover {
+  background: rgba(255, 95, 95, 0.12);
+  border-color: rgba(255, 95, 95, 0.6);
+  color: #ff7777;
+}
+.quota-badge.pro {
+  color: #00e5b0;
+  border-color: rgba(0, 229, 176, 0.3);
+  background: rgba(0, 229, 176, 0.05);
+  letter-spacing: 0.22em;
+}
+.aff-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 14px 12px;
+  border-top: 1px solid #0e0e10;
+  margin-top: 4px;
+}
+.aff-link {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: #777;
+  text-decoration: none;
+  text-transform: uppercase;
+  flex: 1;
+  text-align: center;
+  padding: 6px 8px;
+  border: 1px solid #1a1a1e;
+  border-radius: 2px;
+  transition: color .2s, border-color .2s, background .2s;
+}
+.aff-link:hover {
+  color: #00e5b0;
+  border-color: rgba(0, 229, 176, 0.3);
+  background: rgba(0, 229, 176, 0.04);
+}
+.aff-disclosure {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 7px;
+  color: #2a2a2f;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 2px 5px;
+  border: 1px solid #16161a;
+  border-radius: 2px;
+  cursor: help;
+  flex-shrink: 0;
+}
+/* Watchlist button — same flex-1 sizing as the other footer entries. */
+.watch-btn {
+  flex: 1;
+  display: block;
+  padding: 8px;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: center;
+  border-radius: 2px;
+  font-family: 'IBM Plex Mono', monospace;
+  background: none;
+  cursor: pointer;
+  color: #888;
+  border: 1px solid #252528;
+  transition: color .2s, border-color .2s, background .2s;
+}
+.watch-btn:hover {
+  color: #ccc;
+  border-color: #444;
+  background: rgba(255, 255, 255, 0.02);
+}
+.watch-btn:disabled {
+  cursor: default;
+}
+.watch-btn.watching {
+  color: #00e5b0;
+  border-color: rgba(0, 229, 176, 0.3);
+  background: rgba(0, 229, 176, 0.05);
+}
+.watch-btn.limit {
+  color: #ff7777;
+  border-color: rgba(255, 95, 95, 0.4);
+  background: rgba(255, 95, 95, 0.06);
+  cursor: pointer;
+}
+.watch-btn.limit:hover {
+  color: #ff9999;
+  border-color: rgba(255, 95, 95, 0.6);
+  background: rgba(255, 95, 95, 0.12);
+}
+
+.tk {
+  padding: 0 14px;
+  margin-top: 6px;
+  font-size: 10px;
+  color: #666;
+  letter-spacing: .06em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: 'IBM Plex Mono', monospace;
+}
+.tk b { color: #bbb; font-weight: 600; }
+
+/* FIX: .vb padding-bottom augmenté pour séparer le verdict h1 du score */
+.vb { padding: 2px 14px 6px; position: relative; z-index: 1; }
+.vb h1 { font-family: 'Bebas Neue', 'Arial Black', sans-serif; font-size: 46px; line-height: .88; font-weight: 400; letter-spacing: .04em; }
+.box.safe    .vb h1 { color: #00e5b0; text-shadow: 0 0 30px rgba(0,229,176,.15); }
+.box.caution .vb h1 { color: #f5d000; text-shadow: 0 0 30px rgba(245,208,0,.12); }
+.box.danger  .vb h1 { color: #ff5f5f; text-shadow: 0 0 30px rgba(255,95,95,.15); }
+.box.rug     .vb h1 { color: #ff2244; text-shadow: 0 0 40px rgba(255,34,68,.2); }
+
+/* FIX: .sr margin-top augmenté pour éviter que le score colle au verdict */
+.sr { display: flex; align-items: center; gap: 8px; padding: 0 14px; margin-top: 10px; }
+.sr .n { font-size: 11px; color: #555; font-weight: 600; font-family: 'IBM Plex Mono', monospace; }
+.sr .n b { color: #aaa; }
+.dots { display: flex; gap: 2px; align-items: center; }
+.dt { width: 4px; height: 4px; border-radius: 50%; }
+.dt.on  { background: #00e5b0; }
+.dt.off { background: #222226; }
+
+.sbar { margin: 6px 14px 0; height: 2px; background: #181818; border-radius: 1px; overflow: hidden; }
+.sbar-fill { height: 100%; border-radius: 1px; width: 0%; transition: width 1.1s cubic-bezier(.22,1,.36,1); }
+.box.safe    .sbar-fill { background: linear-gradient(90deg,#00e5b055,#00e5b0); }
+.box.caution .sbar-fill { background: linear-gradient(90deg,#f5d00044,#f5d000); }
+.box.danger  .sbar-fill { background: linear-gradient(90deg,#ff5f5f44,#ff5f5f); }
+.box.rug     .sbar-fill { background: linear-gradient(90deg,#ff224444,#ff2244); }
+
+.sum { padding: 8px 14px 0; font-size: 9px; letter-spacing: .04em; font-family: 'IBM Plex Mono', monospace; }
+.box.safe    .sum { color: #3a7060; }
+.box.caution .sum { color: #8a7820; }
+.box.danger  .sum { color: #aa5050; }
+.box.rug     .sum { color: #cc3344; }
+.ai-sum { padding: 6px 14px 2px; font-size: 9px; color: #8a8aad; line-height: 1.45; letter-spacing: .02em; font-family: 'IBM Plex Mono', monospace; }
+.ai-label { font-weight: 700; color: #a78bfa; margin-right: 4px; font-size: 8px; text-transform: uppercase; letter-spacing: .06em; }
+
+.sep { height: 1px; margin: 8px 14px; background: #1a1a1e; }
+
+.fl { padding: 2px 14px 6px; }
+.f { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; font-size: 10.5px; line-height: 1.5; font-family: 'IBM Plex Mono', monospace; }
+.f + .f { border-top: 1px solid #131316; }
+.ic {
+  width: 15px; height: 15px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 7.5px; flex-shrink: 0; margin-top: 2px;
+}
+.ic.r { background: rgba(255,60,80,.1); color: #ff5f5f; }
+.ic.y { background: rgba(245,208,0,.08); color: #f5d000; }
+.ic.g { background: rgba(0,229,176,.08); color: #00e5b0; }
+.f.cr .ft-txt { color: #cc7070; }
+.f.wr .ft-txt { color: #c8a840; }
+.f.ok .ft-txt { color: #559970; }
+
+.ss {
+  display: flex;
+  margin: 0 14px;
+  background: #0a0a0c;
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid #1a1a1e;
+}
+.si { flex: 1; text-align: center; padding: 7px 2px; position: relative; }
+.si + .si::before {
+  content: '';
+  position: absolute; left: 0; top: 25%; height: 50%; width: 1px;
+  background: #1a1a1e;
+}
+.si span {
+  display: block; font-size: 7px; color: #555;
+  letter-spacing: .12em; text-transform: uppercase; margin-bottom: 3px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+.si b { font-size: 10px; letter-spacing: .02em; font-weight: 700; font-family: 'IBM Plex Mono', monospace; color: #e0e0e0; }
+.si b.y { color: #00e5b0; }
+.si b.n { color: #ff5f5f; }
+.si b.w { color: #f5d000; }
+
+.fo { display: flex; margin: 8px 14px 10px; gap: 4px; }
+.fo a {
+  flex: 1; display: block; padding: 8px;
+  font-size: 8px; color: #888; letter-spacing: .12em;
+  text-transform: uppercase; text-decoration: none; text-align: center;
+  border: 1px solid #252528; border-radius: 2px; transition: .2s;
+  font-family: 'IBM Plex Mono', monospace;
+}
+.fo a:hover { color: #ccc; border-color: #444; background: rgba(255,255,255,.02); }
+.fo a.warn  { border-color: rgba(255,95,95,.2); color: #cc5555; }
+.fo a.warn:hover { border-color: rgba(255,95,95,.4); color: #ff5f5f; background: rgba(255,95,95,.04); }
+
+@keyframes ant-pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
+.scanning { display:flex; align-items:center; gap:8px; color:#777; font-size:12px; padding:12px 14px; font-family:'IBM Plex Mono',monospace; }
+.dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:#444; animation:ant-pulse 1.2s infinite; }
+
+.skel { padding: 10px 14px; }
+.skel-verdict { width: 120px; height: 38px; background: #1a1a1e; border-radius: 6px; animation: ant-pulse 1.4s ease-in-out infinite; margin-bottom: 10px; }
+.skel-bar { width: 100%; height: 2px; background: #1a1a1e; border-radius: 1px; animation: ant-pulse 1.4s ease-in-out infinite .2s; margin-bottom: 10px; }
+.skel-line { height: 10px; background: #1a1a1e; border-radius: 3px; animation: ant-pulse 1.4s ease-in-out infinite; margin-bottom: 6px; }
+.skel-line:nth-child(3) { width: 90%; animation-delay: .1s; }
+.skel-line:nth-child(4) { width: 75%; animation-delay: .2s; }
+.skel-line:nth-child(5) { width: 60%; animation-delay: .3s; }
+
+.sparkline { padding: 4px 14px 0; }
+.sparkline svg { display: block; }
+
+/* ── AI Summary button ─────────────────────────────────────────── */
+.ai-btn {
+  flex: 1; display: block; padding: 8px;
+  font-size: 8px; letter-spacing: .12em;
+  text-transform: uppercase; text-align: center;
+  border-radius: 2px; transition: color .2s, border-color .2s, background .2s;
+  font-family: 'IBM Plex Mono', monospace; background: none; cursor: pointer;
+  color: #a78bfa;
+  border: 1px solid rgba(167,139,250,.25);
+  background: rgba(167,139,250,.05);
+}
+.ai-btn--active {
+  color: #a78bfa;
+  border-color: rgba(167,139,250,.25);
+  background: rgba(167,139,250,.05);
+}
+.ai-btn:hover,
+.ai-btn--active:hover {
+  color: #c4b5fd;
+  border-color: rgba(167,139,250,.5);
+  background: rgba(167,139,250,.1);
+}
+
+/* ── AI Summary panel (inline in overlay) ───────────────────────── */
+@keyframes ai-panel-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.ai-panel {
+  display: none;
+  margin: 0 14px 2px;
+  border: 1px solid rgba(167,139,250,.15);
+  border-radius: 3px;
+  background: rgba(167,139,250,.04);
+  overflow: hidden;
+}
+.ai-panel.open {
+  display: block;
+  animation: ai-panel-in .18s ease;
+}
+
+.ai-panel-inner {
+  padding: 10px 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* First sentence — acts as a verdict summary */
+.ai-panel-verdict {
+  font-size: 10px;
+  font-weight: 600;
+  color: #c4b5fd;
+  line-height: 1.5;
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: .01em;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(167,139,250,.1);
+}
+
+/* Subsequent sentences */
+.ai-panel-line {
+  font-size: 9.5px;
+  color: #8a8aad;
+  line-height: 1.55;
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: .01em;
+}
+
+/* Loading state */
+.ai-panel-loading {
+  padding: 10px 12px;
+  font-size: 9px;
+  color: #555;
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: .04em;
+  text-align: center;
+  animation: ant-pulse 1.2s ease-in-out infinite;
+}
+
+/* Empty state */
+.ai-panel-empty {
+  padding: 10px 12px;
+  font-size: 9px;
+  color: #444;
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: .04em;
+  text-align: center;
+}
+
+.ai-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 5px 0; font-size: 9px; font-family: 'IBM Plex Mono', monospace;
+  border-bottom: 1px solid #131316; color: #777;
+}
+.ai-item:last-child { border-bottom: none; }
+.ai-sym { color: #bbb; font-weight: 600; }
+.ai-risk { font-weight: 700; }
+.ai-risk.safe { color: #00e5b0; }
+.ai-risk.caution { color: #f5d000; }
+.ai-risk.danger { color: #ff5f5f; }
+.ai-risk.rug { color: #ff2244; }
+.ai-score { color: #555; }
+.ai-time { color: #444; font-size: 8px; }
+
+/* ── Critical Flags button + panel (inline, replaces DexScreener) ─── */
+.cf-btn {
+  flex: 1; display: block; padding: 8px;
+  font-size: 8px; letter-spacing: .12em;
+  text-transform: uppercase; text-align: center;
+  border-radius: 2px; transition: color .2s, border-color .2s, background .2s;
+  font-family: 'IBM Plex Mono', monospace; background: rgba(255,95,95,.05);
+  cursor: pointer;
+  color: #cc7070;
+  border: 1px solid rgba(255,95,95,.25);
+}
+.cf-btn:hover {
+  color: #ff5f5f;
+  border-color: rgba(255,95,95,.5);
+  background: rgba(255,95,95,.1);
+}
+
+@keyframes cf-panel-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.cf-panel {
+  display: none;
+  margin: 0 14px 2px;
+  border: 1px solid rgba(255,95,95,.15);
+  border-radius: 3px;
+  background: rgba(255,95,95,.04);
+  overflow: hidden;
+}
+.cf-panel.open {
+  display: block;
+  animation: cf-panel-in .18s ease;
+}
+
+.cf-panel-inner {
+  padding: 10px 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cf-flag {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 4px 0;
+}
+.cf-flag + .cf-flag {
+  border-top: 1px solid rgba(255,255,255,.04);
+  padding-top: 8px;
+}
+
+.cf-flag-icon {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px; font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.cf-flag-icon-r { background: rgba(255,60,80,.15); color: #ff5f5f; }
+.cf-flag-icon-y { background: rgba(245,208,0,.12); color: #f5d000; }
+.cf-flag-icon-g { background: rgba(136,136,136,.1); color: #888; }
+
+.cf-flag-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.cf-flag-label {
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.4;
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: .01em;
+}
+.cf-flag-cr .cf-flag-label { color: #cc7070; }
+.cf-flag-wr .cf-flag-label { color: #c8a840; }
+.cf-flag-in .cf-flag-label { color: #888; }
+
+.cf-flag-desc {
+  font-size: 9px;
+  color: #777;
+  line-height: 1.5;
+  font-style: italic;
+  letter-spacing: .01em;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.cf-panel-empty {
+  padding: 10px 12px;
+  font-size: 9px;
+  color: #444;
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: .04em;
+  text-align: center;
+}
+
+  </style>
+</head>
+<body>
+  <h1>Antares Overlay Preview</h1>
+  <p class="subtitle">Pro v1 — quota badge, affiliate row, watchlist button</p>
+  <p class="meta">8 static states · regenerate via <code>npm run preview</code></p>
+
+  <div class="grid">
+    
+    <section class="variant">
+      <header class="variant-head">
+        <h3>Free · normal usage</h3>
+        <p>Quota 12/50 — gray badge, watchlist available, no affiliate (CAUTION verdict)</p>
+      </header>
+      <div class="overlay-frame">
+        <div class="box caution"><div><div class="topbar"></div><div class="hd"><span class="brand">ANTARES</span><span class="quota-badge" title="38 scans remaining today">12/50</span><div class="hd-right"><span class="drag-icon"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 1L5.5 3h3L7 1Z" fill="currentColor"></path><line x1="7" y1="2.5" x2="7" y2="6.5" stroke="currentColor" stroke-width=".9" stroke-linecap="round"></line><path d="M7 13L5.5 11h3L7 13Z" fill="currentColor"></path><line x1="7" y1="11.5" x2="7" y2="7.5" stroke="currentColor" stroke-width=".9" stroke-linecap="round"></line><path d="M1 7L3 5.5V8.5L1 7Z" fill="currentColor"></path><line x1="2.5" y1="7" x2="6.5" y2="7" stroke="currentColor" stroke-width=".9" stroke-linecap="round"></line><path d="M13 7L11 5.5V8.5L13 7Z" fill="currentColor"></path><line x1="11.5" y1="7" x2="7.5" y2="7" stroke="currentColor" stroke-width=".9" stroke-linecap="round"></line></svg></span><button class="x" id="ant-close"><svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="2" x2="11" y2="11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"></line><line x1="11" y1="2" x2="2" y2="11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"></line></svg></button></div></div><div class="tk"><b>DEMO</b> Demo Token</div><div class="vb"><h1>CAUTION</h1></div><div class="sr"><span class="n"><b class="ant-score" data-target="620">0</b> / 1000</span><div class="dots"><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt off"></div><div class="dt off"></div></div></div><div class="sbar"><div class="sbar-fill" data-w="62"></div></div><div class="sum">1 flags detected</div><div class="sep"></div><div class="ss"><div class="si"><span>Sell</span><b class="y">✓</b></div><div class="si"><span>Mint</span><b class="y">✓</b></div><div class="si"><span>Freeze</span><b class="y">✓</b></div><div class="si"><span>LP Burned</span><b class="y">✓</b></div><div class="si"><span>Liq</span><b class="y">$320.0K</b></div></div><div class="cf-panel" id="ant-critical-flags"></div><div class="ai-panel" id="ant-ai-summary"></div><div class="fo"><button class="cf-btn" id="ant-critical-flags-btn">⚠ Critical Flags</button><a href="#" id="ant-full-analysis" data-ca="So11111111111111111111111111111111111111112">Full Analysis →</a><button class="ai-btn ai-btn--active" id="ant-ai-summary-btn">⬡ AI Summary</button><button class="watch-btn" id="ant-watch" type="button">+ Watch</button></div></div></div>
+      </div>
+    </section>
+  
+    <section class="variant">
+      <header class="variant-head">
+        <h3>Free · approaching limit (warn)</h3>
+        <p>Quota 47/50 — yellow badge</p>
+      </header>
+      <div class="overlay-frame">
+        <div class="box safe"><div><div class="topbar"></div><div class="hd"><span class="brand">ANTARES</span><span class="quota-badge warn" title="3 scans remaining today">47/50</span><div class="hd-right"><span class="drag-icon"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 1L5.5 3h3L7 1Z" fill="currentColor"></path><line x1="7" y1="2.5" x2="7" y2="6.5" stroke="currentColor" stroke-width=".9" stroke-linecap="round"></line><path d="M7 13L5.5 11h3L7 13Z" fill="currentColor"></path><line x1="7" y1="11.5" x2="7" y2="7.5" stroke="currentColor" stroke-width=".9" stroke-linecap="round"></line><path d="M1 7L3 5.5V8.5L1 7Z" fill="currentColor"></path><line x1="2.5" y1="7" x2="6.5" y2="7" stroke="currentColor" stroke-width=".9" stroke-linecap="round"></line><path d="M13 7L11 5.5V8.5L13 7Z" fill="currentColor"></path><line x1="11.5" y1="7" x2="7.5" y2="7" stroke="currentColor" stroke-width=".9" stroke-linecap="round"></line></svg></span><button class="x" id="ant-close"><svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="2" x2="11" y2="11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"></line><line x1="11" y1="2" x2="2" y2="11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"></line></svg></button></div></div><div class="tk"><b>DEMO</b> Demo Token</div><div class="vb"><h1>SAFE</h1></div><div class="sr"><span class="n"><b class="ant-score" data-target="850">0</b> / 1000</span><div class="dots"><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt off"></div></div></div><div class="sbar"><div class="sbar-fill" data-w="85"></div></div><div class="sum">No issues found</div><div class="sep"></div><div class="ss"><div class="si"><span>Sell</span><b class="y">✓</b></div><div class="si"><span>Mint</span><b class="y">✓</b></div><div class="si"><span>Freeze</span><b class="y">✓</b></div><div class="si"><span>LP Burned</span><b class="y">✓</b></div><div class="si"><span>Liq</span><b class="y">$320.0K</b></div></div><div class="cf-panel" id="ant-critical-flags"></div><div class="ai-panel" id="ant-ai-summary"></div><div class="fo"><button class="cf-btn" id="ant-critical-flags-btn">⚠ Critical Flags</button><a href="#" id="ant-full-analysis" data-ca="So11111111111111111111111111111111111111112">Full Analysis →</a><button class="ai-btn ai-btn--active" id="ant-ai-summary-btn">⬡ AI Summary</button><button class="watch-btn" id="ant-watch" type="button">+ Watch</button></div></div></div>
+      </div>
+    </section>
+  
+    <section class="variant">
+      <header class="variant-head">
+        <h3>Free · limit reached</h3>
+        <p>Quota 50/50 — red 'PRO' link, ready to convert</p>
+      </header>
+      <div class="overlay-frame">
+        <div class="box safe"><div><div class="topbar"></div><div class="hd"><span class="brand">ANTARES</span><a class="quota-badge danger" href="https://antares-website.vercel.app/pricing" target="_blank" rel="noopener noreferrer" title="Daily limit reached — upgrade to Pro for unlimited scans">50/50 → PRO</a><div class="hd-right"><span class="drag-icon"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 1L5.5 3h3L7 1Z" fill="currentColor"></path><line x1="7" y1="2.5" x2="7" y2="6.5" stroke="currentColor" stroke-width=".9" stroke-linecap="round"></line><path d="M7 13L5.5 11h3L7 13Z" fill="currentColor"></path><line x1="7" y1="11.5" x2="7" y2="7.5" stroke="currentColor" stroke-width=".9" stroke-linecap="round"></line><path d="M1 7L3 5.5V8.5L1 7Z" fill="currentColor"></path><line x1="2.5" y1="7" x2="6.5" y2="7" stroke="currentColor" stroke-width=".9" stroke-linecap="round"></line><path d="M13 7L11 5.5V8.5L13 7Z" fill="currentColor"></path><line x1="11.5" y1="7" x2="7.5" y2="7" stroke="currentColor" stroke-width=".9" stroke-linecap="round"></line></svg></span><button class="x" id="ant-close"><svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="2" x2="11" y2="11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"></line><line x1="11" y1="2" x2="2" y2="11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"></line></svg></button></div></div><div class="tk"><b>DEMO</b> Demo Token</div><div class="vb"><h1>SAFE</h1></div><div class="sr"><span class="n"><b class="ant-score" data-target="850">0</b> / 1000</span><div class="dots"><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt off"></div></div></div><div class="sbar"><div class="sbar-fill" data-w="85"></div></div><div class="sum">No issues found</div><div class="sep"></div><div class="ss"><div class="si"><span>Sell</span><b class="y">✓</b></div><div class="si"><span>Mint</span><b class="y">✓</b></div><div class="si"><span>Freeze</span><b class="y">✓</b></div><div class="si"><span>LP Burned</span><b class="y">✓</b></div><div class="si"><span>Liq</span><b class="y">$320.0K</b></div></div><div class="cf-panel" id="ant-critical-flags"></div><div class="ai-panel" id="ant-ai-summary"></div><div class="fo"><button class="cf-btn" id="ant-critical-flags-btn">⚠ Critical Flags</button><a href="#" id="ant-full-analysis" data-ca="So11111111111111111111111111111111111111112">Full Analysis →</a><button class="ai-btn ai-btn--active" id="ant-ai-summary-btn">⬡ AI Summary</button><button class="watch-btn" id="ant-watch" type="button">+ Watch</button></div></div></div>
+      </div>
+    </section>
+  
+    <section class="variant">
+      <header class="variant-head">
+        <h3>Pro · unlimited</h3>
+        <p>Green PRO badge, no affiliate row (clean UI as paid benefit)</p>
+      </header>
+      <div class="overlay-frame">
+        <div class="box safe"><div><div class="topbar"></div><div class="hd"><span class="brand">ANTARES</span><span class="quota-badge pro" title="Pro · Unlimited scans">PRO</span><div class="hd-right"><span class="drag-icon"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 1L5.5 3h3L7 1Z" fill="currentColor"></path><line x1="7" y1="2.5" x2="7" y2="6.5" stroke="currentColor" stroke-width=".9" stroke-linecap="round"></line><path d="M7 13L5.5 11h3L7 13Z" fill="currentColor"></path><line x1="7" y1="11.5" x2="7" y2="7.5" stroke="currentColor" stroke-width=".9" stroke-linecap="round"></line><path d="M1 7L3 5.5V8.5L1 7Z" fill="currentColor"></path><line x1="2.5" y1="7" x2="6.5" y2="7" stroke="currentColor" stroke-width=".9" stroke-linecap="round"></line><path d="M13 7L11 5.5V8.5L13 7Z" fill="currentColor"></path><line x1="11.5" y1="7" x2="7.5" y2="7" stroke="currentColor" stroke-width=".9" stroke-linecap="round"></line></svg></span><button class="x" id="ant-close"><svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="2" x2="11" y2="11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"></line><line x1="11" y1="2" x2="2" y2="11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"></line></svg></button></div></div><div class="tk"><b>DEMO</b> Demo Token</div><div class="vb"><h1>SAFE</h1></div><div class="sr"><span class="n"><b class="ant-score" data-target="850">0</b> / 1000</span><div class="dots"><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt off"></div></div></div><div class="sbar"><div class="sbar-fill" data-w="85"></div></div><div class="sum">No issues found</div><div class="sep"></div><div class="ss"><div class="si"><span>Sell</span><b class="y">✓</b></div><div class="si"><span>Mint</span><b class="y">✓</b></div><div class="si"><span>Freeze</span><b class="y">✓</b></div><div class="si"><span>LP Burned</span><b class="y">✓</b></div><div class="si"><span>Liq</span><b class="y">$320.0K</b></div></div><div class="cf-panel" id="ant-critical-flags"></div><div class="ai-panel" id="ant-ai-summary"></div><div class="fo"><button class="cf-btn" id="ant-critical-flags-btn">⚠ Critical Flags</button><a href="#" id="ant-full-analysis" data-ca="So11111111111111111111111111111111111111112">Full Analysis →</a><button class="ai-btn ai-btn--active" id="ant-ai-summary-btn">⬡ AI Summary</button><button class="watch-btn" id="ant-watch" type="button">+ Watch</button></div></div></div>
+      </div>
+    </section>
+  
+    <section class="variant">
+      <header class="variant-head">
+        <h3>Lifetime · founder</h3>
+        <p>Green LIFE badge</p>
+      </header>
+      <div class="overlay-frame">
+        <div class="box safe"><div><div class="topbar"></div><div class="hd"><span class="brand">ANTARES</span><span class="quota-badge pro" title="Lifetime · Unlimited scans">LIFE</span><div class="hd-right"><span class="drag-icon"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 1L5.5 3h3L7 1Z" fill="currentColor"></path><line x1="7" y1="2.5" x2="7" y2="6.5" stroke="currentColor" stroke-width=".9" stroke-linecap="round"></line><path d="M7 13L5.5 11h3L7 13Z" fill="currentColor"></path><line x1="7" y1="11.5" x2="7" y2="7.5" stroke="currentColor" stroke-width=".9" stroke-linecap="round"></line><path d="M1 7L3 5.5V8.5L1 7Z" fill="currentColor"></path><line x1="2.5" y1="7" x2="6.5" y2="7" stroke="currentColor" stroke-width=".9" stroke-linecap="round"></line><path d="M13 7L11 5.5V8.5L13 7Z" fill="currentColor"></path><line x1="11.5" y1="7" x2="7.5" y2="7" stroke="currentColor" stroke-width=".9" stroke-linecap="round"></line></svg></span><button class="x" id="ant-close"><svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="2" x2="11" y2="11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"></line><line x1="11" y1="2" x2="2" y2="11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"></line></svg></button></div></div><div class="tk"><b>DEMO</b> Demo Token</div><div class="vb"><h1>SAFE</h1></div><div class="sr"><span class="n"><b class="ant-score" data-target="850">0</b> / 1000</span><div class="dots"><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt off"></div></div></div><div class="sbar"><div class="sbar-fill" data-w="85"></div></div><div class="sum">No issues found</div><div class="sep"></div><div class="ss"><div class="si"><span>Sell</span><b class="y">✓</b></div><div class="si"><span>Mint</span><b class="y">✓</b></div><div class="si"><span>Freeze</span><b class="y">✓</b></div><div class="si"><span>LP Burned</span><b class="y">✓</b></div><div class="si"><span>Liq</span><b class="y">$320.0K</b></div></div><div class="cf-panel" id="ant-critical-flags"></div><div class="ai-panel" id="ant-ai-summary"></div><div class="fo"><button class="cf-btn" id="ant-critical-flags-btn">⚠ Critical Flags</button><a href="#" id="ant-full-analysis" data-ca="So11111111111111111111111111111111111111112">Full Analysis →</a><button class="ai-btn ai-btn--active" id="ant-ai-summary-btn">⬡ AI Summary</button><button class="watch-btn" id="ant-watch" type="button">+ Watch</button></div></div></div>
+      </div>
+    </section>
+  
+    <section class="variant">
+      <header class="variant-head">
+        <h3>Free · SAFE with affiliate row</h3>
+        <p>Free user on a SAFE token — Photon affiliate row at the bottom (PHOTON_REF set)</p>
+      </header>
+      <div class="overlay-frame">
+        <div class="box safe"><div><div class="topbar"></div><div class="hd"><span class="brand">ANTARES</span><span class="quota-badge" title="45 scans remaining today">5/50</span><div class="hd-right"><span class="drag-icon"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 1L5.5 3h3L7 1Z" fill="currentColor"></path><line x1="7" y1="2.5" x2="7" y2="6.5" stroke="currentColor" stroke-width=".9" stroke-linecap="round"></line><path d="M7 13L5.5 11h3L7 13Z" fill="currentColor"></path><line x1="7" y1="11.5" x2="7" y2="7.5" stroke="currentColor" stroke-width=".9" stroke-linecap="round"></line><path d="M1 7L3 5.5V8.5L1 7Z" fill="currentColor"></path><line x1="2.5" y1="7" x2="6.5" y2="7" stroke="currentColor" stroke-width=".9" stroke-linecap="round"></line><path d="M13 7L11 5.5V8.5L13 7Z" fill="currentColor"></path><line x1="11.5" y1="7" x2="7.5" y2="7" stroke="currentColor" stroke-width=".9" stroke-linecap="round"></line></svg></span><button class="x" id="ant-close"><svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="2" x2="11" y2="11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"></line><line x1="11" y1="2" x2="2" y2="11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"></line></svg></button></div></div><div class="tk"><b>DEMO</b> Demo Token</div><div class="vb"><h1>SAFE</h1></div><div class="sr"><span class="n"><b class="ant-score" data-target="850">0</b> / 1000</span><div class="dots"><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt off"></div></div></div><div class="sbar"><div class="sbar-fill" data-w="85"></div></div><div class="sum">No issues found</div><div class="sep"></div><div class="ss"><div class="si"><span>Sell</span><b class="y">✓</b></div><div class="si"><span>Mint</span><b class="y">✓</b></div><div class="si"><span>Freeze</span><b class="y">✓</b></div><div class="si"><span>LP Burned</span><b class="y">✓</b></div><div class="si"><span>Liq</span><b class="y">$320.0K</b></div></div><div class="cf-panel" id="ant-critical-flags"></div><div class="ai-panel" id="ant-ai-summary"></div><div class="fo"><button class="cf-btn" id="ant-critical-flags-btn">⚠ Critical Flags</button><a href="#" id="ant-full-analysis" data-ca="So11111111111111111111111111111111111111112">Full Analysis →</a><button class="ai-btn ai-btn--active" id="ant-ai-summary-btn">⬡ AI Summary</button><button class="watch-btn" id="ant-watch" type="button">+ Watch</button></div></div></div>
+      </div>
+    </section>
+  
+    <section class="variant">
+      <header class="variant-head">
+        <h3>Free · DANGER verdict (no affiliate)</h3>
+        <p>Affiliate row hidden — we never recommend trading flagged tokens</p>
+      </header>
+      <div class="overlay-frame">
+        <div class="box danger"><div><div class="topbar"></div><div class="hd"><span class="brand">ANTARES</span><span class="quota-badge" title="42 scans remaining today">8/50</span><div class="hd-right"><span class="drag-icon"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 1L5.5 3h3L7 1Z" fill="currentColor"></path><line x1="7" y1="2.5" x2="7" y2="6.5" stroke="currentColor" stroke-width=".9" stroke-linecap="round"></line><path d="M7 13L5.5 11h3L7 13Z" fill="currentColor"></path><line x1="7" y1="11.5" x2="7" y2="7.5" stroke="currentColor" stroke-width=".9" stroke-linecap="round"></line><path d="M1 7L3 5.5V8.5L1 7Z" fill="currentColor"></path><line x1="2.5" y1="7" x2="6.5" y2="7" stroke="currentColor" stroke-width=".9" stroke-linecap="round"></line><path d="M13 7L11 5.5V8.5L13 7Z" fill="currentColor"></path><line x1="11.5" y1="7" x2="7.5" y2="7" stroke="currentColor" stroke-width=".9" stroke-linecap="round"></line></svg></span><button class="x" id="ant-close"><svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="2" x2="11" y2="11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"></line><line x1="11" y1="2" x2="2" y2="11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"></line></svg></button></div></div><div class="tk"><b>DEMO</b> Demo Token</div><div class="vb"><h1>DANGER</h1></div><div class="sr"><span class="n"><b class="ant-score" data-target="280">0</b> / 1000</span><div class="dots"><div class="dt on"></div><div class="dt off"></div><div class="dt off"></div><div class="dt off"></div><div class="dt off"></div></div></div><div class="sbar"><div class="sbar-fill" data-w="28"></div></div><div class="sum">2 flags — 2 critical</div><div class="sep"></div><div class="ss"><div class="si"><span>Sell</span><b class="y">✓</b></div><div class="si"><span>Mint</span><b class="y">✓</b></div><div class="si"><span>Freeze</span><b class="y">✓</b></div><div class="si"><span>LP Burned</span><b class="y">✓</b></div><div class="si"><span>Liq</span><b class="y">$320.0K</b></div></div><div class="cf-panel" id="ant-critical-flags"></div><div class="ai-panel" id="ant-ai-summary"></div><div class="fo"><button class="cf-btn" id="ant-critical-flags-btn">⚠ Critical Flags</button><a href="#" id="ant-full-analysis" data-ca="So11111111111111111111111111111111111111112">Full Analysis →</a><button class="ai-btn ai-btn--active" id="ant-ai-summary-btn">⬡ AI Summary</button><button class="watch-btn" id="ant-watch" type="button">+ Watch</button></div></div></div>
+      </div>
+    </section>
+  
+    <section class="variant">
+      <header class="variant-head">
+        <h3>Free · RUG verdict</h3>
+        <p>Hard kill — score &lt; 350, RUG label, watchlist still available</p>
+      </header>
+      <div class="overlay-frame">
+        <div class="box rug"><div><div class="topbar"></div><div class="hd"><span class="brand">ANTARES</span><span class="quota-badge" title="20 scans remaining today">30/50</span><div class="hd-right"><span class="drag-icon"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 1L5.5 3h3L7 1Z" fill="currentColor"></path><line x1="7" y1="2.5" x2="7" y2="6.5" stroke="currentColor" stroke-width=".9" stroke-linecap="round"></line><path d="M7 13L5.5 11h3L7 13Z" fill="currentColor"></path><line x1="7" y1="11.5" x2="7" y2="7.5" stroke="currentColor" stroke-width=".9" stroke-linecap="round"></line><path d="M1 7L3 5.5V8.5L1 7Z" fill="currentColor"></path><line x1="2.5" y1="7" x2="6.5" y2="7" stroke="currentColor" stroke-width=".9" stroke-linecap="round"></line><path d="M13 7L11 5.5V8.5L13 7Z" fill="currentColor"></path><line x1="11.5" y1="7" x2="7.5" y2="7" stroke="currentColor" stroke-width=".9" stroke-linecap="round"></line></svg></span><button class="x" id="ant-close"><svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="2" x2="11" y2="11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"></line><line x1="11" y1="2" x2="2" y2="11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"></line></svg></button></div></div><div class="tk"><b>DEMO</b> Demo Token</div><div class="vb"><h1>RUG PULL</h1></div><div class="sr"><span class="n"><b class="ant-score" data-target="80">0</b> / 1000</span><div class="dots"><div class="dt off"></div><div class="dt off"></div><div class="dt off"></div><div class="dt off"></div><div class="dt off"></div></div></div><div class="sbar"><div class="sbar-fill" data-w="8"></div></div><div class="sum">1 flags — 1 critical</div><div class="sep"></div><div class="ss"><div class="si"><span>Sell</span><b class="y">✓</b></div><div class="si"><span>Mint</span><b class="y">✓</b></div><div class="si"><span>Freeze</span><b class="y">✓</b></div><div class="si"><span>LP Burned</span><b class="y">✓</b></div><div class="si"><span>Liq</span><b class="y">$320.0K</b></div></div><div class="cf-panel" id="ant-critical-flags"></div><div class="ai-panel" id="ant-ai-summary"></div><div class="fo"><button class="cf-btn" id="ant-critical-flags-btn">⚠ Critical Flags</button><a href="#" id="ant-full-analysis" data-ca="So11111111111111111111111111111111111111112">Full Analysis →</a><button class="ai-btn ai-btn--active" id="ant-ai-summary-btn">⬡ AI Summary</button><button class="watch-btn" id="ant-watch" type="button">+ Watch</button></div></div></div>
+      </div>
+    </section>
+  
+  </div>
+
+  <div class="test-plan">
+    <h2>Manual test plan — interactive states</h2>
+    <p style="font-size:12px;color:#888;line-height:1.7;margin-bottom:14px">
+      The states above cover everything that's deterministic from <code>buildResultNode</code>.
+      Three more behaviours need a real browser load to verify:
+    </p>
+    <ul>
+      <li><strong style="color:#bbb">Watchlist · happy path</strong> — load extension, scan a SAFE token,
+          click <code>+ Watch</code> → button flips to <code>✓ Watching</code> + green border, stays disabled.</li>
+      <li><strong style="color:#bbb">Watchlist · limit reached</strong> — as Free user with 5 items already
+          watched, click <code>+ Watch</code> on a 6th → button shows <code>Limit → PRO</code> + red border;
+          subsequent click opens <code>https://antares-website.vercel.app/pricing</code> in a new tab.</li>
+      <li><strong style="color:#bbb">Quota cap</strong> — perform 50 scans in &lt; 24h → 51st scan fails
+          with HTTP 429, overlay disappears (existing rate-limit-handling path).</li>
+      <li><strong style="color:#bbb">Pro tier flip</strong> — <code>SET user:&lt;your-install-id&gt;:tier "pro"</code>
+          in Upstash directly, refresh a token page → quota badge becomes <code>PRO</code>, affiliate row hides.</li>
+    </ul>
+    <p style="font-size:11px;color:#555;margin-top:18px;font-style:italic">
+      All deterministic states (above) come from a single <code>buildResultNode()</code> call per variant
+      using happy-dom, so any visual regression here will reproduce 1:1 in the live extension.
+    </p>
+  </div>
+</body>
+</html>

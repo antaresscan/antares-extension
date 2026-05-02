@@ -261,6 +261,47 @@ export const SHADOW_CSS = `
   cursor: help;
   flex-shrink: 0;
 }
+/* Watchlist button — same flex-1 sizing as the other footer entries. */
+.watch-btn {
+  flex: 1;
+  display: block;
+  padding: 8px;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: center;
+  border-radius: 2px;
+  font-family: 'IBM Plex Mono', monospace;
+  background: none;
+  cursor: pointer;
+  color: #888;
+  border: 1px solid #252528;
+  transition: color .2s, border-color .2s, background .2s;
+}
+.watch-btn:hover {
+  color: #ccc;
+  border-color: #444;
+  background: rgba(255, 255, 255, 0.02);
+}
+.watch-btn:disabled {
+  cursor: default;
+}
+.watch-btn.watching {
+  color: #00e5b0;
+  border-color: rgba(0, 229, 176, 0.3);
+  background: rgba(0, 229, 176, 0.05);
+}
+.watch-btn.limit {
+  color: #ff7777;
+  border-color: rgba(255, 95, 95, 0.4);
+  background: rgba(255, 95, 95, 0.06);
+  cursor: pointer;
+}
+.watch-btn.limit:hover {
+  color: #ff9999;
+  border-color: rgba(255, 95, 95, 0.6);
+  background: rgba(255, 95, 95, 0.12);
+}
 
 .tk {
   padding: 0 14px;
