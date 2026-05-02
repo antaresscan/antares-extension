@@ -359,6 +359,51 @@ export const SHADOW_CSS = `
 .fo a.warn  { border-color: rgba(255,95,95,.2); color: #cc5555; }
 .fo a.warn:hover { border-color: rgba(255,95,95,.4); color: #ff5f5f; background: rgba(255,95,95,.04); }
 
+/* Quota-exhausted state — Free user has burned their 25/day cap. The
+   overlay stays visible (don't ever silently hide on the 26th scan)
+   and shows the cap, the reset clock, and a primary upgrade CTA so
+   the user knows exactly what's going on and what to do next. */
+.qx-vb { padding: 8px 14px 4px; }
+.qx-vb h1 {
+  font-family: 'Bebas Neue','Arial Black',sans-serif;
+  font-size: 38px; line-height: .9; font-weight: 400; letter-spacing: .04em;
+  color: #f5d000;
+  text-shadow: 0 0 30px rgba(245,208,0,.18);
+}
+.qx-counter {
+  padding: 0 14px; margin-top: 4px;
+  font: 600 11px/1.4 'IBM Plex Mono', monospace;
+  color: #888; letter-spacing: .04em;
+}
+.qx-counter .qx-num { color: #eaeaea; font-size: 13px; }
+.qx-reset {
+  padding: 4px 14px 0;
+  font: 400 10px/1.4 'IBM Plex Mono', monospace;
+  color: #5a5a62; letter-spacing: .02em;
+}
+.qx-reset .qx-reset-time { color: #888; }
+.qx-pitch {
+  padding: 8px 14px 12px;
+  font: 400 10px/1.55 'IBM Plex Mono', monospace;
+  color: #888; letter-spacing: .02em;
+}
+.qx-cta-row {
+  padding: 0 14px 14px;
+}
+.qx-cta {
+  display: block; width: 100%; padding: 11px 12px;
+  background: #00e5b0; color: #0a0a0c;
+  font: 700 11px/1 'IBM Plex Mono', monospace;
+  letter-spacing: .14em; text-transform: uppercase;
+  text-decoration: none; text-align: center;
+  border-radius: 2px; cursor: pointer;
+  transition: transform .15s, box-shadow .15s;
+}
+.qx-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(0,229,176,.28);
+}
+
 /* Free-tier locked variant — Critical Flags / Full Analysis / AI Summary
    stay visible (so users see what they're missing) but are dimmed,
    carry a small "PRO" pill, and clicking opens /pricing instead of

@@ -394,6 +394,78 @@ export function buildHeader(): string {
   return buildHeaderNode().outerHTML
 }
 
+// Quota-exhausted state — rendered when a Free user has burned through
+// their daily 25 scans and the API returns 429 with quota headers
+// signalling remaining=0. Replaces the silent box-hide that made the
+// extension look broken once the cap landed: now the user sees exactly
+// what's happening and gets a primary upgrade CTA pointing at /pricing
+// with their install_id baked in. Reset countdown updates every second.
+export function buildQuotaExhaustedNode(quota: QuotaStatus): HTMLElement {
+  if (state.boxEl) state.boxEl.className = "box caution"
+
+  // Reset countdown — recomputed on every render. The interval below
+  // updates the .reset-time text so the user sees the seconds tick down
+  // without us re-rendering the entire subtree.
+  function fmtReset(): string {
+    if (!quota.resetAt) return "midnight UTC"
+    const ms = quota.resetAt - Date.now()
+    if (ms <= 0) return "any moment now"
+    const totalMin = Math.floor(ms / 60000)
+    const h = Math.floor(totalMin / 60)
+    const m = totalMin % 60
+    if (h <= 0) return `in ${m}m`
+    return `in ${h}h ${m}m`
+  }
+
+  const resetEl = el("span", { class: "qx-reset-time" }, fmtReset())
+
+  const upgradeBtn = el("a", {
+    class: "qx-cta",
+    href: PRICING_URL,
+    target: "_blank",
+    rel: "noopener noreferrer",
+  }, "⚡ Get Pro — unlimited scans →")
+  upgradeBtn.addEventListener("click", (e) => {
+    e.preventDefault()
+    void getInstallId().then((installId) => {
+      const url = installId
+        ? `${PRICING_URL}?install=${encodeURIComponent(installId)}`
+        : PRICING_URL
+      window.open(url, "_blank", "noopener noreferrer")
+    })
+  })
+
+  const root = el("div", undefined,
+    el("div", { class: "topbar" }),
+    buildHeaderNode(quota),
+    el("div", { class: "vb qx-vb" },
+      el("h1", undefined, "OUT OF SCANS"),
+    ),
+    el("div", { class: "qx-counter" },
+      el("span", { class: "qx-num" }, `${quota.used} / ${quota.limit}`),
+      " today",
+    ),
+    el("div", { class: "qx-reset" }, "Resets ", resetEl),
+    el("div", { class: "sep" }),
+    el("div", { class: "qx-pitch" },
+      "Pro = unlimited scans + AI Summary + Critical Flags + Full Analysis page.",
+    ),
+    el("div", { class: "qx-cta-row" }, upgradeBtn),
+  )
+
+  // Tick the reset string every 30s — fine-grained enough that the
+  // user sees progress, coarse enough that it doesn't churn the DOM.
+  const interval = setInterval(() => {
+    if (!resetEl.isConnected) {
+      clearInterval(interval)
+      return
+    }
+    resetEl.textContent = fmtReset()
+  }, 30_000)
+
+  return root
+}
+
 // Loading-state skeleton injected while a scan is in-flight. Exported as
 // a Node so callers can `replaceChildren(buildSkeletonNode())` instead of
 // stringifying — keeps the dynamic render path innerHTML-free, matching
