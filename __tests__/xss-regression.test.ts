@@ -90,37 +90,43 @@ describe("buildResult — XSS regression", () => {
 
 describe("buildResult — Free-tier gating", () => {
   // The Pro v1 monetisation lever: AI Summary, Critical Flags, and Full
-  // Analysis are paid features. Free users see the verdict + score + .ss
-  // stats grid (the core rug-detection signal — free forever) but the
-  // deep-dive panels live behind /pricing.
+  // Analysis are paid features but stay visible to Free users so they
+  // can see what they're missing. The buttons carry a "PRO" lock-pill,
+  // are dimmed, and clicking any of them opens /pricing instead of the
+  // feature.
 
-  it("Free users see the upgrade CTA, not the 3 deep-dive buttons", () => {
+  it("Free users see all 3 deep-dive buttons (visible, not hidden)", () => {
     const data = makeScanData({
       _quota: { tier: "free", used: 3, limit: 25, remaining: 22, resetAt: 0 },
     })
     const html = buildResult(data, "So11111111111111111111111111111111111111112")
 
-    expect(html).toContain('class="fo-upgrade"')
-    expect(html).toContain("Unlock Pro features")
-    expect(html).not.toContain('id="ant-critical-flags-btn"')
-    expect(html).not.toContain('id="ant-full-analysis"')
-    expect(html).not.toContain('id="ant-ai-summary-btn"')
+    expect(html).toContain('id="ant-critical-flags-btn"')
+    expect(html).toContain('id="ant-full-analysis"')
+    expect(html).toContain('id="ant-ai-summary-btn"')
   })
 
-  it("Free users get no cf-panel / ai-panel containers", () => {
-    // Empty containers without their toggle buttons would just be dead
-    // DOM. Skip them so the overlay shadow tree stays minimal for free
-    // users.
+  it("Free users see the buttons in a locked state with a PRO pill", () => {
     const data = makeScanData({
-      _quota: { tier: "free", used: 0, limit: 25, remaining: 25, resetAt: 0 },
+      _quota: { tier: "free", used: 3, limit: 25, remaining: 22, resetAt: 0 },
     })
     const html = buildResult(data, "So11111111111111111111111111111111111111112")
 
-    expect(html).not.toContain('id="ant-critical-flags"')
-    expect(html).not.toContain('id="ant-ai-summary"')
+    // Each of the 3 buttons gets the .locked class
+    expect(html).toContain('class="cf-btn locked"')
+    expect(html).toContain('class="ai-btn ai-btn--active locked"')
+    // Full Analysis is an <a>, takes class="locked" (attribute order
+    // depends on insertion order in el(), so just check both attrs are
+    // present on any <a> tag in the DOM tree).
+    const anchor = new DOMParser().parseFromString(html, "text/html")
+      .querySelector("a#ant-full-analysis")
+    expect(anchor?.getAttribute("class")).toBe("locked")
+    // 3 lock-pills, one per button
+    const pillMatches = html.match(/class="lock-pill">PRO/g) ?? []
+    expect(pillMatches.length).toBe(3)
   })
 
-  it("Free upgrade CTA points at the pricing page", () => {
+  it("Free Full Analysis link points at the pricing page (so no-JS still works)", () => {
     const data = makeScanData({
       _quota: { tier: "free", used: 25, limit: 25, remaining: 0, resetAt: 0 },
     })
@@ -133,7 +139,7 @@ describe("buildResult — Free-tier gating", () => {
     expect(html).toContain("antares-website.vercel.app/pricing")
   })
 
-  it("Pro users keep the 3-button footer", () => {
+  it("Pro users get unlocked footer (no .locked, no PRO pill)", () => {
     const data = makeScanData({
       _quota: { tier: "pro", used: 100, limit: -1, remaining: -1, resetAt: 0 },
     })
@@ -142,10 +148,11 @@ describe("buildResult — Free-tier gating", () => {
     expect(html).toContain('id="ant-critical-flags-btn"')
     expect(html).toContain('id="ant-full-analysis"')
     expect(html).toContain('id="ant-ai-summary-btn"')
-    expect(html).not.toContain('class="fo-upgrade"')
+    expect(html).not.toContain("locked")
+    expect(html).not.toContain("lock-pill")
   })
 
-  it("Lifetime users keep the 3-button footer", () => {
+  it("Lifetime users get unlocked footer (no .locked, no PRO pill)", () => {
     const data = makeScanData({
       _quota: { tier: "lifetime", used: 9999, limit: -1, remaining: -1, resetAt: 0 },
     })
@@ -154,7 +161,8 @@ describe("buildResult — Free-tier gating", () => {
     expect(html).toContain('id="ant-critical-flags-btn"')
     expect(html).toContain('id="ant-full-analysis"')
     expect(html).toContain('id="ant-ai-summary-btn"')
-    expect(html).not.toContain('class="fo-upgrade"')
+    expect(html).not.toContain("locked")
+    expect(html).not.toContain("lock-pill")
   })
 
   it("Missing _quota (pre-quota cached responses) defaults to unlocked", () => {
@@ -168,7 +176,27 @@ describe("buildResult — Free-tier gating", () => {
     expect(html).toContain('id="ant-critical-flags-btn"')
     expect(html).toContain('id="ant-full-analysis"')
     expect(html).toContain('id="ant-ai-summary-btn"')
-    expect(html).not.toContain('class="fo-upgrade"')
+    expect(html).not.toContain("locked")
+  })
+
+  it("cf-panel and ai-panel containers exist for both tiers", () => {
+    // The buttons are visible to Free (just locked), so the panel
+    // containers need to be addressable too. The toggle handlers
+    // never fire for Free (the click short-circuits to /pricing
+    // before they can run).
+    const free = makeScanData({
+      _quota: { tier: "free", used: 1, limit: 25, remaining: 24, resetAt: 0 },
+    })
+    const pro = makeScanData({
+      _quota: { tier: "pro", used: 1, limit: -1, remaining: -1, resetAt: 0 },
+    })
+    const freeHtml = buildResult(free, "So11111111111111111111111111111111111111112")
+    const proHtml = buildResult(pro, "So11111111111111111111111111111111111111112")
+
+    expect(freeHtml).toContain('id="ant-critical-flags"')
+    expect(freeHtml).toContain('id="ant-ai-summary"')
+    expect(proHtml).toContain('id="ant-critical-flags"')
+    expect(proHtml).toContain('id="ant-ai-summary"')
   })
 })
 
