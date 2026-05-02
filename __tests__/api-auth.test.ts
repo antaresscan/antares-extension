@@ -36,10 +36,7 @@ vi.mock("../api/_lib/middleware", async () => {
   };
 });
 
-import signupHandler from "../api/auth/signup";
-import loginHandler from "../api/auth/login";
-import logoutHandler from "../api/auth/logout";
-import meHandler from "../api/auth/me";
+import dispatcher from "../api/auth/[action]";
 import { signSession } from "../api/_lib/account";
 import { SESSION_COOKIE_NAME } from "../api/_lib/session-cookie";
 
@@ -49,14 +46,38 @@ interface MockReqOpts {
   method?: string;
   headers?: Record<string, string>;
   body?: unknown;
+  action?: string;
 }
 
 function mockReq({
   method = "POST",
   headers = {},
   body,
+  action,
 }: MockReqOpts = {}): VercelRequest {
-  return { method, headers, query: {}, body, socket: {} } as unknown as VercelRequest;
+  const query = action ? { action } : {};
+  return { method, headers, query, body, socket: {} } as unknown as VercelRequest;
+}
+
+// Wrappers so the rest of the file can keep talking about
+// "signupHandler(req, res)" — under the hood we route through the
+// single dispatcher with the action query param set, exactly like
+// Vercel does for /api/auth/<action> in production.
+function signupHandler(req: VercelRequest, res: VercelResponse) {
+  (req as unknown as { query: Record<string, string> }).query = { action: "signup" };
+  return dispatcher(req, res);
+}
+function loginHandler(req: VercelRequest, res: VercelResponse) {
+  (req as unknown as { query: Record<string, string> }).query = { action: "login" };
+  return dispatcher(req, res);
+}
+function logoutHandler(req: VercelRequest, res: VercelResponse) {
+  (req as unknown as { query: Record<string, string> }).query = { action: "logout" };
+  return dispatcher(req, res);
+}
+function meHandler(req: VercelRequest, res: VercelResponse) {
+  (req as unknown as { query: Record<string, string> }).query = { action: "me" };
+  return dispatcher(req, res);
 }
 
 function mockRes(): VercelResponse {

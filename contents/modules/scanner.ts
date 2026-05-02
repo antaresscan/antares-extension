@@ -22,6 +22,27 @@ export class QuotaExhaustedError extends Error {
   }
 }
 
+/**
+ * Read the dev-tier override from chrome.storage.local. Set via the
+ * options page; returns null when unset or invalid. The scanner uses
+ * this to add an `X-Antares-Dev-Tier` header to scan requests so the
+ * dev can force Free/Pro/Lifetime in real time without redeploying or
+ * editing Redis. Server-side gate (DEV_PRO_INSTALLS env) ensures only
+ * dev-listed installs can actually override.
+ */
+async function readDevTierOverride(): Promise<string | null> {
+  try {
+    const data = await new Promise<{ antares_dev_tier?: string }>((resolve) =>
+      chrome.storage.local.get(["antares_dev_tier"], (v) => resolve(v as { antares_dev_tier?: string })),
+    )
+    const v = data.antares_dev_tier
+    if (v === "free" || v === "pro" || v === "lifetime") return v
+    return null
+  } catch {
+    return null
+  }
+}
+
 // Pull X-Antares-Quota-* headers off a /api/scan response into a structured
 // shape the overlay can render. Returns undefined when headers are missing
 // (old API version, errored response, or CORS not exposing them) so callers
@@ -199,6 +220,8 @@ export async function scan(ca: string) {
   try {
     const installId = await getInstallId()
     const headers: Record<string, string> = installId ? { "X-Antares-Install": installId } : {}
+    const devTier = await readDevTierOverride()
+    if (devTier) headers["X-Antares-Dev-Tier"] = devTier
     const res = await fetchWithRetry(`${API}?ca=${ca}`, controller.signal, headers)
     if (controller.signal.aborted) return
     const quota = extractQuotaFromHeaders(res.headers)

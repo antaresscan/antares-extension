@@ -18,7 +18,7 @@ import {
   initRateLimiters,
 } from "./_lib/middleware";
 import { initQuota, peekDailyQuota, setQuotaHeaders } from "./_lib/quota";
-import { initUserStorage } from "./_lib/user";
+import { initUserStorage, getEffectiveTier } from "./_lib/user";
 import { apiError } from "./_lib/helpers";
 import { logger } from "./_lib/logger";
 
@@ -46,7 +46,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const identityKey = installId ?? ip;
 
   try {
-    const quota = await peekDailyQuota(identityKey);
+    // Honour the X-Antares-Dev-Tier header for installs in DEV_PRO_INSTALLS.
+    const effectiveTier = await getEffectiveTier(
+      identityKey,
+      req.headers["x-antares-dev-tier"],
+    );
+    const quota = await peekDailyQuota(identityKey, effectiveTier);
     setQuotaHeaders(res, quota);
 
     // No-cache: quota state changes per request, stale data is misleading.

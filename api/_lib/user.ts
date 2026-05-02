@@ -52,13 +52,76 @@ function isAvailable(): boolean {
   return redisConfigured && redis !== null;
 }
 
+// ─── Dev-mode tier override ───────────────────────────────────────────────────
+
+/**
+ * Comma-separated list of install_ids the dev wants to force into a
+ * paid tier without going through the payment flow. Used so the dev
+ * can keep running their own extension on Pro mode without burning
+ * the Free quota during day-to-day work — and so QA installs don't
+ * need real on-chain payments to test paid surfaces.
+ *
+ * `DEV_PRO_INSTALLS=install-aaaaaaaaaaa,install-bbbbbbbbbbb`
+ *   → both ids return tier="lifetime", quota check is bypassed.
+ *
+ * Not meant for production grants: the env var is the audit trail.
+ * Real customers go through /api/redeem like everyone else.
+ */
+function getDevProInstalls(): Set<string> {
+  const raw = process.env.DEV_PRO_INSTALLS ?? "";
+  if (!raw) return new Set();
+  return new Set(
+    raw
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
+  );
+}
+
+export function isDevProInstall(installId: string): boolean {
+  if (!installId) return false;
+  return getDevProInstalls().has(installId);
+}
+
+/**
+ * Resolve the effective tier for a request, honouring an optional dev
+ * override header for installs that are listed in `DEV_PRO_INSTALLS`.
+ *
+ * The dev wants to test Free vs Pro vs Lifetime UX in real-time without
+ * editing env vars or Redis between switches. The extension's options
+ * page stores a dev-mode tier in `chrome.storage.local` and the scanner
+ * sends it as `X-Antares-Dev-Tier: free | pro | lifetime`. The server
+ * trusts that header **only** for installs in `DEV_PRO_INSTALLS` —
+ * otherwise the header is ignored and we fall back to the normal tier
+ * read.
+ *
+ * Without an override header, dev installs still default to lifetime
+ * (the `getUserTier` shortcut), which is what most dev work wants.
+ */
+export async function getEffectiveTier(
+  installId: string,
+  devTierHeaderRaw?: string | string[] | null,
+): Promise<Tier> {
+  if (devTierHeaderRaw && isDevProInstall(installId)) {
+    const raw = Array.isArray(devTierHeaderRaw)
+      ? devTierHeaderRaw[0]
+      : devTierHeaderRaw;
+    const v = String(raw ?? "").trim().toLowerCase();
+    if (v === "free" || v === "pro" || v === "lifetime") return v;
+  }
+  return getUserTier(installId);
+}
+
 // ─── Tier read / write ────────────────────────────────────────────────────────
 
 /**
  * Read the user's tier. Default Free; treats expired Pro/Lifetime as Free
- * automatically (server-side enforcement, not just client trust).
+ * automatically (server-side enforcement, not just client trust). Dev
+ * installs listed in DEV_PRO_INSTALLS short-circuit to lifetime so the
+ * dev never gets quota-locked on their own install.
  */
 export async function getUserTier(installId: string): Promise<Tier> {
+  if (isDevProInstall(installId)) return "lifetime";
   if (!isAvailable() || !redis) return "free";
   try {
     const tier = await redis.get<string>(TIER_KEY(installId));

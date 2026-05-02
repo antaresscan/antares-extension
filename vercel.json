@@ -18,6 +18,11 @@
       "source": "/",
       "destination": "https://antares-website.vercel.app/",
       "permanent": true
+    },
+    {
+      "source": "/api/privacy",
+      "destination": "/privacy.html",
+      "permanent": true
     }
   ],
   "headers": [

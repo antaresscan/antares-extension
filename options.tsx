@@ -10,26 +10,60 @@ type RedeemState =
   | { kind: "success"; tier: string; expiresAt: number | null }
   | { kind: "error"; message: string };
 
+type DevTier = "off" | "free" | "pro" | "lifetime";
+
 function Options() {
   const [stealthMode, setStealthMode] = useState(false);
   const [autoRescan, setAutoRescan] = useState(true);
   const [version, setVersion] = useState("");
+  const [installId, setInstallId] = useState<string>("");
+  const [installIdCopied, setInstallIdCopied] = useState(false);
+  const [devTier, setDevTier] = useState<DevTier>("off");
 
   // License redemption state
   const [licenseInput, setLicenseInput] = useState("");
   const [redeem, setRedeem] = useState<RedeemState>({ kind: "idle" });
 
   useEffect(() => {
-    chrome.storage.local.get(["antares_stealth", "autoRescan"], (data) => {
-      if (chrome.runtime.lastError) {
-        console.error("[antares] options storage error:", chrome.runtime.lastError.message);
-        return;
-      }
-      setStealthMode(!!data.antares_stealth);
-      setAutoRescan(data.autoRescan !== false);
-    });
+    chrome.storage.local.get(
+      ["antares_stealth", "autoRescan", "antares_dev_tier"],
+      (data) => {
+        if (chrome.runtime.lastError) {
+          console.error("[antares] options storage error:", chrome.runtime.lastError.message);
+          return;
+        }
+        setStealthMode(!!data.antares_stealth);
+        setAutoRescan(data.autoRescan !== false);
+        const stored = data.antares_dev_tier;
+        if (stored === "free" || stored === "pro" || stored === "lifetime") {
+          setDevTier(stored);
+        } else {
+          setDevTier("off");
+        }
+      },
+    );
     setVersion(chrome.runtime.getManifest().version);
+    void getInstallId().then((id) => setInstallId(id ?? ""));
   }, []);
+
+  function updateDevTier(next: DevTier) {
+    setDevTier(next);
+    if (next === "off") {
+      void chrome.storage.local.remove("antares_dev_tier");
+    } else {
+      void chrome.storage.local.set({ antares_dev_tier: next });
+    }
+  }
+
+  function copyInstallId() {
+    if (!installId) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      void navigator.clipboard.writeText(installId).then(() => {
+        setInstallIdCopied(true);
+        setTimeout(() => setInstallIdCopied(false), 1800);
+      });
+    }
+  }
 
   async function submitRedeem(e: React.FormEvent) {
     e.preventDefault();
@@ -217,6 +251,126 @@ function Options() {
         </a>{" "}
         with the email you used at checkout.
       </p>
+
+      <h2 style={{ marginTop: 36 }}>This install</h2>
+      <p style={{ color: "#555", fontSize: 13, lineHeight: 1.6 }}>
+        Anonymous identifier for your local install. Used by the API to track
+        quota and tier — never sent to third parties. Reset by uninstalling +
+        reinstalling the extension.
+      </p>
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          marginTop: 12,
+          alignItems: "center",
+        }}
+      >
+        <code
+          style={{
+            flex: 1,
+            padding: "10px 12px",
+            background: "#f5f5f5",
+            border: "1px solid #ddd",
+            borderRadius: 4,
+            fontFamily: "ui-monospace, Menlo, Consolas, monospace",
+            fontSize: 12,
+            color: "#333",
+            userSelect: "all",
+            WebkitUserSelect: "all",
+            wordBreak: "break-all",
+          }}
+        >
+          {installId || "loading…"}
+        </code>
+        <button
+          type="button"
+          onClick={copyInstallId}
+          disabled={!installId}
+          style={{
+            padding: "10px 16px",
+            fontSize: 12,
+            fontWeight: 600,
+            background: installIdCopied ? "#00c89a" : "#0f0f11",
+            color: "#fff",
+            border: "none",
+            borderRadius: 4,
+            cursor: installId ? "pointer" : "default",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {installIdCopied ? "✓ Copied" : "Copy"}
+        </button>
+      </div>
+
+      <h2 style={{ marginTop: 36 }}>Dev mode</h2>
+      <p style={{ color: "#555", fontSize: 13, lineHeight: 1.6 }}>
+        Force a tier on the server side for this install. Only takes effect
+        when the install id above is listed in the server's
+        <code style={{
+          margin: "0 4px",
+          padding: "1px 6px",
+          background: "#f5f5f5",
+          border: "1px solid #ddd",
+          borderRadius: 3,
+          fontSize: 12,
+          fontFamily: "ui-monospace, Menlo, Consolas, monospace",
+        }}>DEV_PRO_INSTALLS</code>
+        env var. Use it to flip between Free / Pro / Lifetime in real time
+        and verify what each tier sees in the overlay.
+      </p>
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          marginTop: 12,
+          alignItems: "center",
+        }}
+      >
+        <label
+          htmlFor="dev-tier"
+          style={{ fontSize: 13, color: "#333", fontWeight: 600 }}
+        >
+          Force tier:
+        </label>
+        <select
+          id="dev-tier"
+          value={devTier}
+          onChange={(e) => updateDevTier(e.target.value as DevTier)}
+          style={{
+            flex: 1,
+            padding: "10px 12px",
+            border: "1px solid #ddd",
+            borderRadius: 4,
+            fontSize: 13,
+            background: "#fff",
+            cursor: "pointer",
+          }}
+        >
+          <option value="off">Off (use real tier)</option>
+          <option value="free">Free</option>
+          <option value="pro">Pro</option>
+          <option value="lifetime">Lifetime</option>
+        </select>
+      </div>
+      {devTier !== "off" && (
+        <p
+          style={{
+            marginTop: 8,
+            padding: 10,
+            background: "rgba(245,208,0,.08)",
+            border: "1px solid rgba(245,208,0,.4)",
+            borderRadius: 4,
+            fontSize: 12,
+            color: "#7a6a00",
+          }}
+        >
+          ⚠ Dev override active: scanner sends
+          {" "}<code style={{ fontFamily: "ui-monospace, Menlo, Consolas, monospace" }}>X-Antares-Dev-Tier: {devTier}</code>
+          {" "}with every scan. Server only honours this if your install id is
+          dev-listed; otherwise it's ignored.
+        </p>
+      )}
 
       <h2>About</h2>
       <p>Antares — real-time Solana token scanner.</p>

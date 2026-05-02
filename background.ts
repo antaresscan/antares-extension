@@ -145,9 +145,18 @@ const handlers: Record<string, MessageHandler> = {
     const ctrl = new AbortController()
     const timer = setTimeout(() => ctrl.abort(), config.fetchTimeoutMs)
 
-    void getInstallId()
-      .then((installId) => {
+    void Promise.all([
+      getInstallId(),
+      new Promise<{ antares_dev_tier?: string }>((resolve) =>
+        chrome.storage.local.get(["antares_dev_tier"], (v) => resolve(v as { antares_dev_tier?: string })),
+      ),
+    ])
+      .then(([installId, store]) => {
         const headers: Record<string, string> = installId ? { "X-Antares-Install": installId } : {}
+        const devTier = store.antares_dev_tier
+        if (devTier === "free" || devTier === "pro" || devTier === "lifetime") {
+          headers["X-Antares-Dev-Tier"] = devTier
+        }
         return fetch(`${config.apiBase}/api/scan?ca=${ca}`, { signal: ctrl.signal, headers })
       })
       .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() })

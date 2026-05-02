@@ -6,6 +6,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added — dev mode: real-time tier toggle without redeploys
+- **Problem.** Dev was getting quota-locked on his own install during
+  daily work, and there was no way to flip between Free / Pro /
+  Lifetime to verify what each tier sees in the overlay without
+  editing Redis between switches.
+- **`DEV_PRO_INSTALLS` env var** — comma-separated list of install_ids
+  that are forced to lifetime tier server-side. `getUserTier()` short-
+  circuits to lifetime for these, and `checkDailyQuota()` /
+  `peekDailyQuota()` skip the counter. Set on Vercel, no
+  redeploy needed for adds/removes (env vars hot-reload at function
+  invoke time).
+- **`X-Antares-Dev-Tier` request header** — when an install is in
+  `DEV_PRO_INSTALLS`, the server trusts this header (`free | pro |
+  lifetime`) over the default lifetime shortcut. Lets the dev flip
+  tiers in real time without editing env vars between switches.
+  Other installs sending the header have it silently ignored — the
+  env var is the gate, not the header.
+- **`getEffectiveTier(installId, headerRaw)`** in `api/_lib/user.ts`
+  is the single resolution point. Both `/api/scan` and `/api/quota`
+  now call it before the quota check.
+- **Options page**:
+  - **"This install" section** — shows the install_id with a Copy
+    button. Needed for putting the id into the
+    `DEV_PRO_INSTALLS` env var.
+  - **"Dev mode" section** — Force-tier select (Off / Free / Pro /
+    Lifetime), stored in `chrome.storage.local`. When non-Off, the
+    scanner adds the header to every scan request, with a yellow
+    warning banner reminding the dev that the override is active.
+- **Scanner + background.ts** — both now read the dev-tier from
+  storage and attach the header when set.
+- 19 new tests covering the env-var gate, header parsing
+  (case-insensitive, trimmed, array-shaped), priority order
+  (header > shortcut > stored tier), and quota bypass. 908/908 passing.
+
 ### Added — accounts: email + password sign up, login, session cookies
 - **Real auth on the API.** The license-key-only flow worked but
   required the buyer to keep the key safe forever. Accounts are the
