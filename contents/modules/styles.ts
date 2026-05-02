@@ -362,46 +362,45 @@ export const SHADOW_CSS = `
 /* Quota-exhausted state — Free user has burned their 25/day cap. The
    overlay stays visible (don't ever silently hide on the 26th scan)
    and shows the cap, the reset clock, and a primary upgrade CTA so
-   the user knows exactly what's going on and what to do next. */
-.qx-vb { padding: 8px 14px 4px; }
+   the user knows exactly what's going on and what to do next.
+   Compact by design: ~210px tall total, no taller than a regular
+   verdict overlay. */
+.qx-vb { padding: 6px 14px 4px; }
 .qx-vb h1 {
   font-family: 'Bebas Neue','Arial Black',sans-serif;
-  font-size: 38px; line-height: .9; font-weight: 400; letter-spacing: .04em;
+  font-size: 32px; line-height: .9; font-weight: 400; letter-spacing: .04em;
   color: #f5d000;
-  text-shadow: 0 0 30px rgba(245,208,0,.18);
+  text-shadow: 0 0 24px rgba(245,208,0,.18);
 }
-.qx-counter {
-  padding: 0 14px; margin-top: 4px;
-  font: 600 11px/1.4 'IBM Plex Mono', monospace;
-  color: #888; letter-spacing: .04em;
+.qx-line {
+  padding: 0 14px;
+  font: 400 10px/1.5 'IBM Plex Mono', monospace;
+  color: #6a6a72; letter-spacing: .02em;
 }
-.qx-counter .qx-num { color: #eaeaea; font-size: 13px; }
-.qx-reset {
-  padding: 4px 14px 0;
-  font: 400 10px/1.4 'IBM Plex Mono', monospace;
-  color: #5a5a62; letter-spacing: .02em;
+.qx-line .qx-num {
+  color: #eaeaea; font-weight: 700; font-size: 11px;
 }
-.qx-reset .qx-reset-time { color: #888; }
-.qx-pitch {
-  padding: 8px 14px 12px;
-  font: 400 10px/1.55 'IBM Plex Mono', monospace;
-  color: #888; letter-spacing: .02em;
-}
-.qx-cta-row {
-  padding: 0 14px 14px;
-}
+.qx-line .qx-reset-time { color: #aaa; font-weight: 600; }
 .qx-cta {
-  display: block; width: 100%; padding: 11px 12px;
-  background: #00e5b0; color: #0a0a0c;
+  display: block; margin: 0 14px;
+  padding: 11px 12px;
+  background: #00e5b0; color: #0a0a0c !important;
   font: 700 11px/1 'IBM Plex Mono', monospace;
-  letter-spacing: .14em; text-transform: uppercase;
+  letter-spacing: .12em; text-transform: uppercase;
   text-decoration: none; text-align: center;
   border-radius: 2px; cursor: pointer;
+  white-space: nowrap;
   transition: transform .15s, box-shadow .15s;
 }
 .qx-cta:hover {
   transform: translateY(-1px);
   box-shadow: 0 8px 22px rgba(0,229,176,.28);
+}
+.qx-pitch {
+  padding: 8px 14px 14px;
+  font: 400 9px/1.6 'IBM Plex Mono', monospace;
+  color: #5a5a62; letter-spacing: .04em;
+  text-align: center;
 }
 
 /* Free-tier locked variant — Critical Flags / Full Analysis / AI Summary
