@@ -281,4 +281,69 @@ describe("POST /api/payment-intent", () => {
     await handler(req, res);
     expect(res.json).toHaveBeenCalledOnce();
   });
+
+  // ── Email + license-key flow ───────────────────────────────────────────────
+  // Site-direct buyers without an install_id can pay using just an email
+  // — the issued license is what they later redeem in the extension.
+
+  it("accepts an email + no install_id (site-direct buyer)", async () => {
+    const req = mockReq({
+      headers: { origin: ORIGIN },
+      body: { tier: "monthly", email: "buyer@example.com" },
+    });
+    const res = mockRes();
+    await handler(req, res);
+    expect(res.status).not.toHaveBeenCalledWith(400);
+    expect(res.status).not.toHaveBeenCalledWith(503);
+  });
+
+  it("accepts an email alongside install_id (extension user opting in)", async () => {
+    const req = mockReq({
+      headers: { origin: ORIGIN },
+      body: {
+        tier: "monthly",
+        install_id: VALID_INSTALL,
+        email: "buyer@example.com",
+      },
+    });
+    const res = mockRes();
+    await handler(req, res);
+    expect(res.status).not.toHaveBeenCalledWith(400);
+  });
+
+  it("rejects when neither email nor install_id is provided", async () => {
+    const req = mockReq({
+      headers: { origin: ORIGIN },
+      body: { tier: "monthly" },
+    });
+    const res = mockRes();
+    await handler(req, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  it("rejects malformed email even when install_id is present", async () => {
+    const req = mockReq({
+      headers: { origin: ORIGIN },
+      body: {
+        tier: "monthly",
+        install_id: VALID_INSTALL,
+        email: "not-an-email",
+      },
+    });
+    const res = mockRes();
+    await handler(req, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  it("treats empty-string email as 'not provided' (doesn't reject)", async () => {
+    // The pricing modal binds the email <input> to its state regardless;
+    // an extension-driven flow that doesn't fill email shouldn't fail.
+    const req = mockReq({
+      headers: { origin: ORIGIN },
+      body: { tier: "monthly", install_id: VALID_INSTALL, email: "" },
+    });
+    const res = mockRes();
+    await handler(req, res);
+    expect(res.status).not.toHaveBeenCalledWith(400);
+  });
 });

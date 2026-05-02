@@ -6,6 +6,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added — license-key flow: site-direct buyers + portable Pro across installs
+- **Email + license-key model.** /api/payment-intent now accepts an
+  `email` field (required for visitors who haven't installed the
+  extension yet, optional alongside `install_id` for extension users).
+  When the on-chain payment confirms, the server issues a license key
+  in the format `ANT-XXXX-XXXX-XXXX-XXXX` (80 bits of entropy,
+  Crockford-base32 alphabet, visually unambiguous).
+- **New `api/_lib/license.ts` module** — generation, Redis-backed
+  storage, idempotent `issueLicense()` (cron retries + lazy-poll
+  retries don't duplicate keys per intent), `getLicensesByEmail()`,
+  and `redeemLicense()` which atomically marks the license claimed +
+  flips the install's tier.
+- **New `POST /api/redeem`** — `{license_key, install_id}` → flips
+  that install's tier. Idempotent reclaim for the same install,
+  409 `already_redeemed` for a different install.
+- **New `POST /api/account-licenses`** — `{email, license_key}` →
+  list every license owned by that email. The license key acts as
+  proof of ownership (no passwords, no sessions). Returns 403 on
+  email/key mismatch so attackers can't enumerate which emails have
+  ever bought.
+- **Cron + lazy-poll both issue licenses** when a confirmed intent
+  carries an email. The lazy-poll path also returns the license key
+  in `/api/payment-status` so the pricing modal can show it as soon
+  as the on-chain check lands, without waiting for the cron tick.
+- **Synthetic install_ids** (`email:foo@bar.com`) when a buyer pays
+  before installing. The cron skips the spurious `setUserTier()`
+  write on those — the user redeems via their license key once they
+  install. Real extension installs continue to get tier flipped
+  immediately.
+- **New "Redeem a Pro license" UI in the options page**. Paste the
+  ANT-XXXX-XXXX-XXXX-XXXX key, click Redeem, watch the tier unlock.
+  Friendly errors for not-found / already-redeemed / invalid format.
+- 43 new tests across `license.test.ts`, `api-redeem.test.ts`,
+  `api-account-licenses.test.ts` plus 5 new payment-intent tests
+  for the email path. 828/828 passing.
+
 ### Changed — Pro v1 monetisation: AI Summary, Critical Flags, Full Analysis gated to paid tiers
 - **The 3-button overlay footer (Critical Flags / Full Analysis / AI Summary)
   is now Pro/Lifetime only — but stays *visible* to Free users.** Free

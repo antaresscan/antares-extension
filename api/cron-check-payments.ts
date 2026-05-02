@@ -33,6 +33,7 @@ import {
   PRO_PASS_DAYS,
   type PaymentIntent,
 } from "./_lib/solana-pay";
+import { issueLicense } from "./_lib/license";
 
 function getRedis(): Redis | null {
   const url = process.env.UPSTASH_REDIS_REST_URL;
@@ -78,11 +79,43 @@ async function processIntent(
       ? undefined
       : Date.now() + PRO_PASS_DAYS * 24 * 60 * 60 * 1000;
 
-  await setUserTier(
-    intent.installId,
-    intent.tier === "lifetime" ? "lifetime" : "pro",
-    tierExpiresAt,
-  );
+  // Real extension installs get their tier flipped immediately so the
+  // overlay unlocks on the next scan without waiting for a manual
+  // redemption step. Email-only synthetic install_ids (site-direct
+  // buyers) skip this write — they redeem via license key once they
+  // install the extension.
+  const isSyntheticInstall = intent.installId.startsWith("email:");
+  if (!isSyntheticInstall) {
+    await setUserTier(
+      intent.installId,
+      intent.tier === "lifetime" ? "lifetime" : "pro",
+      tierExpiresAt,
+    );
+  }
+
+  // Issue a license if the buyer left an email — gives them a portable
+  // credential they can redeem on a new install later (different
+  // machine, reinstall, browser switch). Idempotent on the intent
+  // reference so cron retries don't duplicate.
+  if (intent.email) {
+    try {
+      await issueLicense(redis, {
+        email: intent.email,
+        tier: intent.tier,
+        intentReference: intent.reference,
+        amountUsd: intent.amountUsd,
+      });
+    } catch (err) {
+      // License issuance failure shouldn't block the tier-flip — the
+      // user already paid. Log + continue; we can re-issue manually
+      // from the intent record if needed.
+      logger.warn("cron-check-payments", "license issuance failed", {
+        reference: intent.reference,
+        error: String(err),
+      });
+    }
+  }
+
   await markIntentConfirmed(redis, intent, result.txSignature);
 
   logger.metric("cron-check-payments.tier_set", {
@@ -90,6 +123,8 @@ async function processIntent(
     installId: intent.installId,
     txSignature: result.txSignature,
     amount: intent.amount,
+    hasEmail: !!intent.email,
+    syntheticInstall: isSyntheticInstall,
   });
 
   return "confirmed";
