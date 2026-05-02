@@ -6,6 +6,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Removed — watchlist feature
+- **Watchlist removed entirely.** A list of token addresses without alerts
+  or notifications is just stored strings — no actionable value over the
+  scan history we already keep. Better to ship nothing than ship a
+  half-feature users can't actually use.
+- Deleted: `api/watchlist.ts`, `contents/modules/watchlist.ts`, the watchlist
+  primitives in `api/_lib/user.ts` (`addToWatchlist`, `removeFromWatchlist`,
+  `getWatchlist`, `getWatchlistCount`, `watchlistMaxFor`, related types and
+  storage keys), the `★ Watchlist` toggle button + panel in the overlay
+  footer, the `.wl-*` CSS, mutex references in AI Summary / Critical Flags.
+- Tests removed: `__tests__/api-watchlist.test.ts`, `__tests__/watch-btn.test.ts`,
+  watchlist test blocks in `user.test.ts`.
+- Pricing tier docs updated: 30-day Pro Pass and Lifetime no longer
+  advertise a watchlist; the differentiation is on unlimited scans, scan
+  history, detailed scoring breakdown, priority cache, exports, and clean
+  UI (no affiliate prompts).
+- 759 / 759 tests passing after removal (down from 798 — only watchlist
+  tests removed, no functional regressions).
+
 ### Changed — payments switched to Solana Pay direct on-chain
 - **Removed Lemonsqueezy.** The previous skeleton was never wired in
   production (no env vars set, no charges) — replacing it with a direct

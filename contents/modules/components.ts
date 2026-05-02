@@ -6,7 +6,6 @@ import { initDrag } from "./drag"
 import { encodeHashPayload } from "../../shared/hash-payload"
 import { toggleAiSummary } from "./ai-summary"
 import { toggleCriticalFlags } from "./critical-flags"
-import { toggleWatchlist } from "./watchlist"
 import { getInstallId } from "../../shared/install-id"
 
 // DOM-API element builder. Used by buildResult instead of string template
@@ -157,28 +156,6 @@ export function attachClose(
  * Delegates tab creation to the background service worker via chrome.runtime.sendMessage
  * because chrome.tabs.create is NOT available in content scripts (MV3).
  */
-/**
- * Wires the footer "★ Watchlist" button to toggle the watchlist panel,
- * mirroring the attach pattern of AI Summary / Critical Flags. The panel
- * itself (rendering, fetching, add/remove) is implemented in
- * `contents/modules/watchlist.ts`; this helper only wires the click that
- * opens or closes it.
- */
-export function attachWatchBtn(ca: string) {
-  const btn = state.shadow?.querySelector<HTMLButtonElement>("#ant-watchlist-btn")
-  if (!btn) return
-
-  // Clone-and-replace to drop any prior listeners — same pattern the
-  // sibling attach* helpers use, keeps rescans listener-leak-free.
-  const fresh = btn.cloneNode(true) as HTMLButtonElement
-  btn.parentNode?.replaceChild(fresh, btn)
-  fresh.addEventListener("click", (e) => {
-    e.stopPropagation()
-    e.preventDefault()
-    toggleWatchlist(ca)
-  })
-}
-
 export function attachAnalysisBtn(mint: string) {
   const btn = state.shadow?.querySelector("#ant-full-analysis")
   if (!btn) return
@@ -556,15 +533,6 @@ export function buildResultNode(data: ScanResponseData, ca: string): HTMLElement
     class: "ai-btn ai-btn--active",
     id: "ant-ai-summary-btn",
   }, "\u2b21 AI Summary"))
-  // Watchlist toggle \u2014 same disclosure pattern as Critical Flags / AI Summary.
-  // The actual panel content (list, add/remove, tier indicator) is rendered
-  // lazily by toggleWatchlist on first open, then re-fetched on every reopen
-  // so the user never sees stale state across rescans or concurrent tabs.
-  foNode.appendChild(el("button", {
-    class: "wl-btn",
-    id: "ant-watchlist-btn",
-    type: "button",
-  }, "\u2605 Watchlist"))
 
   const tkNode = tokenSymbol
     ? el("div", { class: "tk" },
@@ -595,7 +563,6 @@ export function buildResultNode(data: ScanResponseData, ca: string): HTMLElement
     ssNode,
     el("div", { class: "cf-panel", id: "ant-critical-flags" }),
     el("div", { class: "ai-panel", id: "ant-ai-summary" }),
-    el("div", { class: "wl-panel", id: "ant-watchlist" }),
     foNode,
     buildAffiliateRow(mint, data.risk, data._quota),
   )

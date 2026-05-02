@@ -28,12 +28,10 @@ export function toggleAiSummary(aiSummary: string | null | undefined): void {
     return
   }
 
-  // Mutex: close the sibling panels before opening this one. AI Summary,
-  // Critical Flags, and Watchlist share the same vertical real estate
-  // inside the overlay; with multiple open the box overflows off-screen
-  // on shorter viewports.
+  // Mutex: close the Critical Flags panel before opening this one. The two
+  // panels share the same vertical real estate inside the overlay; with
+  // both open the box overflowed off-screen on shorter viewports.
   state.shadow?.querySelector("#ant-critical-flags")?.classList.remove("open")
-  state.shadow?.querySelector("#ant-watchlist")?.classList.remove("open")
 
   // Inject content only once
   if (!panel.dataset.loaded) {

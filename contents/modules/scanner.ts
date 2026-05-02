@@ -3,7 +3,7 @@ import * as Sentry from "@sentry/browser"
 import { API, LS_PREFIX, IGNORE } from "./constants"
 import { state, scanCache } from "./state"
 import { getCached, saveToLS } from "./cache"
-import { getBox, showBox, attachClose, attachAnalysisBtn, attachWatchBtn, triggerResultAnimations, buildResultNode, buildSkeletonNode } from "./components"
+import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimations, buildResultNode, buildSkeletonNode } from "./components"
 import { scanRateLimiter } from "../../shared/rate-limit"
 import { logger } from "../../shared/logger"
 import { getInstallId } from "../../shared/install-id"
@@ -153,7 +153,6 @@ export async function scan(ca: string) {
     triggerResultAnimations(el)
     attachClose(cached.aiSummary ?? null, cached.flags ?? null)
     attachAnalysisBtn(ca)
-    attachWatchBtn(ca)
     chrome.storage.local.get(["autoRescan"], (prefs) => {
       if (prefs.autoRescan !== false) scheduleRescanIfPriceCrash(cached, ca)
     })
@@ -185,7 +184,6 @@ export async function scan(ca: string) {
     triggerResultAnimations(el)
     attachClose(data.aiSummary ?? null, data.flags ?? null)
     attachAnalysisBtn(ca)
-    attachWatchBtn(ca)
     chrome.storage.local.get(["autoRescan"], (prefs) => {
       if (prefs.autoRescan !== false) scheduleRescanIfPriceCrash(data, ca)
     })
