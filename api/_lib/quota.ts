@@ -98,6 +98,13 @@ const PERMISSIVE_FREE_RESULT = (resetAt: number): QuotaResult => ({
  */
 export async function checkDailyQuota(
   identityKey: string | null,
+  /**
+   * Pre-resolved tier (from `getEffectiveTier(req)`) — pass when the
+   * caller has already applied the dev-mode override so we don't
+   * double-read tier state. Otherwise falls back to the canonical
+   * `getUserTier()` lookup.
+   */
+  precomputedTier?: Tier,
 ): Promise<QuotaResult> {
   const resetAt = getResetAt();
 
@@ -112,7 +119,7 @@ export async function checkDailyQuota(
   // the damage one anonymous client can do.
   const key = identityKey ?? "anonymous";
 
-  const tier = await getUserTier(key);
+  const tier = precomputedTier ?? (await getUserTier(key));
   if (tier !== "free") return UNLIMITED_RESULT(tier);
 
   const today = getUtcDateKey();
@@ -157,6 +164,8 @@ export async function checkDailyQuota(
  */
 export async function peekDailyQuota(
   identityKey: string | null,
+  /** Same dev-tier override semantics as checkDailyQuota above. */
+  precomputedTier?: Tier,
 ): Promise<QuotaResult> {
   const resetAt = getResetAt();
 
@@ -166,7 +175,7 @@ export async function peekDailyQuota(
 
   const key = identityKey ?? "anonymous";
 
-  const tier = await getUserTier(key);
+  const tier = precomputedTier ?? (await getUserTier(key));
   if (tier !== "free") return UNLIMITED_RESULT(tier);
 
   const today = getUtcDateKey();

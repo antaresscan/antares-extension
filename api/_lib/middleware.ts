@@ -67,7 +67,7 @@ export function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean
     if (origin.startsWith("chrome-extension://")) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Antares-Token, X-Antares-Install");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Antares-Token, X-Antares-Install, X-Antares-Dev-Tier");
     res.setHeader("Access-Control-Expose-Headers", EXPOSED_RESPONSE_HEADERS);
     res.setHeader("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
     return true;
@@ -97,7 +97,7 @@ export function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean
     res.setHeader("Vary", "Origin");
   }
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Antares-Key, X-Antares-Token, X-Antares-Install, Authorization");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Antares-Key, X-Antares-Token, X-Antares-Install, X-Antares-Dev-Tier, Authorization");
   res.setHeader("Access-Control-Expose-Headers", EXPOSED_RESPONSE_HEADERS);
   res.setHeader("Access-Control-Max-Age", "86400");
   res.setHeader("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
