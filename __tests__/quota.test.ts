@@ -170,7 +170,7 @@ describe("checkDailyQuota — Free tier", () => {
     initQuota(redis);
     initUserStorage(redis);
 
-    // First 50 scans → all allowed
+    // First N scans (where N = FREE_TIER_DAILY_LIMIT) → all allowed
     for (let i = 1; i <= FREE_TIER_DAILY_LIMIT; i++) {
       const result = await checkDailyQuota("install-heavy");
       expect(result.allowed).toBe(true);

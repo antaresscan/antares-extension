@@ -6,6 +6,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed — Free tier quota tightened (50 → 25 scans/day)
+- **`FREE_TIER_DAILY_LIMIT` lowered from 50 to 25.** 50 was generous to the
+  point of removing any pull toward upgrade — most active users were finishing
+  their session before getting close to the cap. 25/day is still enough to
+  scan a full session of new launches, but creates a real reason to convert.
+- Updated quota header math, store-listing copy (EN + FR), and tests.
+
+### Added — pay with native SOL alongside USDC
+- **`/api/payment-intent` now accepts `token: "usdc" | "sol"`** (default
+  `usdc`). USDC continues the existing SPL-transfer flow; SOL routes through
+  a new native-transfer path with the SOL/USD rate locked at intent creation.
+- **New helpers** in `api/_lib/solana-pay.ts`:
+  - `getSolPriceUsd()` — Jupiter v4 price endpoint, returns 0 on any failure
+    so the caller can short-circuit cleanly
+  - `resolveAmount(tier, token)` — returns `{ amount, amountUsd, splTokenMint }`,
+    rounds SOL up to 4 decimals (`Math.ceil`) so the user never under-pays the
+    target USD price
+  - `verifySolTransfer()` — pre/post lamport delta check on the recipient
+    account, mirrors the USDC tolerance (≥ 99% of expected amount)
+- **`checkIntentOnChain()`** dispatches on `splTokenMint` (null = native SOL,
+  set = SPL token), so the cron + status polling are token-agnostic.
+- **Failure mode**: when Jupiter is down at intent creation, the endpoint
+  returns 502 with `error: "sol_rate_unavailable"` so the frontend can
+  surface a "try USDC instead" fallback without retrying blindly.
+- **Pricing unchanged**: $24.99 / 30 days, $149.99 lifetime — SOL amount is
+  the USD price ÷ live SOL/USD rate, recomputed per intent.
+- **Tests**: 5 new `verifySolTransfer` cases, 5 new `resolveAmount` cases, 3
+  new `/api/payment-intent` integration tests (SOL path, unknown token
+  rejection, sol_rate_unavailable error). 773 / 773 total passing.
+
 ### Removed — watchlist feature
 - **Watchlist removed entirely.** A list of token addresses without alerts
   or notifications is just stored strings — no actionable value over the

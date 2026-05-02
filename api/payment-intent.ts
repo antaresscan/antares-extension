@@ -22,6 +22,7 @@ import { logger } from "./_lib/logger";
 import {
   createPaymentIntent,
   isValidSolanaAddress,
+  type PayToken,
   type Tier,
 } from "./_lib/solana-pay";
 
@@ -66,6 +67,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const body = readBody(req);
   const tier = String(body.tier ?? "").trim().toLowerCase();
   const installId = String(body.install_id ?? "").trim();
+  // Default to USDC (stable pricing) when the client doesn't specify;
+  // the modal exposes both options explicitly so this fallback only
+  // matters for direct API consumers.
+  const tokenRaw = String(body.token ?? "usdc").trim().toLowerCase();
 
   // 'pro' is a UX alias used by the pricing page — both monthly and pro
   // route to the 30-day pass under the hood.
@@ -73,6 +78,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (tier !== "monthly" && tier !== "pro" && tier !== "lifetime") {
     return apiError(res, 400, "tier must be 'monthly', 'pro' or 'lifetime'.");
   }
+  if (tokenRaw !== "usdc" && tokenRaw !== "sol") {
+    return apiError(res, 400, "token must be 'usdc' or 'sol'.");
+  }
+  const token: PayToken = tokenRaw;
   if (!INSTALL_ID_RE.test(installId)) {
     return apiError(res, 400, "Valid install_id required in body.");
   }
@@ -95,6 +104,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const intent = await createPaymentIntent(redis, {
       installId,
       tier: normalisedTier,
+      token,
       recipient,
     });
 
@@ -103,13 +113,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       reference: intent.reference,
       payUrl: intent.payUrl,
       recipient: intent.recipient,
+      token: intent.token,
       amount: intent.amount,
+      amountUsd: intent.amountUsd,
       splTokenMint: intent.splTokenMint,
       tier: intent.tier,
       expiresAt: intent.expiresAt,
     });
   } catch (err) {
     logger.error("payment-intent", "creation failed", { error: String(err) });
+    // SOL rate fetch failures are user-actionable: surface them so the
+    // pricing-page modal can suggest USDC instead.
+    const message = err instanceof Error ? err.message : String(err);
+    if (/SOL\/USD/i.test(message)) {
+      return res.status(502).json({
+        error: "sol_rate_unavailable",
+        message: "Could not fetch the current SOL price — please try again or pay in USDC.",
+      });
+    }
     return apiError(res, 500, "Could not create payment intent.");
   }
 }

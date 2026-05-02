@@ -44,17 +44,30 @@ export const INTENT_INDEX_KEY = "payment-intents:pending";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type Tier = "monthly" | "lifetime";
+export type PayToken = "usdc" | "sol";
 export type IntentStatus = "pending" | "confirmed" | "expired";
 
 export interface PaymentIntent {
   reference: string;
   installId: string;
   tier: Tier;
+  /** Which token the user is paying with — "usdc" (stable) or "sol" (native). */
+  token: PayToken;
   recipient: string;
-  /** Decimal price in USDC (NOT raw token units). */
+  /**
+   * Decimal amount in the chosen token's natural units (NOT raw lamports
+   * or token-account units). For USDC this is dollars; for SOL it's the
+   * SOL float value computed from the current Jupiter rate at intent
+   * creation time and locked in until the intent expires.
+   */
   amount: number;
-  /** SPL token mint address. We only support USDC right now. */
-  splTokenMint: string;
+  /** USD-equivalent at intent creation — useful for analytics + audit. */
+  amountUsd: number;
+  /**
+   * SPL token mint address; null when paying in native SOL. Verifier
+   * branches on this to pick the right balance check.
+   */
+  splTokenMint: string | null;
   /** The full Solana Pay URL the wallet opens. */
   payUrl: string;
   createdAt: number;
@@ -152,13 +165,71 @@ export function buildPayUrl(params: BuildPayUrlParams): string {
 
 // ─── Pricing helpers ─────────────────────────────────────────────────────────
 
-export function priceFor(tier: Tier): number {
+/** USD price of the tier — the canonical reference, env-overridable. */
+export function priceUsd(tier: Tier): number {
   if (tier === "lifetime") {
     const v = parseFloat(process.env.SOLANA_PRICE_LIFETIME_USDC ?? "149.99");
     return Number.isFinite(v) && v > 0 ? v : 149.99;
   }
   const v = parseFloat(process.env.SOLANA_PRICE_PRO_USDC ?? "24.99");
   return Number.isFinite(v) && v > 0 ? v : 24.99;
+}
+
+/** Back-compat alias — many tests call priceFor(tier) expecting USD. */
+export function priceFor(tier: Tier): number {
+  return priceUsd(tier);
+}
+
+/**
+ * Fetch the current SOL/USD price from Jupiter's free price feed. Used
+ * to lock the SOL amount at intent creation so the user can't pay 24h
+ * later at a stale rate. Returns 0 on any failure — the caller should
+ * surface a clear "rate fetch failed" error rather than silently letting
+ * the user under/over-pay.
+ */
+export async function getSolPriceUsd(): Promise<number> {
+  try {
+    const res = await fetch("https://price.jup.ag/v4/price?ids=SOL", {
+      headers: { Accept: "application/json" },
+    });
+    if (!res.ok) return 0;
+    const json = (await res.json()) as { data?: { SOL?: { price?: number } } };
+    const price = json.data?.SOL?.price;
+    return typeof price === "number" && price > 0 ? price : 0;
+  } catch (err) {
+    logger.warn("solana-pay", "SOL price fetch failed", { error: String(err) });
+    return 0;
+  }
+}
+
+/**
+ * Resolve the tier+token pair into an actual on-chain payment amount.
+ *
+ *   USDC → 1:1 with USD, fixed via env override.
+ *   SOL  → USD price ÷ current SOL/USD rate, rounded to 4 decimals
+ *          (sufficient precision for amounts in the 0.05–1 SOL range).
+ *
+ * Throws when the SOL rate fetch fails — better to refuse intent creation
+ * than to lock a user into an under/over-paid amount.
+ */
+export async function resolveAmount(
+  tier: Tier,
+  token: PayToken,
+): Promise<{ amount: number; amountUsd: number; splTokenMint: string | null }> {
+  const usd = priceUsd(tier);
+  if (token === "usdc") {
+    return { amount: usd, amountUsd: usd, splTokenMint: USDC_MINT };
+  }
+  // SOL
+  const solPrice = await getSolPriceUsd();
+  if (solPrice <= 0) {
+    throw new Error("Could not resolve SOL/USD rate");
+  }
+  // Round up to 4 decimals — under-paying by sub-cent rounding would fail
+  // the verifier's 1% tolerance check on small amounts. Better to ask
+  // 0.0001 SOL more than to silently fail at confirmation.
+  const solAmount = Math.ceil((usd / solPrice) * 1e4) / 1e4;
+  return { amount: solAmount, amountUsd: usd, splTokenMint: null };
 }
 
 // ─── Intent CRUD ─────────────────────────────────────────────────────────────
@@ -174,10 +245,13 @@ export function priceFor(tier: Tier): number {
  */
 export async function createPaymentIntent(
   redis: Redis,
-  params: { installId: string; tier: Tier; recipient: string },
+  params: { installId: string; tier: Tier; token: PayToken; recipient: string },
 ): Promise<PaymentIntent> {
   const reference = generateReferenceKey();
-  const amount = priceFor(params.tier);
+  const { amount, amountUsd, splTokenMint } = await resolveAmount(
+    params.tier,
+    params.token,
+  );
   const now = Date.now();
   const expiresAt = now + INTENT_TTL_SECONDS * 1000;
 
@@ -185,13 +259,15 @@ export async function createPaymentIntent(
     reference,
     installId: params.installId,
     tier: params.tier,
+    token: params.token,
     recipient: params.recipient,
     amount,
-    splTokenMint: USDC_MINT,
+    amountUsd,
+    splTokenMint,
     payUrl: buildPayUrl({
       recipient: params.recipient,
       amount,
-      splTokenMint: USDC_MINT,
+      splTokenMint,
       reference,
       label: "Antares",
       message:
@@ -309,9 +385,18 @@ async function getSignaturesForReference(
   return json.result ?? [];
 }
 
+interface ParsedAccountKey {
+  pubkey?: string;
+  signer?: boolean;
+  writable?: boolean;
+}
+
 interface ParsedTransaction {
   meta?: {
     err?: unknown;
+    /** Native SOL balances (lamports) per account in tx, indexed by accountKeys order. */
+    preBalances?: number[];
+    postBalances?: number[];
     preTokenBalances?: Array<{
       mint?: string;
       owner?: string;
@@ -323,8 +408,15 @@ interface ParsedTransaction {
       uiTokenAmount?: { uiAmount?: number | null; amount?: string };
     }>;
   };
-  transaction?: unknown;
+  transaction?: {
+    message?: {
+      accountKeys?: Array<string | ParsedAccountKey>;
+    };
+  };
 }
+
+/** Solana lamport-to-SOL constant. 1 SOL = 1_000_000_000 lamports. */
+const LAMPORTS_PER_SOL = 1_000_000_000;
 
 async function getTransactionDetails(
   signature: string,
@@ -383,10 +475,41 @@ export function verifyTokenTransfer(
 }
 
 /**
+ * Verify on-chain that a native SOL transfer to the merchant wallet
+ * satisfies the intent's amount. Reads pre/post lamport balances on the
+ * recipient's account index in the tx — no SPL token machinery needed.
+ *
+ * Same 1% tolerance as the SPL verifier so a wallet sub-cent rounding
+ * difference doesn't reject an otherwise-valid payment.
+ */
+export function verifySolTransfer(
+  tx: ParsedTransaction,
+  expected: { recipient: string; minAmount: number },
+): boolean {
+  if (!tx.meta || tx.meta.err) return false;
+  const accountKeys = tx.transaction?.message?.accountKeys ?? [];
+  const recipientIndex = accountKeys.findIndex((k) =>
+    typeof k === "string" ? k === expected.recipient : k?.pubkey === expected.recipient,
+  );
+  if (recipientIndex < 0) return false;
+
+  const preBalances = tx.meta.preBalances ?? [];
+  const postBalances = tx.meta.postBalances ?? [];
+  const preLamports = preBalances[recipientIndex];
+  const postLamports = postBalances[recipientIndex];
+  if (typeof preLamports !== "number" || typeof postLamports !== "number") return false;
+
+  const deltaSol = (postLamports - preLamports) / LAMPORTS_PER_SOL;
+  return deltaSol >= expected.minAmount * 0.99;
+}
+
+/**
  * Check on-chain whether a payment intent has been settled. Returns the
  * confirming tx signature when found, otherwise null.
  *
- * Used by the cron to flip pending intents to confirmed.
+ * Dispatches on `splTokenMint`: when present we look for an SPL transfer,
+ * otherwise we look for a native SOL transfer. Same on-chain query path
+ * for both — only the verification step differs.
  */
 export async function checkIntentOnChain(
   intent: PaymentIntent,
@@ -397,11 +520,16 @@ export async function checkIntentOnChain(
     if (sigInfo.err) continue;
     const tx = await getTransactionDetails(sigInfo.signature, heliusApiKey);
     if (!tx) continue;
-    const ok = verifyTokenTransfer(tx, {
-      recipient: intent.recipient,
-      mint: intent.splTokenMint,
-      minAmount: intent.amount,
-    });
+    const ok = intent.splTokenMint
+      ? verifyTokenTransfer(tx, {
+          recipient: intent.recipient,
+          mint: intent.splTokenMint,
+          minAmount: intent.amount,
+        })
+      : verifySolTransfer(tx, {
+          recipient: intent.recipient,
+          minAmount: intent.amount,
+        });
     if (ok) return { confirmed: true, txSignature: sigInfo.signature };
   }
   return { confirmed: false };

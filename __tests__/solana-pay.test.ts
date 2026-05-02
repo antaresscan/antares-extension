@@ -1,11 +1,14 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   base58encode,
   buildPayUrl,
   generateReferenceKey,
   isValidSolanaAddress,
   priceFor,
+  priceUsd,
+  resolveAmount,
   verifyTokenTransfer,
+  verifySolTransfer,
   USDC_MINT,
 } from "../api/_lib/solana-pay";
 
@@ -303,5 +306,154 @@ describe("verifyTokenTransfer", () => {
         minAmount: 14.99,
       }),
     ).toBe(false);
+  });
+});
+
+// ─── verifySolTransfer ────────────────────────────────────────────────────────
+
+describe("verifySolTransfer", () => {
+  function solTx(
+    accountKeys: string[],
+    pre: number[],
+    post: number[],
+    err: unknown = null,
+  ) {
+    return {
+      meta: { err, preBalances: pre, postBalances: post },
+      transaction: { message: { accountKeys } },
+    };
+  }
+
+  const SENDER = "11111111111111111111111111111112";
+  const LAMPORTS_PER_SOL = 1_000_000_000;
+
+  it("returns true when recipient's SOL balance increased by the expected amount", () => {
+    const accountKeys = [SENDER, VALID_RECIPIENT];
+    const tx = solTx(
+      accountKeys,
+      [10 * LAMPORTS_PER_SOL, 5 * LAMPORTS_PER_SOL],
+      [10 * LAMPORTS_PER_SOL - 0.2 * LAMPORTS_PER_SOL, 5 * LAMPORTS_PER_SOL + 0.2 * LAMPORTS_PER_SOL],
+    );
+    expect(
+      verifySolTransfer(tx, { recipient: VALID_RECIPIENT, minAmount: 0.2 }),
+    ).toBe(true);
+  });
+
+  it("returns false when the recipient is not in the account keys", () => {
+    const accountKeys = [SENDER, "OtherWallet1234567890123456789012345678901"];
+    const tx = solTx(accountKeys, [0, 0], [0, 0.2 * LAMPORTS_PER_SOL]);
+    expect(
+      verifySolTransfer(tx, { recipient: VALID_RECIPIENT, minAmount: 0.2 }),
+    ).toBe(false);
+  });
+
+  it("returns false when the SOL delta is below target", () => {
+    const accountKeys = [SENDER, VALID_RECIPIENT];
+    const tx = solTx(accountKeys, [0, 0], [0, 0.05 * LAMPORTS_PER_SOL]);
+    expect(
+      verifySolTransfer(tx, { recipient: VALID_RECIPIENT, minAmount: 0.2 }),
+    ).toBe(false);
+  });
+
+  it("returns false when transaction failed", () => {
+    const accountKeys = [SENDER, VALID_RECIPIENT];
+    const tx = solTx(
+      accountKeys,
+      [0, 0],
+      [0, 0.2 * LAMPORTS_PER_SOL],
+      { InstructionError: [0, "Custom"] },
+    );
+    expect(
+      verifySolTransfer(tx, { recipient: VALID_RECIPIENT, minAmount: 0.2 }),
+    ).toBe(false);
+  });
+
+  it("accepts a payment 1% under target (rounding tolerance)", () => {
+    const accountKeys = [SENDER, VALID_RECIPIENT];
+    const tx = solTx(
+      accountKeys,
+      [0, 0],
+      [0, 0.198 * LAMPORTS_PER_SOL], // 0.198 ≥ 0.2 * 0.99 = 0.198
+    );
+    expect(
+      verifySolTransfer(tx, { recipient: VALID_RECIPIENT, minAmount: 0.2 }),
+    ).toBe(true);
+  });
+
+  it("supports parsed-account-key shape ({ pubkey, signer, writable })", () => {
+    const accountKeys = [
+      { pubkey: SENDER, signer: true, writable: true },
+      { pubkey: VALID_RECIPIENT, signer: false, writable: true },
+    ];
+    const tx = solTx(
+      accountKeys as unknown as string[], // helper signature uses string[]
+      [0, 0],
+      [0, 0.5 * LAMPORTS_PER_SOL],
+    );
+    expect(
+      verifySolTransfer(tx, { recipient: VALID_RECIPIENT, minAmount: 0.5 }),
+    ).toBe(true);
+  });
+});
+
+// ─── resolveAmount (token-aware pricing) ──────────────────────────────────────
+
+describe("resolveAmount", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    delete process.env.SOLANA_PRICE_PRO_USDC;
+    delete process.env.SOLANA_PRICE_LIFETIME_USDC;
+  });
+
+  it("returns the USD price as USDC amount with USDC mint", async () => {
+    const result = await resolveAmount("monthly", "usdc");
+    expect(result.amount).toBe(24.99);
+    expect(result.amountUsd).toBe(24.99);
+    expect(result.splTokenMint).toBe(USDC_MINT);
+  });
+
+  it("converts USD to SOL using the live Jupiter rate, returns null mint", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => ({ data: { SOL: { price: 100 } } }),
+      })),
+    );
+    const result = await resolveAmount("monthly", "sol");
+    // 24.99 / 100 = 0.2499, rounded UP to 4 decimals = 0.2499
+    expect(result.amount).toBe(0.2499);
+    expect(result.amountUsd).toBe(24.99);
+    expect(result.splTokenMint).toBeNull();
+  });
+
+  it("rounds UP to 4 decimals so the user never under-pays from rounding", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => ({ data: { SOL: { price: 142.857142 } } }),
+      })),
+    );
+    const result = await resolveAmount("lifetime", "sol");
+    // 149.99 / 142.857142 = 1.04993... → ceil to 4 decimals = 1.0500
+    expect(result.amount).toBeGreaterThanOrEqual(149.99 / 142.857142);
+    expect(result.amount).toBeLessThan(149.99 / 142.857142 + 0.001);
+  });
+
+  it("throws when the SOL price fetch fails", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: false,
+        json: async () => ({}),
+      })),
+    );
+    await expect(resolveAmount("monthly", "sol")).rejects.toThrow(/SOL\/USD/i);
+  });
+
+  it("priceUsd matches priceFor (back-compat alias)", () => {
+    expect(priceUsd("monthly")).toBe(priceFor("monthly"));
+    expect(priceUsd("lifetime")).toBe(priceFor("lifetime"));
   });
 });
