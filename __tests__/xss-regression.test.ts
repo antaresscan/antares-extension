@@ -88,6 +88,90 @@ describe("buildResult — XSS regression", () => {
   })
 })
 
+describe("buildResult — Free-tier gating", () => {
+  // The Pro v1 monetisation lever: AI Summary, Critical Flags, and Full
+  // Analysis are paid features. Free users see the verdict + score + .ss
+  // stats grid (the core rug-detection signal — free forever) but the
+  // deep-dive panels live behind /pricing.
+
+  it("Free users see the upgrade CTA, not the 3 deep-dive buttons", () => {
+    const data = makeScanData({
+      _quota: { tier: "free", used: 3, limit: 25, remaining: 22, resetAt: 0 },
+    })
+    const html = buildResult(data, "So11111111111111111111111111111111111111112")
+
+    expect(html).toContain('class="fo-upgrade"')
+    expect(html).toContain("Unlock Pro features")
+    expect(html).not.toContain('id="ant-critical-flags-btn"')
+    expect(html).not.toContain('id="ant-full-analysis"')
+    expect(html).not.toContain('id="ant-ai-summary-btn"')
+  })
+
+  it("Free users get no cf-panel / ai-panel containers", () => {
+    // Empty containers without their toggle buttons would just be dead
+    // DOM. Skip them so the overlay shadow tree stays minimal for free
+    // users.
+    const data = makeScanData({
+      _quota: { tier: "free", used: 0, limit: 25, remaining: 25, resetAt: 0 },
+    })
+    const html = buildResult(data, "So11111111111111111111111111111111111111112")
+
+    expect(html).not.toContain('id="ant-critical-flags"')
+    expect(html).not.toContain('id="ant-ai-summary"')
+  })
+
+  it("Free upgrade CTA points at the pricing page", () => {
+    const data = makeScanData({
+      _quota: { tier: "free", used: 25, limit: 25, remaining: 0, resetAt: 0 },
+    })
+    const html = buildResult(data, "So11111111111111111111111111111111111111112")
+
+    // Static href is the pricing URL so the link works without JS
+    // (right-click "Open in new tab", crawlers, etc.). Click handler
+    // augments with install_id at runtime, but the base contract is
+    // a working link.
+    expect(html).toContain("antares-website.vercel.app/pricing")
+  })
+
+  it("Pro users keep the 3-button footer", () => {
+    const data = makeScanData({
+      _quota: { tier: "pro", used: 100, limit: -1, remaining: -1, resetAt: 0 },
+    })
+    const html = buildResult(data, "So11111111111111111111111111111111111111112")
+
+    expect(html).toContain('id="ant-critical-flags-btn"')
+    expect(html).toContain('id="ant-full-analysis"')
+    expect(html).toContain('id="ant-ai-summary-btn"')
+    expect(html).not.toContain('class="fo-upgrade"')
+  })
+
+  it("Lifetime users keep the 3-button footer", () => {
+    const data = makeScanData({
+      _quota: { tier: "lifetime", used: 9999, limit: -1, remaining: -1, resetAt: 0 },
+    })
+    const html = buildResult(data, "So11111111111111111111111111111111111111112")
+
+    expect(html).toContain('id="ant-critical-flags-btn"')
+    expect(html).toContain('id="ant-full-analysis"')
+    expect(html).toContain('id="ant-ai-summary-btn"')
+    expect(html).not.toContain('class="fo-upgrade"')
+  })
+
+  it("Missing _quota (pre-quota cached responses) defaults to unlocked", () => {
+    // Old localStorage-cached responses from before the quota feature
+    // shipped don't carry _quota. Treating them as free would punish
+    // existing Pro users whose response just happens to be missing the
+    // headers (anonymous traffic, upstream CORS quirks, etc.).
+    const data = makeScanData() // no _quota
+    const html = buildResult(data, "So11111111111111111111111111111111111111112")
+
+    expect(html).toContain('id="ant-critical-flags-btn"')
+    expect(html).toContain('id="ant-full-analysis"')
+    expect(html).toContain('id="ant-ai-summary-btn"')
+    expect(html).not.toContain('class="fo-upgrade"')
+  })
+})
+
 describe("toggleAiSummary — DOM-API rewrite", () => {
   beforeEach(() => {
     document.body.innerHTML = ""

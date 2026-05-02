@@ -515,24 +515,55 @@ export function buildResultNode(data: ScanResponseData, ca: string): HTMLElement
   // DexScreener from here, but they always wanted to see *why* a token
   // was flagged without losing their place. The panel mirrors AI Summary
   // \u2014 toggled inline via toggleCriticalFlags, never opens a new tab.
+  //
+  // Free-tier gating: Critical Flags, Full Analysis, and AI Summary are
+  // Pro/Lifetime features. Free users see the verdict + score + the .ss
+  // stats grid (the core rug-detection value, free forever) but the
+  // deep-dive layers are paid. The footer flips to a single upgrade CTA
+  // that opens /pricing with install_id baked in. We gate by `_quota.tier`
+  // === "free" specifically: pre-quota cached responses without a _quota
+  // field default to the unlocked footer so we don't downgrade users who
+  // were paying yesterday but whose response just happens to be missing
+  // the headers (cached, anonymous, or upstream CORS quirks).
+  const isFree = data._quota?.tier === "free"
   const foNode = el("div", { class: "fo" })
-  foNode.appendChild(el("button", {
-    class: "cf-btn",
-    id: "ant-critical-flags-btn",
-  }, "\u26a0 Critical Flags"))
-  // Always neutral gray \u2014 verdict color is communicated by the verdict
-  // headline and the Critical Flags panel; tinting the deep-dive button
-  // red on RUG was confusing (read as "dangerous to click" instead of
-  // "the token is dangerous").
-  foNode.appendChild(el("a", {
-    href: "#",
-    id: "ant-full-analysis",
-    "data-ca": encodeURIComponent(mint),
-  }, "Full Analysis \u2192"))
-  foNode.appendChild(el("button", {
-    class: "ai-btn ai-btn--active",
-    id: "ant-ai-summary-btn",
-  }, "\u2b21 AI Summary"))
+  if (isFree) {
+    const upgradeLink = el("a", {
+      class: "fo-upgrade",
+      href: PRICING_URL,
+      target: "_blank",
+      rel: "noopener noreferrer",
+      title: "Unlock AI Summary, Critical Flags, and Full Analysis with Pro",
+    }, "\u26a1 Unlock Pro features")
+    upgradeLink.addEventListener("click", (e) => {
+      e.preventDefault()
+      void getInstallId().then((installId) => {
+        const url = installId
+          ? `${PRICING_URL}?install=${encodeURIComponent(installId)}`
+          : PRICING_URL
+        window.open(url, "_blank", "noopener noreferrer")
+      })
+    })
+    foNode.appendChild(upgradeLink)
+  } else {
+    foNode.appendChild(el("button", {
+      class: "cf-btn",
+      id: "ant-critical-flags-btn",
+    }, "\u26a0 Critical Flags"))
+    // Always neutral gray \u2014 verdict color is communicated by the verdict
+    // headline and the Critical Flags panel; tinting the deep-dive button
+    // red on RUG was confusing (read as "dangerous to click" instead of
+    // "the token is dangerous").
+    foNode.appendChild(el("a", {
+      href: "#",
+      id: "ant-full-analysis",
+      "data-ca": encodeURIComponent(mint),
+    }, "Full Analysis \u2192"))
+    foNode.appendChild(el("button", {
+      class: "ai-btn ai-btn--active",
+      id: "ant-ai-summary-btn",
+    }, "\u2b21 AI Summary"))
+  }
 
   const tkNode = tokenSymbol
     ? el("div", { class: "tk" },
@@ -561,8 +592,11 @@ export function buildResultNode(data: ScanResponseData, ca: string): HTMLElement
     el("div", { class: "sum" }, summary),
     el("div", { class: "sep" }),
     ssNode,
-    el("div", { class: "cf-panel", id: "ant-critical-flags" }),
-    el("div", { class: "ai-panel", id: "ant-ai-summary" }),
+    // Panels only render when the user has access — there's no toggle
+    // button for Free users so the empty containers would just be dead
+    // DOM. The el() helper drops null children automatically.
+    isFree ? null : el("div", { class: "cf-panel", id: "ant-critical-flags" }),
+    isFree ? null : el("div", { class: "ai-panel", id: "ant-ai-summary" }),
     foNode,
     buildAffiliateRow(mint, data.risk, data._quota),
   )

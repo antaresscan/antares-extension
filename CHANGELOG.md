@@ -6,6 +6,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed — Pro v1 monetisation: AI Summary, Critical Flags, Full Analysis gated to paid tiers
+- **The 3-button overlay footer (Critical Flags / Full Analysis / AI Summary)
+  is now Pro/Lifetime only.** Free users see a single brand-green
+  `⚡ Unlock Pro features` CTA in the same slot, which deep-links to
+  `/pricing?install=<id>` so the upgrade flow keeps the user's identity.
+  The verdict + score + the 5 stat checks (Sell / Mint / Freeze / LP / Liq)
+  remain visible to Free — those are the core rug-detection signal and
+  stay free forever. The deep-dive layers (the "why" behind the verdict,
+  the AI explanation, the full token analysis page) move to paid.
+- Gating in `components.ts` keys on `data._quota.tier === "free"`
+  specifically. Pre-quota cached responses or anonymous requests where
+  `_quota` is absent default to the unlocked footer — we don't downgrade
+  paying users whose response just happens to be missing the headers.
+- The empty `cf-panel` / `ai-panel` containers no longer render for Free
+  users either (no toggle button → no point keeping dead DOM).
+- 6 new tests in `xss-regression.test.ts` covering Free / Pro / Lifetime /
+  missing-quota footers + the upgrade CTA target. 779/779 passing.
+
 ### Changed — Free tier quota tightened (50 → 25 scans/day)
 - **`FREE_TIER_DAILY_LIMIT` lowered from 50 to 25.** 50 was generous to the
   point of removing any pull toward upgrade — most active users were finishing
