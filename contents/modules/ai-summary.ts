@@ -28,9 +28,12 @@ export function toggleAiSummary(aiSummary: string | null | undefined): void {
     return
   }
 
-  // Mutex: close the sibling panel before opening this one.
-  const siblingPanel = state.shadow?.querySelector("#ant-critical-flags") as HTMLElement | null
-  siblingPanel?.classList.remove("open")
+  // Mutex: close the sibling panels before opening this one. AI Summary,
+  // Critical Flags, and Watchlist share the same vertical real estate
+  // inside the overlay; with multiple open the box overflows off-screen
+  // on shorter viewports.
+  state.shadow?.querySelector("#ant-critical-flags")?.classList.remove("open")
+  state.shadow?.querySelector("#ant-watchlist")?.classList.remove("open")
 
   // Inject content only once
   if (!panel.dataset.loaded) {
