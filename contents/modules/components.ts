@@ -1,11 +1,13 @@
-import type { ScanResponseFlag, ScanResponseData } from "../../shared/types"
-import { RISK_CLASS, LABELS, ANALYSIS_PAGE, SVG_MOVE, SVG_CLOSE, VERDICT_COLORS } from "./constants"
+import type { ScanResponseFlag, ScanResponseData, QuotaStatus } from "../../shared/types"
+import { RISK_CLASS, LABELS, ANALYSIS_PAGE, SVG_MOVE, SVG_CLOSE, VERDICT_COLORS, PHOTON_REF, buildPhotonUrl, PRICING_URL, WATCHLIST_API } from "./constants"
 import { state, scanCache } from "./state"
 import { SHADOW_CSS, injectFonts } from "./styles"
 import { initDrag } from "./drag"
 import { encodeHashPayload } from "../../shared/hash-payload"
 import { toggleAiSummary } from "./ai-summary"
 import { toggleCriticalFlags } from "./critical-flags"
+import { getInstallId } from "../../shared/install-id"
+import { logger } from "../../shared/logger"
 
 // DOM-API element builder. Used by buildResult instead of string template
 // literals so every text interpolation goes through textContent (which the
@@ -155,6 +157,114 @@ export function attachClose(
  * Delegates tab creation to the background service worker via chrome.runtime.sendMessage
  * because chrome.tabs.create is NOT available in content scripts (MV3).
  */
+// Wires up the "+ Watch" footer button to POST to /api/watchlist. Designed as
+// a one-shot action — once the user adds a token, the button disables and
+// shows "✓ Watching" until the overlay closes. v2 will add a panel for full
+// list management; v1 just lets users build their watchlist while scanning.
+//
+// Failure modes (all visible to the user, no silent drops):
+//   - 401 / no install_id     → "✗ Anonymous"  (transient, button resets)
+//   - 402 limit_reached (Free) → "Limit → PRO"  (becomes link to /pricing)
+//   - already_present          → "✓ Already watched"  (sticky, not an error)
+//   - network / 500            → "✗ Failed"     (transient, button resets)
+export function attachWatchBtn(ca: string) {
+  const btn = state.shadow?.querySelector<HTMLButtonElement>("#ant-watch")
+  if (!btn) return
+
+  // Clone-and-replace to drop any prior listeners — same pattern as the
+  // other attach* helpers, prevents listener accumulation on rescans.
+  const fresh = btn.cloneNode(true) as HTMLButtonElement
+  btn.parentNode?.replaceChild(fresh, btn)
+
+  const ORIGINAL = "+ Watch"
+
+  fresh.addEventListener("click", async (e) => {
+    e.preventDefault()
+    if (fresh.disabled) return
+
+    fresh.disabled = true
+    fresh.textContent = "..."
+
+    try {
+      const installId = await getInstallId()
+      if (!installId) {
+        fresh.textContent = "✗ Anon"
+        setTimeout(() => {
+          fresh.textContent = ORIGINAL
+          fresh.disabled = false
+        }, 2000)
+        return
+      }
+
+      const res = await fetch(WATCHLIST_API, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Antares-Install": installId,
+        },
+        body: JSON.stringify({ address: ca }),
+      })
+
+      if (res.status === 200) {
+        const raw: unknown = await res.json().catch(() => ({}))
+        const body =
+          raw && typeof raw === "object"
+            ? (raw as { added?: boolean; reason?: string })
+            : {}
+        if (body.added === true) {
+          fresh.textContent = "✓ Watching"
+          fresh.classList.add("watching")
+          // Stay disabled — token is added, no further action needed
+          return
+        }
+        if (body.reason === "already_present") {
+          fresh.textContent = "✓ Watched"
+          fresh.classList.add("watching")
+          return
+        }
+        // Unexpected 200 shape — fall through to error state
+        fresh.textContent = "✗ Unknown"
+        setTimeout(() => {
+          fresh.textContent = ORIGINAL
+          fresh.disabled = false
+        }, 2000)
+        return
+      }
+
+      if (res.status === 402) {
+        // Free tier limit reached — convert button to upgrade link
+        fresh.textContent = "Limit → PRO"
+        fresh.classList.add("limit")
+        fresh.disabled = false
+        // Replace listeners again so the next click goes to pricing instead of POSTing
+        fresh.addEventListener(
+          "click",
+          (ev) => {
+            ev.preventDefault()
+            window.open(PRICING_URL, "_blank", "noopener noreferrer")
+          },
+          { once: true },
+        )
+        return
+      }
+
+      // 401 / 5xx / etc — transient failure
+      fresh.textContent = "✗ Failed"
+      setTimeout(() => {
+        fresh.textContent = ORIGINAL
+        fresh.disabled = false
+      }, 2000)
+    } catch (err) {
+      logger.warn("watch", "watchlist POST failed", err)
+      fresh.textContent = "✗ Net"
+      setTimeout(() => {
+        fresh.textContent = ORIGINAL
+        fresh.disabled = false
+      }, 2000)
+    }
+  })
+}
+
 export function attachAnalysisBtn(mint: string) {
   const btn = state.shadow?.querySelector("#ant-full-analysis")
   if (!btn) return
@@ -255,13 +365,129 @@ export function formatTimeAgo(ts: number): string {
   return `${Math.floor(hrs / 24)}d ago`
 }
 
-function buildHeaderNode(): HTMLElement {
+// Renders a quota status badge for the overlay header.
+//
+//   Free, plenty left  → dim "47/50"   (no border highlight)
+//   Free, ≤ 5 left     → yellow "3/50" (warning state)
+//   Free, at 0         → red link "0/50 → PRO" (clickable to /pricing)
+//   Pro / Lifetime     → green "PRO"  / "LIFE" badge
+//
+// Returns null when quota is undefined so the header can omit the badge
+// entirely (cached results pre-quota launch, anonymous traffic without
+// identity headers, or API responses where CORS didn't expose the headers).
+const QUOTA_WARN_THRESHOLD = 5
+
+function buildQuotaBadge(quota?: QuotaStatus): HTMLElement | null {
+  if (!quota) return null
+
+  if (quota.tier === "pro" || quota.tier === "lifetime") {
+    const label = quota.tier === "lifetime" ? "LIFE" : "PRO"
+    return el(
+      "span",
+      {
+        class: "quota-badge pro",
+        title: `${quota.tier === "lifetime" ? "Lifetime" : "Pro"} · Unlimited scans`,
+      },
+      label,
+    )
+  }
+
+  // Free tier — show "used/limit" and tier-up the urgency.
+  const text = `${quota.used}/${quota.limit}`
+  const remaining = quota.remaining
+
+  if (remaining === 0) {
+    // Limit reached — surface as a clickable link to the pricing page.
+    // The base href is kept so the link works without JS (right-click "open
+    // in new tab", crawlers, etc.); a click handler resolves the install_id
+    // asynchronously and rewrites the URL to bake it into the checkout flow,
+    // so when the user lands on /pricing the "Upgrade" button already has
+    // the right identity to pass through to Lemonsqueezy.
+    const link = el(
+      "a",
+      {
+        class: "quota-badge danger",
+        href: PRICING_URL,
+        target: "_blank",
+        rel: "noopener noreferrer",
+        title: "Daily limit reached — upgrade to Pro for unlimited scans",
+      },
+      `${text} → PRO`,
+    )
+    link.addEventListener("click", (e) => {
+      e.preventDefault()
+      void getInstallId().then((installId) => {
+        const url = installId
+          ? `${PRICING_URL}?install=${encodeURIComponent(installId)}`
+          : PRICING_URL
+        window.open(url, "_blank", "noopener noreferrer")
+      })
+    })
+    return link
+  }
+
+  const className =
+    remaining <= QUOTA_WARN_THRESHOLD ? "quota-badge warn" : "quota-badge"
+  return el(
+    "span",
+    {
+      class: className,
+      title: `${remaining} scan${remaining === 1 ? "" : "s"} remaining today`,
+    },
+    text,
+  )
+}
+
+// Optional affiliate row — only rendered when:
+//   1. PHOTON_REF is non-empty (we actually have a referral relationship)
+//   2. The user is on the Free tier (Pro/Lifetime get a clean UI as part
+//      of what they pay for)
+//   3. The verdict is SAFE (don't promote trading on flagged tokens —
+//      that would destroy the brand)
+//
+// Returns null in all other cases so callers can splat it into el() and
+// the helper drops nulls automatically.
+function buildAffiliateRow(
+  ca: string,
+  risk: string,
+  quota?: QuotaStatus,
+): HTMLElement | null {
+  if (!PHOTON_REF) return null
+  if (quota && (quota.tier === "pro" || quota.tier === "lifetime")) return null
+  if (risk !== "SAFE") return null
+  const url = buildPhotonUrl(ca)
+  if (!url) return null
+
+  return el("div", { class: "aff-row" },
+    el(
+      "a",
+      {
+        class: "aff-link",
+        href: url,
+        target: "_blank",
+        rel: "noopener sponsored noreferrer",
+        title: "Open on Photon — affiliate link, we earn a small fee on trades",
+      },
+      "Trade safely on Photon →",
+    ),
+    el(
+      "span",
+      { class: "aff-disclosure", title: "We earn a referral fee. Antares stays free for everyone." },
+      "ad",
+    ),
+  )
+}
+
+function buildHeaderNode(quota?: QuotaStatus): HTMLElement {
   const dragIcon = el("span", { class: "drag-icon" })
   setStaticSvg(dragIcon, SVG_MOVE)
   const closeBtn = el("button", { class: "x", id: "ant-close" })
   setStaticSvg(closeBtn, SVG_CLOSE)
+  // The el() helper filters out null children, so we can pass the badge
+  // unconditionally — it just won't render when quota is undefined.
   return el("div", { class: "hd" },
     el("span", { class: "brand" }, "ANTARES"),
+    buildQuotaBadge(quota),
     el("div", { class: "hd-right" }, dragIcon, closeBtn),
   )
 }
@@ -416,6 +642,15 @@ export function buildResultNode(data: ScanResponseData, ca: string): HTMLElement
     class: "ai-btn ai-btn--active",
     id: "ant-ai-summary-btn",
   }, "\u2b21 AI Summary"))
+  // Watchlist button \u2014 wired up by attachWatchBtn after render. Renders for
+  // every scan; the click handler resolves install_id and fails gracefully
+  // with a visible "Anon" state if absent (rare in practice \u2014 the extension
+  // installs an ID on first run).
+  foNode.appendChild(el("button", {
+    class: "watch-btn",
+    id: "ant-watch",
+    type: "button",
+  }, "+ Watch"))
 
   const tkNode = tokenSymbol
     ? el("div", { class: "tk" },
@@ -426,7 +661,7 @@ export function buildResultNode(data: ScanResponseData, ca: string): HTMLElement
 
   const root = el("div", undefined,
     el("div", { class: "topbar" }),
-    buildHeaderNode(),
+    buildHeaderNode(data._quota),
     tkNode,
     el("div", { class: "vb" },
       el("h1", undefined, label),
@@ -447,6 +682,7 @@ export function buildResultNode(data: ScanResponseData, ca: string): HTMLElement
     el("div", { class: "cf-panel", id: "ant-critical-flags" }),
     el("div", { class: "ai-panel", id: "ant-ai-summary" }),
     foNode,
+    buildAffiliateRow(mint, data.risk, data._quota),
   )
 
   return root

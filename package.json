@@ -1,7 +1,7 @@
 {
   "name": "antares-extension",
   "displayName": "Antares — Anti-Scam Scanner for Solana",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "description": "Antares scans Solana tokens in real time and detects rug pulls, honeypots, bundlers and chart manipulation — directly in your browser.",
   "author": "COMEALAMAISONGROUPE",
   "scripts": {
@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "preview": "tsx scripts/generate-overlay-preview.ts",
     "corpus:capture": "tsx scripts/corpus-capture.ts",
     "corpus:refresh": "tsx scripts/corpus-capture.ts --refresh",
     "corpus:discover": "tsx scripts/corpus-discover.ts",

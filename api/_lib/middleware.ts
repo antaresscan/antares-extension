@@ -45,6 +45,21 @@ export function initRateLimiters(redis: Redis): void {
   });
 }
 
+// Headers that client JS needs to read (rate limit + quota status). Without
+// being listed here the browser blocks fetch().headers.get() from returning
+// them on cross-origin responses.
+const EXPOSED_RESPONSE_HEADERS = [
+  "X-Request-Id",
+  "X-RateLimit-Limit",
+  "X-RateLimit-Remaining",
+  "X-Antares-Quota-Tier",
+  "X-Antares-Quota-Limit",
+  "X-Antares-Quota-Used",
+  "X-Antares-Quota-Remaining",
+  "X-Antares-Quota-Reset",
+  "Retry-After",
+].join(", ");
+
 export function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean {
   const origin = (req.headers.origin as string) || "";
 
@@ -53,6 +68,7 @@ export function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Antares-Token, X-Antares-Install");
+    res.setHeader("Access-Control-Expose-Headers", EXPOSED_RESPONSE_HEADERS);
     res.setHeader("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
     return true;
   }
@@ -72,6 +88,7 @@ export function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean
   if (corsOk) res.setHeader("Access-Control-Allow-Origin", origin);
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Antares-Key, X-Antares-Token, X-Antares-Install, Authorization");
+  res.setHeader("Access-Control-Expose-Headers", EXPOSED_RESPONSE_HEADERS);
   res.setHeader("Access-Control-Max-Age", "86400");
   res.setHeader("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
   return corsOk;

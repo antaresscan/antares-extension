@@ -182,6 +182,126 @@ export const SHADOW_CSS = `
   flex-shrink: 0;
 }
 .x:hover { color: #777; }
+.quota-badge {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 7px;
+  letter-spacing: 0.18em;
+  font-weight: 600;
+  color: #555;
+  padding: 3px 7px;
+  border: 1px solid #1a1a1e;
+  border-radius: 2px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-decoration: none;
+  flex-shrink: 0;
+  margin: 0 8px;
+  transition: color .2s, border-color .2s, background .2s;
+}
+.quota-badge.warn {
+  color: #f5d000;
+  border-color: rgba(245, 208, 0, 0.3);
+  background: rgba(245, 208, 0, 0.04);
+}
+.quota-badge.danger {
+  color: #ff5f5f;
+  border-color: rgba(255, 95, 95, 0.4);
+  background: rgba(255, 95, 95, 0.06);
+  cursor: pointer;
+  letter-spacing: 0.16em;
+}
+.quota-badge.danger:hover {
+  background: rgba(255, 95, 95, 0.12);
+  border-color: rgba(255, 95, 95, 0.6);
+  color: #ff7777;
+}
+.quota-badge.pro {
+  color: #00e5b0;
+  border-color: rgba(0, 229, 176, 0.3);
+  background: rgba(0, 229, 176, 0.05);
+  letter-spacing: 0.22em;
+}
+.aff-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 14px 12px;
+  border-top: 1px solid #0e0e10;
+  margin-top: 4px;
+}
+.aff-link {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: #777;
+  text-decoration: none;
+  text-transform: uppercase;
+  flex: 1;
+  text-align: center;
+  padding: 6px 8px;
+  border: 1px solid #1a1a1e;
+  border-radius: 2px;
+  transition: color .2s, border-color .2s, background .2s;
+}
+.aff-link:hover {
+  color: #00e5b0;
+  border-color: rgba(0, 229, 176, 0.3);
+  background: rgba(0, 229, 176, 0.04);
+}
+.aff-disclosure {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 7px;
+  color: #2a2a2f;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 2px 5px;
+  border: 1px solid #16161a;
+  border-radius: 2px;
+  cursor: help;
+  flex-shrink: 0;
+}
+/* Watchlist button — same flex-1 sizing as the other footer entries. */
+.watch-btn {
+  flex: 1;
+  display: block;
+  padding: 8px;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: center;
+  border-radius: 2px;
+  font-family: 'IBM Plex Mono', monospace;
+  background: none;
+  cursor: pointer;
+  color: #888;
+  border: 1px solid #252528;
+  transition: color .2s, border-color .2s, background .2s;
+}
+.watch-btn:hover {
+  color: #ccc;
+  border-color: #444;
+  background: rgba(255, 255, 255, 0.02);
+}
+.watch-btn:disabled {
+  cursor: default;
+}
+.watch-btn.watching {
+  color: #00e5b0;
+  border-color: rgba(0, 229, 176, 0.3);
+  background: rgba(0, 229, 176, 0.05);
+}
+.watch-btn.limit {
+  color: #ff7777;
+  border-color: rgba(255, 95, 95, 0.4);
+  background: rgba(255, 95, 95, 0.06);
+  cursor: pointer;
+}
+.watch-btn.limit:hover {
+  color: #ff9999;
+  border-color: rgba(255, 95, 95, 0.6);
+  background: rgba(255, 95, 95, 0.12);
+}
 
 .tk {
   padding: 0 14px;

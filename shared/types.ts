@@ -4,6 +4,21 @@ export interface ScanResponseFlag {
   impact: number;
 }
 
+// Daily quota state surfaced via X-Antares-Quota-* response headers.
+// Attached client-side to ScanResponseData so the overlay can render
+// "47/50 today" without a second round-trip.
+export interface QuotaStatus {
+  tier: "free" | "pro" | "lifetime";
+  /** Scans consumed today (UTC). */
+  used: number;
+  /** Daily ceiling. -1 for unlimited (Pro/Lifetime). */
+  limit: number;
+  /** Scans still available. -1 for unlimited. */
+  remaining: number;
+  /** Epoch-ms of next 00:00 UTC. 0 for unlimited tiers. */
+  resetAt: number;
+}
+
 
 export interface Transfer {
   from_address?: string;
@@ -60,6 +75,13 @@ export interface ScanResponseData {
     aiSummary?: string | null;
     topHolderPct?: number | null;
     top10HolderPct?: number | null;
+    /**
+     * Client-side metadata: extracted from X-Antares-Quota-* response
+     * headers in scanner.ts. Optional — older API responses without
+     * quota headers and locally-cached results pre-quota launch will
+     * be undefined, in which case the overlay simply hides the badge.
+     */
+    _quota?: QuotaStatus;
   }
 
 export interface HistoryEntry {
