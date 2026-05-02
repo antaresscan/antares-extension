@@ -6,6 +6,69 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed — payments switched to Solana Pay direct on-chain
+- **Removed Lemonsqueezy.** The previous skeleton was never wired in
+  production (no env vars set, no charges) — replacing it with a direct
+  on-chain flow that has zero middleman, zero KYC, zero commission beyond
+  Solana network gas (~$0.0001 per tx).
+- **New direct-on-chain payment flow** using the Solana Pay protocol:
+  user clicks "Subscribe" → server creates a payment intent with a fresh
+  reference Pubkey → page renders the intent as a QR code + Phantom
+  deep-link → user signs USDC SPL transfer → on-chain confirmation flips
+  the user's tier.
+- **New library** (`api/_lib/solana-pay.ts`):
+  - `generateReferenceKey()` — 32 random bytes, base58-encoded (custom
+    encoder, no extra dependency)
+  - `buildPayUrl()` — Solana Pay-spec URL builder (`solana:` scheme)
+  - `createPaymentIntent()` / `getPaymentIntent()` — Redis-backed CRUD
+    with TTL, plus a pending-set index for cron iteration
+  - `verifyTokenTransfer()` — pure function checking pre/post token
+    balance delta on the recipient's account, with 1% rounding tolerance
+  - `checkIntentOnChain()` — Helius RPC integration that pulls
+    transactions involving an intent's reference key and validates them
+- **3 new endpoints**:
+  - `POST /api/payment-intent` — creates an intent, returns the Solana Pay URL
+  - `GET  /api/payment-status?reference=<id>` — polled by the pricing
+    page to detect settlement
+  - `GET  /api/cron-check-payments` — Vercel cron, runs every minute,
+    checks pending intents on-chain, sets tier on confirmation
+- **`vercel.json`** registers the cron at `* * * * *` (every minute).
+- **Pricing**: 30-day Pro Pass at $24.99 USDC, Lifetime at $149.99 USDC
+  one-time. Prices are env-overridable (`SOLANA_PRICE_PRO_USDC`,
+  `SOLANA_PRICE_LIFETIME_USDC`) so they can be tweaked without a redeploy.
+- Crypto has no native auto-renewal, so the user pays again to extend the
+  Pro pass; `user.ts` auto-downgrades after expiry.
+
+### Configuration — env var deltas
+Removed (Lemonsqueezy, never wired):
+  `LEMONSQUEEZY_WEBHOOK_SECRET` `LEMONSQUEEZY_STORE_DOMAIN`
+  `LEMONSQUEEZY_VARIANT_PRO`    `LEMONSQUEEZY_VARIANT_LIFETIME`
+
+Added (Solana Pay):
+  `SOLANA_RECIPIENT_WALLET`         — base58 address that receives USDC payments
+  `SOLANA_PRICE_PRO_USDC`           — defaults 24.99
+  `SOLANA_PRICE_LIFETIME_USDC`      — defaults 149.99
+  `CRON_SECRET`                     — manual-trigger bearer for /api/cron-check-payments
+
+Already used elsewhere, reused here:
+  `HELIUS_API_KEY`                  — for the on-chain verification queries
+
+Until `SOLANA_RECIPIENT_WALLET` is set, every gated path degrades cleanly:
+  `/api/payment-intent`             → 503 + `{error:"checkout_not_configured"}`
+  `/api/cron-check-payments`        → 503 helius_unavailable / storage_unavailable
+  pricing.html                      → "Coming soon" + waitlist fallback
+
+### Tests
+- 62 new tests across `solana-pay.test.ts`, `api-payment-intent.test.ts`,
+  `api-payment-status.test.ts`, `api-cron-check-payments.test.ts`
+- 791 / 791 total passing, coverage 75.07% branches (above 73% threshold)
+
+### Recovered
+- The watchlist-panel commit lost in the squash race during PR #374 merge
+  (pushed 33 minutes after the squash landed). Includes the full `★
+  Watchlist` disclosure panel, mutex with AI Summary / Critical Flags,
+  panel CSS, and 17 dedicated tests.
+
 ## [1.3.0] - 2026-05-02
 
 ### Added — Pro tier launch

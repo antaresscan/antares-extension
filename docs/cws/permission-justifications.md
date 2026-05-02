@@ -139,3 +139,36 @@ is *designed* to scan. It does **not** request `<all_urls>` or any wildcard.
     or for lending purposes:                               no
 
 Privacy policy URL: https://antares-website.vercel.app/privacy
+
+---
+
+## Payment processor disclosure
+
+Pro and Lifetime upgrades are processed **directly on the Solana
+blockchain** via the Solana Pay protocol. There is no third-party
+payment processor, no KYC step, and no card-payment data ever flows
+through the extension or our infrastructure.
+
+The flow:
+
+  1. User clicks "Subscribe" on `/pricing`
+  2. Our server generates a unique reference key + Solana Pay URL
+     (USDC SPL transfer to a fixed merchant wallet)
+  3. User signs the transaction in their preferred Solana wallet
+     (Phantom, Solflare, Backpack, etc.) — funds move directly from
+     the user's wallet to ours, no intermediary
+  4. Our cron job verifies the on-chain transaction via Helius RPC
+     (recipient + token mint + amount match) and flips the user's
+     tier in Redis
+
+What we receive in payment metadata:
+  - The on-chain transaction signature (public on Solana, useful for
+    audit / refund traceability)
+  - The amount received (in USDC, pegged to USD)
+
+What we **never** see or store:
+  - Card numbers, banking info, billing address (no fiat rails involved)
+  - The user's wallet address other than as the tx sender (and only
+    transiently — we don't index by it)
+  - Any link between the payment and the user's identity beyond the
+    opaque install identifier they generated locally on first run

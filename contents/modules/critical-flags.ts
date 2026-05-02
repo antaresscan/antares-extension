@@ -69,13 +69,13 @@ export function toggleCriticalFlags(flags: ScanResponseFlag[] | null | undefined
     return
   }
 
-  // Mutex: close the AI Summary panel before opening this one. With both
-  // open the overlay overflows the viewport on shorter screens (the
-  // user-reported case was a 900px-tall window where the bottom of the
-  // box was clipped by the page chrome). One-at-a-time also matches
-  // standard accordion behavior.
-  const siblingPanel = state.shadow?.querySelector("#ant-ai-summary") as HTMLElement | null
-  siblingPanel?.classList.remove("open")
+  // Mutex: close any sibling panels before opening this one. AI Summary,
+  // Critical Flags, and Watchlist share the same vertical real estate; if
+  // multiple are open the overlay overflows the viewport on shorter screens
+  // (the user-reported case was a 900px-tall window where the bottom of the
+  // box was clipped). One-at-a-time also matches standard accordion behavior.
+  state.shadow?.querySelector("#ant-ai-summary")?.classList.remove("open")
+  state.shadow?.querySelector("#ant-watchlist")?.classList.remove("open")
 
   if (!panel.dataset.loaded) {
     panel.dataset.loaded = "1"
