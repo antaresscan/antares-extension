@@ -6,6 +6,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-05-02
+
+### Added — Pro tier launch
+- **Daily scan quota for Free tier (50 scans / UTC day)** with midnight reset.
+  Pro and Lifetime tiers are unlimited (still subject to the 30 req/min anti-abuse
+  rate limit). Quota state surfaces via `X-Antares-Quota-*` response headers;
+  Redis outages fail open so the Free tier never gets locked out by transient
+  upstream blips.
+- **User storage primitives** (`api/_lib/user.ts`) covering tier read/write
+  (with auto-downgrade after `tierExpires`), scan history (LPUSH + LTRIM 0 999,
+  30-day read window), and tier-capped watchlist (ZSET with `addedAt` as score).
+  Free: 5 watchlist items, 10 history entries. Pro/Lifetime: 50 / 100.
+- **New API endpoints**:
+  - `GET  /api/quota`        — read-only quota status (no counter increment).
+  - `GET  /api/watchlist`    — list; `POST` to add; `DELETE` to remove.
+                              402 Payment Required on limit_reached so the UI
+                              can route to `/pricing`.
+  - `GET  /api/history`      — last N scans, free 10 / pro 100, 30-day window.
+  - `GET  /api/checkout`     — builds a Lemonsqueezy checkout URL with
+                              `install_id` baked into custom_data.
+  - `POST /api/webhook-lemonsqueezy` — verifies LS HMAC and flips user tiers
+                              on subscription / order events. Fails closed
+                              when `LEMONSQUEEZY_WEBHOOK_SECRET` is unset.
+- **Quota status badge** in the scan overlay header — dim "12/50" by default,
+  yellow at ≤ 5 remaining, red "0/50 → PRO" link when capped (click opens the
+  pricing page with `install_id` baked into the query string), green "PRO" /
+  "LIFE" badge for paid tiers.
+- **"+ Watch" button** in the overlay footer adds the current token to the
+  user's watchlist with full visible feedback for every outcome (added,
+  already-present, limit-reached → upgrade link, anonymous, network failure).
+- **Photon affiliate row** on SAFE tokens for Free users only — gated by
+  `PLASMO_PUBLIC_PHOTON_REF` build-time env var (hidden by default until we
+  sign up for the program). Pro/Lifetime users get a clean overlay with no
+  affiliate prompts as part of what they paid for.
+- **Pricing page checkout integration** — when the extension's quota link
+  appends `?install=<id>` to `/pricing`, the page swaps "Join waitlist" for
+  real "Subscribe Pro" / "Get Lifetime" buttons that hit `/api/checkout` and
+  redirect to Lemonsqueezy. Graceful degradation when checkout env vars are
+  unset (503 → "Coming soon").
+
+### Configuration
+The following env vars wire the payment flow at deploy time. Until they're set
+the relevant code paths fall back gracefully:
+- `LEMONSQUEEZY_WEBHOOK_SECRET`     — HMAC signing secret from LS dashboard
+- `LEMONSQUEEZY_STORE_DOMAIN`       — e.g. `antares.lemonsqueezy.com`
+- `LEMONSQUEEZY_VARIANT_PRO`        — variant ID for Pro Monthly product
+- `LEMONSQUEEZY_VARIANT_LIFETIME`   — variant ID for Lifetime product
+- `PLASMO_PUBLIC_PHOTON_REF`        — affiliate handle (build-time)
+
+### Tests
+- 781 / 781 tests passing across 39 files
+- Coverage: 75.12% branches, 79.83% statements (above 73% / 74% thresholds)
+- New test files: `quota.test.ts`, `user.test.ts`, `lemonsqueezy.test.ts`,
+  `watch-btn.test.ts`, `api-checkout.test.ts`, plus integration tests for
+  each new endpoint
+
+## [1.2.1] - 2026-04-27
+
 ### Changed — token page (frontend)
 - Redesigned `token.html` around foldable, click-to-collapse sections
   with a unified `▸ LABEL ─ ▾` header pattern, replacing the previous
