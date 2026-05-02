@@ -398,7 +398,12 @@ function buildQuotaBadge(quota?: QuotaStatus): HTMLElement | null {
 
   if (remaining === 0) {
     // Limit reached — surface as a clickable link to the pricing page.
-    return el(
+    // The base href is kept so the link works without JS (right-click "open
+    // in new tab", crawlers, etc.); a click handler resolves the install_id
+    // asynchronously and rewrites the URL to bake it into the checkout flow,
+    // so when the user lands on /pricing the "Upgrade" button already has
+    // the right identity to pass through to Lemonsqueezy.
+    const link = el(
       "a",
       {
         class: "quota-badge danger",
@@ -409,6 +414,16 @@ function buildQuotaBadge(quota?: QuotaStatus): HTMLElement | null {
       },
       `${text} → PRO`,
     )
+    link.addEventListener("click", (e) => {
+      e.preventDefault()
+      void getInstallId().then((installId) => {
+        const url = installId
+          ? `${PRICING_URL}?install=${encodeURIComponent(installId)}`
+          : PRICING_URL
+        window.open(url, "_blank", "noopener noreferrer")
+      })
+    })
+    return link
   }
 
   const className =
