@@ -85,7 +85,17 @@ export function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean
   }
 
   const corsOk = isCorsAllowed(origin, ALLOWED_ORIGINS);
-  if (corsOk) res.setHeader("Access-Control-Allow-Origin", origin);
+  if (corsOk) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    // Allow cross-site cookies (session cookie set by API origin needs
+    // to flow on website-origin fetches). Browsers refuse to attach
+    // cookies cross-site unless the response carries this header AND
+    // the request was made with `credentials: "include"`.
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    // When cookies are involved, the browser also requires the Vary
+    // header to include Origin so caches don't conflate sessions.
+    res.setHeader("Vary", "Origin");
+  }
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Antares-Key, X-Antares-Token, X-Antares-Install, Authorization");
   res.setHeader("Access-Control-Expose-Headers", EXPOSED_RESPONSE_HEADERS);

@@ -26,6 +26,7 @@ import {
   type Tier,
 } from "./_lib/solana-pay";
 import { normalizeEmail } from "./_lib/license";
+import { getAccountFromRequest } from "./_lib/session-cookie";
 
 const INSTALL_ID_RE = /^[a-zA-Z0-9_-]{8,128}$/;
 
@@ -72,12 +73,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // the modal exposes both options explicitly so this fallback only
   // matters for direct API consumers.
   const tokenRaw = String(body.token ?? "usdc").trim().toLowerCase();
+  // Logged-in user? Pull email from the session cookie so the buyer
+  // doesn't have to re-type it (and so the license is bound to their
+  // account regardless of what they typed in the modal).
+  let sessionEmail: string | null = null;
+  try {
+    const redisForSession = getRedis();
+    if (redisForSession) {
+      const account = await getAccountFromRequest(req, redisForSession);
+      if (account) sessionEmail = account.email;
+    }
+  } catch {
+    // SESSION_SECRET unset, etc. Fall through to body-supplied email.
+  }
   // Email is optional when an install_id is present (the user came from
   // the extension and we already know who they are), but required when
   // it's absent (site-direct visitors who haven't installed yet — the
   // license-key issued on payment confirm is the only handle they'll
-  // have to redeem later).
-  const emailNorm = normalizeEmail(body.email);
+  // have to redeem later). Session email always wins over body.
+  const emailNorm = sessionEmail ?? normalizeEmail(body.email);
 
   // 'pro' is a UX alias used by the pricing page — both monthly and pro
   // route to the 30-day pass under the hood.

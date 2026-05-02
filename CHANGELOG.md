@@ -6,6 +6,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added — accounts: email + password sign up, login, session cookies
+- **Real auth on the API.** The license-key-only flow worked but
+  required the buyer to keep the key safe forever. Accounts are the
+  proper handle: log in once, see your licenses + tier on
+  /account.html without re-entering anything.
+- **`api/_lib/account.ts`** — scrypt password hashing (no extra deps,
+  uses `node:crypto`), HMAC-SHA256 JWT sessions (also `node:crypto`),
+  Redis-backed account records (`account:<email>` HASH).
+- **`api/_lib/session-cookie.ts`** — HTTP-only cookie helpers with
+  `SameSite=None; Secure` so the cookie set by the API origin flows
+  on cross-site fetches from the website.
+- **CORS middleware** updated to send `Access-Control-Allow-Credentials:
+  true` + `Vary: Origin` so cookies actually work cross-origin.
+- **4 new endpoints**:
+  - `POST /api/auth/signup` — `{email, password}` → 200 + Set-Cookie,
+    409 already_exists, 400 invalid_email/weak_password
+  - `POST /api/auth/login` — same shape, 401 on bad creds (constant-
+    time + dummy-hash defence against email enumeration)
+  - `POST /api/auth/logout` — clears the cookie
+  - `GET  /api/auth/me` — returns `{email}` from cookie or 401
+- **`/api/account-licenses` accepts a session cookie** as auth (no
+  proof-key needed when logged in). Legacy email + license-key path
+  still works for buyers who haven't created an account yet.
+- **`/api/payment-intent` auto-fills email** from the session cookie
+  when present, so logged-in buyers don't have to re-type it.
+- **`SESSION_SECRET` env var** required (32+ chars, e.g. `openssl rand
+  -hex 32`). Endpoints surface 503 "Auth not configured" if unset.
+- 52 new tests (account module, session-cookie helpers, 4 auth
+  endpoints) covering hashing, signing, CRUD, login outcomes,
+  cookie attrs. 889/889 passing.
+
 ### Fixed — extension stops working when daily quota hits 25 (silent box hide)
 - **Bug**: a Free user hitting the 25-scan/day cap saw the API return
   429, the scanner retry 3× through exponential back-off, then the
