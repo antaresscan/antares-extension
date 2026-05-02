@@ -1,4 +1,4 @@
-import type { ScanResponseData } from "../../shared/types"
+import type { ScanResponseData, QuotaStatus } from "../../shared/types"
 import * as Sentry from "@sentry/browser"
 import { API, LS_PREFIX, IGNORE } from "./constants"
 import { state, scanCache } from "./state"
@@ -7,6 +7,21 @@ import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimation
 import { scanRateLimiter } from "../../shared/rate-limit"
 import { logger } from "../../shared/logger"
 import { getInstallId } from "../../shared/install-id"
+
+// Pull X-Antares-Quota-* headers off a /api/scan response into a structured
+// shape the overlay can render. Returns undefined when headers are missing
+// (old API version, errored response, or CORS not exposing them) so callers
+// can simply hide the badge instead of showing zeros.
+function extractQuotaFromHeaders(headers: Headers): QuotaStatus | undefined {
+  const tier = headers.get("X-Antares-Quota-Tier")
+  if (tier !== "free" && tier !== "pro" && tier !== "lifetime") return undefined
+  const used = parseInt(headers.get("X-Antares-Quota-Used") ?? "0", 10)
+  const limit = parseInt(headers.get("X-Antares-Quota-Limit") ?? "-1", 10)
+  const remaining = parseInt(headers.get("X-Antares-Quota-Remaining") ?? "-1", 10)
+  const resetAt = parseInt(headers.get("X-Antares-Quota-Reset") ?? "0", 10)
+  if (!Number.isFinite(used) || !Number.isFinite(limit)) return undefined
+  return { tier, used, limit, remaining, resetAt }
+}
 
 export function isValid(addr: string): boolean {
   if (addr.length < 32 || addr.length > 44) return false
@@ -158,8 +173,10 @@ export async function scan(ca: string) {
     const headers: Record<string, string> = installId ? { "X-Antares-Install": installId } : {}
     const res = await fetchWithRetry(`${API}?ca=${ca}`, controller.signal, headers)
     if (controller.signal.aborted) return
+    const quota = extractQuotaFromHeaders(res.headers)
     const data = await res.json() as ScanResponseData
     if (controller.signal.aborted) return
+    if (quota) data._quota = quota
     scanCache.set(ca, { data, ts: Date.now() })
     saveToLS(ca, data)
     el.replaceChildren(buildResultNode(data, ca))

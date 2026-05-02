@@ -182,6 +182,45 @@ export const SHADOW_CSS = `
   flex-shrink: 0;
 }
 .x:hover { color: #777; }
+.quota-badge {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 7px;
+  letter-spacing: 0.18em;
+  font-weight: 600;
+  color: #555;
+  padding: 3px 7px;
+  border: 1px solid #1a1a1e;
+  border-radius: 2px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-decoration: none;
+  flex-shrink: 0;
+  margin: 0 8px;
+  transition: color .2s, border-color .2s, background .2s;
+}
+.quota-badge.warn {
+  color: #f5d000;
+  border-color: rgba(245, 208, 0, 0.3);
+  background: rgba(245, 208, 0, 0.04);
+}
+.quota-badge.danger {
+  color: #ff5f5f;
+  border-color: rgba(255, 95, 95, 0.4);
+  background: rgba(255, 95, 95, 0.06);
+  cursor: pointer;
+  letter-spacing: 0.16em;
+}
+.quota-badge.danger:hover {
+  background: rgba(255, 95, 95, 0.12);
+  border-color: rgba(255, 95, 95, 0.6);
+  color: #ff7777;
+}
+.quota-badge.pro {
+  color: #00e5b0;
+  border-color: rgba(0, 229, 176, 0.3);
+  background: rgba(0, 229, 176, 0.05);
+  letter-spacing: 0.22em;
+}
 
 .tk {
   padding: 0 14px;

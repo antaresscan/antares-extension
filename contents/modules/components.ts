@@ -1,4 +1,4 @@
-import type { ScanResponseFlag, ScanResponseData } from "../../shared/types"
+import type { ScanResponseFlag, ScanResponseData, QuotaStatus } from "../../shared/types"
 import { RISK_CLASS, LABELS, ANALYSIS_PAGE, SVG_MOVE, SVG_CLOSE, VERDICT_COLORS } from "./constants"
 import { state, scanCache } from "./state"
 import { SHADOW_CSS, injectFonts } from "./styles"
@@ -255,13 +255,75 @@ export function formatTimeAgo(ts: number): string {
   return `${Math.floor(hrs / 24)}d ago`
 }
 
-function buildHeaderNode(): HTMLElement {
+// Renders a quota status badge for the overlay header.
+//
+//   Free, plenty left  → dim "47/50"   (no border highlight)
+//   Free, ≤ 5 left     → yellow "3/50" (warning state)
+//   Free, at 0         → red link "0/50 → PRO" (clickable to /pricing)
+//   Pro / Lifetime     → green "PRO"  / "LIFE" badge
+//
+// Returns null when quota is undefined so the header can omit the badge
+// entirely (cached results pre-quota launch, anonymous traffic without
+// identity headers, or API responses where CORS didn't expose the headers).
+const PRICING_URL = "https://antares-website.vercel.app/pricing"
+const QUOTA_WARN_THRESHOLD = 5
+
+function buildQuotaBadge(quota?: QuotaStatus): HTMLElement | null {
+  if (!quota) return null
+
+  if (quota.tier === "pro" || quota.tier === "lifetime") {
+    const label = quota.tier === "lifetime" ? "LIFE" : "PRO"
+    return el(
+      "span",
+      {
+        class: "quota-badge pro",
+        title: `${quota.tier === "lifetime" ? "Lifetime" : "Pro"} · Unlimited scans`,
+      },
+      label,
+    )
+  }
+
+  // Free tier — show "used/limit" and tier-up the urgency.
+  const text = `${quota.used}/${quota.limit}`
+  const remaining = quota.remaining
+
+  if (remaining === 0) {
+    // Limit reached — surface as a clickable link to the pricing page.
+    return el(
+      "a",
+      {
+        class: "quota-badge danger",
+        href: PRICING_URL,
+        target: "_blank",
+        rel: "noopener noreferrer",
+        title: "Daily limit reached — upgrade to Pro for unlimited scans",
+      },
+      `${text} → PRO`,
+    )
+  }
+
+  const className =
+    remaining <= QUOTA_WARN_THRESHOLD ? "quota-badge warn" : "quota-badge"
+  return el(
+    "span",
+    {
+      class: className,
+      title: `${remaining} scan${remaining === 1 ? "" : "s"} remaining today`,
+    },
+    text,
+  )
+}
+
+function buildHeaderNode(quota?: QuotaStatus): HTMLElement {
   const dragIcon = el("span", { class: "drag-icon" })
   setStaticSvg(dragIcon, SVG_MOVE)
   const closeBtn = el("button", { class: "x", id: "ant-close" })
   setStaticSvg(closeBtn, SVG_CLOSE)
+  // The el() helper filters out null children, so we can pass the badge
+  // unconditionally — it just won't render when quota is undefined.
   return el("div", { class: "hd" },
     el("span", { class: "brand" }, "ANTARES"),
+    buildQuotaBadge(quota),
     el("div", { class: "hd-right" }, dragIcon, closeBtn),
   )
 }
@@ -426,7 +488,7 @@ export function buildResultNode(data: ScanResponseData, ca: string): HTMLElement
 
   const root = el("div", undefined,
     el("div", { class: "topbar" }),
-    buildHeaderNode(),
+    buildHeaderNode(data._quota),
     tkNode,
     el("div", { class: "vb" },
       el("h1", undefined, label),
