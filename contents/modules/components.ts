@@ -6,7 +6,6 @@ import { initDrag } from "./drag"
 import { encodeHashPayload } from "../../shared/hash-payload"
 import { toggleAiSummary } from "./ai-summary"
 import { toggleCriticalFlags } from "./critical-flags"
-import { getInstallId } from "../../shared/install-id"
 
 // DOM-API element builder. Used by buildResult instead of string template
 // literals so every text interpolation goes through textContent (which the
@@ -275,7 +274,10 @@ export function formatTimeAgo(ts: number): string {
 // identity headers, or API responses where CORS didn't expose the headers).
 const QUOTA_WARN_THRESHOLD = 5
 
-function buildQuotaBadge(quota?: QuotaStatus): HTMLElement | null {
+function buildQuotaBadge(
+  quota?: QuotaStatus,
+  installId?: string | null,
+): HTMLElement | null {
   if (!quota) return null
 
   if (quota.tier === "pro" || quota.tier === "lifetime") {
@@ -296,32 +298,26 @@ function buildQuotaBadge(quota?: QuotaStatus): HTMLElement | null {
 
   if (remaining === 0) {
     // Limit reached — surface as a clickable link to the pricing page.
-    // The base href is kept so the link works without JS (right-click "open
-    // in new tab", crawlers, etc.); a click handler resolves the install_id
-    // asynchronously and rewrites the URL to bake it into the checkout flow,
-    // so when the user lands on /pricing the "Upgrade" button already has
-    // the right identity to pass through to Lemonsqueezy.
-    const link = el(
+    // install_id is baked into href synchronously by the caller (passed
+    // in via buildHeaderNode), so the native <a target="_blank"> nav
+    // works on a single user-click. Earlier versions wrapped this in
+    // an async window.open inside a click handler — that consumed the
+    // user-gesture grace before the popup could open and silently got
+    // popup-blocked, leaving the link dead.
+    const href = installId
+      ? `${PRICING_URL}?install=${encodeURIComponent(installId)}`
+      : PRICING_URL
+    return el(
       "a",
       {
         class: "quota-badge danger",
-        href: PRICING_URL,
+        href,
         target: "_blank",
         rel: "noopener noreferrer",
         title: "Daily limit reached — upgrade to Pro for unlimited scans",
       },
       `${text} → PRO`,
     )
-    link.addEventListener("click", (e) => {
-      e.preventDefault()
-      void getInstallId().then((installId) => {
-        const url = installId
-          ? `${PRICING_URL}?install=${encodeURIComponent(installId)}`
-          : PRICING_URL
-        window.open(url, "_blank", "noopener noreferrer")
-      })
-    })
-    return link
   }
 
   const className =
@@ -376,16 +372,21 @@ function buildAffiliateRow(
   )
 }
 
-function buildHeaderNode(quota?: QuotaStatus): HTMLElement {
+function buildHeaderNode(
+  quota?: QuotaStatus,
+  installId?: string | null,
+): HTMLElement {
   const dragIcon = el("span", { class: "drag-icon" })
   setStaticSvg(dragIcon, SVG_MOVE)
   const closeBtn = el("button", { class: "x", id: "ant-close" })
   setStaticSvg(closeBtn, SVG_CLOSE)
   // The el() helper filters out null children, so we can pass the badge
   // unconditionally — it just won't render when quota is undefined.
+  // installId is threaded through so the at-cap "0/25 → PRO" link can
+  // be rendered with the right href synchronously.
   return el("div", { class: "hd" },
     el("span", { class: "brand" }, "ANTARES"),
-    buildQuotaBadge(quota),
+    buildQuotaBadge(quota, installId),
     el("div", { class: "hd-right" }, dragIcon, closeBtn),
   )
 }
@@ -555,7 +556,11 @@ function buildSiLp(data: ScanResponseData): HTMLElement {
 // legacy string variant — callers should use replaceChildren(node) instead
 // of `el.innerHTML = string` so the surrounding container never has to
 // re-parse markup at all.
-export function buildResultNode(data: ScanResponseData, ca: string): HTMLElement {
+export function buildResultNode(
+  data: ScanResponseData,
+  ca: string,
+  installId?: string | null,
+): HTMLElement {
   const riskClass = RISK_CLASS[data.risk] || "danger"
   const label = LABELS[data.risk] || data.risk
   const mint = data.resolvedMint || ca
@@ -630,38 +635,46 @@ export function buildResultNode(data: ScanResponseData, ca: string): HTMLElement
   const isFree = data._quota?.tier === "free"
   const foNode = el("div", { class: "fo" })
 
-  // Click handler that opens /pricing with install_id baked in.
-  // Used for all 3 locked buttons when isFree.
-  function attachUpgradeRedirect(node: HTMLElement) {
-    node.addEventListener("click", (e) => {
-      e.stopPropagation()
-      e.preventDefault()
-      void getInstallId().then((installId) => {
-        const url = installId
-          ? `${PRICING_URL}?install=${encodeURIComponent(installId)}`
-          : PRICING_URL
-        window.open(url, "_blank", "noopener noreferrer")
-      })
-    })
-  }
+  // Locked buttons render as <a target="_blank"> with install_id baked
+  // synchronously into the href. Earlier versions used a click handler
+  // that did e.preventDefault() + await getInstallId() + window.open()
+  // \u2014 the async gap consumed the user-gesture grace, so the popup got
+  // blocked and clicks did nothing. Native <a> nav has no such gap.
+  const upgradeHref = installId
+    ? `${PRICING_URL}?install=${encodeURIComponent(installId)}`
+    : PRICING_URL
 
-  const cfBtn = el("button", {
-    class: isFree ? "cf-btn locked" : "cf-btn",
-    id: "ant-critical-flags-btn",
-    title: isFree ? "Unlock with Pro" : undefined,
-  }, "\u26a0 Critical Flags")
+  // Critical Flags \u2014 <a> for Free (locked, navigates), <button> for
+  // Pro/Lifetime (toggles panel). Same id either way so attachClose
+  // can find it; the attachClose path skips rebinding when .locked.
+  let cfBtn: HTMLElement
   if (isFree) {
-    cfBtn.appendChild(el("span", { class: "lock-pill" }, "PRO"))
-    attachUpgradeRedirect(cfBtn)
+    cfBtn = el("a", {
+      class: "cf-btn locked",
+      id: "ant-critical-flags-btn",
+      href: upgradeHref,
+      target: "_blank",
+      rel: "noopener noreferrer",
+      title: "Unlock with Pro",
+    },
+      "\u26a0 Critical Flags",
+      el("span", { class: "lock-pill" }, "PRO"),
+    )
+  } else {
+    cfBtn = el("button", {
+      class: "cf-btn",
+      id: "ant-critical-flags-btn",
+    }, "\u26a0 Critical Flags")
   }
   foNode.appendChild(cfBtn)
 
-  // Always neutral gray \u2014 verdict color is communicated by the verdict
-  // headline and the Critical Flags panel; tinting the deep-dive button
-  // red on RUG was confusing (read as "dangerous to click" instead of
-  // "the token is dangerous").
+  // Full Analysis \u2014 always <a>. For Pro, attachAnalysisBtn binds a
+  // chrome.runtime.sendMessage handler (delegates tab creation to the
+  // background worker because chrome.tabs.create isn't available in
+  // content scripts in MV3). For Free (locked), attachAnalysisBtn
+  // skips the rebind, leaving the synchronous href in charge.
   const faBtn = el("a", {
-    href: isFree ? PRICING_URL : "#",
+    href: isFree ? upgradeHref : "#",
     id: "ant-full-analysis",
     "data-ca": encodeURIComponent(mint),
     class: isFree ? "locked" : undefined,
@@ -671,18 +684,28 @@ export function buildResultNode(data: ScanResponseData, ca: string): HTMLElement
   }, "Full Analysis \u2192")
   if (isFree) {
     faBtn.appendChild(el("span", { class: "lock-pill" }, "PRO"))
-    attachUpgradeRedirect(faBtn)
   }
   foNode.appendChild(faBtn)
 
-  const aiBtn = el("button", {
-    class: isFree ? "ai-btn ai-btn--active locked" : "ai-btn ai-btn--active",
-    id: "ant-ai-summary-btn",
-    title: isFree ? "Unlock with Pro" : undefined,
-  }, "\u2b21 AI Summary")
+  // AI Summary \u2014 same shape as cf-btn above.
+  let aiBtn: HTMLElement
   if (isFree) {
-    aiBtn.appendChild(el("span", { class: "lock-pill" }, "PRO"))
-    attachUpgradeRedirect(aiBtn)
+    aiBtn = el("a", {
+      class: "ai-btn ai-btn--active locked",
+      id: "ant-ai-summary-btn",
+      href: upgradeHref,
+      target: "_blank",
+      rel: "noopener noreferrer",
+      title: "Unlock with Pro",
+    },
+      "\u2b21 AI Summary",
+      el("span", { class: "lock-pill" }, "PRO"),
+    )
+  } else {
+    aiBtn = el("button", {
+      class: "ai-btn ai-btn--active",
+      id: "ant-ai-summary-btn",
+    }, "\u2b21 AI Summary")
   }
   foNode.appendChild(aiBtn)
 
@@ -695,7 +718,7 @@ export function buildResultNode(data: ScanResponseData, ca: string): HTMLElement
 
   const root = el("div", undefined,
     el("div", { class: "topbar" }),
-    buildHeaderNode(data._quota),
+    buildHeaderNode(data._quota, installId),
     tkNode,
     el("div", { class: "vb" },
       el("h1", undefined, label),
@@ -731,6 +754,10 @@ export function buildResultNode(data: ScanResponseData, ca: string): HTMLElement
 // (PR #283) and any future caller that legitimately needs serialised HTML
 // (e.g. for postMessage / saveToHistory) can rely on it. Callers writing
 // into the live DOM should prefer buildResultNode + replaceChildren.
-export function buildResult(data: ScanResponseData, ca: string): string {
-  return buildResultNode(data, ca).innerHTML
+export function buildResult(
+  data: ScanResponseData,
+  ca: string,
+  installId?: string | null,
+): string {
+  return buildResultNode(data, ca, installId).innerHTML
 }
