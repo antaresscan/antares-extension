@@ -195,26 +195,68 @@ export function priceFor(tier: Tier): number {
   return priceUsd(tier);
 }
 
+// Mainnet wrapped-SOL mint — used by Jupiter's price API as the SOL
+// identifier (their v3 lite-api keys by mint address, not symbol).
+const WSOL_MINT = "So11111111111111111111111111111111111111112";
+
 /**
- * Fetch the current SOL/USD price from Jupiter's free price feed. Used
- * to lock the SOL amount at intent creation so the user can't pay 24h
- * later at a stale rate. Returns 0 on any failure — the caller should
- * surface a clear "rate fetch failed" error rather than silently letting
- * the user under/over-pay.
+ * Fetch the current SOL/USD price. Used to lock the SOL amount at
+ * intent creation so the user can't pay 24h later at a stale rate.
+ *
+ * Source priority (first to return a positive number wins):
+ *   1. Jupiter lite-api v3 (free, no auth, very fast, AMM-derived)
+ *   2. CoinGecko simple/price (free, no auth, ~30s cache, exchange-derived)
+ *
+ * The previous implementation hit `https://price.jup.ag/v4/price` which
+ * Jupiter deprecated in late 2024 — the endpoint now returns empty. We
+ * keep two independent sources so a single provider outage doesn't
+ * brick SOL payments.
+ *
+ * Returns 0 on combined failure — the caller surfaces a clear "rate
+ * fetch failed" error rather than silently locking the user into an
+ * under/over-paid amount.
  */
 export async function getSolPriceUsd(): Promise<number> {
+  // Primary: Jupiter lite-api v3 (replaces the dead price.jup.ag v4)
   try {
-    const res = await fetch("https://price.jup.ag/v4/price?ids=SOL", {
-      headers: { Accept: "application/json" },
-    });
-    if (!res.ok) return 0;
-    const json = (await res.json()) as { data?: { SOL?: { price?: number } } };
-    const price = json.data?.SOL?.price;
-    return typeof price === "number" && price > 0 ? price : 0;
+    const res = await fetch(
+      `https://lite-api.jup.ag/price/v3?ids=${WSOL_MINT}`,
+      { headers: { Accept: "application/json" } },
+    );
+    if (res.ok) {
+      const json = (await res.json()) as Record<
+        string,
+        { usdPrice?: number } | undefined
+      >;
+      const price = json[WSOL_MINT]?.usdPrice;
+      if (typeof price === "number" && price > 0) return price;
+    }
   } catch (err) {
-    logger.warn("solana-pay", "SOL price fetch failed", { error: String(err) });
-    return 0;
+    logger.warn("solana-pay", "Jupiter v3 price fetch failed", {
+      error: String(err),
+    });
   }
+
+  // Fallback: CoinGecko simple/price. Free, no auth, but rate-limited
+  // (~30 calls/min) — fine because we only hit it when Jupiter is down.
+  try {
+    const res = await fetch(
+      "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd",
+      { headers: { Accept: "application/json" } },
+    );
+    if (res.ok) {
+      const json = (await res.json()) as { solana?: { usd?: number } };
+      const price = json.solana?.usd;
+      if (typeof price === "number" && price > 0) return price;
+    }
+  } catch (err) {
+    logger.warn("solana-pay", "CoinGecko fallback fetch failed", {
+      error: String(err),
+    });
+  }
+
+  logger.error("solana-pay", "all SOL price sources failed");
+  return 0;
 }
 
 /**
