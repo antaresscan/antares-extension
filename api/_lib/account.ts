@@ -418,3 +418,88 @@ export async function ensureDevLifetimeLicense(
     return null;
   }
 }
+
+// ─── Dev Pro grant ────────────────────────────────────────────────────────────
+//
+// Same shape as the Lifetime grant above but mints a Pro 30-day pass
+// instead of a Lifetime licence. Some devs / QA need to test the
+// expiry-aware Pro flow specifically (renewal prompts, downgrade
+// clock, "Renews on …" UI on /account) — Lifetime doesn't surface
+// any of those.
+//
+// Issuing both a Pro AND a Lifetime to the same email is fine: the
+// /account UI lists both licences and the user picks which key to
+// redeem in the extension. Tier on the install_id reflects whichever
+// got redeemed last.
+
+const DEV_PRO_EMAILS_HARDCODED = [
+  // Founder — same address as the Lifetime grant. Gets both licences
+  // so they can switch between Pro-renewal-flow testing and
+  // Lifetime-forever testing without rotating accounts.
+  "lennypierrepro@gmail.com",
+];
+
+function getDevProEmails(): Set<string> {
+  const fromEnv = (process.env.DEV_PRO_EMAILS ?? "")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  return new Set([
+    ...DEV_PRO_EMAILS_HARDCODED.map((e) => e.toLowerCase()),
+    ...fromEnv,
+  ]);
+}
+
+export function isDevProEmail(email: string): boolean {
+  const norm = normalizeEmail(email);
+  if (!norm) return false;
+  return getDevProEmails().has(norm);
+}
+
+/**
+ * Idempotently issue a Pro 30-day pass licence to a dev-allowlisted
+ * email. Mirror of ensureDevLifetimeLicense but with intent tier
+ * "monthly" (which intentTierToLicenseTier maps to license tier
+ * "pro"). Synthetic intent reference dedupes inside issueLicense
+ * so repeat calls don't mint duplicates.
+ *
+ * Note on expiry: issueLicense sets `expiresAt = now + PRO_PASS_DAYS`
+ * on Pro licences. The first call from a dev's first login locks in
+ * a 30-day window starting then; subsequent logins return the SAME
+ * licence with the SAME expiry (idempotent). To get a fresh 30-day
+ * window after the first one expires, the dev would need to redeem
+ * the licence in the extension (which extends the install's tier
+ * window) or the operator can manually `redis.del('intent-license:
+ * dev-grant-pro:<email>')` to allow a re-issue.
+ */
+export async function ensureDevProLicense(
+  redis: Redis,
+  email: string,
+): Promise<License | null> {
+  const norm = normalizeEmail(email);
+  if (!norm) return null;
+  if (!isDevProEmail(norm)) return null;
+
+  const intentReference = `dev-grant-pro:${norm}`;
+
+  try {
+    const license = await issueLicense(redis, {
+      email: norm,
+      tier: "monthly",
+      intentReference,
+      amountUsd: 0,
+    });
+    logger.info("auth", "dev-pro ensured", {
+      email: norm,
+      key: license.key,
+      reference: intentReference,
+    });
+    return license;
+  } catch (err) {
+    logger.error("auth", "dev-pro issuance failed", {
+      email: norm,
+      error: String(err),
+    });
+    return null;
+  }
+}
