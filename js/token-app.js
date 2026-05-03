@@ -417,7 +417,11 @@ function buildCriticalActorsPreview(d) {
 // scans.
 // ──────────────────────────────────────────────────────────────────────
 function buildTimelineTab(d) {
-  const RC = { RUG: 'rug', DANGER: 'danger', CAUTION: 'caution', SAFE: 'caution' }
+  // Risk → CSS class. SAFE was previously mapped to 'caution' here —
+  // a copy-paste typo from the CAUTION row. Result: SAFE timeline
+  // rows rendered yellow (the .caution colour) instead of the green
+  // .safe colour from the timeline CSS palette. Fixed: SAFE → 'safe'.
+  const RC = { RUG: 'rug', DANGER: 'danger', CAUTION: 'caution', SAFE: 'safe' }
   const LB = { RUG: 'RUG PULL', DANGER: 'DANGER', CAUTION: 'CAUTION', SAFE: 'SAFE' }
   // Backend (verdict-history) returns oldest→newest; the most recent
   // entry is "NOW" and gets the pulse animation. Real history when
