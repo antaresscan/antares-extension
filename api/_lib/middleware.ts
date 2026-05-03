@@ -19,7 +19,12 @@ export const ALLOWED_ORIGINS = [
   "https://gmgn.ai",
   "https://app.telemetry.io",
   "https://antares-extension.vercel.app",
+  // Website lives on GitHub Pages, not Vercel. Both origins kept here
+  // because (a) older clients may still cache the vercel.app URL and
+  // (b) the auth + payment-intent flow on the website needs CORS to
+  // accept GH-Pages-origin fetches with credentials:include.
   "https://antares-website.vercel.app",
+  "https://comealamaisongroupe.github.io",
 ];
 
 // ——— RATE LIMITERS ————————————————————————————————————————————————————————————

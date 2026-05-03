@@ -243,11 +243,11 @@ function Options() {
       <p style={{ fontSize: 12, color: "#888", marginTop: 12 }}>
         Lost your key? Look it up at{" "}
         <a
-          href="https://antares-website.vercel.app/account.html"
+          href="https://comealamaisongroupe.github.io/antares-website/account.html"
           target="_blank"
           rel="noreferrer"
         >
-          antares-website.vercel.app/account
+          comealamaisongroupe.github.io/antares-website/account
         </a>{" "}
         with the email you used at checkout.
       </p>
