@@ -179,6 +179,72 @@ describe("buildResult — Free-tier gating", () => {
     expect(html).not.toContain("locked")
   })
 
+  it("locked cf-btn and ai-btn render as <a> with synchronous /pricing href", () => {
+    // The previous implementation rendered them as <button> with an
+    // async click handler doing e.preventDefault() + getInstallId()
+    // + window.open(). The async gap consumed the user-gesture grace
+    // and the popup got blocked — clicks did nothing. Native <a> nav
+    // with install_id baked into href has no such gap.
+    const data = makeScanData({
+      _quota: { tier: "free", used: 3, limit: 25, remaining: 22, resetAt: 0 },
+    })
+    const html = buildResult(data, "So11111111111111111111111111111111111111112", "install-test-aaaaaaaaaaaa")
+    const doc = new DOMParser().parseFromString(html, "text/html")
+
+    const cf = doc.querySelector("#ant-critical-flags-btn") as HTMLAnchorElement
+    expect(cf.tagName).toBe("A")
+    expect(cf.getAttribute("href")).toContain("/pricing")
+    expect(cf.getAttribute("href")).toContain("install=install-test-aaaaaaaaaaaa")
+    expect(cf.getAttribute("target")).toBe("_blank")
+
+    const ai = doc.querySelector("#ant-ai-summary-btn") as HTMLAnchorElement
+    expect(ai.tagName).toBe("A")
+    expect(ai.getAttribute("href")).toContain("/pricing")
+    expect(ai.getAttribute("href")).toContain("install=install-test-aaaaaaaaaaaa")
+
+    const fa = doc.querySelector("#ant-full-analysis") as HTMLAnchorElement
+    expect(fa.getAttribute("href")).toContain("/pricing")
+    expect(fa.getAttribute("href")).toContain("install=install-test-aaaaaaaaaaaa")
+  })
+
+  it("locked buttons fall back to bare /pricing when install_id is absent", () => {
+    const data = makeScanData({
+      _quota: { tier: "free", used: 3, limit: 25, remaining: 22, resetAt: 0 },
+    })
+    // No installId arg — buildResult / buildResultNode default to undefined
+    const html = buildResult(data, "So11111111111111111111111111111111111111112")
+    const doc = new DOMParser().parseFromString(html, "text/html")
+    const cf = doc.querySelector("#ant-critical-flags-btn") as HTMLAnchorElement
+    expect(cf.getAttribute("href")).toContain("/pricing")
+    expect(cf.getAttribute("href")).not.toContain("install=")
+  })
+
+  it("at-cap quota badge in header bakes install_id into href synchronously", () => {
+    // Same async-popup-block bug, same fix. The "0/25 → PRO" badge
+    // is a fallback handle for users who miss the OUT OF SCANS card
+    // (e.g. it scrolled off-screen) — it must navigate on a single
+    // click without async indirection.
+    const data = makeScanData({
+      _quota: { tier: "free", used: 25, limit: 25, remaining: 0, resetAt: 0 },
+    })
+    const html = buildResult(data, "So11111111111111111111111111111111111111112", "install-test-bbbbbbbbbbbb")
+    const doc = new DOMParser().parseFromString(html, "text/html")
+    const badge = doc.querySelector(".quota-badge.danger") as HTMLAnchorElement
+    expect(badge).not.toBeNull()
+    expect(badge.tagName).toBe("A")
+    expect(badge.getAttribute("href")).toContain("install=install-test-bbbbbbbbbbbb")
+  })
+
+  it("Pro/Lifetime users still get <button> for cf/ai (toggles panel, doesn't navigate)", () => {
+    const data = makeScanData({
+      _quota: { tier: "pro", used: 100, limit: -1, remaining: -1, resetAt: 0 },
+    })
+    const html = buildResult(data, "So11111111111111111111111111111111111111112")
+    const doc = new DOMParser().parseFromString(html, "text/html")
+    expect(doc.querySelector("#ant-critical-flags-btn")?.tagName).toBe("BUTTON")
+    expect(doc.querySelector("#ant-ai-summary-btn")?.tagName).toBe("BUTTON")
+  })
+
   it("cf-panel and ai-panel containers exist for both tiers", () => {
     // The buttons are visible to Free (just locked), so the panel
     // containers need to be addressable too. The toggle handlers

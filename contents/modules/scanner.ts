@@ -191,13 +191,20 @@ export async function scan(ca: string) {
   state.manuallyDismissed = false
   state.lastCA = ca
 
+  // Resolve install_id once up-front so every render path (cached,
+  // loading skeleton, result, quota-exhausted) can bake it into
+  // upgrade-CTA hrefs synchronously. Async window.open in click
+  // handlers gets popup-blocked, so the install_id must be present at
+  // the moment the <a> is constructed, not awaited inside a click.
+  const installId = await getInstallId()
+
   // ── Cached path ──────────────────────────────────────────────────────────────
   if (cached) {
     // replaceChildren swaps the subtree atomically — never round-trips
     // markup through the parser, so a malformed cached payload cannot
     // re-introduce HTML interpretation. buildResultNode constructs the
     // tree via DOM API only.
-    el.replaceChildren(buildResultNode(cached, ca))
+    el.replaceChildren(buildResultNode(cached, ca, installId))
     showBox()
     triggerResultAnimations(el)
     attachClose(cached.aiSummary ?? null, cached.flags ?? null)
@@ -217,11 +224,6 @@ export async function scan(ca: string) {
   showBox()
   attachClose(null)
 
-  // Resolve install_id once up-front so the QuotaExhaustedError catch
-  // path can bake it into the upgrade-CTA href without an async call
-  // (async window.open after a user click gets popup-blocked).
-  const installId = await getInstallId()
-
   try {
     const headers: Record<string, string> = installId ? { "X-Antares-Install": installId } : {}
     const devTier = await readDevTierOverride()
@@ -234,7 +236,7 @@ export async function scan(ca: string) {
     if (quota) data._quota = quota
     scanCache.set(ca, { data, ts: Date.now() })
     saveToLS(ca, data)
-    el.replaceChildren(buildResultNode(data, ca))
+    el.replaceChildren(buildResultNode(data, ca, installId))
     showBox()
     triggerResultAnimations(el)
     attachClose(data.aiSummary ?? null, data.flags ?? null)
