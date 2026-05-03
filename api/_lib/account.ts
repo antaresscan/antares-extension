@@ -18,7 +18,7 @@
 import { randomBytes, scryptSync, timingSafeEqual, createHmac } from "node:crypto";
 import { Redis } from "@upstash/redis";
 import { logger } from "./logger";
-import { normalizeEmail } from "./license";
+import { issueLicense, normalizeEmail, type License } from "./license";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -325,4 +325,96 @@ export async function getAccountByInstall(
   const email = await redis.get<string>(ACCOUNT_INSTALL_KEY(installId));
   if (!email) return null;
   return getAccount(redis, email);
+}
+
+// ─── Dev Lifetime grant ───────────────────────────────────────────────────────
+//
+// Some accounts (the founder, contributors, QA) need to use the
+// extension on the Pro/Lifetime tier without going through a real
+// Solana payment. Mirror of the install-based DEV_PRO_INSTALLS env
+// var in user.ts, but keyed by email so it survives extension
+// re-installs and works for any device the developer logs in from.
+//
+// Resolution:
+//   1. Hardcoded fallback list (audit-friendly, ships with the code)
+//   2. plus DEV_LIFETIME_EMAILS env var, comma-separated, normalised
+//
+// On the auth handler's success path (signup + login), if the email
+// matches we call ensureDevLifetimeLicense() — that issues a real
+// Lifetime licence keyed to the email if one doesn't already exist.
+// The dev then sees it on /account.html and pastes the key into the
+// extension exactly like a paying user would. Same redeem path, same
+// idempotency, same Pro-tier behaviour after redeem.
+
+const DEV_LIFETIME_EMAILS_HARDCODED = [
+  // Founder — keep in code so the deployment always grants this even
+  // before DEV_LIFETIME_EMAILS env var is configured, and so the
+  // grant survives env-var rotation.
+  "lennypierrepro@gmail.com",
+];
+
+function getDevLifetimeEmails(): Set<string> {
+  const fromEnv = (process.env.DEV_LIFETIME_EMAILS ?? "")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  return new Set([
+    ...DEV_LIFETIME_EMAILS_HARDCODED.map((e) => e.toLowerCase()),
+    ...fromEnv,
+  ]);
+}
+
+export function isDevLifetimeEmail(email: string): boolean {
+  const norm = normalizeEmail(email);
+  if (!norm) return false;
+  return getDevLifetimeEmails().has(norm);
+}
+
+/**
+ * Idempotently issue a Lifetime licence to a dev/founder/QA email.
+ * Returns the licence (existing or freshly minted). Safe to call on
+ * every signup/login — the synthetic intent reference dedupes inside
+ * issueLicense, so we never mint duplicates for the same email.
+ *
+ * The licence is real: same redeem path, same scan-tier behaviour,
+ * same /account.html surface. The only difference from a paid
+ * Lifetime is `amountUsd: 0` and the synthetic reference string,
+ * both of which are visible to anyone auditing Redis (no hidden
+ * grants).
+ */
+export async function ensureDevLifetimeLicense(
+  redis: Redis,
+  email: string,
+): Promise<License | null> {
+  const norm = normalizeEmail(email);
+  if (!norm) return null;
+  if (!isDevLifetimeEmail(norm)) return null;
+
+  // Stable synthetic reference — issueLicense uses it for idempotency.
+  // Any subsequent call for the same email returns the same key.
+  const intentReference = `dev-grant-lifetime:${norm}`;
+
+  try {
+    const license = await issueLicense(redis, {
+      email: norm,
+      tier: "lifetime",
+      intentReference,
+      amountUsd: 0,
+    });
+    logger.info("auth", "dev-lifetime ensured", {
+      email: norm,
+      key: license.key,
+      reference: intentReference,
+    });
+    return license;
+  } catch (err) {
+    // Don't fail the auth flow on grant errors — the user can still
+    // log in and pay normally. Logging is enough for the operator
+    // to notice and fix.
+    logger.error("auth", "dev-lifetime issuance failed", {
+      email: norm,
+      error: String(err),
+    });
+    return null;
+  }
 }
