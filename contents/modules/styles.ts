@@ -359,48 +359,64 @@ export const SHADOW_CSS = `
 .fo a.warn  { border-color: rgba(255,95,95,.2); color: #cc5555; }
 .fo a.warn:hover { border-color: rgba(255,95,95,.4); color: #ff5f5f; background: rgba(255,95,95,.04); }
 
-/* Quota-exhausted state — Free user has burned their 25/day cap. The
-   overlay stays visible (don't ever silently hide on the 26th scan)
-   and shows the cap, the reset clock, and a primary upgrade CTA so
-   the user knows exactly what's going on and what to do next.
-   Compact by design: ~210px tall total, no taller than a regular
-   verdict overlay. */
-.qx-vb { padding: 6px 14px 4px; }
+/* Quota-exhausted state — picked from /quota-overlay-demos.html
+   "Demo 3 — Premium / calm". Total ~210px tall.
+   - Neutral white headline (no all-caps drama)
+   - Subtle outline CTA (not a screaming filled button)
+   - Price visible so the user knows what they'd pay before clicking
+   - Live "resets in Xh Ym" countdown that ticks every 30s */
+.qx-vb {
+  padding: 16px 14px 6px;
+  text-align: center;
+}
 .qx-vb h1 {
-  font-family: 'Bebas Neue','Arial Black',sans-serif;
-  font-size: 32px; line-height: .9; font-weight: 400; letter-spacing: .04em;
-  color: #f5d000;
-  text-shadow: 0 0 24px rgba(245,208,0,.18);
+  font-family: 'Bebas Neue', 'Arial Black', sans-serif;
+  font-size: 28px; line-height: 1; font-weight: 400; letter-spacing: .04em;
+  color: #eaeaea;
+  margin-bottom: 4px;
 }
-.qx-line {
-  padding: 0 14px;
+.qx-vb .qx-sub {
   font: 400 10px/1.5 'IBM Plex Mono', monospace;
-  color: #6a6a72; letter-spacing: .02em;
+  color: #666; letter-spacing: .04em;
 }
-.qx-line .qx-num {
-  color: #eaeaea; font-weight: 700; font-size: 11px;
+.qx-vb .qx-sub .qx-reset-time {
+  color: #aaa; font-weight: 600;
 }
-.qx-line .qx-reset-time { color: #aaa; font-weight: 600; }
+.qx-counter {
+  padding: 6px 14px;
+  text-align: center;
+  font: 600 10px/1.5 'IBM Plex Mono', monospace;
+  color: #7a7a82; letter-spacing: .04em;
+}
+.qx-counter b {
+  color: #aaa; font-weight: 700;
+}
 .qx-cta {
-  display: block; margin: 0 14px;
-  padding: 11px 12px;
-  background: #00e5b0; color: #0a0a0c !important;
+  display: block; margin: 10px 14px 8px;
+  padding: 12px;
+  background: transparent;
+  color: #00e5b0 !important;
   font: 700 11px/1 'IBM Plex Mono', monospace;
-  letter-spacing: .12em; text-transform: uppercase;
+  letter-spacing: .16em; text-transform: uppercase;
   text-decoration: none; text-align: center;
-  border-radius: 2px; cursor: pointer;
+  border: 1px solid rgba(0,229,176,.6);
+  border-radius: 2px;
   white-space: nowrap;
-  transition: transform .15s, box-shadow .15s;
+  transition: background .2s, border-color .2s, transform .2s;
 }
 .qx-cta:hover {
+  background: rgba(0,229,176,.08);
+  border-color: #00e5b0;
   transform: translateY(-1px);
-  box-shadow: 0 8px 22px rgba(0,229,176,.28);
 }
-.qx-pitch {
-  padding: 8px 14px 14px;
-  font: 400 9px/1.6 'IBM Plex Mono', monospace;
-  color: #5a5a62; letter-spacing: .04em;
+.qx-price {
+  padding: 0 14px 14px;
   text-align: center;
+  font: 400 9px/1.5 'IBM Plex Mono', monospace;
+  color: #5a5a62; letter-spacing: .04em;
+}
+.qx-price b {
+  color: #00e5b0; font-weight: 700;
 }
 
 /* Free-tier locked variant — Critical Flags / Full Analysis / AI Summary
