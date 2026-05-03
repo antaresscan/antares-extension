@@ -5,10 +5,9 @@ import { buildQuotaExhaustedNode } from "../contents/modules/components"
 import { state } from "../contents/modules/state"
 import type { QuotaStatus } from "../shared/types"
 
-// Regression suite for the user-reported "extension stops working when
-// I hit 25 scans". Plus the design cleanup (cap counter at limit, no
-// redundant header badge, single-line CTA, install_id baked into href
-// synchronously so the native <a> nav works without async window.open).
+// Regression suite + design-3 ("Premium / calm") layout coverage.
+// The card replaces the silent box-hide on quota-exhaustion, and the
+// shape is the user-picked Demo 3 from /quota-overlay-demos.html (#91).
 
 beforeEach(() => {
   document.body.innerHTML = ""
@@ -29,24 +28,32 @@ function makeQuota(over: Partial<QuotaStatus> = {}): QuotaStatus {
   }
 }
 
-describe("buildQuotaExhaustedNode", () => {
-  it("renders the cap headline", () => {
+describe("buildQuotaExhaustedNode (Demo 3 — premium/calm)", () => {
+  it("renders the 'Daily limit reached' headline (not all-caps OUT OF SCANS)", () => {
     const node = buildQuotaExhaustedNode(makeQuota())
-    expect(node.textContent).toContain("OUT OF SCANS")
+    expect(node.textContent).toContain("Daily limit reached")
+    expect(node.textContent).not.toContain("OUT OF SCANS")
   })
 
-  it("shows used/limit and a reset countdown on one line", () => {
+  it("shows the live reset countdown right under the headline", () => {
     const node = buildQuotaExhaustedNode(makeQuota())
-    expect(node.textContent).toContain("25/25")
-    expect(node.textContent).toContain("today")
     expect(node.textContent).toContain("resets in")
+    // 6h ahead → "5h Xm" or "6h Xm" depending on rounding
+    expect(node.textContent).toMatch(/\d+h \d+m|\d+m|midnight/)
   })
 
-  it("caps the displayed counter at the limit (don't show 117/25)", () => {
-    // The server INCRs first then denies, so quota.used can exceed
-    // the cap. Display should clamp — showing "117/25" looks broken.
+  it("counter line shows used/limit in friendly prose", () => {
+    const node = buildQuotaExhaustedNode(makeQuota())
+    expect(node.textContent).toContain("You've used today's")
+    expect(node.textContent).toContain("25 / 25")
+    expect(node.textContent).toContain("scans")
+  })
+
+  it("caps the counter at the limit (don't show 117/25)", () => {
+    // Server INCRs first then denies, so used can exceed limit. Display
+    // must clamp — "117/25" reads like a UI bug.
     const node = buildQuotaExhaustedNode(makeQuota({ used: 117 }))
-    expect(node.textContent).toContain("25/25")
+    expect(node.textContent).toContain("25 / 25")
     expect(node.textContent).not.toContain("117")
   })
 
@@ -77,18 +84,18 @@ describe("buildQuotaExhaustedNode", () => {
     expect(cta.getAttribute("rel")).toContain("noopener")
   })
 
-  it("CTA text fits on one line (no wrapping arrow)", () => {
-    // The previous "Get Pro — unlimited scans →" was too long for
-    // 290px width minus padding; the arrow wrapped. Compact label
-    // avoids that.
+  it("CTA label is short ('Unlock unlimited')", () => {
     const node = buildQuotaExhaustedNode(makeQuota())
     const cta = node.querySelector(".qx-cta") as HTMLAnchorElement
-    expect(cta.textContent?.length ?? 0).toBeLessThanOrEqual(28)
+    expect(cta.textContent).toBe("Unlock unlimited")
   })
 
-  it("explains what Pro unlocks (so the CTA isn't a leap of faith)", () => {
+  it("price footer shows $24.99 / 30 days / USDC or SOL", () => {
     const node = buildQuotaExhaustedNode(makeQuota())
-    expect(node.textContent).toMatch(/AI Summary|Critical Flags|Full Analysis|Unlimited/i)
+    const price = node.querySelector(".qx-price")
+    expect(price?.textContent).toContain("$24.99")
+    expect(price?.textContent).toContain("30 days")
+    expect(price?.textContent).toContain("USDC or SOL")
   })
 
   it("handles already-past reset gracefully", () => {
@@ -102,8 +109,6 @@ describe("buildQuotaExhaustedNode", () => {
   })
 
   it("does NOT render the redundant quota-badge in the header", () => {
-    // The big OUT OF SCANS message says it already; the duplicate
-    // "117/25 → PRO" badge in the top corner was visual noise.
     const node = buildQuotaExhaustedNode(makeQuota())
     const badge = node.querySelector(".quota-badge")
     expect(badge).toBeNull()

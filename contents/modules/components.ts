@@ -444,31 +444,35 @@ export function buildQuotaExhaustedNode(
     ? `${PRICING_URL}?install=${encodeURIComponent(installId)}`
     : PRICING_URL
 
+  // Design picked from /quota-overlay-demos.html (#91) → Demo 3
+  // "Premium / calm". White headline (no all-caps drama), outline
+  // CTA (not screaming green button), price visible so the user
+  // knows what they'd pay before clicking.
   const root = el("div", undefined,
     el("div", { class: "topbar" }),
-    // Pass undefined to suppress the quota badge in the header — the
-    // big "OUT OF SCANS" body already conveys the same info, the
-    // duplicate badge was visual noise.
+    // Pass undefined so the header quota-badge is suppressed — the
+    // body says it already, double signal was visual noise.
     buildHeaderNode(undefined),
-    el("div", { class: "vb qx-vb" },
-      el("h1", undefined, "OUT OF SCANS"),
+    el("div", { class: "qx-vb" },
+      el("h1", undefined, "Daily limit reached"),
+      el("div", { class: "qx-sub" }, "resets in ", resetEl),
     ),
-    el("div", { class: "qx-line" },
-      el("span", { class: "qx-num" }, `${usedDisplay}/${quota.limit}`),
-      " today · resets in ",
-      resetEl,
+    el("div", { class: "qx-counter" },
+      "You've used today's ",
+      el("b", undefined, `${usedDisplay} / ${quota.limit}`),
+      " scans",
     ),
-    el("div", { class: "sep" }),
     el("a", {
       class: "qx-cta",
       href,
       target: "_blank",
       rel: "noopener noreferrer",
       // No JS click handler — native <a> nav is reliable, async
-      // window.open() is not.
-    }, "⚡ Go Pro — unlimited"),
-    el("div", { class: "qx-pitch" },
-      "Unlimited scans · AI Summary · Critical Flags · Full Analysis",
+      // window.open() loses the user-gesture grace and gets blocked.
+    }, "Unlock unlimited"),
+    el("div", { class: "qx-price" },
+      el("b", undefined, "$24.99"),
+      " for 30 days · USDC or SOL",
     ),
   )
 
