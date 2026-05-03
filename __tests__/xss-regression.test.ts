@@ -97,7 +97,7 @@ describe("buildResult — Free-tier gating", () => {
 
   it("Free users see all 3 deep-dive buttons (visible, not hidden)", () => {
     const data = makeScanData({
-      _quota: { tier: "free", used: 3, limit: 25, remaining: 22, resetAt: 0 },
+      _quota: { tier: "free", used: 3, limit: 50, remaining: 47, resetAt: 0 },
     })
     const html = buildResult(data, "So11111111111111111111111111111111111111112")
 
@@ -108,7 +108,7 @@ describe("buildResult — Free-tier gating", () => {
 
   it("Free users see the buttons in a locked state with a PRO pill", () => {
     const data = makeScanData({
-      _quota: { tier: "free", used: 3, limit: 25, remaining: 22, resetAt: 0 },
+      _quota: { tier: "free", used: 3, limit: 50, remaining: 47, resetAt: 0 },
     })
     const html = buildResult(data, "So11111111111111111111111111111111111111112")
 
@@ -128,7 +128,7 @@ describe("buildResult — Free-tier gating", () => {
 
   it("Free Full Analysis link points at the pricing page (so no-JS still works)", () => {
     const data = makeScanData({
-      _quota: { tier: "free", used: 25, limit: 25, remaining: 0, resetAt: 0 },
+      _quota: { tier: "free", used: 50, limit: 50, remaining: 0, resetAt: 0 },
     })
     const html = buildResult(data, "So11111111111111111111111111111111111111112")
 
@@ -186,7 +186,7 @@ describe("buildResult — Free-tier gating", () => {
     // and the popup got blocked — clicks did nothing. Native <a> nav
     // with install_id baked into href has no such gap.
     const data = makeScanData({
-      _quota: { tier: "free", used: 3, limit: 25, remaining: 22, resetAt: 0 },
+      _quota: { tier: "free", used: 3, limit: 50, remaining: 47, resetAt: 0 },
     })
     const html = buildResult(data, "So11111111111111111111111111111111111111112", "install-test-aaaaaaaaaaaa")
     const doc = new DOMParser().parseFromString(html, "text/html")
@@ -209,7 +209,7 @@ describe("buildResult — Free-tier gating", () => {
 
   it("locked buttons fall back to bare /pricing when install_id is absent", () => {
     const data = makeScanData({
-      _quota: { tier: "free", used: 3, limit: 25, remaining: 22, resetAt: 0 },
+      _quota: { tier: "free", used: 3, limit: 50, remaining: 47, resetAt: 0 },
     })
     // No installId arg — buildResult / buildResultNode default to undefined
     const html = buildResult(data, "So11111111111111111111111111111111111111112")
@@ -220,12 +220,12 @@ describe("buildResult — Free-tier gating", () => {
   })
 
   it("at-cap quota badge in header bakes install_id into href synchronously", () => {
-    // Same async-popup-block bug, same fix. The "0/25 → PRO" badge
+    // Same async-popup-block bug, same fix. The "0/50 → PRO" badge
     // is a fallback handle for users who miss the OUT OF SCANS card
     // (e.g. it scrolled off-screen) — it must navigate on a single
     // click without async indirection.
     const data = makeScanData({
-      _quota: { tier: "free", used: 25, limit: 25, remaining: 0, resetAt: 0 },
+      _quota: { tier: "free", used: 50, limit: 50, remaining: 0, resetAt: 0 },
     })
     const html = buildResult(data, "So11111111111111111111111111111111111111112", "install-test-bbbbbbbbbbbb")
     const doc = new DOMParser().parseFromString(html, "text/html")
@@ -251,7 +251,7 @@ describe("buildResult — Free-tier gating", () => {
     // never fire for Free (the click short-circuits to /pricing
     // before they can run).
     const free = makeScanData({
-      _quota: { tier: "free", used: 1, limit: 25, remaining: 24, resetAt: 0 },
+      _quota: { tier: "free", used: 1, limit: 50, remaining: 49, resetAt: 0 },
     })
     const pro = makeScanData({
       _quota: { tier: "pro", used: 1, limit: -1, remaining: -1, resetAt: 0 },

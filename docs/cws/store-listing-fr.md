@@ -74,7 +74,7 @@ CE QUE TU VOIS DANS L'OVERLAY
 
 TARIFICATION — HONNÊTE ET PLAFONNÉE
 
-  • Free      0 €         25 scans/jour (reset à 00h00 UTC)
+  • Free      0 €         50 scans/jour (reset à 00h00 UTC)
   • Pro       24,99 $/30j Scans illimités, historique (30 jours),
                           breakdown détaillé du scoring, cache prioritaire,
                           export CSV/JSON, pas de prompts affiliés
@@ -83,7 +83,7 @@ TARIFICATION — HONNÊTE ET PLAFONNÉE
                           premiers supporters
 
 Le tier gratuit ne sera jamais downgradé. Aucun bait-and-switch. Le cap
-25/jour est annoncé dès le jour 1 — assez pour vetter une session de
+50/jour est annoncé dès le jour 1 — assez pour vetter une session de
 research sans jamais payer un centime.
 
 VIE PRIVÉE

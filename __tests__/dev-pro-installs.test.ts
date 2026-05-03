@@ -125,10 +125,10 @@ describe("checkDailyQuota bypasses for dev installs", () => {
     expect(result.remaining).toBe(-1);
   });
 
-  it("regular installs still hit the 25/day cap", async () => {
+  it("regular installs still hit the 50/day cap", async () => {
     process.env.DEV_PRO_INSTALLS = DEV_INSTALL_A;
-    // Burn 25 scans
-    for (let i = 0; i < 25; i++) {
+    // Burn 50 scans
+    for (let i = 0; i < 50; i++) {
       const r = await checkDailyQuota(REGULAR_INSTALL);
       expect(r.allowed).toBe(true);
     }
@@ -139,8 +139,8 @@ describe("checkDailyQuota bypasses for dev installs", () => {
 
   it("dev install never decrements regular install counter", async () => {
     process.env.DEV_PRO_INSTALLS = DEV_INSTALL_A;
-    // Hit 24 on regular
-    for (let i = 0; i < 24; i++) {
+    // Hit 49 on regular
+    for (let i = 0; i < 49; i++) {
       await checkDailyQuota(REGULAR_INSTALL);
     }
     // Dev does 100 scans — should not affect regular's bucket

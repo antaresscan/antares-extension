@@ -409,15 +409,9 @@ export const SHADOW_CSS = `
   border-color: #00e5b0;
   transform: translateY(-1px);
 }
-.qx-price {
-  padding: 0 14px 14px;
-  text-align: center;
-  font: 400 9px/1.5 'IBM Plex Mono', monospace;
-  color: #5a5a62; letter-spacing: .04em;
-}
-.qx-price b {
-  color: #00e5b0; font-weight: 700;
-}
+/* Trailing margin so the CTA isn't flush against the box edge —
+   replaces the dropped .qx-price footer that used to provide spacing. */
+.qx-cta { margin-bottom: 14px; }
 
 /* Free-tier locked variant — Critical Flags / Full Analysis / AI Summary
    stay visible (so users see what they're missing) but are dimmed,

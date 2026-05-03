@@ -20,8 +20,8 @@ beforeEach(() => {
 function makeQuota(over: Partial<QuotaStatus> = {}): QuotaStatus {
   return {
     tier: "free",
-    used: 25,
-    limit: 25,
+    used: 50,
+    limit: 50,
     remaining: 0,
     resetAt: Date.now() + 6 * 60 * 60 * 1000, // 6h from now
     ...over,
@@ -45,15 +45,15 @@ describe("buildQuotaExhaustedNode (Demo 3 — premium/calm)", () => {
   it("counter line shows used/limit in friendly prose", () => {
     const node = buildQuotaExhaustedNode(makeQuota())
     expect(node.textContent).toContain("You've used today's")
-    expect(node.textContent).toContain("25 / 25")
+    expect(node.textContent).toContain("50 / 50")
     expect(node.textContent).toContain("scans")
   })
 
-  it("caps the counter at the limit (don't show 117/25)", () => {
+  it("caps the counter at the limit (don't show 117/50)", () => {
     // Server INCRs first then denies, so used can exceed limit. Display
-    // must clamp — "117/25" reads like a UI bug.
+    // must clamp — "117/50" reads like a UI bug.
     const node = buildQuotaExhaustedNode(makeQuota({ used: 117 }))
-    expect(node.textContent).toContain("25 / 25")
+    expect(node.textContent).toContain("50 / 50")
     expect(node.textContent).not.toContain("117")
   })
 
@@ -90,12 +90,14 @@ describe("buildQuotaExhaustedNode (Demo 3 — premium/calm)", () => {
     expect(cta.textContent).toBe("Unlock unlimited")
   })
 
-  it("price footer shows $24.99 / 30 days / USDC or SOL", () => {
+  it("does NOT show a price footer — prices live on /pricing, not in the overlay", () => {
+    // Earlier iteration had "$24.99 for 30 days · USDC or SOL" baked
+    // into the card. Removed because (a) the price can change and we
+    // don't want stale numbers in extension code, and (b) the user
+    // sees the full pricing context the moment they click the CTA.
     const node = buildQuotaExhaustedNode(makeQuota())
-    const price = node.querySelector(".qx-price")
-    expect(price?.textContent).toContain("$24.99")
-    expect(price?.textContent).toContain("30 days")
-    expect(price?.textContent).toContain("USDC or SOL")
+    expect(node.querySelector(".qx-price")).toBeNull()
+    expect(node.textContent).not.toContain("$24.99")
   })
 
   it("handles already-past reset gracefully", () => {
