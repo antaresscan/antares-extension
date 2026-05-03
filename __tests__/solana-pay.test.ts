@@ -413,11 +413,13 @@ describe("resolveAmount", () => {
   });
 
   it("converts USD to SOL using the live Jupiter rate, returns null mint", async () => {
+    // Jupiter lite-api v3 shape: keyed by mint address, usdPrice field.
+    const WSOL_MINT = "So11111111111111111111111111111111111111112";
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => ({
         ok: true,
-        json: async () => ({ data: { SOL: { price: 100 } } }),
+        json: async () => ({ [WSOL_MINT]: { usdPrice: 100 } }),
       })),
     );
     const result = await resolveAmount("monthly", "sol");
@@ -428,11 +430,12 @@ describe("resolveAmount", () => {
   });
 
   it("rounds UP to 4 decimals so the user never under-pays from rounding", async () => {
+    const WSOL_MINT = "So11111111111111111111111111111111111111112";
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => ({
         ok: true,
-        json: async () => ({ data: { SOL: { price: 142.857142 } } }),
+        json: async () => ({ [WSOL_MINT]: { usdPrice: 142.857142 } }),
       })),
     );
     const result = await resolveAmount("lifetime", "sol");
@@ -441,7 +444,26 @@ describe("resolveAmount", () => {
     expect(result.amount).toBeLessThan(149.99 / 142.857142 + 0.001);
   });
 
-  it("throws when the SOL price fetch fails", async () => {
+  it("falls back to CoinGecko when Jupiter v3 is unreachable", async () => {
+    // First fetch (Jupiter) fails, second fetch (CoinGecko) returns a price.
+    let callCount = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        callCount += 1;
+        if (callCount === 1) return { ok: false, json: async () => ({}) };
+        return {
+          ok: true,
+          json: async () => ({ solana: { usd: 100 } }),
+        };
+      }),
+    );
+    const result = await resolveAmount("monthly", "sol");
+    expect(result.amount).toBe(0.2499);
+    expect(callCount).toBe(2);
+  });
+
+  it("throws when both SOL price sources fail", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => ({
