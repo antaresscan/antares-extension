@@ -199,6 +199,46 @@ describe("isCorsAllowed", () => {
   it("dexscreener.org (different TLD) -> false", () => {
     expect(isCorsAllowed("https://dexscreener.org", origins)).toBe(false);
   });
+
+  // Vercel preview hostnames for the antares-website project follow a
+  // predictable pattern. We allow them so QA can hit the API from PR
+  // previews without rotating the explicit allowlist for every PR.
+  it("antares-website-git-<branch>-<team>.vercel.app -> true", () => {
+    expect(
+      isCorsAllowed(
+        "https://antares-website-git-claude-da10fb-comealamaisongroupes-projects.vercel.app",
+        origins,
+      ),
+    ).toBe(true);
+  });
+
+  it("antares-website-<deploy-hash>-<team>.vercel.app -> true", () => {
+    expect(
+      isCorsAllowed(
+        "https://antares-website-abc123def-comealamaisongroupes-projects.vercel.app",
+        origins,
+      ),
+    ).toBe(true);
+  });
+
+  it("antares-website.vercel.app exact (no preview suffix) -> false unless in allowlist", () => {
+    // Production needs the explicit allowlist entry — preview pattern
+    // requires a separator after `antares-website-`.
+    expect(isCorsAllowed("https://antares-website.vercel.app", origins)).toBe(false);
+  });
+
+  it("rogue-project-deploy.vercel.app -> false (only antares-website previews)", () => {
+    expect(
+      isCorsAllowed(
+        "https://malicious-project-git-abc-projects.vercel.app",
+        origins,
+      ),
+    ).toBe(false);
+  });
+
+  it("antares-website.evil.app (TLD-shadowing attempt) -> false", () => {
+    expect(isCorsAllowed("https://antares-website-x.evil.app", origins)).toBe(false);
+  });
 });
 
 describe("isValidDexScreenerResponse", () => {
