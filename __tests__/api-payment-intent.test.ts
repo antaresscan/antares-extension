@@ -172,12 +172,13 @@ describe("POST /api/payment-intent", () => {
   });
 
   it("creates a SOL-payable intent when token=sol", async () => {
-    // Mock Jupiter price endpoint
+    // Mock Jupiter lite-api v3 price endpoint — keyed by mint address.
+    const WSOL_MINT = "So11111111111111111111111111111111111111112";
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => ({
         ok: true,
-        json: async () => ({ data: { SOL: { price: 100 } } }),
+        json: async () => ({ [WSOL_MINT]: { usdPrice: 100 } }),
       })),
     );
     const req = mockReq({
