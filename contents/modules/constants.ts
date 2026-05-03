@@ -2,7 +2,11 @@
 // Plasmo exposes PLASMO_PUBLIC_* vars to content scripts at build time
 export const API           = process.env.PLASMO_PUBLIC_API_URL || "https://antares-extension.vercel.app/api/scan"
 export const ANALYSIS_PAGE = process.env.PLASMO_PUBLIC_ANALYSIS_URL || "https://antares-extension.vercel.app/token.html"
-export const PRICING_URL   = "https://antares-website.vercel.app/pricing"
+// Website is hosted on GitHub Pages, not Vercel. The repo path is part
+// of the URL (project-pages style: <user>.github.io/<repo>/<page>.html),
+// and the .html suffix is required because GH Pages doesn't serve
+// extensionless routes by default.
+export const PRICING_URL   = "https://comealamaisongroupe.github.io/antares-website/pricing.html"
 export const LS_PREFIX     = "antares_scan_"
 export const CACHE_TTL    = 5 * 60 * 1000
 export const POS_KEY       = "antares_popup_pos"

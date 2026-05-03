@@ -58,9 +58,9 @@ describe("sitemap.xml", () => {
   })
 
   it("does not list the bare root — it is a redirect, not a page", () => {
-    // After option C, `/` is a 301 to antares-website.vercel.app. Listing
-    // it in our sitemap would tell Google to crawl a redirect that lands
-    // on a different host — wasteful at best, confusing at worst.
+    // `/` 301s to the canonical website on GitHub Pages. Listing it in
+    // our sitemap would tell Google to crawl a redirect that lands on
+    // a different host — wasteful at best, confusing at worst.
     expect(body).not.toContain("<loc>https://antares-extension.vercel.app/</loc>")
   })
 })
@@ -71,10 +71,10 @@ describe("vercel.json — root redirect to canonical site", () => {
   }
   const config = JSON.parse(readFileSync(join(repoRoot, "vercel.json"), "utf-8")) as VercelConfig
 
-  it("redirects bare / to the antares-website canonical landing", () => {
+  it("redirects bare / to the antares-website GitHub Pages landing", () => {
     const rootRedirect = config.redirects?.find(r => r.source === "/")
     expect(rootRedirect).toBeDefined()
-    expect(rootRedirect?.destination).toBe("https://antares-website.vercel.app/")
+    expect(rootRedirect?.destination).toBe("https://comealamaisongroupe.github.io/antares-website/")
     expect(rootRedirect?.permanent).toBe(true)
   })
 })

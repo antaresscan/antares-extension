@@ -16,7 +16,7 @@
   "redirects": [
     {
       "source": "/",
-      "destination": "https://antares-website.vercel.app/",
+      "destination": "https://comealamaisongroupe.github.io/antares-website/",
       "permanent": true
     },
     {
