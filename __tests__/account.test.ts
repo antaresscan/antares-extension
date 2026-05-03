@@ -129,9 +129,40 @@ describe("signSession + verifySession", () => {
     expect(verifySession("a.b.c.d")).toBeNull();
   });
 
-  it("rejects sessions when SESSION_SECRET is too short", () => {
+  it("rejects sessions when SESSION_SECRET is too short and no Redis fallback available", () => {
     process.env.SESSION_SECRET = "short";
+    delete process.env.UPSTASH_REDIS_REST_TOKEN;
     expect(() => signSession("user@example.com")).toThrow();
+  });
+
+  it("falls back to UPSTASH_REDIS_REST_TOKEN derivation when SESSION_SECRET is unset", () => {
+    // Bootstrap path: deployment has Redis configured but operator
+    // hasn't set SESSION_SECRET yet. Auth should still work.
+    delete process.env.SESSION_SECRET;
+    process.env.UPSTASH_REDIS_REST_TOKEN = "x".repeat(64);
+    const token = signSession("bootstrap@example.com");
+    const verified = verifySession(token);
+    expect(verified).not.toBeNull();
+    expect(verified?.sub).toBe("bootstrap@example.com");
+  });
+
+  it("explicit SESSION_SECRET takes precedence over Redis fallback", () => {
+    process.env.SESSION_SECRET = "1".repeat(64);
+    process.env.UPSTASH_REDIS_REST_TOKEN = "y".repeat(64);
+    const tokenA = signSession("user@example.com");
+
+    // Switch to fallback only — different key, shouldn't verify the
+    // token issued under the explicit secret.
+    delete process.env.SESSION_SECRET;
+    expect(verifySession(tokenA)).toBeNull();
+  });
+
+  it("rotating SESSION_SECRET invalidates every session at once", () => {
+    process.env.SESSION_SECRET = "a".repeat(64);
+    const token = signSession("user@example.com");
+    expect(verifySession(token)).not.toBeNull();
+    process.env.SESSION_SECRET = "b".repeat(64);
+    expect(verifySession(token)).toBeNull();
   });
 });
 
