@@ -119,9 +119,35 @@ export function apiError(res: VercelResponse, status: number, message: string, d
   res.status(status).json({ error: message, ...(details ? { details } : {}) });
 }
 
+/**
+ * Match a hostname against the antares-website Vercel preview pattern.
+ *
+ * Vercel previews use predictable hostname shapes for branch builds:
+ *   `<project>-git-<branch-hash>-<team>-projects.vercel.app`   (PR / branch)
+ *   `<project>-<deploy-hash>-<team>-projects.vercel.app`       (one-off)
+ *
+ * We accept any host that ends in `.vercel.app` AND starts with
+ * `antares-website-` (project slug + a separator). Vercel guarantees
+ * only deployments owned by this project can serve under that prefix,
+ * so the hostname shape alone is a sufficient origin check — we don't
+ * need a deploy-token round-trip.
+ *
+ * Production `antares-website.vercel.app` is still matched via the
+ * explicit ALLOWED_ORIGINS list (canonical, audit-friendly). This
+ * helper only adds the *preview* deployments to the allowed set so QA
+ * and pre-merge testing don't 403 with "Origin not allowed".
+ */
+function isAntaresWebsitePreview(hostname: string): boolean {
+  return (
+    hostname.endsWith(".vercel.app") &&
+    hostname.startsWith("antares-website-")
+  );
+}
+
 export function isCorsAllowed(origin: string, allowedOrigins: string[]): boolean {
   try {
     const h = new URL(origin).hostname;
+    if (isAntaresWebsitePreview(h)) return true;
     return allowedOrigins.some(o => {
       try { return h === new URL(o).hostname; }
       catch { return false; }
