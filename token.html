@@ -247,16 +247,27 @@ nav .actions a.warn:hover{color:var(--orange);border-color:rgba(255,95,95,.4);ba
 .tl-dot{width:14px;height:14px;border-radius:50%;justify-self:center;border:2px solid var(--bg);box-shadow:0 0 0 1px currentColor}
 .tl-dot.now{animation:tl-pulse 2s ease-in-out infinite}
 @keyframes tl-pulse{0%,100%{box-shadow:0 0 0 1px currentColor,0 0 0 4px transparent}50%{box-shadow:0 0 0 1px currentColor,0 0 0 6px var(--risk-soft)}}
-.tl-dot.rug{background:var(--orange);color:var(--orange)}
-.tl-dot.danger{background:var(--orange);color:var(--orange);opacity:.65}
+/* Verdict colour palette — must align with the engine's risk ladder:
+     SAFE    → green (--c)
+     CAUTION → yellow (--yellow)
+     DANGER  → orange (--orange)
+     RUG     → red (--red)
+   Previous CSS had no explicit `.safe` rule, so the SAFE row inherited
+   the parent's text colour and rendered the same yellow as CAUTION —
+   broke the at-a-glance read of the timeline. RUG and DANGER were
+   both `var(--orange)` (one with opacity), now properly distinct. */
+.tl-dot.safe{background:var(--c);color:var(--c)}
 .tl-dot.caution{background:var(--yellow);color:var(--yellow)}
+.tl-dot.danger{background:var(--orange);color:var(--orange)}
+.tl-dot.rug{background:var(--red);color:var(--red)}
 .tl-dot.empty{background:transparent;color:#444}
 .tl-time{font-size:11px;color:#666;letter-spacing:.06em}
 .tl-time.now{color:var(--risk);font-weight:700;letter-spacing:.1em}
 .tl-verdict{font:400 18px/1 'Bebas Neue',sans-serif;letter-spacing:.06em}
-.tl-verdict.rug{color:var(--orange)}
-.tl-verdict.danger{color:var(--orange);opacity:.8}
+.tl-verdict.safe{color:var(--c)}
 .tl-verdict.caution{color:var(--yellow)}
+.tl-verdict.danger{color:var(--orange)}
+.tl-verdict.rug{color:var(--red)}
 .tl-score{font:600 13px 'IBM Plex Mono',monospace;color:#888}
 .tl-score b{color:#ddd}
 .tl-event{font-size:11px;color:#777;font-style:italic;line-height:1.5}
