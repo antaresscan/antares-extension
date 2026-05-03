@@ -382,7 +382,7 @@ function buildHeaderNode(
   setStaticSvg(closeBtn, SVG_CLOSE)
   // The el() helper filters out null children, so we can pass the badge
   // unconditionally — it just won't render when quota is undefined.
-  // installId is threaded through so the at-cap "0/25 → PRO" link can
+  // installId is threaded through so the at-cap "0/50 → PRO" link can
   // be rendered with the right href synchronously.
   return el("div", { class: "hd" },
     el("span", { class: "brand" }, "ANTARES"),
@@ -396,7 +396,7 @@ export function buildHeader(): string {
 }
 
 // Quota-exhausted state — rendered when a Free user has burned through
-// their daily 25 scans and the API returns 429 with quota headers
+// their daily 50 scans and the API returns 429 with quota headers
 // signalling remaining=0. Replaces the silent box-hide that made the
 // extension look broken once the cap landed: now the user sees exactly
 // what's happening and gets a primary upgrade CTA pointing at /pricing
@@ -434,7 +434,7 @@ export function buildQuotaExhaustedNode(
 
   // Cap the displayed counter at the limit — `quota.used` keeps
   // incrementing even past the cap (server INCRs first, then denies).
-  // Showing "117/25" looks broken; users care that they're at the cap,
+  // Showing "117/50" looks broken; users care that they're at the cap,
   // not by how much they've blown past it.
   const usedDisplay = Math.min(quota.used, quota.limit)
 
@@ -471,10 +471,6 @@ export function buildQuotaExhaustedNode(
       // No JS click handler — native <a> nav is reliable, async
       // window.open() loses the user-gesture grace and gets blocked.
     }, "Unlock unlimited"),
-    el("div", { class: "qx-price" },
-      el("b", undefined, "$24.99"),
-      " for 30 days · USDC or SOL",
-    ),
   )
 
   // Tick the reset string every 30s — coarse enough to not churn DOM,
