@@ -21,7 +21,7 @@ import {
 } from "../_lib/middleware";
 import { apiError } from "../_lib/helpers";
 import { logger } from "../_lib/logger";
-import { createAccount, authenticate } from "../_lib/account";
+import { createAccount, authenticate, ensureDevLifetimeLicense } from "../_lib/account";
 import {
   setSessionCookie,
   clearSessionCookie,
@@ -74,6 +74,9 @@ async function handleSignup(req: VercelRequest, res: VercelResponse) {
       return res.status(status).json({ ok: false, reason: outcome.reason });
     }
     setSessionCookie(res, outcome.account.email);
+    // Auto-grant Lifetime to dev-allowlisted emails. No-op for everyone
+    // else. Failure here doesn't block signup — logged + ignored.
+    await ensureDevLifetimeLicense(redis, outcome.account.email);
     logger.metric("auth.signup", { email: outcome.account.email });
     return res.status(200).json({ ok: true, email: outcome.account.email });
   } catch (err) {
@@ -111,6 +114,9 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
         .json({ ok: false, reason: "invalid_credentials" });
     }
     setSessionCookie(res, outcome.account.email);
+    // Auto-grant Lifetime to dev-allowlisted emails. Idempotent — only
+    // mints once per email regardless of how many times they log in.
+    await ensureDevLifetimeLicense(redis, outcome.account.email);
     logger.metric("auth.login", { email: outcome.account.email });
     return res.status(200).json({ ok: true, email: outcome.account.email });
   } catch (err) {
