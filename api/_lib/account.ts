@@ -111,14 +111,66 @@ function base64UrlDecode(s: string): Buffer {
   return Buffer.from(str, "base64");
 }
 
+// Domain-separated derivation salt for the bootstrap fallback path
+// (see getSessionSecret below). Hard-coded by design: changing this
+// rotates every session previously issued via the fallback, which is
+// useful operational lever — a deploy with a different value forces
+// re-login without touching env vars.
+const SESSION_SECRET_DERIVATION_INFO = "antares-session-secret-v1";
+
+/**
+ * Resolve the HMAC key used to sign session JWTs.
+ *
+ * Resolution order:
+ *   1. process.env.SESSION_SECRET (≥32 chars) — production-correct path.
+ *      Operators should always set this explicitly; rotate by `vercel
+ *      env rm SESSION_SECRET production && vercel env add ...` and
+ *      redeploy.
+ *
+ *   2. Bootstrap fallback derived from UPSTASH_REDIS_REST_TOKEN via
+ *      HMAC-SHA256 with a domain-separated info string. Used when the
+ *      operator hasn't explicitly set SESSION_SECRET on a fresh
+ *      deployment (e.g. the antares-extension Vercel project before
+ *      first `setup-auth.sh` run). This unblocks signup/login from day
+ *      one — every deployment that has Redis configured (which is
+ *      mandatory for any storage anyway) gets a working auth secret.
+ *
+ *      Trade-off: session integrity becomes coupled to the Redis
+ *      token's secrecy. If the Redis token leaks, attackers can forge
+ *      sessions. We log a `warn` line per `getSessionSecret` call so
+ *      operators see this in dashboards and rotate to an explicit
+ *      `SESSION_SECRET` quickly.
+ *
+ *      Migrating to an explicit SESSION_SECRET later invalidates
+ *      every session issued via the fallback — users get logged out
+ *      and re-authenticate. Acceptable cost for unblocking auth on
+ *      day one.
+ *
+ *   3. Throw — unrecoverable. The only way to hit this is a deployment
+ *      with neither `SESSION_SECRET` nor `UPSTASH_REDIS_REST_TOKEN`
+ *      set, which means there's no Redis either, which means storage
+ *      is broken and signup wouldn't work regardless.
+ */
 function getSessionSecret(): Buffer {
-  const secret = process.env.SESSION_SECRET ?? "";
-  if (secret.length < 32) {
-    throw new Error(
-      "SESSION_SECRET must be set (32+ chars). Generate with `openssl rand -hex 32`.",
-    );
+  const explicit = process.env.SESSION_SECRET;
+  if (typeof explicit === "string" && explicit.length >= 32) {
+    return Buffer.from(explicit, "utf8");
   }
-  return Buffer.from(secret, "utf8");
+
+  const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (typeof redisToken === "string" && redisToken.length >= 32) {
+    logger.warn(
+      "auth",
+      "SESSION_SECRET not set — using bootstrap fallback derived from UPSTASH_REDIS_REST_TOKEN. Set a dedicated SESSION_SECRET ASAP via the Vercel dashboard or `vercel env add SESSION_SECRET production`. See AUTH-SETUP.md §2.",
+    );
+    return createHmac("sha256", redisToken)
+      .update(SESSION_SECRET_DERIVATION_INFO)
+      .digest();
+  }
+
+  throw new Error(
+    "Auth not configured: set SESSION_SECRET (32+ chars) on the deployment, or ensure UPSTASH_REDIS_REST_TOKEN is set so the bootstrap fallback can derive one. Generate a SESSION_SECRET with `openssl rand -hex 32`.",
+  );
 }
 
 const SESSION_TTL_SECONDS = 30 * 24 * 60 * 60; // 30 days
