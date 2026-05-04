@@ -10,6 +10,7 @@ import {
   isDevAllowlistedInstall,
   getEffectiveTier,
   getEffectiveTierFromRequest,
+  resolveTierAndBypass,
   HISTORY_HARD_CAP,
   HISTORY_DAY_WINDOW,
   _resetUserStorageForTests,
@@ -665,6 +666,106 @@ describe("getEffectiveTierFromRequest (session-gated)", () => {
     // _resetUserStorageForTests already ran in beforeEach (top of file).
     const token = signSession("alice@example.com");
     expect(await getEffectiveTierFromRequest(reqWithCookie(token), "install-x")).toBe("free");
+  });
+});
+
+// ─── Dev quota bypass (free tier unlimited for the founder/QA) ────────────────
+
+describe("resolveTierAndBypass (dev quota bypass)", () => {
+  const ORIG_ENV = { ...process.env };
+
+  beforeEach(() => {
+    process.env.SESSION_SECRET = "0".repeat(64);
+  });
+
+  afterEach(() => {
+    if (ORIG_ENV.DEV_PRO_INSTALLS === undefined) delete process.env.DEV_PRO_INSTALLS;
+    else process.env.DEV_PRO_INSTALLS = ORIG_ENV.DEV_PRO_INSTALLS;
+    if (ORIG_ENV.SESSION_SECRET === undefined) delete process.env.SESSION_SECRET;
+    else process.env.SESSION_SECRET = ORIG_ENV.SESSION_SECRET;
+  });
+
+  function reqWithCookie(token: string | null, devTier?: string) {
+    const headers: Record<string, string | string[]> = {};
+    if (token) headers.cookie = `${SESSION_COOKIE_NAME}=${token}`;
+    if (devTier) headers["x-antares-dev-tier"] = devTier;
+    return { headers } as unknown as Parameters<typeof resolveTierAndBypass>[0];
+  }
+
+  function seedAccount(m: MockBundle, email: string) {
+    m.store.hashes.set(`account:${email}`, {
+      email,
+      status: "active",
+      emailVerified: "0",
+      createdAt: String(Date.now()),
+    });
+  }
+
+  it("bypassQuota=true for env-var dev installs (legacy headless path)", async () => {
+    process.env.DEV_PRO_INSTALLS = "install-headless";
+    const m = mockRedis({});
+    initUserStorage(m.redis);
+
+    const result = await resolveTierAndBypass(reqWithCookie(null), "install-headless");
+    expect(result.bypassQuota).toBe(true);
+    // No header + env-var dev → getUserTier short-circuits to lifetime
+    expect(result.tier).toBe("lifetime");
+  });
+
+  it("bypassQuota=true for signed-in dev-allowlisted email (Lifetime list)", async () => {
+    const m = mockRedis({
+      "account:install:install-dev": "lennypierrepro@gmail.com",
+      "user:install-dev:tier": "lifetime",
+    });
+    initUserStorage(m.redis);
+    seedAccount(m, "lennypierrepro@gmail.com");
+
+    const token = signSession("lennypierrepro@gmail.com");
+    const result = await resolveTierAndBypass(reqWithCookie(token), "install-dev");
+    expect(result.bypassQuota).toBe(true);
+    expect(result.tier).toBe("lifetime");
+  });
+
+  it("dev forcing Free still bypasses quota (the use case from the user)", async () => {
+    const m = mockRedis({
+      "account:install:install-dev": "lennypierrepro@gmail.com",
+      "user:install-dev:tier": "lifetime",
+    });
+    initUserStorage(m.redis);
+    seedAccount(m, "lennypierrepro@gmail.com");
+
+    const token = signSession("lennypierrepro@gmail.com");
+    // Dev sets dropdown to Free → tier reports as Free (so overlay locks),
+    // but bypassQuota is still true (so no 429 hit on every scan).
+    const result = await resolveTierAndBypass(reqWithCookie(token, "free"), "install-dev");
+    expect(result.tier).toBe("free");
+    expect(result.bypassQuota).toBe(true);
+  });
+
+  it("bypassQuota=false for signed-in non-dev users (paying customers)", async () => {
+    const m = mockRedis({
+      "account:install:install-paid": "alice@example.com",
+      "user:install-paid:tier": "lifetime",
+    });
+    initUserStorage(m.redis);
+    seedAccount(m, "alice@example.com");
+
+    const token = signSession("alice@example.com");
+    const result = await resolveTierAndBypass(reqWithCookie(token), "install-paid");
+    expect(result.bypassQuota).toBe(false);
+    expect(result.tier).toBe("lifetime");
+  });
+
+  it("bypassQuota=false for signed-out users (Free with real quota)", async () => {
+    const m = mockRedis({
+      "account:install:install-paid": "alice@example.com",
+      "user:install-paid:tier": "lifetime",
+    });
+    initUserStorage(m.redis);
+
+    const result = await resolveTierAndBypass(reqWithCookie(null), "install-paid");
+    expect(result.bypassQuota).toBe(false);
+    expect(result.tier).toBe("free");
   });
 });
 
