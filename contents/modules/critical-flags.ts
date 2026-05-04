@@ -87,21 +87,19 @@ function renderPanel(panel: HTMLElement, flags: ScanResponseFlag[] | null | unde
   panel.replaceChildren()
 
   // Filter rules:
-  //   bonus      → already excluded (these are positives, not "issues")
-  //   info       → infrastructure status, e.g. "Helius unavailable" or
-  //                "GoPlus unavailable". They tell the user *we* couldn't
-  //                reach a source, not that there's a problem with the
-  //                token. Showing them in the Critical Flags panel is
-  //                noise — users read "1 flag detected" and assume the
-  //                token is risky when in fact only our pipeline is
-  //                degraded. The reduced confidence already surfaces
-  //                upstream availability via the Conf X% header.
-  //   "unavailable"-shaped warnings → legacy: some sources still emit
-  //                outage notices at "warning" severity. Catch those by
-  //                label until each source is migrated to "info".
+  //   bonus      → excluded (these are positives, not "issues")
+  //   info       → excluded (truly informational, doesn't affect verdict)
+  //
+  // Provider-availability "warning" flags (e.g. "Helius unavailable —
+  // holder concentration unverified") are KEPT in the panel. Reasoning:
+  // those flags are exactly what triggers the safeBlock layer's CAUTION
+  // cap (see api/_lib/layers.ts), so hiding them produces a CAUTION
+  // verdict with no visible reason — a user staring at "No issues found"
+  // on a CAUTION token can't tell whether to trust the score. We surface
+  // them honestly and let the wording ("unavailable", "unverified") make
+  // it clear it's a pipeline gap, not a token-side red flag.
   const filtered = (flags ?? []).filter((f) => {
     if (f.severity === "bonus" || f.severity === "info") return false
-    if (typeof f.label === "string" && /\bunavailable\b/i.test(f.label)) return false
     return true
   })
 
