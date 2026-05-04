@@ -284,13 +284,21 @@ function buildQuotaBadge(
 ): HTMLElement | null {
   if (!quota) return null
 
-  if (quota.tier === "pro" || quota.tier === "lifetime") {
-    const label = quota.tier === "lifetime" ? "LIFE" : "PRO"
+  if (quota.tier === "pro" || quota.tier === "yearly" || quota.tier === "lifetime") {
+    // Badge text:
+    //   "PRO"   = 30-day pass
+    //   "YEAR"  = 1-year subscription (replaces "LIFE" as of 2026-05)
+    //   "LIFE"  = grandfathered legacy tier — a small minority of users
+    //             paid before the rename and keep their forever pass
+    const label =
+      quota.tier === "lifetime" ? "LIFE" : quota.tier === "yearly" ? "YEAR" : "PRO"
+    const fullName =
+      quota.tier === "lifetime" ? "Lifetime" : quota.tier === "yearly" ? "Yearly" : "Pro"
     return el(
       "span",
       {
         class: "quota-badge pro",
-        title: `${quota.tier === "lifetime" ? "Lifetime" : "Pro"} · Unlimited scans`,
+        title: `${fullName} · Unlimited scans`,
       },
       label,
     )
@@ -364,7 +372,7 @@ function buildAffiliateRow(
   quota?: QuotaStatus,
 ): HTMLElement | null {
   if (!PHOTON_REF) return null
-  if (quota && (quota.tier === "pro" || quota.tier === "lifetime")) return null
+  if (quota && (quota.tier === "pro" || quota.tier === "yearly" || quota.tier === "lifetime")) return null
   if (risk !== "SAFE") return null
   const url = buildPhotonUrl(ca)
   if (!url) return null

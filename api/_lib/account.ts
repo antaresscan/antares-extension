@@ -371,16 +371,21 @@ export function isDevLifetimeEmail(email: string): boolean {
 }
 
 /**
- * Idempotently issue a Lifetime licence to a dev/founder/QA email.
+ * Idempotently issue a Yearly licence to a dev/founder/QA email.
  * Returns the licence (existing or freshly minted). Safe to call on
  * every signup/login — the synthetic intent reference dedupes inside
  * issueLicense, so we never mint duplicates for the same email.
  *
+ * Function name kept as `ensureDevLifetimeLicense` for back-compat with
+ * call sites in api/auth/[action].ts. As of 2026-05 the granted tier
+ * is "yearly" (1-year subscription), matching the new product. Old
+ * lifetime grants in Redis from before the rename still work — they
+ * just keep their stored "lifetime" tier and never expire.
+ *
  * The licence is real: same redeem path, same scan-tier behaviour,
- * same /account.html surface. The only difference from a paid
- * Lifetime is `amountUsd: 0` and the synthetic reference string,
- * both of which are visible to anyone auditing Redis (no hidden
- * grants).
+ * same /account.html surface. The only difference from a paid Yearly
+ * is `amountUsd: 0` and the synthetic reference string, both of
+ * which are visible to anyone auditing Redis (no hidden grants).
  */
 export async function ensureDevLifetimeLicense(
   redis: Redis,
@@ -390,18 +395,21 @@ export async function ensureDevLifetimeLicense(
   if (!norm) return null;
   if (!isDevLifetimeEmail(norm)) return null;
 
-  // Stable synthetic reference — issueLicense uses it for idempotency.
-  // Any subsequent call for the same email returns the same key.
-  const intentReference = `dev-grant-lifetime:${norm}`;
+  // Stable synthetic reference — bumped to "yearly" so the new dev grant
+  // gets minted alongside any pre-existing dev-lifetime licence (rather
+  // than dedupe-merging into it). Effect: founders signing up after the
+  // 2026-05 rollout get a yearly grant; pre-rollout lifetime grants stay
+  // valid forever in parallel.
+  const intentReference = `dev-grant-yearly:${norm}`;
 
   try {
     const license = await issueLicense(redis, {
       email: norm,
-      tier: "lifetime",
+      tier: "yearly",
       intentReference,
       amountUsd: 0,
     });
-    logger.info("auth", "dev-lifetime ensured", {
+    logger.info("auth", "dev-yearly ensured", {
       email: norm,
       key: license.key,
       reference: intentReference,
@@ -411,7 +419,7 @@ export async function ensureDevLifetimeLicense(
     // Don't fail the auth flow on grant errors — the user can still
     // log in and pay normally. Logging is enough for the operator
     // to notice and fix.
-    logger.error("auth", "dev-lifetime issuance failed", {
+    logger.error("auth", "dev-yearly issuance failed", {
       email: norm,
       error: String(err),
     });

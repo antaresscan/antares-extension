@@ -8,10 +8,13 @@ export interface ScanResponseFlag {
 // Attached client-side to ScanResponseData so the overlay can render
 // "47/50 today" without a second round-trip.
 export interface QuotaStatus {
-  tier: "free" | "pro" | "lifetime";
+  // "yearly" is the new paid tier (replaces "lifetime" for new buyers as
+  // of 2026-05). "lifetime" stays in the union for grandfathered
+  // customers who paid before the rename.
+  tier: "free" | "pro" | "yearly" | "lifetime";
   /** Scans consumed today (UTC). */
   used: number;
-  /** Daily ceiling. -1 for unlimited (Pro/Lifetime). */
+  /** Daily ceiling. -1 for unlimited (all tiers post-2026-05). */
   limit: number;
   /** Scans still available. -1 for unlimited. */
   remaining: number;

@@ -67,11 +67,16 @@ async function maybeConfirmOnChain(
     const result = await checkIntentOnChain(intent, heliusApiKey);
     if (!result.confirmed) return intent;
 
+    // Mirror cron-check-payments.ts: yearly subscriptions get a 365-day
+    // expiry, monthly passes get 30 days. No new lifetime tier flips
+    // happen post-2026-05; the user-tier "lifetime" is grandfathered
+    // for customers who paid before the rename.
+    const YEARLY_DAYS = 365;
     const tier =
-      intent.tier === "lifetime" ? ("lifetime" as const) : ("pro" as const);
+      intent.tier === "yearly" ? ("yearly" as const) : ("pro" as const);
     const expiresAtMs =
-      intent.tier === "lifetime"
-        ? undefined
+      intent.tier === "yearly"
+        ? Date.now() + YEARLY_DAYS * 24 * 60 * 60 * 1000
         : Date.now() + PRO_PASS_DAYS * 24 * 60 * 60 * 1000;
 
     // Real install — flip tier directly. Synthetic email-only ids

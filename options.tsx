@@ -10,7 +10,7 @@ type RedeemState =
   | { kind: "success"; tier: string; expiresAt: number | null }
   | { kind: "error"; message: string };
 
-type DevTier = "off" | "free" | "pro" | "lifetime";
+type DevTier = "off" | "free" | "pro" | "yearly" | "lifetime";
 
 function Options() {
   const [stealthMode, setStealthMode] = useState(false);
@@ -35,7 +35,7 @@ function Options() {
         setStealthMode(!!data.antares_stealth);
         setAutoRescan(data.autoRescan !== false);
         const stored = data.antares_dev_tier;
-        if (stored === "free" || stored === "pro" || stored === "lifetime") {
+        if (stored === "free" || stored === "pro" || stored === "yearly" || stored === "lifetime") {
           setDevTier(stored);
         } else {
           setDevTier("off");
@@ -216,8 +216,11 @@ function Options() {
             color: "#0a7a5e",
           }}
         >
-          ✓ {redeem.tier === "lifetime" ? "Lifetime" : "Pro"} unlocked on this
-          install
+          ✓ {redeem.tier === "lifetime"
+            ? "Lifetime"
+            : redeem.tier === "yearly"
+              ? "Yearly"
+              : "Pro"} unlocked on this install
           {redeem.expiresAt
             ? ` until ${new Date(redeem.expiresAt).toLocaleDateString()}.`
             : "."}
@@ -349,8 +352,8 @@ function Options() {
         >
           <option value="off">Off (use real tier)</option>
           <option value="free">Free</option>
-          <option value="pro">Pro</option>
-          <option value="lifetime">Lifetime</option>
+          <option value="pro">Pro (30 days)</option>
+          <option value="yearly">Yearly (1 year)</option>
         </select>
       </div>
       {devTier !== "off" && (

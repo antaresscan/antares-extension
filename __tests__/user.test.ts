@@ -493,15 +493,15 @@ describe("getEffectiveTier (header honoured for dev-allowlisted installs)", () =
 
   it("ignores invalid header values from dev installs (defensive)", async () => {
     process.env.DEV_PRO_INSTALLS = "install-dev";
-    // Garbage header → should fall through to getUserTier (lifetime for dev installs)
-    expect(await getEffectiveTier("install-dev", "premium-plus-ultra")).toBe("lifetime");
+    // Garbage header → should fall through to getUserTier (yearly for dev installs)
+    expect(await getEffectiveTier("install-dev", "premium-plus-ultra")).toBe("yearly");
   });
 
   it("defaults to stored tier when no header is provided", async () => {
     process.env.DEV_PRO_INSTALLS = "install-dev";
-    expect(await getEffectiveTier("install-dev")).toBe("lifetime");
-    expect(await getEffectiveTier("install-dev", null)).toBe("lifetime");
-    expect(await getEffectiveTier("install-dev", undefined)).toBe("lifetime");
+    expect(await getEffectiveTier("install-dev")).toBe("yearly");
+    expect(await getEffectiveTier("install-dev", null)).toBe("yearly");
+    expect(await getEffectiveTier("install-dev", undefined)).toBe("yearly");
   });
 
   it("normalises array headers (Vercel multi-value form) to first value", async () => {
@@ -613,9 +613,10 @@ describe("getEffectiveTierFromRequest (session-gated)", () => {
     const m = mockRedis({});
     initUserStorage(m.redis);
 
-    // No cookie — would normally return Free. Env-var dev escape returns lifetime.
+    // No cookie — would normally return Free. Env-var dev escape returns
+    // yearly (was "lifetime" pre-2026-05; same unlimited dev access).
     expect(await getEffectiveTierFromRequest(reqWithCookie(null), "install-headless")).toBe(
-      "lifetime",
+      "yearly",
     );
   });
 
@@ -708,14 +709,16 @@ describe("resolveTierAndBypass (dev quota bypass)", () => {
 
     const result = await resolveTierAndBypass(reqWithCookie(null), "install-headless");
     expect(result.bypassQuota).toBe(true);
-    // No header + env-var dev → getUserTier short-circuits to lifetime
-    expect(result.tier).toBe("lifetime");
+    // No header + env-var dev → getUserTier short-circuits to yearly (was
+    // "lifetime" pre-2026-05; rename keeps the same dev-unlimited semantics)
+    expect(result.tier).toBe("yearly");
   });
 
-  it("bypassQuota=true for signed-in dev-allowlisted email (Lifetime list)", async () => {
+  it("bypassQuota=true for signed-in dev-allowlisted email (Yearly grant)", async () => {
     const m = mockRedis({
       "account:install:install-dev": "lennypierrepro@gmail.com",
-      "user:install-dev:tier": "lifetime",
+      // Stored tier is "yearly" (the new dev-grant tier post-2026-05).
+      "user:install-dev:tier": "yearly",
     });
     initUserStorage(m.redis);
     seedAccount(m, "lennypierrepro@gmail.com");
@@ -723,7 +726,7 @@ describe("resolveTierAndBypass (dev quota bypass)", () => {
     const token = signSession("lennypierrepro@gmail.com");
     const result = await resolveTierAndBypass(reqWithCookie(token), "install-dev");
     expect(result.bypassQuota).toBe(true);
-    expect(result.tier).toBe("lifetime");
+    expect(result.tier).toBe("yearly");
   });
 
   it("dev forcing Free still bypasses quota (the use case from the user)", async () => {

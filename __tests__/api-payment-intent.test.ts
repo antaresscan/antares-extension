@@ -100,7 +100,7 @@ describe("POST /api/payment-intent", () => {
   it("rejects unknown tier with 400", async () => {
     const req = mockReq({
       headers: { origin: ORIGIN },
-      body: { tier: "yearly", install_id: VALID_INSTALL },
+      body: { tier: "premium-platinum", install_id: VALID_INSTALL },
     });
     const res = mockRes();
     await handler(req, res);
@@ -233,7 +233,23 @@ describe("POST /api/payment-intent", () => {
     expect(payload.error).toBe("sol_rate_unavailable");
   });
 
-  it("uses lifetime price when tier=lifetime", async () => {
+  it("uses yearly price when tier=yearly", async () => {
+    const req = mockReq({
+      headers: { origin: ORIGIN },
+      body: { tier: "yearly", install_id: VALID_INSTALL },
+    });
+    const res = mockRes();
+    await handler(req, res);
+    const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock
+      .calls[0][0] as { amount: number; tier: string };
+    expect(payload.tier).toBe("yearly");
+    expect(payload.amount).toBe(149.99);
+  });
+
+  it("legacy tier=lifetime in body still mints a yearly intent (rename rollout)", async () => {
+    // Stale clients that haven't reloaded the new pricing page may still
+    // POST tier=lifetime — we accept it and route to yearly so they get
+    // the new product without a redirect/retry.
     const req = mockReq({
       headers: { origin: ORIGIN },
       body: { tier: "lifetime", install_id: VALID_INSTALL },
@@ -242,8 +258,7 @@ describe("POST /api/payment-intent", () => {
     await handler(req, res);
     const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock
       .calls[0][0] as { amount: number; tier: string };
-    expect(payload.tier).toBe("lifetime");
-    expect(payload.amount).toBe(149.99);
+    expect(payload.tier).toBe("yearly");
   });
 
   it("treats 'pro' as alias for 'monthly'", async () => {

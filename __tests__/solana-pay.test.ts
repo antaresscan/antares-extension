@@ -131,9 +131,10 @@ describe("priceFor", () => {
     expect(priceFor("monthly")).toBe(24.99);
   });
 
-  it("returns 149.99 for lifetime by default", () => {
+  it("returns 149.99 for yearly by default (legacy SOLANA_PRICE_LIFETIME_USDC fallback)", () => {
+    delete process.env.SOLANA_PRICE_YEARLY_USDC;
     delete process.env.SOLANA_PRICE_LIFETIME_USDC;
-    expect(priceFor("lifetime")).toBe(149.99);
+    expect(priceFor("yearly")).toBe(149.99);
   });
 
   it("honours SOLANA_PRICE_PRO_USDC env override", () => {
@@ -438,7 +439,7 @@ describe("resolveAmount", () => {
         json: async () => ({ [WSOL_MINT]: { usdPrice: 142.857142 } }),
       })),
     );
-    const result = await resolveAmount("lifetime", "sol");
+    const result = await resolveAmount("yearly", "sol");
     // 149.99 / 142.857142 = 1.04993... → ceil to 4 decimals = 1.0500
     expect(result.amount).toBeGreaterThanOrEqual(149.99 / 142.857142);
     expect(result.amount).toBeLessThan(149.99 / 142.857142 + 0.001);
@@ -476,6 +477,6 @@ describe("resolveAmount", () => {
 
   it("priceUsd matches priceFor (back-compat alias)", () => {
     expect(priceUsd("monthly")).toBe(priceFor("monthly"));
-    expect(priceUsd("lifetime")).toBe(priceFor("lifetime"));
+    expect(priceUsd("yearly")).toBe(priceFor("yearly"));
   });
 });

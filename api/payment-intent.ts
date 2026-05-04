@@ -93,11 +93,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // have to redeem later). Session email always wins over body.
   const emailNorm = sessionEmail ?? normalizeEmail(body.email);
 
-  // 'pro' is a UX alias used by the pricing page — both monthly and pro
-  // route to the 30-day pass under the hood.
-  const normalisedTier: Tier = tier === "lifetime" ? "lifetime" : "monthly";
-  if (tier !== "monthly" && tier !== "pro" && tier !== "lifetime") {
-    return apiError(res, 400, "tier must be 'monthly', 'pro' or 'lifetime'.");
+  // Tier normalisation:
+  //   - 'pro'  / 'monthly' → "monthly" (30-day pass)
+  //   - 'yearly'           → "yearly" (1-year subscription, replaces lifetime
+  //                                    as of 2026-05)
+  //   - 'lifetime'         → "yearly" (legacy alias kept so old pricing
+  //                                    pages / cached HTML still mint a
+  //                                    valid intent — they get the new
+  //                                    yearly product, not a forever pass)
+  const normalisedTier: Tier =
+    tier === "yearly" || tier === "lifetime" ? "yearly" : "monthly";
+  if (
+    tier !== "monthly" &&
+    tier !== "pro" &&
+    tier !== "yearly" &&
+    tier !== "lifetime"
+  ) {
+    return apiError(res, 400, "tier must be 'monthly', 'pro' or 'yearly'.");
   }
   if (tokenRaw !== "usdc" && tokenRaw !== "sol") {
     return apiError(res, 400, "token must be 'usdc' or 'sol'.");
