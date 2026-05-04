@@ -84,12 +84,24 @@ export function applySafeGateOverride(input: SafeGateInput): boolean {
   // LP burned, GoPlus clean, contract-level clean). Sub-blue-chip
   // tokens with concentration stay DANGER as before.
   //
+  // Hard guard: presence of `concentration_warning` (single wallet
+  // 10-14%) blocks this exemption regardless of blue-chip status.
+  // PENGU was getting SAFE under the previous logic because 11%
+  // emits a soft "holders" reason that the all-soft branch would
+  // unlock — the founder explicitly called this out: at 11% top-1
+  // even a blue-chip should be CAUTION, never SAFE. Listing
+  // concentration_warning here keeps the gate closed without
+  // forcing DANGER (which the hard `concentration` reason does).
+  //
   // Limitation: relies on holder count from the upstream sources.
   // When Solscan/RugCheck/GoPlus are simultaneously down, holder
   // count can collapse to the Helius top-20 view (=20) and the
   // exemption misses. The hardcoded-treasury allowlist (planned
   // follow-up) will handle that data-quality fallback.
+  const hasConcentrationWarning =
+    input.safeBlockedReasons.includes("concentration_warning");
   const onlyConcentrationHard =
+    !hasConcentrationWarning &&
     input.safeBlockedReasons.length > 0 &&
     input.safeBlockedReasons.every(r =>
       r === "concentration" || SOFT_REASONS[r] === true,

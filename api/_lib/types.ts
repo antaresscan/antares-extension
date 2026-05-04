@@ -30,6 +30,13 @@ export type SafeBlockedReason =
     | "chart"            // HARD
   | "low_holders"     // HARD — tokens with <50 holders
   | "concentration"   // HARD — single wallet holds >=15% of supply
+  // Single wallet holds 10-14% of supply. Not a hard block (DANGER would
+  // be too strong for a blue-chip with otherwise solid fundamentals) but
+  // strong enough that it should NOT be soft-unlocked by the blue-chip
+  // exemption — even Pudgy Penguins / FARTCOIN tier tokens get CAUTION
+  // when one whale can move price meaningfully on a sell. Lives outside
+  // SOFT_REASONS so applySafeGateOverride keeps the gate closed.
+  | "concentration_warning"
   | "lp_unverified"; // SOFT - LP not burned but token is mature and clean
 
 // ─── LAYER RESULT ────────────────────────────────────────────────────────────────────
