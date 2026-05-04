@@ -34,6 +34,12 @@ import { setUserTier, type Tier as UserTier } from "./user";
 import { PRO_PASS_DAYS, type Tier as IntentTier } from "./solana-pay";
 import { logger } from "./logger";
 
+// Inlined here (instead of imported from ./account) to avoid the
+// circular dep account.ts → license.ts → account.ts. Must stay in
+// sync with the canonical definition in api/_lib/account.ts.
+const ACCOUNT_INSTALL_KEY = (installId: string) =>
+  `account:install:${installId}`;
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 /**
@@ -322,7 +328,7 @@ export async function redeemLicense(
     if (existing.redeemedBy === installId) {
       // Same install reclaiming its own license — idempotent success.
       // Re-flip the tier in case Redis lost it (e.g. manual flush).
-      await applyTier(installId, existing);
+      await applyTier(redis, installId, existing);
       return { ok: true, license: existing };
     }
     return { ok: false, reason: "already_redeemed" };
@@ -342,7 +348,7 @@ export async function redeemLicense(
     redeemedBy: installId,
     redeemedAt: String(now),
   });
-  await applyTier(installId, updated);
+  await applyTier(redis, installId, updated);
 
   logger.info("license", "redeemed", {
     key: existing.key,
@@ -353,7 +359,11 @@ export async function redeemLicense(
   return { ok: true, license: updated };
 }
 
-async function applyTier(installId: string, license: License): Promise<void> {
+async function applyTier(
+  redis: Redis,
+  installId: string,
+  license: License,
+): Promise<void> {
   // 1:1 mapping — license tier vocabulary == user tier vocabulary.
   // license.expiresAt carries the right per-tier clock (30d Pro, 365d
   // Yearly, undefined Lifetime), so setUserTier just forwards it.
@@ -364,4 +374,36 @@ async function applyTier(installId: string, license: License): Promise<void> {
         ? "yearly"
         : "pro";
   await setUserTier(installId, userTier, license.expiresAt);
+
+  // Bind the install to the buyer's email so the API's session-gated
+  // tier resolution (`resolveTierAndBypass` in api/_lib/user.ts) can
+  // map "the user signed in as X" → "X owns this install" → "return
+  // the tier stored on this install". Without this write the user
+  // sees Free in the overlay even after a successful redeem because
+  // the install→email binding doesn't exist.
+  //
+  // This is the missing piece the founder hit repeatedly: clicking
+  // LINK TO MY EXTENSION on /account.html flipped tier on the install
+  // but never wrote the binding, so signed-in scan calls resolved
+  // anonymous → Free. Writing the binding here closes the loop in the
+  // redemption path so any user (Solana payer with email, license-
+  // redeemer, dev grantee) gets their tier the moment they redeem.
+  //
+  // Idempotent: we always write the same email regardless of any
+  // existing value. License redemption is the canonical "this email
+  // owns this install" event; later sync-token auto-binds defer to
+  // it (sync-token only writes when no binding exists).
+  try {
+    await redis.set(ACCOUNT_INSTALL_KEY(installId), license.email);
+  } catch (err) {
+    // Don't fail the redeem on a binding-write hiccup — the user paid,
+    // tier is already flipped, the binding can be re-created later by
+    // sync-token's auto-bind path. Log so the operator can see if this
+    // happens at scale.
+    logger.warn("license", "applyTier binding-write failed", {
+      installId,
+      email: license.email,
+      error: String(err),
+    });
+  }
 }
