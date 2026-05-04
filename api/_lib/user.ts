@@ -156,6 +156,91 @@ export async function getEffectiveTier(
 }
 
 /**
+ * Combined tier + dev-bypass resolution. One session lookup, two answers.
+ *
+ * Returns:
+ *   - `tier`: the same value `getEffectiveTierFromRequest` would return
+ *   - `bypassQuota`: true if the caller is dev-allowlisted (env-var or
+ *     bound dev email). When true, callers should skip the Free-tier
+ *     daily-quota enforcement so the dev can flip the Options dropdown
+ *     to Free and test the locked-overlay UX without burning through
+ *     the 50-scan/day cap. Quota counter is still surfaced honestly
+ *     in response headers — we just don't 429 the request.
+ *
+ * For non-dev users this returns `{ tier, bypassQuota: false }` and
+ * behaves identically to `getEffectiveTierFromRequest`.
+ */
+export async function resolveTierAndBypass(
+  req: { headers: { cookie?: string | string[]; "x-antares-dev-tier"?: string | string[] } },
+  installId: string,
+): Promise<{ tier: Tier; bypassQuota: boolean }> {
+  const devTierHeaderRaw = req.headers["x-antares-dev-tier"] ?? null;
+
+  // Env-var dev escape: bypass session, bypass quota.
+  if (isDevProInstall(installId)) {
+    let tier: Tier = "lifetime";
+    if (devTierHeaderRaw) {
+      const raw = Array.isArray(devTierHeaderRaw) ? devTierHeaderRaw[0] : devTierHeaderRaw;
+      const v = String(raw ?? "").trim().toLowerCase();
+      if (v === "free" || v === "pro" || v === "lifetime") tier = v as Tier;
+    } else {
+      tier = await getUserTier(installId);
+    }
+    return { tier, bypassQuota: true };
+  }
+
+  if (!isAvailable() || !redis) return { tier: "free", bypassQuota: false };
+
+  // Single session read.
+  let sessionEmail: string | null = null;
+  try {
+    const { getAccountFromRequest } = await import("./session-cookie");
+    const account = await getAccountFromRequest(
+      req as unknown as Parameters<typeof getAccountFromRequest>[0],
+      redis,
+    );
+    sessionEmail = account?.email ?? null;
+  } catch (err) {
+    logger.warn("user", "session check failed during tier resolve", { error: String(err) });
+    return { tier: "free", bypassQuota: false };
+  }
+  if (!sessionEmail) return { tier: "free", bypassQuota: false };
+
+  // Binding check.
+  let boundEmail: string | null = null;
+  try {
+    boundEmail = await redis.get<string>(`account:install:${installId}`);
+  } catch (err) {
+    logger.warn("user", "binding read failed during tier resolve", { error: String(err) });
+    return { tier: "free", bypassQuota: false };
+  }
+  if (!boundEmail || boundEmail !== sessionEmail) return { tier: "free", bypassQuota: false };
+
+  // Dev check (single import).
+  let isDev = false;
+  try {
+    const { isDevLifetimeEmail, isDevProEmail } = await import("./account");
+    isDev = isDevLifetimeEmail(sessionEmail) || isDevProEmail(sessionEmail);
+  } catch (err) {
+    logger.warn("user", "dev-email check failed during tier resolve", { error: String(err) });
+  }
+
+  // Dev users can flip tier via header; non-dev users always get stored tier.
+  let tier: Tier;
+  if (isDev && devTierHeaderRaw) {
+    const raw = Array.isArray(devTierHeaderRaw) ? devTierHeaderRaw[0] : devTierHeaderRaw;
+    const v = String(raw ?? "").trim().toLowerCase();
+    tier = v === "free" || v === "pro" || v === "lifetime"
+      ? (v as Tier)
+      : await getUserTier(installId);
+  } else {
+    tier = await getUserTier(installId);
+  }
+
+  return { tier, bypassQuota: isDev };
+}
+
+/**
  * Session-gated tier resolution. THIS is the right thing for HTTP
  * handlers (scan / quota / history / etc.) to call.
  *
@@ -185,74 +270,11 @@ export async function getEffectiveTierFromRequest(
   req: { headers: { cookie?: string | string[]; "x-antares-dev-tier"?: string | string[] } },
   installId: string,
 ): Promise<Tier> {
-  const devTierHeaderRaw = req.headers["x-antares-dev-tier"] ?? null;
-
-  // Legacy escape hatch: env-var devs still work without sessions.
-  // Honour the dev-tier header for them, default to lifetime otherwise.
-  if (isDevProInstall(installId)) {
-    if (devTierHeaderRaw) {
-      const raw = Array.isArray(devTierHeaderRaw)
-        ? devTierHeaderRaw[0]
-        : devTierHeaderRaw;
-      const v = String(raw ?? "").trim().toLowerCase();
-      if (v === "free" || v === "pro" || v === "lifetime") return v;
-    }
-    return getUserTier(installId);
-  }
-
-  if (!isAvailable() || !redis) return "free";
-
-  // Session check. Lazy-imported to keep this module from importing
-  // session-cookie at top level (which pulls in the JWT plumbing —
-  // not desired for tests that exercise the user module in isolation).
-  let sessionEmail: string | null = null;
-  try {
-    const { getAccountFromRequest } = await import("./session-cookie");
-    const account = await getAccountFromRequest(
-      req as unknown as Parameters<typeof getAccountFromRequest>[0],
-      redis,
-    );
-    sessionEmail = account?.email ?? null;
-  } catch (err) {
-    logger.warn("user", "session check failed during tier resolve", {
-      error: String(err),
-    });
-    return "free";
-  }
-  if (!sessionEmail) return "free";
-
-  // Binding check: the session must own this install. Otherwise refuse.
-  let boundEmail: string | null = null;
-  try {
-    boundEmail = await redis.get<string>(`account:install:${installId}`);
-  } catch (err) {
-    logger.warn("user", "binding read failed during tier resolve", {
-      error: String(err),
-    });
-    return "free";
-  }
-  if (!boundEmail || boundEmail !== sessionEmail) return "free";
-
-  // Authenticated + owns the install. Now resolve the actual tier.
-  if (devTierHeaderRaw) {
-    try {
-      const { isDevLifetimeEmail, isDevProEmail } = await import("./account");
-      if (isDevLifetimeEmail(sessionEmail) || isDevProEmail(sessionEmail)) {
-        const raw = Array.isArray(devTierHeaderRaw)
-          ? devTierHeaderRaw[0]
-          : devTierHeaderRaw;
-        const v = String(raw ?? "").trim().toLowerCase();
-        if (v === "free" || v === "pro" || v === "lifetime") return v;
-      }
-    } catch (err) {
-      logger.warn("user", "dev-email check failed during tier resolve", {
-        error: String(err),
-      });
-      // fall through to stored tier
-    }
-  }
-
-  return getUserTier(installId);
+  // Thin wrapper around resolveTierAndBypass so callers that don't care
+  // about the dev-quota-bypass flag stay simple. Both functions share one
+  // session+binding read internally.
+  const { tier } = await resolveTierAndBypass(req, installId);
+  return tier;
 }
 
 // ─── Tier read / write ────────────────────────────────────────────────────────

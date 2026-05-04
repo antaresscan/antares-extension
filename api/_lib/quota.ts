@@ -105,6 +105,19 @@ export async function checkDailyQuota(
    * `getUserTier()` lookup.
    */
   precomputedTier?: Tier,
+  /**
+   * Dev-mode bypass: when true, the request is always allowed regardless
+   * of the per-day Free counter. The counter is read but not incremented
+   * so the dev's test traffic doesn't pollute their own real-user usage
+   * stats. Headers still report the honest `tier` (Free if the dropdown
+   * forced Free) so the overlay shows the locked Free-tier UX, just
+   * without the 429.
+   *
+   * Resolved by `resolveTierAndBypass(req, installId)`: true for installs
+   * in DEV_PRO_INSTALLS env var or whose bound email is in
+   * DEV_LIFETIME_EMAILS_HARDCODED / DEV_PRO_EMAILS_HARDCODED.
+   */
+  options: { bypassQuota?: boolean } = {},
 ): Promise<QuotaResult> {
   const resetAt = getResetAt();
 
@@ -124,6 +137,31 @@ export async function checkDailyQuota(
 
   const today = getUtcDateKey();
   const quotaKey = `quota:${key}:${today}`;
+
+  // Dev-bypass branch: read the current count without incrementing, and
+  // always return allowed. The dev sees Free-tier UX but never gets
+  // 429'd — perfect for testing the locked overlay across many tokens.
+  if (options.bypassQuota) {
+    let used = 0;
+    try {
+      const raw = await redis.get<number | string>(quotaKey);
+      if (typeof raw === "number") used = raw;
+      else if (typeof raw === "string") {
+        const parsed = parseInt(raw, 10);
+        used = Number.isFinite(parsed) ? parsed : 0;
+      }
+    } catch {
+      // Silent — bypass is permissive anyway.
+    }
+    return {
+      allowed: true,
+      used,
+      remaining: Math.max(0, FREE_TIER_DAILY_LIMIT - used),
+      limit: FREE_TIER_DAILY_LIMIT,
+      resetAt,
+      tier: "free",
+    };
+  }
 
   let used = 0;
   try {
@@ -166,6 +204,8 @@ export async function peekDailyQuota(
   identityKey: string | null,
   /** Same dev-tier override semantics as checkDailyQuota above. */
   precomputedTier?: Tier,
+  /** Dev bypass — see checkDailyQuota for semantics. */
+  options: { bypassQuota?: boolean } = {},
 ): Promise<QuotaResult> {
   const resetAt = getResetAt();
 
@@ -196,9 +236,9 @@ export async function peekDailyQuota(
   }
 
   // `<` not `<=`: the question is "would the *next* scan be allowed",
-  // and a peek doesn't add to the counter.
+  // and a peek doesn't add to the counter. Devs are always allowed.
   return {
-    allowed: used < FREE_TIER_DAILY_LIMIT,
+    allowed: options.bypassQuota ? true : used < FREE_TIER_DAILY_LIMIT,
     used,
     remaining: Math.max(0, FREE_TIER_DAILY_LIMIT - used),
     limit: FREE_TIER_DAILY_LIMIT,
