@@ -577,23 +577,35 @@ export function buildResultNode(
     ),
   )
 
-  // Same filter rules as the Critical Flags panel: drop bonus + info +
-  // legacy "unavailable" warnings. Without this the summary shows
-  // "1 flags detected" for tokens whose only flag is "Helius unavailable",
-  // which scares users about token risk when only our pipeline is degraded.
-  // Conf X% in the header already conveys upstream availability.
-  const allFlags = (data.flags || []).filter((f: ScanResponseFlag) => {
+  // Summary count includes EVERY warning + critical flag, even
+  // provider-availability ones ("Helius unavailable \u2014 holder concentration
+  // unverified"). Why: those are exactly what triggers CAUTION via the
+  // safeBlock layer (see api/_lib/layers.ts). Hiding them from the count
+  // produces "No issues found" on a CAUTION verdict, which lies to the
+  // user \u2014 they then can't tell whether to trust the score.
+  //
+  // Bonus and pure-info flags stay filtered: those don't affect verdict
+  // and would inflate the count for "good news" rows like "LP burned \u2713".
+  const summaryFlags = (data.flags || []).filter((f: ScanResponseFlag) => {
     if (f.severity === "bonus" || f.severity === "info") return false
-    if (typeof f.label === "string" && /\bunavailable\b/i.test(f.label)) return false
     return true
   })
-  const flagCount = allFlags.length
-  const critCount = allFlags.filter((f: ScanResponseFlag) => f.severity === "critical").length
+  const flagCount = summaryFlags.length
+  const critCount = summaryFlags.filter((f: ScanResponseFlag) => f.severity === "critical").length
+  // Flag whether any of the surfaced flags are pure provider-availability
+  // issues (no upstream token signal). When that's the only thing in the
+  // count the wording shifts to "data unverified" \u2014 the user understands
+  // it's a pipeline gap, not a token-side red flag.
+  const onlyUnavailable = flagCount > 0 && summaryFlags.every(
+    (f: ScanResponseFlag) =>
+      typeof f.label === "string" && /\bunavailable\b/i.test(f.label),
+  )
 
   let summary = ""
   if (flagCount === 0) summary = "No issues found"
+  else if (onlyUnavailable) summary = `${flagCount} flag${flagCount > 1 ? "s" : ""} \u2014 data unverified`
   else if (critCount > 0) summary = `${flagCount} flags \u2014 ${critCount} critical`
-  else summary = `${flagCount} flags detected`
+  else summary = `${flagCount} flag${flagCount > 1 ? "s" : ""} detected`
 
   const liqDisplay = liq !== null ? formatMcap(liq) : "\u2014"
   const liqClass: string | undefined =
