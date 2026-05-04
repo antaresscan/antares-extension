@@ -12,6 +12,10 @@ vi.mock("@upstash/redis", () => {
       return "OK";
     });
     get = vi.fn(async (k: string) => mocks.store.get(k) ?? null);
+    del = vi.fn(async (k: string) => {
+      const had = mocks.store.delete(k);
+      return had ? 1 : 0;
+    });
     hset = vi.fn(async (k: string, fields: Record<string, string>) => {
       const existing = (mocks.store.get(k) as Record<string, string>) ?? {};
       mocks.store.set(k, { ...existing, ...fields });
@@ -231,6 +235,10 @@ describe("POST /api/auth/login", () => {
 
 // ── logout ────────────────────────────────────────────────────────────────
 describe("POST /api/auth/logout", () => {
+  // A valid install_id must satisfy the INSTALL_ID_RE regex used by
+  // getInstallId — keep it deterministic so the mock store keys match.
+  const DEV_INSTALL_ID = "11111111-1111-4111-8111-111111111111";
+
   it("clears the session cookie", async () => {
     const req = mockReq({ headers: { origin: ORIGIN } });
     const res = mockRes();
@@ -244,6 +252,68 @@ describe("POST /api/auth/logout", () => {
     const res = mockRes();
     await logoutHandler(req, res);
     expect(res.status).toHaveBeenCalledWith(405);
+  });
+
+  it("unbinds dev-allowlisted install + resets stored tier to free", async () => {
+    // Pre-seed: dev install bound to dev email + tier=lifetime stored
+    mocks.store.set(
+      `account:install:${DEV_INSTALL_ID}`,
+      "lennypierrepro@gmail.com",
+    );
+    mocks.store.set(`user:${DEV_INSTALL_ID}:tier`, "lifetime");
+
+    const req = mockReq({
+      headers: { origin: ORIGIN, "x-antares-install": DEV_INSTALL_ID },
+    });
+    const res = mockRes();
+    await logoutHandler(req, res);
+
+    // The install→email binding is gone, and the stored tier is gone too
+    // (setUserTier("free") deletes both keys per user.ts behaviour).
+    expect(mocks.store.has(`account:install:${DEV_INSTALL_ID}`)).toBe(false);
+    expect(mocks.store.has(`user:${DEV_INSTALL_ID}:tier`)).toBe(false);
+  });
+
+  it("leaves real-customer install untouched on logout", async () => {
+    const REAL_INSTALL_ID = "22222222-2222-4222-8222-222222222222";
+    mocks.store.set(
+      `account:install:${REAL_INSTALL_ID}`,
+      "real-customer@example.com",
+    );
+    mocks.store.set(`user:${REAL_INSTALL_ID}:tier`, "lifetime");
+
+    const req = mockReq({
+      headers: { origin: ORIGIN, "x-antares-install": REAL_INSTALL_ID },
+    });
+    const res = mockRes();
+    await logoutHandler(req, res);
+
+    // Real customers paid for their tier. Logout shouldn't strip it.
+    expect(mocks.store.get(`account:install:${REAL_INSTALL_ID}`)).toBe(
+      "real-customer@example.com",
+    );
+    expect(mocks.store.get(`user:${REAL_INSTALL_ID}:tier`)).toBe("lifetime");
+  });
+
+  it("works without install_id header (no dev reset attempted)", async () => {
+    const req = mockReq({ headers: { origin: ORIGIN } });
+    const res = mockRes();
+    await logoutHandler(req, res);
+    expect(res.status).not.toHaveBeenCalledWith(500);
+    const cookie = getSetCookieHeader(res);
+    expect(cookie).toContain("Max-Age=0");
+  });
+
+  it("doesn't fail logout when install has no bound email", async () => {
+    const ORPHAN_INSTALL_ID = "33333333-3333-4333-8333-333333333333";
+    // No account:install:* key seeded.
+    const req = mockReq({
+      headers: { origin: ORIGIN, "x-antares-install": ORPHAN_INSTALL_ID },
+    });
+    const res = mockRes();
+    await logoutHandler(req, res);
+    const cookie = getSetCookieHeader(res);
+    expect(cookie).toContain("Max-Age=0");
   });
 });
 
