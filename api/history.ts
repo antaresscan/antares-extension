@@ -72,7 +72,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Dev-tier override flows through the same path for dev-allowlisted
     // emails — see api/_lib/user.ts:getEffectiveTierFromRequest.
     const tier = await getEffectiveTierFromRequest(req, installId);
-    const isPaid = tier === "pro" || tier === "lifetime";
+    const isPaid = tier === "pro" || tier === "yearly" || tier === "lifetime";
 
     const maxLimit = isPaid ? PRO_HISTORY_LIMIT : FREE_HISTORY_LIMIT;
     const limit = clampInt(req.query.limit, 1, maxLimit, maxLimit);

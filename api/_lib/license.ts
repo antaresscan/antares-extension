@@ -38,11 +38,15 @@ import { logger } from "./logger";
 
 /**
  * Tier carried by a license. Mirrors the user-tier vocabulary in
- * api/_lib/user.ts (which uses "pro" instead of "monthly") rather than
- * the intent vocabulary in solana-pay.ts ("monthly"). Translation
- * happens once at issue time so callers don't need to know.
+ * api/_lib/user.ts.
+ *
+ *   "pro"      → 30-day pass (mapped from intent tier "monthly")
+ *   "yearly"   → 1-year subscription (replaces "lifetime" as of 2026-05)
+ *   "lifetime" → grandfathered: kept readable so old licenses still
+ *                redeem correctly, but new licences are never minted
+ *                with this tier.
  */
-export type LicenseTier = "pro" | "lifetime";
+export type LicenseTier = "pro" | "yearly" | "lifetime";
 
 export interface License {
   /** ANT-XXXX-XXXX-XXXX-XXXX, base32-ish, 19 chars including dashes. */
@@ -115,11 +119,20 @@ export function normalizeEmail(email: unknown): string | null {
 // ─── Tier translation ─────────────────────────────────────────────────────────
 
 /**
- * Intent vocabulary uses "monthly", user vocabulary uses "pro". Map
- * once on issue. Lifetime is the same word in both.
+ * Intent vocabulary uses "monthly" / "yearly"; license vocabulary uses
+ * "pro" / "yearly" (yearly is the same word in both). Translation
+ * happens once at issue time so callers don't need to know. The legacy
+ * "lifetime" intent value is mapped to "yearly" too, to handle in-flight
+ * intents created on stale clients during the 2026-05 rename rollout.
  */
 export function intentTierToLicenseTier(tier: IntentTier): LicenseTier {
-  return tier === "lifetime" ? "lifetime" : "pro";
+  // Cast: IntentTier is currently "monthly" | "yearly" but stale clients
+  // may still POST tier="lifetime"; the runtime check below is what
+  // actually runs. TypeScript guards us against new IntentTier values.
+  if ((tier as string) === "yearly" || (tier as string) === "lifetime") {
+    return "yearly";
+  }
+  return "pro";
 }
 
 // ─── Issue ────────────────────────────────────────────────────────────────────
@@ -164,11 +177,21 @@ export async function issueLicense(
     });
   }
 
-  // Pro 30-day pass: the license carries its own expiry, so when it's
-  // eventually redeemed the install gets the correct downgrade clock.
-  // Lifetime: no expiry on the license, no expiry on the install.
+  // License-level expiry. The license carries its own clock so when
+  // it's eventually redeemed the install gets the correct downgrade
+  // moment, even if the user redeems weeks after purchase.
+  //
+  //   "pro"      → 30 days
+  //   "yearly"   → 365 days
+  //   "lifetime" → undefined (grandfathered legacy licences only;
+  //                new licences never reach this branch)
+  const YEARLY_DAYS = 365;
   const expiresAt =
-    tier === "pro" ? now + PRO_PASS_DAYS * 24 * 60 * 60 * 1000 : undefined;
+    tier === "pro"
+      ? now + PRO_PASS_DAYS * 24 * 60 * 60 * 1000
+      : tier === "yearly"
+        ? now + YEARLY_DAYS * 24 * 60 * 60 * 1000
+        : undefined;
 
   const license: License = {
     key: generateLicenseKey(),
@@ -247,7 +270,14 @@ export async function getLicensesByEmail(
 function parseLicense(raw: Record<string, string>): License {
   const expiresAt =
     raw.expiresAt && raw.expiresAt !== "0" ? Number(raw.expiresAt) : undefined;
-  const tier: LicenseTier = raw.tier === "lifetime" ? "lifetime" : "pro";
+  // Honour all three persisted tier values. "lifetime" is grandfathered
+  // for legacy licences that haven't been redeemed yet.
+  const tier: LicenseTier =
+    raw.tier === "lifetime"
+      ? "lifetime"
+      : raw.tier === "yearly"
+        ? "yearly"
+        : "pro";
   return {
     key: raw.key,
     email: raw.email,
@@ -324,6 +354,14 @@ export async function redeemLicense(
 }
 
 async function applyTier(installId: string, license: License): Promise<void> {
-  const userTier: UserTier = license.tier === "lifetime" ? "lifetime" : "pro";
+  // 1:1 mapping — license tier vocabulary == user tier vocabulary.
+  // license.expiresAt carries the right per-tier clock (30d Pro, 365d
+  // Yearly, undefined Lifetime), so setUserTier just forwards it.
+  const userTier: UserTier =
+    license.tier === "lifetime"
+      ? "lifetime"
+      : license.tier === "yearly"
+        ? "yearly"
+        : "pro";
   await setUserTier(installId, userTier, license.expiresAt);
 }

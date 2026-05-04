@@ -264,11 +264,11 @@ describe("GET /api/payment-status", () => {
       expect(payload.txSignature).toBe("sig-fast");
     });
 
-    it("flips to Lifetime without expiry on lifetime tier", async () => {
-      mockGet.mockResolvedValueOnce(intent({ status: "pending", tier: "lifetime" }));
+    it("flips to Yearly with 365-day expiry on yearly tier", async () => {
+      mockGet.mockResolvedValueOnce(intent({ status: "pending", tier: "yearly" }));
       mocks.checkOnChain.mockResolvedValueOnce({
         confirmed: true,
-        txSignature: "sig-life",
+        txSignature: "sig-year",
       });
 
       const req = mockReq({
@@ -278,11 +278,14 @@ describe("GET /api/payment-status", () => {
       const res = mockRes();
       await handler(req, res);
 
-      expect(mocks.setUserTier).toHaveBeenCalledWith(
-        "install-test-aaaaaaaaaaaa",
-        "lifetime",
-        undefined,
-      );
+      const calls = (mocks.setUserTier as ReturnType<typeof vi.fn>).mock.calls;
+      expect(calls.length).toBeGreaterThan(0);
+      const [installArg, tierArg, expiresArg] = calls[0] as [string, string, number];
+      expect(installArg).toBe("install-test-aaaaaaaaaaaa");
+      expect(tierArg).toBe("yearly");
+      const oneYearMs = 365 * 24 * 60 * 60 * 1000;
+      expect(expiresArg).toBeGreaterThan(Date.now() + oneYearMs - 60_000);
+      expect(expiresArg).toBeLessThan(Date.now() + oneYearMs + 60_000);
     });
 
     it("does not run the on-chain check when intent is already confirmed", async () => {

@@ -90,15 +90,17 @@ describe("isDevProInstall", () => {
 });
 
 describe("getUserTier with DEV_PRO_INSTALLS override", () => {
-  it("forces lifetime for dev installs without consulting Redis", async () => {
+  it("forces yearly for dev installs without consulting Redis", async () => {
     process.env.DEV_PRO_INSTALLS = DEV_INSTALL_A;
-    expect(await getUserTier(DEV_INSTALL_A)).toBe("lifetime");
+    expect(await getUserTier(DEV_INSTALL_A)).toBe("yearly");
   });
 
   it("dev override wins over a stored 'free' tier", async () => {
     process.env.DEV_PRO_INSTALLS = DEV_INSTALL_A;
-    // Even if we stored nothing or "free", dev install stays lifetime
-    expect(await getUserTier(DEV_INSTALL_A)).toBe("lifetime");
+    // Even if we stored nothing or "free", dev install stays yearly.
+    // (Was "lifetime" pre-2026-05; rename keeps the same semantics —
+    // unlimited dev access — under the new product name.)
+    expect(await getUserTier(DEV_INSTALL_A)).toBe("yearly");
   });
 
   it("regular installs still default to free", async () => {
@@ -110,16 +112,16 @@ describe("getUserTier with DEV_PRO_INSTALLS override", () => {
     process.env.DEV_PRO_INSTALLS = DEV_INSTALL_A;
     await setUserTier(REGULAR_INSTALL, "pro");
     expect(await getUserTier(REGULAR_INSTALL)).toBe("pro");
-    // dev install still lifetime regardless
-    expect(await getUserTier(DEV_INSTALL_A)).toBe("lifetime");
+    // dev install still yearly regardless
+    expect(await getUserTier(DEV_INSTALL_A)).toBe("yearly");
   });
 });
 
 describe("checkDailyQuota — unlimited for everyone post-2026-05", () => {
-  it("dev installs return unlimited Lifetime", async () => {
+  it("dev installs return unlimited Yearly", async () => {
     process.env.DEV_PRO_INSTALLS = DEV_INSTALL_A;
     const result = await checkDailyQuota(DEV_INSTALL_A);
-    expect(result.tier).toBe("lifetime");
+    expect(result.tier).toBe("yearly");
     expect(result.allowed).toBe(true);
     expect(result.limit).toBe(-1);
     expect(result.remaining).toBe(-1);
@@ -141,7 +143,7 @@ describe("peekDailyQuota matches checkDailyQuota for dev installs", () => {
   it("returns unlimited for dev installs", async () => {
     process.env.DEV_PRO_INSTALLS = DEV_INSTALL_A;
     const result = await peekDailyQuota(DEV_INSTALL_A);
-    expect(result.tier).toBe("lifetime");
+    expect(result.tier).toBe("yearly");
     expect(result.limit).toBe(-1);
   });
 });
@@ -151,27 +153,29 @@ describe("getEffectiveTier with X-Antares-Dev-Tier header", () => {
     process.env.DEV_PRO_INSTALLS = DEV_INSTALL_A;
     expect(await getEffectiveTier(DEV_INSTALL_A, "free")).toBe("free");
     expect(await getEffectiveTier(DEV_INSTALL_A, "pro")).toBe("pro");
+    expect(await getEffectiveTier(DEV_INSTALL_A, "yearly")).toBe("yearly");
+    // "lifetime" still honoured for grandfathered legacy installs
     expect(await getEffectiveTier(DEV_INSTALL_A, "lifetime")).toBe("lifetime");
   });
 
-  it("dev install + no header → default lifetime (DEV_PRO_INSTALLS shortcut)", async () => {
+  it("dev install + no header → default yearly (DEV_PRO_INSTALLS shortcut)", async () => {
     process.env.DEV_PRO_INSTALLS = DEV_INSTALL_A;
-    expect(await getEffectiveTier(DEV_INSTALL_A)).toBe("lifetime");
-    expect(await getEffectiveTier(DEV_INSTALL_A, null)).toBe("lifetime");
+    expect(await getEffectiveTier(DEV_INSTALL_A)).toBe("yearly");
+    expect(await getEffectiveTier(DEV_INSTALL_A, null)).toBe("yearly");
   });
 
   it("dev install + invalid header → ignored, falls back to default", async () => {
     process.env.DEV_PRO_INSTALLS = DEV_INSTALL_A;
-    expect(await getEffectiveTier(DEV_INSTALL_A, "admin")).toBe("lifetime");
-    expect(await getEffectiveTier(DEV_INSTALL_A, "")).toBe("lifetime");
+    expect(await getEffectiveTier(DEV_INSTALL_A, "admin")).toBe("yearly");
+    expect(await getEffectiveTier(DEV_INSTALL_A, "")).toBe("yearly");
   });
 
   it("non-dev install + valid header → header IGNORED, normal tier read", async () => {
     process.env.DEV_PRO_INSTALLS = DEV_INSTALL_A;
     // Server trusts the header only for dev-listed installs.
-    expect(await getEffectiveTier(REGULAR_INSTALL, "lifetime")).toBe("free");
+    expect(await getEffectiveTier(REGULAR_INSTALL, "yearly")).toBe("free");
     await setUserTier(REGULAR_INSTALL, "pro");
-    expect(await getEffectiveTier(REGULAR_INSTALL, "lifetime")).toBe("pro");
+    expect(await getEffectiveTier(REGULAR_INSTALL, "yearly")).toBe("pro");
   });
 
   it("array-shaped header (Vercel sometimes wraps) → first value used", async () => {
@@ -184,6 +188,6 @@ describe("getEffectiveTier with X-Antares-Dev-Tier header", () => {
   it("header case-insensitive ('PRO' = 'pro')", async () => {
     process.env.DEV_PRO_INSTALLS = DEV_INSTALL_A;
     expect(await getEffectiveTier(DEV_INSTALL_A, "PRO")).toBe("pro");
-    expect(await getEffectiveTier(DEV_INSTALL_A, "  Lifetime  ")).toBe("lifetime");
+    expect(await getEffectiveTier(DEV_INSTALL_A, "  Yearly  ")).toBe("yearly");
   });
 });

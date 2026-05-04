@@ -157,7 +157,12 @@ const handlers: Record<string, MessageHandler> = {
       .then(([installId, store]) => {
         const headers: Record<string, string> = installId ? { "X-Antares-Install": installId } : {}
         const devTier = store.antares_dev_tier
-        if (devTier === "free" || devTier === "pro" || devTier === "lifetime") {
+        if (
+          devTier === "free" ||
+          devTier === "pro" ||
+          devTier === "yearly" ||
+          devTier === "lifetime"
+        ) {
           headers["X-Antares-Dev-Tier"] = devTier
         }
         // Session token from the website bridge (see contents/antares-

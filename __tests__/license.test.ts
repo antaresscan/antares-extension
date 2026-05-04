@@ -129,9 +129,16 @@ describe("normalizeEmail", () => {
 });
 
 describe("intentTierToLicenseTier", () => {
-  it("maps monthly → pro and lifetime → lifetime", () => {
+  it("maps monthly → pro and yearly → yearly", () => {
     expect(intentTierToLicenseTier("monthly")).toBe("pro");
-    expect(intentTierToLicenseTier("lifetime")).toBe("lifetime");
+    expect(intentTierToLicenseTier("yearly")).toBe("yearly");
+  });
+
+  it("legacy lifetime intents map to yearly (rename rollout fallback)", () => {
+    // Cast: stale intents created before the 2026-05 rename may still
+    // arrive with tier="lifetime"; runtime guard inside the helper
+    // routes them to "yearly" so they get the new product.
+    expect(intentTierToLicenseTier("lifetime" as never)).toBe("yearly");
   });
 });
 
@@ -158,16 +165,19 @@ describe("issueLicense + getLicense", () => {
     expect(fetched?.email).toBe("buyer@example.com");
   });
 
-  it("lifetime intents produce no expiry on the license", async () => {
+  it("yearly intents produce a 365-day expiry on the license", async () => {
     const redis = new Redis({ url: "x", token: "y" });
     const lic = await issueLicense(redis, {
       email: "buyer@example.com",
-      tier: "lifetime",
-      intentReference: "ref-life",
+      tier: "yearly",
+      intentReference: "ref-year",
       amountUsd: 149.99,
     });
-    expect(lic.tier).toBe("lifetime");
-    expect(lic.expiresAt).toBeUndefined();
+    expect(lic.tier).toBe("yearly");
+    expect(lic.expiresAt).toBeDefined();
+    const oneYearMs = 365 * 24 * 60 * 60 * 1000;
+    expect(lic.expiresAt).toBeGreaterThan(Date.now() + oneYearMs - 60_000);
+    expect(lic.expiresAt).toBeLessThan(Date.now() + oneYearMs + 60_000);
   });
 
   it("is idempotent on the intent reference (cron retries don't duplicate)", async () => {
@@ -218,7 +228,7 @@ describe("getLicensesByEmail", () => {
     });
     const b = await issueLicense(redis, {
       email: "buyer@example.com",
-      tier: "lifetime",
+      tier: "yearly",
       intentReference: "ref-B",
       amountUsd: 149.99,
       now: 2000,
@@ -261,20 +271,20 @@ describe("redeemLicense", () => {
     );
   });
 
-  it("lifetime redemption flips to lifetime + no expiry", async () => {
+  it("yearly redemption flips to yearly with 365-day expiry", async () => {
     const redis = new Redis({ url: "x", token: "y" });
     const lic = await issueLicense(redis, {
       email: "buyer@example.com",
-      tier: "lifetime",
-      intentReference: "ref-Rlife",
+      tier: "yearly",
+      intentReference: "ref-Ryear",
       amountUsd: 149.99,
     });
 
     await redeemLicense(redis, lic.key, VALID_INSTALL);
     expect(setUserTierMock).toHaveBeenCalledWith(
       VALID_INSTALL,
-      "lifetime",
-      undefined,
+      "yearly",
+      expect.any(Number),
     );
   });
 

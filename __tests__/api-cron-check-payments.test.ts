@@ -200,18 +200,28 @@ describe("cron /api/cron-check-payments", () => {
     expect(payload.outcome.confirmed).toBe(1);
   });
 
-  it("flips user to Lifetime without expiry when tier=lifetime", async () => {
-    mockListPending.mockResolvedValueOnce(["ref-life"]);
-    mockGetIntent.mockResolvedValueOnce(intent({ reference: "ref-life", tier: "lifetime" }));
+  it("flips user to Yearly with 365-day expiry when tier=yearly", async () => {
+    mockListPending.mockResolvedValueOnce(["ref-year"]);
+    mockGetIntent.mockResolvedValueOnce(intent({ reference: "ref-year", tier: "yearly" }));
     mockCheckOnChain.mockResolvedValueOnce({
       confirmed: true,
-      txSignature: "sig-life",
+      txSignature: "sig-year",
     });
     const req = cronReq({ "x-vercel-cron": "1" });
     const res = mockRes();
     await handler(req, res);
 
-    expect(mockSetUserTier).toHaveBeenCalledWith(VALID_INSTALL, "lifetime", undefined);
+    // setUserTier called with tier="yearly" + an epoch-ms expiry roughly
+    // 365 days from now (allow generous slack — test runs may take time).
+    const calls = (mockSetUserTier as ReturnType<typeof vi.fn>).mock.calls;
+    expect(calls.length).toBeGreaterThan(0);
+    const [installArg, tierArg, expiresArg] = calls[0] as [string, string, number];
+    expect(installArg).toBe(VALID_INSTALL);
+    expect(tierArg).toBe("yearly");
+    expect(typeof expiresArg).toBe("number");
+    const oneYearMs = 365 * 24 * 60 * 60 * 1000;
+    expect(expiresArg).toBeGreaterThan(Date.now() + oneYearMs - 60_000);
+    expect(expiresArg).toBeLessThan(Date.now() + oneYearMs + 60_000);
   });
 
   it("leaves still-pending intents alone (no setUserTier, no mark)", async () => {

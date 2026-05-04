@@ -21,7 +21,11 @@ export const HISTORY_KEY = (id: string) => `user:${id}:history`;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type Tier = "free" | "pro" | "lifetime";
+// "yearly" replaces "lifetime" for new purchases as of 2026-05. We keep
+// "lifetime" in the type for grandfathered customers who paid before
+// the rename — their stored tier is still honoured forever and the UI
+// displays them as Lifetime. New checkout flows mint "yearly" only.
+export type Tier = "free" | "pro" | "yearly" | "lifetime";
 
 export interface ScanHistoryEntry {
   ca: string;
@@ -150,7 +154,7 @@ export async function getEffectiveTier(
       ? devTierHeaderRaw[0]
       : devTierHeaderRaw;
     const v = String(raw ?? "").trim().toLowerCase();
-    if (v === "free" || v === "pro" || v === "lifetime") return v;
+    if (v === "free" || v === "pro" || v === "yearly" || v === "lifetime") return v as Tier;
   }
   return getUserTier(installId);
 }
@@ -178,11 +182,11 @@ export async function resolveTierAndBypass(
 
   // Env-var dev escape: bypass session, bypass quota.
   if (isDevProInstall(installId)) {
-    let tier: Tier = "lifetime";
+    let tier: Tier = "yearly";
     if (devTierHeaderRaw) {
       const raw = Array.isArray(devTierHeaderRaw) ? devTierHeaderRaw[0] : devTierHeaderRaw;
       const v = String(raw ?? "").trim().toLowerCase();
-      if (v === "free" || v === "pro" || v === "lifetime") tier = v as Tier;
+      if (v === "free" || v === "pro" || v === "yearly" || v === "lifetime") tier = v as Tier;
     } else {
       tier = await getUserTier(installId);
     }
@@ -230,7 +234,7 @@ export async function resolveTierAndBypass(
   if (isDev && devTierHeaderRaw) {
     const raw = Array.isArray(devTierHeaderRaw) ? devTierHeaderRaw[0] : devTierHeaderRaw;
     const v = String(raw ?? "").trim().toLowerCase();
-    tier = v === "free" || v === "pro" || v === "lifetime"
+    tier = v === "free" || v === "pro" || v === "yearly" || v === "lifetime"
       ? (v as Tier)
       : await getUserTier(installId);
   } else {
@@ -286,11 +290,11 @@ export async function getEffectiveTierFromRequest(
  * dev never gets quota-locked on their own install.
  */
 export async function getUserTier(installId: string): Promise<Tier> {
-  if (isDevProInstall(installId)) return "lifetime";
+  if (isDevProInstall(installId)) return "yearly";
   if (!isAvailable() || !redis) return "free";
   try {
     const tier = await redis.get<string>(TIER_KEY(installId));
-    if (tier !== "pro" && tier !== "lifetime") return "free";
+    if (tier !== "pro" && tier !== "yearly" && tier !== "lifetime") return "free";
 
     // Honour expiry — Pro Monthly subs that lapsed should immediately
     // revert to Free without waiting for an external sweeper.

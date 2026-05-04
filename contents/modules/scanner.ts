@@ -36,7 +36,7 @@ async function readDevTierOverride(): Promise<string | null> {
       chrome.storage.local.get(["antares_dev_tier"], (v) => resolve(v as { antares_dev_tier?: string })),
     )
     const v = data.antares_dev_tier
-    if (v === "free" || v === "pro" || v === "lifetime") return v
+    if (v === "free" || v === "pro" || v === "yearly" || v === "lifetime") return v
     return null
   } catch {
     return null
@@ -49,7 +49,14 @@ async function readDevTierOverride(): Promise<string | null> {
 // can simply hide the badge instead of showing zeros.
 function extractQuotaFromHeaders(headers: Headers): QuotaStatus | undefined {
   const tier = headers.get("X-Antares-Quota-Tier")
-  if (tier !== "free" && tier !== "pro" && tier !== "lifetime") return undefined
+  if (
+    tier !== "free" &&
+    tier !== "pro" &&
+    tier !== "yearly" &&
+    tier !== "lifetime"
+  ) {
+    return undefined
+  }
   const used = parseInt(headers.get("X-Antares-Quota-Used") ?? "0", 10)
   const limit = parseInt(headers.get("X-Antares-Quota-Limit") ?? "-1", 10)
   const remaining = parseInt(headers.get("X-Antares-Quota-Remaining") ?? "-1", 10)

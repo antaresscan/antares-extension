@@ -72,11 +72,14 @@ async function processIntent(
   const result = await checkIntentOnChain(intent, heliusApiKey);
   if (!result.confirmed) return "still_pending";
 
-  // Compute Pro Pass expiry — 30 days from confirmation, NOT from intent
-  // creation. User shouldn't be penalised for taking 25 minutes to pay.
+  // Tier expiry from confirmation time:
+  //   - monthly → 30 days
+  //   - yearly  → 365 days (replaced "lifetime" as of 2026-05; the
+  //               product is now a 1-year subscription, not a forever pass)
+  const YEARLY_DAYS = 365;
   const tierExpiresAt =
-    intent.tier === "lifetime"
-      ? undefined
+    intent.tier === "yearly"
+      ? Date.now() + YEARLY_DAYS * 24 * 60 * 60 * 1000
       : Date.now() + PRO_PASS_DAYS * 24 * 60 * 60 * 1000;
 
   // Real extension installs get their tier flipped immediately so the
@@ -88,7 +91,7 @@ async function processIntent(
   if (!isSyntheticInstall) {
     await setUserTier(
       intent.installId,
-      intent.tier === "lifetime" ? "lifetime" : "pro",
+      intent.tier === "yearly" ? "yearly" : "pro",
       tierExpiresAt,
     );
   }
@@ -119,7 +122,7 @@ async function processIntent(
   await markIntentConfirmed(redis, intent, result.txSignature);
 
   logger.metric("cron-check-payments.tier_set", {
-    tier: intent.tier === "lifetime" ? "lifetime" : "pro",
+    tier: intent.tier === "yearly" ? "yearly" : "pro",
     installId: intent.installId,
     txSignature: result.txSignature,
     amount: intent.amount,

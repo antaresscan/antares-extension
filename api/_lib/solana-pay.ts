@@ -43,7 +43,13 @@ export const INTENT_INDEX_KEY = "payment-intents:pending";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type Tier = "monthly" | "lifetime";
+// Payment-intent tiers. "yearly" replaces "lifetime" as of 2026-05 (the
+// founder's call: a 1-year subscription is the right product, not a
+// forever pass). "lifetime" is removed from the union so we can't
+// accidentally mint a new lifetime intent — grandfathered customers
+// still have user tier = "lifetime" (handled in api/_lib/user.ts) but
+// the payment system never issues new lifetime artefacts.
+export type Tier = "monthly" | "yearly";
 export type PayToken = "usdc" | "sol";
 export type IntentStatus = "pending" | "confirmed" | "expired";
 
@@ -182,9 +188,16 @@ export function buildPayUrl(params: BuildPayUrlParams): string {
 
 /** USD price of the tier — the canonical reference, env-overridable. */
 export function priceUsd(tier: Tier): number {
-  if (tier === "lifetime") {
-    const v = parseFloat(process.env.SOLANA_PRICE_LIFETIME_USDC ?? "149.99");
-    return Number.isFinite(v) && v > 0 ? v : 149.99;
+  if (tier === "yearly") {
+    // The yearly subscription replaces the old "lifetime" SKU. Same
+    // env knob name kept for back-compat (existing Vercel env vars
+    // don't need rotation), with a yearly-named alias preferred when
+    // both are set. Default falls back to the legacy lifetime price
+    // until the founder sets the new yearly price explicitly.
+    const yearly = parseFloat(process.env.SOLANA_PRICE_YEARLY_USDC ?? "");
+    if (Number.isFinite(yearly) && yearly > 0) return yearly;
+    const legacy = parseFloat(process.env.SOLANA_PRICE_LIFETIME_USDC ?? "149.99");
+    return Number.isFinite(legacy) && legacy > 0 ? legacy : 149.99;
   }
   const v = parseFloat(process.env.SOLANA_PRICE_PRO_USDC ?? "24.99");
   return Number.isFinite(v) && v > 0 ? v : 24.99;
@@ -341,8 +354,8 @@ export async function createPaymentIntent(
       reference,
       label: "Antares",
       message:
-        params.tier === "lifetime"
-          ? "Antares Lifetime — Pro features forever"
+        params.tier === "yearly"
+          ? "Antares Yearly — Pro features for 1 year"
           : "Antares Pro — 30-day pass",
     }),
     createdAt: now,
