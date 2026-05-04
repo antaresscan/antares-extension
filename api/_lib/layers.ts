@@ -383,11 +383,39 @@ export function layerHelius(
   const penalties: number[] = [];
   let forceRug = false;
   let safeBlocked = false;
-  if (!rawHolderAccounts.length || !totalSupplyUi || totalSupplyUi <= 0) return {
-    source: "helius", trust: 1.0, available: false,
-    flags: [makeFlag("Helius unavailable", "info", 0)],
-    forceRug: false, safeBlocked: false,
-  };
+  if (!rawHolderAccounts.length || !totalSupplyUi || totalSupplyUi <= 0) {
+    // ── Helius unavailable: refuse to claim SAFE ───────────────────────────
+    // Earlier behaviour: trust=1.0 + safeBlocked=false. That made
+    // every Helius-down scan land at 1000/1000 SAFE — even on tokens
+    // where the LAST KNOWN scan flagged 11% wallet concentration. The
+    // user reported PENGU rendering SAFE while the timeline tab still
+    // showed CAUTION 786/1000 from 3 days earlier (same data
+    // availability, same bug — happened with FARTCOIN before).
+    //
+    // The honest answer when this layer's data is missing: we don't
+    // know. Set safeBlocked=true so the verdict caps at CAUTION
+    // regardless of how clean the other layers look. Drop trust to
+    // 0.82 so the geometric-mean score reflects the uncertainty
+    // (clean other layers → ~820/1000, banded as CAUTION). Bump the
+    // flag severity from "info" to "warning" so it surfaces in the
+    // Critical Flags panel and the user sees WHY the verdict isn't
+    // SAFE.
+    //
+    // Trade-off: tokens that are genuinely safe will show CAUTION
+    // when Helius is having a bad day. That's the right error mode —
+    // false-CAUTION is a worse-case-of-extra-research, false-SAFE
+    // can lose the user money on a hidden 11%-whale token.
+    return {
+      source: "helius", trust: 0.82, available: false,
+      flags: [
+        makeFlag(
+          "Helius unavailable — holder concentration unverified",
+          "warning", 0,
+        ),
+      ],
+      forceRug: false, safeBlocked: true,
+    };
+  }
   const accounts = rawHolderAccounts.filter(
     h => !LP_PROGRAM_ADDRESSES.has(h.owner) && !FOUNDATION_WALLETS.has(h.owner)
   );
