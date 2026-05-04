@@ -80,10 +80,27 @@ export function clearSessionCookie(
 }
 
 /**
- * Pull the session JWT out of the Cookie header. We don't use a third-
- * party cookie parser — a single named cookie is trivial to extract.
+ * Pull the session JWT out of the request. Two paths supported:
+ *
+ *   1. `X-Antares-Session: <jwt>` header (preferred for extension
+ *      scan calls — bypasses third-party cookie restrictions that
+ *      Chrome enforces on chrome-extension:// → API-origin fetches)
+ *   2. `Cookie: antares_session=<jwt>` (used by website-origin fetches
+ *      where the cookie auto-attaches via SameSite=None + Secure)
+ *
+ * Header takes precedence so the extension's stored session-token
+ * (synced via the website bridge) is authoritative when both happen
+ * to be present.
  */
 export function readSessionToken(req: VercelRequest): string | null {
+  // Path 1: explicit header.
+  const headerRaw = req.headers["x-antares-session"];
+  const headerVal = Array.isArray(headerRaw) ? headerRaw[0] : headerRaw;
+  if (typeof headerVal === "string" && headerVal.trim()) {
+    return headerVal.trim();
+  }
+
+  // Path 2: HttpOnly session cookie (legacy / website fetches).
   const raw = req.headers.cookie;
   if (typeof raw !== "string" || !raw) return null;
   const re = new RegExp(

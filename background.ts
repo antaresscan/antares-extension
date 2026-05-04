@@ -147,8 +147,11 @@ const handlers: Record<string, MessageHandler> = {
 
     void Promise.all([
       getInstallId(),
-      new Promise<{ antares_dev_tier?: string }>((resolve) =>
-        chrome.storage.local.get(["antares_dev_tier"], (v) => resolve(v as { antares_dev_tier?: string })),
+      new Promise<{ antares_dev_tier?: string; antares_session_token?: string }>((resolve) =>
+        chrome.storage.local.get(
+          ["antares_dev_tier", "antares_session_token"],
+          (v) => resolve(v as { antares_dev_tier?: string; antares_session_token?: string }),
+        ),
       ),
     ])
       .then(([installId, store]) => {
@@ -157,13 +160,21 @@ const handlers: Record<string, MessageHandler> = {
         if (devTier === "free" || devTier === "pro" || devTier === "lifetime") {
           headers["X-Antares-Dev-Tier"] = devTier
         }
+        // Session token from the website bridge (see contents/antares-
+        // website-bridge.ts). The website pushes the JWT after login/link
+        // and the extension echoes it on every scan so the server knows
+        // who the user is — independent of cookies. This is the reliable
+        // path: chrome-extension:// → API cookies are increasingly blocked
+        // by Chrome's third-party cookie phase-out, so we don't depend on
+        // them. The cookie still flows via credentials:"include" as a
+        // fallback for browsers that allow it.
+        const sessionToken = store.antares_session_token
+        if (typeof sessionToken === "string" && sessionToken.length > 0) {
+          headers["X-Antares-Session"] = sessionToken
+        }
         return fetch(`${config.apiBase}/api/scan?ca=${ca}`, {
           signal: ctrl.signal,
           headers,
-          // Send the session cookie set by the website on sign-in so the
-          // server can resolve the caller's tier. Without this, every scan
-          // call is treated as anonymous (= Free quota) regardless of the
-          // user's actual tier.
           credentials: "include",
         })
       })

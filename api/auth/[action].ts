@@ -26,6 +26,7 @@ import {
   authenticate,
   ensureDevLifetimeLicense,
   ensureDevProLicense,
+  signSession,
 } from "../_lib/account";
 import {
   setSessionCookie,
@@ -150,6 +151,49 @@ function handleLogout(req: VercelRequest, res: VercelResponse) {
   return res.status(200).json({ ok: true });
 }
 
+// ── sync-token ──────────────────────────────────────────────────────────
+//
+// Returns the session JWT in the response body so the website can hand
+// it to the extension via the postMessage bridge. Required because:
+//
+//   - The session cookie set on /api/auth/login is HttpOnly, so JS on
+//     the website can't read it to forward to the extension.
+//   - Cookies don't reliably flow from chrome-extension:// → API origin
+//     in browsers with strict third-party cookie blocking. SameSite=None
+//     + Secure helps but Chrome 124+ phases out third-party cookies
+//     entirely. Without a non-cookie path, signed-in users would see
+//     Free in the overlay.
+//
+// Flow: website calls this after login (cookie auto-sent) → gets the
+// JWT → posts {type:'antares:set-session-token', token} to the bridge
+// content script → bridge writes to chrome.storage.local → background
+// scan calls send X-Antares-Session: <token> header → API verifies.
+//
+// The token is a fresh sign of the same email payload. Same TTL as the
+// cookie (30 days). Logout clears the bridge-stored token via a
+// separate postMessage (handled in the bridge content script).
+async function handleSyncToken(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== "POST") return apiError(res, 405, "Method not allowed.");
+
+  const redis = getRedis();
+  if (!redis) return apiError(res, 503, "Storage unavailable.");
+
+  try {
+    const account = await getAccountFromRequest(req, redis);
+    if (!account) {
+      return res.status(401).json({ ok: false, reason: "not_authenticated" });
+    }
+    const token = signSession(account.email);
+    return res.json({ ok: true, token, email: account.email });
+  } catch (err) {
+    logger.error("auth/sync-token", "lookup failed", { error: String(err) });
+    if (String(err).includes("SESSION_SECRET")) {
+      return apiError(res, 503, "Auth not configured on this deployment.");
+    }
+    return apiError(res, 500, "Could not issue sync token.");
+  }
+}
+
 // ── me ──────────────────────────────────────────────────────────────────
 async function handleMe(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "GET") return apiError(res, 405, "Method not allowed.");
@@ -199,11 +243,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return handleLogout(req, res);
     case "me":
       return handleMe(req, res);
+    case "sync-token":
+      return handleSyncToken(req, res);
     default:
       return apiError(
         res,
         404,
-        "Unknown auth action. Use signup | login | logout | me.",
+        "Unknown auth action. Use signup | login | logout | me | sync-token.",
       );
   }
 }
@@ -214,4 +260,5 @@ export const __test = {
   handleLogin,
   handleLogout,
   handleMe,
+  handleSyncToken,
 };

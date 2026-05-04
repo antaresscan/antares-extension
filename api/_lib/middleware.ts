@@ -72,11 +72,14 @@ export function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean
     if (origin.startsWith("chrome-extension://")) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Antares-Token, X-Antares-Install, X-Antares-Dev-Tier");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Antares-Token, X-Antares-Install, X-Antares-Dev-Tier, X-Antares-Session");
     // Allow the session cookie set by the website (login on the website
     // origin sets a cookie for the API origin) to flow on extension scan
     // calls — that's what gates tier post-logout. Without credentials,
     // the cookie is dropped and we'd always read "no session → Free".
+    // (The X-Antares-Session header is the more reliable path — see
+    // api/_lib/session-cookie.ts:readSessionToken — but we keep cookies
+    // working too as a fallback.)
     res.setHeader("Access-Control-Allow-Credentials", "true");
     res.setHeader("Vary", "Origin");
     res.setHeader("Access-Control-Expose-Headers", EXPOSED_RESPONSE_HEADERS);
@@ -108,7 +111,7 @@ export function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean
     res.setHeader("Vary", "Origin");
   }
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Antares-Key, X-Antares-Token, X-Antares-Install, X-Antares-Dev-Tier, Authorization");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Antares-Key, X-Antares-Token, X-Antares-Install, X-Antares-Dev-Tier, X-Antares-Session, Authorization");
   res.setHeader("Access-Control-Expose-Headers", EXPOSED_RESPONSE_HEADERS);
   res.setHeader("Access-Control-Max-Age", "86400");
   res.setHeader("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
