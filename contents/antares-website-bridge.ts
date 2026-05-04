@@ -74,6 +74,28 @@ export const config: PlasmoCSConfig = {
   }
 })()
 
+// Storage key shared with background.ts. The session token sits next to
+// install_id in chrome.storage.local — both are bound to the same browser
+// profile, both clear on uninstall.
+const SESSION_TOKEN_KEY = "antares_session_token"
+
+function setStoredSessionToken(token: string): Promise<void> {
+  return new Promise((resolve) => {
+    chrome.storage.local.set({ [SESSION_TOKEN_KEY]: token }, () => {
+      // chrome.runtime.lastError is a non-fatal write failure (quota,
+      // OS lock); resolve either way so the page's postMessage flow
+      // doesn't hang. Background.ts treats missing token as signed-out.
+      resolve()
+    })
+  })
+}
+
+function clearStoredSessionToken(): Promise<void> {
+  return new Promise((resolve) => {
+    chrome.storage.local.remove(SESSION_TOKEN_KEY, () => resolve())
+  })
+}
+
 // Listen for install_id requests from the page (pricing modal,
 // /account.html auto-link, etc.). We only respond to messages whose
 // `type` matches our prefix; everything else is ignored to avoid
@@ -82,7 +104,11 @@ window.addEventListener("message", (event) => {
   // Trust the source: messages must come from the same window
   // (page → bridge), not iframes or other origins.
   if (event.source !== window) return
-  const data = event.data as { type?: string; nonce?: string } | null
+  const data = event.data as {
+    type?: string
+    nonce?: string
+    token?: unknown
+  } | null
   if (!data || typeof data !== "object") return
 
   if (data.type === "antares:get-install-id") {
@@ -107,5 +133,36 @@ window.addEventListener("message", (event) => {
           window.location.origin
         )
       })
+    return
+  }
+
+  // Website pushes the session JWT after successful login / link / signup.
+  // The extension stores it in chrome.storage.local; background.ts reads
+  // it on every scan and sends it as the X-Antares-Session header. This
+  // is the cookie-free path — works even when Chrome blocks third-party
+  // cookies for chrome-extension origins.
+  if (data.type === "antares:set-session-token") {
+    if (typeof data.token === "string" && data.token.length > 0) {
+      void setStoredSessionToken(data.token).then(() => {
+        window.postMessage(
+          { type: "antares:session-token-stored", v: 1 },
+          window.location.origin
+        )
+      })
+    }
+    return
+  }
+
+  // Logout: website tells the bridge to drop the stored token. The next
+  // scan from the extension goes out without X-Antares-Session, so the
+  // server treats it as anonymous → Free tier.
+  if (data.type === "antares:clear-session-token") {
+    void clearStoredSessionToken().then(() => {
+      window.postMessage(
+        { type: "antares:session-token-cleared", v: 1 },
+        window.location.origin
+      )
+    })
+    return
   }
 })
