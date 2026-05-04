@@ -220,7 +220,18 @@ export async function resolveTierAndBypass(
     );
     sessionEmail = account?.email ?? null;
   } catch (err) {
-    logger.warn("user", "session check failed during tier resolve", { error: String(err) });
+    // Diagnostic: emit the full error info as a metric (always-on log).
+    // The previous logger.warn was truncated by Vercel's UI which made
+    // it impossible to tell whether this was a Redis hiccup, a JWT
+    // verify failure, or something else. Metric level surfaces the
+    // structured payload in the runtime logs.
+    logger.metric("tier-resolve.session-error", {
+      installId,
+      authSource,
+      errorMessage: err instanceof Error ? err.message : String(err),
+      errorName: err instanceof Error ? err.name : "unknown",
+      errorStack: err instanceof Error ? err.stack?.slice(0, 800) : undefined,
+    });
     return { tier: "free", bypassQuota: false };
   }
   if (!sessionEmail) {
