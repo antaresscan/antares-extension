@@ -115,8 +115,8 @@ describe("getUserTier with DEV_PRO_INSTALLS override", () => {
   });
 });
 
-describe("checkDailyQuota bypasses for dev installs", () => {
-  it("dev installs return unlimited regardless of counter", async () => {
+describe("checkDailyQuota — unlimited for everyone post-2026-05", () => {
+  it("dev installs return unlimited Lifetime", async () => {
     process.env.DEV_PRO_INSTALLS = DEV_INSTALL_A;
     const result = await checkDailyQuota(DEV_INSTALL_A);
     expect(result.tier).toBe("lifetime");
@@ -125,31 +125,15 @@ describe("checkDailyQuota bypasses for dev installs", () => {
     expect(result.remaining).toBe(-1);
   });
 
-  it("regular installs still hit the 50/day cap", async () => {
+  it("regular Free installs are also unlimited (feature gating only)", async () => {
     process.env.DEV_PRO_INSTALLS = DEV_INSTALL_A;
-    // Burn 50 scans
-    for (let i = 0; i < 50; i++) {
+    // 200 scans — every one allowed under the new uncapped Free model.
+    for (let i = 0; i < 200; i++) {
       const r = await checkDailyQuota(REGULAR_INSTALL);
       expect(r.allowed).toBe(true);
+      expect(r.tier).toBe("free");
+      expect(r.limit).toBe(-1);
     }
-    const blocked = await checkDailyQuota(REGULAR_INSTALL);
-    expect(blocked.allowed).toBe(false);
-    expect(blocked.remaining).toBe(0);
-  });
-
-  it("dev install never decrements regular install counter", async () => {
-    process.env.DEV_PRO_INSTALLS = DEV_INSTALL_A;
-    // Hit 49 on regular
-    for (let i = 0; i < 49; i++) {
-      await checkDailyQuota(REGULAR_INSTALL);
-    }
-    // Dev does 100 scans — should not affect regular's bucket
-    for (let i = 0; i < 100; i++) {
-      await checkDailyQuota(DEV_INSTALL_A);
-    }
-    // Regular still has 1 scan left
-    const r = await checkDailyQuota(REGULAR_INSTALL);
-    expect(r.allowed).toBe(true);
   });
 });
 

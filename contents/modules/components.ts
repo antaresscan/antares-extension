@@ -264,10 +264,14 @@ export function formatTimeAgo(ts: number): string {
 
 // Renders a quota status badge for the overlay header.
 //
-//   Free, plenty left  → dim "47/50"   (no border highlight)
-//   Free, ≤ 5 left     → yellow "3/50" (warning state)
-//   Free, at 0         → red link "0/50 → PRO" (clickable to /pricing)
-//   Pro / Lifetime     → green "PRO"  / "LIFE" badge
+//   Free, unlimited (limit = -1) → "FREE" badge (post-2026-05 model where
+//                                  Free tier has unlimited scans; only the
+//                                  paid features stay locked)
+//   Pro / Lifetime               → green "PRO" / "LIFE" badge
+//   Free, capped (legacy, kept for back-compat with stale cached responses):
+//     Free, plenty left  → dim "47/50"
+//     Free, ≤ 5 left     → yellow "3/50" (warning state)
+//     Free, at 0         → red link "0/50 → PRO" (clickable to /pricing)
 //
 // Returns null when quota is undefined so the header can omit the badge
 // entirely (cached results pre-quota launch, anonymous traffic without
@@ -292,7 +296,20 @@ function buildQuotaBadge(
     )
   }
 
-  // Free tier — show "used/limit" and tier-up the urgency.
+  // Free tier with unlimited quota (limit=-1): show a plain FREE badge —
+  // the count is meaningless when the cap is gone. The Pro-locked features
+  // (Critical Flags, Full Analysis, AI Summary) stay locked via separate
+  // gating in the UI; quota is now purely a tier label.
+  if (quota.limit < 0) {
+    return el(
+      "span",
+      { class: "quota-badge free", title: "Free · Unlimited scans" },
+      "FREE",
+    )
+  }
+
+  // Legacy Free tier with the 50/day cap (kept so cached pre-rollout
+  // responses still render gracefully). Same visuals as before.
   const text = `${quota.used}/${quota.limit}`
   const remaining = quota.remaining
 

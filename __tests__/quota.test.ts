@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { Redis } from "@upstash/redis";
 import type { VercelResponse } from "@vercel/node";
 import {
-  FREE_TIER_DAILY_LIMIT,
   initQuota,
   checkDailyQuota,
   peekDailyQuota,
@@ -97,12 +96,14 @@ describe("getUtcDateKey", () => {
 // ─── checkDailyQuota — no Redis ───────────────────────────────────────────────
 
 describe("checkDailyQuota — without Redis", () => {
-  it("returns permissive Free result when Redis is not initialised", async () => {
+  it("returns unlimited Free result when Redis is not initialised", async () => {
+    // Post-2026-05: every tier is unlimited, so without Redis we still
+    // hand back an unlimited Free result.
     const result = await checkDailyQuota("install-abc");
     expect(result.allowed).toBe(true);
     expect(result.tier).toBe("free");
-    expect(result.limit).toBe(FREE_TIER_DAILY_LIMIT);
-    expect(result.remaining).toBe(FREE_TIER_DAILY_LIMIT);
+    expect(result.limit).toBe(-1);
+    expect(result.remaining).toBe(-1);
   });
 });
 
@@ -136,7 +137,7 @@ describe("checkDailyQuota — paid tiers", () => {
     expect(redis.incr).not.toHaveBeenCalled();
   });
 
-  it("treats unknown tier values as Free", async () => {
+  it("treats unknown tier values as Free (still unlimited, just labelled free)", async () => {
     const redis = mockRedis({ tier: { "install-x": "premium-plus-ultra" } });
     initQuota(redis);
     initUserStorage(redis);
@@ -144,14 +145,15 @@ describe("checkDailyQuota — paid tiers", () => {
     const result = await checkDailyQuota("install-x");
 
     expect(result.tier).toBe("free");
-    expect(redis.incr).toHaveBeenCalledOnce();
+    expect(result.allowed).toBe(true);
+    expect(result.limit).toBe(-1);
   });
 });
 
-// ─── checkDailyQuota — Free tier counting ─────────────────────────────────────
+// ─── checkDailyQuota — Free tier (now unlimited) ──────────────────────────────
 
 describe("checkDailyQuota — Free tier", () => {
-  it("allows the first scan and returns remaining = limit-1", async () => {
+  it("returns unlimited result on first scan", async () => {
     const redis = mockRedis();
     initQuota(redis);
     initUserStorage(redis);
@@ -159,41 +161,49 @@ describe("checkDailyQuota — Free tier", () => {
     const result = await checkDailyQuota("install-fresh");
 
     expect(result.allowed).toBe(true);
-    expect(result.used).toBe(1);
-    expect(result.remaining).toBe(FREE_TIER_DAILY_LIMIT - 1);
     expect(result.tier).toBe("free");
+    expect(result.limit).toBe(-1);
+    expect(result.remaining).toBe(-1);
   });
 
-  it("allows up to the daily limit then denies", async () => {
+  it("never denies, regardless of how many scans land in a day", async () => {
     const counter: Record<string, number> = {};
     const redis = mockRedis({ counter });
     initQuota(redis);
     initUserStorage(redis);
 
-    // First N scans (where N = FREE_TIER_DAILY_LIMIT) → all allowed
-    for (let i = 1; i <= FREE_TIER_DAILY_LIMIT; i++) {
+    // 200 scans in a day all succeed — feature gating remains in the
+    // overlay (Pro-locked panels), but quota itself never blocks Free.
+    for (let i = 1; i <= 200; i++) {
       const result = await checkDailyQuota("install-heavy");
       expect(result.allowed).toBe(true);
-      expect(result.used).toBe(i);
+      expect(result.tier).toBe("free");
+      expect(result.limit).toBe(-1);
     }
-
-    // 51st scan → denied
-    const denied = await checkDailyQuota("install-heavy");
-    expect(denied.allowed).toBe(false);
-    expect(denied.used).toBe(FREE_TIER_DAILY_LIMIT + 1);
-    expect(denied.remaining).toBe(0);
   });
 
-  it("sets TTL on the first INCR of the day only", async () => {
+  it("still increments the counter for analytics (best-effort)", async () => {
+    // The counter is no longer a gate, but we keep it for visibility
+    // / abuse detection. Successful scans bump it; failures swallow.
     const redis = mockRedis();
     initQuota(redis);
     initUserStorage(redis);
 
-    await checkDailyQuota("install-ttl");
-    await checkDailyQuota("install-ttl");
-    await checkDailyQuota("install-ttl");
+    await checkDailyQuota("install-counted");
+    // Give the void best-effort INCR a tick to land.
+    await new Promise((r) => setTimeout(r, 0));
 
-    expect(redis.expire).toHaveBeenCalledOnce();
+    expect(redis.incr).toHaveBeenCalled();
+  });
+
+  it("does not increment for paid tiers (Pro/Lifetime are unlimited up-front)", async () => {
+    const redis = mockRedis({ tier: { "install-pro": "pro" } });
+    initQuota(redis);
+    initUserStorage(redis);
+
+    await checkDailyQuota("install-pro");
+
+    expect(redis.incr).not.toHaveBeenCalled();
   });
 
   it("uses anonymous bucket when identityKey is null", async () => {
@@ -202,12 +212,11 @@ describe("checkDailyQuota — Free tier", () => {
     initQuota(redis);
     initUserStorage(redis);
 
-    const r1 = await checkDailyQuota(null);
-    const r2 = await checkDailyQuota(null);
+    await checkDailyQuota(null);
+    await checkDailyQuota(null);
+    // Best-effort INCRs need a tick to land.
+    await new Promise((r) => setTimeout(r, 0));
 
-    expect(r1.used).toBe(1);
-    expect(r2.used).toBe(2);
-    // Both should have hit the same anonymous key
     const keys = Object.keys(counter);
     expect(keys.length).toBe(1);
     expect(keys[0]).toContain("anonymous");
@@ -219,11 +228,10 @@ describe("checkDailyQuota — Free tier", () => {
     initQuota(redis);
     initUserStorage(redis);
 
-    const a = await checkDailyQuota("install-a");
-    const b = await checkDailyQuota("install-b");
+    await checkDailyQuota("install-a");
+    await checkDailyQuota("install-b");
+    await new Promise((r) => setTimeout(r, 0));
 
-    expect(a.used).toBe(1);
-    expect(b.used).toBe(1);
     expect(Object.keys(counter).length).toBe(2);
   });
 });
@@ -231,28 +239,28 @@ describe("checkDailyQuota — Free tier", () => {
 // ─── checkDailyQuota — fail-open ──────────────────────────────────────────────
 
 describe("checkDailyQuota — fail-open on Redis errors", () => {
-  it("returns permissive result when INCR throws", async () => {
+  it("still returns unlimited Free result when INCR throws (counter is best-effort)", async () => {
     const redis = mockRedis({ fail: true });
     initQuota(redis);
     initUserStorage(redis);
 
     const result = await checkDailyQuota("install-broken");
 
-    // Fail-open: don't lock everyone out on a transient outage
+    // INCR failures don't change the answer — every tier is unlimited.
     expect(result.allowed).toBe(true);
     expect(result.tier).toBe("free");
-    expect(result.remaining).toBe(FREE_TIER_DAILY_LIMIT);
+    expect(result.limit).toBe(-1);
   });
 });
 
 // ─── peekDailyQuota ───────────────────────────────────────────────────────────
 
 describe("peekDailyQuota — read-only", () => {
-  it("returns permissive Free result without Redis", async () => {
+  it("returns unlimited Free result without Redis", async () => {
     const result = await peekDailyQuota("install-x");
     expect(result.allowed).toBe(true);
     expect(result.tier).toBe("free");
-    expect(result.used).toBe(0);
+    expect(result.limit).toBe(-1);
   });
 
   it("does NOT increment the counter", async () => {
@@ -269,7 +277,7 @@ describe("peekDailyQuota — read-only", () => {
     expect(Object.keys(counter).length).toBe(0);
   });
 
-  it("reflects the current counter value when present", async () => {
+  it("returns unlimited regardless of stored counter value (Free is now uncapped)", async () => {
     const today = getUtcDateKey();
     const counter: Record<string, number> = {
       [`quota:install-mid:${today}`]: 12,
@@ -280,28 +288,12 @@ describe("peekDailyQuota — read-only", () => {
 
     const result = await peekDailyQuota("install-mid");
 
-    expect(result.used).toBe(12);
-    expect(result.remaining).toBe(FREE_TIER_DAILY_LIMIT - 12);
     expect(result.allowed).toBe(true);
+    expect(result.tier).toBe("free");
+    expect(result.limit).toBe(-1);
   });
 
-  it("reports allowed=false when at the limit", async () => {
-    const today = getUtcDateKey();
-    const counter: Record<string, number> = {
-      [`quota:install-full:${today}`]: FREE_TIER_DAILY_LIMIT,
-    };
-    const redis = mockRedis({ counter });
-    initQuota(redis);
-    initUserStorage(redis);
-
-    const result = await peekDailyQuota("install-full");
-
-    expect(result.used).toBe(FREE_TIER_DAILY_LIMIT);
-    expect(result.remaining).toBe(0);
-    expect(result.allowed).toBe(false);
-  });
-
-  it("returns unlimited result for Pro tier without reading the counter", async () => {
+  it("returns unlimited result for Pro tier", async () => {
     const redis = mockRedis({ tier: { "install-pro": "pro" } });
     initQuota(redis);
     initUserStorage(redis);
@@ -310,12 +302,6 @@ describe("peekDailyQuota — read-only", () => {
 
     expect(result.tier).toBe("pro");
     expect(result.remaining).toBe(-1);
-    // Tier lookup is 2 reads (tier + tierExpires for downgrade-on-expiry).
-    // The counter MUST NOT be touched — we'd be wasting a Redis op for a Pro user.
-    const counterReads = (redis.get as ReturnType<typeof vi.fn>).mock.calls.filter(
-      (call: unknown[]) => typeof call[0] === "string" && (call[0] as string).startsWith("quota:"),
-    );
-    expect(counterReads.length).toBe(0);
   });
 
   it("falls open when Redis throws", async () => {
