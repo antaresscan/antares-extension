@@ -193,7 +193,20 @@ export async function resolveTierAndBypass(
     return { tier, bypassQuota: true };
   }
 
-  if (!isAvailable() || !redis) return { tier: "free", bypassQuota: false };
+  if (!isAvailable() || !redis) {
+    logger.info("user", "tier-resolve no-redis", { installId, tier: "free" });
+    return { tier: "free", bypassQuota: false };
+  }
+
+  // Helper to find which auth path was taken (header vs cookie vs none)
+  const cookieRaw = (req as { headers: { cookie?: string | string[] } }).headers.cookie;
+  const headerRaw = (req as { headers: { "x-antares-session"?: string | string[] } })
+    .headers["x-antares-session"];
+  const authSource = headerRaw
+    ? "header"
+    : (typeof cookieRaw === "string" && cookieRaw.includes("antares_session="))
+      ? "cookie"
+      : "none";
 
   // Single session read. The cookie or X-Antares-Session header is the
   // ONLY thing that proves who the user is — sign out clears it,
@@ -210,11 +223,12 @@ export async function resolveTierAndBypass(
     logger.warn("user", "session check failed during tier resolve", { error: String(err) });
     return { tier: "free", bypassQuota: false };
   }
-  if (!sessionEmail) return { tier: "free", bypassQuota: false };
+  if (!sessionEmail) {
+    logger.info("user", "tier-resolve no-session", { installId, authSource, tier: "free" });
+    return { tier: "free", bypassQuota: false };
+  }
 
-  // Read install→email binding (if any). Used for both anti-hijack
-  // (mismatch refuses to honour) and the legacy install-tier fallback
-  // path below.
+  // Read install→email binding (if any).
   let boundEmail: string | null = null;
   try {
     boundEmail = await redis.get<string>(`account:install:${installId}`);
@@ -225,6 +239,9 @@ export async function resolveTierAndBypass(
   // session, refuse. An unbound install is fine — we'll resolve tier
   // from the session email's licences instead.
   if (boundEmail && boundEmail !== sessionEmail) {
+    logger.info("user", "tier-resolve hijack-block", {
+      installId, authSource, sessionEmail, boundEmail, tier: "free",
+    });
     return { tier: "free", bypassQuota: false };
   }
 
@@ -243,35 +260,37 @@ export async function resolveTierAndBypass(
     const raw = Array.isArray(devTierHeaderRaw) ? devTierHeaderRaw[0] : devTierHeaderRaw;
     const v = String(raw ?? "").trim().toLowerCase();
     if (v === "free" || v === "pro" || v === "yearly" || v === "lifetime") {
+      logger.info("user", "tier-resolve dev-header", {
+        installId, authSource, sessionEmail, tier: v,
+      });
       return { tier: v as Tier, bypassQuota: true };
     }
   }
 
-  // PRIMARY: resolve tier from the session email's licences. This is
-  // the architectural fix — the founder's "overlay isn't synced with
-  // my account" complaint comes down to the previous resolver requiring
-  // an install→email binding that doesn't always exist (timing race in
-  // sync-token auto-bind, Solana-direct payers, dev grants etc.).
-  // License-of-record on the email is THE source of truth: signing in
-  // immediately maps to whatever the user paid for.
+  // PRIMARY: resolve tier from the session email's licences.
   const emailTier = await resolveTierFromEmail(sessionEmail);
   if (emailTier !== "free") {
+    logger.info("user", "tier-resolve from-email", {
+      installId, authSource, sessionEmail, tier: emailTier, isDev,
+    });
     return { tier: emailTier, bypassQuota: isDev };
   }
 
   // FALLBACK: when the email has no licences but the install IS bound
-  // to the same email, honour the install's stored tier. This covers
-  // legacy customers whose tier was set on install_id directly (older
-  // pre-licence-of-record code paths) or who paid via a flow that
-  // didn't issue a licence. New customers always go through the email
-  // path above.
+  // to the same email, honour the install's stored tier.
   if (boundEmail === sessionEmail) {
     const legacyTier = await getUserTier(installId);
+    logger.info("user", "tier-resolve from-install-fallback", {
+      installId, authSource, sessionEmail, tier: legacyTier, isDev,
+    });
     return { tier: legacyTier, bypassQuota: isDev };
   }
 
   // No licence on email + no install binding → user is signed in but
   // hasn't paid for anything. Free.
+  logger.info("user", "tier-resolve no-license-no-binding", {
+    installId, authSource, sessionEmail, tier: "free", isDev,
+  });
   return { tier: "free", bypassQuota: isDev };
 }
 
