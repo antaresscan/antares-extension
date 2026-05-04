@@ -194,7 +194,7 @@ export async function resolveTierAndBypass(
   }
 
   if (!isAvailable() || !redis) {
-    logger.info("user", "tier-resolve no-redis", { installId, tier: "free" });
+    logger.metric("tier-resolve.no-redis", { installId, tier: "free" });
     return { tier: "free", bypassQuota: false };
   }
 
@@ -224,7 +224,7 @@ export async function resolveTierAndBypass(
     return { tier: "free", bypassQuota: false };
   }
   if (!sessionEmail) {
-    logger.info("user", "tier-resolve no-session", { installId, authSource, tier: "free" });
+    logger.metric("tier-resolve.no-session", { installId, authSource, tier: "free" });
     return { tier: "free", bypassQuota: false };
   }
 
@@ -239,7 +239,7 @@ export async function resolveTierAndBypass(
   // session, refuse. An unbound install is fine — we'll resolve tier
   // from the session email's licences instead.
   if (boundEmail && boundEmail !== sessionEmail) {
-    logger.info("user", "tier-resolve hijack-block", {
+    logger.metric("tier-resolve.hijack-block", {
       installId, authSource, sessionEmail, boundEmail, tier: "free",
     });
     return { tier: "free", bypassQuota: false };
@@ -260,7 +260,7 @@ export async function resolveTierAndBypass(
     const raw = Array.isArray(devTierHeaderRaw) ? devTierHeaderRaw[0] : devTierHeaderRaw;
     const v = String(raw ?? "").trim().toLowerCase();
     if (v === "free" || v === "pro" || v === "yearly" || v === "lifetime") {
-      logger.info("user", "tier-resolve dev-header", {
+      logger.metric("tier-resolve.dev-header", {
         installId, authSource, sessionEmail, tier: v,
       });
       return { tier: v as Tier, bypassQuota: true };
@@ -270,7 +270,7 @@ export async function resolveTierAndBypass(
   // PRIMARY: resolve tier from the session email's licences.
   const emailTier = await resolveTierFromEmail(sessionEmail);
   if (emailTier !== "free") {
-    logger.info("user", "tier-resolve from-email", {
+    logger.metric("tier-resolve.from-email", {
       installId, authSource, sessionEmail, tier: emailTier, isDev,
     });
     return { tier: emailTier, bypassQuota: isDev };
@@ -280,7 +280,7 @@ export async function resolveTierAndBypass(
   // to the same email, honour the install's stored tier.
   if (boundEmail === sessionEmail) {
     const legacyTier = await getUserTier(installId);
-    logger.info("user", "tier-resolve from-install-fallback", {
+    logger.metric("tier-resolve.from-install-fallback", {
       installId, authSource, sessionEmail, tier: legacyTier, isDev,
     });
     return { tier: legacyTier, bypassQuota: isDev };
@@ -288,7 +288,7 @@ export async function resolveTierAndBypass(
 
   // No licence on email + no install binding → user is signed in but
   // hasn't paid for anything. Free.
-  logger.info("user", "tier-resolve no-license-no-binding", {
+  logger.metric("tier-resolve.no-license-no-binding", {
     installId, authSource, sessionEmail, tier: "free", isDev,
   });
   return { tier: "free", bypassQuota: isDev };
