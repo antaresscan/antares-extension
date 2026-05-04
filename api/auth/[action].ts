@@ -21,7 +21,12 @@ import {
 } from "../_lib/middleware";
 import { apiError } from "../_lib/helpers";
 import { logger } from "../_lib/logger";
-import { createAccount, authenticate, ensureDevLifetimeLicense, ensureDevProLicense } from "../_lib/account";
+import {
+  createAccount,
+  authenticate,
+  ensureDevLifetimeLicense,
+  ensureDevProLicense,
+} from "../_lib/account";
 import {
   setSessionCookie,
   clearSessionCookie,
@@ -133,6 +138,12 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
 }
 
 // ── logout ──────────────────────────────────────────────────────────────
+//
+// Just clear the cookie. We don't need to mutate the install→email
+// binding or stored tier any more — `getEffectiveTierFromRequest` is
+// session-gated, so the cookie's absence IS what makes the next scan
+// return Free for everyone, including dev and paying customers.
+// Signing back in restores tier without any data being touched.
 function handleLogout(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") return apiError(res, 405, "Method not allowed.");
   clearSessionCookie(res);

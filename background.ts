@@ -157,7 +157,15 @@ const handlers: Record<string, MessageHandler> = {
         if (devTier === "free" || devTier === "pro" || devTier === "lifetime") {
           headers["X-Antares-Dev-Tier"] = devTier
         }
-        return fetch(`${config.apiBase}/api/scan?ca=${ca}`, { signal: ctrl.signal, headers })
+        return fetch(`${config.apiBase}/api/scan?ca=${ca}`, {
+          signal: ctrl.signal,
+          headers,
+          // Send the session cookie set by the website on sign-in so the
+          // server can resolve the caller's tier. Without this, every scan
+          // call is treated as anonymous (= Free quota) regardless of the
+          // user's actual tier.
+          credentials: "include",
+        })
       })
       .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() })
       .then((data: Record<string, unknown>) => {

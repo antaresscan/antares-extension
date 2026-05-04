@@ -12,6 +12,10 @@ vi.mock("@upstash/redis", () => {
       return "OK";
     });
     get = vi.fn(async (k: string) => mocks.store.get(k) ?? null);
+    del = vi.fn(async (k: string) => {
+      const had = mocks.store.delete(k);
+      return had ? 1 : 0;
+    });
     hset = vi.fn(async (k: string, fields: Record<string, string>) => {
       const existing = (mocks.store.get(k) as Record<string, string>) ?? {};
       mocks.store.set(k, { ...existing, ...fields });
@@ -230,7 +234,14 @@ describe("POST /api/auth/login", () => {
 });
 
 // ── logout ────────────────────────────────────────────────────────────────
+//
+// Logout just clears the session cookie. The session-gated
+// `getEffectiveTierFromRequest` (in api/_lib/user.ts) handles the
+// "no cookie → Free" semantics on every API call, so we don't need
+// to mutate any per-install Redis state at logout time.
 describe("POST /api/auth/logout", () => {
+  const SOME_INSTALL_ID = "11111111-1111-4111-8111-111111111111";
+
   it("clears the session cookie", async () => {
     const req = mockReq({ headers: { origin: ORIGIN } });
     const res = mockRes();
@@ -244,6 +255,27 @@ describe("POST /api/auth/logout", () => {
     const res = mockRes();
     await logoutHandler(req, res);
     expect(res.status).toHaveBeenCalledWith(405);
+  });
+
+  it("does NOT mutate install→email binding or stored tier", async () => {
+    // Anti-regression: the cookie is the gate. Storage stays intact so
+    // signing back in instantly restores tier without re-redeem.
+    mocks.store.set(
+      `account:install:${SOME_INSTALL_ID}`,
+      "real-customer@example.com",
+    );
+    mocks.store.set(`user:${SOME_INSTALL_ID}:tier`, "lifetime");
+
+    const req = mockReq({
+      headers: { origin: ORIGIN, "x-antares-install": SOME_INSTALL_ID },
+    });
+    const res = mockRes();
+    await logoutHandler(req, res);
+
+    expect(mocks.store.get(`account:install:${SOME_INSTALL_ID}`)).toBe(
+      "real-customer@example.com",
+    );
+    expect(mocks.store.get(`user:${SOME_INSTALL_ID}:tier`)).toBe("lifetime");
   });
 });
 

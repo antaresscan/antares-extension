@@ -73,6 +73,12 @@ export function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Antares-Token, X-Antares-Install, X-Antares-Dev-Tier");
+    // Allow the session cookie set by the website (login on the website
+    // origin sets a cookie for the API origin) to flow on extension scan
+    // calls — that's what gates tier post-logout. Without credentials,
+    // the cookie is dropped and we'd always read "no session → Free".
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Vary", "Origin");
     res.setHeader("Access-Control-Expose-Headers", EXPOSED_RESPONSE_HEADERS);
     res.setHeader("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
     return true;

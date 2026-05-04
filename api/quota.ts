@@ -18,7 +18,7 @@ import {
   initRateLimiters,
 } from "./_lib/middleware";
 import { initQuota, peekDailyQuota, setQuotaHeaders } from "./_lib/quota";
-import { initUserStorage, getEffectiveTier } from "./_lib/user";
+import { initUserStorage, getEffectiveTierFromRequest } from "./_lib/user";
 import { apiError } from "./_lib/helpers";
 import { logger } from "./_lib/logger";
 
@@ -46,11 +46,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const identityKey = installId ?? ip;
 
   try {
-    // Honour the X-Antares-Dev-Tier header for installs in DEV_PRO_INSTALLS.
-    const effectiveTier = await getEffectiveTier(
-      identityKey,
-      req.headers["x-antares-dev-tier"],
-    );
+    // Session-gated: logged-out users get Free quota (50/day) regardless
+    // of what tier their install has stored. Signing back in restores
+    // their paid tier without any data being mutated.
+    const effectiveTier = await getEffectiveTierFromRequest(req, identityKey);
     const quota = await peekDailyQuota(identityKey, effectiveTier);
     setQuotaHeaders(res, quota);
 
