@@ -90,6 +90,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return apiError(res, 405, "Method not allowed.");
   }
 
+  // Override the CDN cache header set by setCorsHeaders. /api/scan
+  // responses include per-user data (X-Antares-Quota-Tier — the tier
+  // the overlay displays) and a CDN cache-by-URL keys all callers to
+  // the same response. So the first anonymous scan's "Free" gets
+  // served to every signed-in user for 15-45s, and the lambda is
+  // never invoked, the session is never validated, the binding is
+  // never checked. That's why the founder kept seeing Free in the
+  // overlay even after every other fix landed correctly. Internal
+  // Redis cache (getCachedResult) still absorbs duplicate scoring
+  // work — only the per-user tier resolution runs on every call,
+  // which is what we want.
+  res.setHeader("Cache-Control", "no-store, max-age=0");
+
   const ip = getClientIp(req);
   const installId = getInstallId(req);
   const rateLimitOk = await checkRateLimit(res, ip, installId);
