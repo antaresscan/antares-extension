@@ -9,11 +9,14 @@ import {
   isDevProInstall,
   isDevAllowlistedInstall,
   getEffectiveTier,
+  getEffectiveTierFromRequest,
   HISTORY_HARD_CAP,
   HISTORY_DAY_WINDOW,
   _resetUserStorageForTests,
   type ScanHistoryEntry,
 } from "../api/_lib/user";
+import { signSession } from "../api/_lib/account";
+import { SESSION_COOKIE_NAME } from "../api/_lib/session-cookie";
 
 // ─── In-memory Redis mock ─────────────────────────────────────────────────────
 
@@ -21,6 +24,7 @@ interface MockStore {
   strings: Map<string, string>;
   lists: Map<string, string[]>;
   zsets: Map<string, Map<string, number>>;
+  hashes: Map<string, Record<string, string>>;
   fail: boolean;
 }
 
@@ -35,6 +39,7 @@ function mockRedis(initialStrings: Record<string, string> = {}): MockBundle {
     strings: new Map(Object.entries(initialStrings)),
     lists: new Map(),
     zsets: new Map(),
+    hashes: new Map(),
     fail: false,
   };
 
@@ -125,6 +130,17 @@ function mockRedis(initialStrings: Record<string, string> = {}): MockBundle {
     zscore: vi.fn(async (key: string, member: string) => {
       guard();
       return store.zsets.get(key)?.get(member) ?? null;
+    }),
+    hset: vi.fn(async (key: string, fields: Record<string, string>) => {
+      guard();
+      const existing = store.hashes.get(key) ?? {};
+      store.hashes.set(key, { ...existing, ...fields });
+      return Object.keys(fields).length;
+    }),
+    hgetall: vi.fn(async (key: string) => {
+      guard();
+      const v = store.hashes.get(key);
+      return v ? { ...v } : null;
     }),
   } as unknown as Redis;
 
@@ -490,6 +506,165 @@ describe("getEffectiveTier (header honoured for dev-allowlisted installs)", () =
   it("normalises array headers (Vercel multi-value form) to first value", async () => {
     process.env.DEV_PRO_INSTALLS = "install-dev";
     expect(await getEffectiveTier("install-dev", ["free", "pro"])).toBe("free");
+  });
+});
+
+// ─── Session-gated tier (the main production resolver) ────────────────────────
+//
+// `getEffectiveTierFromRequest` is what every HTTP handler calls. It
+// resolves to:
+//   - lifetime/header value if install is in DEV_PRO_INSTALLS env var
+//   - free if no valid session cookie
+//   - free if session valid but install bound to a different email
+//   - free if session valid but install has no binding yet (needs redeem)
+//   - stored install tier otherwise (or dev header for dev-allowlisted email)
+//
+// The "free if signed out" property is what makes "log out → I'm Free again"
+// true server-side for everyone, paying customers included.
+
+describe("getEffectiveTierFromRequest (session-gated)", () => {
+  const ORIG_ENV = { ...process.env };
+
+  beforeEach(() => {
+    // signSession needs SESSION_SECRET; pad to 64 hex chars so verifySession
+    // doesn't reject it.
+    process.env.SESSION_SECRET = "0".repeat(64);
+  });
+
+  afterEach(() => {
+    if (ORIG_ENV.DEV_PRO_INSTALLS === undefined) delete process.env.DEV_PRO_INSTALLS;
+    else process.env.DEV_PRO_INSTALLS = ORIG_ENV.DEV_PRO_INSTALLS;
+    if (ORIG_ENV.SESSION_SECRET === undefined) delete process.env.SESSION_SECRET;
+    else process.env.SESSION_SECRET = ORIG_ENV.SESSION_SECRET;
+  });
+
+  function reqWithCookie(token: string | null, devTier?: string) {
+    const headers: Record<string, string | string[]> = {};
+    if (token) headers.cookie = `${SESSION_COOKIE_NAME}=${token}`;
+    if (devTier) headers["x-antares-dev-tier"] = devTier;
+    return { headers } as unknown as Parameters<typeof getEffectiveTierFromRequest>[0];
+  }
+
+  function seedAccount(m: MockBundle, email: string) {
+    // getAccount reads the hash; seed minimal fields (email + status active).
+    m.store.hashes.set(`account:${email}`, {
+      email,
+      status: "active",
+      emailVerified: "0",
+      createdAt: String(Date.now()),
+    });
+  }
+
+  it("returns 'free' when no cookie is present (signed-out user)", async () => {
+    const m = mockRedis({
+      "account:install:install-paid": "alice@example.com",
+      "user:install-paid:tier": "lifetime",
+    });
+    initUserStorage(m.redis);
+    seedAccount(m, "alice@example.com");
+
+    expect(await getEffectiveTierFromRequest(reqWithCookie(null), "install-paid")).toBe("free");
+  });
+
+  it("returns stored tier when cookie matches install binding", async () => {
+    const m = mockRedis({
+      "account:install:install-paid": "alice@example.com",
+      "user:install-paid:tier": "lifetime",
+    });
+    initUserStorage(m.redis);
+    seedAccount(m, "alice@example.com");
+
+    const token = signSession("alice@example.com");
+    expect(await getEffectiveTierFromRequest(reqWithCookie(token), "install-paid")).toBe(
+      "lifetime",
+    );
+  });
+
+  it("returns 'free' when cookie email doesn't match install binding (anti-hijack)", async () => {
+    const m = mockRedis({
+      // Install was paid for by Bob.
+      "account:install:install-bob": "bob@example.com",
+      "user:install-bob:tier": "lifetime",
+    });
+    initUserStorage(m.redis);
+    seedAccount(m, "bob@example.com");
+    seedAccount(m, "eve@example.com");
+
+    // Eve signs in on Bob's browser — should not get Bob's tier.
+    const token = signSession("eve@example.com");
+    expect(await getEffectiveTierFromRequest(reqWithCookie(token), "install-bob")).toBe("free");
+  });
+
+  it("returns 'free' when cookie is valid but install has no binding yet", async () => {
+    // User signed up but never redeemed/linked an install.
+    const m = mockRedis({});
+    initUserStorage(m.redis);
+    seedAccount(m, "alice@example.com");
+
+    const token = signSession("alice@example.com");
+    expect(await getEffectiveTierFromRequest(reqWithCookie(token), "install-fresh")).toBe(
+      "free",
+    );
+  });
+
+  it("env-var DEV_PRO_INSTALLS bypasses the session check", async () => {
+    process.env.DEV_PRO_INSTALLS = "install-headless";
+    const m = mockRedis({});
+    initUserStorage(m.redis);
+
+    // No cookie — would normally return Free. Env-var dev escape returns lifetime.
+    expect(await getEffectiveTierFromRequest(reqWithCookie(null), "install-headless")).toBe(
+      "lifetime",
+    );
+  });
+
+  it("env-var DEV_PRO_INSTALLS still honours dev-tier header for headless tests", async () => {
+    process.env.DEV_PRO_INSTALLS = "install-headless";
+    const m = mockRedis({});
+    initUserStorage(m.redis);
+
+    expect(await getEffectiveTierFromRequest(reqWithCookie(null, "free"), "install-headless")).toBe(
+      "free",
+    );
+  });
+
+  it("honours dev-tier header for signed-in dev-allowlisted email", async () => {
+    const m = mockRedis({
+      "account:install:install-dev": "lennypierrepro@gmail.com",
+      "user:install-dev:tier": "lifetime",
+    });
+    initUserStorage(m.redis);
+    seedAccount(m, "lennypierrepro@gmail.com");
+
+    const token = signSession("lennypierrepro@gmail.com");
+    // Even though stored tier is lifetime, header forces Free.
+    expect(
+      await getEffectiveTierFromRequest(reqWithCookie(token, "free"), "install-dev"),
+    ).toBe("free");
+    expect(
+      await getEffectiveTierFromRequest(reqWithCookie(token, "pro"), "install-dev"),
+    ).toBe("pro");
+  });
+
+  it("ignores dev-tier header for signed-in non-dev email (anti-spoof)", async () => {
+    const m = mockRedis({
+      "account:install:install-paid": "alice@example.com",
+      "user:install-paid:tier": "lifetime",
+    });
+    initUserStorage(m.redis);
+    seedAccount(m, "alice@example.com");
+
+    const token = signSession("alice@example.com");
+    // Alice tries to send dev-tier=free; header is ignored, stored tier wins.
+    expect(
+      await getEffectiveTierFromRequest(reqWithCookie(token, "free"), "install-paid"),
+    ).toBe("lifetime");
+  });
+
+  it("returns 'free' when storage is not initialised", async () => {
+    // _resetUserStorageForTests already ran in beforeEach (top of file).
+    const token = signSession("alice@example.com");
+    expect(await getEffectiveTierFromRequest(reqWithCookie(token), "install-x")).toBe("free");
   });
 });
 

@@ -21,7 +21,7 @@ import {
 import { initQuota } from "./_lib/quota";
 import {
   initUserStorage,
-  getEffectiveTier,
+  getEffectiveTierFromRequest,
   getScanHistory,
   HISTORY_DAY_WINDOW,
 } from "./_lib/user";
@@ -67,13 +67,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Cache-Control", "no-store, max-age=0");
 
   try {
-    // Honour X-Antares-Dev-Tier for dev-allowlisted installs so flipping
-    // the Options dropdown to Free actually shrinks history to the Free
-    // window (10 entries) — same dev-mode story as /api/scan and /api/quota.
-    const tier = await getEffectiveTier(
-      installId,
-      req.headers["x-antares-dev-tier"],
-    );
+    // Session-gated tier resolution: signed-out users see Free history
+    // (10 entries); signed-in users get their account tier's window.
+    // Dev-tier override flows through the same path for dev-allowlisted
+    // emails — see api/_lib/user.ts:getEffectiveTierFromRequest.
+    const tier = await getEffectiveTierFromRequest(req, installId);
     const isPaid = tier === "pro" || tier === "lifetime";
 
     const maxLimit = isPaid ? PRO_HISTORY_LIMIT : FREE_HISTORY_LIMIT;

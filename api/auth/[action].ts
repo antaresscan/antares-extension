@@ -17,7 +17,6 @@ import {
   setCorsHeaders,
   checkRateLimit,
   getClientIp,
-  getInstallId,
   initRateLimiters,
 } from "../_lib/middleware";
 import { apiError } from "../_lib/helpers";
@@ -27,16 +26,12 @@ import {
   authenticate,
   ensureDevLifetimeLicense,
   ensureDevProLicense,
-  isDevLifetimeEmail,
-  isDevProEmail,
-  ACCOUNT_INSTALL_KEY,
 } from "../_lib/account";
 import {
   setSessionCookie,
   clearSessionCookie,
   getAccountFromRequest,
 } from "../_lib/session-cookie";
-import { initUserStorage, setUserTier } from "../_lib/user";
 
 function getRedis(): Redis | null {
   const url = process.env.UPSTASH_REDIS_REST_URL;
@@ -144,46 +139,14 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
 
 // ── logout ──────────────────────────────────────────────────────────────
 //
-// Beyond clearing the session cookie, logout ALSO drops dev-allowlisted
-// installs back to the Free tier. Why: the dev tier override (Options
-// dropdown → X-Antares-Dev-Tier) is honoured server-side as long as
-// `account:install:<install_id>` points to a dev-allowlisted email.
-// Without unbinding on logout, signing out wouldn't actually return the
-// dev to anonymous-Free-user behaviour — they'd still be elevated to
-// whatever the dropdown said.
-//
-// Real customers are untouched: their bound email isn't dev-allowlisted,
-// so we skip the unbind+reset. Their lifetime/pro licence remains valid
-// across logout.
-async function handleLogout(req: VercelRequest, res: VercelResponse) {
+// Just clear the cookie. We don't need to mutate the install→email
+// binding or stored tier any more — `getEffectiveTierFromRequest` is
+// session-gated, so the cookie's absence IS what makes the next scan
+// return Free for everyone, including dev and paying customers.
+// Signing back in restores tier without any data being touched.
+function handleLogout(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") return apiError(res, 405, "Method not allowed.");
   clearSessionCookie(res);
-
-  const installId = getInstallId(req);
-  if (installId) {
-    const redis = getRedis();
-    if (redis) {
-      try {
-        const email = await redis.get<string>(ACCOUNT_INSTALL_KEY(installId));
-        if (email && (isDevLifetimeEmail(email) || isDevProEmail(email))) {
-          // Dev install: unbind and reset stored tier so the next request
-          // (without the dev-tier header even being honoured) reads as Free.
-          initUserStorage(redis);
-          await redis.del(ACCOUNT_INSTALL_KEY(installId));
-          await setUserTier(installId, "free");
-          logger.info("auth/logout", "dev install reset to free", { installId });
-        }
-      } catch (err) {
-        // Don't let a logout-side reset failure block the user from logging
-        // out — clearSessionCookie already happened.
-        logger.warn("auth/logout", "dev install reset failed", {
-          error: String(err),
-          installId,
-        });
-      }
-    }
-  }
-
   return res.status(200).json({ ok: true });
 }
 

@@ -129,16 +129,17 @@ export async function isDevAllowlistedInstall(
 }
 
 /**
- * Resolve the effective tier for a request, honouring an optional dev
- * override header. Honoured ONLY for installs that are dev-allowlisted
- * (env-var direct OR via bound email). Otherwise the header is ignored
- * and we fall back to the normal tier read.
+ * Resolve the effective tier for a request — non-session-aware variant.
  *
- * The extension's Options page stores a dev-mode tier in
- * chrome.storage.local. The scanner sends it as `X-Antares-Dev-Tier:
- * free | pro | lifetime` on every request. With this resolver, a dev
- * who's signed up + bound their install via license redeem can flip
- * tier from the dropdown at will — no env-var edits, no redeploys.
+ * Used by callers that don't have a request object (tests, internal
+ * batch jobs). Honours the dev-tier header for dev-allowlisted installs
+ * and otherwise reads the stored install tier.
+ *
+ * The session-gated production path is `getEffectiveTierFromRequest`,
+ * which is what every HTTP handler should call. This variant exists
+ * so we don't break existing tests or any code path that legitimately
+ * needs to read the raw install tier without the "are you signed in"
+ * gate.
  */
 export async function getEffectiveTier(
   installId: string,
@@ -151,6 +152,106 @@ export async function getEffectiveTier(
     const v = String(raw ?? "").trim().toLowerCase();
     if (v === "free" || v === "pro" || v === "lifetime") return v;
   }
+  return getUserTier(installId);
+}
+
+/**
+ * Session-gated tier resolution. THIS is the right thing for HTTP
+ * handlers (scan / quota / history / etc.) to call.
+ *
+ * Behaviour:
+ *   - install in DEV_PRO_INSTALLS env var
+ *       → "lifetime" (legacy escape hatch — headless test runs and
+ *         CI smoke-tests where there's no website session don't break)
+ *   - no valid session cookie
+ *       → "free" (this is what makes "log out → I'm Free again" true
+ *         for everyone, paying customers included; signing back in
+ *         restores tier without any data being mutated)
+ *   - session cookie valid AND install bound to a different email
+ *       → "free" (anti-hijack: install Y was paid by email B; if email
+ *         A signs in on the same browser they don't inherit B's tier)
+ *   - session cookie valid AND install bound to the same email
+ *       → honour X-Antares-Dev-Tier if email is dev-allowlisted, else
+ *         return the stored install tier
+ *   - session cookie valid AND install has no binding yet
+ *       → "free" (user needs to redeem a license or re-link via
+ *         /account.html before tier kicks in)
+ *
+ * No tier data is mutated by this function. Tier storage stays on
+ * `user:<install_id>:tier` exactly as before — we just refuse to
+ * surface it to the client unless the session proves they own it.
+ */
+export async function getEffectiveTierFromRequest(
+  req: { headers: { cookie?: string | string[]; "x-antares-dev-tier"?: string | string[] } },
+  installId: string,
+): Promise<Tier> {
+  const devTierHeaderRaw = req.headers["x-antares-dev-tier"] ?? null;
+
+  // Legacy escape hatch: env-var devs still work without sessions.
+  // Honour the dev-tier header for them, default to lifetime otherwise.
+  if (isDevProInstall(installId)) {
+    if (devTierHeaderRaw) {
+      const raw = Array.isArray(devTierHeaderRaw)
+        ? devTierHeaderRaw[0]
+        : devTierHeaderRaw;
+      const v = String(raw ?? "").trim().toLowerCase();
+      if (v === "free" || v === "pro" || v === "lifetime") return v;
+    }
+    return getUserTier(installId);
+  }
+
+  if (!isAvailable() || !redis) return "free";
+
+  // Session check. Lazy-imported to keep this module from importing
+  // session-cookie at top level (which pulls in the JWT plumbing —
+  // not desired for tests that exercise the user module in isolation).
+  let sessionEmail: string | null = null;
+  try {
+    const { getAccountFromRequest } = await import("./session-cookie");
+    const account = await getAccountFromRequest(
+      req as unknown as Parameters<typeof getAccountFromRequest>[0],
+      redis,
+    );
+    sessionEmail = account?.email ?? null;
+  } catch (err) {
+    logger.warn("user", "session check failed during tier resolve", {
+      error: String(err),
+    });
+    return "free";
+  }
+  if (!sessionEmail) return "free";
+
+  // Binding check: the session must own this install. Otherwise refuse.
+  let boundEmail: string | null = null;
+  try {
+    boundEmail = await redis.get<string>(`account:install:${installId}`);
+  } catch (err) {
+    logger.warn("user", "binding read failed during tier resolve", {
+      error: String(err),
+    });
+    return "free";
+  }
+  if (!boundEmail || boundEmail !== sessionEmail) return "free";
+
+  // Authenticated + owns the install. Now resolve the actual tier.
+  if (devTierHeaderRaw) {
+    try {
+      const { isDevLifetimeEmail, isDevProEmail } = await import("./account");
+      if (isDevLifetimeEmail(sessionEmail) || isDevProEmail(sessionEmail)) {
+        const raw = Array.isArray(devTierHeaderRaw)
+          ? devTierHeaderRaw[0]
+          : devTierHeaderRaw;
+        const v = String(raw ?? "").trim().toLowerCase();
+        if (v === "free" || v === "pro" || v === "lifetime") return v;
+      }
+    } catch (err) {
+      logger.warn("user", "dev-email check failed during tier resolve", {
+        error: String(err),
+      });
+      // fall through to stored tier
+    }
+  }
+
   return getUserTier(installId);
 }
 

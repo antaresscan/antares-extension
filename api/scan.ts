@@ -41,7 +41,7 @@ import { computeFinalScore, classifySafeBlockedReasons } from "./_lib/scoring";
 import { evaluatePostLayerFlags, applySafeGateOverride, applyEstablishedBonus, determineVerdict } from "./_lib/pipeline";
 import { setCorsHeaders, getClientIp, getInstallId, checkRateLimit, validateCA, initRateLimiters } from "./_lib/middleware";
 import { initQuota, checkDailyQuota, setQuotaHeaders, secondsUntilReset } from "./_lib/quota";
-import { initUserStorage, pushScanHistory, getEffectiveTier } from "./_lib/user";
+import { initUserStorage, pushScanHistory, getEffectiveTierFromRequest } from "./_lib/user";
 import { initCache, getCachedResult, setCachedResult, getCacheRedis } from "./_lib/cache";
 import * as Sentry from "@sentry/node";
 import { generateAISummary } from "./_lib/ai-summary";
@@ -104,13 +104,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // is the primary identity key; falling back to IP keeps anonymous traffic
   // bounded and prevents quota-bypass via missing header.
   const identityKey = installId ?? ip;
-  // Honour the X-Antares-Dev-Tier header for installs in DEV_PRO_INSTALLS
-  // so the dev can flip between Free / Pro / Lifetime in real time
-  // (testing the locked-vs-unlocked overlay paths).
-  const effectiveTier = await getEffectiveTier(
-    identityKey,
-    req.headers["x-antares-dev-tier"],
-  );
+  // Session-gated tier: log out → Free (50/day quota), log in + linked
+  // install → your account's tier. The X-Antares-Dev-Tier header is
+  // honoured inside this resolver for dev-allowlisted emails; the env-
+  // var DEV_PRO_INSTALLS path also short-circuits here for headless
+  // CI/test runs that don't have a website session.
+  const effectiveTier = await getEffectiveTierFromRequest(req, identityKey);
   const quota = await checkDailyQuota(identityKey, effectiveTier);
   setQuotaHeaders(res, quota);
   if (!quota.allowed) {
