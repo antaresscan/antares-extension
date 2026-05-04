@@ -83,6 +83,10 @@ function meHandler(req: VercelRequest, res: VercelResponse) {
   (req as unknown as { query: Record<string, string> }).query = { action: "me" };
   return dispatcher(req, res);
 }
+function syncTokenHandler(req: VercelRequest, res: VercelResponse) {
+  (req as unknown as { query: Record<string, string> }).query = { action: "sync-token" };
+  return dispatcher(req, res);
+}
 
 function mockRes(): VercelResponse {
   return {
@@ -315,6 +319,141 @@ describe("GET /api/auth/me", () => {
     const req = mockReq({ method: "POST", headers: { origin: ORIGIN } });
     const res = mockRes();
     await meHandler(req, res);
+    expect(res.status).toHaveBeenCalledWith(405);
+  });
+});
+
+// ── sync-token ────────────────────────────────────────────────────────────
+//
+// /api/auth/sync-token is what closes the website-account ↔ extension-
+// overlay loop. The website calls it after login with the user's
+// install_id (probed from the bridge). The endpoint:
+//   1. Verifies the session cookie → identifies the user.
+//   2. AUTO-BINDS the install_id to the user's email if the install
+//      isn't yet bound (this is the fix for the "I'm signed in but
+//      overlay shows Free" bug — without auto-bind the API has a valid
+//      session but no install→email mapping, so resolveTierAndBypass
+//      returns Free).
+//   3. Returns the JWT in the response body so the website can hand
+//      it to the extension via the bridge.
+describe("POST /api/auth/sync-token", () => {
+  const VALID_INSTALL = "11111111-1111-4111-8111-111111111111";
+  const OTHER_INSTALL = "22222222-2222-4222-8222-222222222222";
+
+  beforeEach(async () => {
+    await signupHandler(
+      mockReq({
+        headers: { origin: ORIGIN },
+        body: { email: "alice@example.com", password: "supersecret1" },
+      }),
+      mockRes(),
+    );
+  });
+
+  it("returns 401 when no session cookie", async () => {
+    const req = mockReq({ headers: { origin: ORIGIN } });
+    const res = mockRes();
+    await syncTokenHandler(req, res);
+    expect(res.status).toHaveBeenCalledWith(401);
+  });
+
+  it("returns 200 + JWT when signed in", async () => {
+    const cookie = signSession("alice@example.com");
+    const req = mockReq({
+      headers: { origin: ORIGIN, cookie: `${SESSION_COOKIE_NAME}=${cookie}` },
+    });
+    const res = mockRes();
+    await syncTokenHandler(req, res);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ ok: true, email: "alice@example.com", token: expect.any(String) }),
+    );
+  });
+
+  it("auto-binds install_id to email when install has no binding yet", async () => {
+    const cookie = signSession("alice@example.com");
+    const req = mockReq({
+      headers: {
+        origin: ORIGIN,
+        cookie: `${SESSION_COOKIE_NAME}=${cookie}`,
+        "x-antares-install": VALID_INSTALL,
+      },
+    });
+    const res = mockRes();
+    await syncTokenHandler(req, res);
+
+    // Binding should now exist pointing at the signed-in email
+    expect(mocks.store.get(`account:install:${VALID_INSTALL}`)).toBe(
+      "alice@example.com",
+    );
+  });
+
+  it("does NOT overwrite existing binding to a different email (anti-hijack)", async () => {
+    // Pre-existing binding to bob (e.g. bob paid via Solana)
+    mocks.store.set(`account:install:${OTHER_INSTALL}`, "bob@example.com");
+    mocks.store.set(`user:${OTHER_INSTALL}:tier`, "yearly");
+
+    // Eve signs in on bob's browser and tries to claim bob's install
+    const cookie = signSession("alice@example.com");
+    const req = mockReq({
+      headers: {
+        origin: ORIGIN,
+        cookie: `${SESSION_COOKIE_NAME}=${cookie}`,
+        "x-antares-install": OTHER_INSTALL,
+      },
+    });
+    const res = mockRes();
+    await syncTokenHandler(req, res);
+
+    // Binding stays with bob — alice can't claim bob's paid install
+    expect(mocks.store.get(`account:install:${OTHER_INSTALL}`)).toBe(
+      "bob@example.com",
+    );
+    // Stored tier untouched too (not that the endpoint touches it,
+    // but anti-regression check).
+    expect(mocks.store.get(`user:${OTHER_INSTALL}:tier`)).toBe("yearly");
+    // Sync-token still succeeds — alice gets a JWT, just no tier mapping.
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ ok: true, email: "alice@example.com" }),
+    );
+  });
+
+  it("idempotent re-bind (same email) is a no-op", async () => {
+    mocks.store.set(`account:install:${VALID_INSTALL}`, "alice@example.com");
+
+    const cookie = signSession("alice@example.com");
+    const req = mockReq({
+      headers: {
+        origin: ORIGIN,
+        cookie: `${SESSION_COOKIE_NAME}=${cookie}`,
+        "x-antares-install": VALID_INSTALL,
+      },
+    });
+    const res = mockRes();
+    await syncTokenHandler(req, res);
+
+    expect(mocks.store.get(`account:install:${VALID_INSTALL}`)).toBe(
+      "alice@example.com",
+    );
+  });
+
+  it("works without install_id header (cookie-only flow, no bind attempted)", async () => {
+    const cookie = signSession("alice@example.com");
+    const req = mockReq({
+      headers: { origin: ORIGIN, cookie: `${SESSION_COOKIE_NAME}=${cookie}` },
+    });
+    const res = mockRes();
+    await syncTokenHandler(req, res);
+
+    // Token returned, no binding written (no install to bind).
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ ok: true, token: expect.any(String) }),
+    );
+  });
+
+  it("rejects GET with 405", async () => {
+    const req = mockReq({ method: "GET", headers: { origin: ORIGIN } });
+    const res = mockRes();
+    await syncTokenHandler(req, res);
     expect(res.status).toHaveBeenCalledWith(405);
   });
 });

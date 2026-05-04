@@ -17,6 +17,7 @@ import {
   setCorsHeaders,
   checkRateLimit,
   getClientIp,
+  getInstallId,
   initRateLimiters,
 } from "../_lib/middleware";
 import { apiError } from "../_lib/helpers";
@@ -27,6 +28,7 @@ import {
   ensureDevLifetimeLicense,
   ensureDevProLicense,
   signSession,
+  ACCOUNT_INSTALL_KEY,
 } from "../_lib/account";
 import {
   setSessionCookie,
@@ -183,6 +185,55 @@ async function handleSyncToken(req: VercelRequest, res: VercelResponse) {
     if (!account) {
       return res.status(401).json({ ok: false, reason: "not_authenticated" });
     }
+
+    // Auto-bind the caller's install_id to their email so subsequent scan
+    // calls resolve tier without requiring a separate "Link to my
+    // extension" click. This is what closes the website-account ↔
+    // extension-overlay loop:
+    //
+    //   1. User signs in → cookie set
+    //   2. /account.html probes install_id from extension bridge
+    //   3. /account.html calls /api/auth/sync-token with X-Antares-Install
+    //   4. We bind the install to the user's email here (this block)
+    //   5. We hand back the JWT, the bridge stores it
+    //   6. Next /api/scan call resolves session+binding → user's tier ✓
+    //
+    // Anti-hijack: we only bind when the install is currently UNBOUND.
+    // If install is already bound to a different email, we leave it
+    // alone — preventing user B from claiming user A's paid install
+    // by signing up on the same browser. (Same-email re-bind is a
+    // no-op; idempotent.) Refusal is silent — the sync-token still
+    // succeeds so the user can scan; their tier just stays Free
+    // until they redeem their own license.
+    const installId = getInstallId(req);
+    if (installId) {
+      try {
+        const existing = await redis.get<string>(ACCOUNT_INSTALL_KEY(installId));
+        if (!existing) {
+          await redis.set(ACCOUNT_INSTALL_KEY(installId), account.email);
+          logger.info("auth/sync-token", "install auto-bound", {
+            installId,
+            email: account.email,
+          });
+        } else if (existing !== account.email) {
+          logger.warn("auth/sync-token", "install bound to different email", {
+            installId,
+            sessionEmail: account.email,
+            boundEmail: existing,
+          });
+        }
+        // existing === account.email → no-op, idempotent
+      } catch (err) {
+        // Don't fail the whole sync-token call on a binding-write hiccup —
+        // tier resolution will just see no binding and return Free, which
+        // is the safe default. The user can retry from /account.html.
+        logger.warn("auth/sync-token", "auto-bind write failed", {
+          error: String(err),
+          installId,
+        });
+      }
+    }
+
     const token = signSession(account.email);
     return res.json({ ok: true, token, email: account.email });
   } catch (err) {
