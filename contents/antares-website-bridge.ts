@@ -32,20 +32,21 @@ import type { PlasmoCSConfig } from "plasmo"
 import { getInstallId } from "../shared/install-id"
 
 export const config: PlasmoCSConfig = {
+  // Manifest-v3 match patterns: wildcards can be the scheme, the first
+  // hostname segment, or in the path — never mid-hostname. So we don't
+  // try to cover Vercel preview URLs (`<project>-<hash>-<team>-
+  // projects.vercel.app`) — auto-link is production-only; preview
+  // users still get the manual paste-key path.
+  //
+  // The two GH Pages entries are kept overlapping intentionally: the
+  // narrower one captures user intent (we own only the antares-website
+  // path under that org), the wildcard one is a defensive net for any
+  // future page added to the same org.
   matches: [
     "https://antares-website.vercel.app/*",
-    // Vercel preview deployments — pattern matches `<project>-<hash>-<team>-projects.vercel.app`
-    "https://antares-website-*.vercel.app/*",
-    // GitHub Pages mirror
     "https://comealamaisongroupe.github.io/antares-website/*",
     "https://comealamaisongroupe.github.io/*"
-  ],
-  run_at: "document_start",
-  // World "MAIN" runs in the page's JS context so window.postMessage flows
-  // both ways without crossing the isolated-world boundary. Default
-  // "ISOLATED" would also work here (postMessage crosses worlds for
-  // window-level events) but MAIN is more straightforward.
-  world: "ISOLATED"
+  ]
 }
 
 // Marker so the page's JS can detect "extension is installed" without
