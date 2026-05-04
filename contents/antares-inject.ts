@@ -20,7 +20,7 @@ if (process.env.PLASMO_PUBLIC_SENTRY_DSN) {
 }
 
 import { state } from "./modules/state"
-import { hydrateCacheFromLS } from "./modules/cache"
+import { hydrateCacheFromLS, clearAllScanCache } from "./modules/cache"
 import { createHost, hideBox } from "./modules/components"
 import { poll, setupNavListeners, cleanupNavListeners, getInitialDelay } from "./modules/address-detector"
 import { logger } from "../shared/logger"
@@ -76,7 +76,39 @@ if (document.documentElement.hasAttribute(GUARD)) {
   setupNavListeners()
 }
 
-    // ─── EXTENSION TOGGLE (icon click) ─────────────────────────────────────────
+// ─── LIVE SESSION SYNC ────────────────────────────────────────────────────────
+//
+// When the user signs in or out on antares-website, the bridge content
+// script writes/clears `antares_session_token` in chrome.storage.local.
+// Token-page tabs that are already open need to react to that change so
+// the overlay reflects the user's NEW tier without a manual page refresh:
+//
+//   - Sign in (token written) → next scan adds the JWT, server returns
+//     paid tier, overlay re-renders Pro/Yearly/Lifetime ✓
+//   - Sign out (token cleared) → next scan goes anonymous, server
+//     returns Free, overlay re-renders Free ✓
+//
+// Implementation: chrome.storage.onChanged fires in every extension
+// context (background + every tab's content script). We bust the
+// per-CA cache (so the next scan goes through the API instead of
+// short-circuiting on cached state) and trigger poll() which detects
+// the current page's CA and re-scans it.
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== "local") return
+  if (!Object.prototype.hasOwnProperty.call(changes, "antares_session_token")) return
+  if (!state.enabled) return
+  // Wipe BOTH caches (in-memory + localStorage) so that token pages
+  // visited while the previous session was active don't keep showing
+  // the previously-cached tier. Without the localStorage wipe, opening
+  // a previously-scanned token after logout would still show Pro
+  // because the LS-hydrated cache hits before the re-scan request.
+  clearAllScanCache()
+  state.lastCA = ""
+  state.manuallyDismissed = false
+  poll()
+})
+
+// ─── EXTENSION TOGGLE (icon click) ─────────────────────────────────────────
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type !== "EXTENSION_TOGGLE") return
   state.enabled = !!msg.enabled
