@@ -195,7 +195,9 @@ export async function resolveTierAndBypass(
 
   if (!isAvailable() || !redis) return { tier: "free", bypassQuota: false };
 
-  // Single session read.
+  // Single session read. The cookie or X-Antares-Session header is the
+  // ONLY thing that proves who the user is — sign out clears it,
+  // signing in restores it.
   let sessionEmail: string | null = null;
   try {
     const { getAccountFromRequest } = await import("./session-cookie");
@@ -210,15 +212,21 @@ export async function resolveTierAndBypass(
   }
   if (!sessionEmail) return { tier: "free", bypassQuota: false };
 
-  // Binding check.
+  // Read install→email binding (if any). Used for both anti-hijack
+  // (mismatch refuses to honour) and the legacy install-tier fallback
+  // path below.
   let boundEmail: string | null = null;
   try {
     boundEmail = await redis.get<string>(`account:install:${installId}`);
   } catch (err) {
     logger.warn("user", "binding read failed during tier resolve", { error: String(err) });
+  }
+  // Anti-hijack: if the install is bound to a DIFFERENT email than the
+  // session, refuse. An unbound install is fine — we'll resolve tier
+  // from the session email's licences instead.
+  if (boundEmail && boundEmail !== sessionEmail) {
     return { tier: "free", bypassQuota: false };
   }
-  if (!boundEmail || boundEmail !== sessionEmail) return { tier: "free", bypassQuota: false };
 
   // Dev check (single import).
   let isDev = false;
@@ -229,19 +237,86 @@ export async function resolveTierAndBypass(
     logger.warn("user", "dev-email check failed during tier resolve", { error: String(err) });
   }
 
-  // Dev users can flip tier via header; non-dev users always get stored tier.
-  let tier: Tier;
+  // Dev users can flip tier via header — applies on top of whatever
+  // tier resolution would otherwise produce.
   if (isDev && devTierHeaderRaw) {
     const raw = Array.isArray(devTierHeaderRaw) ? devTierHeaderRaw[0] : devTierHeaderRaw;
     const v = String(raw ?? "").trim().toLowerCase();
-    tier = v === "free" || v === "pro" || v === "yearly" || v === "lifetime"
-      ? (v as Tier)
-      : await getUserTier(installId);
-  } else {
-    tier = await getUserTier(installId);
+    if (v === "free" || v === "pro" || v === "yearly" || v === "lifetime") {
+      return { tier: v as Tier, bypassQuota: true };
+    }
   }
 
-  return { tier, bypassQuota: isDev };
+  // PRIMARY: resolve tier from the session email's licences. This is
+  // the architectural fix — the founder's "overlay isn't synced with
+  // my account" complaint comes down to the previous resolver requiring
+  // an install→email binding that doesn't always exist (timing race in
+  // sync-token auto-bind, Solana-direct payers, dev grants etc.).
+  // License-of-record on the email is THE source of truth: signing in
+  // immediately maps to whatever the user paid for.
+  const emailTier = await resolveTierFromEmail(sessionEmail);
+  if (emailTier !== "free") {
+    return { tier: emailTier, bypassQuota: isDev };
+  }
+
+  // FALLBACK: when the email has no licences but the install IS bound
+  // to the same email, honour the install's stored tier. This covers
+  // legacy customers whose tier was set on install_id directly (older
+  // pre-licence-of-record code paths) or who paid via a flow that
+  // didn't issue a licence. New customers always go through the email
+  // path above.
+  if (boundEmail === sessionEmail) {
+    const legacyTier = await getUserTier(installId);
+    return { tier: legacyTier, bypassQuota: isDev };
+  }
+
+  // No licence on email + no install binding → user is signed in but
+  // hasn't paid for anything. Free.
+  return { tier: "free", bypassQuota: isDev };
+}
+
+/**
+ * Pick the best active tier across all licenses owned by `email`.
+ * Priority: lifetime (no expiry) > yearly (active) > pro (active) > free.
+ *
+ * Active means either no expiresAt set OR expiresAt is in the future.
+ * Lifetime licences never have an expiry; pro/yearly licences expire
+ * after their respective windows.
+ *
+ * Same logic as /account.html resolveTier() — they walk licences and
+ * pick the highest active band. Keep both copies in sync.
+ */
+async function resolveTierFromEmail(email: string): Promise<Tier> {
+  if (!isAvailable() || !redis) return "free";
+  try {
+    // Lazy import to avoid pulling license module into every code path
+    // that touches user.ts (some are cold paths where license lookup
+    // would be wasted overhead).
+    const { getLicensesByEmail } = await import("./license");
+    const licenses = await getLicensesByEmail(redis, email);
+    if (licenses.length === 0) return "free";
+
+    const now = Date.now();
+    let hasLifetime = false;
+    let activeYearly = false;
+    let activePro = false;
+    for (const l of licenses) {
+      if (l.tier === "lifetime") {
+        hasLifetime = true;
+      } else if (l.tier === "yearly") {
+        if (!l.expiresAt || l.expiresAt > now) activeYearly = true;
+      } else if (l.tier === "pro") {
+        if (!l.expiresAt || l.expiresAt > now) activePro = true;
+      }
+    }
+    if (hasLifetime) return "lifetime";
+    if (activeYearly) return "yearly";
+    if (activePro) return "pro";
+    return "free";
+  } catch (err) {
+    logger.warn("user", "email tier resolve failed", { error: String(err), email });
+    return "free";
+  }
 }
 
 /**
