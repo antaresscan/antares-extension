@@ -220,15 +220,18 @@ describe("reason classification", () => {
     expect(reasons).toContain("concentration")
   })
 
-  it("single wallet 10-14% stays soft (holders)", () => {
+  it("single wallet 10-14% classifies as concentration_warning", () => {
     // Sub-15% concentration is a CAUTION ceiling, not a DANGER hard block.
+    // The dedicated concentration_warning reason blocks the blue-chip
+    // exemption so PENGU / FARTCOIN-tier tokens with one whale at 11%
+    // get CAUTION instead of SAFE — per founder's rule.
     const flagLabel = "Single wallet holds 11% of supply"
     const layers = defaultLayers({
       helius: layer("helius", 0.6, [flag(flagLabel, "warning")], { safeBlocked: true }),
     })
     const reasons = classifySafeBlockedReasons(layers)
     expect(reasons).not.toContain("concentration")
-    expect(reasons).toContain("holders")
+    expect(reasons).toContain("concentration_warning")
   })
 })
 
@@ -333,6 +336,25 @@ describe("safe gate unlock paths", () => {
       lpBurned: true,
       goPlusClean: true,
       tokenAgeHours: 365 * 24,
+      sourcesAvailableCount: 6,
+    })
+    expect(blocked).toBe(true)
+  })
+
+  it("Path 3: PENGU-style 11% top-1 wallet keeps gate closed even on a blue-chip (CAUTION not SAFE)", () => {
+    // Founder rule: a single wallet at 10-14% should always be CAUTION,
+    // even on Pudgy Penguins / FARTCOIN-tier blue-chips. The dedicated
+    // concentration_warning reason lives outside SOFT_REASONS so the
+    // blue-chip soft-unlock branch refuses to fire. Other paths (only-
+    // soft, blue-chip onlyConcentrationHard) also reject it.
+    const blocked = applySafeGateOverride({
+      safeBlocked: true,
+      safeBlockedReasons: ["concentration_warning"] as SafeBlockedReason[],
+      forceRug: false,
+      holders: 150_000, // PENGU-tier holder count
+      lpBurned: true,
+      goPlusClean: true,
+      tokenAgeHours: 365 * 24, // years old
       sourcesAvailableCount: 6,
     })
     expect(blocked).toBe(true)

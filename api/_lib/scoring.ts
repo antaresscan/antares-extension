@@ -72,6 +72,14 @@ export const HARD_BLOCK_PATTERNS: Array<[RegExp, SafeBlockedReason]> = [
   // closed and verdict.ts routes the score band to DANGER/RUG.
   [/single wallet holds (1[5-9]|[2-9]\d|\d{3,})% of supply/i, "concentration"],
   [/top 1 holder > 20%/i, "concentration"],
+  // Single-wallet concentration in the 10-14% band is a "soft warning".
+  // It's NOT in HARD_BLOCK_REASONS (so verdict can still be CAUTION,
+  // not DANGER) but it's NOT in SOFT_REASONS either — applySafeGate-
+  // OverRide refuses to apply the blue-chip DAO exemption when this
+  // signal is present, so PENGU / FARTCOIN-tier tokens with one
+  // whale at 11% get CAUTION instead of SAFE. Per founder rule:
+  // "any token, even bluechip, must be CAUTION at 11% top-1 wallet".
+  [/single wallet holds 1[0-4]% of supply/i, "concentration_warning"],
 ];
 
 export function classifySafeBlockedReasons(layers: LayerResult[]): SafeBlockedReason[] {
