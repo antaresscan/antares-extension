@@ -43,6 +43,32 @@ async function readDevTierOverride(): Promise<string | null> {
   }
 }
 
+/**
+ * Read the website-issued session JWT from chrome.storage.local. The
+ * bridge content-script (contents/antares-website-bridge.ts) writes it
+ * there after the user signs in on /account.html. We forward it as
+ * X-Antares-Session on every scan call so the API can resolve the
+ * caller's tier from their email's licence-of-record. Without this
+ * header the scan call goes anonymous → server returns Free.
+ *
+ * NOTE: this needs to live in the content script (not just background)
+ * because content scripts call /api/scan directly — they don't go
+ * through the background service worker for the scan fetch.
+ */
+async function readSessionToken(): Promise<string | null> {
+  try {
+    const data = await new Promise<{ antares_session_token?: string }>((resolve) =>
+      chrome.storage.local.get(["antares_session_token"], (v) =>
+        resolve(v as { antares_session_token?: string }),
+      ),
+    )
+    const t = data.antares_session_token
+    return typeof t === "string" && t.length > 0 ? t : null
+  } catch {
+    return null
+  }
+}
+
 // Pull X-Antares-Quota-* headers off a /api/scan response into a structured
 // shape the overlay can render. Returns undefined when headers are missing
 // (old API version, errored response, or CORS not exposing them) so callers
@@ -235,6 +261,11 @@ export async function scan(ca: string) {
     const headers: Record<string, string> = installId ? { "X-Antares-Install": installId } : {}
     const devTier = await readDevTierOverride()
     if (devTier) headers["X-Antares-Dev-Tier"] = devTier
+    // Forward the website-issued session JWT (written by the bridge on
+    // /account.html sign-in). Without this the API treats every scan as
+    // anonymous → returns Free regardless of the user's actual tier.
+    const sessionToken = await readSessionToken()
+    if (sessionToken) headers["X-Antares-Session"] = sessionToken
     const res = await fetchWithRetry(`${API}?ca=${ca}`, controller.signal, headers)
     if (controller.signal.aborted) return
     const quota = extractQuotaFromHeaders(res.headers)
