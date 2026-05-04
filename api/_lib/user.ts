@@ -10,6 +10,20 @@
 //   user:{id}:history     LIST     LPUSH JSON entries, LTRIM 0 999
 import { Redis } from "@upstash/redis";
 import { logger } from "./logger";
+// Static imports for the auth + tier helpers we use inside resolveTierAndBypass.
+// Previously these were `await import("./session-cookie")` and `await
+// import("./account")`. The dynamic-import path was added to dodge the
+// known circular dep (user → session-cookie → account → license → user)
+// but it backfired: Vercel's serverless bundler doesn't resolve
+// dynamic relative imports the same way Node ESM does, and threw
+// `Cannot find module './session-cookie'` on every /api/scan call —
+// every authenticated request silently fell through to "Free" before
+// any auth code even ran. Static imports work because JS handles the
+// circular gracefully (license.ts only needs setUserTier at call time,
+// not at module init).
+import { getAccountFromRequest } from "./session-cookie";
+import { isDevLifetimeEmail, isDevProEmail } from "./account";
+import { getLicensesByEmail } from "./license";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -119,10 +133,6 @@ export async function isDevAllowlistedInstall(
   if (isDevProInstall(installId)) return true;
   if (!isAvailable() || !redis) return false;
   try {
-    // Lazy import to avoid circular dep with account.ts (which imports
-    // from license.ts which is independent — we only need the email
-    // allowlist predicates here).
-    const { isDevLifetimeEmail, isDevProEmail } = await import("./account");
     const email = await redis.get<string>(`account:install:${installId}`);
     if (!email) return false;
     return isDevLifetimeEmail(email) || isDevProEmail(email);
@@ -213,24 +223,17 @@ export async function resolveTierAndBypass(
   // signing in restores it.
   let sessionEmail: string | null = null;
   try {
-    const { getAccountFromRequest } = await import("./session-cookie");
     const account = await getAccountFromRequest(
       req as unknown as Parameters<typeof getAccountFromRequest>[0],
       redis,
     );
     sessionEmail = account?.email ?? null;
   } catch (err) {
-    // Diagnostic: emit the full error info as a metric (always-on log).
-    // The previous logger.warn was truncated by Vercel's UI which made
-    // it impossible to tell whether this was a Redis hiccup, a JWT
-    // verify failure, or something else. Metric level surfaces the
-    // structured payload in the runtime logs.
     logger.metric("tier-resolve.session-error", {
       installId,
       authSource,
       errorMessage: err instanceof Error ? err.message : String(err),
       errorName: err instanceof Error ? err.name : "unknown",
-      errorStack: err instanceof Error ? err.stack?.slice(0, 800) : undefined,
     });
     return { tier: "free", bypassQuota: false };
   }
@@ -256,14 +259,8 @@ export async function resolveTierAndBypass(
     return { tier: "free", bypassQuota: false };
   }
 
-  // Dev check (single import).
-  let isDev = false;
-  try {
-    const { isDevLifetimeEmail, isDevProEmail } = await import("./account");
-    isDev = isDevLifetimeEmail(sessionEmail) || isDevProEmail(sessionEmail);
-  } catch (err) {
-    logger.warn("user", "dev-email check failed during tier resolve", { error: String(err) });
-  }
+  // Dev check.
+  const isDev = isDevLifetimeEmail(sessionEmail) || isDevProEmail(sessionEmail);
 
   // Dev users can flip tier via header — applies on top of whatever
   // tier resolution would otherwise produce.
@@ -319,10 +316,6 @@ export async function resolveTierAndBypass(
 async function resolveTierFromEmail(email: string): Promise<Tier> {
   if (!isAvailable() || !redis) return "free";
   try {
-    // Lazy import to avoid pulling license module into every code path
-    // that touches user.ts (some are cold paths where license lookup
-    // would be wasted overhead).
-    const { getLicensesByEmail } = await import("./license");
     const licenses = await getLicensesByEmail(redis, email);
     if (licenses.length === 0) return "free";
 
