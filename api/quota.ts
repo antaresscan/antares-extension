@@ -18,7 +18,7 @@ import {
   initRateLimiters,
 } from "./_lib/middleware";
 import { initQuota, peekDailyQuota, setQuotaHeaders } from "./_lib/quota";
-import { initUserStorage, getEffectiveTierFromRequest } from "./_lib/user";
+import { initUserStorage, resolveTierAndBypass } from "./_lib/user";
 import { apiError } from "./_lib/helpers";
 import { logger } from "./_lib/logger";
 
@@ -48,9 +48,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     // Session-gated: logged-out users get Free quota (50/day) regardless
     // of what tier their install has stored. Signing back in restores
-    // their paid tier without any data being mutated.
-    const effectiveTier = await getEffectiveTierFromRequest(req, identityKey);
-    const quota = await peekDailyQuota(identityKey, effectiveTier);
+    // their paid tier without any data being mutated. Devs with the
+    // dropdown set to Free get an unlimited Free view (bypassQuota=true)
+    // so the overlay UI test never gets locked out.
+    const { tier: effectiveTier, bypassQuota } = await resolveTierAndBypass(
+      req,
+      identityKey,
+    );
+    const quota = await peekDailyQuota(identityKey, effectiveTier, { bypassQuota });
     setQuotaHeaders(res, quota);
 
     // No-cache: quota state changes per request, stale data is misleading.
