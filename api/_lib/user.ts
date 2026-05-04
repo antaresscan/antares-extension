@@ -84,25 +84,67 @@ export function isDevProInstall(installId: string): boolean {
 }
 
 /**
+ * Async dev-install check that ALSO honours installs whose bound email
+ * is in the dev-Lifetime / dev-Pro hardcoded allowlists (see
+ * api/_lib/account.ts: DEV_LIFETIME_EMAILS_HARDCODED,
+ * DEV_PRO_EMAILS_HARDCODED).
+ *
+ * Why this exists: previously the X-Antares-Dev-Tier header was only
+ * honoured for installs in the `DEV_PRO_INSTALLS` env var — meaning
+ * the founder had to look up each install's UUID and add it manually,
+ * for every browser they tested on, surviving every reinstall. Tying
+ * the dev override to EMAIL instead means: sign up once with the
+ * dev-allowlisted email, redeem any license in the extension once
+ * (which binds install_id → email via account:install:<install_id>),
+ * and from that moment on every tier-switch from this install's
+ * Options dropdown is honoured by the server.
+ *
+ * Resolution order:
+ *   1. installId in process.env.DEV_PRO_INSTALLS  → true (legacy path)
+ *   2. installId has a bound email AND that email is dev-allowlisted → true
+ *   3. otherwise → false
+ *
+ * Reads Redis (one cheap GET) on path 2. Path 1 short-circuits without
+ * a network round-trip so per-scan latency is unchanged for the common
+ * env-var case.
+ */
+export async function isDevAllowlistedInstall(
+  installId: string,
+): Promise<boolean> {
+  if (!installId) return false;
+  if (isDevProInstall(installId)) return true;
+  if (!isAvailable() || !redis) return false;
+  try {
+    // Lazy import to avoid circular dep with account.ts (which imports
+    // from license.ts which is independent — we only need the email
+    // allowlist predicates here).
+    const { isDevLifetimeEmail, isDevProEmail } = await import("./account");
+    const email = await redis.get<string>(`account:install:${installId}`);
+    if (!email) return false;
+    return isDevLifetimeEmail(email) || isDevProEmail(email);
+  } catch (err) {
+    logger.warn("user", "dev-allowlist check failed", { error: String(err), installId });
+    return false;
+  }
+}
+
+/**
  * Resolve the effective tier for a request, honouring an optional dev
- * override header for installs that are listed in `DEV_PRO_INSTALLS`.
+ * override header. Honoured ONLY for installs that are dev-allowlisted
+ * (env-var direct OR via bound email). Otherwise the header is ignored
+ * and we fall back to the normal tier read.
  *
- * The dev wants to test Free vs Pro vs Lifetime UX in real-time without
- * editing env vars or Redis between switches. The extension's options
- * page stores a dev-mode tier in `chrome.storage.local` and the scanner
- * sends it as `X-Antares-Dev-Tier: free | pro | lifetime`. The server
- * trusts that header **only** for installs in `DEV_PRO_INSTALLS` —
- * otherwise the header is ignored and we fall back to the normal tier
- * read.
- *
- * Without an override header, dev installs still default to lifetime
- * (the `getUserTier` shortcut), which is what most dev work wants.
+ * The extension's Options page stores a dev-mode tier in
+ * chrome.storage.local. The scanner sends it as `X-Antares-Dev-Tier:
+ * free | pro | lifetime` on every request. With this resolver, a dev
+ * who's signed up + bound their install via license redeem can flip
+ * tier from the dropdown at will — no env-var edits, no redeploys.
  */
 export async function getEffectiveTier(
   installId: string,
   devTierHeaderRaw?: string | string[] | null,
 ): Promise<Tier> {
-  if (devTierHeaderRaw && isDevProInstall(installId)) {
+  if (devTierHeaderRaw && (await isDevAllowlistedInstall(installId))) {
     const raw = Array.isArray(devTierHeaderRaw)
       ? devTierHeaderRaw[0]
       : devTierHeaderRaw;

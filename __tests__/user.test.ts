@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { Redis } from "@upstash/redis";
 import {
   initUserStorage,
@@ -6,6 +6,9 @@ import {
   setUserTier,
   pushScanHistory,
   getScanHistory,
+  isDevProInstall,
+  isDevAllowlistedInstall,
+  getEffectiveTier,
   HISTORY_HARD_CAP,
   HISTORY_DAY_WINDOW,
   _resetUserStorageForTests,
@@ -330,6 +333,163 @@ describe("getScanHistory", () => {
 
     const items = await getScanHistory("install-x");
     expect(items.length).toBe(1);
+  });
+});
+
+// ─── Dev-tier override (env var + bound-email) ────────────────────────────────
+//
+// These tests cover the resolution chain that lets the founder flip
+// Free/Pro/Lifetime from the extension Options dropdown without managing
+// install_id UUIDs manually:
+//   1. install_id in DEV_PRO_INSTALLS env var → allowlisted (legacy)
+//   2. install_id has a bound email AND that email is dev-allowlisted → allowlisted
+//   3. otherwise → header is ignored, fall back to stored tier
+
+describe("isDevProInstall (env-var path)", () => {
+  const origEnv = process.env.DEV_PRO_INSTALLS;
+
+  afterEach(() => {
+    if (origEnv === undefined) delete process.env.DEV_PRO_INSTALLS;
+    else process.env.DEV_PRO_INSTALLS = origEnv;
+  });
+
+  it("returns false for empty installId", () => {
+    expect(isDevProInstall("")).toBe(false);
+  });
+
+  it("returns false when env var is unset", () => {
+    delete process.env.DEV_PRO_INSTALLS;
+    expect(isDevProInstall("install-aaa")).toBe(false);
+  });
+
+  it("returns true for installs listed in env var", () => {
+    process.env.DEV_PRO_INSTALLS = "install-aaa,install-bbb,install-ccc";
+    expect(isDevProInstall("install-bbb")).toBe(true);
+  });
+
+  it("ignores whitespace around comma-separated values", () => {
+    process.env.DEV_PRO_INSTALLS = "  install-aaa  ,  install-bbb  ";
+    expect(isDevProInstall("install-aaa")).toBe(true);
+    expect(isDevProInstall("install-bbb")).toBe(true);
+  });
+});
+
+describe("isDevAllowlistedInstall (env-var + bound-email path)", () => {
+  const origEnv = process.env.DEV_PRO_INSTALLS;
+
+  afterEach(() => {
+    if (origEnv === undefined) delete process.env.DEV_PRO_INSTALLS;
+    else process.env.DEV_PRO_INSTALLS = origEnv;
+  });
+
+  it("returns true for installs listed directly in DEV_PRO_INSTALLS", async () => {
+    process.env.DEV_PRO_INSTALLS = "install-direct";
+    // No Redis needed — env-var path short-circuits.
+    expect(await isDevAllowlistedInstall("install-direct")).toBe(true);
+  });
+
+  it("returns true for installs whose bound email is in DEV_LIFETIME_EMAILS_HARDCODED", async () => {
+    delete process.env.DEV_PRO_INSTALLS;
+    const m = mockRedis({
+      // The reverse-index key written by license redeem.
+      "account:install:install-bound-lifetime": "lennypierrepro@gmail.com",
+    });
+    initUserStorage(m.redis);
+    expect(await isDevAllowlistedInstall("install-bound-lifetime")).toBe(true);
+  });
+
+  it("returns false for installs with no bound email and not in env var", async () => {
+    delete process.env.DEV_PRO_INSTALLS;
+    const m = mockRedis(); // no account:install:* key
+    initUserStorage(m.redis);
+    expect(await isDevAllowlistedInstall("install-unknown")).toBe(false);
+  });
+
+  it("returns false for installs whose bound email is NOT in any dev allowlist", async () => {
+    delete process.env.DEV_PRO_INSTALLS;
+    const m = mockRedis({
+      "account:install:install-bound-random": "random-user@example.com",
+    });
+    initUserStorage(m.redis);
+    expect(await isDevAllowlistedInstall("install-bound-random")).toBe(false);
+  });
+
+  it("returns false for empty installId without touching Redis", async () => {
+    const m = mockRedis();
+    initUserStorage(m.redis);
+    expect(await isDevAllowlistedInstall("")).toBe(false);
+    expect(m.redis.get).not.toHaveBeenCalled();
+  });
+
+  it("returns false (fail-closed) when Redis throws", async () => {
+    delete process.env.DEV_PRO_INSTALLS;
+    const m = mockRedis();
+    m.setFailing(true);
+    initUserStorage(m.redis);
+    expect(await isDevAllowlistedInstall("install-anything")).toBe(false);
+  });
+
+  it("returns false when storage is not initialised", async () => {
+    delete process.env.DEV_PRO_INSTALLS;
+    // _resetUserStorageForTests already ran in beforeEach
+    expect(await isDevAllowlistedInstall("install-anything")).toBe(false);
+  });
+});
+
+describe("getEffectiveTier (header honoured for dev-allowlisted installs)", () => {
+  const origEnv = process.env.DEV_PRO_INSTALLS;
+
+  afterEach(() => {
+    if (origEnv === undefined) delete process.env.DEV_PRO_INSTALLS;
+    else process.env.DEV_PRO_INSTALLS = origEnv;
+  });
+
+  it("honours X-Antares-Dev-Tier header for env-var dev installs", async () => {
+    process.env.DEV_PRO_INSTALLS = "install-dev";
+    expect(await getEffectiveTier("install-dev", "free")).toBe("free");
+    expect(await getEffectiveTier("install-dev", "pro")).toBe("pro");
+    expect(await getEffectiveTier("install-dev", "lifetime")).toBe("lifetime");
+  });
+
+  it("honours the header for bound-email dev installs", async () => {
+    delete process.env.DEV_PRO_INSTALLS;
+    const m = mockRedis({
+      "account:install:install-bound": "lennypierrepro@gmail.com",
+      // Stored tier is pro, but header says free → header should win.
+      "user:install-bound:tier": "pro",
+    });
+    initUserStorage(m.redis);
+    expect(await getEffectiveTier("install-bound", "free")).toBe("free");
+    expect(await getEffectiveTier("install-bound", "lifetime")).toBe("lifetime");
+  });
+
+  it("ignores the header for non-allowlisted installs (anti-spoofing)", async () => {
+    delete process.env.DEV_PRO_INSTALLS;
+    const m = mockRedis({
+      // Install has stored tier=free, but a malicious request claims lifetime.
+      "user:install-attacker:tier": "free",
+    });
+    initUserStorage(m.redis);
+    expect(await getEffectiveTier("install-attacker", "lifetime")).toBe("free");
+    expect(await getEffectiveTier("install-attacker", "pro")).toBe("free");
+  });
+
+  it("ignores invalid header values from dev installs (defensive)", async () => {
+    process.env.DEV_PRO_INSTALLS = "install-dev";
+    // Garbage header → should fall through to getUserTier (lifetime for dev installs)
+    expect(await getEffectiveTier("install-dev", "premium-plus-ultra")).toBe("lifetime");
+  });
+
+  it("defaults to stored tier when no header is provided", async () => {
+    process.env.DEV_PRO_INSTALLS = "install-dev";
+    expect(await getEffectiveTier("install-dev")).toBe("lifetime");
+    expect(await getEffectiveTier("install-dev", null)).toBe("lifetime");
+    expect(await getEffectiveTier("install-dev", undefined)).toBe("lifetime");
+  });
+
+  it("normalises array headers (Vercel multi-value form) to first value", async () => {
+    process.env.DEV_PRO_INSTALLS = "install-dev";
+    expect(await getEffectiveTier("install-dev", ["free", "pro"])).toBe("free");
   });
 });
 
