@@ -592,19 +592,13 @@ export function buildResultNode(
   })
   const flagCount = summaryFlags.length
   const critCount = summaryFlags.filter((f: ScanResponseFlag) => f.severity === "critical").length
-  // Flag whether any of the surfaced flags are pure provider-availability
-  // issues (no upstream token signal). When that's the only thing in the
-  // count the wording shifts to "data unverified" \u2014 the user understands
-  // it's a pipeline gap, not a token-side red flag.
-  const onlyUnavailable = flagCount > 0 && summaryFlags.every(
-    (f: ScanResponseFlag) =>
-      typeof f.label === "string" && /\bunavailable\b/i.test(f.label),
-  )
 
+  // Plain, neutral wording \u2014 never editorialise about data quality. The
+  // panel surfaces each flag's actual label so users can read the
+  // specifics there. The summary is just a count + critical breakdown.
   let summary = ""
   if (flagCount === 0) summary = "No issues found"
-  else if (onlyUnavailable) summary = `${flagCount} flag${flagCount > 1 ? "s" : ""} \u2014 data unverified`
-  else if (critCount > 0) summary = `${flagCount} flags \u2014 ${critCount} critical`
+  else if (critCount > 0) summary = `${flagCount} flag${flagCount > 1 ? "s" : ""} \u2014 ${critCount} critical`
   else summary = `${flagCount} flag${flagCount > 1 ? "s" : ""} detected`
 
   const liqDisplay = liq !== null ? formatMcap(liq) : "\u2014"
