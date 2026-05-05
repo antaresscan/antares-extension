@@ -23,6 +23,7 @@ import { state } from "./modules/state"
 import { hydrateCacheFromLS, clearAllScanCache } from "./modules/cache"
 import { createHost, hideBox } from "./modules/components"
 import { poll, setupNavListeners, cleanupNavListeners, getInitialDelay } from "./modules/address-detector"
+import { scan } from "./modules/scanner"
 import { logger } from "../shared/logger"
 
 /**
@@ -80,32 +81,77 @@ if (document.documentElement.hasAttribute(GUARD)) {
 //
 // When the user signs in or out on antares-website, the bridge content
 // script writes/clears `antares_session_token` in chrome.storage.local.
-// Token-page tabs that are already open need to react to that change so
-// the overlay reflects the user's NEW tier without a manual page refresh:
+// Token-page tabs already open react to that change so the overlay
+// reflects the user's NEW tier without a manual page refresh:
 //
-//   - Sign in (token written) → next scan adds the JWT, server returns
-//     paid tier, overlay re-renders Pro/Yearly/Lifetime ✓
-//   - Sign out (token cleared) → next scan goes anonymous, server
-//     returns Free, overlay re-renders Free ✓
+//   - Sign in (token written) → silent re-scan with the JWT, server
+//     returns paid tier, overlay swaps to Pro/Yearly/Lifetime ✓
+//   - Sign out (token cleared) → silent re-scan, server returns Free,
+//     overlay swaps to Free ✓
 //
-// Implementation: chrome.storage.onChanged fires in every extension
-// context (background + every tab's content script). We bust the
-// per-CA cache (so the next scan goes through the API instead of
-// short-circuiting on cached state) and trigger poll() which detects
-// the current page's CA and re-scans it.
+// UX guarantee: silent: true keeps the EXISTING overlay on screen
+// during the fetch — no skeleton flash, no perceived reload. The new
+// data swaps in atomically the moment it lands. We also reset
+// manuallyDismissed because login/logout is an explicit user action
+// and they probably want to see the resulting tier change.
+//
+// We still call clearAllScanCache to keep localStorage bounded — without
+// it, every token a user ever scanned would linger in LS forever for
+// pages they don't revisit. Session-tagged entries auto-invalidate on
+// read, but they'd still occupy disk. The wipe is cheap (small payloads,
+// few entries) and runs only on auth state change.
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local") return
   if (!Object.prototype.hasOwnProperty.call(changes, "antares_session_token")) return
   if (!state.enabled) return
-  // Wipe BOTH caches (in-memory + localStorage) so that token pages
-  // visited while the previous session was active don't keep showing
-  // the previously-cached tier. Without the localStorage wipe, opening
-  // a previously-scanned token after logout would still show Pro
-  // because the LS-hydrated cache hits before the re-scan request.
-  clearAllScanCache()
-  state.lastCA = ""
   state.manuallyDismissed = false
-  poll()
+  clearAllScanCache()
+  if (state.lastCA) {
+    // Currently-displayed CA: silent re-scan keeps the overlay visible
+    // and swaps in the new tier without a skeleton flash.
+    void scan(state.lastCA, { silent: true })
+  } else {
+    // CA not yet resolved on this tab (initial poll never landed) —
+    // run normal poll path which will scan once the page settles.
+    poll()
+  }
+})
+
+// ─── TAB-FOCUS SELF-HEAL ──────────────────────────────────────────────────
+//
+// chrome.storage.onChanged is reliable for tabs whose content scripts are
+// still RUNNING when the session changes. But Chrome aggressively
+// discards inactive tabs to reclaim memory — when that happens the
+// content script is torn down and the storage listener never fires.
+// On revisit, the script re-injects and hydrates from localStorage,
+// which still holds the pre-logout/login Pro/Free entry.
+//
+// Two backstops cover that gap:
+//
+//   1. Cache entries are session-tagged (see cache.ts → getCached).
+//      A stale entry can never serve the wrong tier — getCached evicts
+//      on session mismatch and returns null, forcing a fresh scan.
+//
+//   2. When a previously-hidden tab becomes visible, we silent-rescan
+//      the current CA. silent: true means scan() short-circuits cheaply
+//      if the cache is still valid (no API call, no re-render), and
+//      keeps the existing overlay visible if a fresh fetch is needed
+//      (no skeleton flash). Net effect: zero perceived activity when
+//      nothing changed; a smooth atomic swap when something did.
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "visible") return
+  if (!state.enabled) return
+  // Don't auto-resurrect a manually-dismissed overlay; the next nav
+  // event will re-evaluate. This keeps the close-button UX intact —
+  // user closes the box, switches tabs, comes back, box stays closed.
+  if (state.manuallyDismissed) return
+
+  if (state.lastCA) {
+    void scan(state.lastCA, { silent: true })
+  } else {
+    // Nothing scanned yet on this tab — fall back to normal poll.
+    poll()
+  }
 })
 
 // ─── EXTENSION TOGGLE (icon click) ─────────────────────────────────────────
