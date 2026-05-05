@@ -344,6 +344,17 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
       // data-target / data-w values (the score textContent is initially
       // "0" and the bar width starts at 0%).
       applyFinalAnimationValues(el)
+      // Completion flash: after the shimmer slides offstage, pulse the
+      // topbar with a green glow for ~600ms so the user feels the swap
+      // "land". Without this the shimmer just stops and the new tier
+      // appears, which doesn't punctuate the moment of change. The
+      // class self-removes after the animation so a follow-up rescan
+      // can replay the flash. See styles.ts → @keyframes refresh-flash.
+      const topbar = el.querySelector(".topbar")
+      if (topbar) {
+        topbar.classList.add("flash")
+        setTimeout(() => topbar.classList.remove("flash"), 700)
+      }
     } else {
       triggerResultAnimations(el)
     }
