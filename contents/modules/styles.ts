@@ -190,6 +190,10 @@ export const SHADOW_CSS = `
 .x:active {
   transform: scale(0.95);
 }
+.x:focus-visible {
+  outline: 1px solid rgba(0,229,176,.5);
+  outline-offset: 2px;
+}
 .quota-badge {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 7px;
@@ -259,15 +263,21 @@ export const SHADOW_CSS = `
 }
 .aff-disclosure {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 7px;
-  color: #2a2a2f;
-  letter-spacing: 0.12em;
+  font-size: 8px;
+  font-weight: 700;
+  color: #555;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   padding: 2px 5px;
-  border: 1px solid #16161a;
+  border: 1px solid #1a1a1e;
   border-radius: 2px;
   cursor: help;
   flex-shrink: 0;
+  transition: color .2s, border-color .2s;
+}
+.aff-disclosure:hover {
+  color: #888;
+  border-color: #2a2a30;
 }
 .tk {
   padding: 0 14px;
@@ -366,6 +376,29 @@ export const SHADOW_CSS = `
 .fo a:hover { color: #ccc; border-color: #444; background: rgba(255,255,255,.02); }
 .fo a.warn  { border-color: rgba(255,95,95,.2); color: #cc5555; }
 .fo a.warn:hover { border-color: rgba(255,95,95,.4); color: #ff5f5f; background: rgba(255,95,95,.04); }
+
+/* Keyboard focus rings — surfaces interactive elements for users who
+   navigate with Tab. focus-visible scopes these to keyboard focus only,
+   so mouse clicks don't get a stray outline. */
+.fo a:focus-visible,
+.fo .ai-btn:focus-visible,
+.fo .cf-btn:focus-visible {
+  outline: 1px solid rgba(0,229,176,.5);
+  outline-offset: 2px;
+}
+.err-retry:focus-visible,
+.qx-cta:focus-visible {
+  outline: 1px solid rgba(0,229,176,.6);
+  outline-offset: 2px;
+}
+.aff-link:focus-visible {
+  outline: 1px solid rgba(0,229,176,.5);
+  outline-offset: 2px;
+}
+.quota-badge.danger:focus-visible {
+  outline: 1px solid rgba(255,95,95,.6);
+  outline-offset: 2px;
+}
 
 /* Quota-exhausted state — picked from /quota-overlay-demos.html
    "Demo 3 — Premium / calm". Total ~210px tall.
@@ -598,6 +631,19 @@ export const SHADOW_CSS = `
   display: flex;
   flex-direction: column;
   gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(167,139,250,.3) transparent;
+}
+.ai-panel-inner::-webkit-scrollbar { width: 4px; }
+.ai-panel-inner::-webkit-scrollbar-track { background: transparent; }
+.ai-panel-inner::-webkit-scrollbar-thumb {
+  background: rgba(167,139,250,.3);
+  border-radius: 2px;
+}
+.ai-panel-inner::-webkit-scrollbar-thumb:hover {
+  background: rgba(167,139,250,.5);
 }
 
 /* First sentence — acts as a verdict summary */
@@ -704,6 +750,19 @@ export const SHADOW_CSS = `
   display: flex;
   flex-direction: column;
   gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,95,95,.3) transparent;
+}
+.cf-panel-inner::-webkit-scrollbar { width: 4px; }
+.cf-panel-inner::-webkit-scrollbar-track { background: transparent; }
+.cf-panel-inner::-webkit-scrollbar-thumb {
+  background: rgba(255,95,95,.3);
+  border-radius: 2px;
+}
+.cf-panel-inner::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,95,95,.5);
 }
 
 .cf-flag {
