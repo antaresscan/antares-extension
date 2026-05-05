@@ -613,16 +613,33 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const realHolderAccounts: HeliusHolder[] = resolvedHolderAccounts.filter(
       h => !LP_PROGRAM_ADDRESSES.has(h.owner) && !FOUNDATION_WALLETS.has(h.owner),
     );
+    // Fallback chain for top-N holder concentration:
+    //   1. Helius-derived from realHolderAccounts (richest signal)
+    //   2. RugCheck topHolders.top10Percentage / top1Percentage
+    //
+    // The previous version returned null when Helius was unavailable
+    // even on tokens where RugCheck had the same data. The Insider
+    // Watch tab + the Sniper Map's concentration view both rely on
+    // these fields — leaving them null left those tabs blank on
+    // every token where Helius was down (BONK, large established
+    // tokens that are too big for Helius to walk in time).
+    const rugTopHolders = (rugData as { topHolders?: { top1Percentage?: number; top1HolderPercentage?: number; top10Percentage?: number } } | null)?.topHolders;
     const topHolderPct: number | null = (() => {
-      if (realHolderAccounts.length === 0 || totalSupplyUi <= 0) return null;
-      const topAmt = asNumber(realHolderAccounts[0]?.uiAmount);
-      return topAmt > 0 ? (topAmt / totalSupplyUi) * 100 : null;
+      if (realHolderAccounts.length > 0 && totalSupplyUi > 0) {
+        const topAmt = asNumber(realHolderAccounts[0]?.uiAmount);
+        if (topAmt > 0) return (topAmt / totalSupplyUi) * 100;
+      }
+      const rcTop1 = asNumber(rugTopHolders?.top1Percentage ?? rugTopHolders?.top1HolderPercentage);
+      return rcTop1 > 0 ? Math.min(100, rcTop1) : null;
     })();
     const top10HolderPct: number | null = (() => {
-      if (realHolderAccounts.length === 0 || totalSupplyUi <= 0) return null;
-      const top10Sum = realHolderAccounts.slice(0, 10)
-        .reduce((sum, h) => sum + asNumber(h?.uiAmount), 0);
-      return top10Sum > 0 ? Math.min(100, (top10Sum / totalSupplyUi) * 100) : null;
+      if (realHolderAccounts.length > 0 && totalSupplyUi > 0) {
+        const top10Sum = realHolderAccounts.slice(0, 10)
+          .reduce((sum, h) => sum + asNumber(h?.uiAmount), 0);
+        if (top10Sum > 0) return Math.min(100, (top10Sum / totalSupplyUi) * 100);
+      }
+      const rcTop10 = asNumber(rugTopHolders?.top10Percentage);
+      return rcTop10 > 0 ? Math.min(100, rcTop10) : null;
     })();
 
     // ─── V5 Critical Actors preview ───────────────────────────────────
