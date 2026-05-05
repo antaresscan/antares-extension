@@ -264,9 +264,17 @@
   .ov.w0::before{display:none}                                 /* none — baseline */
   .ov.w1::before{opacity:.03;background-size:70% auto}         /* subtle centred */
   .ov.w2::before{opacity:.06;background-size:75% auto}         /* visible centred */
-  .ov.w3::before{                                               /* off-center TOP-right */
-    opacity:.10;background-position:right -8% top -8%;
-    background-size:55% auto;
+  .ov.w3::before{
+    /* Aligned with the vertical divider between LP LOCK (col 4) and
+       LIQ (col 5) in the security row — that's at horizontal 80% of
+       the overlay. Centred vertically. 140x140 watermark, 4% opacity. */
+    inset:50% auto auto 80%;
+    width:140px;height:140px;
+    margin:-70px 0 0 -70px;
+    background:#fff;background-image:none;
+    -webkit-mask:url('icon.png') no-repeat center / 400% 400%;
+            mask:url('icon.png') no-repeat center / 400% 400%;
+    opacity:.04;
   }
   .ov.w4::before{                                               /* tile pattern */
     opacity:.025;background:url('icon.png') repeat;
@@ -482,7 +490,7 @@
 
     <!-- W3 — Off-center TOP-right -->
     <div class="wm-card">
-      <div class="wm-name">W3 — off-centre (top-right)</div>
+      <div class="wm-name">W3 — aligned LP LOCK | LIQ</div>
       <div class="ov w3">
         <div class="ov-tb">
           <div class="ov-tb-lf"><span class="ov-brand">ANTARES</span><span class="logo md pro"></span></div>
@@ -506,7 +514,7 @@
           <div class="ov-btn locked"><span class="ico">○</span>AI SUMMARY</div>
         </div>
       </div>
-      <div class="wm-desc">Logo bleeds off the top-right corner like a watermark stamp. Asymmetric.</div>
+      <div class="wm-desc">Watermark centred on the vertical divider between LP LOCK and LIQ cells (80% horizontal). Lower opacity (4%) so the topbar logo stays clean.</div>
     </div>
 
     <!-- W4 — Tile pattern -->
