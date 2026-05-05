@@ -19,6 +19,9 @@
     --gray:#666;
     --gray-deep:#3a3a40;
     --gray-pale:#888;
+    /* Verdict palette for the overlay mockup */
+    --caution:#f5d000;
+    --danger:#ff5f5f;
   }
   body{
     background:var(--bg);color:var(--ink);font-family:'IBM Plex Mono',monospace;
@@ -237,6 +240,129 @@
   .hero-sample .logo{width:42px;height:42px}
   .hero-sample .col-pro span{color:var(--gold)}
   .hero-sample .col-free span{color:var(--gray)}
+
+  /* ════════════════════════════════════════════════════════════════════
+     FULL OVERLAY MOCK — production-faithful overlay used to preview the
+     logo watermark variants. Geometry matches the user's screenshots
+     (CAUTION verdict, 850/1000 score, security row, locked buttons).
+     ════════════════════════════════════════════════════════════════════ */
+  .ov{
+    position:relative;width:340px;background:#101013;
+    border:1px solid #1d1d22;border-radius:6px;padding:14px 16px 16px;
+    display:flex;flex-direction:column;gap:11px;color:var(--ink);
+    overflow:hidden;
+  }
+  /* Watermark layer — ::before sits behind every content element */
+  .ov::before{
+    content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
+    background:url('icon.png') no-repeat center / 70% auto;
+    opacity:0;
+  }
+  .ov > *{position:relative;z-index:1}
+
+  /* Watermark presets */
+  .ov.w0::before{display:none}                                 /* none — baseline */
+  .ov.w1::before{opacity:.03;background-size:70% auto}         /* subtle centred */
+  .ov.w2::before{opacity:.06;background-size:75% auto}         /* visible centred */
+  .ov.w3::before{                                               /* off-center bottom-right */
+    opacity:.05;background-position:right -8% bottom -8%;
+    background-size:55% auto;
+  }
+  .ov.w4::before{                                               /* tile pattern */
+    opacity:.025;background:url('icon.png') repeat;
+    background-size:54px 54px;
+  }
+  .ov.w5::before{                                               /* radial gradient mask */
+    opacity:.09;background-size:80% auto;
+    -webkit-mask:radial-gradient(circle at center,black 25%,transparent 75%);
+            mask:radial-gradient(circle at center,black 25%,transparent 75%);
+  }
+  .ov.w6::before{                                               /* peeking from top */
+    opacity:.05;background-position:center -25%;
+    background-size:90% auto;
+  }
+  .ov.w7::before{                                               /* gold-tinted via mask */
+    opacity:.12;
+    background:var(--gold);
+    -webkit-mask:url('icon.png') no-repeat center / 70% auto;
+            mask:url('icon.png') no-repeat center / 70% auto;
+  }
+  .ov.w8::before{                                               /* big-bottom (peeks up) */
+    opacity:.06;background-position:center 130%;
+    background-size:90% auto;
+  }
+
+  /* Topbar */
+  .ov-tb{display:flex;align-items:center;justify-content:space-between;
+    padding-bottom:9px;border-bottom:1px solid #1a1a1e}
+  .ov-tb-lf{display:flex;align-items:center;gap:8px}
+  .ov-brand{font:600 11px/1 'IBM Plex Mono',monospace;color:#888;letter-spacing:.18em}
+  .ov-tb-rt{display:flex;gap:6px;color:#3a3a40;font-size:11px}
+  .ov-tb-rt span{cursor:default;padding:1px 3px}
+
+  /* Token line */
+  .ov-tk{font:600 13px/1 'IBM Plex Mono',monospace}
+  .ov-tk b{color:var(--ink)}
+  .ov-tk span{color:#7a7a82;margin-left:4px}
+
+  /* Verdict */
+  .ov-vd{font:400 38px/.95 'Bebas Neue',sans-serif;letter-spacing:.04em;
+    color:var(--caution);text-shadow:0 0 18px rgba(245,208,0,.3);margin-top:-2px}
+
+  /* Score */
+  .ov-sc{display:flex;align-items:baseline;gap:6px;font:600 14px/1 'IBM Plex Mono',monospace}
+  .ov-sc b{color:var(--ink)}
+  .ov-sc small{color:#5a5a62;font-size:11px;font-weight:500}
+  .ov-sc .dots{color:var(--caution);margin-left:4px;font-size:9px;letter-spacing:1px}
+
+  /* Bar */
+  .ov-bar{height:2px;background:#1a1a1e;border-radius:1px;overflow:hidden}
+  .ov-bar-fill{height:100%;width:85%;background:var(--caution);
+    box-shadow:0 0 6px rgba(245,208,0,.4)}
+
+  /* Flag count */
+  .ov-fl{font:600 10px/1 'IBM Plex Mono',monospace;color:var(--caution);letter-spacing:.04em}
+
+  /* Security row */
+  .ov-sec{display:grid;grid-template-columns:repeat(5,1fr);gap:0;
+    background:#0a0a0c;border:1px solid #1a1a1e;border-radius:3px}
+  .ov-sec .cell{padding:6px 4px;text-align:center;border-right:1px solid #1a1a1e;
+    display:flex;flex-direction:column;align-items:center;gap:3px}
+  .ov-sec .cell:last-child{border-right:none}
+  .ov-sec .cell span{font:700 7.5px/1 'IBM Plex Mono',monospace;color:#666;letter-spacing:.1em}
+  .ov-sec .cell b{font:700 11px/1 'IBM Plex Mono',monospace}
+  .ov-sec .cell b.ok{color:var(--c)}
+  .ov-sec .cell b.ko{color:var(--danger)}
+  .ov-sec .cell b.liq{color:var(--c);font-size:10px}
+
+  /* Action buttons */
+  .ov-btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+  .ov-btn{padding:11px 5px 9px;background:#0a0a0c;border:1px solid #1a1a1e;border-radius:3px;
+    font:700 8.5px/1.3 'IBM Plex Mono',monospace;color:#888;letter-spacing:.06em;
+    cursor:default;position:relative;text-align:center}
+  .ov-btn .ico{display:block;font-size:10px;margin-bottom:3px;color:#666}
+  .ov-btn.locked{opacity:.5}
+  .ov-btn.locked::after{content:'PRO';position:absolute;top:4px;right:4px;
+    font:700 6.5px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;
+    padding:2px 4px;border-radius:2px;color:var(--gold);
+    background:rgba(245,208,0,.1);border:1px solid rgba(245,208,0,.3)}
+
+  /* Watermark section heading + grid */
+  .wm-section{margin-top:36px}
+  .wm-section h2{font:400 38px/1 'Bebas Neue',sans-serif;letter-spacing:.04em;
+    color:var(--ink);margin-bottom:6px}
+  .wm-section h2 .gold{color:var(--gold)}
+  .wm-section .sub{font-size:13px;color:var(--dim);line-height:1.7;max-width:820px;margin-bottom:24px}
+  .wm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));
+    gap:24px;justify-items:center}
+  .wm-card{display:flex;flex-direction:column;gap:10px;align-items:center;
+    padding:18px;background:var(--card);border:1px solid #1a1a1e;border-radius:6px;
+    transition:transform .28s,border-color .28s;width:100%;max-width:380px}
+  .wm-card:hover{transform:translateY(-3px);border-color:#252529}
+  .wm-card .wm-name{font:700 10px/1 'IBM Plex Mono',monospace;color:var(--gold);
+    letter-spacing:.2em;text-transform:uppercase}
+  .wm-card .wm-desc{font-size:11px;color:var(--dim);text-align:center;line-height:1.55;
+    max-width:320px}
 </style>
 </head>
 <body>
@@ -254,6 +380,288 @@
     <div class="col col-pro"><span class="logo md pro-pale"></span><span>PRO — pale champagne</span></div>
   </div>
 </header>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     FULL OVERLAY + LOGO WATERMARK
+     Same overlay content (CAUTION verdict, 850/1000 score, security
+     row, locked PRO buttons) shown 9 times with different watermark
+     intensities/positions. Pick the one you want.
+     ══════════════════════════════════════════════════════════════════════ -->
+<section class="wm-section">
+  <h2>FULL OVERLAY <span class="gold">+ LOGO WATERMARK</span></h2>
+  <p class="sub">Logo as a low-opacity background fill behind every button and text. Pure decoration &mdash; never interferes with readability. Same overlay content (CAUTION verdict, 850/1000 score, security row, locked PRO buttons) so the only thing that changes between cards is the watermark intensity / position. Topbar uses style <b>D &mdash; logo with gold halo</b> as the placeholder tier badge; we can swap it for any of A&ndash;L below once you pick.</p>
+
+  <div class="wm-grid">
+
+    <!-- W0 — None (baseline) -->
+    <div class="wm-card">
+      <div class="wm-name">W0 — none (baseline)</div>
+      <div class="ov w0">
+        <div class="ov-tb">
+          <div class="ov-tb-lf"><span class="ov-brand">ANTARES</span><span class="b-halo pro"><span class="logo md pro"></span></span></div>
+          <div class="ov-tb-rt"><span>+</span><span>×</span></div>
+        </div>
+        <div class="ov-tk"><b>LOL</b> <span>LOL</span></div>
+        <div class="ov-vd">CAUTION</div>
+        <div class="ov-sc"><b>850</b> <small>/ 1000</small> <span class="dots">●●●●</span></div>
+        <div class="ov-bar"><div class="ov-bar-fill"></div></div>
+        <div class="ov-fl">1 flag detected</div>
+        <div class="ov-sec">
+          <div class="cell"><span>SELL</span><b class="ok">✓</b></div>
+          <div class="cell"><span>MINT</span><b class="ok">✓</b></div>
+          <div class="cell"><span>FREEZE</span><b class="ok">✓</b></div>
+          <div class="cell"><span>LP LOCK</span><b class="ko">✗</b></div>
+          <div class="cell"><span>LIQ</span><b class="liq">$285K</b></div>
+        </div>
+        <div class="ov-btns">
+          <div class="ov-btn locked"><span class="ico">⚠</span>CRITICAL FLAGS</div>
+          <div class="ov-btn locked">FULL ANALYSIS →</div>
+          <div class="ov-btn locked"><span class="ico">○</span>AI SUMMARY</div>
+        </div>
+      </div>
+      <div class="wm-desc">Baseline — what the overlay looks like today, no watermark.</div>
+    </div>
+
+    <!-- W1 — Subtle centered (3% opacity, 70% size) -->
+    <div class="wm-card">
+      <div class="wm-name">W1 — subtle centred (3%)</div>
+      <div class="ov w1">
+        <div class="ov-tb">
+          <div class="ov-tb-lf"><span class="ov-brand">ANTARES</span><span class="b-halo pro"><span class="logo md pro"></span></span></div>
+          <div class="ov-tb-rt"><span>+</span><span>×</span></div>
+        </div>
+        <div class="ov-tk"><b>LOL</b> <span>LOL</span></div>
+        <div class="ov-vd">CAUTION</div>
+        <div class="ov-sc"><b>850</b> <small>/ 1000</small> <span class="dots">●●●●</span></div>
+        <div class="ov-bar"><div class="ov-bar-fill"></div></div>
+        <div class="ov-fl">1 flag detected</div>
+        <div class="ov-sec">
+          <div class="cell"><span>SELL</span><b class="ok">✓</b></div>
+          <div class="cell"><span>MINT</span><b class="ok">✓</b></div>
+          <div class="cell"><span>FREEZE</span><b class="ok">✓</b></div>
+          <div class="cell"><span>LP LOCK</span><b class="ko">✗</b></div>
+          <div class="cell"><span>LIQ</span><b class="liq">$285K</b></div>
+        </div>
+        <div class="ov-btns">
+          <div class="ov-btn locked"><span class="ico">⚠</span>CRITICAL FLAGS</div>
+          <div class="ov-btn locked">FULL ANALYSIS →</div>
+          <div class="ov-btn locked"><span class="ico">○</span>AI SUMMARY</div>
+        </div>
+      </div>
+      <div class="wm-desc">Big logo dead-centre, 3% opacity. Almost invisible — you have to look for it.</div>
+    </div>
+
+    <!-- W2 — Visible centered (6% opacity) -->
+    <div class="wm-card">
+      <div class="wm-name">W2 — visible centred (6%)</div>
+      <div class="ov w2">
+        <div class="ov-tb">
+          <div class="ov-tb-lf"><span class="ov-brand">ANTARES</span><span class="b-halo pro"><span class="logo md pro"></span></span></div>
+          <div class="ov-tb-rt"><span>+</span><span>×</span></div>
+        </div>
+        <div class="ov-tk"><b>LOL</b> <span>LOL</span></div>
+        <div class="ov-vd">CAUTION</div>
+        <div class="ov-sc"><b>850</b> <small>/ 1000</small> <span class="dots">●●●●</span></div>
+        <div class="ov-bar"><div class="ov-bar-fill"></div></div>
+        <div class="ov-fl">1 flag detected</div>
+        <div class="ov-sec">
+          <div class="cell"><span>SELL</span><b class="ok">✓</b></div>
+          <div class="cell"><span>MINT</span><b class="ok">✓</b></div>
+          <div class="cell"><span>FREEZE</span><b class="ok">✓</b></div>
+          <div class="cell"><span>LP LOCK</span><b class="ko">✗</b></div>
+          <div class="cell"><span>LIQ</span><b class="liq">$285K</b></div>
+        </div>
+        <div class="ov-btns">
+          <div class="ov-btn locked"><span class="ico">⚠</span>CRITICAL FLAGS</div>
+          <div class="ov-btn locked">FULL ANALYSIS →</div>
+          <div class="ov-btn locked"><span class="ico">○</span>AI SUMMARY</div>
+        </div>
+      </div>
+      <div class="wm-desc">6% opacity — you can see it without squinting, still doesn&rsquo;t fight the content.</div>
+    </div>
+
+    <!-- W3 — Off-center bottom-right -->
+    <div class="wm-card">
+      <div class="wm-name">W3 — off-centre (bottom-right)</div>
+      <div class="ov w3">
+        <div class="ov-tb">
+          <div class="ov-tb-lf"><span class="ov-brand">ANTARES</span><span class="b-halo pro"><span class="logo md pro"></span></span></div>
+          <div class="ov-tb-rt"><span>+</span><span>×</span></div>
+        </div>
+        <div class="ov-tk"><b>LOL</b> <span>LOL</span></div>
+        <div class="ov-vd">CAUTION</div>
+        <div class="ov-sc"><b>850</b> <small>/ 1000</small> <span class="dots">●●●●</span></div>
+        <div class="ov-bar"><div class="ov-bar-fill"></div></div>
+        <div class="ov-fl">1 flag detected</div>
+        <div class="ov-sec">
+          <div class="cell"><span>SELL</span><b class="ok">✓</b></div>
+          <div class="cell"><span>MINT</span><b class="ok">✓</b></div>
+          <div class="cell"><span>FREEZE</span><b class="ok">✓</b></div>
+          <div class="cell"><span>LP LOCK</span><b class="ko">✗</b></div>
+          <div class="cell"><span>LIQ</span><b class="liq">$285K</b></div>
+        </div>
+        <div class="ov-btns">
+          <div class="ov-btn locked"><span class="ico">⚠</span>CRITICAL FLAGS</div>
+          <div class="ov-btn locked">FULL ANALYSIS →</div>
+          <div class="ov-btn locked"><span class="ico">○</span>AI SUMMARY</div>
+        </div>
+      </div>
+      <div class="wm-desc">Logo bleeds off the bottom-right corner like a watermark stamp. Asymmetric.</div>
+    </div>
+
+    <!-- W4 — Tile pattern -->
+    <div class="wm-card">
+      <div class="wm-name">W4 — tile pattern</div>
+      <div class="ov w4">
+        <div class="ov-tb">
+          <div class="ov-tb-lf"><span class="ov-brand">ANTARES</span><span class="b-halo pro"><span class="logo md pro"></span></span></div>
+          <div class="ov-tb-rt"><span>+</span><span>×</span></div>
+        </div>
+        <div class="ov-tk"><b>LOL</b> <span>LOL</span></div>
+        <div class="ov-vd">CAUTION</div>
+        <div class="ov-sc"><b>850</b> <small>/ 1000</small> <span class="dots">●●●●</span></div>
+        <div class="ov-bar"><div class="ov-bar-fill"></div></div>
+        <div class="ov-fl">1 flag detected</div>
+        <div class="ov-sec">
+          <div class="cell"><span>SELL</span><b class="ok">✓</b></div>
+          <div class="cell"><span>MINT</span><b class="ok">✓</b></div>
+          <div class="cell"><span>FREEZE</span><b class="ok">✓</b></div>
+          <div class="cell"><span>LP LOCK</span><b class="ko">✗</b></div>
+          <div class="cell"><span>LIQ</span><b class="liq">$285K</b></div>
+        </div>
+        <div class="ov-btns">
+          <div class="ov-btn locked"><span class="ico">⚠</span>CRITICAL FLAGS</div>
+          <div class="ov-btn locked">FULL ANALYSIS →</div>
+          <div class="ov-btn locked"><span class="ico">○</span>AI SUMMARY</div>
+        </div>
+      </div>
+      <div class="wm-desc">Repeating logo-tile wallpaper, very faint (2.5%). Luxury-brand monogram feel.</div>
+    </div>
+
+    <!-- W5 — Radial gradient mask -->
+    <div class="wm-card">
+      <div class="wm-name">W5 — gradient-masked centre</div>
+      <div class="ov w5">
+        <div class="ov-tb">
+          <div class="ov-tb-lf"><span class="ov-brand">ANTARES</span><span class="b-halo pro"><span class="logo md pro"></span></span></div>
+          <div class="ov-tb-rt"><span>+</span><span>×</span></div>
+        </div>
+        <div class="ov-tk"><b>LOL</b> <span>LOL</span></div>
+        <div class="ov-vd">CAUTION</div>
+        <div class="ov-sc"><b>850</b> <small>/ 1000</small> <span class="dots">●●●●</span></div>
+        <div class="ov-bar"><div class="ov-bar-fill"></div></div>
+        <div class="ov-fl">1 flag detected</div>
+        <div class="ov-sec">
+          <div class="cell"><span>SELL</span><b class="ok">✓</b></div>
+          <div class="cell"><span>MINT</span><b class="ok">✓</b></div>
+          <div class="cell"><span>FREEZE</span><b class="ok">✓</b></div>
+          <div class="cell"><span>LP LOCK</span><b class="ko">✗</b></div>
+          <div class="cell"><span>LIQ</span><b class="liq">$285K</b></div>
+        </div>
+        <div class="ov-btns">
+          <div class="ov-btn locked"><span class="ico">⚠</span>CRITICAL FLAGS</div>
+          <div class="ov-btn locked">FULL ANALYSIS →</div>
+          <div class="ov-btn locked"><span class="ico">○</span>AI SUMMARY</div>
+        </div>
+      </div>
+      <div class="wm-desc">Visible at centre (9%), fades to zero at edges. Spotlight effect, never reaches the borders.</div>
+    </div>
+
+    <!-- W6 — Peeking from top -->
+    <div class="wm-card">
+      <div class="wm-name">W6 — peeking from top</div>
+      <div class="ov w6">
+        <div class="ov-tb">
+          <div class="ov-tb-lf"><span class="ov-brand">ANTARES</span><span class="b-halo pro"><span class="logo md pro"></span></span></div>
+          <div class="ov-tb-rt"><span>+</span><span>×</span></div>
+        </div>
+        <div class="ov-tk"><b>LOL</b> <span>LOL</span></div>
+        <div class="ov-vd">CAUTION</div>
+        <div class="ov-sc"><b>850</b> <small>/ 1000</small> <span class="dots">●●●●</span></div>
+        <div class="ov-bar"><div class="ov-bar-fill"></div></div>
+        <div class="ov-fl">1 flag detected</div>
+        <div class="ov-sec">
+          <div class="cell"><span>SELL</span><b class="ok">✓</b></div>
+          <div class="cell"><span>MINT</span><b class="ok">✓</b></div>
+          <div class="cell"><span>FREEZE</span><b class="ok">✓</b></div>
+          <div class="cell"><span>LP LOCK</span><b class="ko">✗</b></div>
+          <div class="cell"><span>LIQ</span><b class="liq">$285K</b></div>
+        </div>
+        <div class="ov-btns">
+          <div class="ov-btn locked"><span class="ico">⚠</span>CRITICAL FLAGS</div>
+          <div class="ov-btn locked">FULL ANALYSIS →</div>
+          <div class="ov-btn locked"><span class="ico">○</span>AI SUMMARY</div>
+        </div>
+      </div>
+      <div class="wm-desc">Logo positioned mostly above the overlay, only the bottom curve peeks in behind the topbar.</div>
+    </div>
+
+    <!-- W7 — GOLD-tinted -->
+    <div class="wm-card">
+      <div class="wm-name">W7 — gold-tinted (12%)</div>
+      <div class="ov w7">
+        <div class="ov-tb">
+          <div class="ov-tb-lf"><span class="ov-brand">ANTARES</span><span class="b-halo pro"><span class="logo md pro"></span></span></div>
+          <div class="ov-tb-rt"><span>+</span><span>×</span></div>
+        </div>
+        <div class="ov-tk"><b>LOL</b> <span>LOL</span></div>
+        <div class="ov-vd">CAUTION</div>
+        <div class="ov-sc"><b>850</b> <small>/ 1000</small> <span class="dots">●●●●</span></div>
+        <div class="ov-bar"><div class="ov-bar-fill"></div></div>
+        <div class="ov-fl">1 flag detected</div>
+        <div class="ov-sec">
+          <div class="cell"><span>SELL</span><b class="ok">✓</b></div>
+          <div class="cell"><span>MINT</span><b class="ok">✓</b></div>
+          <div class="cell"><span>FREEZE</span><b class="ok">✓</b></div>
+          <div class="cell"><span>LP LOCK</span><b class="ko">✗</b></div>
+          <div class="cell"><span>LIQ</span><b class="liq">$285K</b></div>
+        </div>
+        <div class="ov-btns">
+          <div class="ov-btn locked"><span class="ico">⚠</span>CRITICAL FLAGS</div>
+          <div class="ov-btn locked">FULL ANALYSIS →</div>
+          <div class="ov-btn locked"><span class="ico">○</span>AI SUMMARY</div>
+        </div>
+      </div>
+      <div class="wm-desc">Watermark painted in gold at 12% opacity. Hint of luxury behind everything — only relevant on Pro.</div>
+    </div>
+
+    <!-- W8 — Big from bottom -->
+    <div class="wm-card">
+      <div class="wm-name">W8 — big from bottom</div>
+      <div class="ov w8">
+        <div class="ov-tb">
+          <div class="ov-tb-lf"><span class="ov-brand">ANTARES</span><span class="b-halo pro"><span class="logo md pro"></span></span></div>
+          <div class="ov-tb-rt"><span>+</span><span>×</span></div>
+        </div>
+        <div class="ov-tk"><b>LOL</b> <span>LOL</span></div>
+        <div class="ov-vd">CAUTION</div>
+        <div class="ov-sc"><b>850</b> <small>/ 1000</small> <span class="dots">●●●●</span></div>
+        <div class="ov-bar"><div class="ov-bar-fill"></div></div>
+        <div class="ov-fl">1 flag detected</div>
+        <div class="ov-sec">
+          <div class="cell"><span>SELL</span><b class="ok">✓</b></div>
+          <div class="cell"><span>MINT</span><b class="ok">✓</b></div>
+          <div class="cell"><span>FREEZE</span><b class="ok">✓</b></div>
+          <div class="cell"><span>LP LOCK</span><b class="ko">✗</b></div>
+          <div class="cell"><span>LIQ</span><b class="liq">$285K</b></div>
+        </div>
+        <div class="ov-btns">
+          <div class="ov-btn locked"><span class="ico">⚠</span>CRITICAL FLAGS</div>
+          <div class="ov-btn locked">FULL ANALYSIS →</div>
+          <div class="ov-btn locked"><span class="ico">○</span>AI SUMMARY</div>
+        </div>
+      </div>
+      <div class="wm-desc">Logo positioned mostly below the overlay, only the top peek-up (eye + star) shows behind the action buttons.</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     12 TIER-BADGE STYLES (A → L)
+     ════════════════════════════════════════════════════════════════════ -->
+<h2 style="font:400 38px/1 'Bebas Neue',sans-serif;letter-spacing:.04em;color:var(--ink);margin:48px 0 6px">12 BADGE <span style="color:var(--gold)">VARIANTS</span></h2>
+<p style="font-size:13px;color:var(--dim);line-height:1.7;max-width:820px;margin-bottom:24px">Each card shows the badge in <b>Free</b> and <b>Pro / Lifetime</b> states side-by-side.</p>
 
 <div class="grid">
 
