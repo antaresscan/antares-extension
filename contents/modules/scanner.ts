@@ -4,7 +4,7 @@ import { API, LS_PREFIX, IGNORE } from "./constants"
 import { state, scanCache } from "./state"
 import { getCached, saveToLS } from "./cache"
 import { readSessionToken } from "./session-token"
-import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimations, buildResultNode, buildSkeletonNode, buildQuotaExhaustedNode } from "./components"
+import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimations, buildResultNode, buildSkeletonNode, buildQuotaExhaustedNode, buildErrorNode } from "./components"
 import { scanRateLimiter } from "../../shared/rate-limit"
 import { logger } from "../../shared/logger"
 import { getInstallId } from "../../shared/install-id"
@@ -327,12 +327,24 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
     // Don't tear down a visible overlay on a silent-fetch failure —
     // a transient network blip during a session-change refresh shouldn't
     // make the user's working overlay disappear. Preserve what they had
-    // and let the next legitimate scan trigger retry. For non-silent
-    // failures (initial load / nav) we hide as before so the user isn't
-    // stuck staring at a broken skeleton.
-    if (state.lastCA === ca && state.boxEl && !skipFlashUI) {
-      state.boxEl.style.display = "none"
-      state.boxEl.style.opacity = "0"
+    // and let the next legitimate scan trigger retry.
+    //
+    // For non-silent failures (initial load / nav) we used to hide the
+    // box outright (`display: none`), which made the extension look
+    // broken — overlay just vanished after ~10s of retries. Now we
+    // render a clear error state with a one-click retry button so the
+    // user knows what happened and can recover without page reload.
+    if (state.lastCA === ca && !skipFlashUI) {
+      // Reset the per-scan state so the retry button can re-enter
+      // scan() cleanly (otherwise alreadyHandled() / dedup checks
+      // would short-circuit because lastCA still points at this CA).
+      el.replaceChildren(buildErrorNode(() => {
+        state.lastCA = ""
+        state.manuallyDismissed = false
+        void scan(ca)
+      }))
+      showBox()
+      attachClose(null)
     }
   } finally {
     if (state.currentScanController === controller) {

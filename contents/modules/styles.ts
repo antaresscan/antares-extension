@@ -458,6 +458,78 @@ export const SHADOW_CSS = `
 .skel-line:nth-child(4) { width: 75%; animation-delay: .2s; }
 .skel-line:nth-child(5) { width: 60%; animation-delay: .3s; }
 
+/* Slow-network reassurance. Hidden for the first 3s of a scan (covers
+   typical fast responses). After 3s, fades in so the user knows we're
+   still working and the extension isn't stuck. The element gets removed
+   with the rest of the skeleton when buildResultNode swaps in, so the
+   animation never lingers on success. */
+@keyframes skel-slow-fadein {
+  from { opacity: 0; }
+  to   { opacity: .9; }
+}
+.skel-slow-hint {
+  margin-top: 12px;
+  font: 400 8.5px/1.4 'IBM Plex Mono', monospace;
+  color: #555;
+  letter-spacing: .08em;
+  text-align: center;
+  text-transform: uppercase;
+  opacity: 0;
+  animation: skel-slow-fadein .4s ease 3s forwards;
+}
+
+/* Error state — rendered when fetchWithRetry exhausts its 3 retries
+   (~10.5s) on a non-silent scan. Replaces the silent display-none
+   behavior; user gets a clear "what happened" + a one-click retry. */
+.err-vb {
+  padding: 18px 14px 8px;
+  text-align: center;
+}
+.err-vb .err-icon {
+  font-size: 24px;
+  color: #f5d000;
+  line-height: 1;
+  margin-bottom: 8px;
+  text-shadow: 0 0 20px rgba(245,208,0,.2);
+}
+.err-vb h2 {
+  font-family: 'Bebas Neue', 'Arial Black', sans-serif;
+  font-size: 22px; line-height: 1.05; font-weight: 400;
+  letter-spacing: .04em;
+  color: #eaeaea;
+  margin-bottom: 4px;
+}
+.err-vb .err-sub {
+  font: 400 9.5px/1.5 'IBM Plex Mono', monospace;
+  color: #777;
+  letter-spacing: .04em;
+}
+.err-retry {
+  display: block;
+  margin: 10px 14px 14px;
+  padding: 11px;
+  width: calc(100% - 28px);
+  background: transparent;
+  color: #00e5b0;
+  font: 700 10px/1 'IBM Plex Mono', monospace;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  text-align: center;
+  border: 1px solid rgba(0,229,176,.5);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background .2s, border-color .2s, color .2s, transform .15s;
+}
+.err-retry:hover {
+  background: rgba(0,229,176,.08);
+  border-color: #00e5b0;
+  color: #4ff5cc;
+  transform: translateY(-1px);
+}
+.err-retry:active {
+  transform: translateY(0);
+}
+
 .sparkline { padding: 4px 14px 0; }
 .sparkline svg { display: block; }
 

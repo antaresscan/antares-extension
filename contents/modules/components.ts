@@ -515,6 +515,12 @@ export function buildQuotaExhaustedNode(
 // a Node so callers can `replaceChildren(buildSkeletonNode())` instead of
 // stringifying — keeps the dynamic render path innerHTML-free, matching
 // the pattern established in #292 for buildResultNode.
+//
+// The .skel-slow-hint child carries a CSS animation with `animation-delay: 3s`
+// — invisible for the first 3 seconds (typical fast-network responses), then
+// fades to "Still loading…" so the user knows the extension isn't stuck on
+// slow connections. Once the skeleton is replaced by buildResultNode the
+// element disappears and the animation is gone — no JS timer to manage.
 export function buildSkeletonNode(): DocumentFragment {
   const frag = document.createDocumentFragment()
   frag.appendChild(el("div", {
@@ -528,8 +534,50 @@ export function buildSkeletonNode(): DocumentFragment {
     el("div", { class: "skel-line" }),
     el("div", { class: "skel-line" }),
     el("div", { class: "skel-line" }),
+    el("div", { class: "skel-slow-hint" }, "Still loading…"),
   ))
   return frag
+}
+
+/**
+ * Error state — rendered when a scan fails after `fetchWithRetry`'s 3 retries
+ * (~10.5s total). Replaces the previous silent `display: none` behavior that
+ * just made the overlay vanish without explanation. The user now sees:
+ *
+ *   - A neutral "Connection failed" headline (no all-caps panic)
+ *   - A short subtitle explaining what was attempted
+ *   - A primary "Retry scan" button that calls `onRetry()` synchronously
+ *
+ * The header (with brand + close button) is preserved so the user can dismiss
+ * the box manually if they don't care to retry.
+ *
+ * Click reliability: the retry button is a real <button>, not an <a>, so we
+ * wire its handler directly. No async indirection, no popup-blocker risk.
+ */
+export function buildErrorNode(onRetry: () => void): HTMLElement {
+  if (state.boxEl) state.boxEl.className = "box caution"
+
+  const retryBtn = el("button", {
+    class: "err-retry",
+    type: "button",
+  }, "Retry scan")
+
+  retryBtn.addEventListener("click", (e) => {
+    e.stopPropagation()
+    e.preventDefault()
+    onRetry()
+  })
+
+  return el("div", undefined,
+    el("div", { class: "topbar" }),
+    buildHeaderNode(undefined),
+    el("div", { class: "err-vb" },
+      el("div", { class: "err-icon" }, "⚠"),
+      el("h2", undefined, "Connection failed"),
+      el("div", { class: "err-sub" }, "Couldn't reach the scanner."),
+    ),
+    retryBtn,
+  )
 }
 
 function buildSiBool(siLabel: string, val: unknown, invert = false): HTMLElement {
