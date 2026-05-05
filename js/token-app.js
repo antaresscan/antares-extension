@@ -259,35 +259,33 @@ function buildRadarSvg(s) {
 // ──────────────────────────────────────────────────────────────────────
 // SNIPER MAP tab — replaces Score Breakdown.
 //
-// Visual: Retention Bar — a horizontal bar split into three coloured
-// segments showing how the cohort of launch snipers has distributed
-// (still holding / reducing / cashed out). Picked from designs-library
-// (SM-3). Title clearly frames the numbers as ESTIMATED so the user
-// understands the derivation.
+// Visual: Retention Bar — a horizontal segmented bar showing how the
+// supply is split between concentrated top-10 holders and the rest of
+// the float. Picked from designs-library (SM-3).
 //
-// Data: a per-wallet retention walk (Helius launch-block tracking)
-// hasn't shipped yet, so we estimate retention from two signals we
-// already have:
-//   1. Sniper / bundle PRESENCE — from d.flags (pattern detection)
-//   2. CURRENT top-10 holder concentration (d.top10HolderPct) as a
-//      proxy for "did the cohort distribute". When top-10 still hold
-//      a large share, the launch buyers haven't sold yet. When top-10
-//      have dropped, they've redistributed (likely cashed out).
+// Data — every number is a real measurement, no heuristics or brackets:
+//   d.top10HolderPct      → the "concentrated" segment width (literal %)
+//   100 - top10HolderPct  → the "distributed" segment width (literal %)
+//   d.topHolderPct        → single-largest-wallet % (axis caption)
+//   d.flags               → count of sniper/bundle flag matches (axis)
 //
-// The three percentages are derived bracket estimates pinned to the
-// concentration band — clearly labelled "ESTIMATED" in the title so
-// the user knows it's a derived signal, not a wallet-level walk.
+// Interpretation: when sniper/bundle activity is detected at launch +
+// the top-10 still hold a large share, the launch buyers haven't
+// distributed yet. When the top-10 share has dropped, the bots got
+// out — distribution underway / completed. The verdict line at the
+// bottom interprets the same two numbers in plain language so a
+// non-technical user gets the action-relevant takeaway.
 // ──────────────────────────────────────────────────────────────────────
 function buildSniperMapTab(d) {
   const flags = Array.isArray(d.flags) ? d.flags : []
   const sniperFlags = flags.filter(f => /sniper|bundle/i.test(f.label || ''))
   const hasActivity = sniperFlags.length > 0
   const top10 = typeof d.top10HolderPct === 'number' ? d.top10HolderPct : null
+  const top1 = typeof d.topHolderPct === 'number' ? d.topHolderPct : null
 
   if (!hasActivity) {
-    // Clean launch path: render the bar at 100% "still in" so the visual
-    // is in place even on the happy-path token. Honest framing: no bots
-    // detected, so retention isn't a concern.
+    // Clean launch: visual still rendered (single segment) so the tab
+    // never looks "broken", just a confident "no bots" verdict.
     return `
       <div class="sm-bar-wrap">
         <div class="sm-title">CLEAN LAUNCH</div>
@@ -301,50 +299,40 @@ function buildSniperMapTab(d) {
   }
 
   if (top10 == null) {
-    // Activity detected but no concentration data — render with an
-    // honest "concentration unknown" segment rather than fabricating
-    // retention numbers.
-    return `
-      <div class="sm-bar-wrap">
-        <div class="sm-title">${sniperFlags.length} COORDINATED LAUNCH PATTERN${sniperFlags.length > 1 ? 'S' : ''} DETECTED</div>
-        <div class="sm-bar">
-          <div class="sm-seg pending" style="flex:100"><span class="pct">retention unknown</span><span>concentration data missing</span></div>
-        </div>
-        <div class="sm-axis"><span>Block 0–5</span><span>last 24h</span><span>now</span></div>
-      </div>
-      <div class="tab-alert warn">Coordinated launch patterns detected. Top-holder concentration data is missing — retention cannot be estimated for this scan.</div>
-    `
+    // Activity detected but concentration data missing — empty state.
+    return `<div class="tab-empty">Sniper / bundle activity detected at launch, but top-holder concentration data is missing — distribution status cannot be computed for this scan. Re-scan to retry.</div>`
   }
 
-  // Activity detected + concentration known → estimate retention bracket
-  // from top-10 concentration band.
-  let holdingPct, partialPct, exitedPct, status, statusCls, alertCls, alertText
-  if (top10 >= 50) {
-    holdingPct = 75; partialPct = 20; exitedPct = 5
-    status = 'STILL CONCENTRATED'; statusCls = 'warn'
+  // Real, measured concentration split. Both numbers add to 100.
+  const concentrated = Math.round(Math.max(0, Math.min(100, top10)))
+  const distributed = 100 - concentrated
+  const top1Disp = top1 != null ? top1.toFixed(1) + '%' : '—'
+
+  // Status label + verdict text derived from the actual concentration
+  // band. Every threshold compares against a measured number.
+  let status, alertCls, alertText
+  if (concentrated >= 50) {
+    status = 'STILL CONCENTRATED'
     alertCls = 'warn'
-    alertText = `Sniper / bundle activity at launch. Top 10 wallets still hold ${top10.toFixed(0)}% of supply — most launch buyers have not distributed yet. Watch closely.`
-  } else if (top10 >= 25) {
-    holdingPct = 40; partialPct = 40; exitedPct = 20
-    status = 'PARTIALLY DISTRIBUTED'; statusCls = 'warn'
+    alertText = `Sniper / bundle activity detected. Top 10 still hold ${concentrated}% of supply — bots haven't distributed yet. Watch for the dump.`
+  } else if (concentrated >= 25) {
+    status = 'PARTIALLY DISTRIBUTED'
     alertCls = 'warn'
-    alertText = `Sniper / bundle activity at launch. Top 10 holds ${top10.toFixed(0)}% — partial distribution under way. Some early buyers have already exited.`
+    alertText = `Sniper / bundle activity detected. Top 10 hold ${concentrated}% — partial distribution under way.`
   } else {
-    holdingPct = 10; partialPct = 30; exitedPct = 60
-    status = 'MOSTLY EXITED'; statusCls = 'bad'
+    status = 'DISTRIBUTED'
     alertCls = 'bad'
-    alertText = `Launch buyers have largely cashed out — top 10 holds only ${top10.toFixed(0)}% of supply. Early bots got out before retail.`
+    alertText = `Sniper / bundle activity detected at launch. Top 10 hold only ${concentrated}% — bots have largely cashed out before retail.`
   }
 
   return `
     <div class="sm-bar-wrap">
-      <div class="sm-title">ESTIMATED RETENTION OF LAUNCH BUYERS</div>
+      <div class="sm-title">SUPPLY CONCENTRATION · ${concentrated}% IN TOP 10</div>
       <div class="sm-bar">
-        <div class="sm-seg holding" style="flex:${holdingPct}"><span class="pct">${holdingPct}%</span><span>Still in</span></div>
-        <div class="sm-seg partial" style="flex:${partialPct}"><span class="pct">${partialPct}%</span><span>Reducing</span></div>
-        <div class="sm-seg exited" style="flex:${exitedPct}"><span class="pct">${exitedPct}%</span><span>Cashed out</span></div>
+        <div class="sm-seg holding" style="flex:${concentrated}"><span class="pct">${concentrated}%</span><span>Top 10</span></div>
+        <div class="sm-seg exited" style="flex:${distributed}"><span class="pct">${distributed}%</span><span>Distributed</span></div>
       </div>
-      <div class="sm-axis"><span>Top 10 hold ${top10.toFixed(0)}%</span><span>${escapeHtml(status)}</span><span>now</span></div>
+      <div class="sm-axis"><span>Largest: ${escapeHtml(top1Disp)}</span><span>${escapeHtml(status)}</span><span>${sniperFlags.length} flag${sniperFlags.length > 1 ? 's' : ''}</span></div>
     </div>
     <div class="tab-alert ${alertCls}">${escapeHtml(alertText)}</div>
   `
