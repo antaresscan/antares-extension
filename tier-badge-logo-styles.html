@@ -252,179 +252,223 @@
     display:flex;flex-direction:column;gap:11px;color:var(--ink);
     overflow:hidden;
   }
-  /* Watermark layers — ::before is the main watermark, ::after is for
-     a second logo (mirror / stack / etc.). Both sit behind content. */
-  .ov::before,.ov::after{
-    content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
-    background:url('icon.png') no-repeat center / 380% auto;
-    opacity:0;
+  /* Watermark layer — wraps all watermark logos at z-index:0 so they
+     sit behind the overlay content (which lives at z-index:1). */
+  .ov .wm{
+    position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden;
   }
-  .ov::after{display:none}
   .ov > *{position:relative;z-index:1}
+  .ov > .wm{z-index:0}  /* override the rule above for the wm wrapper */
 
-  /* The icon.png is 2000x2000 with the eye occupying ~25% of the source
-     image. background-size:380% means the actual eye element spans the
-     full overlay width (340px). 500% pushes it edge-to-edge with bleed. */
-
-  /* ───── W0 — none (baseline) ───── */
-  .ov.w0::before{display:none}
-
-  /* ───── W1 — full-width centred, subtle ───── */
-  .ov.w1::before{opacity:.04;background-size:380% auto}
-
-  /* ───── W2 — full-width centred, visible ───── */
-  .ov.w2::before{opacity:.07;background-size:380% auto}
-
-  /* ───── W3 — full-width centred, GOLD tinted ───── */
-  .ov.w3::before{
-    opacity:.13;
-    background:var(--gold);
-    -webkit-mask:url('icon.png') no-repeat center / 380% auto;
-            mask:url('icon.png') no-repeat center / 380% auto;
+  /* ── Watermark logo primitive ──
+     Uses icon.png as a CSS mask and paints the underlying div in
+     currentColor. Default colour is white (so .wm-l inherits text colour
+     of its parent for free; we override for gold variants).
+     mask-size:400% places the eye element of the icon at full-element
+     size — so width:Npx on .wm-l means a roughly Npx-wide eye visible. */
+  .ov .wm-l{
+    position:absolute;
+    background:currentColor;color:#fff;
+    -webkit-mask:url('icon.png') no-repeat center / 400% 400%;
+            mask:url('icon.png') no-repeat center / 400% 400%;
   }
 
-  /* ───── W4 — full-width with vertical fade-in/fade-out mask ─────
-     Eye fills width, but the top + bottom edges fade so the watermark
-     never quite touches the topbar or the action buttons. */
-  .ov.w4::before{
-    opacity:.10;background-size:380% auto;
-    -webkit-mask:linear-gradient(to bottom,transparent 0%,black 30%,black 70%,transparent 100%);
-            mask:linear-gradient(to bottom,transparent 0%,black 30%,black 70%,transparent 100%);
+  /* ─── Common keyframes ─── */
+  @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+  @keyframes spin-rev{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
+  @keyframes drift-x{0%,100%{transform:translateX(-12%)}50%{transform:translateX(12%)}}
+  @keyframes drift-y{0%,100%{transform:translateY(-10%)}50%{transform:translateY(10%)}}
+  @keyframes pulse-soft{0%,100%{transform:scale(1);opacity:.05}50%{transform:scale(1.10);opacity:.10}}
+  @keyframes pulse-medium{0%,100%{transform:scale(1);opacity:.07}50%{transform:scale(1.08);opacity:.12}}
+  @keyframes pulse-big{0%,100%{transform:scale(1);opacity:.06}50%{transform:scale(1.05);opacity:.10}}
+  @keyframes float-up{0%{transform:translateY(120%);opacity:0}10%{opacity:.08}90%{opacity:.08}100%{transform:translateY(-120%);opacity:0}}
+  @keyframes orbit-near{
+    from{transform:rotate(0deg) translateX(70px) rotate(0deg)}
+    to  {transform:rotate(360deg) translateX(70px) rotate(0deg)}
+  }
+  @keyframes orbit-far{
+    from{transform:rotate(0deg) translateX(110px) rotate(0deg)}
+    to  {transform:rotate(-360deg) translateX(110px) rotate(0deg)}
+  }
+  @keyframes drift-diag-a{0%,100%{transform:translate(-15%,-10%)}50%{transform:translate(15%,10%)}}
+  @keyframes drift-diag-b{0%,100%{transform:translate(15%,-10%)}50%{transform:translate(-15%,10%)}}
+  @keyframes drift-diag-c{0%,100%{transform:translate(-10%,10%)}50%{transform:translate(10%,-10%)}}
+  @keyframes drift-diag-d{0%,100%{transform:translate(8%,12%)}50%{transform:translate(-8%,-12%)}}
+  @keyframes shimmer-mask{
+    from{mask-position:-100% center;-webkit-mask-position:-100% center}
+    to{mask-position:200% center;-webkit-mask-position:200% center}
   }
 
-  /* ───── W5 — full-width with radial spotlight ─────
-     Strong at the centre, fades concentrically to edges. */
-  .ov.w5::before{
-    opacity:.12;background-size:380% auto;
-    -webkit-mask:radial-gradient(ellipse at center,black 0%,transparent 70%);
-            mask:radial-gradient(ellipse at center,black 0%,transparent 70%);
+  /* ════════════════════════════════════════════════════════════════════
+     M0 — NONE (baseline reference)
+     ════════════════════════════════════════════════════════════════════ */
+  /* No .wm child — overlay shows just the content */
+
+  /* ════════════════════════════════════════════════════════════════════
+     M1 — Small slow rotating logo, centred (60px eye, 30s spin)
+     ════════════════════════════════════════════════════════════════════ */
+  .ov.m1 .wm-l{
+    left:50%;top:50%;width:60px;height:60px;margin:-30px 0 0 -30px;
+    opacity:.10;animation:spin 30s linear infinite;transform-origin:center;
   }
 
-  /* ───── W6 — full-width OVERSIZE (logo bleeds past edges) ─────
-     The eye is bigger than the overlay; only the inner part is visible. */
-  .ov.w6::before{opacity:.09;background-size:600% auto}
-
-  /* ───── W7 — full-width slow rotation ─────
-     Rotates 360° over 60s. Subtle — eye slowly drifting. */
-  @keyframes wm-rotate{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-  .ov.w7::before{
-    opacity:.07;background-size:380% auto;
-    animation:wm-rotate 60s linear infinite;
-    transform-origin:center;
+  /* ════════════════════════════════════════════════════════════════════
+     M2 — Medium rotating logo, centred (130px, 45s)
+     ════════════════════════════════════════════════════════════════════ */
+  .ov.m2 .wm-l{
+    left:50%;top:50%;width:130px;height:130px;margin:-65px 0 0 -65px;
+    opacity:.07;animation:spin 45s linear infinite;transform-origin:center;
   }
 
-  /* ───── W8 — full-width slow breath/pulse ─────
-     Scales between 1.0 → 1.06 over 5s. */
-  @keyframes wm-breath{
-    0%,100%{transform:scale(1);opacity:.06}
-    50%{transform:scale(1.06);opacity:.10}
-  }
-  .ov.w8::before{
-    background-size:380% auto;
-    animation:wm-breath 5s ease-in-out infinite;
-    transform-origin:center;
+  /* ════════════════════════════════════════════════════════════════════
+     M3 — Big rotating logo, gold-tinted (220px, 70s, gold)
+     ════════════════════════════════════════════════════════════════════ */
+  .ov.m3 .wm-l{
+    left:50%;top:50%;width:220px;height:220px;margin:-110px 0 0 -110px;
+    color:var(--gold);opacity:.13;
+    animation:spin 70s linear infinite;transform-origin:center;
   }
 
-  /* ───── W9 — diagonal sweep gradient mask ─────
-     Logo only visible along a diagonal stripe across the overlay. */
-  .ov.w9::before{
-    opacity:.13;background-size:380% auto;
-    -webkit-mask:linear-gradient(135deg,transparent 30%,black 50%,transparent 70%);
-            mask:linear-gradient(135deg,transparent 30%,black 50%,transparent 70%);
+  /* ════════════════════════════════════════════════════════════════════
+     M4 — Slow breath/pulse, medium (140px, 5s scale + opacity)
+     ════════════════════════════════════════════════════════════════════ */
+  .ov.m4 .wm-l{
+    left:50%;top:50%;width:140px;height:140px;margin:-70px 0 0 -70px;
+    animation:pulse-medium 5s ease-in-out infinite;transform-origin:center;
   }
 
-  /* ───── W10 — three-stack vertical ─────
-     Three logos stacked vertically (top, middle, bottom), each at full
-     width. Reads as a column of eyes — surveillance-grid feel. */
-  .ov.w10::before{
-    opacity:.06;
-    background:
-      url('icon.png') no-repeat center 0% / 200% auto,
-      url('icon.png') no-repeat center 50% / 200% auto,
-      url('icon.png') no-repeat center 100% / 200% auto;
+  /* ════════════════════════════════════════════════════════════════════
+     M5 — Drift horizontal (100px medium, glides left ↔ right, 16s)
+     ════════════════════════════════════════════════════════════════════ */
+  .ov.m5 .wm-l{
+    left:50%;top:50%;width:100px;height:100px;margin:-50px 0 0 -50px;
+    opacity:.10;animation:drift-x 16s ease-in-out infinite;
   }
 
-  /* ───── W11 — mirror reflection (top + flipped bottom) ─────
-     Logo at top half, vertically flipped logo at bottom half. */
-  .ov.w11{position:relative}
-  .ov.w11::before{
-    opacity:.07;background-size:380% auto;
-    background-position:center -40%;
+  /* ════════════════════════════════════════════════════════════════════
+     M6 — Counter-rotating duo (2 logos overlapping, opposite spin)
+     ════════════════════════════════════════════════════════════════════ */
+  .ov.m6 .wm-l:nth-child(1){
+    left:50%;top:50%;width:160px;height:160px;margin:-80px 0 0 -80px;
+    opacity:.07;animation:spin 40s linear infinite;transform-origin:center;
   }
-  .ov.w11::after{
-    display:block;
-    opacity:.05;background-size:380% auto;
-    background-position:center 140%;
-    transform:scaleY(-1);
-  }
-
-  /* ───── W12 — chromatic aberration (RGB split) ─────
-     Three offset logo layers in red / cyan / gold. Subtle CRT vibe. */
-  .ov.w12::before{
-    opacity:1;
-    background:
-      linear-gradient(transparent,transparent);
-    -webkit-mask:none;mask:none;
-    /* Use box-shadow trick: layer 3 different masks via filters */
-    background-image:url('icon.png'),url('icon.png'),url('icon.png');
-    background-size:380% auto,380% auto,380% auto;
-    background-position:calc(50% - 4px) center,calc(50% + 4px) center,50% center;
-    background-repeat:no-repeat,no-repeat,no-repeat;
-    filter:opacity(.1) drop-shadow(2px 0 0 var(--gold));
+  .ov.m6 .wm-l:nth-child(2){
+    left:50%;top:50%;width:90px;height:90px;margin:-45px 0 0 -45px;
+    color:var(--gold);opacity:.14;
+    animation:spin-rev 22s linear infinite;transform-origin:center;
   }
 
-  /* ───── W13 — gold gradient sweep ─────
-     Logo painted in gold, with a moving gold-shimmer gradient mask
-     that loops left → right every 8s. Like a treasure-hunt scanner. */
-  @keyframes wm-shimmer{
-    from{-webkit-mask-position:-100% 0;mask-position:-100% 0}
-    to{-webkit-mask-position:200% 0;mask-position:200% 0}
+  /* ════════════════════════════════════════════════════════════════════
+     M7 — Triple rotating row (3 small logos in horizontal line)
+     ════════════════════════════════════════════════════════════════════ */
+  .ov.m7 .wm-l{
+    width:55px;height:55px;top:50%;margin-top:-27px;
+    opacity:.09;animation:spin 25s linear infinite;transform-origin:center;
   }
-  .ov.w13::before{
-    opacity:.16;
-    background:var(--gold);
-    -webkit-mask:url('icon.png') no-repeat center / 380% auto;
-            mask:url('icon.png') no-repeat center / 380% auto;
+  .ov.m7 .wm-l:nth-child(1){left:14%}
+  .ov.m7 .wm-l:nth-child(2){left:50%;margin-left:-27px;animation-direction:reverse;
+    color:var(--gold);opacity:.13}
+  .ov.m7 .wm-l:nth-child(3){right:14%}
+
+  /* ════════════════════════════════════════════════════════════════════
+     M8 — Orbital atom (1 medium centre + 2 small satellites orbiting)
+     ════════════════════════════════════════════════════════════════════ */
+  .ov.m8 .wm-l:nth-child(1){
+    /* center, static */
+    left:50%;top:50%;width:80px;height:80px;margin:-40px 0 0 -40px;
+    color:var(--gold);opacity:.12;
   }
-  .ov.w13::after{
-    display:block;opacity:.18;
+  .ov.m8 .wm-l:nth-child(2),.ov.m8 .wm-l:nth-child(3){
+    /* satellites */
+    left:50%;top:50%;width:24px;height:24px;margin:-12px 0 0 -12px;
+    opacity:.20;
+  }
+  .ov.m8 .wm-l:nth-child(2){animation:orbit-near 9s linear infinite}
+  .ov.m8 .wm-l:nth-child(3){animation:orbit-far 14s linear infinite}
+
+  /* ════════════════════════════════════════════════════════════════════
+     M9 — Constellation drift (5 tiny logos at scattered positions,
+     each drifting in its own direction)
+     ════════════════════════════════════════════════════════════════════ */
+  .ov.m9 .wm-l{width:32px;height:32px;opacity:.10}
+  .ov.m9 .wm-l:nth-child(1){top:14%;left:18%;animation:drift-diag-a 12s ease-in-out infinite}
+  .ov.m9 .wm-l:nth-child(2){top:18%;right:16%;animation:drift-diag-b 14s ease-in-out infinite}
+  .ov.m9 .wm-l:nth-child(3){top:55%;left:28%;animation:drift-diag-c 16s ease-in-out infinite;
+    color:var(--gold);opacity:.13}
+  .ov.m9 .wm-l:nth-child(4){bottom:18%;right:24%;animation:drift-diag-d 13s ease-in-out infinite}
+  .ov.m9 .wm-l:nth-child(5){bottom:14%;left:14%;animation:drift-diag-a 18s ease-in-out infinite reverse}
+
+  /* ════════════════════════════════════════════════════════════════════
+     M10 — Cascade fall (small logos repeatedly falling top-to-bottom,
+     staggered so there's always 2-3 visible)
+     ════════════════════════════════════════════════════════════════════ */
+  .ov.m10 .wm-l{width:38px;height:38px;left:50%;margin-left:-19px;opacity:.10}
+  .ov.m10 .wm-l:nth-child(1){left:30%;animation:float-up 10s linear infinite}
+  .ov.m10 .wm-l:nth-child(2){left:50%;margin-left:-19px;animation:float-up 12s linear -4s infinite;
+    color:var(--gold);opacity:.13}
+  .ov.m10 .wm-l:nth-child(3){left:70%;animation:float-up 11s linear -8s infinite}
+
+  /* ════════════════════════════════════════════════════════════════════
+     M11 — Anchored behind verdict (medium logo, slow pulse, sits exactly
+     behind the CAUTION text — gold tinted)
+     ════════════════════════════════════════════════════════════════════ */
+  .ov.m11 .wm-l{
+    left:50%;top:32%;width:100px;height:100px;margin-left:-50px;margin-top:-50px;
+    color:var(--gold);
+    animation:pulse-soft 4s ease-in-out infinite;transform-origin:center;
+  }
+
+  /* ════════════════════════════════════════════════════════════════════
+     M12 — Big slow rotation, gold-shimmer scanner (220px, 70s rotation
+     PLUS a moving champagne sweep across)
+     ════════════════════════════════════════════════════════════════════ */
+  .ov.m12 .wm-l:nth-child(1){
+    left:50%;top:50%;width:200px;height:200px;margin:-100px 0 0 -100px;
+    color:var(--gold);opacity:.13;
+    animation:spin 70s linear infinite;transform-origin:center;
+  }
+  .ov.m12 .wm-l:nth-child(2){
+    /* shimmer sweep — uses the icon mask but a moving gold-pale
+       gradient as background */
+    left:50%;top:50%;width:200px;height:200px;margin:-100px 0 0 -100px;
     background:linear-gradient(105deg,transparent 30%,var(--gold-pale) 50%,transparent 70%);
-    background-size:200% 100%;
-    -webkit-mask:url('icon.png') no-repeat center / 380% auto;
-            mask:url('icon.png') no-repeat center / 380% auto;
-    animation:wm-shimmer 8s ease-in-out infinite;
-  }
-
-  /* ───── W14 — eye behind the verdict (anchored at the verdict line) ─
-     Logo positioned so the eye element sits exactly behind the CAUTION
-     text. Adds visual weight to the verdict without competing with it. */
-  .ov.w14::before{
-    opacity:.10;background-size:280% auto;
-    background-position:center 32%;
-  }
-
-  /* ───── W15 — outline-only ghost ─────
-     Logo rendered as outline only (using mask-image trick + 1px stroke).
-     Wireframe / blueprint feel. */
-  .ov.w15::before{
+    background-size:300% 100%;background-color:transparent;
+    -webkit-mask:url('icon.png') no-repeat center / 400% 400%;
+            mask:url('icon.png') no-repeat center / 400% 400%;
     opacity:.4;
-    background:
-      radial-gradient(circle at center,transparent 30%,var(--gold) 30.5%,var(--gold) 31%,transparent 31.5%);
-    -webkit-mask:url('icon.png') no-repeat center / 380% auto;
-            mask:url('icon.png') no-repeat center / 380% auto;
+    animation:shimmer-mask 7s ease-in-out infinite;
   }
 
-  /* ───── W16 — film grain + logo mix ─────
-     Logo + a noise-grain pattern overlaid. CRT + analog feel. */
-  .ov.w16::before{
-    opacity:.08;background-size:380% auto;
+  /* ════════════════════════════════════════════════════════════════════
+     M13 — Stacked counter-pulse (2 logos same size, alternating pulse —
+     when one expands, the other contracts)
+     ════════════════════════════════════════════════════════════════════ */
+  @keyframes pulse-alt-a{0%,100%{transform:scale(.9);opacity:.04}50%{transform:scale(1.08);opacity:.12}}
+  @keyframes pulse-alt-b{0%,100%{transform:scale(1.08);opacity:.12}50%{transform:scale(.9);opacity:.04}}
+  .ov.m13 .wm-l{
+    left:50%;top:50%;width:130px;height:130px;margin:-65px 0 0 -65px;
+    transform-origin:center;
   }
-  .ov.w16::after{
-    display:block;opacity:.5;
-    background:
-      repeating-linear-gradient(0deg,transparent 0,transparent 1px,rgba(255,255,255,.012) 1px,rgba(255,255,255,.012) 2px),
-      repeating-linear-gradient(90deg,transparent 0,transparent 1px,rgba(255,255,255,.008) 1px,rgba(255,255,255,.008) 2px);
+  .ov.m13 .wm-l:nth-child(1){animation:pulse-alt-a 4s ease-in-out infinite}
+  .ov.m13 .wm-l:nth-child(2){
+    color:var(--gold);
+    animation:pulse-alt-b 4s ease-in-out infinite;
   }
+
+  /* ════════════════════════════════════════════════════════════════════
+     M14 — Galaxy (1 medium static center + 4 tiny drifting logos
+     scattered around like dust around a star)
+     ════════════════════════════════════════════════════════════════════ */
+  .ov.m14 .wm-l:nth-child(1){
+    /* center star — static, gold */
+    left:50%;top:50%;width:90px;height:90px;margin:-45px 0 0 -45px;
+    color:var(--gold);opacity:.10;
+  }
+  .ov.m14 .wm-l:nth-child(n+2){width:24px;height:24px;opacity:.13}
+  .ov.m14 .wm-l:nth-child(2){top:18%;left:18%;animation:drift-diag-a 11s ease-in-out infinite}
+  .ov.m14 .wm-l:nth-child(3){top:22%;right:14%;animation:drift-diag-b 13s ease-in-out infinite}
+  .ov.m14 .wm-l:nth-child(4){bottom:20%;left:16%;animation:drift-diag-c 15s ease-in-out infinite}
+  .ov.m14 .wm-l:nth-child(5){bottom:14%;right:20%;animation:drift-diag-d 12s ease-in-out infinite}
 
   /* Topbar */
   .ov-tb{display:flex;align-items:center;justify-content:space-between;
@@ -493,10 +537,20 @@
     padding:18px;background:var(--card);border:1px solid #1a1a1e;border-radius:6px;
     transition:transform .28s,border-color .28s;width:100%;max-width:380px}
   .wm-card:hover{transform:translateY(-3px);border-color:#252529}
+  .wm-card .wm-card-h{display:flex;align-items:center;justify-content:space-between;
+    gap:10px;width:100%;max-width:340px}
   .wm-card .wm-name{font:700 10px/1 'IBM Plex Mono',monospace;color:var(--gold);
     letter-spacing:.2em;text-transform:uppercase}
   .wm-card .wm-desc{font-size:11px;color:var(--dim);text-align:center;line-height:1.55;
     max-width:320px}
+  .wm-card .wm-tag{
+    font:700 8.5px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;text-transform:uppercase;
+    padding:3px 6px;border:1px solid #2a2a2e;border-radius:2px;color:#888;white-space:nowrap;
+  }
+  .wm-card .wm-tag.medium{color:#22d3ee;border-color:rgba(34,211,238,.4)}
+  .wm-card .wm-tag.big{color:var(--gold);border-color:rgba(245,208,0,.4)}
+  .wm-card .wm-tag.multi{color:#a78bfa;border-color:rgba(167,139,250,.4)}
+  .wm-card .wm-tag.anim{color:#ff7a59;border-color:rgba(255,122,89,.4)}
 </style>
 </head>
 <body>
@@ -522,15 +576,18 @@
      intensities/positions. Pick the one you want.
      ══════════════════════════════════════════════════════════════════════ -->
 <section class="wm-section">
-  <h2>FULL OVERLAY <span class="gold">+ LOGO WATERMARK</span></h2>
-  <p class="sub">Logo as a background fill at full overlay width, behind every button and text. Pure decoration &mdash; never interferes with readability. Same overlay content (CAUTION verdict, 850/1000 score, security row, locked PRO buttons) so the only thing that changes between cards is the watermark style. Topbar uses your pick: <b>A &mdash; bare gold logo</b>. The eye element of the icon spans the full overlay width in every variant (icon.png is 2000&times;2000, eye is the central ~25% of the source, so <code style="color:#aaa;background:#16161a;padding:1px 4px;border-radius:2px">background-size: 380% auto</code> stretches the eye edge-to-edge).</p>
+  <h2>OVERLAY <span class="gold">+ MOVING LOGO</span></h2>
+  <p class="sub">15 ways to put the Antares logo behind the overlay content. Mix of sizes (small / medium / big), motion types (rotation / drift / pulse / orbit / cascade), and configurations (single / dual / triple / constellation of 5). Pure decoration — every variant sits at <code style="color:#aaa;background:#16161a;padding:1px 4px;border-radius:2px">z-index:0</code> behind the buttons + text. Tag in the corner of each card hints at the style: <span style="color:var(--gold)"><b>ref</b></span> = baseline, <b>subtle</b> = small, <b>medium</b> = balanced, <b>big</b> = imposing, <b>multi</b> = several logos, <b>animated</b> = special motion.</p>
 
   <div class="wm-grid">
 
-    <!-- W0 — None (baseline) -->
+    <!-- M0 — none -->
     <div class="wm-card">
-      <div class="wm-name">W0 — none</div>
-      <div class="ov w0">
+      <div class="wm-card-h">
+        <div class="wm-name">M0 — none</div>
+        <span class="wm-tag">ref</span>
+      </div>
+      <div class="ov m0">
         <div class="ov-tb">
           <div class="ov-tb-lf"><span class="ov-brand">ANTARES</span><span class="logo md pro"></span></div>
           <div class="ov-tb-rt"><span>+</span><span>×</span></div>
@@ -553,13 +610,17 @@
           <div class="ov-btn locked"><span class="ico">○</span>AI SUMMARY</div>
         </div>
       </div>
-      <div class="wm-desc">Baseline reference — overlay with Badge A in topbar but no watermark behind. Compare every other card against this.</div>
+      <div class="wm-desc">Baseline reference — no watermark behind. Compare every card against this one.</div>
     </div>
 
-    <!-- W1 — Subtle centered (3% opacity, 70% size) -->
+    <!-- M1 — small rotating (30s) -->
     <div class="wm-card">
-      <div class="wm-name">W1 — full-width subtle (4%)</div>
-      <div class="ov w1">
+      <div class="wm-card-h">
+        <div class="wm-name">M1 — small rotating (30s)</div>
+        <span class="wm-tag">subtle</span>
+      </div>
+      <div class="ov m1">
+        <div class="wm"><span class="wm-l"></span></div>
         <div class="ov-tb">
           <div class="ov-tb-lf"><span class="ov-brand">ANTARES</span><span class="logo md pro"></span></div>
           <div class="ov-tb-rt"><span>+</span><span>×</span></div>
@@ -582,13 +643,17 @@
           <div class="ov-btn locked"><span class="ico">○</span>AI SUMMARY</div>
         </div>
       </div>
-      <div class="wm-desc">Eye spans the full overlay width at 4% opacity. You feel it more than see it — pure texture.</div>
+      <div class="wm-desc">Small eye (60px) rotating slowly at the centre. Subtle, present, never imposing.</div>
     </div>
 
-    <!-- W2 — Visible centered (6% opacity) -->
+    <!-- M2 — medium rotating (45s) -->
     <div class="wm-card">
-      <div class="wm-name">W2 — full-width visible (7%)</div>
-      <div class="ov w2">
+      <div class="wm-card-h">
+        <div class="wm-name">M2 — medium rotating (45s)</div>
+        <span class="wm-tag medium">medium</span>
+      </div>
+      <div class="ov m2">
+        <div class="wm"><span class="wm-l"></span></div>
         <div class="ov-tb">
           <div class="ov-tb-lf"><span class="ov-brand">ANTARES</span><span class="logo md pro"></span></div>
           <div class="ov-tb-rt"><span>+</span><span>×</span></div>
@@ -611,13 +676,17 @@
           <div class="ov-btn locked"><span class="ico">○</span>AI SUMMARY</div>
         </div>
       </div>
-      <div class="wm-desc">Same full-width eye, bumped to 7% — you can see the silhouette clearly without squinting, still doesn&rsquo;t compete with the content.</div>
+      <div class="wm-desc">Medium eye (130px) rotating at the centre. A bit more presence than M1, still calm.</div>
     </div>
 
-    <!-- W3 — Off-center bottom-right -->
+    <!-- M3 — big GOLD rotating (70s) -->
     <div class="wm-card">
-      <div class="wm-name">W3 — full-width GOLD (13%)</div>
-      <div class="ov w3">
+      <div class="wm-card-h">
+        <div class="wm-name">M3 — big GOLD rotating (70s)</div>
+        <span class="wm-tag big">big</span>
+      </div>
+      <div class="ov m3">
+        <div class="wm"><span class="wm-l"></span></div>
         <div class="ov-tb">
           <div class="ov-tb-lf"><span class="ov-brand">ANTARES</span><span class="logo md pro"></span></div>
           <div class="ov-tb-rt"><span>+</span><span>×</span></div>
@@ -640,13 +709,17 @@
           <div class="ov-btn locked"><span class="ico">○</span>AI SUMMARY</div>
         </div>
       </div>
-      <div class="wm-desc">Eye painted in gold via mask-image — full overlay width, 13% gold opacity. Premium &ldquo;you have Pro&rdquo; vibe baked into the chrome.</div>
+      <div class="wm-desc">Big eye (220px) painted gold, rotating very slowly. Cinematic centrepiece.</div>
     </div>
 
-    <!-- W4 — Tile pattern -->
+    <!-- M4 — medium breath (5s) -->
     <div class="wm-card">
-      <div class="wm-name">W4 — vertical fade (top + bottom)</div>
-      <div class="ov w4">
+      <div class="wm-card-h">
+        <div class="wm-name">M4 — medium breath (5s)</div>
+        <span class="wm-tag medium">medium</span>
+      </div>
+      <div class="ov m4">
+        <div class="wm"><span class="wm-l"></span></div>
         <div class="ov-tb">
           <div class="ov-tb-lf"><span class="ov-brand">ANTARES</span><span class="logo md pro"></span></div>
           <div class="ov-tb-rt"><span>+</span><span>×</span></div>
@@ -669,13 +742,17 @@
           <div class="ov-btn locked"><span class="ico">○</span>AI SUMMARY</div>
         </div>
       </div>
-      <div class="wm-desc">Full-width eye at 10%, but the top + bottom edges fade to invisible — the watermark never quite touches the topbar or the action buttons. Floats in the middle band.</div>
+      <div class="wm-desc">Medium eye scaling 1→1.08 + opacity 7→12% on a 5s loop. Living, breathing.</div>
     </div>
 
-    <!-- W5 — Radial gradient mask -->
+    <!-- M5 — horizontal drift (16s) -->
     <div class="wm-card">
-      <div class="wm-name">W5 — radial spotlight</div>
-      <div class="ov w5">
+      <div class="wm-card-h">
+        <div class="wm-name">M5 — horizontal drift (16s)</div>
+        <span class="wm-tag">subtle</span>
+      </div>
+      <div class="ov m5">
+        <div class="wm"><span class="wm-l"></span></div>
         <div class="ov-tb">
           <div class="ov-tb-lf"><span class="ov-brand">ANTARES</span><span class="logo md pro"></span></div>
           <div class="ov-tb-rt"><span>+</span><span>×</span></div>
@@ -698,13 +775,17 @@
           <div class="ov-btn locked"><span class="ico">○</span>AI SUMMARY</div>
         </div>
       </div>
-      <div class="wm-desc">Eye spans full width but fades concentrically from the centre — strong (12%) at the bullseye, zero at the edges. Spotlight beam.</div>
+      <div class="wm-desc">Small eye gliding left ↔ right inside the overlay every 16s. Calm parallax.</div>
     </div>
 
-    <!-- W6 — Peeking from top -->
+    <!-- M6 — counter-rotating duo -->
     <div class="wm-card">
-      <div class="wm-name">W6 — oversize (600% bleed)</div>
-      <div class="ov w6">
+      <div class="wm-card-h">
+        <div class="wm-name">M6 — counter-rotating duo</div>
+        <span class="wm-tag anim">animated</span>
+      </div>
+      <div class="ov m6">
+        <div class="wm"><span class="wm-l"></span><span class="wm-l"></span></div>
         <div class="ov-tb">
           <div class="ov-tb-lf"><span class="ov-brand">ANTARES</span><span class="logo md pro"></span></div>
           <div class="ov-tb-rt"><span>+</span><span>×</span></div>
@@ -727,13 +808,17 @@
           <div class="ov-btn locked"><span class="ico">○</span>AI SUMMARY</div>
         </div>
       </div>
-      <div class="wm-desc">Eye scaled to 600% — bleeds way past the overlay edges, only the inner star + iris are visible. Macro / cropped / cinematic feel.</div>
+      <div class="wm-desc">Two overlapping eyes — one big slow grey, one smaller fast gold, rotating in opposite directions.</div>
     </div>
 
-    <!-- W7 — GOLD-tinted -->
+    <!-- M7 — triple rotating row -->
     <div class="wm-card">
-      <div class="wm-name">W7 — slow rotation (60s)</div>
-      <div class="ov w7">
+      <div class="wm-card-h">
+        <div class="wm-name">M7 — triple rotating row</div>
+        <span class="wm-tag multi">multi-logo</span>
+      </div>
+      <div class="ov m7">
+        <div class="wm"><span class="wm-l"></span><span class="wm-l"></span><span class="wm-l"></span></div>
         <div class="ov-tb">
           <div class="ov-tb-lf"><span class="ov-brand">ANTARES</span><span class="logo md pro"></span></div>
           <div class="ov-tb-rt"><span>+</span><span>×</span></div>
@@ -756,13 +841,17 @@
           <div class="ov-btn locked"><span class="ico">○</span>AI SUMMARY</div>
         </div>
       </div>
-      <div class="wm-desc">Full-width eye rotating 360° over 60 seconds. So slow it almost reads as static, but movement is there if you watch — like a turning planet.</div>
+      <div class="wm-desc">Three small eyes in a horizontal row, all rotating; the middle one is gold and spins backward.</div>
     </div>
 
-    <!-- W8 — Big from bottom -->
+    <!-- M8 — orbital atom -->
     <div class="wm-card">
-      <div class="wm-name">W8 — slow breath / pulse (5s)</div>
-      <div class="ov w8">
+      <div class="wm-card-h">
+        <div class="wm-name">M8 — orbital atom</div>
+        <span class="wm-tag multi">multi-logo</span>
+      </div>
+      <div class="ov m8">
+        <div class="wm"><span class="wm-l"></span><span class="wm-l"></span><span class="wm-l"></span></div>
         <div class="ov-tb">
           <div class="ov-tb-lf"><span class="ov-brand">ANTARES</span><span class="logo md pro"></span></div>
           <div class="ov-tb-rt"><span>+</span><span>×</span></div>
@@ -785,13 +874,17 @@
           <div class="ov-btn locked"><span class="ico">○</span>AI SUMMARY</div>
         </div>
       </div>
-      <div class="wm-desc">Full-width eye gently breathing — scales 1.0 → 1.06 with opacity 6% → 10% on a 5s loop. Living, watching, breathing.</div>
+      <div class="wm-desc">One static gold eye in the centre + two tiny satellite eyes orbiting it at different speeds. Atom / solar-system.</div>
     </div>
 
-    <!-- W9 — Diagonal sweep gradient mask -->
+    <!-- M9 — constellation (5 dots) -->
     <div class="wm-card">
-      <div class="wm-name">W9 — diagonal sweep</div>
-      <div class="ov w9">
+      <div class="wm-card-h">
+        <div class="wm-name">M9 — constellation (5 dots)</div>
+        <span class="wm-tag multi">multi-logo</span>
+      </div>
+      <div class="ov m9">
+        <div class="wm"><span class="wm-l"></span><span class="wm-l"></span><span class="wm-l"></span><span class="wm-l"></span><span class="wm-l"></span></div>
         <div class="ov-tb">
           <div class="ov-tb-lf"><span class="ov-brand">ANTARES</span><span class="logo md pro"></span></div>
           <div class="ov-tb-rt"><span>+</span><span>×</span></div>
@@ -814,13 +907,17 @@
           <div class="ov-btn locked"><span class="ico">○</span>AI SUMMARY</div>
         </div>
       </div>
-      <div class="wm-desc">Eye visible only along a diagonal stripe (135° gradient mask) — like a lens flare cutting across. Asymmetric, modern.</div>
+      <div class="wm-desc">Five tiny eyes scattered like stars, each drifting in its own direction with its own period. Living constellation.</div>
     </div>
 
-    <!-- W10 — Three-stack vertical -->
+    <!-- M10 — cascade fall -->
     <div class="wm-card">
-      <div class="wm-name">W10 — three-stack vertical</div>
-      <div class="ov w10">
+      <div class="wm-card-h">
+        <div class="wm-name">M10 — cascade fall</div>
+        <span class="wm-tag multi">multi-logo</span>
+      </div>
+      <div class="ov m10">
+        <div class="wm"><span class="wm-l"></span><span class="wm-l"></span><span class="wm-l"></span></div>
         <div class="ov-tb">
           <div class="ov-tb-lf"><span class="ov-brand">ANTARES</span><span class="logo md pro"></span></div>
           <div class="ov-tb-rt"><span>+</span><span>×</span></div>
@@ -843,13 +940,17 @@
           <div class="ov-btn locked"><span class="ico">○</span>AI SUMMARY</div>
         </div>
       </div>
-      <div class="wm-desc">Three eyes stacked top / middle / bottom, each at full overlay width. Reads as a watching column — surveillance grid.</div>
+      <div class="wm-desc">Three small eyes endlessly falling from top to bottom on staggered timings — always 1–2 visible. Rain of eyes.</div>
     </div>
 
-    <!-- W11 — Mirror reflection -->
+    <!-- M11 — anchored gold pulse -->
     <div class="wm-card">
-      <div class="wm-name">W11 — mirror reflection</div>
-      <div class="ov w11">
+      <div class="wm-card-h">
+        <div class="wm-name">M11 — anchored gold pulse</div>
+        <span class="wm-tag medium">medium</span>
+      </div>
+      <div class="ov m11">
+        <div class="wm"><span class="wm-l"></span></div>
         <div class="ov-tb">
           <div class="ov-tb-lf"><span class="ov-brand">ANTARES</span><span class="logo md pro"></span></div>
           <div class="ov-tb-rt"><span>+</span><span>×</span></div>
@@ -872,13 +973,17 @@
           <div class="ov-btn locked"><span class="ico">○</span>AI SUMMARY</div>
         </div>
       </div>
-      <div class="wm-desc">Eye at the top, vertically-flipped eye at the bottom. Symmetry — like a logo + its reflection on water.</div>
+      <div class="wm-desc">Medium gold eye anchored exactly behind the CAUTION verdict, pulsing softly. Watches from behind the most-important element.</div>
     </div>
 
-    <!-- W12 — Chromatic aberration / RGB split -->
+    <!-- M12 — gold rotation + shimmer -->
     <div class="wm-card">
-      <div class="wm-name">W12 — chromatic aberration</div>
-      <div class="ov w12">
+      <div class="wm-card-h">
+        <div class="wm-name">M12 — gold rotation + shimmer</div>
+        <span class="wm-tag big">big</span>
+      </div>
+      <div class="ov m12">
+        <div class="wm"><span class="wm-l"></span><span class="wm-l"></span></div>
         <div class="ov-tb">
           <div class="ov-tb-lf"><span class="ov-brand">ANTARES</span><span class="logo md pro"></span></div>
           <div class="ov-tb-rt"><span>+</span><span>×</span></div>
@@ -901,13 +1006,17 @@
           <div class="ov-btn locked"><span class="ico">○</span>AI SUMMARY</div>
         </div>
       </div>
-      <div class="wm-desc">Three offset full-width eye layers with a gold drop-shadow — RGB-split / CRT chromatic-aberration effect. Glitch / cyber feel.</div>
+      <div class="wm-desc">Big gold eye rotating 70s + a champagne shimmer sweep across it every 7s. Treasure-hunt vibe.</div>
     </div>
 
-    <!-- W13 — Gold shimmer scanner (animated) -->
+    <!-- M13 — stacked counter-pulse -->
     <div class="wm-card">
-      <div class="wm-name">W13 — gold shimmer scanner</div>
-      <div class="ov w13">
+      <div class="wm-card-h">
+        <div class="wm-name">M13 — stacked counter-pulse</div>
+        <span class="wm-tag anim">animated</span>
+      </div>
+      <div class="ov m13">
+        <div class="wm"><span class="wm-l"></span><span class="wm-l"></span></div>
         <div class="ov-tb">
           <div class="ov-tb-lf"><span class="ov-brand">ANTARES</span><span class="logo md pro"></span></div>
           <div class="ov-tb-rt"><span>+</span><span>×</span></div>
@@ -930,13 +1039,17 @@
           <div class="ov-btn locked"><span class="ico">○</span>AI SUMMARY</div>
         </div>
       </div>
-      <div class="wm-desc">Full-width gold eye + a moving champagne shimmer that sweeps left → right every 8s. Treasure-scanner / metal-detector vibe.</div>
+      <div class="wm-desc">Two stacked eyes pulsing in alternation — when grey expands, gold contracts. Mechanical heartbeat.</div>
     </div>
 
-    <!-- W14 — Eye anchored behind the verdict -->
+    <!-- M14 — galaxy -->
     <div class="wm-card">
-      <div class="wm-name">W14 — anchored behind verdict</div>
-      <div class="ov w14">
+      <div class="wm-card-h">
+        <div class="wm-name">M14 — galaxy</div>
+        <span class="wm-tag multi">multi-logo</span>
+      </div>
+      <div class="ov m14">
+        <div class="wm"><span class="wm-l"></span><span class="wm-l"></span><span class="wm-l"></span><span class="wm-l"></span><span class="wm-l"></span></div>
         <div class="ov-tb">
           <div class="ov-tb-lf"><span class="ov-brand">ANTARES</span><span class="logo md pro"></span></div>
           <div class="ov-tb-rt"><span>+</span><span>×</span></div>
@@ -959,65 +1072,7 @@
           <div class="ov-btn locked"><span class="ico">○</span>AI SUMMARY</div>
         </div>
       </div>
-      <div class="wm-desc">Eye positioned exactly behind the CAUTION verdict (slightly smaller, 280%). Adds visual weight to the verdict line — the icon &ldquo;watches&rdquo; from behind the most-important element.</div>
-    </div>
-
-    <!-- W15 — Outline ghost -->
-    <div class="wm-card">
-      <div class="wm-name">W15 — outline ghost</div>
-      <div class="ov w15">
-        <div class="ov-tb">
-          <div class="ov-tb-lf"><span class="ov-brand">ANTARES</span><span class="logo md pro"></span></div>
-          <div class="ov-tb-rt"><span>+</span><span>×</span></div>
-        </div>
-        <div class="ov-tk"><b>LOL</b> <span>LOL</span></div>
-        <div class="ov-vd">CAUTION</div>
-        <div class="ov-sc"><b>850</b> <small>/ 1000</small> <span class="dots">●●●●</span></div>
-        <div class="ov-bar"><div class="ov-bar-fill"></div></div>
-        <div class="ov-fl">1 flag detected</div>
-        <div class="ov-sec">
-          <div class="cell"><span>SELL</span><b class="ok">✓</b></div>
-          <div class="cell"><span>MINT</span><b class="ok">✓</b></div>
-          <div class="cell"><span>FREEZE</span><b class="ok">✓</b></div>
-          <div class="cell"><span>LP LOCK</span><b class="ko">✗</b></div>
-          <div class="cell"><span>LIQ</span><b class="liq">$285K</b></div>
-        </div>
-        <div class="ov-btns">
-          <div class="ov-btn locked"><span class="ico">⚠</span>CRITICAL FLAGS</div>
-          <div class="ov-btn locked">FULL ANALYSIS →</div>
-          <div class="ov-btn locked"><span class="ico">○</span>AI SUMMARY</div>
-        </div>
-      </div>
-      <div class="wm-desc">Eye rendered as a thin gold outline only — no fill, just the silhouette ring. Wireframe / blueprint feel.</div>
-    </div>
-
-    <!-- W16 — Film grain + logo -->
-    <div class="wm-card">
-      <div class="wm-name">W16 — film grain + logo</div>
-      <div class="ov w16">
-        <div class="ov-tb">
-          <div class="ov-tb-lf"><span class="ov-brand">ANTARES</span><span class="logo md pro"></span></div>
-          <div class="ov-tb-rt"><span>+</span><span>×</span></div>
-        </div>
-        <div class="ov-tk"><b>LOL</b> <span>LOL</span></div>
-        <div class="ov-vd">CAUTION</div>
-        <div class="ov-sc"><b>850</b> <small>/ 1000</small> <span class="dots">●●●●</span></div>
-        <div class="ov-bar"><div class="ov-bar-fill"></div></div>
-        <div class="ov-fl">1 flag detected</div>
-        <div class="ov-sec">
-          <div class="cell"><span>SELL</span><b class="ok">✓</b></div>
-          <div class="cell"><span>MINT</span><b class="ok">✓</b></div>
-          <div class="cell"><span>FREEZE</span><b class="ok">✓</b></div>
-          <div class="cell"><span>LP LOCK</span><b class="ko">✗</b></div>
-          <div class="cell"><span>LIQ</span><b class="liq">$285K</b></div>
-        </div>
-        <div class="ov-btns">
-          <div class="ov-btn locked"><span class="ico">⚠</span>CRITICAL FLAGS</div>
-          <div class="ov-btn locked">FULL ANALYSIS →</div>
-          <div class="ov-btn locked"><span class="ico">○</span>AI SUMMARY</div>
-        </div>
-      </div>
-      <div class="wm-desc">Eye at 8% + a subtle CRT scan-line grid overlaid on top. Analog / vintage / surveillance-monitor feel.</div>
+      <div class="wm-desc">One gold star at the centre + four tiny eye-dust drifting around it. Galaxy / cosmos feel.</div>
     </div>
 
   </div>
@@ -1385,19 +1440,24 @@
 
 <!-- Recommendations -->
 <section class="recs">
-  <h2>HOW TO PICK <span class="gold">FROM HERE</span></h2>
+  <h2>HOW TO PICK <span class="gold">A WATERMARK</span></h2>
+  <p style="font-size:12px;color:var(--dim);line-height:1.7;margin-bottom:18px">Topbar badge is locked in: <b style="color:var(--gold)">A &mdash; bare gold logo</b>. Now the question is what (if anything) sits behind the overlay content.</p>
   <ol>
-    <li><b>Smallest possible signal?</b> Pick <b>A — Logo only</b>. No border, no label. Just the colour shift carries everything.</li>
-    <li><b>Most explicit?</b> Pick <b>B — Logo + label</b>. Logo + &ldquo;LIFE&rdquo;/&ldquo;FREE&rdquo;. No ambiguity.</li>
-    <li><b>Coin / token feel?</b> Pick <b>C — Pill border</b> or <b>I — Concentric ring</b>. Logo framed.</li>
-    <li><b>Premium feel without animation?</b> Pick <b>D — Halo</b> or <b>J — Engraved plate</b>. Static but visually rich.</li>
-    <li><b>Subtle motion?</b> Pick <b>E — Pulse</b>. 2.4s breathing animation, not distracting.</li>
-    <li><b>Bold / brand-forward?</b> Pick <b>F — Logo replaces wordmark</b>. Big logo, no &ldquo;ANTARES&rdquo; text.</li>
-    <li><b>Magazine / luxury?</b> Pick <b>K — Logo + italic serif</b>. Playfair Display italic looks editorial / wedding-invitation.</li>
-    <li><b>Personal / status?</b> Pick <b>H — Member ID</b>. Adds a number, feels like a wristband.</li>
+    <li><b>Want nothing extra?</b> Pick <b>M0 — none</b>. Topbar logo is the only chrome. Cleanest possible.</li>
+    <li><b>Smallest possible motion?</b> Pick <b>M1 — small rotating</b>. 60px eye, 30s rotation. The smallest sign of life.</li>
+    <li><b>Calm, premium centerpiece?</b> Pick <b>M3 — big gold rotating</b>. 220px gold eye, 70s rotation. Imposing but smooth.</li>
+    <li><b>Lots of motion, multiple logos?</b> Pick <b>M9 — constellation</b> or <b>M14 — galaxy</b>. 5 little logos drifting in their own rhythm.</li>
+    <li><b>Most cinematic?</b> Pick <b>M12 — gold rotation + shimmer</b>. Big gold eye + champagne sweep across.</li>
+    <li><b>Mechanical / heart-beat?</b> Pick <b>M13 — counter-pulse</b>. Two stacked logos pulsing in alternation.</li>
+    <li><b>Atomic / orbital?</b> Pick <b>M8 — orbital atom</b>. Static gold centre + 2 satellite eyes orbiting.</li>
+    <li><b>Vibe of falling stars?</b> Pick <b>M10 — cascade</b>. Eyes endlessly raining top to bottom.</li>
   </ol>
   <div class="pick">
-    <b>My pick :</b> <b>D — Halo</b> as the cleanest visual statement (logo + soft gold glow, nothing else needed) ; or <b>I — Concentric ring</b> if you want the &ldquo;sealed coin&rdquo; / signet feel ; or <b>J — Engraved plate</b> for the most physically luxurious feel. Tell me the letter and I wire it into <code>js/token-app.js</code> + the overlay topbar so the badge swaps gray → gold the moment the user goes Pro / Life.
+    <b>My picks (top 3):</b><br>
+    <b>M1 — small rotating</b> for the most subtle &ldquo;something&rsquo;s alive&rdquo; signal that never imposes.<br>
+    <b>M9 — constellation</b> for variety + multiple logos drifting at different speeds (your &ldquo;multi-logo&rdquo; brief).<br>
+    <b>M14 — galaxy</b> for a premium centerpiece (gold star) surrounded by 4 dust-like satellites.<br>
+    Dis le numéro et je le câble dans <code>js/token-app.js</code> + l&rsquo;overlay topbar avec le badge A en or.
   </div>
 </section>
 
