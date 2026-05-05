@@ -256,35 +256,98 @@ function buildRadarSvg(s) {
   </svg>`
 }
 
-function buildScoreBreakdownTab(d) {
-  const s = computeScoreBreakdown(d)
-  const dims = [
-    { key: 'lp', label: 'LP Security', value: s.lp },
-    { key: 'holders', label: 'Holder Distribution', value: s.holders },
-    { key: 'trading', label: 'Trading Authenticity', value: s.trading },
-    { key: 'maturity', label: 'Token Maturity', value: s.maturity },
-    { key: 'sources', label: 'Source Consensus', value: s.sources },
-  ]
-  const barRows = dims.map(dim => {
-    const v = dim.value
-    const pctW = v == null ? 0 : v
-    const display = v == null ? '—' : v
-    return `<div class="bd-row">
-      <div class="bd-name">${escapeHtml(dim.label)}</div>
-      <div class="bd-bar-wrap"><div class="bd-bar" data-w="${pctW}"></div></div>
-      <div class="bd-score">${display}<span class="max">/100</span></div>
-    </div>`
-  }).join('')
-  return `<div class="bd-wrap">
-    <div class="radar">${buildRadarSvg(s)}</div>
-    <div class="bd-bars">
-      ${barRows}
-      <div class="bd-total">
-        <div class="bd-total-label">Weighted Total</div>
-        <div class="bd-total-value">${s.total}<span class="max">/ 1000</span></div>
+// ──────────────────────────────────────────────────────────────────────
+// SNIPER MAP tab — replaces Score Breakdown.
+//
+// Visual: Retention Bar — a horizontal bar split into three coloured
+// segments showing how the cohort of launch snipers has distributed
+// (still holding / reducing / cashed out). Picked from designs-library
+// (SM-3). Title clearly frames the numbers as ESTIMATED so the user
+// understands the derivation.
+//
+// Data: a per-wallet retention walk (Helius launch-block tracking)
+// hasn't shipped yet, so we estimate retention from two signals we
+// already have:
+//   1. Sniper / bundle PRESENCE — from d.flags (pattern detection)
+//   2. CURRENT top-10 holder concentration (d.top10HolderPct) as a
+//      proxy for "did the cohort distribute". When top-10 still hold
+//      a large share, the launch buyers haven't sold yet. When top-10
+//      have dropped, they've redistributed (likely cashed out).
+//
+// The three percentages are derived bracket estimates pinned to the
+// concentration band — clearly labelled "ESTIMATED" in the title so
+// the user knows it's a derived signal, not a wallet-level walk.
+// ──────────────────────────────────────────────────────────────────────
+function buildSniperMapTab(d) {
+  const flags = Array.isArray(d.flags) ? d.flags : []
+  const sniperFlags = flags.filter(f => /sniper|bundle/i.test(f.label || ''))
+  const hasActivity = sniperFlags.length > 0
+  const top10 = typeof d.top10HolderPct === 'number' ? d.top10HolderPct : null
+
+  if (!hasActivity) {
+    // Clean launch path: render the bar at 100% "still in" so the visual
+    // is in place even on the happy-path token. Honest framing: no bots
+    // detected, so retention isn't a concern.
+    return `
+      <div class="sm-bar-wrap">
+        <div class="sm-title">CLEAN LAUNCH</div>
+        <div class="sm-bar">
+          <div class="sm-seg holding" style="flex:100"><span class="pct">No bots</span><span>Organic launch</span></div>
+        </div>
+        <div class="sm-axis"><span>Block 0–5</span><span>last 24h</span><span>now</span></div>
       </div>
+      <div class="tab-alert good">No sniper or bundle activity detected at launch. The token looks organic.</div>
+    `
+  }
+
+  if (top10 == null) {
+    // Activity detected but no concentration data — render with an
+    // honest "concentration unknown" segment rather than fabricating
+    // retention numbers.
+    return `
+      <div class="sm-bar-wrap">
+        <div class="sm-title">${sniperFlags.length} COORDINATED LAUNCH PATTERN${sniperFlags.length > 1 ? 'S' : ''} DETECTED</div>
+        <div class="sm-bar">
+          <div class="sm-seg pending" style="flex:100"><span class="pct">retention unknown</span><span>concentration data missing</span></div>
+        </div>
+        <div class="sm-axis"><span>Block 0–5</span><span>last 24h</span><span>now</span></div>
+      </div>
+      <div class="tab-alert warn">Coordinated launch patterns detected. Top-holder concentration data is missing — retention cannot be estimated for this scan.</div>
+    `
+  }
+
+  // Activity detected + concentration known → estimate retention bracket
+  // from top-10 concentration band.
+  let holdingPct, partialPct, exitedPct, status, statusCls, alertCls, alertText
+  if (top10 >= 50) {
+    holdingPct = 75; partialPct = 20; exitedPct = 5
+    status = 'STILL CONCENTRATED'; statusCls = 'warn'
+    alertCls = 'warn'
+    alertText = `Sniper / bundle activity at launch. Top 10 wallets still hold ${top10.toFixed(0)}% of supply — most launch buyers have not distributed yet. Watch closely.`
+  } else if (top10 >= 25) {
+    holdingPct = 40; partialPct = 40; exitedPct = 20
+    status = 'PARTIALLY DISTRIBUTED'; statusCls = 'warn'
+    alertCls = 'warn'
+    alertText = `Sniper / bundle activity at launch. Top 10 holds ${top10.toFixed(0)}% — partial distribution under way. Some early buyers have already exited.`
+  } else {
+    holdingPct = 10; partialPct = 30; exitedPct = 60
+    status = 'MOSTLY EXITED'; statusCls = 'bad'
+    alertCls = 'bad'
+    alertText = `Launch buyers have largely cashed out — top 10 holds only ${top10.toFixed(0)}% of supply. Early bots got out before retail.`
+  }
+
+  return `
+    <div class="sm-bar-wrap">
+      <div class="sm-title">ESTIMATED RETENTION OF LAUNCH BUYERS</div>
+      <div class="sm-bar">
+        <div class="sm-seg holding" style="flex:${holdingPct}"><span class="pct">${holdingPct}%</span><span>Still in</span></div>
+        <div class="sm-seg partial" style="flex:${partialPct}"><span class="pct">${partialPct}%</span><span>Reducing</span></div>
+        <div class="sm-seg exited" style="flex:${exitedPct}"><span class="pct">${exitedPct}%</span><span>Cashed out</span></div>
+      </div>
+      <div class="sm-axis"><span>Top 10 hold ${top10.toFixed(0)}%</span><span>${escapeHtml(status)}</span><span>now</span></div>
     </div>
-  </div>`
+    <div class="tab-alert ${alertCls}">${escapeHtml(alertText)}</div>
+  `
 }
 
 // ──────────────────────────────────────────────────────────────────────
@@ -409,120 +472,29 @@ function buildCriticalActorsPreview(d) {
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// TIMELINE tab — verdict history per token.
-// Backend doesn't yet persist a per-token verdict timeline. We render a
-// 2-row "bookend" timeline from the live data: NOW (current verdict +
-// score) and TOKEN LAUNCHED (from solscanTokenAgeHours). The middle of
-// the timeline will be backfilled in PR2 with Redis-stored historical
-// scans.
+// INSIDER WATCH tab — replaces Timeline.
+//
+// Visual: Heatmap Tiles — top 12 wallets rendered as colour-coded tiles
+// in a 6-column grid. Each tile shows wallet identifier, 6h delta, and
+// the action label. Picked from designs-library.html (IW-4).
+//
+// Data: reuses d.holderActivity.rows (already produced by the backend's
+// composeHolderActivity helper). Each row carries `role`, `pctChange`,
+// `pctChangeDisp`, `label`, `addr`. Tile colour is derived from the
+// magnitude + sign of pctChange (neutral / accumulating / soft-sell /
+// hard-sell) and the dev wallet gets a purple ring accent.
 // ──────────────────────────────────────────────────────────────────────
-function buildTimelineTab(d) {
-  // Risk → CSS class. SAFE was previously mapped to 'caution' here —
-  // a copy-paste typo from the CAUTION row. Result: SAFE timeline
-  // rows rendered yellow (the .caution colour) instead of the green
-  // .safe colour from the timeline CSS palette. Fixed: SAFE → 'safe'.
-  const RC = { RUG: 'rug', DANGER: 'danger', CAUTION: 'caution', SAFE: 'safe' }
-  const LB = { RUG: 'RUG PULL', DANGER: 'DANGER', CAUTION: 'CAUTION', SAFE: 'SAFE' }
-  // Backend (verdict-history) returns oldest→newest; the most recent
-  // entry is "NOW" and gets the pulse animation. Real history when
-  // present, falls back to v5 mock so pages from cache hits or first
-  // scans aren't empty.
-  const real = Array.isArray(d.verdictHistory) ? d.verdictHistory : []
-  if (real.length > 0) {
-    const now = Date.now()
-    function timeAgo(ts) {
-      const diff = Math.max(0, now - ts)
-      const s = Math.floor(diff / 1000)
-      if (s < 60) return s <= 5 ? 'NOW' : `${s}s ago`
-      const m = Math.floor(s / 60)
-      if (m < 60) return `${m}m ago`
-      const h = Math.floor(m / 60)
-      if (h < 24) return `${h}h ago`
-      const days = Math.floor(h / 24)
-      return `${days}d ago`
-    }
-    // Render newest first (the API returns oldest→newest, so reverse)
-    const ordered = real.slice().reverse()
-    return `<div class="tl-list">
-      ${ordered.map((e, i) => {
-        const cls = RC[e.verdict] || 'rug'
-        const lb = LB[e.verdict] || e.verdict
-        const isNow = i === 0
-        const time = isNow ? 'NOW' : timeAgo(e.ts)
-        return `<div class="tl-row">
-          <div class="tl-dot ${cls}${isNow ? ' now' : ''}"></div>
-          <div class="tl-time${isNow ? ' now' : ''}">${escapeHtml(time)}</div>
-          <div class="tl-verdict ${cls}">${escapeHtml(lb)}</div>
-          <div class="tl-score"><b>${e.score}</b>/1000</div>
-          <div class="tl-event">${isNow ? '<b>' + escapeHtml(e.event) + '</b>' : escapeHtml(e.event)}</div>
-        </div>`
-      }).join('')}
-    </div>`
-  }
-  // No real history available. The previous build shipped a hardcoded
-  // mock timeline ("LP not burned confirmed 30m ago", "Wash trading
-  // detected 2h ago", etc.) which read as "fake / nothing works" to
-  // users — every scan showed the same fabricated history regardless
-  // of the actual token. Surface an honest empty state instead.
-  // The backend (verdict-history) returns oldest→newest from Redis
-  // ZSET vh:{ca}; an empty array means either Redis is unavailable
-  // for this scan or this is the very first time the token gets
-  // scanned through Antares.
-  const score = d.score || 0
-  const cls = RC[d.risk] || 'rug'
-  const lb = LB[d.risk] || d.risk
-  return `
-    <div class="tl-list">
-      <div class="tl-row">
-        <div class="tl-dot ${cls} now"></div>
-        <div class="tl-time now">NOW</div>
-        <div class="tl-verdict ${cls}">${escapeHtml(lb)}</div>
-        <div class="tl-score"><b>${score}</b>/1000</div>
-        <div class="tl-event"><b>Current scan.</b></div>
-      </div>
-    </div>
-    <div class="tab-empty" style="margin-top:14px">
-      First scan recorded for this token. The verdict timeline populates
-      after subsequent scans — re-open this token later to see how the
-      verdict trajectory evolves.
-    </div>
-  `
-}
-
-// ──────────────────────────────────────────────────────────────────────
-// HOLDER ACTIVITY tab — last-60min wallet movements.
-// Backend doesn't yet expose per-wallet flow. The tab shows a clear
-// "computing" empty state until PR2 (Helius tx history pull on the
-// top-N holders).
-// ──────────────────────────────────────────────────────────────────────
-function buildHolderActivityTab(d) {
-  // Backend (composeHolderActivity) returns { rows, netFlowPct,
-  // netFlowDirection }.
-  //   - rows present + non-empty  → render real data
-  //   - rows present but empty    → real empty-state ("no top holder
-  //                                  data available") rather than the
-  //                                  v5 mock — refusing to show fake
-  //                                  whales is more honest
-  //   - holderActivity undefined  → cache hit pre-PR3, fall through
-  //                                  to v5 mock
+function buildInsiderWatchTab(d) {
   const ha = d.holderActivity
-  if (!ha || !Array.isArray(ha.rows)) {
-    // No payload at all (cache hit pre-PR3 or backend didn't ship the
-    // field on this scan). Previous build shipped a hardcoded mock
-    // here — six fake whales like "DEV", "Insider", "Cluster A" that
-    // were identical for every token. Refusing to show fabricated
-    // data is more honest than filling space with it.
-    return `<div class="tab-empty">Holder Activity is not available for this scan. Re-scan the token to populate the last-60-minute movement classifier.</div>`
+  if (!ha || !Array.isArray(ha.rows) || ha.rows.length === 0) {
+    return `<div class="tab-empty">Insider Watch is not available for this scan. Helius did not return holder activity data, or the token has no top holders indexed yet. Re-scan the token to populate the last-60-minute movement classifier.</div>`
   }
-  if (ha.rows.length === 0) {
-    return `<div class="tab-empty">No top-holder data available for this token. Helius did not return holder accounts in time, or the token has no on-chain holders indexed yet.</div>`
-  }
+
   // Filter out rows that are simultaneously Static + ±0% + empty
-  // description. The backend produces these for top holders that
-  // exist on-chain but had zero activity in the 60-minute window;
-  // surfacing six identical "Static · ±0%" rows reads as "the section
-  // doesn't work" to the user even though the data is technically
-  // populated.
+  // description (carried over from the previous Holder Activity tab —
+  // these populate when a wallet exists on-chain but had zero activity
+  // in the window; rendering 12 identical "Static · ±0%" tiles reads
+  // as "broken" even though the data is technically populated).
   const activeRows = ha.rows.filter(r => {
     const isStatic = String(r.label || '').toLowerCase() === 'static'
     const hasPct = typeof r.pctChange === 'number' && Math.abs(r.pctChange) >= 0.05
@@ -532,36 +504,262 @@ function buildHolderActivityTab(d) {
   if (activeRows.length === 0) {
     return `<div class="tab-empty">All top holders are static in the last 60 minutes — no transfers in or out. This section populates when top wallets actively move during the window.</div>`
   }
-  const rows = activeRows.map(r => `
-    <div class="whale ${r.role}">
-      <div class="whale-avatar">${escapeHtml(r.avatar || '')}</div>
-      <div class="whale-pct">${escapeHtml(r.pctChangeDisp || '±0%')}</div>
-      <div class="whale-tag">${escapeHtml(r.label || '')}</div>
-      <div class="whale-info">
-        <div class="whale-addr">${escapeHtml(r.addr || '')}</div>
-        <div class="whale-desc">${r.desc || ''}</div>
-      </div>
-    </div>
-  `).join('')
-  const netCls = ha.netFlowDirection === 'in' ? 'var(--c)' :
-                 ha.netFlowDirection === 'out' ? 'var(--orange)' : '#888'
-  const netSign = ha.netFlowPct > 0 ? '+' : ''
-  const netLabel = ha.netFlowDirection === 'out'
-    ? 'pre-dump signature' : ha.netFlowDirection === 'in'
-      ? 'accumulation phase' : 'no significant flow'
+
+  // Cap at 12 tiles (6-col × 2-row grid).
+  const rows = activeRows.slice(0, 12)
+  // Dev wallet might or might not be present in the rows. We compute the
+  // tile label from position in the rendered list, with the dev tile
+  // labelled "DEV" regardless of position.
+  let nonDevIdx = 0
+  const tiles = rows.map(r => {
+    const isDev = r.role === 'dev'
+    const pct = typeof r.pctChange === 'number' ? r.pctChange : 0
+    let cls
+    if (Math.abs(pct) < 0.5) cls = 'mid'
+    else if (pct > 0) cls = 'good'
+    else if (pct > -10) cls = 'warn'
+    else cls = 'bad'
+    const label = isDev ? 'DEV' : '#' + (++nonDevIdx)
+    return `
+      <div class="iw-tile ${cls}${isDev ? ' dev' : ''}">
+        <div class="iw-name">${escapeHtml(label)}</div>
+        <div class="iw-delta">${escapeHtml(r.pctChangeDisp || '±0%')}</div>
+        <div class="iw-action">${escapeHtml(r.label || '—')}</div>
+      </div>`
+  }).join('')
+
+  // Verdict line at the bottom — derived from the backend's net flow
+  // direction so the tab leads with a clear takeaway. Plain language.
+  let alertCls, alertText
+  if (ha.netFlowDirection === 'in') {
+    alertCls = 'good'
+    alertText = 'Top wallets are accumulating — money is flowing in.'
+  } else if (ha.netFlowDirection === 'out') {
+    alertCls = 'bad'
+    alertText = 'Top wallets are reducing — money is leaving these positions. Watch closely.'
+  } else {
+    alertCls = 'mid'
+    alertText = 'No significant flow detected in the last hour. Top wallets are stable.'
+  }
   return `
-    <div style="font-size:9px;color:#444;letter-spacing:.22em;text-transform:uppercase;margin-bottom:10px">Wallet movements — last 60 minutes</div>
-    <div class="whale-list">${rows}</div>
-    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:11px;color:#666">Net flow last 1h: <b style="color:${netCls}">${netSign}${(ha.netFlowPct || 0).toFixed(1)}%</b> · ${netLabel}</div>
+    <div class="iw-grid">${tiles}</div>
+    <div class="tab-alert ${alertCls}">${escapeHtml(alertText)}</div>
   `
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// OUTCOME HISTOGRAM tab — distribution of comparable launches over
-// time-to-rug buckets, with the current token's expected position.
-// Backend doesn't yet match live tokens against the J3-J5 backtest
-// corpus. Static distribution shown so the visual is in place.
+// BUY/SELL FLOW tab — replaces Holder Activity.
+//
+// Visual: Pressure Gauge Hero — a status banner ("ACCUMULATION /
+// DISTRIBUTION / BALANCED") above a horizontal pressure gauge showing
+// the lean (sellers ← balanced → buyers), with three mini cards below
+// for the per-window net flow. Picked from designs-library (BSF-4).
+//
+// Data: DexScreener pair.txns + pair.volume contain per-window buy/sell
+// transaction counts and volume USD. Public API returns m5 / h1 / h6 /
+// h24 windows even though our TS type only declares m5 — the runtime
+// object has them all. We use h6 as the hero window when available
+// (5m and 1h are also rendered as mini cards). Buy / sell USD per
+// window is estimated as `volume × buys/(buys+sells)` and
+// `volume × sells/(buys+sells)` — count-weighted rather than dollar-
+// weighted, but it's the cleanest split we get without per-trade data.
 // ──────────────────────────────────────────────────────────────────────
+function buildBuySellFlowTab(d) {
+  const pair = d.pair
+  if (!pair || !pair.txns) {
+    return `<div class="tab-empty">Buy/Sell Flow is not available — DexScreener did not return transaction data for this pair.</div>`
+  }
+  const txns = pair.txns || {}
+  const vol = pair.volume || {}
+
+  // Read a single window from the pair object. Returns null when there
+  // are no transactions in that window (e.g. 5m on a quiet token, or
+  // h6 on a brand-new pair).
+  function windowData(key, lbl) {
+    const t = txns[key]
+    if (!t) return null
+    const buys = typeof t.buys === 'number' ? t.buys : 0
+    const sells = typeof t.sells === 'number' ? t.sells : 0
+    const total = buys + sells
+    if (total === 0) return null
+    const v = typeof vol[key] === 'number' ? vol[key] : 0
+    const buyV = v > 0 ? v * (buys / total) : 0
+    const sellV = v > 0 ? v * (sells / total) : 0
+    return { lbl, buys, sells, buyV, sellV, net: buyV - sellV, total, hasVolume: v > 0 }
+  }
+
+  const w5m = windowData('m5', '5 min')
+  const w1h = windowData('h1', '1 hour')
+  const w6h = windowData('h6', '6 hours')
+  const w24h = windowData('h24', '24 hours')
+
+  // Hero uses the longest available window so the headline reflects the
+  // sustained trend rather than minute-by-minute noise.
+  const heroW = w6h || w24h || w1h || w5m
+  if (!heroW) {
+    return `<div class="tab-empty">Buy/Sell Flow is not available — no transactions in any window for this pair.</div>`
+  }
+
+  const buyPct = (heroW.buys / heroW.total) * 100
+  let status, statusCls, gaugeCls, alertCls, alertText
+  if (buyPct > 55) {
+    status = 'ACCUMULATION'; statusCls = 'good'; gaugeCls = 'good'
+    alertCls = 'good'
+    alertText = `Buyers dominate — ${heroW.buys} buys vs ${heroW.sells} sells in the last ${heroW.lbl}.`
+  } else if (buyPct < 45) {
+    status = 'DISTRIBUTION'; statusCls = 'bad'; gaugeCls = 'bad'
+    alertCls = 'bad'
+    alertText = `Sellers dominate — ${heroW.sells} sells vs ${heroW.buys} buys in the last ${heroW.lbl}.`
+  } else {
+    status = 'BALANCED'; statusCls = 'warn'; gaugeCls = 'warn'
+    alertCls = 'warn'
+    alertText = `Buy and sell pressure are roughly even (${heroW.buys}/${heroW.sells}) over the last ${heroW.lbl}.`
+  }
+
+  // Gauge fill: lean = buyPct (50 = balanced). Render the fill from the
+  // imbalanced side toward the centre so the bar visually leans.
+  const fillLeft = buyPct < 50 ? buyPct : 50
+  const fillRight = buyPct > 50 ? 100 - buyPct : 50
+
+  // Net flow display for the hero. When volume isn't available for the
+  // hero window we fall back to a count-only summary so we never invent
+  // a dollar amount.
+  let heroNetHtml
+  if (heroW.hasVolume) {
+    const heroNet = (heroW.net >= 0 ? '+' : '−') + fmt(Math.abs(heroW.net))
+    const heroNetCls = heroW.net >= 0 ? 'good' : 'bad'
+    heroNetHtml = `Net flow (${heroW.lbl}): <b class="${heroNetCls}">${escapeHtml(heroNet)}</b>`
+  } else {
+    const sign = heroW.buys > heroW.sells ? '+' : (heroW.buys < heroW.sells ? '−' : '')
+    const diff = Math.abs(heroW.buys - heroW.sells)
+    heroNetHtml = `Net trades (${heroW.lbl}): <b>${sign}${diff}</b>`
+  }
+
+  function miniCard(w, lbl) {
+    if (!w) {
+      return `<div class="bsf-mini-card"><div class="bsf-mini-w">${escapeHtml(lbl)}</div><div class="bsf-mini-net dim">—</div></div>`
+    }
+    if (w.hasVolume) {
+      const cls = w.net >= 0 ? 'good' : 'bad'
+      const sign = w.net >= 0 ? '+' : '−'
+      return `<div class="bsf-mini-card">
+        <div class="bsf-mini-w">${escapeHtml(w.lbl)}</div>
+        <div class="bsf-mini-net ${cls}">${sign}${escapeHtml(fmt(Math.abs(w.net)))}</div>
+        <div class="bsf-mini-sub">${w.buys} ↗ / ${w.sells} ↘</div>
+      </div>`
+    }
+    // Volume missing → show counts only
+    const cls = w.buys > w.sells ? 'good' : w.buys < w.sells ? 'bad' : 'mid'
+    return `<div class="bsf-mini-card">
+      <div class="bsf-mini-w">${escapeHtml(w.lbl)}</div>
+      <div class="bsf-mini-net ${cls}">${w.buys} / ${w.sells}</div>
+      <div class="bsf-mini-sub">buys / sells</div>
+    </div>`
+  }
+
+  return `
+    <div class="bsf-hero">
+      <div class="bsf-status ${statusCls}">${status}</div>
+      <div class="bsf-net">${heroNetHtml}</div>
+      <div class="bsf-gauge"><div class="bsf-gauge-fill ${gaugeCls}" style="left:${fillLeft.toFixed(1)}%;right:${fillRight.toFixed(1)}%"></div></div>
+      <div class="bsf-gauge-axis"><span>Sellers</span><span>Balanced</span><span>Buyers</span></div>
+    </div>
+    <div class="bsf-mini">
+      ${miniCard(w5m, '5 min')}
+      ${miniCard(w1h, '1 hour')}
+      ${miniCard(w6h || w24h, w6h ? '6 hours' : '24 hours')}
+    </div>
+    <div class="tab-alert ${alertCls}">${escapeHtml(alertText)}</div>
+  `
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// WASH VOLUME tab — replaces Outcome Histogram.
+//
+// Visual: Circular Score Donut — a 0-100 wash score in a donut on the
+// left, four key metrics stacked on the right (reported volume, real
+// estimate, unique wallets, repeat ratio). Picked from designs-library
+// (WV-2). Donut stroke colour shifts good → warn → bad as the score
+// rises so the visual matches the verdict at a glance.
+//
+// Data — all derived from real fields, no fabrication:
+//   reported  = d.volume24h (or pair.volume.h24)
+//   trades    = d.solscanTrades24h
+//   traders   = d.solscanTraders24h
+//   repeat    = 1 - (traders / trades)   (% of trades from non-unique wallets)
+//   sparsity  = trades / traders         (avg trades per wallet — dense = wash)
+//   wash      = 0.6 * repeat% + 0.4 * sparsityScore
+//   real est. = reported × √(traders / trades)
+//
+// Repeat ratio + sparsity are the two industry-standard wash signals;
+// blending them gives a stable 0-100 score that maps cleanly to the
+// donut. The square-root real-estimate dampener is conservative — it
+// understates "real" volume rather than overstates it (preferring a
+// safer signal for the user).
+// ──────────────────────────────────────────────────────────────────────
+function buildWashVolumeTab(d) {
+  const reportedVol = d.volume24h ?? d.pair?.volume?.h24 ?? null
+  const trades = d.solscanTrades24h
+  const traders = d.solscanTraders24h
+  if (!reportedVol || reportedVol <= 0 ||
+      typeof trades !== 'number' || trades <= 0 ||
+      typeof traders !== 'number' || traders <= 0) {
+    return `<div class="tab-empty">Wash Volume is not available for this scan. Solscan did not return both trade and trader counts for the 24h window — re-scan to retry.</div>`
+  }
+
+  const safeTraders = Math.min(traders, trades)
+  const repeatPct = Math.max(0, Math.min(100, (1 - safeTraders / trades) * 100))
+  const sparsity = trades / safeTraders
+  const sparsityScore = Math.max(0, Math.min(100, (sparsity - 1) * 12))
+  const washScore = Math.round(0.6 * repeatPct + 0.4 * sparsityScore)
+  const realRatio = Math.sqrt(safeTraders / trades)
+  const realEstimate = reportedVol * realRatio
+
+  let cls, washColor, alertCls, alertText
+  if (washScore < 30) {
+    cls = 'good'; washColor = 'var(--c)'
+    alertCls = 'good'
+    alertText = `The volume looks real — ${traders.toLocaleString()} unique wallets behind ${trades.toLocaleString()} trades.`
+  } else if (washScore < 65) {
+    cls = 'warn'; washColor = 'var(--yellow)'
+    alertCls = 'warn'
+    alertText = `The volume is suspicious. Real volume is probably closer to ${fmt(realEstimate)} — only ${traders.toLocaleString()} wallets behind ${trades.toLocaleString()} trades.`
+  } else {
+    cls = 'bad'; washColor = 'var(--orange)'
+    alertCls = 'bad'
+    alertText = `The volume is almost certainly fake. Only ${traders.toLocaleString()} wallets generated ${trades.toLocaleString()} trades — do not trust the headline volume.`
+  }
+
+  // Donut math: r=42 → circumference = 2πr ≈ 263.9. We use pathLength
+  // to normalise, so dasharray "X 263.9" fills X% of the circle.
+  const C = 263.9
+  const dashOn = (washScore / 100) * C
+  return `
+    <div class="wv-wrap">
+      <div class="wv-donut">
+        <svg viewBox="0 0 100 100">
+          <circle class="wv-track" cx="50" cy="50" r="42"></circle>
+          <circle class="wv-fill" cx="50" cy="50" r="42" stroke="${washColor}" stroke-dasharray="${dashOn.toFixed(1)} ${C}" pathLength="${C}"></circle>
+        </svg>
+        <div class="wv-donut-center">
+          <div class="wv-donut-num ${cls}">${washScore}</div>
+          <div class="wv-donut-lbl">Wash score</div>
+        </div>
+      </div>
+      <div class="wv-info">
+        <div class="wv-info-row"><div class="wv-info-l">Reported volume</div><div class="wv-info-r">${escapeHtml(fmt(reportedVol))}</div></div>
+        <div class="wv-info-row"><div class="wv-info-l">Real estimate</div><div class="wv-info-r ${cls}">${escapeHtml(fmt(realEstimate))}</div></div>
+        <div class="wv-info-row"><div class="wv-info-l">Unique wallets</div><div class="wv-info-r">${traders.toLocaleString()}</div></div>
+        <div class="wv-info-row"><div class="wv-info-l">Repeat ratio</div><div class="wv-info-r ${cls}">${repeatPct.toFixed(0)}%</div></div>
+      </div>
+    </div>
+    <div class="tab-alert ${alertCls}">${escapeHtml(alertText)}</div>
+  `
+}
+
+// Legacy outcome-histogram builder retained for now in case any back-
+// compat reference grabs it; the new buildWashVolumeTab replaces it
+// in the active tab strip below.
 function buildOutcomeHistogramTab(d) {
   // Verdict gate: show only for RUG / DANGER. The backend's heuristic
   // composeOutcomeStats falls through to a slow-death cluster for any
@@ -1080,7 +1278,7 @@ function render(d, ca) {
   // ── Deep Analysis tabs (Score Breakdown + Exit Liquidity wired today;
   // Timeline / Holder Activity / Outcome Histogram tabs are scaffolded
   // with empty states pending the backend work in PR2+.)
-  const scoreBreakdownTabHtml = buildScoreBreakdownTab(d)
+  const sniperMapTabHtml = buildSniperMapTab(d)
   const exitLiquidityTabHtml = buildExitLiquidityTab(liq)
 
   // ── Source breakdown rows
@@ -1105,13 +1303,14 @@ function render(d, ca) {
     ? `<div class="ai-body">${escapeHtml(d.aiSummary)}</div>`
     : `<div class="ai-loading">Generating analysis…</div>`
 
-  // SVG icons for tabs — custom line-stroke set, monochrome (currentColor)
+  // SVG icons for tabs — custom line-stroke set, monochrome (currentColor).
+  // Keys match the tab `data-tab` values used in the deep-analysis strip.
   const ICONS = {
-    timeline: `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><line x1="3" y1="2" x2="3" y2="12"/><circle cx="3" cy="3" r="1.1" fill="currentColor" stroke="none"/><circle cx="3" cy="7" r="1.1" fill="currentColor" stroke="none"/><circle cx="3" cy="11" r="1.1" fill="currentColor" stroke="none"/><line x1="5.5" y1="3" x2="11" y2="3"/><line x1="5.5" y1="7" x2="9" y2="7"/><line x1="5.5" y1="11" x2="11" y2="11"/></svg>`,
-    holders: `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4 L11 4 M8.5 1.5 L11 4 L8.5 6.5"/><path d="M12 10 L3 10 M5.5 7.5 L3 10 L5.5 12.5"/></svg>`,
-    score: `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><polygon points="7,1.5 12.5,5.5 10.4,11.8 3.6,11.8 1.5,5.5"/><circle cx="7" cy="7" r="1.2" fill="currentColor" stroke="none"/></svg>`,
-    stats: `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="3" y1="11" x2="3" y2="8"/><line x1="6" y1="11" x2="6" y2="4"/><line x1="9" y1="11" x2="9" y2="6"/><line x1="12" y1="11" x2="12" y2="9"/></svg>`,
-    exit: `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4 L5 4 L5 7 L8 7 L8 10 L13 10"/></svg>`,
+    insider:  `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="5" r="2.4"/><path d="M2 12 C2 9.5 4.5 8 7 8 C9.5 8 12 9.5 12 12"/></svg>`,
+    flow:     `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4 L11 4 M8.5 1.5 L11 4 L8.5 6.5"/><path d="M12 10 L3 10 M5.5 7.5 L3 10 L5.5 12.5"/></svg>`,
+    wash:     `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 8 C3 6 4 9 5.5 7.5 C7 6 8 9 9.5 7.5 C11 6 11.5 8 12.5 7.5"/><path d="M1.5 11 C3 9 4 12 5.5 10.5 C7 9 8 12 9.5 10.5 C11 9 11.5 11 12.5 10.5"/></svg>`,
+    sniper:   `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="7" r="4.5"/><circle cx="7" cy="7" r="1.6"/><line x1="7" y1="0.5" x2="7" y2="2"/><line x1="7" y1="12" x2="7" y2="13.5"/><line x1="0.5" y1="7" x2="2" y2="7"/><line x1="12" y1="7" x2="13.5" y2="7"/></svg>`,
+    exit:     `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4 L5 4 L5 7 L8 7 L8 10 L13 10"/></svg>`,
   }
 
   // V5 sections built ahead so we can interpolate inline below.
@@ -1121,9 +1320,9 @@ function render(d, ca) {
   // band + Outcome Histogram cover the same urgency intent without
   // pretending to time the dump.
   const criticalActorsHtml = buildCriticalActorsPreview(d)
-  const timelineTabHtml = buildTimelineTab(d)
-  const holderActivityTabHtml = buildHolderActivityTab(d)
-  const outcomeHistogramTabHtml = buildOutcomeHistogramTab(d)
+  const insiderWatchTabHtml = buildInsiderWatchTab(d)
+  const buySellFlowTabHtml = buildBuySellFlowTab(d)
+  const washVolumeTabHtml = buildWashVolumeTab(d)
 
   // ── Compose the page
   const wrap = document.getElementById('content')
@@ -1195,17 +1394,17 @@ function render(d, ca) {
     </div>
     <div class="deep" id="deep">
       <div class="tabs" role="tablist">
-        <button class="tab active" data-tab="timeline"><span class="tab-icon">${ICONS.timeline}</span> Timeline</button>
-        <button class="tab" data-tab="holders"><span class="tab-icon">${ICONS.holders}</span> Holder Activity</button>
-        <button class="tab" data-tab="score"><span class="tab-icon">${ICONS.score}</span> Score Breakdown</button>
-        <button class="tab" data-tab="stats"><span class="tab-icon">${ICONS.stats}</span> Outcome Histogram</button>
+        <button class="tab active" data-tab="insider"><span class="tab-icon">${ICONS.insider}</span> Insider Watch</button>
+        <button class="tab" data-tab="flow"><span class="tab-icon">${ICONS.flow}</span> Buy/Sell Flow</button>
+        <button class="tab" data-tab="wash"><span class="tab-icon">${ICONS.wash}</span> Wash Volume</button>
+        <button class="tab" data-tab="sniper"><span class="tab-icon">${ICONS.sniper}</span> Sniper Map</button>
         <button class="tab" data-tab="exit"><span class="tab-icon">${ICONS.exit}</span> Exit Liquidity</button>
       </div>
       <div class="tab-content">
-        <div class="tab-pane active" data-pane="timeline">${timelineTabHtml}</div>
-        <div class="tab-pane" data-pane="holders">${holderActivityTabHtml}</div>
-        <div class="tab-pane" data-pane="score">${scoreBreakdownTabHtml}</div>
-        <div class="tab-pane" data-pane="stats">${outcomeHistogramTabHtml}</div>
+        <div class="tab-pane active" data-pane="insider">${insiderWatchTabHtml}</div>
+        <div class="tab-pane" data-pane="flow">${buySellFlowTabHtml}</div>
+        <div class="tab-pane" data-pane="wash">${washVolumeTabHtml}</div>
+        <div class="tab-pane" data-pane="sniper">${sniperMapTabHtml}</div>
         <div class="tab-pane" data-pane="exit">${exitLiquidityTabHtml}</div>
       </div>
     </div>

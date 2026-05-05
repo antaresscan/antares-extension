@@ -372,6 +372,159 @@ nav .actions a.warn:hover{color:var(--orange);border-color:rgba(255,95,95,.4);ba
 .exit-note b{color:#999;font-style:normal;font-weight:600}
 .exit-row.exit-head .exit-amount,.exit-row.exit-head .exit-slip,.exit-row.exit-head .exit-note{color:#444;font-weight:700;font-style:normal}
 
+/* ╔═══════════════════════════════════════════════════════════════════════╗
+   ║  INSIDER WATCH (Heatmap Tiles) — replaces Timeline                    ║
+   ╚═══════════════════════════════════════════════════════════════════════╝ */
+.iw-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+@media(max-width:780px){.iw-grid{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:480px){.iw-grid{grid-template-columns:repeat(3,1fr)}}
+.iw-tile{
+  aspect-ratio:1;border-radius:3px;padding:8px 10px;
+  display:flex;flex-direction:column;justify-content:space-between;
+  border:1px solid;font-family:'IBM Plex Mono',monospace;
+  transition:transform .2s ease,border-color .2s ease;
+  position:relative;
+}
+.iw-tile:hover{transform:translateY(-2px)}
+.iw-tile.good{background:rgba(0,229,176,.08);border-color:rgba(0,229,176,.4);color:var(--c)}
+.iw-tile.warn{background:rgba(245,208,0,.07);border-color:rgba(245,208,0,.4);color:var(--yellow)}
+.iw-tile.bad {background:rgba(255,95,95,.07);border-color:rgba(255,95,95,.4);color:var(--orange)}
+.iw-tile.mid {background:rgba(255,255,255,.02);border-color:#222226;color:#888}
+.iw-tile.dev{box-shadow:inset 0 0 0 1px var(--purple)}
+.iw-tile.dev::after{
+  content:'DEV';position:absolute;top:5px;right:6px;
+  font-size:7px;font-weight:700;letter-spacing:.12em;color:var(--purple);
+}
+.iw-name{font-size:9.5px;font-weight:700;letter-spacing:.06em}
+.iw-delta{font:400 22px/1 'Bebas Neue',sans-serif;letter-spacing:.02em}
+.iw-action{font-size:7.5px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;opacity:.85}
+
+/* ╔═══════════════════════════════════════════════════════════════════════╗
+   ║  BUY/SELL FLOW (Pressure Gauge Hero) — replaces Holder Activity      ║
+   ╚═══════════════════════════════════════════════════════════════════════╝ */
+.bsf-hero{
+  background:#0a0a0c;border:1px solid var(--border);border-radius:3px;
+  padding:24px 28px;margin-bottom:14px;text-align:center;
+}
+.bsf-status{font:400 36px/1 'Bebas Neue',sans-serif;letter-spacing:.04em;margin-bottom:6px}
+.bsf-status.good{color:var(--c);text-shadow:0 0 32px rgba(0,229,176,.25)}
+.bsf-status.bad {color:var(--orange);text-shadow:0 0 32px rgba(255,95,95,.25)}
+.bsf-status.warn{color:var(--yellow);text-shadow:0 0 32px rgba(245,208,0,.2)}
+.bsf-net{font-size:11px;color:#888;letter-spacing:.06em;margin-bottom:18px}
+.bsf-net b{color:#ddd;font-weight:700}
+.bsf-net b.good{color:var(--c)}
+.bsf-net b.bad {color:var(--orange)}
+.bsf-gauge{
+  position:relative;height:8px;background:#13131a;border-radius:1px;
+  max-width:480px;margin:0 auto;overflow:hidden;
+}
+.bsf-gauge::before{
+  content:'';position:absolute;left:50%;top:-3px;bottom:-3px;
+  width:1px;background:#444;
+}
+.bsf-gauge-fill{position:absolute;top:0;bottom:0;transition:left .6s,right .6s,background .25s}
+.bsf-gauge-fill.good{background:linear-gradient(90deg,rgba(0,229,176,.2),var(--c))}
+.bsf-gauge-fill.bad {background:linear-gradient(90deg,var(--orange),rgba(255,95,95,.2))}
+.bsf-gauge-fill.warn{background:rgba(255,255,255,.18)}
+.bsf-gauge-axis{
+  display:flex;justify-content:space-between;margin:8px auto 0;max-width:480px;
+  font-size:8px;color:#555;letter-spacing:.2em;text-transform:uppercase;font-weight:700;
+}
+.bsf-mini{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.bsf-mini-card{
+  background:#0a0a0c;border:1px solid var(--border);
+  padding:12px 14px;border-radius:3px;text-align:center;
+}
+.bsf-mini-w{font-size:8.5px;color:#666;letter-spacing:.2em;text-transform:uppercase;font-weight:700;margin-bottom:4px}
+.bsf-mini-net{font:400 20px/1 'Bebas Neue',sans-serif;letter-spacing:.02em}
+.bsf-mini-net.good{color:var(--c)}
+.bsf-mini-net.bad {color:var(--orange)}
+.bsf-mini-net.warn{color:var(--yellow)}
+.bsf-mini-net.mid {color:#aaa}
+.bsf-mini-net.dim {color:#444}
+.bsf-mini-sub{font-size:9px;color:#666;margin-top:4px;letter-spacing:.04em}
+
+/* ╔═══════════════════════════════════════════════════════════════════════╗
+   ║  WASH VOLUME (Circular Donut) — replaces Outcome Histogram           ║
+   ╚═══════════════════════════════════════════════════════════════════════╝ */
+.wv-wrap{
+  display:grid;grid-template-columns:200px 1fr;gap:32px;align-items:center;
+  background:#0a0a0c;border:1px solid var(--border);padding:24px;border-radius:3px;
+}
+@media(max-width:600px){.wv-wrap{grid-template-columns:1fr;justify-items:center}}
+.wv-donut{position:relative;width:200px;height:200px}
+.wv-donut svg{width:100%;height:100%;transform:rotate(-90deg)}
+.wv-donut .wv-track{fill:none;stroke:#13131a;stroke-width:14}
+.wv-donut .wv-fill{fill:none;stroke-width:14;stroke-linecap:round;transition:stroke-dasharray 1s ease}
+.wv-donut-center{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+}
+.wv-donut-num{font:400 56px/1 'Bebas Neue',sans-serif;letter-spacing:.02em;color:#eaeaea}
+.wv-donut-num.good{color:var(--c);text-shadow:0 0 24px rgba(0,229,176,.3)}
+.wv-donut-num.warn{color:var(--yellow);text-shadow:0 0 24px rgba(245,208,0,.25)}
+.wv-donut-num.bad {color:var(--orange);text-shadow:0 0 24px rgba(255,95,95,.3)}
+.wv-donut-lbl{font-size:9px;color:#666;letter-spacing:.22em;text-transform:uppercase;font-weight:700;margin-top:6px}
+.wv-info{display:flex;flex-direction:column;gap:14px;width:100%}
+.wv-info-row{
+  display:flex;justify-content:space-between;align-items:baseline;
+  padding:10px 0;border-bottom:1px solid #16161a;
+}
+.wv-info-row:last-child{border-bottom:none}
+.wv-info-l{font-size:10px;color:#666;letter-spacing:.1em;text-transform:uppercase;font-weight:600}
+.wv-info-r{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#ddd;font-weight:600}
+.wv-info-r.good{color:var(--c)}
+.wv-info-r.warn{color:var(--yellow)}
+.wv-info-r.bad {color:var(--orange)}
+
+/* ╔═══════════════════════════════════════════════════════════════════════╗
+   ║  SNIPER MAP (Retention Bar) — replaces Score Breakdown               ║
+   ╚═══════════════════════════════════════════════════════════════════════╝ */
+.sm-bar-wrap{
+  background:#0a0a0c;border:1px solid var(--border);border-radius:3px;
+  padding:22px 24px;
+}
+.sm-title{font:400 14px/1 'Bebas Neue',sans-serif;letter-spacing:.04em;color:#eaeaea;margin-bottom:14px}
+.sm-bar{
+  display:flex;height:44px;border-radius:2px;overflow:hidden;
+  border:1px solid #16161a;
+}
+.sm-seg{
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;font-weight:700;
+  flex-direction:column;gap:2px;
+  transition:flex .6s cubic-bezier(.22,1,.36,1);
+  min-width:0;
+}
+.sm-seg .pct{font:400 18px/1 'Bebas Neue',sans-serif}
+.sm-seg.holding{background:rgba(0,229,176,.65);color:#08161a}
+.sm-seg.partial{background:rgba(245,208,0,.55);color:#1a1a08}
+.sm-seg.exited {background:rgba(255,95,95,.6);color:#1a0808}
+.sm-seg.pending{background:rgba(255,255,255,.05);color:#888}
+.sm-axis{
+  display:flex;justify-content:space-between;margin-top:10px;
+  font-size:8.5px;color:#666;letter-spacing:.18em;text-transform:uppercase;font-weight:700;
+}
+
+/* ╔═══════════════════════════════════════════════════════════════════════╗
+   ║  Shared tab-alert verdict line (used by all 4 new tabs)              ║
+   ╚═══════════════════════════════════════════════════════════════════════╝ */
+.tab-alert{
+  margin-top:14px;padding:11px 14px 11px 36px;
+  font-size:11px;letter-spacing:.04em;line-height:1.55;
+  border-radius:3px;border:1px solid;position:relative;
+}
+.tab-alert::before{
+  content:'';position:absolute;left:14px;top:50%;transform:translateY(-50%);
+  width:7px;height:7px;border-radius:50%;background:currentColor;
+  animation:tab-alert-pulse 2.4s ease-in-out infinite;
+}
+@keyframes tab-alert-pulse{0%,100%{opacity:.7}50%{opacity:1}}
+.tab-alert.good{color:#5fe5b8;border-color:rgba(0,229,176,.3);background:rgba(0,229,176,.05)}
+.tab-alert.warn{color:#f5d05a;border-color:rgba(245,208,0,.3);background:rgba(245,208,0,.05)}
+.tab-alert.bad {color:#ff7777;border-color:rgba(255,95,95,.3);background:rgba(255,95,95,.05)}
+.tab-alert.mid {color:#999;border-color:rgba(255,255,255,.1);background:rgba(255,255,255,.02)}
+
 /* ── HOLDERS concentration card (kept inside tabs or its own section) ── */
 .holders-card{background:var(--card);border:1px solid var(--border);padding:18px 20px}
 .holders-card .lbl{font-size:9px;color:#444;letter-spacing:.2em;text-transform:uppercase;margin-bottom:12px}
