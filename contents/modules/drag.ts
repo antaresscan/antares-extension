@@ -10,16 +10,36 @@ function commitPos() {
   state.host.style.transform = `translate(${state.posX}px,${state.posY}px)`
 }
 
-/** Clamp position so widget stays within viewport bounds */
+/**
+ * Clamp position so widget stays within viewport bounds.
+ *
+ * On a window resize that pushes the widget out of view, we want the
+ * adjustment to feel intentional, not like a snap-jump. We add a brief
+ * eased transform transition for the duration of the clamp, then strip
+ * it so live drag stays buttery (the per-frame transform updates from
+ * pointermove must NOT animate — that would lag the cursor).
+ *
+ * Skip the clamp entirely when nothing changed — avoids wasted style
+ * recalc and a no-op transition flicker on every resize event.
+ */
 function clampPosition() {
   if (!state.host) return
   const w = state.host.offsetWidth || 280
   const h = state.host.offsetHeight || 360
-  state.posX = Math.max(0, Math.min(window.innerWidth - w, state.posX))
-  state.posY = Math.max(0, Math.min(window.innerHeight - h, state.posY))
+  const newX = Math.max(0, Math.min(window.innerWidth - w, state.posX))
+  const newY = Math.max(0, Math.min(window.innerHeight - h, state.posY))
+  if (newX === state.posX && newY === state.posY) return
+  state.posX = newX
+  state.posY = newY
   state.pendingX = state.posX
   state.pendingY = state.posY
+  state.host.style.transition = "transform .3s cubic-bezier(.22,1,.36,1)"
   state.host.style.transform = `translate(${state.posX}px,${state.posY}px)`
+  // Strip the transition AFTER the animation so subsequent pointer-driven
+  // transforms snap instantly — drag would feel mushy otherwise.
+  setTimeout(() => {
+    if (state.host) state.host.style.transition = ""
+  }, 320)
   try { localStorage.setItem(POS_KEY, JSON.stringify({ x: state.posX, y: state.posY })) } catch (e: unknown) { logger.warn(e) }
 }
 

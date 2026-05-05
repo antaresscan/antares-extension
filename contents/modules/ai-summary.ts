@@ -1,4 +1,5 @@
 import { state } from "./state"
+import { closePanelAnimated } from "./panel-close"
 
 /**
  * Toggle the AI summary panel in the overlay.
@@ -24,14 +25,16 @@ export function toggleAiSummary(aiSummary: string | null | undefined): void {
 
   const isOpen = panel.classList.contains("open")
   if (isOpen) {
-    panel.classList.remove("open")
+    closePanelAnimated(panel)
     return
   }
 
   // Mutex: close the Critical Flags panel before opening this one. The two
   // panels share the same vertical real estate inside the overlay; with
-  // both open the box overflowed off-screen on shorter viewports.
-  state.shadow?.querySelector("#ant-critical-flags")?.classList.remove("open")
+  // both open the box overflowed off-screen on shorter viewports. We use
+  // the animated-close path so the swap feels coherent rather than one
+  // panel snapping shut while the other slides open.
+  closePanelAnimated(state.shadow?.querySelector("#ant-critical-flags") as HTMLElement | null)
 
   // Inject content only once
   if (!panel.dataset.loaded) {
