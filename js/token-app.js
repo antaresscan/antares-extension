@@ -607,10 +607,73 @@ function buildInsiderWatchTab(d) {
     `
   }
 
-  // PATH 3 — last-resort empty state. No activity rows, no critical
-  // actors. The tab cannot render meaningful tiles. Acknowledge it
-  // honestly rather than fabricate.
-  return `<div class="tab-empty">Insider Watch is not available for this scan. Helius did not return holder activity or critical-actor data.</div>`
+  // PATH 3 — concentration fallback. When Helius is down (no holder
+  // activity, no critical actors) but we have top-10 / single-wallet
+  // concentration from ANY source (structured fields OR parsed from
+  // flag labels), render a 3-tile structural view: largest wallet,
+  // top-10 cluster, and the remaining float. Better than blank — the
+  // user gets real concentration numbers even on degraded scans.
+  const flagsForFallback = Array.isArray(d.flags) ? d.flags : []
+  let top10Fb = typeof d.top10HolderPct === 'number' ? d.top10HolderPct : null
+  let top1Fb = typeof d.topHolderPct === 'number' ? d.topHolderPct : null
+  if (top10Fb == null) {
+    for (const f of flagsForFallback) {
+      const m = (f.label || '').match(/top\s*10\b[^%]*?(\d+(?:\.\d+)?)\s*%/i)
+      if (m) { top10Fb = parseFloat(m[1]); break }
+    }
+  }
+  if (top1Fb == null) {
+    for (const f of flagsForFallback) {
+      const m = (f.label || '').match(/single\s+wallet[^%]*?(\d+(?:\.\d+)?)\s*%/i)
+      if (m) { top1Fb = parseFloat(m[1]); break }
+    }
+  }
+  if (top10Fb != null) {
+    const top10R = Math.round(Math.max(0, Math.min(100, top10Fb)))
+    const top1R = top1Fb != null ? Math.round(Math.max(0, Math.min(100, top1Fb))) : null
+    const float = Math.max(0, 100 - top10R)
+    // Tile colour from concentration risk: highly concentrated = bad,
+    // moderately concentrated = warn, distributed = good. Mirrors the
+    // bands in Sniper Map so the verdict feels consistent.
+    const concentrationCls = top10R >= 50 ? 'bad' : top10R >= 25 ? 'warn' : 'good'
+    const top1Cls = top1R == null ? 'mid' : top1R >= 20 ? 'bad' : top1R >= 10 ? 'warn' : 'good'
+    let alertCls, alertText
+    if (top10R >= 50) {
+      alertCls = 'bad'
+      alertText = `Wallet activity data is unavailable on this scan, but the top 10 wallets hold ${top10R}% of supply — high concentration risk.`
+    } else if (top10R >= 25) {
+      alertCls = 'warn'
+      alertText = `Wallet activity data is unavailable on this scan. Top 10 wallets hold ${top10R}% — moderate concentration.`
+    } else {
+      alertCls = 'good'
+      alertText = `Wallet activity data is unavailable on this scan, but supply looks well-distributed (top 10 hold ${top10R}%).`
+    }
+    return `
+      <div class="iw-grid">
+        <div class="iw-tile ${top1Cls}${top1R != null ? '' : ' mid'}">
+          <div class="iw-name">LARGEST</div>
+          <div class="iw-delta">${top1R != null ? top1R + '%' : '—'}</div>
+          <div class="iw-action">single wallet</div>
+        </div>
+        <div class="iw-tile ${concentrationCls}">
+          <div class="iw-name">TOP 10</div>
+          <div class="iw-delta">${top10R}%</div>
+          <div class="iw-action">cluster</div>
+        </div>
+        <div class="iw-tile good">
+          <div class="iw-name">FLOAT</div>
+          <div class="iw-delta">${float}%</div>
+          <div class="iw-action">distributed</div>
+        </div>
+      </div>
+      <div class="tab-alert ${alertCls}">${escapeHtml(alertText)}</div>
+    `
+  }
+
+  // PATH 4 — last-resort empty state. No wallet activity, no critical
+  // actors, no concentration data. Acknowledge it honestly rather
+  // than fabricate.
+  return `<div class="tab-empty">Insider Watch is not available for this scan. Wallet and concentration data did not return — re-scan to retry.</div>`
 }
 
 // ──────────────────────────────────────────────────────────────────────
