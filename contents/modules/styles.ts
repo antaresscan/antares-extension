@@ -142,6 +142,24 @@ export const SHADOW_CSS = `
   animation: refresh-slide 1.2s linear infinite;
 }
 
+/* Completion flash: when fresh data lands after a silent rescan, the
+   topbar glows green for ~600ms — punctuates the swap with a clear
+   "done, you've got the new tier" beat. Without it the shimmer just
+   stops and the new content appears, which doesn't quite "land" — the
+   flash gives the swap a satisfying micro-celebration the user can
+   actually feel. Scanner.ts adds .flash via classList right after
+   buildResultNode renders (silent path only); the animation strips
+   itself via animation-fill-mode: backwards default + setTimeout
+   removes the class so subsequent flashes can replay. */
+@keyframes refresh-flash {
+  0%   { box-shadow: 0 0 0 0 rgba(0,229,176,0); }
+  40%  { box-shadow: 0 0 14px 2px rgba(0,229,176,.55); }
+  100% { box-shadow: 0 0 0 0 rgba(0,229,176,0); }
+}
+.topbar.flash {
+  animation: refresh-flash .6s ease;
+}
+
 .hd {
   display: flex;
   justify-content: space-between;
