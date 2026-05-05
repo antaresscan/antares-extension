@@ -274,22 +274,25 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
   // ── Loading skeleton ─────────────────────────────────────────────────────────
   const controller = new AbortController()
   state.currentScanController = controller
-  if (state.boxEl) state.boxEl.className = "box"
 
   if (!skipFlashUI) {
     // Normal first-load / nav path: show the skeleton while we fetch.
-    // Silent + visible path: skip this so the existing rendered overlay
-    // stays on screen during the fetch — no flash, no perceived reload.
+    // Reset className to neutral here — the skeleton predates the actual
+    // verdict result, so we don't want a leftover verdict colour bleeding
+    // through. buildResultNode will set the correct verdict class when
+    // the fetch returns.
+    if (state.boxEl) state.boxEl.className = "box"
     el.replaceChildren(buildSkeletonNode())
     showBox()
     attachClose(null)
   } else {
-    // Silent rescan with overlay already showing: add the .refreshing
-    // class so the topbar plays an animated shimmer. The user gets a
-    // clear "we're working on it" signal instead of staring at stale
-    // data with no indication anything is happening — the previous
-    // silent path looked exactly like a frozen overlay until the new
-    // data swapped in. See styles.ts → @keyframes refresh-slide.
+    // Silent rescan with overlay already showing: KEEP the existing
+    // verdict class (e.g. "box caution") so the topbar's coloured
+    // gradient stays in place — the .refreshing animation slides that
+    // same gradient left-to-right. The previous version reset className
+    // to plain "box" before adding .refreshing, which stripped the
+    // gradient entirely and made the shimmer slide an invisible blank
+    // track. User-visible effect: "the animation doesn't work."
     state.boxEl?.classList.add("refreshing")
   }
 
