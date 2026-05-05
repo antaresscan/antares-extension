@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Antares — Design Library (24 options)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap">
+<style>
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --c:#00e5b0;--bg:#0a0a0c;--card:#111114;--border:#1a1a1e;--dim:#3a3a3f;--txt:#c8c8cc;
+    --orange:#ff5f5f;--yellow:#f5d000;--purple:#a78bfa;--cyan:#22d3ee;--red:#ff2244;
+  }
+  body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Mono',monospace;min-height:100vh}
+
+  /* ── Sticky top nav ── */
+  .topnav{
+    position:sticky;top:0;z-index:100;
+    background:rgba(10,10,12,.92);backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--border);
+    padding:14px 24px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;
+  }
+  .topnav .brand{font:400 18px/1 'Bebas Neue',sans-serif;letter-spacing:.16em;color:#eaeaea;flex-shrink:0}
+  .topnav a{
+    font-size:10px;color:#888;letter-spacing:.16em;text-transform:uppercase;
+    text-decoration:none;padding:6px 12px;border:1px solid var(--border);border-radius:2px;
+    transition:all .2s;font-weight:600;
+  }
+  .topnav a:hover{color:var(--c);border-color:rgba(0,229,176,.4);background:rgba(0,229,176,.05)}
+
+  .shell{max-width:1180px;margin:0 auto;padding:32px 24px 80px}
+
+  .intro{
+    background:rgba(0,229,176,.06);border:1px solid rgba(0,229,176,.25);
+    color:#aaa;padding:14px 18px;border-radius:4px;
+    font-size:11px;line-height:1.6;letter-spacing:.04em;margin-bottom:32px;
+  }
+  .intro b{color:var(--c);letter-spacing:.12em;text-transform:uppercase;font-size:9.5px;display:block;margin-bottom:4px}
+
+  /* ── Section headers (jump targets) ── */
+  .section-head{
+    margin:48px 0 18px;padding-bottom:10px;
+    border-bottom:1px solid var(--border);
+    display:flex;align-items:baseline;gap:14px;
+    scroll-margin-top:80px;
+  }
+  .section-head h2{font:400 36px/1 'Bebas Neue',sans-serif;color:#fafafa;letter-spacing:.04em}
+  .section-head .sub{color:#777;font-size:11px;letter-spacing:.06em;font-style:italic}
+
+  /* ── Per-design wrapper ── */
+  .design{
+    background:#0d0e10;border:1px solid var(--border);border-radius:6px;
+    margin-bottom:22px;padding:0;overflow:hidden;
+  }
+  .design-head{
+    padding:14px 20px;border-bottom:1px solid var(--border);
+    background:rgba(255,255,255,.015);
+    display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
+  }
+  .design-num{
+    font:400 22px/1 'Bebas Neue',sans-serif;color:var(--c);letter-spacing:.04em;flex-shrink:0;
+  }
+  .design-title{font-size:13px;color:#eaeaea;font-weight:700;letter-spacing:.04em}
+  .design-tag{
+    font-size:8.5px;letter-spacing:.18em;text-transform:uppercase;font-weight:700;
+    color:#888;border:1px solid var(--border);padding:2px 6px;border-radius:2px;
+    margin-left:auto;
+  }
+  .design-tag.special{color:var(--purple);border-color:rgba(167,139,250,.4);background:rgba(167,139,250,.05)}
+  .design-tag.minimal{color:var(--c);border-color:rgba(0,229,176,.4);background:rgba(0,229,176,.05)}
+  .design-desc{padding:0 20px 14px;color:#888;font-size:11px;line-height:1.55;letter-spacing:.02em}
+  .stage{
+    padding:24px;background:#0a0b0d;
+    background-image:repeating-linear-gradient(45deg, transparent 0 12px, rgba(255,255,255,.012) 12px 13px);
+    border-top:1px solid var(--border);
+  }
+
+  /* ── Shared helpers ── */
+  .clr-good{color:var(--c)}
+  .clr-bad{color:var(--orange)}
+  .clr-warn{color:var(--yellow)}
+  .clr-mid{color:#aaa}
+  .clr-dim{color:#777}
+  .lbl{font-size:9px;color:#666;letter-spacing:.18em;text-transform:uppercase;font-weight:700}
+  .num-bg{font:400 28px/1 'Bebas Neue',sans-serif;letter-spacing:.02em}
+  .num-bg.good{color:var(--c)}
+  .num-bg.bad{color:var(--orange)}
+  .num-bg.warn{color:var(--yellow)}
+  .alert-line{
+    margin-top:14px;padding:10px 14px 10px 32px;font-size:11px;letter-spacing:.04em;
+    border-radius:3px;border:1px solid;line-height:1.5;position:relative;
+  }
+  .alert-line::before{
+    content:'';position:absolute;left:12px;top:50%;
+    width:7px;height:7px;border-radius:50%;background:currentColor;transform:translateY(-50%);
+    animation:pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:.7}50%{opacity:1}}
+  .alert-line.good{color:#5fe5b8;border-color:rgba(0,229,176,.3);background:rgba(0,229,176,.05)}
+  .alert-line.warn{color:#f5d05a;border-color:rgba(245,208,0,.3);background:rgba(245,208,0,.05)}
+  .alert-line.bad {color:#ff7777;border-color:rgba(255,95,95,.3);background:rgba(255,95,95,.05)}
+
+  /* ╔═════════════════════════════════════════════════════════════╗
+     ║  INSIDER WATCH — 6 design styles                            ║
+     ╚═════════════════════════════════════════════════════════════╝ */
+
+  /* IW-1 Classic Table */
+  .iw1-row{display:grid;grid-template-columns:120px 100px 1fr 90px 110px;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid #16161a;font-size:12px}
+  .iw1-row.head{font-size:9px;color:#444;letter-spacing:.2em;text-transform:uppercase;font-weight:700}
+  .iw1-row:last-child{border-bottom:none}
+  .iw1-name{font-weight:600;color:#ddd}
+  .iw1-name.dev{color:var(--purple)}
+  .iw1-addr{font:600 11px 'IBM Plex Mono',monospace;color:#888}
+  .iw1-bar{height:6px;background:#1a1a1e;border-radius:1px;overflow:hidden}
+  .iw1-bar-fill{height:100%;border-radius:1px}
+  .iw1-bar-fill.good{background:var(--c)}
+  .iw1-bar-fill.warn{background:var(--yellow)}
+  .iw1-bar-fill.bad{background:var(--orange)}
+  .iw1-delta{font-weight:700}
+  .iw1-action{font-size:10px;color:#888;font-style:italic;text-align:right}
+
+  /* IW-2 Sparkline Table */
+  .iw2-row{display:grid;grid-template-columns:120px 100px 1fr 90px 110px;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid #16161a}
+  .iw2-row.head{font-size:9px;color:#444;letter-spacing:.2em;text-transform:uppercase;font-weight:700;padding:10px 0}
+  .iw2-row:last-child{border-bottom:none}
+  .iw2-spark{height:24px;width:100%;display:block}
+  .iw2-spark .line{fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+  .iw2-spark .area{stroke:none;opacity:.18}
+  .iw2-spark.good .line, .iw2-spark.good .end{stroke:var(--c);fill:var(--c)}
+  .iw2-spark.good .area{fill:var(--c)}
+  .iw2-spark.warn .line, .iw2-spark.warn .end{stroke:var(--yellow);fill:var(--yellow)}
+  .iw2-spark.warn .area{fill:var(--yellow)}
+  .iw2-spark.bad .line, .iw2-spark.bad .end{stroke:var(--orange);fill:var(--orange)}
+  .iw2-spark.bad .area{fill:var(--orange)}
+  .iw2-spark.mid .line, .iw2-spark.mid .end{stroke:#666;fill:#666}
+  .iw2-spark.mid .area{fill:#666}
+
+  /* IW-3 Wallet Cards Grid */
+  .iw3-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .iw3-card{
+    background:#0a0a0c;border:1px solid var(--border);border-radius:3px;padding:14px 16px;
+    display:grid;grid-template-columns:1fr 90px;gap:14px;align-items:center;
+    position:relative;
+  }
+  .iw3-card::before{content:'';position:absolute;left:0;top:8px;bottom:8px;width:2px;border-radius:1px}
+  .iw3-card.good::before{background:var(--c)}
+  .iw3-card.warn::before{background:var(--yellow)}
+  .iw3-card.bad::before{background:var(--orange)}
+  .iw3-card.mid::before{background:#444}
+  .iw3-name{font:600 12px 'IBM Plex Mono',monospace;color:#ddd}
+  .iw3-name.dev{color:var(--purple)}
+  .iw3-addr{font:600 10px 'IBM Plex Mono',monospace;color:#777;margin-top:2px}
+  .iw3-bar{margin-top:8px;height:4px;background:#15151a;border-radius:1px;overflow:hidden}
+  .iw3-bar-fill{height:100%}
+  .iw3-bar-fill.good{background:var(--c)}
+  .iw3-bar-fill.warn{background:var(--yellow)}
+  .iw3-bar-fill.bad{background:var(--orange)}
+  .iw3-bar-fill.mid{background:#555}
+  .iw3-action{text-align:right}
+  .iw3-delta{font:400 24px/1 'Bebas Neue',sans-serif}
+  .iw3-action-lbl{font-size:8.5px;color:#888;letter-spacing:.14em;text-transform:uppercase;margin-top:3px;font-weight:600}
+
+  /* IW-4 Heatmap Tiles */
+  .iw4-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+  .iw4-tile{
+    aspect-ratio:1;border-radius:3px;padding:8px 10px;
+    display:flex;flex-direction:column;justify-content:space-between;
+    border:1px solid;font-family:'IBM Plex Mono',monospace;
+    transition:transform .2s ease;
+  }
+  .iw4-tile:hover{transform:translateY(-2px)}
+  .iw4-tile.good{background:rgba(0,229,176,.08);border-color:rgba(0,229,176,.4);color:var(--c)}
+  .iw4-tile.warn{background:rgba(245,208,0,.07);border-color:rgba(245,208,0,.4);color:var(--yellow)}
+  .iw4-tile.bad{background:rgba(255,95,95,.07);border-color:rgba(255,95,95,.4);color:var(--orange)}
+  .iw4-tile.mid{background:rgba(255,255,255,.02);border-color:#222226;color:#888}
+  .iw4-tile.dev{box-shadow:inset 0 0 0 1px var(--purple);position:relative}
+  .iw4-tile.dev::after{
+    content:'DEV';position:absolute;top:5px;right:6px;font-size:7px;font-weight:700;letter-spacing:.12em;color:var(--purple);
+  }
+  .iw4-name{font-size:9.5px;font-weight:700;letter-spacing:.06em}
+  .iw4-delta{font:400 22px/1 'Bebas Neue',sans-serif;letter-spacing:.02em}
+  .iw4-action{font-size:7.5px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;opacity:.85}
+
+  /* IW-5 Threat Meter Hero */
+  .iw5-meter{
+    background:#0a0a0c;border:1px solid var(--border);border-radius:3px;padding:18px 20px;
+    margin-bottom:14px;display:grid;grid-template-columns:140px 1fr;gap:24px;align-items:center;
+  }
+  .iw5-meter-label{font-size:9px;color:#666;letter-spacing:.22em;text-transform:uppercase;font-weight:700}
+  .iw5-meter-status{font:400 32px/1 'Bebas Neue',sans-serif;letter-spacing:.04em;margin-top:6px}
+  .iw5-meter-status.good{color:var(--c)}
+  .iw5-meter-status.warn{color:var(--yellow)}
+  .iw5-meter-status.bad{color:var(--orange)}
+  .iw5-meter-bar{height:14px;border-radius:2px;background:linear-gradient(90deg,var(--c) 0%,var(--c) 33%,var(--yellow) 33%,var(--yellow) 66%,var(--orange) 66%,var(--orange) 100%);position:relative;opacity:.18}
+  .iw5-meter-thumb{
+    position:absolute;top:-3px;width:3px;height:20px;background:#fff;border-radius:1px;
+    box-shadow:0 0 12px rgba(255,255,255,.4);transform:translateX(-50%);
+  }
+  .iw5-meter-ticks{display:flex;justify-content:space-between;margin-top:6px;font-size:8px;color:#555;letter-spacing:.18em;text-transform:uppercase;font-weight:700}
+  .iw5-list-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #16161a;font-size:11px}
+  .iw5-list-row:last-child{border-bottom:none}
+  .iw5-list-l{display:flex;align-items:center;gap:10px}
+  .iw5-list-bullet{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+  .iw5-list-bullet.good{background:var(--c)}
+  .iw5-list-bullet.warn{background:var(--yellow)}
+  .iw5-list-bullet.bad{background:var(--orange)}
+  .iw5-list-bullet.mid{background:#444}
+  .iw5-list-name{color:#ddd;font-weight:600}
+  .iw5-list-name.dev{color:var(--purple)}
+  .iw5-list-r{font:600 11px 'IBM Plex Mono',monospace}
+
+  /* IW-6 Timeline Strip */
+  .iw6-row{display:grid;grid-template-columns:120px 1fr 90px;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid #16161a;font-size:12px}
+  .iw6-row.head{font-size:9px;color:#444;letter-spacing:.2em;text-transform:uppercase;font-weight:700}
+  .iw6-row:last-child{border-bottom:none}
+  .iw6-name{font-weight:600;color:#ddd}
+  .iw6-name.dev{color:var(--purple)}
+  .iw6-tl{position:relative;height:18px;background:#13131a;border-radius:1px}
+  .iw6-tl-line{position:absolute;top:50%;left:0;right:0;height:1px;background:#1f1f24;transform:translateY(-50%)}
+  .iw6-tl-event{position:absolute;top:50%;width:8px;height:8px;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 0 2px #0a0b0d}
+  .iw6-tl-event.buy{background:var(--c)}
+  .iw6-tl-event.sell{background:var(--orange)}
+  .iw6-tl-now{position:absolute;top:0;bottom:0;width:1px;background:rgba(255,255,255,.3)}
+  .iw6-tl-axis{display:flex;justify-content:space-between;margin-top:4px;font-size:7.5px;color:#444;letter-spacing:.14em;font-weight:600}
+
+  /* ╔═════════════════════════════════════════════════════════════╗
+     ║  BUY/SELL FLOW — 6 design styles                            ║
+     ╚═════════════════════════════════════════════════════════════╝ */
+
+  /* BSF-1 Classic Table */
+  .bsf1-row{display:grid;grid-template-columns:110px 1fr 1fr 1fr 80px 80px;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid #16161a;font-size:12px}
+  .bsf1-row.head{font-size:9px;color:#444;letter-spacing:.2em;text-transform:uppercase;font-weight:700}
+  .bsf1-row:last-child{border-bottom:none}
+
+  /* BSF-2 Divergent Bars */
+  .bsf2-row{display:grid;grid-template-columns:80px 1fr 1fr 110px 80px;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid #16161a}
+  .bsf2-row.head{font-size:9px;color:#444;letter-spacing:.2em;text-transform:uppercase;font-weight:700;padding:10px 0}
+  .bsf2-row:last-child{border-bottom:none}
+  .bsf2-buys-cell, .bsf2-sells-cell{height:18px;position:relative;background:#0a0a0c;border-radius:1px;overflow:hidden}
+  .bsf2-buys-cell{display:flex;justify-content:flex-end;align-items:center}
+  .bsf2-sells-cell{display:flex;justify-content:flex-start;align-items:center}
+  .bsf2-buys-fill{height:100%;background:linear-gradient(270deg,var(--c),rgba(0,229,176,.25))}
+  .bsf2-sells-fill{height:100%;background:linear-gradient(90deg,var(--orange),rgba(255,95,95,.25))}
+  .bsf2-amt{
+    position:absolute;font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.04em;
+    top:50%;transform:translateY(-50%);text-shadow:0 0 6px #0a0a0c;pointer-events:none;
+  }
+  .bsf2-buys-cell .bsf2-amt{right:6px;color:var(--c)}
+  .bsf2-sells-cell .bsf2-amt{left:6px;color:var(--orange)}
+  .bsf2-net{font:600 12px 'IBM Plex Mono',monospace;text-align:center}
+  .bsf2-net.good{color:var(--c)}
+  .bsf2-net.bad{color:var(--orange)}
+  .bsf2-meta{font-size:10px;color:#888;text-align:right}
+
+  /* BSF-3 Stacked Vertical */
+  .bsf3-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .bsf3-col{
+    background:#0a0a0c;border:1px solid var(--border);border-radius:3px;
+    padding:14px;display:flex;flex-direction:column;align-items:center;gap:10px;
+  }
+  .bsf3-window{font-size:9px;color:#666;letter-spacing:.22em;text-transform:uppercase;font-weight:700}
+  .bsf3-tower{
+    width:48px;height:140px;display:flex;flex-direction:column;
+    background:#13131a;border-radius:2px;overflow:hidden;
+  }
+  .bsf3-buys{background:linear-gradient(180deg,var(--c),rgba(0,229,176,.4));flex-shrink:0}
+  .bsf3-sells{background:linear-gradient(0deg,var(--orange),rgba(255,95,95,.4));flex-shrink:0;margin-top:auto}
+  .bsf3-net{font:400 22px/1 'Bebas Neue',sans-serif;letter-spacing:.04em}
+  .bsf3-net.good{color:var(--c)}
+  .bsf3-net.bad{color:var(--orange)}
+  .bsf3-vols{font-size:9.5px;color:#888;text-align:center;line-height:1.5}
+  .bsf3-vols b{color:var(--c);font-weight:600}
+  .bsf3-vols i{color:var(--orange);font-style:normal;font-weight:600}
+
+  /* BSF-4 Pressure Gauge Hero */
+  .bsf4-hero{
+    background:#0a0a0c;border:1px solid var(--border);border-radius:3px;padding:24px 28px;
+    margin-bottom:14px;text-align:center;
+  }
+  .bsf4-status{font:400 36px/1 'Bebas Neue',sans-serif;letter-spacing:.04em;margin-bottom:6px}
+  .bsf4-status.good{color:var(--c);text-shadow:0 0 32px rgba(0,229,176,.25)}
+  .bsf4-status.bad{color:var(--orange);text-shadow:0 0 32px rgba(255,95,95,.25)}
+  .bsf4-status.warn{color:var(--yellow);text-shadow:0 0 32px rgba(245,208,0,.2)}
+  .bsf4-net{font-size:11px;color:#888;letter-spacing:.06em;margin-bottom:18px}
+  .bsf4-net b{color:#ddd}
+  .bsf4-gauge{position:relative;height:8px;background:#13131a;border-radius:1px;max-width:480px;margin:0 auto;overflow:hidden}
+  .bsf4-gauge-fill{position:absolute;top:0;bottom:0}
+  .bsf4-gauge-fill.good{background:linear-gradient(90deg,rgba(0,229,176,.2),var(--c))}
+  .bsf4-gauge-fill.bad{background:linear-gradient(90deg,var(--orange),rgba(255,95,95,.2))}
+  .bsf4-gauge::before{content:'';position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:#444}
+  .bsf4-gauge-axis{display:flex;justify-content:space-between;margin-top:8px;font-size:8px;color:#555;letter-spacing:.2em;text-transform:uppercase;font-weight:700;max-width:480px;margin-left:auto;margin-right:auto}
+  .bsf4-mini{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+  .bsf4-mini-card{background:#0a0a0c;border:1px solid var(--border);padding:10px 12px;border-radius:3px;text-align:center}
+  .bsf4-mini-w{font-size:8.5px;color:#666;letter-spacing:.2em;text-transform:uppercase;font-weight:700;margin-bottom:4px}
+  .bsf4-mini-net{font:400 18px/1 'Bebas Neue',sans-serif}
+  .bsf4-mini-net.good{color:var(--c)}
+  .bsf4-mini-net.bad{color:var(--orange)}
+
+  /* BSF-5 Flow Pulse (Heart Rate) */
+  .bsf5-graph{
+    background:#0a0a0c;border:1px solid var(--border);border-radius:3px;
+    padding:18px 20px;height:160px;position:relative;
+  }
+  .bsf5-axis{position:absolute;left:0;right:0;top:50%;height:1px;background:#1f1f24}
+  .bsf5-graph svg{width:100%;height:100%;display:block}
+  .bsf5-graph .pulse-line{fill:none;stroke-width:1.5;stroke-linejoin:round;stroke-linecap:round}
+  .bsf5-graph .pulse-line.buy{stroke:var(--c)}
+  .bsf5-graph .pulse-line.sell{stroke:var(--orange)}
+  .bsf5-graph .pulse-fill.buy{fill:var(--c);opacity:.12}
+  .bsf5-graph .pulse-fill.sell{fill:var(--orange);opacity:.12}
+  .bsf5-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+  .bsf5-stat{background:#0a0a0c;border:1px solid var(--border);padding:10px 12px;border-radius:3px}
+  .bsf5-stat .lbl{font-size:8.5px;color:#666;letter-spacing:.2em;text-transform:uppercase;font-weight:700}
+  .bsf5-stat .v{margin-top:5px;font:400 22px/1 'Bebas Neue',sans-serif}
+  .bsf5-stat .v.good{color:var(--c)}
+  .bsf5-stat .v.bad{color:var(--orange)}
+
+  /* BSF-6 Tug of War */
+  .bsf6-tug{
+    background:#0a0a0c;border:1px solid var(--border);border-radius:3px;padding:24px 28px;
+    margin-bottom:14px;
+  }
+  .bsf6-rope{
+    height:32px;background:linear-gradient(90deg,rgba(0,229,176,.15),rgba(255,95,95,.15));
+    border-radius:2px;position:relative;overflow:hidden;border:1px solid #16161a;
+  }
+  .bsf6-rope::before{content:'';position:absolute;left:50%;top:-8px;bottom:-8px;width:1px;background:#444;z-index:2}
+  .bsf6-marker{
+    position:absolute;top:50%;width:14px;height:48px;
+    background:#fff;border-radius:2px;
+    transform:translate(-50%,-50%);box-shadow:0 0 24px rgba(255,255,255,.35);z-index:3;
+  }
+  .bsf6-buy-side, .bsf6-sell-side{position:absolute;top:0;bottom:0;display:flex;align-items:center}
+  .bsf6-buy-side{left:0;padding-left:16px;color:var(--c);font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.06em}
+  .bsf6-sell-side{right:0;padding-right:16px;color:var(--orange);font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.06em}
+  .bsf6-axis{display:flex;justify-content:space-between;margin-top:10px;font-size:9px;color:#666;letter-spacing:.18em;text-transform:uppercase;font-weight:700}
+  .bsf6-windows{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+  .bsf6-w-card{
+    background:#0a0a0c;border:1px solid var(--border);padding:12px 14px;border-radius:3px;
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  .bsf6-w-l{font-size:9px;color:#666;letter-spacing:.2em;text-transform:uppercase;font-weight:700}
+  .bsf6-w-r{font:600 12px 'IBM Plex Mono',monospace}
+  .bsf6-w-r.good{color:var(--c)}
+  .bsf6-w-r.bad{color:var(--orange)}
+
+  /* ╔═════════════════════════════════════════════════════════════╗
+     ║  WASH VOLUME — 6 design styles                              ║
+     ╚═════════════════════════════════════════════════════════════╝ */
+
+  /* WV-1 Linear Bar (current production) */
+  .wv1-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+  .wv1-card{background:#0a0a0c;border:1px solid var(--border);padding:12px 14px;border-radius:3px}
+  .wv1-card .lbl{font-size:9px;color:#666;letter-spacing:.18em;text-transform:uppercase;font-weight:700;margin-bottom:5px}
+  .wv1-card .val{font:400 24px/1 'Bebas Neue',sans-serif}
+  .wv1-card .val.bad{color:var(--orange)}
+  .wv1-card .sub{margin-top:4px;font-size:9.5px;color:#666}
+  .wv1-gauge{display:flex;align-items:center;gap:18px;padding:14px 0;border-top:1px solid var(--border);margin-top:6px}
+  .wv1-gauge .lbl{font-size:9px;color:#666;letter-spacing:.18em;text-transform:uppercase;font-weight:700;min-width:96px}
+  .wv1-bar{flex:1;height:10px;background:#13131a;border-radius:1px;overflow:hidden}
+  .wv1-fill{height:100%}
+  .wv1-score{font:400 32px/1 'Bebas Neue',sans-serif;min-width:90px;text-align:right}
+  .wv1-score b{color:#444;font-size:14px;font-weight:400;font-family:'IBM Plex Mono',monospace;margin-left:2px}
+
+  /* WV-2 Circular Donut */
+  .wv2-wrap{display:grid;grid-template-columns:200px 1fr;gap:32px;align-items:center}
+  .wv2-donut{position:relative;width:200px;height:200px}
+  .wv2-donut svg{width:100%;height:100%;transform:rotate(-90deg)}
+  .wv2-donut .track{fill:none;stroke:#13131a;stroke-width:14}
+  .wv2-donut .fill{fill:none;stroke-width:14;stroke-linecap:round;transition:stroke-dashoffset 1s ease}
+  .wv2-donut-center{
+    position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;
+  }
+  .wv2-donut-num{font:400 56px/1 'Bebas Neue',sans-serif;letter-spacing:.02em}
+  .wv2-donut-num.bad{color:var(--orange);text-shadow:0 0 24px rgba(255,95,95,.3)}
+  .wv2-donut-lbl{font-size:9px;color:#666;letter-spacing:.22em;text-transform:uppercase;font-weight:700;margin-top:6px}
+  .wv2-info{display:flex;flex-direction:column;gap:14px}
+  .wv2-info-row{display:flex;justify-content:space-between;align-items:baseline;padding:10px 0;border-bottom:1px solid #16161a}
+  .wv2-info-row:last-child{border-bottom:none}
+  .wv2-info-l{font-size:10px;color:#666;letter-spacing:.1em;text-transform:uppercase;font-weight:600}
+  .wv2-info-r{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#ddd;font-weight:600}
+  .wv2-info-r.bad{color:var(--orange)}
+
+  /* WV-3 Real vs Reported */
+  .wv3-compare{
+    display:grid;grid-template-columns:1fr 60px 1fr;align-items:center;gap:24px;
+    background:#0a0a0c;border:1px solid var(--border);border-radius:3px;padding:24px 28px;
+  }
+  .wv3-side{text-align:center}
+  .wv3-side .lbl{font-size:9px;color:#666;letter-spacing:.22em;text-transform:uppercase;font-weight:700;margin-bottom:8px}
+  .wv3-side .val{font:400 56px/1 'Bebas Neue',sans-serif;letter-spacing:.02em}
+  .wv3-side .val.real{color:var(--orange);text-shadow:0 0 24px rgba(255,95,95,.25)}
+  .wv3-side .val.rep{color:#ddd}
+  .wv3-side .meta{font-size:10px;color:#666;margin-top:6px}
+  .wv3-arrow{
+    text-align:center;font:600 18px/1 'IBM Plex Mono',monospace;color:var(--orange);letter-spacing:.04em;
+  }
+  .wv3-arrow .pct{display:block;font:400 26px/1 'Bebas Neue',sans-serif;color:var(--orange);margin-bottom:4px}
+  .wv3-meta-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+  .wv3-meta-card{background:#0a0a0c;border:1px solid var(--border);padding:12px 14px;border-radius:3px}
+  .wv3-meta-card .lbl{font-size:9px;color:#666;letter-spacing:.18em;text-transform:uppercase;font-weight:700}
+  .wv3-meta-card .val{font:600 16px 'IBM Plex Mono',monospace;color:var(--orange);margin-top:4px}
+
+  /* WV-4 Iceberg */
+  .wv4-iceberg{
+    background:linear-gradient(180deg,#0a0d10 0%,#0a0d10 50%,#0d1418 50%,#0d1418 100%);
+    border:1px solid var(--border);border-radius:3px;padding:24px;height:280px;
+    position:relative;overflow:hidden;
+  }
+  .wv4-water{
+    position:absolute;left:0;right:0;top:50%;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(34,211,238,.4),transparent);
+    box-shadow:0 0 8px rgba(34,211,238,.4);
+  }
+  .wv4-water::before{content:'WATERLINE';position:absolute;right:0;top:-10px;font-size:8px;color:var(--cyan);letter-spacing:.2em;font-weight:700}
+  .wv4-above{
+    position:absolute;left:50%;bottom:50%;transform:translateX(-50%);
+    width:140px;background:linear-gradient(180deg,var(--c),rgba(0,229,176,.3));
+    border-radius:6px 6px 0 0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:8px;
+  }
+  .wv4-above-num{font:400 18px/1 'Bebas Neue',sans-serif;color:#fff}
+  .wv4-above-lbl{font-size:8px;color:rgba(255,255,255,.7);letter-spacing:.18em;text-transform:uppercase;font-weight:700;margin-top:2px}
+  .wv4-below{
+    position:absolute;left:50%;top:50%;transform:translateX(-50%);
+    width:280px;background:linear-gradient(0deg,rgba(255,95,95,.4),rgba(255,95,95,.1));
+    border-radius:0 0 6px 6px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:8px;
+    border-top:1px dashed rgba(255,95,95,.3);
+  }
+  .wv4-below-num{font:400 36px/1 'Bebas Neue',sans-serif;color:var(--orange)}
+  .wv4-below-lbl{font-size:9px;color:rgba(255,95,95,.85);letter-spacing:.18em;text-transform:uppercase;font-weight:700;margin-top:4px}
+
+  /* WV-5 Wallet Distribution Donut */
+  .wv5-wrap{display:grid;grid-template-columns:200px 1fr;gap:32px;align-items:center}
+  .wv5-donut{position:relative;width:200px;height:200px}
+  .wv5-donut svg{transform:rotate(-90deg);width:100%;height:100%}
+  .wv5-donut .seg{fill:none;stroke-width:30;transition:stroke-dasharray 1s}
+  .wv5-donut .ctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+  .wv5-donut .ctr .num{font:400 32px/1 'Bebas Neue',sans-serif;color:var(--orange)}
+  .wv5-donut .ctr .lbl{font-size:8px;color:#666;letter-spacing:.18em;text-transform:uppercase;font-weight:700;margin-top:6px;max-width:120px}
+  .wv5-legend{display:flex;flex-direction:column;gap:10px}
+  .wv5-leg-row{display:grid;grid-template-columns:auto 1fr 60px;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #16161a}
+  .wv5-leg-row:last-child{border:none}
+  .wv5-leg-dot{width:10px;height:10px;border-radius:2px}
+  .wv5-leg-l{font-size:11px;color:#aaa}
+  .wv5-leg-r{font:600 11px 'IBM Plex Mono',monospace;color:#ddd;text-align:right}
+
+  /* WV-6 Confidence Stripe */
+  .wv6-stripe{
+    background:#0a0a0c;border:1px solid var(--border);border-radius:3px;padding:22px 24px;
+  }
+  .wv6-bar{display:flex;height:36px;border-radius:2px;overflow:hidden;margin-bottom:14px;border:1px solid #16161a}
+  .wv6-seg{display:flex;align-items:center;justify-content:center;font-size:9px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:#fff}
+  .wv6-seg.real{background:rgba(0,229,176,.7);color:#08161a}
+  .wv6-seg.suspect{background:rgba(245,208,0,.5);color:#1a1a08}
+  .wv6-seg.fake{background:rgba(255,95,95,.7);color:#1a0808}
+  .wv6-pin{position:relative;height:14px;margin-bottom:14px}
+  .wv6-pin::before{content:'';position:absolute;top:0;width:2px;height:14px;background:#fff;box-shadow:0 0 12px #fff;border-radius:1px}
+  .wv6-pin .pin-num{position:absolute;top:-22px;font:400 18px/1 'Bebas Neue',sans-serif;color:#fff;transform:translateX(-50%);white-space:nowrap}
+  .wv6-axis{display:flex;justify-content:space-between;font-size:9px;color:#666;letter-spacing:.16em;text-transform:uppercase;font-weight:700;margin-bottom:14px}
+  .wv6-data{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .wv6-cell{background:#0a0a0c;border:1px solid var(--border);padding:10px 12px;border-radius:3px}
+  .wv6-cell .lbl{font-size:8.5px;color:#666;letter-spacing:.2em;text-transform:uppercase;font-weight:700}
+  .wv6-cell .val{font:400 18px/1 'Bebas Neue',sans-serif;margin-top:4px;color:#ddd}
+  .wv6-cell .val.bad{color:var(--orange)}
+
+  /* ╔═════════════════════════════════════════════════════════════╗
+     ║  SNIPER MAP — 6 design styles                               ║
+     ╚═════════════════════════════════════════════════════════════╝ */
+
+  /* SM-1 4 Stat Cards */
+  .sm1-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .sm1-card{background:#0a0a0c;border:1px solid var(--border);padding:14px 16px;border-radius:3px}
+  .sm1-card .lbl{font-size:9px;color:#666;letter-spacing:.18em;text-transform:uppercase;font-weight:700;margin-bottom:5px}
+  .sm1-card .val{font:400 28px/1 'Bebas Neue',sans-serif}
+  .sm1-card .val.good{color:var(--c)}
+  .sm1-card .val.warn{color:var(--yellow)}
+  .sm1-card .val.bad{color:var(--orange)}
+  .sm1-card .sub{font-size:10px;color:#666;margin-top:4px}
+
+  /* SM-2 Cohort Strip + Stats */
+  .sm2-cohort-wrap{display:flex;align-items:center;gap:14px;background:#0a0a0c;border:1px solid var(--border);padding:14px 16px;border-radius:3px;margin-bottom:14px}
+  .sm2-cohort-lbl{font-size:9px;color:#666;letter-spacing:.18em;text-transform:uppercase;font-weight:700;flex-shrink:0}
+  .sm2-cohort-strip{display:flex;flex-wrap:wrap;gap:4px;flex:1}
+  .sm2-tile{
+    width:18px;height:18px;border-radius:2px;
+    display:flex;align-items:center;justify-content:center;
+    font:700 8px 'IBM Plex Mono',monospace;border:1px solid;
+  }
+  .sm2-tile.holding{background:rgba(0,229,176,.12);border-color:var(--c);color:var(--c)}
+  .sm2-tile.partial{background:rgba(245,208,0,.1);border-color:rgba(245,208,0,.5);color:var(--yellow)}
+  .sm2-tile.exited{background:transparent;border-color:rgba(255,95,95,.4);color:#aa5050;opacity:.55}
+
+  /* SM-3 Retention Bar */
+  .sm3-bar-wrap{
+    background:#0a0a0c;border:1px solid var(--border);border-radius:3px;padding:22px 24px;
+    margin-bottom:14px;
+  }
+  .sm3-title{font:400 14px/1 'Bebas Neue',sans-serif;letter-spacing:.04em;color:#eaeaea;margin-bottom:14px}
+  .sm3-bar{display:flex;height:44px;border-radius:2px;overflow:hidden;border:1px solid #16161a}
+  .sm3-seg{display:flex;align-items:center;justify-content:center;color:#fff;font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;font-weight:700;flex-direction:column;gap:2px}
+  .sm3-seg .pct{font:400 18px/1 'Bebas Neue',sans-serif}
+  .sm3-seg.holding{background:rgba(0,229,176,.65);color:#08161a}
+  .sm3-seg.partial{background:rgba(245,208,0,.55);color:#1a1a08}
+  .sm3-seg.exited{background:rgba(255,95,95,.6);color:#1a0808}
+  .sm3-axis{display:flex;justify-content:space-between;margin-top:10px;font-size:8.5px;color:#666;letter-spacing:.18em;text-transform:uppercase;font-weight:700}
+
+  /* SM-4 Survival Donut */
+  .sm4-wrap{display:grid;grid-template-columns:220px 1fr;gap:32px;align-items:center;background:#0a0a0c;border:1px solid var(--border);padding:24px;border-radius:3px;margin-bottom:14px}
+  .sm4-donut{position:relative;width:220px;height:220px}
+  .sm4-donut svg{transform:rotate(-90deg);width:100%;height:100%}
+  .sm4-donut .seg{fill:none;stroke-width:24}
+  .sm4-donut .seg.holding{stroke:var(--c)}
+  .sm4-donut .seg.partial{stroke:var(--yellow)}
+  .sm4-donut .seg.exited{stroke:var(--orange)}
+  .sm4-donut .ctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .sm4-donut .ctr-num{font:400 48px/1 'Bebas Neue',sans-serif;color:var(--c)}
+  .sm4-donut .ctr-lbl{font-size:9px;color:#666;letter-spacing:.22em;text-transform:uppercase;font-weight:700;margin-top:6px}
+  .sm4-info{display:flex;flex-direction:column;gap:14px}
+  .sm4-info-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #16161a}
+  .sm4-info-row:last-child{border:none}
+  .sm4-info-l{display:flex;align-items:center;gap:10px;font-size:11px;color:#aaa}
+  .sm4-info-l .dot{width:10px;height:10px;border-radius:2px}
+  .sm4-info-l .dot.holding{background:var(--c)}
+  .sm4-info-l .dot.partial{background:var(--yellow)}
+  .sm4-info-l .dot.exited{background:var(--orange)}
+  .sm4-info-r{font:600 13px 'IBM Plex Mono',monospace;color:#ddd}
+
+  /* SM-5 Sniper Health Rows */
+  .sm5-row{
+    display:grid;grid-template-columns:60px 130px 1fr 90px;align-items:center;gap:12px;
+    padding:10px 0;border-bottom:1px solid #16161a;font-size:11px;
+  }
+  .sm5-row.head{font-size:9px;color:#444;letter-spacing:.2em;text-transform:uppercase;font-weight:700}
+  .sm5-row:last-child{border-bottom:none}
+  .sm5-id{font:400 18px/1 'Bebas Neue',sans-serif;color:var(--c);letter-spacing:.04em}
+  .sm5-id.bad{color:var(--orange)}
+  .sm5-id.warn{color:var(--yellow)}
+  .sm5-addr{font:600 11px 'IBM Plex Mono',monospace;color:#888}
+  .sm5-bar{height:8px;background:#13131a;border-radius:1px;overflow:hidden;position:relative}
+  .sm5-fill{height:100%}
+  .sm5-fill.good{background:linear-gradient(90deg,rgba(0,229,176,.4),var(--c))}
+  .sm5-fill.warn{background:linear-gradient(90deg,rgba(245,208,0,.4),var(--yellow))}
+  .sm5-fill.bad{background:linear-gradient(90deg,rgba(255,95,95,.4),var(--orange))}
+  .sm5-status{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;text-align:right}
+  .sm5-status.good{color:var(--c)}
+  .sm5-status.warn{color:var(--yellow)}
+  .sm5-status.bad{color:var(--orange)}
+
+  /* SM-6 Block-by-Block Launch */
+  .sm6-blocks{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+  .sm6-block{
+    background:#0a0a0c;border:1px solid var(--border);border-radius:3px;
+    padding:14px 12px;display:flex;flex-direction:column;align-items:center;gap:10px;min-height:140px;
+  }
+  .sm6-block-num{font:400 16px/1 'Bebas Neue',sans-serif;color:#666;letter-spacing:.04em}
+  .sm6-block-num b{color:var(--c);font-weight:400}
+  .sm6-block-cnt{font-size:9px;color:#555;letter-spacing:.16em;text-transform:uppercase;font-weight:700}
+  .sm6-block-dots{display:flex;flex-direction:column;gap:4px;align-items:center;flex:1;justify-content:flex-end}
+  .sm6-block-dot{
+    width:14px;height:14px;border-radius:2px;border:1px solid;
+  }
+  .sm6-block-dot.holding{background:rgba(0,229,176,.18);border-color:var(--c)}
+  .sm6-block-dot.partial{background:rgba(245,208,0,.12);border-color:rgba(245,208,0,.5)}
+  .sm6-block-dot.exited{background:transparent;border-color:rgba(255,95,95,.4);opacity:.5}
+</style>
+</head>
+<body>
+
+<div class="topnav">
+  <div class="brand">▎ANTARES · DESIGN LIBRARY</div>
+  <a href="#insider">Insider Watch</a>
+  <a href="#flow">Buy/Sell Flow</a>
+  <a href="#wash">Wash Volume</a>
+  <a href="#sniper">Sniper Map</a>
+</div>
+
+<div class="shell">
+
+  <div class="intro">
+    <b>24 designs · 6 per section</b>
+    Each section shows 6 different visual approaches — from the most minimal table layout
+    to the most expressive special design. Pick the one you want for each section, or mix
+    and match (e.g. "Insider Watch design 2 + Sniper Map design 6"). Designs are tagged
+    <span style="color:var(--c)">MINIMAL</span>, <span>BALANCED</span>, or
+    <span style="color:var(--purple)">SPECIAL</span> so you can scan by intent.
+    All scenarios use the same "Distribution / Suspect" data shape (the moment the design has to work hardest).
+  </div>
+
+  <!-- ============================================================ -->
+  <!--  INSIDER WATCH                                              -->
+  <!-- ============================================================ -->
+  <div class="section-head" id="insider">
+    <h2>Insider Watch</h2>
+    <span class="sub">— What are the top 10 holders + dev wallet doing right now?</span>
+  </div>
+
+  <!-- IW-1 -->
+  <div class="design">
+    <div class="design-head">
+      <span class="design-num">01</span>
+      <span class="design-title">Classic Table</span>
+      <span class="design-tag minimal">Minimal</span>
+    </div>
+    <div class="design-desc">Plain tabular rows — wallet, address, position bar, delta, action. Maximum legibility, zero ornament. Closest to Exit Liquidity's existing aesthetic.</div>
+    <div class="stage">
+      <div class="iw1-row head"><div>Wallet</div><div>Address</div><div>Position</div><div>Delta</div><div>Doing</div></div>
+      <div class="iw1-row"><div class="iw1-name dev">Dev wallet</div><div class="iw1-addr">EaS9..pump</div><div class="iw1-bar"><div class="iw1-bar-fill warn" style="width:78%"></div></div><div class="iw1-delta clr-warn">-12.4%</div><div class="iw1-action">Selling</div></div>
+      <div class="iw1-row"><div class="iw1-name">Wallet #1</div><div class="iw1-addr">7Hg8..3sol</div><div class="iw1-bar"><div class="iw1-bar-fill warn" style="width:80%"></div></div><div class="iw1-delta clr-warn">-8.1%</div><div class="iw1-action">Reducing</div></div>
+      <div class="iw1-row"><div class="iw1-name">Wallet #2</div><div class="iw1-addr">Bn4Q..a1vT</div><div class="iw1-bar"><div class="iw1-bar-fill good" style="width:100%"></div></div><div class="iw1-delta clr-mid">+0%</div><div class="iw1-action">Holding</div></div>
+      <div class="iw1-row"><div class="iw1-name">Wallet #3</div><div class="iw1-addr">4f9X..2cKp</div><div class="iw1-bar"><div class="iw1-bar-fill warn" style="width:60%"></div></div><div class="iw1-delta clr-warn">-22.3%</div><div class="iw1-action">Distributing</div></div>
+      <div class="iw1-row"><div class="iw1-name">Wallet #4</div><div class="iw1-addr">91Mn..b8dF</div><div class="iw1-bar"><div class="iw1-bar-fill good" style="width:80%"></div></div><div class="iw1-delta clr-mid">+0%</div><div class="iw1-action">Holding</div></div>
+      <div class="iw1-row"><div class="iw1-name">Wallet #5</div><div class="iw1-addr">7dTy..1eRq</div><div class="iw1-bar"><div class="iw1-bar-fill warn" style="width:78%"></div></div><div class="iw1-delta clr-warn">-5.7%</div><div class="iw1-action">Selling</div></div>
+      <div class="alert-line warn">Several big holders are selling — including the dev. Watch your position.</div>
+    </div>
+  </div>
+
+  <!-- IW-2 -->
+  <div class="design">
+    <div class="design-head">
+      <span class="design-num">02</span>
+      <span class="design-title">Sparkline Trajectory</span>
+      <span class="design-tag">Balanced</span>
+    </div>
+    <div class="design-desc">Each wallet gets a 6h sparkline showing the SHAPE of the move, not just the current state. Dump pattern visible at a glance. Recommended.</div>
+    <div class="stage" id="iw2-stage">
+      <div class="iw2-row head"><div>Wallet</div><div>Address</div><div>6h trend</div><div>Delta</div><div>Doing</div></div>
+      <div class="iw2-row"><div class="iw1-name dev">Dev wallet</div><div class="iw1-addr">EaS9..pump</div><div data-spark="100,99,95,90,86,82,78" data-cls="warn"></div><div class="iw1-delta clr-warn">-12.4%</div><div class="iw1-action">Selling</div></div>
+      <div class="iw2-row"><div class="iw1-name">Wallet #1</div><div class="iw1-addr">7Hg8..3sol</div><div data-spark="100,99,95,92,88,85,80" data-cls="warn"></div><div class="iw1-delta clr-warn">-8.1%</div><div class="iw1-action">Reducing</div></div>
+      <div class="iw2-row"><div class="iw1-name">Wallet #2</div><div class="iw1-addr">Bn4Q..a1vT</div><div data-spark="100,100,100,100,100,100,100" data-cls="mid"></div><div class="iw1-delta clr-mid">+0%</div><div class="iw1-action">Holding</div></div>
+      <div class="iw2-row"><div class="iw1-name">Wallet #3</div><div class="iw1-addr">4f9X..2cKp</div><div data-spark="100,95,88,80,72,65,60" data-cls="warn"></div><div class="iw1-delta clr-warn">-22.3%</div><div class="iw1-action">Distributing</div></div>
+      <div class="iw2-row"><div class="iw1-name">Wallet #4</div><div class="iw1-addr">91Mn..b8dF</div><div data-spark="80,80,80,80,80,80,80" data-cls="mid"></div><div class="iw1-delta clr-mid">+0%</div><div class="iw1-action">Holding</div></div>
+      <div class="iw2-row"><div class="iw1-name">Wallet #5</div><div class="iw1-addr">7dTy..1eRq</div><div data-spark="85,84,83,82,81,80,78" data-cls="warn"></div><div class="iw1-delta clr-warn">-5.7%</div><div class="iw1-action">Selling</div></div>
+      <div class="alert-line warn">Several big holders are selling — including the dev. Watch your position.</div>
+    </div>
+  </div>
+
+  <!-- IW-3 -->
+  <div class="design">
+    <div class="design-head">
+      <span class="design-num">03</span>
+      <span class="design-title">Wallet Cards Grid</span>
+      <span class="design-tag">Balanced</span>
+    </div>
+    <div class="design-desc">2-column grid, each card with a colored left accent matching the action. More breathing room than a table; better when there are 6-10 wallets.</div>
+    <div class="stage">
+      <div class="iw3-grid">
+        <div class="iw3-card warn"><div><div class="iw3-name dev">Dev wallet</div><div class="iw3-addr">EaS9..pump</div><div class="iw3-bar"><div class="iw3-bar-fill warn" style="width:78%"></div></div></div><div class="iw3-action"><div class="iw3-delta clr-warn">-12.4%</div><div class="iw3-action-lbl clr-warn">Selling</div></div></div>
+        <div class="iw3-card warn"><div><div class="iw3-name">Wallet #1</div><div class="iw3-addr">7Hg8..3sol</div><div class="iw3-bar"><div class="iw3-bar-fill warn" style="width:80%"></div></div></div><div class="iw3-action"><div class="iw3-delta clr-warn">-8.1%</div><div class="iw3-action-lbl clr-warn">Reducing</div></div></div>
+        <div class="iw3-card mid"><div><div class="iw3-name">Wallet #2</div><div class="iw3-addr">Bn4Q..a1vT</div><div class="iw3-bar"><div class="iw3-bar-fill good" style="width:100%"></div></div></div><div class="iw3-action"><div class="iw3-delta clr-mid">+0%</div><div class="iw3-action-lbl clr-dim">Holding</div></div></div>
+        <div class="iw3-card warn"><div><div class="iw3-name">Wallet #3</div><div class="iw3-addr">4f9X..2cKp</div><div class="iw3-bar"><div class="iw3-bar-fill warn" style="width:60%"></div></div></div><div class="iw3-action"><div class="iw3-delta clr-warn">-22.3%</div><div class="iw3-action-lbl clr-warn">Distributing</div></div></div>
+        <div class="iw3-card mid"><div><div class="iw3-name">Wallet #4</div><div class="iw3-addr">91Mn..b8dF</div><div class="iw3-bar"><div class="iw3-bar-fill good" style="width:80%"></div></div></div><div class="iw3-action"><div class="iw3-delta clr-mid">+0%</div><div class="iw3-action-lbl clr-dim">Holding</div></div></div>
+        <div class="iw3-card warn"><div><div class="iw3-name">Wallet #5</div><div class="iw3-addr">7dTy..1eRq</div><div class="iw3-bar"><div class="iw3-bar-fill warn" style="width:78%"></div></div></div><div class="iw3-action"><div class="iw3-delta clr-warn">-5.7%</div><div class="iw3-action-lbl clr-warn">Selling</div></div></div>
+      </div>
+      <div class="alert-line warn">Several big holders are selling — including the dev. Watch your position.</div>
+    </div>
+  </div>
+
+  <!-- IW-4 -->
+  <div class="design">
+    <div class="design-head">
+      <span class="design-num">04</span>
+      <span class="design-title">Heatmap Tiles</span>
+      <span class="design-tag special">Special</span>
+    </div>
+    <div class="design-desc">Each wallet is a colored tile, intensity = position size, hue = action. Bloomberg-terminal density. Read the whole panel in one glance.</div>
+    <div class="stage">
+      <div class="iw4-grid">
+        <div class="iw4-tile warn dev"><div class="iw4-name">DEV</div><div><div class="iw4-delta">-12.4%</div><div class="iw4-action">Selling</div></div></div>
+        <div class="iw4-tile warn"><div class="iw4-name">#1</div><div><div class="iw4-delta">-8.1%</div><div class="iw4-action">Reducing</div></div></div>
+        <div class="iw4-tile mid"><div class="iw4-name">#2</div><div><div class="iw4-delta">+0%</div><div class="iw4-action">Holding</div></div></div>
+        <div class="iw4-tile warn"><div class="iw4-name">#3</div><div><div class="iw4-delta">-22%</div><div class="iw4-action">Distrib</div></div></div>
+        <div class="iw4-tile mid"><div class="iw4-name">#4</div><div><div class="iw4-delta">+0%</div><div class="iw4-action">Holding</div></div></div>
+        <div class="iw4-tile warn"><div class="iw4-name">#5</div><div><div class="iw4-delta">-5.7%</div><div class="iw4-action">Selling</div></div></div>
+        <div class="iw4-tile mid"><div class="iw4-name">#6</div><div><div class="iw4-delta">+0%</div><div class="iw4-action">Holding</div></div></div>
+        <div class="iw4-tile mid"><div class="iw4-name">#7</div><div><div class="iw4-delta">+0%</div><div class="iw4-action">Holding</div></div></div>
+        <div class="iw4-tile warn"><div class="iw4-name">#8</div><div><div class="iw4-delta">-3.2%</div><div class="iw4-action">Selling</div></div></div>
+        <div class="iw4-tile good"><div class="iw4-name">#9</div><div><div class="iw4-delta">+1.4%</div><div class="iw4-action">Adding</div></div></div>
+        <div class="iw4-tile mid"><div class="iw4-name">#10</div><div><div class="iw4-delta">+0%</div><div class="iw4-action">Holding</div></div></div>
+        <div class="iw4-tile mid"><div class="iw4-name">#11</div><div><div class="iw4-delta">+0%</div><div class="iw4-action">Holding</div></div></div>
+      </div>
+      <div class="alert-line warn">Several big holders are selling — including the dev. Watch your position.</div>
+    </div>
+  </div>
+
+  <!-- IW-5 -->
+  <div class="design">
+    <div class="design-head">
+      <span class="design-num">05</span>
+      <span class="design-title">Threat Meter Hero</span>
+      <span class="design-tag special">Special</span>
+    </div>
+    <div class="design-desc">Big "INSIDER PRESSURE" meter at the top with a pin showing where the current state lands on a 3-zone scale. Compact list below. Dramatic, decision-first.</div>
+    <div class="stage">
+      <div class="iw5-meter">
+        <div><div class="iw5-meter-label">Insider pressure</div><div class="iw5-meter-status warn">ELEVATED</div></div>
+        <div>
+          <div class="iw5-meter-bar"><div class="iw5-meter-thumb" style="left:62%"></div></div>
+          <div class="iw5-meter-ticks"><span>Calm</span><span>Elevated</span><span>Critical</span></div>
+        </div>
+      </div>
+      <div class="iw5-list-row"><div class="iw5-list-l"><div class="iw5-list-bullet warn"></div><div class="iw5-list-name dev">Dev wallet</div></div><div class="iw5-list-r clr-warn">-12.4% · Selling</div></div>
+      <div class="iw5-list-row"><div class="iw5-list-l"><div class="iw5-list-bullet warn"></div><div class="iw5-list-name">Wallet #1</div></div><div class="iw5-list-r clr-warn">-8.1% · Reducing</div></div>
+      <div class="iw5-list-row"><div class="iw5-list-l"><div class="iw5-list-bullet mid"></div><div class="iw5-list-name">Wallet #2</div></div><div class="iw5-list-r clr-mid">+0% · Holding</div></div>
+      <div class="iw5-list-row"><div class="iw5-list-l"><div class="iw5-list-bullet warn"></div><div class="iw5-list-name">Wallet #3</div></div><div class="iw5-list-r clr-warn">-22.3% · Distributing</div></div>
+      <div class="iw5-list-row"><div class="iw5-list-l"><div class="iw5-list-bullet mid"></div><div class="iw5-list-name">Wallet #4</div></div><div class="iw5-list-r clr-mid">+0% · Holding</div></div>
+      <div class="iw5-list-row"><div class="iw5-list-l"><div class="iw5-list-bullet warn"></div><div class="iw5-list-name">Wallet #5</div></div><div class="iw5-list-r clr-warn">-5.7% · Selling</div></div>
+      <div class="alert-line warn">Several big holders are selling — including the dev. Watch your position.</div>
+    </div>
+  </div>
+
+  <!-- IW-6 -->
+  <div class="design">
+    <div class="design-head">
+      <span class="design-num">06</span>
+      <span class="design-title">6h Event Timeline</span>
+      <span class="design-tag special">Special</span>
+    </div>
+    <div class="design-desc">Horizontal 6h track per wallet with green dots for buys and orange dots for sells. Shows WHEN each insider acted — visceral pattern recognition.</div>
+    <div class="stage">
+      <div class="iw6-row head"><div>Wallet</div><div>6h activity (buys ●&nbsp;<span class="clr-good">●</span>&nbsp;sells ●&nbsp;<span class="clr-bad">●</span>)</div><div>Delta</div></div>
+      <div class="iw6-row">
+        <div class="iw1-name dev">Dev wallet</div>
+        <div class="iw6-tl"><div class="iw6-tl-line"></div><div class="iw6-tl-event sell" style="left:55%"></div><div class="iw6-tl-event sell" style="left:74%"></div><div class="iw6-tl-event sell" style="left:92%"></div><div class="iw6-tl-now" style="right:0"></div></div>
+        <div class="iw1-delta clr-warn">-12.4%</div>
+      </div>
+      <div class="iw6-row">
+        <div class="iw1-name">Wallet #1</div>
+        <div class="iw6-tl"><div class="iw6-tl-line"></div><div class="iw6-tl-event sell" style="left:48%"></div><div class="iw6-tl-event sell" style="left:78%"></div></div>
+        <div class="iw1-delta clr-warn">-8.1%</div>
+      </div>
+      <div class="iw6-row">
+        <div class="iw1-name">Wallet #2</div>
+        <div class="iw6-tl"><div class="iw6-tl-line"></div></div>
+        <div class="iw1-delta clr-mid">+0%</div>
+      </div>
+      <div class="iw6-row">
+        <div class="iw1-name">Wallet #3</div>
+        <div class="iw6-tl"><div class="iw6-tl-line"></div><div class="iw6-tl-event sell" style="left:25%"></div><div class="iw6-tl-event sell" style="left:50%"></div><div class="iw6-tl-event sell" style="left:75%"></div></div>
+        <div class="iw1-delta clr-warn">-22.3%</div>
+      </div>
+      <div class="iw6-row">
+        <div class="iw1-name">Wallet #4</div>
+        <div class="iw6-tl"><div class="iw6-tl-line"></div></div>
+        <div class="iw1-delta clr-mid">+0%</div>
+      </div>
+      <div class="iw6-row">
+        <div class="iw1-name">Wallet #5</div>
+        <div class="iw6-tl"><div class="iw6-tl-line"></div><div class="iw6-tl-event sell" style="left:88%"></div></div>
+        <div class="iw1-delta clr-warn">-5.7%</div>
+      </div>
+      <div class="iw6-tl-axis"><span>6h ago</span><span>4h</span><span>2h</span><span>now</span></div>
+      <div class="alert-line warn">Several big holders are selling — including the dev. Watch your position.</div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!--  BUY/SELL FLOW                                              -->
+  <!-- ============================================================ -->
+  <div class="section-head" id="flow">
+    <h2>Buy/Sell Flow</h2>
+    <span class="sub">— Is money flowing in or out across 5min / 1h / 6h?</span>
+  </div>
+
+  <!-- BSF-1 -->
+  <div class="design">
+    <div class="design-head">
+      <span class="design-num">01</span>
+      <span class="design-title">Classic Table</span>
+      <span class="design-tag minimal">Minimal</span>
+    </div>
+    <div class="design-desc">Plain table — windows as rows, columns for buys / sells / net flow / wallets. Maximum density per pixel.</div>
+    <div class="stage">
+      <div class="bsf1-row head"><div>Window</div><div>Buys</div><div>Sells</div><div>Net flow</div><div>Buyers</div><div>Sellers</div></div>
+      <div class="bsf1-row"><div>5 min</div><div class="clr-good">$12.4K</div><div class="clr-bad">$18.7K</div><div class="clr-bad">−$6.3K</div><div class="clr-mid">8</div><div class="clr-mid">11</div></div>
+      <div class="bsf1-row"><div>1 hour</div><div class="clr-good">$94K</div><div class="clr-bad">$156K</div><div class="clr-bad">−$62K</div><div class="clr-mid">47</div><div class="clr-mid">89</div></div>
+      <div class="bsf1-row"><div>6 hours</div><div class="clr-good">$782K</div><div class="clr-bad">$1.24M</div><div class="clr-bad">−$458K</div><div class="clr-mid">203</div><div class="clr-mid">512</div></div>
+      <div class="alert-line bad">More money is leaving than coming in. $458K has left in the last 6 hours.</div>
+    </div>
+  </div>
+
+  <!-- BSF-2 -->
+  <div class="design">
+    <div class="design-head">
+      <span class="design-num">02</span>
+      <span class="design-title">Divergent Bars</span>
+      <span class="design-tag">Balanced</span>
+    </div>
+    <div class="design-desc">Buys grow LEFT from a center axis (teal), sells grow RIGHT (orange). Per-window battle layout. Imbalance visible at a glance.</div>
+    <div class="stage">
+      <div class="bsf2-row head"><div>Window</div><div style="text-align:right">Buys ←</div><div>→ Sells</div><div style="text-align:center">Net</div><div style="text-align:right">Wallets</div></div>
+      <div class="bsf2-row"><div>5 min</div><div class="bsf2-buys-cell"><div class="bsf2-buys-fill" style="width:1%"></div><span class="bsf2-amt">$12.4K</span></div><div class="bsf2-sells-cell"><div class="bsf2-sells-fill" style="width:2%"></div><span class="bsf2-amt">$18.7K</span></div><div class="bsf2-net bad">−$6.3K</div><div class="bsf2-meta"><span class="clr-good">8</span> / <span class="clr-bad">11</span></div></div>
+      <div class="bsf2-row"><div>1 hour</div><div class="bsf2-buys-cell"><div class="bsf2-buys-fill" style="width:8%"></div><span class="bsf2-amt">$94K</span></div><div class="bsf2-sells-cell"><div class="bsf2-sells-fill" style="width:13%"></div><span class="bsf2-amt">$156K</span></div><div class="bsf2-net bad">−$62K</div><div class="bsf2-meta"><span class="clr-good">47</span> / <span class="clr-bad">89</span></div></div>
+      <div class="bsf2-row"><div>6 hours</div><div class="bsf2-buys-cell"><div class="bsf2-buys-fill" style="width:63%"></div><span class="bsf2-amt">$782K</span></div><div class="bsf2-sells-cell"><div class="bsf2-sells-fill" style="width:100%"></div><span class="bsf2-amt">$1.24M</span></div><div class="bsf2-net bad">−$458K</div><div class="bsf2-meta"><span class="clr-good">203</span> / <span class="clr-bad">512</span></div></div>
+      <div class="alert-line bad">More money is leaving than coming in. $458K has left in the last 6 hours.</div>
+    </div>
+  </div>
+
+  <!-- BSF-3 -->
+  <div class="design">
+    <div class="design-head">
+      <span class="design-num">03</span>
+      <span class="design-title">Stacked Vertical Towers</span>
+      <span class="design-tag special">Special</span>
+    </div>
+    <div class="design-desc">3 vertical towers (5m / 1h / 6h). Each tower stacks teal buys at top + orange sells at bottom. Visceral physical-shape comparison.</div>
+    <div class="stage">
+      <div class="bsf3-cols">
+        <div class="bsf3-col">
+          <div class="bsf3-window">5 min</div>
+          <div class="bsf3-tower"><div class="bsf3-buys" style="height:40%"></div><div class="bsf3-sells" style="height:60%"></div></div>
+          <div class="bsf3-net bad">−$6.3K</div>
+          <div class="bsf3-vols"><b>$12.4K</b> in / <i>$18.7K</i> out<br><span class="clr-dim">8 ↗ vs 11 ↘</span></div>
+        </div>
+        <div class="bsf3-col">
+          <div class="bsf3-window">1 hour</div>
+          <div class="bsf3-tower"><div class="bsf3-buys" style="height:38%"></div><div class="bsf3-sells" style="height:62%"></div></div>
+          <div class="bsf3-net bad">−$62K</div>
+          <div class="bsf3-vols"><b>$94K</b> in / <i>$156K</i> out<br><span class="clr-dim">47 ↗ vs 89 ↘</span></div>
+        </div>
+        <div class="bsf3-col">
+          <div class="bsf3-window">6 hours</div>
+          <div class="bsf3-tower"><div class="bsf3-buys" style="height:39%"></div><div class="bsf3-sells" style="height:61%"></div></div>
+          <div class="bsf3-net bad">−$458K</div>
+          <div class="bsf3-vols"><b>$782K</b> in / <i>$1.24M</i> out<br><span class="clr-dim">203 ↗ vs 512 ↘</span></div>
+        </div>
+      </div>
+      <div class="alert-line bad">More money is leaving than coming in. $458K has left in the last 6 hours.</div>
+    </div>
+  </div>
+
+  <!-- BSF-4 -->
+  <div class="design">
+    <div class="design-head">
+      <span class="design-num">04</span>
+      <span class="design-title">Pressure Gauge Hero</span>
+      <span class="design-tag special">Special</span>
+    </div>
+    <div class="design-desc">Single big "DISTRIBUTION" status banner with a horizontal pressure gauge below. Three mini cards underneath for window-level detail.</div>
+    <div class="stage">
+      <div class="bsf4-hero">
+        <div class="bsf4-status bad">DISTRIBUTION</div>
+        <div class="bsf4-net">Net 6h flow: <b>−$458K</b></div>
+        <div class="bsf4-gauge"><div class="bsf4-gauge-fill bad" style="left:30%;right:0"></div></div>
+        <div class="bsf4-gauge-axis"><span>Sellers</span><span>Balanced</span><span>Buyers</span></div>
+      </div>
+      <div class="bsf4-mini">
+        <div class="bsf4-mini-card"><div class="bsf4-mini-w">5 min</div><div class="bsf4-mini-net bad">−$6.3K</div></div>
+        <div class="bsf4-mini-card"><div class="bsf4-mini-w">1 hour</div><div class="bsf4-mini-net bad">−$62K</div></div>
+        <div class="bsf4-mini-card"><div class="bsf4-mini-w">6 hours</div><div class="bsf4-mini-net bad">−$458K</div></div>
+      </div>
+      <div class="alert-line bad">More money is leaving than coming in. $458K has left in the last 6 hours.</div>
+    </div>
+  </div>
+
+  <!-- BSF-5 -->
+  <div class="design">
+    <div class="design-head">
+      <span class="design-num">05</span>
+      <span class="design-title">Heart-Rate Pulse</span>
+      <span class="design-tag special">Special</span>
+    </div>
+    <div class="design-desc">Animated buy / sell pulse over a 6h timeline. Crests above the axis = buying activity, troughs below = selling. The "rhythm" of the token.</div>
+    <div class="stage">
+      <div class="bsf5-graph">
+        <div class="bsf5-axis"></div>
+        <svg viewBox="0 0 600 140" preserveAspectRatio="none">
+          <path class="pulse-fill buy" d="M0,70 L50,68 L80,55 L110,70 L160,72 L200,64 L240,70 L280,68 L320,72 L360,66 L400,70 L450,75 L500,72 L550,70 L600,70 L600,70 L0,70 Z"></path>
+          <path class="pulse-line buy" d="M0,70 L50,68 L80,55 L110,70 L160,72 L200,64 L240,70 L280,68 L320,72 L360,66 L400,70 L450,75 L500,72 L550,70 L600,70"></path>
+          <path class="pulse-fill sell" d="M0,70 L40,72 L75,90 L120,76 L165,85 L210,98 L255,80 L300,105 L350,90 L395,110 L440,95 L490,118 L540,100 L600,108 L600,140 L0,140 Z"></path>
+          <path class="pulse-line sell" d="M0,70 L40,72 L75,90 L120,76 L165,85 L210,98 L255,80 L300,105 L350,90 L395,110 L440,95 L490,118 L540,100 L600,108"></path>
+        </svg>
+      </div>
+      <div class="bsf5-summary">
+        <div class="bsf5-stat"><div class="lbl">Net 5m</div><div class="v bad">−$6.3K</div></div>
+        <div class="bsf5-stat"><div class="lbl">Net 1h</div><div class="v bad">−$62K</div></div>
+        <div class="bsf5-stat"><div class="lbl">Net 6h</div><div class="v bad">−$458K</div></div>
+      </div>
+      <div class="alert-line bad">More money is leaving than coming in. $458K has left in the last 6 hours.</div>
+    </div>
+  </div>
+
+  <!-- BSF-6 -->
+  <div class="design">
+    <div class="design-head">
+      <span class="design-num">06</span>
+      <span class="design-title">Tug of War</span>
+      <span class="design-tag special">Special</span>
+    </div>
+    <div class="design-desc">A single horizontal "rope" with a glowing white marker showing where the balance lands. Buyers pull left, sellers pull right. Iconic, instantly clear.</div>
+    <div class="stage">
+      <div class="bsf6-tug">
+        <div class="bsf6-rope">
+          <div class="bsf6-buy-side">$782K · 203 buyers</div>
+          <div class="bsf6-marker" style="left:38%"></div>
+          <div class="bsf6-sell-side">512 sellers · $1.24M</div>
+        </div>
+        <div class="bsf6-axis"><span class="clr-good">Buyers winning</span><span>Center</span><span class="clr-bad">Sellers winning</span></div>
+      </div>
+      <div class="bsf6-windows">
+        <div class="bsf6-w-card"><div class="bsf6-w-l">5 min</div><div class="bsf6-w-r bad">−$6.3K</div></div>
+        <div class="bsf6-w-card"><div class="bsf6-w-l">1 hour</div><div class="bsf6-w-r bad">−$62K</div></div>
+        <div class="bsf6-w-card"><div class="bsf6-w-l">6 hours</div><div class="bsf6-w-r bad">−$458K</div></div>
+      </div>
+      <div class="alert-line bad">More money is leaving than coming in. $458K has left in the last 6 hours.</div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!--  WASH VOLUME                                                -->
+  <!-- ============================================================ -->
+  <div class="section-head" id="wash">
+    <h2>Wash Volume</h2>
+    <span class="sub">— Is the reported volume real, or is it being faked?</span>
+  </div>
+
+  <!-- WV-1 -->
+  <div class="design">
+    <div class="design-head">
+      <span class="design-num">01</span>
+      <span class="design-title">Linear Bar Gauge</span>
+      <span class="design-tag minimal">Minimal</span>
+    </div>
+    <div class="design-desc">Current production design — 4 stat cards above a horizontal 0-100 wash score bar. Familiar, compact, shipped.</div>
+    <div class="stage">
+      <div class="wv1-grid">
+        <div class="wv1-card"><div class="lbl">Reported</div><div class="val">$487K</div><div class="sub">last 1h</div></div>
+        <div class="wv1-card"><div class="lbl">Real est.</div><div class="val bad">$87K</div><div class="sub">deduped</div></div>
+        <div class="wv1-card"><div class="lbl">Unique wallets</div><div class="val">18</div><div class="sub">distinct traders</div></div>
+        <div class="wv1-card"><div class="lbl">Repeat ratio</div><div class="val bad">76%</div><div class="sub">same-wallet trades</div></div>
+      </div>
+      <div class="wv1-gauge">
+        <div class="lbl">Wash score</div>
+        <div class="wv1-bar"><div class="wv1-fill" style="width:82%;background:var(--yellow)"></div></div>
+        <div class="wv1-score" style="color:var(--yellow)">82<b>/100</b></div>
+      </div>
+      <div class="alert-line warn">The volume is suspicious. Real volume is probably closer to $87K — only a few wallets are doing all the trading.</div>
+    </div>
+  </div>
+
+  <!-- WV-2 -->
+  <div class="design">
+    <div class="design-head">
+      <span class="design-num">02</span>
+      <span class="design-title">Circular Score Donut</span>
+      <span class="design-tag">Balanced</span>
+    </div>
+    <div class="design-desc">Big circular wash score on the left (instantly readable), key metrics stacked on the right. The score IS the hero.</div>
+    <div class="stage">
+      <div class="wv2-wrap">
+        <div class="wv2-donut">
+          <svg viewBox="0 0 100 100">
+            <circle class="track" cx="50" cy="50" r="42"></circle>
+            <circle class="fill" cx="50" cy="50" r="42" stroke="var(--yellow)" stroke-dasharray="216.4 263.9" pathLength="263.9"></circle>
+          </svg>
+          <div class="wv2-donut-center"><div class="wv2-donut-num bad" style="color:var(--yellow)">82</div><div class="wv2-donut-lbl">Wash score</div></div>
+        </div>
+        <div class="wv2-info">
+          <div class="wv2-info-row"><div class="wv2-info-l">Reported volume</div><div class="wv2-info-r">$487K</div></div>
+          <div class="wv2-info-row"><div class="wv2-info-l">Real estimate</div><div class="wv2-info-r bad">$87K</div></div>
+          <div class="wv2-info-row"><div class="wv2-info-l">Unique wallets</div><div class="wv2-info-r">18</div></div>
+          <div class="wv2-info-row"><div class="wv2-info-l">Repeat ratio</div><div class="wv2-info-r bad">76%</div></div>
+        </div>
+      </div>
+      <div class="alert-line warn">The volume is suspicious. Real volume is probably closer to $87K — only a few wallets are doing all the trading.</div>
+    </div>
+  </div>
+
+  <!-- WV-3 -->
+  <div class="design">
+    <div class="design-head">
+      <span class="design-num">03</span>
+      <span class="design-title">Real vs Reported</span>
+      <span class="design-tag special">Special</span>
+    </div>
+    <div class="design-desc">Two giant numbers facing each other with the gap displayed dramatically in the middle. The fakeness is the entire visual.</div>
+    <div class="stage">
+      <div class="wv3-compare">
+        <div class="wv3-side"><div class="lbl">Reported</div><div class="val rep">$487K</div><div class="meta">what dexscreener shows</div></div>
+        <div class="wv3-arrow"><span class="pct">−82%</span>fake</div>
+        <div class="wv3-side"><div class="lbl">Real estimate</div><div class="val real">$87K</div><div class="meta">deduped wallets</div></div>
+      </div>
+      <div class="wv3-meta-row">
+        <div class="wv3-meta-card"><div class="lbl">Unique wallets</div><div class="val">18</div></div>
+        <div class="wv3-meta-card"><div class="lbl">Repeat ratio</div><div class="val">76%</div></div>
+      </div>
+      <div class="alert-line warn">The volume is suspicious. Real volume is probably closer to $87K — only a few wallets are doing all the trading.</div>
+    </div>
+  </div>
+
+  <!-- WV-4 -->
+  <div class="design">
+    <div class="design-head">
+      <span class="design-num">04</span>
+      <span class="design-title">Iceberg</span>
+      <span class="design-tag special">Special</span>
+    </div>
+    <div class="design-desc">Visual metaphor — real volume is the small tip above the waterline, fake volume is the massive iceberg below. Tells the story without words.</div>
+    <div class="stage">
+      <div class="wv4-iceberg">
+        <div class="wv4-water"></div>
+        <div class="wv4-above" style="height:30px"><div class="wv4-above-num">$87K</div><div class="wv4-above-lbl">REAL</div></div>
+        <div class="wv4-below" style="height:120px"><div class="wv4-below-num">$400K</div><div class="wv4-below-lbl">FAKE</div></div>
+      </div>
+      <div class="alert-line warn">The volume is suspicious. Real volume is probably closer to $87K — only a few wallets are doing all the trading.</div>
+    </div>
+  </div>
+
+  <!-- WV-5 -->
+  <div class="design">
+    <div class="design-head">
+      <span class="design-num">05</span>
+      <span class="design-title">Wallet Concentration Donut</span>
+      <span class="design-tag special">Special</span>
+    </div>
+    <div class="design-desc">Pie chart shows what % of volume comes from the top 3 / next 5 / rest. When 3 wallets do 80% of volume, the donut is mostly orange. Tells you WHY it's fake.</div>
+    <div class="stage">
+      <div class="wv5-wrap">
+        <div class="wv5-donut">
+          <svg viewBox="0 0 100 100">
+            <circle class="seg" cx="50" cy="50" r="40" stroke="var(--orange)" stroke-dasharray="201 251" pathLength="251"></circle>
+            <circle class="seg" cx="50" cy="50" r="40" stroke="var(--yellow)" stroke-dasharray="40 251" stroke-dashoffset="-201" pathLength="251"></circle>
+            <circle class="seg" cx="50" cy="50" r="40" stroke="var(--c)" stroke-dasharray="10 251" stroke-dashoffset="-241" pathLength="251"></circle>
+          </svg>
+          <div class="ctr"><div class="num">3</div><div class="lbl">wallets do 80% of volume</div></div>
+        </div>
+        <div class="wv5-legend">
+          <div class="wv5-leg-row"><div class="wv5-leg-dot" style="background:var(--orange)"></div><div class="wv5-leg-l">Top 3 wallets</div><div class="wv5-leg-r clr-bad">80%</div></div>
+          <div class="wv5-leg-row"><div class="wv5-leg-dot" style="background:var(--yellow)"></div><div class="wv5-leg-l">Next 5 wallets</div><div class="wv5-leg-r clr-warn">16%</div></div>
+          <div class="wv5-leg-row"><div class="wv5-leg-dot" style="background:var(--c)"></div><div class="wv5-leg-l">Everyone else</div><div class="wv5-leg-r clr-good">4%</div></div>
+        </div>
+      </div>
+      <div class="alert-line warn">The volume is suspicious. Real volume is probably closer to $87K — only a few wallets are doing all the trading.</div>
+    </div>
+  </div>
+
+  <!-- WV-6 -->
+  <div class="design">
+    <div class="design-head">
+      <span class="design-num">06</span>
+      <span class="design-title">Confidence Stripe</span>
+      <span class="design-tag">Balanced</span>
+    </div>
+    <div class="design-desc">Single horizontal bar with three named zones (Real / Suspect / Fake). White pin shows where the score lands. Like Eliquid Liquidity's outcome column, but for volume trustworthiness.</div>
+    <div class="stage">
+      <div class="wv6-stripe">
+        <div class="wv6-pin"><div style="position:absolute;left:75%"><div class="pin-num">82</div></div><div style="position:absolute;left:75%"></div></div>
+        <div class="wv6-bar">
+          <div class="wv6-seg real" style="flex:33">Real</div>
+          <div class="wv6-seg suspect" style="flex:34">Suspect</div>
+          <div class="wv6-seg fake" style="flex:33">Fake</div>
+        </div>
+        <div class="wv6-axis"><span>0</span><span>33</span><span>66</span><span>100</span></div>
+        <div class="wv6-data">
+          <div class="wv6-cell"><div class="lbl">Reported</div><div class="val">$487K</div></div>
+          <div class="wv6-cell"><div class="lbl">Real est.</div><div class="val bad">$87K</div></div>
+          <div class="wv6-cell"><div class="lbl">Wallets</div><div class="val">18</div></div>
+          <div class="wv6-cell"><div class="lbl">Repeat</div><div class="val bad">76%</div></div>
+        </div>
+      </div>
+      <div class="alert-line warn">The volume is suspicious. Real volume is probably closer to $87K — only a few wallets are doing all the trading.</div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!--  SNIPER MAP                                                 -->
+  <!-- ============================================================ -->
+  <div class="section-head" id="sniper">
+    <h2>Sniper Map</h2>
+    <span class="sub">— Are the launch bots still in, or did they cash out?</span>
+  </div>
+
+  <!-- SM-1 -->
+  <div class="design">
+    <div class="design-head">
+      <span class="design-num">01</span>
+      <span class="design-title">4 Stat Cards</span>
+      <span class="design-tag minimal">Minimal</span>
+    </div>
+    <div class="design-desc">Just the numbers — 4 cards in a row. Maximum simplicity, no visual flair. Closest to a Stripe-style metric grid.</div>
+    <div class="stage">
+      <div class="sm1-grid">
+        <div class="sm1-card"><div class="lbl">Bots detected</div><div class="val">14</div><div class="sub">at launch</div></div>
+        <div class="sm1-card"><div class="lbl">Cashed out</div><div class="val bad">6</div><div class="sub">fully gone</div></div>
+        <div class="sm1-card"><div class="lbl">Reducing</div><div class="val warn">5</div><div class="sub">selling now</div></div>
+        <div class="sm1-card"><div class="lbl">Still in</div><div class="val bad">3</div><div class="sub">only 21%</div></div>
+      </div>
+      <div class="alert-line bad">Most launch bots have already cashed out. They sold before retail — risky.</div>
+    </div>
+  </div>
+
+  <!-- SM-2 -->
+  <div class="design">
+    <div class="design-head">
+      <span class="design-num">02</span>
+      <span class="design-title">Cohort Strip + Stats</span>
+      <span class="design-tag">Balanced</span>
+    </div>
+    <div class="design-desc">A compact horizontal strip of numbered tiles representing each sniper, color-coded by status. The cohort at a glance + supporting stats.</div>
+    <div class="stage">
+      <div class="sm2-cohort-wrap">
+        <div class="sm2-cohort-lbl">Sniper cohort</div>
+        <div class="sm2-cohort-strip">
+          <div class="sm2-tile exited">01</div><div class="sm2-tile exited">02</div><div class="sm2-tile exited">03</div><div class="sm2-tile exited">04</div><div class="sm2-tile exited">05</div><div class="sm2-tile exited">06</div>
+          <div class="sm2-tile partial">07</div><div class="sm2-tile partial">08</div><div class="sm2-tile partial">09</div><div class="sm2-tile partial">10</div><div class="sm2-tile partial">11</div>
+          <div class="sm2-tile holding">12</div><div class="sm2-tile holding">13</div><div class="sm2-tile holding">14</div>
+        </div>
+      </div>
+      <div class="sm1-grid">
+        <div class="sm1-card"><div class="lbl">Detected</div><div class="val">14</div></div>
+        <div class="sm1-card"><div class="lbl">Cashed out</div><div class="val bad">6</div></div>
+        <div class="sm1-card"><div class="lbl">Reducing</div><div class="val warn">5</div></div>
+        <div class="sm1-card"><div class="lbl">Still in</div><div class="val bad">3</div></div>
+      </div>
+      <div class="alert-line bad">Most launch bots have already cashed out. They sold before retail — risky.</div>
+    </div>
+  </div>
+
+  <!-- SM-3 -->
+  <div class="design">
+    <div class="design-head">
+      <span class="design-num">03</span>
+      <span class="design-title">Retention Bar</span>
+      <span class="design-tag">Balanced</span>
+    </div>
+    <div class="design-desc">A single horizontal bar split into 3 colored segments showing the cohort breakdown. Big, simple, immediately readable.</div>
+    <div class="stage">
+      <div class="sm3-bar-wrap">
+        <div class="sm3-title">14 SNIPERS DETECTED AT LAUNCH</div>
+        <div class="sm3-bar">
+          <div class="sm3-seg holding" style="flex:21"><span class="pct">21%</span><span>Still in</span></div>
+          <div class="sm3-seg partial" style="flex:36"><span class="pct">36%</span><span>Reducing</span></div>
+          <div class="sm3-seg exited" style="flex:43"><span class="pct">43%</span><span>Cashed out</span></div>
+        </div>
+        <div class="sm3-axis"><span>3 wallets</span><span>5 wallets</span><span>6 wallets</span></div>
+      </div>
+      <div class="alert-line bad">Most launch bots have already cashed out. They sold before retail — risky.</div>
+    </div>
+  </div>
+
+  <!-- SM-4 -->
+  <div class="design">
+    <div class="design-head">
+      <span class="design-num">04</span>
+      <span class="design-title">Survival Donut</span>
+      <span class="design-tag special">Special</span>
+    </div>
+    <div class="design-desc">A donut chart showing the cohort breakdown with the retention % big in the middle. Most "premium SaaS" of the bunch.</div>
+    <div class="stage">
+      <div class="sm4-wrap">
+        <div class="sm4-donut">
+          <svg viewBox="0 0 100 100">
+            <circle class="seg holding" cx="50" cy="50" r="42" stroke-dasharray="55.4 263.9" pathLength="263.9"></circle>
+            <circle class="seg partial" cx="50" cy="50" r="42" stroke-dasharray="95 263.9" stroke-dashoffset="-55.4" pathLength="263.9"></circle>
+            <circle class="seg exited" cx="50" cy="50" r="42" stroke-dasharray="113.5 263.9" stroke-dashoffset="-150.4" pathLength="263.9"></circle>
+          </svg>
+          <div class="ctr"><div class="ctr-num" style="color:var(--orange)">21%</div><div class="ctr-lbl">Still holding</div></div>
+        </div>
+        <div class="sm4-info">
+          <div class="sm4-info-row"><div class="sm4-info-l"><div class="dot holding"></div>Still in</div><div class="sm4-info-r">3 / 14</div></div>
+          <div class="sm4-info-row"><div class="sm4-info-l"><div class="dot partial"></div>Reducing</div><div class="sm4-info-r">5 / 14</div></div>
+          <div class="sm4-info-row"><div class="sm4-info-l"><div class="dot exited"></div>Cashed out</div><div class="sm4-info-r">6 / 14</div></div>
+        </div>
+      </div>
+      <div class="alert-line bad">Most launch bots have already cashed out. They sold before retail — risky.</div>
+    </div>
+  </div>
+
+  <!-- SM-5 -->
+  <div class="design">
+    <div class="design-head">
+      <span class="design-num">05</span>
+      <span class="design-title">Sniper Health Rows</span>
+      <span class="design-tag special">Special</span>
+    </div>
+    <div class="design-desc">Each sniper as a row with its current "health" (% of original position remaining) as a horizontal bar. Game-style threat assessment.</div>
+    <div class="stage">
+      <div class="sm5-row head"><div>Sniper</div><div>Wallet</div><div>Position remaining</div><div>Status</div></div>
+      <div class="sm5-row"><div class="sm5-id bad">01</div><div class="sm5-addr">3F8x..n2pq</div><div class="sm5-bar"><div class="sm5-fill bad" style="width:0%"></div></div><div class="sm5-status bad">Exited</div></div>
+      <div class="sm5-row"><div class="sm5-id bad">02</div><div class="sm5-addr">9Lp4..k7vR</div><div class="sm5-bar"><div class="sm5-fill bad" style="width:0%"></div></div><div class="sm5-status bad">Exited</div></div>
+      <div class="sm5-row"><div class="sm5-id bad">03</div><div class="sm5-addr">Tm3J..a8Xy</div><div class="sm5-bar"><div class="sm5-fill bad" style="width:5%"></div></div><div class="sm5-status bad">Exited</div></div>
+      <div class="sm5-row"><div class="sm5-id warn">07</div><div class="sm5-addr">Bc2K..p5Qf</div><div class="sm5-bar"><div class="sm5-fill warn" style="width:42%"></div></div><div class="sm5-status warn">Reducing</div></div>
+      <div class="sm5-row"><div class="sm5-id warn">08</div><div class="sm5-addr">Wz7H..r1Mn</div><div class="sm5-bar"><div class="sm5-fill warn" style="width:55%"></div></div><div class="sm5-status warn">Reducing</div></div>
+      <div class="sm5-row"><div class="sm5-id good">12</div><div class="sm5-addr">Vq6L..z3Yt</div><div class="sm5-bar"><div class="sm5-fill good" style="width:100%"></div></div><div class="sm5-status good">Holding</div></div>
+      <div class="sm5-row"><div class="sm5-id good">13</div><div class="sm5-addr">Aj1S..f4Eu</div><div class="sm5-bar"><div class="sm5-fill good" style="width:98%"></div></div><div class="sm5-status good">Holding</div></div>
+      <div class="alert-line bad">Most launch bots have already cashed out. They sold before retail — risky.</div>
+    </div>
+  </div>
+
+  <!-- SM-6 -->
+  <div class="design">
+    <div class="design-head">
+      <span class="design-num">06</span>
+      <span class="design-title">Block-by-Block Launch</span>
+      <span class="design-tag special">Special</span>
+    </div>
+    <div class="design-desc">Visualize the launch as 5 columns (one per block). Each sniper appears as a tile in the block they bought, color-coded by current status. The launch story told as a 2D map.</div>
+    <div class="stage">
+      <div class="sm6-blocks">
+        <div class="sm6-block"><div class="sm6-block-num">Block <b>1</b></div><div class="sm6-block-cnt">5 buys</div><div class="sm6-block-dots"><div class="sm6-block-dot exited"></div><div class="sm6-block-dot exited"></div><div class="sm6-block-dot exited"></div><div class="sm6-block-dot partial"></div><div class="sm6-block-dot holding"></div></div></div>
+        <div class="sm6-block"><div class="sm6-block-num">Block <b>2</b></div><div class="sm6-block-cnt">4 buys</div><div class="sm6-block-dots"><div class="sm6-block-dot exited"></div><div class="sm6-block-dot exited"></div><div class="sm6-block-dot partial"></div><div class="sm6-block-dot partial"></div></div></div>
+        <div class="sm6-block"><div class="sm6-block-num">Block <b>3</b></div><div class="sm6-block-cnt">3 buys</div><div class="sm6-block-dots"><div class="sm6-block-dot exited"></div><div class="sm6-block-dot partial"></div><div class="sm6-block-dot holding"></div></div></div>
+        <div class="sm6-block"><div class="sm6-block-num">Block <b>4</b></div><div class="sm6-block-cnt">1 buy</div><div class="sm6-block-dots"><div class="sm6-block-dot partial"></div></div></div>
+        <div class="sm6-block"><div class="sm6-block-num">Block <b>5</b></div><div class="sm6-block-cnt">1 buy</div><div class="sm6-block-dots"><div class="sm6-block-dot holding"></div></div></div>
+      </div>
+      <div class="alert-line bad">Most launch bots have already cashed out. They sold before retail — risky.</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Sparkline injection for IW-2
+  (function() {
+    document.querySelectorAll('[data-spark]').forEach(el => {
+      const pts = el.dataset.spark.split(',').map(Number);
+      const cls = el.dataset.cls || 'mid';
+      const w = 100, h = 30;
+      const min = Math.min(...pts), max = Math.max(...pts);
+      const r = max - min || 1;
+      const coords = pts.map((v, i) => {
+        const x = (i / (pts.length - 1)) * w;
+        const y = h - ((v - min) / r) * (h - 4) - 2;
+        return [x, y];
+      });
+      const line = coords.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+      const area = line + ` L${w},${h} L0,${h} Z`;
+      const last = coords[coords.length - 1];
+      el.innerHTML = `<svg class="iw2-spark ${cls}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+        <path class="area" d="${area}"></path>
+        <path class="line" d="${line}"></path>
+        <circle class="end" cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="2"></circle>
+      </svg>`;
+    });
+  })();
+</script>
+
+</body>
+</html>
