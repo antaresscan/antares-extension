@@ -170,18 +170,26 @@ export const SHADOW_CSS = `
 .x {
   color: #3a3a42;
   cursor: pointer;
-  transition: color .2s;
+  transition: color .15s ease, transform .15s ease, background .15s ease;
   background: none;
   border: none;
-  width: 13px;
-  height: 13px;
+  width: 16px;
+  height: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
+  padding: 1px;
   flex-shrink: 0;
+  border-radius: 50%;
 }
-.x:hover { color: #777; }
+.x:hover {
+  color: #ccc;
+  transform: scale(1.15);
+  background: rgba(255,255,255,.06);
+}
+.x:active {
+  transform: scale(0.95);
+}
 .quota-badge {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 7px;
@@ -561,6 +569,10 @@ export const SHADOW_CSS = `
   from { opacity: 0; transform: translateY(-4px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+@keyframes ai-panel-out {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-4px); }
+}
 
 .ai-panel {
   display: none;
@@ -573,6 +585,12 @@ export const SHADOW_CSS = `
 .ai-panel.open {
   display: block;
   animation: ai-panel-in .18s ease;
+}
+/* The .closing class is added by toggleAiSummary just before removing
+   .open; both classes are stripped on animationend. Keeping .open during
+   close keeps display:block so the animation can actually play. */
+.ai-panel.open.closing {
+  animation: ai-panel-out .15s ease forwards;
 }
 
 .ai-panel-inner {
@@ -660,6 +678,10 @@ export const SHADOW_CSS = `
   from { opacity: 0; transform: translateY(-4px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+@keyframes cf-panel-out {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-4px); }
+}
 
 .cf-panel {
   display: none;
@@ -672,6 +694,9 @@ export const SHADOW_CSS = `
 .cf-panel.open {
   display: block;
   animation: cf-panel-in .18s ease;
+}
+.cf-panel.open.closing {
+  animation: cf-panel-out .15s ease forwards;
 }
 
 .cf-panel-inner {

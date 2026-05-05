@@ -210,9 +210,14 @@ export function showCachedBadge(ageMs: number) {
 
 export function triggerResultAnimations(el: HTMLDivElement) {
   requestAnimationFrame(() => {
+    // Score bar fills synchronously with the score number animation —
+    // both kicked off in the same frame so they finish together. The
+    // previous 250ms setTimeout made the bar lag noticeably behind the
+    // score, which read as "two animations" instead of "one verdict
+    // landing". CSS handles the actual width tween (1.1s cubic-bezier).
     el.querySelectorAll(".sbar-fill").forEach((b: Element) => {
       const bar = b as HTMLElement
-      setTimeout(() => { bar.style.width = bar.dataset.w + "%" }, 250)
+      bar.style.width = bar.dataset.w + "%"
     })
     const scoreEl = el.querySelector(".ant-score") as HTMLElement | null
     if (scoreEl) {

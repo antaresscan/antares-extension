@@ -1,4 +1,5 @@
 import { state } from "./state"
+import { closePanelAnimated } from "./panel-close"
 import type { ScanResponseFlag } from "../../shared/types"
 
 // Plain-English descriptions for the most common flags. Mirrors the map
@@ -65,15 +66,16 @@ export function toggleCriticalFlags(flags: ScanResponseFlag[] | null | undefined
 
   const isOpen = panel.classList.contains("open")
   if (isOpen) {
-    panel.classList.remove("open")
+    closePanelAnimated(panel)
     return
   }
 
   // Mutex: close the AI Summary panel before opening this one. With both
   // open the overlay overflows the viewport on shorter screens (the
   // user-reported case was a 900px-tall window where the bottom of the
-  // box was clipped). One-at-a-time also matches standard accordion behavior.
-  state.shadow?.querySelector("#ant-ai-summary")?.classList.remove("open")
+  // box was clipped). Animated close matches the open animation, so the
+  // panel swap feels coherent.
+  closePanelAnimated(state.shadow?.querySelector("#ant-ai-summary") as HTMLElement | null)
 
   if (!panel.dataset.loaded) {
     panel.dataset.loaded = "1"
