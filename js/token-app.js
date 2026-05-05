@@ -276,31 +276,86 @@ function buildRadarSvg(s) {
 // bottom interprets the same two numbers in plain language so a
 // non-technical user gets the action-relevant takeaway.
 // ──────────────────────────────────────────────────────────────────────
+// Parse a percentage from a flag label of the form
+// "Top 10 wallets hold 82% of supply" or "Single wallet holds 76% of supply".
+// Returns null when no match. Used as a fallback when the structured
+// fields (d.top10HolderPct / d.topHolderPct) are missing from the
+// scan response — the same number is often present in flag text.
+function parsePctFromFlags(flags, regex) {
+  for (const f of flags) {
+    const m = (f.label || '').match(regex)
+    if (m && m[1]) {
+      const n = parseFloat(m[1])
+      if (!Number.isNaN(n)) return n
+    }
+  }
+  return null
+}
+
 function buildSniperMapTab(d) {
   const flags = Array.isArray(d.flags) ? d.flags : []
   const sniperFlags = flags.filter(f => /sniper|bundle/i.test(f.label || ''))
   const hasActivity = sniperFlags.length > 0
-  const top10 = typeof d.top10HolderPct === 'number' ? d.top10HolderPct : null
-  const top1 = typeof d.topHolderPct === 'number' ? d.topHolderPct : null
+  // Field-first, flag-fallback. The structured fields are populated by
+  // Helius; on tokens where Helius didn't return (BONK-style) the
+  // backend still emits flags like "Top 10 wallets hold X%" which we
+  // parse here so the visual still has a measured percentage.
+  let top10 = typeof d.top10HolderPct === 'number' ? d.top10HolderPct : null
+  let top1 = typeof d.topHolderPct === 'number' ? d.topHolderPct : null
+  if (top10 == null) top10 = parsePctFromFlags(flags, /top\s*10\b[^%]*?(\d+(?:\.\d+)?)\s*%/i)
+  if (top1 == null) top1 = parsePctFromFlags(flags, /single\s+wallet[^%]*?(\d+(?:\.\d+)?)\s*%/i)
+  // If Helius is explicitly unavailable per backend, surface that
+  // honestly rather than using a stale or zero value.
+  const heliusUnavailable = flags.some(f => /helius\s+unavailable/i.test(f.label || ''))
 
+  // Clean-launch path: no sniper / bundle flags. We still render the
+  // bar so the tab is never blank — what we show depends on whether
+  // we have top-10 concentration to display.
   if (!hasActivity) {
-    // Clean launch: visual still rendered (single segment) so the tab
-    // never looks "broken", just a confident "no bots" verdict.
+    if (top10 != null) {
+      // Show concentration even on the clean path so the user gets
+      // something quantitative — useful context regardless of bots.
+      const pc = Math.round(Math.max(0, Math.min(100, top10)))
+      return `
+        <div class="sm-bar-wrap">
+          <div class="sm-title">CLEAN LAUNCH · TOP 10 HOLD ${pc}%</div>
+          <div class="sm-bar">
+            <div class="sm-seg holding" style="flex:${pc}"><span class="pct">${pc}%</span><span>Top 10</span></div>
+            <div class="sm-seg distributed" style="flex:${100 - pc}"><span class="pct">${100 - pc}%</span><span>Distributed</span></div>
+          </div>
+          <div class="sm-axis"><span>${top1 != null ? 'Largest: ' + top1.toFixed(1) + '%' : '—'}</span><span>NO COORDINATED LAUNCH</span><span>0 flags</span></div>
+        </div>
+        <div class="tab-alert good">No sniper or bundle activity detected at launch. The token looks organic.</div>
+      `
+    }
     return `
       <div class="sm-bar-wrap">
         <div class="sm-title">CLEAN LAUNCH</div>
         <div class="sm-bar">
           <div class="sm-seg holding" style="flex:100"><span class="pct">No bots</span><span>Organic launch</span></div>
         </div>
-        <div class="sm-axis"><span>Block 0–5</span><span>last 24h</span><span>now</span></div>
+        <div class="sm-axis"><span>—</span><span>NO COORDINATED LAUNCH</span><span>0 flags</span></div>
       </div>
       <div class="tab-alert good">No sniper or bundle activity detected at launch. The token looks organic.</div>
     `
   }
 
   if (top10 == null) {
-    // Activity detected but concentration data missing — empty state.
-    return `<div class="tab-empty">Sniper / bundle activity detected at launch, but top-holder concentration data is missing — distribution status cannot be computed for this scan. Re-scan to retry.</div>`
+    // Activity detected but concentration data really is missing
+    // (Helius unavailable on this scan + no flag-borne %). Render the
+    // bar with a single "concentration unknown" segment so the visual
+    // is still in place, plus an alert explaining the gap.
+    const reason = heliusUnavailable ? 'Helius unavailable on this scan' : 'top-holder data missing'
+    return `
+      <div class="sm-bar-wrap">
+        <div class="sm-title">${sniperFlags.length} COORDINATED LAUNCH PATTERN${sniperFlags.length > 1 ? 'S' : ''} DETECTED</div>
+        <div class="sm-bar">
+          <div class="sm-seg pending" style="flex:100"><span class="pct">unknown</span><span>concentration unavailable</span></div>
+        </div>
+        <div class="sm-axis"><span>—</span><span>${escapeHtml(reason.toUpperCase())}</span><span>${sniperFlags.length} flag${sniperFlags.length > 1 ? 's' : ''}</span></div>
+      </div>
+      <div class="tab-alert warn">Sniper / bundle activity detected at launch — but ${escapeHtml(reason)}, so the distribution status cannot be measured for this scan.</div>
+    `
   }
 
   // Real, measured concentration split. Both numbers add to 100.
@@ -474,65 +529,88 @@ function buildCriticalActorsPreview(d) {
 // ──────────────────────────────────────────────────────────────────────
 function buildInsiderWatchTab(d) {
   const ha = d.holderActivity
-  if (!ha || !Array.isArray(ha.rows) || ha.rows.length === 0) {
-    return `<div class="tab-empty">Insider Watch is not available for this scan. Helius did not return holder activity data, or the token has no top holders indexed yet. Re-scan the token to populate the last-60-minute movement classifier.</div>`
-  }
+  // Render every row from holderActivity — even pure-static (±0% no
+  // description) wallets get a tile, just shown as "HOLDING" in gray
+  // rather than filtered out. Showing 12 calm tiles + a "wallets are
+  // stable" verdict is more useful than blanking the tab. The previous
+  // filter was originally meant to avoid rendering "broken-looking"
+  // identical static rows, but in production this filtered out tokens
+  // like PENGU (6 stable wallets → 0 visible tiles → empty state).
+  const haRows = (ha && Array.isArray(ha.rows) ? ha.rows : [])
 
-  // Filter out rows that are simultaneously Static + ±0% + empty
-  // description (carried over from the previous Holder Activity tab —
-  // these populate when a wallet exists on-chain but had zero activity
-  // in the window; rendering 12 identical "Static · ±0%" tiles reads
-  // as "broken" even though the data is technically populated).
-  const activeRows = ha.rows.filter(r => {
-    const isStatic = String(r.label || '').toLowerCase() === 'static'
-    const hasPct = typeof r.pctChange === 'number' && Math.abs(r.pctChange) >= 0.05
-    const hasDesc = typeof r.desc === 'string' && r.desc.length > 0
-    return !isStatic || hasPct || hasDesc
-  })
-  if (activeRows.length === 0) {
-    return `<div class="tab-empty">All top holders are static in the last 60 minutes — no transfers in or out. This section populates when top wallets actively move during the window.</div>`
-  }
+  // PATH 1 — holderActivity has rows (best case: wallet-level data).
+  if (haRows.length > 0) {
+    const rows = haRows.slice(0, 12)
+    let nonDevIdx = 0
+    const tiles = rows.map(r => {
+      const isDev = r.role === 'dev'
+      const pct = typeof r.pctChange === 'number' ? r.pctChange : 0
+      let cls
+      if (Math.abs(pct) < 0.5) cls = 'mid'
+      else if (pct > 0) cls = 'good'
+      else if (pct > -10) cls = 'warn'
+      else cls = 'bad'
+      const label = isDev ? 'DEV' : '#' + (++nonDevIdx)
+      return `
+        <div class="iw-tile ${cls}${isDev ? ' dev' : ''}">
+          <div class="iw-name">${escapeHtml(label)}</div>
+          <div class="iw-delta">${escapeHtml(r.pctChangeDisp || '±0%')}</div>
+          <div class="iw-action">${escapeHtml(r.label || '—')}</div>
+        </div>`
+    }).join('')
 
-  // Cap at 12 tiles (6-col × 2-row grid).
-  const rows = activeRows.slice(0, 12)
-  // Dev wallet might or might not be present in the rows. We compute the
-  // tile label from position in the rendered list, with the dev tile
-  // labelled "DEV" regardless of position.
-  let nonDevIdx = 0
-  const tiles = rows.map(r => {
-    const isDev = r.role === 'dev'
-    const pct = typeof r.pctChange === 'number' ? r.pctChange : 0
-    let cls
-    if (Math.abs(pct) < 0.5) cls = 'mid'
-    else if (pct > 0) cls = 'good'
-    else if (pct > -10) cls = 'warn'
-    else cls = 'bad'
-    const label = isDev ? 'DEV' : '#' + (++nonDevIdx)
+    let alertCls, alertText
+    if (ha.netFlowDirection === 'in') {
+      alertCls = 'good'
+      alertText = 'Top wallets are accumulating — money is flowing in.'
+    } else if (ha.netFlowDirection === 'out') {
+      alertCls = 'bad'
+      alertText = 'Top wallets are reducing — money is leaving these positions. Watch closely.'
+    } else {
+      alertCls = 'mid'
+      alertText = 'No significant flow detected in the last hour. Top wallets are stable.'
+    }
     return `
-      <div class="iw-tile ${cls}${isDev ? ' dev' : ''}">
-        <div class="iw-name">${escapeHtml(label)}</div>
-        <div class="iw-delta">${escapeHtml(r.pctChangeDisp || '±0%')}</div>
-        <div class="iw-action">${escapeHtml(r.label || '—')}</div>
-      </div>`
-  }).join('')
-
-  // Verdict line at the bottom — derived from the backend's net flow
-  // direction so the tab leads with a clear takeaway. Plain language.
-  let alertCls, alertText
-  if (ha.netFlowDirection === 'in') {
-    alertCls = 'good'
-    alertText = 'Top wallets are accumulating — money is flowing in.'
-  } else if (ha.netFlowDirection === 'out') {
-    alertCls = 'bad'
-    alertText = 'Top wallets are reducing — money is leaving these positions. Watch closely.'
-  } else {
-    alertCls = 'mid'
-    alertText = 'No significant flow detected in the last hour. Top wallets are stable.'
+      <div class="iw-grid">${tiles}</div>
+      <div class="tab-alert ${alertCls}">${escapeHtml(alertText)}</div>
+    `
   }
-  return `
-    <div class="iw-grid">${tiles}</div>
-    <div class="tab-alert ${alertCls}">${escapeHtml(alertText)}</div>
-  `
+
+  // PATH 2 — fallback to criticalActors when holderActivity didn't
+  // populate but composeCriticalActors did (different upstream path,
+  // wider availability). Map each actor to a tile colour/severity.
+  const actors = Array.isArray(d.criticalActors) ? d.criticalActors : []
+  if (actors.length > 0) {
+    const tiles = actors.slice(0, 12).map(a => {
+      // Tile colour derived from severity. Critical / warning / info →
+      // bad / warn / mid. Dev card gets the purple ring regardless.
+      const sev = String(a.severity || '').toLowerCase()
+      let cls
+      if (sev === 'critical') cls = 'bad'
+      else if (sev === 'warning') cls = 'warn'
+      else cls = 'mid'
+      const isDev = String(a.type || '').toLowerCase() === 'dev'
+      const label = (a.tag || '').toUpperCase().slice(0, 8) || (isDev ? 'DEV' : '#')
+      const pctDisp = typeof a.pct === 'number' ? a.pct.toFixed(1) + '%' : '—'
+      // No 6h delta in criticalActors — show the holder %; framing
+      // makes it clear this is the position size, not a delta.
+      return `
+        <div class="iw-tile ${cls}${isDev ? ' dev' : ''}">
+          <div class="iw-name">${escapeHtml(label)}</div>
+          <div class="iw-delta">${escapeHtml(pctDisp)}</div>
+          <div class="iw-action">of supply</div>
+        </div>`
+    }).join('')
+    return `
+      <div class="iw-grid">${tiles}</div>
+      <div class="tab-alert mid">Wallet flow data is unavailable for this scan — showing the structural critical-actor breakdown instead.</div>
+    `
+  }
+
+  // PATH 3 — last-resort empty state. No activity rows, no critical
+  // actors. The tab cannot render meaningful tiles. Acknowledge it
+  // honestly rather than fabricate.
+  return `<div class="tab-empty">Insider Watch is not available for this scan. Helius did not return holder activity or critical-actor data.</div>`
 }
 
 // ──────────────────────────────────────────────────────────────────────
@@ -665,61 +743,92 @@ function buildBuySellFlowTab(d) {
 // WASH VOLUME tab — replaces Outcome Histogram.
 //
 // Visual: Circular Score Donut — a 0-100 wash score in a donut on the
-// left, four key metrics stacked on the right (reported volume, real
-// estimate, unique wallets, repeat ratio). Picked from designs-library
-// (WV-2). Donut stroke colour shifts good → warn → bad as the score
-// rises so the visual matches the verdict at a glance.
+// left, four key metrics stacked on the right. Picked from designs-
+// library (WV-2). Donut stroke colour shifts good → warn → bad as the
+// score rises so the visual matches the verdict at a glance.
 //
-// Data — all derived from real fields, no fabrication:
-//   reported  = d.volume24h (or pair.volume.h24)
-//   trades    = d.solscanTrades24h
-//   traders   = d.solscanTraders24h
-//   repeat    = 1 - (traders / trades)   (% of trades from non-unique wallets)
-//   sparsity  = trades / traders         (avg trades per wallet — dense = wash)
-//   wash      = 0.6 * repeat% + 0.4 * sparsityScore
-//   real est. = reported × √(traders / trades)
+// Data — wired exclusively to DexScreener pair data which is reliably
+// populated for every token. (Solscan trades/traders fields were tried
+// first but the upstream returns null on most tokens in production, so
+// the tab would have been empty for the majority of users.) Every
+// number on screen is a real measurement:
 //
-// Repeat ratio + sparsity are the two industry-standard wash signals;
-// blending them gives a stable 0-100 score that maps cleanly to the
-// donut. The square-root real-estimate dampener is conservative — it
-// understates "real" volume rather than overstates it (preferring a
-// safer signal for the user).
+//   reported   = pair.volume.h24
+//   trades     = pair.txns.h24.buys + pair.txns.h24.sells
+//   avg trade  = reported / trades
+//   symmetry   = |buys - sells| / trades  (1 = totally one-sided, 0 = perfect 50/50)
+//
+// Wash signals (0-100, higher = more wash):
+//   tiny-trade-score = how small the avg trade is relative to liquidity.
+//                      Many tiny trades vs available liquidity is the
+//                      classic wash pattern (bots cycling small amounts).
+//   symmetry-score   = how perfectly balanced buys vs sells are. Real
+//                      organic trading has natural imbalance; bots
+//                      trading with themselves produce ~50/50 splits.
+//
+// Final score = avg of the two component scores. Both are derived from
+// measured DexScreener data, no Solscan dependency.
 // ──────────────────────────────────────────────────────────────────────
 function buildWashVolumeTab(d) {
-  const reportedVol = d.volume24h ?? d.pair?.volume?.h24 ?? null
-  const trades = d.solscanTrades24h
-  const traders = d.solscanTraders24h
-  if (!reportedVol || reportedVol <= 0 ||
-      typeof trades !== 'number' || trades <= 0 ||
-      typeof traders !== 'number' || traders <= 0) {
-    return `<div class="tab-empty">Wash Volume is not available for this scan. Solscan did not return both trade and trader counts for the 24h window — re-scan to retry.</div>`
+  const pair = d.pair
+  if (!pair || !pair.txns || !pair.volume) {
+    return `<div class="tab-empty">Wash Volume is not available — DexScreener did not return transaction data for this pair.</div>`
+  }
+  const txns24 = pair.txns.h24 || {}
+  const buys = typeof txns24.buys === 'number' ? txns24.buys : 0
+  const sells = typeof txns24.sells === 'number' ? txns24.sells : 0
+  const totalTrades = buys + sells
+  const reportedVol = (typeof pair.volume.h24 === 'number' ? pair.volume.h24 : null) ?? d.volume24h ?? null
+  const liq = (typeof d.liquidity === 'number' ? d.liquidity : null) ?? (typeof pair.liquidity?.usd === 'number' ? pair.liquidity.usd : null) ?? null
+
+  if (totalTrades === 0 || !reportedVol || reportedVol <= 0) {
+    return `<div class="tab-empty">Wash Volume is not available — no trade activity reported in the last 24 hours.</div>`
   }
 
-  const safeTraders = Math.min(traders, trades)
-  const repeatPct = Math.max(0, Math.min(100, (1 - safeTraders / trades) * 100))
-  const sparsity = trades / safeTraders
-  const sparsityScore = Math.max(0, Math.min(100, (sparsity - 1) * 12))
-  const washScore = Math.round(0.6 * repeatPct + 0.4 * sparsityScore)
-  const realRatio = Math.sqrt(safeTraders / trades)
-  const realEstimate = reportedVol * realRatio
+  const avgTrade = reportedVol / totalTrades
+
+  // Tiny-trade signal: avg trade size relative to liquidity. Threshold
+  // 0.05% of LP — below that the trades look more like wash cycling
+  // than retail flow (a $50 trade against $1M LP is suspicious volume
+  // texture). Score climbs as the avg drops below the threshold.
+  let tinyTradeScore = 0
+  if (liq && liq > 0) {
+    const ratio = avgTrade / Math.max(1, liq * 0.0005)  // 1.0 = at threshold
+    tinyTradeScore = Math.max(0, Math.min(100, (1 - ratio) * 100))
+  }
+
+  // Symmetry signal: very balanced buy/sell ratios over many trades is
+  // an artificial pattern. Real organic trading drifts naturally one
+  // way or the other. We only flag it when there are enough trades to
+  // make symmetry statistically improbable.
+  const imbalance = Math.abs(buys - sells) / totalTrades  // 0 = perfect 50/50, 1 = one-sided
+  let symmetryScore = 0
+  if (totalTrades > 100) {
+    if (imbalance < 0.03) symmetryScore = 80
+    else if (imbalance < 0.07) symmetryScore = 50
+    else if (imbalance < 0.12) symmetryScore = 25
+  }
+
+  const washScore = Math.round(0.55 * tinyTradeScore + 0.45 * symmetryScore)
+  const symPct = Math.round((1 - imbalance) * 100)
 
   let cls, washColor, alertCls, alertText
   if (washScore < 30) {
     cls = 'good'; washColor = 'var(--c)'
     alertCls = 'good'
-    alertText = `The volume looks real — ${traders.toLocaleString()} unique wallets behind ${trades.toLocaleString()} trades.`
+    alertText = `The volume looks real — ${totalTrades.toLocaleString()} trades with healthy average size and natural buy/sell drift.`
   } else if (washScore < 65) {
     cls = 'warn'; washColor = 'var(--yellow)'
     alertCls = 'warn'
-    alertText = `The volume is suspicious. Real volume is probably closer to ${fmt(realEstimate)} — only ${traders.toLocaleString()} wallets behind ${trades.toLocaleString()} trades.`
+    alertText = `The volume is suspicious — ${totalTrades.toLocaleString()} trades with avg size of ${fmt(avgTrade)} relative to ${liq ? fmt(liq) + ' LP' : 'shallow LP'}. Possible wash cycling.`
   } else {
     cls = 'bad'; washColor = 'var(--orange)'
     alertCls = 'bad'
-    alertText = `The volume is almost certainly fake. Only ${traders.toLocaleString()} wallets generated ${trades.toLocaleString()} trades — do not trust the headline volume.`
+    alertText = `The volume is almost certainly fake — small trades cycling against a thin LP. Do not trust the headline volume.`
   }
 
-  // Donut math: r=42 → circumference = 2πr ≈ 263.9. We use pathLength
-  // to normalise, so dasharray "X 263.9" fills X% of the circle.
+  // Donut math: r=42 → circumference = 2πr ≈ 263.9. pathLength normalises
+  // so dasharray "X 263.9" fills X% of the circle.
   const C = 263.9
   const dashOn = (washScore / 100) * C
   return `
@@ -736,9 +845,9 @@ function buildWashVolumeTab(d) {
       </div>
       <div class="wv-info">
         <div class="wv-info-row"><div class="wv-info-l">Reported volume</div><div class="wv-info-r">${escapeHtml(fmt(reportedVol))}</div></div>
-        <div class="wv-info-row"><div class="wv-info-l">Real estimate</div><div class="wv-info-r ${cls}">${escapeHtml(fmt(realEstimate))}</div></div>
-        <div class="wv-info-row"><div class="wv-info-l">Unique wallets</div><div class="wv-info-r">${traders.toLocaleString()}</div></div>
-        <div class="wv-info-row"><div class="wv-info-l">Repeat ratio</div><div class="wv-info-r ${cls}">${repeatPct.toFixed(0)}%</div></div>
+        <div class="wv-info-row"><div class="wv-info-l">Total trades</div><div class="wv-info-r">${totalTrades.toLocaleString()}</div></div>
+        <div class="wv-info-row"><div class="wv-info-l">Avg trade size</div><div class="wv-info-r ${cls}">${escapeHtml(fmt(avgTrade))}</div></div>
+        <div class="wv-info-row"><div class="wv-info-l">Buy/sell symmetry</div><div class="wv-info-r ${cls}">${symPct}%</div></div>
       </div>
     </div>
     <div class="tab-alert ${alertCls}">${escapeHtml(alertText)}</div>
