@@ -503,15 +503,24 @@ export function buildQuotaExhaustedNode(
     }, "Unlock unlimited"),
   )
 
-  // Tick the reset string every 30s — coarse enough to not churn DOM,
-  // fine enough to feel live.
-  const interval = setInterval(() => {
+  // Adaptive tick: when more than 2 minutes remain we tick once per
+  // minute (matches the displayed precision — "1h 24m"), so the user
+  // doesn't see a number sit unchanged for 60s then jump 2). Under
+  // 2 minutes we tick every 10s so the final approach to "any moment"
+  // feels live without single-digit flashing.
+  let timer: ReturnType<typeof setTimeout> | null = null
+  function schedule() {
     if (!resetEl.isConnected) {
-      clearInterval(interval)
+      if (timer) clearTimeout(timer)
+      timer = null
       return
     }
     resetEl.textContent = fmtReset()
-  }, 30_000)
+    const ms = quota.resetAt ? quota.resetAt - Date.now() : 60_000
+    const interval = ms > 120_000 ? 60_000 : 10_000
+    timer = setTimeout(schedule, interval)
+  }
+  timer = setTimeout(schedule, 0)
 
   return root
 }
