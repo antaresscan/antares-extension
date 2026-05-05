@@ -52,11 +52,35 @@ async function fetchScan(ca: string): Promise<ScanResult | null> {
 // Replicates the data-availability checks each build function performs
 // so we can predict whether a tab will render content vs an empty state
 // for a given scan result.
-function checkInsiderWatch(d: ScanResult) {
-  const haRows = (d.holderActivity?.rows ?? []) as unknown[]
-  if (haRows.length > 0) return 'PATH_1_HEATMAP'
+function checkInsiderWatch(d: ScanResult & { holders?: number | null; pair?: { txns?: { h24?: { buys?: number; sells?: number } } } }) {
+  // Mirror the production fallback ladder so the test predicts which
+  // path the build function will hit.
+  const haRows = (d.holderActivity?.rows ?? []) as Array<{ label?: string; pctChange?: number; desc?: string }>
+  const activeRows = haRows.filter(r => {
+    const isStatic = String(r.label || '').toLowerCase() === 'static'
+    const hasPct = typeof r.pctChange === 'number' && Math.abs(r.pctChange) >= 0.05
+    const hasDesc = typeof r.desc === 'string' && r.desc.length > 0
+    return !isStatic || hasPct || hasDesc
+  })
+  if (activeRows.length > 0) return 'PATH_1_WALLET_HEATMAP'
   if (Array.isArray(d.criticalActors) && d.criticalActors.length > 0) return 'PATH_2_CRITICAL_ACTORS'
-  return 'PATH_3_EMPTY'
+  // PATH 3 fires when concentration is available from any source
+  let top10 = typeof d.top10HolderPct === 'number' ? d.top10HolderPct : null
+  if (top10 == null) {
+    for (const f of (d.flags || [])) {
+      const m = (f.label || '').match(/top\s*10\b[^%]*?(\d+(?:\.\d+)?)\s*%/i)
+      if (m) { top10 = parseFloat(m[1]); break }
+    }
+  }
+  if (top10 != null) return 'PATH_3_CONCENTRATION_TILES'
+  if (haRows.length > 0) return 'PATH_4_STATIC_HEATMAP'
+  // PATH 5 — market structure tiles when nothing else, but at least one
+  // structural field is present.
+  const t24 = d.pair?.txns?.h24
+  const tradesPresent = t24 != null && (((t24.buys || 0) + (t24.sells || 0)) > 0)
+  const hasMarket = (typeof d.holders === 'number') || (typeof d.liquidity === 'number') || tradesPresent
+  if (hasMarket) return 'PATH_5_MARKET_STRUCTURE'
+  return 'PATH_6_EMPTY'
 }
 
 function checkBuySellFlow(d: ScanResult) {
@@ -135,6 +159,17 @@ describeFn('Full Analysis tabs — live API integration', () => {
       // The rendered path varies by data availability but every path
       // is a render path (not the bare empty-state div).
       expect(['CLEAN_WITH_CONCENTRATION','CLEAN_NO_DATA','ACTIVITY_NO_CONCENTRATION','ACTIVITY_WITH_CONCENTRATION']).toContain(sniper)
+
+      // Insider Watch hard requirement: must NEVER hit PATH_6 (empty
+      // state) when the token has ANY upstream data at all. PATH 6 is
+      // reserved for the truly-empty case where DexScreener + Solscan
+      // both miss, which doesn't happen on real tokens. If we hit
+      // PATH 6 on BONK / PENGU / TRUMP / TROLL, the fallback ladder
+      // is broken.
+      const hasAnyMarketData = (d.pair && d.pair.txns) || typeof d.liquidity === 'number'
+      if (hasAnyMarketData) {
+        expect(insider, `${tok.name} Insider Watch should not hit PATH_6_EMPTY when DexScreener/Solscan returned data`).not.toBe('PATH_6_EMPTY')
+      }
     }, 30_000)
   }
 })
