@@ -704,10 +704,48 @@ function buildInsiderWatchTab(d) {
     `
   }
 
-  // PATH 5 — last-resort empty state. No wallet activity, no critical
-  // actors, no concentration data, no holder rows at all. Acknowledge
-  // honestly rather than fabricate.
-  return `<div class="tab-empty">Insider Watch is not available for this scan. Wallet and concentration data did not return — re-scan to retry.</div>`
+  // PATH 5 — market-structure fallback when every wallet-level source
+  // came back empty (Helius rate-limit + RugCheck miss + Solscan
+  // transfers gone). Rather than leaving the tab blank we render the
+  // structural market data we DO have (total holders, liquidity, 24h
+  // trades) so the tab stays informative. The verdict line tells the
+  // user wallet data is missing and to re-scan.
+  const totalHolders = typeof d.holders === 'number' ? d.holders : null
+  const liq = typeof d.liquidity === 'number' ? d.liquidity : null
+  const txns24 = (d.pair && d.pair.txns && d.pair.txns.h24) || null
+  const totalTrades = txns24 ? ((txns24.buys || 0) + (txns24.sells || 0)) : null
+  const haveAny = totalHolders != null || liq != null || totalTrades != null
+  if (haveAny) {
+    // Compose 3 tiles. Each tile colour bands by a quick health
+    // heuristic so the user gets at-a-glance sentiment even on the
+    // structural fallback. Holder count: more is better (distributed).
+    // Liquidity: more is better. Trade count: pure context, no colour.
+    const tilesHtml = []
+    if (totalHolders != null) {
+      const cls = totalHolders >= 5000 ? 'good' : totalHolders >= 500 ? 'mid' : 'warn'
+      const disp = totalHolders >= 1_000_000 ? (totalHolders / 1_000_000).toFixed(1) + 'M'
+                 : totalHolders >= 1_000 ? (totalHolders / 1_000).toFixed(0) + 'K'
+                 : String(totalHolders)
+      tilesHtml.push(`<div class="iw-tile ${cls}"><div class="iw-name">HOLDERS</div><div class="iw-delta">${escapeHtml(disp)}</div><div class="iw-action">total wallets</div></div>`)
+    }
+    if (liq != null) {
+      const cls = liq >= 100_000 ? 'good' : liq >= 10_000 ? 'mid' : 'warn'
+      tilesHtml.push(`<div class="iw-tile ${cls}"><div class="iw-name">LIQUIDITY</div><div class="iw-delta">${escapeHtml(fmt(liq))}</div><div class="iw-action">in LP</div></div>`)
+    }
+    if (totalTrades != null) {
+      const cls = totalTrades >= 500 ? 'good' : totalTrades >= 50 ? 'mid' : 'warn'
+      tilesHtml.push(`<div class="iw-tile ${cls}"><div class="iw-name">TRADES 24H</div><div class="iw-delta">${totalTrades.toLocaleString()}</div><div class="iw-action">total</div></div>`)
+    }
+    return `
+      <div class="iw-grid">${tilesHtml.join('')}</div>
+      <div class="tab-alert mid">Wallet-level activity data is unavailable on this scan. Showing token market structure instead — re-scan to populate insider details.</div>
+    `
+  }
+
+  // PATH 6 — absolute last resort. Even market structure data is
+  // missing (no DexScreener pair, no Solscan holder count). Empty
+  // state is honest here — there is no signal to show.
+  return `<div class="tab-empty">Insider Watch is not available for this scan. None of the upstream sources returned wallet, concentration, or market data — re-scan to retry.</div>`
 }
 
 // ──────────────────────────────────────────────────────────────────────
