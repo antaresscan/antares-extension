@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tier badge — logo styles (gold / gray)</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500;600;700&family=Playfair+Display:ital,wght@1,600&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#0a0a0c;--card:#111114;--ink:#eaeaea;--dim:#7a7a82;--muted:#454550;
+    --c:#00e5b0;
+    /* Pro gold palette — three shades for variants */
+    --gold:#f5d000;       /* bright gold (current site accent) */
+    --gold-deep:#d4a838;  /* deeper, richer gold */
+    --gold-pale:#fde68a;  /* pale champagne gold */
+    --gold-glow:rgba(245,208,0,.35);
+    /* Free / muted gray — three shades */
+    --gray:#666;
+    --gray-deep:#3a3a40;
+    --gray-pale:#888;
+  }
+  body{
+    background:var(--bg);color:var(--ink);font-family:'IBM Plex Mono',monospace;
+    padding:40px 24px 80px;min-height:100vh;
+  }
+  .stripe{position:fixed;top:0;left:0;right:0;height:3px;z-index:999;
+    background:linear-gradient(90deg,#c0007a,var(--c),#c8c000,#c0002a,var(--c),#c0007a);
+    background-size:400% 100%;animation:stripe 6s linear infinite;opacity:.7}
+  @keyframes stripe{0%{background-position:0% 0}100%{background-position:400% 0}}
+
+  .page{max-width:1320px;margin:0 auto}
+  .head h1{font:400 56px/1 'Bebas Neue',sans-serif;letter-spacing:.04em;margin:18px 0 8px}
+  .head h1 .gold{color:var(--gold)}
+  .head h1 .ash{color:var(--gray)}
+  .head p{font-size:13px;color:var(--dim);line-height:1.7;max-width:840px;margin-bottom:6px}
+  .head .eb{font:600 11px/1 'IBM Plex Mono',monospace;color:var(--gold);
+    letter-spacing:.28em;text-transform:uppercase;display:flex;align-items:center;gap:10px}
+  .head .eb::before{content:'';width:22px;height:2px;background:var(--gold)}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));
+    gap:18px;margin-top:36px}
+
+  .card{
+    background:var(--card);border:1px solid #1a1a1e;border-radius:6px;
+    padding:18px 18px 16px;display:flex;flex-direction:column;gap:14px;
+    transition:transform .28s,border-color .28s;
+  }
+  .card:hover{transform:translateY(-3px);border-color:#252529}
+  .card-h{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .card-h .num{
+    font:700 9px/1 'IBM Plex Mono',monospace;color:var(--muted);
+    letter-spacing:.2em;
+  }
+  .card-h .nm{font:600 12px/1.2 'IBM Plex Mono',monospace;color:var(--ink);letter-spacing:.04em}
+  .card-h .pill-tag{
+    font:700 9px/1 'IBM Plex Mono',monospace;color:#888;letter-spacing:.18em;
+    padding:3px 7px;border:1px solid #2a2a2e;border-radius:3px;text-transform:uppercase;
+  }
+  .card-h .pill-tag.gold{color:var(--gold);border-color:rgba(245,208,0,.4)}
+  .card .desc{font-size:11px;color:var(--dim);line-height:1.55}
+
+  /* Mini overlay topbar */
+  .mini{
+    background:#0c0c0e;border:1px solid #1d1d22;border-radius:4px;padding:9px 11px;
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+  }
+  .mini .lf{display:flex;align-items:center;gap:9px;min-width:0;flex:1}
+  .mini .br{font:600 11px/1 'IBM Plex Mono',monospace;color:#888;letter-spacing:.18em}
+  .mini .icns{display:flex;gap:4px;align-items:center;color:#3a3a40;font-size:10px}
+
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .pair .col{display:flex;flex-direction:column;gap:6px}
+  .pair .lab{font:600 9px/1 'IBM Plex Mono',monospace;color:var(--muted);letter-spacing:.18em}
+
+  /* ════════════════════════════════════════════════════════════════════
+     CORE LOGO PRIMITIVE — uses mask-image so we get pure colour control
+     The icon.png is monochrome black. We use it as an alpha mask and
+     paint the underlying div in any colour we want.
+     ════════════════════════════════════════════════════════════════════ */
+  .logo{
+    display:inline-block;width:18px;height:18px;
+    -webkit-mask:url('icon.png') no-repeat center / contain;
+            mask:url('icon.png') no-repeat center / contain;
+    background:currentColor;flex-shrink:0;
+  }
+  .logo.sm{width:14px;height:14px}
+  .logo.md{width:18px;height:18px}
+  .logo.lg{width:22px;height:22px}
+  .logo.xl{width:28px;height:28px}
+
+  /* Free state default — soft gray, dim opacity */
+  .logo.free{color:#5a5a62;opacity:.55}
+  /* Pro state default — bright gold */
+  .logo.pro{color:var(--gold)}
+  .logo.pro-deep{color:var(--gold-deep)}
+  .logo.pro-pale{color:var(--gold-pale)}
+
+  /* ════════════════════════════════════════════════════════════════════
+     STYLE A — Logo only, no text, no border
+     ════════════════════════════════════════════════════════════════════ */
+  /* Uses .logo primitive directly */
+
+  /* ════════════════════════════════════════════════════════════════════
+     STYLE B — Logo + tier label (FREE / LIFE)
+     ════════════════════════════════════════════════════════════════════ */
+  .b-tier-free,.b-tier-pro{display:inline-flex;align-items:center;gap:6px;
+    font:700 9px/1 'IBM Plex Mono',monospace;letter-spacing:.18em}
+  .b-tier-free{color:#666}
+  .b-tier-pro{color:var(--gold)}
+
+  /* ════════════════════════════════════════════════════════════════════
+     STYLE C — Logo inside a pill border
+     ════════════════════════════════════════════════════════════════════ */
+  .b-pill{display:inline-flex;align-items:center;justify-content:center;
+    width:24px;height:22px;border-radius:99px;border:1px solid;}
+  .b-pill.free{border-color:#2a2a2e}
+  .b-pill.pro{border-color:var(--gold);background:rgba(245,208,0,.06)}
+
+  /* ════════════════════════════════════════════════════════════════════
+     STYLE D — Logo with gold halo glow on Pro
+     ════════════════════════════════════════════════════════════════════ */
+  .b-halo{position:relative;display:inline-flex;align-items:center;justify-content:center;
+    width:22px;height:22px}
+  .b-halo.pro::before{content:'';position:absolute;inset:-3px;border-radius:50%;
+    background:radial-gradient(circle,var(--gold-glow),transparent 65%);filter:blur(2px)}
+
+  /* ════════════════════════════════════════════════════════════════════
+     STYLE E — Logo with subtle pulse animation on Pro
+     ════════════════════════════════════════════════════════════════════ */
+  @keyframes logo-pulse{
+    0%,100%{transform:scale(1);filter:drop-shadow(0 0 0 transparent)}
+    50%{transform:scale(1.08);filter:drop-shadow(0 0 6px var(--gold-glow))}
+  }
+  .b-pulse.pro{animation:logo-pulse 2.4s ease-in-out infinite}
+
+  /* ════════════════════════════════════════════════════════════════════
+     STYLE F — Logo replaces "ANTARES" brand entirely
+     ════════════════════════════════════════════════════════════════════ */
+  /* Hide brand text, logo carries it */
+
+  /* ════════════════════════════════════════════════════════════════════
+     STYLE G — Logo as corner ribbon
+     ════════════════════════════════════════════════════════════════════ */
+  .mini.gribbon{position:relative;overflow:visible}
+  .mini.gribbon .ribbon{
+    position:absolute;top:-8px;right:14px;
+    width:22px;height:24px;display:flex;align-items:center;justify-content:center;
+    background:var(--gold);color:#0a0a0c;
+    clip-path:polygon(0 0,100% 0,100% 100%,50% 80%,0 100%);
+    box-shadow:0 4px 8px rgba(0,0,0,.4);
+  }
+  .mini.gribbon.free .ribbon{display:none}
+
+  /* ════════════════════════════════════════════════════════════════════
+     STYLE H — Logo + member ID
+     ════════════════════════════════════════════════════════════════════ */
+  .b-member-free,.b-member-pro{display:inline-flex;align-items:center;gap:6px;
+    font:600 9px/1 'IBM Plex Mono',monospace;letter-spacing:.14em}
+  .b-member-free{color:#666}
+  .b-member-pro{color:var(--gold);padding:3px 8px;border:1px dashed var(--gold);
+    border-radius:2px;background:rgba(245,208,0,.04)}
+
+  /* ════════════════════════════════════════════════════════════════════
+     STYLE I — Logo with concentric gold ring (eye-of-providence vibe)
+     ════════════════════════════════════════════════════════════════════ */
+  .b-ring{position:relative;display:inline-flex;align-items:center;justify-content:center;
+    width:24px;height:24px;border-radius:50%}
+  .b-ring.free{border:1px solid #2a2a2e}
+  .b-ring.pro{border:1px solid var(--gold);box-shadow:0 0 0 2px rgba(245,208,0,.06),
+    inset 0 0 6px rgba(245,208,0,.08)}
+
+  /* ════════════════════════════════════════════════════════════════════
+     STYLE J — Engraved gold plate (logo masked into a brushed-gold tile)
+     ════════════════════════════════════════════════════════════════════ */
+  .b-plate{display:inline-flex;align-items:center;justify-content:center;
+    width:26px;height:22px;border-radius:3px;}
+  .b-plate.free{
+    background:linear-gradient(180deg,#1f1f23,#15151a);
+    border:1px solid #2a2a2e;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+  }
+  .b-plate.pro{
+    background:linear-gradient(180deg,#fce8a8,#c89e3a 60%,#8a6e22);
+    border:1px solid #5a4f30;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 1px 0 rgba(0,0,0,.4);
+  }
+  .b-plate .logo.pro{color:#3a2a08}  /* dark engraved logo on gold plate */
+  .b-plate .logo.free{color:#3a3a40;opacity:.7}
+
+  /* ════════════════════════════════════════════════════════════════════
+     STYLE K — Logo + italic serif "Pro" / "Life"
+     ════════════════════════════════════════════════════════════════════ */
+  .b-serif-free,.b-serif-pro{display:inline-flex;align-items:center;gap:5px}
+  .b-serif-free{color:#666;font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.18em}
+  .b-serif-pro .word{
+    font:italic 700 14px/1 'Playfair Display',serif;color:var(--gold);
+    letter-spacing:.02em;text-shadow:0 0 12px rgba(245,208,0,.25);
+  }
+
+  /* ════════════════════════════════════════════════════════════════════
+     STYLE L — Logo with diagonal slash divider (premium / luxury vibe)
+     ════════════════════════════════════════════════════════════════════ */
+  .b-slash-free,.b-slash-pro{display:inline-flex;align-items:center;gap:6px;
+    font:700 9px/1 'IBM Plex Mono',monospace;letter-spacing:.16em}
+  .b-slash-free{color:#666}
+  .b-slash-free .div{color:#3a3a40;font-weight:300}
+  .b-slash-pro{color:var(--gold)}
+  .b-slash-pro .div{color:var(--gold-deep);font-weight:300}
+
+  /* Notes panel */
+  .recs{
+    margin-top:48px;padding:28px 32px;background:var(--card);border:1px solid #1a1a1e;border-radius:6px;
+  }
+  .recs h2{font:400 30px/1 'Bebas Neue',sans-serif;letter-spacing:.04em;margin-bottom:16px}
+  .recs h2 .gold{color:var(--gold)}
+  .recs ol{list-style:none;counter-reset:rec;display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+  .recs ol li{counter-increment:rec;padding:14px;background:#0c0c0e;border:1px solid #1a1a1e;
+    border-radius:4px;font-size:12px;line-height:1.6;color:var(--dim);position:relative;padding-left:46px}
+  .recs ol li::before{content:counter(rec,upper-alpha);position:absolute;left:14px;top:14px;
+    font:700 16px/1 'Bebas Neue',sans-serif;color:var(--gold);letter-spacing:.04em}
+  .recs ol li b{color:var(--ink)}
+  .recs .pick{
+    margin-top:24px;padding:18px 20px;background:rgba(245,208,0,.04);
+    border:1px solid rgba(245,208,0,.25);border-radius:4px;
+    font-size:13px;color:var(--ink);line-height:1.7;
+  }
+  .recs .pick b{color:var(--gold)}
+
+  /* Sample at hero — show the logo big to confirm the gold mask works */
+  .hero-sample{display:flex;gap:32px;align-items:center;margin:24px 0 0;
+    padding:20px 24px;background:#0c0c0e;border:1px solid #1a1a1e;border-radius:6px}
+  .hero-sample .col{display:flex;flex-direction:column;align-items:center;gap:10px}
+  .hero-sample .col span{font:700 9px/1 'IBM Plex Mono',monospace;color:var(--muted);
+    letter-spacing:.2em}
+  .hero-sample .logo{width:42px;height:42px}
+  .hero-sample .col-pro span{color:var(--gold)}
+  .hero-sample .col-free span{color:var(--gray)}
+</style>
+</head>
+<body>
+<div class="stripe" role="presentation"></div>
+
+<div class="page">
+<header class="head">
+  <div class="eb">Brand-logo tier badge</div>
+  <h1>YOUR <span class="ash">LOGO</span> &mdash; <span class="gold">GOLD ON PRO</span>, <span class="ash">GRAY ON FREE</span></h1>
+  <p>12 ways to use the Antares eye-and-star logo as the tier indicator. Every variant uses the same monochrome <code style="color:#aaa;background:#16161a;padding:1px 4px;border-radius:2px">icon.png</code> as a CSS <code style="color:#aaa;background:#16161a;padding:1px 4px;border-radius:2px">mask-image</code> so we paint it any colour we want &mdash; no Photoshop pass needed. Free state is muted gray + 55% opacity, Pro state is one of three gold shades.</p>
+  <div class="hero-sample">
+    <div class="col col-free"><span class="logo md free"></span><span>FREE — gray</span></div>
+    <div class="col col-pro"><span class="logo md pro"></span><span>PRO — bright gold</span></div>
+    <div class="col col-pro"><span class="logo md pro-deep"></span><span>PRO — deep gold</span></div>
+    <div class="col col-pro"><span class="logo md pro-pale"></span><span>PRO — pale champagne</span></div>
+  </div>
+</header>
+
+<div class="grid">
+
+  <!-- A — LOGO ONLY -->
+  <div class="card">
+    <div class="card-h">
+      <span class="num">A</span>
+      <span class="nm">Logo only — bare</span>
+      <span class="pill-tag gold">minimal</span>
+    </div>
+    <div class="desc">Just the logo, no border, no label. Free = small dim-gray logo. Pro = small bright-gold logo. Smallest possible footprint, most subtle reading.</div>
+    <div class="pair">
+      <div class="col">
+        <div class="lab">FREE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span><span class="logo md free"></span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="lab">PRO / LIFE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span><span class="logo md pro"></span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- B — LOGO + LABEL -->
+  <div class="card">
+    <div class="card-h">
+      <span class="num">B</span>
+      <span class="nm">Logo + tier label</span>
+      <span class="pill-tag gold">classic</span>
+    </div>
+    <div class="desc">Logo paired with a small tier name (FREE / LIFE). Both elements take the tier colour together. Most explicit — no ambiguity about what tier you&rsquo;re on.</div>
+    <div class="pair">
+      <div class="col">
+        <div class="lab">FREE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span>
+            <span class="b-tier-free"><span class="logo sm free"></span>FREE</span>
+          </div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="lab">PRO / LIFE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span>
+            <span class="b-tier-pro"><span class="logo sm pro"></span>LIFE</span>
+          </div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- C — LOGO IN PILL BORDER -->
+  <div class="card">
+    <div class="card-h">
+      <span class="num">C</span>
+      <span class="nm">Logo in pill border</span>
+      <span class="pill-tag gold">framed</span>
+    </div>
+    <div class="desc">Logo encircled by a rounded pill outline. Free = gray border, Pro = gold border with subtle gold tint inside. Reads like a coin / token.</div>
+    <div class="pair">
+      <div class="col">
+        <div class="lab">FREE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span>
+            <span class="b-pill free"><span class="logo sm free"></span></span>
+          </div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="lab">PRO / LIFE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span>
+            <span class="b-pill pro"><span class="logo sm pro"></span></span>
+          </div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- D — LOGO WITH HALO -->
+  <div class="card">
+    <div class="card-h">
+      <span class="num">D</span>
+      <span class="nm">Logo with gold halo</span>
+      <span class="pill-tag gold">glow</span>
+    </div>
+    <div class="desc">Free = bare gray logo, Pro = gold logo with a soft radial-glow halo behind it. Halo is subtle (no animation) — gives the logo a permanent &ldquo;lit&rdquo; look on Pro.</div>
+    <div class="pair">
+      <div class="col">
+        <div class="lab">FREE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span>
+            <span class="b-halo free"><span class="logo md free"></span></span>
+          </div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="lab">PRO / LIFE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span>
+            <span class="b-halo pro"><span class="logo md pro"></span></span>
+          </div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- E — LOGO WITH PULSE -->
+  <div class="card">
+    <div class="card-h">
+      <span class="num">E</span>
+      <span class="nm">Logo with subtle pulse</span>
+      <span class="pill-tag gold">animated</span>
+    </div>
+    <div class="desc">Pro logo gently pulses every 2.4s — soft scale-up + a brief gold drop-shadow. Reads as &ldquo;active membership&rdquo; without being distracting. Free is static gray.</div>
+    <div class="pair">
+      <div class="col">
+        <div class="lab">FREE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span>
+            <span class="b-pulse"><span class="logo md free"></span></span>
+          </div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="lab">PRO / LIFE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span>
+            <span class="b-pulse pro"><span class="logo md pro"></span></span>
+          </div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- F — LOGO REPLACES BRAND -->
+  <div class="card">
+    <div class="card-h">
+      <span class="num">F</span>
+      <span class="nm">Logo replaces ANTARES brand</span>
+      <span class="pill-tag gold">bold</span>
+    </div>
+    <div class="desc">Drop the wordmark entirely. The logo IS the brand AND the tier indicator. Bigger logo (28px) so it&rsquo;s legible. Free = gray, Pro = gold.</div>
+    <div class="pair">
+      <div class="col">
+        <div class="lab">FREE</div>
+        <div class="mini">
+          <div class="lf"><span class="logo xl free"></span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="lab">PRO / LIFE</div>
+        <div class="mini">
+          <div class="lf"><span class="logo xl pro"></span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- G — LOGO RIBBON -->
+  <div class="card">
+    <div class="card-h">
+      <span class="num">G</span>
+      <span class="nm">Gold ribbon with logo</span>
+      <span class="pill-tag gold">decorative</span>
+    </div>
+    <div class="desc">Free = no ribbon. Pro = a small gold ribbon flag projects above the topbar with the logo embedded. The brand reads cleanly underneath; the ribbon flags &ldquo;you have Pro&rdquo;.</div>
+    <div class="pair">
+      <div class="col">
+        <div class="lab">FREE</div>
+        <div class="mini gribbon free" style="margin-top:10px">
+          <div class="lf"><span class="br">ANTARES</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+          <div class="ribbon"><span class="logo sm" style="color:#0a0a0c"></span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="lab">PRO / LIFE</div>
+        <div class="mini gribbon pro" style="margin-top:10px">
+          <div class="lf"><span class="br">ANTARES</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+          <div class="ribbon"><span class="logo sm" style="color:#0a0a0c"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- H — LOGO + MEMBER ID -->
+  <div class="card">
+    <div class="card-h">
+      <span class="num">H</span>
+      <span class="nm">Logo + member ID</span>
+      <span class="pill-tag gold">personal</span>
+    </div>
+    <div class="desc">Free = nothing extra. Pro = gold logo + a personal member number (#0142) in a dashed gold outline. Like a wristband / early-access pass.</div>
+    <div class="pair">
+      <div class="col">
+        <div class="lab">FREE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span>
+            <span class="b-member-free"><span class="logo sm free"></span></span>
+          </div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="lab">PRO / LIFE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span>
+            <span class="b-member-pro"><span class="logo sm pro"></span>#0142</span>
+          </div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- I — LOGO WITH RING -->
+  <div class="card">
+    <div class="card-h">
+      <span class="num">I</span>
+      <span class="nm">Logo with concentric gold ring</span>
+      <span class="pill-tag gold">framed gem</span>
+    </div>
+    <div class="desc">Free = gray logo inside a gray circle. Pro = gold logo inside a gold ring with subtle inner-glow + outer ring. Reads as a sealed coin / signet.</div>
+    <div class="pair">
+      <div class="col">
+        <div class="lab">FREE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span>
+            <span class="b-ring free"><span class="logo sm free"></span></span>
+          </div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="lab">PRO / LIFE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span>
+            <span class="b-ring pro"><span class="logo sm pro"></span></span>
+          </div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- J — LOGO ENGRAVED GOLD PLATE -->
+  <div class="card">
+    <div class="card-h">
+      <span class="num">J</span>
+      <span class="nm">Engraved gold plate</span>
+      <span class="pill-tag gold">tactile</span>
+    </div>
+    <div class="desc">The logo &ldquo;engraved&rdquo; into a tile. Free = dark steel plate with dim logo. Pro = brushed gold plate with the logo etched in deep brown. Most physically tangible / luxury feel.</div>
+    <div class="pair">
+      <div class="col">
+        <div class="lab">FREE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span>
+            <span class="b-plate free"><span class="logo sm free"></span></span>
+          </div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="lab">PRO / LIFE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span>
+            <span class="b-plate pro"><span class="logo sm pro"></span></span>
+          </div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- K — LOGO + ITALIC SERIF -->
+  <div class="card">
+    <div class="card-h">
+      <span class="num">K</span>
+      <span class="nm">Logo + italic serif word</span>
+      <span class="pill-tag gold">elegant</span>
+    </div>
+    <div class="desc">Logo paired with a single italic-serif word (&ldquo;Pro&rdquo; / &ldquo;Life&rdquo;). Free uses mono &ldquo;FREE&rdquo;. Pro uses Playfair Display italic in gold &mdash; magazine masthead vibe.</div>
+    <div class="pair">
+      <div class="col">
+        <div class="lab">FREE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span>
+            <span class="b-serif-free"><span class="logo sm free"></span>FREE</span>
+          </div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="lab">PRO / LIFE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span>
+            <span class="b-serif-pro"><span class="logo md pro"></span><span class="word">Life</span></span>
+          </div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- L — LOGO WITH SLASH DIVIDER -->
+  <div class="card">
+    <div class="card-h">
+      <span class="num">L</span>
+      <span class="nm">Logo + slash + tier</span>
+      <span class="pill-tag gold">structured</span>
+    </div>
+    <div class="desc">Logo &middot; slash &middot; tier name. Reads like a structured masthead (e.g. &ldquo;LV / PARIS&rdquo;). Both elements share the tier colour — no chrome.</div>
+    <div class="pair">
+      <div class="col">
+        <div class="lab">FREE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span>
+            <span class="b-slash-free"><span class="logo sm free"></span><span class="div">/</span>FREE</span>
+          </div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="lab">PRO / LIFE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span>
+            <span class="b-slash-pro"><span class="logo sm pro"></span><span class="div">/</span>LIFE</span>
+          </div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Recommendations -->
+<section class="recs">
+  <h2>HOW TO PICK <span class="gold">FROM HERE</span></h2>
+  <ol>
+    <li><b>Smallest possible signal?</b> Pick <b>A — Logo only</b>. No border, no label. Just the colour shift carries everything.</li>
+    <li><b>Most explicit?</b> Pick <b>B — Logo + label</b>. Logo + &ldquo;LIFE&rdquo;/&ldquo;FREE&rdquo;. No ambiguity.</li>
+    <li><b>Coin / token feel?</b> Pick <b>C — Pill border</b> or <b>I — Concentric ring</b>. Logo framed.</li>
+    <li><b>Premium feel without animation?</b> Pick <b>D — Halo</b> or <b>J — Engraved plate</b>. Static but visually rich.</li>
+    <li><b>Subtle motion?</b> Pick <b>E — Pulse</b>. 2.4s breathing animation, not distracting.</li>
+    <li><b>Bold / brand-forward?</b> Pick <b>F — Logo replaces wordmark</b>. Big logo, no &ldquo;ANTARES&rdquo; text.</li>
+    <li><b>Magazine / luxury?</b> Pick <b>K — Logo + italic serif</b>. Playfair Display italic looks editorial / wedding-invitation.</li>
+    <li><b>Personal / status?</b> Pick <b>H — Member ID</b>. Adds a number, feels like a wristband.</li>
+  </ol>
+  <div class="pick">
+    <b>My pick :</b> <b>D — Halo</b> as the cleanest visual statement (logo + soft gold glow, nothing else needed) ; or <b>I — Concentric ring</b> if you want the &ldquo;sealed coin&rdquo; / signet feel ; or <b>J — Engraved plate</b> for the most physically luxurious feel. Tell me the letter and I wire it into <code>js/token-app.js</code> + the overlay topbar so the badge swaps gray → gold the moment the user goes Pro / Life.
+  </div>
+</section>
+
+</div>
+</body>
+</html>
