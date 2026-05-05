@@ -1,5 +1,6 @@
 import type { SiteAdapter } from "./base-adapter"
 import { extractCAFromPathname, pathnameChanged } from "./base-adapter"
+import { INITIAL_POLL_DELAY } from "../constants"
 
 /**
  * GMGN adapter
@@ -11,7 +12,7 @@ import { extractCAFromPathname, pathnameChanged } from "./base-adapter"
 export const GMGNAdapter: SiteAdapter = {
   name: "GMGN",
   hostnames: ["gmgn.ai"],
-  initialDelay: 400,
+  initialDelay: INITIAL_POLL_DELAY,
   extractCA(url: URL, _doc: Document): string {
     // gmgn.ai/sol/token/{CA}
     if (url.pathname.includes("/token/")) {

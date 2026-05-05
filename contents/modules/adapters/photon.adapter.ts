@@ -1,5 +1,6 @@
 import type { SiteAdapter } from "./base-adapter"
 import { pathnameChanged, scoreAddresses } from "./base-adapter"
+import { INITIAL_POLL_DELAY } from "../constants"
 
 /**
  * Photon (TinyAstro) adapter
@@ -26,7 +27,7 @@ const NON_TOKEN_PATHS = [
 export const PhotonAdapter: SiteAdapter = {
   name: "Photon",
   hostnames: ["photon-sol.tinyastro.io"],
-  initialDelay: 800,
+  initialDelay: INITIAL_POLL_DELAY,
 
   extractCA(url: URL, doc: Document): string {
     const path = url.pathname.toLowerCase()

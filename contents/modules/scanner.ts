@@ -283,7 +283,22 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
     el.replaceChildren(buildSkeletonNode())
     showBox()
     attachClose(null)
+  } else {
+    // Silent rescan with overlay already showing: add the .refreshing
+    // class so the topbar plays an animated shimmer. The user gets a
+    // clear "we're working on it" signal instead of staring at stale
+    // data with no indication anything is happening — the previous
+    // silent path looked exactly like a frozen overlay until the new
+    // data swapped in. See styles.ts → @keyframes refresh-slide.
+    state.boxEl?.classList.add("refreshing")
   }
+
+  // Floor on how long the shimmer must be visible. Without this, a
+  // sub-300ms API response makes the shimmer flash for an imperceptible
+  // moment then disappear — reads as a UI glitch. 500ms is the lower
+  // bound where motion registers as intentional rather than accidental.
+  const MIN_SHIMMER_MS = 500
+  const shimmerStartedAt = Date.now()
 
   try {
     const headers: Record<string, string> = installId ? { "X-Antares-Install": installId } : {}
@@ -305,6 +320,17 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
     // re-fetch instead of serving the stale tier.
     scanCache.set(ca, { data, ts: Date.now(), session: sessionToken ?? null })
     saveToLS(ca, data, sessionToken ?? null)
+    // Hold the shimmer for the minimum visible duration before swapping
+    // in the result. Only matters on silent rescans (where the shimmer
+    // is the loading affordance) — non-silent paths show a skeleton
+    // which has its own pulse animation and doesn't need this gate.
+    if (skipFlashUI) {
+      const elapsed = Date.now() - shimmerStartedAt
+      if (elapsed < MIN_SHIMMER_MS) {
+        await new Promise<void>((r) => setTimeout(r, MIN_SHIMMER_MS - elapsed))
+      }
+      if (controller.signal.aborted) return
+    }
     el.replaceChildren(buildResultNode(data, ca, installId))
     showBox()
     if (skipFlashUI) {
@@ -370,5 +396,10 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
     if (state.currentScanController === controller) {
       state.currentScanController = null
     }
+    // Defensive: strip the shimmer class on every exit path so a
+    // failed/aborted silent fetch doesn't leave the topbar animating
+    // forever. On success this is a no-op because buildResultNode's
+    // className overwrite already removed it.
+    state.boxEl?.classList.remove("refreshing")
   }
 }

@@ -11,6 +11,31 @@ export const LS_PREFIX     = "antares_scan_"
 export const CACHE_TTL    = 5 * 60 * 1000
 export const POS_KEY       = "antares_popup_pos"
 
+/**
+ * Single uniform delay before the first poll fires after page load.
+ *
+ * Per-adapter delays (400-1200ms) used to vary the experience across
+ * sites — fast on dexscreener, slow on Birdeye. We unified to one value
+ * so the overlay's first appearance feels consistent everywhere, no
+ * matter what site the user is on.
+ *
+ * 1000ms picked because:
+ *  - Birdeye SPA hydrates in 800-1200ms (the longest in the matrix);
+ *    1000ms lands inside that window and works for the majority of
+ *    Birdeye loads. Earlier adapter-specific value was 1200ms — we
+ *    accept slightly tighter timing to keep all sites uniform.
+ *  - Other sites (dexscreener, pump.fun, axiom, etc.) only needed
+ *    400-800ms but the extra ~300ms is imperceptible relative to the
+ *    network round-trip on the scan call that follows immediately.
+ *  - Single source of truth: tune in this file if site SPAs change.
+ *
+ * Minimum visible loading time on the silent-rescan shimmer is gated
+ * separately (see scanner.ts MIN_REFRESH_MS) — that one keeps the
+ * shimmer on screen for at least ~500ms even when the API is fast,
+ * so login/logout never produces a sub-perceptible flash.
+ */
+export const INITIAL_POLL_DELAY = 1000
+
 export const RISK_CLASS: Record<string, string> = {
   SAFE:    "safe",
   CAUTION: "caution",

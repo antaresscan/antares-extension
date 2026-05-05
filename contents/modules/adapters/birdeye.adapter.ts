@@ -1,5 +1,6 @@
 import type { SiteAdapter } from "./base-adapter"
 import { extractCAFromPathname } from "./base-adapter"
+import { INITIAL_POLL_DELAY } from "../constants"
 
 /**
  * Extract the token CA from a Birdeye URL pathname.
@@ -43,9 +44,12 @@ function caFromBirdeyePath(url: URL): string {
 export const BirdeyeAdapter: SiteAdapter = {
   name: "Birdeye",
   hostnames: ["birdeye.so"],
-  // 1200ms: gives Birdeye SPA enough time to redirect and settle on
-  // the canonical /solana/token/{CA} URL before we extract the address.
-  initialDelay: 1200,
+  // Uniform delay across all sites — see INITIAL_POLL_DELAY in
+  // constants.ts. Birdeye specifically benefits from a slightly longer
+  // pause (the SPA redirect chain takes 800-1200ms to settle); the
+  // shared 1000ms value is the middle of that window so most loads
+  // catch the canonical URL before extraction runs.
+  initialDelay: INITIAL_POLL_DELAY,
   extractCA(url: URL, _doc: Document): string {
     // Birdeye canonical: /solana/token/{CA} or legacy /token/{CA}
     // Do NOT fall back to DOM — Birdeye pages contain hundreds of

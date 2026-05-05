@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Antares — Loading State Options</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html, body {
+    background: #08090b;
+    color: #ddd;
+    font-family: 'IBM Plex Mono', monospace;
+    min-height: 100vh;
+  }
+  body { padding: 32px 24px 48px; }
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    letter-spacing: .04em;
+    color: #fafafa;
+    margin-bottom: 6px;
+  }
+  .subtitle {
+    color: #777;
+    font-size: 12px;
+    letter-spacing: .04em;
+    margin-bottom: 24px;
+  }
+  .controls {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    margin-bottom: 36px;
+    padding: 14px 18px;
+    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 4px;
+    flex-wrap: wrap;
+  }
+  .trigger-btn {
+    padding: 10px 18px;
+    background: transparent;
+    color: #00e5b0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    border: 1px solid rgba(0,229,176,.5);
+    border-radius: 2px;
+    cursor: pointer;
+    transition: background .2s, border-color .2s, color .2s;
+  }
+  .trigger-btn:hover {
+    background: rgba(0,229,176,.08);
+    border-color: #00e5b0;
+    color: #4ff5cc;
+  }
+  .auto-cycle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #aaa;
+    font-size: 11px;
+    letter-spacing: .04em;
+    cursor: pointer;
+    user-select: none;
+  }
+  .auto-cycle input { accent-color: #00e5b0; }
+  .scenario-toggle {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    color: #aaa;
+    font-size: 11px;
+    letter-spacing: .04em;
+    margin-left: auto;
+  }
+  .scenario-toggle label {
+    cursor: pointer;
+    padding: 5px 10px;
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 2px;
+    transition: all .2s;
+  }
+  .scenario-toggle label.active {
+    color: #00e5b0;
+    border-color: rgba(0,229,176,.5);
+    background: rgba(0,229,176,.06);
+  }
+  .scenario-toggle input { display: none; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 28px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  .demo-card {
+    background: #0d0e10;
+    border: 1px solid rgba(255,255,255,.06);
+    border-radius: 6px;
+    padding: 24px;
+    position: relative;
+  }
+  .demo-card h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px;
+    color: #fafafa;
+    letter-spacing: .04em;
+    margin-bottom: 4px;
+  }
+  .demo-card .desc {
+    color: #888;
+    font-size: 11px;
+    letter-spacing: .03em;
+    line-height: 1.55;
+    margin-bottom: 16px;
+    min-height: 44px;
+  }
+  .demo-card .stage {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background:
+      repeating-linear-gradient(45deg, transparent 0 12px, rgba(255,255,255,.015) 12px 13px),
+      #0a0b0d;
+    padding: 26px 14px;
+    border-radius: 4px;
+    min-height: 470px;
+    position: relative;
+  }
+  .demo-card .meta {
+    margin-top: 14px;
+    display: flex;
+    gap: 14px;
+    font-size: 10px;
+    color: #555;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    flex-wrap: wrap;
+  }
+  .demo-card .meta b { color: #888; font-weight: 600; }
+
+  /* ──────────────────────────────────────────────────────────────
+     Overlay box — adapted from contents/modules/styles.ts
+     ────────────────────────────────────────────────────────────── */
+  .box {
+    pointer-events: auto;
+    width: 290px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid rgba(255,255,255,.06);
+    box-shadow: 0 40px 80px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.02) inset;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    line-height: 1.4;
+    background: linear-gradient(180deg,#0e0d0a 0%,#0a0a09 100%);
+  }
+  .topbar {
+    height: 2px;
+    background: linear-gradient(90deg,transparent,#f5d000,transparent);
+  }
+  .hd {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px 0;
+  }
+  .brand {
+    font-size: 7px;
+    color: #555;
+    letter-spacing: .55em;
+    text-transform: uppercase;
+  }
+  .quota-badge {
+    font-size: 7px;
+    letter-spacing: .18em;
+    font-weight: 600;
+    padding: 3px 7px;
+    border-radius: 2px;
+    text-transform: uppercase;
+    margin: 0 8px;
+    transition: color .25s, border-color .25s, background .25s, transform .25s;
+  }
+  .quota-badge.free {
+    color: #555;
+    border: 1px solid #1a1a1e;
+  }
+  .quota-badge.pro {
+    color: #00e5b0;
+    border: 1px solid rgba(0,229,176,.3);
+    background: rgba(0,229,176,.05);
+    letter-spacing: .22em;
+  }
+  .hd-right { display: flex; align-items: center; gap: 10px; color: #3a3a42; font-size: 11px; }
+  .x { color: #3a3a42; cursor: pointer; }
+  .tk {
+    padding: 6px 14px 0;
+    font-size: 10px;
+    color: #666;
+  }
+  .tk b { color: #bbb; font-weight: 600; }
+  .vb { padding: 2px 14px 6px; }
+  .vb h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 46px;
+    line-height: .88;
+    letter-spacing: .04em;
+    color: #f5d000;
+    text-shadow: 0 0 30px rgba(245,208,0,.12);
+  }
+  .sr { display: flex; align-items: center; gap: 8px; padding: 0 14px; margin-top: 10px; }
+  .sr .n { font-size: 11px; color: #555; font-weight: 600; }
+  .sr .n b { color: #aaa; }
+  .dots { display: flex; gap: 2px; align-items: center; }
+  .dt { width: 4px; height: 4px; border-radius: 50%; }
+  .dt.on { background: #00e5b0; }
+  .dt.off { background: #222226; }
+  .sbar { margin: 6px 14px 0; height: 2px; background: #181818; border-radius: 1px; overflow: hidden; }
+  .sbar-fill { height: 100%; background: linear-gradient(90deg,#f5d00044,#f5d000); }
+  .sum { padding: 8px 14px 0; font-size: 9px; color: #8a7820; letter-spacing: .04em; }
+  .sep { height: 1px; margin: 8px 14px; background: #1a1a1e; }
+  .ss {
+    display: flex;
+    margin: 0 14px;
+    background: #0a0a0c;
+    border-radius: 3px;
+    overflow: hidden;
+    border: 1px solid #1a1a1e;
+  }
+  .si { flex: 1; text-align: center; padding: 7px 2px; position: relative; }
+  .si + .si::before {
+    content: '';
+    position: absolute; left: 0; top: 25%; height: 50%; width: 1px;
+    background: #1a1a1e;
+  }
+  .si span { display: block; font-size: 7px; color: #555; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 3px; }
+  .si b { font-size: 10px; font-weight: 700; color: #e0e0e0; }
+  .si b.y { color: #00e5b0; }
+  .si b.n { color: #ff5f5f; }
+  .fo { display: flex; margin: 8px 14px 10px; gap: 4px; }
+  .fo a, .fo button {
+    flex: 1; display: block; padding: 8px;
+    font-size: 8px; letter-spacing: .12em;
+    text-transform: uppercase; text-align: center;
+    border-radius: 2px;
+    font-family: 'IBM Plex Mono', monospace;
+    background: transparent;
+    cursor: pointer;
+  }
+  .fo a:nth-child(1) {
+    background: rgba(255,95,95,.05);
+    color: #cc7070;
+    border: 1px solid rgba(255,95,95,.25);
+  }
+  .fo a:nth-child(2) {
+    color: #888;
+    border: 1px solid #252528;
+    text-decoration: none;
+  }
+  .fo a:nth-child(3) {
+    color: #a78bfa;
+    border: 1px solid rgba(167,139,250,.25);
+    background: rgba(167,139,250,.05);
+  }
+
+  /* ╔════════════════════════════════════════════════════════════════╗
+     ║  OPTION 1 — Slim animated shimmer at top                       ║
+     ╚════════════════════════════════════════════════════════════════╝ */
+  @keyframes refresh-slide {
+    from { background-position: -40% 50%; }
+    to   { background-position: 140% 50%; }
+  }
+  .opt1 .box.refreshing .topbar {
+    background-size: 40% 100%;
+    background-repeat: no-repeat;
+    animation: refresh-slide 1.2s linear infinite;
+  }
+
+  /* ╔════════════════════════════════════════════════════════════════╗
+     ║  OPTION 2 — Tier badge pulse + content dim                     ║
+     ╚════════════════════════════════════════════════════════════════╝ */
+  @keyframes badge-pulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0,229,176,.0); }
+    50%      { transform: scale(1.06); box-shadow: 0 0 14px 2px rgba(0,229,176,.4); }
+  }
+  .opt2 .box.refreshing .quota-badge {
+    animation: badge-pulse 1.2s ease-in-out infinite;
+    color: #00e5b0;
+    border-color: rgba(0,229,176,.5);
+    background: rgba(0,229,176,.08);
+  }
+  .opt2 .box.refreshing .vb,
+  .opt2 .box.refreshing .sr,
+  .opt2 .box.refreshing .sum,
+  .opt2 .box.refreshing .ss,
+  .opt2 .box.refreshing .fo {
+    opacity: .55;
+    transition: opacity .25s ease;
+  }
+
+  /* ╔════════════════════════════════════════════════════════════════╗
+     ║  OPTION 3 — Toast notification                                 ║
+     ╚════════════════════════════════════════════════════════════════╝ */
+  .toast {
+    position: absolute;
+    top: 6px; left: 6px; right: 6px;
+    padding: 8px 12px;
+    background: rgba(0,229,176,.12);
+    color: #00e5b0;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-align: center;
+    border: 1px solid rgba(0,229,176,.4);
+    border-radius: 3px;
+    backdrop-filter: blur(6px);
+    transform: translateY(-12px);
+    opacity: 0;
+    transition: transform .3s cubic-bezier(.22,1,.36,1), opacity .3s ease;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .toast.show {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  .toast.logout {
+    background: rgba(255,255,255,.04);
+    color: #aaa;
+    border-color: rgba(255,255,255,.1);
+  }
+
+  /* ╔════════════════════════════════════════════════════════════════╗
+     ║  OPTION 4 — Shimmer + tier badge crossfade                     ║
+     ╚════════════════════════════════════════════════════════════════╝ */
+  .opt4 .box.refreshing .topbar {
+    background-size: 40% 100%;
+    background-repeat: no-repeat;
+    animation: refresh-slide 1.2s linear infinite;
+  }
+  @keyframes badge-out {
+    from { transform: translateY(0); opacity: 1; }
+    to   { transform: translateY(-6px); opacity: 0; }
+  }
+  @keyframes badge-in {
+    from { transform: translateY(6px); opacity: 0; }
+    to   { transform: translateY(0); opacity: 1; }
+  }
+  .opt4 .quota-badge.swap-out { animation: badge-out .18s ease forwards; }
+  .opt4 .quota-badge.swap-in  { animation: badge-in .25s cubic-bezier(.22,1,.36,1) forwards; }
+
+  /* Helper: a green flash on the topbar when refresh completes (Option 1 + 4) */
+  @keyframes complete-flash {
+    0%   { box-shadow: 0 0 0 0 rgba(0,229,176,.0); }
+    50%  { box-shadow: 0 0 14px 2px rgba(0,229,176,.5); }
+    100% { box-shadow: 0 0 0 0 rgba(0,229,176,.0); }
+  }
+  .topbar.flash { animation: complete-flash .6s ease; }
+</style>
+</head>
+<body>
+
+<h1>Antares — Loading State Options</h1>
+<div class="subtitle">
+  Click <b>Simulate login/logout</b> to see each option's refresh animation.
+  Auto-cycle loops every 5 seconds.
+</div>
+
+<div class="controls">
+  <button class="trigger-btn" onclick="runAll()">▶ Simulate login/logout</button>
+  <label class="auto-cycle">
+    <input type="checkbox" id="autocycle"> Auto-cycle every 5s
+  </label>
+  <div class="scenario-toggle">
+    <span>Scenario:</span>
+    <label class="active" id="lab-login">
+      <input type="radio" name="scenario" value="login" checked> Login (Free → Pro)
+    </label>
+    <label id="lab-logout">
+      <input type="radio" name="scenario" value="logout"> Logout (Pro → Free)
+    </label>
+  </div>
+</div>
+
+<div class="grid">
+
+  <!-- Option 1 -->
+  <div class="demo-card opt1" id="opt1">
+    <h2>Option 1 — Slim shimmer at top</h2>
+    <div class="desc">
+      Animated gradient slides across the 2px topbar during the fetch.
+      Body content stays fully visible. Industry-standard pattern (Linear, Vercel, GitHub).
+    </div>
+    <div class="stage">
+      <div class="box">
+        <div class="topbar"></div>
+        <div class="hd">
+          <span class="brand">ANTARES</span>
+          <span class="quota-badge free">FREE</span>
+          <span class="hd-right"><span>⊕</span><span class="x">×</span></span>
+        </div>
+        <div class="tk"><b>BULL</b> Bull</div>
+        <div class="vb"><h1>CAUTION</h1></div>
+        <div class="sr">
+          <span class="n"><b>850</b> / 1000</span>
+          <div class="dots">
+            <div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt off"></div>
+          </div>
+        </div>
+        <div class="sbar"><div class="sbar-fill" style="width:85%"></div></div>
+        <div class="sum">1 flag detected</div>
+        <div class="sep"></div>
+        <div class="ss">
+          <div class="si"><span>Sell</span><b class="y">✓</b></div>
+          <div class="si"><span>Mint</span><b class="y">✓</b></div>
+          <div class="si"><span>Freeze</span><b class="y">✓</b></div>
+          <div class="si"><span>LP Lock</span><b class="n">✗</b></div>
+          <div class="si"><span>Liq</span><b>$2.32M</b></div>
+        </div>
+        <div class="fo">
+          <a href="#">⚠ Critical Flags</a>
+          <a href="#">Full Analysis →</a>
+          <a href="#">⬢ AI Summary</a>
+        </div>
+      </div>
+    </div>
+    <div class="meta">
+      <span><b>Effort:</b> ~30 lines CSS + 4 lines TS</span>
+      <span><b>Risk:</b> almost none</span>
+      <span><b>Vibe:</b> calm, pro</span>
+    </div>
+  </div>
+
+  <!-- Option 2 -->
+  <div class="demo-card opt2" id="opt2">
+    <h2>Option 2 — Badge pulse + body dim</h2>
+    <div class="desc">
+      Tier badge pulses + glows; body content dims to 55%.
+      Localized signal — tells the user "we're verifying your account".
+    </div>
+    <div class="stage">
+      <div class="box">
+        <div class="topbar"></div>
+        <div class="hd">
+          <span class="brand">ANTARES</span>
+          <span class="quota-badge free">FREE</span>
+          <span class="hd-right"><span>⊕</span><span class="x">×</span></span>
+        </div>
+        <div class="tk"><b>BULL</b> Bull</div>
+        <div class="vb"><h1>CAUTION</h1></div>
+        <div class="sr">
+          <span class="n"><b>850</b> / 1000</span>
+          <div class="dots">
+            <div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt off"></div>
+          </div>
+        </div>
+        <div class="sbar"><div class="sbar-fill" style="width:85%"></div></div>
+        <div class="sum">1 flag detected</div>
+        <div class="sep"></div>
+        <div class="ss">
+          <div class="si"><span>Sell</span><b class="y">✓</b></div>
+          <div class="si"><span>Mint</span><b class="y">✓</b></div>
+          <div class="si"><span>Freeze</span><b class="y">✓</b></div>
+          <div class="si"><span>LP Lock</span><b class="n">✗</b></div>
+          <div class="si"><span>Liq</span><b>$2.32M</b></div>
+        </div>
+        <div class="fo">
+          <a href="#">⚠ Critical Flags</a>
+          <a href="#">Full Analysis →</a>
+          <a href="#">⬢ AI Summary</a>
+        </div>
+      </div>
+    </div>
+    <div class="meta">
+      <span><b>Effort:</b> ~25 lines CSS + 6 lines TS</span>
+      <span><b>Risk:</b> dim can read as "broken"</span>
+      <span><b>Vibe:</b> active, "checking..."</span>
+    </div>
+  </div>
+
+  <!-- Option 3 -->
+  <div class="demo-card opt3" id="opt3">
+    <h2>Option 3 — Toast banner</h2>
+    <div class="desc">
+      Brief 2.5s banner: "Pro unlocked" or "Signed out". Most explicit, builds product personality.
+      Risk: feels intrusive when testing log-in/out repeatedly.
+    </div>
+    <div class="stage">
+      <div class="box">
+        <div class="toast" id="opt3-toast">✨ Pro unlocked</div>
+        <div class="topbar"></div>
+        <div class="hd">
+          <span class="brand">ANTARES</span>
+          <span class="quota-badge free">FREE</span>
+          <span class="hd-right"><span>⊕</span><span class="x">×</span></span>
+        </div>
+        <div class="tk"><b>BULL</b> Bull</div>
+        <div class="vb"><h1>CAUTION</h1></div>
+        <div class="sr">
+          <span class="n"><b>850</b> / 1000</span>
+          <div class="dots">
+            <div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt off"></div>
+          </div>
+        </div>
+        <div class="sbar"><div class="sbar-fill" style="width:85%"></div></div>
+        <div class="sum">1 flag detected</div>
+        <div class="sep"></div>
+        <div class="ss">
+          <div class="si"><span>Sell</span><b class="y">✓</b></div>
+          <div class="si"><span>Mint</span><b class="y">✓</b></div>
+          <div class="si"><span>Freeze</span><b class="y">✓</b></div>
+          <div class="si"><span>LP Lock</span><b class="n">✗</b></div>
+          <div class="si"><span>Liq</span><b>$2.32M</b></div>
+        </div>
+        <div class="fo">
+          <a href="#">⚠ Critical Flags</a>
+          <a href="#">Full Analysis →</a>
+          <a href="#">⬢ AI Summary</a>
+        </div>
+      </div>
+    </div>
+    <div class="meta">
+      <span><b>Effort:</b> ~50 CSS + ~30 TS</span>
+      <span><b>Risk:</b> intrusive on rapid sign-in/out</span>
+      <span><b>Vibe:</b> celebratory, friendly</span>
+    </div>
+  </div>
+
+  <!-- Option 4 -->
+  <div class="demo-card opt4" id="opt4">
+    <h2>Option 4 — Shimmer + badge crossfade</h2>
+    <div class="desc">
+      Option 1's shimmer + when new data lands, the tier badge slides up & out, new value
+      slides in from below. Two-stage feedback: "working" → "done, here's what changed."
+    </div>
+    <div class="stage">
+      <div class="box">
+        <div class="topbar"></div>
+        <div class="hd">
+          <span class="brand">ANTARES</span>
+          <span class="quota-badge free" id="opt4-badge">FREE</span>
+          <span class="hd-right"><span>⊕</span><span class="x">×</span></span>
+        </div>
+        <div class="tk"><b>BULL</b> Bull</div>
+        <div class="vb"><h1>CAUTION</h1></div>
+        <div class="sr">
+          <span class="n"><b>850</b> / 1000</span>
+          <div class="dots">
+            <div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt on"></div><div class="dt off"></div>
+          </div>
+        </div>
+        <div class="sbar"><div class="sbar-fill" style="width:85%"></div></div>
+        <div class="sum">1 flag detected</div>
+        <div class="sep"></div>
+        <div class="ss">
+          <div class="si"><span>Sell</span><b class="y">✓</b></div>
+          <div class="si"><span>Mint</span><b class="y">✓</b></div>
+          <div class="si"><span>Freeze</span><b class="y">✓</b></div>
+          <div class="si"><span>LP Lock</span><b class="n">✗</b></div>
+          <div class="si"><span>Liq</span><b>$2.32M</b></div>
+        </div>
+        <div class="fo">
+          <a href="#">⚠ Critical Flags</a>
+          <a href="#">Full Analysis →</a>
+          <a href="#">⬢ AI Summary</a>
+        </div>
+      </div>
+    </div>
+    <div class="meta">
+      <span><b>Effort:</b> Option 1 + ~25 lines</span>
+      <span><b>Risk:</b> low</span>
+      <span><b>Vibe:</b> premium SaaS</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Simulated fetch duration — set close to a typical real silent rescan.
+  const FETCH_MS = 2200;
+
+  let currentScenario = 'login'; // 'login' or 'logout'
+
+  // Scenario toggle
+  document.querySelectorAll('input[name="scenario"]').forEach(input => {
+    input.addEventListener('change', () => {
+      currentScenario = input.value;
+      document.querySelectorAll('.scenario-toggle label').forEach(l => l.classList.remove('active'));
+      document.getElementById('lab-' + currentScenario).classList.add('active');
+      // Reset badges to the STARTING state for the new scenario
+      resetBadges();
+    });
+  });
+
+  function setBadge(badge, tier) {
+    badge.textContent = tier === 'pro' ? 'LIFE' : 'FREE';
+    badge.classList.remove('free', 'pro');
+    badge.classList.add(tier === 'pro' ? 'pro' : 'free');
+  }
+
+  function resetBadges() {
+    const startTier = currentScenario === 'login' ? 'free' : 'pro';
+    document.querySelectorAll('.quota-badge').forEach(b => setBadge(b, startTier));
+    // Clear any stuck animation state
+    document.querySelectorAll('.box').forEach(box => box.classList.remove('refreshing'));
+    document.querySelectorAll('.toast').forEach(t => t.classList.remove('show'));
+    document.querySelectorAll('.topbar').forEach(t => t.classList.remove('flash'));
+  }
+
+  function runOpt1() {
+    const card = document.getElementById('opt1');
+    const box = card.querySelector('.box');
+    const badge = card.querySelector('.quota-badge');
+    const topbar = card.querySelector('.topbar');
+    box.classList.add('refreshing');
+    setTimeout(() => {
+      box.classList.remove('refreshing');
+      const newTier = currentScenario === 'login' ? 'pro' : 'free';
+      setBadge(badge, newTier);
+      topbar.classList.add('flash');
+      setTimeout(() => topbar.classList.remove('flash'), 600);
+    }, FETCH_MS);
+  }
+
+  function runOpt2() {
+    const card = document.getElementById('opt2');
+    const box = card.querySelector('.box');
+    const badge = card.querySelector('.quota-badge');
+    box.classList.add('refreshing');
+    setTimeout(() => {
+      box.classList.remove('refreshing');
+      const newTier = currentScenario === 'login' ? 'pro' : 'free';
+      setBadge(badge, newTier);
+    }, FETCH_MS);
+  }
+
+  function runOpt3() {
+    const card = document.getElementById('opt3');
+    const badge = card.querySelector('.quota-badge');
+    const toast = card.querySelector('.toast');
+    // Toast appears at start of refresh, badge updates simultaneously,
+    // toast fades out after 2.5s
+    const newTier = currentScenario === 'login' ? 'pro' : 'free';
+    if (currentScenario === 'login') {
+      toast.textContent = '✨ Pro unlocked';
+      toast.classList.remove('logout');
+    } else {
+      toast.textContent = 'Signed out — Free tier';
+      toast.classList.add('logout');
+    }
+    // Toast slides in immediately to acknowledge the action
+    toast.classList.add('show');
+    // Mid-fetch, the badge updates
+    setTimeout(() => setBadge(badge, newTier), FETCH_MS * 0.6);
+    // Toast lingers ~2.5s total then dismisses
+    setTimeout(() => toast.classList.remove('show'), 2500);
+  }
+
+  function runOpt4() {
+    const card = document.getElementById('opt4');
+    const box = card.querySelector('.box');
+    const badge = card.querySelector('.quota-badge');
+    const topbar = card.querySelector('.topbar');
+    box.classList.add('refreshing');
+    setTimeout(() => {
+      // Badge crossfade
+      badge.classList.add('swap-out');
+      setTimeout(() => {
+        const newTier = currentScenario === 'login' ? 'pro' : 'free';
+        setBadge(badge, newTier);
+        badge.classList.remove('swap-out');
+        badge.classList.add('swap-in');
+        setTimeout(() => badge.classList.remove('swap-in'), 250);
+      }, 180);
+      box.classList.remove('refreshing');
+      topbar.classList.add('flash');
+      setTimeout(() => topbar.classList.remove('flash'), 600);
+    }, FETCH_MS);
+  }
+
+  function runAll() {
+    runOpt1();
+    runOpt2();
+    runOpt3();
+    runOpt4();
+    // Flip scenario for next cycle so users see both directions
+    setTimeout(() => {
+      const inputs = document.querySelectorAll('input[name="scenario"]');
+      const next = currentScenario === 'login' ? 'logout' : 'login';
+      inputs.forEach(i => { i.checked = i.value === next; });
+      currentScenario = next;
+      document.querySelectorAll('.scenario-toggle label').forEach(l => l.classList.remove('active'));
+      document.getElementById('lab-' + next).classList.add('active');
+    }, FETCH_MS + 400);
+  }
+
+  // Auto-cycle
+  let autoTimer = null;
+  document.getElementById('autocycle').addEventListener('change', e => {
+    if (e.target.checked) {
+      runAll();
+      autoTimer = setInterval(runAll, 5000);
+    } else {
+      if (autoTimer) clearInterval(autoTimer);
+      autoTimer = null;
+    }
+  });
+
+  // Init
+  resetBadges();
+</script>
+
+</body>
+</html>
