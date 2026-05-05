@@ -1,6 +1,13 @@
-// api/_lib/outcome-stats.ts — Time-to-Rug + Outcome Histogram payload.
+// api/_lib/outcome-stats.ts — Time-to-Rug + outcome distribution payload.
 //
-// V1 ships a heuristic profile-matcher tied to the verdict + token age
+// DEPRECATED in #430: the Outcome Histogram tab on the Full Analysis
+// page was replaced by Wash Volume, which derives its score directly
+// from DexScreener pair.txns + pair.volume. The `outcomeStats` field is
+// no longer consumed by the frontend. Kept here so the API response
+// shape stays stable for older cached scans; safe to delete in a
+// follow-up cleanup once cached responses have rotated.
+//
+// V1 shipped a heuristic profile-matcher tied to the verdict + token age
 // + concentration + vol/liq ratio. The output shape mirrors what the
 // real backtest-corpus matcher (J3-J5 harness) will produce so the
 // frontend wiring stays unchanged once the corpus comes online.

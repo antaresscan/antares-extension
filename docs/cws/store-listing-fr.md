@@ -63,14 +63,20 @@ mauvaise source ne peut pas se cacher ; un faux positif ne peut pas
 basculer un token clean en RUG. Un "Safe Gate" override sur les flags
 critiques (LP ouvert, honeypot, autorité mint active, nom trompeur).
 
-CE QUE TU VOIS DANS L'OVERLAY
+CE QUE TU OBTIENS
 
+  Dans l'overlay (live sur chaque page token) :
   • Le score sur 1000, coloré par verdict
   • Panel Critical Flags (pourquoi ce token est flag, classé par impact)
   • AI Summary qui explique le verdict en 2-4 phrases
-  • Holder Activity (60 dernières minutes — vois les whales dump en live)
-  • Verdict Timeline (historique des verdicts pour ce token)
   • Grille Sell / Mint / Freeze / LP / Liquidité
+
+  Dans la page Full Analysis (section Deep Analysis, 5 onglets dédiés) :
+  • Insider Watch — heatmap des top wallets, qui accumule vs qui dump
+  • Buy/Sell Flow — argent qui entre vs qui sort sur 5min / 1h / 6h
+  • Wash Volume — score wash 0-100, estimation volume réel vs annoncé
+  • Sniper Map — activité bots au launch + état de rétention
+  • Exit Liquidity — slippage à $100 / $1K / $5K / $10K / $20K de sell
 
 TARIFICATION — HONNÊTE ET PLAFONNÉE
 

@@ -1,5 +1,6 @@
-// api/_lib/holder-activity.ts — composes the Holder Activity tab data
-// shown on the v5 Deep Analysis section. For each top holder we
+// api/_lib/holder-activity.ts — composes wallet-level activity rows
+// consumed by the Insider Watch tab (replaced "Holder Activity" in the
+// post-#430 redesign). For each top holder we
 // classify their last-60min on-chain activity into a single label
 // (Holding / Selling / Buying / Splitting / Static / Reducing) and
 // estimate position change as a percentage of their total holdings.

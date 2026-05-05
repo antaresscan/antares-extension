@@ -3,13 +3,14 @@
 // the timestamp (ms), member is JSON of the entry. Read returns the
 // last N entries oldest→newest with the most recent flagged as "now".
 //
-// Used by the v5 Timeline tab on the token page: instead of showing a
-// static bookend (NOW + token launch), the tab renders the actual
-// verdict-progression captured across previous scans.
+// DEPRECATED in #430: the Timeline tab on the Full Analysis page was
+// replaced by Insider Watch, so the `verdictHistory` field is no longer
+// consumed by the frontend. The history is still persisted on every
+// scan — kept for future analytics (verdict-evolution tracking,
+// rugpull-leadtime analysis) and so cached scans don't lose data.
 //
 // The persistence path is failure-tolerant: if Redis is down, push and
-// read both no-op silently — the scan still serves the current verdict,
-// and the frontend falls back to its v5 mock for the timeline rows.
+// read both no-op silently — the scan still serves the current verdict.
 
 import type { Redis } from "@upstash/redis";
 import {

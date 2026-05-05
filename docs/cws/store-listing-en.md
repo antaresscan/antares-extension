@@ -62,14 +62,20 @@ can't hide; one false-positive can't flip a clean token to RUG. A "Safe
 Gate" overrides on hard kill flags (LP open, honeypot, mint authority
 active, deceptive name).
 
-WHAT YOU SEE IN THE OVERLAY
+WHAT YOU GET
 
+  In the overlay (live on every token page):
   • The 1000-point score, color-coded by verdict
   • Critical Flags panel (why this token was flagged, ranked by impact)
   • AI Summary explaining the verdict in 2-4 sentences
-  • Holder Activity (last 60 minutes — see whales dumping in real time)
-  • Verdict Timeline (per-token history of past verdicts)
   • Sell / Mint / Freeze / LP / Liquidity status grid
+
+  In the Full Analysis page (Deep Analysis section, 5 specialized tabs):
+  • Insider Watch — heatmap of top wallets, see who's accumulating vs dumping
+  • Buy/Sell Flow — money in vs money out across 5min / 1h / 6h windows
+  • Wash Volume — 0-100 wash score, real-vs-reported volume estimate
+  • Sniper Map — launch-block bot activity + retention status
+  • Exit Liquidity — slippage at $100 / $1K / $5K / $10K / $20K sell sizes
 
 PRICING — HONEST AND CAPPED
 
