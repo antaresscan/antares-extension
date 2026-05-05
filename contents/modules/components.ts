@@ -227,6 +227,28 @@ export function triggerResultAnimations(el: HTMLDivElement) {
   })
 }
 
+/**
+ * Apply the final score + bar values WITHOUT animation. Used by silent
+ * rescan paths (login/logout sync, tab focus) where playing the entrance
+ * tween would feel like a reload — but the values STILL have to be
+ * written into the DOM. buildResultNode renders the score node with
+ * textContent "0" and the bar with width 0%; the actual numbers live in
+ * the data-target / data-w attributes and get written here.
+ *
+ * Without this fix the silent path showed "0 / 1000" plus a 0%-wide bar
+ * for every freshly-rendered card after a session change, even though
+ * the dots and the verdict colour reflected the real (correct) score —
+ * read as "the extension is broken after I logged in/out".
+ */
+export function applyFinalAnimationValues(el: HTMLDivElement) {
+  el.querySelectorAll(".sbar-fill").forEach((b: Element) => {
+    const bar = b as HTMLElement
+    bar.style.width = (bar.dataset.w || "0") + "%"
+  })
+  const scoreEl = el.querySelector(".ant-score") as HTMLElement | null
+  if (scoreEl) scoreEl.textContent = scoreEl.dataset.target || "0"
+}
+
 export function easeOutQuad(t: number): number { return t * (2 - t) }
 
 export function animateScore(el: HTMLElement, target: number, duration = 1100) {

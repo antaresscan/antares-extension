@@ -4,7 +4,7 @@ import { API, LS_PREFIX, IGNORE } from "./constants"
 import { state, scanCache } from "./state"
 import { getCached, saveToLS } from "./cache"
 import { readSessionToken } from "./session-token"
-import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimations, buildResultNode, buildSkeletonNode, buildQuotaExhaustedNode, buildErrorNode } from "./components"
+import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimations, applyFinalAnimationValues, buildResultNode, buildSkeletonNode, buildQuotaExhaustedNode, buildErrorNode } from "./components"
 import { scanRateLimiter } from "../../shared/rate-limit"
 import { logger } from "../../shared/logger"
 import { getInstallId } from "../../shared/install-id"
@@ -252,7 +252,17 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
     // tree via DOM API only.
     el.replaceChildren(buildResultNode(cached, ca, installId))
     showBox()
-    if (!skipFlashUI) triggerResultAnimations(el)
+    if (skipFlashUI) {
+      // Silent rescan: skip the entrance animation BUT still write the
+      // final score + bar values into the DOM. Without this, the cached
+      // overlay rendered "0 / 1000" with a 0%-wide bar after every
+      // login/logout because triggerResultAnimations is what writes the
+      // data-target / data-w values (the score textContent is initially
+      // "0" and the bar width starts at 0%).
+      applyFinalAnimationValues(el)
+    } else {
+      triggerResultAnimations(el)
+    }
     attachClose(cached.aiSummary ?? null, cached.flags ?? null)
     attachAnalysisBtn(ca)
     chrome.storage.local.get(["autoRescan"], (prefs) => {
@@ -297,7 +307,17 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
     saveToLS(ca, data, sessionToken ?? null)
     el.replaceChildren(buildResultNode(data, ca, installId))
     showBox()
-    if (!skipFlashUI) triggerResultAnimations(el)
+    if (skipFlashUI) {
+      // Silent rescan: skip the entrance animation BUT still write the
+      // final score + bar values into the DOM. Without this, the cached
+      // overlay rendered "0 / 1000" with a 0%-wide bar after every
+      // login/logout because triggerResultAnimations is what writes the
+      // data-target / data-w values (the score textContent is initially
+      // "0" and the bar width starts at 0%).
+      applyFinalAnimationValues(el)
+    } else {
+      triggerResultAnimations(el)
+    }
     attachClose(data.aiSummary ?? null, data.flags ?? null)
     attachAnalysisBtn(ca)
     chrome.storage.local.get(["autoRescan"], (prefs) => {
