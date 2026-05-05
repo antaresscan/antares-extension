@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tier badge — alternative styles</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@1,600;1,700&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#0a0a0c;--card:#111114;--ink:#eaeaea;--dim:#7a7a82;--muted:#454550;
+    --c:#00e5b0;--violet:#a78bfa;--gold:#f5d000;--cyan:#22d3ee;--coral:#ff7a59;
+    --caution:#f5d000;--danger:#ff5f5f;--safe:#00e5b0;
+  }
+  body{
+    background:var(--bg);color:var(--ink);font-family:'IBM Plex Mono',monospace;
+    padding:40px 24px 80px;min-height:100vh;
+  }
+  .stripe{position:fixed;top:0;left:0;right:0;height:3px;z-index:999;
+    background:linear-gradient(90deg,#c0007a,var(--c),#c8c000,#c0002a,var(--c),#c0007a);
+    background-size:400% 100%;animation:stripe 6s linear infinite;opacity:.7}
+  @keyframes stripe{0%{background-position:0% 0}100%{background-position:400% 0}}
+
+  .page{max-width:1320px;margin:0 auto}
+  .head h1{font:400 56px/1 'Bebas Neue',sans-serif;letter-spacing:.04em;margin:18px 0 8px}
+  .head p{font-size:13px;color:var(--dim);line-height:1.7;max-width:780px;margin-bottom:6px}
+  .head .eb{font:600 11px/1 'IBM Plex Mono',monospace;color:var(--c);
+    letter-spacing:.28em;text-transform:uppercase;display:flex;align-items:center;gap:10px}
+  .head .eb::before{content:'';width:22px;height:2px;background:var(--c)}
+  .head .legend{display:flex;gap:18px;font-size:11px;color:var(--dim);margin-top:18px}
+  .head .legend b{color:var(--ink);margin-right:6px}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));
+    gap:18px;margin-top:36px}
+
+  /* ── Each card frames one style: label + Free state + Pro state ───── */
+  .card{
+    background:var(--card);border:1px solid #1a1a1e;border-radius:6px;
+    padding:18px 18px 16px;display:flex;flex-direction:column;gap:14px;
+    transition:transform .28s,border-color .28s;
+  }
+  .card:hover{transform:translateY(-3px);border-color:#252529}
+  .card.featured{border:1px solid var(--c);box-shadow:0 0 0 1px var(--c) inset}
+  .card.featured::before{
+    content:'BASELINE — what you don\27t like';color:var(--c);
+    font:700 9px/1 'IBM Plex Mono',monospace;letter-spacing:.2em;
+  }
+  .card-h{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .card-h .num{
+    font:700 9px/1 'IBM Plex Mono',monospace;color:var(--muted);
+    letter-spacing:.2em;
+  }
+  .card-h .nm{font:600 12px/1.2 'IBM Plex Mono',monospace;color:var(--ink);letter-spacing:.04em}
+  .card-h .pill-tag{
+    font:700 9px/1 'IBM Plex Mono',monospace;color:#888;letter-spacing:.18em;
+    padding:3px 7px;border:1px solid #2a2a2e;border-radius:3px;text-transform:uppercase;
+  }
+  .card-h .pill-tag.exp{color:var(--violet);border-color:rgba(167,139,250,.4)}
+  .card-h .pill-tag.bal{color:var(--cyan);border-color:rgba(34,211,238,.4)}
+  .card-h .pill-tag.mini{color:#888;border-color:#2a2a2e}
+  .card .desc{font-size:11px;color:var(--dim);line-height:1.55}
+
+  /* Mini overlay topbar — what each style is anchored on */
+  .mini{
+    background:#0c0c0e;border:1px solid #1d1d22;border-radius:4px;padding:9px 11px;
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+  }
+  .mini .lf{display:flex;align-items:center;gap:9px;min-width:0;flex:1}
+  .mini .br{
+    font:600 11px/1 'IBM Plex Mono',monospace;color:#888;letter-spacing:.18em;
+  }
+  .mini .icns{display:flex;gap:4px;align-items:center;color:#3a3a40;font-size:10px}
+  .mini .icns span{cursor:default;padding:2px}
+
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .pair .col{display:flex;flex-direction:column;gap:6px}
+  .pair .lab{
+    font:600 9px/1 'IBM Plex Mono',monospace;color:var(--muted);
+    letter-spacing:.18em;
+  }
+
+  /* ════════════════════════════════════════════════════════════════════
+     STYLE 0 — Current baseline (the one you don't like)
+     ════════════════════════════════════════════════════════════════════ */
+  .b0-free{
+    font:700 9px/1 'IBM Plex Mono',monospace;letter-spacing:.18em;
+    padding:3px 8px;border-radius:3px;border:1px solid #2a2a2e;color:#888;
+  }
+  .b0-pro{
+    font:700 9px/1 'IBM Plex Mono',monospace;letter-spacing:.18em;
+    padding:3px 8px;border-radius:3px;border:1px solid rgba(0,229,176,.4);
+    color:var(--c);background:rgba(0,229,176,.08);
+  }
+
+  /* ════════════════════════════════════════════════════════════════════
+     STYLE 1 — Violet outline pill (no fill change)
+     ════════════════════════════════════════════════════════════════════ */
+  .b1-free{
+    font:700 9px/1 'IBM Plex Mono',monospace;letter-spacing:.18em;
+    padding:3px 8px;border-radius:3px;border:1px solid #2a2a2e;color:#888;
+  }
+  .b1-pro{
+    font:700 9px/1 'IBM Plex Mono',monospace;letter-spacing:.18em;
+    padding:3px 8px;border-radius:3px;border:1px solid var(--violet);
+    color:var(--violet);background:transparent;
+  }
+
+  /* ════════════════════════════════════════════════════════════════════
+     STYLE 2 — Crown icon only (no text)
+     ════════════════════════════════════════════════════════════════════ */
+  .b2-free,.b2-pro{display:inline-flex;align-items:center;gap:0;
+    width:20px;height:20px;justify-content:center;border-radius:50%;
+    border:1px solid #2a2a2e;color:#3a3a40}
+  .b2-pro{border-color:var(--gold);color:var(--gold);background:rgba(245,208,0,.08);
+    box-shadow:0 0 8px rgba(245,208,0,.15)}
+  .b2-free svg,.b2-pro svg{width:11px;height:11px;fill:currentColor}
+
+  /* ════════════════════════════════════════════════════════════════════
+     STYLE 3 — Star count (1 vs 3)
+     ════════════════════════════════════════════════════════════════════ */
+  .b3-free,.b3-pro{display:inline-flex;align-items:center;gap:1px;color:#3a3a40;font-size:10px}
+  .b3-pro{color:var(--gold)}
+
+  /* ════════════════════════════════════════════════════════════════════
+     STYLE 4 — Glowing dot
+     ════════════════════════════════════════════════════════════════════ */
+  .b4-free{display:inline-flex;align-items:center;gap:7px;
+    font:600 9px/1 'IBM Plex Mono',monospace;color:#666;letter-spacing:.18em}
+  .b4-free::before{content:'';width:6px;height:6px;border-radius:50%;background:#3a3a40}
+  .b4-pro{display:inline-flex;align-items:center;gap:7px;
+    font:600 9px/1 'IBM Plex Mono',monospace;color:var(--violet);letter-spacing:.18em}
+  .b4-pro::before{content:'';width:6px;height:6px;border-radius:50%;
+    background:var(--violet);box-shadow:0 0 8px var(--violet);animation:pulse 1.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(.85)}}
+
+  /* ════════════════════════════════════════════════════════════════════
+     STYLE 5 — Vertical accent bar before brand
+     ════════════════════════════════════════════════════════════════════ */
+  .mini.b5{padding-left:0}
+  .mini.b5 .lf{padding-left:11px;position:relative}
+  .mini.b5 .lf::before{content:'';position:absolute;left:0;top:-9px;bottom:-9px;
+    width:3px;background:#2a2a2e}
+  .mini.b5.pro .lf::before{background:linear-gradient(to bottom,var(--violet),#5c4099);
+    box-shadow:0 0 6px rgba(167,139,250,.4)}
+  .b5-free,.b5-pro{font:600 9px/1 'IBM Plex Mono',monospace;color:#666;letter-spacing:.18em}
+  .b5-pro{color:var(--violet)}
+
+  /* ════════════════════════════════════════════════════════════════════
+     STYLE 6 — Underline beneath ANTARES brand
+     ════════════════════════════════════════════════════════════════════ */
+  .mini.b6 .br{position:relative;padding-bottom:3px}
+  .mini.b6 .br::after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;background:#2a2a2e}
+  .mini.b6.pro .br::after{background:var(--gold);box-shadow:0 0 6px rgba(245,208,0,.4)}
+  .b6-free,.b6-pro{font:600 9px/1 'IBM Plex Mono',monospace;color:#666;letter-spacing:.18em;display:none}
+
+  /* ════════════════════════════════════════════════════════════════════
+     STYLE 7 — Corner ribbon (top-right of overlay, projects out)
+     ════════════════════════════════════════════════════════════════════ */
+  .mini.b7{position:relative;overflow:visible}
+  .mini.b7 .ribbon{
+    position:absolute;top:-7px;right:18px;padding:3px 7px;
+    background:var(--violet);color:#0a0a0c;
+    font:700 8px/1 'IBM Plex Mono',monospace;letter-spacing:.18em;
+    clip-path:polygon(0 0,100% 0,100% 100%,50% 80%,0 100%);
+    box-shadow:0 4px 8px rgba(0,0,0,.4);
+  }
+  .mini.b7.free .ribbon{display:none}
+
+  /* ════════════════════════════════════════════════════════════════════
+     STYLE 8 — Hexagonal badge
+     ════════════════════════════════════════════════════════════════════ */
+  .b8-free,.b8-pro{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:24px;height:22px;
+    clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);
+    font:700 8px/1 'IBM Plex Mono',monospace;letter-spacing:0;
+  }
+  .b8-free{background:#1a1a1e;color:#666}
+  .b8-pro{background:var(--cyan);color:#0a0a0c;
+    box-shadow:0 0 10px rgba(34,211,238,.4)}
+
+  /* ════════════════════════════════════════════════════════════════════
+     STYLE 9 — Diamond gem (rotated square)
+     ════════════════════════════════════════════════════════════════════ */
+  .b9-free,.b9-pro{
+    display:inline-block;width:11px;height:11px;transform:rotate(45deg);
+  }
+  .b9-free{background:#2a2a2e;border:1px solid #3a3a40}
+  .b9-pro{background:linear-gradient(135deg,var(--violet),#5c4099);
+    box-shadow:0 0 8px rgba(167,139,250,.5);border:1px solid var(--violet)}
+
+  /* ════════════════════════════════════════════════════════════════════
+     STYLE 10 — Padlock (closed/open)
+     ════════════════════════════════════════════════════════════════════ */
+  .b10-free,.b10-pro{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:18px;height:18px;color:#666;
+  }
+  .b10-pro{color:var(--c)}
+  .b10-free svg,.b10-pro svg{width:13px;height:13px;fill:currentColor}
+
+  /* ════════════════════════════════════════════════════════════════════
+     STYLE 11 — Holographic gradient pill
+     ════════════════════════════════════════════════════════════════════ */
+  .b11-free{
+    font:700 9px/1 'IBM Plex Mono',monospace;letter-spacing:.18em;
+    padding:3px 8px;border-radius:99px;border:1px solid #2a2a2e;color:#888;
+  }
+  .b11-pro{
+    font:700 9px/1 'IBM Plex Mono',monospace;letter-spacing:.18em;
+    padding:3px 8px;border-radius:99px;
+    background:linear-gradient(120deg,#a78bfa,#22d3ee,#f5d000,#a78bfa);
+    background-size:300% 100%;animation:holo 4s linear infinite;
+    color:#0a0a0c;border:1px solid transparent;
+  }
+  @keyframes holo{from{background-position:0% 0}to{background-position:300% 0}}
+
+  /* ════════════════════════════════════════════════════════════════════
+     STYLE 12 — Brushed metal plate
+     ════════════════════════════════════════════════════════════════════ */
+  .b12-free{
+    font:700 9px/1 'IBM Plex Mono',monospace;letter-spacing:.18em;color:#666;
+    padding:3px 8px;border-radius:2px;
+    background:linear-gradient(180deg,#1f1f23,#15151a);
+    border:1px solid #2a2a2e;box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+  }
+  .b12-pro{
+    font:700 9px/1 'IBM Plex Mono',monospace;letter-spacing:.18em;
+    color:#1a1a1e;padding:3px 8px;border-radius:2px;
+    background:linear-gradient(180deg,#e8e0c8,#a89968 60%,#7a6f4a);
+    border:1px solid #5a4f30;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 1px 0 rgba(0,0,0,.4);
+    text-shadow:0 1px 0 rgba(255,255,255,.2);
+  }
+
+  /* ════════════════════════════════════════════════════════════════════
+     STYLE 13 — Notched corner pill (cut corner)
+     ════════════════════════════════════════════════════════════════════ */
+  .b13-free,.b13-pro{
+    font:700 9px/1 'IBM Plex Mono',monospace;letter-spacing:.18em;
+    padding:3px 10px 3px 8px;
+    clip-path:polygon(0 0,100% 0,100% 60%,calc(100% - 6px) 100%,0 100%);
+  }
+  .b13-free{background:#1a1a1e;color:#666;border:1px solid #2a2a2e}
+  .b13-pro{
+    background:linear-gradient(135deg,rgba(167,139,250,.18),rgba(167,139,250,.06));
+    color:var(--violet);
+    border:1px solid var(--violet);
+  }
+
+  /* ════════════════════════════════════════════════════════════════════
+     STYLE 14 — Italic serif "Pro" (premium typography)
+     ════════════════════════════════════════════════════════════════════ */
+  .b14-free{
+    font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.18em;color:#666;
+  }
+  .b14-pro{
+    font:italic 700 14px/1 'Playfair Display',serif;color:var(--gold);
+    letter-spacing:.02em;text-shadow:0 0 12px rgba(245,208,0,.25);
+  }
+
+  /* ════════════════════════════════════════════════════════════════════
+     STYLE 15 — Brand color shift (no badge — ANTARES tints)
+     ════════════════════════════════════════════════════════════════════ */
+  .mini.b15.free .br{color:#888}
+  .mini.b15.pro .br{
+    background:linear-gradient(120deg,var(--violet),#22d3ee 60%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .b15-free,.b15-pro{font-size:9px;color:#666;display:none}
+
+  /* ════════════════════════════════════════════════════════════════════
+     STYLE 16 — Member number / token-style ID
+     ════════════════════════════════════════════════════════════════════ */
+  .b16-free{
+    font:600 9px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:#666;
+  }
+  .b16-pro{
+    font:600 9px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;
+    color:var(--c);padding:3px 8px;border:1px dashed var(--c);border-radius:2px;
+    background:rgba(0,229,176,.04);
+  }
+
+  /* ════════════════════════════════════════════════════════════════════
+     STYLE 17 — Tier-coloured corner inset (no badge — overlay border tints)
+     ════════════════════════════════════════════════════════════════════ */
+  .mini.b17{position:relative;overflow:hidden}
+  .mini.b17::before{
+    content:'';position:absolute;top:0;right:0;width:32px;height:32px;
+    background:transparent;
+  }
+  .mini.b17.pro::before{
+    background:linear-gradient(135deg,transparent 50%,var(--gold) 50%);
+    opacity:.85;
+  }
+  .b17-free,.b17-pro{font-size:9px;color:#666;display:none}
+
+  /* ════════════════════════════════════════════════════════════════════
+     STYLE 18 — Subtle dot-matrix banner
+     ════════════════════════════════════════════════════════════════════ */
+  .b18-free{
+    font:700 8px/1 'IBM Plex Mono',monospace;letter-spacing:.22em;color:#666;
+    padding:4px 8px;background:radial-gradient(circle at 1px 1px,#2a2a2e 1px,transparent 1px);
+    background-size:3px 3px;border:1px solid #1a1a1e;
+  }
+  .b18-pro{
+    font:700 8px/1 'IBM Plex Mono',monospace;letter-spacing:.22em;color:var(--coral);
+    padding:4px 8px;
+    background:radial-gradient(circle at 1px 1px,rgba(255,122,89,.4) 1px,transparent 1px);
+    background-size:3px 3px;border:1px solid rgba(255,122,89,.4);
+  }
+
+  /* ════════════════════════════════════════════════════════════════════
+     STYLE 19 — Animated unlock (lock fades, replaced by check)
+     ════════════════════════════════════════════════════════════════════ */
+  .b19-free,.b19-pro{
+    display:inline-flex;align-items:center;gap:5px;
+    font:600 9px/1 'IBM Plex Mono',monospace;letter-spacing:.18em;
+  }
+  .b19-free{color:#666}
+  .b19-pro{color:var(--c)}
+  .b19-free svg,.b19-pro svg{width:11px;height:11px;fill:currentColor}
+
+  /* Notes panel at bottom */
+  .recs{
+    margin-top:48px;padding:28px 32px;background:var(--card);border:1px solid #1a1a1e;border-radius:6px;
+  }
+  .recs h2{font:400 30px/1 'Bebas Neue',sans-serif;letter-spacing:.04em;margin-bottom:16px}
+  .recs ol{list-style:none;counter-reset:rec;display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+  .recs ol li{counter-increment:rec;padding:14px;background:#0c0c0e;border:1px solid #1a1a1e;
+    border-radius:4px;font-size:12px;line-height:1.6;color:var(--dim);position:relative;padding-left:46px}
+  .recs ol li::before{content:counter(rec);position:absolute;left:14px;top:14px;
+    font:700 16px/1 'Bebas Neue',sans-serif;color:var(--c);letter-spacing:.04em}
+  .recs ol li b{color:var(--ink)}
+  .recs .pick{
+    margin-top:24px;padding:18px 20px;background:rgba(0,229,176,.04);
+    border:1px solid rgba(0,229,176,.25);border-radius:4px;
+    font-size:13px;color:var(--ink);line-height:1.7;
+  }
+  .recs .pick b{color:var(--c)}
+</style>
+</head>
+<body>
+<div class="stripe" role="presentation"></div>
+
+<div class="page">
+<header class="head">
+  <div class="eb">Tier indicator — alternative styles</div>
+  <h1>FROM &ldquo;FREE&rdquo; <span style="color:var(--c)">→</span> &ldquo;LIFE&rdquo; <span style="color:var(--dim)">/</span> &ldquo;PRO&rdquo;</h1>
+  <p>20 alternative styles for the small tier indicator that lives next to the <code style="color:#aaa;background:#16161a;padding:1px 4px;border-radius:2px">ANTARES</code> brand in the overlay topbar. Each row shows the same style in <b style="color:#888">Free</b> and <b style="color:var(--c)">Pro / Lifetime</b> states so you can compare the transition.</p>
+  <p style="margin-top:10px"><b style="color:#ff8888">Style 00 is the current baseline</b> &mdash; the one you don&rsquo;t like. Pick anything from 01 to 19, or mix-and-match (a colour from one with a shape from another).</p>
+  <div class="legend">
+    <span><b style="color:var(--violet)">●</b> Violet</span>
+    <span><b style="color:var(--gold)">●</b> Gold</span>
+    <span><b style="color:var(--cyan)">●</b> Cyan</span>
+    <span><b style="color:var(--coral)">●</b> Coral</span>
+    <span><b style="color:var(--c)">●</b> Mint (current)</span>
+  </div>
+</header>
+
+<div class="grid">
+
+  <!-- 0 — BASELINE -->
+  <div class="card featured">
+    <div class="card-h">
+      <span class="num">00</span>
+      <span class="nm">Current baseline</span>
+      <span class="pill-tag">FYI</span>
+    </div>
+    <div class="desc">Outlined pill that fills with green on Pro. The dislike: it competes visually with the SAFE verdict (also green) and "the button turns green" feels too on-the-nose.</div>
+    <div class="pair">
+      <div class="col">
+        <div class="lab">FREE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span><span class="b0-free">FREE</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="lab">PRO / LIFE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span><span class="b0-pro">LIFE</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 1 — VIOLET OUTLINE -->
+  <div class="card">
+    <div class="card-h">
+      <span class="num">01</span>
+      <span class="nm">Violet outline pill</span>
+      <span class="pill-tag bal">violet</span>
+    </div>
+    <div class="desc">Same shape, but Pro outlines in violet (no fill). Stops the &ldquo;turns green&rdquo; effect and creates separation from the SAFE verdict colour.</div>
+    <div class="pair">
+      <div class="col">
+        <div class="lab">FREE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span><span class="b1-free">FREE</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="lab">PRO / LIFE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span><span class="b1-pro">LIFE</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2 — CROWN ICON -->
+  <div class="card">
+    <div class="card-h">
+      <span class="num">02</span>
+      <span class="nm">Crown icon only</span>
+      <span class="pill-tag exp">no text</span>
+    </div>
+    <div class="desc">No tier-name text. Free shows a tiny dimmed circle. Pro shows a gold crown icon with subtle glow. Premium feel without shouting.</div>
+    <div class="pair">
+      <div class="col">
+        <div class="lab">FREE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span>
+            <span class="b2-free" title="Free"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="3"/></svg></span>
+          </div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="lab">PRO / LIFE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span>
+            <span class="b2-pro" title="Pro"><svg viewBox="0 0 16 16"><path d="M2 5 L4 11 L8 7 L12 11 L14 5 L11 7 L8 3 L5 7 Z"/></svg></span>
+          </div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3 — STAR COUNT -->
+  <div class="card">
+    <div class="card-h">
+      <span class="num">03</span>
+      <span class="nm">Star count (1 vs 3)</span>
+      <span class="pill-tag bal">membership</span>
+    </div>
+    <div class="desc">Free = 1 dim star, Pro = 3 gold stars. Game-like membership feel. Easy to extend later (Yearly = 4 stars, Lifetime = 5 stars).</div>
+    <div class="pair">
+      <div class="col">
+        <div class="lab">FREE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span><span class="b3-free">★</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="lab">PRO / LIFE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span><span class="b3-pro">★★★</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 — GLOWING DOT -->
+  <div class="card">
+    <div class="card-h">
+      <span class="num">04</span>
+      <span class="nm">Glowing status dot</span>
+      <span class="pill-tag bal">live</span>
+    </div>
+    <div class="desc">Free = static gray dot + label. Pro = pulsing violet dot + label. Reads like a live-status LED, never &ldquo;activated button&rdquo;.</div>
+    <div class="pair">
+      <div class="col">
+        <div class="lab">FREE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span><span class="b4-free">FREE</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="lab">PRO / LIFE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span><span class="b4-pro">LIFE</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5 — VERTICAL ACCENT BAR -->
+  <div class="card">
+    <div class="card-h">
+      <span class="num">05</span>
+      <span class="nm">Vertical accent bar</span>
+      <span class="pill-tag bal">subtle</span>
+    </div>
+    <div class="desc">Thin coloured bar on the left edge of the topbar — gray on Free, violet gradient on Pro. Tier indicator is part of the chrome, not a button.</div>
+    <div class="pair">
+      <div class="col">
+        <div class="lab">FREE</div>
+        <div class="mini b5 free">
+          <div class="lf"><span class="br">ANTARES</span><span class="b5-free">FREE</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="lab">PRO / LIFE</div>
+        <div class="mini b5 pro">
+          <div class="lf"><span class="br">ANTARES</span><span class="b5-pro">LIFE</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6 — UNDERLINE BENEATH BRAND -->
+  <div class="card">
+    <div class="card-h">
+      <span class="num">06</span>
+      <span class="nm">Underline beneath brand</span>
+      <span class="pill-tag bal">minimal</span>
+    </div>
+    <div class="desc">No tier label at all. A 1px line under <code>ANTARES</code> tints from gray (Free) to gold (Pro). Most minimal possible — and the shift is perceived peripherally without any &ldquo;activated&rdquo; vibe.</div>
+    <div class="pair">
+      <div class="col">
+        <div class="lab">FREE</div>
+        <div class="mini b6 free">
+          <div class="lf"><span class="br">ANTARES</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="lab">PRO / LIFE</div>
+        <div class="mini b6 pro">
+          <div class="lf"><span class="br">ANTARES</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7 — CORNER RIBBON -->
+  <div class="card">
+    <div class="card-h">
+      <span class="num">07</span>
+      <span class="nm">Corner ribbon (Pro only)</span>
+      <span class="pill-tag exp">decorative</span>
+    </div>
+    <div class="desc">Free = no badge at all. Pro = a small banner ribbon projects above the topbar with violet fill. Reads like a flag or seal — never a button.</div>
+    <div class="pair">
+      <div class="col">
+        <div class="lab">FREE</div>
+        <div class="mini b7 free" style="margin-top:10px">
+          <div class="lf"><span class="br">ANTARES</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+          <div class="ribbon">PRO</div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="lab">PRO / LIFE</div>
+        <div class="mini b7 pro" style="margin-top:10px">
+          <div class="lf"><span class="br">ANTARES</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+          <div class="ribbon">PRO</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8 — HEXAGONAL BADGE -->
+  <div class="card">
+    <div class="card-h">
+      <span class="num">08</span>
+      <span class="nm">Hexagonal badge</span>
+      <span class="pill-tag exp">tech</span>
+    </div>
+    <div class="desc">Hexagon shape — feels game-like / sci-fi. Free is a dark hex, Pro is a solid cyan hex with a single letter. Distinct shape avoids competing with verdict pills.</div>
+    <div class="pair">
+      <div class="col">
+        <div class="lab">FREE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span><span class="b8-free">F</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="lab">PRO / LIFE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span><span class="b8-pro">P</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9 — DIAMOND GEM -->
+  <div class="card">
+    <div class="card-h">
+      <span class="num">09</span>
+      <span class="nm">Diamond gem</span>
+      <span class="pill-tag exp">premium</span>
+    </div>
+    <div class="desc">Just a small rotated square (diamond). Free = dark stone, Pro = violet gem with subtle glow. Nothing else changes — the diamond carries the entire signal.</div>
+    <div class="pair">
+      <div class="col">
+        <div class="lab">FREE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span><span class="b9-free"></span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="lab">PRO / LIFE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span><span class="b9-pro"></span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 10 — PADLOCK -->
+  <div class="card">
+    <div class="card-h">
+      <span class="num">10</span>
+      <span class="nm">Padlock (closed → open)</span>
+      <span class="pill-tag bal">unlock</span>
+    </div>
+    <div class="desc">Free = closed padlock icon. Pro = open padlock in mint. Literal &ldquo;you&rsquo;ve unlocked the tools&rdquo; metaphor — works without any text.</div>
+    <div class="pair">
+      <div class="col">
+        <div class="lab">FREE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span>
+            <span class="b10-free"><svg viewBox="0 0 16 16"><path d="M5 7V5a3 3 0 0 1 6 0v2h1v6H4V7h1zm2-2v2h2V5a1 1 0 1 0-2 0z"/></svg></span>
+          </div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="lab">PRO / LIFE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span>
+            <span class="b10-pro"><svg viewBox="0 0 16 16"><path d="M11 5a3 3 0 0 0-6 0v2h7v6H4V7h1V5a3 3 0 0 1 6 0z"/></svg></span>
+          </div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 11 — HOLOGRAPHIC GRADIENT -->
+  <div class="card">
+    <div class="card-h">
+      <span class="num">11</span>
+      <span class="nm">Holographic gradient</span>
+      <span class="pill-tag exp">animated</span>
+    </div>
+    <div class="desc">Pro pill has an animated rainbow gradient that loops slowly. Free stays a flat gray pill. Iridescent / collectible-card feel — eye-catching but not green.</div>
+    <div class="pair">
+      <div class="col">
+        <div class="lab">FREE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span><span class="b11-free">FREE</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="lab">PRO / LIFE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span><span class="b11-pro">LIFE</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 12 — BRUSHED METAL PLATE -->
+  <div class="card">
+    <div class="card-h">
+      <span class="num">12</span>
+      <span class="nm">Brushed metal plate</span>
+      <span class="pill-tag exp">tactile</span>
+    </div>
+    <div class="desc">Free = dark steel plate, Pro = brushed gold plate with embossed text. Tactile / physical premium feel.</div>
+    <div class="pair">
+      <div class="col">
+        <div class="lab">FREE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span><span class="b12-free">FREE</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="lab">PRO / LIFE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span><span class="b12-pro">LIFE</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 13 — NOTCHED CORNER -->
+  <div class="card">
+    <div class="card-h">
+      <span class="num">13</span>
+      <span class="nm">Notched corner pill</span>
+      <span class="pill-tag exp">geometric</span>
+    </div>
+    <div class="desc">Pill with one cut corner. Visually distinct from anything else in the overlay (verdict pill, score chips). Violet outline + tinted fill on Pro.</div>
+    <div class="pair">
+      <div class="col">
+        <div class="lab">FREE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span><span class="b13-free">FREE</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="lab">PRO / LIFE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span><span class="b13-pro">LIFE</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 14 — ITALIC SERIF "Pro" -->
+  <div class="card">
+    <div class="card-h">
+      <span class="num">14</span>
+      <span class="nm">Italic serif typography</span>
+      <span class="pill-tag exp">elegant</span>
+    </div>
+    <div class="desc">No box, no border. Just typography. Free uses the regular mono. Pro uses Playfair Display italic — wedding-invitation premium. Very different from everything else in the overlay.</div>
+    <div class="pair">
+      <div class="col">
+        <div class="lab">FREE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span><span class="b14-free">FREE</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="lab">PRO / LIFE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span><span class="b14-pro">Pro</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 15 — BRAND COLOR SHIFT -->
+  <div class="card">
+    <div class="card-h">
+      <span class="num">15</span>
+      <span class="nm">Brand color shift (no badge)</span>
+      <span class="pill-tag bal">cleanest</span>
+    </div>
+    <div class="desc">No badge at all. The <code>ANTARES</code> brand text picks up a violet-to-cyan gradient on Pro. Cleanest possible — no extra UI elements.</div>
+    <div class="pair">
+      <div class="col">
+        <div class="lab">FREE</div>
+        <div class="mini b15 free">
+          <div class="lf"><span class="br">ANTARES</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="lab">PRO / LIFE</div>
+        <div class="mini b15 pro">
+          <div class="lf"><span class="br">ANTARES</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 16 — MEMBER ID -->
+  <div class="card">
+    <div class="card-h">
+      <span class="num">16</span>
+      <span class="nm">Member ID / token-style</span>
+      <span class="pill-tag exp">personal</span>
+    </div>
+    <div class="desc">Free shows nothing. Pro shows your member number (<code>#0001</code>, <code>#0142</code>) in dashed outline — like an early-access wristband. Personal touch.</div>
+    <div class="pair">
+      <div class="col">
+        <div class="lab">FREE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="lab">PRO / LIFE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span><span class="b16-pro">#0142</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 17 — CORNER INSET -->
+  <div class="card">
+    <div class="card-h">
+      <span class="num">17</span>
+      <span class="nm">Tier-coloured corner inset</span>
+      <span class="pill-tag bal">discreet</span>
+    </div>
+    <div class="desc">A small triangle in the top-right corner of the overlay tints gold on Pro. Free has no triangle. Reads as a permanent corner-fold mark.</div>
+    <div class="pair">
+      <div class="col">
+        <div class="lab">FREE</div>
+        <div class="mini b17 free">
+          <div class="lf"><span class="br">ANTARES</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="lab">PRO / LIFE</div>
+        <div class="mini b17 pro">
+          <div class="lf"><span class="br">ANTARES</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 18 — DOT MATRIX -->
+  <div class="card">
+    <div class="card-h">
+      <span class="num">18</span>
+      <span class="nm">Dot-matrix banner</span>
+      <span class="pill-tag exp">arcade</span>
+    </div>
+    <div class="desc">Subtle dot-pattern background inside the badge. Free = gray dots, Pro = warm coral dots. Retro / arcade machine feel without flashing animation.</div>
+    <div class="pair">
+      <div class="col">
+        <div class="lab">FREE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span><span class="b18-free">FREE</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="lab">PRO / LIFE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span><span class="b18-pro">LIFE</span></div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 19 — UNLOCK ICON + LABEL -->
+  <div class="card">
+    <div class="card-h">
+      <span class="num">19</span>
+      <span class="nm">Lock icon + label</span>
+      <span class="pill-tag bal">narrative</span>
+    </div>
+    <div class="desc">Free shows a small closed-lock icon next to a &ldquo;FREE&rdquo; label. Pro shows a small check-mark icon next to a &ldquo;LIFE&rdquo; label. Reads as a status, not an active button.</div>
+    <div class="pair">
+      <div class="col">
+        <div class="lab">FREE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span>
+            <span class="b19-free">
+              <svg viewBox="0 0 16 16"><path d="M5 7V5a3 3 0 0 1 6 0v2h1v6H4V7h1z"/></svg>
+              FREE
+            </span>
+          </div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="lab">PRO / LIFE</div>
+        <div class="mini">
+          <div class="lf"><span class="br">ANTARES</span>
+            <span class="b19-pro">
+              <svg viewBox="0 0 16 16"><path d="M3 8.5l3 3 7-7"/></svg>
+              LIFE
+            </span>
+          </div>
+          <div class="icns"><span>+</span><span>×</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Recommendations -->
+<section class="recs">
+  <h2>HOW TO PICK</h2>
+  <ol>
+    <li><b>Want the smallest possible change?</b> Pick <b>01 — Violet outline pill</b>. Same shape as today, just stops fighting the SAFE colour.</li>
+    <li><b>Want zero badge clutter?</b> Pick <b>06 — Underline</b> or <b>15 — Brand color shift</b>. The tier signal lives inside the brand, not next to it.</li>
+    <li><b>Want premium / luxury feel?</b> Pick <b>14 — Italic serif</b> or <b>12 — Brushed metal plate</b>. Pro feels like a different object, not an &ldquo;activated&rdquo; one.</li>
+    <li><b>Want it to feel like membership / status?</b> Pick <b>03 — Star count</b> or <b>16 — Member ID</b>. Communicates progression instead of binary on/off.</li>
+    <li><b>Want flashy / collectible?</b> Pick <b>11 — Holographic gradient</b>. Iridescent rainbow loop — distinctly Pro, distinctly not green.</li>
+    <li><b>Want the metaphor of unlock?</b> Pick <b>10 — Padlock</b> or <b>19 — Lock + label</b>. Closed → open, no colour-change-on-button.</li>
+  </ol>
+  <div class="pick">
+    <b>My pick:</b> <b>01 — Violet outline pill</b> as the safest swap (one CSS change, ships in minutes), or <b>03 — Star count</b> if you want a fresh visual that also helps differentiate Free / Pro / Yearly / Lifetime tiers (1 / 3 / 4 / 5 stars). Both avoid the &ldquo;button turns green&rdquo; pattern entirely. Tell me which number(s) and I&rsquo;ll wire it into the production overlay (<code>js/token-app.js</code>) + the design library demo.
+  </div>
+</section>
+
+</div>
+</body>
+</html>
