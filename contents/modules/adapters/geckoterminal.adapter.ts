@@ -1,5 +1,6 @@
 import type { SiteAdapter } from "./base-adapter"
 import { pathnameChanged, scoreAddresses } from "./base-adapter"
+import { INITIAL_POLL_DELAY } from "../constants"
 
 /**
  * GeckoTerminal adapter
@@ -14,7 +15,7 @@ import { pathnameChanged, scoreAddresses } from "./base-adapter"
 export const GeckoTerminalAdapter: SiteAdapter = {
   name: "GeckoTerminal",
   hostnames: ["geckoterminal.com"],
-  initialDelay: 600,
+  initialDelay: INITIAL_POLL_DELAY,
   extractCA(url: URL, doc: Document): string {
     // Only scan on pool detail pages
     if (url.pathname.includes("/pools/")) {

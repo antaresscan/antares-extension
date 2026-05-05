@@ -1,5 +1,6 @@
 import type { SiteAdapter } from "./base-adapter"
 import { extractCAFromPathname, pathnameChanged } from "./base-adapter"
+import { INITIAL_POLL_DELAY } from "../constants"
 
 /**
  * Pages that are NOT token pages — skip scanning entirely.
@@ -31,7 +32,7 @@ const NON_TOKEN_PATHS = [
 export const PumpAdapter: SiteAdapter = {
   name: "Pump.fun",
   hostnames: ["pump.fun"],
-  initialDelay: 500,
+  initialDelay: INITIAL_POLL_DELAY,
 
   extractCA(url: URL, _doc: Document): string {
     const path = url.pathname.toLowerCase()

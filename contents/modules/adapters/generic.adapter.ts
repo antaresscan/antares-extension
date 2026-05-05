@@ -1,5 +1,6 @@
 import type { SiteAdapter } from "./base-adapter"
 import { extractCAFromPathname, pathnameChanged } from "./base-adapter"
+import { INITIAL_POLL_DELAY } from "../constants"
 
 /**
  * Generic fallback adapter
@@ -11,7 +12,7 @@ import { extractCAFromPathname, pathnameChanged } from "./base-adapter"
 export const GenericAdapter: SiteAdapter = {
   name: "Generic",
   hostnames: [],
-  initialDelay: 500,
+  initialDelay: INITIAL_POLL_DELAY,
 
   extractCA(url: URL, _doc: Document): string {
     return extractCAFromPathname(url)

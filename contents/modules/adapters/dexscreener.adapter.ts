@@ -1,6 +1,6 @@
 import type { SiteAdapter } from "./base-adapter"
 import { extractCAFromPathname, pathnameChanged } from "./base-adapter"
-import { makeSOLAddrRegex } from "../constants"
+import { makeSOLAddrRegex, INITIAL_POLL_DELAY } from "../constants"
 import { isValid } from "../scanner"
 
 /**
@@ -24,7 +24,7 @@ import { isValid } from "../scanner"
 export const DexScreenerAdapter: SiteAdapter = {
   name: "DexScreener",
   hostnames: ["dexscreener.com"],
-  initialDelay: 500,
+  initialDelay: INITIAL_POLL_DELAY,
 
   extractCA(url: URL, doc: Document): string {
     // Only operate on /solana/* pages

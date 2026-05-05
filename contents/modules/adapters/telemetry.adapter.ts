@@ -1,5 +1,6 @@
 import type { SiteAdapter } from "./base-adapter"
 import { extractCAFromPathname, pathnameChanged } from "./base-adapter"
+import { INITIAL_POLL_DELAY } from "../constants"
 
 /**
  * Telemetry adapter
@@ -10,7 +11,7 @@ import { extractCAFromPathname, pathnameChanged } from "./base-adapter"
 export const TelemetryAdapter: SiteAdapter = {
   name: "Telemetry",
   hostnames: ["app.telemetry.io"],
-  initialDelay: 500,
+  initialDelay: INITIAL_POLL_DELAY,
   extractCA(url: URL, _doc: Document): string {
     return extractCAFromPathname(url)
   },

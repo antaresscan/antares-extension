@@ -127,6 +127,21 @@ export const SHADOW_CSS = `
 .box.danger  .topbar { background: linear-gradient(90deg,transparent,#ff5f5f,transparent); }
 .box.rug     .topbar { background: linear-gradient(90deg,transparent,#ff2244,transparent); }
 
+/* Refresh shimmer: animated gradient slides left-to-right across the
+   2px topbar during a silent rescan (login/logout sync, tab focus).
+   Each verdict keeps its own colour so the loading state still reads
+   as "this token is X". The .refreshing class is added by scanner.ts
+   when a silent fetch starts and removed when it lands. */
+@keyframes refresh-slide {
+  from { background-position: -40% 50%; }
+  to   { background-position: 140% 50%; }
+}
+.box.refreshing .topbar {
+  background-size: 40% 100%;
+  background-repeat: no-repeat;
+  animation: refresh-slide 1.2s linear infinite;
+}
+
 .hd {
   display: flex;
   justify-content: space-between;
@@ -143,7 +158,7 @@ export const SHADOW_CSS = `
 }
 .brand {
   font-size: 7px;
-  color: #555;
+  color: #888;
   letter-spacing: .55em;
   text-transform: uppercase;
   font-family: 'IBM Plex Mono', monospace;
@@ -199,9 +214,9 @@ export const SHADOW_CSS = `
   font-size: 7px;
   letter-spacing: 0.18em;
   font-weight: 600;
-  color: #555;
+  color: #888;
   padding: 3px 7px;
-  border: 1px solid #1a1a1e;
+  border: 1px solid #2a2a2e;
   border-radius: 2px;
   text-transform: uppercase;
   white-space: nowrap;
@@ -283,14 +298,14 @@ export const SHADOW_CSS = `
   padding: 0 14px;
   margin-top: 6px;
   font-size: 10px;
-  color: #666;
+  color: #999;
   letter-spacing: .06em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   font-family: 'IBM Plex Mono', monospace;
 }
-.tk b { color: #bbb; font-weight: 600; }
+.tk b { color: #e6e6e6; font-weight: 600; }
 
 /* FIX: .vb padding-bottom augmenté pour séparer le verdict h1 du score */
 .vb { padding: 2px 14px 6px; position: relative; z-index: 1; }
@@ -302,8 +317,8 @@ export const SHADOW_CSS = `
 
 /* FIX: .sr margin-top augmenté pour éviter que le score colle au verdict */
 .sr { display: flex; align-items: center; gap: 8px; padding: 0 14px; margin-top: 10px; }
-.sr .n { font-size: 11px; color: #555; font-weight: 600; font-family: 'IBM Plex Mono', monospace; }
-.sr .n b { color: #aaa; }
+.sr .n { font-size: 11px; color: #888; font-weight: 600; font-family: 'IBM Plex Mono', monospace; }
+.sr .n b { color: #f0f0f0; }
 .dots { display: flex; gap: 2px; align-items: center; }
 .dt { width: 4px; height: 4px; border-radius: 50%; }
 .dt.on  { background: #00e5b0; }
@@ -317,10 +332,10 @@ export const SHADOW_CSS = `
 .box.rug     .sbar-fill { background: linear-gradient(90deg,#ff224444,#ff2244); }
 
 .sum { padding: 8px 14px 0; font-size: 9px; letter-spacing: .04em; font-family: 'IBM Plex Mono', monospace; }
-.box.safe    .sum { color: #3a7060; }
-.box.caution .sum { color: #8a7820; }
-.box.danger  .sum { color: #aa5050; }
-.box.rug     .sum { color: #cc3344; }
+.box.safe    .sum { color: #5fa888; }
+.box.caution .sum { color: #c4a838; }
+.box.danger  .sum { color: #d47878; }
+.box.rug     .sum { color: #ff5566; }
 .ai-sum { padding: 6px 14px 2px; font-size: 9px; color: #8a8aad; line-height: 1.45; letter-spacing: .02em; font-family: 'IBM Plex Mono', monospace; }
 .ai-label { font-weight: 700; color: #a78bfa; margin-right: 4px; font-size: 8px; text-transform: uppercase; letter-spacing: .06em; }
 
@@ -356,11 +371,11 @@ export const SHADOW_CSS = `
   background: #1a1a1e;
 }
 .si span {
-  display: block; font-size: 7px; color: #555;
+  display: block; font-size: 7px; color: #888;
   letter-spacing: .12em; text-transform: uppercase; margin-bottom: 3px;
   font-family: 'IBM Plex Mono', monospace;
 }
-.si b { font-size: 10px; letter-spacing: .02em; font-weight: 700; font-family: 'IBM Plex Mono', monospace; color: #e0e0e0; }
+.si b { font-size: 10px; letter-spacing: .02em; font-weight: 700; font-family: 'IBM Plex Mono', monospace; color: #f0f0f0; }
 .si b.y { color: #00e5b0; }
 .si b.n { color: #ff5f5f; }
 .si b.w { color: #f5d000; }
@@ -368,12 +383,12 @@ export const SHADOW_CSS = `
 .fo { display: flex; margin: 8px 14px 10px; gap: 4px; }
 .fo a {
   flex: 1; display: block; padding: 8px;
-  font-size: 8px; color: #888; letter-spacing: .12em;
+  font-size: 8px; color: #b0b0b0; letter-spacing: .12em;
   text-transform: uppercase; text-decoration: none; text-align: center;
-  border: 1px solid #252528; border-radius: 2px; transition: .2s;
+  border: 1px solid #2a2a2e; border-radius: 2px; transition: .2s;
   font-family: 'IBM Plex Mono', monospace;
 }
-.fo a:hover { color: #ccc; border-color: #444; background: rgba(255,255,255,.02); }
+.fo a:hover { color: #f0f0f0; border-color: #555; background: rgba(255,255,255,.04); }
 .fo a.warn  { border-color: rgba(255,95,95,.2); color: #cc5555; }
 .fo a.warn:hover { border-color: rgba(255,95,95,.4); color: #ff5f5f; background: rgba(255,95,95,.04); }
 
