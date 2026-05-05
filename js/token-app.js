@@ -529,18 +529,28 @@ function buildCriticalActorsPreview(d) {
 // ──────────────────────────────────────────────────────────────────────
 function buildInsiderWatchTab(d) {
   const ha = d.holderActivity
-  // Render every row from holderActivity — even pure-static (±0% no
-  // description) wallets get a tile, just shown as "HOLDING" in gray
-  // rather than filtered out. Showing 12 calm tiles + a "wallets are
-  // stable" verdict is more useful than blanking the tab. The previous
-  // filter was originally meant to avoid rendering "broken-looking"
-  // identical static rows, but in production this filtered out tokens
-  // like PENGU (6 stable wallets → 0 visible tiles → empty state).
   const haRows = (ha && Array.isArray(ha.rows) ? ha.rows : [])
 
-  // PATH 1 — holderActivity has rows (best case: wallet-level data).
-  if (haRows.length > 0) {
-    const rows = haRows.slice(0, 12)
+  // Classify rows: "active" = the wallet had measurable movement in the
+  // last 60 minutes; "static" = ±0% with no description (the boring
+  // case). We treat the two cases very differently below — twelve
+  // identical "STATIC ±0%" tiles is functionally useless and reads as
+  // "broken", so we only render the wallet-level heatmap when at least
+  // ONE wallet is active. Otherwise we prefer the concentration view
+  // (PATH 3) which shows real measured numbers (top-10 holding X%) over
+  // a wall of meaningless ±0% tiles.
+  const activeRows = haRows.filter(r => {
+    const isStatic = String(r.label || '').toLowerCase() === 'static'
+    const hasPct = typeof r.pctChange === 'number' && Math.abs(r.pctChange) >= 0.05
+    const hasDesc = typeof r.desc === 'string' && r.desc.length > 0
+    return !isStatic || hasPct || hasDesc
+  })
+
+  // PATH 1 — wallet-level heatmap. Requires at least one wallet showing
+  // meaningful activity; otherwise we fall through to the concentration
+  // view rather than render twelve gray tiles.
+  if (activeRows.length > 0) {
+    const rows = activeRows.slice(0, 12)
     let nonDevIdx = 0
     const tiles = rows.map(r => {
       const isDev = r.role === 'dev'
@@ -568,7 +578,7 @@ function buildInsiderWatchTab(d) {
       alertText = 'Top wallets are reducing — money is leaving these positions. Watch closely.'
     } else {
       alertCls = 'mid'
-      alertText = 'No significant flow detected in the last hour. Top wallets are stable.'
+      alertText = 'Mixed activity in the last hour — wallets moving in different directions.'
     }
     return `
       <div class="iw-grid">${tiles}</div>
@@ -670,9 +680,33 @@ function buildInsiderWatchTab(d) {
     `
   }
 
-  // PATH 4 — last-resort empty state. No wallet activity, no critical
-  // actors, no concentration data. Acknowledge it honestly rather
-  // than fabricate.
+  // PATH 4 — holderActivity has rows but every wallet is ±0% Static.
+  // Reached only when neither criticalActors nor concentration data is
+  // available. Render the static heatmap so the tab isn't blank, with a
+  // verdict line that explicitly tells the user nothing moved (better
+  // than 6 blank tiles + no explanation).
+  if (haRows.length > 0) {
+    const rows = haRows.slice(0, 12)
+    let nonDevIdx = 0
+    const tiles = rows.map(r => {
+      const isDev = r.role === 'dev'
+      const label = isDev ? 'DEV' : '#' + (++nonDevIdx)
+      return `
+        <div class="iw-tile mid${isDev ? ' dev' : ''}">
+          <div class="iw-name">${escapeHtml(label)}</div>
+          <div class="iw-delta">${escapeHtml(r.pctChangeDisp || '±0%')}</div>
+          <div class="iw-action">${escapeHtml(r.label || 'static')}</div>
+        </div>`
+    }).join('')
+    return `
+      <div class="iw-grid">${tiles}</div>
+      <div class="tab-alert good">All top wallets are stable in the last hour — no insider movement detected.</div>
+    `
+  }
+
+  // PATH 5 — last-resort empty state. No wallet activity, no critical
+  // actors, no concentration data, no holder rows at all. Acknowledge
+  // honestly rather than fabricate.
   return `<div class="tab-empty">Insider Watch is not available for this scan. Wallet and concentration data did not return — re-scan to retry.</div>`
 }
 
