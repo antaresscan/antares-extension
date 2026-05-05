@@ -1,6 +1,20 @@
 import type { ScanResponseData } from "../../shared/types"
 
-export const scanCache = new Map<string, { data: ScanResponseData; ts: number }>()
+/**
+ * Cache entries carry the session token that was active at scan time.
+ * On read, getCached() compares the entry's session to the CURRENT
+ * session and invalidates on mismatch — so a Pro overlay can never
+ * survive a logout, and a Free overlay can never survive a Pro login,
+ * even when the chrome.storage.onChanged listener missed the change
+ * (e.g. tab was discarded by Chrome and re-injected fresh from LS).
+ *
+ * `session: null` represents "anonymous at scan time" (signed-out user).
+ * That entry is valid only while the user remains signed out.
+ */
+export const scanCache = new Map<
+  string,
+  { data: ScanResponseData; ts: number; session: string | null }
+>()
 
 export const state = {
     enabled: true,
