@@ -3,6 +3,7 @@ import * as Sentry from "@sentry/browser"
 import { API, LS_PREFIX, IGNORE } from "./constants"
 import { state, scanCache } from "./state"
 import { getCached, saveToLS } from "./cache"
+import { readSessionToken } from "./session-token"
 import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimations, buildResultNode, buildSkeletonNode, buildQuotaExhaustedNode } from "./components"
 import { scanRateLimiter } from "../../shared/rate-limit"
 import { logger } from "../../shared/logger"
@@ -38,32 +39,6 @@ async function readDevTierOverride(): Promise<string | null> {
     const v = data.antares_dev_tier
     if (v === "free" || v === "pro" || v === "yearly" || v === "lifetime") return v
     return null
-  } catch {
-    return null
-  }
-}
-
-/**
- * Read the website-issued session JWT from chrome.storage.local. The
- * bridge content-script (contents/antares-website-bridge.ts) writes it
- * there after the user signs in on /account.html. We forward it as
- * X-Antares-Session on every scan call so the API can resolve the
- * caller's tier from their email's licence-of-record. Without this
- * header the scan call goes anonymous → server returns Free.
- *
- * NOTE: this needs to live in the content script (not just background)
- * because content scripts call /api/scan directly — they don't go
- * through the background service worker for the scan fetch.
- */
-async function readSessionToken(): Promise<string | null> {
-  try {
-    const data = await new Promise<{ antares_session_token?: string }>((resolve) =>
-      chrome.storage.local.get(["antares_session_token"], (v) =>
-        resolve(v as { antares_session_token?: string }),
-      ),
-    )
-    const t = data.antares_session_token
-    return typeof t === "string" && t.length > 0 ? t : null
   } catch {
     return null
   }
@@ -199,7 +174,30 @@ async function fetchWithRetry(
   throw lastError
 }
 
-export async function scan(ca: string) {
+/**
+ * Options for `scan()`.
+ *
+ * `silent: true` is the "tier just changed under our feet" path — used by:
+ *   - chrome.storage.onChanged on session change (login/logout)
+ *   - visibilitychange when a backgrounded tab regains focus
+ *
+ * The promise: when an overlay is already on screen with stale data, do
+ * NOT flash a skeleton on the way to the new data. Keep the existing
+ * overlay visible, run the fetch in the background, and atomically swap
+ * in the new result the moment it lands. Also skip entrance animations
+ * (a re-render shouldn't replay the box-fade-in) and don't hide the
+ * overlay on a transient network blip — the user keeps seeing what they
+ * had until the next legitimate scan trigger.
+ *
+ * When silent is true but no overlay is currently visible (e.g. error
+ * state or first-load), we fall through to the normal skeleton+animation
+ * path — there's nothing on screen worth preserving.
+ */
+export interface ScanOptions {
+  silent?: boolean
+}
+
+export async function scan(ca: string, opts: ScanOptions = {}) {
   if (!ca) return
 
   if (!scanRateLimiter.tryAcquire()) {
@@ -208,7 +206,12 @@ export async function scan(ca: string) {
   }
 
   const el = getBox()
-  const cached = getCached(ca)
+  // getCached is async because it consults chrome.storage.local for the
+  // current session token and returns null if the cached entry was
+  // scanned under a different session — a Pro entry can never survive
+  // a logout, even if the chrome.storage.onChanged listener missed
+  // (e.g. tab was discarded by Chrome and re-injected from LS).
+  const cached = await getCached(ca)
   if (ca === state.lastCA && cached && el.style.display !== "none") return
   if (state.manuallyDismissed && ca === state.lastCA) return
 
@@ -223,6 +226,16 @@ export async function scan(ca: string) {
 
   state.manuallyDismissed = false
   state.lastCA = ca
+
+  // Snapshot whether the overlay was already showing rendered content at
+  // the START of this call. Silent mode only suppresses the skeleton +
+  // animations when there's something worth preserving — if the box is
+  // hidden (first scan, prior error, user-dismissed) silent has nothing
+  // to do and we render normally.
+  const wasOverlayVisible =
+    el.style.display !== "none" &&
+    (state.boxEl?.style.display ?? "") !== "none"
+  const skipFlashUI = !!opts.silent && wasOverlayVisible
 
   // Resolve install_id once up-front so every render path (cached,
   // loading skeleton, result, quota-exhausted) can bake it into
@@ -239,7 +252,7 @@ export async function scan(ca: string) {
     // tree via DOM API only.
     el.replaceChildren(buildResultNode(cached, ca, installId))
     showBox()
-    triggerResultAnimations(el)
+    if (!skipFlashUI) triggerResultAnimations(el)
     attachClose(cached.aiSummary ?? null, cached.flags ?? null)
     attachAnalysisBtn(ca)
     chrome.storage.local.get(["autoRescan"], (prefs) => {
@@ -253,9 +266,14 @@ export async function scan(ca: string) {
   state.currentScanController = controller
   if (state.boxEl) state.boxEl.className = "box"
 
-  el.replaceChildren(buildSkeletonNode())
-  showBox()
-  attachClose(null)
+  if (!skipFlashUI) {
+    // Normal first-load / nav path: show the skeleton while we fetch.
+    // Silent + visible path: skip this so the existing rendered overlay
+    // stays on screen during the fetch — no flash, no perceived reload.
+    el.replaceChildren(buildSkeletonNode())
+    showBox()
+    attachClose(null)
+  }
 
   try {
     const headers: Record<string, string> = installId ? { "X-Antares-Install": installId } : {}
@@ -272,11 +290,14 @@ export async function scan(ca: string) {
     const data = await res.json() as ScanResponseData
     if (controller.signal.aborted) return
     if (quota) data._quota = quota
-    scanCache.set(ca, { data, ts: Date.now() })
-    saveToLS(ca, data)
+    // Stamp the entry with the session token used for this fetch so
+    // getCached() can later detect login/logout drift and force a
+    // re-fetch instead of serving the stale tier.
+    scanCache.set(ca, { data, ts: Date.now(), session: sessionToken ?? null })
+    saveToLS(ca, data, sessionToken ?? null)
     el.replaceChildren(buildResultNode(data, ca, installId))
     showBox()
-    triggerResultAnimations(el)
+    if (!skipFlashUI) triggerResultAnimations(el)
     attachClose(data.aiSummary ?? null, data.flags ?? null)
     attachAnalysisBtn(ca)
     chrome.storage.local.get(["autoRescan"], (prefs) => {
@@ -303,7 +324,13 @@ export async function scan(ca: string) {
     }
     logger.warn("scanner", "scan failed after retries", e)
     try { Sentry.captureException(e) } catch { /* Sentry not initialized */ }
-    if (state.lastCA === ca && state.boxEl) {
+    // Don't tear down a visible overlay on a silent-fetch failure —
+    // a transient network blip during a session-change refresh shouldn't
+    // make the user's working overlay disappear. Preserve what they had
+    // and let the next legitimate scan trigger retry. For non-silent
+    // failures (initial load / nav) we hide as before so the user isn't
+    // stuck staring at a broken skeleton.
+    if (state.lastCA === ca && state.boxEl && !skipFlashUI) {
       state.boxEl.style.display = "none"
       state.boxEl.style.opacity = "0"
     }
