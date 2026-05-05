@@ -917,81 +917,9 @@ function buildWashVolumeTab(d) {
   `
 }
 
-// Legacy outcome-histogram builder retained for now in case any back-
-// compat reference grabs it; the new buildWashVolumeTab replaces it
-// in the active tab strip below.
-function buildOutcomeHistogramTab(d) {
-  // Verdict gate: show only for RUG / DANGER. The backend's heuristic
-  // composeOutcomeStats falls through to a slow-death cluster for any
-  // non-RUG verdict (api/_lib/outcome-stats.ts:159), which produced
-  // misleading "median time-to-rug 2d" stats on bluechip CAUTION
-  // tokens (FARTCOIN, score 825, year-old established memecoin). Hide
-  // the section entirely for SAFE / CAUTION until the corpus-based
-  // KNN matcher ships and can produce meaningful distributions for
-  // those bands.
-  const verdictUpper = String(d.risk || '').toUpperCase()
-  const showOutcome = verdictUpper === 'RUG' || verdictUpper === 'RUG PULL' || verdictUpper === 'DANGER'
-  if (!showOutcome) {
-    return `<div class="tab-empty">Outcome distribution is shown only for tokens flagged as <b>RUG</b> or <b>DANGER</b>. The current verdict is <b>${escapeHtml(verdictUpper || '—')}</b> — there is no historical cluster of comparable launches that justifies a time-to-rug forecast.</div>`
-  }
-
-  const o = d.outcomeStats
-  // Strict gate: backend payload must be present and well-shaped. The
-  // previous build shipped a hardcoded fallback (RUGCOIN / SCAMBOY /
-  // TRAPCAT distributions) when the backend didn't provide stats —
-  // users saw the same fake "similar tokens" on every scan, which
-  // read as "fake / nothing works". Show an honest empty state
-  // instead.
-  if (!o || typeof o !== 'object') {
-    return `<div class="tab-empty">Outcome Histogram is not available for this scan. Re-scan the token to populate the historical distribution.</div>`
-  }
-  const dist = Array.isArray(o.distribution) ? o.distribution : []
-  if (!dist.length) {
-    return `<div class="tab-empty">Outcome distribution unavailable for this token.</div>`
-  }
-  const sampleSize = o.timeToRugSampleSize || 0
-  const medianHours = o.timeToRugMedianHours || 0
-  const pctRugged = o.pctRugged24h || 0
-  const pctSlow = o.pctSlowDeath || 0
-  const pctAlive = o.pctAlive30d || 0
-  const similar = Array.isArray(o.mostSimilar) ? o.mostSimilar : []
-  const youIdx = typeof o.youBucketIndex === 'number' ? o.youBucketIndex : -1
-  const max = Math.max(...dist)
-  const bars = dist.map((v, i) => {
-    const cls = i === youIdx ? 'you' : v > 15 ? '' : v > 5 ? 'warn' : 'ok'
-    const h = (v / max) * 100
-    return `<div class="sim-hist-bar ${cls}" style="height:${h.toFixed(1)}%" title="${v}% of tokens"></div>`
-  }).join('')
-  const markerLeft = ((youIdx + 0.5) / dist.length * 100).toFixed(2)
-  const fmtMedian = medianHours < 24
-    ? `${medianHours.toFixed(1)}h`
-    : `${(medianHours / 24).toFixed(1)}d`
-  const simHtml = similar.map(s => {
-    const after = s.ruggedAfterHours < 24
-      ? `rugged ${s.ruggedAfterHours}h after launch`
-      : `rugged ${(s.ruggedAfterHours / 24).toFixed(0)}d after launch`
-    return `<div class="sim-token"><div class="sim-token-icon">✕</div><div class="sim-token-name">${escapeHtml(s.symbol)}</div><div class="sim-token-time">${escapeHtml(after)}</div><div class="sim-token-loss">${s.loss.toFixed(1)}%</div></div>`
-  }).join('')
-  return `
-    <div class="sim-hist">
-      <div class="sim-hist-head">
-        <div class="sim-hist-title">Outcome distribution · ${sampleSize} comparable launches</div>
-        <div class="sim-hist-detail">Median time-to-rug: ${escapeHtml(fmtMedian)}</div>
-      </div>
-      <div class="sim-hist-bars">${bars}<div class="sim-hist-marker" style="left:${markerLeft}%"></div></div>
-      <div class="sim-hist-axis">
-        <span>0h</span><span>4h</span><span>12h</span><span>24h</span><span>3d</span><span>7d</span><span>30d+</span>
-      </div>
-    </div>
-    <div class="sim-stats">
-      <div class="sim-stat rug"><div class="sim-stat-pct">${pctRugged}%</div><div class="sim-stat-label">Rugged &lt; 24h</div><div class="sim-stat-detail">Median ${escapeHtml(fmtMedian)}</div></div>
-      <div class="sim-stat slow"><div class="sim-stat-pct">${pctSlow}%</div><div class="sim-stat-label">Slow death</div><div class="sim-stat-detail">-80% in 7d</div></div>
-      <div class="sim-stat alive"><div class="sim-stat-pct">${pctAlive}%</div><div class="sim-stat-label">Alive 30d</div><div class="sim-stat-detail">Survived</div></div>
-    </div>
-    <div style="font-size:9px;color:#444;letter-spacing:.22em;text-transform:uppercase;margin:14px 0 2px">Most similar (last 30 days)</div>
-    ${simHtml}
-  `
-}
+// (Removed: legacy buildOutcomeHistogramTab — Outcome Histogram tab was
+// replaced by Wash Volume in #430. The function had no live callers
+// after the tab swap; deleted here per the post-merge audit.)
 
 // ──────────────────────────────────────────────────────────────────────
 // Source Breakdown — 1 row per upstream source. Verdict is derived from
