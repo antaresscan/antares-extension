@@ -588,7 +588,7 @@ function buildCriticalActorsPreview(d) {
 // ──────────────────────────────────────────────────────────────────────
 function buildInsiderWatchTab(d) {
   // Placeholder skeleton. The actual feed is fetched async from
-  // /api/insider-activity by loadInsiderActivity() after the page
+  // /api/graph?activity=1 by loadInsiderActivity() after the page
   // renders, and slotted into #ant-insider-feed below. Server-side
   // cache (60s) means most loads are sub-200ms.
   const ca = d.resolvedMint || ""
@@ -618,7 +618,7 @@ function buildInsiderWatchTab(d) {
   `
 }
 
-// Async loader — fetches /api/insider-activity then renders the feed
+// Async loader — fetches /api/graph?activity=1 then renders the feed
 // into #ant-insider-feed (and the net-flow footer into #ant-insider-foot).
 // Tolerant of 200-with-empty / network errors / Helius outages: every
 // failure path resolves to a clear empty/error state, never a broken UI.
@@ -640,13 +640,22 @@ async function loadInsiderActivity() {
 
   try {
     const priceQ = wrap.dataset.price ? `&price=${encodeURIComponent(wrap.dataset.price)}` : ''
-    const url = `${API_BASE}/insider-activity?ca=${encodeURIComponent(ca)}${priceQ}`
+    // /api/graph hosts the activity feed under ?activity=1 — same
+    // serverless slot as the insider-graph since they share the
+    // top-holders + Helius data and Vercel Hobby caps us at 12
+    // functions total.
+    const url = `${API_BASE}/graph?ca=${encodeURIComponent(ca)}&activity=1${priceQ}`
     const res = await fetch(url)
     if (!res.ok) {
       renderEmpty('Live activity unavailable on this scan — re-scan in a moment.', 'warn')
       return
     }
-    const data = await res.json()
+    const payload = await res.json()
+    // /api/graph returns the graph fields at top level + an `activity`
+    // sub-object. Defensive: extract activity safely so a graph-only
+    // response (or a graph endpoint returning a different shape) just
+    // renders the empty state instead of throwing.
+    const data = payload && payload.activity ? payload.activity : null
     const activity = Array.isArray(data && data.activity) ? data.activity : []
 
     if (!activity.length) {
