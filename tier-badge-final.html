@@ -40,14 +40,16 @@
   }
 
   /* Watermark — 160x160 element with its CENTRE positioned EXACTLY
-     at (80%, 35%) of the overlay so the icon's geometric centre sits
-     pixel-precisely on the vertical divider between LP LOCK (col 4)
-     and LIQ (col 5). Absolute positioning to remove any background-
-     position percentage ambiguity. Opacity 4%. */
+     on the vertical divider between LP LOCK (col 4) and LIQ (col 5).
+     Math: .ov is 340px wide with 1px border + 16px padding + 1px sec
+     row border = 18px chrome each side, so the security row content
+     is 304px and the LP LOCK | LIQ divider is at 4/5 × 304 + 18 =
+     261.2px from .ov outer left, which is 260.2/338 ≈ 77% of the
+     padding box that absolute positioning is relative to. */
   .ov::before{
     content:'';position:absolute;
     width:160px;height:160px;
-    left:80%;top:35%;
+    left:77%;top:35%;
     margin:-80px 0 0 -80px;
     background:url('icon.png') no-repeat center / contain;
     opacity:.04;
