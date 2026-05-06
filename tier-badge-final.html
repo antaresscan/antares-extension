@@ -39,14 +39,11 @@
     overflow:hidden;
   }
 
-  /* Same approach as the W3 screenshot the user wants — full overlay
-     ::before with background-image, 55% size — but anchored on the
-     vertical divider between LP LOCK and LIQ (80% horizontal, i.e.
-     image right edge at 20% from container right) and opacity dropped
-     from 10% to 4%. */
+  /* Exact W3 position from the reference photo — top-right corner,
+     aligned with the LP LOCK | LIQ vertical divider. Opacity 4%. */
   .ov::before{
     content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
-    background:url('icon.png') no-repeat right 20% center / 55% auto;
+    background:url('icon.png') no-repeat right -8% top -8% / 55% auto;
     opacity:.04;
   }
   .ov > *{position:relative;z-index:1}
