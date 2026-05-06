@@ -91,6 +91,15 @@ export interface InsiderActivityResult {
   generatedAt: number
   totalCheckedWallets: number
   walletsWithActivity: number
+  /** Pipeline diagnostics — temporary, helps trace why a token returns
+   *  0 entries (Helius rate-limit vs no-recent-tx vs mint mismatch). */
+  _debug?: {
+    sigsTotal: number
+    sigsAfterCutoff: number
+    parsedTxsCount: number
+    txsAfterCutoff: number
+    txsTouchingMint: number
+  }
 }
 
 let redis: Redis | null = null
@@ -221,7 +230,9 @@ export async function buildInsiderActivity(
 
   // Filter sigs by time window + dedupe across wallets
   const sigSet = new Set<string>()
+  let sigsTotal = 0
   for (const sigs of sigsResults) {
+    sigsTotal += sigs.length
     for (const s of sigs) {
       const ts = (s.blockTime ?? 0) * 1000
       if (ts >= cutoffMs && !sigSet.has(s.signature)) {
@@ -232,6 +243,8 @@ export async function buildInsiderActivity(
 
   const allSigs = [...sigSet]
   const parsedTxs = await parseTxBatch(allSigs, apiKey)
+  let txsAfterCutoff = 0
+  let txsTouchingMint = 0
 
   // Build feed entries — one entry per (tx, our-wallet, mint-transfer)
   const entries: InsiderActivityEntry[] = []
@@ -239,9 +252,12 @@ export async function buildInsiderActivity(
   for (const tx of parsedTxs) {
     const ts = (tx.timestamp ?? 0) * 1000
     if (ts < cutoffMs) continue
+    txsAfterCutoff++
 
     const transfers = tx.tokenTransfers ?? []
     const isSwap = tx.type === "SWAP" || !!tx.events?.swap
+    const hadMintMatch = transfers.some(tr => tr.mint === mint)
+    if (hadMintMatch) txsTouchingMint++
 
     // We process the FIRST relevant transfer so each tx contributes one
     // feed row. Multi-transfer batched txs (rare on memecoins) get their
@@ -305,6 +321,13 @@ export async function buildInsiderActivity(
     generatedAt: now,
     totalCheckedWallets: wallets.length,
     walletsWithActivity: new Set(entries.map(e => e.walletFull)).size,
+    _debug: {
+      sigsTotal,
+      sigsAfterCutoff: allSigs.length,
+      parsedTxsCount: parsedTxs.length,
+      txsAfterCutoff,
+      txsTouchingMint,
+    },
   }
 
   if (redis) {
