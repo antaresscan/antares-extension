@@ -1,4 +1,5 @@
 const API="https://antares-extension.vercel.app/api/scan"
+const API_BASE="https://antares-extension.vercel.app/api"
 const MAX_RETRIES=3
 const RETRY_DELAYS=[1000,2000]
 
@@ -586,225 +587,166 @@ function buildCriticalActorsPreview(d) {
 // hard-sell) and the dev wallet gets a purple ring accent.
 // ──────────────────────────────────────────────────────────────────────
 function buildInsiderWatchTab(d) {
-  const ha = d.holderActivity
-  const haRows = (ha && Array.isArray(ha.rows) ? ha.rows : [])
-
-  // Classify rows: "active" = the wallet had measurable movement in the
-  // last 60 minutes; "static" = ±0% with no description (the boring
-  // case). We treat the two cases very differently below — twelve
-  // identical "STATIC ±0%" tiles is functionally useless and reads as
-  // "broken", so we only render the wallet-level heatmap when at least
-  // ONE wallet is active. Otherwise we prefer the concentration view
-  // (PATH 3) which shows real measured numbers (top-10 holding X%) over
-  // a wall of meaningless ±0% tiles.
-  const activeRows = haRows.filter(r => {
-    const isStatic = String(r.label || '').toLowerCase() === 'static'
-    const hasPct = typeof r.pctChange === 'number' && Math.abs(r.pctChange) >= 0.05
-    const hasDesc = typeof r.desc === 'string' && r.desc.length > 0
-    return !isStatic || hasPct || hasDesc
-  })
-
-  // PATH 1 — wallet-level heatmap. Requires at least one wallet showing
-  // meaningful activity; otherwise we fall through to the concentration
-  // view rather than render twelve gray tiles.
-  if (activeRows.length > 0) {
-    const rows = activeRows.slice(0, 12)
-    let nonDevIdx = 0
-    const tiles = rows.map(r => {
-      const isDev = r.role === 'dev'
-      const pct = typeof r.pctChange === 'number' ? r.pctChange : 0
-      let cls
-      if (Math.abs(pct) < 0.5) cls = 'mid'
-      else if (pct > 0) cls = 'good'
-      else if (pct > -10) cls = 'warn'
-      else cls = 'bad'
-      const label = isDev ? 'DEV' : '#' + (++nonDevIdx)
-      return `
-        <div class="iw-tile ${cls}${isDev ? ' dev' : ''}">
-          <div class="iw-name">${escapeHtml(label)}</div>
-          <div class="iw-delta">${escapeHtml(r.pctChangeDisp || '±0%')}</div>
-          <div class="iw-action">${escapeHtml(r.label || '—')}</div>
-        </div>`
-    }).join('')
-
-    let alertCls, alertText
-    if (ha.netFlowDirection === 'in') {
-      alertCls = 'good'
-      alertText = 'Top wallets are accumulating — money is flowing in.'
-    } else if (ha.netFlowDirection === 'out') {
-      alertCls = 'bad'
-      alertText = 'Top wallets are reducing — money is leaving these positions. Watch closely.'
-    } else {
-      alertCls = 'mid'
-      alertText = 'Mixed activity in the last hour — wallets moving in different directions.'
-    }
-    return `
-      <div class="iw-grid">${tiles}</div>
-      <div class="tab-alert ${alertCls}">${escapeHtml(alertText)}</div>
-    `
-  }
-
-  // PATH 2 — fallback to criticalActors when holderActivity didn't
-  // populate but composeCriticalActors did (different upstream path,
-  // wider availability). Map each actor to a tile colour/severity.
-  const actors = Array.isArray(d.criticalActors) ? d.criticalActors : []
-  if (actors.length > 0) {
-    const tiles = actors.slice(0, 12).map(a => {
-      // Tile colour derived from severity. Critical / warning / info →
-      // bad / warn / mid. Dev card gets the purple ring regardless.
-      const sev = String(a.severity || '').toLowerCase()
-      let cls
-      if (sev === 'critical') cls = 'bad'
-      else if (sev === 'warning') cls = 'warn'
-      else cls = 'mid'
-      const isDev = String(a.type || '').toLowerCase() === 'dev'
-      const label = (a.tag || '').toUpperCase().slice(0, 8) || (isDev ? 'DEV' : '#')
-      const pctDisp = typeof a.pct === 'number' ? a.pct.toFixed(1) + '%' : '—'
-      // No 6h delta in criticalActors — show the holder %; framing
-      // makes it clear this is the position size, not a delta.
-      return `
-        <div class="iw-tile ${cls}${isDev ? ' dev' : ''}">
-          <div class="iw-name">${escapeHtml(label)}</div>
-          <div class="iw-delta">${escapeHtml(pctDisp)}</div>
-          <div class="iw-action">of supply</div>
-        </div>`
-    }).join('')
-    return `
-      <div class="iw-grid">${tiles}</div>
-      <div class="tab-alert mid">Wallet flow data is unavailable for this scan — showing the structural critical-actor breakdown instead.</div>
-    `
-  }
-
-  // PATH 3 — concentration fallback. When Helius is down (no holder
-  // activity, no critical actors) but we have top-10 / single-wallet
-  // concentration from ANY source (structured fields OR parsed from
-  // flag labels), render a 3-tile structural view: largest wallet,
-  // top-10 cluster, and the remaining float. Better than blank — the
-  // user gets real concentration numbers even on degraded scans.
-  const flagsForFallback = Array.isArray(d.flags) ? d.flags : []
-  let top10Fb = typeof d.top10HolderPct === 'number' ? d.top10HolderPct : null
-  let top1Fb = typeof d.topHolderPct === 'number' ? d.topHolderPct : null
-  if (top10Fb == null) {
-    for (const f of flagsForFallback) {
-      const m = (f.label || '').match(/top\s*10\b[^%]*?(\d+(?:\.\d+)?)\s*%/i)
-      if (m) { top10Fb = parseFloat(m[1]); break }
-    }
-  }
-  if (top1Fb == null) {
-    for (const f of flagsForFallback) {
-      const m = (f.label || '').match(/single\s+wallet[^%]*?(\d+(?:\.\d+)?)\s*%/i)
-      if (m) { top1Fb = parseFloat(m[1]); break }
-    }
-  }
-  if (top10Fb != null) {
-    const top10R = Math.round(Math.max(0, Math.min(100, top10Fb)))
-    const top1R = top1Fb != null ? Math.round(Math.max(0, Math.min(100, top1Fb))) : null
-    const float = Math.max(0, 100 - top10R)
-    // Tile colour from concentration risk: highly concentrated = bad,
-    // moderately concentrated = warn, distributed = good. Mirrors the
-    // bands in Sniper Map so the verdict feels consistent.
-    const concentrationCls = top10R >= 50 ? 'bad' : top10R >= 25 ? 'warn' : 'good'
-    const top1Cls = top1R == null ? 'mid' : top1R >= 20 ? 'bad' : top1R >= 10 ? 'warn' : 'good'
-    let alertCls, alertText
-    if (top10R >= 50) {
-      alertCls = 'bad'
-      alertText = `Wallet activity data is unavailable on this scan, but the top 10 wallets hold ${top10R}% of supply — high concentration risk.`
-    } else if (top10R >= 25) {
-      alertCls = 'warn'
-      alertText = `Wallet activity data is unavailable on this scan. Top 10 wallets hold ${top10R}% — moderate concentration.`
-    } else {
-      alertCls = 'good'
-      alertText = `Wallet activity data is unavailable on this scan, but supply looks well-distributed (top 10 hold ${top10R}%).`
-    }
-    return `
-      <div class="iw-grid">
-        <div class="iw-tile ${top1Cls}${top1R != null ? '' : ' mid'}">
-          <div class="iw-name">LARGEST</div>
-          <div class="iw-delta">${top1R != null ? top1R + '%' : '—'}</div>
-          <div class="iw-action">single wallet</div>
-        </div>
-        <div class="iw-tile ${concentrationCls}">
-          <div class="iw-name">TOP 10</div>
-          <div class="iw-delta">${top10R}%</div>
-          <div class="iw-action">cluster</div>
-        </div>
-        <div class="iw-tile good">
-          <div class="iw-name">FLOAT</div>
-          <div class="iw-delta">${float}%</div>
-          <div class="iw-action">distributed</div>
+  // Placeholder skeleton. The actual feed is fetched async from
+  // /api/insider-activity by loadInsiderActivity() after the page
+  // renders, and slotted into #ant-insider-feed below. Server-side
+  // cache (60s) means most loads are sub-200ms.
+  const ca = d.resolvedMint || ""
+  // Price hint lets the backend skip a DexScreener round-trip. Multiple
+  // paths because the backend evolved its naming over time — any one
+  // being a number is enough.
+  const priceHint =
+    (d.priceUsd != null ? d.priceUsd
+      : d.pair && d.pair.priceUsd != null ? d.pair.priceUsd
+      : null)
+  return `
+    <div class="iw-feed-wrap" data-ca="${escapeHtml(ca)}" data-price="${escapeHtml(String(priceHint || ''))}">
+      <div class="iw-feed-head">
+        <span class="iw-feed-title">TOP 10 RECENT ACTIVITY · LAST 6h</span>
+        <span class="iw-feed-meta" id="ant-insider-meta">loading…</span>
+      </div>
+      <div class="iw-feed" id="ant-insider-feed">
+        <div class="iw-feed-loading">
+          <div class="iw-skel-row"></div>
+          <div class="iw-skel-row"></div>
+          <div class="iw-skel-row"></div>
+          <div class="iw-skel-row"></div>
         </div>
       </div>
-      <div class="tab-alert ${alertCls}">${escapeHtml(alertText)}</div>
-    `
-  }
-
-  // PATH 4 — holderActivity has rows but every wallet is ±0% Static.
-  // Reached only when neither criticalActors nor concentration data is
-  // available. Render the static heatmap so the tab isn't blank, with a
-  // verdict line that explicitly tells the user nothing moved (better
-  // than 6 blank tiles + no explanation).
-  if (haRows.length > 0) {
-    const rows = haRows.slice(0, 12)
-    let nonDevIdx = 0
-    const tiles = rows.map(r => {
-      const isDev = r.role === 'dev'
-      const label = isDev ? 'DEV' : '#' + (++nonDevIdx)
-      return `
-        <div class="iw-tile mid${isDev ? ' dev' : ''}">
-          <div class="iw-name">${escapeHtml(label)}</div>
-          <div class="iw-delta">${escapeHtml(r.pctChangeDisp || '±0%')}</div>
-          <div class="iw-action">${escapeHtml(r.label || 'static')}</div>
-        </div>`
-    }).join('')
-    return `
-      <div class="iw-grid">${tiles}</div>
-      <div class="tab-alert good">All top wallets are stable in the last hour — no insider movement detected.</div>
-    `
-  }
-
-  // PATH 5 — market-structure fallback when every wallet-level source
-  // came back empty (Helius rate-limit + RugCheck miss + Solscan
-  // transfers gone). Rather than leaving the tab blank we render the
-  // structural market data we DO have (total holders, liquidity, 24h
-  // trades) so the tab stays informative. The verdict line tells the
-  // user wallet data is missing and to re-scan.
-  const totalHolders = typeof d.holders === 'number' ? d.holders : null
-  const liq = typeof d.liquidity === 'number' ? d.liquidity : null
-  const txns24 = (d.pair && d.pair.txns && d.pair.txns.h24) || null
-  const totalTrades = txns24 ? ((txns24.buys || 0) + (txns24.sells || 0)) : null
-  const haveAny = totalHolders != null || liq != null || totalTrades != null
-  if (haveAny) {
-    // Compose 3 tiles. Each tile colour bands by a quick health
-    // heuristic so the user gets at-a-glance sentiment even on the
-    // structural fallback. Holder count: more is better (distributed).
-    // Liquidity: more is better. Trade count: pure context, no colour.
-    const tilesHtml = []
-    if (totalHolders != null) {
-      const cls = totalHolders >= 5000 ? 'good' : totalHolders >= 500 ? 'mid' : 'warn'
-      const disp = totalHolders >= 1_000_000 ? (totalHolders / 1_000_000).toFixed(1) + 'M'
-                 : totalHolders >= 1_000 ? (totalHolders / 1_000).toFixed(0) + 'K'
-                 : String(totalHolders)
-      tilesHtml.push(`<div class="iw-tile ${cls}"><div class="iw-name">HOLDERS</div><div class="iw-delta">${escapeHtml(disp)}</div><div class="iw-action">total wallets</div></div>`)
-    }
-    if (liq != null) {
-      const cls = liq >= 100_000 ? 'good' : liq >= 10_000 ? 'mid' : 'warn'
-      tilesHtml.push(`<div class="iw-tile ${cls}"><div class="iw-name">LIQUIDITY</div><div class="iw-delta">${escapeHtml(fmt(liq))}</div><div class="iw-action">in LP</div></div>`)
-    }
-    if (totalTrades != null) {
-      const cls = totalTrades >= 500 ? 'good' : totalTrades >= 50 ? 'mid' : 'warn'
-      tilesHtml.push(`<div class="iw-tile ${cls}"><div class="iw-name">TRADES 24H</div><div class="iw-delta">${totalTrades.toLocaleString()}</div><div class="iw-action">total</div></div>`)
-    }
-    return `
-      <div class="iw-grid">${tilesHtml.join('')}</div>
-      <div class="tab-alert mid">Wallet-level activity data is unavailable on this scan. Showing token market structure instead — re-scan to populate insider details.</div>
-    `
-  }
-
-  // PATH 6 — absolute last resort. Even market structure data is
-  // missing (no DexScreener pair, no Solscan holder count). Empty
-  // state is honest here — there is no signal to show.
-  return `<div class="tab-empty">Insider Watch is not available for this scan. None of the upstream sources returned wallet, concentration, or market data — re-scan to retry.</div>`
+      <div class="iw-feed-foot" id="ant-insider-foot"></div>
+    </div>
+  `
 }
+
+// Async loader — fetches /api/insider-activity then renders the feed
+// into #ant-insider-feed (and the net-flow footer into #ant-insider-foot).
+// Tolerant of 200-with-empty / network errors / Helius outages: every
+// failure path resolves to a clear empty/error state, never a broken UI.
+async function loadInsiderActivity() {
+  const wrap = document.querySelector('.iw-feed-wrap')
+  if (!wrap) return
+  const ca = wrap.dataset.ca
+  if (!ca) return
+
+  const slot = document.getElementById('ant-insider-feed')
+  const meta = document.getElementById('ant-insider-meta')
+  const foot = document.getElementById('ant-insider-foot')
+
+  const renderEmpty = (msg, cls) => {
+    if (slot) slot.innerHTML = `<div class="iw-feed-empty ${cls || ''}">${escapeHtml(msg)}</div>`
+    if (meta) meta.textContent = ''
+    if (foot) foot.innerHTML = ''
+  }
+
+  try {
+    const priceQ = wrap.dataset.price ? `&price=${encodeURIComponent(wrap.dataset.price)}` : ''
+    const url = `${API_BASE}/insider-activity?ca=${encodeURIComponent(ca)}${priceQ}`
+    const res = await fetch(url)
+    if (!res.ok) {
+      renderEmpty('Live activity unavailable on this scan — re-scan in a moment.', 'warn')
+      return
+    }
+    const data = await res.json()
+    const activity = Array.isArray(data && data.activity) ? data.activity : []
+
+    if (!activity.length) {
+      renderEmpty('No transactions from the top 10 holders in the last 6 hours.', '')
+      return
+    }
+
+    const rowsHtml = activity.map(e => {
+      const action = String(e.action || '').toUpperCase()
+      const isBuy = action === 'BOUGHT' || action === 'TRANSFER_IN'
+      const isSell = action === 'SOLD' || action === 'TRANSFER_OUT'
+      const cls = isBuy ? 'buy' : isSell ? 'sell' : ''
+      const usd = (typeof e.usdValue === 'number' && Number.isFinite(e.usdValue))
+        ? (e.usdValue >= 0 ? '+' : '') + fmtUsd(e.usdValue)
+        : '—'
+      const tokAmt = fmtTok(e.tokenAmount)
+      const ageTxt = formatAge(e.ageMin)
+      const sigUrl = `https://solscan.io/tx/${encodeURIComponent(e.signature || '')}`
+      const walletUrl = `https://solscan.io/account/${encodeURIComponent(e.walletFull || '')}`
+      const actionLbl = action.replace('_', ' ')
+      return `
+        <a class="iw-row ${cls}" href="${escapeHtml(sigUrl)}" target="_blank" rel="noopener noreferrer">
+          <span class="iw-row-wallet" data-wallet="${escapeHtml(e.walletFull || '')}" title="${escapeHtml(e.walletFull || '')}">${escapeHtml(e.wallet || '')}</span>
+          <span class="iw-row-action">${escapeHtml(actionLbl)}</span>
+          <span class="iw-row-amount">${escapeHtml(tokAmt)}</span>
+          <span class="iw-row-usd">${escapeHtml(usd)}</span>
+          <span class="iw-row-age">${escapeHtml(ageTxt)}</span>
+        </a>
+      `
+    }).join('')
+
+    if (slot) slot.innerHTML = rowsHtml
+
+    // Wallet sub-link click handler (delegated, avoids inline onclick CSP).
+    if (slot) {
+      slot.querySelectorAll('.iw-row-wallet').forEach(el => {
+        el.addEventListener('click', ev => {
+          ev.stopPropagation()
+          ev.preventDefault()
+          const w = el.getAttribute('data-wallet')
+          if (w) window.open('https://solscan.io/account/' + encodeURIComponent(w), '_blank', 'noopener')
+        })
+      })
+    }
+
+    if (meta) {
+      const wActive = data.walletsWithActivity || 0
+      const wTotal = data.totalCheckedWallets || 0
+      meta.textContent = `${wActive}/${wTotal} wallets active`
+    }
+
+    if (foot) {
+      const nf = (typeof data.netFlowUsd === 'number' && Number.isFinite(data.netFlowUsd))
+        ? data.netFlowUsd
+        : null
+      if (nf !== null) {
+        let label = 'BALANCED'
+        let cls = ''
+        if (nf > 1000) { label = 'ACCUMULATING'; cls = 'buy' }
+        else if (nf < -1000) { label = 'DISTRIBUTING'; cls = 'sell' }
+        const sign = nf >= 0 ? '+' : ''
+        foot.innerHTML = `
+          <div class="iw-flow ${cls}">
+            <span class="iw-flow-label">NET FLOW (${data.windowHours || 6}h)</span>
+            <span class="iw-flow-val">${escapeHtml(sign + fmtUsd(nf))}</span>
+            <span class="iw-flow-state">${escapeHtml(label)}</span>
+          </div>
+        `
+      } else {
+        foot.innerHTML = ''
+      }
+    }
+  } catch (err) {
+    renderEmpty('Failed to load insider activity. Re-scan to retry.', 'warn')
+  }
+}
+
+// Helpers used by the feed renderer.
+function fmtUsd(v) {
+  const a = Math.abs(v)
+  if (a >= 1_000_000) return '$' + (v / 1_000_000).toFixed(2) + 'M'
+  if (a >= 1_000) return '$' + (v / 1_000).toFixed(1) + 'K'
+  return '$' + a.toFixed(0)
+}
+function fmtTok(v) {
+  if (typeof v !== 'number' || !Number.isFinite(v)) return '—'
+  const a = Math.abs(v)
+  if (a >= 1_000_000) return (v / 1_000_000).toFixed(2) + 'M'
+  if (a >= 1_000) return (v / 1_000).toFixed(1) + 'K'
+  return v.toFixed(0)
+}
+function formatAge(min) {
+  if (typeof min !== 'number' || !Number.isFinite(min)) return '—'
+  if (min < 1) return 'just now'
+  if (min < 60) return min + 'min'
+  const h = Math.floor(min / 60)
+  if (h < 24) return h + 'h'
+  return Math.floor(h / 24) + 'd'
+}
+
 
 // ──────────────────────────────────────────────────────────────────────
 // BUY/SELL FLOW tab — replaces Holder Activity.
@@ -1661,6 +1603,12 @@ function render(d, ca) {
       b.style.width = b.dataset.w + '%'
     })
   }, 400)
+
+  // Async-load Top 10 live activity feed (Insider Watch tab). Fired
+  // after the synchronous render so the placeholder skeleton is
+  // already painted; the API is server-side cached 60s so most loads
+  // are sub-200ms.
+  setTimeout(() => { loadInsiderActivity() }, 50)
 
   // Async-load AI summary if not in initial response
   if (!d.aiSummary) {

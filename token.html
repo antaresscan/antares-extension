@@ -400,6 +400,87 @@ nav .actions a.warn:hover{color:var(--orange);border-color:rgba(255,95,95,.4);ba
 .iw-action{font-size:7.5px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;opacity:.85}
 
 /* ╔═══════════════════════════════════════════════════════════════════════╗
+   ║  INSIDER WATCH v2 — Top 10 live activity feed (replaces heatmap)     ║
+   ║  ────────────────────────────────────────────────────────────────    ║
+   ║  Replaces the old "STATIC ±0%" tile grid that was useless on most    ║
+   ║  tokens. Renders an actionable feed of recent on-chain transactions  ║
+   ║  from the top 10 holders, plus a window net-flow footer.             ║
+   ╚═══════════════════════════════════════════════════════════════════════╝ */
+.iw-feed-wrap{display:flex;flex-direction:column;gap:8px}
+.iw-feed-head{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:0 2px;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;
+}
+.iw-feed-title{color:#888;font-weight:700}
+.iw-feed-meta{color:#555;font-size:9px;letter-spacing:.1em}
+.iw-feed{
+  display:flex;flex-direction:column;
+  background:#0a0a0c;border:1px solid var(--border);border-radius:3px;
+  overflow:hidden;
+}
+.iw-row{
+  display:grid;
+  grid-template-columns: 1fr 90px 1fr 1fr 60px;
+  align-items:center;
+  padding:10px 14px;border-top:1px solid #15151a;
+  font-family:'IBM Plex Mono',monospace;font-size:11px;
+  text-decoration:none;color:#bbb;
+  transition:background .15s ease;
+}
+.iw-row:first-child{border-top:none}
+.iw-row:hover{background:rgba(255,255,255,.03)}
+.iw-row-wallet{
+  color:#888;font-size:10.5px;letter-spacing:.04em;cursor:pointer;
+  border-bottom:1px dashed transparent;
+}
+.iw-row-wallet:hover{color:#ddd;border-bottom-color:#444}
+.iw-row-action{
+  font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#666;
+}
+.iw-row.buy .iw-row-action{color:var(--c)}
+.iw-row.sell .iw-row-action{color:var(--orange)}
+.iw-row-amount{color:#aaa;text-align:right;padding-right:14px;font-variant-numeric:tabular-nums}
+.iw-row-usd{font-weight:700;font-variant-numeric:tabular-nums;text-align:right;padding-right:14px;color:#888}
+.iw-row.buy .iw-row-usd{color:var(--c)}
+.iw-row.sell .iw-row-usd{color:var(--orange)}
+.iw-row-age{color:#555;font-size:10px;text-align:right;letter-spacing:.04em}
+
+@media(max-width:640px){
+  .iw-row{grid-template-columns:1fr 70px 1fr 50px;font-size:10px}
+  .iw-row-usd{display:none}
+}
+
+.iw-feed-loading{padding:8px 0}
+.iw-skel-row{
+  height:38px;margin:0 14px;border-bottom:1px solid #15151a;
+  background:linear-gradient(90deg,#0c0c10 0%,#15151a 50%,#0c0c10 100%);
+  background-size:200% 100%;animation:iw-skel 1.4s ease-in-out infinite;
+}
+@keyframes iw-skel{
+  0%,100%{background-position:0% 0}
+  50%{background-position:-200% 0}
+}
+
+.iw-feed-empty{
+  padding:36px 20px;text-align:center;color:#555;font-size:11px;
+  letter-spacing:.04em;line-height:1.7;
+}
+.iw-feed-empty.warn{color:var(--yellow)}
+
+.iw-feed-foot{display:flex}
+.iw-flow{
+  display:flex;justify-content:space-between;align-items:center;flex:1;
+  padding:10px 14px;border:1px solid var(--border);border-radius:3px;
+  background:rgba(255,255,255,.02);
+  font-family:'IBM Plex Mono',monospace;font-size:10.5px;
+}
+.iw-flow-label{color:#666;font-size:9px;letter-spacing:.18em;text-transform:uppercase;font-weight:700}
+.iw-flow-val{font-variant-numeric:tabular-nums;font-weight:700;color:#aaa}
+.iw-flow-state{font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:#666;font-weight:700}
+.iw-flow.buy .iw-flow-val,.iw-flow.buy .iw-flow-state{color:var(--c)}
+.iw-flow.sell .iw-flow-val,.iw-flow.sell .iw-flow-state{color:var(--orange)}
+
+/* ╔═══════════════════════════════════════════════════════════════════════╗
    ║  BUY/SELL FLOW (Pressure Gauge Hero) — replaces Holder Activity      ║
    ╚═══════════════════════════════════════════════════════════════════════╝ */
 .bsf-hero{
@@ -643,6 +724,6 @@ footer span{color:var(--c)}
   <button class="ask-fab" aria-label="Ask Antares AI">✦</button>
 </div>
 
-<script defer src="/js/token-app.js?v=20260507-sniper-strict-bands"></script>
+<script defer src="/js/token-app.js?v=20260507-insider-feed"></script>
 <script defer src="/js/token-bg.js?v=20260429a"></script>
 </body></html>
