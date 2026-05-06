@@ -39,12 +39,20 @@
     overflow:hidden;
   }
 
-  /* Exact W3 position from the reference photo — top-right corner,
-     aligned with the LP LOCK | LIQ vertical divider. Opacity 4%. */
+  /* Watermark — 160x160 element with its CENTRE positioned EXACTLY
+     at (80%, 35%) of the overlay so the icon's geometric centre sits
+     pixel-precisely on the vertical divider between LP LOCK (col 4)
+     and LIQ (col 5). Absolute positioning to remove any background-
+     position percentage ambiguity. Opacity 4%. */
   .ov::before{
-    content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
-    background:url('icon.png') no-repeat right -8% top -8% / 55% auto;
+    content:'';position:absolute;
+    width:160px;height:160px;
+    left:80%;top:35%;
+    margin:-80px 0 0 -80px;
+    background:url('icon.png') no-repeat center / contain;
     opacity:.04;
+    pointer-events:none;
+    z-index:0;
   }
   .ov > *{position:relative;z-index:1}
 
