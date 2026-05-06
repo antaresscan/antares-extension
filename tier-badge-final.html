@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Antares overlay — final</title>
+<title>Antares overlay — Free + Pro (ANTARES wordmark colour)</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
@@ -14,20 +14,17 @@
   body{
     background:var(--bg);color:var(--ink);font-family:'IBM Plex Mono',monospace;
     min-height:100vh;display:flex;align-items:center;justify-content:center;
-    padding:40px 24px;
+    flex-direction:column;gap:36px;padding:40px 24px;
   }
   .stripe{position:fixed;top:0;left:0;right:0;height:3px;z-index:999;
     background:linear-gradient(90deg,#c0007a,var(--c),#c8c000,#c0002a,var(--c),#c0007a);
     background-size:400% 100%;animation:stripe 6s linear infinite;opacity:.7}
   @keyframes stripe{0%{background-position:0% 0}100%{background-position:400% 0}}
 
-  /* Bare gold logo for the topbar */
-  .logo{
-    display:inline-block;width:18px;height:18px;
-    -webkit-mask:url('icon.png') no-repeat center / contain;
-            mask:url('icon.png') no-repeat center / contain;
-    background:var(--gold);flex-shrink:0;
-  }
+  h1{font:400 38px/1 'Bebas Neue',sans-serif;letter-spacing:.04em;color:var(--ink);text-align:center}
+  h1 .gold{color:var(--gold)}
+  h1 .gray{color:#888}
+  .sub{font-size:13px;color:var(--dim);max-width:760px;line-height:1.7;text-align:center}
 
   /* The overlay */
   .ov{
@@ -36,10 +33,7 @@
     display:flex;flex-direction:column;gap:11px;color:var(--ink);
     overflow:hidden;
   }
-
-  /* Watermark — locked at user's chosen position:
-     X 77%, Y 24%, opacity 6.5%. Centred on the LP LOCK | LIQ
-     vertical divider. */
+  /* Watermark — same on every overlay */
   .ov::before{
     content:'';position:absolute;
     width:160px;height:160px;
@@ -47,15 +41,19 @@
     margin:-80px 0 0 -80px;
     background:url('icon.png') no-repeat center / contain;
     opacity:.065;
-    pointer-events:none;
-    z-index:0;
+    pointer-events:none;z-index:0;
   }
   .ov > *{position:relative;z-index:1}
 
+  /* Topbar */
   .ov-tb{display:flex;align-items:center;justify-content:space-between;
     padding-bottom:9px;border-bottom:1px solid #1a1a1e}
   .ov-tb-lf{display:flex;align-items:center;gap:8px}
-  .ov-brand{font:600 11px/1 'IBM Plex Mono',monospace;color:#888;letter-spacing:.18em}
+  /* Brand wordmark — gray for Free, gold for Pro. ONLY visual signal
+     of tier in the topbar; no separate badge logo. */
+  .ov-brand{font:600 11px/1 'IBM Plex Mono',monospace;letter-spacing:.18em}
+  .ov.free .ov-brand{color:#888}
+  .ov.pro  .ov-brand{color:var(--gold)}
   .ov-tb-rt{display:flex;gap:6px;color:#3a3a40;font-size:11px}
   .ov-tb-rt span{cursor:default;padding:1px 3px}
 
@@ -92,39 +90,98 @@
     font:700 8.5px/1.3 'IBM Plex Mono',monospace;color:#888;letter-spacing:.06em;
     cursor:default;position:relative;text-align:center}
   .ov-btn .ico{display:block;font-size:10px;margin-bottom:3px;color:#666}
+  /* Locked = Free state, with gold PRO pill */
   .ov-btn.locked{opacity:.5}
   .ov-btn.locked::after{content:'PRO';position:absolute;top:4px;right:4px;
     font:700 6.5px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;
     padding:2px 4px;border-radius:2px;color:var(--gold);
     background:rgba(245,208,0,.1);border:1px solid rgba(245,208,0,.3)}
+  /* Unlocked = Pro state. Per-button accent colours (matches prod). */
+  .ov-btn.cf{color:#ff7878;border-color:rgba(255,95,95,.3);background:rgba(255,95,95,.04)}
+  .ov-btn.cf .ico{color:#ff7878}
+  .ov-btn.fa{color:var(--ink);border-color:rgba(255,255,255,.08);background:rgba(255,255,255,.03)}
+  .ov-btn.ai{color:#a78bfa;border-color:rgba(167,139,250,.35);background:rgba(167,139,250,.05)}
+  .ov-btn.ai .ico{color:#a78bfa}
+
+  .pair{display:flex;gap:48px;flex-wrap:wrap;justify-content:center}
+  .col{display:flex;flex-direction:column;align-items:center;gap:14px}
+  .col .label{font:700 11px/1 'IBM Plex Mono',monospace;letter-spacing:.22em;text-transform:uppercase}
+  .col .label.free{color:#888}
+  .col .label.pro{color:var(--gold)}
+
+  .note{font-size:11px;color:#5a5a62;text-align:center;line-height:1.6;max-width:640px}
+  .note b{color:var(--ink)}
+  .note .gold{color:var(--gold)}
+  .note .gray{color:#888}
 </style>
 </head>
 <body>
 <div class="stripe" role="presentation"></div>
 
-<div class="ov">
-  <div class="ov-tb">
-    <div class="ov-tb-lf"><span class="ov-brand">ANTARES</span><span class="logo"></span></div>
-    <div class="ov-tb-rt"><span>+</span><span>×</span></div>
-  </div>
-  <div class="ov-tk"><b>LOL</b> <span>LOL</span></div>
-  <div class="ov-vd">CAUTION</div>
-  <div class="ov-sc"><b>850</b> <small>/ 1000</small> <span class="dots">●●●●</span></div>
-  <div class="ov-bar"><div class="ov-bar-fill"></div></div>
-  <div class="ov-fl">1 flag detected</div>
-  <div class="ov-sec">
-    <div class="cell"><span>SELL</span><b class="ok">✓</b></div>
-    <div class="cell"><span>MINT</span><b class="ok">✓</b></div>
-    <div class="cell"><span>FREEZE</span><b class="ok">✓</b></div>
-    <div class="cell"><span>LP LOCK</span><b class="ko">✗</b></div>
-    <div class="cell"><span>LIQ</span><b class="liq">$285K</b></div>
-  </div>
-  <div class="ov-btns">
-    <div class="ov-btn locked"><span class="ico">⚠</span>CRITICAL FLAGS</div>
-    <div class="ov-btn locked">FULL ANALYSIS →</div>
-    <div class="ov-btn locked"><span class="ico">○</span>AI SUMMARY</div>
-  </div>
+<div>
+  <h1>SAME OVERLAY &mdash; <span class="gray">ANTARES</span> in gray for Free, <span class="gold">ANTARES</span> in gold for Pro</h1>
+  <p class="sub">Pas de badge / pas de logo à côté du wordmark. Le mot <b>ANTARES</b> lui-même change de couleur : gris pour Free, doré pour Pro/Yearly/Lifetime. Le watermark orbital reste identique sur les deux états.</p>
 </div>
+
+<div class="pair">
+
+  <div class="col">
+    <div class="label free">FREE</div>
+    <div class="ov free">
+      <div class="ov-tb">
+        <div class="ov-tb-lf"><span class="ov-brand">ANTARES</span></div>
+        <div class="ov-tb-rt"><span>+</span><span>×</span></div>
+      </div>
+      <div class="ov-tk"><b>LOL</b> <span>LOL</span></div>
+      <div class="ov-vd">CAUTION</div>
+      <div class="ov-sc"><b>850</b> <small>/ 1000</small> <span class="dots">●●●●</span></div>
+      <div class="ov-bar"><div class="ov-bar-fill"></div></div>
+      <div class="ov-fl">1 flag detected</div>
+      <div class="ov-sec">
+        <div class="cell"><span>SELL</span><b class="ok">✓</b></div>
+        <div class="cell"><span>MINT</span><b class="ok">✓</b></div>
+        <div class="cell"><span>FREEZE</span><b class="ok">✓</b></div>
+        <div class="cell"><span>LP LOCK</span><b class="ko">✗</b></div>
+        <div class="cell"><span>LIQ</span><b class="liq">$285K</b></div>
+      </div>
+      <div class="ov-btns">
+        <div class="ov-btn locked"><span class="ico">⚠</span>CRITICAL FLAGS</div>
+        <div class="ov-btn locked">FULL ANALYSIS →</div>
+        <div class="ov-btn locked"><span class="ico">○</span>AI SUMMARY</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="label pro">PRO / LIFETIME</div>
+    <div class="ov pro">
+      <div class="ov-tb">
+        <div class="ov-tb-lf"><span class="ov-brand">ANTARES</span></div>
+        <div class="ov-tb-rt"><span>+</span><span>×</span></div>
+      </div>
+      <div class="ov-tk"><b>LOL</b> <span>LOL</span></div>
+      <div class="ov-vd">CAUTION</div>
+      <div class="ov-sc"><b>850</b> <small>/ 1000</small> <span class="dots">●●●●</span></div>
+      <div class="ov-bar"><div class="ov-bar-fill"></div></div>
+      <div class="ov-fl">1 flag detected</div>
+      <div class="ov-sec">
+        <div class="cell"><span>SELL</span><b class="ok">✓</b></div>
+        <div class="cell"><span>MINT</span><b class="ok">✓</b></div>
+        <div class="cell"><span>FREEZE</span><b class="ok">✓</b></div>
+        <div class="cell"><span>LP LOCK</span><b class="ko">✗</b></div>
+        <div class="cell"><span>LIQ</span><b class="liq">$285K</b></div>
+      </div>
+      <div class="ov-btns">
+        <div class="ov-btn cf"><span class="ico">⚠</span>CRITICAL FLAGS</div>
+        <div class="ov-btn fa">FULL ANALYSIS →</div>
+        <div class="ov-btn ai"><span class="ico">○</span>AI SUMMARY</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<p class="note">Différences entre les deux états : <b class="gray">ANTARES gris</b> + boutons lockés + pilules <b class="gold">PRO</b> dorées (Free) &nbsp;→&nbsp; <b class="gold">ANTARES doré</b> + boutons unlocked colorés (Pro). Watermark identique. Aucun logo séparé.</p>
 
 </body>
 </html>
