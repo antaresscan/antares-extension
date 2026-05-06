@@ -1,3 +1,9 @@
+// Bundle the icon as a base64 data URI at build time so it's available
+// inside the shadow DOM without a chrome.runtime.getURL() round-trip.
+// Used for both the small gold-tier badge next to ANTARES and the
+// low-opacity orbital watermark behind Pro/Yearly/Lifetime overlays.
+import iconDataUrl from "data-base64:~assets/icon.png"
+
 const FONT_FACE_CSS = `
 @font-face {
   font-family: 'Bebas Neue';
@@ -111,6 +117,25 @@ export const SHADOW_CSS = `
   pointer-events: none;
 }
 
+/* Pro/Yearly/Lifetime watermark — orbital logo behind the overlay
+   content. Centred on the LP LOCK | LIQ vertical divider in the
+   security row (X 77%, Y 24%, opacity 6.5%). Width tuned for the
+   290px production overlay (130px ≈ 160px × 290/340 from the demo).
+   Renders only when the user is on a paid tier (.has-pro). Sits at
+   z-index:0 so verdict text + buttons (z-index:1 via .vb / .si)
+   remain on top. */
+.box.has-pro::after {
+  content: '';
+  position: absolute;
+  width: 130px; height: 130px;
+  left: 77%; top: 24%;
+  margin: -65px 0 0 -65px;
+  background: url(${iconDataUrl}) no-repeat center / contain;
+  opacity: .065;
+  pointer-events: none;
+  z-index: 0;
+}
+
 .box.safe   { background: linear-gradient(180deg,#0b100f 0%,#090b0a 100%); }
 .box.caution{ background: linear-gradient(180deg,#0e0d0a 0%,#0a0a09 100%); }
 .box.danger { background: linear-gradient(180deg,#0e0a0a 0%,#0a0909 100%); }
@@ -180,6 +205,20 @@ export const SHADOW_CSS = `
   letter-spacing: .55em;
   text-transform: uppercase;
   font-family: 'IBM Plex Mono', monospace;
+}
+/* Small bare gold logo that sits next to the ANTARES wordmark when the
+   user is on a paid tier (Pro/Yearly/Lifetime). Replaces the legacy
+   text pill (PRO/YEAR/LIFE). Uses icon as mask + currentColor fill so
+   we can change the gold shade with a single CSS tweak. */
+.brand-logo {
+  display: inline-block;
+  width: 11px; height: 11px;
+  -webkit-mask: url(${iconDataUrl}) no-repeat center / contain;
+          mask: url(${iconDataUrl}) no-repeat center / contain;
+  background: #f5d000;
+  margin-left: 7px;
+  flex-shrink: 0;
+  vertical-align: middle;
 }
 .drag-icon {
   display: flex;

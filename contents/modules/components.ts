@@ -432,13 +432,33 @@ function buildHeaderNode(
   setStaticSvg(dragIcon, SVG_MOVE)
   const closeBtn = el("button", { class: "x", id: "ant-close" })
   setStaticSvg(closeBtn, SVG_CLOSE)
+  // Paid tiers get a small bare gold logo next to the ANTARES brand
+  // (Badge A from the tier-badge demo) instead of the legacy text pill
+  // (PRO/YEAR/LIFE). Free tier still gets the FREE/quota text pill —
+  // the badge logo is reserved as a "you're paid" flex.
+  const isPro = !!quota && (
+    quota.tier === "pro" ||
+    quota.tier === "yearly" ||
+    quota.tier === "lifetime"
+  )
+  const proLogo = isPro
+    ? el("span", {
+        class: "brand-logo",
+        title: quota!.tier === "lifetime"
+          ? "Lifetime · Unlimited scans"
+          : quota!.tier === "yearly"
+            ? "Yearly · Unlimited scans"
+            : "Pro · Unlimited scans",
+      })
+    : null
   // The el() helper filters out null children, so we can pass the badge
   // unconditionally — it just won't render when quota is undefined.
   // installId is threaded through so the at-cap "0/50 → PRO" link can
   // be rendered with the right href synchronously.
   return el("div", { class: "hd" },
     el("span", { class: "brand" }, "ANTARES"),
-    buildQuotaBadge(quota, installId),
+    proLogo,
+    isPro ? null : buildQuotaBadge(quota, installId),
     el("div", { class: "hd-right" }, dragIcon, closeBtn),
   )
 }
@@ -677,7 +697,18 @@ export function buildResultNode(
   const tokenName = data.tokenName || data.pair?.baseToken?.name || ""
   const tokenSymbol = data.tokenSymbol || data.pair?.baseToken?.symbol || ""
 
-  if (state.boxEl) state.boxEl.className = `box ${riskClass}`
+  // Paid tiers get the orbital-logo watermark behind the overlay
+  // content (X 77%, Y 24%, opacity 6.5% — values from the tier-badge
+  // demo's interactive slider session). Driven by the .has-pro class
+  // so the watermark only renders for paying users.
+  const isProBox = !!data._quota && (
+    data._quota.tier === "pro" ||
+    data._quota.tier === "yearly" ||
+    data._quota.tier === "lifetime"
+  )
+  if (state.boxEl) {
+    state.boxEl.className = `box ${riskClass}${isProBox ? " has-pro" : ""}`
+  }
 
   const dotsCount = Math.round((score / 1000) * 5)
   const dotsNode = el("div", { class: "dots" },
