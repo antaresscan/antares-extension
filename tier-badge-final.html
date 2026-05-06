@@ -14,6 +14,7 @@
   body{
     background:var(--bg);color:var(--ink);font-family:'IBM Plex Mono',monospace;
     min-height:100vh;display:flex;align-items:center;justify-content:center;
+    flex-direction:column;gap:32px;
     padding:40px 24px;
   }
   .stripe{position:fixed;top:0;left:0;right:0;height:3px;z-index:999;
@@ -21,9 +22,6 @@
     background-size:400% 100%;animation:stripe 6s linear infinite;opacity:.7}
   @keyframes stripe{0%{background-position:0% 0}100%{background-position:400% 0}}
 
-  /* Bare gold-logo badge for the topbar — exactly like the A demo
-     card the user referenced (mask:contain so the icon sits cleanly
-     inside the 18px container at its natural size). */
   .logo{
     display:inline-block;width:18px;height:18px;
     -webkit-mask:url('icon.png') no-repeat center / contain;
@@ -31,7 +29,6 @@
     background:var(--gold);flex-shrink:0;
   }
 
-  /* ── The overlay ───────────────────────────────────────────────────── */
   .ov{
     position:relative;width:340px;background:#101013;
     border:1px solid #1d1d22;border-radius:6px;padding:14px 16px 16px;
@@ -39,24 +36,13 @@
     overflow:hidden;
   }
 
-  /* Watermark — 160x160 element with its CENTRE positioned EXACTLY
-     on the vertical divider between LP LOCK (col 4) and LIQ (col 5).
-     Math: .ov is 340px wide with 1px border + 16px padding + 1px sec
-     row border = 18px chrome each side, so the security row content
-     is 304px and the LP LOCK | LIQ divider is at 4/5 × 304 + 18 =
-     261.2px from .ov outer left, which is 260.2/338 ≈ 77% of the
-     padding box that absolute positioning is relative to. */
   .ov::before{
     content:'';position:absolute;
     width:160px;height:160px;
-    /* Hardcoded pixel position. .ov is 340px outer (border-box), 1px
-       border + 16px padding + 1px sec-row border = 18px chrome per
-       side. Sec-row content = 304px, 5 cols of 60.8px each.
-       LP LOCK | LIQ boundary = 4 * 60.8 + 18 = 261.2px from .ov outer
-       = 260.2px from .ov padding box left. Element is 160px wide so
-       its left edge = 260.2 - 80 = 180.2px to centre on the line. */
-    left:200px;top:35%;
-    margin-top:-80px;
+    /* JS sets --wm-x and --wm-y */
+    left:calc(var(--wm-x, 80) * 1%);
+    top:calc(var(--wm-y, 35) * 1%);
+    margin:-80px 0 0 -80px;
     background:url('icon.png') no-repeat center / contain;
     opacity:.04;
     pointer-events:none;
@@ -64,7 +50,22 @@
   }
   .ov > *{position:relative;z-index:1}
 
-  /* Topbar */
+  /* Reference vertical line on the LP LOCK | LIQ column boundary,
+     so the user can VISUALLY see when the watermark is centred on it. */
+  .ov::after{
+    content:'';position:absolute;
+    top:0;bottom:0;
+    /* The LP LOCK | LIQ boundary is at exactly 80% of the security
+       row's content (5 equal cols, between col 4 and col 5). The
+       security row spans the .ov content box (left = 16px padding,
+       width = 306px). 80% of that is at 16 + 0.8 * 306 = 260.8px
+       from .ov outer left = 259.8px from padding box left. */
+    left:259.8px;width:1px;
+    background:rgba(255,255,255,.2);
+    pointer-events:none;z-index:0;
+  }
+  .ov.no-line::after{display:none}
+
   .ov-tb{display:flex;align-items:center;justify-content:space-between;
     padding-bottom:9px;border-bottom:1px solid #1a1a1e}
   .ov-tb-lf{display:flex;align-items:center;gap:8px}
@@ -110,12 +111,28 @@
     font:700 6.5px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;
     padding:2px 4px;border-radius:2px;color:var(--gold);
     background:rgba(245,208,0,.1);border:1px solid rgba(245,208,0,.3)}
+
+  /* Slider panel */
+  .panel{
+    background:var(--card);border:1px solid #1a1a1e;border-radius:6px;
+    padding:18px 22px;width:340px;display:flex;flex-direction:column;gap:14px;
+  }
+  .panel h2{
+    font:700 11px/1 'IBM Plex Mono',monospace;letter-spacing:.18em;
+    color:var(--gold);text-transform:uppercase;
+  }
+  .row{display:flex;align-items:center;gap:12px;font-size:11px;color:var(--dim)}
+  .row label{min-width:18px;font-weight:700;color:var(--ink)}
+  .row input[type=range]{flex:1;accent-color:var(--gold)}
+  .row .val{min-width:46px;text-align:right;color:var(--gold);font-variant-numeric:tabular-nums}
+  .hint{font-size:10px;color:#5a5a62;line-height:1.5;text-align:center}
+  .hint b{color:var(--gold)}
 </style>
 </head>
 <body>
 <div class="stripe" role="presentation"></div>
 
-<div class="ov">
+<div class="ov" id="ov">
   <div class="ov-tb">
     <div class="ov-tb-lf"><span class="ov-brand">ANTARES</span><span class="logo"></span></div>
     <div class="ov-tb-rt"><span>+</span><span>×</span></div>
@@ -139,5 +156,59 @@
   </div>
 </div>
 
+<div class="panel">
+  <h2>POSITION DU LOGO</h2>
+  <div class="row">
+    <label for="x">X</label>
+    <input type="range" id="x" min="0" max="100" step="0.5" value="80">
+    <span class="val" id="x-val">80%</span>
+  </div>
+  <div class="row">
+    <label for="y">Y</label>
+    <input type="range" id="y" min="0" max="100" step="0.5" value="35">
+    <span class="val" id="y-val">35%</span>
+  </div>
+  <div class="row">
+    <label for="op" style="min-width:auto">Opacité</label>
+    <input type="range" id="op" min="0" max="20" step="0.5" value="4">
+    <span class="val" id="op-val">4%</span>
+  </div>
+  <div class="row">
+    <label for="line" style="min-width:auto;font-size:11px;">Ligne ref</label>
+    <input type="checkbox" id="line" checked style="accent-color:var(--gold)">
+    <span style="flex:1"></span>
+  </div>
+  <div class="hint">
+    Bouge les sliders jusqu&rsquo;à ce que <b>le centre du logo</b> soit pile sur la <b>ligne blanche verticale</b> (LP LOCK | LIQ).
+  </div>
+</div>
+
+<script>
+  const ov = document.getElementById('ov');
+  const x = document.getElementById('x'), xv = document.getElementById('x-val');
+  const y = document.getElementById('y'), yv = document.getElementById('y-val');
+  const op = document.getElementById('op'), opv = document.getElementById('op-val');
+  const line = document.getElementById('line');
+  function update(){
+    ov.style.setProperty('--wm-x', x.value);
+    ov.style.setProperty('--wm-y', y.value);
+    ov.style.setProperty('--wm-op', op.value);
+    ov.style.setProperty('opacity', null);
+    // Update opacity by setting it on ::before via inline style attribute trick:
+    let css = `.ov::before{opacity:${(op.value/100).toFixed(3)} !important}`;
+    let s = document.getElementById('dyn-style');
+    if(!s){s=document.createElement('style');s.id='dyn-style';document.head.appendChild(s);}
+    s.textContent = css;
+    xv.textContent = x.value + '%';
+    yv.textContent = y.value + '%';
+    opv.textContent = op.value + '%';
+    ov.classList.toggle('no-line', !line.checked);
+  }
+  x.addEventListener('input', update);
+  y.addEventListener('input', update);
+  op.addEventListener('input', update);
+  line.addEventListener('change', update);
+  update();
+</script>
 </body>
 </html>
