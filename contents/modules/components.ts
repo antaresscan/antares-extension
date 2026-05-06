@@ -432,33 +432,36 @@ function buildHeaderNode(
   setStaticSvg(dragIcon, SVG_MOVE)
   const closeBtn = el("button", { class: "x", id: "ant-close" })
   setStaticSvg(closeBtn, SVG_CLOSE)
-  // Paid tiers get a small bare gold logo next to the ANTARES brand
-  // (Badge A from the tier-badge demo) instead of the legacy text pill
-  // (PRO/YEAR/LIFE). Free tier still gets the FREE/quota text pill —
-  // the badge logo is reserved as a "you're paid" flex.
+  // Brand logo next to the ANTARES wordmark — same on every tier
+  // (replaces the legacy FREE/PRO/YEAR/LIFE text pill entirely). The
+  // ONLY visual distinction between tiers is the logo colour: gray
+  // for Free, gold for Pro/Yearly/Lifetime. Title attribute carries
+  // the tier-specific copy for hover.
   const isPro = !!quota && (
     quota.tier === "pro" ||
     quota.tier === "yearly" ||
     quota.tier === "lifetime"
   )
-  const proLogo = isPro
-    ? el("span", {
-        class: "brand-logo",
-        title: quota!.tier === "lifetime"
-          ? "Lifetime · Unlimited scans"
-          : quota!.tier === "yearly"
-            ? "Yearly · Unlimited scans"
-            : "Pro · Unlimited scans",
-      })
-    : null
-  // The el() helper filters out null children, so we can pass the badge
-  // unconditionally — it just won't render when quota is undefined.
-  // installId is threaded through so the at-cap "0/50 → PRO" link can
-  // be rendered with the right href synchronously.
+  const tierTitle =
+    quota?.tier === "lifetime" ? "Lifetime · Unlimited scans"
+    : quota?.tier === "yearly" ? "Yearly · Unlimited scans"
+    : quota?.tier === "pro"    ? "Pro · Unlimited scans"
+    : "Free · Unlimited scans"
+  const brandLogo = el("span", {
+    class: `brand-logo ${isPro ? "pro" : "free"}`,
+    title: tierTitle,
+  })
+  // Legacy quota-exhausted badge — only relevant when a Free user
+  // hits the 50/day cap (quota.limit > 0 + remaining === 0). Render
+  // it so the "0/50 → PRO" upgrade link still appears in that edge
+  // case. For everything else (unlimited Free, Pro, no-quota), the
+  // brand-logo carries the full tier signal and we omit the pill.
+  const showLegacyCapPill =
+    !!quota && !isPro && quota.limit > 0 && quota.remaining === 0
   return el("div", { class: "hd" },
     el("span", { class: "brand" }, "ANTARES"),
-    proLogo,
-    isPro ? null : buildQuotaBadge(quota, installId),
+    brandLogo,
+    showLegacyCapPill ? buildQuotaBadge(quota, installId) : null,
     el("div", { class: "hd-right" }, dragIcon, closeBtn),
   )
 }
@@ -697,18 +700,10 @@ export function buildResultNode(
   const tokenName = data.tokenName || data.pair?.baseToken?.name || ""
   const tokenSymbol = data.tokenSymbol || data.pair?.baseToken?.symbol || ""
 
-  // Paid tiers get the orbital-logo watermark behind the overlay
-  // content (X 77%, Y 24%, opacity 6.5% — values from the tier-badge
-  // demo's interactive slider session). Driven by the .has-pro class
-  // so the watermark only renders for paying users.
-  const isProBox = !!data._quota && (
-    data._quota.tier === "pro" ||
-    data._quota.tier === "yearly" ||
-    data._quota.tier === "lifetime"
-  )
-  if (state.boxEl) {
-    state.boxEl.className = `box ${riskClass}${isProBox ? " has-pro" : ""}`
-  }
+  // Watermark renders on every overlay regardless of tier (Free + Pro
+  // get the same visual). Driven by .box::after in styles.ts — no
+  // tier-gating class needed here.
+  if (state.boxEl) state.boxEl.className = `box ${riskClass}`
 
   const dotsCount = Math.round((score / 1000) * 5)
   const dotsNode = el("div", { class: "dots" },

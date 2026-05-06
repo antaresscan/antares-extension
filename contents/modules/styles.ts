@@ -117,21 +117,23 @@ export const SHADOW_CSS = `
   pointer-events: none;
 }
 
-/* Pro/Yearly/Lifetime watermark — orbital logo behind the overlay
-   content. Centred on the LP LOCK | LIQ vertical divider in the
-   security row (X 77%, Y 24%, opacity 6.5%). Width tuned for the
-   290px production overlay (130px ≈ 160px × 290/340 from the demo).
-   Renders only when the user is on a paid tier (.has-pro). Sits at
-   z-index:0 so verdict text + buttons (z-index:1 via .vb / .si)
-   remain on top. */
-.box.has-pro::after {
+/* Watermark — orbital logo behind the overlay content. Same on every
+   overlay regardless of tier (Free + Pro/Yearly/Lifetime get the
+   identical visual treatment per spec — only the topbar logo colour
+   changes between tiers). Centred on the LP LOCK | LIQ vertical
+   divider in the security row (X 77%, Y 24%). Width tuned for the
+   290px production overlay (140px ≈ 160px × 290/340 from the demo).
+   Sits at z-index:0 so verdict text + buttons (z-index:1 via .vb /
+   .si) remain on top. Opacity bumped to 11% — production background
+   is darker than the demo, so 6.5% was barely visible. */
+.box::after {
   content: '';
   position: absolute;
-  width: 130px; height: 130px;
+  width: 140px; height: 140px;
   left: 77%; top: 24%;
-  margin: -65px 0 0 -65px;
+  margin: -70px 0 0 -70px;
   background: url(${iconDataUrl}) no-repeat center / contain;
-  opacity: .065;
+  opacity: .11;
   pointer-events: none;
   z-index: 0;
 }
@@ -206,20 +208,22 @@ export const SHADOW_CSS = `
   text-transform: uppercase;
   font-family: 'IBM Plex Mono', monospace;
 }
-/* Small bare gold logo that sits next to the ANTARES wordmark when the
-   user is on a paid tier (Pro/Yearly/Lifetime). Replaces the legacy
-   text pill (PRO/YEAR/LIFE). Uses icon as mask + currentColor fill so
-   we can change the gold shade with a single CSS tweak. */
+/* Small brand logo that sits next to the ANTARES wordmark on every
+   overlay. The colour is the only thing that distinguishes Free
+   (muted gray) from Pro/Yearly/Lifetime (bright gold). Uses the icon
+   as a mask + solid background fill so the colour swap is a single
+   property change. */
 .brand-logo {
   display: inline-block;
-  width: 11px; height: 11px;
+  width: 12px; height: 12px;
   -webkit-mask: url(${iconDataUrl}) no-repeat center / contain;
           mask: url(${iconDataUrl}) no-repeat center / contain;
-  background: #f5d000;
   margin-left: 7px;
   flex-shrink: 0;
   vertical-align: middle;
 }
+.brand-logo.free { background: #5a5a62; }
+.brand-logo.pro  { background: #f5d000; }
 .drag-icon {
   display: flex;
   align-items: center;
