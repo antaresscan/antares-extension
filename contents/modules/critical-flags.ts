@@ -70,12 +70,13 @@ export function toggleCriticalFlags(flags: ScanResponseFlag[] | null | undefined
     return
   }
 
-  // Mutex: close the AI Summary panel before opening this one. With both
-  // open the overlay overflows the viewport on shorter screens (the
-  // user-reported case was a 900px-tall window where the bottom of the
-  // box was clipped). Animated close matches the open animation, so the
-  // panel swap feels coherent.
-  closePanelAnimated(state.shadow?.querySelector("#ant-ai-summary") as HTMLElement | null)
+  // Mutex: close the AI Summary panel INSTANTLY before opening this one.
+  // Animated close was creating a 150ms window where both panels were
+  // in the DOM, .box height had to accommodate both, and the resulting
+  // layout jiggle was being read as "the overlay bugs out". Snapping
+  // the other panel shut while this one fades in feels rock solid.
+  const aiPanel = state.shadow?.querySelector("#ant-ai-summary") as HTMLElement | null
+  if (aiPanel) aiPanel.classList.remove("open", "closing")
 
   if (!panel.dataset.loaded) {
     panel.dataset.loaded = "1"

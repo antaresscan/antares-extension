@@ -202,14 +202,15 @@ export const SHADOW_CSS = `
 }
 /* ANTARES wordmark — single visual signal for tier in the topbar.
    Gray for Free (default), gold for Pro/Yearly/Lifetime (.pro
-   modifier). No badge / no separate logo next to it. */
+   modifier). No transition on the colour — instant swap on tier
+   change so it never reads as "the wordmark is animating" during
+   a button click. */
 .brand {
   font-size: 7px;
   color: #888;
   letter-spacing: .55em;
   text-transform: uppercase;
   font-family: 'IBM Plex Mono', monospace;
-  transition: color .25s ease;
 }
 .brand.pro { color: #f5d000; }
 .drag-icon {
@@ -663,14 +664,18 @@ export const SHADOW_CSS = `
   background: rgba(167,139,250,.1);
 }
 
-/* ── AI Summary panel (inline in overlay) ───────────────────────── */
+/* ── AI Summary panel (inline in overlay) ─────────────────────────
+   Pure opacity fade — NO translateY. Vertical movement on panel open
+   was being read as "the whole overlay is jiggling" by users, even
+   though only the panel content shifted 4px. Fade-only feels rock
+   solid. */
 @keyframes ai-panel-in {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 @keyframes ai-panel-out {
-  from { opacity: 1; transform: translateY(0); }
-  to   { opacity: 0; transform: translateY(-4px); }
+  from { opacity: 1; }
+  to   { opacity: 0; }
 }
 
 .ai-panel {
@@ -786,13 +791,14 @@ export const SHADOW_CSS = `
   background: rgba(255,95,95,.1);
 }
 
+/* Pure opacity fade — same reasoning as ai-panel keyframes. */
 @keyframes cf-panel-in {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 @keyframes cf-panel-out {
-  from { opacity: 1; transform: translateY(0); }
-  to   { opacity: 0; transform: translateY(-4px); }
+  from { opacity: 1; }
+  to   { opacity: 0; }
 }
 
 .cf-panel {

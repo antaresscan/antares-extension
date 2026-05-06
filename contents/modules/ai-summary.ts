@@ -29,12 +29,14 @@ export function toggleAiSummary(aiSummary: string | null | undefined): void {
     return
   }
 
-  // Mutex: close the Critical Flags panel before opening this one. The two
-  // panels share the same vertical real estate inside the overlay; with
-  // both open the box overflowed off-screen on shorter viewports. We use
-  // the animated-close path so the swap feels coherent rather than one
-  // panel snapping shut while the other slides open.
-  closePanelAnimated(state.shadow?.querySelector("#ant-critical-flags") as HTMLElement | null)
+  // Mutex: close the Critical Flags panel INSTANTLY before opening this
+  // one. Animated close was creating a 150ms window where both panels
+  // were in the DOM, .box height had to accommodate both, and the
+  // resulting layout jiggle was being read as "the overlay bugs out".
+  // Snapping the other panel shut while this one fades in feels rock
+  // solid by comparison.
+  const cfPanel = state.shadow?.querySelector("#ant-critical-flags") as HTMLElement | null
+  if (cfPanel) cfPanel.classList.remove("open", "closing")
 
   // Inject content only once
   if (!panel.dataset.loaded) {
