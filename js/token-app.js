@@ -638,6 +638,45 @@ async function loadInsiderActivity() {
     if (foot) foot.innerHTML = ''
   }
 
+  // Render the holder snapshot rows when activity is empty (or as a fallback
+  // beneath rows when partially populated). Each row shows: short address,
+  // pct supply, and "no recent activity" hint, with a Solscan link.
+  // This is the user-visible promise that the feature is alive — quiet
+  // treasury wallets still appear, instead of an "empty" state that looks
+  // like a broken scan.
+  const renderWalletList = (wallets, hint) => {
+    if (!Array.isArray(wallets) || !wallets.length) {
+      renderEmpty(hint || 'No transactions from the top 10 holders in the last 6 hours.', '')
+      return
+    }
+    const rowsHtml = wallets.map((w, i) => {
+      const idx = String(i + 1).padStart(2, '0')
+      const pct = (typeof w.pctSupply === 'number' && Number.isFinite(w.pctSupply))
+        ? w.pctSupply.toFixed(2) + '%'
+        : '—'
+      const tok = fmtTok(w.holdings)
+      const hold = w.holdings != null ? `${tok} tokens` : ''
+      const status = w.active ? 'ACTIVE' : 'IDLE'
+      const cls = w.active ? 'active' : 'idle'
+      const url = `https://solscan.io/account/${encodeURIComponent(w.walletFull || '')}`
+      return `
+        <a class="iw-holder-row ${cls}" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">
+          <span class="iw-holder-rank">#${idx}</span>
+          <span class="iw-holder-wallet" title="${escapeHtml(w.walletFull || '')}">${escapeHtml(w.wallet || '')}</span>
+          <span class="iw-holder-pct">${escapeHtml(pct)}</span>
+          <span class="iw-holder-amount">${escapeHtml(hold)}</span>
+          <span class="iw-holder-state">${escapeHtml(status)}</span>
+        </a>
+      `
+    }).join('')
+    if (slot) {
+      slot.innerHTML = `
+        <div class="iw-fallback-note">${escapeHtml(hint || 'No on-chain activity from these wallets in the last 6h.')}</div>
+        <div class="iw-holder-list">${rowsHtml}</div>
+      `
+    }
+  }
+
   try {
     const priceQ = wrap.dataset.price ? `&price=${encodeURIComponent(wrap.dataset.price)}` : ''
     // /api/graph hosts the activity feed under ?activity=1 — same
@@ -657,9 +696,23 @@ async function loadInsiderActivity() {
     // renders the empty state instead of throwing.
     const data = payload && payload.activity ? payload.activity : null
     const activity = Array.isArray(data && data.activity) ? data.activity : []
+    const walletList = Array.isArray(data && data.wallets) ? data.wallets : []
 
     if (!activity.length) {
-      renderEmpty('No transactions from the top 10 holders in the last 6 hours.', '')
+      // Fallback: show the top 10 holder list with their pct supply so
+      // the panel looks alive even when none of them traded in 6h. Many
+      // tokens have quiet treasuries and long-term holders dominating
+      // the top 10 — that's a legitimate "no activity" case, not a bug.
+      renderWalletList(
+        walletList,
+        'No on-chain activity from these wallets in the last 6h — showing current holdings.',
+      )
+      // Still surface the meta count if present, and clear the flow foot.
+      if (meta) {
+        const wTotal = data && typeof data.totalCheckedWallets === 'number' ? data.totalCheckedWallets : walletList.length
+        meta.textContent = `0/${wTotal} wallets active`
+      }
+      if (foot) foot.innerHTML = ''
       return
     }
 

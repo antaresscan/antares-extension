@@ -467,6 +467,52 @@ nav .actions a.warn:hover{color:var(--orange);border-color:rgba(255,95,95,.4);ba
 }
 .iw-feed-empty.warn{color:var(--yellow)}
 
+/* Fallback holder list — shown when no recent activity is found.
+   Keeps the panel feeling "alive" by displaying who holds the supply
+   even if nobody traded in the last 6h (treasury / long-term holds). */
+.iw-fallback-note{
+  padding:12px 14px;color:#888;font-size:10px;letter-spacing:.06em;
+  line-height:1.6;border-bottom:1px solid #14141a;background:#0a0a0c;
+}
+.iw-holder-list{display:flex;flex-direction:column}
+.iw-holder-row{
+  display:grid;
+  grid-template-columns:34px 1fr 64px 1fr 60px;
+  align-items:center;gap:10px;
+  padding:10px 14px;border-bottom:1px solid #13131a;
+  text-decoration:none;color:#bbb;
+  font-family:'IBM Plex Mono',monospace;font-size:10.5px;
+  transition:background .12s ease;
+}
+.iw-holder-row:hover{background:rgba(255,255,255,.025)}
+.iw-holder-row:last-child{border-bottom:none}
+.iw-holder-rank{
+  color:#555;font-weight:700;font-size:9.5px;letter-spacing:.06em;
+}
+.iw-holder-wallet{
+  color:#ddd;font-weight:600;letter-spacing:.02em;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.iw-holder-pct{
+  color:#f5d000;font-weight:700;font-variant-numeric:tabular-nums;
+  text-align:right;
+}
+.iw-holder-amount{
+  color:#777;font-variant-numeric:tabular-nums;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  text-align:right;
+}
+.iw-holder-state{
+  font-size:9px;letter-spacing:.18em;font-weight:700;
+  text-align:right;color:#555;
+}
+.iw-holder-row.active .iw-holder-state{color:var(--c)}
+.iw-holder-row.idle   .iw-holder-state{color:#444}
+@media (max-width:580px){
+  .iw-holder-row{grid-template-columns:28px 1fr 56px 56px;}
+  .iw-holder-amount{display:none}
+}
+
 .iw-feed-foot{display:flex}
 .iw-flow{
   display:flex;justify-content:space-between;align-items:center;flex:1;
@@ -724,6 +770,6 @@ footer span{color:var(--c)}
   <button class="ask-fab" aria-label="Ask Antares AI">✦</button>
 </div>
 
-<script defer src="/js/token-app.js?v=20260507-insider-feed"></script>
+<script defer src="/js/token-app.js?v=20260507-holder-fallback"></script>
 <script defer src="/js/token-bg.js?v=20260429a"></script>
 </body></html>

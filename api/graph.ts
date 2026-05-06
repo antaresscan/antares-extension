@@ -86,10 +86,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const filtered = holdersWithOwners.filter(
         (h) => !lpAddresses.has(h.address) && !lpAddresses.has(h.owner),
       );
-      const topAddresses = filtered
-        .slice(0, 10)
-        .map((h) => h.owner ?? h.address);
-      if (topAddresses.length > 0) {
+      // Build the snapshot list (owner + uiAmount) for the helper. The
+      // helper uses `owner` for matching tokenTransfers and `uiAmount` +
+      // totalSupply to compute pctSupply for the fallback wallet list.
+      const topHolderSnapshots = filtered.slice(0, 10).map((h) => ({
+        owner: h.owner ?? h.address,
+        uiAmount: h.uiAmount ?? 0,
+      }));
+      if (topHolderSnapshots.length > 0) {
         // Optional price hint — caller passes the DexScreener price
         // already known from the scan response, avoids a duplicate
         // upstream lookup. Falls back to null if missing/invalid;
@@ -103,7 +107,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         try {
           activity = await buildInsiderActivity(
             ca,
-            topAddresses,
+            topHolderSnapshots,
+            totalSupply,
             tokenPriceUsd,
             HELIUS_API_KEY,
           );

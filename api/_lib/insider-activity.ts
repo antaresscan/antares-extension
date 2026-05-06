@@ -83,8 +83,28 @@ export interface InsiderActivityEntry {
   ageMin: number
 }
 
+/**
+ * Snapshot of one of the top 10 wallets being tracked. Always emitted (even
+ * when no recent activity is found) so the UI can render the holder list
+ * as a fallback empty state instead of looking broken.
+ */
+export interface InsiderWalletSnapshot {
+  /** Truncated wallet, e.g. "7sZx...K9pQ". */
+  wallet: string
+  /** Full base58 owner wallet. */
+  walletFull: string
+  /** UI-amount currently held. */
+  holdings: number
+  /** Pct of total supply (0–100). */
+  pctSupply: number
+  /** True if this wallet had at least one matching action in the window. */
+  active: boolean
+}
+
 export interface InsiderActivityResult {
   activity: InsiderActivityEntry[]
+  /** Top 10 wallets being tracked — emitted regardless of activity. */
+  wallets: InsiderWalletSnapshot[]
   /** Signed USD net flow over the entire window (not just sliced feed). */
   netFlowUsd: number
   windowHours: number
@@ -100,6 +120,14 @@ export interface InsiderActivityResult {
     txsAfterCutoff: number
     txsTouchingMint: number
   }
+}
+
+/** Caller-provided shape: a top-holder owner wallet with its current balance. */
+export interface InsiderActivityHolder {
+  /** Owner wallet (already resolved from token account). */
+  owner: string
+  /** UI-amount currently held by this wallet. */
+  uiAmount: number
 }
 
 let redis: Redis | null = null
@@ -183,15 +211,21 @@ async function parseTxBatch(
  * Build the live activity feed for a token's top holders.
  *
  * @param mint Token mint address (CA).
- * @param topHolders Up to 10 wallet addresses, already LP/foundation-filtered.
+ * @param topHolders Up to 10 holder snapshots (owner wallet + UI amount),
+ *                   already LP/foundation-filtered.
+ * @param totalSupply Total token supply (UI amount) — used to compute pctSupply
+ *                    per wallet for the snapshot fallback.
  * @param tokenPriceUsd Current price per token in USD (from DexScreener) — used
  *                      to compute USD values; null leaves usdValue=null per entry.
  * @param apiKey Helius API key.
- * @returns Sorted feed (most recent first) + window net-flow + metadata.
+ * @returns Sorted feed (most recent first) + window net-flow + metadata,
+ *          AND the wallet snapshot list (always populated so the UI can
+ *          show holders as a fallback when activity is empty).
  */
 export async function buildInsiderActivity(
   mint: string,
-  topHolders: string[],
+  topHolders: InsiderActivityHolder[],
+  totalSupply: number,
   tokenPriceUsd: number | null,
   apiKey: string,
 ): Promise<InsiderActivityResult> {
@@ -207,7 +241,8 @@ export async function buildInsiderActivity(
     } catch { /* fall through */ }
   }
 
-  const wallets = topHolders.slice(0, MAX_WALLETS)
+  const trimmedHolders = topHolders.slice(0, MAX_WALLETS)
+  const wallets = trimmedHolders.map(h => h.owner)
   const holderSet = new Set(wallets)
   const cutoffMs = Date.now() - WINDOW_HOURS * 3600 * 1000
 
@@ -318,13 +353,28 @@ export async function buildInsiderActivity(
     0,
   )
 
+  // Wallet snapshot list — emitted regardless of activity so the UI has
+  // a meaningful empty state. When the top holders are quiet treasury /
+  // long-term-hold wallets (genuinely no recent activity), the user still
+  // sees who owns the supply, with their pct + Solscan link, instead of
+  // an "empty feed" that looks like the feature is broken.
+  const activeOwners = new Set(entries.map(e => e.walletFull))
+  const walletSnapshots: InsiderWalletSnapshot[] = trimmedHolders.map(h => ({
+    wallet: shortAddr(h.owner),
+    walletFull: h.owner,
+    holdings: h.uiAmount,
+    pctSupply: totalSupply > 0 ? (h.uiAmount / totalSupply) * 100 : 0,
+    active: activeOwners.has(h.owner),
+  }))
+
   const result: InsiderActivityResult = {
     activity: sliced,
+    wallets: walletSnapshots,
     netFlowUsd,
     windowHours: WINDOW_HOURS,
     generatedAt: now,
     totalCheckedWallets: wallets.length,
-    walletsWithActivity: new Set(entries.map(e => e.walletFull)).size,
+    walletsWithActivity: activeOwners.size,
     _debug: {
       sigsTotal,
       sigsAfterCutoff: allSigs.length,
