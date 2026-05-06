@@ -37,20 +37,15 @@
     overflow:hidden;
   }
 
-  /* Watermark — centred on the vertical divider between LP LOCK
-     (col 4) and LIQ (col 5), which is at 80% horizontal. Vertically
-     centred. Uses background-image with `contain` sizing so the FULL
-     orbital pattern of the icon is preserved (instead of zooming into
-     the inner burst only). Low opacity (4%). */
+  /* Same approach as the W3 screenshot the user wants — full overlay
+     ::before with background-image, 55% size — but anchored on the
+     vertical divider between LP LOCK and LIQ (80% horizontal, i.e.
+     image right edge at 20% from container right) and opacity dropped
+     from 10% to 4%. */
   .ov::before{
-    content:'';position:absolute;
-    width:160px;height:160px;
-    left:80%;top:50%;
-    margin:-80px 0 0 -80px;
-    background:url('icon.png') no-repeat center / contain;
+    content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
+    background:url('icon.png') no-repeat right 20% center / 55% auto;
     opacity:.04;
-    pointer-events:none;
-    z-index:0;
   }
   .ov > *{position:relative;z-index:1}
 
