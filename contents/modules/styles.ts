@@ -199,33 +199,18 @@ export const SHADOW_CSS = `
   align-items: center;
   gap: 10px;
 }
+/* ANTARES wordmark — single visual signal for tier in the topbar.
+   Gray for Free (default), gold for Pro/Yearly/Lifetime (.pro
+   modifier). No badge / no separate logo next to it. */
 .brand {
   font-size: 7px;
   color: #888;
   letter-spacing: .55em;
   text-transform: uppercase;
   font-family: 'IBM Plex Mono', monospace;
+  transition: color .25s ease;
 }
-/* Small brand logo that sits next to the ANTARES wordmark on every
-   overlay. The colour is the only thing that distinguishes Free
-   (muted gray) from Pro/Yearly/Lifetime (bright gold). Uses the icon
-   as a mask + solid background fill so the colour swap is a single
-   property change. */
-.brand-logo {
-  display: inline-block;
-  width: 12px; height: 12px;
-  -webkit-mask: url(${iconDataUrl}) no-repeat center / contain;
-          mask: url(${iconDataUrl}) no-repeat center / contain;
-  /* Negative margin pulls the logo back against the trailing letter
-     spacing on .brand (letter-spacing:.55em adds ~4px after the S);
-     -3px lands the logo ~2px after the S edge so it reads as part
-     of the wordmark. */
-  margin-left: -3px;
-  flex-shrink: 0;
-  vertical-align: middle;
-}
-.brand-logo.free { background: #5a5a62; }
-.brand-logo.pro  { background: #f5d000; }
+.brand.pro { color: #f5d000; }
 .drag-icon {
   display: flex;
   align-items: center;
