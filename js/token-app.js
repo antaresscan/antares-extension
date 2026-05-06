@@ -304,47 +304,78 @@ function buildSniperMapTab(d) {
   let top1 = typeof d.topHolderPct === 'number' ? d.topHolderPct : null
   if (top10 == null) top10 = parsePctFromFlags(flags, /top\s*10\b[^%]*?(\d+(?:\.\d+)?)\s*%/i)
   if (top1 == null) top1 = parsePctFromFlags(flags, /single\s+wallet[^%]*?(\d+(?:\.\d+)?)\s*%/i)
-  // If Helius is explicitly unavailable per backend, surface that
-  // honestly rather than using a stale or zero value.
   const heliusUnavailable = flags.some(f => /helius\s+unavailable/i.test(f.label || ''))
 
-  // Clean-launch path: no sniper / bundle flags. We still render the
-  // bar so the tab is never blank — what we show depends on whether
-  // we have top-10 concentration to display.
-  if (!hasActivity) {
-    if (top10 != null) {
-      // Show concentration even on the clean path so the user gets
-      // something quantitative — useful context regardless of bots.
-      const pc = Math.round(Math.max(0, Math.min(100, top10)))
-      return `
-        <div class="sm-bar-wrap">
-          <div class="sm-title">CLEAN LAUNCH · TOP 10 HOLD ${pc}%</div>
-          <div class="sm-bar">
-            <div class="sm-seg holding" style="flex:${pc}"><span class="pct">${pc}%</span><span>Top 10</span></div>
-            <div class="sm-seg distributed" style="flex:${100 - pc}"><span class="pct">${100 - pc}%</span><span>Distributed</span></div>
-          </div>
-          <div class="sm-axis"><span>${top1 != null ? 'Largest: ' + top1.toFixed(1) + '%' : '—'}</span><span>NO COORDINATED LAUNCH</span><span>0 flags</span></div>
-        </div>
-        <div class="tab-alert good">No sniper or bundle activity detected at launch. The token looks organic.</div>
-      `
+  // ── Concentration verdict (independent of sniper activity) ────────
+  // The previous version said "CLEAN LAUNCH · The token looks organic"
+  // even when top 10 held 80%+ of supply. That's wrong — the absence
+  // of sniper bots doesn't make a hyper-concentrated token safe. Now
+  // the verdict is a function of BOTH (1) measured concentration and
+  // (2) sniper/bundle flags, with concentration ALWAYS able to push
+  // the verdict into a warning regardless of activity.
+  function concentrationVerdict(t10, t1) {
+    // Single-whale override: one wallet >= 30% is critical no matter
+    // what the rest of the distribution looks like.
+    if (t1 != null && t1 >= 30) {
+      return {
+        title: `WHALE RISK · ONE WALLET HOLDS ${t1.toFixed(1)}%`,
+        cls: 'bad',
+        text: `One wallet holds ${t1.toFixed(1)}% of supply — single-entity dump can wipe price out at any moment.`,
+      }
     }
+    if (t10 == null) return null
+    if (t10 >= 70) {
+      return {
+        title: `EXTREME CONCENTRATION · TOP 10 HOLD ${Math.round(t10)}%`,
+        cls: 'bad',
+        text: `Top 10 wallets hold ${Math.round(t10)}% of supply — extreme concentration. A coordinated exit will crash the price.`,
+      }
+    }
+    if (t10 >= 50) {
+      return {
+        title: `HIGH CONCENTRATION · TOP 10 HOLD ${Math.round(t10)}%`,
+        cls: 'warn',
+        text: `Top 10 wallets hold ${Math.round(t10)}% of supply — high concentration. Watch for coordinated dumps.`,
+      }
+    }
+    if (t10 >= 30) {
+      return {
+        title: `ELEVATED CONCENTRATION · TOP 10 HOLD ${Math.round(t10)}%`,
+        cls: 'warn',
+        text: `Top 10 wallets hold ${Math.round(t10)}% of supply — above the healthy launch range. Watch whale moves.`,
+      }
+    }
+    if (t10 >= 15) {
+      return {
+        title: `MODERATE CONCENTRATION · TOP 10 HOLD ${Math.round(t10)}%`,
+        cls: 'info',
+        text: `Top 10 wallets hold ${Math.round(t10)}% of supply — within normal launch range.`,
+      }
+    }
+    return {
+      title: `WELL DISTRIBUTED · TOP 10 HOLD ${Math.round(t10)}%`,
+      cls: 'good',
+      text: `Top 10 wallets hold only ${Math.round(t10)}% of supply — healthy distribution.`,
+    }
+  }
+
+  // No concentration data and no sniper activity — render minimal
+  // bar saying so honestly. Never claim "organic" without measurement.
+  if (top10 == null && !hasActivity) {
+    const reason = heliusUnavailable ? 'Helius unavailable on this scan' : 'top-holder data missing'
     return `
       <div class="sm-bar-wrap">
-        <div class="sm-title">CLEAN LAUNCH</div>
+        <div class="sm-title">CONCENTRATION UNAVAILABLE</div>
         <div class="sm-bar">
-          <div class="sm-seg holding" style="flex:100"><span class="pct">No bots</span><span>Organic launch</span></div>
+          <div class="sm-seg pending" style="flex:100"><span class="pct">unknown</span><span>concentration unavailable</span></div>
         </div>
-        <div class="sm-axis"><span>—</span><span>NO COORDINATED LAUNCH</span><span>0 flags</span></div>
+        <div class="sm-axis"><span>—</span><span>${escapeHtml(reason.toUpperCase())}</span><span>0 flags</span></div>
       </div>
-      <div class="tab-alert good">No sniper or bundle activity detected at launch. The token looks organic.</div>
+      <div class="tab-alert warn">No sniper or bundle activity detected, but distribution data is unavailable on this scan — concentration cannot be assessed. Re-scan for full data.</div>
     `
   }
 
-  if (top10 == null) {
-    // Activity detected but concentration data really is missing
-    // (Helius unavailable on this scan + no flag-borne %). Render the
-    // bar with a single "concentration unknown" segment so the visual
-    // is still in place, plus an alert explaining the gap.
+  if (top10 == null && hasActivity) {
     const reason = heliusUnavailable ? 'Helius unavailable on this scan' : 'top-holder data missing'
     return `
       <div class="sm-bar-wrap">
@@ -354,40 +385,46 @@ function buildSniperMapTab(d) {
         </div>
         <div class="sm-axis"><span>—</span><span>${escapeHtml(reason.toUpperCase())}</span><span>${sniperFlags.length} flag${sniperFlags.length > 1 ? 's' : ''}</span></div>
       </div>
-      <div class="tab-alert warn">Sniper / bundle activity detected at launch — but ${escapeHtml(reason)}, so the distribution status cannot be measured for this scan.</div>
+      <div class="tab-alert bad">Sniper / bundle activity detected at launch — but ${escapeHtml(reason)}, so the distribution status cannot be measured for this scan.</div>
     `
   }
 
-  // Real, measured concentration split. Both numbers add to 100.
+  // We have measurable concentration. Build the bar + combine the
+  // concentration verdict with sniper activity (if any).
   const concentrated = Math.round(Math.max(0, Math.min(100, top10)))
   const distributed = 100 - concentrated
   const top1Disp = top1 != null ? top1.toFixed(1) + '%' : '—'
+  const concV = concentrationVerdict(top10, top1)
 
-  // Status label + verdict text derived from the actual concentration
-  // band. Every threshold compares against a measured number.
-  let status, alertCls, alertText
-  if (concentrated >= 50) {
-    status = 'STILL CONCENTRATED'
-    alertCls = 'warn'
-    alertText = `Sniper / bundle activity detected. Top 10 still hold ${concentrated}% of supply — bots haven't distributed yet. Watch for the dump.`
-  } else if (concentrated >= 25) {
-    status = 'PARTIALLY DISTRIBUTED'
-    alertCls = 'warn'
-    alertText = `Sniper / bundle activity detected. Top 10 hold ${concentrated}% — partial distribution under way.`
+  let title, alertCls, alertText, axisStatus
+  if (hasActivity) {
+    // Sniper/bundle activity AND measured concentration — combine.
+    // The concentration band drives severity; sniper count adds context.
+    title = `${sniperFlags.length} SNIPER/BUNDLE PATTERN${sniperFlags.length > 1 ? 'S' : ''} · TOP 10 HOLD ${concentrated}%`
+    alertCls = concV.cls === 'good' ? 'warn' : concV.cls // sniper activity always at least warn
+    alertText = `${sniperFlags.length} sniper/bundle flag${sniperFlags.length > 1 ? 's' : ''} detected at launch. ${concV.text}`
+    axisStatus = concV.title.split('·')[0].trim()
   } else {
-    status = 'DISTRIBUTED'
-    alertCls = 'bad'
-    alertText = `Sniper / bundle activity detected at launch. Top 10 hold only ${concentrated}% — bots have largely cashed out before retail.`
+    // No sniper activity — verdict is purely concentration-based.
+    title = concV.title
+    alertCls = concV.cls
+    alertText = concV.text
+    // Append a note that there's no sniper activity (a small
+    // positive signal in an otherwise concentration-based read).
+    if (concV.cls === 'good' || concV.cls === 'info') {
+      alertText += ' No sniper or bundle activity detected at launch.'
+    }
+    axisStatus = concV.title.split('·')[0].trim()
   }
 
   return `
     <div class="sm-bar-wrap">
-      <div class="sm-title">SUPPLY CONCENTRATION · ${concentrated}% IN TOP 10</div>
+      <div class="sm-title">${escapeHtml(title)}</div>
       <div class="sm-bar">
         <div class="sm-seg holding" style="flex:${concentrated}"><span class="pct">${concentrated}%</span><span>Top 10</span></div>
-        <div class="sm-seg exited" style="flex:${distributed}"><span class="pct">${distributed}%</span><span>Distributed</span></div>
+        <div class="sm-seg ${hasActivity ? 'exited' : 'distributed'}" style="flex:${distributed}"><span class="pct">${distributed}%</span><span>Distributed</span></div>
       </div>
-      <div class="sm-axis"><span>Largest: ${escapeHtml(top1Disp)}</span><span>${escapeHtml(status)}</span><span>${sniperFlags.length} flag${sniperFlags.length > 1 ? 's' : ''}</span></div>
+      <div class="sm-axis"><span>Largest: ${escapeHtml(top1Disp)}</span><span>${escapeHtml(axisStatus)}</span><span>${sniperFlags.length} flag${sniperFlags.length === 1 ? '' : 's'}</span></div>
     </div>
     <div class="tab-alert ${alertCls}">${escapeHtml(alertText)}</div>
   `
