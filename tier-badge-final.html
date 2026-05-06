@@ -37,18 +37,18 @@
     overflow:hidden;
   }
 
-  /* Watermark — centred on the vertical divider between
-     LP LOCK (col 4) and LIQ (col 5), which is at 80% horizontal.
-     Vertically centred. Low opacity (3.5%). */
+  /* Watermark — centred on the vertical divider between LP LOCK
+     (col 4) and LIQ (col 5), which is at 80% horizontal. Vertically
+     centred. Uses background-image with `contain` sizing so the FULL
+     orbital pattern of the icon is preserved (instead of zooming into
+     the inner burst only). Low opacity (4%). */
   .ov::before{
     content:'';position:absolute;
-    width:140px;height:140px;
+    width:160px;height:160px;
     left:80%;top:50%;
-    margin:-70px 0 0 -70px;
-    background:#fff;
-    -webkit-mask:url('icon.png') no-repeat center / 400% 400%;
-            mask:url('icon.png') no-repeat center / 400% 400%;
-    opacity:.035;
+    margin:-80px 0 0 -80px;
+    background:url('icon.png') no-repeat center / contain;
+    opacity:.04;
     pointer-events:none;
     z-index:0;
   }
