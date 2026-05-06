@@ -21,11 +21,13 @@
     background-size:400% 100%;animation:stripe 6s linear infinite;opacity:.7}
   @keyframes stripe{0%{background-position:0% 0}100%{background-position:400% 0}}
 
-  /* Bare gold-logo badge for the topbar */
+  /* Bare gold-logo badge for the topbar — exactly like the A demo
+     card the user referenced (mask:contain so the icon sits cleanly
+     inside the 18px container at its natural size). */
   .logo{
     display:inline-block;width:18px;height:18px;
-    -webkit-mask:url('icon.png') no-repeat center / 400% 400%;
-            mask:url('icon.png') no-repeat center / 400% 400%;
+    -webkit-mask:url('icon.png') no-repeat center / contain;
+            mask:url('icon.png') no-repeat center / contain;
     background:var(--gold);flex-shrink:0;
   }
 
