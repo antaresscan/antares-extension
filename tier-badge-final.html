@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Antares overlay — final</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#0a0a0c;--card:#111114;--ink:#eaeaea;--dim:#7a7a82;--muted:#454550;
+    --c:#00e5b0;--gold:#f5d000;--caution:#f5d000;--danger:#ff5f5f;
+  }
+  body{
+    background:var(--bg);color:var(--ink);font-family:'IBM Plex Mono',monospace;
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    padding:40px 24px;
+  }
+  .stripe{position:fixed;top:0;left:0;right:0;height:3px;z-index:999;
+    background:linear-gradient(90deg,#c0007a,var(--c),#c8c000,#c0002a,var(--c),#c0007a);
+    background-size:400% 100%;animation:stripe 6s linear infinite;opacity:.7}
+  @keyframes stripe{0%{background-position:0% 0}100%{background-position:400% 0}}
+
+  /* Bare gold-logo badge for the topbar */
+  .logo{
+    display:inline-block;width:18px;height:18px;
+    -webkit-mask:url('icon.png') no-repeat center / 400% 400%;
+            mask:url('icon.png') no-repeat center / 400% 400%;
+    background:var(--gold);flex-shrink:0;
+  }
+
+  /* ── The overlay ───────────────────────────────────────────────────── */
+  .ov{
+    position:relative;width:340px;background:#101013;
+    border:1px solid #1d1d22;border-radius:6px;padding:14px 16px 16px;
+    display:flex;flex-direction:column;gap:11px;color:var(--ink);
+    overflow:hidden;
+  }
+
+  /* Watermark — centred on the vertical divider between
+     LP LOCK (col 4) and LIQ (col 5), which is at 80% horizontal.
+     Vertically centred. Low opacity (3.5%). */
+  .ov::before{
+    content:'';position:absolute;
+    width:140px;height:140px;
+    left:80%;top:50%;
+    margin:-70px 0 0 -70px;
+    background:#fff;
+    -webkit-mask:url('icon.png') no-repeat center / 400% 400%;
+            mask:url('icon.png') no-repeat center / 400% 400%;
+    opacity:.035;
+    pointer-events:none;
+    z-index:0;
+  }
+  .ov > *{position:relative;z-index:1}
+
+  /* Topbar */
+  .ov-tb{display:flex;align-items:center;justify-content:space-between;
+    padding-bottom:9px;border-bottom:1px solid #1a1a1e}
+  .ov-tb-lf{display:flex;align-items:center;gap:8px}
+  .ov-brand{font:600 11px/1 'IBM Plex Mono',monospace;color:#888;letter-spacing:.18em}
+  .ov-tb-rt{display:flex;gap:6px;color:#3a3a40;font-size:11px}
+  .ov-tb-rt span{cursor:default;padding:1px 3px}
+
+  .ov-tk{font:600 13px/1 'IBM Plex Mono',monospace}
+  .ov-tk b{color:var(--ink)}
+  .ov-tk span{color:#7a7a82;margin-left:4px}
+
+  .ov-vd{font:400 38px/.95 'Bebas Neue',sans-serif;letter-spacing:.04em;
+    color:var(--caution);text-shadow:0 0 18px rgba(245,208,0,.3);margin-top:-2px}
+
+  .ov-sc{display:flex;align-items:baseline;gap:6px;font:600 14px/1 'IBM Plex Mono',monospace}
+  .ov-sc b{color:var(--ink)}
+  .ov-sc small{color:#5a5a62;font-size:11px;font-weight:500}
+  .ov-sc .dots{color:var(--caution);margin-left:4px;font-size:9px;letter-spacing:1px}
+
+  .ov-bar{height:2px;background:#1a1a1e;border-radius:1px;overflow:hidden}
+  .ov-bar-fill{height:100%;width:85%;background:var(--caution);box-shadow:0 0 6px rgba(245,208,0,.4)}
+
+  .ov-fl{font:600 10px/1 'IBM Plex Mono',monospace;color:var(--caution);letter-spacing:.04em}
+
+  .ov-sec{display:grid;grid-template-columns:repeat(5,1fr);
+    background:#0a0a0c;border:1px solid #1a1a1e;border-radius:3px}
+  .ov-sec .cell{padding:6px 4px;text-align:center;border-right:1px solid #1a1a1e;
+    display:flex;flex-direction:column;align-items:center;gap:3px}
+  .ov-sec .cell:last-child{border-right:none}
+  .ov-sec .cell span{font:700 7.5px/1 'IBM Plex Mono',monospace;color:#666;letter-spacing:.1em}
+  .ov-sec .cell b{font:700 11px/1 'IBM Plex Mono',monospace}
+  .ov-sec .cell b.ok{color:var(--c)}
+  .ov-sec .cell b.ko{color:var(--danger)}
+  .ov-sec .cell b.liq{color:var(--c);font-size:10px}
+
+  .ov-btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+  .ov-btn{padding:11px 5px 9px;background:#0a0a0c;border:1px solid #1a1a1e;border-radius:3px;
+    font:700 8.5px/1.3 'IBM Plex Mono',monospace;color:#888;letter-spacing:.06em;
+    cursor:default;position:relative;text-align:center}
+  .ov-btn .ico{display:block;font-size:10px;margin-bottom:3px;color:#666}
+  .ov-btn.locked{opacity:.5}
+  .ov-btn.locked::after{content:'PRO';position:absolute;top:4px;right:4px;
+    font:700 6.5px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;
+    padding:2px 4px;border-radius:2px;color:var(--gold);
+    background:rgba(245,208,0,.1);border:1px solid rgba(245,208,0,.3)}
+</style>
+</head>
+<body>
+<div class="stripe" role="presentation"></div>
+
+<div class="ov">
+  <div class="ov-tb">
+    <div class="ov-tb-lf"><span class="ov-brand">ANTARES</span><span class="logo"></span></div>
+    <div class="ov-tb-rt"><span>+</span><span>×</span></div>
+  </div>
+  <div class="ov-tk"><b>LOL</b> <span>LOL</span></div>
+  <div class="ov-vd">CAUTION</div>
+  <div class="ov-sc"><b>850</b> <small>/ 1000</small> <span class="dots">●●●●</span></div>
+  <div class="ov-bar"><div class="ov-bar-fill"></div></div>
+  <div class="ov-fl">1 flag detected</div>
+  <div class="ov-sec">
+    <div class="cell"><span>SELL</span><b class="ok">✓</b></div>
+    <div class="cell"><span>MINT</span><b class="ok">✓</b></div>
+    <div class="cell"><span>FREEZE</span><b class="ok">✓</b></div>
+    <div class="cell"><span>LP LOCK</span><b class="ko">✗</b></div>
+    <div class="cell"><span>LIQ</span><b class="liq">$285K</b></div>
+  </div>
+  <div class="ov-btns">
+    <div class="ov-btn locked"><span class="ico">⚠</span>CRITICAL FLAGS</div>
+    <div class="ov-btn locked">FULL ANALYSIS →</div>
+    <div class="ov-btn locked"><span class="ico">○</span>AI SUMMARY</div>
+  </div>
+</div>
+
+</body>
+</html>
