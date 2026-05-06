@@ -17,7 +17,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Redis } from "@upstash/redis";
 import { setCorsHeaders, validateCA, checkRateLimit, getClientIp, initRateLimiters } from "./_lib/middleware";
 import { apiError, settled } from "./_lib/helpers";
-import { heliusGetLargestAccounts, heliusGetTokenSupply } from "./_lib/fetchers";
+import { heliusGetLargestAccounts, heliusGetTokenSupply, heliusResolveAccountOwners } from "./_lib/fetchers";
 import { LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS } from "./_lib/constants";
 import { buildInsiderGraph, initGraphCache } from "./_lib/insider-graph";
 import { buildInsiderActivity, initActivityCache } from "./_lib/insider-activity";
@@ -76,10 +76,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // (shared with insider-graph) + per-CA result cache (60s).
     let activity = null;
     if (req.query.activity === "1") {
-      const filtered = holders.filter(
-        (h) => !lpAddresses.has(h.address),
+      // CRITICAL: getLargestAccounts returns SPL token-account addresses,
+      // but tokenTransfers.fromUserAccount/toUserAccount in parsed
+      // transactions are OWNER wallets. Without resolution the holder
+      // set never matches any transfer counterparty → 0 entries forever.
+      // heliusResolveAccountOwners maps each token account to its owner
+      // wallet (falls back to the original address if resolution fails).
+      const holdersWithOwners = await heliusResolveAccountOwners(holders, HELIUS_API_KEY);
+      const filtered = holdersWithOwners.filter(
+        (h) => !lpAddresses.has(h.address) && !lpAddresses.has(h.owner),
       );
-      const topAddresses = filtered.slice(0, 10).map((h) => h.address);
+      const topAddresses = filtered
+        .slice(0, 10)
+        .map((h) => h.owner ?? h.address);
       if (topAddresses.length > 0) {
         // Optional price hint — caller passes the DexScreener price
         // already known from the scan response, avoids a duplicate
