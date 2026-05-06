@@ -432,10 +432,9 @@ function buildHeaderNode(
   setStaticSvg(dragIcon, SVG_MOVE)
   const closeBtn = el("button", { class: "x", id: "ant-close" })
   setStaticSvg(closeBtn, SVG_CLOSE)
-  // Brand logo next to the ANTARES wordmark — same on every tier
-  // (replaces the legacy FREE/PRO/YEAR/LIFE text pill entirely). The
-  // ONLY visual distinction between tiers is the logo colour: gray
-  // for Free, gold for Pro/Yearly/Lifetime. Title attribute carries
+  // Tier signal lives entirely on the ANTARES wordmark colour itself
+  // — gray for Free, gold for Pro/Yearly/Lifetime. No separate badge
+  // logo, no PRO/YEAR/LIFE pill. Title attribute on the span carries
   // the tier-specific copy for hover.
   const isPro = !!quota && (
     quota.tier === "pro" ||
@@ -447,20 +446,18 @@ function buildHeaderNode(
     : quota?.tier === "yearly" ? "Yearly · Unlimited scans"
     : quota?.tier === "pro"    ? "Pro · Unlimited scans"
     : "Free · Unlimited scans"
-  const brandLogo = el("span", {
-    class: `brand-logo ${isPro ? "pro" : "free"}`,
-    title: tierTitle,
-  })
   // Legacy quota-exhausted badge — only relevant when a Free user
   // hits the 50/day cap (quota.limit > 0 + remaining === 0). Render
   // it so the "0/50 → PRO" upgrade link still appears in that edge
   // case. For everything else (unlimited Free, Pro, no-quota), the
-  // brand-logo carries the full tier signal and we omit the pill.
+  // wordmark colour carries the full tier signal.
   const showLegacyCapPill =
     !!quota && !isPro && quota.limit > 0 && quota.remaining === 0
   return el("div", { class: "hd" },
-    el("span", { class: "brand" }, "ANTARES"),
-    brandLogo,
+    el("span", {
+      class: `brand ${isPro ? "pro" : ""}`.trim(),
+      title: tierTitle,
+    }, "ANTARES"),
     showLegacyCapPill ? buildQuotaBadge(quota, installId) : null,
     el("div", { class: "hd-right" }, dragIcon, closeBtn),
   )
