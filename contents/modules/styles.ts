@@ -118,17 +118,18 @@ export const SHADOW_CSS = `
 }
 
 /* Watermark — logo behind the overlay content. Same on every overlay
-   regardless of tier (Free + Pro/Yearly/Lifetime get the identical
-   visual treatment per spec — only the topbar logo colour changes
-   between tiers). Settings copied 1:1 from the user-approved
-   tier-badge-final.html demo (slider session locked these values):
-   width 160px, X 77%, Y 24%, opacity 6.5%. Sits at z-index:0 so
-   verdict text + buttons (z-index:1 via .vb / .si) remain on top. */
+   regardless of tier. Anchored at FIXED pixel position from the top
+   (NOT a percentage) so opening a panel (Critical Flags / AI Summary
+   / Full Analysis) which grows the box height doesn't visually shift
+   the watermark. The 77px lands the centre right around the verdict
+   line, matching the demo's visual at collapsed overlay height.
+   Width still uses a percent (.box width is fixed at 290px) so the
+   horizontal centring on the LP LOCK | LIQ divider stays accurate. */
 .box::after {
   content: '';
   position: absolute;
   width: 160px; height: 160px;
-  left: 77%; top: 24%;
+  left: 77%; top: 77px;
   margin: -80px 0 0 -80px;
   background: url(${iconDataUrl}) no-repeat center / contain;
   opacity: .065;
