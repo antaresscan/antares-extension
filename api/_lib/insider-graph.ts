@@ -163,12 +163,15 @@ async function parseTransactions(
 ): Promise<HeliusParsedTx[]> {
   if (!signatures.length) return [];
   try {
-    const res = await fetchJson(`${HELIUS_REST_BASE}/v0/transactions`, {
+    // Helius Enhanced Transactions: `?api-key=` query param auth ONLY
+    // — the Bearer header works for the RPC mainnet endpoint but
+    // returns 401 here. Was silently swallowed by fetchJson (null
+    // result), making `parsedTxs` always empty → graph edges + clusters
+    // were always [] in production. Diagnosed via the activity-feed
+    // diagnostic fields that revealed parsedTxsCount=0 across tokens.
+    const res = await fetchJson(`${HELIUS_REST_BASE}/v0/transactions?api-key=${apiKey}`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ transactions: signatures.slice(0, 20) }),
     }, 8000);
     return Array.isArray(res) ? res : [];

@@ -155,14 +155,18 @@ async function parseTxBatch(
   for (let i = 0; i < sigs.length; i += MAX_PARSE_BATCH) {
     const batch = sigs.slice(i, i + MAX_PARSE_BATCH)
     try {
+      // Helius Enhanced Transactions endpoint authenticates via the
+      // `?api-key=` query param, NOT a Bearer header. The Bearer
+      // pattern works for the JSON-RPC mainnet endpoint but the REST
+      // /v0/* surface accepts only the query-param form. Sending
+      // Authorization Bearer here returns 401 (which our generic
+      // fetchJson swallows as null), so the helper saw 0 parsed txs.
+      // Same bug exists in insider-graph.ts — fixed there in next commit.
       const res = await fetchJson(
-        `${HELIUS_REST_BASE}/v0/transactions`,
+        `${HELIUS_REST_BASE}/v0/transactions?api-key=${apiKey}`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${apiKey}`,
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ transactions: batch }),
         },
         8000,
