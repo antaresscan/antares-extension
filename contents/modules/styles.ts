@@ -216,7 +216,11 @@ export const SHADOW_CSS = `
   width: 12px; height: 12px;
   -webkit-mask: url(${iconDataUrl}) no-repeat center / contain;
           mask: url(${iconDataUrl}) no-repeat center / contain;
-  margin-left: 7px;
+  /* Negative margin pulls the logo back against the trailing letter
+     spacing on .brand (letter-spacing:.55em adds ~4px after the S);
+     -3px lands the logo ~2px after the S edge so it reads as part
+     of the wordmark. */
+  margin-left: -3px;
   flex-shrink: 0;
   vertical-align: middle;
 }
@@ -550,15 +554,17 @@ export const SHADOW_CSS = `
   letter-spacing: .12em;
   padding: 2px 4px;
   border-radius: 2px;
-  background: rgba(0,229,176,.15);
-  color: #00e5b0;
-  border: 1px solid rgba(0,229,176,.4);
+  /* Gold "PRO" pill on locked buttons — same gold (#f5d000) as the
+     brand-logo for visual consistency. */
+  background: rgba(245,208,0,.15);
+  color: #f5d000;
+  border: 1px solid rgba(245,208,0,.4);
   font-family: 'IBM Plex Mono', monospace;
   pointer-events: none;
 }
 .fo .locked:hover .lock-pill {
-  background: rgba(0,229,176,.25);
-  color: #4ff5cc;
+  background: rgba(245,208,0,.25);
+  color: #ffe34d;
 }
 
 @keyframes ant-pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
