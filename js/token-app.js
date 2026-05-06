@@ -306,57 +306,29 @@ function buildSniperMapTab(d) {
   if (top1 == null) top1 = parsePctFromFlags(flags, /single\s+wallet[^%]*?(\d+(?:\.\d+)?)\s*%/i)
   const heliusUnavailable = flags.some(f => /helius\s+unavailable/i.test(f.label || ''))
 
-  // ── Concentration verdict (independent of sniper activity) ────────
-  // The previous version said "CLEAN LAUNCH · The token looks organic"
-  // even when top 10 held 80%+ of supply. That's wrong — the absence
-  // of sniper bots doesn't make a hyper-concentrated token safe. Now
-  // the verdict is a function of BOTH (1) measured concentration and
-  // (2) sniper/bundle flags, with concentration ALWAYS able to push
-  // the verdict into a warning regardless of activity.
-  function concentrationVerdict(t10, t1) {
-    // Single-whale override: one wallet >= 30% is critical no matter
-    // what the rest of the distribution looks like.
-    if (t1 != null && t1 >= 30) {
-      return {
-        title: `WHALE RISK · ONE WALLET HOLDS ${t1.toFixed(1)}%`,
-        cls: 'bad',
-        text: `One wallet holds ${t1.toFixed(1)}% of supply — single-entity dump can wipe price out at any moment.`,
-      }
-    }
+  // ── Concentration verdict — strict bands calibrated against actual
+  // distribution risk, NOT the toxic memecoin median. The market norm
+  // (40-70% top 10) is itself the reason most retail traders get rinsed.
+  // We rank both top10 and top1 independently, then take the worse one,
+  // and add a "top-heavy" modifier when one wallet dominates the cluster.
+
+  // Severity ladder: 0 good, 1 info, 2 warn, 3 bad. Numeric so we can
+  // pick max(top10, top1).
+  function top10Band(t10) {
     if (t10 == null) return null
-    if (t10 >= 70) {
-      return {
-        title: `EXTREME CONCENTRATION · TOP 10 HOLD ${Math.round(t10)}%`,
-        cls: 'bad',
-        text: `Top 10 wallets hold ${Math.round(t10)}% of supply — extreme concentration. A coordinated exit will crash the price.`,
-      }
-    }
-    if (t10 >= 50) {
-      return {
-        title: `HIGH CONCENTRATION · TOP 10 HOLD ${Math.round(t10)}%`,
-        cls: 'warn',
-        text: `Top 10 wallets hold ${Math.round(t10)}% of supply — high concentration. Watch for coordinated dumps.`,
-      }
-    }
-    if (t10 >= 30) {
-      return {
-        title: `ELEVATED CONCENTRATION · TOP 10 HOLD ${Math.round(t10)}%`,
-        cls: 'warn',
-        text: `Top 10 wallets hold ${Math.round(t10)}% of supply — above the healthy launch range. Watch whale moves.`,
-      }
-    }
-    if (t10 >= 15) {
-      return {
-        title: `MODERATE CONCENTRATION · TOP 10 HOLD ${Math.round(t10)}%`,
-        cls: 'info',
-        text: `Top 10 wallets hold ${Math.round(t10)}% of supply — within normal launch range.`,
-      }
-    }
-    return {
-      title: `WELL DISTRIBUTED · TOP 10 HOLD ${Math.round(t10)}%`,
-      cls: 'good',
-      text: `Top 10 wallets hold only ${Math.round(t10)}% of supply — healthy distribution.`,
-    }
+    if (t10 >= 70) return { rank: 3, label: 'EXTREME CONCENTRATION', cls: 'bad' }
+    if (t10 >= 50) return { rank: 3, label: 'VERY HIGH CONCENTRATION', cls: 'bad' }
+    if (t10 >= 35) return { rank: 2, label: 'HIGH CONCENTRATION', cls: 'warn' }
+    if (t10 >= 20) return { rank: 2, label: 'ELEVATED CONCENTRATION', cls: 'warn' }
+    if (t10 >= 10) return { rank: 1, label: 'NORMAL DISTRIBUTION', cls: 'info' }
+    return { rank: 0, label: 'WELL DISTRIBUTED', cls: 'good' }
+  }
+  function top1Band(t1) {
+    if (t1 == null) return null
+    if (t1 >= 25) return { rank: 3, label: 'WHALE CRITICAL', cls: 'bad' }
+    if (t1 >= 15) return { rank: 2, label: 'WHALE RISK', cls: 'warn' }
+    if (t1 >= 8)  return { rank: 1, label: 'LARGE WALLET', cls: 'info' }
+    return null // < 8% top1 is not worth flagging on its own
   }
 
   // No concentration data and no sniper activity — render minimal
@@ -389,32 +361,81 @@ function buildSniperMapTab(d) {
     `
   }
 
-  // We have measurable concentration. Build the bar + combine the
-  // concentration verdict with sniper activity (if any).
+  // We have measurable concentration. Compute both bands, take worse.
   const concentrated = Math.round(Math.max(0, Math.min(100, top10)))
   const distributed = 100 - concentrated
   const top1Disp = top1 != null ? top1.toFixed(1) + '%' : '—'
-  const concV = concentrationVerdict(top10, top1)
+  const t10b = top10Band(top10)
+  const t1b = top1Band(top1)
+  // Top-heavy: top1 captures more than 40% of the top10 cluster. Means
+  // one wallet dominates and can dump unilaterally — orthogonal risk on
+  // top of raw concentration.
+  const topHeavyRatio = (top1 != null && top10 != null && top10 > 0) ? (top1 / top10) : 0
+  const isTopHeavy = topHeavyRatio >= 0.4
 
-  let title, alertCls, alertText, axisStatus
-  if (hasActivity) {
-    // Sniper/bundle activity AND measured concentration — combine.
-    // The concentration band drives severity; sniper count adds context.
-    title = `${sniperFlags.length} SNIPER/BUNDLE PATTERN${sniperFlags.length > 1 ? 'S' : ''} · TOP 10 HOLD ${concentrated}%`
-    alertCls = concV.cls === 'good' ? 'warn' : concV.cls // sniper activity always at least warn
-    alertText = `${sniperFlags.length} sniper/bundle flag${sniperFlags.length > 1 ? 's' : ''} detected at launch. ${concV.text}`
-    axisStatus = concV.title.split('·')[0].trim()
+  // Pick the worse-ranked band as the primary verdict.
+  let primary = t10b
+  if (t1b && (!primary || t1b.rank > primary.rank)) primary = t1b
+
+  // Build verdict title and alert text from the primary band.
+  let titleParts = []
+  let alertParts = []
+  if (primary === t10b) {
+    titleParts.push(`${primary.label} · TOP 10 HOLD ${concentrated}%`)
+    alertParts.push(`Top 10 wallets hold ${concentrated}% of supply.`)
   } else {
-    // No sniper activity — verdict is purely concentration-based.
-    title = concV.title
-    alertCls = concV.cls
-    alertText = concV.text
-    // Append a note that there's no sniper activity (a small
-    // positive signal in an otherwise concentration-based read).
-    if (concV.cls === 'good' || concV.cls === 'info') {
-      alertText += ' No sniper or bundle activity detected at launch.'
+    // t1 is driving the verdict
+    titleParts.push(`${primary.label} · ONE WALLET HOLDS ${top1.toFixed(1)}%`)
+    alertParts.push(`Largest wallet holds ${top1.toFixed(1)}% of supply.`)
+  }
+  if (isTopHeavy && primary !== t1b) {
+    // Add top-heavy modifier when t10 was primary AND top1 is heavy
+    titleParts[0] += ' · TOP-HEAVY'
+    alertParts.push(`One wallet (${top1.toFixed(1)}%) accounts for ${Math.round(topHeavyRatio * 100)}% of the top-10 cluster — single-entity dump risk.`)
+  } else if (!isTopHeavy && primary === t10b && top1 != null && t10b.rank >= 2) {
+    // Spread within top 10 — softer interpretation
+    alertParts.push(`Largest wallet only ${top1.toFixed(1)}% — concentration is spread across the top 10 cluster.`)
+  }
+  // Severity-specific phrasing
+  switch (primary.cls) {
+    case 'bad':
+      alertParts.push('Coordinated exit can crash the price at any moment.')
+      break
+    case 'warn':
+      alertParts.push('Watch whale moves and large transfers carefully.')
+      break
+    case 'info':
+      alertParts.push('Within normal range — monitor as positions evolve.')
+      break
+    case 'good':
+      // Reserved for the strict "clean" path below
+      break
+  }
+
+  // Combine with sniper activity
+  let alertCls = primary.cls
+  let title = titleParts.join('')
+  let alertText = alertParts.join(' ')
+  let axisStatus = primary.label
+
+  if (hasActivity) {
+    // Sniper/bundle flags floor severity at warn; bad stays bad.
+    if (alertCls === 'good' || alertCls === 'info') alertCls = 'warn'
+    title = `${sniperFlags.length} SNIPER/BUNDLE PATTERN${sniperFlags.length > 1 ? 'S' : ''} · ${title}`
+    alertText = `${sniperFlags.length} sniper/bundle flag${sniperFlags.length > 1 ? 's' : ''} detected at launch. ${alertText}`
+  } else {
+    // CLEAN/ORGANIC verdict requires ALL THREE: top10 < 15%, top1 < 5%,
+    // 0 sniper flags. This is intentionally rare — a real clean launch
+    // is rare. Most memecoins won't qualify, and that's correct.
+    const isTrulyClean = (
+      top10 < 15 && (top1 == null || top1 < 5) && primary.cls === 'good'
+    )
+    if (isTrulyClean) {
+      title = `CLEAN LAUNCH · TOP 10 HOLD ${concentrated}%`
+      alertCls = 'good'
+      alertText = `Top 10 wallets hold only ${concentrated}% of supply${top1 != null ? ` (largest ${top1.toFixed(1)}%)` : ''}. No sniper or bundle activity at launch. Distribution looks genuinely organic.`
+      axisStatus = 'CLEAN LAUNCH'
     }
-    axisStatus = concV.title.split('·')[0].trim()
   }
 
   return `
@@ -422,7 +443,7 @@ function buildSniperMapTab(d) {
       <div class="sm-title">${escapeHtml(title)}</div>
       <div class="sm-bar">
         <div class="sm-seg holding" style="flex:${concentrated}"><span class="pct">${concentrated}%</span><span>Top 10</span></div>
-        <div class="sm-seg ${hasActivity ? 'exited' : 'distributed'}" style="flex:${distributed}"><span class="pct">${distributed}%</span><span>Distributed</span></div>
+        <div class="sm-seg ${alertCls === 'good' ? 'distributed' : 'exited'}" style="flex:${distributed}"><span class="pct">${distributed}%</span><span>Distributed</span></div>
       </div>
       <div class="sm-axis"><span>Largest: ${escapeHtml(top1Disp)}</span><span>${escapeHtml(axisStatus)}</span><span>${sniperFlags.length} flag${sniperFlags.length === 1 ? '' : 's'}</span></div>
     </div>
