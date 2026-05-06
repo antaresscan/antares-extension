@@ -1,8 +1,8 @@
 // Bundle the icon as a base64 data URI at build time so it's available
 // inside the shadow DOM without a chrome.runtime.getURL() round-trip.
-// Used for both the small gold-tier badge next to ANTARES and the
-// low-opacity orbital watermark behind Pro/Yearly/Lifetime overlays.
-import iconDataUrl from "data-base64:~assets/icon.png"
+// Uses the root icon.png (same file the deployed demo loads) — kept
+// in sync with the user-approved tier-badge-final.html visual.
+import iconDataUrl from "data-base64:~icon.png"
 
 const FONT_FACE_CSS = `
 @font-face {
@@ -117,23 +117,21 @@ export const SHADOW_CSS = `
   pointer-events: none;
 }
 
-/* Watermark — orbital logo behind the overlay content. Same on every
-   overlay regardless of tier (Free + Pro/Yearly/Lifetime get the
-   identical visual treatment per spec — only the topbar logo colour
-   changes between tiers). Centred on the LP LOCK | LIQ vertical
-   divider in the security row (X 77%, Y 24%). Width tuned for the
-   290px production overlay (140px ≈ 160px × 290/340 from the demo).
-   Sits at z-index:0 so verdict text + buttons (z-index:1 via .vb /
-   .si) remain on top. Opacity bumped to 11% — production background
-   is darker than the demo, so 6.5% was barely visible. */
+/* Watermark — logo behind the overlay content. Same on every overlay
+   regardless of tier (Free + Pro/Yearly/Lifetime get the identical
+   visual treatment per spec — only the topbar logo colour changes
+   between tiers). Settings copied 1:1 from the user-approved
+   tier-badge-final.html demo (slider session locked these values):
+   width 160px, X 77%, Y 24%, opacity 6.5%. Sits at z-index:0 so
+   verdict text + buttons (z-index:1 via .vb / .si) remain on top. */
 .box::after {
   content: '';
   position: absolute;
-  width: 140px; height: 140px;
+  width: 160px; height: 160px;
   left: 77%; top: 24%;
-  margin: -70px 0 0 -70px;
+  margin: -80px 0 0 -80px;
   background: url(${iconDataUrl}) no-repeat center / contain;
-  opacity: .11;
+  opacity: .065;
   pointer-events: none;
   z-index: 0;
 }
