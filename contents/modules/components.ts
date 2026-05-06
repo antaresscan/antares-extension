@@ -870,13 +870,16 @@ export function buildResultNode(
     el("div", { class: "sum" }, summary),
     el("div", { class: "sep" }),
     ssNode,
-    // Panels exist in the DOM for both tiers — buttons are visible to
-    // free users (locked) so the panels need to be addressable too,
-    // even though the toggleCriticalFlags / toggleAiSummary handlers
-    // never run for free (the click handler short-circuits to /pricing
-    // before they can fire).
-    el("div", { class: "cf-panel", id: "ant-critical-flags" }),
-    el("div", { class: "ai-panel", id: "ant-ai-summary" }),
+    // Panels live inside a shared .panel-area wrapper — the wrapper
+    // reserves a constant slot, and both panels sit position:absolute
+    // overlapping inside it. Switching from AI Summary to Critical
+    // Flags (or vice-versa) never changes .box height because the
+    // wrapper's min-height is sized to the larger of the two panels.
+    // Eliminates the "overlay grows for a frame on panel-swap" bug.
+    el("div", { class: "panel-area" },
+      el("div", { class: "cf-panel", id: "ant-critical-flags" }),
+      el("div", { class: "ai-panel", id: "ant-ai-summary" }),
+    ),
     foNode,
     buildAffiliateRow(mint, data.risk, data._quota),
   )

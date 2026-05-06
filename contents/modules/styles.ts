@@ -665,34 +665,46 @@ export const SHADOW_CSS = `
 }
 
 /* ── AI Summary panel (inline in overlay) ─────────────────────────
-   Pure opacity fade — NO translateY. Vertical movement on panel open
-   was being read as "the whole overlay is jiggling" by users, even
-   though only the panel content shifted 4px. Fade-only feels rock
-   solid. */
-@keyframes ai-panel-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
+   Open: INSTANT (no animation). Close: short fade-out for the
+   single-button-click toggle case so it doesn't snap shut.
+   Reasoning: the open-fade was creating a frame where the panel
+   slot was the right height but the CONTENT was still opacity:0,
+   which read as "the overlay grew but is empty". Snapping the
+   open makes panel-swaps feel instant. */
 @keyframes ai-panel-out {
   from { opacity: 1; }
   to   { opacity: 0; }
 }
 
-.ai-panel {
-  display: none;
+/* ── Panel area — shared overlay slot for AI / Critical Flags ──────
+   Both panels live position:absolute inside this wrapper, overlapping
+   each other. The wrapper grows to fit whichever panel is currently
+   visible (height: max-content of the displayed panel). Switching
+   from one panel to another doesn't reflow the .box because the
+   wrapper height is dictated by the new panel from frame 1. */
+.panel-area {
+  position: relative;
   margin: 0 14px 2px;
-  border: 1px solid rgba(167,139,250,.15);
-  border-radius: 3px;
-  background: rgba(167,139,250,.04);
-  overflow: hidden;
+  /* No fixed height — collapses to 0 when both panels are closed. */
 }
+
+.ai-panel,
+.cf-panel {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  display: none;
+  border-radius: 3px;
+  overflow: hidden;
+  /* When .open, takes the wrapper's static slot via absolute pos. The
+     wrapper's height is determined by whichever panel is currently
+     visible — see .panel-area > .open below. */
+}
+.ai-panel { border: 1px solid rgba(167,139,250,.15); background: rgba(167,139,250,.04); }
 .ai-panel.open {
   display: block;
-  animation: ai-panel-in .18s ease;
+  /* Promote to in-flow so the wrapper grows to this panel's height. */
+  position: relative;
 }
-/* The .closing class is added by toggleAiSummary just before removing
-   .open; both classes are stripped on animationend. Keeping .open during
-   close keeps display:block so the animation can actually play. */
 .ai-panel.open.closing {
   animation: ai-panel-out .15s ease forwards;
 }
@@ -791,27 +803,18 @@ export const SHADOW_CSS = `
   background: rgba(255,95,95,.1);
 }
 
-/* Pure opacity fade — same reasoning as ai-panel keyframes. */
-@keyframes cf-panel-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
+/* Open instant, close fades. Same reasoning as ai-panel keyframes. */
 @keyframes cf-panel-out {
   from { opacity: 1; }
   to   { opacity: 0; }
 }
 
-.cf-panel {
-  display: none;
-  margin: 0 14px 2px;
-  border: 1px solid rgba(255,95,95,.15);
-  border-radius: 3px;
-  background: rgba(255,95,95,.04);
-  overflow: hidden;
-}
+.cf-panel { border: 1px solid rgba(255,95,95,.15); background: rgba(255,95,95,.04); }
 .cf-panel.open {
   display: block;
-  animation: cf-panel-in .18s ease;
+  /* Same in-flow promotion as .ai-panel.open so the wrapper sizes
+     to whichever panel is the active one. */
+  position: relative;
 }
 .cf-panel.open.closing {
   animation: cf-panel-out .15s ease forwards;
