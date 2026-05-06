@@ -49,8 +49,14 @@
   .ov::before{
     content:'';position:absolute;
     width:160px;height:160px;
-    left:85%;top:35%;
-    margin:-80px 0 0 -80px;
+    /* Hardcoded pixel position. .ov is 340px outer (border-box), 1px
+       border + 16px padding + 1px sec-row border = 18px chrome per
+       side. Sec-row content = 304px, 5 cols of 60.8px each.
+       LP LOCK | LIQ boundary = 4 * 60.8 + 18 = 261.2px from .ov outer
+       = 260.2px from .ov padding box left. Element is 160px wide so
+       its left edge = 260.2 - 80 = 180.2px to centre on the line. */
+    left:200px;top:35%;
+    margin-top:-80px;
     background:url('icon.png') no-repeat center / contain;
     opacity:.04;
     pointer-events:none;
