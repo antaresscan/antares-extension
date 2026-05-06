@@ -20,7 +20,13 @@ import { Redis } from "@upstash/redis"
 import { fetchJson } from "./http"
 import { HELIUS_BASE, HELIUS_REST_BASE } from "./constants"
 
-const SIG_CACHE_PREFIX = "igsig:"            // shared with insider-graph
+// Separate cache from insider-graph's `igsig:` because the cached SHAPE
+// differs (we need `blockTime` per sig for the time-window filter,
+// insider-graph stores only the signature strings). Sharing the prefix
+// would make our helper read string[] as HeliusSignatureV2[] — runtime
+// fields are undefined, every sig fails the cutoff check, feed comes
+// back empty. That bug shipped briefly in 760d614.
+const SIG_CACHE_PREFIX = "iasig:"
 const SIG_CACHE_TTL = 60                     // seconds
 const ACTIVITY_CACHE_PREFIX = "iact:"
 const ACTIVITY_CACHE_TTL = 60                // seconds
@@ -101,11 +107,20 @@ async function getWalletSignaturesV2(
   apiKey: string,
 ): Promise<HeliusSignatureV2[]> {
   try {
+    // Match the auth convention used by insider-graph.ts (which is
+    // proven to work in production): Authorization: Bearer header,
+    // no api-key in URL. Earlier version used `?api-key=` in URL
+    // which silently returned empty results — looks valid (HTTP 200)
+    // but `result` is undefined, so the helper falls back to [] and
+    // the activity feed renders as empty for every token.
     const res = await fetchJson(
-      `${HELIUS_BASE}/?api-key=${apiKey}`,
+      HELIUS_BASE,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
+        },
         body: JSON.stringify({
           jsonrpc: "2.0",
           id: 1,
