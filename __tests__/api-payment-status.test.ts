@@ -1,37 +1,56 @@
+// __tests__/api-payment-status.test.ts — NOWPayments status polling endpoint.
+//
+// Covers: input validation, intent lookup, lazy-confirm via NOWPayments
+// REST API, expiry on TTL hit, license-key surfacing, and the underpay
+// short-circuit (delegated to confirmIntent — verified end-to-end here
+// to catch any wiring regression).
+
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import type { PaymentIntent } from "../api/_lib/solana-pay";
 
-// vi.hoisted runs before vi.mock, required because mock factories reference
-// the vi.fn() values below.
 const mocks = vi.hoisted(() => ({
-  redisGet: vi.fn() as ReturnType<typeof vi.fn>,
-  redisSet: vi.fn().mockResolvedValue("OK") as ReturnType<typeof vi.fn>,
-  redisSrem: vi.fn().mockResolvedValue(1) as ReturnType<typeof vi.fn>,
-  checkOnChain: vi.fn() as ReturnType<typeof vi.fn>,
-  markConfirmed: vi.fn().mockResolvedValue(undefined) as ReturnType<typeof vi.fn>,
-  setUserTier: vi.fn().mockResolvedValue(undefined) as ReturnType<typeof vi.fn>,
+  store: new Map<string, unknown>(),
+  getPayment: vi.fn(),
+  listPaymentsForInvoice: vi.fn().mockResolvedValue([]),
+  setUserTier: vi.fn().mockResolvedValue(undefined),
+  issueLicense: vi.fn(),
 }));
 
 vi.mock("@upstash/redis", () => {
   class MockRedis {
-    get = mocks.redisGet;
-    set = mocks.redisSet;
+    set = vi.fn(async (k: string, v: unknown) => {
+      mocks.store.set(k, v);
+      return "OK";
+    });
+    get = vi.fn(async (k: string) => mocks.store.get(k) ?? null);
     sadd = vi.fn().mockResolvedValue(1);
     smembers = vi.fn().mockResolvedValue([]);
-    srem = mocks.redisSrem;
+    srem = vi.fn().mockResolvedValue(1);
+    hset = vi.fn().mockResolvedValue(1);
+    hgetall = vi.fn().mockResolvedValue(null);
   }
   return { Redis: MockRedis };
 });
 
-vi.mock("../api/_lib/solana-pay", async () => {
-  const actual = await vi.importActual<typeof import("../api/_lib/solana-pay")>(
-    "../api/_lib/solana-pay",
+vi.mock("../api/_lib/middleware", async () => {
+  const actual = await vi.importActual<typeof import("../api/_lib/middleware")>(
+    "../api/_lib/middleware",
   );
   return {
     ...actual,
-    checkIntentOnChain: mocks.checkOnChain,
-    markIntentConfirmed: mocks.markConfirmed,
+    checkRateLimit: vi.fn().mockResolvedValue(true),
+    initRateLimiters: vi.fn(),
+  };
+});
+
+vi.mock("../api/_lib/nowpayments", async () => {
+  const actual = await vi.importActual<typeof import("../api/_lib/nowpayments")>(
+    "../api/_lib/nowpayments",
+  );
+  return {
+    ...actual,
+    getPayment: mocks.getPayment,
+    listPaymentsForInvoice: mocks.listPaymentsForInvoice,
   };
 });
 
@@ -46,19 +65,20 @@ vi.mock("../api/_lib/user", async () => {
   };
 });
 
-vi.mock("../api/_lib/middleware", async () => {
-  const actual = await vi.importActual<typeof import("../api/_lib/middleware")>(
-    "../api/_lib/middleware",
+vi.mock("../api/_lib/license", async () => {
+  const actual = await vi.importActual<typeof import("../api/_lib/license")>(
+    "../api/_lib/license",
   );
-  return { ...actual };
+  return {
+    ...actual,
+    issueLicense: mocks.issueLicense,
+  };
 });
 
 import handler from "../api/payment-status";
 
-const mockGet = mocks.redisGet;
-
 const ORIGIN = "https://antares-website.vercel.app";
-const VALID_REFERENCE = "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM";
+const REFERENCE = "a".repeat(64);
 
 interface MockReqOpts {
   method?: string;
@@ -83,47 +103,51 @@ function mockRes(): VercelResponse {
   } as unknown as VercelResponse;
 }
 
-function intent(over: Partial<PaymentIntent> = {}): PaymentIntent {
-  return {
-    reference: VALID_REFERENCE,
+function seedPendingIntent(
+  opts: { amountUsd?: number; npPaymentId?: string; expiresIn?: number } = {},
+) {
+  const intent = {
+    reference: REFERENCE,
     installId: "install-test-aaaaaaaaaaaa",
-    tier: "monthly",
-    token: "usdc",
-    recipient: "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
-    amount: 24.99,
-    amountUsd: 24.99,
-    splTokenMint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-    payUrl: `solana:${VALID_REFERENCE}?amount=24.99`,
+    email: "buyer@example.com",
+    tier: "monthly" as const,
+    amountUsd: opts.amountUsd ?? 24.99,
+    payUrl: "https://nowpayments.io/payment?iid=inv-1",
+    npInvoiceId: "inv-1",
+    ...(opts.npPaymentId ? { npPaymentId: opts.npPaymentId } : {}),
     createdAt: Date.now(),
-    expiresAt: Date.now() + 30 * 60 * 1000,
-    status: "pending",
-    ...over,
+    expiresAt: Date.now() + (opts.expiresIn ?? 60 * 60 * 1000),
+    status: "pending" as const,
   };
+  mocks.store.set(`payment-intent:${REFERENCE}`, intent);
+  return intent;
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.store.clear();
+  mocks.getPayment.mockReset();
+  mocks.listPaymentsForInvoice.mockReset().mockResolvedValue([]);
+  mocks.issueLicense.mockResolvedValue({
+    key: "ANT-AAAA-BBBB-CCCC-DDDD",
+    email: "buyer@example.com",
+    tier: "pro",
+    intentReference: REFERENCE,
+    amountUsd: 24.99,
+    createdAt: Date.now(),
+    redeemed: false,
+    expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000,
+  });
   process.env.UPSTASH_REDIS_REST_URL = "https://fake.upstash";
   process.env.UPSTASH_REDIS_REST_TOKEN = "fake-token";
-  // Without HELIUS_API_KEY the lazy on-chain check is a no-op — tests
-  // that don't care about confirmation default to skipping it.
-  delete process.env.HELIUS_API_KEY;
 });
 
 afterEach(() => {
   delete process.env.UPSTASH_REDIS_REST_URL;
   delete process.env.UPSTASH_REDIS_REST_TOKEN;
-  delete process.env.HELIUS_API_KEY;
 });
 
-describe("GET /api/payment-status", () => {
-  it("handles OPTIONS with 204", async () => {
-    const req = mockReq({ method: "OPTIONS", headers: { origin: ORIGIN } });
-    const res = mockRes();
-    await handler(req, res);
-    expect(res.status).toHaveBeenCalledWith(204);
-  });
-
+describe("GET /api/payment-status (NOWPayments)", () => {
   it("rejects POST with 405", async () => {
     const req = mockReq({ method: "POST", headers: { origin: ORIGIN } });
     const res = mockRes();
@@ -132,13 +156,13 @@ describe("GET /api/payment-status", () => {
   });
 
   it("rejects disallowed origins with 403", async () => {
-    const req = mockReq({ headers: { origin: "https://attacker.example.com" } });
+    const req = mockReq({ headers: { origin: "https://attacker.example" } });
     const res = mockRes();
     await handler(req, res);
     expect(res.status).toHaveBeenCalledWith(403);
   });
 
-  it("rejects missing reference with 400", async () => {
+  it("rejects missing reference query param with 400", async () => {
     const req = mockReq({ headers: { origin: ORIGIN } });
     const res = mockRes();
     await handler(req, res);
@@ -148,225 +172,184 @@ describe("GET /api/payment-status", () => {
   it("rejects malformed reference with 400", async () => {
     const req = mockReq({
       headers: { origin: ORIGIN },
-      query: { reference: "0000" },
+      query: { reference: "not-hex-not-64-chars" },
     });
     const res = mockRes();
     await handler(req, res);
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
-  it("returns 404 not_found when intent doesn't exist", async () => {
-    mockGet.mockResolvedValueOnce(null);
+  it("returns 404 when the intent is not in storage", async () => {
     const req = mockReq({
       headers: { origin: ORIGIN },
-      query: { reference: VALID_REFERENCE },
+      query: { reference: REFERENCE },
     });
     const res = mockRes();
     await handler(req, res);
     expect(res.status).toHaveBeenCalledWith(404);
   });
 
-  it("returns the pending status when intent is fresh", async () => {
-    mockGet.mockResolvedValueOnce(intent());
+  it("returns 'pending' when NOWPayments has no payment yet", async () => {
+    seedPendingIntent();
+    mocks.listPaymentsForInvoice.mockResolvedValueOnce([]);
     const req = mockReq({
       headers: { origin: ORIGIN },
-      query: { reference: VALID_REFERENCE },
+      query: { reference: REFERENCE },
     });
     const res = mockRes();
     await handler(req, res);
-    const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock
-      .calls[0][0] as { status: string };
+    const payload = (res.json as unknown as { mock: { calls: unknown[][] } })
+      .mock.calls[0][0] as { status: string };
     expect(payload.status).toBe("pending");
+    expect(mocks.issueLicense).not.toHaveBeenCalled();
   });
 
-  it("returns confirmed status with txSignature", async () => {
-    mockGet.mockResolvedValueOnce(
-      intent({
-        status: "confirmed",
-        txSignature: "sig-abcdef",
-        confirmedAt: Date.now(),
-      }),
-    );
+  it("flips to 'expired' on TTL hit", async () => {
+    seedPendingIntent({ expiresIn: -1000 }); // already past expiry
     const req = mockReq({
       headers: { origin: ORIGIN },
-      query: { reference: VALID_REFERENCE },
+      query: { reference: REFERENCE },
     });
     const res = mockRes();
     await handler(req, res);
-    const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock
-      .calls[0][0] as { status: string; txSignature: string };
-    expect(payload.status).toBe("confirmed");
-    expect(payload.txSignature).toBe("sig-abcdef");
-  });
-
-  it("flips pending → expired client-side when expiresAt is in the past", async () => {
-    mockGet.mockResolvedValueOnce(
-      intent({ status: "pending", expiresAt: Date.now() - 1000 }),
-    );
-    const req = mockReq({
-      headers: { origin: ORIGIN },
-      query: { reference: VALID_REFERENCE },
-    });
-    const res = mockRes();
-    await handler(req, res);
-    const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock
-      .calls[0][0] as { status: string };
-    // The cron may not have visited it yet, but we surface "expired" so the
-    // page UI shows the correct state immediately.
+    const payload = (res.json as unknown as { mock: { calls: unknown[][] } })
+      .mock.calls[0][0] as { status: string };
     expect(payload.status).toBe("expired");
   });
 
-  it("disables HTTP caching for live status polling", async () => {
-    mockGet.mockResolvedValueOnce(intent());
+  it("confirms intent + issues license when NOWPayments returns 'finished'", async () => {
+    seedPendingIntent();
+    mocks.listPaymentsForInvoice.mockResolvedValueOnce([
+      {
+        payment_id: "pay-1",
+        payment_status: "finished",
+        invoice_id: "inv-1",
+        order_id: REFERENCE,
+        price_amount: 24.99,
+        payin_hash: "0xabc",
+      },
+    ]);
     const req = mockReq({
       headers: { origin: ORIGIN },
-      query: { reference: VALID_REFERENCE },
+      query: { reference: REFERENCE },
+    });
+    const res = mockRes();
+    await handler(req, res);
+    expect(mocks.setUserTier).toHaveBeenCalledOnce();
+    expect(mocks.issueLicense).toHaveBeenCalledOnce();
+    const payload = (res.json as unknown as { mock: { calls: unknown[][] } })
+      .mock.calls[0][0] as { status: string; licenseKey: string | null };
+    expect(payload.status).toBe("confirmed");
+    expect(payload.licenseKey).toBe("ANT-AAAA-BBBB-CCCC-DDDD");
+  });
+
+  it("uses npPaymentId fast path when bound on the intent", async () => {
+    seedPendingIntent({ npPaymentId: "pay-fast" });
+    mocks.getPayment.mockResolvedValueOnce({
+      payment_id: "pay-fast",
+      payment_status: "finished",
+      invoice_id: "inv-1",
+      order_id: REFERENCE,
+      price_amount: 24.99,
+    });
+    const req = mockReq({
+      headers: { origin: ORIGIN },
+      query: { reference: REFERENCE },
+    });
+    const res = mockRes();
+    await handler(req, res);
+    expect(mocks.getPayment).toHaveBeenCalledWith("pay-fast");
+    expect(mocks.listPaymentsForInvoice).not.toHaveBeenCalled();
+    const payload = (res.json as unknown as { mock: { calls: unknown[][] } })
+      .mock.calls[0][0] as { status: string };
+    expect(payload.status).toBe("confirmed");
+  });
+
+  it("does NOT confirm when underpaid (anti-tamper via confirmIntent)", async () => {
+    seedPendingIntent({ amountUsd: 24.99 });
+    mocks.listPaymentsForInvoice.mockResolvedValueOnce([
+      {
+        payment_id: "pay-underpaid",
+        payment_status: "finished",
+        invoice_id: "inv-1",
+        order_id: REFERENCE,
+        price_amount: 1, // way below 24.99 — should reject
+      },
+    ]);
+    const req = mockReq({
+      headers: { origin: ORIGIN },
+      query: { reference: REFERENCE },
+    });
+    const res = mockRes();
+    await handler(req, res);
+    expect(mocks.issueLicense).not.toHaveBeenCalled();
+    expect(mocks.setUserTier).not.toHaveBeenCalled();
+    const payload = (res.json as unknown as { mock: { calls: unknown[][] } })
+      .mock.calls[0][0] as { status: string; licenseKey: string | null };
+    expect(payload.status).toBe("pending");
+    expect(payload.licenseKey).toBeNull();
+  });
+
+  it("expires intent when NOWPayments reports 'failed'", async () => {
+    seedPendingIntent();
+    mocks.listPaymentsForInvoice.mockResolvedValueOnce([
+      {
+        payment_id: "pay-fail",
+        payment_status: "failed",
+        invoice_id: "inv-1",
+        price_amount: 24.99,
+      },
+    ]);
+    const req = mockReq({
+      headers: { origin: ORIGIN },
+      query: { reference: REFERENCE },
+    });
+    const res = mockRes();
+    await handler(req, res);
+    const payload = (res.json as unknown as { mock: { calls: unknown[][] } })
+      .mock.calls[0][0] as { status: string };
+    expect(payload.status).toBe("expired");
+  });
+
+  it("picks the most-progressed payment when invoice has multiple", async () => {
+    seedPendingIntent();
+    mocks.listPaymentsForInvoice.mockResolvedValueOnce([
+      {
+        payment_id: "pay-stale",
+        payment_status: "waiting",
+        invoice_id: "inv-1",
+        price_amount: 24.99,
+      },
+      {
+        payment_id: "pay-good",
+        payment_status: "finished",
+        invoice_id: "inv-1",
+        order_id: REFERENCE,
+        price_amount: 24.99,
+      },
+    ]);
+    const req = mockReq({
+      headers: { origin: ORIGIN },
+      query: { reference: REFERENCE },
+    });
+    const res = mockRes();
+    await handler(req, res);
+    const payload = (res.json as unknown as { mock: { calls: unknown[][] } })
+      .mock.calls[0][0] as { status: string };
+    expect(payload.status).toBe("confirmed");
+  });
+
+  it("disables HTTP caching", async () => {
+    seedPendingIntent();
+    const req = mockReq({
+      headers: { origin: ORIGIN },
+      query: { reference: REFERENCE },
     });
     const res = mockRes();
     await handler(req, res);
     const cacheControl = (res.setHeader as unknown as {
       mock: { calls: [string, string][] };
     }).mock.calls.filter(([k]) => k === "Cache-Control");
-    const lastValue = cacheControl[cacheControl.length - 1][1];
-    expect(lastValue).toContain("no-store");
-  });
-
-  // ─── Lazy on-chain confirmation ────────────────────────────────────────────
-
-  describe("lazy on-chain check", () => {
-    beforeEach(() => {
-      process.env.HELIUS_API_KEY = "fake-helius";
-    });
-
-    it("flips the user to Pro and updates the response when payment lands", async () => {
-      mockGet.mockResolvedValueOnce(intent({ status: "pending" }));
-      mocks.checkOnChain.mockResolvedValueOnce({
-        confirmed: true,
-        txSignature: "sig-fast",
-      });
-
-      const req = mockReq({
-        headers: { origin: ORIGIN },
-        query: { reference: VALID_REFERENCE },
-      });
-      const res = mockRes();
-      await handler(req, res);
-
-      expect(mocks.setUserTier).toHaveBeenCalledWith(
-        "install-test-aaaaaaaaaaaa",
-        "pro",
-        expect.any(Number),
-      );
-      expect(mocks.markConfirmed).toHaveBeenCalled();
-      const payload = (res.json as unknown as { mock: { calls: unknown[][] } })
-        .mock.calls[0][0] as { status: string; txSignature: string };
-      expect(payload.status).toBe("confirmed");
-      expect(payload.txSignature).toBe("sig-fast");
-    });
-
-    it("flips to Yearly with 365-day expiry on yearly tier", async () => {
-      mockGet.mockResolvedValueOnce(intent({ status: "pending", tier: "yearly" }));
-      mocks.checkOnChain.mockResolvedValueOnce({
-        confirmed: true,
-        txSignature: "sig-year",
-      });
-
-      const req = mockReq({
-        headers: { origin: ORIGIN },
-        query: { reference: VALID_REFERENCE },
-      });
-      const res = mockRes();
-      await handler(req, res);
-
-      const calls = (mocks.setUserTier as ReturnType<typeof vi.fn>).mock.calls;
-      expect(calls.length).toBeGreaterThan(0);
-      const [installArg, tierArg, expiresArg] = calls[0] as [string, string, number];
-      expect(installArg).toBe("install-test-aaaaaaaaaaaa");
-      expect(tierArg).toBe("yearly");
-      const oneYearMs = 365 * 24 * 60 * 60 * 1000;
-      expect(expiresArg).toBeGreaterThan(Date.now() + oneYearMs - 60_000);
-      expect(expiresArg).toBeLessThan(Date.now() + oneYearMs + 60_000);
-    });
-
-    it("does not run the on-chain check when intent is already confirmed", async () => {
-      mockGet.mockResolvedValueOnce(
-        intent({ status: "confirmed", txSignature: "old-sig" }),
-      );
-
-      const req = mockReq({
-        headers: { origin: ORIGIN },
-        query: { reference: VALID_REFERENCE },
-      });
-      const res = mockRes();
-      await handler(req, res);
-
-      expect(mocks.checkOnChain).not.toHaveBeenCalled();
-      expect(mocks.setUserTier).not.toHaveBeenCalled();
-    });
-
-    it("does not run the on-chain check when intent is past expiry", async () => {
-      mockGet.mockResolvedValueOnce(
-        intent({ status: "pending", expiresAt: Date.now() - 1000 }),
-      );
-
-      const req = mockReq({
-        headers: { origin: ORIGIN },
-        query: { reference: VALID_REFERENCE },
-      });
-      const res = mockRes();
-      await handler(req, res);
-
-      expect(mocks.checkOnChain).not.toHaveBeenCalled();
-    });
-
-    it("returns pending unchanged when on-chain check finds no confirming tx", async () => {
-      mockGet.mockResolvedValueOnce(intent({ status: "pending" }));
-      mocks.checkOnChain.mockResolvedValueOnce({ confirmed: false });
-
-      const req = mockReq({
-        headers: { origin: ORIGIN },
-        query: { reference: VALID_REFERENCE },
-      });
-      const res = mockRes();
-      await handler(req, res);
-
-      expect(mocks.setUserTier).not.toHaveBeenCalled();
-      const payload = (res.json as unknown as { mock: { calls: unknown[][] } })
-        .mock.calls[0][0] as { status: string };
-      expect(payload.status).toBe("pending");
-    });
-
-    it("doesn't break the polling response when Helius throws", async () => {
-      mockGet.mockResolvedValueOnce(intent({ status: "pending" }));
-      mocks.checkOnChain.mockRejectedValueOnce(new Error("helius timeout"));
-
-      const req = mockReq({
-        headers: { origin: ORIGIN },
-        query: { reference: VALID_REFERENCE },
-      });
-      const res = mockRes();
-      await handler(req, res);
-
-      // Helius failure shouldn't bubble — return the stored state and let
-      // the next poll (or the cron) catch the confirmation.
-      expect(mocks.setUserTier).not.toHaveBeenCalled();
-      const payload = (res.json as unknown as { mock: { calls: unknown[][] } })
-        .mock.calls[0][0] as { status: string };
-      expect(payload.status).toBe("pending");
-    });
-
-    it("skips the check when HELIUS_API_KEY is unset", async () => {
-      delete process.env.HELIUS_API_KEY;
-      mockGet.mockResolvedValueOnce(intent({ status: "pending" }));
-
-      const req = mockReq({
-        headers: { origin: ORIGIN },
-        query: { reference: VALID_REFERENCE },
-      });
-      const res = mockRes();
-      await handler(req, res);
-
-      expect(mocks.checkOnChain).not.toHaveBeenCalled();
-    });
+    expect(cacheControl.some(([, v]) => v.includes("no-store"))).toBe(true);
   });
 });

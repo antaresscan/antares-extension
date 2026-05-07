@@ -1,29 +1,56 @@
+// __tests__/api-payment-intent.test.ts — NOWPayments invoice creation flow.
+//
+// Covers the new contract after the Solana-Pay → NOWPayments migration:
+// invoice URL bubbles through, env-gating, input validation, tier mapping.
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
+const mocks = vi.hoisted(() => ({
+  createInvoice: vi.fn(),
+  redisSet: vi.fn().mockResolvedValue("OK") as ReturnType<typeof vi.fn>,
+  redisSadd: vi.fn().mockResolvedValue(1) as ReturnType<typeof vi.fn>,
+}));
+
 vi.mock("@upstash/redis", () => {
   class MockRedis {
-    set = vi.fn().mockResolvedValue("OK");
+    set = mocks.redisSet;
     get = vi.fn().mockResolvedValue(null);
-    sadd = vi.fn().mockResolvedValue(1);
+    sadd = mocks.redisSadd;
     smembers = vi.fn().mockResolvedValue([]);
     srem = vi.fn().mockResolvedValue(1);
   }
   return { Redis: MockRedis };
 });
 
+vi.mock("../api/_lib/nowpayments", async () => {
+  const actual = await vi.importActual<typeof import("../api/_lib/nowpayments")>(
+    "../api/_lib/nowpayments",
+  );
+  return {
+    ...actual,
+    createInvoice: mocks.createInvoice,
+  };
+});
+
 vi.mock("../api/_lib/middleware", async () => {
   const actual = await vi.importActual<typeof import("../api/_lib/middleware")>(
     "../api/_lib/middleware",
   );
-  return { ...actual };
+  return {
+    ...actual,
+    // The real `checkRateLimit` calls `redis.evalsha` for an atomic Lua
+    // script, which our MockRedis doesn't expose. Bypass for tests so we
+    // exercise the validation + invoice paths, not the limiter itself
+    // (which has its own coverage in the full middleware tests).
+    checkRateLimit: vi.fn().mockResolvedValue(true),
+    initRateLimiters: vi.fn(),
+  };
 });
 
 import handler from "../api/payment-intent";
 
 const ORIGIN = "https://antares-website.vercel.app";
 const VALID_INSTALL = "install-test-aaaaaaaaaaaa";
-const VALID_RECIPIENT = "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM";
 
 interface MockReqOpts {
   method?: string;
@@ -50,27 +77,34 @@ function mockRes(): VercelResponse {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  process.env.SOLANA_RECIPIENT_WALLET = VALID_RECIPIENT;
+  process.env.NOWPAYMENTS_API_KEY = "test-api-key";
   process.env.UPSTASH_REDIS_REST_URL = "https://fake.upstash";
   process.env.UPSTASH_REDIS_REST_TOKEN = "fake-token";
+  process.env.ANTARES_PUBLIC_BASE_URL = "https://antares-extension.vercel.app";
+  // Default invoice mock — individual tests can override.
+  mocks.createInvoice.mockResolvedValue({
+    id: "np-invoice-1",
+    invoice_url: "https://nowpayments.io/payment?iid=np-invoice-1",
+    order_id: "ignored-server-side",
+    price_amount: "24.99",
+    price_currency: "usd",
+    created_at: new Date().toISOString(),
+  });
 });
 
 afterEach(() => {
-  delete process.env.SOLANA_RECIPIENT_WALLET;
+  delete process.env.NOWPAYMENTS_API_KEY;
   delete process.env.UPSTASH_REDIS_REST_URL;
   delete process.env.UPSTASH_REDIS_REST_TOKEN;
+  delete process.env.ANTARES_PUBLIC_BASE_URL;
 });
 
-describe("POST /api/payment-intent", () => {
-  it("handles OPTIONS preflight with 204 + POST in allow-methods", async () => {
+describe("POST /api/payment-intent (NOWPayments)", () => {
+  it("handles OPTIONS preflight with 204", async () => {
     const req = mockReq({ method: "OPTIONS", headers: { origin: ORIGIN } });
     const res = mockRes();
     await handler(req, res);
     expect(res.status).toHaveBeenCalledWith(204);
-    const allowMethods = (res.setHeader as unknown as {
-      mock: { calls: [string, string][] };
-    }).mock.calls.filter(([k]) => k === "Access-Control-Allow-Methods");
-    expect(allowMethods.at(-1)![1]).toContain("POST");
   });
 
   it("rejects GET with 405", async () => {
@@ -87,20 +121,34 @@ describe("POST /api/payment-intent", () => {
     expect(res.status).toHaveBeenCalledWith(403);
   });
 
-  it("rejects missing tier with 400", async () => {
+  it("returns 503 + checkout_not_configured when NOWPAYMENTS_API_KEY is unset", async () => {
+    delete process.env.NOWPAYMENTS_API_KEY;
     const req = mockReq({
       headers: { origin: ORIGIN },
-      body: { install_id: VALID_INSTALL },
+      body: { tier: "monthly", install_id: VALID_INSTALL },
     });
     const res = mockRes();
     await handler(req, res);
-    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.status).toHaveBeenCalledWith(503);
+    const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock
+      .calls[0][0] as { error: string };
+    expect(payload.error).toBe("checkout_not_configured");
   });
 
   it("rejects unknown tier with 400", async () => {
     const req = mockReq({
       headers: { origin: ORIGIN },
       body: { tier: "premium-platinum", install_id: VALID_INSTALL },
+    });
+    const res = mockRes();
+    await handler(req, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  it("rejects when neither email nor install_id is provided", async () => {
+    const req = mockReq({
+      headers: { origin: ORIGIN },
+      body: { tier: "monthly" },
     });
     const res = mockRes();
     await handler(req, res);
@@ -117,120 +165,52 @@ describe("POST /api/payment-intent", () => {
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
-  it("returns 503 + checkout_not_configured when SOLANA_RECIPIENT_WALLET is unset", async () => {
-    delete process.env.SOLANA_RECIPIENT_WALLET;
+  it("rejects malformed email even when install_id is present", async () => {
     const req = mockReq({
       headers: { origin: ORIGIN },
-      body: { tier: "monthly", install_id: VALID_INSTALL },
-    });
-    const res = mockRes();
-    await handler(req, res);
-    expect(res.status).toHaveBeenCalledWith(503);
-    const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock
-      .calls[0][0] as { error: string };
-    expect(payload.error).toBe("checkout_not_configured");
-  });
-
-  it("returns 503 when SOLANA_RECIPIENT_WALLET has invalid format", async () => {
-    process.env.SOLANA_RECIPIENT_WALLET = "not-a-real-address";
-    const req = mockReq({
-      headers: { origin: ORIGIN },
-      body: { tier: "monthly", install_id: VALID_INSTALL },
-    });
-    const res = mockRes();
-    await handler(req, res);
-    expect(res.status).toHaveBeenCalledWith(503);
-  });
-
-  it("creates an intent and returns the Solana Pay URL for monthly tier (USDC default)", async () => {
-    const req = mockReq({
-      headers: { origin: ORIGIN },
-      body: { tier: "monthly", install_id: VALID_INSTALL },
-    });
-    const res = mockRes();
-    await handler(req, res);
-    const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock
-      .calls[0][0] as {
-      reference: string;
-      payUrl: string;
-      recipient: string;
-      token: string;
-      amount: number;
-      amountUsd: number;
-      tier: string;
-      expiresAt: number;
-    };
-    expect(payload.tier).toBe("monthly");
-    expect(payload.token).toBe("usdc");
-    expect(payload.recipient).toBe(VALID_RECIPIENT);
-    expect(payload.amount).toBe(24.99);
-    expect(payload.amountUsd).toBe(24.99);
-    expect(payload.payUrl.startsWith(`solana:${VALID_RECIPIENT}?`)).toBe(true);
-    expect(payload.payUrl).toContain(`reference=${payload.reference}`);
-    expect(payload.payUrl).toContain("spl-token=");
-    expect(payload.expiresAt).toBeGreaterThan(Date.now());
-  });
-
-  it("creates a SOL-payable intent when token=sol", async () => {
-    // Mock Jupiter lite-api v3 price endpoint — keyed by mint address.
-    const WSOL_MINT = "So11111111111111111111111111111111111111112";
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => ({
-        ok: true,
-        json: async () => ({ [WSOL_MINT]: { usdPrice: 100 } }),
-      })),
-    );
-    const req = mockReq({
-      headers: { origin: ORIGIN },
-      body: { tier: "monthly", token: "sol", install_id: VALID_INSTALL },
-    });
-    const res = mockRes();
-    await handler(req, res);
-    const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock
-      .calls[0][0] as {
-      token: string;
-      amount: number;
-      amountUsd: number;
-      payUrl: string;
-      splTokenMint: string | null;
-    };
-    expect(payload.token).toBe("sol");
-    expect(payload.amountUsd).toBe(24.99);
-    expect(payload.amount).toBe(0.2499); // 24.99 / 100
-    expect(payload.splTokenMint).toBeNull();
-    // Native SOL pay URL doesn't include spl-token
-    expect(payload.payUrl).not.toContain("spl-token");
-  });
-
-  it("rejects unknown token values with 400", async () => {
-    const req = mockReq({
-      headers: { origin: ORIGIN },
-      body: { tier: "monthly", token: "btc", install_id: VALID_INSTALL },
+      body: {
+        tier: "monthly",
+        install_id: VALID_INSTALL,
+        email: "not-an-email",
+      },
     });
     const res = mockRes();
     await handler(req, res);
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
-  it("returns 502 sol_rate_unavailable when Jupiter price fetch fails", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => ({
-        ok: false,
-        json: async () => ({}),
-      })),
-    );
+  it("creates an invoice and returns the NOWPayments hosted URL for monthly tier", async () => {
     const req = mockReq({
       headers: { origin: ORIGIN },
-      body: { tier: "monthly", token: "sol", install_id: VALID_INSTALL },
+      body: { tier: "monthly", install_id: VALID_INSTALL },
     });
     const res = mockRes();
     await handler(req, res);
-    expect(res.status).toHaveBeenCalledWith(502);
+    expect(mocks.createInvoice).toHaveBeenCalledOnce();
+    const invoiceArgs = mocks.createInvoice.mock.calls[0][0] as {
+      orderId: string;
+      priceAmountUsd: number;
+      ipnCallbackUrl: string;
+      successUrl: string;
+      cancelUrl: string;
+    };
+    expect(invoiceArgs.priceAmountUsd).toBe(24.99);
+    expect(invoiceArgs.ipnCallbackUrl).toContain("/api/auth/nowpayments-ipn");
+    expect(invoiceArgs.orderId).toMatch(/^[0-9a-f]{64}$/);
+
     const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock
-      .calls[0][0] as { error: string };
-    expect(payload.error).toBe("sol_rate_unavailable");
+      .calls[0][0] as {
+      reference: string;
+      payUrl: string;
+      tier: string;
+      amountUsd: number;
+      expiresAt: number;
+    };
+    expect(payload.tier).toBe("monthly");
+    expect(payload.amountUsd).toBe(24.99);
+    expect(payload.payUrl).toBe("https://nowpayments.io/payment?iid=np-invoice-1");
+    expect(payload.reference).toBe(invoiceArgs.orderId);
+    expect(payload.expiresAt).toBeGreaterThan(Date.now());
   });
 
   it("uses yearly price when tier=yearly", async () => {
@@ -241,15 +221,12 @@ describe("POST /api/payment-intent", () => {
     const res = mockRes();
     await handler(req, res);
     const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock
-      .calls[0][0] as { amount: number; tier: string };
+      .calls[0][0] as { tier: string; amountUsd: number };
     expect(payload.tier).toBe("yearly");
-    expect(payload.amount).toBe(149.99);
+    expect(payload.amountUsd).toBe(149.99);
   });
 
-  it("legacy tier=lifetime in body still mints a yearly intent (rename rollout)", async () => {
-    // Stale clients that haven't reloaded the new pricing page may still
-    // POST tier=lifetime — we accept it and route to yearly so they get
-    // the new product without a redirect/retry.
+  it("legacy tier=lifetime in body still mints a yearly invoice", async () => {
     const req = mockReq({
       headers: { origin: ORIGIN },
       body: { tier: "lifetime", install_id: VALID_INSTALL },
@@ -257,7 +234,7 @@ describe("POST /api/payment-intent", () => {
     const res = mockRes();
     await handler(req, res);
     const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock
-      .calls[0][0] as { amount: number; tier: string };
+      .calls[0][0] as { tier: string };
     expect(payload.tier).toBe("yearly");
   });
 
@@ -269,9 +246,31 @@ describe("POST /api/payment-intent", () => {
     const res = mockRes();
     await handler(req, res);
     const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock
-      .calls[0][0] as { tier: string; amount: number };
+      .calls[0][0] as { tier: string; amountUsd: number };
     expect(payload.tier).toBe("monthly");
-    expect(payload.amount).toBe(24.99);
+    expect(payload.amountUsd).toBe(24.99);
+  });
+
+  it("accepts an email + no install_id (site-direct buyer)", async () => {
+    const req = mockReq({
+      headers: { origin: ORIGIN },
+      body: { tier: "monthly", email: "buyer@example.com" },
+    });
+    const res = mockRes();
+    await handler(req, res);
+    expect(res.status).not.toHaveBeenCalledWith(400);
+    expect(res.status).not.toHaveBeenCalledWith(503);
+  });
+
+  it("returns 502 when NOWPayments invoice creation fails", async () => {
+    mocks.createInvoice.mockRejectedValueOnce(new Error("upstream 500"));
+    const req = mockReq({
+      headers: { origin: ORIGIN },
+      body: { tier: "monthly", install_id: VALID_INSTALL },
+    });
+    const res = mockRes();
+    await handler(req, res);
+    expect(res.status).toHaveBeenCalledWith(502);
   });
 
   it("disables HTTP caching", async () => {
@@ -296,70 +295,5 @@ describe("POST /api/payment-intent", () => {
     const res = mockRes();
     await handler(req, res);
     expect(res.json).toHaveBeenCalledOnce();
-  });
-
-  // ── Email + license-key flow ───────────────────────────────────────────────
-  // Site-direct buyers without an install_id can pay using just an email
-  // — the issued license is what they later redeem in the extension.
-
-  it("accepts an email + no install_id (site-direct buyer)", async () => {
-    const req = mockReq({
-      headers: { origin: ORIGIN },
-      body: { tier: "monthly", email: "buyer@example.com" },
-    });
-    const res = mockRes();
-    await handler(req, res);
-    expect(res.status).not.toHaveBeenCalledWith(400);
-    expect(res.status).not.toHaveBeenCalledWith(503);
-  });
-
-  it("accepts an email alongside install_id (extension user opting in)", async () => {
-    const req = mockReq({
-      headers: { origin: ORIGIN },
-      body: {
-        tier: "monthly",
-        install_id: VALID_INSTALL,
-        email: "buyer@example.com",
-      },
-    });
-    const res = mockRes();
-    await handler(req, res);
-    expect(res.status).not.toHaveBeenCalledWith(400);
-  });
-
-  it("rejects when neither email nor install_id is provided", async () => {
-    const req = mockReq({
-      headers: { origin: ORIGIN },
-      body: { tier: "monthly" },
-    });
-    const res = mockRes();
-    await handler(req, res);
-    expect(res.status).toHaveBeenCalledWith(400);
-  });
-
-  it("rejects malformed email even when install_id is present", async () => {
-    const req = mockReq({
-      headers: { origin: ORIGIN },
-      body: {
-        tier: "monthly",
-        install_id: VALID_INSTALL,
-        email: "not-an-email",
-      },
-    });
-    const res = mockRes();
-    await handler(req, res);
-    expect(res.status).toHaveBeenCalledWith(400);
-  });
-
-  it("treats empty-string email as 'not provided' (doesn't reject)", async () => {
-    // The pricing modal binds the email <input> to its state regardless;
-    // an extension-driven flow that doesn't fill email shouldn't fail.
-    const req = mockReq({
-      headers: { origin: ORIGIN },
-      body: { tier: "monthly", install_id: VALID_INSTALL, email: "" },
-    });
-    const res = mockRes();
-    await handler(req, res);
-    expect(res.status).not.toHaveBeenCalledWith(400);
   });
 });

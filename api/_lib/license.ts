@@ -31,7 +31,7 @@
 import { randomBytes } from "node:crypto";
 import { Redis } from "@upstash/redis";
 import { setUserTier, type Tier as UserTier } from "./user";
-import { PRO_PASS_DAYS, type Tier as IntentTier } from "./solana-pay";
+import { PRO_PASS_DAYS, type Tier as IntentTier } from "./payments";
 import { logger } from "./logger";
 
 // Inlined here (instead of imported from ./account) to avoid the

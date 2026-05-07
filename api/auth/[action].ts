@@ -35,6 +35,20 @@ import {
   clearSessionCookie,
   getAccountFromRequest,
 } from "../_lib/session-cookie";
+import {
+  verifyIpnSignature,
+  mapStatus,
+  type NpPayment,
+} from "../_lib/nowpayments";
+import {
+  bindNpPaymentId,
+  getIntentByNpInvoiceId,
+  getIntentByNpPaymentId,
+  getPaymentIntent,
+  markIntentExpired,
+} from "../_lib/payments";
+import { confirmIntent } from "../_lib/payment-confirm";
+import { initUserStorage } from "../_lib/user";
 
 function getRedis(): Redis | null {
   const url = process.env.UPSTASH_REDIS_REST_URL;
@@ -272,18 +286,182 @@ async function handleMe(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+// ── nowpayments-ipn ─────────────────────────────────────────────────────
+//
+// NOWPayments IPN webhook receiver. Sits inside the auth router (rather
+// than in its own file) because Vercel Hobby caps us at 12 serverless
+// functions and this dispatcher already has spare capacity.
+//
+// Request: POST /api/auth/nowpayments-ipn
+//   Headers: x-nowpayments-sig: <HMAC-SHA512 of body using IPN secret>
+//   Body (NpPayment shape):
+//     { payment_id, payment_status, order_id, invoice_id, payin_hash, ... }
+//
+// Security: signature verification is mandatory. Without a valid
+// `NOWPAYMENTS_IPN_SECRET` env var or a matching signature header we
+// fail closed (401). Replays of an already-confirmed intent are
+// idempotent thanks to `confirmIntent` checking intent.status first.
+//
+// CORS: NOWPayments servers are not browsers, no preflight expected,
+// and we don't need to expose this to extension origins. The router's
+// outer setCorsHeaders gate is permissive enough; we don't add origin
+// restrictions here because NOWPayments doesn't send an Origin header.
+async function handleNowpaymentsIpn(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== "POST") return apiError(res, 405, "Method not allowed.");
+
+  const redis = getRedis();
+  if (!redis) return apiError(res, 503, "Storage unavailable.");
+
+  // Per-IP rate limit. NOWPayments fires from a stable set of IPs so
+  // legit traffic never approaches the cap (30/min). The check protects
+  // against spoofed-source flood: an attacker with a known endpoint can
+  // POST garbage all day; without a limit each request would HMAC-verify
+  // (cheap but non-zero), look up a Redis key, and burn function quota.
+  initRateLimiters(redis);
+  const ip = getClientIp(req);
+  const allowed = await checkRateLimit(res, ip);
+  if (!allowed) return;
+
+  initUserStorage(redis);
+
+  const sigHeader = req.headers["x-nowpayments-sig"];
+  const body = readBody(req);
+  if (!body || Object.keys(body).length === 0) {
+    return apiError(res, 400, "Empty IPN payload.");
+  }
+
+  if (!verifyIpnSignature(body, sigHeader)) {
+    logger.warn("auth/nowpayments-ipn", "signature verification failed", {
+      hasSig: typeof sigHeader === "string" && sigHeader.length > 0,
+      orderId: typeof body.order_id === "string" ? body.order_id : null,
+    });
+    return res.status(401).json({ ok: false, reason: "invalid_signature" });
+  }
+
+  const payment = body as unknown as NpPayment;
+  const orderId = typeof payment.order_id === "string" ? payment.order_id : "";
+  const npPaymentId =
+    typeof payment.payment_id === "string"
+      ? payment.payment_id
+      : payment.payment_id != null
+        ? String(payment.payment_id)
+        : "";
+  const npInvoiceId =
+    typeof payment.invoice_id === "string"
+      ? payment.invoice_id
+      : payment.invoice_id != null
+        ? String(payment.invoice_id)
+        : "";
+
+  // Locate the intent. order_id is our reference (what we passed to
+  // NOWPayments), so it's the primary lookup. Fall back to the
+  // payment_id → reference index, then the invoice_id index, in case
+  // an upstream relay drops the order_id field.
+  let intent = orderId ? await getPaymentIntent(redis, orderId) : null;
+  if (!intent && npPaymentId) {
+    intent = await getIntentByNpPaymentId(redis, npPaymentId);
+  }
+  if (!intent && npInvoiceId) {
+    intent = await getIntentByNpInvoiceId(redis, npInvoiceId);
+  }
+  if (!intent) {
+    logger.warn("auth/nowpayments-ipn", "intent not found", {
+      orderId,
+      npPaymentId,
+      npInvoiceId,
+    });
+    // 200 anyway so NOWPayments doesn't keep retrying — the intent
+    // either doesn't exist or has been GC'd. Logging captures it.
+    return res.status(200).json({ ok: true, ignored: true });
+  }
+
+  // Bind the payment_id on first observation so subsequent IPN events
+  // (and the payment-status poll) hit the fast path.
+  if (npPaymentId && !intent.npPaymentId) {
+    try {
+      intent = await bindNpPaymentId(redis, intent, npPaymentId);
+    } catch { /* non-critical */ }
+  }
+
+  const internalStatus = mapStatus(payment.payment_status);
+
+  if (internalStatus === "confirmed") {
+    // The IPN body is HMAC-signed so we trust *what NOWPayments saw*,
+    // but pass the reported amount to confirmIntent so it can guard
+    // against the partially-paid → finished corner case (anti-underpay).
+    const reportedUsd = Number(payment.price_amount ?? 0);
+    const txSignature =
+      payment.payin_hash ?? payment.payout_hash ?? undefined;
+    const outcome = await confirmIntent(redis, intent, {
+      txSignature: typeof txSignature === "string" ? txSignature : undefined,
+      reportedUsd: Number.isFinite(reportedUsd) ? reportedUsd : undefined,
+    });
+    if (!outcome.ok) {
+      // 200 anyway so NOWPayments stops retrying. Polling client can
+      // see the underpay state via the body for UX surfacing.
+      return res.status(200).json({
+        ok: false,
+        status: "amount_mismatch",
+        reason: outcome.reason,
+        expectedUsd: outcome.expectedUsd,
+        reportedUsd: outcome.reportedUsd,
+      });
+    }
+    logger.metric("auth/nowpayments-ipn.confirmed", {
+      reference: outcome.intent.reference,
+      tier: outcome.intent.tier,
+      amountUsd: outcome.intent.amountUsd,
+      reportedUsd,
+      hasEmail: !!outcome.intent.email,
+      licenseIssued: outcome.licenseKey !== null,
+    });
+    return res.status(200).json({ ok: true, status: "confirmed" });
+  }
+
+  if (internalStatus === "expired") {
+    if (intent.status !== "expired") {
+      try {
+        await markIntentExpired(redis, intent);
+      } catch { /* non-critical */ }
+    }
+    logger.metric("auth/nowpayments-ipn.expired", {
+      reference: intent.reference,
+      providerStatus: payment.payment_status,
+    });
+    return res.status(200).json({ ok: true, status: "expired" });
+  }
+
+  // Pending / partially-paid / waiting / confirming — record the event but
+  // don't transition the intent yet. The polling endpoint and cron will
+  // re-check on subsequent ticks.
+  logger.info("auth/nowpayments-ipn", "pending update", {
+    reference: intent.reference,
+    providerStatus: payment.payment_status,
+  });
+  return res.status(200).json({ ok: true, status: "pending" });
+}
+
 // ── dispatcher ──────────────────────────────────────────────────────────
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Vercel surfaces the [action] segment under req.query.action.
+  const actionRaw = req.query.action;
+  const action = String(Array.isArray(actionRaw) ? actionRaw[0] : actionRaw ?? "");
+
+  // NOWPayments IPN webhook is hit by NOWPayments servers, NOT browsers.
+  // No Origin header → the CORS gate would reject it (403). Skip CORS
+  // entirely for this action — auth is enforced via the HMAC signature
+  // header, which is far stronger than origin checking anyway.
+  if (action === "nowpayments-ipn") {
+    res.setHeader("Cache-Control", "no-store, max-age=0");
+    return handleNowpaymentsIpn(req, res);
+  }
+
   const corsOk = setCorsHeaders(req, res);
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   if (req.method === "OPTIONS") return res.status(204).end();
   if (!corsOk) return apiError(res, 403, "Origin not allowed.");
 
   res.setHeader("Cache-Control", "no-store, max-age=0");
-
-  // Vercel surfaces the [action] segment under req.query.action.
-  const actionRaw = req.query.action;
-  const action = String(Array.isArray(actionRaw) ? actionRaw[0] : actionRaw ?? "");
 
   switch (action) {
     case "signup":
@@ -296,11 +474,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return handleMe(req, res);
     case "sync-token":
       return handleSyncToken(req, res);
+    case "nowpayments-ipn":
+      return handleNowpaymentsIpn(req, res);
     default:
       return apiError(
         res,
         404,
-        "Unknown auth action. Use signup | login | logout | me | sync-token.",
+        "Unknown auth action. Use signup | login | logout | me | sync-token | nowpayments-ipn.",
       );
   }
 }
@@ -312,4 +492,5 @@ export const __test = {
   handleLogout,
   handleMe,
   handleSyncToken,
+  handleNowpaymentsIpn,
 };
