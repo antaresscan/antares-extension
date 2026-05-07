@@ -245,6 +245,102 @@ describe("POST /api/auth/nowpayments-ipn", () => {
     expect(issuedArgs.intentReference).toBe(REFERENCE);
   });
 
+  it("auto-binds install→email on first confirm (so next scan resolves Pro without sync-token)", async () => {
+    // Pre-condition: NO existing binding in Redis. Confirm should write
+    // it from intent.email so the user is auto-synced even if they never
+    // visit /account.html.
+    seedPendingIntent();
+    expect(mocks.store.get(`account:install:${VALID_INSTALL}`)).toBeUndefined();
+
+    const body = {
+      payment_id: "pay-1",
+      payment_status: "finished",
+      order_id: REFERENCE,
+      invoice_id: "inv-123",
+      price_amount: 24.99,
+    };
+    const req = mockIpnReq({
+      headers: { "x-nowpayments-sig": signPayload(body) },
+      body,
+    });
+    const res = mockRes();
+    await dispatcher(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    // Binding should now exist with the intent's email value.
+    expect(mocks.store.get(`account:install:${VALID_INSTALL}`)).toBe(
+      "buyer@example.com",
+    );
+  });
+
+  it("does NOT overwrite an existing install→email binding (anti-hijack)", async () => {
+    // Someone else's email is already bound to this install (e.g.
+    // shared browser, prior owner). A confirm from a different payer
+    // must NOT overwrite — that would let user B's payment claim
+    // user A's install.
+    seedPendingIntent();
+    mocks.store.set(`account:install:${VALID_INSTALL}`, "owner@previous.example");
+
+    const body = {
+      payment_id: "pay-1",
+      payment_status: "finished",
+      order_id: REFERENCE,
+      invoice_id: "inv-123",
+      price_amount: 24.99,
+    };
+    const req = mockIpnReq({
+      headers: { "x-nowpayments-sig": signPayload(body) },
+      body,
+    });
+    const res = mockRes();
+    await dispatcher(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    // Binding stays as the original — payer's email DOES NOT clobber it.
+    expect(mocks.store.get(`account:install:${VALID_INSTALL}`)).toBe(
+      "owner@previous.example",
+    );
+  });
+
+  it("does NOT bind for synthetic email-only installs (no real install_id to bind)", async () => {
+    // Site-direct buyer: no extension installed, intent.installId is
+    // 'email:<email>'. There's no install to bind, and writing
+    // account:install:email:foo@bar would be useless.
+    const syntheticInstall = "email:buyer@example.com";
+    const intent = {
+      reference: REFERENCE,
+      installId: syntheticInstall,
+      email: "buyer@example.com",
+      tier: "monthly" as const,
+      amountUsd: 24.99,
+      payUrl: "https://nowpayments.io/payment?iid=inv-123",
+      npInvoiceId: "inv-123",
+      createdAt: Date.now(),
+      expiresAt: Date.now() + 60 * 60 * 1000,
+      status: "pending" as const,
+    };
+    mocks.store.set(`payment-intent:${REFERENCE}`, intent);
+    mocks.store.set(`payment-intent-by-inv:inv-123`, REFERENCE);
+
+    const body = {
+      payment_id: "pay-1",
+      payment_status: "finished",
+      order_id: REFERENCE,
+      invoice_id: "inv-123",
+      price_amount: 24.99,
+    };
+    const req = mockIpnReq({
+      headers: { "x-nowpayments-sig": signPayload(body) },
+      body,
+    });
+    const res = mockRes();
+    await dispatcher(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    // No binding written for the synthetic install.
+    expect(mocks.store.get(`account:install:${syntheticInstall}`)).toBeUndefined();
+  });
+
   it("REFUSES to confirm when the reported amount is below the expected (anti-underpay)", async () => {
     seedPendingIntent({ amountUsd: 24.99 });
     const body = {

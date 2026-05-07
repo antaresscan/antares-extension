@@ -15,6 +15,7 @@ import type { Redis } from "@upstash/redis"
 import { logger } from "./logger"
 import { setUserTier } from "./user"
 import { issueLicense, INTENT_LICENSE_KEY } from "./license"
+import { ACCOUNT_INSTALL_KEY } from "./account"
 import {
   PRO_PASS_DAYS,
   YEARLY_DAYS,
@@ -111,6 +112,54 @@ export async function confirmIntent(
         reference: intent.reference,
         error: String(err),
       })
+    }
+
+    // Auto-bind install→email so the next /api/scan call resolves the
+    // user's tier WITHOUT them having to sign in to the website first.
+    // Closes the silent-fail loop where:
+    //   - User pays from /pricing.html (install_id flowed via the
+    //     extension bridge) with their email
+    //   - setUserTier writes user:<install>:tier = pro
+    //   - But account:install:<install> stays unset
+    //   - Next scan: resolveTierAndBypass sees no session AND no
+    //     binding → returns Free → extension shows locked overlay
+    //     even though the user just paid 10 seconds ago
+    //
+    // Anti-hijack: only bind when the install is currently UNBOUND.
+    // If somehow the install is already tied to a different email
+    // (would be unusual), we leave it alone and log a warning so the
+    // operator can investigate. Same-email re-bind is a no-op.
+    if (intent.email) {
+      try {
+        const existingBinding = await redis.get<string>(
+          ACCOUNT_INSTALL_KEY(intent.installId),
+        )
+        if (!existingBinding) {
+          await redis.set(ACCOUNT_INSTALL_KEY(intent.installId), intent.email)
+          logger.info("payment-confirm", "install auto-bound via payment", {
+            reference: intent.reference,
+            installId: intent.installId,
+            email: intent.email,
+          })
+        } else if (existingBinding !== intent.email) {
+          logger.warn("payment-confirm", "install bound to different email — leaving as-is", {
+            reference: intent.reference,
+            installId: intent.installId,
+            payerEmail: intent.email,
+            boundEmail: existingBinding,
+          })
+        }
+        // existingBinding === intent.email → no-op, idempotent
+      } catch (err) {
+        // Don't fail the whole confirmation on a binding-write hiccup.
+        // The user's tier is already set on the install, and the binding
+        // can be re-created later via /api/auth/sync-token or /api/redeem.
+        logger.warn("payment-confirm", "install binding write failed", {
+          reference: intent.reference,
+          installId: intent.installId,
+          error: String(err),
+        })
+      }
     }
   }
 
