@@ -37,8 +37,8 @@ Secondaire : **Outils pour développeurs**
 ANTARES — STOP AUX ARNAQUES SUR SOLANA
 
 Antares scanne chaque token Solana que tu rencontres pendant ta navigation —
-DexScreener, pump.fun, Axiom, Photon, Birdeye, GeckoTerminal, GMGN, Jupiter,
-Raydium, Solscan — et te donne un verdict 7 couches en quelques secondes.
+DexScreener, pump.fun, Axiom, Photon, Birdeye, GeckoTerminal, GMGN,
+Telemetry — et te donne un verdict 7 couches en quelques secondes.
 SAFE / CAUTION / DANGER / RUG, avec un score sur 1000 points et les raisons
 derrière le verdict.
 
@@ -129,9 +129,6 @@ L'overlay s'active automatiquement sur :
   • Birdeye (birdeye.so)
   • GeckoTerminal (geckoterminal.com)
   • GMGN (gmgn.ai)
-  • Jupiter (jup.ag)
-  • Raydium (raydium.io)
-  • Solscan (solscan.io)
   • Telemetry (app.telemetry.io)
 
 OPEN SOURCE
