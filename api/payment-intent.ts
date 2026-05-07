@@ -14,11 +14,20 @@
 // Configure at deploy time (Vercel env vars):
 //   NOWPAYMENTS_API_KEY      Server-side API key from the NOWPayments dashboard
 //   NOWPAYMENTS_IPN_SECRET   IPN secret from the same dashboard (HMAC verifier)
-//   ANTARES_PUBLIC_BASE_URL  e.g. https://antares-extension.vercel.app
-//                            (used to build IPN callback + success URLs)
+//   ANTARES_PUBLIC_BASE_URL  API host, e.g. https://antares-extension.vercel.app
+//                            (used to build the IPN callback URL — the
+//                            webhook handler lives on the API host)
+//   ANTARES_WEBSITE_URL      Marketing-site host, e.g.
+//                            https://antares-website.vercel.app
+//                            (used to build the post-payment success +
+//                            cancel redirects — account.html lives on
+//                            the website, NOT on the API host. Without
+//                            this set, NOWPayments redirects buyers to
+//                            the API host's /account.html which 404s.)
 //   ANTARES_SUCCESS_URL      Optional override for the post-payment redirect
-//                            (defaults to ${BASE}/success.html?ref=<reference>)
+//                            (defaults to ${WEBSITE}/account.html?ref=<reference>)
 //   ANTARES_CANCEL_URL       Optional override for the bail-out redirect
+//                            (defaults to ${WEBSITE}/account.html?cancelled=1)
 //
 // Without NOWPAYMENTS_API_KEY set, returns 503 + checkout_not_configured.
 import type { VercelRequest, VercelResponse } from "@vercel/node";
@@ -69,18 +78,37 @@ function readBody(req: VercelRequest): Record<string, unknown> {
 }
 
 /**
- * Resolve the public base URL we use to build the IPN callback +
- * success / cancel URLs we hand to NOWPayments. Order:
+ * Resolve the API host — used for the IPN callback URL only. The
+ * webhook handler lives on this host (api/auth/nowpayments-ipn.ts),
+ * so NOWPayments must POST signature-verified events here.
+ *
  *   1. ANTARES_PUBLIC_BASE_URL env var (recommended, explicit)
  *   2. VERCEL_PROJECT_PRODUCTION_URL (auto-set by Vercel on prod deploys)
  *   3. Hardcoded production URL (last resort)
  */
-function getPublicBaseUrl(): string {
+function getApiBaseUrl(): string {
   const explicit = (process.env.ANTARES_PUBLIC_BASE_URL ?? "").trim();
   if (explicit) return explicit.replace(/\/+$/, "");
   const vercelProd = (process.env.VERCEL_PROJECT_PRODUCTION_URL ?? "").trim();
   if (vercelProd) return `https://${vercelProd.replace(/^https?:\/\//, "")}`;
   return "https://antares-extension.vercel.app";
+}
+
+/**
+ * Resolve the marketing-site host — used for the post-payment
+ * success/cancel redirects. account.html lives on the website repo
+ * (deployed to antares-website.vercel.app + GH Pages mirror), NOT on
+ * the API host — using the API host as the redirect target would 404
+ * the buyer right after paying. This was a real bug that surfaced as
+ * "404 page after clicking pay".
+ *
+ *   1. ANTARES_WEBSITE_URL env var (recommended, explicit)
+ *   2. Hardcoded production URL (works for the canonical deployment)
+ */
+function getWebsiteUrl(): string {
+  const explicit = (process.env.ANTARES_WEBSITE_URL ?? "").trim();
+  if (explicit) return explicit.replace(/\/+$/, "");
+  return "https://antares-website.vercel.app";
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -172,13 +200,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const reference = generateReference();
   const amountUsd = priceUsd(normalisedTier);
-  const baseUrl = getPublicBaseUrl();
-  const ipnCallbackUrl = `${baseUrl}/api/auth/nowpayments-ipn`;
+  // IPN callback target = API host (the webhook handler lives there).
+  const apiBaseUrl = getApiBaseUrl();
+  const ipnCallbackUrl = `${apiBaseUrl}/api/auth/nowpayments-ipn`;
+  // Success/cancel redirects = WEBSITE host (account.html lives there,
+  // NOT on the API host). Reusing the API host for these used to 404
+  // the buyer the moment NOWPayments redirected back after payment.
+  const websiteUrl = getWebsiteUrl();
   const successUrl =
-    (process.env.ANTARES_SUCCESS_URL ?? `${baseUrl}/account.html?ref=${reference}`)
+    (process.env.ANTARES_SUCCESS_URL ?? `${websiteUrl}/account.html?ref=${reference}`)
       .replace("{reference}", reference);
   const cancelUrl =
-    process.env.ANTARES_CANCEL_URL ?? `${baseUrl}/account.html?cancelled=1`;
+    process.env.ANTARES_CANCEL_URL ?? `${websiteUrl}/account.html?cancelled=1`;
 
   let invoice;
   try {
