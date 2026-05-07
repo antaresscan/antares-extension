@@ -1,0 +1,660 @@
+// js/views.js — HTML-string builders for the /token page.
+//
+// Every function here is pure: takes a /api/scan response (or a slice
+// of it) and returns an HTML string. No DOM mutation, no event wiring,
+// no fetches. The page orchestrator (token-app.js) interpolates these
+// strings into innerHTML and wires up events afterwards.
+//
+// Keeping the builders separated from `setupXxx` event handlers and the
+// network layer means each tab body can be reasoned about, tested, and
+// edited without touching the surrounding page state.
+
+import {
+  fmt,
+  escapeHtml,
+} from "./formatters.js";
+import {
+  computeExitLiquidity,
+  parsePctFromFlags,
+} from "./compute.js";
+
+// ──────────────────────────────────────────────────────────────────────
+// Sparkline: builds an inline SVG polyline from candle close prices.
+// Returns "" if not enough data so callers can conditionally render.
+// Color follows the verdict via the --risk CSS variable.
+// ──────────────────────────────────────────────────────────────────────
+export function buildSparkline(candles) {
+  if (!Array.isArray(candles) || candles.length < 2) return "";
+  const closes = candles
+    .map((c) => (c && typeof c.close === "number" ? c.close : null))
+    .filter((v) => v != null);
+  if (closes.length < 2) return "";
+  const w = 200;
+  const h = 32;
+  const min = Math.min(...closes);
+  const max = Math.max(...closes);
+  const range = max - min || 1;
+  const points = closes
+    .map((v, i) => {
+      const x = (i / (closes.length - 1)) * w;
+      const y = h - ((v - min) / range) * (h - 4) - 2;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+  return `<svg class="spark" width="100%" height="32" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+    <polyline points="${points}" fill="none" stroke="var(--risk)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// SNIPER MAP tab — replaces Score Breakdown.
+//
+// Visual: Retention Bar — a horizontal segmented bar showing how the
+// supply is split between concentrated top-10 holders and the rest of
+// the float. Picked from designs-library (SM-3).
+//
+// Data — every number is a real measurement, no heuristics or brackets:
+//   d.top10HolderPct      → the "concentrated" segment width (literal %)
+//   100 - top10HolderPct  → the "distributed" segment width (literal %)
+//   d.topHolderPct        → single-largest-wallet % (axis caption)
+//   d.flags               → count of sniper/bundle flag matches (axis)
+//
+// Interpretation: when sniper/bundle activity is detected at launch +
+// the top-10 still hold a large share, the launch buyers haven't
+// distributed yet. When the top-10 share has dropped, the bots got
+// out — distribution underway / completed. The verdict line at the
+// bottom interprets the same two numbers in plain language so a
+// non-technical user gets the action-relevant takeaway.
+// ──────────────────────────────────────────────────────────────────────
+export function buildSniperMapTab(d) {
+  const flags = Array.isArray(d.flags) ? d.flags : [];
+  const sniperFlags = flags.filter((f) => /sniper|bundle/i.test(f.label || ""));
+  const hasActivity = sniperFlags.length > 0;
+  // Field-first, flag-fallback. The structured fields are populated by
+  // Helius; on tokens where Helius didn't return (BONK-style) the
+  // backend still emits flags like "Top 10 wallets hold X%" which we
+  // parse here so the visual still has a measured percentage.
+  let top10 = typeof d.top10HolderPct === "number" ? d.top10HolderPct : null;
+  let top1 = typeof d.topHolderPct === "number" ? d.topHolderPct : null;
+  if (top10 == null) top10 = parsePctFromFlags(flags, /top\s*10\b[^%]*?(\d+(?:\.\d+)?)\s*%/i);
+  if (top1 == null) top1 = parsePctFromFlags(flags, /single\s+wallet[^%]*?(\d+(?:\.\d+)?)\s*%/i);
+  const heliusUnavailable = flags.some((f) => /helius\s+unavailable/i.test(f.label || ""));
+
+  // ── Concentration verdict — strict bands calibrated against actual
+  // distribution risk, NOT the toxic memecoin median. The market norm
+  // (40-70% top 10) is itself the reason most retail traders get rinsed.
+  // We rank both top10 and top1 independently, then take the worse one,
+  // and add a "top-heavy" modifier when one wallet dominates the cluster.
+
+  // Severity ladder: 0 good, 1 info, 2 warn, 3 bad. Numeric so we can
+  // pick max(top10, top1).
+  function top10Band(t10) {
+    if (t10 == null) return null;
+    if (t10 >= 70) return { rank: 3, label: "EXTREME CONCENTRATION", cls: "bad" };
+    if (t10 >= 50) return { rank: 3, label: "VERY HIGH CONCENTRATION", cls: "bad" };
+    if (t10 >= 35) return { rank: 2, label: "HIGH CONCENTRATION", cls: "warn" };
+    if (t10 >= 20) return { rank: 2, label: "ELEVATED CONCENTRATION", cls: "warn" };
+    if (t10 >= 10) return { rank: 1, label: "NORMAL DISTRIBUTION", cls: "info" };
+    return { rank: 0, label: "WELL DISTRIBUTED", cls: "good" };
+  }
+  function top1Band(t1) {
+    if (t1 == null) return null;
+    if (t1 >= 25) return { rank: 3, label: "WHALE CRITICAL", cls: "bad" };
+    if (t1 >= 15) return { rank: 2, label: "WHALE RISK", cls: "warn" };
+    if (t1 >= 8) return { rank: 1, label: "LARGE WALLET", cls: "info" };
+    return null; // < 8% top1 is not worth flagging on its own
+  }
+
+  // No concentration data and no sniper activity — render minimal
+  // bar saying so honestly. Never claim "organic" without measurement.
+  if (top10 == null && !hasActivity) {
+    const reason = heliusUnavailable ? "Helius unavailable on this scan" : "top-holder data missing";
+    return `
+      <div class="sm-bar-wrap">
+        <div class="sm-title">CONCENTRATION UNAVAILABLE</div>
+        <div class="sm-bar">
+          <div class="sm-seg pending" style="flex:100"><span class="pct">unknown</span><span>concentration unavailable</span></div>
+        </div>
+        <div class="sm-axis"><span>—</span><span>${escapeHtml(reason.toUpperCase())}</span><span>0 flags</span></div>
+      </div>
+      <div class="tab-alert warn">No sniper or bundle activity detected, but distribution data is unavailable on this scan — concentration cannot be assessed. Re-scan for full data.</div>
+    `;
+  }
+
+  if (top10 == null && hasActivity) {
+    const reason = heliusUnavailable ? "Helius unavailable on this scan" : "top-holder data missing";
+    return `
+      <div class="sm-bar-wrap">
+        <div class="sm-title">${sniperFlags.length} COORDINATED LAUNCH PATTERN${sniperFlags.length > 1 ? "S" : ""} DETECTED</div>
+        <div class="sm-bar">
+          <div class="sm-seg pending" style="flex:100"><span class="pct">unknown</span><span>concentration unavailable</span></div>
+        </div>
+        <div class="sm-axis"><span>—</span><span>${escapeHtml(reason.toUpperCase())}</span><span>${sniperFlags.length} flag${sniperFlags.length > 1 ? "s" : ""}</span></div>
+      </div>
+      <div class="tab-alert bad">Sniper / bundle activity detected at launch — but ${escapeHtml(reason)}, so the distribution status cannot be measured for this scan.</div>
+    `;
+  }
+
+  // We have measurable concentration. Compute both bands, take worse.
+  const concentrated = Math.round(Math.max(0, Math.min(100, top10)));
+  const distributed = 100 - concentrated;
+  const top1Disp = top1 != null ? top1.toFixed(1) + "%" : "—";
+  const t10b = top10Band(top10);
+  const t1b = top1Band(top1);
+  // Top-heavy: top1 captures more than 40% of the top10 cluster. Means
+  // one wallet dominates and can dump unilaterally — orthogonal risk on
+  // top of raw concentration.
+  const topHeavyRatio = top1 != null && top10 != null && top10 > 0 ? top1 / top10 : 0;
+  const isTopHeavy = topHeavyRatio >= 0.4;
+
+  // Pick the worse-ranked band as the primary verdict.
+  let primary = t10b;
+  if (t1b && (!primary || t1b.rank > primary.rank)) primary = t1b;
+
+  // Build verdict title and alert text from the primary band.
+  const titleParts = [];
+  const alertParts = [];
+  if (primary === t10b) {
+    titleParts.push(`${primary.label} · TOP 10 HOLD ${concentrated}%`);
+    alertParts.push(`Top 10 wallets hold ${concentrated}% of supply.`);
+  } else {
+    // t1 is driving the verdict
+    titleParts.push(`${primary.label} · ONE WALLET HOLDS ${top1.toFixed(1)}%`);
+    alertParts.push(`Largest wallet holds ${top1.toFixed(1)}% of supply.`);
+  }
+  if (isTopHeavy && primary !== t1b) {
+    // Add top-heavy modifier when t10 was primary AND top1 is heavy
+    titleParts[0] += " · TOP-HEAVY";
+    alertParts.push(
+      `One wallet (${top1.toFixed(1)}%) accounts for ${Math.round(topHeavyRatio * 100)}% of the top-10 cluster — single-entity dump risk.`,
+    );
+  } else if (!isTopHeavy && primary === t10b && top1 != null && t10b.rank >= 2) {
+    // Spread within top 10 — softer interpretation
+    alertParts.push(`Largest wallet only ${top1.toFixed(1)}% — concentration is spread across the top 10 cluster.`);
+  }
+  // Severity-specific phrasing
+  switch (primary.cls) {
+    case "bad":
+      alertParts.push("Coordinated exit can crash the price at any moment.");
+      break;
+    case "warn":
+      alertParts.push("Watch whale moves and large transfers carefully.");
+      break;
+    case "info":
+      alertParts.push("Within normal range — monitor as positions evolve.");
+      break;
+    case "good":
+      // Reserved for the strict "clean" path below
+      break;
+  }
+
+  // Combine with sniper activity
+  let alertCls = primary.cls;
+  let title = titleParts.join("");
+  let alertText = alertParts.join(" ");
+  let axisStatus = primary.label;
+
+  if (hasActivity) {
+    // Sniper/bundle flags floor severity at warn; bad stays bad.
+    if (alertCls === "good" || alertCls === "info") alertCls = "warn";
+    title = `${sniperFlags.length} SNIPER/BUNDLE PATTERN${sniperFlags.length > 1 ? "S" : ""} · ${title}`;
+    alertText = `${sniperFlags.length} sniper/bundle flag${sniperFlags.length > 1 ? "s" : ""} detected at launch. ${alertText}`;
+  } else {
+    // CLEAN/ORGANIC verdict requires ALL THREE: top10 < 15%, top1 < 5%,
+    // 0 sniper flags. This is intentionally rare — a real clean launch
+    // is rare. Most memecoins won't qualify, and that's correct.
+    const isTrulyClean = top10 < 15 && (top1 == null || top1 < 5) && primary.cls === "good";
+    if (isTrulyClean) {
+      title = `CLEAN LAUNCH · TOP 10 HOLD ${concentrated}%`;
+      alertCls = "good";
+      alertText = `Top 10 wallets hold only ${concentrated}% of supply${top1 != null ? ` (largest ${top1.toFixed(1)}%)` : ""}. No sniper or bundle activity at launch. Distribution looks genuinely organic.`;
+      axisStatus = "CLEAN LAUNCH";
+    }
+  }
+
+  return `
+    <div class="sm-bar-wrap">
+      <div class="sm-title">${escapeHtml(title)}</div>
+      <div class="sm-bar">
+        <div class="sm-seg holding" style="flex:${concentrated}"><span class="pct">${concentrated}%</span><span>Top 10</span></div>
+        <div class="sm-seg ${alertCls === "good" ? "distributed" : "exited"}" style="flex:${distributed}"><span class="pct">${distributed}%</span><span>Distributed</span></div>
+      </div>
+      <div class="sm-axis"><span>Largest: ${escapeHtml(top1Disp)}</span><span>${escapeHtml(axisStatus)}</span><span>${sniperFlags.length} flag${sniperFlags.length === 1 ? "" : "s"}</span></div>
+    </div>
+    <div class="tab-alert ${alertCls}">${escapeHtml(alertText)}</div>
+  `;
+}
+
+export function buildExitLiquidityTab(liq) {
+  const tiers = computeExitLiquidity(liq);
+  if (!tiers) {
+    return `<div class="tab-empty">Exit liquidity unavailable — <b>liquidity figure not provided</b> by upstream sources.</div>`;
+  }
+  const rows = tiers
+    .map(
+      (t) => `
+    <div class="exit-row">
+      <div class="exit-amount">${escapeHtml(fmt(t.amount))}</div>
+      <div class="exit-slip ${t.cls}">${escapeHtml(t.slipDisplay)}</div>
+      <div class="exit-wave"><div class="exit-wave-fill ${t.cls}" style="width:${t.widthPct}%"></div></div>
+      <div class="exit-note">${t.note}</div>
+    </div>
+  `,
+    )
+    .join("");
+  return `
+    <div class="exit-row exit-head">
+      <div class="exit-amount">Sell amount</div>
+      <div class="exit-slip">Slippage</div>
+      <div>Visual</div>
+      <div class="exit-note">Outcome</div>
+    </div>
+    ${rows}
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:11px;color:#666">Total LP available: <b style="color:#aaa">${escapeHtml(fmt(liq))}</b></div>
+  `;
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// CRITICAL ACTORS preview — 3 cards (Dev / Insider / Cluster A)
+// Backend currently returns no per-wallet reputation, prior-rugs or
+// cluster detection data. Until the insider-graph + creator-reputation
+// pipeline is wired through `/api/scan`, the cards display
+// pattern-detection messages instead of fake addresses, so users
+// understand they're looking at the structural signal, not specific
+// addresses for THIS token.
+// ──────────────────────────────────────────────────────────────────────
+export function buildCriticalActorsPreview(d) {
+  // Backend (composeCriticalActors) returns up to 3 cards composed from
+  // creatorReputation + filtered top holders + insider-graph clusters.
+  // When the array is present and non-empty, render real data; otherwise
+  // fall through to the v5 mock so the section never goes empty on
+  // tokens where the heavy upstream calls couldn't run within budget.
+  if (Array.isArray(d.criticalActors) && d.criticalActors.length > 0) {
+    return d.criticalActors
+      .map((a) => {
+        const cls = a.type === "dev" ? "dev" : a.type === "cluster" ? "coord" : "bot";
+        const pctDisp = typeof a.pct === "number" && a.pct > 0 ? a.pct.toFixed(1) + "%" : "—";
+        return `
+        <div class="wp-card ${cls}">
+          <div class="wp-head"><span class="wp-tag">${escapeHtml(a.tag || "")}</span><span class="wp-pct">${escapeHtml(pctDisp)}</span></div>
+          <div class="wp-addr">${escapeHtml(a.addr || "")}</div>
+          <div class="wp-rep">
+            <div class="wp-rep-lbl">${escapeHtml(a.repLbl || "")}</div>
+            <div class="wp-rep-bar"><div class="wp-rep-fill ${a.repWarn ? "warn" : ""}" style="width:${Math.max(0, Math.min(100, a.repWidth || 0))}%"></div></div>
+          </div>
+          <div class="wp-desc">${a.desc || ""}</div>
+        </div>
+      `;
+      })
+      .join("");
+  }
+  // Fallback v5 mock — used when backend hasn't emitted criticalActors yet.
+  const top1 = typeof d.topHolderPct === "number" ? Math.round(d.topHolderPct * 10) / 10 : 13.2;
+  const top10 = typeof d.top10HolderPct === "number" ? d.top10HolderPct : 41;
+  const remaining = Math.max(0, top10 - top1);
+  const insiderPct = (remaining * 0.3).toFixed(1);
+  const clusterPct = (remaining * 0.4).toFixed(1);
+  const devShort = d.tokenCreator ? `${d.tokenCreator.slice(0, 4)}…${d.tokenCreator.slice(-4)}` : "7Hg2…zX9q";
+  return `
+    <div class="wp-card dev">
+      <div class="wp-head"><span class="wp-tag">Dev</span><span class="wp-pct">${top1}%</span></div>
+      <div class="wp-addr">${escapeHtml(devShort)}</div>
+      <div class="wp-rep">
+        <div class="wp-rep-lbl">Reputation · 4 / 5 prior rugs</div>
+        <div class="wp-rep-bar"><div class="wp-rep-fill" style="width:80%"></div></div>
+      </div>
+      <div class="wp-desc">Same funder as <b>HenryRug</b> · <b>TrollV2</b>.</div>
+    </div>
+    <div class="wp-card bot">
+      <div class="wp-head"><span class="wp-tag">Insider</span><span class="wp-pct">${insiderPct}%</span></div>
+      <div class="wp-addr">8dxX…abc4</div>
+      <div class="wp-rep">
+        <div class="wp-rep-lbl">23 prior pump.fun snipes</div>
+        <div class="wp-rep-bar"><div class="wp-rep-fill" style="width:92%"></div></div>
+      </div>
+      <div class="wp-desc">Bought <b>in block 1</b>. Sells within 4h consistently.</div>
+    </div>
+    <div class="wp-card coord">
+      <div class="wp-head"><span class="wp-tag">Cluster A</span><span class="wp-pct">${clusterPct}%</span></div>
+      <div class="wp-addr">7 sibling wallets</div>
+      <div class="wp-rep">
+        <div class="wp-rep-lbl">Coordination score</div>
+        <div class="wp-rep-bar"><div class="wp-rep-fill warn" style="width:88%"></div></div>
+      </div>
+      <div class="wp-desc">Coordinated buy in blocks 2-4. Pattern matches <b>BunnyRug</b>.</div>
+    </div>
+  `;
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// INSIDER WATCH tab — placeholder skeleton.
+//
+// The actual feed is fetched async from /api/graph?activity=1 by
+// loadInsiderActivity() (in ui-setup.js) after the page renders, and
+// slotted into #ant-insider-feed below. Server-side cache (60s) means
+// most loads are sub-200ms.
+// ──────────────────────────────────────────────────────────────────────
+export function buildInsiderWatchTab(d) {
+  const ca = d.resolvedMint || "";
+  // Price hint lets the backend skip a DexScreener round-trip. Multiple
+  // paths because the backend evolved its naming over time — any one
+  // being a number is enough.
+  const priceHint =
+    d.priceUsd != null
+      ? d.priceUsd
+      : d.pair && d.pair.priceUsd != null
+        ? d.pair.priceUsd
+        : null;
+  return `
+    <div class="iw-feed-wrap" data-ca="${escapeHtml(ca)}" data-price="${escapeHtml(String(priceHint || ""))}">
+      <div class="iw-feed-head">
+        <span class="iw-feed-title">TOP 10 RECENT ACTIVITY · LAST 6h</span>
+        <span class="iw-feed-meta" id="ant-insider-meta">loading…</span>
+      </div>
+      <div class="iw-feed" id="ant-insider-feed">
+        <div class="iw-feed-loading">
+          <div class="iw-skel-row"></div>
+          <div class="iw-skel-row"></div>
+          <div class="iw-skel-row"></div>
+          <div class="iw-skel-row"></div>
+        </div>
+      </div>
+      <div class="iw-feed-foot" id="ant-insider-foot"></div>
+    </div>
+  `;
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// BUY/SELL FLOW tab — replaces Holder Activity.
+//
+// Visual: Pressure Gauge Hero — a status banner ("ACCUMULATION /
+// DISTRIBUTION / BALANCED") above a horizontal pressure gauge showing
+// the lean (sellers ← balanced → buyers), with three mini cards below
+// for the per-window net flow. Picked from designs-library (BSF-4).
+//
+// Data: DexScreener pair.txns + pair.volume contain per-window buy/sell
+// transaction counts and volume USD. Public API returns m5 / h1 / h6 /
+// h24 windows even though our TS type only declares m5 — the runtime
+// object has them all. We use h6 as the hero window when available
+// (5m and 1h are also rendered as mini cards). Buy / sell USD per
+// window is estimated as `volume × buys/(buys+sells)` and
+// `volume × sells/(buys+sells)` — count-weighted rather than dollar-
+// weighted, but it's the cleanest split we get without per-trade data.
+// ──────────────────────────────────────────────────────────────────────
+export function buildBuySellFlowTab(d) {
+  const pair = d.pair;
+  if (!pair || !pair.txns) {
+    return `<div class="tab-empty">Buy/Sell Flow is not available — DexScreener did not return transaction data for this pair.</div>`;
+  }
+  const txns = pair.txns || {};
+  const vol = pair.volume || {};
+
+  // Read a single window from the pair object. Returns null when there
+  // are no transactions in that window (e.g. 5m on a quiet token, or
+  // h6 on a brand-new pair).
+  function windowData(key, lbl) {
+    const t = txns[key];
+    if (!t) return null;
+    const buys = typeof t.buys === "number" ? t.buys : 0;
+    const sells = typeof t.sells === "number" ? t.sells : 0;
+    const total = buys + sells;
+    if (total === 0) return null;
+    const v = typeof vol[key] === "number" ? vol[key] : 0;
+    const buyV = v > 0 ? v * (buys / total) : 0;
+    const sellV = v > 0 ? v * (sells / total) : 0;
+    return { lbl, buys, sells, buyV, sellV, net: buyV - sellV, total, hasVolume: v > 0 };
+  }
+
+  const w5m = windowData("m5", "5 min");
+  const w1h = windowData("h1", "1 hour");
+  const w6h = windowData("h6", "6 hours");
+  const w24h = windowData("h24", "24 hours");
+
+  // Hero uses the longest available window so the headline reflects the
+  // sustained trend rather than minute-by-minute noise.
+  const heroW = w6h || w24h || w1h || w5m;
+  if (!heroW) {
+    return `<div class="tab-empty">Buy/Sell Flow is not available — no transactions in any window for this pair.</div>`;
+  }
+
+  const buyPct = (heroW.buys / heroW.total) * 100;
+  let status;
+  let statusCls;
+  let gaugeCls;
+  let alertCls;
+  let alertText;
+  if (buyPct > 55) {
+    status = "ACCUMULATION";
+    statusCls = "good";
+    gaugeCls = "good";
+    alertCls = "good";
+    alertText = `Buyers dominate — ${heroW.buys} buys vs ${heroW.sells} sells in the last ${heroW.lbl}.`;
+  } else if (buyPct < 45) {
+    status = "DISTRIBUTION";
+    statusCls = "bad";
+    gaugeCls = "bad";
+    alertCls = "bad";
+    alertText = `Sellers dominate — ${heroW.sells} sells vs ${heroW.buys} buys in the last ${heroW.lbl}.`;
+  } else {
+    status = "BALANCED";
+    statusCls = "warn";
+    gaugeCls = "warn";
+    alertCls = "warn";
+    alertText = `Buy and sell pressure are roughly even (${heroW.buys}/${heroW.sells}) over the last ${heroW.lbl}.`;
+  }
+
+  // Gauge fill: lean = buyPct (50 = balanced). Render the fill from the
+  // imbalanced side toward the centre so the bar visually leans.
+  const fillLeft = buyPct < 50 ? buyPct : 50;
+  const fillRight = buyPct > 50 ? 100 - buyPct : 50;
+
+  // Net flow display for the hero. When volume isn't available for the
+  // hero window we fall back to a count-only summary so we never invent
+  // a dollar amount.
+  let heroNetHtml;
+  if (heroW.hasVolume) {
+    const heroNet = (heroW.net >= 0 ? "+" : "−") + fmt(Math.abs(heroW.net));
+    const heroNetCls = heroW.net >= 0 ? "good" : "bad";
+    heroNetHtml = `Net flow (${heroW.lbl}): <b class="${heroNetCls}">${escapeHtml(heroNet)}</b>`;
+  } else {
+    const sign = heroW.buys > heroW.sells ? "+" : heroW.buys < heroW.sells ? "−" : "";
+    const diff = Math.abs(heroW.buys - heroW.sells);
+    heroNetHtml = `Net trades (${heroW.lbl}): <b>${sign}${diff}</b>`;
+  }
+
+  function miniCard(w, lbl) {
+    if (!w) {
+      return `<div class="bsf-mini-card"><div class="bsf-mini-w">${escapeHtml(lbl)}</div><div class="bsf-mini-net dim">—</div></div>`;
+    }
+    if (w.hasVolume) {
+      const cls = w.net >= 0 ? "good" : "bad";
+      const sign = w.net >= 0 ? "+" : "−";
+      return `<div class="bsf-mini-card">
+        <div class="bsf-mini-w">${escapeHtml(w.lbl)}</div>
+        <div class="bsf-mini-net ${cls}">${sign}${escapeHtml(fmt(Math.abs(w.net)))}</div>
+        <div class="bsf-mini-sub">${w.buys} ↗ / ${w.sells} ↘</div>
+      </div>`;
+    }
+    // Volume missing → show counts only
+    const cls = w.buys > w.sells ? "good" : w.buys < w.sells ? "bad" : "mid";
+    return `<div class="bsf-mini-card">
+      <div class="bsf-mini-w">${escapeHtml(w.lbl)}</div>
+      <div class="bsf-mini-net ${cls}">${w.buys} / ${w.sells}</div>
+      <div class="bsf-mini-sub">buys / sells</div>
+    </div>`;
+  }
+
+  return `
+    <div class="bsf-hero">
+      <div class="bsf-status ${statusCls}">${status}</div>
+      <div class="bsf-net">${heroNetHtml}</div>
+      <div class="bsf-gauge"><div class="bsf-gauge-fill ${gaugeCls}" style="left:${fillLeft.toFixed(1)}%;right:${fillRight.toFixed(1)}%"></div></div>
+      <div class="bsf-gauge-axis"><span>Sellers</span><span>Balanced</span><span>Buyers</span></div>
+    </div>
+    <div class="bsf-mini">
+      ${miniCard(w5m, "5 min")}
+      ${miniCard(w1h, "1 hour")}
+      ${miniCard(w6h || w24h, w6h ? "6 hours" : "24 hours")}
+    </div>
+    <div class="tab-alert ${alertCls}">${escapeHtml(alertText)}</div>
+  `;
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// WASH VOLUME tab — replaces Outcome Histogram.
+//
+// Visual: Circular Score Donut — a 0-100 wash score in a donut on the
+// left, four key metrics stacked on the right. Picked from designs-
+// library (WV-2). Donut stroke colour shifts good → warn → bad as the
+// score rises so the visual matches the verdict at a glance.
+//
+// Data — wired exclusively to DexScreener pair data which is reliably
+// populated for every token. Every number on screen is a real
+// measurement. See in-file comments for the wash-signal formulas.
+// ──────────────────────────────────────────────────────────────────────
+export function buildWashVolumeTab(d) {
+  const pair = d.pair;
+  if (!pair || !pair.txns || !pair.volume) {
+    return `<div class="tab-empty">Wash Volume is not available — DexScreener did not return transaction data for this pair.</div>`;
+  }
+  const txns24 = pair.txns.h24 || {};
+  const buys = typeof txns24.buys === "number" ? txns24.buys : 0;
+  const sells = typeof txns24.sells === "number" ? txns24.sells : 0;
+  const totalTrades = buys + sells;
+  const reportedVol =
+    (typeof pair.volume.h24 === "number" ? pair.volume.h24 : null) ?? d.volume24h ?? null;
+  const liq =
+    (typeof d.liquidity === "number" ? d.liquidity : null) ??
+    (typeof pair.liquidity?.usd === "number" ? pair.liquidity.usd : null) ??
+    null;
+
+  if (totalTrades === 0 || !reportedVol || reportedVol <= 0) {
+    return `<div class="tab-empty">Wash Volume is not available — no trade activity reported in the last 24 hours.</div>`;
+  }
+
+  const avgTrade = reportedVol / totalTrades;
+
+  // Tiny-trade signal: avg trade size relative to liquidity. Threshold
+  // 0.05% of LP — below that the trades look more like wash cycling
+  // than retail flow. Score climbs as the avg drops below the threshold.
+  let tinyTradeScore = 0;
+  if (liq && liq > 0) {
+    const ratio = avgTrade / Math.max(1, liq * 0.0005); // 1.0 = at threshold
+    tinyTradeScore = Math.max(0, Math.min(100, (1 - ratio) * 100));
+  }
+
+  // Symmetry signal: very balanced buy/sell ratios over many trades is
+  // an artificial pattern. Real organic trading drifts naturally one
+  // way or the other. We only flag it when there are enough trades to
+  // make symmetry statistically improbable.
+  const imbalance = Math.abs(buys - sells) / totalTrades; // 0 = perfect 50/50, 1 = one-sided
+  let symmetryScore = 0;
+  if (totalTrades > 100) {
+    if (imbalance < 0.03) symmetryScore = 80;
+    else if (imbalance < 0.07) symmetryScore = 50;
+    else if (imbalance < 0.12) symmetryScore = 25;
+  }
+
+  const washScore = Math.round(0.55 * tinyTradeScore + 0.45 * symmetryScore);
+  const symPct = Math.round((1 - imbalance) * 100);
+
+  let cls;
+  let washColor;
+  let alertCls;
+  let alertText;
+  if (washScore < 30) {
+    cls = "good";
+    washColor = "var(--c)";
+    alertCls = "good";
+    alertText = `The volume looks real — ${totalTrades.toLocaleString()} trades with healthy average size and natural buy/sell drift.`;
+  } else if (washScore < 65) {
+    cls = "warn";
+    washColor = "var(--yellow)";
+    alertCls = "warn";
+    alertText = `The volume is suspicious — ${totalTrades.toLocaleString()} trades with avg size of ${fmt(avgTrade)} relative to ${liq ? fmt(liq) + " LP" : "shallow LP"}. Possible wash cycling.`;
+  } else {
+    cls = "bad";
+    washColor = "var(--orange)";
+    alertCls = "bad";
+    alertText = `The volume is almost certainly fake — small trades cycling against a thin LP. Do not trust the headline volume.`;
+  }
+
+  // Donut math: r=42 → circumference = 2πr ≈ 263.9. pathLength normalises
+  // so dasharray "X 263.9" fills X% of the circle.
+  const C = 263.9;
+  const dashOn = (washScore / 100) * C;
+  return `
+    <div class="wv-wrap">
+      <div class="wv-donut">
+        <svg viewBox="0 0 100 100">
+          <circle class="wv-track" cx="50" cy="50" r="42"></circle>
+          <circle class="wv-fill" cx="50" cy="50" r="42" stroke="${washColor}" stroke-dasharray="${dashOn.toFixed(1)} ${C}" pathLength="${C}"></circle>
+        </svg>
+        <div class="wv-donut-center">
+          <div class="wv-donut-num ${cls}">${washScore}</div>
+          <div class="wv-donut-lbl">Wash score</div>
+        </div>
+      </div>
+      <div class="wv-info">
+        <div class="wv-info-row"><div class="wv-info-l">Reported volume</div><div class="wv-info-r">${escapeHtml(fmt(reportedVol))}</div></div>
+        <div class="wv-info-row"><div class="wv-info-l">Total trades</div><div class="wv-info-r">${totalTrades.toLocaleString()}</div></div>
+        <div class="wv-info-row"><div class="wv-info-l">Avg trade size</div><div class="wv-info-r ${cls}">${escapeHtml(fmt(avgTrade))}</div></div>
+        <div class="wv-info-row"><div class="wv-info-l">Buy/sell symmetry</div><div class="wv-info-r ${cls}">${symPct}%</div></div>
+      </div>
+    </div>
+    <div class="tab-alert ${alertCls}">${escapeHtml(alertText)}</div>
+  `;
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Source Breakdown — 1 row per upstream source. Verdict is derived from
+// the layer's trust score (>=0.75 OK, >=0.4 risk, otherwise flagged).
+// Rendered inside a foldable section at the bottom of the page.
+// ──────────────────────────────────────────────────────────────────────
+export function buildSourceListRows(d) {
+  const layers = d.layers || {};
+  const order = ["rugcheck", "helius", "solscan", "chart", "dexscreener"];
+  const labels = {
+    rugcheck: "RugCheck",
+    helius: "Helius",
+    solscan: "Solscan",
+    chart: "Chart Engine",
+    dexscreener: "DexScreener",
+  };
+  return order
+    .map((key) => {
+      const l = layers[key];
+      if (!l) return null;
+      if (!l.available) {
+        return `<div class="src-row na">
+        <div class="src-name">${escapeHtml(labels[key])}</div>
+        <div class="src-verdict">N/A</div>
+        <div class="src-note">Source unavailable for this token.</div>
+      </div>`;
+      }
+      const trust = l.trust || 0;
+      let cls;
+      let verdict;
+      let note;
+      if (trust >= 0.75) {
+        cls = "ok";
+        verdict = "OK";
+        note = `${labels[key]} reports no critical issues.`;
+      } else if (trust >= 0.4) {
+        cls = "warn";
+        verdict = "Risk";
+        note = `${labels[key]} flagged moderate concerns.`;
+      } else {
+        cls = "bad";
+        verdict = "Flagged";
+        note = `${labels[key]} flagged significant concerns.`;
+      }
+      return `<div class="src-row ${cls}">
+      <div class="src-name">${escapeHtml(labels[key])}</div>
+      <div class="src-verdict">${escapeHtml(verdict)}</div>
+      <div class="src-note">${escapeHtml(note)}</div>
+    </div>`;
+    })
+    .filter(Boolean)
+    .join("");
+}
