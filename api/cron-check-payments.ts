@@ -1,12 +1,17 @@
-// api/cron-check-payments.ts — Vercel cron: confirm pending Solana Pay intents.
+// api/cron-check-payments.ts — Vercel cron: reconcile NOWPayments invoices.
 //
-// Runs every minute (configured in vercel.json). For each intent in the
-// pending index:
-//   1. If past expiry → mark expired (cleans the index, page polling will
-//      see "expired" on its next tick).
-//   2. Otherwise query Helius RPC for transactions involving the intent's
-//      reference key. If we find one that satisfies recipient + token +
-//      amount, set the user's tier and mark the intent confirmed.
+// Runs on the schedule defined in vercel.json. For each pending intent in
+// the index:
+//   1. If past expiry → mark expired (cleans the index, polling sees
+//      "expired" on its next tick).
+//   2. Otherwise query NOWPayments for the underlying payment and, if the
+//      provider says confirmed/finished, run the shared confirmIntent
+//      helper (issues license + flips tier + marks confirmed).
+//
+// This is the safety-net for missed IPN webhooks. NOWPayments retries
+// IPN delivery on failure but transient outages (Vercel deploy, Redis
+// hiccup, our handler bug) can still drop one. The cron sweeps any
+// pending intent the webhook didn't finalise.
 //
 // Authentication:
 //   - Vercel attaches `x-vercel-cron: 1` to legitimate scheduled invocations.
@@ -14,26 +19,29 @@
 //     <CRON_SECRET>` so we can probe the endpoint without spinning up Vercel.
 //
 // Failure modes:
-//   - Helius down → cron iteration logs and moves on; next tick retries.
-//   - Redis hiccup on setUserTier → log error but don't mark intent
-//     confirmed (so we retry on the next tick).
+//   - NOWPayments down → cron iteration logs and moves on; next tick retries.
+//   - Redis hiccup → log error but don't mark intent confirmed (we retry).
 //   - Concurrent crons (Vercel sometimes fires twice during deploys): each
-//     sees the same pending index, both call setUserTier with idempotent
+//     sees the same pending index, both call confirmIntent with idempotent
 //     writes — Pro stays Pro, no duplicate billing.
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Redis } from "@upstash/redis";
 import { logger } from "./_lib/logger";
-import { initUserStorage, setUserTier } from "./_lib/user";
+import { initUserStorage } from "./_lib/user";
 import {
-  checkIntentOnChain,
+  bindNpPaymentId,
   getPaymentIntent,
   listPendingIntentReferences,
-  markIntentConfirmed,
   markIntentExpired,
-  PRO_PASS_DAYS,
   type PaymentIntent,
-} from "./_lib/solana-pay";
-import { issueLicense } from "./_lib/license";
+} from "./_lib/payments";
+import {
+  isConfigured as nowpaymentsConfigured,
+  listPaymentsForInvoice,
+  getPayment,
+  mapStatus,
+} from "./_lib/nowpayments";
+import { confirmIntent } from "./_lib/payment-confirm";
 
 function getRedis(): Redis | null {
   const url = process.env.UPSTASH_REDIS_REST_URL;
@@ -43,9 +51,7 @@ function getRedis(): Redis | null {
 }
 
 function isAuthorized(req: VercelRequest): boolean {
-  // Vercel scheduled invocations carry this header — trust them.
   if (req.headers["x-vercel-cron"] === "1") return true;
-  // Manual / local invocations need the bearer secret to match.
   const secret = process.env.CRON_SECRET ?? "";
   if (!secret) return false;
   const auth = req.headers.authorization ?? "";
@@ -59,9 +65,26 @@ interface CronOutcome {
   errors: number;
 }
 
+/**
+ * Pick the most-progressed payment for an intent. NOWPayments creates
+ * one payment record per crypto-pick attempt, so an invoice can have
+ * multiple payment records — we pick whichever is furthest along so a
+ * half-completed earlier attempt doesn't mask a successful retry.
+ */
+const PAYMENT_PRIORITY: Record<string, number> = {
+  finished: 5,
+  confirmed: 4,
+  sending: 3,
+  confirming: 2,
+  partially_paid: 1,
+  waiting: 0,
+  failed: -1,
+  refunded: -1,
+  expired: -1,
+};
+
 async function processIntent(
   intent: PaymentIntent,
-  heliusApiKey: string,
   redis: Redis,
 ): Promise<"confirmed" | "expired" | "still_pending" | "error"> {
   if (Date.now() > intent.expiresAt) {
@@ -69,72 +92,55 @@ async function processIntent(
     return "expired";
   }
 
-  const result = await checkIntentOnChain(intent, heliusApiKey);
-  if (!result.confirmed) return "still_pending";
-
-  // Tier expiry from confirmation time:
-  //   - monthly → 30 days
-  //   - yearly  → 365 days (replaced "lifetime" as of 2026-05; the
-  //               product is now a 1-year subscription, not a forever pass)
-  const YEARLY_DAYS = 365;
-  const tierExpiresAt =
-    intent.tier === "yearly"
-      ? Date.now() + YEARLY_DAYS * 24 * 60 * 60 * 1000
-      : Date.now() + PRO_PASS_DAYS * 24 * 60 * 60 * 1000;
-
-  // Real extension installs get their tier flipped immediately so the
-  // overlay unlocks on the next scan without waiting for a manual
-  // redemption step. Email-only synthetic install_ids (site-direct
-  // buyers) skip this write — they redeem via license key once they
-  // install the extension.
-  const isSyntheticInstall = intent.installId.startsWith("email:");
-  if (!isSyntheticInstall) {
-    await setUserTier(
-      intent.installId,
-      intent.tier === "yearly" ? "yearly" : "pro",
-      tierExpiresAt,
-    );
+  // Fast path when we already have the provider payment_id from a prior
+  // IPN or polling tick.
+  let canonical = null;
+  if (intent.npPaymentId) {
+    canonical = await getPayment(intent.npPaymentId);
   }
-
-  // Issue a license if the buyer left an email — gives them a portable
-  // credential they can redeem on a new install later (different
-  // machine, reinstall, browser switch). Idempotent on the intent
-  // reference so cron retries don't duplicate.
-  if (intent.email) {
-    try {
-      await issueLicense(redis, {
-        email: intent.email,
-        tier: intent.tier,
-        intentReference: intent.reference,
-        amountUsd: intent.amountUsd,
-      });
-    } catch (err) {
-      // License issuance failure shouldn't block the tier-flip — the
-      // user already paid. Log + continue; we can re-issue manually
-      // from the intent record if needed.
-      logger.warn("cron-check-payments", "license issuance failed", {
-        reference: intent.reference,
-        error: String(err),
-      });
+  if (!canonical && intent.npInvoiceId) {
+    const payments = await listPaymentsForInvoice(intent.npInvoiceId);
+    if (payments.length > 0) {
+      payments.sort(
+        (a, b) =>
+          (PAYMENT_PRIORITY[b.payment_status] ?? 0) -
+          (PAYMENT_PRIORITY[a.payment_status] ?? 0),
+      );
+      canonical = payments[0];
     }
   }
+  if (!canonical) return "still_pending";
 
-  await markIntentConfirmed(redis, intent, result.txSignature);
+  let workingIntent = intent;
+  if (!workingIntent.npPaymentId && canonical.payment_id) {
+    try {
+      workingIntent = await bindNpPaymentId(
+        redis,
+        workingIntent,
+        String(canonical.payment_id),
+      );
+    } catch { /* non-critical */ }
+  }
 
-  logger.metric("cron-check-payments.tier_set", {
-    tier: intent.tier === "yearly" ? "yearly" : "pro",
-    installId: intent.installId,
-    txSignature: result.txSignature,
-    amount: intent.amount,
-    hasEmail: !!intent.email,
-    syntheticInstall: isSyntheticInstall,
-  });
-
-  return "confirmed";
+  const internalStatus = mapStatus(canonical.payment_status);
+  if (internalStatus === "confirmed") {
+    const txSignature =
+      canonical.payin_hash ?? canonical.payout_hash ?? undefined;
+    await confirmIntent(
+      redis,
+      workingIntent,
+      typeof txSignature === "string" ? txSignature : undefined,
+    );
+    return "confirmed";
+  }
+  if (internalStatus === "expired") {
+    await markIntentExpired(redis, workingIntent);
+    return "expired";
+  }
+  return "still_pending";
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Vercel sends GET for crons by default
   if (req.method !== "GET" && req.method !== "POST") {
     res.setHeader("Allow", "GET, POST");
     return res.status(405).json({ error: "method_not_allowed" });
@@ -144,9 +150,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({ error: "unauthorized" });
   }
 
-  const heliusApiKey = process.env.HELIUS_API_KEY ?? "";
-  if (!heliusApiKey) {
-    return res.status(503).json({ error: "helius_unavailable" });
+  if (!nowpaymentsConfigured()) {
+    return res.status(503).json({ error: "nowpayments_not_configured" });
   }
 
   const redis = getRedis();
@@ -161,19 +166,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const refs = await listPendingIntentReferences(redis);
     outcome.scanned = refs.length;
 
-    // Process serially — typical pending count is < 20, the Helius
+    // Process serially — typical pending count is < 20, the NOWPayments
     // round-trip dominates. Parallelising would barely help and would
-    // multiply the chance of hitting Helius rate limits during a burst.
+    // multiply the chance of hitting their rate limit during a burst.
     for (const ref of refs) {
       const intent = await getPaymentIntent(redis, ref);
       if (!intent) {
-        // Stale index entry — index TTL is shorter than intent TTL, but
-        // an SREM-without-DEL race can leave dangling refs. Clean up.
         outcome.errors++;
         continue;
       }
       try {
-        const status = await processIntent(intent, heliusApiKey, redis);
+        const status = await processIntent(intent, redis);
         if (status === "confirmed") outcome.confirmed++;
         else if (status === "expired") outcome.expired++;
         else if (status === "error") outcome.errors++;

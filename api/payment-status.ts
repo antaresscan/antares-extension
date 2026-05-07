@@ -1,37 +1,42 @@
-// api/payment-status.ts — Poll the status of a Solana Pay payment intent.
+// api/payment-status.ts — Poll the status of a NOWPayments invoice.
 //
-//   GET /api/payment-status?reference=<base58>
-//   Returns: { status, expiresAt, txSignature?, confirmedAt? }
+//   GET /api/payment-status?reference=<hex>
+//   Returns: { status, expiresAt, txSignature?, confirmedAt?, tier, amount, licenseKey }
 //
-// The pricing page calls this every 2-3s while the user is on the QR code
-// modal. Once `status` flips to "confirmed" the page closes the modal and
-// shows the success state.
+// The pricing page calls this every 2-3s while the user is on the
+// NOWPayments hosted checkout (or on the post-payment success page).
+// Once `status` flips to "confirmed" the page closes the modal and shows
+// the success state with the license key.
 //
-// **Lazy on-chain verification**: each polling request also triggers a
-// Helius RPC check for the intent's reference key. If a confirming
-// transaction has landed, we flip the user's tier in the same response —
-// gives the user instant confirmation feedback instead of waiting for the
-// daily cron sweep. The cron still runs as a safety net for users who
-// paid but closed the tab before the polling caught up.
+// **Lazy reconciliation**: each polling request also hits the NOWPayments
+// REST API to check if the underlying payment has progressed. If we
+// observe a `confirmed`/`finished` payment, we flip the user's tier and
+// issue the license in the same response — gives instant confirmation
+// feedback without depending solely on the IPN webhook (which can be
+// delayed under load) or the daily cron sweep.
 //
 // No auth — the reference key itself is the secret. It's 32 random bytes
-// of entropy (2^256), and it's only useful for someone who already knows
-// they created it (otherwise the worst they can do is observe a tier flip
-// they have no agency over).
+// of entropy (2^256), and it's only useful to someone who already knows
+// they created it.
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Redis } from "@upstash/redis";
 import { setCorsHeaders } from "./_lib/middleware";
 import { apiError } from "./_lib/helpers";
 import { logger } from "./_lib/logger";
-import { initUserStorage, setUserTier } from "./_lib/user";
+import { initUserStorage } from "./_lib/user";
 import {
-  checkIntentOnChain,
   getPaymentIntent,
-  markIntentConfirmed,
-  PRO_PASS_DAYS,
+  bindNpPaymentId,
+  markIntentExpired,
   type PaymentIntent,
-} from "./_lib/solana-pay";
-import { issueLicense, INTENT_LICENSE_KEY } from "./_lib/license";
+} from "./_lib/payments";
+import {
+  listPaymentsForInvoice,
+  getPayment,
+  mapStatus,
+} from "./_lib/nowpayments";
+import { confirmIntent } from "./_lib/payment-confirm";
+import { INTENT_LICENSE_KEY } from "./_lib/license";
 
 function getRedis(): Redis | null {
   const url = process.env.UPSTASH_REDIS_REST_URL;
@@ -40,97 +45,108 @@ function getRedis(): Redis | null {
   return new Redis({ url, token });
 }
 
-const REFERENCE_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+// Reference is 32 bytes hex → 64 chars [0-9a-f].
+const REFERENCE_RE = /^[0-9a-f]{64}$/;
 
 /**
- * If the intent is still pending and we have a Helius key configured, query
- * the chain to see if a matching transaction has landed. On match, flip the
- * user's tier and mark the intent confirmed in the same operation so the
- * polling response carries the success state immediately.
- *
- * Returns the (possibly updated) intent. Best-effort — Helius failures or
- * Redis hiccups don't break the polling response, they just leave the
- * intent in its current state for the next poll (or the daily cron) to
- * pick up.
+ * Pick the most-progressed payment when an invoice has multiple
+ * (NOWPayments creates one payment record per crypto-pick attempt).
+ * "finished" / "confirmed" / "sending" win over "confirming"/"waiting"
+ * so a half-completed earlier attempt doesn't mask a successful retry.
  */
-async function maybeConfirmOnChain(
+const PRIORITY: Record<string, number> = {
+  finished: 5,
+  confirmed: 4,
+  sending: 3,
+  confirming: 2,
+  partially_paid: 1,
+  waiting: 0,
+  failed: -1,
+  refunded: -1,
+  expired: -1,
+};
+
+async function findCanonicalPayment(intent: PaymentIntent) {
+  // Fast path: we already know which payment id to look up.
+  if (intent.npPaymentId) {
+    const p = await getPayment(intent.npPaymentId);
+    if (p) return p;
+    // Fall through to invoice listing if the bound payment id was lost.
+  }
+  if (!intent.npInvoiceId) return null;
+  const payments = await listPaymentsForInvoice(intent.npInvoiceId);
+  if (payments.length === 0) return null;
+  payments.sort(
+    (a, b) =>
+      (PRIORITY[b.payment_status] ?? 0) - (PRIORITY[a.payment_status] ?? 0),
+  );
+  return payments[0];
+}
+
+/**
+ * If the intent is still pending, query NOWPayments to see if the
+ * underlying payment has progressed. On confirm we flip the tier and
+ * issue the license in the same operation. Best-effort — provider
+ * failures or Redis hiccups don't break the polling response, they just
+ * leave the intent in its current state for the next poll (or the cron)
+ * to pick up.
+ */
+async function maybeConfirmFromProvider(
   intent: PaymentIntent,
   redis: Redis,
-): Promise<PaymentIntent> {
-  if (intent.status !== "pending") return intent;
-  if (Date.now() >= intent.expiresAt) return intent;
-
-  const heliusApiKey = process.env.HELIUS_API_KEY;
-  if (!heliusApiKey) return intent;
-
-  try {
-    const result = await checkIntentOnChain(intent, heliusApiKey);
-    if (!result.confirmed) return intent;
-
-    // Mirror cron-check-payments.ts: yearly subscriptions get a 365-day
-    // expiry, monthly passes get 30 days. No new lifetime tier flips
-    // happen post-2026-05; the user-tier "lifetime" is grandfathered
-    // for customers who paid before the rename.
-    const YEARLY_DAYS = 365;
-    const tier =
-      intent.tier === "yearly" ? ("yearly" as const) : ("pro" as const);
-    const expiresAtMs =
-      intent.tier === "yearly"
-        ? Date.now() + YEARLY_DAYS * 24 * 60 * 60 * 1000
-        : Date.now() + PRO_PASS_DAYS * 24 * 60 * 60 * 1000;
-
-    // Real install — flip tier directly. Synthetic email-only ids
-    // skip this; the buyer redeems via license key instead.
-    const isSyntheticInstall = intent.installId.startsWith("email:");
-    if (!isSyntheticInstall) {
-      await setUserTier(intent.installId, tier, expiresAtMs);
-    }
-
-    // Issue the license here in the lazy path too so a buyer who
-    // closes the tab seconds after paying still has their license
-    // ready when they come back to /account.html — without waiting
-    // for the next cron tick.
-    if (intent.email) {
+): Promise<{ intent: PaymentIntent; licenseKey: string | null }> {
+  if (intent.status !== "pending") {
+    // Already in a terminal state — surface any previously-issued license
+    // key so the polling page sees it on its first call after refresh.
+    let licenseKey: string | null = null;
+    if (intent.email && intent.status === "confirmed") {
       try {
-        await issueLicense(redis, {
-          email: intent.email,
-          tier: intent.tier,
-          intentReference: intent.reference,
-          amountUsd: intent.amountUsd,
-        });
-      } catch (err) {
-        logger.warn("payment-status", "license issuance failed", {
-          reference: intent.reference,
-          error: String(err),
-        });
-      }
+        licenseKey =
+          (await redis.get<string>(INTENT_LICENSE_KEY(intent.reference))) ?? null;
+      } catch { /* non-critical */ }
     }
-
-    await markIntentConfirmed(redis, intent, result.txSignature);
-
-    logger.metric("payment-status.tier_set", {
-      tier,
-      installId: intent.installId,
-      txSignature: result.txSignature,
-      amount: intent.amount,
-      via: "lazy-poll",
-      hasEmail: !!intent.email,
-      syntheticInstall: isSyntheticInstall,
-    });
-
-    return {
-      ...intent,
-      status: "confirmed",
-      txSignature: result.txSignature,
-      confirmedAt: Date.now(),
-    };
-  } catch (err) {
-    logger.warn("payment-status", "lazy on-chain check failed", {
-      error: String(err),
-      reference: intent.reference,
-    });
-    return intent;
+    return { intent, licenseKey };
   }
+
+  // Auto-expire on TTL hit even if NOWPayments is unreachable. Keeps the
+  // polling client from spinning forever after a crashed checkout.
+  if (Date.now() > intent.expiresAt) {
+    const expired = await markIntentExpired(redis, intent);
+    return { intent: expired, licenseKey: null };
+  }
+
+  let canonical;
+  try {
+    canonical = await findCanonicalPayment(intent);
+  } catch (err) {
+    logger.warn("payment-status", "provider lookup failed", {
+      reference: intent.reference,
+      error: String(err),
+    });
+    return { intent, licenseKey: null };
+  }
+
+  if (!canonical) return { intent, licenseKey: null };
+
+  // First time we've seen this payment_id for the intent — bind it so
+  // future polls and the IPN webhook hit the fast path.
+  let workingIntent = intent;
+  if (!workingIntent.npPaymentId && canonical.payment_id) {
+    try {
+      workingIntent = await bindNpPaymentId(redis, workingIntent, canonical.payment_id);
+    } catch { /* non-critical */ }
+  }
+
+  const internalStatus = mapStatus(canonical.payment_status);
+  if (internalStatus === "confirmed") {
+    const txSignature = canonical.payin_hash ?? canonical.payout_hash ?? undefined;
+    return await confirmIntent(redis, workingIntent, txSignature);
+  }
+  if (internalStatus === "expired") {
+    const expired = await markIntentExpired(redis, workingIntent);
+    return { intent: expired, licenseKey: null };
+  }
+  return { intent: workingIntent, licenseKey: null };
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -158,34 +174,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(404).json({ status: "not_found" });
   }
 
-  // Lazy on-chain check — confirms the intent in the same response when
-  // possible so the user gets instant feedback rather than waiting for the
-  // (now daily) cron tick.
-  const intent = await maybeConfirmOnChain(stored, redis);
+  const { intent, licenseKey } = await maybeConfirmFromProvider(stored, redis);
 
   // If the intent is past expiry but neither this poll nor the cron has
-  // visited it yet, treat it as expired client-side so the pricing page can
-  // show the right state immediately rather than waiting for the next sweep.
+  // visited it yet, treat it as expired client-side so the pricing page
+  // can show the right state immediately.
   const status =
     intent.status === "pending" && Date.now() > intent.expiresAt
       ? "expired"
       : intent.status;
-
-  // Once confirmed, surface the license key (if one was issued) so the
-  // pricing modal can display it for the buyer to copy + save. The key
-  // is keyed by intent reference, which is the secret in the URL — same
-  // trust model as the rest of the endpoint.
-  let licenseKey: string | null = null;
-  if (status === "confirmed" && intent.email) {
-    try {
-      licenseKey = (await redis.get<string>(INTENT_LICENSE_KEY(intent.reference))) ?? null;
-    } catch (err) {
-      logger.warn("payment-status", "license-key lookup failed", {
-        reference: intent.reference,
-        error: String(err),
-      });
-    }
-  }
 
   return res.json({
     status,
@@ -193,7 +190,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     txSignature: intent.txSignature ?? null,
     confirmedAt: intent.confirmedAt ?? null,
     tier: intent.tier,
-    amount: intent.amount,
+    amount: intent.amountUsd,
     licenseKey,
   });
 }

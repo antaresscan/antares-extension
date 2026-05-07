@@ -1,41 +1,45 @@
-// api/payment-intent.ts — Create a Solana Pay payment intent.
+// api/payment-intent.ts — Create a NOWPayments hosted-checkout invoice.
 //
 //   POST /api/payment-intent
-//   Body:    { tier: "monthly" | "lifetime", install_id: string }
-//   Returns: { reference, payUrl, recipient, amount, splTokenMint, expiresAt }
+//   Body:    { tier: "monthly" | "yearly", install_id?: string, email?: string }
+//   Returns: { reference, payUrl, tier, amountUsd, expiresAt }
 //
-// The pricing page POSTs here when the user clicks "Subscribe Pro" or
-// "Get Lifetime", then renders the returned `payUrl` as a QR code + clickable
-// Phantom deep link, and polls /api/payment-status?reference=... for the
-// settlement state.
+// The pricing page POSTs here when the user clicks "Get Pro" / "Get
+// Yearly", then redirects them to `payUrl` (NOWPayments hosted page).
+// The user picks any of 200+ supported cryptos there. NOWPayments fires
+// our IPN webhook (`/api/auth/nowpayments-ipn`) when payment confirms;
+// the page polls /api/payment-status?reference=... in parallel as a
+// belt-and-braces fallback.
 //
-// Configure at deploy time:
-//   SOLANA_RECIPIENT_WALLET   base58 address that receives the USDC payments
-//   HELIUS_API_KEY             already set, reused by the cron verifier
+// Configure at deploy time (Vercel env vars):
+//   NOWPAYMENTS_API_KEY      Server-side API key from the NOWPayments dashboard
+//   NOWPAYMENTS_IPN_SECRET   IPN secret from the same dashboard (HMAC verifier)
+//   ANTARES_PUBLIC_BASE_URL  e.g. https://antares-extension.vercel.app
+//                            (used to build IPN callback + success URLs)
+//   ANTARES_SUCCESS_URL      Optional override for the post-payment redirect
+//                            (defaults to ${BASE}/success.html?ref=<reference>)
+//   ANTARES_CANCEL_URL       Optional override for the bail-out redirect
 //
-// Without SOLANA_RECIPIENT_WALLET set, returns 503 + checkout_not_configured.
+// Without NOWPAYMENTS_API_KEY set, returns 503 + checkout_not_configured.
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Redis } from "@upstash/redis";
 import { setCorsHeaders } from "./_lib/middleware";
 import { apiError } from "./_lib/helpers";
 import { logger } from "./_lib/logger";
 import {
-  createPaymentIntent,
-  isValidSolanaAddress,
-  type PayToken,
+  generateReference,
+  saveNewIntent,
+  priceUsd,
+  INTENT_TTL_SECONDS,
+  type PaymentIntent,
   type Tier,
-} from "./_lib/solana-pay";
+} from "./_lib/payments";
+import { createInvoice, isConfigured as nowpaymentsConfigured } from "./_lib/nowpayments";
 import { normalizeEmail } from "./_lib/license";
 import { getAccountFromRequest } from "./_lib/session-cookie";
 
 const INSTALL_ID_RE = /^[a-zA-Z0-9_-]{8,128}$/;
 
-/**
- * Lazy-init Redis on first request rather than at module load. Upstash
- * is a thin HTTP client so re-creation per request is essentially free,
- * and it keeps the env-var check evaluable inside test setups that
- * configure them after import.
- */
 function getRedis(): Redis | null {
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -59,6 +63,21 @@ function readBody(req: VercelRequest): Record<string, unknown> {
   return {};
 }
 
+/**
+ * Resolve the public base URL we use to build the IPN callback +
+ * success / cancel URLs we hand to NOWPayments. Order:
+ *   1. ANTARES_PUBLIC_BASE_URL env var (recommended, explicit)
+ *   2. VERCEL_PROJECT_PRODUCTION_URL (auto-set by Vercel on prod deploys)
+ *   3. Hardcoded production URL (last resort)
+ */
+function getPublicBaseUrl(): string {
+  const explicit = (process.env.ANTARES_PUBLIC_BASE_URL ?? "").trim();
+  if (explicit) return explicit.replace(/\/+$/, "");
+  const vercelProd = (process.env.VERCEL_PROJECT_PRODUCTION_URL ?? "").trim();
+  if (vercelProd) return `https://${vercelProd.replace(/^https?:\/\//, "")}`;
+  return "https://antares-extension.vercel.app";
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const corsOk = setCorsHeaders(req, res);
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -66,16 +85,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!corsOk) return apiError(res, 403, "Origin not allowed.");
   if (req.method !== "POST") return apiError(res, 405, "Method not allowed.");
 
+  if (!nowpaymentsConfigured()) {
+    res.setHeader("Cache-Control", "no-store, max-age=0");
+    return res.status(503).json({
+      error: "checkout_not_configured",
+      message: "Crypto checkout not available yet.",
+    });
+  }
+
   const body = readBody(req);
-  const tier = String(body.tier ?? "").trim().toLowerCase();
+  const tierRaw = String(body.tier ?? "").trim().toLowerCase();
   const installIdRaw = String(body.install_id ?? "").trim();
-  // Default to USDC (stable pricing) when the client doesn't specify;
-  // the modal exposes both options explicitly so this fallback only
-  // matters for direct API consumers.
-  const tokenRaw = String(body.token ?? "usdc").trim().toLowerCase();
-  // Logged-in user? Pull email from the session cookie so the buyer
-  // doesn't have to re-type it (and so the license is bound to their
-  // account regardless of what they typed in the modal).
+
+  // Logged-in user? Pull email from the session cookie so the buyer doesn't
+  // have to re-type it (and so the license is bound to their account
+  // regardless of what they typed in the modal).
   let sessionEmail: string | null = null;
   try {
     const redisForSession = getRedis();
@@ -86,38 +110,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } catch {
     // SESSION_SECRET unset, etc. Fall through to body-supplied email.
   }
-  // Email is optional when an install_id is present (the user came from
-  // the extension and we already know who they are), but required when
-  // it's absent (site-direct visitors who haven't installed yet — the
-  // license-key issued on payment confirm is the only handle they'll
-  // have to redeem later). Session email always wins over body.
   const emailNorm = sessionEmail ?? normalizeEmail(body.email);
 
   // Tier normalisation:
-  //   - 'pro'  / 'monthly' → "monthly" (30-day pass)
-  //   - 'yearly'           → "yearly" (1-year subscription, replaces lifetime
-  //                                    as of 2026-05)
-  //   - 'lifetime'         → "yearly" (legacy alias kept so old pricing
-  //                                    pages / cached HTML still mint a
-  //                                    valid intent — they get the new
-  //                                    yearly product, not a forever pass)
+  //   - 'pro'      / 'monthly'  → "monthly" (30-day pass)
+  //   - 'yearly'                → "yearly" (1-year subscription)
+  //   - 'lifetime'              → "yearly" (legacy alias from before the rename)
   const normalisedTier: Tier =
-    tier === "yearly" || tier === "lifetime" ? "yearly" : "monthly";
+    tierRaw === "yearly" || tierRaw === "lifetime" ? "yearly" : "monthly";
   if (
-    tier !== "monthly" &&
-    tier !== "pro" &&
-    tier !== "yearly" &&
-    tier !== "lifetime"
+    tierRaw !== "monthly" &&
+    tierRaw !== "pro" &&
+    tierRaw !== "yearly" &&
+    tierRaw !== "lifetime"
   ) {
     return apiError(res, 400, "tier must be 'monthly', 'pro' or 'yearly'.");
   }
-  if (tokenRaw !== "usdc" && tokenRaw !== "sol") {
-    return apiError(res, 400, "token must be 'usdc' or 'sol'.");
-  }
-  const token: PayToken = tokenRaw;
-  // install_id is optional when email is provided. At least one of the
-  // two must be present so we have *some* identity to bind the license
-  // to.
+
+  // install_id is optional when email is provided. At least one of the two
+  // must be present so we have *some* identity to bind the license to.
   const hasInstall = INSTALL_ID_RE.test(installIdRaw);
   if (!hasInstall && !emailNorm) {
     return apiError(res, 400, "install_id or email required.");
@@ -125,63 +136,84 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (installIdRaw && !hasInstall) {
     return apiError(res, 400, "install_id format invalid.");
   }
-  // When email is present but the user typed something invalid we want
-  // to fail loudly rather than silently dropping it — it's the only
-  // recovery handle for site-direct buyers.
+  // When email is present but the user typed something invalid we want to
+  // fail loudly rather than silently dropping it — it's the only recovery
+  // handle for site-direct buyers.
   if (body.email !== undefined && body.email !== "" && !emailNorm) {
     return apiError(res, 400, "email format invalid.");
   }
-  // Stable identity used downstream by createPaymentIntent + license
-  // issuance. When the user has no install yet, the email synthesises
-  // one (prefixed so we never collide with a real install_id).
+  // Stable identity used downstream by the confirmation helper. When the
+  // user has no install yet, the email synthesises one (prefixed so we
+  // never collide with a real install_id).
   const installId = hasInstall ? installIdRaw : `email:${emailNorm}`;
-
-  const recipient = process.env.SOLANA_RECIPIENT_WALLET ?? "";
-  if (!recipient || !isValidSolanaAddress(recipient)) {
-    res.setHeader("Cache-Control", "no-store, max-age=0");
-    return res.status(503).json({
-      error: "checkout_not_configured",
-      message: "Crypto checkout not available yet.",
-    });
-  }
 
   const redis = getRedis();
   if (!redis) {
     return apiError(res, 503, "Storage unavailable.");
   }
 
-  try {
-    const intent = await createPaymentIntent(redis, {
-      installId,
-      ...(emailNorm ? { email: emailNorm } : {}),
-      tier: normalisedTier,
-      token,
-      recipient,
-    });
+  const reference = generateReference();
+  const amountUsd = priceUsd(normalisedTier);
+  const baseUrl = getPublicBaseUrl();
+  const ipnCallbackUrl = `${baseUrl}/api/auth/nowpayments-ipn`;
+  const successUrl =
+    (process.env.ANTARES_SUCCESS_URL ?? `${baseUrl}/account.html?ref=${reference}`)
+      .replace("{reference}", reference);
+  const cancelUrl =
+    process.env.ANTARES_CANCEL_URL ?? `${baseUrl}/account.html?cancelled=1`;
 
-    res.setHeader("Cache-Control", "no-store, max-age=0");
-    return res.json({
-      reference: intent.reference,
-      payUrl: intent.payUrl,
-      recipient: intent.recipient,
-      token: intent.token,
-      amount: intent.amount,
-      amountUsd: intent.amountUsd,
-      splTokenMint: intent.splTokenMint,
-      tier: intent.tier,
-      expiresAt: intent.expiresAt,
+  let invoice;
+  try {
+    invoice = await createInvoice({
+      orderId: reference,
+      priceAmountUsd: amountUsd,
+      description:
+        normalisedTier === "yearly"
+          ? "Antares Pro — 1 year subscription"
+          : "Antares Pro — 30 day pass",
+      ipnCallbackUrl,
+      successUrl,
+      cancelUrl,
     });
   } catch (err) {
-    logger.error("payment-intent", "creation failed", { error: String(err) });
-    // SOL rate fetch failures are user-actionable: surface them so the
-    // pricing-page modal can suggest USDC instead.
-    const message = err instanceof Error ? err.message : String(err);
-    if (/SOL\/USD/i.test(message)) {
-      return res.status(502).json({
-        error: "sol_rate_unavailable",
-        message: "Could not fetch the current SOL price — please try again or pay in USDC.",
-      });
-    }
-    return apiError(res, 500, "Could not create payment intent.");
+    logger.error("payment-intent", "NOWPayments invoice creation failed", {
+      error: String(err),
+      tier: normalisedTier,
+    });
+    return apiError(res, 502, "Could not create payment intent.");
   }
+
+  const now = Date.now();
+  const expiresAt = now + INTENT_TTL_SECONDS * 1000;
+  const intent: PaymentIntent = {
+    reference,
+    installId,
+    ...(emailNorm ? { email: emailNorm } : {}),
+    tier: normalisedTier,
+    amountUsd,
+    payUrl: invoice.invoice_url,
+    npInvoiceId: invoice.id,
+    createdAt: now,
+    expiresAt,
+    status: "pending",
+  };
+
+  try {
+    await saveNewIntent(redis, intent);
+  } catch (err) {
+    logger.error("payment-intent", "intent persistence failed", {
+      error: String(err),
+      reference,
+    });
+    return apiError(res, 500, "Could not persist payment intent.");
+  }
+
+  res.setHeader("Cache-Control", "no-store, max-age=0");
+  return res.json({
+    reference: intent.reference,
+    payUrl: intent.payUrl,
+    tier: intent.tier,
+    amountUsd: intent.amountUsd,
+    expiresAt: intent.expiresAt,
+  });
 }
