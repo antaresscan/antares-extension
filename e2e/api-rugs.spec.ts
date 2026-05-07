@@ -16,9 +16,20 @@ test.describe('API /api/rugs \u2014 Wall of Shame', () => {
   });
 
   test.describe('Method enforcement', () => {
-    test('rejects POST method', async ({ request }) => {
+    // POST is now a valid method on /api/rugs (it dispatches to the
+    // feedback handler when ?action=feedback). Without a known action,
+    // the handler returns 400 "Unknown POST action" rather than 405.
+    test('POST without action returns 400 (unknown action)', async ({ request }) => {
       const r = await request.post(`${BASE}/api/rugs`);
-      expect([403, 405]).toContain(r.status());
+      expect([400, 403]).toContain(r.status());
+    });
+
+    test('POST with action=feedback + missing CA returns 400', async ({ request }) => {
+      const r = await request.post(`${BASE}/api/rugs?action=feedback`, {
+        headers: { 'Content-Type': 'application/json' },
+        data: {}, // intentionally empty — should fail CA validation
+      });
+      expect([400, 403]).toContain(r.status());
     });
 
     test('rejects PUT method', async ({ request }) => {
@@ -47,8 +58,9 @@ test.describe('API /api/rugs \u2014 Wall of Shame', () => {
   });
 
   test.describe('Error shape', () => {
-    test('non-GET method returns error with consistent shape', async ({ request }) => {
-      const r = await request.post(`${BASE}/api/rugs`);
+    test('disallowed method returns error with consistent shape', async ({ request }) => {
+      // PUT/DELETE are still 405 (POST is now a feedback dispatcher).
+      const r = await request.put(`${BASE}/api/rugs`);
       expect(r.ok()).toBeFalsy();
       const b = await r.json();
       // Error responses should have an error property
