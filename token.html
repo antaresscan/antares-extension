@@ -420,8 +420,12 @@ nav .actions a.warn:hover{color:var(--orange);border-color:rgba(255,95,95,.4);ba
 }
 .iw-row{
   display:grid;
-  grid-template-columns: 1fr 90px 1fr 1fr 60px;
+  /* Rank pill (#N) added as the first column at 36px so users can
+     instantly see WHICH of the top 10 holders is buying/selling
+     without having to memorise the truncated address. */
+  grid-template-columns: 36px 1fr 90px 1fr 1fr 60px;
   align-items:center;
+  gap:8px;
   padding:10px 14px;border-top:1px solid #15151a;
   font-family:'IBM Plex Mono',monospace;font-size:11px;
   text-decoration:none;color:#bbb;
@@ -429,6 +433,15 @@ nav .actions a.warn:hover{color:var(--orange);border-color:rgba(255,95,95,.4);ba
 }
 .iw-row:first-child{border-top:none}
 .iw-row:hover{background:rgba(255,255,255,.03)}
+.iw-row-rank{
+  font-size:10px;font-weight:700;letter-spacing:.04em;
+  color:#5a5a5a;
+  background:#15151a;border:1px solid #1f1f24;border-radius:3px;
+  padding:3px 6px;text-align:center;
+  font-variant-numeric:tabular-nums;
+}
+.iw-row.buy .iw-row-rank{color:var(--c);border-color:rgba(0,229,176,.25);background:rgba(0,229,176,.04)}
+.iw-row.sell .iw-row-rank{color:var(--orange);border-color:rgba(255,95,95,.25);background:rgba(255,95,95,.04)}
 .iw-row-wallet{
   color:#888;font-size:10.5px;letter-spacing:.04em;cursor:pointer;
   border-bottom:1px dashed transparent;
@@ -446,7 +459,7 @@ nav .actions a.warn:hover{color:var(--orange);border-color:rgba(255,95,95,.4);ba
 .iw-row-age{color:#555;font-size:10px;text-align:right;letter-spacing:.04em}
 
 @media(max-width:640px){
-  .iw-row{grid-template-columns:1fr 70px 1fr 50px;font-size:10px}
+  .iw-row{grid-template-columns:32px 1fr 70px 1fr 50px;font-size:10px;gap:6px}
   .iw-row-usd{display:none}
 }
 
@@ -770,6 +783,6 @@ footer span{color:var(--c)}
   <button class="ask-fab" aria-label="Ask Antares AI">✦</button>
 </div>
 
-<script defer src="/js/token-app.js?v=20260507-holder-fallback"></script>
+<script defer src="/js/token-app.js?v=20260507-top3-rank"></script>
 <script defer src="/js/token-bg.js?v=20260429a"></script>
 </body></html>
