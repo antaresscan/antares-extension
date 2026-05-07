@@ -51,6 +51,9 @@ import {
 import { createInvoice, isConfigured as nowpaymentsConfigured } from "./_lib/nowpayments";
 import { normalizeEmail } from "./_lib/license";
 import { getAccountFromRequest } from "./_lib/session-cookie";
+import { initSentry, captureError } from "./_lib/sentry";
+
+initSentry();
 
 const INSTALL_ID_RE = /^[a-zA-Z0-9_-]{8,128}$/;
 
@@ -231,6 +234,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       error: String(err),
       tier: normalisedTier,
     });
+    captureError(err, { endpoint: "payment-intent", phase: "createInvoice", tier: normalisedTier });
     return apiError(res, 502, "Could not create payment intent.");
   }
 
@@ -256,6 +260,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       error: String(err),
       reference,
     });
+    captureError(err, { endpoint: "payment-intent", phase: "saveNewIntent", reference });
     return apiError(res, 500, "Could not persist payment intent.");
   }
 

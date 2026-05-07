@@ -24,6 +24,9 @@ import { apiError } from "./_lib/helpers";
 import { logger } from "./_lib/logger";
 import { initUserStorage } from "./_lib/user";
 import { redeemLicense, isValidLicenseKey } from "./_lib/license";
+import { initSentry, captureError } from "./_lib/sentry";
+
+initSentry();
 
 const INSTALL_ID_RE = /^[a-zA-Z0-9_-]{8,128}$/;
 
@@ -124,6 +127,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   } catch (err) {
     logger.error("redeem", "redemption failed", { error: String(err) });
+    captureError(err, { endpoint: "redeem", licenseKey, installId });
     return apiError(res, 500, "Could not redeem license.");
   }
 }

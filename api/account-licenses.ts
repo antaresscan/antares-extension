@@ -29,6 +29,9 @@ import {
 } from "./_lib/middleware";
 import { apiError } from "./_lib/helpers";
 import { logger } from "./_lib/logger";
+import { initSentry, captureError } from "./_lib/sentry";
+
+initSentry();
 import {
   getLicensesByEmail,
   isValidLicenseKey,
@@ -145,6 +148,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     } catch (err) {
       logger.error("account-licenses", "lookup failed", { error: String(err) });
+      captureError(err, { endpoint: "account-licenses", phase: "preflightAuth" });
       return apiError(res, 500, "Could not look up licenses.");
     }
   }
@@ -163,6 +167,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   } catch (err) {
     logger.error("account-licenses", "lookup failed", { error: String(err) });
+    captureError(err, { endpoint: "account-licenses", phase: "list" });
     return apiError(res, 500, "Could not look up licenses.");
   }
 }

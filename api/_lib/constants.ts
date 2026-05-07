@@ -132,6 +132,65 @@ export const ESTABLISHED_HOLDERS_THRESHOLD    = 5000; // HARDENED: 5000 holders 
 // Trust floor for geometric mean — prevents single-layer nuking
 export const TRUST_FLOOR = 0.001;
 
+// ═══ SCORING ENGINE VERSION ════════════════════════════════════════════════
+//
+// Tied to the Redis scan cache key (`api/_lib/cache.ts`). The cache stores
+// the *output* of the scoring pipeline; if any input weight, penalty or
+// threshold changes, every cached score becomes stale and must be evicted.
+// Without an engine version in the cache key, a deploy that retunes the
+// weights would hand back the OLD score for any token still in cache —
+// users see DANGER, refresh five minutes later, see SAFE. That happened
+// once already (LP-burn weight bump in v14) and triggered a wave of
+// "your scanner is broken, the verdict keeps flipping" support tickets.
+//
+// **Maintenance rule**: bump `ENGINE_VERSION_MANUAL` whenever you change
+// any of these in this file:
+//   - LAYER_WEIGHTS values
+//   - XV_PENALTY_* multipliers
+//   - TRUST_FLOOR
+//   - ESTABLISHED_* thresholds / multiplier
+//   - HARD_BLOCK_REASONS membership
+//   - Any constant consumed by api/_lib/scoring.ts or api/_lib/layers.ts
+//
+// `ENGINE_VERSION` below combines the manual tag with a fingerprint of the
+// numeric constants so accidental "I changed a weight but forgot to bump"
+// is caught automatically — different fingerprint, different cache key,
+// stale entries naturally expire on first read miss.
+const ENGINE_VERSION_MANUAL = "v15";
+
+function fingerprint(): string {
+  // Stable, order-independent stringify — JSON.stringify with sorted keys.
+  const parts = {
+    weights: Object.keys(LAYER_WEIGHTS)
+      .sort()
+      .map((k) => `${k}=${LAYER_WEIGHTS[k]}`)
+      .join(","),
+    xv: [
+      `lp=${XV_PENALTY_LP_BURN}`,
+      `mint=${XV_PENALTY_MINT_AUTH}`,
+      `age=${XV_PENALTY_AGE}`,
+      `holder=${XV_PENALTY_HOLDER_CONCENTRATION}`,
+    ].join(","),
+    bonus: [
+      `mult=${ESTABLISHED_BONUS_MULTIPLIER}`,
+      `age=${ESTABLISHED_AGE_THRESHOLD_HOURS}`,
+      `holders=${ESTABLISHED_HOLDERS_THRESHOLD}`,
+    ].join(","),
+    floor: `${TRUST_FLOOR}`,
+  };
+  // FNV-1a 32-bit — deterministic, fast, no Node dependency. The result
+  // is hex-encoded so it's URL/Redis-key safe.
+  const input = JSON.stringify(parts);
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash.toString(16).padStart(8, "0");
+}
+
+export const ENGINE_VERSION = `${ENGINE_VERSION_MANUAL}-${fingerprint()}`;
+
 // ── HARD BLOCK REASONS (single source of truth) ──────────────
 export const HARD_BLOCK_REASONS = new Set([
   "lp", "deceptive_name", "honeypot", "mint", "freeze",
