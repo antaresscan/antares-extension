@@ -51,3 +51,54 @@ export async function fetchWithRetry(url, opts = {}) {
     return fetchWithRetry(url, { ...opts, attempt: attempt + 1 });
   }
 }
+
+/**
+ * Submit a "this verdict was wrong" report to /api/rugs?action=feedback.
+ *
+ * Returns either:
+ *   { ok: true, totalReports }                  — successful submission
+ *   { ok: false, reason, status }               — server-side reject
+ *   { ok: false, reason: "network", status: 0 } — fetch threw
+ *
+ * The `reason` codes mirror what the backend emits:
+ *   - "same_verdict" : original === reported (form should prevent this)
+ *   - "duplicate"    : same install reported same CA in last 24h
+ *   - "no_storage"   : Redis not configured on the deployment
+ *   - "write_failed" : transient Redis error
+ *   - "network"      : client-side fetch threw (offline / CORS / DNS)
+ *
+ * @param {object} payload
+ * @param {string} payload.ca                                Solana mint address.
+ * @param {"SAFE"|"CAUTION"|"DANGER"|"RUG"} payload.originalVerdict
+ * @param {"SAFE"|"CAUTION"|"DANGER"|"RUG"} payload.reportedVerdict
+ * @param {string} [payload.note]                            Optional ≤500-char note.
+ * @returns {Promise<{ ok: true, totalReports: number }
+ *                  | { ok: false, reason: string, status: number }>}
+ */
+export async function submitFeedback({ ca, originalVerdict, reportedVerdict, note }) {
+  let r;
+  try {
+    r = await fetch(`${API_BASE}/rugs?action=feedback`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ca, originalVerdict, reportedVerdict, note: note || null }),
+    });
+  } catch {
+    return { ok: false, reason: "network", status: 0 };
+  }
+  if (r.ok) {
+    try {
+      return await r.json();
+    } catch {
+      return { ok: false, reason: "bad_response", status: r.status };
+    }
+  }
+  let reason = "request_failed";
+  try {
+    const body = await r.json();
+    if (body && typeof body.reason === "string") reason = body.reason;
+  } catch {
+    /* non-JSON error body — leave reason as request_failed */
+  }
+  return { ok: false, reason, status: r.status };
+}

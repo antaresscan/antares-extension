@@ -658,3 +658,75 @@ export function buildSourceListRows(d) {
     .filter(Boolean)
     .join("");
 }
+
+// ──────────────────────────────────────────────────────────────────────
+// Feedback trigger + modal — "Disagree with this verdict?" link rendered
+// next to the freshness ticker, plus a hidden modal that ui-setup wires
+// up on click.
+//
+// The modal asks the user to pick the verdict they think is correct
+// (one button per SAFE/CAUTION/DANGER/RUG, with the originally-reported
+// verdict disabled — submitting "no change" makes no sense and the
+// backend rejects it anyway). Optional 500-char note. Submission posts
+// to /api/rugs?action=feedback via api-client.submitFeedback.
+//
+// Ids are stable so ui-setup can find them with getElementById without
+// scoping selectors to the modal subtree.
+// ──────────────────────────────────────────────────────────────────────
+const VERDICTS = ["SAFE", "CAUTION", "DANGER", "RUG"];
+
+/**
+ * Inline link the user clicks to open the feedback modal. Rendered in
+ * the hero next to the freshness ticker. Lightweight enough to live
+ * inside the m-card without crowding it.
+ */
+export function buildFeedbackTrigger() {
+  return `<button class="m-feedback-trigger" id="feedback-trigger" type="button" aria-label="Report incorrect verdict" title="Tell us if you think this verdict is wrong">
+    Disagree?
+  </button>`;
+}
+
+/**
+ * Hidden-by-default modal markup. ui-setup.setupFeedbackModal toggles
+ * the `.open` class to show/hide and fills in the verdict buttons
+ * (with `originalVerdict` disabled) at open time.
+ */
+export function buildFeedbackModal() {
+  const verdictButtonsHtml = VERDICTS.map(
+    (v) =>
+      `<button class="fb-verdict" type="button" data-verdict="${escapeHtml(v)}">${escapeHtml(v)}</button>`,
+  ).join("");
+
+  return `<div class="fb-overlay" id="fb-overlay" role="dialog" aria-modal="true" aria-labelledby="fb-title" hidden>
+    <div class="fb-modal">
+      <div class="fb-head">
+        <h3 id="fb-title">Report incorrect verdict</h3>
+        <button class="fb-close" id="fb-close" type="button" aria-label="Close">×</button>
+      </div>
+      <p class="fb-body-intro" id="fb-intro">
+        We use this signal to detect blind spots in the scoring engine.
+        Reports are anonymous — we store only an IP /24 prefix, never
+        your address or account.
+      </p>
+      <div class="fb-section">
+        <div class="fb-label">What do you think is correct?</div>
+        <div class="fb-verdicts" id="fb-verdicts">${verdictButtonsHtml}</div>
+      </div>
+      <div class="fb-section">
+        <label class="fb-label" for="fb-note">Optional context (≤500 chars)</label>
+        <textarea
+          id="fb-note"
+          class="fb-note"
+          maxlength="500"
+          rows="3"
+          placeholder="e.g. Got rugged 2h after the scan — LP pulled at 14:23 UTC"
+        ></textarea>
+        <div class="fb-counter" id="fb-counter">0 / 500</div>
+      </div>
+      <div class="fb-actions">
+        <span class="fb-status" id="fb-status" role="status"></span>
+        <button class="fb-submit" id="fb-submit" type="button" disabled>Submit report</button>
+      </div>
+    </div>
+  </div>`;
+}
