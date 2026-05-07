@@ -1,89 +1,31 @@
+// js/token-app.js — Entry point + render() orchestrator for /token.
+//
+// The pure helpers (formatters, compute) and the flag descriptions
+// live in their own ES modules so they can be unit-tested without a
+// browser harness. The view-builders and UI-setup helpers stay inline
+// here for now — splitting them is tracked as follow-up work.
+
+import {
+  fmt,
+  pct,
+  age,
+  fmtPrice,
+  formatAgeHours,
+  formatAgeMin,
+  escapeHtml,
+  fmtUsd,
+  fmtTok,
+  getFlagDescription,
+} from "./formatters.js"
+import {
+  computeExitLiquidity,
+  parsePctFromFlags,
+} from "./compute.js"
+
 const API="https://antares-extension.vercel.app/api/scan"
 const API_BASE="https://antares-extension.vercel.app/api"
 const MAX_RETRIES=3
 const RETRY_DELAYS=[1000,2000]
-
-function fmt(n){
-  if(n==null)return"—"
-  if(n>=1e9)return`$${(n/1e9).toFixed(2)}B`
-  if(n>=1e6)return`$${(n/1e6).toFixed(2)}M`
-  if(n>=1e3)return`$${(n/1e3).toFixed(1)}K`
-  return`$${n.toFixed(0)}`
-}
-function pct(n){
-  if(n==null)return{txt:"—",cls:"neu"}
-  const s=n>0?"+":""
-  const cls=n>0?"up":n<0?"dn":"neu"
-  return{txt:`${s}${n.toFixed(2)}%`,cls}
-}
-function age(h){
-  if(!h)return null
-  if(h<24)return`${Math.round(h)}h old`
-  const d=Math.floor(h/24)
-  if(d<30)return`${d}d old`
-  return`${Math.floor(d/30)}mo old`
-}
-function fmtPrice(p){
-  if(!p)return"—"
-  const n=parseFloat(p)
-  if(n<0.000001)return`$${n.toExponential(2)}`
-  if(n<0.01)return`$${n.toFixed(6)}`
-  if(n<1)return`$${n.toFixed(4)}`
-  return`$${n.toFixed(2)}`
-}
-
-function formatAge(hours) {
-  if (!hours && hours !== 0) return null
-  if (hours < 1) return Math.round(hours * 60) + 'm'
-  if (hours < 24) return Math.round(hours) + 'h'
-  const days = Math.floor(hours / 24)
-  const rem = Math.round(hours % 24)
-  return rem > 0 ? `${days}d ${rem}h` : `${days}d`
-}
-
-function escapeHtml(str) {
-  if (!str) return ''
-  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
-}
-
-const FLAG_DESCRIPTIONS = {
-  "Mint Authority enabled": "The dev can print unlimited new tokens and dump them on you at any time.",
-  "Mint Authority enabled (RugCheck)": "The dev can print unlimited new tokens and dump them on you at any time.",
-  "Freeze Authority enabled": "The dev can freeze your wallet and prevent you from selling.",
-  "Freeze Authority enabled (RugCheck)": "The dev can freeze your wallet and prevent you from selling.",
-  "LP not burned or locked": "The dev can pull all liquidity in one transaction and crash the price to zero.",
-  "LP not burned but token is mature and liquid (unverified LP)": "Liquidity is not locked — the dev can still rug at any time.",
-  "Honeypot detected — cannot sell": "You cannot sell this token. Any funds spent are gone.",
-  "Bundle activity detected": "Coordinated wallets bought together to fake demand — classic pump and dump setup.",
-  "Bundle holds": "A coordinated group controls a large portion of supply and can dump at will.",
-  "Sniper activity detected": "Bots bought massively at launch before anyone else could — supply is concentrated.",
-  "Top 10 holders > 70%": "Ten wallets control over 70% of the supply. If they sell together, the price collapses.",
-  "Top 10 holders > 50%": "Half the supply is in 10 wallets — high dump risk.",
-  "Single wallet holds": "One wallet controls a huge portion of supply and can crash the price alone.",
-  "Metadata mutable": "The dev can change the token name, symbol and logo after launch — common in rug setups.",
-  "No website / Twitter / Telegram": "Zero social presence — the team can disappear without any trace.",
-  "Wash trading detected": "The trading volume is fake — bots trading with themselves to create false activity.",
-  "Sell tax": "A hidden fee is taken every time you sell — often used to bleed holders slowly.",
-  "Buy tax": "A fee is taken on every purchase — used to fund the dev or prevent exits.",
-  "Owner holds > 5%": "The owner wallet holds a large stake and can dump it at any time.",
-  "Creator holds > 5%": "The creator wallet holds a large stake and can dump it at any time.",
-  "Blacklist capability": "The dev can blacklist specific wallets and prevent them from selling.",
-  "Transfer pausable": "The dev can pause all transfers, trapping everyone's funds.",
-  "Hidden owner": "The real owner of the contract is hidden — a known red flag for rug pulls.",
-  "Upgradeable/proxy contract": "The contract code can be replaced after launch — any security audit becomes worthless.",
-  "LP Burned ✓": "The liquidity is permanently burned. The dev cannot pull it.",
-  "Well distributed supply ✓": "The token supply is well spread across many wallets — good sign.",
-  "Strong holder base (5K+) ✓": "Over 5000 holders — strong community adoption signal.",
-  "Established token (30d+) ✓": "The token has survived over 30 days — most rugs die within hours.",
-}
-
-function getFlagDescription(label) {
-  if (FLAG_DESCRIPTIONS[label]) return FLAG_DESCRIPTIONS[label]
-  for (const key of Object.keys(FLAG_DESCRIPTIONS)) {
-    if (label.toLowerCase().startsWith(key.toLowerCase())) return FLAG_DESCRIPTIONS[key]
-  }
-  return null
-}
 
 const params=new URLSearchParams(location.search)
 const CA_RE=/^[1-9A-HJ-NP-Za-km-z]{32,44}$/
@@ -162,100 +104,11 @@ function buildSparkline(candles) {
   </svg>`
 }
 
-// ──────────────────────────────────────────────────────────────────────
-// Score Breakdown: derive 5 dimensions from the existing /api/scan
-// payload. No backend change needed — the dimensions are computable
-// from the data already in the response.
-//   LP Security        — 100 if burned, 70 if locked, 0 if open
-//   Holder Distribution — 100 - top10HolderPct (clamp 0-100)
-//   Trading Authenticity — vol/liq < 5 = healthy; higher = wash risk
-//   Token Maturity     — age_hours / 720 (1 month) * 100
-//   Source Consensus   — average trust across all available layers
-// Returns nullable dims so the radar can show partial data with
-// missing axes pegged to 0 visually but flagged "—" in the bars.
-// ──────────────────────────────────────────────────────────────────────
-function computeScoreBreakdown(d) {
-  let lp = null
-  if (d.lpBurned === true) lp = 100
-  else if (d.lpLocked === true) lp = 70
-  else if (d.lpBurned === false || d.lpLocked === false) lp = 0
-
-  const top10 = typeof d.top10HolderPct === 'number' ? d.top10HolderPct : null
-  const holders = top10 != null ? Math.max(0, Math.min(100, Math.round(100 - top10))) : null
-
-  const liq = d.liquidity ?? d.pair?.liquidity?.usd ?? null
-  const vol = d.volume24h ?? d.pair?.volume?.h24 ?? null
-  let trading = null
-  if (liq && vol && liq > 0) {
-    const ratio = vol / liq
-    trading = ratio < 5 ? 100 : Math.max(0, Math.round(100 - (ratio - 5) * 8))
-  }
-
-  const ageH = d.solscanTokenAgeHours ?? null
-  const maturity = ageH != null ? Math.min(100, Math.round((ageH / 720) * 100)) : null
-
-  const layers = d.layers || {}
-  const layerArr = Object.values(layers).filter(l => l && l.available)
-  const sources = layerArr.length > 0
-    ? Math.round((layerArr.reduce((a, l) => a + (l.trust || 0), 0) / layerArr.length) * 100)
-    : null
-
-  return { lp, holders, trading, maturity, sources, total: d.score || 0 }
-}
-
-// Radar pentagon — 5 axes laid out at 72° intervals starting at top.
-// Coordinates are normalized to [-100, 100] and the SVG viewBox is
-// -150 to 150 to leave room for axis labels outside the polygon.
-function buildRadarSvg(s) {
-  const v = {
-    lp: s.lp ?? 0,
-    holders: s.holders ?? 0,
-    trading: s.trading ?? 0,
-    maturity: s.maturity ?? 0,
-    sources: s.sources ?? 0,
-  }
-  const offsets = {
-    lp: [0, -1],
-    holders: [0.951, -0.309],
-    trading: [0.588, 0.809],
-    maturity: [-0.588, 0.809],
-    sources: [-0.951, -0.309],
-  }
-  const order = ['lp', 'holders', 'trading', 'maturity', 'sources']
-  const polyPts = order.map(a => {
-    const [ox, oy] = offsets[a]
-    return `${(v[a] * ox).toFixed(1)},${(v[a] * oy).toFixed(1)}`
-  }).join(' ')
-  const dataPts = order.map(a => {
-    const [ox, oy] = offsets[a]
-    return `<circle class="data-pt" cx="${(v[a] * ox).toFixed(1)}" cy="${(v[a] * oy).toFixed(1)}" r="3"/>`
-  }).join('')
-  const dispVal = (n) => n === 0 && s[order.find(k => offsets[k] && k)] === null ? '—' : n
-  return `<svg viewBox="-150 -150 300 300">
-    <polygon class="grid" points="0,-100 95.1,-30.9 58.8,80.9 -58.8,80.9 -95.1,-30.9"/>
-    <polygon class="grid" points="0,-80 76.1,-24.7 47,64.7 -47,64.7 -76.1,-24.7"/>
-    <polygon class="grid" points="0,-60 57,-18.5 35.3,48.5 -35.3,48.5 -57,-18.5"/>
-    <polygon class="grid" points="0,-40 38,-12.4 23.5,32.4 -23.5,32.4 -38,-12.4"/>
-    <polygon class="grid" points="0,-20 19,-6.2 11.8,16.2 -11.8,16.2 -19,-6.2"/>
-    <line class="axis" x1="0" y1="0" x2="0" y2="-100"/>
-    <line class="axis" x1="0" y1="0" x2="95.1" y2="-30.9"/>
-    <line class="axis" x1="0" y1="0" x2="58.8" y2="80.9"/>
-    <line class="axis" x1="0" y1="0" x2="-58.8" y2="80.9"/>
-    <line class="axis" x1="0" y1="0" x2="-95.1" y2="-30.9"/>
-    <polygon class="data-fill" points="${polyPts}"/>
-    ${dataPts}
-    <text class="axis-lbl" text-anchor="middle" x="0" y="-118">LP Sec</text>
-    <text class="axis-val" text-anchor="middle" x="0" y="-105">${s.lp ?? '—'}</text>
-    <text class="axis-lbl" text-anchor="start" x="105" y="-32">Holders</text>
-    <text class="axis-val" text-anchor="start" x="105" y="-20">${s.holders ?? '—'}</text>
-    <text class="axis-lbl" text-anchor="start" x="65" y="92">Trading</text>
-    <text class="axis-val" text-anchor="start" x="65" y="104">${s.trading ?? '—'}</text>
-    <text class="axis-lbl" text-anchor="end" x="-65" y="92">Maturity</text>
-    <text class="axis-val" text-anchor="end" x="-65" y="104">${s.maturity ?? '—'}</text>
-    <text class="axis-lbl" text-anchor="end" x="-105" y="-32">Sources</text>
-    <text class="axis-val" text-anchor="end" x="-105" y="-20">${s.sources ?? '—'}</text>
-  </svg>`
-}
+// Dead-code removal: the Radar tab + computeScoreBreakdown were
+// replaced by Sniper Map / Wash Volume / Buy-Sell Flow tabs in #430.
+// The buildRadarSvg / computeScoreBreakdown bodies stayed in this file
+// for many releases without a single caller. Removed here. The pure
+// compute helper lives in `js/compute.js` if a future radar comes back.
 
 // ──────────────────────────────────────────────────────────────────────
 // SNIPER MAP tab — replaces Score Breakdown.
@@ -277,21 +130,7 @@ function buildRadarSvg(s) {
 // bottom interprets the same two numbers in plain language so a
 // non-technical user gets the action-relevant takeaway.
 // ──────────────────────────────────────────────────────────────────────
-// Parse a percentage from a flag label of the form
-// "Top 10 wallets hold 82% of supply" or "Single wallet holds 76% of supply".
-// Returns null when no match. Used as a fallback when the structured
-// fields (d.top10HolderPct / d.topHolderPct) are missing from the
-// scan response — the same number is often present in flag text.
-function parsePctFromFlags(flags, regex) {
-  for (const f of flags) {
-    const m = (f.label || '').match(regex)
-    if (m && m[1]) {
-      const n = parseFloat(m[1])
-      if (!Number.isNaN(n)) return n
-    }
-  }
-  return null
-}
+// `parsePctFromFlags` moved to `js/compute.js` for testability.
 
 function buildSniperMapTab(d) {
   const flags = Array.isArray(d.flags) ? d.flags : []
@@ -452,30 +291,8 @@ function buildSniperMapTab(d) {
   `
 }
 
-// ──────────────────────────────────────────────────────────────────────
-// Exit Liquidity: AMM constant-product slippage estimate from the
-// liquidity USD figure. Computed client-side so no backend change is
-// needed. If liquidity is unknown we hide the tab via the caller.
-// ──────────────────────────────────────────────────────────────────────
-function computeExitLiquidity(liqUsd) {
-  if (!liqUsd || liqUsd <= 0) return null
-  const tiers = [100, 1000, 5000, 10000, 20000]
-  return tiers.map(amount => {
-    // Constant-product AMM: slippage ~= X / (X + reserve). With L being
-    // total USD liquidity (both sides), reserve_quote ≈ L/2.
-    const slippagePct = (amount / (amount + liqUsd / 2)) * 100
-    const lostUsd = amount * (slippagePct / 100)
-    let cls, note
-    if (slippagePct < 3) { cls = 'ok'; note = 'Easy exit' }
-    else if (slippagePct < 8) { cls = 'ok'; note = 'Acceptable' }
-    else if (slippagePct < 20) { cls = 'warn'; note = `<b>${fmt(lostUsd)} lost</b>` }
-    else if (slippagePct < 50) { cls = 'warn'; note = `<b>${fmt(lostUsd)} lost</b> · split your sell` }
-    else { cls = 'bad'; note = '<b>You\'d crash the price</b>' }
-    const slipDisplay = slippagePct > 50 ? '~ DUMPS' : `${slippagePct.toFixed(1)}%`
-    const widthPct = Math.min(100, slippagePct * 1.6)
-    return { amount, slipDisplay, widthPct, cls, note }
-  })
-}
+// `computeExitLiquidity` moved to `js/compute.js` for testability — the
+// AMM slippage math is pure and reused by `buildExitLiquidityTab` only.
 
 function buildExitLiquidityTab(liq) {
   const tiers = computeExitLiquidity(liq)
@@ -737,7 +554,7 @@ async function loadInsiderActivity() {
         ? (e.usdValue >= 0 ? '+' : '') + fmtUsd(e.usdValue)
         : '—'
       const tokAmt = fmtTok(e.tokenAmount)
-      const ageTxt = formatAge(e.ageMin)
+      const ageTxt = formatAgeMin(e.ageMin)
       const sigUrl = `https://solscan.io/tx/${encodeURIComponent(e.signature || '')}`
       const walletUrl = `https://solscan.io/account/${encodeURIComponent(e.walletFull || '')}`
       const actionLbl = action.replace('_', ' ')
@@ -801,28 +618,11 @@ async function loadInsiderActivity() {
   }
 }
 
-// Helpers used by the feed renderer.
-function fmtUsd(v) {
-  const a = Math.abs(v)
-  if (a >= 1_000_000) return '$' + (v / 1_000_000).toFixed(2) + 'M'
-  if (a >= 1_000) return '$' + (v / 1_000).toFixed(1) + 'K'
-  return '$' + a.toFixed(0)
-}
-function fmtTok(v) {
-  if (typeof v !== 'number' || !Number.isFinite(v)) return '—'
-  const a = Math.abs(v)
-  if (a >= 1_000_000) return (v / 1_000_000).toFixed(2) + 'M'
-  if (a >= 1_000) return (v / 1_000).toFixed(1) + 'K'
-  return v.toFixed(0)
-}
-function formatAge(min) {
-  if (typeof min !== 'number' || !Number.isFinite(min)) return '—'
-  if (min < 1) return 'just now'
-  if (min < 60) return min + 'min'
-  const h = Math.floor(min / 60)
-  if (h < 24) return h + 'h'
-  return Math.floor(h / 24) + 'd'
-}
+// `fmtUsd`, `fmtTok`, and the minutes-based age formatter all moved to
+// `js/formatters.js` for testability and to fix the silent shadowing
+// bug between two `formatAge` declarations (one taking hours, one
+// taking minutes — the second was clobbering the first across the
+// whole module). The minutes variant is now `formatAgeMin`.
 
 
 // ──────────────────────────────────────────────────────────────────────
@@ -1504,7 +1304,7 @@ function render(d, ca) {
     d.holders != null && ['Holders', d.holders.toLocaleString()],
     d.solscanTrades24h != null && ['Trades 24h', d.solscanTrades24h.toLocaleString()],
     d.solscanTraders24h != null && ['Traders 24h', d.solscanTraders24h.toLocaleString()],
-    d.solscanTokenAgeHours != null && ['Token Age', formatAge(d.solscanTokenAgeHours)],
+    d.solscanTokenAgeHours != null && ['Token Age', formatAgeHours(d.solscanTokenAgeHours)],
     d.tokenSupply != null && ['Supply', fmt(d.tokenSupply).replace('$', '')],
     d.tokenCreator && ['Creator', `<a href="https://solscan.io/account/${encodeURIComponent(d.tokenCreator)}" target="_blank" rel="noopener noreferrer">${escapeHtml(d.tokenCreator.slice(0, 6) + '…' + d.tokenCreator.slice(-4))}<span class="ext">↗</span></a>`],
   ].filter(Boolean)
