@@ -14,7 +14,12 @@
 // A different install_id sees `already_redeemed`.
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Redis } from "@upstash/redis";
-import { setCorsHeaders } from "./_lib/middleware";
+import {
+  setCorsHeaders,
+  checkRateLimit,
+  getClientIp,
+  initRateLimiters,
+} from "./_lib/middleware";
 import { apiError } from "./_lib/helpers";
 import { logger } from "./_lib/logger";
 import { initUserStorage } from "./_lib/user";
@@ -53,6 +58,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") return apiError(res, 405, "Method not allowed.");
 
   res.setHeader("Cache-Control", "no-store, max-age=0");
+
+  // Rate-limit per IP — redemption mints a license off a key, so the worst
+  // damage from brute-forcing keys is energy waste on Redis lookups, but
+  // an unrestricted endpoint also lets an attacker confirm whether a
+  // stolen key has already been redeemed (oracle attack on `already_
+  // redeemed` vs `not_found`). The shared 30/min sliding window matches
+  // every other paid-resource endpoint and is way above any honest user
+  // (one redeem per fresh install, ever).
+  const rlRedis = getRedis();
+  if (rlRedis) {
+    initRateLimiters(rlRedis);
+    const ip = getClientIp(req);
+    const allowed = await checkRateLimit(res, ip);
+    if (!allowed) return;
+  }
 
   const body = readBody(req);
   const licenseKey = String(body.license_key ?? "").trim().toUpperCase();

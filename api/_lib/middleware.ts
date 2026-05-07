@@ -87,11 +87,19 @@ export function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean
     return true;
   }
 
-  // Fix: Allow same-origin requests (token.html -> /api/scan on same domain)
-  // Browsers don't send Origin header for same-origin fetch requests.
+  // Allow same-origin requests (token.html -> /api/scan on the same Vercel
+  // deployment) — browsers omit the Origin header for these. We trust the
+  // Host header (which Vercel populates from the actual served deployment
+  // and uses for routing) rather than Referer (which any non-browser client
+  // can trivially forge with `curl -H Referer:...`). Pattern matches the
+  // production host plus preview deploys of this same project; other
+  // *.vercel.app projects do NOT match.
   if (!origin) {
-    const referer = (req.headers.referer as string) || "";
-    if (referer.startsWith("https://antares-extension.vercel.app")) {
+    const host = ((req.headers.host as string) || "").toLowerCase();
+    if (
+      host === "antares-extension.vercel.app" ||
+      /^antares-extension(-[a-z0-9-]+)?\.vercel\.app$/.test(host)
+    ) {
       res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
       res.setHeader("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
       return true;

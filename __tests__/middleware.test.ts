@@ -97,19 +97,34 @@ describe("setCorsHeaders", () => {
     expect(setCorsHeaders(req, res)).toBe(false);
   });
 
-  it("allows same-origin request with matching referer", () => {
-    const req = mockReq({ referer: "https://antares-extension.vercel.app/token.html" });
+  it("allows same-origin request with matching host (production)", () => {
+    const req = mockReq({ host: "antares-extension.vercel.app" });
     const res = mockRes();
     expect(setCorsHeaders(req, res)).toBe(true);
   });
 
-  it("rejects no-origin request without matching referer", () => {
-    const req = mockReq({ referer: "https://evil.com/page" });
+  it("allows same-origin request with matching host (preview deploy)", () => {
+    const req = mockReq({ host: "antares-extension-git-feat-x-comealamaisongroupe.vercel.app" });
+    const res = mockRes();
+    expect(setCorsHeaders(req, res)).toBe(true);
+  });
+
+  it("rejects no-origin request from a different vercel.app project", () => {
+    const req = mockReq({ host: "some-other-project.vercel.app" });
     const res = mockRes();
     expect(setCorsHeaders(req, res)).toBe(false);
   });
 
-  it("rejects no-origin no-referer request", () => {
+  it("rejects no-origin request even when referer claims trust (anti-spoof)", () => {
+    // Old behaviour trusted Referer; the new check ignores it because
+    // any non-browser client can forge Referer. Host is set by Vercel
+    // routing so it cannot be cross-deployment forged.
+    const req = mockReq({ referer: "https://antares-extension.vercel.app/token.html" });
+    const res = mockRes();
+    expect(setCorsHeaders(req, res)).toBe(false);
+  });
+
+  it("rejects no-origin no-host request", () => {
     const req = mockReq();
     const res = mockRes();
     expect(setCorsHeaders(req, res)).toBe(false);
