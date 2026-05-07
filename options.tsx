@@ -1,16 +1,33 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getInstallId } from "./shared/install-id";
 
 const API_BASE = "https://antares-extension.vercel.app";
-const KEY_RE = /^ANT-[0-9A-HJ-NP-TV-Z]{4}-[0-9A-HJ-NP-TV-Z]{4}-[0-9A-HJ-NP-TV-Z]{4}-[0-9A-HJ-NP-TV-Z]{4}$/;
-
-type RedeemState =
-  | { kind: "idle" }
-  | { kind: "submitting" }
-  | { kind: "success"; tier: string; expiresAt: number | null }
-  | { kind: "error"; message: string };
+const WEBSITE_BASE = "https://antares-website.vercel.app";
+const SESSION_TOKEN_KEY = "antares_session_token";
 
 type DevTier = "off" | "free" | "pro" | "yearly" | "lifetime";
+
+interface AccountStateLoading {
+  kind: "loading";
+}
+interface AccountStateSignedOut {
+  kind: "signed_out";
+}
+interface AccountStateSignedIn {
+  kind: "signed_in";
+  email: string;
+  tier: "free" | "pro" | "yearly" | "lifetime";
+  expiresAt: number | null;
+}
+interface AccountStateError {
+  kind: "error";
+  message: string;
+}
+type AccountState =
+  | AccountStateLoading
+  | AccountStateSignedOut
+  | AccountStateSignedIn
+  | AccountStateError;
 
 function Options() {
   const [stealthMode, setStealthMode] = useState(false);
@@ -19,23 +36,121 @@ function Options() {
   const [installId, setInstallId] = useState<string>("");
   const [installIdCopied, setInstallIdCopied] = useState(false);
   const [devTier, setDevTier] = useState<DevTier>("off");
+  const [account, setAccount] = useState<AccountState>({ kind: "loading" });
 
-  // License redemption state
-  const [licenseInput, setLicenseInput] = useState("");
-  const [redeem, setRedeem] = useState<RedeemState>({ kind: "idle" });
+  // Read the session token from chrome.storage.local. The website's
+  // bridge content script (contents/antares-website-bridge.ts) writes
+  // it on successful login + clears it on logout, so we just need to
+  // surface whatever's currently there.
+  const readSessionToken = useCallback((): Promise<string | null> => {
+    return new Promise((resolve) => {
+      chrome.storage.local.get([SESSION_TOKEN_KEY], (data) => {
+        const token = data[SESSION_TOKEN_KEY];
+        resolve(typeof token === "string" && token.length > 0 ? token : null);
+      });
+    });
+  }, []);
+
+  // Probe /api/auth/me with the session token to confirm it's still
+  // valid + fetch the account email. Token is stateless JWT (HMAC-SHA256
+  // with SESSION_SECRET) so the server validates on each call. Failure
+  // here means the token is expired or revoked → treat as signed-out.
+  const refreshAccount = useCallback(async () => {
+    const token = await readSessionToken();
+    if (!token) {
+      setAccount({ kind: "signed_out" });
+      return;
+    }
+    try {
+      const meRes = await fetch(`${API_BASE}/api/auth/me`, {
+        headers: { "X-Antares-Session": token },
+      });
+      if (meRes.status === 401 || !meRes.ok) {
+        // Stale or invalid token — drop it so future scans go out as
+        // anonymous (Free) instead of with a token the server rejects.
+        chrome.storage.local.remove(SESSION_TOKEN_KEY);
+        setAccount({ kind: "signed_out" });
+        return;
+      }
+      const me = (await meRes.json()) as {
+        ok?: boolean;
+        email?: string;
+      };
+      if (!me?.ok || !me.email) {
+        setAccount({ kind: "signed_out" });
+        return;
+      }
+      // Resolve the user's effective tier via /api/quota — same source
+      // /api/scan reads from, so the Options-page badge always matches
+      // what the overlay would show.
+      try {
+        const installIdNow = await getInstallId();
+        const url = `${API_BASE}/api/quota${installIdNow ? `?install=${encodeURIComponent(installIdNow)}` : ""}`;
+        const quotaRes = await fetch(url, {
+          headers: {
+            "X-Antares-Session": token,
+            ...(installIdNow ? { "X-Antares-Install": installIdNow } : {}),
+          },
+        });
+        let tier: AccountStateSignedIn["tier"] = "free";
+        let expiresAt: number | null = null;
+        if (quotaRes.ok) {
+          const q = (await quotaRes.json()) as {
+            tier?: string;
+            tierExpiresAt?: number | null;
+          };
+          if (
+            q.tier === "free" ||
+            q.tier === "pro" ||
+            q.tier === "yearly" ||
+            q.tier === "lifetime"
+          ) {
+            tier = q.tier;
+          }
+          if (typeof q.tierExpiresAt === "number") {
+            expiresAt = q.tierExpiresAt;
+          }
+        }
+        setAccount({ kind: "signed_in", email: me.email, tier, expiresAt });
+      } catch {
+        // /api/quota down — fall back to "signed_in but tier unknown"
+        // shown as "free" so we never falsely advertise Pro.
+        setAccount({
+          kind: "signed_in",
+          email: me.email,
+          tier: "free",
+          expiresAt: null,
+        });
+      }
+    } catch (err) {
+      setAccount({
+        kind: "error",
+        message: "Network error. Reload to retry.",
+      });
+      console.warn("[antares] account refresh failed", err);
+    }
+  }, [readSessionToken]);
 
   useEffect(() => {
     chrome.storage.local.get(
       ["antares_stealth", "autoRescan", "antares_dev_tier"],
       (data) => {
         if (chrome.runtime.lastError) {
-          console.error("[antares] options storage error:", chrome.runtime.lastError.message);
+          console.error(
+            "[antares] options storage error:",
+            chrome.runtime.lastError.message,
+          );
           return;
         }
         setStealthMode(!!data.antares_stealth);
         setAutoRescan(data.autoRescan !== false);
         const stored = data.antares_dev_tier;
-        if (stored === "free" || stored === "pro" || stored === "yearly" || stored === "lifetime") {
+        if (
+          stored === "free" ||
+          stored === "pro" ||
+          stored === "yearly" ||
+          stored === "lifetime"
+        ) {
           setDevTier(stored);
         } else {
           setDevTier("off");
@@ -44,7 +159,25 @@ function Options() {
     );
     setVersion(chrome.runtime.getManifest().version);
     void getInstallId().then((id) => setInstallId(id ?? ""));
-  }, []);
+    void refreshAccount();
+  }, [refreshAccount]);
+
+  // Watch for changes to the session token written by the bridge —
+  // when the user signs in on the website, the bridge writes the JWT
+  // here and we refresh the Options-page UI to match without the user
+  // having to close + reopen the page.
+  useEffect(() => {
+    function onStorageChange(
+      changes: Record<string, chrome.storage.StorageChange>,
+      areaName: string,
+    ) {
+      if (areaName !== "local") return;
+      if (!(SESSION_TOKEN_KEY in changes)) return;
+      void refreshAccount();
+    }
+    chrome.storage.onChanged.addListener(onStorageChange);
+    return () => chrome.storage.onChanged.removeListener(onStorageChange);
+  }, [refreshAccount]);
 
   function updateDevTier(next: DevTier) {
     setDevTier(next);
@@ -65,173 +198,242 @@ function Options() {
     }
   }
 
-  async function submitRedeem(e: React.FormEvent) {
-    e.preventDefault();
-    const key = licenseInput.trim().toUpperCase();
-    if (!KEY_RE.test(key)) {
-      setRedeem({
-        kind: "error",
-        message: "License key format is ANT-XXXX-XXXX-XXXX-XXXX.",
-      });
-      return;
-    }
-    setRedeem({ kind: "submitting" });
+  // Open the website auth page in a new tab. The bridge content script
+  // already runs on antares-website.vercel.app (see manifest match
+  // patterns + contents/antares-website-bridge.ts) so as soon as the
+  // user signs in there, /api/auth/sync-token mints the JWT and the
+  // bridge pushes it to chrome.storage.local — onStorageChange picks
+  // it up and re-renders this page automatically.
+  function openSignIn() {
+    void chrome.tabs.create({
+      url: `${WEBSITE_BASE}/auth.html?return=%2Faccount.html`,
+    });
+  }
+
+  // Sign out: clear the token here AND best-effort tell the API to
+  // clear the session cookie. Either step alone is sufficient to
+  // downgrade the next scan to Free, so we don't block on the network
+  // call — local storage clear runs first, refresh runs immediately.
+  async function signOut() {
     try {
-      const installId = await getInstallId();
-      const resp = await fetch(`${API_BASE}/api/redeem`, {
+      const token = await readSessionToken();
+      void fetch(`${API_BASE}/api/auth/logout`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ license_key: key, install_id: installId }),
-      });
-      const body = (await resp.json().catch(() => ({}))) as {
-        ok?: boolean;
-        reason?: string;
-        tier?: string;
-        expiresAt?: number | null;
-      };
-      if (resp.ok && body.ok) {
-        setRedeem({
-          kind: "success",
-          tier: body.tier ?? "pro",
-          expiresAt: body.expiresAt ?? null,
-        });
-        setLicenseInput("");
-        return;
-      }
-      // Map server reasons to friendly messages
-      const map: Record<string, string> = {
-        not_found: "We couldn't find that license. Double-check the key.",
-        already_redeemed:
-          "That license is already redeemed on a different install. Reach out to support if you switched machines.",
-        invalid_format: "License key format is ANT-XXXX-XXXX-XXXX-XXXX.",
-      };
-      setRedeem({
-        kind: "error",
-        message: map[body.reason ?? ""] ?? "Could not redeem the license.",
-      });
-    } catch (err) {
-      setRedeem({
-        kind: "error",
-        message: "Network error. Check your connection and retry.",
-      });
-      console.error("[antares] redeem failed", err);
+        headers: token ? { "X-Antares-Session": token } : {},
+      }).catch(() => { /* non-critical */ });
+    } catch { /* ignore */ }
+    await new Promise<void>((resolve) =>
+      chrome.storage.local.remove(SESSION_TOKEN_KEY, () => resolve()),
+    );
+    setAccount({ kind: "signed_out" });
+  }
+
+  function tierLabel(tier: AccountStateSignedIn["tier"]): string {
+    if (tier === "lifetime") return "Lifetime";
+    if (tier === "yearly") return "Yearly";
+    if (tier === "pro") return "Pro";
+    return "Free";
+  }
+
+  function tierColor(tier: AccountStateSignedIn["tier"]): string {
+    if (tier === "lifetime" || tier === "yearly" || tier === "pro") {
+      return "#00c89a";
     }
+    return "#888";
   }
 
   return (
     <div style={{ maxWidth: 600, margin: "40px auto", fontFamily: "system-ui" }}>
       <h1>Antares Scanner Settings</h1>
+
       <div style={{ marginBottom: 16 }}>
         <label>
-          <input type="checkbox" checked={stealthMode}
+          <input
+            type="checkbox"
+            checked={stealthMode}
             onChange={(e) => {
               setStealthMode(e.target.checked);
-              void chrome.storage.local.set({ antares_stealth: e.target.checked });
-            }} />
+              void chrome.storage.local.set({
+                antares_stealth: e.target.checked,
+              });
+            }}
+          />
           {" "}Stealth Mode (hide overlay on pages)
         </label>
       </div>
       <div style={{ marginBottom: 16 }}>
         <label>
-          <input type="checkbox" checked={autoRescan}
+          <input
+            type="checkbox"
+            checked={autoRescan}
             onChange={(e) => {
               setAutoRescan(e.target.checked);
               void chrome.storage.local.set({ autoRescan: e.target.checked });
-            }} />
+            }}
+          />
           {" "}Auto-rescan on price crash (&gt;30% drop in 1h)
         </label>
       </div>
 
-      <h2 style={{ marginTop: 36 }}>Redeem a Pro license</h2>
-      <p style={{ color: "#555", fontSize: 13, lineHeight: 1.6 }}>
-        Bought a license on the website? Paste the key here to unlock Pro on
-        this install. Each license redeems on one install — to move to a
-        different machine, contact support with your transaction signature.
-      </p>
-      <form onSubmit={submitRedeem} style={{ display: "flex", gap: 8, marginTop: 12 }}>
-        <input
-          type="text"
-          placeholder="ANT-XXXX-XXXX-XXXX-XXXX"
-          value={licenseInput}
-          onChange={(e) => {
-            setLicenseInput(e.target.value);
-            if (redeem.kind === "error") setRedeem({ kind: "idle" });
-          }}
-          disabled={redeem.kind === "submitting" || redeem.kind === "success"}
-          spellCheck={false}
-          autoCorrect="off"
-          autoCapitalize="characters"
-          style={{
-            flex: 1,
-            padding: "10px 12px",
-            fontFamily: "ui-monospace, Menlo, Consolas, monospace",
-            fontSize: 14,
-            letterSpacing: ".05em",
-            border: "1px solid #ccc",
-            borderRadius: 4,
-            background:
-              redeem.kind === "success" ? "#f0fff7" : "#fff",
-          }}
-          aria-label="License key"
-        />
-        <button
-          type="submit"
-          disabled={
-            redeem.kind === "submitting" ||
-            redeem.kind === "success" ||
-            !licenseInput.trim()
-          }
-          style={{
-            padding: "10px 18px",
-            fontSize: 14,
-            fontWeight: 600,
-            background: redeem.kind === "success" ? "#00c89a" : "#0f0f11",
-            color: "#fff",
-            border: "none",
-            borderRadius: 4,
-            cursor:
-              redeem.kind === "submitting" || redeem.kind === "success"
-                ? "default"
-                : "pointer",
-            opacity: !licenseInput.trim() ? 0.5 : 1,
-          }}
-        >
-          {redeem.kind === "submitting"
-            ? "Redeeming…"
-            : redeem.kind === "success"
-              ? "✓ Redeemed"
-              : "Redeem"}
-        </button>
-      </form>
-      {redeem.kind === "success" && (
-        <div
-          role="status"
-          style={{
-            marginTop: 12,
-            padding: 12,
-            background: "rgba(0,200,154,0.08)",
-            border: "1px solid rgba(0,200,154,0.4)",
-            borderRadius: 4,
-            fontSize: 13,
-            color: "#0a7a5e",
-          }}
-        >
-          ✓ {redeem.tier === "lifetime"
-            ? "Lifetime"
-            : redeem.tier === "yearly"
-              ? "Yearly"
-              : "Pro"} unlocked on this install
-          {redeem.expiresAt
-            ? ` until ${new Date(redeem.expiresAt).toLocaleDateString()}.`
-            : "."}
-          {" "}Reload the page you were scanning to see the unlocked overlay.
-        </div>
+      {/* ── Account section ────────────────────────────────────────────── */}
+      {/* Pro is activated automatically when this extension carries a
+          valid Antares session token. The website's bridge content
+          script writes the token to chrome.storage.local on login and
+          clears it on logout — no manual key paste anywhere. */}
+      <h2 style={{ marginTop: 36 }}>Account</h2>
+
+      {account.kind === "loading" && (
+        <p style={{ color: "#888", fontSize: 13 }}>Checking account…</p>
       )}
-      {redeem.kind === "error" && (
-        <div
+
+      {account.kind === "signed_out" && (
+        <>
+          <p style={{ color: "#555", fontSize: 13, lineHeight: 1.6 }}>
+            Sign in to your Antares account to activate Pro features on
+            this device. Your subscription syncs automatically across every
+            device where you sign in — no codes to copy, no setup needed.
+          </p>
+          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+            <button
+              type="button"
+              onClick={openSignIn}
+              style={{
+                padding: "10px 18px",
+                fontSize: 14,
+                fontWeight: 600,
+                background: "#00c89a",
+                color: "#0a0a0c",
+                border: "none",
+                borderRadius: 4,
+                cursor: "pointer",
+              }}
+            >
+              Sign in / Create account
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                void chrome.tabs.create({ url: `${WEBSITE_BASE}/pricing.html` });
+              }}
+              style={{
+                padding: "10px 18px",
+                fontSize: 14,
+                fontWeight: 600,
+                background: "#fff",
+                color: "#0a0a0c",
+                border: "1px solid #ccc",
+                borderRadius: 4,
+                cursor: "pointer",
+              }}
+            >
+              View pricing
+            </button>
+          </div>
+        </>
+      )}
+
+      {account.kind === "signed_in" && (
+        <>
+          <div
+            style={{
+              padding: 14,
+              background: "rgba(0,200,154,0.06)",
+              border: "1px solid rgba(0,200,154,0.4)",
+              borderRadius: 4,
+              marginTop: 4,
+            }}
+          >
+            <div style={{ fontSize: 11, color: "#888", letterSpacing: ".15em", textTransform: "uppercase", marginBottom: 4 }}>
+              Signed in
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "#222", marginBottom: 8 }}>
+              {account.email}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: ".15em",
+                  textTransform: "uppercase",
+                  padding: "3px 8px",
+                  background: tierColor(account.tier),
+                  color: "#fff",
+                  borderRadius: 2,
+                }}
+              >
+                {tierLabel(account.tier)}
+              </span>
+              {account.expiresAt && account.tier !== "lifetime" && (
+                <span style={{ fontSize: 12, color: "#666" }}>
+                  Renews / expires{" "}
+                  {new Date(account.expiresAt).toLocaleDateString()}
+                </span>
+              )}
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+            <button
+              type="button"
+              onClick={() => {
+                void chrome.tabs.create({
+                  url: `${WEBSITE_BASE}/account.html`,
+                });
+              }}
+              style={{
+                padding: "9px 16px",
+                fontSize: 13,
+                fontWeight: 600,
+                background: "#0f0f11",
+                color: "#fff",
+                border: "none",
+                borderRadius: 4,
+                cursor: "pointer",
+              }}
+            >
+              Open account page
+            </button>
+            <button
+              type="button"
+              onClick={() => void signOut()}
+              style={{
+                padding: "9px 16px",
+                fontSize: 13,
+                fontWeight: 600,
+                background: "#fff",
+                color: "#0a0a0c",
+                border: "1px solid #ccc",
+                borderRadius: 4,
+                cursor: "pointer",
+              }}
+            >
+              Sign out
+            </button>
+          </div>
+          {account.tier === "free" && (
+            <p style={{ fontSize: 12, color: "#888", marginTop: 12, lineHeight: 1.6 }}>
+              You're signed in but no active Pro subscription found.{" "}
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  void chrome.tabs.create({
+                    url: `${WEBSITE_BASE}/pricing.html`,
+                  });
+                }}
+                style={{ color: "#00a37e" }}
+              >
+                Upgrade to Pro →
+              </a>
+            </p>
+          )}
+        </>
+      )}
+
+      {account.kind === "error" && (
+        <p
           role="alert"
           style={{
-            marginTop: 12,
             padding: 12,
             background: "rgba(255,95,95,0.06)",
             border: "1px solid rgba(255,95,95,0.4)",
@@ -240,26 +442,15 @@ function Options() {
             color: "#a04040",
           }}
         >
-          {redeem.message}
-        </div>
+          {account.message}
+        </p>
       )}
-      <p style={{ fontSize: 12, color: "#888", marginTop: 12 }}>
-        Lost your key? Look it up at{" "}
-        <a
-          href="https://comealamaisongroupe.github.io/antares-website/account.html"
-          target="_blank"
-          rel="noreferrer"
-        >
-          comealamaisongroupe.github.io/antares-website/account
-        </a>{" "}
-        with the email you used at checkout.
-      </p>
 
       <h2 style={{ marginTop: 36 }}>This install</h2>
       <p style={{ color: "#555", fontSize: 13, lineHeight: 1.6 }}>
-        Anonymous identifier for your local install. Used by the API to track
-        quota and tier — never sent to third parties. Reset by uninstalling +
-        reinstalling the extension.
+        Anonymous identifier for your local install. Used by the API to
+        track quota and tier — never sent to third parties. Reset by
+        uninstalling + reinstalling the extension.
       </p>
       <div
         style={{
@@ -308,19 +499,23 @@ function Options() {
 
       <h2 style={{ marginTop: 36 }}>Dev mode</h2>
       <p style={{ color: "#555", fontSize: 13, lineHeight: 1.6 }}>
-        Force a tier on the server side for this install. Only takes effect
-        when the install id above is listed in the server's
-        <code style={{
-          margin: "0 4px",
-          padding: "1px 6px",
-          background: "#f5f5f5",
-          border: "1px solid #ddd",
-          borderRadius: 3,
-          fontSize: 12,
-          fontFamily: "ui-monospace, Menlo, Consolas, monospace",
-        }}>DEV_PRO_INSTALLS</code>
-        env var. Use it to flip between Free / Pro / Lifetime in real time
-        and verify what each tier sees in the overlay.
+        Force a tier on the server side for this install. Only takes
+        effect when the install id above is listed in the server's
+        <code
+          style={{
+            margin: "0 4px",
+            padding: "1px 6px",
+            background: "#f5f5f5",
+            border: "1px solid #ddd",
+            borderRadius: 3,
+            fontSize: 12,
+            fontFamily: "ui-monospace, Menlo, Consolas, monospace",
+          }}
+        >
+          DEV_PRO_INSTALLS
+        </code>
+        env var. Use it to flip between Free / Pro / Lifetime in real
+        time and verify what each tier sees in the overlay.
       </p>
       <div
         style={{
@@ -370,15 +565,23 @@ function Options() {
         >
           ⚠ Dev override active: scanner sends
           {" "}<code style={{ fontFamily: "ui-monospace, Menlo, Consolas, monospace" }}>X-Antares-Dev-Tier: {devTier}</code>
-          {" "}with every scan. Server only honours this if your install id is
-          dev-listed; otherwise it's ignored.
+          {" "}with every scan. Server only honours this if your install
+          id is dev-listed; otherwise it's ignored.
         </p>
       )}
 
       <h2>About</h2>
       <p>Antares — real-time Solana token scanner.</p>
       <p>Version: {version}</p>
-      <p><a href="https://antares-extension.vercel.app/privacy" target="_blank" rel="noreferrer">Privacy Policy</a></p>
+      <p>
+        <a
+          href="https://antares-extension.vercel.app/privacy"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Privacy Policy
+        </a>
+      </p>
     </div>
   );
 }
