@@ -23,7 +23,12 @@
 // Without NOWPAYMENTS_API_KEY set, returns 503 + checkout_not_configured.
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Redis } from "@upstash/redis";
-import { setCorsHeaders } from "./_lib/middleware";
+import {
+  setCorsHeaders,
+  checkRateLimit,
+  getClientIp,
+  initRateLimiters,
+} from "./_lib/middleware";
 import { apiError } from "./_lib/helpers";
 import { logger } from "./_lib/logger";
 import {
@@ -91,6 +96,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       error: "checkout_not_configured",
       message: "Crypto checkout not available yet.",
     });
+  }
+
+  // Rate-limit per IP — invoice creation hits NOWPayments (paid API quota)
+  // and writes to Redis (paid storage). A misbehaving client or a bot
+  // sweep could otherwise mint thousands of stale invoices and burn our
+  // budget. The shared limiter (30/min sliding) is the right knob here:
+  // a real buyer makes 1-3 attempts max in normal use, way below the cap.
+  const rlRedis = getRedis();
+  if (rlRedis) {
+    initRateLimiters(rlRedis);
+    const ip = getClientIp(req);
+    const allowed = await checkRateLimit(res, ip);
+    if (!allowed) return;
   }
 
   const body = readBody(req);

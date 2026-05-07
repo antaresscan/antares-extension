@@ -126,11 +126,21 @@ async function processIntent(
   if (internalStatus === "confirmed") {
     const txSignature =
       canonical.payin_hash ?? canonical.payout_hash ?? undefined;
-    await confirmIntent(
-      redis,
-      workingIntent,
-      typeof txSignature === "string" ? txSignature : undefined,
-    );
+    const reportedUsd = Number(canonical.price_amount ?? 0);
+    const outcome = await confirmIntent(redis, workingIntent, {
+      txSignature: typeof txSignature === "string" ? txSignature : undefined,
+      reportedUsd: Number.isFinite(reportedUsd) ? reportedUsd : undefined,
+    });
+    if (!outcome.ok) {
+      // Underpay surfaced by the cron — log + leave pending. Either
+      // the buyer tops up or the intent eventually expires.
+      logger.warn("cron-check-payments", "underpaid intent skipped", {
+        reference: workingIntent.reference,
+        expectedUsd: outcome.expectedUsd,
+        reportedUsd: outcome.reportedUsd,
+      });
+      return "still_pending";
+    }
     return "confirmed";
   }
   if (internalStatus === "expired") {

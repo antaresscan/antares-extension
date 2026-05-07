@@ -140,7 +140,18 @@ async function maybeConfirmFromProvider(
   const internalStatus = mapStatus(canonical.payment_status);
   if (internalStatus === "confirmed") {
     const txSignature = canonical.payin_hash ?? canonical.payout_hash ?? undefined;
-    return await confirmIntent(redis, workingIntent, txSignature);
+    const reportedUsd = Number(canonical.price_amount ?? 0);
+    const outcome = await confirmIntent(redis, workingIntent, {
+      txSignature: typeof txSignature === "string" ? txSignature : undefined,
+      reportedUsd: Number.isFinite(reportedUsd) ? reportedUsd : undefined,
+    });
+    if (!outcome.ok) {
+      // Underpay — leave intent pending so the user (or our cron) can
+      // retry without re-issuing a license. The polling client just
+      // keeps spinning until the buyer tops up or the intent expires.
+      return { intent: workingIntent, licenseKey: null };
+    }
+    return { intent: outcome.intent, licenseKey: outcome.licenseKey };
   }
   if (internalStatus === "expired") {
     const expired = await markIntentExpired(redis, workingIntent);

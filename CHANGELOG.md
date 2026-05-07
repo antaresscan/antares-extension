@@ -6,6 +6,74 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed — payment provider: Solana Pay → NOWPayments
+- **Why.** Solana Pay was native-crypto-only (USDC/SOL on Solana
+  wallets like Phantom). Most non-crypto-native users hit a wall:
+  they had to install a Solana wallet, fund it, and sign a tx — too
+  much friction. NOWPayments is a hosted-checkout aggregator that
+  accepts 200+ cryptos (BTC, ETH, USDT-Tron, BNB, USDC-anything,
+  SOL, etc.) on a page the user just clicks through.
+- **What changed.**
+  - `api/payment-intent.ts` — calls NOWPayments
+    `POST /v1/invoice` instead of building a Solana Pay URL. Same
+    request contract, only `payUrl` shape changes (now an
+    `https://nowpayments.io/payment?iid=...` URL).
+  - `api/payment-status.ts` — polls NOWPayments via
+    `GET /v1/payment/{id}` instead of reading on-chain transfers via
+    Helius RPC. Lazy-confirms intents in the same response.
+  - `api/auth/[action].ts` — new `nowpayments-ipn` action (POST)
+    receives webhook callbacks, verifies HMAC-SHA512 signature,
+    flips tier + issues license. Routed through the auth dispatcher
+    rather than its own file so we stay under the 12-fn Vercel cap.
+  - `api/cron-check-payments.ts` — same daily safety-net role, now
+    reconciles via NOWPayments `getPayment` instead of Helius RPC.
+- **New libs.**
+  - `api/_lib/nowpayments.ts` — REST client (createInvoice,
+    getPayment, listPaymentsForInvoice) + canonical-form HMAC-SHA512
+    IPN signature verifier.
+  - `api/_lib/payments.ts` — provider-agnostic intent store
+    (replaces `solana-pay.ts`). Keys an intent by reference, by
+    NOWPayments payment_id, and by invoice_id for fast IPN lookup.
+  - `api/_lib/payment-confirm.ts` — shared `confirmIntent()` helper
+    invoked by polling, IPN webhook, and cron. Idempotent on the
+    same reference, anti-underpay (rejects when reportedUsd is below
+    99% of intent.amountUsd), single source of truth for the side
+    effects (tier flip + license issuance + index update).
+- **Security hardening.**
+  - **HMAC-SHA512 verification** on every IPN callback — fail closed
+    when `NOWPAYMENTS_IPN_SECRET` is unset or signature mismatches.
+  - **Anti-underpay** — IPN, polling and cron all pass the provider-
+    reported price to `confirmIntent`, which rejects below the 99%
+    threshold (covers the partially-paid → finished corner case).
+  - **Rate limiting** on both `/api/payment-intent` (anti-DoS on
+    invoice creation, which costs us NOWPayments API quota) and
+    `/api/auth/nowpayments-ipn` (anti-spam on bad-signature flood).
+- **Removed.** `api/_lib/solana-pay.ts` and its 3 tests
+  (`solana-pay.test.ts`, `api-payment-intent.test.ts`,
+  `api-payment-status.test.ts`, `api-cron-check-payments.test.ts`)
+  — replaced with `api-payment-intent.test.ts` (new contract),
+  `nowpayments.test.ts` (HMAC + status mapping), and
+  `api-nowpayments-ipn.test.ts` (full IPN webhook flow).
+- **Required env vars** (must be set in Vercel before this deploy
+  can mint invoices):
+  - `NOWPAYMENTS_API_KEY` — server API key from the dashboard.
+  - `NOWPAYMENTS_IPN_SECRET` — IPN secret from the dashboard.
+  - `ANTARES_PUBLIC_BASE_URL` — `https://antares-extension.vercel.app`
+    (used to build IPN callback + success URLs).
+  - Optional: `ANTARES_PRICE_MONTHLY_USD` /
+    `ANTARES_PRICE_YEARLY_USD` (defaults 24.99 / 149.99). Legacy
+    `SOLANA_PRICE_*_USDC` env vars are honoured as fallback to keep
+    existing Vercel deployment values working through the cutover.
+- **Required dashboard config.**
+  - Settings → Store settings → IPN Callback URL:
+    `https://antares-extension.vercel.app/api/auth/nowpayments-ipn`
+  - Settings → Store settings → IPN Secret Key (matches the env var)
+  - Recommended: Settings → Auto Conversion → USDT (eliminates
+    crypto volatility exposure on the merchant side)
+- **Tests.** Full suite: 925+ passed (added the IPN webhook flow,
+  HMAC verification, status mapping, and rewrote the payment-intent
+  + cron tests for the new contract).
+
 ### Added — dev mode: real-time tier toggle without redeploys
 - **Problem.** Dev was getting quota-locked on his own install during
   daily work, and there was no way to flip between Free / Pro /

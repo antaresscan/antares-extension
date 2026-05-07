@@ -144,31 +144,44 @@ Privacy policy URL: https://antares-website.vercel.app/privacy
 
 ## Payment processor disclosure
 
-Pro and Lifetime upgrades are processed **directly on the Solana
-blockchain** via the Solana Pay protocol. There is no third-party
-payment processor, no KYC step, and no card-payment data ever flows
-through the extension or our infrastructure.
+Pro and Yearly upgrades are processed via **NOWPayments**, a
+non-custodial cryptocurrency payment aggregator. There is no
+card-payment processor, no KYC step on the user side, and no
+billing data ever flows through the extension or our infrastructure.
 
 The flow:
 
   1. User clicks "Subscribe" on `/pricing`
-  2. Our server generates a unique reference key + Solana Pay URL
-     (USDC SPL transfer to a fixed merchant wallet)
-  3. User signs the transaction in their preferred Solana wallet
-     (Phantom, Solflare, Backpack, etc.) — funds move directly from
-     the user's wallet to ours, no intermediary
-  4. Our cron job verifies the on-chain transaction via Helius RPC
-     (recipient + token mint + amount match) and flips the user's
-     tier in Redis
+  2. Our server creates a NOWPayments invoice (`POST /v1/invoice`)
+     and returns the invoice URL to the website
+  3. User is redirected to the NOWPayments hosted checkout page,
+     where they pick a cryptocurrency from 200+ supported options
+     (BTC, ETH, USDT, USDC, SOL, BNB, etc.) and complete payment
+     directly to a NOWPayments-managed deposit address
+  4. NOWPayments fires a signed IPN webhook to our backend
+     (`POST /api/auth/nowpayments-ipn`) with the on-chain transaction
+     hash and payment status. We verify the HMAC-SHA512 signature
+     against our IPN secret, sanity-check the reported amount
+     matches the invoice (anti-underpay defence), and flip the
+     user's tier in Redis. A daily cron (`/api/cron-check-payments`)
+     reconciles any missed webhooks via NOWPayments' API.
 
 What we receive in payment metadata:
-  - The on-chain transaction signature (public on Solana, useful for
-    audit / refund traceability)
-  - The amount received (in USDC, pegged to USD)
+  - NOWPayments invoice + payment IDs
+  - The on-chain transaction hash (public on the chain the buyer
+    chose, useful for audit / refund traceability)
+  - The USD-equivalent amount NOWPayments converted (we set
+    `is_fixed_rate: true` so the buyer locks in the USD price at
+    checkout time)
+  - Optional auto-conversion to USDT if enabled in our NOWPayments
+    dashboard settings
 
 What we **never** see or store:
-  - Card numbers, banking info, billing address (no fiat rails involved)
-  - The user's wallet address other than as the tx sender (and only
-    transiently — we don't index by it)
-  - Any link between the payment and the user's identity beyond the
-    opaque install identifier they generated locally on first run
+  - Card numbers, banking info, billing address (no fiat rails
+    involved)
+  - The user's source wallet address (NOWPayments handles the
+    deposit address; we only see the public on-chain tx hash)
+  - Any link between the payment and the user's identity beyond
+    the opaque install identifier they generated locally on first
+    run, or the email they optionally provided to receive a
+    redeemable license key

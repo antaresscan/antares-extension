@@ -36,7 +36,15 @@ vi.mock("../api/_lib/middleware", async () => {
   const actual = await vi.importActual<typeof import("../api/_lib/middleware")>(
     "../api/_lib/middleware",
   );
-  return { ...actual };
+  return {
+    ...actual,
+    // The real `checkRateLimit` calls `redis.evalsha` for an atomic Lua
+    // script, which our MockRedis doesn't expose. Bypass for tests so we
+    // exercise the validation + invoice paths, not the limiter itself
+    // (which has its own coverage in the full middleware tests).
+    checkRateLimit: vi.fn().mockResolvedValue(true),
+    initRateLimiters: vi.fn(),
+  };
 });
 
 import handler from "../api/payment-intent";

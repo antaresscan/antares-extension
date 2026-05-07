@@ -309,6 +309,21 @@ async function handleMe(req: VercelRequest, res: VercelResponse) {
 async function handleNowpaymentsIpn(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") return apiError(res, 405, "Method not allowed.");
 
+  const redis = getRedis();
+  if (!redis) return apiError(res, 503, "Storage unavailable.");
+
+  // Per-IP rate limit. NOWPayments fires from a stable set of IPs so
+  // legit traffic never approaches the cap (30/min). The check protects
+  // against spoofed-source flood: an attacker with a known endpoint can
+  // POST garbage all day; without a limit each request would HMAC-verify
+  // (cheap but non-zero), look up a Redis key, and burn function quota.
+  initRateLimiters(redis);
+  const ip = getClientIp(req);
+  const allowed = await checkRateLimit(res, ip);
+  if (!allowed) return;
+
+  initUserStorage(redis);
+
   const sigHeader = req.headers["x-nowpayments-sig"];
   const body = readBody(req);
   if (!body || Object.keys(body).length === 0) {
@@ -322,10 +337,6 @@ async function handleNowpaymentsIpn(req: VercelRequest, res: VercelResponse) {
     });
     return res.status(401).json({ ok: false, reason: "invalid_signature" });
   }
-
-  const redis = getRedis();
-  if (!redis) return apiError(res, 503, "Storage unavailable.");
-  initUserStorage(redis);
 
   const payment = body as unknown as NpPayment;
   const orderId = typeof payment.order_id === "string" ? payment.order_id : "";
@@ -375,19 +386,34 @@ async function handleNowpaymentsIpn(req: VercelRequest, res: VercelResponse) {
   const internalStatus = mapStatus(payment.payment_status);
 
   if (internalStatus === "confirmed") {
+    // The IPN body is HMAC-signed so we trust *what NOWPayments saw*,
+    // but pass the reported amount to confirmIntent so it can guard
+    // against the partially-paid → finished corner case (anti-underpay).
+    const reportedUsd = Number(payment.price_amount ?? 0);
     const txSignature =
       payment.payin_hash ?? payment.payout_hash ?? undefined;
-    const { intent: updated, licenseKey } = await confirmIntent(
-      redis,
-      intent,
-      typeof txSignature === "string" ? txSignature : undefined,
-    );
+    const outcome = await confirmIntent(redis, intent, {
+      txSignature: typeof txSignature === "string" ? txSignature : undefined,
+      reportedUsd: Number.isFinite(reportedUsd) ? reportedUsd : undefined,
+    });
+    if (!outcome.ok) {
+      // 200 anyway so NOWPayments stops retrying. Polling client can
+      // see the underpay state via the body for UX surfacing.
+      return res.status(200).json({
+        ok: false,
+        status: "amount_mismatch",
+        reason: outcome.reason,
+        expectedUsd: outcome.expectedUsd,
+        reportedUsd: outcome.reportedUsd,
+      });
+    }
     logger.metric("auth/nowpayments-ipn.confirmed", {
-      reference: updated.reference,
-      tier: updated.tier,
-      amountUsd: updated.amountUsd,
-      hasEmail: !!updated.email,
-      licenseIssued: licenseKey !== null,
+      reference: outcome.intent.reference,
+      tier: outcome.intent.tier,
+      amountUsd: outcome.intent.amountUsd,
+      reportedUsd,
+      hasEmail: !!outcome.intent.email,
+      licenseIssued: outcome.licenseKey !== null,
     });
     return res.status(200).json({ ok: true, status: "confirmed" });
   }
