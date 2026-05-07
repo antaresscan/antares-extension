@@ -716,6 +716,18 @@ async function loadInsiderActivity() {
       return
     }
 
+    // Build a rank lookup: walletFull → "#N" (1-based index in the top
+    // 10 list). Lets each activity row show WHICH of the top 10 holders
+    // is doing the buy/sell, not just the truncated address. Falls back
+    // to "?" when the wallet isn't in the top 10 snapshot (rare — e.g.
+    // out-of-order resolution between activity feed + holders snapshot).
+    const rankByWallet = new Map()
+    walletList.forEach((w, i) => {
+      if (w && typeof w.walletFull === 'string') {
+        rankByWallet.set(w.walletFull, i + 1)
+      }
+    })
+
     const rowsHtml = activity.map(e => {
       const action = String(e.action || '').toUpperCase()
       const isBuy = action === 'BOUGHT' || action === 'TRANSFER_IN'
@@ -729,8 +741,11 @@ async function loadInsiderActivity() {
       const sigUrl = `https://solscan.io/tx/${encodeURIComponent(e.signature || '')}`
       const walletUrl = `https://solscan.io/account/${encodeURIComponent(e.walletFull || '')}`
       const actionLbl = action.replace('_', ' ')
+      const rank = rankByWallet.get(e.walletFull) || '?'
+      const rankDisp = rank === '?' ? '?' : '#' + rank
       return `
         <a class="iw-row ${cls}" href="${escapeHtml(sigUrl)}" target="_blank" rel="noopener noreferrer">
+          <span class="iw-row-rank" title="Rank in top 10 holders">${escapeHtml(rankDisp)}</span>
           <span class="iw-row-wallet" data-wallet="${escapeHtml(e.walletFull || '')}" title="${escapeHtml(e.walletFull || '')}">${escapeHtml(e.wallet || '')}</span>
           <span class="iw-row-action">${escapeHtml(actionLbl)}</span>
           <span class="iw-row-amount">${escapeHtml(tokAmt)}</span>
