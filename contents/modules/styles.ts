@@ -714,19 +714,23 @@ export const SHADOW_CSS = `
   display: flex;
   flex-direction: column;
   gap: 6px;
-  max-height: 220px;
+  /* Compact panel — was 220px, dropped to 140px so the overlay takes
+     much less vertical space when AI Summary is open. The scroll bar
+     is also bumped (4px → 6px) and given a brighter colour so it
+     reads as "scroll for more" instead of being invisible. */
+  max-height: 140px;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: rgba(167,139,250,.3) transparent;
+  scrollbar-color: rgba(167,139,250,.5) transparent;
 }
-.ai-panel-inner::-webkit-scrollbar { width: 4px; }
-.ai-panel-inner::-webkit-scrollbar-track { background: transparent; }
+.ai-panel-inner::-webkit-scrollbar { width: 6px; }
+.ai-panel-inner::-webkit-scrollbar-track { background: rgba(167,139,250,.04); border-radius: 3px; }
 .ai-panel-inner::-webkit-scrollbar-thumb {
-  background: rgba(167,139,250,.3);
-  border-radius: 2px;
+  background: rgba(167,139,250,.5);
+  border-radius: 3px;
 }
 .ai-panel-inner::-webkit-scrollbar-thumb:hover {
-  background: rgba(167,139,250,.5);
+  background: rgba(167,139,250,.75);
 }
 
 /* First sentence — acts as a verdict summary */
@@ -825,19 +829,21 @@ export const SHADOW_CSS = `
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 220px;
+  /* Same compact treatment as .ai-panel-inner — keeps the overlay
+     short, reveals scroll affordance instead of dominating the box. */
+  max-height: 140px;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255,95,95,.3) transparent;
+  scrollbar-color: rgba(255,95,95,.5) transparent;
 }
-.cf-panel-inner::-webkit-scrollbar { width: 4px; }
-.cf-panel-inner::-webkit-scrollbar-track { background: transparent; }
+.cf-panel-inner::-webkit-scrollbar { width: 6px; }
+.cf-panel-inner::-webkit-scrollbar-track { background: rgba(255,95,95,.04); border-radius: 3px; }
 .cf-panel-inner::-webkit-scrollbar-thumb {
-  background: rgba(255,95,95,.3);
-  border-radius: 2px;
+  background: rgba(255,95,95,.5);
+  border-radius: 3px;
 }
 .cf-panel-inner::-webkit-scrollbar-thumb:hover {
-  background: rgba(255,95,95,.5);
+  background: rgba(255,95,95,.75);
 }
 
 .cf-flag {
