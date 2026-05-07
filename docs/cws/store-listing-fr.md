@@ -9,7 +9,7 @@
 ## Nom (max 75 caractères)
 
 ```
-Antares — Scanner de Risque Token Solana
+Antares — Scanner Anti-Arnaques pour Solana
 ```
 
 ---
@@ -17,7 +17,7 @@ Antares — Scanner de Risque Token Solana
 ## Description courte / Résumé (max 132 caractères)
 
 ```
-Repère les rugs Solana avant de cliquer. Scoring 7 couches sur chaque page token. Scans illimités gratuits, Pro pour les power users.
+Scanner de tokens Solana en temps réel. Scoring 7 couches sur chaque page token. Scans illimités gratuits, Pro pour les power users.
 ```
 
 (127 caractères)
@@ -34,7 +34,7 @@ Secondaire : **Outils pour développeurs**
 ## Description détaillée
 
 ```
-ANTARES — REPÈRE LES RUGS SOLANA AVANT DE CLIQUER
+ANTARES — STOP AUX ARNAQUES SUR SOLANA
 
 Antares scanne chaque token Solana que tu rencontres pendant ta navigation —
 DexScreener, pump.fun, Axiom, Photon, Birdeye, GeckoTerminal, GMGN, Jupiter,
@@ -142,16 +142,14 @@ https://github.com/COMEALAMAISONGROUPE/antares-extension
 
 LIMITES — LIRE CECI
 
-Antares est un screen probabiliste de risque, pas une garantie. On surface
-ce que sept sources indépendantes remontent au moment du scan. Les
-exploits inédits, les dumps coordonnés via wallets fresh, et les attaques
-social-engineering peuvent ne pas registrer. SAFE veut dire "pas de
-signaux critiques sur nos sept couches" — c'est PAS "money guaranteed",
-et Antares N'EST PAS un conseil financier.
+Antares est un screen probabiliste de risque, pas une garantie. On peut
+détecter ce que sept sources indépendantes remontent au moment du scan.
+Les exploits inédits, les dumps coordonnés via wallets fresh, ou les
+attaques social-engineering peuvent ne pas registrer. SAFE veut dire
+"pas de signaux critiques sur nos sept couches" — pas "money guaranteed".
 
 Fais toujours tes propres recherches. Le score est un outil, pas une
-recommandation. Les marchés crypto bougent plus vite que n'importe quel
-scanner ; ce qui est SAFE à 14h00 UTC peut rug à 14h05.
+recommandation.
 ```
 
 (~4,100 caractères — bien sous la limite de 16,000)
@@ -169,14 +167,14 @@ sécurité crypto, jupiter, raydium, solscan, photon, birdeye
 ## Promo Twitter
 
 ```
-🛡️ Antares v1.3 — Scanner de Risque Token Solana
+🛡️ Antares v1.3 est live sur le Chrome Web Store.
 
-Repère les rugs avant de cliquer. 7 couches de détection, score sur 1000,
+Stop aux arnaques sur Solana. Verdict 7 couches, score sur 1000,
 dans ton overlay sur chaque dex.
 
-Free : scans illimités sur tous les sites
-Pro 24,99 $/30j · Yearly 149,99 $/an · paie en 200+ cryptos
-Sync multi-device · open-source · zéro tracking
+Free : scans illimités sur tous les sites.
+Pro 24,99 $/30j · Yearly 149,99 $/an · paie en 200+ cryptos.
+Sync multi-device · open-source · zéro tracking.
 
 Install → [link]
 ```
