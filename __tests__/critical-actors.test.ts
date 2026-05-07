@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { composeCriticalActors } from "../api/_lib/critical-actors";
-import type { HeliusHolder, CriticalActor } from "../api/_lib/types";
+import type { HeliusHolder } from "../api/_lib/types";
 import type { InsiderGraphResult } from "../api/_lib/insider-graph";
 
 const SUPPLY = 1_000_000;
