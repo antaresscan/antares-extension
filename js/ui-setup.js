@@ -10,7 +10,7 @@
 // /api/graph activity feed, and injects HTML into the placeholder
 // skeleton built by views.buildInsiderWatchTab().
 
-import { API, API_BASE } from "./api-client.js";
+import { API, API_BASE, submitFeedback } from "./api-client.js";
 import {
   escapeHtml,
   fmtUsd,
@@ -401,5 +401,170 @@ export async function loadInsiderActivity() {
     }
   } catch {
     renderEmpty("Failed to load insider activity. Re-scan to retry.", "warn");
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Feedback modal — wires the "Disagree?" trigger and modal built by
+// views.buildFeedbackTrigger / buildFeedbackModal.
+//
+// Flow:
+//   1. User clicks #feedback-trigger → modal opens, original verdict
+//      button is disabled, others are selectable.
+//   2. User picks a verdict → submit button enables.
+//   3. User clicks Submit → POST /api/rugs?action=feedback. Result
+//      shown inline in #fb-status; on success, modal auto-closes after
+//      a short delay.
+//
+// Idempotent like the other setupXxx — the wiring uses event-delegated
+// handlers on document so re-renders don't compound listeners.
+// ──────────────────────────────────────────────────────────────────────
+const FEEDBACK_REASON_MESSAGES = {
+  duplicate: "You already reported this token in the last 24h. Thanks!",
+  same_verdict: "Pick a verdict that differs from the current one.",
+  no_storage: "Feedback temporarily unavailable. Please try later.",
+  write_failed: "Couldn't save your report. Please try again.",
+  network: "Network error — check your connection and retry.",
+  bad_response: "Couldn't read the server response. Please retry.",
+  request_failed: "Server error. Please retry in a moment.",
+};
+
+export function setupFeedbackModal(ca, originalVerdict) {
+  if (window.__feedbackInit) return;
+  window.__feedbackInit = true;
+
+  const overlay = document.getElementById("fb-overlay");
+  if (!overlay) return;
+
+  const closeBtn = document.getElementById("fb-close");
+  const trigger = document.getElementById("feedback-trigger");
+  const verdictsWrap = document.getElementById("fb-verdicts");
+  const note = document.getElementById("fb-note");
+  const counter = document.getElementById("fb-counter");
+  const submit = document.getElementById("fb-submit");
+  const status = document.getElementById("fb-status");
+
+  // Per-modal session state. Resets each time we open the modal.
+  let pickedVerdict = null;
+  let isSubmitting = false;
+  let lastResultIsSuccess = false;
+
+  const open = () => {
+    pickedVerdict = null;
+    lastResultIsSuccess = false;
+    if (note) note.value = "";
+    if (counter) counter.textContent = "0 / 500";
+    if (status) {
+      status.textContent = "";
+      status.className = "fb-status";
+    }
+    if (submit) submit.disabled = true;
+    // Disable the verdict that was the original — the backend rejects
+    // same-as-original anyway, so we hide the option client-side too.
+    if (verdictsWrap) {
+      verdictsWrap
+        .querySelectorAll(".fb-verdict")
+        .forEach((b) => {
+          const v = b.dataset.verdict;
+          const isOriginal = v === originalVerdict;
+          b.disabled = isOriginal;
+          b.classList.toggle("disabled", isOriginal);
+          b.classList.remove("active");
+          // Tooltip the disabled one so users understand why it's greyed.
+          if (isOriginal) {
+            b.title = "This is the verdict shown to you — pick a different one to report.";
+          } else {
+            b.removeAttribute("title");
+          }
+        });
+    }
+    overlay.removeAttribute("hidden");
+    overlay.classList.add("open");
+  };
+
+  const close = () => {
+    overlay.classList.remove("open");
+    overlay.setAttribute("hidden", "");
+  };
+
+  if (trigger) trigger.addEventListener("click", open);
+  if (closeBtn) closeBtn.addEventListener("click", close);
+
+  // Click outside the modal box closes it (only when the result wasn't
+  // a successful submission — we want users to see the success state
+  // briefly before the auto-close kicks in).
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay && !lastResultIsSuccess && !isSubmitting) close();
+  });
+
+  // Esc closes (only when overlay is open + not mid-submit)
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (overlay.hasAttribute("hidden")) return;
+    if (isSubmitting) return;
+    close();
+  });
+
+  // Verdict picker — toggle .active on click, enable submit when one is picked.
+  if (verdictsWrap) {
+    verdictsWrap.addEventListener("click", (e) => {
+      const btn = e.target.closest(".fb-verdict");
+      if (!btn || btn.disabled) return;
+      pickedVerdict = btn.dataset.verdict;
+      verdictsWrap.querySelectorAll(".fb-verdict").forEach((b) =>
+        b.classList.toggle("active", b === btn),
+      );
+      if (submit) submit.disabled = false;
+    });
+  }
+
+  // Note counter — visual signal at 500.
+  if (note && counter) {
+    note.addEventListener("input", () => {
+      const len = note.value.length;
+      counter.textContent = `${len} / 500`;
+      counter.classList.toggle("near-cap", len > 450);
+    });
+  }
+
+  // Submit — POST + inline status.
+  if (submit) {
+    submit.addEventListener("click", async () => {
+      if (!pickedVerdict || isSubmitting) return;
+      isSubmitting = true;
+      submit.disabled = true;
+      submit.textContent = "Submitting…";
+      if (status) {
+        status.textContent = "";
+        status.className = "fb-status";
+      }
+
+      const result = await submitFeedback({
+        ca,
+        originalVerdict,
+        reportedVerdict: pickedVerdict,
+        note: note ? note.value.trim() : "",
+      });
+
+      isSubmitting = false;
+      submit.textContent = "Submit report";
+
+      if (result.ok) {
+        lastResultIsSuccess = true;
+        if (status) {
+          status.textContent = `Thanks — your report is in. (${result.totalReports} total)`;
+          status.className = "fb-status ok";
+        }
+        // Auto-close after a beat so users see the confirmation.
+        setTimeout(close, 1800);
+      } else {
+        const msg = FEEDBACK_REASON_MESSAGES[result.reason] || "Couldn't submit. Please retry.";
+        if (status) {
+          status.textContent = msg;
+          status.className = "fb-status err";
+        }
+        submit.disabled = false;
+      }
+    });
   }
 }

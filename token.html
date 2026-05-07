@@ -736,6 +736,39 @@ footer span{color:var(--c)}
 .fab-pill{display:inline-flex;align-items:center;gap:6px;background:#1a1a1e;color:#ccc;padding:8px 14px;border-radius:20px;font-size:11px;letter-spacing:.04em;border:1px solid #2a2a30;cursor:pointer;transition:.2s;white-space:nowrap;font-family:'IBM Plex Mono',monospace}
 .fab-pill:hover{border-color:var(--purple);color:var(--purple);transform:translateX(-2px)}
 .fab-pill .ico{font-size:11px;color:var(--purple)}
+
+/* ─── Feedback trigger + modal ─────────────────────────────────────── */
+.m-fresh-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:6px}
+.m-feedback-trigger{background:none;border:1px dashed #2a2a30;color:#666;font:600 9px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;padding:5px 9px;border-radius:3px;cursor:pointer;transition:.15s}
+.m-feedback-trigger:hover{border-color:#444;color:#aaa;border-style:solid}
+
+.fb-overlay{position:fixed;inset:0;z-index:200;background:rgba(8,8,10,.78);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .18s ease-out}
+.fb-overlay.open{opacity:1;pointer-events:auto}
+.fb-overlay[hidden]{display:none}
+.fb-modal{background:#0d0d10;border:1px solid #2a2a30;border-radius:6px;width:100%;max-width:480px;padding:22px 22px 18px;font:13px/1.5 'IBM Plex Mono',monospace;color:#c8c8cc;box-shadow:0 18px 40px rgba(0,0,0,.55)}
+.fb-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.fb-head h3{font:600 12px/1 'IBM Plex Mono',monospace;letter-spacing:.18em;text-transform:uppercase;color:#eaeaea;margin:0}
+.fb-close{background:none;border:none;color:#666;font-size:22px;line-height:1;padding:0 4px;cursor:pointer;transition:color .12s}
+.fb-close:hover{color:#eaeaea}
+.fb-body-intro{font-size:11px;color:#666;line-height:1.55;margin:0 0 16px}
+.fb-section{margin-bottom:14px}
+.fb-label{font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#888;margin-bottom:8px;display:block}
+.fb-verdicts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.fb-verdict{background:#16161a;border:1px solid #2a2a30;color:#aaa;font:600 11px/1 'IBM Plex Mono',monospace;letter-spacing:.08em;padding:10px 6px;border-radius:3px;cursor:pointer;transition:.12s}
+.fb-verdict:hover:not(:disabled){border-color:#3a3a42;color:#eaeaea}
+.fb-verdict.active{background:rgba(0,229,176,.08);border-color:var(--c,#00e5b0);color:var(--c,#00e5b0)}
+.fb-verdict:disabled,.fb-verdict.disabled{opacity:.35;cursor:not-allowed}
+.fb-note{width:100%;background:#16161a;border:1px solid #2a2a30;border-radius:3px;color:#c8c8cc;font:12px/1.45 'IBM Plex Mono',monospace;padding:9px 10px;resize:vertical;min-height:54px}
+.fb-note:focus{outline:none;border-color:#444}
+.fb-counter{font-size:10px;color:#555;margin-top:4px;text-align:right;letter-spacing:.06em}
+.fb-counter.near-cap{color:#f5d000}
+.fb-actions{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:8px}
+.fb-status{font-size:11px;line-height:1.4;flex:1}
+.fb-status.ok{color:var(--c,#00e5b0)}
+.fb-status.err{color:#ff6b75}
+.fb-submit{background:rgba(0,229,176,.12);border:1px solid var(--c,#00e5b0);color:var(--c,#00e5b0);font:600 11px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;padding:10px 18px;border-radius:3px;cursor:pointer;transition:.15s;white-space:nowrap}
+.fb-submit:hover:not(:disabled){background:rgba(0,229,176,.2)}
+.fb-submit:disabled{opacity:.35;cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -783,6 +816,6 @@ footer span{color:var(--c)}
   <button class="ask-fab" aria-label="Ask Antares AI">✦</button>
 </div>
 
-<script type="module" src="/js/token-app.js?v=20260508-phase2"></script>
+<script type="module" src="/js/token-app.js?v=20260508-feedback"></script>
 <script defer src="/js/token-bg.js?v=20260429a"></script>
 </body></html>
