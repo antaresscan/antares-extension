@@ -49,6 +49,9 @@ import {
 } from "../_lib/payments";
 import { confirmIntent } from "../_lib/payment-confirm";
 import { initUserStorage } from "../_lib/user";
+import { initSentry, captureError } from "../_lib/sentry";
+
+initSentry();
 
 function getRedis(): Redis | null {
   const url = process.env.UPSTASH_REDIS_REST_URL;
@@ -109,6 +112,7 @@ async function handleSignup(req: VercelRequest, res: VercelResponse) {
     if (String(err).includes("SESSION_SECRET")) {
       return apiError(res, 503, "Auth not configured on this deployment.");
     }
+    captureError(err, { endpoint: "auth/signup" });
     return apiError(res, 500, "Could not create account.");
   }
 }
@@ -150,6 +154,7 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
     if (String(err).includes("SESSION_SECRET")) {
       return apiError(res, 503, "Auth not configured on this deployment.");
     }
+    captureError(err, { endpoint: "auth/login" });
     return apiError(res, 500, "Could not log in.");
   }
 }
@@ -255,6 +260,7 @@ async function handleSyncToken(req: VercelRequest, res: VercelResponse) {
     if (String(err).includes("SESSION_SECRET")) {
       return apiError(res, 503, "Auth not configured on this deployment.");
     }
+    captureError(err, { endpoint: "auth/sync-token" });
     return apiError(res, 500, "Could not issue sync token.");
   }
 }
@@ -282,6 +288,7 @@ async function handleMe(req: VercelRequest, res: VercelResponse) {
     if (String(err).includes("SESSION_SECRET")) {
       return apiError(res, 503, "Auth not configured on this deployment.");
     }
+    captureError(err, { endpoint: "auth/me" });
     return apiError(res, 500, "Could not read session.");
   }
 }
@@ -453,7 +460,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // header, which is far stronger than origin checking anyway.
   if (action === "nowpayments-ipn") {
     res.setHeader("Cache-Control", "no-store, max-age=0");
-    return handleNowpaymentsIpn(req, res);
+    // Wrap with a global catch — handleNowpaymentsIpn does not have
+    // an outer try, and an unhandled throw inside `confirmIntent`
+    // (e.g. transient Redis flake mid-license-mint) is the worst
+    // bug we can ship: NOWPayments confirmed the payment, the user
+    // pays, but our side fails silently and the license never lands,
+    // leaving them paid-but-still-Free. Sentry capture here is the
+    // only signal we have to detect that scenario.
+    try {
+      return await handleNowpaymentsIpn(req, res);
+    } catch (err) {
+      logger.error("auth/nowpayments-ipn", "unhandled exception", {
+        error: String(err),
+      });
+      captureError(err, { endpoint: "auth/nowpayments-ipn", phase: "unhandled" });
+      // Return 500 so NOWPayments retries the IPN — they will, and
+      // by the time of retry the transient cause is usually gone.
+      // confirmIntent is idempotent so duplicate retries are safe.
+      if (!res.headersSent) {
+        return res.status(500).json({ ok: false, reason: "internal_error" });
+      }
+      return;
+    }
   }
 
   const corsOk = setCorsHeaders(req, res);

@@ -28,6 +28,9 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Redis } from "@upstash/redis";
 import { logger } from "./_lib/logger";
 import { initUserStorage } from "./_lib/user";
+import { initSentry, captureError } from "./_lib/sentry";
+
+initSentry();
 import {
   bindNpPaymentId,
   getPaymentIntent,
@@ -196,12 +199,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           reference: ref,
           error: String(err),
         });
+        captureError(err, { endpoint: "cron-check-payments", phase: "processIntent", reference: ref });
       }
     }
   } catch (err) {
     logger.error("cron-check-payments", "iteration failed", {
       error: String(err),
     });
+    captureError(err, { endpoint: "cron-check-payments", phase: "iteration" });
     return res.status(500).json({ error: "iteration_failed", outcome });
   }
 

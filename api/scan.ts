@@ -42,7 +42,7 @@ import { evaluatePostLayerFlags, applySafeGateOverride, applyEstablishedBonus, d
 import { setCorsHeaders, getClientIp, getInstallId, checkRateLimit, validateCA, initRateLimiters } from "./_lib/middleware";
 import { initQuota, checkDailyQuota, setQuotaHeaders, secondsUntilReset } from "./_lib/quota";
 import { initUserStorage, pushScanHistory, resolveTierAndBypass } from "./_lib/user";
-import { initCache, getCachedResult, setCachedResult, getCacheRedis } from "./_lib/cache";
+import { initCache, getCachedResult, setCachedResult, setShortCachedResult } from "./_lib/cache";
 import * as Sentry from "@sentry/node";
 import { generateAISummary } from "./_lib/ai-summary";
 
@@ -766,11 +766,11 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       setCachedResult(ca, result, tokenAgeMinutes, result.risk);
       if (resolvedMint !== ca) setCachedResult(resolvedMint, result, tokenAgeMinutes, result.risk);
     } else {
-      const redis = getCacheRedis();
-      if (redis) {
-        redis.setex(`antares:v15:${ca}`, 30, result).catch(() => {});
-        if (resolvedMint !== ca) redis.setex(`antares:v15:${resolvedMint}`, 30, result).catch(() => {});
-      }
+      // No AI summary yet — short-TTL cache so a same-CA reload within
+      // 30s skips re-running the whole pipeline, but the cache expires
+      // fast enough to pick up the AI summary on the next scan tick.
+      setShortCachedResult(ca, result, 30);
+      if (resolvedMint !== ca) setShortCachedResult(resolvedMint, result, 30);
     }
 
     void recordRug({ mint: resolvedMint, symbol: sanitizeString(pair?.baseToken?.symbol) ?? null, score, risk, flags, creator: tokenCreator });

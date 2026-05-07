@@ -31,12 +31,16 @@ vi.mock("../api/_lib/middleware", async () => {
   };
 });
 
-// Mock cache — includes getCacheRedis returning a mock redis with setex
+// Mock cache — short-cache helper replaces the ad-hoc getCacheRedis().setex
+// call site that used to exist in scan.ts. The setex spy lives only to
+// keep test introspection consistent with the previous version, in case
+// any downstream assertion still pokes at it.
 const mockSetex = vi.fn().mockResolvedValue("OK");
 vi.mock("../api/_lib/cache", () => ({
   initCache: vi.fn(),
   getCachedResult: vi.fn().mockResolvedValue(null),
   setCachedResult: vi.fn(),
+  setShortCachedResult: vi.fn(),
   getCacheRedis: vi.fn().mockReturnValue({ setex: mockSetex }),
 }));
 
@@ -361,13 +365,15 @@ describe("scan handler", () => {
     const res = createMockRes();
     await handler(req, res);
     expect(res.json).toHaveBeenCalled();
-    // setCachedResult should NOT have been called (we use redis.setex directly for short TTL)
-    const { setCachedResult } = await import("../api/_lib/cache");
+    // setCachedResult should NOT have been called when aiSummary is null —
+    // scan.ts routes incomplete results through setShortCachedResult (30s
+    // TTL) so the next scan picks up the AI summary.
+    const { setCachedResult, setShortCachedResult } = await import("../api/_lib/cache");
     expect(setCachedResult).not.toHaveBeenCalled();
-    expect(mockSetex).toHaveBeenCalledWith(
-      expect.stringContaining("So11111111111111111111111111111111111111112"),
+    expect(setShortCachedResult).toHaveBeenCalledWith(
+      "So11111111111111111111111111111111111111112",
+      expect.any(Object),
       30,
-      expect.any(Object)
     );
   });
 });

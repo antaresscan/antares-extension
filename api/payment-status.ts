@@ -37,6 +37,9 @@ import {
 } from "./_lib/nowpayments";
 import { confirmIntent } from "./_lib/payment-confirm";
 import { INTENT_LICENSE_KEY } from "./_lib/license";
+import { initSentry, captureError } from "./_lib/sentry";
+
+initSentry();
 
 function getRedis(): Redis | null {
   const url = process.env.UPSTASH_REDIS_REST_URL;
@@ -123,6 +126,7 @@ async function maybeConfirmFromProvider(
       reference: intent.reference,
       error: String(err),
     });
+    captureError(err, { endpoint: "payment-status", phase: "providerLookup", reference: intent.reference });
     return { intent, licenseKey: null };
   }
 
