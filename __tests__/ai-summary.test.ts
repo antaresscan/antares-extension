@@ -390,6 +390,14 @@ describe("generateAISummary", () => {
       risk: "DANGER",
       score: 450,
       freezeAuthority: true,
+      // Real /scan code emits a flag when freezeAuthority === true.
+      // The fallback now requires the flag to be present before
+      // narrating "freeze authority enabled" — the boolean alone is
+      // not authoritative (CHILLHOUSE fix: don't invent risks from
+      // raw fields when the engine didn't surface them).
+      flags: [
+        { label: "Freeze Authority enabled (RugCheck)", severity: "critical", impact: 200 },
+      ],
     }
     const result = await generateAISummary(freezeInput)
     structuralChecks(result)
@@ -408,6 +416,12 @@ describe("generateAISummary", () => {
       lpBurned: true,
       topHolderPct: 5,
       honeypot: false,
+      // /scan emits a critical flag when mintAuthority === true; the
+      // fallback now requires that flag before narrating "mint-authority
+      // rug" (was inventing the narrative from the boolean alone).
+      flags: [
+        { label: "Mint Authority enabled (RugCheck)", severity: "critical", impact: 220 },
+      ],
     }
     const result = await generateAISummary(mintInput)
     structuralChecks(result)
@@ -448,6 +462,14 @@ describe("generateAISummary", () => {
       mintAuthority: false,
       freezeAuthority: false,
       honeypot: false,
+      // /scan emits a critical concentration flag when top1 ≥ 25%; the
+      // fallback now requires that flag before narrating "concentration
+      // rug" (was inventing it from the raw topHolderPct alone — the
+      // CHILLHOUSE bug, where 8.1% top holder with only an LP flag was
+      // being narrated as a concentration risk).
+      flags: [
+        { label: "Single wallet holds 45% of supply", severity: "critical", impact: 250 },
+      ],
     }
     const result = await generateAISummary(topHolderInput)
     structuralChecks(result)
@@ -622,6 +644,88 @@ describe("generateAISummary", () => {
     // The fourth ("High vol/liquidity ratio") falls through to the
     // generic shortener and shows up as "high vol/liquidity ratio".
     expect(para2Lower).toContain("vol/liquidity")
+  })
+
+  it("fallback does NOT invent concentration narrative when no concentration flag is fired (CHILLHOUSE regression: 8.1% top1 + only LP flag)", async () => {
+    // Production CA CHILLHOUSE shipped on CAUTION with exactly one
+    // warning flag — "LP not burned but token is mature and liquid" —
+    // and a top-holder of 8.1%. The /scan engine deliberately did NOT
+    // flag the 8.1% concentration: that holding is within tolerance
+    // for a mature 30d+ token with otherwise clean structure. But the
+    // structured fallback was triggering on `top1 >= 8` regardless,
+    // and the AI summary opened with "lands on CAUTION because a
+    // single wallet holds 8.1% of supply — a meaningful concentration
+    // risk" — i.e. inventing a risk the engine had ruled out and
+    // contradicting the visible flag list.
+    //
+    // The fix gates each verdict's para1 on the actual presence of a
+    // matching flag in topFlags. With no concentration flag here, the
+    // CAUTION branch must fall through to the dominant-flag path and
+    // open with the LP issue, NOT the concentration narrative.
+    vi.stubEnv("GEMINI_API_KEY", "")
+    delete process.env.GEMINI_API_KEY
+    const chillhouseLikeInput: AISummaryInput = {
+      ...noFlagInput,
+      risk: "CAUTION",
+      score: 850,
+      tokenSymbol: "CHILLHOUSE",
+      flags: [
+        // Only LP is flagged. The 8.1% top-holder did NOT trigger the
+        // engine — that's exactly the configuration the fidelity fix
+        // protects against.
+        { label: "LP not burned but token is mature and liquid (unverified LP)", severity: "warning", impact: 150 },
+      ],
+      holders: 16060,
+      lpBurned: false,
+      lpLocked: false,
+      mintAuthority: false,
+      freezeAuthority: false,
+      honeypot: false,
+      tokenAgeHours: 24 * 365, // 12mo old, mature
+      topHolderPct: 8.1, // ABOVE 8 (old gate fired) but NOT FLAGGED
+    }
+    const result = await generateAISummary(chillhouseLikeInput)
+    expect(result).not.toBeNull()
+    const paragraphs = result!.split(/\n\s*\n/).filter((p) => p.trim().length > 0)
+    expect(paragraphs.length).toBe(3)
+    const para1Lower = paragraphs[0].toLowerCase()
+    // Para 1 must NOT claim concentration is the dominant mechanism.
+    // The two markers that betray the bug:
+    expect(para1Lower).not.toContain("single wallet holds 8.1%")
+    expect(para1Lower).not.toMatch(/concentration risk/)
+    // Para 1 SHOULD mention the LP flag (the only thing actually flagged).
+    expect(para1Lower).toMatch(/lp|liquidity|burned/)
+  })
+
+  it("fallback does NOT invent mint-authority narrative without a mint flag", async () => {
+    // Inverse-direction guard: even if mintAuthority === true on the
+    // raw input, without a corresponding flag the fallback must not
+    // narrate "mint-authority rug". Real /scan code always emits the
+    // flag when the boolean fires, so this is paranoia coverage —
+    // catches a regression where someone might forget to wire the
+    // flag in but still surface the boolean.
+    vi.stubEnv("GEMINI_API_KEY", "")
+    delete process.env.GEMINI_API_KEY
+    const mintNoFlagInput: AISummaryInput = {
+      ...noFlagInput,
+      risk: "RUG",
+      score: 95,
+      tokenSymbol: "GHOSTMINT",
+      mintAuthority: true,
+      // No mint flag in the list — only a generic info flag.
+      flags: [
+        { label: "Unusual xyz pattern", severity: "info", impact: 10 },
+      ],
+      lpBurned: true,
+      honeypot: false,
+      topHolderPct: 5,
+    }
+    const result = await generateAISummary(mintNoFlagInput)
+    expect(result).not.toBeNull()
+    const para1Lower = result!.split(/\n\s*\n/)[0].toLowerCase()
+    // The mint-authority narrative must NOT appear without a flag.
+    expect(para1Lower).not.toContain("mint-authority rug")
+    expect(para1Lower).not.toContain("dilute holders to zero")
   })
 
   it("low-flag scans stay tight — no padding when only 1 critical flag fires", async () => {
