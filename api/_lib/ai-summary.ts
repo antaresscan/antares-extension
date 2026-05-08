@@ -21,13 +21,18 @@ export type AISummaryInput = {
 }
 
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
-const MAX_FLAGS = 8
+// MAX_FLAGS bumped 8→12 so a stacked rug (10+ flags) doesn't silently
+// drop the tail-end critical flags before they ever reach the prompt.
+// Completeness > brevity per the founder's call: it's better to have
+// a slightly longer summary than to omit a real risk signal.
+const MAX_FLAGS = 12
 const TIMEOUT_MS = 8000
 const MIN_LENGTH = 20
-// Bumped 1800→2200 to cover the 5+ critical-flag tier (target up to
-// ~145 words, can land at ~1800 chars after expansion). 2200 gives a
-// comfortable safety margin without ballooning UI height.
-const MAX_LENGTH = 2200
+// Bumped to 2600 to cover the high-flag tier headroom (target up to
+// ~180 words, can land at ~2200 chars after expansion). 2600 gives
+// margin for the rare 10+ critical flag scan without truncating
+// mid-sentence.
+const MAX_LENGTH = 2600
 const MAX_RETRIES = 2
 const RETRY_DELAYS = [1500, 3000]
 
@@ -48,15 +53,22 @@ const SEVERITY_ORDER: Record<string, number> = {
  * half of what's wrong" and erodes trust.
  *
  * The fix is to scale the budget with the actual flag count:
- *   0–2 critical → 45–75 words (lean SAFE / low-flag CAUTION)
- *   3–4 critical → 70–110 words (DANGER with multiple stacking issues)
- *   5+  critical →  95–145 words (textbook RUG with full enumeration)
+ *   0–2 critical →  45–75 words  (lean SAFE / low-flag CAUTION)
+ *   3–4 critical →  70–110 words (DANGER with multiple stacking issues)
+ *   5–7 critical →  95–145 words (heavy RUG with full enumeration)
+ *   8+  critical → 110–180 words (extreme stacked rug — never drop a flag)
  *
  * Paragraph 2 of the prompt is then required to enumerate EVERY
  * critical flag with a one-clause reason, so the user never sees
  * "the AI explained 1 of 7 flags".
+ *
+ * The 8+ tier exists because completeness is the founder's stated
+ * priority: even on a token with 10 critical flags, every flag must
+ * appear in the summary. Better a slightly longer block than a
+ * silently dropped risk signal.
  */
 function computeWordTarget(criticalFlagCount: number): { min: number; max: number } {
+  if (criticalFlagCount >= 8) return { min: 110, max: 180 }
   if (criticalFlagCount >= 5) return { min: 95, max: 145 }
   if (criticalFlagCount >= 3) return { min: 70, max: 110 }
   return { min: 45, max: 75 }
