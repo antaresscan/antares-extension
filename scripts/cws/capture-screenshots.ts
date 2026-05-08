@@ -164,40 +164,18 @@ async function captureOverlay(
   }
 }
 
-/**
- * Write `antares_dev_tier` into chrome.storage.local so the
- * background worker treats this install as a paid tier. We need an
- * extension-page context (chrome-extension://...) to access
- * chrome.storage; we use the extension's options page since it's
- * declared in the manifest.
- */
-async function setDevTier(
-  context: BrowserContext,
-  tier: "free" | "pro" | "yearly" | "lifetime",
-): Promise<void> {
-  // Find the extension ID from the registered service worker.
-  const sw = context.serviceWorkers()[0]
-  if (!sw) throw new Error("no service worker registered")
-  const extensionId = sw.url().split("/")[2]
-
-  // Open the options page (a chrome-extension:// URL where chrome.*
-  // APIs are available) just long enough to write the storage key.
-  const page = await context.newPage()
-  await page.goto(`chrome-extension://${extensionId}/options.html`)
-  await page.evaluate((t: string) => {
-    return new Promise<void>((resolve) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const c = (globalThis as any).chrome
-      if (!c?.storage?.local) {
-        resolve()
-        return
-      }
-      c.storage.local.set({ antares_dev_tier: t }, () => resolve())
-    })
-  }, tier)
-  await page.close()
-  console.log(`     dev tier set to "${tier}"`)
-}
+// Note: an earlier draft of this script also exposed a `setDevTier`
+// helper that wrote `antares_dev_tier` into chrome.storage.local from
+// the extension's options page so the background worker would send
+// X-Antares-Dev-Tier: lifetime on every API call. The plan was to
+// unlock the Critical Flags + AI Summary panels for screenshots 3-4.
+// Removed because the API only honours that header for installs in
+// the production DEV_PRO_INSTALLS allowlist or dev-allowlisted
+// emails (see api/_lib/user.ts) — sending it from a fresh install
+// just gets ignored. The current narrative shows verdict variety
+// against real production scoring instead, which is more honest
+// anyway. If we ever ship simulated-Pro screenshots we'll need a
+// dedicated dev-tier install in the allowlist + this helper back.
 
 async function captureWithExtension(): Promise<void> {
   // launchPersistentContext is the supported way to load an unpacked
