@@ -81,14 +81,22 @@ See `api/_lib/constants.ts` for the canonical version + fingerprint logic.
 
 ## Backtest accuracy
 
-The engine is tested live against a corpus of **214 real Solana memecoins**
-captured against the deployed `/api/scan` endpoint. A nightly drift check
-re-scans every fixture and opens an issue if results move.
+The engine is tested live against a corpus of **1,510 real Solana tokens**
+(memecoin-heavy + verified mid-cap) captured against the deployed
+`/api/scan` endpoint. A nightly drift check re-scans every fixture with
+a landed capture and opens an issue if results move.
 
 ```
-Corpus size      : 214 memecoins
-Acceptable rate  : 99.1% (212/214)
-Hard fail        : 0.9% (2/214 — drift to within tolerated band)
+Corpus size       : 1,510 Solana tokens
+Acceptable rate   : 100% (1510/1510)
+  ├─ Exact match  : 7.2%  (109/1510)
+  └─ Tolerated    : 92.8% (1401/1510)
+Hard fail         : 0%    (0/1510)
+
+Tested daily      : 539  / 1510 (35.7%) — 18 SEED + 521 DISCOVERED with
+                                          live captured fixtures
+Tracked weekly    : 971  / 1510 (64.3%) — flagged skipFixture pending
+                                          first /api/scan capture
 
 False-positive on SAFE  : 0  (no blue-chip flagged DANGER/RUG)
 False-negative on RUG   : 0  (no confirmed rug returned SAFE)
