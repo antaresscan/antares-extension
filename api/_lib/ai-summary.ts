@@ -24,11 +24,10 @@ const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat
 const MAX_FLAGS = 8
 const TIMEOUT_MS = 8000
 const MIN_LENGTH = 20
-// Bumped 1200→1800 so we never have to truncate a complete Gemini
-// output mid-sentence. Gemini under the new max_tokens=600 budget
-// (see callGemini) can land at ~1500 chars on dense scans; 1800
-// gives a comfortable safety margin without ballooning UI height.
-const MAX_LENGTH = 1800
+// Bumped 1800→2200 to cover the 5+ critical-flag tier (target up to
+// ~145 words, can land at ~1800 chars after expansion). 2200 gives a
+// comfortable safety margin without ballooning UI height.
+const MAX_LENGTH = 2200
 const MAX_RETRIES = 2
 const RETRY_DELAYS = [1500, 3000]
 
@@ -37,6 +36,30 @@ const SEVERITY_ORDER: Record<string, number> = {
   warning: 1,
   bonus: 2,
   info: 3,
+}
+
+/**
+ * Word-count target band scaled to the critical-flag count.
+ *
+ * Earlier the prompt locked all summaries to 45–75 words regardless of
+ * how many flags were present. Users complained — and they were right
+ * — that a token with 7 critical flags getting a 60-word summary that
+ * only names the dominant flag reads as "the AI doesn't even mention
+ * half of what's wrong" and erodes trust.
+ *
+ * The fix is to scale the budget with the actual flag count:
+ *   0–2 critical → 45–75 words (lean SAFE / low-flag CAUTION)
+ *   3–4 critical → 70–110 words (DANGER with multiple stacking issues)
+ *   5+  critical →  95–145 words (textbook RUG with full enumeration)
+ *
+ * Paragraph 2 of the prompt is then required to enumerate EVERY
+ * critical flag with a one-clause reason, so the user never sees
+ * "the AI explained 1 of 7 flags".
+ */
+function computeWordTarget(criticalFlagCount: number): { min: number; max: number } {
+  if (criticalFlagCount >= 5) return { min: 95, max: 145 }
+  if (criticalFlagCount >= 3) return { min: 70, max: 110 }
+  return { min: 45, max: 75 }
 }
 
 // Removed: FLAG_EXPLANATIONS dictionary + getFlagExplanation helper.
@@ -48,7 +71,11 @@ const SEVERITY_ORDER: Record<string, number> = {
 /**
  * Build a structured explanation prompt from the scan data.
  */
-function buildUserPrompt(input: AISummaryInput, topFlags: Array<{ label: string; severity: string; impact: number }>): string {
+function buildUserPrompt(
+  input: AISummaryInput,
+  topFlags: Array<{ label: string; severity: string; impact: number }>,
+  target: { min: number; max: number },
+): string {
   const lines: string[] = []
   lines.push(`Token: ${input.tokenSymbol || "unknown"}`)
   lines.push(`Score: ${input.score}/1000, Verdict: ${input.risk}`)
@@ -87,6 +114,7 @@ function buildUserPrompt(input: AISummaryInput, topFlags: Array<{ label: string;
   bools.push(input.honeypot ? "HONEYPOT detected (BAD)" : "no honeypot (good)")
   lines.push(`Status: ${bools.join(", ")}`)
 
+  const criticalFlags = topFlags.filter((f) => f.severity === "critical")
   if (topFlags.length > 0) {
     lines.push("")
     lines.push("Detected flags (most critical first):")
@@ -99,22 +127,39 @@ function buildUserPrompt(input: AISummaryInput, topFlags: Array<{ label: string;
   }
 
   lines.push("")
+  // Embed the per-scan length target + the explicit enumeration
+  // requirement directly in the user message. Keeping it in the user
+  // prompt (rather than the system prompt alone) reinforces both
+  // constraints right next to the flag list, which empirically
+  // produces tighter compliance from Gemini than relying on the
+  // system prompt only.
+  const enumInstruction =
+    criticalFlags.length >= 3
+      ? `Paragraph 2 MUST enumerate ALL ${criticalFlags.length} critical flags with one short clause each — do NOT skip any. ` +
+        "Use a comma-separated list if needed. Skipping flags makes the summary look incomplete to a user who already sees the full list above."
+      : "Paragraph 2 weaves the flags and bonus signals — keep it tight."
+
   lines.push(
-    "Write the 3-paragraph AI Verdict block. Paragraph 1 = verdict reason with concrete numbers. " +
-      "Paragraph 2 = counter-context that weaves both the flags AND the bonus status (good/BAD signals above). " +
+    `Write the 3-paragraph AI Verdict block. TOTAL length ${target.min}-${target.max} words. ` +
+      "Paragraph 1 = verdict reason with concrete numbers (≤25 words). " +
+      `Paragraph 2 = counter-context. ${enumInstruction} ` +
       "Paragraph 3 = boundary case (why this verdict, not the adjacent one) for CAUTION/DANGER, action statement for RUG, brief confirming closer for SAFE.",
   )
   return lines.join("\n")
 }
 
-// Strict-format prompt v3. Earlier iterations allowed 5\u20139 sentences
-// across "2 or 3 paragraphs" \u2014 too much variance. Users reported some
-// tokens getting wall-of-text summaries while others got two terse
-// sentences. This version locks the format hard: ALWAYS 3 paragraphs,
-// ALWAYS 45\u201375 words, fixed sentence-budget per paragraph. The four
-// /demo summaries are the canonical references \u2014 they all sit in this
-// 45\u201375 word band with the same skeleton, regardless of verdict.
-const SYSTEM_PROMPT =
+// Strict-format prompt v4. Earlier v3 locked the cap at 45-75 words
+// regardless of how many flags fired, which produced "the AI named 1
+// of 7 critical flags" outputs that erode user trust. v4 takes a
+// dynamic word band (computed by computeWordTarget) and a flag-
+// enumeration requirement on paragraph 2.
+//
+// The four /demo summaries (HAWK/PIPPIN/FARTCOIN/PENGU) remain the
+// canonical low-flag references \u2014 they still sit in the 45-75 band.
+// Higher-flag tokens get more room to enumerate without the model
+// padding the easy cases.
+function buildSystemPrompt(target: { min: number; max: number }): string {
+  return (
   "You are writing the AI Verdict block of an Antares Solana token scan overlay. " +
   "The user already sees the verdict pill (SAFE / CAUTION / DANGER / RUG PULL), the score (X / 1000) and a list of detected flags. " +
   "Your block goes underneath. " +
@@ -122,7 +167,7 @@ const SYSTEM_PROMPT =
   "STRICT FORMAT \u2014 every output MUST follow this exactly: " +
   "\n" +
   "\u2022 EXACTLY 3 paragraphs separated by a single blank line. Never 1, never 2, never 4. " +
-  "\u2022 TOTAL length 45 to 75 words. Never less than 45, never more than 75. " +
+  `\u2022 TOTAL length ${target.min} to ${target.max} words. Never less than ${target.min}, never more than ${target.max}. ` +
   "\u2022 Plain text only. No markdown, no emoji, no bullets, no headers. " +
   "\n\n" +
   "PARAGRAPH 1 \u2014 VERDICT REASON (exactly 1 sentence, \u226425 words). " +
@@ -154,8 +199,10 @@ const SYSTEM_PROMPT =
   "\u2022 CAUTION (other): \"{Symbol} lands on CAUTION because {mechanism with numbers} \u2014 a meaningful risk even with otherwise solid fundamentals.\" " +
   "\u2022 SAFE: \"{Symbol} shows a SAFE profile with {primary positive signal}.\" " +
   "\n\n" +
-  "PARAGRAPH 2 \u2014 COUNTER-CONTEXT (1 or 2 sentences, \u226435 words). " +
-  "List the OTHER signals \u2014 both positive (LP burned, mint/freeze renounced, no honeypot, 30d+ trading) and any other negatives. " +
+  "PARAGRAPH 2 \u2014 COUNTER-CONTEXT + FULL FLAG INVENTORY. " +
+  "List BOTH positive signals (LP burned, mint/freeze renounced, no honeypot, 30d+ trading) AND every remaining critical flag. " +
+  "If 3+ critical flags fired, paragraph 2 MUST name each one with a one-clause reason \u2014 e.g. \u201cBundle holds 37%, top-10 hold 78%, deceptive name, mutable metadata\u201d. " +
+  "Do NOT skip flags: a user already sees the full flag list above your block, and explaining only one when many fired reads as incomplete. " +
   "For RUG / DANGER: state whether positives save the verdict or get overridden. " +
   "For SAFE / CAUTION: list positives matter-of-factly; reference sources by name when they cross-validate. " +
   "\n\n" +
@@ -165,12 +212,17 @@ const SYSTEM_PROMPT =
   "\u2022 CAUTION: \"The verdict is not DANGER because the rest is clean; it is not SAFE because {flag} alone has enough leverage.\" " +
   "\u2022 SAFE: brief confirming closer. \"Strong holder distribution.\" or \"Cross-validates across the 7 layers.\" " +
   "\n\n" +
-  "REFERENCE OUTPUTS (copy this length, structure and tone \u2014 these are the target):" +
+  "REFERENCE OUTPUTS (copy structure and tone \u2014 these are the target. Lengths scale with flag count):" +
   "\n\n" +
-  "[RUG \u00b7 105/1000 \u00b7 single wallet 44%]\n" +
+  "[RUG \u00b7 105/1000 \u00b7 single wallet 44%, 1 critical flag]\n" +
   "Hawk Tuah is the textbook concentration rug \u2014 a single wallet holds 44% of total supply, more than enough to crash the price to zero in one transaction.\n\n" +
   "LP is technically burned and the token has 30d+ of trading history, but those signals are completely overridden by the wallet concentration.\n\n" +
   "Hard kill. Treat any remaining liquidity as exit-only." +
+  "\n\n" +
+  "[RUG \u00b7 60/1000 \u00b7 6 critical flags] (note the longer paragraph 2 enumerating each flag)\n" +
+  "TROLLV2 is a stacked rug \u2014 a single wallet holds 38% of supply with the top 10 controlling 91%, more than enough to dump in one transaction.\n\n" +
+  "LP is unlocked, the contract retains both mint and freeze authority, the metadata is mutable, the project lists no socials, and the engine flags a deceptive name copying an established meme \u2014 every structural surface is compromised.\n\n" +
+  "Hard kill. Any remaining liquidity is exit-only." +
   "\n\n" +
   "[DANGER \u00b7 525/1000 \u00b7 top1 27%, top10 67%]\n" +
   "Pippin lands on DANGER because of stacked concentration risk \u2014 a single wallet holds 27% of supply and the top 10 wallets together control 67%.\n\n" +
@@ -188,6 +240,8 @@ const SYSTEM_PROMPT =
   "Strong holder distribution." +
   "\n\n" +
   "Output ONLY the 3 paragraphs. Do not include the verdict tag or score in your output. Do not add quotation marks. Do not preface."
+  )
+}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -198,12 +252,19 @@ function sleep(ms: number): Promise<void> {
  * - the summary string on success
  * - "__RETRY__" if the error is recoverable (429 or timeout)
  * - null for all other errors
+ *
+ * `target` is the per-scan word budget (computed by computeWordTarget).
+ * The validator uses a wider tolerance band around it (target.min - 20
+ * down to a hard floor of 25, and target.max + 25) so a slightly
+ * over/under output isn't rejected — but a wall-of-text or two-word
+ * regression still gets caught.
  */
 async function callGemini(
   apiKey: string,
   model: string,
   systemPrompt: string,
   userPrompt: string,
+  target: { min: number; max: number },
 ): Promise<string | "__RETRY__" | null> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS)
@@ -283,16 +344,18 @@ async function callGemini(
       })
       return null
     }
-    // Accept 25–110 words. The lower end (25) is the natural floor
-    // for SAFE outputs — the canonical PENGU /demo summary is ~30
-    // words because there is genuinely little to say when nothing is
-    // wrong. The upper bound (110) catches Gemini wall-of-text
-    // regressions while leaving slack for RUG cases that need to
-    // weave 5–6 facts.
-    if (wordCount < 25 || wordCount > 110) {
+    // Tolerance band keyed off the dynamic target. Lower floor
+    // is hard-set at 25 — the canonical PENGU /demo summary is ~30
+    // words because there is genuinely little to say when nothing
+    // is wrong. Upper bound is target.max + 25 to leave slack for a
+    // model that runs slightly over on dense scans, while still
+    // catching wall-of-text regressions.
+    const acceptMin = Math.max(25, target.min - 20)
+    const acceptMax = target.max + 25
+    if (wordCount < acceptMin || wordCount > acceptMax) {
       logger.warn("ai-summary", "Gemini output rejected — word count out of band", {
         wordCount,
-        target: "45–75 typical, 25–110 hard limits",
+        target: `${target.min}-${target.max} typical, ${acceptMin}-${acceptMax} hard limits`,
       })
       return null
     }
@@ -440,16 +503,41 @@ function buildStructuredFallback(
     para1 = `${sym} shows a SAFE profile with ${safeOpener}${ageOpener}.`
   }
 
-  // ── PARA 2 ── counter-context
+  // ── PARA 2 ── counter-context.
+  //
+  // For 3+ critical flags, enumerate each remaining critical flag with
+  // a short clause so the user never sees "the AI named 1 of 7 flags".
+  // The summarised list is built from topFlags MINUS whichever flag we
+  // already used to anchor paragraph 1 (avoids redundancy on the
+  // dominant signal).
+  const criticalFlags = topFlags.filter((f) => f.severity === "critical")
+  const dominantUsed = topFlags[0]?.label ?? ""
+  // No slice cap here — criticalFlags is already bounded by MAX_FLAGS
+  // (8) on the upstream sort, and removing the dominant leaves at most
+  // 7 to enumerate. Capping smaller would resurface the "AI named only
+  // 1 of N flags" complaint this PR is fixing.
+  const otherCritical = criticalFlags
+    .filter((f) => f.label !== dominantUsed)
+    .map((f) => shortenFlagLabel(f.label))
+
   let para2: string
   if (verdict === "RUG") {
-    if (positives.length > 0) {
+    if (criticalFlags.length >= 3 && otherCritical.length > 0) {
+      // Heavy-flag rug — enumerate the supporting critical flags.
+      const cleanClause =
+        positives.length > 0 ? `${capitalize(joinCommaList(positives))} are present, but ` : "There are no clean structural counter-signals; "
+      para2 = `${cleanClause}the engine also flags ${joinCommaList(otherCritical)} — every structural surface that should protect a holder is compromised.`
+    } else if (positives.length > 0) {
       para2 = `${capitalize(joinCommaList(positives))}, but those signals are completely overridden by the dominant flag — the dev (or whoever controls that wallet) can collapse the price at any moment.`
     } else {
       para2 = `No structural counter-signals to mitigate — the contract is compromised across multiple layers and there is no clean signal to weigh against the verdict.`
     }
   } else if (verdict === "DANGER") {
-    if (positives.length >= 2) {
+    if (criticalFlags.length >= 3 && otherCritical.length > 0) {
+      const cleanClause =
+        positives.length >= 1 ? `${capitalize(joinCommaList(positives))}, which keeps the verdict short of RUG. The engine ` : "The engine "
+      para2 = `${cleanClause}also flags ${joinCommaList(otherCritical)} — each one a meaningful risk on its own.`
+    } else if (positives.length >= 2) {
       para2 = `${capitalize(joinCommaList(positives))} — the contract surface itself is clean, which is why the verdict does not collapse all the way to RUG.`
     } else if (positives.length === 1) {
       para2 = `${capitalize(positives[0])} — the only counter-signal that keeps the verdict from collapsing all the way to RUG.`
@@ -457,7 +545,11 @@ function buildStructuredFallback(
       para2 = `No clean structural counter-signals to weigh against the dominant risk — the contract has nothing in its favor to soften the verdict.`
     }
   } else if (verdict === "CAUTION") {
-    if (positives.length > 0) {
+    if (criticalFlags.length >= 3 && otherCritical.length > 0) {
+      const cleanClause =
+        positives.length > 0 ? `${capitalize(joinCommaList(positives))}, but ` : "Beyond the primary concern, "
+      para2 = `${cleanClause}the engine also flags ${joinCommaList(otherCritical)} — secondary concerns that compound the verdict.`
+    } else if (positives.length > 0) {
       para2 = `${capitalize(joinCommaList(positives))} — the rest of the structural posture is clean.`
     } else {
       para2 = `The rest of the contract surface is clean and there are no other critical signals firing alongside the primary concern.`
@@ -500,6 +592,52 @@ function buildStructuredFallback(
 function capitalize(s: string): string {
   if (s.length === 0) return s
   return s[0].toUpperCase() + s.slice(1)
+}
+
+/**
+ * Compact a verbose flag label into a clause that fits a comma-list.
+ *
+ * Examples:
+ *   "Top 10 holders > 70%"                        → "top-10 hold >70%"
+ *   "Single wallet holds 18% of supply"           → "single wallet 18%"
+ *   "Mint Authority enabled (RugCheck)"           → "mint authority enabled"
+ *   "LP not burned or locked"                     → "LP unlocked"
+ *   "Honeypot detected — cannot sell"             → "honeypot"
+ *   "Bundle holds ~37% of supply — coordinated…"  → "bundle holds ~37%"
+ *   "No website / Twitter / Telegram"             → "no socials"
+ *   "Metadata mutable"                            → "mutable metadata"
+ *
+ * Falls back to a lowercased version of the original label trimmed at
+ * the first long-form separator (em dash, parenthesis) when no rule
+ * matches. Output is always lowercased so the joined list reads like
+ * a natural-language inventory.
+ */
+function shortenFlagLabel(label: string): string {
+  const l = label.toLowerCase()
+  if (/honeypot/.test(l)) return "honeypot"
+  if (/lp not burned|lp not locked|lp open|liquidity (?:not|unlocked)/.test(l)) return "LP unlocked"
+  if (/freeze authority/.test(l)) return "freeze authority enabled"
+  if (/mint authority/.test(l)) return "mint authority enabled"
+  const top10Match = l.match(/top\s*10[^%]*?(\d+(?:\.\d+)?)\s*%/)
+  if (top10Match) return `top-10 hold ${top10Match[1]}%`
+  const single = l.match(/single wallet[^%]*?(\d+(?:\.\d+)?)\s*%/)
+  if (single) return `single wallet ${single[1]}%`
+  const bundle = l.match(/bundl[ae]r?[^%]*?(\d+(?:\.\d+)?)\s*%/)
+  if (bundle) return `bundle holds ~${bundle[1]}%`
+  if (/bundl|coordinated/.test(l)) return "bundle activity"
+  if (/wash/.test(l)) return "wash trading"
+  if (/sniper/.test(l)) return "sniper activity"
+  if (/deceptive name|impersonat/.test(l)) return "deceptive name"
+  if (/metadata mutable/.test(l)) return "mutable metadata"
+  if (/no website|no socials|no twitter|no telegram|missing socials/.test(l)) return "no socials"
+  if (/hidden owner/.test(l)) return "hidden owner"
+  if (/upgradeable|proxy/.test(l)) return "upgradeable contract"
+  if (/blacklist/.test(l)) return "blacklist capability"
+  if (/transfer pausable|transfer paused/.test(l)) return "transfer pausable"
+  if (/sell tax|buy tax/.test(l)) return l.match(/(?:sell|buy)\s*tax\s*(\d+)?/)?.[0] || "tax flag"
+  // Generic fallback: take the part before any separator and trim.
+  const head = label.split(/[—(]/)[0].trim().toLowerCase()
+  return head.length > 60 ? head.slice(0, 57) + "…" : head
 }
 
 function joinCommaList(items: string[]): string {
@@ -556,7 +694,13 @@ export async function generateAISummary(
     })
     .slice(0, MAX_FLAGS)
 
-  const userPrompt = buildUserPrompt(input, topFlags)
+  // Scale the word budget with critical-flag count so dense scans get
+  // enough room to enumerate every flag (see computeWordTarget for
+  // why and the bands in use).
+  const criticalCount = topFlags.filter((f) => f.severity === "critical").length
+  const target = computeWordTarget(criticalCount)
+  const systemPrompt = buildSystemPrompt(target)
+  const userPrompt = buildUserPrompt(input, topFlags, target)
 
   // Try Gemini with retries
   if (apiKey && apiKey !== "") {
@@ -575,8 +719,10 @@ export async function generateAISummary(
         model: primaryModel,
         attempt: attempt + 1,
         totalAttempts: MAX_RETRIES + 1,
+        criticalCount,
+        targetWords: `${target.min}-${target.max}`,
       })
-      const result = await callGemini(apiKey, primaryModel, SYSTEM_PROMPT, userPrompt)
+      const result = await callGemini(apiKey, primaryModel, systemPrompt, userPrompt, target)
 
       if (result === "__RETRY__") {
         // Continue to next retry attempt

@@ -516,8 +516,95 @@ describe("generateAISummary", () => {
     const result = await generateAISummary(longInput)
     expect(result).not.toBeNull()
     if (result) {
-      expect(result.length).toBeLessThanOrEqual(1800)
+      // MAX_LENGTH bumped to 2200 in the dynamic-target rewrite — kept
+      // the assertion at the new ceiling. 1800 was a leftover from the
+      // 45–75 word fixed cap; today the cap scales with critical-flag
+      // count up to 145 words.
+      expect(result.length).toBeLessThanOrEqual(2200)
     }
+  })
+
+  it("fallback enumerates ALL critical flags in paragraph 2 when 5+ are present (no AI explanations one-of-many)", async () => {
+    // The user-reported pain: tokens with 5–10 flags would get a
+    // summary that explained only the dominant one and waved at "and
+    // some other negatives". This test pins the new contract — every
+    // critical flag must appear by name in paragraph 2.
+    vi.stubEnv("GEMINI_API_KEY", "")
+    delete process.env.GEMINI_API_KEY
+    const denseInput: AISummaryInput = {
+      ...noFlagInput,
+      risk: "RUG",
+      score: 80,
+      tokenSymbol: "TROLLV2",
+      flags: [
+        { label: "Single wallet holds 38% of supply", severity: "critical", impact: 200 },
+        { label: "Top 10 holders > 90%", severity: "critical", impact: 180 },
+        { label: "LP not burned or locked", severity: "critical", impact: 160 },
+        { label: "Mint Authority enabled", severity: "critical", impact: 150 },
+        { label: "Freeze Authority enabled", severity: "critical", impact: 140 },
+        { label: "Metadata mutable", severity: "critical", impact: 100 },
+        { label: "No website / Twitter / Telegram", severity: "critical", impact: 90 },
+        { label: "Deceptive name detected", severity: "critical", impact: 80 },
+      ],
+      lpBurned: false,
+      lpLocked: false,
+      mintAuthority: true,
+      freezeAuthority: true,
+      topHolderPct: 38,
+    }
+    const result = await generateAISummary(denseInput)
+    expect(result).not.toBeNull()
+    const paragraphs = result!.split(/\n\s*\n/).filter((p) => p.trim().length > 0)
+    expect(paragraphs.length).toBe(3)
+    // Paragraph 2 should mention secondary critical flags by short
+    // name. We test for the compacted forms emitted by
+    // shortenFlagLabel — same shape the comma-list uses.
+    const para2Lower = paragraphs[1].toLowerCase()
+    // The dominant flag (single wallet 38%) anchors paragraph 1 and is
+    // intentionally NOT repeated in paragraph 2 — but the rest must be.
+    const expectedMentions = [
+      "top-10 hold",       // top 10 holders > 90%
+      "lp unlocked",       // LP not burned/locked
+      "mutable metadata",  // metadata mutable
+      "no socials",        // no website / twitter / telegram
+      "deceptive name",    // deceptive name detected
+    ]
+    for (const mention of expectedMentions) {
+      expect(para2Lower).toContain(mention)
+    }
+    // Word count should land in the 5+ critical band (95–145 typical,
+    // wider tolerance allowed).
+    const wordCount = result!.split(/\s+/).filter((w) => w.length > 0).length
+    expect(wordCount).toBeGreaterThanOrEqual(60)
+    expect(wordCount).toBeLessThanOrEqual(170)
+  })
+
+  it("low-flag scans stay tight — no padding when only 1 critical flag fires", async () => {
+    // Mirror invariant: tokens with 1 critical flag still get a 45–75
+    // word summary. We don't want the new dynamic cap to make every
+    // CAUTION read like a wall of text.
+    vi.stubEnv("GEMINI_API_KEY", "")
+    delete process.env.GEMINI_API_KEY
+    const tightInput: AISummaryInput = {
+      ...noFlagInput,
+      risk: "CAUTION",
+      score: 825,
+      tokenSymbol: "Fartcoin",
+      flags: [
+        { label: "Single wallet holds 11% of supply", severity: "critical", impact: 100 },
+      ],
+      lpBurned: true,
+      mintAuthority: false,
+      freezeAuthority: false,
+      honeypot: false,
+      tokenAgeHours: 24 * 60,
+      topHolderPct: 11,
+    }
+    const result = await generateAISummary(tightInput)
+    expect(result).not.toBeNull()
+    const wordCount = result!.split(/\s+/).filter((w) => w.length > 0).length
+    expect(wordCount).toBeGreaterThanOrEqual(25)
+    expect(wordCount).toBeLessThanOrEqual(95)
   })
 
   // ---------------------------------------------------------------------------
