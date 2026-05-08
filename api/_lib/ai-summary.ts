@@ -136,13 +136,13 @@ function buildUserPrompt(
   )
   if (topFlags.length > 0) {
     lines.push("")
-    lines.push("Detected flags (most critical first):")
+    lines.push("Detected flags (AUTHORITATIVE — discuss ONLY these as risks; the Metrics line above is for adding numbers to flags that DID fire, never for inventing new risks):")
     for (const f of topFlags) {
       lines.push(`- [${f.severity}] ${f.label} (impact: ${f.impact})`)
     }
   } else {
     lines.push("")
-    lines.push("No flags raised — verdict is driven by the bonus signals above.")
+    lines.push("No flags raised — verdict is driven by the positive signals above. Do NOT introduce risks from raw metric values; the engine has decided nothing is flag-worthy.")
   }
 
   lines.push("")
@@ -188,6 +188,14 @@ function buildSystemPrompt(target: { min: number; max: number }): string {
   "\u2022 EXACTLY 3 paragraphs separated by a single blank line. Never 1, never 2, never 4. " +
   `\u2022 TOTAL length ${target.min} to ${target.max} words. Never less than ${target.min}, never more than ${target.max}. ` +
   "\u2022 Plain text only. No markdown, no emoji, no bullets, no headers. " +
+  "\n\n" +
+  "FLAG FIDELITY \u2014 the 'Detected flags' list in the user message is the AUTHORITATIVE source of negative findings. " +
+  "The 'Metrics' line shows raw values for context (so you can quote concrete numbers when explaining a flag that already fired) and the 'Status' line shows positive/negative structural state. " +
+  "But a number being present in Metrics does NOT mean it is a flagged risk. " +
+  "If 'top holder owns 8.1% of supply' appears in Metrics but NO concentration flag is in the Detected flags list, you MUST NOT call it a concentration risk \u2014 the engine already decided 8.1% is within tolerance for this token. " +
+  "Same rule for any other metric: holder count, liquidity, age, volume. " +
+  "Use Metrics to add concrete numbers to flags that DID fire, never to invent new ones. " +
+  "If the flag list is short or empty, your paragraphs 1\u20132 must mirror that \u2014 lead with the single dominant flag (or the verdict reason itself if no flags fired) and use the rest of the data as positive counter-context, not as additional risk. " +
   "\n\n" +
   "PARAGRAPH 1 \u2014 VERDICT REASON (exactly 1 sentence, \u226425 words). " +
   "Open with the token name. State the verdict and the dominant mechanism with one concrete number. " +
@@ -456,6 +464,25 @@ function buildStructuredFallback(
   const bundlePctMatch = bundleFlag ? bundleFlag.label.match(/~?(\d+(?:\.\d+)?)\s*%/) : null
   const bundlePct = bundlePctMatch ? bundlePctMatch[1] : null
 
+  // Did the scoring engine actually flag concentration? Without this
+  // gate the fallback would invent a "single wallet holds X% — concentration
+  // risk" narrative purely off the raw top-holder metric, even when the
+  // engine concluded the holding was within tolerance and emitted no
+  // concentration flag (CHILLHOUSE bug: top1=8.1% with only an LP flag
+  // produced a concentration narrative that didn't match the displayed
+  // flag list). The flag list is the authoritative source of risks; the
+  // metric is only allowed to anchor para1 when there IS a flag for it.
+  const concentrationFlag = topFlags.find((f) =>
+    /single wallet|top\s*holder|top\s*1[^0]|top\s*10|holder concentration|concentration/i.test(f.label),
+  )
+  // Did the engine flag the LP? Same fidelity rule for the LP-anchored
+  // RUG / DANGER branches — we only narrate "liquidity unlocked" or
+  // "exit-scam pattern" when an LP flag is actually in the list.
+  const lpFlag = topFlags.find((f) => /\blp\b|liquidity|locked|burned/i.test(f.label))
+  // Did the engine flag mint or freeze authority?
+  const mintFlag = topFlags.find((f) => /mint authority/i.test(f.label))
+  const freezeFlag = topFlags.find((f) => /freeze authority/i.test(f.label))
+
   // top1 is in PERCENTAGE form (0–100), as set by api/scan.ts:
   //   `(topAmt / totalSupplyUi) * 100`
   // i.e. a 44% wallet arrives as 44, not 0.44. All thresholds and
@@ -471,6 +498,11 @@ function buildStructuredFallback(
   //   4. LP not locked    — exit-scam surface
   //   5. mint authority   — dilution-rug surface
   //   6. generic          — fall-through to dominant flag label
+  // Each branch below is gated on whether the engine actually flagged
+  // the corresponding mechanism. The honeypot boolean is treated as a
+  // flag-equivalent because it's a hard-coded contract property the
+  // /scan code surfaces directly. All other narratives require a flag
+  // in topFlags so we never invent a risk from raw metric values.
   let para1: string
   if (verdict === "RUG") {
     if (input.honeypot) {
@@ -478,11 +510,11 @@ function buildStructuredFallback(
     } else if (bundleFlag) {
       const pctClause = bundlePct ? `roughly ${bundlePct}% of supply` : "a meaningful share of supply"
       para1 = `${sym} is a bundle rug — coordinated wallets quietly hold ${pctClause} across multiple addresses, invisible to top-holder metrics but acting as a single coordinated seller.`
-    } else if (top1 !== null && top1 >= 25) {
+    } else if (concentrationFlag && top1 !== null && top1 >= 25) {
       para1 = `${sym} is the textbook concentration rug — a single wallet holds ${top1.toFixed(1)}% of total supply, more than enough to crash the price to zero in one transaction.`
-    } else if (!lpProtected) {
+    } else if (lpFlag && !lpProtected) {
       para1 = `${sym} is an exit-scam pattern — liquidity is unlocked and the dev can drain the entire pool in a single transaction.`
-    } else if (input.mintAuthority === true) {
+    } else if (mintFlag && input.mintAuthority === true) {
       para1 = `${sym} is a mint-authority rug — the dev can print unlimited new tokens and dilute holders to zero at will.`
     } else if (dominantFlag) {
       para1 = `${sym} lands on RUG because of ${dominantFlag} — multiple critical signals confirm the verdict.`
@@ -493,11 +525,11 @@ function buildStructuredFallback(
     if (bundleFlag) {
       const pctClause = bundlePct ? `roughly ${bundlePct}% of supply` : "a meaningful share of supply"
       para1 = `${sym} lands on DANGER because of bundle activity — coordinated wallets hold ${pctClause}, masking concentration that visible top-holder metrics don't catch.`
-    } else if (top1 !== null && top1 >= 20) {
+    } else if (concentrationFlag && top1 !== null && top1 >= 20) {
       para1 = `${sym} lands on DANGER because of stacked concentration risk — a single wallet holds ${top1.toFixed(1)}% of supply, enough to dictate price action on its own.`
-    } else if (!lpProtected) {
+    } else if (lpFlag && !lpProtected) {
       para1 = `${sym} lands on DANGER because liquidity is neither locked nor burned — the dev retains the option to drain the pool whenever they choose.`
-    } else if (input.mintAuthority === true || input.freezeAuthority === true) {
+    } else if ((mintFlag && input.mintAuthority === true) || (freezeFlag && input.freezeAuthority === true)) {
       const which = input.mintAuthority === true && input.freezeAuthority === true ? "mint and freeze" : input.mintAuthority === true ? "mint" : "freeze"
       para1 = `${sym} lands on DANGER because the contract retains ${which} authority — a structural risk that no holder activity can offset.`
     } else if (dominantFlag) {
@@ -509,7 +541,12 @@ function buildStructuredFallback(
     if (bundleFlag) {
       const pctClause = bundlePct ? `roughly ${bundlePct}% of supply` : "a meaningful share of supply"
       para1 = `${sym} lands on CAUTION because of bundle activity — coordinated wallets hold ${pctClause}, invisible to standard concentration metrics even with otherwise solid fundamentals.`
-    } else if (top1 !== null && top1 >= 8) {
+    } else if (concentrationFlag && top1 !== null && top1 >= 8) {
+      // Only narrate concentration when the engine actually flagged it.
+      // Without this gate we would invent the FARTCOIN-style narrative
+      // for any token with a top-1 ≥8% even when the only fired flag
+      // was about LP/mint/freeze/socials/etc — exactly the CHILLHOUSE
+      // bug (8.1% top1, 1 LP flag, but the AI summary led with concentration).
       para1 = `${sym} lands on CAUTION because a single wallet holds ${top1.toFixed(1)}% of supply — a meaningful concentration risk even with otherwise solid fundamentals.`
     } else if (dominantFlag) {
       para1 = `${sym} lands on CAUTION because of ${dominantFlag} — a meaningful risk even with otherwise solid fundamentals.`
