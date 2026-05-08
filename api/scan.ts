@@ -47,6 +47,7 @@ import * as Sentry from "@sentry/node";
 import { generateAISummary } from "./_lib/ai-summary";
 
 import { initRugDb, recordRug } from "./_lib/rugdb";
+import { initFeedbackStore, getDisagreementSignal } from "./_lib/feedback";
 import { logger } from "./_lib/logger";
 import { composeCriticalActors } from "./_lib/critical-actors";
 import { buildInsiderGraph, initGraphCache } from "./_lib/insider-graph";
@@ -69,6 +70,7 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
   initRugDb(redis);
   initGraphCache(redis);
   initHistoryCache(redis);
+  initFeedbackStore(redis);
 }
 
 // 24s internal budget against the 25s vercel.json maxDuration. The 9s
@@ -77,6 +79,30 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
 // enrich). 25s is enough headroom even for the heaviest tokens while
 // still bounding worst-case wait for users on warm calls.
 const GLOBAL_TIMEOUT_MS = Number(process.env.VERCEL_TIMEOUT) || 24000;
+
+/**
+ * Attach the live "users disagree" signal to a scan result before
+ * returning it. Read live (uncached) on every response — the heavy
+ * scoring result stays cached at the regular TTL but the signal
+ * needs to reflect freshly-submitted reports as users land on the
+ * page. The Redis read is sub-millisecond on Upstash so the cost is
+ * negligible relative to the scan pipeline.
+ *
+ * Errors are swallowed: if the feedback store is unreachable we
+ * return the bare result rather than a 500 — the disagreement banner
+ * is a nice-to-have, the verdict is the load-bearing signal.
+ */
+async function withDisagreement<T extends object>(result: T, mint: string): Promise<T> {
+  try {
+    const signal = await getDisagreementSignal(mint);
+    if (signal) {
+      return { ...result, disagreement: signal };
+    }
+  } catch {
+    /* swallow — the verdict response should not fail because feedback is down */
+  }
+  return result;
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const requestId = randomUUID();
@@ -165,7 +191,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         name: cached.tokenName ?? undefined,
       });
     }
-    return res.json(cached);
+    return res.json(await withDisagreement(cached, cached.resolvedMint ?? ca));
   }
 
   const timeoutPromise = new Promise<never>((_, reject) =>
@@ -255,7 +281,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
             name: cachedByMint.tokenName ?? undefined,
           });
         }
-        return res.json(cachedByMint);
+        return res.json(await withDisagreement(cachedByMint, cachedByMint.resolvedMint ?? resolvedMint));
       }
     }
     if (dexData?.pairs && dexData.pairs.length > 1) {
@@ -801,7 +827,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       });
     }
 
-    return res.json(result);
+    return res.json(await withDisagreement(result, resolvedMint));
   } catch (e) {
     logger.error("scan", "analysis error", { requestId, version: SCORING_VERSION, error: String(e) });
     Sentry.captureException(e);

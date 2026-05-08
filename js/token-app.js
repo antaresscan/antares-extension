@@ -34,6 +34,7 @@ import {
   buildSourceListRows,
   buildFeedbackTrigger,
   buildFeedbackModal,
+  buildDisagreementBanner,
 } from "./views.js";
 import {
   setupCursorGlow,
@@ -376,6 +377,12 @@ function render(d, ca) {
   const buySellFlowTabHtml = buildBuySellFlowTab(d);
   const washVolumeTabHtml = buildWashVolumeTab(d);
 
+  // ── Disagreement banner — backend attaches `disagreement` to the
+  // /api/scan response when there's a clear majority of users reporting
+  // a different verdict. See `getDisagreementSignal` in
+  // api/_lib/feedback.ts for the dominance + minimum-count logic.
+  const disagreementBannerHtml = buildDisagreementBanner(d.disagreement);
+
   // ── Source breakdown rows
   const sourceListHtml = buildSourceListRows(d);
 
@@ -415,6 +422,7 @@ function render(d, ca) {
           ${tokenLogoHtml}
         </div>
         ${tkLineHtml}
+        ${disagreementBannerHtml}
         <div class="meta-row">
           ${ageBadgeHtml}
           ${socialsHtml}
