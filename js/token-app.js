@@ -32,9 +32,6 @@ import {
   buildBuySellFlowTab,
   buildWashVolumeTab,
   buildSourceListRows,
-  buildFeedbackTrigger,
-  buildFeedbackModal,
-  buildDisagreementBanner,
 } from "./views.js";
 import {
   setupCursorGlow,
@@ -45,7 +42,6 @@ import {
   setupRefreshButton,
   setupFreshnessTicker,
   setupRevealObserver,
-  setupFeedbackModal,
   loadInsiderActivity,
 } from "./ui-setup.js";
 import { API, fetchWithRetry } from "./api-client.js";
@@ -377,12 +373,6 @@ function render(d, ca) {
   const buySellFlowTabHtml = buildBuySellFlowTab(d);
   const washVolumeTabHtml = buildWashVolumeTab(d);
 
-  // ── Disagreement banner — backend attaches `disagreement` to the
-  // /api/scan response when there's a clear majority of users reporting
-  // a different verdict. See `getDisagreementSignal` in
-  // api/_lib/feedback.ts for the dominance + minimum-count logic.
-  const disagreementBannerHtml = buildDisagreementBanner(d.disagreement);
-
   // ── Source breakdown rows
   const sourceListHtml = buildSourceListRows(d);
 
@@ -422,7 +412,6 @@ function render(d, ca) {
           ${tokenLogoHtml}
         </div>
         ${tkLineHtml}
-        ${disagreementBannerHtml}
         <div class="meta-row">
           ${ageBadgeHtml}
           ${socialsHtml}
@@ -436,10 +425,7 @@ function render(d, ca) {
             <div class="m-big">${score}<span class="denom">/ 1000</span></div>
             <div class="sbar"><div class="sbar-fill" id="sbarf"></div></div>
             <div class="m-sub risk">${escapeHtml(flagSummary)}${conf !== null ? " · Conf " + conf + "%" : ""}</div>
-            <div class="m-fresh-row">
-              <span class="m-fresh" id="m-fresh">Scanned just now</span>
-              ${buildFeedbackTrigger()}
-            </div>
+            <div class="m-fresh" id="m-fresh">Scanned just now</div>
           </div>
           ${priceCardHtml}
         </div>
@@ -518,8 +504,6 @@ function render(d, ca) {
     <div class="marquee-wrap">
       <div class="marquee-inner">${marqueeHtml}</div>
     </div>
-
-    ${buildFeedbackModal()}
   `;
 
   // Wire up animations + reveal observer (one-shot init guarded inside)
@@ -531,7 +515,6 @@ function render(d, ca) {
   setupFab();
   setupRefreshButton(ca, { onRefresh: (data) => render(data, ca) });
   setupFreshnessTicker(d.fetchedAt);
-  setupFeedbackModal(ca, d.risk || "SAFE");
 
   // Score bar animation
   setTimeout(() => {
