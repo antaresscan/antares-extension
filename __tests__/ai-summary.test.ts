@@ -579,6 +579,51 @@ describe("generateAISummary", () => {
     expect(wordCount).toBeLessThanOrEqual(170)
   })
 
+  it("fallback enumerates ALL flags when token has only WARNING flags (GIGARAT regression: 0 critical + 4 warning)", async () => {
+    // Production CA GIGARAT shipped with 0 critical + 4 warning flags
+    // and the AI summary enumerated only the dominant flag (LP not
+    // burned), waving at "holder structure" without naming the wash
+    // trading, the wallet pct, or the volume/liquidity ratio. The user
+    // saw 4 flags in the panel and 1 flag in the summary — exactly the
+    // failure mode this PR fixes. The earlier `criticalFlags >= 3`
+    // gate was the bug; it now triggers on `significantFlags >= 3`
+    // (critical + warning).
+    vi.stubEnv("GEMINI_API_KEY", "")
+    delete process.env.GEMINI_API_KEY
+    const gigaratLikeInput: AISummaryInput = {
+      ...noFlagInput,
+      risk: "DANGER",
+      score: 480,
+      tokenSymbol: "GIGARAT",
+      flags: [
+        { label: "LP not burned or locked — dev can rug liquidity", severity: "warning", impact: 150 },
+        { label: "Single wallet holds 14% of supply", severity: "warning", impact: 120 },
+        { label: "Liquidity mirage: volume >> liquidity (wash)", severity: "warning", impact: 100 },
+        { label: "High vol/liquidity ratio", severity: "warning", impact: 80 },
+      ],
+      lpBurned: false,
+      lpLocked: false,
+      mintAuthority: false,
+      freezeAuthority: false,
+      honeypot: false,
+      topHolderPct: 14,
+    }
+    const result = await generateAISummary(gigaratLikeInput)
+    expect(result).not.toBeNull()
+    const paragraphs = result!.split(/\n\s*\n/).filter((p) => p.trim().length > 0)
+    expect(paragraphs.length).toBe(3)
+    const para2Lower = paragraphs[1].toLowerCase()
+    // The dominant (LP not burned) anchors paragraph 1 — paragraph 2
+    // must surface the OTHER three. Each compact label produced by
+    // shortenFlagLabel (single wallet 14%, wash trading, high vol)
+    // should appear.
+    expect(para2Lower).toContain("single wallet 14%")
+    expect(para2Lower).toContain("wash trading")
+    // The fourth ("High vol/liquidity ratio") falls through to the
+    // generic shortener and shows up as "high vol/liquidity ratio".
+    expect(para2Lower).toContain("vol/liquidity")
+  })
+
   it("low-flag scans stay tight — no padding when only 1 critical flag fires", async () => {
     // Mirror invariant: tokens with 1 critical flag still get a 45–75
     // word summary. We don't want the new dynamic cap to make every

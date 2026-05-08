@@ -44,33 +44,33 @@ const SEVERITY_ORDER: Record<string, number> = {
 }
 
 /**
- * Word-count target band scaled to the critical-flag count.
+ * Word-count target band scaled to the SIGNIFICANT-flag count
+ * (critical + warning, ignoring bonus/info noise).
  *
- * Earlier the prompt locked all summaries to 45–75 words regardless of
- * how many flags were present. Users complained — and they were right
- * — that a token with 7 critical flags getting a 60-word summary that
- * only names the dominant flag reads as "the AI doesn't even mention
- * half of what's wrong" and erodes trust.
+ * Earlier versions counted only critical flags, which silently
+ * de-prioritised warning flags. A real production CA (GIGARAT,
+ * 2026-05-08) had 0 critical + 4 warning flags and got a 70-word
+ * summary that only mentioned 1 of the 4 — exactly the failure mode
+ * we're trying to prevent. The user already sees no severity
+ * distinction in the flags panel; the summary needs to mirror that.
  *
- * The fix is to scale the budget with the actual flag count:
- *   0–2 critical →  45–75 words  (lean SAFE / low-flag CAUTION)
- *   3–4 critical →  70–110 words (DANGER with multiple stacking issues)
- *   5–7 critical →  95–145 words (heavy RUG with full enumeration)
- *   8+  critical → 110–180 words (extreme stacked rug — never drop a flag)
+ * Bands (`s` = significant flags = critical + warning):
+ *   0–2 → 45–75 words  (lean SAFE / single-flag CAUTION)
+ *   3–4 → 70–110 words (DANGER with stacking issues — GIGARAT case)
+ *   5–7 → 95–145 words (heavy DANGER/RUG with full enumeration)
+ *   8+  → 110–180 words (extreme stacked rug — never drop a flag)
  *
  * Paragraph 2 of the prompt is then required to enumerate EVERY
- * critical flag with a one-clause reason, so the user never sees
+ * significant flag with a one-clause reason, so the user never sees
  * "the AI explained 1 of 7 flags".
  *
- * The 8+ tier exists because completeness is the founder's stated
- * priority: even on a token with 10 critical flags, every flag must
- * appear in the summary. Better a slightly longer block than a
- * silently dropped risk signal.
+ * Completeness is the founder's stated priority: better a slightly
+ * longer block than a silently dropped risk signal.
  */
-function computeWordTarget(criticalFlagCount: number): { min: number; max: number } {
-  if (criticalFlagCount >= 8) return { min: 110, max: 180 }
-  if (criticalFlagCount >= 5) return { min: 95, max: 145 }
-  if (criticalFlagCount >= 3) return { min: 70, max: 110 }
+function computeWordTarget(significantFlagCount: number): { min: number; max: number } {
+  if (significantFlagCount >= 8) return { min: 110, max: 180 }
+  if (significantFlagCount >= 5) return { min: 95, max: 145 }
+  if (significantFlagCount >= 3) return { min: 70, max: 110 }
   return { min: 45, max: 75 }
 }
 
@@ -126,7 +126,14 @@ function buildUserPrompt(
   bools.push(input.honeypot ? "HONEYPOT detected (BAD)" : "no honeypot (good)")
   lines.push(`Status: ${bools.join(", ")}`)
 
-  const criticalFlags = topFlags.filter((f) => f.severity === "critical")
+  // Significant = critical + warning. Bonus and info severities are
+  // already filtered out upstream. We treat criticals and warnings
+  // identically for enumeration purposes — the user sees both in the
+  // flags panel without distinction (just a colour), so the summary
+  // must mirror that.
+  const significantFlags = topFlags.filter(
+    (f) => f.severity === "critical" || f.severity === "warning",
+  )
   if (topFlags.length > 0) {
     lines.push("")
     lines.push("Detected flags (most critical first):")
@@ -146,8 +153,8 @@ function buildUserPrompt(
   // produces tighter compliance from Gemini than relying on the
   // system prompt only.
   const enumInstruction =
-    criticalFlags.length >= 3
-      ? `Paragraph 2 MUST enumerate ALL ${criticalFlags.length} critical flags with one short clause each — do NOT skip any. ` +
+    significantFlags.length >= 3
+      ? `Paragraph 2 MUST enumerate ALL ${significantFlags.length} flags above with one short clause each — do NOT skip any, regardless of whether they are critical or warning. ` +
         "Use a comma-separated list if needed. Skipping flags makes the summary look incomplete to a user who already sees the full list above."
       : "Paragraph 2 weaves the flags and bonus signals — keep it tight."
 
@@ -212,9 +219,10 @@ function buildSystemPrompt(target: { min: number; max: number }): string {
   "\u2022 SAFE: \"{Symbol} shows a SAFE profile with {primary positive signal}.\" " +
   "\n\n" +
   "PARAGRAPH 2 \u2014 COUNTER-CONTEXT + FULL FLAG INVENTORY. " +
-  "List BOTH positive signals (LP burned, mint/freeze renounced, no honeypot, 30d+ trading) AND every remaining critical flag. " +
-  "If 3+ critical flags fired, paragraph 2 MUST name each one with a one-clause reason \u2014 e.g. \u201cBundle holds 37%, top-10 hold 78%, deceptive name, mutable metadata\u201d. " +
+  "List BOTH positive signals (LP burned, mint/freeze renounced, no honeypot, 30d+ trading) AND every remaining flag (critical AND warning \u2014 the user sees both colours and expects them named). " +
+  "If 3+ flags fired in total (critical + warning), paragraph 2 MUST name each one with a one-clause reason \u2014 e.g. \u201cBundle holds 37%, top-10 hold 78%, deceptive name, wash trading, single wallet 14%, high vol/liquidity ratio\u201d. " +
   "Do NOT skip flags: a user already sees the full flag list above your block, and explaining only one when many fired reads as incomplete. " +
+  "Treat warnings with the same enumeration discipline as criticals \u2014 a 4-warning DANGER token must name all 4. " +
   "For RUG / DANGER: state whether positives save the verdict or get overridden. " +
   "For SAFE / CAUTION: list positives matter-of-factly; reference sources by name when they cross-validate. " +
   "\n\n" +
@@ -517,38 +525,43 @@ function buildStructuredFallback(
 
   // ── PARA 2 ── counter-context.
   //
-  // For 3+ critical flags, enumerate each remaining critical flag with
-  // a short clause so the user never sees "the AI named 1 of 7 flags".
-  // The summarised list is built from topFlags MINUS whichever flag we
-  // already used to anchor paragraph 1 (avoids redundancy on the
-  // dominant signal).
-  const criticalFlags = topFlags.filter((f) => f.severity === "critical")
+  // Enumerate EVERY significant flag (critical OR warning) with a
+  // short clause so the user never sees "the AI named 1 of N flags".
+  // The summarised list excludes whichever flag we already used to
+  // anchor paragraph 1 (avoids redundancy on the dominant signal).
+  // Earlier this branch only counted `severity === "critical"` and
+  // missed warning-only tokens like GIGARAT (0 critical + 4 warning),
+  // which got a single-flag summary. Now both severities qualify for
+  // the enumeration trigger.
+  const significantFlags = topFlags.filter(
+    (f) => f.severity === "critical" || f.severity === "warning",
+  )
   const dominantUsed = topFlags[0]?.label ?? ""
-  // No slice cap here — criticalFlags is already bounded by MAX_FLAGS
-  // (8) on the upstream sort, and removing the dominant leaves at most
-  // 7 to enumerate. Capping smaller would resurface the "AI named only
-  // 1 of N flags" complaint this PR is fixing.
-  const otherCritical = criticalFlags
+  // No slice cap here — significantFlags is already bounded by
+  // MAX_FLAGS (12) on the upstream sort, and removing the dominant
+  // leaves at most 11 to enumerate. Capping smaller would resurface
+  // the "AI named only 1 of N flags" complaint this PR is fixing.
+  const otherFlags = significantFlags
     .filter((f) => f.label !== dominantUsed)
     .map((f) => shortenFlagLabel(f.label))
 
   let para2: string
   if (verdict === "RUG") {
-    if (criticalFlags.length >= 3 && otherCritical.length > 0) {
-      // Heavy-flag rug — enumerate the supporting critical flags.
+    if (significantFlags.length >= 3 && otherFlags.length > 0) {
+      // Heavy-flag rug — enumerate the supporting flags.
       const cleanClause =
         positives.length > 0 ? `${capitalize(joinCommaList(positives))} are present, but ` : "There are no clean structural counter-signals; "
-      para2 = `${cleanClause}the engine also flags ${joinCommaList(otherCritical)} — every structural surface that should protect a holder is compromised.`
+      para2 = `${cleanClause}the engine also flags ${joinCommaList(otherFlags)} — every structural surface that should protect a holder is compromised.`
     } else if (positives.length > 0) {
       para2 = `${capitalize(joinCommaList(positives))}, but those signals are completely overridden by the dominant flag — the dev (or whoever controls that wallet) can collapse the price at any moment.`
     } else {
       para2 = `No structural counter-signals to mitigate — the contract is compromised across multiple layers and there is no clean signal to weigh against the verdict.`
     }
   } else if (verdict === "DANGER") {
-    if (criticalFlags.length >= 3 && otherCritical.length > 0) {
+    if (significantFlags.length >= 3 && otherFlags.length > 0) {
       const cleanClause =
         positives.length >= 1 ? `${capitalize(joinCommaList(positives))}, which keeps the verdict short of RUG. The engine ` : "The engine "
-      para2 = `${cleanClause}also flags ${joinCommaList(otherCritical)} — each one a meaningful risk on its own.`
+      para2 = `${cleanClause}also flags ${joinCommaList(otherFlags)} — each one a meaningful risk on its own.`
     } else if (positives.length >= 2) {
       para2 = `${capitalize(joinCommaList(positives))} — the contract surface itself is clean, which is why the verdict does not collapse all the way to RUG.`
     } else if (positives.length === 1) {
@@ -557,10 +570,10 @@ function buildStructuredFallback(
       para2 = `No clean structural counter-signals to weigh against the dominant risk — the contract has nothing in its favor to soften the verdict.`
     }
   } else if (verdict === "CAUTION") {
-    if (criticalFlags.length >= 3 && otherCritical.length > 0) {
+    if (significantFlags.length >= 3 && otherFlags.length > 0) {
       const cleanClause =
         positives.length > 0 ? `${capitalize(joinCommaList(positives))}, but ` : "Beyond the primary concern, "
-      para2 = `${cleanClause}the engine also flags ${joinCommaList(otherCritical)} — secondary concerns that compound the verdict.`
+      para2 = `${cleanClause}the engine also flags ${joinCommaList(otherFlags)} — secondary concerns that compound the verdict.`
     } else if (positives.length > 0) {
       para2 = `${capitalize(joinCommaList(positives))} — the rest of the structural posture is clean.`
     } else {
@@ -706,11 +719,14 @@ export async function generateAISummary(
     })
     .slice(0, MAX_FLAGS)
 
-  // Scale the word budget with critical-flag count so dense scans get
-  // enough room to enumerate every flag (see computeWordTarget for
-  // why and the bands in use).
-  const criticalCount = topFlags.filter((f) => f.severity === "critical").length
-  const target = computeWordTarget(criticalCount)
+  // Scale the word budget with the SIGNIFICANT-flag count (critical +
+  // warning). Counting only criticals missed warning-only tokens like
+  // GIGARAT (0 critical, 4 warning) — the summary then enumerated only
+  // 1 of 4 flags. See computeWordTarget for the bands.
+  const significantCount = topFlags.filter(
+    (f) => f.severity === "critical" || f.severity === "warning",
+  ).length
+  const target = computeWordTarget(significantCount)
   const systemPrompt = buildSystemPrompt(target)
   const userPrompt = buildUserPrompt(input, topFlags, target)
 
@@ -731,7 +747,7 @@ export async function generateAISummary(
         model: primaryModel,
         attempt: attempt + 1,
         totalAttempts: MAX_RETRIES + 1,
-        criticalCount,
+        significantCount,
         targetWords: `${target.min}-${target.max}`,
       })
       const result = await callGemini(apiKey, primaryModel, systemPrompt, userPrompt, target)
