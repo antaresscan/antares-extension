@@ -329,9 +329,17 @@ export async function loadInsiderActivity() {
         const isBuy = action === "BOUGHT" || action === "TRANSFER_IN";
         const isSell = action === "SOLD" || action === "TRANSFER_OUT";
         const cls = isBuy ? "buy" : isSell ? "sell" : "";
+        // Always render the sign on the USD column so a SOLD row reads
+        // "−$71" (clearly money OUT) instead of just "$71" (ambiguous).
+        // Earlier code only prefixed `+` on positives — sells came out
+        // unsigned and users couldn't tell they were losses without
+        // reading the row colour. fmtUsd already emits a literal `-`
+        // for the M/K tiers (per its unit tests), so we pass abs value
+        // and assemble the prefix ourselves to avoid `−$-71` doubling.
         const usd =
           typeof e.usdValue === "number" && Number.isFinite(e.usdValue)
-            ? (e.usdValue >= 0 ? "+" : "") + fmtUsd(e.usdValue)
+            ? (e.usdValue > 0 ? "+" : e.usdValue < 0 ? "−" : "") +
+              fmtUsd(Math.abs(e.usdValue))
             : "—";
         const tokAmt = fmtTok(e.tokenAmount);
         const ageTxt = formatAgeMin(e.ageMin);
@@ -378,20 +386,39 @@ export async function loadInsiderActivity() {
           ? data.netFlowUsd
           : null;
       if (nf !== null) {
-        let label = "BALANCED";
+        // 4-state label so a small non-zero net flow doesn't look like
+        // it contradicts the verdict ("$588 BALANCED" was confusing —
+        // users read it as "balanced means $0", not "balanced means
+        // small enough to be noise"). The QUIET tier explicitly admits
+        // that under-$100 flow is rounding noise and shouldn't be
+        // treated as either accumulation or distribution.
+        let label;
         let cls = "";
-        if (nf > 1000) {
+        const abs = Math.abs(nf);
+        if (abs < 100) {
+          label = "QUIET · negligible flow";
+        } else if (abs < 1000) {
+          label = nf > 0 ? "BALANCED · slight buying" : "BALANCED · slight selling";
+        } else if (nf > 0) {
           label = "ACCUMULATING";
           cls = "buy";
-        } else if (nf < -1000) {
+        } else {
           label = "DISTRIBUTING";
           cls = "sell";
         }
-        const sign = nf >= 0 ? "+" : "";
+        // Always show a leading sign so "+ $588" (small inflow) reads
+        // as obviously different from "− $588" (small outflow). Zero
+        // is shown without sign — `nf >= 0` would also render `+$0`
+        // which is awkward.
+        // We pass Math.abs(nf) into fmtUsd because fmtUsd itself emits
+        // a `$-1.5K` shape on negatives (asserted by its unit tests),
+        // and we don't want the doubled minus `−$-1.5K` here.
+        const sign = nf > 0 ? "+" : nf < 0 ? "−" : "";
+        const valueDisp = sign + fmtUsd(Math.abs(nf));
         foot.innerHTML = `
           <div class="iw-flow ${cls}">
             <span class="iw-flow-label">NET FLOW (${data.windowHours || 6}h)</span>
-            <span class="iw-flow-val">${escapeHtml(sign + fmtUsd(nf))}</span>
+            <span class="iw-flow-val">${escapeHtml(valueDisp)}</span>
             <span class="iw-flow-state">${escapeHtml(label)}</span>
           </div>
         `;

@@ -212,12 +212,33 @@ export function buildSniperMapTab(d) {
     }
   }
 
+  // ── Bar colour follows the severity, NOT a fixed "holding = green".
+  // Earlier version always painted the concentration segment green even
+  // when the verdict was EXTREME CONCENTRATION, which made the visual
+  // contradict the title. Map alertCls → CSS class so the colour and
+  // the text always agree.
+  //   bad  → red (.exited)  · concentration is dangerous
+  //   warn → yellow (.partial) · elevated, watch
+  //   info → yellow (.partial) · normal-distribution band, neutralish
+  //   good → green (.holding) · well-distributed
+  const concentratedCls =
+    alertCls === "bad" ? "exited" : alertCls === "good" ? "holding" : "partial";
+
+  // Hide the right "Distributed" segment entirely when there's
+  // effectively no float left — flex:0 on a child still renders its
+  // textContent and overflows visually. Threshold of 5% keeps the
+  // label readable when there's enough space to fit it.
+  const showDistributed = distributed >= 5;
+  const distributedSegHtml = showDistributed
+    ? `<div class="sm-seg distributed" style="flex:${distributed}"><span class="pct">${distributed}%</span><span>Distributed</span></div>`
+    : "";
+
   return `
     <div class="sm-bar-wrap">
       <div class="sm-title">${escapeHtml(title)}</div>
       <div class="sm-bar">
-        <div class="sm-seg holding" style="flex:${concentrated}"><span class="pct">${concentrated}%</span><span>Top 10</span></div>
-        <div class="sm-seg ${alertCls === "good" ? "distributed" : "exited"}" style="flex:${distributed}"><span class="pct">${distributed}%</span><span>Distributed</span></div>
+        <div class="sm-seg ${concentratedCls}" style="flex:${concentrated}"><span class="pct">${concentrated}%</span><span>Top 10</span></div>
+        ${distributedSegHtml}
       </div>
       <div class="sm-axis"><span>Largest: ${escapeHtml(top1Disp)}</span><span>${escapeHtml(axisStatus)}</span><span>${sniperFlags.length} flag${sniperFlags.length === 1 ? "" : "s"}</span></div>
     </div>
@@ -350,6 +371,20 @@ export function buildInsiderWatchTab(d) {
       <div class="iw-feed-head">
         <span class="iw-feed-title">TOP 10 RECENT ACTIVITY · LAST 6h</span>
         <span class="iw-feed-meta" id="ant-insider-meta">loading…</span>
+      </div>
+      <!-- Column header — sits OUTSIDE #ant-insider-feed so it survives
+           the dynamic innerHTML rewrites done by loadInsiderActivity().
+           Mirrors the iw-row grid (36px 1fr 90px 1fr 1fr 60px) so the
+           labels line up exactly above each column. Earlier the rows
+           rendered without headers and users couldn't tell whether
+           "60.0K" was tokens, USD or something else. -->
+      <div class="iw-row iw-row-header" aria-hidden="true">
+        <span class="iw-row-rank" title="Rank in top 10 holders">#</span>
+        <span class="iw-row-wallet">Wallet</span>
+        <span class="iw-row-action">Action</span>
+        <span class="iw-row-amount">Tokens</span>
+        <span class="iw-row-usd">USD value</span>
+        <span class="iw-row-age">Age</span>
       </div>
       <div class="iw-feed" id="ant-insider-feed">
         <div class="iw-feed-loading">
