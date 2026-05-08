@@ -36,9 +36,9 @@ Secondary: **Developer Tools**
 ```
 ANTARES — STOP GETTING SCAMMED ON SOLANA
 
-Antares scans every Solana token you encounter while browsing — DexScreener,
-pump.fun, Axiom, Photon, Birdeye, GeckoTerminal, GMGN, Jupiter, Raydium,
-Solscan — and surfaces a 7-layer verdict in seconds. SAFE / CAUTION /
+Antares scans every Solana token you encounter while browsing —
+DexScreener, pump.fun, Axiom, Photon, Birdeye, GeckoTerminal, GMGN,
+Telemetry — and surfaces a 7-layer verdict in seconds. SAFE / CAUTION /
 DANGER / RUG, with a 1000-point composite score and the reasons behind it.
 
 You don't paste contract addresses. You don't switch tabs. You don't sign
@@ -126,9 +126,6 @@ The overlay activates automatically on:
   • Birdeye (birdeye.so)
   • GeckoTerminal (geckoterminal.com)
   • GMGN (gmgn.ai)
-  • Jupiter (jup.ag)
-  • Raydium (raydium.io)
-  • Solscan (solscan.io)
   • Telemetry (app.telemetry.io)
 
 OPEN SOURCE
