@@ -737,6 +737,21 @@ footer span{color:var(--c)}
 .fab-pill:hover{border-color:var(--purple);color:var(--purple);transform:translateX(-2px)}
 .fab-pill .ico{font-size:11px;color:var(--purple)}
 
+/* ─── Disagreement banner — surfaced near the verdict when /api/scan
+ * attaches a `disagreement` payload (≥5 reports + dominance threshold).
+ * Tone classes follow the same palette as the rest of the page —
+ * .bad ≈ red, .warn ≈ yellow, .muted ≈ neutral grey. ──────────────── */
+.disagreement-banner{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:4px;margin:14px 0 4px;font:11px/1.45 'IBM Plex Mono',monospace;border:1px solid;letter-spacing:.02em}
+.disagreement-banner .db-icon{font-size:14px;line-height:1}
+.disagreement-banner .db-text{flex:1}
+.disagreement-banner .db-text b{font-weight:700}
+.disagreement-banner.bad{background:rgba(255,79,108,.06);border-color:rgba(255,79,108,.4);color:#ff7b8a}
+.disagreement-banner.bad .db-icon{color:#ff5f5f}
+.disagreement-banner.warn{background:rgba(245,208,0,.06);border-color:rgba(245,208,0,.35);color:#f5d000}
+.disagreement-banner.warn .db-icon{color:#f5d000}
+.disagreement-banner.muted{background:rgba(255,255,255,.03);border-color:#2a2a30;color:#888}
+.disagreement-banner.muted .db-icon{color:#888}
+
 /* ─── Feedback trigger + modal ─────────────────────────────────────── */
 .m-fresh-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:6px}
 .m-feedback-trigger{background:none;border:1px dashed #2a2a30;color:#666;font:600 9px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;padding:5px 9px;border-radius:3px;cursor:pointer;transition:.15s}
@@ -816,6 +831,6 @@ footer span{color:var(--c)}
   <button class="ask-fab" aria-label="Ask Antares AI">✦</button>
 </div>
 
-<script type="module" src="/js/token-app.js?v=20260508-feedback"></script>
+<script type="module" src="/js/token-app.js?v=20260508-disagreement"></script>
 <script defer src="/js/token-bg.js?v=20260429a"></script>
 </body></html>

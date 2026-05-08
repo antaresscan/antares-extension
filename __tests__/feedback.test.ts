@@ -7,6 +7,7 @@ import {
   initFeedbackStore,
   submitFeedback,
   getFeedbackSummary,
+  getDisagreementSignal,
   ipToPrefix24,
 } from "../api/_lib/feedback";
 
@@ -259,5 +260,123 @@ describe("getFeedbackSummary", () => {
     const summary = await getFeedbackSummary("dirty");
     expect(summary?.count).toBe(1);
     expect(summary?.pairs["SAFE_RUG"]).toBe(1);
+  });
+});
+
+describe("getDisagreementSignal", () => {
+  let redis: ReturnType<typeof makeMockRedis>;
+
+  beforeEach(() => {
+    redis = makeMockRedis();
+    initFeedbackStore(redis as unknown as Parameters<typeof initFeedbackStore>[0]);
+  });
+
+  // Helper that bypasses the dedup lock so each call lands a fresh entry.
+  // Real submitFeedback would block these as duplicates because they share
+  // an installId by default; the no-installId path admits everything.
+  const seedFeedback = async (
+    ca: string,
+    pairs: Array<readonly ["SAFE" | "CAUTION" | "DANGER" | "RUG", "SAFE" | "CAUTION" | "DANGER" | "RUG"]>,
+  ) => {
+    let i = 0;
+    for (const [from, to] of pairs) {
+      await submitFeedback({
+        ca,
+        originalVerdict: from,
+        reportedVerdict: to,
+        installId: `seed-${i++}-${"x".repeat(10)}`,
+      });
+    }
+  };
+
+  it("returns null below the minTotal floor", async () => {
+    await seedFeedback("tokenLow", [
+      ["SAFE", "RUG"],
+      ["SAFE", "RUG"],
+    ]);
+    expect(await getDisagreementSignal("tokenLow")).toBeNull();
+  });
+
+  it("returns the dominant pair when count >= 5 and majority agrees", async () => {
+    await seedFeedback("tokenA", [
+      ["SAFE", "RUG"],
+      ["SAFE", "RUG"],
+      ["SAFE", "RUG"],
+      ["SAFE", "RUG"],
+      ["SAFE", "RUG"],
+    ]);
+    const signal = await getDisagreementSignal("tokenA");
+    expect(signal).toEqual({
+      totalReports: 5,
+      from: "SAFE",
+      to: "RUG",
+      pairCount: 5,
+    });
+  });
+
+  it("picks the largest pair when multiple are present, as long as it's dominant", async () => {
+    // 6 reports — 4 of SAFE→RUG (66%), 2 of SAFE→DANGER. SAFE→RUG dominates.
+    await seedFeedback("tokenB", [
+      ["SAFE", "RUG"],
+      ["SAFE", "RUG"],
+      ["SAFE", "RUG"],
+      ["SAFE", "RUG"],
+      ["SAFE", "DANGER"],
+      ["SAFE", "DANGER"],
+    ]);
+    const signal = await getDisagreementSignal("tokenB");
+    expect(signal?.from).toBe("SAFE");
+    expect(signal?.to).toBe("RUG");
+    expect(signal?.pairCount).toBe(4);
+    expect(signal?.totalReports).toBe(6);
+  });
+
+  it("returns null when the leading pair fails the dominance threshold", async () => {
+    // 6 reports split as 2/2/2 — no single pair owns >= 50%.
+    await seedFeedback("tokenSplit", [
+      ["SAFE", "RUG"],
+      ["SAFE", "RUG"],
+      ["SAFE", "DANGER"],
+      ["SAFE", "DANGER"],
+      ["SAFE", "CAUTION"],
+      ["SAFE", "CAUTION"],
+    ]);
+    expect(await getDisagreementSignal("tokenSplit")).toBeNull();
+  });
+
+  it("respects the dominanceThreshold override", async () => {
+    // 5 reports — 3 SAFE→RUG (60%), 2 SAFE→DANGER (40%).
+    await seedFeedback("tokenAdj", [
+      ["SAFE", "RUG"],
+      ["SAFE", "RUG"],
+      ["SAFE", "RUG"],
+      ["SAFE", "DANGER"],
+      ["SAFE", "DANGER"],
+    ]);
+    // Default 0.5 → 60% >= 50% → returns SAFE→RUG.
+    const defaultSig = await getDisagreementSignal("tokenAdj");
+    expect(defaultSig?.to).toBe("RUG");
+    // Bumping to 0.7 → 60% < 70% → returns null.
+    const strictSig = await getDisagreementSignal("tokenAdj", 5, 0.7);
+    expect(strictSig).toBeNull();
+  });
+
+  it("respects the minTotal override", async () => {
+    await seedFeedback("tokenMin", [
+      ["SAFE", "RUG"],
+      ["SAFE", "RUG"],
+      ["SAFE", "RUG"],
+    ]);
+    // Default 5 → 3 reports → null.
+    expect(await getDisagreementSignal("tokenMin")).toBeNull();
+    // Lowered to 3 → returns the dominant pair.
+    const sig = await getDisagreementSignal("tokenMin", 3);
+    expect(sig?.totalReports).toBe(3);
+    expect(sig?.to).toBe("RUG");
+  });
+
+  it("returns null when storage is not configured", async () => {
+    initFeedbackStore(null);
+    expect(await getDisagreementSignal("anyToken")).toBeNull();
   });
 });
