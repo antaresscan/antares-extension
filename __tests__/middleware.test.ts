@@ -134,6 +134,58 @@ describe("setCorsHeaders", () => {
     expect(ALLOWED_ORIGINS).toContain("https://dexscreener.com");
     expect(ALLOWED_ORIGINS).toContain("https://pump.fun");
   });
+
+  // ── CDN-cache safety regression tests ────────────────────────────
+  // These guard the fix for the "login works sometimes, fails sometimes"
+  // bug. With Cache-Control: s-maxage=15 on every response, an OPTIONS
+  // preflight without Origin (e.g. an internal probe) used to be cached
+  // by the Vercel CDN WITHOUT a Vary: Origin header, then served back
+  // to credentialed browser preflights — which then failed CORS
+  // because the cached response had no Access-Control-Allow-* headers.
+  // Two invariants:
+  //   1. Vary: Origin is set on EVERY response, regardless of whether
+  //      CORS is allowed or whether an Origin was present.
+  //   2. OPTIONS responses are never CDN-cached (Cache-Control: no-store).
+
+  it("sets Vary: Origin on every response, even when no Origin is present", () => {
+    const req = mockReq();
+    const res = mockRes();
+    setCorsHeaders(req, res);
+    expect(res.setHeader).toHaveBeenCalledWith("Vary", "Origin");
+  });
+
+  it("sets Vary: Origin on disallowed origins too (so CDN keeps them in their own cache)", () => {
+    const req = mockReq({ origin: "https://evil.example.com" });
+    const res = mockRes();
+    setCorsHeaders(req, res);
+    expect(res.setHeader).toHaveBeenCalledWith("Vary", "Origin");
+  });
+
+  it("sets Vary: Origin on chrome-extension origins (otherwise the same CDN poisoning class hits the extension)", () => {
+    const req = mockReq({ origin: "chrome-extension://abc123" });
+    const res = mockRes();
+    setCorsHeaders(req, res);
+    expect(res.setHeader).toHaveBeenCalledWith("Vary", "Origin");
+  });
+
+  it("sets Cache-Control: no-store on OPTIONS preflights", () => {
+    const req = mockReq({ origin: "https://dexscreener.com" });
+    (req as unknown as { method: string }).method = "OPTIONS";
+    const res = mockRes();
+    setCorsHeaders(req, res);
+    expect(res.setHeader).toHaveBeenCalledWith("Cache-Control", "no-store, max-age=0");
+  });
+
+  it("keeps Cache-Control: s-maxage=15 on real (non-OPTIONS) responses", () => {
+    const req = mockReq({ origin: "https://dexscreener.com" });
+    (req as unknown as { method: string }).method = "GET";
+    const res = mockRes();
+    setCorsHeaders(req, res);
+    expect(res.setHeader).toHaveBeenCalledWith(
+      "Cache-Control",
+      "s-maxage=15, stale-while-revalidate=30",
+    );
+  });
 });
 
 // ═══ checkRateLimit (no Redis configured) ═══════════════════════════════════

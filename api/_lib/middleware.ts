@@ -68,6 +68,26 @@ const EXPOSED_RESPONSE_HEADERS = [
 export function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean {
   const origin = (req.headers.origin as string) || "";
 
+  // ALWAYS set Vary: Origin first, before any conditional branches.
+  //
+  // Why: every response goes through the Vercel edge cache with
+  // `Cache-Control: s-maxage=15, stale-while-revalidate=30` (set
+  // below). Without Vary: Origin on every response, the CDN can
+  // cache a no-Origin response (e.g. an internal probe, a same-
+  // origin healthcheck, a curl from Vercel's deployment process)
+  // and then serve that same cache entry to a browser preflight
+  // that DID send an Origin. The browser preflight then arrives
+  // with no `Access-Control-Allow-*` headers and CORS fails with
+  // "Failed to fetch" — intermittently, depending on which request
+  // populated the 15-second cache window.
+  //
+  // This was the root cause of the long-running "login works
+  // sometimes, fails sometimes" pain reported on antares-website.
+  // Setting Vary: Origin unconditionally forces the CDN to key on
+  // origin so the no-Origin and origin-bearing responses live in
+  // separate cache entries.
+  res.setHeader("Vary", "Origin");
+
       // chrome-extension:// origins: allow all extensions via rate limiting
     if (origin.startsWith("chrome-extension://")) {
     res.setHeader("Access-Control-Allow-Origin", origin);
@@ -81,7 +101,6 @@ export function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean
     // api/_lib/session-cookie.ts:readSessionToken — but we keep cookies
     // working too as a fallback.)
     res.setHeader("Access-Control-Allow-Credentials", "true");
-    res.setHeader("Vary", "Origin");
     res.setHeader("Access-Control-Expose-Headers", EXPOSED_RESPONSE_HEADERS);
     res.setHeader("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
     return true;
@@ -114,15 +133,22 @@ export function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean
     // cookies cross-site unless the response carries this header AND
     // the request was made with `credentials: "include"`.
     res.setHeader("Access-Control-Allow-Credentials", "true");
-    // When cookies are involved, the browser also requires the Vary
-    // header to include Origin so caches don't conflate sessions.
-    res.setHeader("Vary", "Origin");
   }
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Antares-Key, X-Antares-Token, X-Antares-Install, X-Antares-Dev-Tier, X-Antares-Session, Authorization");
   res.setHeader("Access-Control-Expose-Headers", EXPOSED_RESPONSE_HEADERS);
   res.setHeader("Access-Control-Max-Age", "86400");
-  res.setHeader("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
+  // OPTIONS preflight responses must not be CDN-cached: their CORS
+  // headers depend on the request's Origin, and even with Vary: Origin
+  // the safest default is to keep them un-cached at the edge so a
+  // misbehaving probe can never poison a credentialed flow. Real
+  // (non-OPTIONS) responses keep the existing s-maxage=15 freshness
+  // window — that's the cheap-cache hot path for /api/scan etc.
+  if (req.method === "OPTIONS") {
+    res.setHeader("Cache-Control", "no-store, max-age=0");
+  } else {
+    res.setHeader("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
+  }
   return corsOk;
 }
 
