@@ -32,8 +32,6 @@ import {
   buildBuySellFlowTab,
   buildWashVolumeTab,
   buildSourceListRows,
-  buildFeedbackTrigger,
-  buildFeedbackModal,
 } from "./views.js";
 import {
   setupCursorGlow,
@@ -44,7 +42,6 @@ import {
   setupRefreshButton,
   setupFreshnessTicker,
   setupRevealObserver,
-  setupFeedbackModal,
   loadInsiderActivity,
 } from "./ui-setup.js";
 import { API, fetchWithRetry } from "./api-client.js";
@@ -428,10 +425,7 @@ function render(d, ca) {
             <div class="m-big">${score}<span class="denom">/ 1000</span></div>
             <div class="sbar"><div class="sbar-fill" id="sbarf"></div></div>
             <div class="m-sub risk">${escapeHtml(flagSummary)}${conf !== null ? " · Conf " + conf + "%" : ""}</div>
-            <div class="m-fresh-row">
-              <span class="m-fresh" id="m-fresh">Scanned just now</span>
-              ${buildFeedbackTrigger()}
-            </div>
+            <div class="m-fresh" id="m-fresh">Scanned just now</div>
           </div>
           ${priceCardHtml}
         </div>
@@ -510,8 +504,6 @@ function render(d, ca) {
     <div class="marquee-wrap">
       <div class="marquee-inner">${marqueeHtml}</div>
     </div>
-
-    ${buildFeedbackModal()}
   `;
 
   // Wire up animations + reveal observer (one-shot init guarded inside)
@@ -523,7 +515,6 @@ function render(d, ca) {
   setupFab();
   setupRefreshButton(ca, { onRefresh: (data) => render(data, ca) });
   setupFreshnessTicker(d.fetchedAt);
-  setupFeedbackModal(ca, d.risk || "SAFE");
 
   // Score bar animation
   setTimeout(() => {
