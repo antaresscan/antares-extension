@@ -6,6 +6,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.3.1] — 2026-05-08
+
+### Fixed
+- **AI summary now enumerates ALL flags, not just one.** Tokens with
+  several flags (e.g. GIGARAT with 4 warnings) used to get a summary
+  that mentioned only the dominant flag and waved at the rest. The
+  enumeration discipline now triggers on critical + warning flags,
+  not critical alone, with a word-count band that scales to the flag
+  count (3+ flags ⇒ 70-110 words, 5+ ⇒ 95-145, 8+ ⇒ 110-180). PR #468.
+- **AI summary stops inventing risks from raw metrics.** On token
+  CHILLHOUSE (one LP warning, top-holder 8.1%) the summary led with
+  "single wallet holds 8.1% — concentration risk" even though the
+  scoring engine had not flagged the 8.1% (within tolerance for the
+  token's profile). The flag list is now the authoritative source of
+  negative findings: metrics in the prompt are only used to add
+  concrete numbers to flags that *did* fire, never to invent new ones.
+  Fallback verdicts now require a matching flag (concentration / LP
+  / mint / freeze) to be in the flag list before narrating it. PR #469.
+- **CORS preflight cache poisoning.** OPTIONS responses now always
+  carry `Vary: Origin` and `Cache-Control: no-store`, fixing the
+  intermittent "Failed to fetch" that surfaced when the CDN edge
+  served a no-Origin preflight to a request that did have an Origin.
+  PR #465.
+
 ### Changed — payment provider: Solana Pay → NOWPayments
 - **Why.** Solana Pay was native-crypto-only (USDC/SOL on Solana
   wallets like Phantom). Most non-crypto-native users hit a wall:
