@@ -81,25 +81,27 @@ See `api/_lib/constants.ts` for the canonical version + fingerprint logic.
 
 ## Backtest accuracy
 
-The engine is tested live against a corpus of **1,510 real Solana tokens**
-(memecoin-heavy + verified mid-cap) captured against the deployed
-`/api/scan` endpoint. A nightly drift check re-scans every fixture with
-a landed capture and opens an issue if results move.
+The engine is tested live against **539 real Solana tokens** with captured
+`/api/scan` fixtures (18 hand-vetted SEEDs + 521 auto-discovered). A
+nightly drift check re-scans every one of them and opens an issue if
+the verdict moves. A wider 1,510-token tracked corpus (memecoin-heavy +
+verified mid-cap) feeds future fixture captures.
 
 ```
-Corpus size       : 1,510 Solana tokens
-Acceptable rate   : 100% (1510/1510)
-  ├─ Exact match  : 7.2%  (109/1510)
-  └─ Tolerated    : 92.8% (1401/1510)
-Hard fail         : 0%    (0/1510)
-
-Tested daily      : 539  / 1510 (35.7%) — 18 SEED + 521 DISCOVERED with
-                                          live captured fixtures
-Tracked weekly    : 971  / 1510 (64.3%) — flagged skipFixture pending
-                                          first /api/scan capture
+Tested live       : 539 Solana tokens
+Acceptable rate   : 100% (539/539)
+  ├─ Exact match  : 20.2%  (109/539)
+  └─ Tolerated    : 79.8%  (430/539)
+Hard fail         : 0%     (0/539)
 
 False-positive on SAFE  : 0  (no blue-chip flagged DANGER/RUG)
 False-negative on RUG   : 0  (no confirmed rug returned SAFE)
+
+Tracked corpus    : 1,510 tokens total — 971 (64%) are queued for
+                                         their first fixture capture
+                                         and treated as warnings, not
+                                         failures, until the capture
+                                         lands.
 ```
 
 Full methodology, sources, and confusion matrix in [BACKTEST.md](./BACKTEST.md).
