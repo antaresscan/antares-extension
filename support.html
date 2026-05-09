@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Antares — Support</title>
+<meta name="description" content="Support page for the Antares Chrome extension — contact, FAQ, bug reports, and feature requests for the Solana rug-detection extension.">
+<meta property="og:title" content="Antares — Support">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://antaresscan.com/support">
+<link rel="canonical" href="https://antaresscan.com/support">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:#0a0a0f;color:#c4c4cc;font-family:"IBM Plex Mono",monospace;font-size:15px;line-height:1.8;padding:2rem 1rem}
+.container{max-width:780px;margin:0 auto}
+h1{font-family:"Bebas Neue",sans-serif;font-size:2.6rem;color:#00ffa3;margin-bottom:.5rem;letter-spacing:2px}
+.updated{color:#666;font-size:.8rem;margin-bottom:2rem}
+h2{font-family:"Bebas Neue",sans-serif;font-size:1.5rem;color:#e0e0e0;margin:2rem 0 .8rem;letter-spacing:1px}
+h3{font-size:1rem;color:#e0e0e0;margin:1.2rem 0 .4rem}
+p,ul,table{margin-bottom:1rem}
+ul{padding-left:1.5rem}
+li{margin-bottom:.4rem}
+a{color:#00ffa3;text-decoration:none}
+a:hover{text-decoration:underline}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid #222;vertical-align:top}
+th{color:#e0e0e0;background:#111;font-family:"Bebas Neue",sans-serif;letter-spacing:1px}
+code{background:#111;padding:.1rem .35rem;border-radius:3px;font-size:.85em}
+.callout{background:#0d1820;border-left:3px solid #00ffa3;padding:1rem 1.2rem;margin:1.2rem 0;border-radius:3px}
+.callout strong{color:#00ffa3}
+.email{display:inline-block;background:#111;padding:.5rem 1rem;border:1px solid #00ffa3;border-radius:4px;color:#00ffa3;font-size:1rem;margin:.6rem 0}
+.email:hover{background:#00ffa3;color:#0a0a0f;text-decoration:none}
+.back{display:inline-block;margin-top:2rem;padding:.6rem 1.4rem;border:1px solid #00ffa3;color:#00ffa3;border-radius:4px;font-size:.85rem;transition:all .2s}
+.back:hover{background:#00ffa3;color:#0a0a0f;text-decoration:none}
+.faq-q{color:#e0e0e0;font-weight:600;margin-top:1.4rem;margin-bottom:.4rem}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Support</h1>
+<p class="updated">Last updated: May 9, 2026 · Antares Chrome extension</p>
+
+<h2>1. Contact</h2>
+<p>The fastest way to reach us about the Antares extension is by email. We read every message and reply within 2 business days.</p>
+<a class="email" href="mailto:lennypierrepro@gmail.com?subject=Antares%20Support">lennypierrepro@gmail.com</a>
+<p>Please include the following so we can help quickly:</p>
+<ul>
+<li>Extension version (visible in <code>chrome://extensions</code> → Antares → Details).</li>
+<li>Browser and OS (e.g. Chrome 130 on Windows 11).</li>
+<li>The trading site you were on when the issue occurred (DexScreener, Birdeye, Photon, etc.).</li>
+<li>The token contract address, if applicable.</li>
+<li>A short description of what you expected vs. what happened. Screenshots help.</li>
+</ul>
+
+<h2>2. Bug reports</h2>
+<p>If you've spotted a reproducible bug, email the address above with the steps to reproduce it. For non-sensitive issues you can also write directly to <code>lennypierrepro@gmail.com</code> with the subject line <code>[BUG]</code> followed by a one-line summary.</p>
+<div class="callout">
+<strong>Security issues:</strong> please do <em>not</em> describe exploitable vulnerabilities by email. Use GitHub's Private Vulnerability Reporting flow described in our <a href="/privacy">privacy policy</a> (section 11) instead. Public disclosure before a fix puts users at risk.
+</div>
+
+<h2>3. Feature requests</h2>
+<p>We love hearing what you want next. Email us with the subject line <code>[FEATURE]</code> and describe the use case — not just the feature, but the problem you're trying to solve. Concrete examples (a token where the current verdict missed something, a trading site we don't yet support, etc.) make it much easier to prioritise.</p>
+
+<h2>4. Frequently asked questions</h2>
+
+<p class="faq-q">Why doesn't Antares show anything on my page?</p>
+<p>Antares only injects on the <strong>8 trading platforms</strong> listed in our manifest: DexScreener, Birdeye, Pump.fun, Photon, Axiom, GMGN, Telemetry, and GeckoTerminal. On any other site the extension is dormant by design. If you're on a supported site and still see nothing, refresh the page once — the content script attaches when the URL contains a Solana contract address.</p>
+
+<p class="faq-q">The verdict says DANGER but the price is going up — is Antares wrong?</p>
+<p>No. Antares scores <strong>structural risk</strong> (concentration, contract surface, LP burn status, holder distribution), not short-term price action. A token can pump while still being a coordinated dump risk. The <em>Full Analysis</em> page breaks down which specific layer triggered the verdict so you can decide for yourself.</p>
+
+<p class="faq-q">Why does the same token sometimes give a different score?</p>
+<p>Some inputs are real-time: liquidity, holder distribution, volume, and on-chain transfers all change as the token trades. The verdict reflects the state of the chain at scan time. If a critical wallet sells or LP gets pulled, the score moves accordingly.</p>
+
+<p class="faq-q">Does Antares store my wallet address or trades?</p>
+<p>No. Antares never reads your wallet, never reads form fields, never reads cookies. It extracts the public Solana contract address visible in the URL or DOM of supported pages and sends only that to our API. Read the <a href="/privacy">privacy policy</a> for the full data flow.</p>
+
+<p class="faq-q">I'm getting "rate limited" errors. What's happening?</p>
+<p>The free public API enforces a sliding-window rate limit so it stays fast for everyone. If you hit it, wait 60 seconds and try again. If you're consistently hitting the limit, email us — we can usually figure out what's going on.</p>
+
+<p class="faq-q">Can I use Antares on Solana tokens that aren't on a DEX yet?</p>
+<p>Partially. Pre-launch tokens (no liquidity yet) have no price/holder data, so several layers of the score will be inconclusive. Antares will still surface what it can read on-chain (mint authority, freeze authority, supply, deployer history) but the overall verdict is most reliable once the token is trading.</p>
+
+<p class="faq-q">The overlay disappeared. How do I bring it back?</p>
+<p>The overlay can be hidden via the <strong>Stealth</strong> toggle in the extension popup. Click the Antares icon in your browser toolbar and turn Stealth off. If that's not it, refresh the page once.</p>
+
+<p class="faq-q">How do I report a token that Antares missed (false negative) or wrongly flagged (false positive)?</p>
+<p>Email the address above with subject <code>[VERDICT]</code> and include the contract address plus what you observed on-chain. We use false negatives to tune the rug database and false positives to refine the scoring weights.</p>
+
+<h2>5. Status and known issues</h2>
+<p>If multiple users are reporting the same problem, we post a status note here. As of <strong>May 9, 2026</strong> there are no known outages or major regressions. The extension is at version <strong>1.2.0</strong>.</p>
+
+<h2>6. Links</h2>
+<ul>
+<li><a href="/privacy">Privacy policy</a> — what data the extension processes.</li>
+<li><a href="/token.html">Try the public scanner</a> — paste any Solana contract address.</li>
+<li><a href="mailto:lennypierrepro@gmail.com">lennypierrepro@gmail.com</a> — direct support contact.</li>
+</ul>
+
+<a href="/token.html" class="back">&larr; Back to Antares</a>
+</div>
+</body>
+</html>
