@@ -657,8 +657,32 @@ export function layerChart(
     penalties.push(0.65); safeBlocked = true;
   }
   if (drawdownFromPeak < -55) {
-    flags.push(makeFlag("Blow-off top: price collapsed >55% from peak", "critical", 0));
-    penalties.push(0.20); forceRug = true; safeBlocked = true;
+    // Mature pairs (5k+ holders OR 90d+ age with $500k+ liquidity) routinely
+    // sit -60–80% below a local 40-candle peak — that's normal volatility,
+    // not a rug. AURA (DtR4...k9B2) was the canary: 2 years old, $1.95M LP,
+    // all four binary safety checks clean, +133% 24h, but it still got
+    // forceRug'd because the local peak in the recent window happened to
+    // be >55% above the current close. Same shape applies to any blue-chip
+    // memecoin in a normal correction.
+    //
+    // Fix: drop forceRug from this single signal. A 55% drawdown alone is
+    // not a rug pull — that's an exit-scam term reserved for LP drained,
+    // mint authority used, freeze active, or honeypot. Keep severity
+    // critical + safeBlock + penalty for non-mature tokens (where the
+    // signal still feeds into the cumulative score and will land DANGER /
+    // RUG when paired with the other rug fingerprints in this layer and
+    // in cross-validation). For mature pairs, demote to info-only — no
+    // penalty cap, no hard verdict override, no chart-only false rug.
+    const mc = maturityContext;
+    const looksMature =
+      (mc?.holders ?? 0) >= 5_000 ||
+      ((mc?.tokenAgeHours ?? 0) >= 90 * 24 && (mc?.liquidity ?? 0) >= 500_000);
+    if (looksMature) {
+      flags.push(makeFlag("Drawdown >55% from local peak (mature pair, normal volatility)", "info", 0));
+    } else {
+      flags.push(makeFlag("Blow-off top: price collapsed >55% from peak", "critical", 0));
+      penalties.push(0.20); safeBlocked = true;
+    }
   }
   if (tokenAgeMinutes !== null && tokenAgeMinutes < 90 && volumes.length >= 10) {
     const recentVol = volumes.slice(-5);
