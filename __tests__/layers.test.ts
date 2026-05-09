@@ -669,4 +669,61 @@ describe("layerChart", () => {
     const r = layerChart(candles, null, 30);
     expect(r.available).toBe(true);
   });
+
+  // Regression: AURA (DtR4...k9B2). 2-year-old token, all 4 binary safety
+  // checks clean ($1.95M LP, no mint/freeze authority, LP burned), +133% in
+  // the most recent 24h, but its 40-candle window contained a local peak
+  // that was >55% above the current close. Pre-fix, that single chart
+  // signal hard-promoted the verdict to RUG via forceRug=true. The fix
+  // adds a maturity guard mirroring the rug-staircase pattern: 5k+ holders
+  // OR (90d+ age AND $500k+ liquidity) demotes the flag to info-level
+  // with no penalty cap and no chart-only forceRug. Cumulative score from
+  // the OTHER layers still drives the verdict — actual rugs (with low LP
+  // / wallet concentration / honeypot / no socials) keep landing RUG via
+  // their other independent signals.
+  it("does not forceRug a mature pair on chart-only blow-off (AURA regression)", () => {
+    // Synthesise candles: peak at index 5, then collapse > 55% by index 39.
+    const candles = Array.from({ length: 40 }, (_, i) => {
+      const price = i < 5 ? 1 + i * 1.0 : 6 - (i - 5) * 0.12; // peak ~6, ends ~1.8 → -70% from peak
+      return mkCandle(price, price + 0.05, price - 0.05, price, 5000);
+    });
+    const matureContext = {
+      holders: 8_000,
+      liquidity: 1_950_000,
+      tokenAgeHours: 730 * 24, // ~2 years
+      mintAuthority: false,
+      freezeAuthority: false,
+      honeypot: false,
+      lpBurned: true,
+    };
+    const r = layerChart(candles, null, 730 * 24 * 60, matureContext);
+    expect(r.available).toBe(true);
+    expect(r.forceRug).toBe(false); // ← the headline assertion
+    const blowOff = r.flags.find((f) => /drawdown.*from local peak|blow.?off top/i.test(f.label));
+    expect(blowOff?.severity).toBe("info");
+  });
+
+  it("still forceRug-blocks SAFE on a young token with chart-only blow-off when no other safety signals exist", () => {
+    // Same chart shape, but the token is young + thin liquidity — exactly
+    // the case where the chart pattern IS a meaningful rug fingerprint.
+    const candles = Array.from({ length: 40 }, (_, i) => {
+      const price = i < 5 ? 1 + i * 1.0 : 6 - (i - 5) * 0.12;
+      return mkCandle(price, price + 0.05, price - 0.05, price, 5000);
+    });
+    const youngContext = {
+      holders: 50,
+      liquidity: 4_000,
+      tokenAgeHours: 6,
+      mintAuthority: false,
+      freezeAuthority: false,
+      honeypot: false,
+      lpBurned: false,
+    };
+    const r = layerChart(candles, null, 6 * 60, youngContext);
+    expect(r.available).toBe(true);
+    expect(r.safeBlocked).toBe(true); // chart still blocks SAFE for young tokens
+    // forceRug from THIS specific signal is gone, but cumulative score from
+    // the rest of the layers still drives the verdict; we don't re-assert
+    // RUG here since that's scoring's job, not layerChart's.
+  });
 });
