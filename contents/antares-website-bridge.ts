@@ -43,6 +43,17 @@ export const config: PlasmoCSConfig = {
   // path under that org), the wildcard one is a defensive net for any
   // future page added to the same org.
   matches: [
+    // Production custom domain — primary website host. Without this entry
+    // the bridge is never injected on antaresscan.com pages, so:
+    //   - account.html can't push the freshly minted session JWT into
+    //     chrome.storage.local (Pro never unlocks on the extension), and
+    //   - account.html's logout postMessage `antares:clear-session-token`
+    //     is silently dropped (storage stays put, the storage-onChanged
+    //     listener in antares-inject.ts never fires, the overlay keeps
+    //     sending the still-valid JWT and stays on Pro forever).
+    "https://antaresscan.com/*",
+    "https://www.antaresscan.com/*",
+    // Legacy + preview origins kept for older installs / Vercel previews.
     "https://antares-website.vercel.app/*",
     "https://comealamaisongroupe.github.io/antares-website/*",
     "https://comealamaisongroupe.github.io/*"
