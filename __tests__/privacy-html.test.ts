@@ -55,6 +55,10 @@ describe("privacy.html GDPR / Chrome Web Store sections", () => {
 describe("privacy.html processor disclosure (audit findings)", () => {
   // The audit specifically flagged Gemini, Upstash, and Vercel as missing.
   // Locking all of them in guards against accidental removal in future edits.
+  // GitHub was historically listed because the source repo and the
+  // Private Vulnerability Reporting flow lived there; the repo is now
+  // private and security disclosure runs via email, so GitHub is no
+  // longer a user-data processor and was removed from the table.
   const processors = [
     "Vercel",
     "Upstash",
@@ -66,7 +70,6 @@ describe("privacy.html processor disclosure (audit findings)", () => {
     "Helius",
     "Solscan",
     "GeckoTerminal",
-    "GitHub",
   ];
 
   for (const processor of processors) {
