@@ -476,7 +476,15 @@ export async function pushScanHistory(
   if (!isAvailable() || !redis) return;
   try {
     await redis.lpush(HISTORY_KEY(installId), JSON.stringify(entry));
-    await redis.ltrim(HISTORY_KEY(installId), 0, HISTORY_HARD_CAP - 1);
+    // LTRIM was previously fired on every push, costing 1 Redis command
+    // per scan. Sampled at ~1 % now: the list cap is HISTORY_HARD_CAP
+    // (1000) and the worst-case overshoot between trims is bounded by
+    // the sampling rate, so a 1000-cap list might hold ~1010 entries
+    // temporarily — completely safe at read time (we filter by sinceMs
+    // anyway). Cuts ~0.99 commands per scan.
+    if (Math.random() < 0.01) {
+      await redis.ltrim(HISTORY_KEY(installId), 0, HISTORY_HARD_CAP - 1);
+    }
   } catch (err) {
     logger.warn("user", "history push failed", { error: String(err) });
   }

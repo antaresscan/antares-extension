@@ -50,7 +50,13 @@ import { initRugDb, recordRug } from "./_lib/rugdb";
 import { logger } from "./_lib/logger";
 import { composeCriticalActors } from "./_lib/critical-actors";
 import { buildInsiderGraph, initGraphCache } from "./_lib/insider-graph";
-import { initHistoryCache, pushVerdictHistory, getVerdictHistory, deriveEvent } from "./_lib/verdict-history";
+import { deriveEvent } from "./_lib/verdict-history";
+// initHistoryCache / pushVerdictHistory / getVerdictHistory are no
+// longer imported — the Verdict Timeline feature was decommissioned
+// (see the "Verdict Timeline (decommissioned)" block lower in this
+// file for the full rationale). `deriveEvent` is still imported
+// because the current-scan entry still tags the verdict with a
+// human-readable event label.
 import { composeHolderActivity } from "./_lib/holder-activity";
 import { composeOutcomeStats } from "./_lib/outcome-stats";
 if (process.env.SENTRY_DSN) {
@@ -68,7 +74,8 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
   initUserStorage(redis);
   initRugDb(redis);
   initGraphCache(redis);
-  initHistoryCache(redis);
+  // initHistoryCache deliberately not called — verdict-history is
+  // decommissioned (see decom block lower in this file).
 }
 
 // 24s internal budget against the 25s vercel.json maxDuration. The 9s
@@ -155,16 +162,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       latencyMs: Date.now() - startTime,
       hitKey: "ca",
     });
-    if (installId) {
-      void pushScanHistory(installId, {
-        ca: cached.resolvedMint ?? ca,
-        score: cached.score,
-        verdict: cached.risk,
-        scannedAt: Date.now(),
-        symbol: cached.tokenSymbol ?? undefined,
-        name: cached.tokenName ?? undefined,
-      });
-    }
+    // History push intentionally skipped on cache-hit paths. The first
+    // miss (the bottom of this handler) already recorded the scan; a
+    // user refreshing the same page within the cache TTL would
+    // otherwise stamp identical history entries every reload and
+    // burn 1–2 Redis commands per refresh for zero new information.
     return res.json(cached);
   }
 
@@ -245,16 +247,9 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
           latencyMs: Date.now() - startTime,
           hitKey: "resolvedMint",
         });
-        if (installId) {
-          void pushScanHistory(installId, {
-            ca: cachedByMint.resolvedMint ?? resolvedMint,
-            score: cachedByMint.score,
-            verdict: cachedByMint.risk,
-            scannedAt: Date.now(),
-            symbol: cachedByMint.tokenSymbol ?? undefined,
-            name: cachedByMint.tokenName ?? undefined,
-          });
-        }
+        // History push intentionally skipped on cache-hit (see the
+        // comment on the CA-cache branch above for the rationale —
+        // duplicate entries on refresh, no new signal, costs Redis).
         return res.json(cachedByMint);
       }
     }
@@ -710,22 +705,22 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       priceChange1h,
     }).catch(() => null);
 
-    // ─── V5 Verdict Timeline ──────────────────────────────────────────
-    // Append the current scan to the per-token history ZSET (deduped on
-    // tight refresh windows + identical verdict/score) and read back
-    // the last N entries so the Timeline tab on the page can show real
-    // verdict progression instead of a static mock.
+    // ─── Verdict Timeline (decommissioned) ───────────────────────────
+    // Was a per-token ZSET (push current verdict, read back last N
+    // entries) feeding the Timeline tab in the overlay. The Timeline
+    // tab was replaced by Insider Watch and the frontend stopped
+    // reading `verdictHistory` long ago; the writes/reads kept burning
+    // ~5 Redis commands per scan for no consumer. Removed on
+    // 2026-05-11 during the Upstash budget audit. The field stays on
+    // `ScanResult` (optional) with a single "current" entry so any
+    // stale frontend that still parses it doesn't crash on a null.
     const currentEntry = {
       ts: Date.now(),
       verdict: risk,
       score,
       event: deriveEvent(risk, flags),
     };
-    void pushVerdictHistory(resolvedMint, currentEntry);
-    const verdictHistory = await getVerdictHistory(resolvedMint).catch(() => []);
-    // First scan or Redis unavailable — synthesize a single "now" entry
-    // so the timeline is never empty when the section is open.
-    const finalHistory = verdictHistory.length > 0 ? verdictHistory : [currentEntry];
+    const finalHistory = [currentEntry];
 
     const result: ScanResult = {
       score, risk, flags, pair, resolvedMint, confidence, sources_used,

@@ -5,7 +5,11 @@ import {
   HELIUS_BASE, HELIUS_REST_BASE,
   INSIDER_MAX_HOLDERS, INSIDER_MAX_SIGNATURES,
   INSIDER_GRAPH_CACHE_TTL, INSIDER_GRAPH_CACHE_PREFIX,
-  INSIDER_SIG_CACHE_TTL, INSIDER_SIG_CACHE_PREFIX,
+  // INSIDER_SIG_CACHE_TTL / INSIDER_SIG_CACHE_PREFIX intentionally not
+  // imported — the per-wallet signature cache was removed in the
+  // Upstash-quota audit (see `getCachedWalletSignatures` below for the
+  // rationale). The constants are kept in `constants.ts` for now so any
+  // external references don't break.
 } from "./constants";
 import type { Redis } from "@upstash/redis";
 
@@ -14,8 +18,6 @@ const MAX_HOLDERS = INSIDER_MAX_HOLDERS;
 const MAX_SIGNATURES = INSIDER_MAX_SIGNATURES;
 const GRAPH_CACHE_TTL = INSIDER_GRAPH_CACHE_TTL;
 const GRAPH_CACHE_PREFIX = INSIDER_GRAPH_CACHE_PREFIX;
-const SIG_CACHE_TTL = INSIDER_SIG_CACHE_TTL;
-const SIG_CACHE_PREFIX = INSIDER_SIG_CACHE_PREFIX;
 
 // ─── TYPES ─────────────────────────────────────────────────────────────
 export interface GraphNode {
@@ -132,30 +134,28 @@ async function getWalletSignatures(
   }
 }
 
-// Per-wallet signature cache. Skips the Helius round-trip when the same
-// wallet was already queried within SIG_CACHE_TTL — useful because top
-// holders often overlap across consecutive scans of the same token (and
-// occasionally across different tokens). Cache failure is non-blocking;
-// we always fall back to a live Helius call.
+// Per-wallet signature cache REMOVED on 2026-05-11 after Upstash audit.
+//
+// The original design cached Helius `getSignaturesForAddress` results
+// per wallet for 5 min so consecutive scans of the SAME token re-using
+// the same top holders would skip Helius. The flaw: every scan did N
+// GETs (one per top holder) + up to N SETs on miss. At MAX_HOLDERS = 20
+// that's ~20–40 Redis commands per scan. Multiplied across 30 active
+// users on free tier (500 K cmd/month cap), the sig cache alone
+// consumed ~80 % of the monthly budget.
+//
+// The graph-level cache at `${GRAPH_CACHE_PREFIX}${mint}` (5 min TTL)
+// already absorbs the dominant repeat case (same token re-scanned within
+// 5 min — every cache HIT skips ALL sig fetches). The per-wallet
+// cross-token overlap optimisation the sig cache used to provide is
+// empirically tiny: top holders rarely overlap across DIFFERENT mints
+// within a 5-minute window. We pay slightly more Helius calls on cold-
+// graph scans in exchange for cutting ~12 Redis commands per scan, and
+// Helius has more headroom than Upstash at the current scale.
 async function getCachedWalletSignatures(
-  wallet: string, apiKey: string
+  wallet: string, apiKey: string,
 ): Promise<string[]> {
-  if (redis) {
-    try {
-      const cached = await redis.get<string[]>(`${SIG_CACHE_PREFIX}${wallet}`);
-      if (Array.isArray(cached)) return cached;
-    } catch { /* fall through to live fetch */ }
-  }
-
-  const sigs = await getWalletSignatures(wallet, apiKey);
-
-  if (redis && sigs.length > 0) {
-    try {
-      await redis.set(`${SIG_CACHE_PREFIX}${wallet}`, sigs, { ex: SIG_CACHE_TTL });
-    } catch { /* non-critical */ }
-  }
-
-  return sigs;
+  return getWalletSignatures(wallet, apiKey);
 }
 
 async function parseTransactions(

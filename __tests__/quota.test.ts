@@ -182,18 +182,22 @@ describe("checkDailyQuota — Free tier", () => {
     }
   });
 
-  it("still increments the counter for analytics (best-effort)", async () => {
-    // The counter is no longer a gate, but we keep it for visibility
-    // / abuse detection. Successful scans bump it; failures swallow.
+  it("no longer increments any per-day counter (decommissioned 2026-05-11)", async () => {
+    // The free-tier daily counter used to fire 1–2 Redis commands per
+    // scan (INCR plus EXPIRE on first scan of the UTC day) for a
+    // metric no production code consumed — quota gating was removed
+    // when all tiers became unlimited. The Upstash-budget audit on
+    // 2026-05-11 deleted the writer. This test pins the new
+    // behaviour: ZERO Redis ops for the counter, regardless of tier.
     const redis = mockRedis();
     initQuota(redis);
     initUserStorage(redis);
 
     await checkDailyQuota("install-counted");
-    // Give the void best-effort INCR a tick to land.
     await new Promise((r) => setTimeout(r, 0));
 
-    expect(redis.incr).toHaveBeenCalled();
+    expect(redis.incr).not.toHaveBeenCalled();
+    expect(redis.expire).not.toHaveBeenCalled();
   });
 
   it("does not increment for paid tiers (Pro/Lifetime are unlimited up-front)", async () => {
@@ -206,7 +210,10 @@ describe("checkDailyQuota — Free tier", () => {
     expect(redis.incr).not.toHaveBeenCalled();
   });
 
-  it("uses anonymous bucket when identityKey is null", async () => {
+  it("does not bucket anonymous traffic separately (counter decommissioned)", async () => {
+    // Pre-2026-05-11 the function created a `quota:anonymous:<day>`
+    // bucket when identityKey was null. With the counter gone there's
+    // no bucket to inspect — assert ZERO INCRs regardless of identity.
     const counter: Record<string, number> = {};
     const redis = mockRedis({ counter });
     initQuota(redis);
@@ -214,15 +221,13 @@ describe("checkDailyQuota — Free tier", () => {
 
     await checkDailyQuota(null);
     await checkDailyQuota(null);
-    // Best-effort INCRs need a tick to land.
     await new Promise((r) => setTimeout(r, 0));
 
-    const keys = Object.keys(counter);
-    expect(keys.length).toBe(1);
-    expect(keys[0]).toContain("anonymous");
+    expect(Object.keys(counter).length).toBe(0);
+    expect(redis.incr).not.toHaveBeenCalled();
   });
 
-  it("isolates buckets across distinct install ids", async () => {
+  it("does not isolate buckets across install ids (counter decommissioned)", async () => {
     const counter: Record<string, number> = {};
     const redis = mockRedis({ counter });
     initQuota(redis);
@@ -232,7 +237,9 @@ describe("checkDailyQuota — Free tier", () => {
     await checkDailyQuota("install-b");
     await new Promise((r) => setTimeout(r, 0));
 
-    expect(Object.keys(counter).length).toBe(2);
+    // Both install-a and install-b are unlimited Free; neither writes
+    // to the counter any more, so the counter remains empty.
+    expect(Object.keys(counter).length).toBe(0);
   });
 });
 
