@@ -259,18 +259,46 @@ const sampleEntry = (overrides: Partial<ScanHistoryEntry> = {}): ScanHistoryEntr
 });
 
 describe("pushScanHistory", () => {
-  it("LPUSHes the JSON entry and trims to HISTORY_HARD_CAP", async () => {
+  it("LPUSHes on every call and samples LTRIM at ~1% (Upstash audit 2026-05-11)", async () => {
+    // Pre-2026-05-11 every push did 2 Redis commands: LPUSH + LTRIM.
+    // The Upstash-budget audit deduced that LTRIM doesn't need to
+    // fire every push — HISTORY_HARD_CAP is 1000 and a 1% sample
+    // keeps worst-case overshoot bounded (~1010 entries) without
+    // breaking the read-time filtering. This test pins the new
+    // contract: LPUSH always fires; LTRIM is sampled, so we force
+    // Math.random to return 0.5 (above the 1% threshold) and assert
+    // it does NOT fire on this push.
     const m = mockRedis();
     initUserStorage(m.redis);
 
-    await pushScanHistory("install-x", sampleEntry({ ca: "A".padEnd(43, "1") }));
+    const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0.5);
+    try {
+      await pushScanHistory("install-x", sampleEntry({ ca: "A".padEnd(43, "1") }));
+      expect(m.redis.lpush).toHaveBeenCalledOnce();
+      expect(m.redis.ltrim).not.toHaveBeenCalled();
+    } finally {
+      randomSpy.mockRestore();
+    }
+  });
 
-    expect(m.redis.lpush).toHaveBeenCalledOnce();
-    expect(m.redis.ltrim).toHaveBeenCalledWith(
-      "user:install-x:history",
-      0,
-      HISTORY_HARD_CAP - 1,
-    );
+  it("LTRIM fires when the sample bucket lands (~1% of calls)", async () => {
+    // Inverse of the above — force the random draw under the 1%
+    // threshold and assert LTRIM does fire with the correct args.
+    const m = mockRedis();
+    initUserStorage(m.redis);
+
+    const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0.005);
+    try {
+      await pushScanHistory("install-x", sampleEntry({ ca: "A".padEnd(43, "1") }));
+      expect(m.redis.lpush).toHaveBeenCalledOnce();
+      expect(m.redis.ltrim).toHaveBeenCalledWith(
+        "user:install-x:history",
+        0,
+        HISTORY_HARD_CAP - 1,
+      );
+    } finally {
+      randomSpy.mockRestore();
+    }
   });
 
   it("doesn't throw if Redis push fails", async () => {
