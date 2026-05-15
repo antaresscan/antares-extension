@@ -40,6 +40,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!corsOk) return apiError(res, 403, "Origin not allowed.");
   if (req.method !== "GET") return apiError(res, 405, "Method not allowed.");
 
+  // Validate input BEFORE any async work. Validation is cheap and must
+  // not depend on rate-limiter/Redis availability — otherwise a Redis
+  // outage in CI (or prod) makes the endpoint answer invalid requests
+  // with 500 instead of a clean 400. e2e contract: /api/graph (no ca)
+  // and /api/graph?ca= must return 400, never 500.
+  const ca = validateCA(req.query.ca);
+  if (!ca) return apiError(res, 400, "Invalid token address.");
+
   // Dedicated rate limiting for /api/graph (expensive Helius calls)
   const ip = getClientIp(req);
   const allowed = await checkRateLimit(res, ip);
@@ -47,9 +55,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const HELIUS_API_KEY = process.env.HELIUS_API_KEY;
   if (!HELIUS_API_KEY) return apiError(res, 503, "Helius API key not configured.");
-
-  const ca = validateCA(req.query.ca);
-  if (!ca) return apiError(res, 400, "Invalid token address.");
 
   try {
     // Fetch holders and supply in parallel
