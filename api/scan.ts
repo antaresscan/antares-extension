@@ -110,13 +110,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // which is what we want.
   res.setHeader("Cache-Control", "no-store, max-age=0");
 
+  // Validate input BEFORE any async work (see /api/graph for the
+  // same rationale). e2e contract: /api/scan (no ca) and ?ca= must
+  // return 400, never 500.
+  const ca = validateCA(req.query.ca);
+  if (!ca) return apiError(res, 400, "Invalid token address.");
+
   const ip = getClientIp(req);
   const installId = getInstallId(req);
   const rateLimitOk = await checkRateLimit(res, ip, installId);
   if (!rateLimitOk) return;
-
-  const ca = validateCA(req.query.ca);
-  if (!ca) return apiError(res, 400, "Invalid token address.");
 
   // Daily quota gate — runs after CA validation (don't charge invalid CAs
   // against the user's budget) but before the cache lookup (cache hits still
