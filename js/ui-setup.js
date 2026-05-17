@@ -71,26 +71,6 @@ export function setupCollapsibles() {
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// FAB Ask Antares — toggle on click; auto-close on outside click. Hover
-// also opens (CSS-driven) but click is the touch-friendly path.
-// ──────────────────────────────────────────────────────────────────────
-export function setupFab() {
-  if (window.__fabInit) return;
-  window.__fabInit = true;
-  const wrap = document.getElementById("ask-fab-wrap");
-  if (!wrap) return;
-  wrap.removeAttribute("aria-hidden");
-  const btn = wrap.querySelector(".ask-fab");
-  if (btn) {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      wrap.classList.toggle("open");
-    });
-  }
-  document.addEventListener("click", () => wrap.classList.remove("open"));
-}
-
-// ──────────────────────────────────────────────────────────────────────
 // Tab switcher — scoped to each .deep widget so multiple tab groups on
 // the same page (future-proof) stay independent.
 // ──────────────────────────────────────────────────────────────────────
