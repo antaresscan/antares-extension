@@ -37,7 +37,6 @@ import {
   setupCursorGlow,
   setupStickyNav,
   setupCollapsibles,
-  setupFab,
   setupTabs,
   setupRefreshButton,
   setupFreshnessTicker,
@@ -512,7 +511,6 @@ function render(d, ca) {
   setupRevealObserver();
   setupCollapsibles();
   setupTabs();
-  setupFab();
   setupRefreshButton(ca, { onRefresh: (data) => render(data, ca) });
   setupFreshnessTicker(d.fetchedAt);
 
