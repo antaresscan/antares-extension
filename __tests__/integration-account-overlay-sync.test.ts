@@ -140,6 +140,10 @@ function extractTokenFromCookie(setCookie: string): string {
   return decodeURIComponent(match![1]);
 }
 
+// Dev/founder allowlist is env-var only (no hardcoded list in account.ts).
+process.env.DEV_LIFETIME_EMAILS = "test-dev@example.com";
+process.env.DEV_PRO_EMAILS = "test-dev@example.com";
+
 beforeEach(() => {
   mocks.store.clear();
   process.env.UPSTASH_REDIS_REST_URL = "https://fake.upstash";
@@ -318,7 +322,7 @@ describe("E2E: account ↔ overlay tier sync (the one the founder kept asking fo
 
   it("REPRODUCES the user's bug: sign up → redeem license → scan must return user's tier (NOT Free)", async () => {
     // This is the founder's exact scenario from their screenshot:
-    //   - Signed in as lennypierrepro@gmail.com
+    //   - Signed in as test-dev@example.com
     //   - Clicked LINK TO MY EXTENSION → redeemed Lifetime licence
     //   - /account.html shows "✓ Linked" + CURRENT TIER: Lifetime
     //   - Overlay STILL shows FREE
