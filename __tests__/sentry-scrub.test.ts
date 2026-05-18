@@ -19,7 +19,7 @@ vi.mock("@sentry/node", () => ({
   withScope: vi.fn(),
 }));
 
-import { _scrubObjectForTests } from "../api/_lib/sentry";
+import { _scrubObjectForTests, _scrubEventForTests } from "../api/_lib/sentry";
 
 describe("Sentry PII scrubber", () => {
   it("scrubs `email` at the top level", () => {
@@ -129,5 +129,77 @@ describe("Sentry PII scrubber", () => {
     let nested: unknown = { email: "deep@example.com" };
     for (let i = 0; i < 12; i++) nested = { a: nested };
     expect(() => _scrubObjectForTests(nested)).not.toThrow();
+  });
+});
+
+// New scope: the full event-level scrubber wired into beforeSend.
+// Pins the GDPR-claim-preserving behaviour added 2026-05-19 after the
+// security audit flagged that privacy.html's "no PII / no contract
+// address" claim wasn't actually held by the code (Sentry default IP
+// capture + URL-with-query weren't scrubbed).
+describe("Sentry event scrubber (beforeSend)", () => {
+  it("strips ?ca=<contract> from request.url while preserving path", () => {
+    const event = {
+      request: {
+        url: "https://antares-extension.vercel.app/api/scan?ca=ukHH6c7mMyiWCf1b9pnWe25TSpkDDt3H5pQZgZ74J82&t=123",
+      },
+    };
+    const out = _scrubEventForTests(event);
+    expect(out.request.url).toBe(
+      "https://antares-extension.vercel.app/api/scan?[scrubbed]",
+    );
+  });
+
+  it("leaves a query-less URL untouched", () => {
+    const event = {
+      request: { url: "https://antares-extension.vercel.app/api/health" },
+    };
+    const out = _scrubEventForTests(event);
+    expect(out.request.url).toBe(
+      "https://antares-extension.vercel.app/api/health",
+    );
+  });
+
+  it("scrubs user.email and user.ip_address", () => {
+    const event = {
+      user: {
+        email: "buyer@example.com",
+        ip_address: "203.0.113.42",
+        id: "install-abc",
+      },
+    };
+    const out = _scrubEventForTests(event);
+    expect(out.user.email).toBe("[scrubbed]");
+    expect(out.user.ip_address).toBe("[scrubbed]");
+    // id is not PII per privacy policy (opaque install-id), keep it.
+    expect(out.user.id).toBe("install-abc");
+  });
+
+  it("scrubs request.data, headers, cookies via key allowlist", () => {
+    const event = {
+      request: {
+        data: { email: "x@y.z", reference: "ref-1" },
+        headers: { authorization: "Bearer xxx", "user-agent": "Mozilla" },
+        cookies: { antares_session: "jwt-here", theme: "dark" },
+      },
+    };
+    const out = _scrubEventForTests(event);
+    expect(out.request.data.email).toBe("[scrubbed]");
+    expect(out.request.data.reference).toBe("ref-1");
+    expect(out.request.headers.authorization).toBe("[scrubbed]");
+    expect(out.request.headers["user-agent"]).toBe("Mozilla");
+    expect(out.request.cookies.theme).toBe("dark");
+  });
+
+  it("returns the event even when malformed (no throw)", () => {
+    // Adversarial shape — a getter that throws partway through scrubbing.
+    const event = {
+      request: {
+        get url() {
+          throw new Error("boom");
+        },
+      },
+    };
+    expect(() => _scrubEventForTests(event)).not.toThrow();
   });
 });

@@ -80,6 +80,58 @@ function scrubObject(value: unknown, depth = 0): unknown {
   return out;
 }
 
+/**
+ * Apply every PII scrub to a single Sentry event in place. Extracted
+ * out of `beforeSend` so the behaviour is unit-testable without
+ * spinning up `@sentry/node`. Mutates and returns the event.
+ *
+ * Operations:
+ *  - SCRUB_KEYS values inside extra/tags/contexts/request.data/headers/cookies → "[scrubbed]"
+ *  - `event.request.url` query string → "?[scrubbed]" (path preserved for grouping)
+ *  - `event.user.email`, `event.user.ip_address` → "[scrubbed]"
+ *
+ * Any thrown error during scrubbing is swallowed (we'd rather Sentry
+ * see a raw event than lose signal entirely).
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function scrubEvent(event: any): any {
+  try {
+    if (event.extra)
+      event.extra = scrubObject(event.extra);
+    if (event.tags)
+      event.tags = scrubObject(event.tags);
+    if (event.contexts)
+      event.contexts = scrubObject(event.contexts);
+    if (event.request) {
+      if (event.request.data)
+        event.request.data = scrubObject(event.request.data);
+      if (event.request.headers)
+        event.request.headers = scrubObject(event.request.headers);
+      if (event.request.cookies)
+        event.request.cookies = scrubObject(event.request.cookies);
+      // Drop the URL query string — `?ca=<contract>` would leak the
+      // very identifier privacy.html promises never to send. Path is
+      // kept so error grouping by route still works.
+      if (typeof event.request.url === "string") {
+        const qIdx = event.request.url.indexOf("?");
+        if (qIdx >= 0)
+          event.request.url = event.request.url.slice(0, qIdx) + "?[scrubbed]";
+      }
+    }
+    // Strip user.email even if Sentry's user-context integration ever
+    // lands on us. We don't currently call setUser, but the protection
+    // costs nothing and prevents a future regression.
+    if (event.user?.email) event.user.email = "[scrubbed]";
+    // sendDefaultPii=false already prevents IP capture upstream, but
+    // if a future integration or manual setUser puts one back, strip
+    // it here as the last line of defence.
+    if (event.user?.ip_address) event.user.ip_address = "[scrubbed]";
+  } catch {
+    // Scrubbing failure shouldn't drop the whole event.
+  }
+  return event;
+}
+
 export function initSentry(): void {
   if (initialized) return;
   const dsn = process.env.SENTRY_DSN;
@@ -87,45 +139,34 @@ export function initSentry(): void {
   Sentry.init({
     dsn,
     tracesSampleRate: 0.1,
+    // Disable Sentry's default PII enrichment — the SDK normally
+    // auto-attaches the client IP and the full request URL (incl.
+    // query string with `?ca=<contract>`) to every event. That
+    // contradicts privacy.html's claim "Sentry: never the contract
+    // address or your IP". sendDefaultPii=false stops the IP capture
+    // upstream of beforeSend; the query-string + user.ip_address
+    // scrubs in scrubEvent below are belt-and-braces against any
+    // auto-enrichment we didn't anticipate.
+    sendDefaultPii: false,
     // Don't auto-capture console — we already log structured events
     // via api/_lib/logger.ts and don't want duplicates in Sentry.
     integrations: (defaults) =>
       defaults.filter((i) => i.name !== "Console"),
-    // PII scrubbing — runs on every event before it leaves the
-    // process. Walks `extra`, `tags`, `contexts`, request.data /
-    // request.headers / request.cookies, and user.email. Keys
-    // matching SCRUB_KEYS (case-insensitive) have their value
-    // replaced with "[scrubbed]". Needed to make privacy.html's
-    // "no PII to error telemetry" claim actually hold.
     beforeSend(event) {
-      try {
-        if (event.extra)
-          event.extra = scrubObject(event.extra) as typeof event.extra;
-        if (event.tags)
-          event.tags = scrubObject(event.tags) as typeof event.tags;
-        if (event.contexts)
-          event.contexts = scrubObject(event.contexts) as typeof event.contexts;
-        if (event.request) {
-          if (event.request.data)
-            event.request.data = scrubObject(event.request.data) as typeof event.request.data;
-          if (event.request.headers)
-            event.request.headers = scrubObject(event.request.headers) as typeof event.request.headers;
-          if (event.request.cookies)
-            event.request.cookies = scrubObject(event.request.cookies) as typeof event.request.cookies;
-        }
-        // Strip user.email even if Sentry's user-context integration
-        // ever lands on us. We don't currently call setUser, but the
-        // protection costs nothing and prevents a future regression.
-        if (event.user?.email) event.user.email = "[scrubbed]";
-      } catch {
-        // Scrubbing failure shouldn't drop the whole event — let
-        // Sentry see the raw (PII-bearing) version rather than lose
-        // signal on a malformed event shape.
-      }
-      return event;
+      return scrubEvent(event);
     },
   });
   initialized = true;
+}
+
+/**
+ * Test-only helper. Exposes the full event scrubber (URL query strip,
+ * user.email + user.ip_address strip, and recursive key scrub) so
+ * tests can pin its behaviour without spinning up Sentry.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function _scrubEventForTests(event: any): any {
+  return scrubEvent(event);
 }
 
 /**
