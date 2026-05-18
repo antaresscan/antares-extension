@@ -90,6 +90,19 @@ export const config: PlasmoCSConfig = {
 // profile, both clear on uninstall.
 const SESSION_TOKEN_KEY = "antares_session_token"
 
+// Explicit allowlist of origins whose postMessage traffic we trust.
+// Defense-in-depth: the `matches` list above already gates injection,
+// but if someone widens those wildcards by accident (or a future MV3
+// quirk loosens matching) this still blocks rogue origins from planting
+// a session JWT into chrome.storage.local. Must stay in sync with
+// `matches` — narrower is fine, wider is a security regression.
+const ALLOWED_BRIDGE_ORIGINS = new Set([
+  "https://antaresscan.com",
+  "https://www.antaresscan.com",
+  "https://antares-website.vercel.app",
+  "https://comealamaisongroupe.github.io"
+])
+
 function setStoredSessionToken(token: string): Promise<void> {
   return new Promise((resolve) => {
     chrome.storage.local.set({ [SESSION_TOKEN_KEY]: token }, () => {
@@ -115,6 +128,12 @@ window.addEventListener("message", (event) => {
   // Trust the source: messages must come from the same window
   // (page → bridge), not iframes or other origins.
   if (event.source !== window) return
+  // Origin allowlist — blocks any rogue script that somehow makes it past
+  // the `event.source === window` check (e.g. if a future Chrome update
+  // changes `source` semantics for synthetic events). Without this gate,
+  // a single XSS on a non-allowlisted host that we accidentally match
+  // could plant a forged session JWT into chrome.storage.local.
+  if (!ALLOWED_BRIDGE_ORIGINS.has(event.origin)) return
   const data = event.data as {
     type?: string
     nonce?: string

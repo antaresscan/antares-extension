@@ -12,6 +12,7 @@
 import {
   fmt,
   escapeHtml,
+  escapeHtmlAllowBold,
 } from "./formatters.js";
 import {
   computeExitLiquidity,
@@ -258,7 +259,7 @@ export function buildExitLiquidityTab(liq) {
       <div class="exit-amount">${escapeHtml(fmt(t.amount))}</div>
       <div class="exit-slip ${t.cls}">${escapeHtml(t.slipDisplay)}</div>
       <div class="exit-wave"><div class="exit-wave-fill ${t.cls}" style="width:${t.widthPct}%"></div></div>
-      <div class="exit-note">${t.note}</div>
+      <div class="exit-note">${escapeHtmlAllowBold(t.note)}</div>
     </div>
   `,
     )
@@ -303,7 +304,7 @@ export function buildCriticalActorsPreview(d) {
             <div class="wp-rep-lbl">${escapeHtml(a.repLbl || "")}</div>
             <div class="wp-rep-bar"><div class="wp-rep-fill ${a.repWarn ? "warn" : ""}" style="width:${Math.max(0, Math.min(100, a.repWidth || 0))}%"></div></div>
           </div>
-          <div class="wp-desc">${a.desc || ""}</div>
+          <div class="wp-desc">${escapeHtmlAllowBold(a.desc)}</div>
         </div>
       `;
       })

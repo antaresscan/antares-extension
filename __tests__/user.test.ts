@@ -154,6 +154,12 @@ function mockRedis(initialStrings: Record<string, string> = {}): MockBundle {
   };
 }
 
+// Dev/founder allowlist is now env-var only (was previously hardcoded in
+// api/_lib/account.ts). Tests that probe the bound-email allowlist path
+// rely on this value being set before any account/user logic runs.
+process.env.DEV_LIFETIME_EMAILS = "test-dev@example.com";
+process.env.DEV_PRO_EMAILS = "test-dev@example.com";
+
 beforeEach(() => {
   _resetUserStorageForTests();
 });
@@ -433,11 +439,11 @@ describe("isDevAllowlistedInstall (env-var + bound-email path)", () => {
     expect(await isDevAllowlistedInstall("install-direct")).toBe(true);
   });
 
-  it("returns true for installs whose bound email is in DEV_LIFETIME_EMAILS_HARDCODED", async () => {
+  it("returns true for installs whose bound email is in DEV_LIFETIME_EMAILS env var", async () => {
     delete process.env.DEV_PRO_INSTALLS;
     const m = mockRedis({
       // The reverse-index key written by license redeem.
-      "account:install:install-bound-lifetime": "lennypierrepro@gmail.com",
+      "account:install:install-bound-lifetime": "test-dev@example.com",
     });
     initUserStorage(m.redis);
     expect(await isDevAllowlistedInstall("install-bound-lifetime")).toBe(true);
@@ -499,7 +505,7 @@ describe("getEffectiveTier (header honoured for dev-allowlisted installs)", () =
   it("honours the header for bound-email dev installs", async () => {
     delete process.env.DEV_PRO_INSTALLS;
     const m = mockRedis({
-      "account:install:install-bound": "lennypierrepro@gmail.com",
+      "account:install:install-bound": "test-dev@example.com",
       // Stored tier is pro, but header says free → header should win.
       "user:install-bound:tier": "pro",
     });
@@ -660,13 +666,13 @@ describe("getEffectiveTierFromRequest (session-gated)", () => {
 
   it("honours dev-tier header for signed-in dev-allowlisted email", async () => {
     const m = mockRedis({
-      "account:install:install-dev": "lennypierrepro@gmail.com",
+      "account:install:install-dev": "test-dev@example.com",
       "user:install-dev:tier": "lifetime",
     });
     initUserStorage(m.redis);
-    seedAccount(m, "lennypierrepro@gmail.com");
+    seedAccount(m, "test-dev@example.com");
 
-    const token = signSession("lennypierrepro@gmail.com");
+    const token = signSession("test-dev@example.com");
     // Even though stored tier is lifetime, header forces Free.
     expect(
       await getEffectiveTierFromRequest(reqWithCookie(token, "free"), "install-dev"),
@@ -744,14 +750,14 @@ describe("resolveTierAndBypass (dev quota bypass)", () => {
 
   it("bypassQuota=true for signed-in dev-allowlisted email (Yearly grant)", async () => {
     const m = mockRedis({
-      "account:install:install-dev": "lennypierrepro@gmail.com",
+      "account:install:install-dev": "test-dev@example.com",
       // Stored tier is "yearly" (the new dev-grant tier post-2026-05).
       "user:install-dev:tier": "yearly",
     });
     initUserStorage(m.redis);
-    seedAccount(m, "lennypierrepro@gmail.com");
+    seedAccount(m, "test-dev@example.com");
 
-    const token = signSession("lennypierrepro@gmail.com");
+    const token = signSession("test-dev@example.com");
     const result = await resolveTierAndBypass(reqWithCookie(token), "install-dev");
     expect(result.bypassQuota).toBe(true);
     expect(result.tier).toBe("yearly");
@@ -759,13 +765,13 @@ describe("resolveTierAndBypass (dev quota bypass)", () => {
 
   it("dev forcing Free still bypasses quota (the use case from the user)", async () => {
     const m = mockRedis({
-      "account:install:install-dev": "lennypierrepro@gmail.com",
+      "account:install:install-dev": "test-dev@example.com",
       "user:install-dev:tier": "lifetime",
     });
     initUserStorage(m.redis);
-    seedAccount(m, "lennypierrepro@gmail.com");
+    seedAccount(m, "test-dev@example.com");
 
-    const token = signSession("lennypierrepro@gmail.com");
+    const token = signSession("test-dev@example.com");
     // Dev sets dropdown to Free → tier reports as Free (so overlay locks),
     // but bypassQuota is still true (so no 429 hit on every scan).
     const result = await resolveTierAndBypass(reqWithCookie(token, "free"), "install-dev");

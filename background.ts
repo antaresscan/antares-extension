@@ -41,6 +41,25 @@ function extractSymbol(data: Record<string, unknown>): string {
   return ""
 }
 
+// Hosts the OPEN_TAB handler is allowed to open. Anything else — even an
+// HTTPS URL — is rejected and the caller falls back to window.open(), which
+// still has the page's CSP + popup-blocker + user-gesture gates in front of
+// it. This is the second line of defence behind `sender.id` checking: it
+// prevents a compromised content script (XSS on a host site that somehow
+// reaches the message handler) from using the extension's tab privileges
+// to spawn a phishing page under an Antares-trusted-looking pattern.
+//
+// Update this list when introducing a new product host. Localhost dev is
+// intentionally excluded — devs working against PLASMO_PUBLIC_ANALYSIS_URL
+// see the window.open fallback and can sideload normally.
+const ALLOWED_OPEN_TAB_HOSTS = new Set([
+  "antares-extension.vercel.app",
+  "antaresscan.com",
+  "www.antaresscan.com",
+  "antares-website.vercel.app",
+  "comealamaisongroupe.github.io"
+])
+
 // ─── KEEPALIVE ────────────────────────────────────────────────────────────────
 void chrome.alarms.create(config.keepaliveAlarmName, { periodInMinutes: config.keepaliveIntervalMinutes })
 chrome.alarms.onAlarm.addListener((a) => { if (a.name === config.keepaliveAlarmName) void chrome.runtime.id })
@@ -240,8 +259,27 @@ const handlers: Record<string, MessageHandler> = {
     }
 
     const url = safeString(msg.url)
-    if (!url || !/^https?:\/\//.test(url)) {
+    if (!url) {
       sendResponse({ ok: false, error: "Invalid URL" })
+      return
+    }
+    let parsed: URL
+    try {
+      parsed = new URL(url)
+    } catch {
+      sendResponse({ ok: false, error: "Invalid URL" })
+      return
+    }
+    // HTTPS only — drop the legacy `http?:` allowance. No host on the
+    // allowlist serves over plain HTTP, so http URLs are categorically a
+    // sign of either dev fallback (should go through window.open instead)
+    // or attempted abuse.
+    if (parsed.protocol !== "https:") {
+      sendResponse({ ok: false, error: "Invalid URL: https required" })
+      return
+    }
+    if (!ALLOWED_OPEN_TAB_HOSTS.has(parsed.hostname)) {
+      sendResponse({ ok: false, error: "Invalid URL: host not allowed" })
       return
     }
 
