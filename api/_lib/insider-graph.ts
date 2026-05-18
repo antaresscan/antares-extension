@@ -1,6 +1,7 @@
 // api/_lib/insider-graph.ts — Insider Network Graph builder
 // Analyzes top holder wallets to detect coordinated clusters
 import { fetchJson } from "./helpers";
+import { runWithConcurrency } from "./concurrency";
 import {
   HELIUS_BASE, HELIUS_REST_BASE,
   INSIDER_MAX_HOLDERS, INSIDER_MAX_SIGNATURES,
@@ -12,6 +13,13 @@ import {
   // external references don't break.
 } from "./constants";
 import type { Redis } from "@upstash/redis";
+
+// Max simultaneous Helius RPC calls when fanning out per-holder signature
+// fetches. Helius free tier permits ~10 req/s sustained; bursting 20 in
+// the same tick from a cold-graph scan was tripping 429s. Five-in-flight
+// keeps us comfortably below the ceiling while still finishing the
+// 20-holder sweep in ~4 batches.
+const HELIUS_SIG_CONCURRENCY = 5;
 
 // Constants imported from constants.ts
 const MAX_HOLDERS = INSIDER_MAX_HOLDERS;
@@ -209,12 +217,17 @@ export async function buildInsiderGraph(
     isLP: lpAddresses.has(h.address),
   }));
 
-  // Fetch transaction signatures for each top holder (parallel, limited).
-  // Goes through the per-wallet cache so repeat scans of overlapping
-  // holders skip Helius entirely.
+  // Fetch transaction signatures for each top holder. Bounded to
+  // HELIUS_SIG_CONCURRENCY (5) simultaneous requests — at MAX_HOLDERS = 20
+  // an unbounded Promise.all reliably tripped Helius free-tier's 10 req/s
+  // ceiling on cold-graph paths. 5-in-flight stays comfortably under the
+  // budget while keeping the latency penalty small (4 batches of 5
+  // ≈ 4 × per-call duration instead of 1 burst).
   const walletAddresses = topHolders.map(h => h.address);
-  const sigResults = await Promise.all(
-    walletAddresses.map(w => getCachedWalletSignatures(w, apiKey))
+  const sigResults = await runWithConcurrency(
+    walletAddresses,
+    HELIUS_SIG_CONCURRENCY,
+    (w) => getCachedWalletSignatures(w, apiKey),
   );
 
   // Parse transactions to find transfers between holders

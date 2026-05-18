@@ -18,7 +18,12 @@
 
 import { Redis } from "@upstash/redis"
 import { fetchJson } from "./http"
+import { runWithConcurrency } from "./concurrency"
 import { HELIUS_BASE, HELIUS_REST_BASE } from "./constants"
+
+// Match insider-graph.ts — 5-in-flight cap keeps the combined burst
+// under Helius free tier's 10 req/s ceiling.
+const HELIUS_SIG_CONCURRENCY = 5
 
 // Separate cache from insider-graph's `igsig:` because the cached SHAPE
 // differs (we need `blockTime` per sig for the time-window filter,
@@ -246,9 +251,15 @@ export async function buildInsiderActivity(
   const holderSet = new Set(wallets)
   const cutoffMs = Date.now() - WINDOW_HOURS * 3600 * 1000
 
-  // Get sigs per wallet (with shared insider-graph cache)
-  const sigsResults = await Promise.all(
-    wallets.map(async (w): Promise<HeliusSignatureV2[]> => {
+  // Get sigs per wallet (with shared insider-graph cache). Bounded to
+  // HELIUS_SIG_CONCURRENCY (5) simultaneous Helius RPC calls — same
+  // burst-vs-rate-limit reasoning as insider-graph.ts: at MAX_WALLETS = 10
+  // an unbounded Promise.all could spike past the 10 req/s ceiling
+  // when paired with concurrent scans.
+  const sigsResults = await runWithConcurrency(
+    wallets,
+    HELIUS_SIG_CONCURRENCY,
+    async (w): Promise<HeliusSignatureV2[]> => {
       if (redis) {
         try {
           const cached = await redis.get<HeliusSignatureV2[]>(
@@ -264,7 +275,7 @@ export async function buildInsiderActivity(
         } catch { /* non-critical */ }
       }
       return sigs
-    }),
+    },
   )
 
   // Filter sigs by time window + dedupe across wallets
