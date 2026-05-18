@@ -10,15 +10,36 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+          # Cache the npm registry by package-lock.json hash. Skips the
+          # network round-trip for unchanged dependency trees and removes
+          # the ECONNRESET failure mode that flaked CI #1751.
+          cache: "npm"
 
       - name: Install dependencies
-        run: npm install
+        # `npm install` rather than `npm ci` because the current
+        # lockfile has a pre-existing drift (Plasmo peer-deps resolve
+        # differently between npm 10 and npm 11) that the strict
+        # `npm ci` refuses to install. Wrapped in a retry loop because
+        # GitHub-hosted runners occasionally ECONNRESET against the npm
+        # registry on first connect — three attempts with linear
+        # backoff covers the transient case without papering over a
+        # real outage.
+        # TODO: switch back to `npm ci` once the lockfile is regenerated
+        # under the same npm version that runs in CI.
+        run: |
+          for i in 1 2 3; do
+            if npm install --no-audit --no-fund; then exit 0; fi
+            echo "npm install failed (attempt $i) — backing off ${i}0s"
+            sleep $((i * 10))
+          done
+          exit 1
 
       - name: Typecheck
         run: npx tsc --noEmit
@@ -50,15 +71,24 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     needs: build
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+          cache: "npm"
 
       - name: Install dependencies
-        run: npm install
+        # See build job above for npm install vs npm ci rationale.
+        run: |
+          for i in 1 2 3; do
+            if npm install --no-audit --no-fund; then exit 0; fi
+            echo "npm install failed (attempt $i) — backing off ${i}0s"
+            sleep $((i * 10))
+          done
+          exit 1
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
