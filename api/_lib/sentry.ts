@@ -28,6 +28,58 @@ import * as Sentry from "@sentry/node";
 
 let initialized = false;
 
+// PII keys we strip from every Sentry event before send. `email` is the
+// big one — privacy.html promises no PII reaches Sentry, but
+// `captureError(err, { email })` callers exist in account.ts /
+// auth/[action].ts. Scrubbing here means the existing call sites are
+// safe by default; we no longer rely on every operator remembering to
+// hash before logging.
+//
+// Matching is case-insensitive on the key. Values are replaced with
+// the string "[scrubbed]" rather than deleted so the event shape stays
+// inspectable (operator can see "an email was here, not what it was")
+// when debugging.
+const SCRUB_KEYS = new Set([
+  "email",
+  "emails",
+  "emaillc",
+  "password",
+  "passwordhash",
+  "password_hash",
+  "token",
+  "session_token",
+  "sessiontoken",
+  "jwt",
+  "authorization",
+  "cookie",
+  "set-cookie",
+  "ipnsecret",
+  "ipn_secret",
+  "apikey",
+  "api_key",
+  "session_secret",
+]);
+
+function scrubObject(value: unknown, depth = 0): unknown {
+  // Defensive recursion limit — circular refs and huge nested errors
+  // shouldn't OOM the function. 6 layers covers extras + nested
+  // request bodies + nested exception causes.
+  if (depth > 6) return value;
+  if (value === null || typeof value !== "object") return value;
+  if (Array.isArray(value)) {
+    return value.map((v) => scrubObject(v, depth + 1));
+  }
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    if (SCRUB_KEYS.has(k.toLowerCase())) {
+      out[k] = "[scrubbed]";
+    } else {
+      out[k] = scrubObject(v, depth + 1);
+    }
+  }
+  return out;
+}
+
 export function initSentry(): void {
   if (initialized) return;
   const dsn = process.env.SENTRY_DSN;
@@ -39,8 +91,49 @@ export function initSentry(): void {
     // via api/_lib/logger.ts and don't want duplicates in Sentry.
     integrations: (defaults) =>
       defaults.filter((i) => i.name !== "Console"),
+    // PII scrubbing — runs on every event before it leaves the
+    // process. Walks `extra`, `tags`, `contexts`, request.data /
+    // request.headers / request.cookies, and user.email. Keys
+    // matching SCRUB_KEYS (case-insensitive) have their value
+    // replaced with "[scrubbed]". Needed to make privacy.html's
+    // "no PII to error telemetry" claim actually hold.
+    beforeSend(event) {
+      try {
+        if (event.extra)
+          event.extra = scrubObject(event.extra) as typeof event.extra;
+        if (event.tags)
+          event.tags = scrubObject(event.tags) as typeof event.tags;
+        if (event.contexts)
+          event.contexts = scrubObject(event.contexts) as typeof event.contexts;
+        if (event.request) {
+          if (event.request.data)
+            event.request.data = scrubObject(event.request.data) as typeof event.request.data;
+          if (event.request.headers)
+            event.request.headers = scrubObject(event.request.headers) as typeof event.request.headers;
+          if (event.request.cookies)
+            event.request.cookies = scrubObject(event.request.cookies) as typeof event.request.cookies;
+        }
+        // Strip user.email even if Sentry's user-context integration
+        // ever lands on us. We don't currently call setUser, but the
+        // protection costs nothing and prevents a future regression.
+        if (event.user?.email) event.user.email = "[scrubbed]";
+      } catch {
+        // Scrubbing failure shouldn't drop the whole event — let
+        // Sentry see the raw (PII-bearing) version rather than lose
+        // signal on a malformed event shape.
+      }
+      return event;
+    },
   });
   initialized = true;
+}
+
+/**
+ * Test-only helper. Exposes the scrubber so unit tests can pin its
+ * behaviour without spinning up a Sentry process.
+ */
+export function _scrubObjectForTests(value: unknown): unknown {
+  return scrubObject(value);
 }
 
 /**

@@ -16,7 +16,7 @@ test.describe('Scan Integration \u2014 Full Flow E2E', () => {
 
     // Step 2: Scan a known token
     const scan = await request.get(`${BASE}/api/scan?ca=${SOL}`);
-    test.skip(!scan.ok(), `Skipped: scan API returned ${scan.status()}`);
+    expect(scan.ok(), `scan API returned ${scan.status()} — production must succeed (retries: 2)`).toBe(true);
     const result = await scan.json();
 
     // Step 3: Verify complete response structure
@@ -30,9 +30,9 @@ test.describe('Scan Integration \u2014 Full Flow E2E', () => {
 
   test('scanning same token twice returns consistent scores', async ({ request }) => {
     const r1 = await request.get(`${BASE}/api/scan?ca=${SOL}`);
-    test.skip(!r1.ok(), `Skipped: API returned ${r1.status()}`);
+    expect(r1.ok(), `API returned ${r1.status()} — first request must succeed`).toBe(true);
     const r2 = await request.get(`${BASE}/api/scan?ca=${SOL}`);
-    test.skip(!r2.ok(), `Skipped: API returned ${r2.status()}`);
+    expect(r2.ok(), `API returned ${r2.status()} — repeat request must succeed (cache path)`).toBe(true);
     const b1 = await r1.json();
     const b2 = await r2.json();
     // Scores should be identical (cached) or within small tolerance
@@ -43,7 +43,7 @@ test.describe('Scan Integration \u2014 Full Flow E2E', () => {
   test('different tokens produce different results', async ({ request }) => {
     const r1 = await request.get(`${BASE}/api/scan?ca=${SOL}`);
     const r2 = await request.get(`${BASE}/api/scan?ca=${USDC}`);
-    test.skip(!r1.ok() || !r2.ok(), `Skipped: API returned ${r1.status()}/${r2.status()}`);
+    expect(r1.ok() && r2.ok(), `API returned ${r1.status()}/${r2.status()} — both must succeed`).toBe(true);
     const b1 = await r1.json();
     const b2 = await r2.json();
     // requestId may not exist if cached, so just check they responded
