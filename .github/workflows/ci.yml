@@ -23,17 +23,20 @@ jobs:
           cache: "npm"
 
       - name: Install dependencies
-        # `npm ci` reads package-lock.json strictly and is the supported
-        # path for CI: faster, deterministic, and fails loud on
-        # lockfile/package.json drift instead of silently re-resolving.
-        # Wrapped in a retry loop because GitHub-hosted runners
-        # occasionally ECONNRESET against the npm registry on first
-        # connect — three attempts with linear backoff covers the
-        # transient case without papering over a real outage.
+        # `npm install` rather than `npm ci` because the current
+        # lockfile has a pre-existing drift (Plasmo peer-deps resolve
+        # differently between npm 10 and npm 11) that the strict
+        # `npm ci` refuses to install. Wrapped in a retry loop because
+        # GitHub-hosted runners occasionally ECONNRESET against the npm
+        # registry on first connect — three attempts with linear
+        # backoff covers the transient case without papering over a
+        # real outage.
+        # TODO: switch back to `npm ci` once the lockfile is regenerated
+        # under the same npm version that runs in CI.
         run: |
           for i in 1 2 3; do
-            if npm ci --no-audit --no-fund; then exit 0; fi
-            echo "npm ci failed (attempt $i) — backing off ${i}0s"
+            if npm install --no-audit --no-fund; then exit 0; fi
+            echo "npm install failed (attempt $i) — backing off ${i}0s"
             sleep $((i * 10))
           done
           exit 1
@@ -78,10 +81,11 @@ jobs:
           cache: "npm"
 
       - name: Install dependencies
+        # See build job above for npm install vs npm ci rationale.
         run: |
           for i in 1 2 3; do
-            if npm ci --no-audit --no-fund; then exit 0; fi
-            echo "npm ci failed (attempt $i) — backing off ${i}0s"
+            if npm install --no-audit --no-fund; then exit 0; fi
+            echo "npm install failed (attempt $i) — backing off ${i}0s"
             sleep $((i * 10))
           done
           exit 1
