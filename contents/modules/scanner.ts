@@ -201,8 +201,9 @@ export interface ScanOptions {
 export async function scan(ca: string, opts: ScanOptions = {}) {
   if (!ca) return
 
-  if (!scanRateLimiter.tryAcquire()) {
-    logger.warn("scanner", "scan rate-limited, retry after", scanRateLimiter.getRetryAfterMs())
+  if (!(await scanRateLimiter.tryAcquire())) {
+    const retryAfter = await scanRateLimiter.getRetryAfterMs()
+    logger.warn("scanner", "scan rate-limited, retry after", retryAfter)
     return
   }
 
