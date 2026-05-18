@@ -8,6 +8,7 @@ import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimation
 import { scanRateLimiter } from "../../shared/rate-limit"
 import { logger } from "../../shared/logger"
 import { getInstallId } from "../../shared/install-id"
+import { ScanResponseDataSchema } from "../../shared/schemas"
 
 /**
  * Thrown by fetchWithRetry when a 429 carries quota headers showing
@@ -315,8 +316,32 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
     const res = await fetchWithRetry(`${API}?ca=${ca}`, controller.signal, headers)
     if (controller.signal.aborted) return
     const quota = extractQuotaFromHeaders(res.headers)
-    const data = await res.json() as ScanResponseData
+    const raw = await res.json()
     if (controller.signal.aborted) return
+    // Runtime-validate the response shape. Zod schemas have lived in
+    // shared/schemas.ts for months without ever being called — the audit
+    // flagged that a malformed /api/scan response (wrong type on `score`,
+    // `flags` not an array, etc.) would traverse all the way to
+    // buildResultNode and either panic the content script or render
+    // garbage. `.passthrough()` on the schema preserves unknown fields
+    // so the API can add new keys without a coordinated extension ship;
+    // we only catch *type* drift, not field-set drift.
+    const parsed = ScanResponseDataSchema.safeParse(raw)
+    if (!parsed.success) {
+      // Surface to Sentry as a warning — schema drift is a P1 signal
+      // (API contract broke) but not a runtime crash. Log a small,
+      // PII-free summary: which fields failed, not the full payload.
+      const issueSummary = parsed.error.issues
+        .slice(0, 5)
+        .map((i) => `${i.path.join(".") || "<root>"}: ${i.code}`)
+      Sentry.captureMessage("scan_schema_drift", {
+        level: "warning",
+        extra: { issues: issueSummary, ca },
+      })
+      logger.warn("scanner", "schema validation failed", { issues: issueSummary })
+      throw new Error("scan_schema_drift")
+    }
+    const data = parsed.data as ScanResponseData
     if (quota) data._quota = quota
     // Stamp the entry with the session token used for this fetch so
     // getCached() can later detect login/logout drift and force a

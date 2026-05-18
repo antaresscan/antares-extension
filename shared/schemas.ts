@@ -27,6 +27,11 @@ export const ScanResponseFlagSchema = z.object({
   impact: z.number(),
 })
 
+// `.passthrough()` keeps unknown fields in the parsed result — without
+// it, Zod's default behaviour strips any key not declared above, and
+// the API can never add new fields without us shipping a matching
+// schema bump first. We want runtime *validation* (catch the day the
+// shape drifts), not strict gating.
 export const ScanResponseDataSchema = z.object({
   score: z.number(),
   risk: z.string(),
@@ -80,4 +85,4 @@ export const ScanResponseDataSchema = z.object({
     aiSummary: z.string().nullable().optional(),
     topHolderPct: z.number().nullable().optional(),
     top10HolderPct: z.number().nullable().optional(),
-})
+}).passthrough()
