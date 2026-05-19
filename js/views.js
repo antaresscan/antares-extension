@@ -599,8 +599,43 @@ export function buildWashVolumeTab(d) {
     else if (imbalance < 0.12) symmetryScore = 25;
   }
 
-  const washScore = Math.round(0.55 * tinyTradeScore + 0.45 * symmetryScore);
+  // Volume / liquidity ratio signal — aligned with the backend flag
+  // "Liquidity mirage: volume >> liquidity (wash)" in api/_lib/layers.ts
+  // which trips when v24h / LP > 12. Without this branch in the donut,
+  // a token like TOLYBOT (vol $2.13M on $120K LP → ratio ≈ 17.6) would
+  // trip the backend wash flag (visible in the Critical Flags list and
+  // surfaced by the AI summary as "wash trading detected") while the
+  // donut said "the volume looks real" — user-visible incoherence.
+  //
+  // Threshold ladder mirrors the backend trigger (>= 12) so a flagged
+  // token never gets a "healthy" donut, and pushes higher beyond it
+  // because more extreme ratios are increasingly damning.
+  let volRatioScore = 0;
+  if (liq && liq > 0) {
+    const v24Ratio = reportedVol / liq;
+    if (v24Ratio >= 20) volRatioScore = 95;
+    else if (v24Ratio >= 12) volRatioScore = 75; // backend Liquidity mirage trigger
+    else if (v24Ratio >= 8)  volRatioScore = 50;
+    else if (v24Ratio >= 4)  volRatioScore = 25;
+  }
+
+  // Final wash score: max of the trade-stream signals (tiny + symmetry)
+  // and the structural vol/liq ratio. Vol/liq is a hard diagnostic
+  // floor — when it fires, the donut MUST reflect it regardless of how
+  // clean the trade size / symmetry look on their own (those can be
+  // gamed; a backed-into ratio cannot). Tiny + symmetry stay as
+  // corroborating signals that dominate when vol/liq is healthy.
+  const baseScore = Math.round(0.55 * tinyTradeScore + 0.45 * symmetryScore);
+  const washScore = Math.max(volRatioScore, baseScore);
   const symPct = Math.round((1 - imbalance) * 100);
+
+  // Pick alert text that matches whichever signal drove the score.
+  // Saying "small trades cycling" when the score came from vol/liq ratio
+  // (and avg trade was actually normal) would have been the same kind of
+  // incoherence we just fixed on the AI side — the message must align
+  // with the measurement.
+  const ratioDriven = volRatioScore > baseScore && volRatioScore >= 50;
+  const v24Ratio = liq && liq > 0 ? reportedVol / liq : 0;
 
   let cls;
   let washColor;
@@ -615,12 +650,20 @@ export function buildWashVolumeTab(d) {
     cls = "warn";
     washColor = "var(--yellow)";
     alertCls = "warn";
-    alertText = `The volume is suspicious — ${totalTrades.toLocaleString()} trades with avg size of ${fmt(avgTrade)} relative to ${liq ? fmt(liq) + " LP" : "shallow LP"}. Possible wash cycling.`;
+    if (ratioDriven) {
+      alertText = `Volume looks inflated — reported ${fmt(reportedVol)} 24h on ${liq ? fmt(liq) + " LP" : "thin LP"} (×${v24Ratio.toFixed(1)} ratio, well above the ×4 healthy band).`;
+    } else {
+      alertText = `The volume is suspicious — ${totalTrades.toLocaleString()} trades with avg size of ${fmt(avgTrade)} relative to ${liq ? fmt(liq) + " LP" : "shallow LP"}. Possible wash cycling.`;
+    }
   } else {
     cls = "bad";
     washColor = "var(--orange)";
     alertCls = "bad";
-    alertText = `The volume is almost certainly fake — small trades cycling against a thin LP. Do not trust the headline volume.`;
+    if (ratioDriven) {
+      alertText = `Wash volume detected — reported ${fmt(reportedVol)} 24h on ${liq ? fmt(liq) + " LP" : "very thin LP"} (×${v24Ratio.toFixed(1)} ratio). The headline volume is almost certainly inflated; do not trust it as a liquidity signal.`;
+    } else {
+      alertText = `The volume is almost certainly fake — small trades cycling against a thin LP. Do not trust the headline volume.`;
+    }
   }
 
   // Donut math: r=42 → circumference = 2πr ≈ 263.9. pathLength normalises

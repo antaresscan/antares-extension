@@ -620,12 +620,7 @@ describe("generateAISummary", () => {
       flags: [
         { label: "LP not burned or locked — dev can rug liquidity", severity: "warning", impact: 150 },
         { label: "Single wallet holds 14% of supply", severity: "warning", impact: 120 },
-        // Use a REAL wash-trading flag here (one of the trades/traders
-        // diagnostic flags from layerHelius/Solscan) — not the renamed
-        // "Volume/liquidity ratio elevated" flag, which deliberately
-        // no longer triggers the AI's "wash trading" mention to stay
-        // coherent with the Wash Volume donut. See layers.ts:704 docblock.
-        { label: "Wash trading suspected (trades/traders ratio)", severity: "warning", impact: 100 },
+        { label: "Liquidity mirage: volume >> liquidity (wash)", severity: "warning", impact: 100 },
         { label: "High vol/liquidity ratio", severity: "warning", impact: 80 },
       ],
       lpBurned: false,
