@@ -25,112 +25,16 @@
 // and only error captures elsewhere, we have 50× headroom for normal
 // traffic.
 import * as Sentry from "@sentry/node";
+import { scrubEvent, scrubObject } from "../../shared/sentry-scrub";
 
 let initialized = false;
 
-// PII keys we strip from every Sentry event before send. `email` is the
-// big one — privacy.html promises no PII reaches Sentry, but
-// `captureError(err, { email })` callers exist in account.ts /
-// auth/[action].ts. Scrubbing here means the existing call sites are
-// safe by default; we no longer rely on every operator remembering to
-// hash before logging.
-//
-// Matching is case-insensitive on the key. Values are replaced with
-// the string "[scrubbed]" rather than deleted so the event shape stays
-// inspectable (operator can see "an email was here, not what it was")
-// when debugging.
-const SCRUB_KEYS = new Set([
-  "email",
-  "emails",
-  "emaillc",
-  "password",
-  "passwordhash",
-  "password_hash",
-  "token",
-  "session_token",
-  "sessiontoken",
-  "jwt",
-  "authorization",
-  "cookie",
-  "set-cookie",
-  "ipnsecret",
-  "ipn_secret",
-  "apikey",
-  "api_key",
-  "session_secret",
-]);
-
-function scrubObject(value: unknown, depth = 0): unknown {
-  // Defensive recursion limit — circular refs and huge nested errors
-  // shouldn't OOM the function. 6 layers covers extras + nested
-  // request bodies + nested exception causes.
-  if (depth > 6) return value;
-  if (value === null || typeof value !== "object") return value;
-  if (Array.isArray(value)) {
-    return value.map((v) => scrubObject(v, depth + 1));
-  }
-  const out: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-    if (SCRUB_KEYS.has(k.toLowerCase())) {
-      out[k] = "[scrubbed]";
-    } else {
-      out[k] = scrubObject(v, depth + 1);
-    }
-  }
-  return out;
-}
-
-/**
- * Apply every PII scrub to a single Sentry event in place. Extracted
- * out of `beforeSend` so the behaviour is unit-testable without
- * spinning up `@sentry/node`. Mutates and returns the event.
- *
- * Operations:
- *  - SCRUB_KEYS values inside extra/tags/contexts/request.data/headers/cookies → "[scrubbed]"
- *  - `event.request.url` query string → "?[scrubbed]" (path preserved for grouping)
- *  - `event.user.email`, `event.user.ip_address` → "[scrubbed]"
- *
- * Any thrown error during scrubbing is swallowed (we'd rather Sentry
- * see a raw event than lose signal entirely).
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function scrubEvent(event: any): any {
-  try {
-    if (event.extra)
-      event.extra = scrubObject(event.extra);
-    if (event.tags)
-      event.tags = scrubObject(event.tags);
-    if (event.contexts)
-      event.contexts = scrubObject(event.contexts);
-    if (event.request) {
-      if (event.request.data)
-        event.request.data = scrubObject(event.request.data);
-      if (event.request.headers)
-        event.request.headers = scrubObject(event.request.headers);
-      if (event.request.cookies)
-        event.request.cookies = scrubObject(event.request.cookies);
-      // Drop the URL query string — `?ca=<contract>` would leak the
-      // very identifier privacy.html promises never to send. Path is
-      // kept so error grouping by route still works.
-      if (typeof event.request.url === "string") {
-        const qIdx = event.request.url.indexOf("?");
-        if (qIdx >= 0)
-          event.request.url = event.request.url.slice(0, qIdx) + "?[scrubbed]";
-      }
-    }
-    // Strip user.email even if Sentry's user-context integration ever
-    // lands on us. We don't currently call setUser, but the protection
-    // costs nothing and prevents a future regression.
-    if (event.user?.email) event.user.email = "[scrubbed]";
-    // sendDefaultPii=false already prevents IP capture upstream, but
-    // if a future integration or manual setUser puts one back, strip
-    // it here as the last line of defence.
-    if (event.user?.ip_address) event.user.ip_address = "[scrubbed]";
-  } catch {
-    // Scrubbing failure shouldn't drop the whole event.
-  }
-  return event;
-}
+// PII scrubbing now lives in `shared/sentry-scrub.ts` so the browser
+// init in background.ts + contents/antares-inject.ts shares the same
+// SCRUB_KEYS list and the same scrubEvent logic. Before this split,
+// the browser Sentry init bypassed all scrubbing — silently violating
+// privacy.html's "no PII / no contract address" promise on the entire
+// extension overlay.
 
 export function initSentry(): void {
   if (initialized) return;

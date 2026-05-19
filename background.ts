@@ -6,10 +6,26 @@ import { CA_RE } from "./shared/constants"
 import { config } from "./shared/config"
 import { logger } from "./shared/logger"
 import { getInstallId } from "./shared/install-id"
+import { scrubEvent, scrubBreadcrumb } from "./shared/sentry-scrub"
 
 // ─── SENTRY INITIALIZATION ───────────────────────────────────────────────────
+// `sendDefaultPii: false` + `beforeSend` + `beforeBreadcrumb` wire the
+// same SCRUB_KEYS / URL-query-strip the backend uses (api/_lib/sentry.ts).
+// Without these, the browser Sentry SDK silently shipped:
+//   - the full request URL including `?ca=<contract>` via XHR
+//     breadcrumbs (every overlay scan call),
+//   - any email / JWT / authorization header attached to the scope
+//     via captureException-with-context,
+// violating privacy.html's "Sentry: never the contract address or
+// your IP" promise on the entire extension surface.
 if (config.sentryDsn) {
-  Sentry.init({ dsn: config.sentryDsn, tracesSampleRate: config.sentryTracesSampleRate })
+  Sentry.init({
+    dsn: config.sentryDsn,
+    tracesSampleRate: config.sentryTracesSampleRate,
+    sendDefaultPii: false,
+    beforeSend: (event) => scrubEvent(event),
+    beforeBreadcrumb: (breadcrumb) => scrubBreadcrumb(breadcrumb),
+  })
 }
 
 // ─── SAFE DATA EXTRACTION HELPERS ─────────────────────────────────────────────
