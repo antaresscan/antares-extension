@@ -781,12 +781,18 @@ describe("layerChart", () => {
       // contribution by checking flags don't carry the warning severity.
     });
 
-    it("mature pair @ +250% in 24h: warning flag, still no safeBlock from this pattern", () => {
+    it("mature pair @ +250% in 24h: warning flag + safeBlock (forces verdict to CAUTION, not DANGER)", () => {
       const r = layerChart(flatCandles(), mkPair(250), 730 * 24 * 60, matureContext);
       const pumpFlag = r.flags.find((f) => /pumped \+\d+% in 24h.*blue-chip/i.test(f.label));
       expect(pumpFlag).toBeDefined();
       expect(pumpFlag?.severity).toBe("warning");
       expect(pumpFlag?.label).toMatch(/elevated retrace risk/i);
+      // Per user calibration 2026-05-19: a blue-chip pumping ≥ 200% in
+      // 24h must trigger safeBlock so the verdict caps at CAUTION
+      // ("doit passer en caution"). The penalty itself stays small
+      // (0.85 = ~-150 pts) so the verdict doesn't slide into DANGER
+      // on this signal alone ("pas forcément en danger").
+      expect(r.safeBlocked).toBe(true);
     });
 
     it("non-mature token @ +150% in 24h: warning flag (no blue-chip label)", () => {

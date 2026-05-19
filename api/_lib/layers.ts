@@ -652,18 +652,24 @@ export function layerChart(
   // ── Sustained 24h pump — high retrace risk on entry ──────────────────────────
   // The "Vertical pump" above catches launch-scam micro-pumps (5m+1h
   // window). This pattern complements it by catching slower, multi-hour
-  // pumps that are typical of mature blue-chip memecoins riding momentum
+  // pumps typical of mature blue-chip memecoins riding momentum
   // (TROLL +200% in a day, FWOG +150%, etc.) — the contract is still
   // safe but the trader is buying at a local top, and retrace risk is
   // disproportionate.
   //
-  // The verdict can stay SAFE (we don't safeBlock for mature pairs) but
-  // the user sees a clear warning chip in the overlay + a meaningful
-  // score penalty. For non-mature tokens the same magnitude is far more
-  // dangerous (thin LP = retrace becomes a dump): warning + safeBlock.
+  // Calibration (per user feedback 2026-05-19): a pumping blue-chip is
+  // not a "broken" token, so the penalty must stay light enough that
+  // the verdict never falls below CAUTION on this signal alone. We
+  // pair `safeBlock` (force the verdict to CAUTION minimum so the
+  // trader sees the warning surfaced in the badge) with a SMALL score
+  // penalty (≈ -100 to -150 pts on a 1000 base), so the verdict caps
+  // at CAUTION without skidding into DANGER unless OTHER layers also
+  // flag the token. For non-mature tokens the same magnitude is far
+  // more dangerous (thin LP = retrace becomes a dump): stronger
+  // penalties + safeBlock fire as before.
   //
   // 5m/1h vertical pumps already fire above with stronger penalties +
-  // safeBlock, so a launch scam doesn't double-count here — it's caught
+  // safeBlock, so a launch scam doesn't double-count — it's caught
   // upstream. This pattern is for the "rode the wave for hours" case.
   if (pc24h >= 100) {
     const mcP = maturityContext;
@@ -674,20 +680,24 @@ export function layerChart(
 
     if (matureForPump) {
       // Mature pair (blue-chip memecoin / established token). Retrace
-      // is a real risk but the structural fundamentals haven't changed
-      // — keep verdict driven by the rest of the layers, just nudge
-      // score down and surface the timing risk to the trader.
+      // is a real risk but the structural fundamentals haven't changed.
+      // safeBlock on ≥ 200% forces the verdict to CAUTION minimum;
+      // small penalty keeps it from falling further into DANGER on
+      // this signal alone. < 200% stays info-only (no safeBlock,
+      // tiny penalty) so a 100-200% climb on a blue-chip surfaces
+      // visibly but doesn't force the verdict down.
       if (pc24h >= 200) {
         flags.push(makeFlag(`Pumped +${pumpPct}% in 24h — elevated retrace risk on entry (blue-chip)`, "warning", 0));
-        penalties.push(0.70);
+        penalties.push(0.85); safeBlocked = true;
       } else {
         flags.push(makeFlag(`Pumped +${pumpPct}% in 24h — moderate retrace risk on entry (blue-chip)`, "info", 0));
-        penalties.push(0.85);
+        penalties.push(0.92);
       }
     } else {
       // Non-mature token. Sustained pump + thin LP = exit-liquidity
       // trap shape. SafeBlock so the verdict can't return SAFE while
-      // pointing at this risk.
+      // pointing at this risk; heavier penalties as the LP gets
+      // thinner relative to the pump magnitude.
       if (pc24h >= 300) {
         flags.push(makeFlag(`Pumped +${pumpPct}% in 24h — exit liquidity risk on thin LP`, "warning", 0));
         penalties.push(0.45); safeBlocked = true;
