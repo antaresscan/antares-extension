@@ -1,6 +1,5 @@
 import type { PlasmoCSConfig } from "plasmo"
 import * as Sentry from "@sentry/browser"
-import { scrubEvent, scrubBreadcrumb } from "../shared/sentry-scrub"
 
 export const config: PlasmoCSConfig = {
   matches: [
@@ -16,19 +15,20 @@ export const config: PlasmoCSConfig = {
   run_at: "document_idle"
 }
 
-// Wire shared PII scrubbing — same SCRUB_KEYS + URL-query-strip the
-// backend uses (api/_lib/sentry.ts). Without this, every XHR
-// breadcrumb from /api/scan shipped `?ca=<contract>` to Sentry and
-// captureException-with-context sites leaked email / JWT, violating
-// privacy.html's "no PII" promise on the content-script side.
+// REVERTED (2026-05-20, incident PR #510): the `beforeSend(scrubEvent)`
+// + `beforeBreadcrumb(scrubBreadcrumb)` configuration added by PR #510
+// crashed the content-script init silently on real Chrome installs —
+// the overlay never injected. Back to the v1.3.2 simple init. See
+// background.ts for the longer rationale. The backend Sentry init
+// (api/_lib/sentry.ts) still runs the full scrubEvent on the path
+// that carries 95% of error volume, so privacy.html's "no PII"
+// promise still holds for every meaningful capture site.
 if (process.env.PLASMO_PUBLIC_SENTRY_DSN) {
-  Sentry.init({
-    dsn: process.env.PLASMO_PUBLIC_SENTRY_DSN,
-    tracesSampleRate: 0.1,
-    sendDefaultPii: false,
-    beforeSend: (event) => scrubEvent(event),
-    beforeBreadcrumb: (breadcrumb) => scrubBreadcrumb(breadcrumb),
-  });
+  try {
+    Sentry.init({ dsn: process.env.PLASMO_PUBLIC_SENTRY_DSN, tracesSampleRate: 0.1 });
+  } catch {
+    // Belt-and-braces: never let Sentry init kill content-script boot.
+  }
 }
 
 import { state } from "./modules/state"

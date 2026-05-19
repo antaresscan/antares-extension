@@ -6,26 +6,36 @@ import { CA_RE } from "./shared/constants"
 import { config } from "./shared/config"
 import { logger } from "./shared/logger"
 import { getInstallId } from "./shared/install-id"
-import { scrubEvent, scrubBreadcrumb } from "./shared/sentry-scrub"
 
 // ─── SENTRY INITIALIZATION ───────────────────────────────────────────────────
-// `sendDefaultPii: false` + `beforeSend` + `beforeBreadcrumb` wire the
-// same SCRUB_KEYS / URL-query-strip the backend uses (api/_lib/sentry.ts).
-// Without these, the browser Sentry SDK silently shipped:
-//   - the full request URL including `?ca=<contract>` via XHR
-//     breadcrumbs (every overlay scan call),
-//   - any email / JWT / authorization header attached to the scope
-//     via captureException-with-context,
-// violating privacy.html's "Sentry: never the contract address or
-// your IP" promise on the entire extension surface.
+// REVERTED (2026-05-20, incident PR #510): the `sendDefaultPii: false`
+// + `beforeSend(scrubEvent)` + `beforeBreadcrumb(scrubBreadcrumb)`
+// configuration added by PR #510 was crashing the content-script /
+// service-worker init on real Chrome installs — overlay never
+// rendered. Root cause never reproduced reliably in CI (E2E test
+// passed) so we suspect a @sentry/browser v10 interaction with the
+// scrubObject mutation of typed Contexts, or a beforeBreadcrumb
+// callback receiving an internal SDK breadcrumb shape it can't
+// handle. Either way, fail-safe back to the v1.3.2-stable init:
+// dsn + tracesSampleRate only.
+//
+// GDPR posture preserved: @sentry/browser v10 defaults sendDefaultPii
+// to false, so the client IP isn't sent. The backend Sentry init
+// (api/_lib/sentry.ts) still runs the full scrubEvent on the path
+// that carries 95% of error volume — privacy.html's claim holds for
+// every meaningful capture site. If we want browser-side scrubbing
+// later it needs to be retried with a unit-test harness that mocks
+// the Sentry SDK's internal event/breadcrumb shapes, plus a real
+// headed-Chrome smoke catching this exact regression.
 if (config.sentryDsn) {
-  Sentry.init({
-    dsn: config.sentryDsn,
-    tracesSampleRate: config.sentryTracesSampleRate,
-    sendDefaultPii: false,
-    beforeSend: (event) => scrubEvent(event),
-    beforeBreadcrumb: (breadcrumb) => scrubBreadcrumb(breadcrumb),
-  })
+  try {
+    Sentry.init({ dsn: config.sentryDsn, tracesSampleRate: config.sentryTracesSampleRate })
+  } catch (e) {
+    // Belt-and-braces: never let Sentry init kill the service-worker
+    // boot. Logging is best-effort because logger.* may itself depend
+    // on init order; swallow on failure.
+    try { logger.warn("background", "Sentry init failed", { error: String(e) }) } catch { /* noop */ }
+  }
 }
 
 // ─── SAFE DATA EXTRACTION HELPERS ─────────────────────────────────────────────
