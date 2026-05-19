@@ -201,6 +201,14 @@ export function buildSniperMapTab(d) {
     title = `${sniperFlags.length} SNIPER/BUNDLE PATTERN${sniperFlags.length > 1 ? "S" : ""} · ${title}`;
     alertText = `${sniperFlags.length} sniper/bundle flag${sniperFlags.length > 1 ? "s" : ""} detected at launch. ${alertText}`;
   } else {
+    // No sniper / bundle flags fired. Surface this EXPLICITLY in every
+    // path below so the tab — labelled "SNIPER MAP" — actually mentions
+    // snipers. Previously the user saw only "ELEVATED CONCENTRATION ·
+    // TOP 10 HOLD 23%" with zero mention of snipers, which read as if
+    // the detector hadn't run. Lead the alert with the green checkmark
+    // so the absence is a positive signal, not a missing one.
+    alertText = `✓ 0 sniper / bundle flags detected at launch. ${alertText}`;
+
     // CLEAN/ORGANIC verdict requires ALL THREE: top10 < 15%, top1 < 5%,
     // 0 sniper flags. This is intentionally rare — a real clean launch
     // is rare. Most memecoins won't qualify, and that's correct.
@@ -208,7 +216,7 @@ export function buildSniperMapTab(d) {
     if (isTrulyClean) {
       title = `CLEAN LAUNCH · TOP 10 HOLD ${concentrated}%`;
       alertCls = "good";
-      alertText = `Top 10 wallets hold only ${concentrated}% of supply${top1 != null ? ` (largest ${top1.toFixed(1)}%)` : ""}. No sniper or bundle activity at launch. Distribution looks genuinely organic.`;
+      alertText = `✓ 0 sniper / bundle flags detected at launch. Top 10 wallets hold only ${concentrated}% of supply${top1 != null ? ` (largest ${top1.toFixed(1)}%)` : ""}. Distribution looks genuinely organic.`;
       axisStatus = "CLEAN LAUNCH";
     }
   }

@@ -701,7 +701,21 @@ export function layerChart(
     }
   }
   if (v24Liq > 12 || v1hLiq > 4) {
-    flags.push(makeFlag("Liquidity mirage: volume >> liquidity (wash)", "warning", 0));
+    // NOTE 2026-05-19: label intentionally avoids the word "wash" — the
+    // vol/liquidity ratio alone is a *suggestive* signal (could be wash
+    // OR just genuinely thin LP relative to organic volume), not proof.
+    // The earlier label "Liquidity mirage (wash)" caused user-visible
+    // incoherence with the Wash Volume tab donut (which scores from
+    // tinyTradeScore + symmetry on the trade stream) — for tokens like
+    // TOLYBOT the donut said "healthy" while the AI summary said
+    // "wash trading detected" because the AI mapping /wash/ regex hit
+    // this flag's old label. The real wash signals stay below ("Wash
+    // trading detected (vol/liq > 20) — bundler dump" line 71, "Wash
+    // trading: trades with zero identified traders" / "Wash trading
+    // suspected (trades/traders ratio)" in layerHelius/Solscan) — the
+    // AI still picks those up via the unchanged /wash/ regex; they are
+    // the diagnostic flags that align with the donut's view.
+    flags.push(makeFlag("Volume/liquidity ratio elevated — possible bundler activity", "warning", 0));
     penalties.push(0.60); safeBlocked = true;
   }
   if (recent.length >= 10 && risingCount >= Math.floor(recent.length * 0.8) && returnStd < 3.5) {
