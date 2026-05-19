@@ -327,11 +327,22 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
     // garbage. `.passthrough()` on the schema preserves unknown fields
     // so the API can add new keys without a coordinated extension ship;
     // we only catch *type* drift, not field-set drift.
+    //
+    // FAIL-OPEN POLICY (2026-05-20 incident PR #510 follow-up):
+    // The original implementation `throw`-ed on any Zod failure, which
+    // killed the overlay completely whenever the API drifted by a
+    // single field — including benign drifts like an `optional` field
+    // returning `null` instead of `undefined`. That was the root cause
+    // of users seeing "the overlay just stopped working" after the
+    // PR #506 merge. Validation is now a Sentry-only signal: we log
+    // the drift loud so ops sees it within minutes, but the user-
+    // facing overlay continues with the raw data. Catastrophic type
+    // mismatches (e.g. `score` not a number) will fail naturally in
+    // the rendering path and a regression in the rendering code is
+    // far less likely than the API adding a nullable field.
     const parsed = ScanResponseDataSchema.safeParse(raw)
+    let data: ScanResponseData
     if (!parsed.success) {
-      // Surface to Sentry as a warning — schema drift is a P1 signal
-      // (API contract broke) but not a runtime crash. Log a small,
-      // PII-free summary: which fields failed, not the full payload.
       const issueSummary = parsed.error.issues
         .slice(0, 5)
         .map((i) => `${i.path.join(".") || "<root>"}: ${i.code}`)
@@ -339,10 +350,13 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
         level: "warning",
         extra: { issues: issueSummary, ca },
       })
-      logger.warn("scanner", "schema validation failed", { issues: issueSummary })
-      throw new Error("scan_schema_drift")
+      logger.warn("scanner", "schema validation failed — falling back to raw payload", { issues: issueSummary })
+      // Fail-open: trust the raw payload. Drift surfaces in Sentry,
+      // not in the user's overlay.
+      data = raw as ScanResponseData
+    } else {
+      data = parsed.data as ScanResponseData
     }
-    const data = parsed.data as ScanResponseData
     if (quota) data._quota = quota
     // Stamp the entry with the session token used for this fetch so
     // getCached() can later detect login/logout drift and force a

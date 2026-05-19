@@ -32,22 +32,32 @@ export const ScanResponseFlagSchema = z.object({
 // the API can never add new fields without us shipping a matching
 // schema bump first. We want runtime *validation* (catch the day the
 // shape drifts), not strict gating.
+// Every optional field below is also nullable: the API serializes
+// "missing" upstream values as `null`, not `undefined`. Without
+// `.nullable()`, Zod rejected the payload on any field where the
+// upstream returned no value — that was the root cause of incident
+// PR #510 (silent overlay crash on a single optional-but-null field
+// like `pair.url`). The scanner now also fails open (logs Sentry +
+// uses raw payload, see contents/modules/scanner.ts) but keeping
+// the schema tolerant here makes the Sentry drift signal high-signal:
+// when we get a `scan_schema_drift` event, it's a real contract
+// break, not just `null` vs `undefined` noise.
 export const ScanResponseDataSchema = z.object({
   score: z.number(),
   risk: z.string(),
   flags: z.array(ScanResponseFlagSchema),
   pair: z.object({
     baseToken: z.object({
-      symbol: z.string().optional(),
-      name: z.string().optional(),
-      address: z.string().optional(),
-    }).optional(),
-    liquidity: z.object({ usd: z.number().optional() }).optional(),
-    url: z.string().optional(),
+      symbol: z.string().nullable().optional(),
+      name: z.string().nullable().optional(),
+      address: z.string().nullable().optional(),
+    }).nullable().optional(),
+    liquidity: z.object({ usd: z.number().nullable().optional() }).nullable().optional(),
+    url: z.string().nullable().optional(),
   }).nullable().optional(),
-  resolvedMint: z.string().optional(),
-  confidence: z.number().optional(),
-  sources_used: z.array(z.string()).optional(),
+  resolvedMint: z.string().nullable().optional(),
+  confidence: z.number().nullable().optional(),
+  sources_used: z.array(z.string()).nullable().optional(),
   holders: z.number().nullable().optional(),
   marketCap: z.number().nullable().optional(),
   priceUsd: z.number().nullable().optional(),
