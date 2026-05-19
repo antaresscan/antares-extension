@@ -648,6 +648,58 @@ export function layerChart(
     flags.push(makeFlag("Vertical pump detected (+35% 5m / +120% 1h)", "warning", 0));
     penalties.push(0.55); safeBlocked = true;
   }
+
+  // ── Sustained 24h pump — high retrace risk on entry ──────────────────────────
+  // The "Vertical pump" above catches launch-scam micro-pumps (5m+1h
+  // window). This pattern complements it by catching slower, multi-hour
+  // pumps that are typical of mature blue-chip memecoins riding momentum
+  // (TROLL +200% in a day, FWOG +150%, etc.) — the contract is still
+  // safe but the trader is buying at a local top, and retrace risk is
+  // disproportionate.
+  //
+  // The verdict can stay SAFE (we don't safeBlock for mature pairs) but
+  // the user sees a clear warning chip in the overlay + a meaningful
+  // score penalty. For non-mature tokens the same magnitude is far more
+  // dangerous (thin LP = retrace becomes a dump): warning + safeBlock.
+  //
+  // 5m/1h vertical pumps already fire above with stronger penalties +
+  // safeBlock, so a launch scam doesn't double-count here — it's caught
+  // upstream. This pattern is for the "rode the wave for hours" case.
+  if (pc24h >= 100) {
+    const mcP = maturityContext;
+    const matureForPump =
+      (mcP?.holders ?? 0) >= 5_000 ||
+      ((mcP?.tokenAgeHours ?? 0) >= 90 * 24 && (mcP?.liquidity ?? 0) >= 500_000);
+    const pumpPct = Math.round(pc24h);
+
+    if (matureForPump) {
+      // Mature pair (blue-chip memecoin / established token). Retrace
+      // is a real risk but the structural fundamentals haven't changed
+      // — keep verdict driven by the rest of the layers, just nudge
+      // score down and surface the timing risk to the trader.
+      if (pc24h >= 200) {
+        flags.push(makeFlag(`Pumped +${pumpPct}% in 24h — elevated retrace risk on entry (blue-chip)`, "warning", 0));
+        penalties.push(0.70);
+      } else {
+        flags.push(makeFlag(`Pumped +${pumpPct}% in 24h — moderate retrace risk on entry (blue-chip)`, "info", 0));
+        penalties.push(0.85);
+      }
+    } else {
+      // Non-mature token. Sustained pump + thin LP = exit-liquidity
+      // trap shape. SafeBlock so the verdict can't return SAFE while
+      // pointing at this risk.
+      if (pc24h >= 300) {
+        flags.push(makeFlag(`Pumped +${pumpPct}% in 24h — exit liquidity risk on thin LP`, "warning", 0));
+        penalties.push(0.45); safeBlocked = true;
+      } else if (pc24h >= 200) {
+        flags.push(makeFlag(`Pumped +${pumpPct}% in 24h — entering at local top (thin LP)`, "warning", 0));
+        penalties.push(0.55); safeBlocked = true;
+      } else {
+        flags.push(makeFlag(`Pumped +${pumpPct}% in 24h — elevated retrace risk on entry`, "warning", 0));
+        penalties.push(0.70);
+      }
+    }
+  }
   if (v24Liq > 12 || v1hLiq > 4) {
     flags.push(makeFlag("Liquidity mirage: volume >> liquidity (wash)", "warning", 0));
     penalties.push(0.60); safeBlocked = true;
