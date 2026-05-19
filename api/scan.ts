@@ -43,7 +43,7 @@ import { setCorsHeaders, getClientIp, getInstallId, checkRateLimit, validateCA, 
 import { initQuota, checkDailyQuota, setQuotaHeaders, secondsUntilReset } from "./_lib/quota";
 import { initUserStorage, pushScanHistory, resolveTierAndBypass } from "./_lib/user";
 import { initCache, getCachedResult, setCachedResult, setShortCachedResult } from "./_lib/cache";
-import * as Sentry from "@sentry/node";
+import { initSentry, captureError } from "./_lib/sentry";
 import { generateAISummary } from "./_lib/ai-summary";
 
 import { initRugDb, recordRug } from "./_lib/rugdb";
@@ -59,9 +59,13 @@ import { deriveEvent } from "./_lib/verdict-history";
 // human-readable event label.
 import { composeHolderActivity } from "./_lib/holder-activity";
 import { composeOutcomeStats } from "./_lib/outcome-stats";
-if (process.env.SENTRY_DSN) {
-  Sentry.init({ dsn: process.env.SENTRY_DSN, tracesSampleRate: 0.1 });
-}
+// Route through the centralised initSentry() — it sets sendDefaultPii=false
+// and wires beforeSend(scrubEvent) so `?ca=<contract>`, the client IP, and
+// any email/JWT/auth header attached to an event are stripped before leaving
+// the process. The previous direct Sentry.init() here bypassed both, leaking
+// PII on the hottest endpoint (~95% of traffic) and silently violating the
+// "Sentry: never the contract address or your IP" claim in privacy.html.
+initSentry();
 
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
   const redis = new Redis({
@@ -184,7 +188,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (e instanceof Error && e.message === "Global timeout") {
       return apiError(res, 504, "Analysis timed out. Try again.");
     }
-    Sentry.captureException(e); return apiError(res, 500, "Unexpected error.");
+    captureError(e, { endpoint: "scan", requestId, ca });
+    return apiError(res, 500, "Unexpected error.");
   }
 }
 
@@ -802,7 +807,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     return res.json(result);
   } catch (e) {
     logger.error("scan", "analysis error", { requestId, version: SCORING_VERSION, error: String(e) });
-    Sentry.captureException(e);
+    captureError(e, { endpoint: "scan", requestId, ca });
     return apiError(res, 500, "Analysis error.");
   }
 }
