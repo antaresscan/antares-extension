@@ -726,4 +726,114 @@ describe("layerChart", () => {
     // the rest of the layers still drives the verdict; we don't re-assert
     // RUG here since that's scoring's job, not layerChart's.
   });
+
+  // ──── Sustained-24h-pump warning (2026-05-19 — TROLL-case) ────────────────
+  // The "Vertical pump (5m/1h)" pattern catches launch-scam micro-pumps.
+  // This complementary pattern catches the slower, multi-hour pump shape
+  // typical of blue-chip memecoins riding momentum — where the contract
+  // is structurally fine but a trader entering at the top eats the
+  // retrace. Tests pin the four tiers: mature×moderate, mature×high,
+  // non-mature×moderate, non-mature×severe.
+  describe("layerChart — Sustained 24h pump warning", () => {
+    const flatCandles = () => Array.from({ length: 20 }, (_, i) => {
+      const base = 1 + i * 0.01;
+      return mkCandle(base, base + 0.02, base - 0.01, base + 0.005, 1000);
+    });
+    const mkPair = (pc24: number) => ({
+      liquidity: { usd: 1_000_000 },
+      volume: { h24: 500_000, h1: 20_000 },
+      priceChange: { m5: 0.5, h1: 5, h6: 30, h24: pc24 },
+    } as unknown as Parameters<typeof layerChart>[1]);
+
+    const matureContext = {
+      holders: 8_000,
+      liquidity: 1_950_000,
+      tokenAgeHours: 730 * 24,
+      mintAuthority: false,
+      freezeAuthority: false,
+      honeypot: false,
+      lpBurned: true,
+    };
+    const youngContext = {
+      holders: 200,
+      liquidity: 20_000,
+      tokenAgeHours: 6,
+      mintAuthority: false,
+      freezeAuthority: false,
+      honeypot: false,
+      lpBurned: false,
+    };
+
+    it("does NOT fire when pc24h is below the 100% threshold", () => {
+      const r = layerChart(flatCandles(), mkPair(50), 730 * 24 * 60, matureContext);
+      const pumpFlag = r.flags.find((f) => /pumped \+\d+% in 24h/i.test(f.label));
+      expect(pumpFlag).toBeUndefined();
+    });
+
+    it("mature pair @ +150% in 24h: info-only flag, no safeBlock (TROLL-case)", () => {
+      const r = layerChart(flatCandles(), mkPair(150), 730 * 24 * 60, matureContext);
+      const pumpFlag = r.flags.find((f) => /pumped \+\d+% in 24h/i.test(f.label));
+      expect(pumpFlag).toBeDefined();
+      expect(pumpFlag?.severity).toBe("info");
+      expect(pumpFlag?.label).toMatch(/blue-chip/i);
+      // safeBlock can be triggered by OTHER patterns in layerChart, so we
+      // only assert that the pump pattern itself didn't set it. Test the
+      // contribution by checking flags don't carry the warning severity.
+    });
+
+    it("mature pair @ +250% in 24h: warning flag + safeBlock (forces verdict to CAUTION, not DANGER)", () => {
+      const r = layerChart(flatCandles(), mkPair(250), 730 * 24 * 60, matureContext);
+      const pumpFlag = r.flags.find((f) => /pumped \+\d+% in 24h.*blue-chip/i.test(f.label));
+      expect(pumpFlag).toBeDefined();
+      expect(pumpFlag?.severity).toBe("warning");
+      expect(pumpFlag?.label).toMatch(/elevated retrace risk/i);
+      // Per user calibration 2026-05-19: a blue-chip pumping ≥ 200% in
+      // 24h must trigger safeBlock so the verdict caps at CAUTION
+      // ("doit passer en caution"). The penalty itself stays small
+      // (0.85 = ~-150 pts) so the verdict doesn't slide into DANGER
+      // on this signal alone ("pas forcément en danger").
+      expect(r.safeBlocked).toBe(true);
+    });
+
+    it("non-mature token @ +150% in 24h: warning flag (no blue-chip label)", () => {
+      const r = layerChart(flatCandles(), mkPair(150), 6 * 60, youngContext);
+      const pumpFlag = r.flags.find((f) => /pumped \+\d+% in 24h/i.test(f.label));
+      expect(pumpFlag).toBeDefined();
+      expect(pumpFlag?.severity).toBe("warning");
+      expect(pumpFlag?.label).not.toMatch(/blue-chip/i);
+    });
+
+    it("non-mature token @ +250% in 24h: warning + safeBlock (entering at local top)", () => {
+      const r = layerChart(flatCandles(), mkPair(250), 6 * 60, youngContext);
+      const pumpFlag = r.flags.find((f) => /pumped \+\d+% in 24h/i.test(f.label));
+      expect(pumpFlag).toBeDefined();
+      expect(pumpFlag?.severity).toBe("warning");
+      expect(r.safeBlocked).toBe(true); // exit-liquidity trap shape
+    });
+
+    it("non-mature token @ +400% in 24h: warning + safeBlock (exit liquidity risk)", () => {
+      const r = layerChart(flatCandles(), mkPair(400), 6 * 60, youngContext);
+      const pumpFlag = r.flags.find((f) => /pumped \+\d+% in 24h.*exit liquidity/i.test(f.label));
+      expect(pumpFlag).toBeDefined();
+      expect(pumpFlag?.severity).toBe("warning");
+      expect(r.safeBlocked).toBe(true);
+    });
+
+    it("does NOT double-count when both 5m/1h vertical pump AND 24h sustained pump fire", () => {
+      // Craft a pair where BOTH "Vertical pump" (pc5m>35 && pc1h>120) AND
+      // sustained 24h pump fire. They should produce TWO distinct flags
+      // (different labels), not collide or short-circuit each other.
+      const explosivePair = {
+        liquidity: { usd: 20_000 },
+        volume: { h24: 5_000_000, h1: 200_000 },
+        priceChange: { m5: 50, h1: 200, h6: 300, h24: 400 },
+      } as unknown as Parameters<typeof layerChart>[1];
+      const r = layerChart(flatCandles(), explosivePair, 6 * 60, youngContext);
+      const verticalFlag = r.flags.find((f) => /Vertical pump/i.test(f.label));
+      const sustainedFlag = r.flags.find((f) => /pumped \+\d+% in 24h/i.test(f.label));
+      expect(verticalFlag).toBeDefined();
+      expect(sustainedFlag).toBeDefined();
+      // Both should be present — independent signals.
+    });
+  });
 });
