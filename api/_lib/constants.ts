@@ -247,7 +247,16 @@ export const API_TIMEOUT_DEFAULT = 5000;
 export const API_TIMEOUT_HELIUS = 6000;
 
 // ── SCORING VERSION (single source of truth) ─────────────────
-export const SCORING_VERSION = "7.3.0";
+// 7.4.0 — bumped 2026-05-20 to invalidate the Redis cache after the
+// scoring changes in PRs #510 (TOCTOU + Sentry + safeUrl + scrub
+// keys), #512 (PUMPED 24h warning flag in layerChart) and #513
+// (Wash Volume donut wired to vol/liq ratio + Sniper Map labelling
+// + Liquidity mirage label restoration). Without this bump the Redis
+// cache keeps serving pre-merge scans so users never see the new
+// PUMPED flag or the corrected Liquidity-mirage routing through the
+// AI summary. Standard cache-invalidation step after any scoring or
+// flag-label change.
+export const SCORING_VERSION = "7.4.0";
 
 // ── SOFT REASONS (safe gate unlock) ───────────────────────────
 export const SOFT_REASONS: Record<string, boolean> = { age: true, holders: true, lp_unverified: true };
