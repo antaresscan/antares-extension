@@ -36,57 +36,12 @@ let initialized = false;
 // privacy.html's "no PII / no contract address" promise on the entire
 // extension overlay.
 
-/**
- * Apply every PII scrub to a single Sentry event in place. Extracted
- * out of `beforeSend` so the behaviour is unit-testable without
- * spinning up `@sentry/node`. Mutates and returns the event.
- *
- * Operations:
- *  - SCRUB_KEYS values inside extra/tags/contexts/request.data/headers/cookies → "[scrubbed]"
- *  - `event.request.url` query string → "?[scrubbed]" (path preserved for grouping)
- *  - `event.user.email`, `event.user.ip_address` → "[scrubbed]"
- *
- * Any thrown error during scrubbing is swallowed (we'd rather Sentry
- * see a raw event than lose signal entirely).
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function scrubEvent(event: any): any {
-  try {
-    if (event.extra)
-      event.extra = scrubObject(event.extra);
-    if (event.tags)
-      event.tags = scrubObject(event.tags);
-    if (event.contexts)
-      event.contexts = scrubObject(event.contexts);
-    if (event.request) {
-      if (event.request.data)
-        event.request.data = scrubObject(event.request.data);
-      if (event.request.headers)
-        event.request.headers = scrubObject(event.request.headers);
-      if (event.request.cookies)
-        event.request.cookies = scrubObject(event.request.cookies);
-      // Drop the URL query string — `?ca=<contract>` would leak the
-      // very identifier privacy.html promises never to send. Path is
-      // kept so error grouping by route still works.
-      if (typeof event.request.url === "string") {
-        const qIdx = event.request.url.indexOf("?");
-        if (qIdx >= 0)
-          event.request.url = event.request.url.slice(0, qIdx) + "?[scrubbed]";
-      }
-    }
-    // Strip user.email even if Sentry's user-context integration ever
-    // lands on us. We don't currently call setUser, but the protection
-    // costs nothing and prevents a future regression.
-    if (event.user?.email) event.user.email = "[scrubbed]";
-    // sendDefaultPii=false already prevents IP capture upstream, but
-    // if a future integration or manual setUser puts one back, strip
-    // it here as the last line of defence.
-    if (event.user?.ip_address) event.user.ip_address = "[scrubbed]";
-  } catch {
-    // Scrubbing failure shouldn't drop the whole event.
-  }
-  return event;
-}
+// scrubEvent + scrubObject now live in `shared/sentry-scrub.ts` —
+// imported at the top of this file. The earlier local copy was
+// re-introduced here by the merge of master (which still carried the
+// pre-refactor version from PR #508 squash). Removed again to avoid
+// the TS2440 "Import declaration conflicts with local declaration"
+// build error.
 
 export function initSentry(): void {
   if (initialized) return;
