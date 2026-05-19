@@ -42,6 +42,15 @@ vi.mock("@upstash/redis", () => {
       mocks.store.set(k, { ...existing, ...fields });
       return Object.keys(fields).length;
     });
+    // Atomic field-create-if-absent — used by redeemLicense (license.ts)
+    // for HSETNX-based race serialisation. Returns 1 if the field was
+    // set, 0 if it was already present.
+    hsetnx = vi.fn(async (k: string, field: string, value: string) => {
+      const existing = (mocks.store.get(k) as Record<string, string>) ?? {};
+      if (field in existing) return 0;
+      mocks.store.set(k, { ...existing, [field]: value });
+      return 1;
+    });
     hgetall = vi.fn(async (k: string) => {
       const v = mocks.store.get(k);
       return v ? { ...(v as Record<string, string>) } : null;

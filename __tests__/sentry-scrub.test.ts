@@ -84,6 +84,13 @@ describe("Sentry PII scrubber", () => {
       token: "x",
       session_token: "x",
       sessionToken: "x",
+      // Added 2026-05-19 after audit V3 flagged that the session
+      // cookie name itself (`antares_session`) and license keys were
+      // captured in cookies / breadcrumbs / extras without scrubbing.
+      antares_session: "x",
+      antares_session_token: "x",
+      licenseKey: "x",
+      license_key: "x",
       jwt: "x",
       authorization: "Bearer xxx",
       cookie: "antares_session=xxx",
