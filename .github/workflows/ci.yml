@@ -61,6 +61,21 @@ jobs:
       - name: Build extension
         run: npx plasmo build
 
+      # Smoke-load the packaged content-script bundle in happy-dom to
+      # catch the class of crash that broke the overlay during the
+      # 2026-05-19 → 2026-05-20 incident: the Zod schema import at
+      # module top level threw on the user's Chrome, the content
+      # script never reached its init block, the overlay never
+      # mounted, and CI was green because no existing job evaluated
+      # the actual packaged bundle. This smoke does exactly that:
+      # eval the bundle in a Node + happy-dom + chrome.* shim
+      # environment and assert the GUARD attribute gets set. If the
+      # bundle throws on boot for ANY reason (Sentry init, schema
+      # import, missing global, etc.) this step fails and the build
+      # never publishes a broken artifact.
+      - name: Smoke-test packaged content-script bundle
+        run: npm run smoke
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:

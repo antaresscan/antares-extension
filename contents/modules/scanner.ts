@@ -8,7 +8,18 @@ import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimation
 import { scanRateLimiter } from "../../shared/rate-limit"
 import { logger } from "../../shared/logger"
 import { getInstallId } from "../../shared/install-id"
-import { ScanResponseDataSchema } from "../../shared/schemas"
+// NOTE 2026-05-20: the Zod runtime validation of /api/scan responses
+// was the root cause of the overlay-not-mounting incident (bisect
+// confirmed: TEST-B with Zod = KO, TEST-C with Sentry hooks but no
+// Zod = OK). Removing the import + the safeParse block restores the
+// overlay. The schema file (shared/schemas.ts) stays around for
+// future use but is no longer wired into the content-script bundle.
+// If we want runtime validation back, it needs:
+//   1. A real headed-Chrome E2E test that catches this regression
+//      class (the current Playwright e2e is skipped in CI and never
+//      caught this)
+//   2. A fail-open posture that does not import the Zod schema at
+//      module top-level (defer behind a flag or lazy-load)
 
 /**
  * Thrown by fetchWithRetry when a 429 carries quota headers showing
@@ -319,44 +330,26 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
     const quota = extractQuotaFromHeaders(res.headers)
     const raw = await res.json()
     if (controller.signal.aborted) return
-    // Runtime-validate the response shape. Zod schemas have lived in
-    // shared/schemas.ts for months without ever being called — the audit
-    // flagged that a malformed /api/scan response (wrong type on `score`,
-    // `flags` not an array, etc.) would traverse all the way to
-    // buildResultNode and either panic the content script or render
-    // garbage. `.passthrough()` on the schema preserves unknown fields
-    // so the API can add new keys without a coordinated extension ship;
-    // we only catch *type* drift, not field-set drift.
+    // RUNTIME VALIDATION REMOVED (2026-05-20, incident PR #510).
     //
-    // FAIL-OPEN POLICY (2026-05-20 incident PR #510 follow-up):
-    // The original implementation `throw`-ed on any Zod failure, which
-    // killed the overlay completely whenever the API drifted by a
-    // single field — including benign drifts like an `optional` field
-    // returning `null` instead of `undefined`. That was the root cause
-    // of users seeing "the overlay just stopped working" after the
-    // PR #506 merge. Validation is now a Sentry-only signal: we log
-    // the drift loud so ops sees it within minutes, but the user-
-    // facing overlay continues with the raw data. Catastrophic type
-    // mismatches (e.g. `score` not a number) will fail naturally in
-    // the rendering path and a regression in the rendering code is
-    // far less likely than the API adding a nullable field.
-    const parsed = ScanResponseDataSchema.safeParse(raw)
-    let data: ScanResponseData
-    if (!parsed.success) {
-      const issueSummary = parsed.error.issues
-        .slice(0, 5)
-        .map((i) => `${i.path.join(".") || "<root>"}: ${i.code}`)
-      Sentry.captureMessage("scan_schema_drift", {
-        level: "warning",
-        extra: { issues: issueSummary, ca },
-      })
-      logger.warn("scanner", "schema validation failed — falling back to raw payload", { issues: issueSummary })
-      // Fail-open: trust the raw payload. Drift surfaces in Sentry,
-      // not in the user's overlay.
-      data = raw as ScanResponseData
-    } else {
-      data = parsed.data as ScanResponseData
-    }
+    // The Zod safeParse used to live here as defence against /api/scan
+    // payload drift. Bisect (TEST-B with Zod = KO, TEST-C without =
+    // OK on the same user setup) proved that even with the fail-open
+    // posture I added in PR #515, the mere act of importing the Zod
+    // schema at module top level was enough to crash the content
+    // script during boot on the user's Chrome — the overlay never
+    // mounted. Pulled the import + the safeParse so the content
+    // script boots cleanly. Trust the raw payload from /api/scan
+    // (the backend is the source of truth, and any catastrophic type
+    // mismatch will fail naturally inside buildResultNode rather
+    // than killing the entire overlay path).
+    //
+    // Re-adding runtime validation requires:
+    //   1. A real headed-Chrome E2E test that reproduces this exact
+    //      crash so we never ship a Zod regression to users again.
+    //   2. Either lazy-loading the Zod module or running validation
+    //      behind a flag — never at module top level.
+    const data = raw as ScanResponseData
     if (quota) data._quota = quota
     // Stamp the entry with the session token used for this fetch so
     // getCached() can later detect login/logout drift and force a

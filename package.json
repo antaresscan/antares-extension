@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "smoke": "node scripts/smoke-bundle.mjs",
     "corpus:capture": "tsx scripts/corpus-capture.ts",
     "corpus:refresh": "tsx scripts/corpus-capture.ts --refresh",
     "corpus:discover": "tsx scripts/corpus-discover.ts",
