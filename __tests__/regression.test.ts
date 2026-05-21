@@ -136,14 +136,23 @@ describe("VDOR-class rug regression", () => {
     expect(result.trust).toBeLessThan(1.0);
   });
 
-  it("LP not locked/burned sets safeBlocked in layerRugCheck", () => {
+  it("LP not locked/burned sets safeBlocked in layerRugCheck (matrix or fallback)", () => {
     const rugData: RugCheckSummary = {
       lpBurned: false,
       lpLocked: false,
     };
+    // SCORING_VERSION 7.6.0+: with no maturityContext the matrix returns
+    // the 'unknown' bucket which still safeBlocks. Original VDOR regression
+    // protection is preserved; only the flag label string varies depending
+    // on whether lpPctOfSupply was computable.
     const result = layerRugCheck(rugData, null, "VDORmint123");
     expect(result.safeBlocked).toBe(true);
-    expect(result.flags.some(f => /LP not burned or locked/i.test(f.label))).toBe(true);
+    const hasLpFlag = result.flags.some(f =>
+      /LP not burned or locked/i.test(f.label) ||
+      /could not be computed/i.test(f.label) ||
+      /LP holds .+% of supply/i.test(f.label)
+    );
+    expect(hasLpFlag).toBe(true);
   });
 
   it("VDOR-like token with high score is still blocked from SAFE verdict", () => {

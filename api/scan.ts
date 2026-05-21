@@ -37,6 +37,7 @@ import {
   layerDexScreener, layerRugCheck, layerGoPlus, layerHelius,
   layerSolscan, layerChart, layerCrossValidation,
 } from "./_lib/layers";
+import { computeLpPctOfSupply } from "./_lib/lp-risk-matrix";
 import { computeFinalScore, classifySafeBlockedReasons } from "./_lib/scoring";
 import { evaluatePostLayerFlags, applySafeGateOverride, applyEstablishedBonus, determineVerdict } from "./_lib/pipeline";
 import { setCorsHeaders, getClientIp, getInstallId, checkRateLimit, validateCA, initRateLimiters } from "./_lib/middleware";
@@ -458,6 +459,18 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       : _gpEarlyBurnPct >= 50 ? true
       : rugData?.lpBurned === false ? false
       : null;
+    // Compute the share of total supply that sits in the LP. Feeds the
+    // 2-axis LP risk matrix (api/_lib/lp-risk-matrix.ts) so the verdict
+    // reflects actual rug-pull capacity, not just "is LP locked?". See
+    // computeLpPctOfSupply for the back-compute math (DexScreener
+    // doesn't expose liquidity.base directly in our schema, so we derive
+    // it from liquidity.usd × priceUsd × totalSupply, accurate to ~5%
+    // on classic AMM pools).
+    const _lpPctOfSupply = computeLpPctOfSupply(
+      asNumber(pair?.liquidity?.usd),
+      asNumber(pair?.priceUsd),
+      totalSupplyUi,
+    );
     const maturityCtx = {
       holders: holders,
       liquidity: asNumber(pair?.liquidity?.usd),
@@ -466,6 +479,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       freezeAuthority: rugData?.freezeAuthorityEnabled === true,
       honeypot: false,
       lpBurned: _earlyLpBurned,
+      lpPctOfSupply: _lpPctOfSupply,
     };
     const l2 = layerRugCheck(rugData, rugReport, resolvedMint, tokenName, maturityCtx);
     const l3 = layerGoPlus(goplus, maturityCtx);

@@ -223,14 +223,23 @@ describe("layerRugCheck", () => {
     expect(result.flags.some(f => /deceptive name/i.test(f.label))).toBe(false);
   });
 
-  it("Fix(LP_SAFE_BLOCK): LP not burned or locked sets safeBlocked=true", () => {
+  it("Fix(LP_SAFE_BLOCK): LP not burned or locked still sets safeBlocked=true (matrix unknown bucket)", () => {
     const rugData: RugCheckSummary = {
       lpBurned: false,
       lpLocked: false,
     };
+    // No maturityContext → matrix returns the 'unknown' bucket which is
+    // conservative (warning + safeBlocked=true). This preserves the
+    // original LP_SAFE_BLOCK protection. SCORING_VERSION 7.6.0+ flag
+    // label changed: "LP not burned" → either matrix label or fallback.
     const result = layerRugCheck(rugData, null, "someMint123");
     expect(result.safeBlocked).toBe(true);
-    expect(result.flags.some(f => /LP not burned or locked/i.test(f.label))).toBe(true);
+    const hasLpFlag = result.flags.some(f =>
+      /LP not burned or locked/i.test(f.label) ||
+      /could not be computed/i.test(f.label) ||
+      /LP holds .+% of supply/i.test(f.label)
+    );
+    expect(hasLpFlag).toBe(true);
   });
 });
 

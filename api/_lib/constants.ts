@@ -217,6 +217,13 @@ export const LP_UNVERIFIED_MIN_HOLDERS   = 5000;
 export const LP_UNVERIFIED_MIN_LIQUIDITY = 500_000;
 export const LP_UNVERIFIED_MIN_AGE_HOURS = 336; // 14 days
 
+// NOTE: LP-unverified scoring was rewritten in SCORING_VERSION 7.6.0 to
+// use a 2-axis matrix (LP % of supply × token age). The legacy
+// LP_UNVERIFIED_MIN_* constants above are kept only because some tests
+// still reference the symbol names. The matrix thresholds live in
+// api/_lib/lp-risk-matrix.ts and supersede this section for production
+// scoring. Treat the constants above as legacy/dead for scoring decisions.
+
 // ── EXTERNAL API BASE URLs ───────────────────────────────────
 
 export const HELIUS_REST_BASE = "https://api.helius.xyz";
@@ -256,7 +263,7 @@ export const API_TIMEOUT_HELIUS = 6000;
 // PUMPED flag or the corrected Liquidity-mirage routing through the
 // AI summary. Standard cache-invalidation step after any scoring or
 // flag-label change.
-export const SCORING_VERSION = "7.4.0";
+export const SCORING_VERSION = "7.6.0";
 
 // ── SOFT REASONS (safe gate unlock) ───────────────────────────
 export const SOFT_REASONS: Record<string, boolean> = { age: true, holders: true, lp_unverified: true };
