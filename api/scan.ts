@@ -30,14 +30,13 @@ import {
 import {
   DEXSCREENER_BASE, RUGCHECK_BASE, GOPLUS_BASE, LAYER_WEIGHTS, SCORING_VERSION,
   LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS,
-  LP_UNVERIFIED_MIN_HOLDERS, LP_UNVERIFIED_MIN_LIQUIDITY, LP_UNVERIFIED_MIN_AGE_HOURS,
   HARD_BLOCK_REASONS,
 } from "./_lib/constants";
 import {
   layerDexScreener, layerRugCheck, layerGoPlus, layerHelius,
   layerSolscan, layerChart, layerCrossValidation,
 } from "./_lib/layers";
-import { computeLpPctOfSupply } from "./_lib/lp-risk-matrix";
+import { computeLpPctOfSupply, getLpRiskBucket } from "./_lib/lp-risk-matrix";
 import { computeFinalScore, classifySafeBlockedReasons } from "./_lib/scoring";
 import { evaluatePostLayerFlags, applySafeGateOverride, applyEstablishedBonus, determineVerdict } from "./_lib/pipeline";
 import { setCorsHeaders, getClientIp, getInstallId, checkRateLimit, validateCA, initRateLimiters } from "./_lib/middleware";
@@ -535,34 +534,34 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // unknown-age" on every available signal.
     if (!lpBurned && !lpLocked) {
       const anyLpFlag = allLayers.some(l =>
-        l.flags.some(f => /\bLP\b|liquidity (?:not|is)|dev can rug|unverified LP/i.test(f.label))
+        l.flags.some(f => /\bLP\b|liquidity (?:not|is)|dev can rug|unverified LP|holds .+% of supply|rug (?:capacity|exposure|risk|impact)/i.test(f.label))
       );
       if (!anyLpFlag) {
-        const liqNum = asNumber(pair?.liquidity?.usd);
-        const looksMature =
-          (holders ?? 0) >= LP_UNVERIFIED_MIN_HOLDERS ||
-          liqNum >= LP_UNVERIFIED_MIN_LIQUIDITY ||
-          (tokenAgeHours !== null && tokenAgeHours >= LP_UNVERIFIED_MIN_AGE_HOURS);
-        if (looksMature) {
-          // Soft reason → CAUTION ceiling via the score-clip change
-          // below. Mirrors layerRugCheck's mature-LP soft path.
-          postLayerFlags.push(makeFlag(
-            "LP not burned but token is mature and liquid (unverified LP)",
-            "warning",
-            0
-          ));
+        // Fail-closed safety net: when neither RugCheck nor GoPlus emitted
+        // an LP flag (typically because both upstreams returned null lpBurned
+        // and lpLocked — blue chips often hit this because RugCheck is
+        // patchy on long-established mints), we still need to surface SOME
+        // LP signal so the user sees the unverified status.
+        //
+        // SCORING_VERSION 7.6.0+: this path now ALSO uses the 2-axis LP
+        // risk matrix (api/_lib/lp-risk-matrix.ts) — same logic as the
+        // layer-level paths — so blue chips with tiny LP % land in the
+        // info bucket (no safeBlock) instead of being capped at CAUTION
+        // by the old `looksMature` binary. This was the root cause of
+        // BONK / WIF still showing CAUTION after the layer-level matrix
+        // shipped: the safety net was running with the legacy code path
+        // because the layer never emitted an LP flag in the first place.
+        const bucket = getLpRiskBucket(_lpPctOfSupply, tokenAgeHours);
+        postLayerFlags.push(makeFlag(bucket.flagLabel, bucket.severity, 0));
+        if (bucket.safeBlock) {
           safeBlocked = true;
-          if (!safeBlockedReasons.includes("lp_unverified")) safeBlockedReasons.push("lp_unverified");
-        } else {
-          // Hard reason → DANGER. Genuinely young/small token with
-          // unverified LP — exit-liquidity risk is real here.
-          postLayerFlags.push(makeFlag(
-            "LP not burned or locked — dev can rug liquidity",
-            "warning",
-            0
-          ));
-          safeBlocked = true;
-          if (!safeBlockedReasons.includes("lp")) safeBlockedReasons.push("lp");
+          // Critical buckets classify as hard 'lp'; soft buckets as 'lp_unverified'
+          // (back-compat with classifySafeBlockedReasons regex order).
+          const reason = bucket.severity === "critical" ? "lp" : "lp_unverified";
+          if (!safeBlockedReasons.includes(reason)) safeBlockedReasons.push(reason);
+        }
+        if (bucket.forceRug) {
+          forceRug = true;
         }
       }
     }
