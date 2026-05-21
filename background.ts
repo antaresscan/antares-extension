@@ -115,9 +115,17 @@ function checkRiskEscalation(ca: string, currentRisk: string, tokenSymbol: strin
       }
       const prev = safeString(result[key])
       if (prev && riskWorsened(prev, currentRisk)) {
+        // Plasmo hashes icon paths at build time (icon128.plasmo.<hash>.png),
+        // so we can't hardcode "assets/icon.png" \u2014 that file doesn't exist
+        // in the packaged build. Read the real icon path from the runtime
+        // manifest, which Plasmo populates with the correct hashed names.
+        // Without a resolvable iconUrl, chrome.notifications.create() fails
+        // silently and the user never sees the alert.
+        const icons = chrome.runtime.getManifest().icons as Record<string, string> | undefined
+        const iconPath = icons?.["128"] || icons?.["64"] || icons?.["48"] || icons?.["32"] || ""
         void chrome.notifications.create(`antares_alert_${ca}`, {
           type: "basic",
-          iconUrl: chrome.runtime.getURL("assets/icon.png"),
+          iconUrl: chrome.runtime.getURL(iconPath),
           title: "Antares \u2014 Risk Escalation",
           message: `${tokenSymbol || ca.slice(0, 8)} risk changed: ${prev} \u2192 ${currentRisk}`,
         })
