@@ -156,7 +156,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v16"; // PR #521/#522: 2-axis LP risk matrix (lp-risk-matrix.ts) consumed by layers.ts — per maintenance rule above, any new constant feeding scoring.ts/layers.ts demands a manual bump to invalidate Redis scan cache. SCORING_VERSION 7.6.0 alone doesn't touch the cache key.
+const ENGINE_VERSION_MANUAL = "v17"; // PR #524: determineVerdict adds clean-blue-chip SAFE path (≥750 score + 0 warning/critical flags + ≥4 sources). Fixes "No issues found / CAUTION" UX contradiction surfaced by corpus-drift issue #519 (BONK/WIF/POPCAT SAFE → CAUTION regression).
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.
