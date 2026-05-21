@@ -37,6 +37,7 @@ function Options() {
   const [installIdCopied, setInstallIdCopied] = useState(false);
   const [devTier, setDevTier] = useState<DevTier>("off");
   const [account, setAccount] = useState<AccountState>({ kind: "loading" });
+  const [notifTestState, setNotifTestState] = useState<"idle" | "sent" | "blocked">("idle");
 
   // Read the session token from chrome.storage.local. The website's
   // bridge content script (contents/antares-website-bridge.ts) writes
@@ -185,6 +186,43 @@ function Options() {
       void chrome.storage.local.remove("antares_dev_tier");
     } else {
       void chrome.storage.local.set({ antares_dev_tier: next });
+    }
+  }
+
+  // Fire a demo system notification identical in shape to the real
+  // risk-escalation alert (background.ts → checkRiskEscalation). Used
+  // by reviewers and end-users to confirm the OS-level notification
+  // permission is granted and visible — the real feature only fires
+  // when a previously-scanned token's risk worsens between two scans,
+  // which is impossible to trigger on demand during a CWS review.
+  function triggerTestNotification() {
+    try {
+      // Plasmo hashes icon filenames at build time. Read the real
+      // path from the runtime manifest — "assets/icon.png" does NOT
+      // exist in the built package and would cause the notification
+      // to silently fail (Chrome rejects notifications whose iconUrl
+      // returns 404).
+      const icons = chrome.runtime.getManifest().icons as Record<string, string> | undefined;
+      const iconPath = icons?.["128"] || icons?.["64"] || icons?.["48"] || icons?.["32"] || "";
+      chrome.notifications.create(
+        `antares_test_${Date.now()}`,
+        {
+          type: "basic",
+          iconUrl: chrome.runtime.getURL(iconPath),
+          title: "Antares — Risk Escalation",
+          message: "BONK risk changed: CAUTION → DANGER  (this is a test)",
+        },
+        (notifId) => {
+          if (chrome.runtime.lastError || !notifId) {
+            setNotifTestState("blocked");
+            return;
+          }
+          setNotifTestState("sent");
+          setTimeout(() => setNotifTestState("idle"), 4000);
+        },
+      );
+    } catch {
+      setNotifTestState("blocked");
     }
   }
 
@@ -445,6 +483,52 @@ function Options() {
           {account.message}
         </p>
       )}
+
+      {/* ── Notifications section ──────────────────────────────────────
+           Antares fires a single category of OS-level system notification:
+           when a token you previously scanned is re-scanned and its risk
+           tier has worsened (e.g. CAUTION → DANGER). The real trigger
+           depends on live token data changing between two scans of the
+           same contract — impossible to deterministically reproduce
+           during a review window. This button fires the SAME shape of
+           notification on demand so reviewers can validate the feature
+           visually in <1 second. */}
+      <h2 style={{ marginTop: 36 }}>Notifications</h2>
+      <p style={{ color: "#555", fontSize: 13, lineHeight: 1.6 }}>
+        Antares sends a system notification when a token you previously
+        scanned gets re-scanned and its risk tier has worsened
+        (e.g. CAUTION → DANGER). This is the only kind of notification
+        the extension ever fires — no marketing, no engagement pings.
+        Click below to preview what the alert looks like on your system.
+      </p>
+      <div style={{ display: "flex", gap: 8, marginTop: 12, alignItems: "center" }}>
+        <button
+          type="button"
+          onClick={triggerTestNotification}
+          style={{
+            padding: "10px 18px",
+            fontSize: 13,
+            fontWeight: 600,
+            background: "#0f0f11",
+            color: "#fff",
+            border: "none",
+            borderRadius: 4,
+            cursor: "pointer",
+          }}
+        >
+          Send test notification
+        </button>
+        {notifTestState === "sent" && (
+          <span style={{ fontSize: 13, color: "#00a37e", fontWeight: 600 }}>
+            ✓ Sent — check your system notification area
+          </span>
+        )}
+        {notifTestState === "blocked" && (
+          <span style={{ fontSize: 13, color: "#c04040", fontWeight: 600 }}>
+            ✕ Blocked by your OS or browser settings
+          </span>
+        )}
+      </div>
 
       <h2 style={{ marginTop: 36 }}>This install</h2>
       <p style={{ color: "#555", fontSize: 13, lineHeight: 1.6 }}>
