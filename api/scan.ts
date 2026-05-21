@@ -606,11 +606,24 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       .filter(l => l.available && l.source !== "crossvalidation")
       .map(l => l.source);
 
+    const _allFlagsForVerdict: ScanFlag[] = allLayers.flatMap(l => l.flags).concat(postLayerFlags);
+    // Count token-side warning/critical flags so determineVerdict can apply
+    // the "clean blue-chip" path when literally zero issues are visible.
+    // Match the same filter the overlay uses (components.ts:721) — bonus +
+    // info excluded — so the "No issues found" UX state lines up with the
+    // verdict logic. Was the root cause of BONK/WIF showing "No issues found
+    // / CAUTION" simultaneously after the LP matrix shipped.
+    const _warningFlagsCount = _allFlagsForVerdict.filter(
+      (f) => f.severity === "warning" || f.severity === "critical",
+    ).length;
+
     const risk: Verdict = determineVerdict({
-      score, forceRug, safeBlocked, safeBlockedReasons, sourcesUsedCount: sources_used.length,
+      score, forceRug, safeBlocked, safeBlockedReasons,
+      sourcesUsedCount: sources_used.length,
+      warningFlagsCount: _warningFlagsCount,
     });
 
-    const flags: ScanFlag[] = allLayers.flatMap(l => l.flags).concat(postLayerFlags);
+    const flags: ScanFlag[] = _allFlagsForVerdict;
     const severityOrder: Record<Severity, number> = { critical:0, warning:1, info:2, bonus:3 };
     flags.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
 
