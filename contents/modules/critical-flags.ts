@@ -167,7 +167,10 @@ const SECTIONS: Array<{
  * HTML. The panel renders once on first open; subsequent clicks toggle
  * the .open class.
  */
-export function toggleCriticalFlags(flags: ScanResponseFlag[] | null | undefined): void {
+export function toggleCriticalFlags(
+  flags: ScanResponseFlag[] | null | undefined,
+  verdict?: string | null,
+): void {
   const panel = state.shadow?.querySelector("#ant-critical-flags") as HTMLElement | null
   if (!panel) return
 
@@ -187,25 +190,40 @@ export function toggleCriticalFlags(flags: ScanResponseFlag[] | null | undefined
 
   if (!panel.dataset.loaded) {
     panel.dataset.loaded = "1"
-    renderPanel(panel, flags)
+    renderPanel(panel, flags, verdict)
   }
 
   panel.classList.add("open")
 }
 
-function renderPanel(panel: HTMLElement, flags: ScanResponseFlag[] | null | undefined): void {
+function renderPanel(
+  panel: HTMLElement,
+  flags: ScanResponseFlag[] | null | undefined,
+  verdict?: string | null,
+): void {
   panel.replaceChildren()
 
-  // No severity filter — show everything. Empty state only triggers
-  // when there are LITERALLY no flags at all (which would be unusual
-  // because the layers always emit at least one bonus or info).
-  // Drop pipeline-status flags entirely — they describe OUR plumbing
-  // (Helius/GoPlus/RugCheck/Solscan availability), not the token, and
-  // surfacing them decredibilises the verdict. Founder rule: "ne jamais
-  // mettre ça, c'est d'aucune utilité a part décrédibiliser le projet".
-  // Verdict-side safety policy (Helius-down → safeBlock) is preserved
-  // on the layer object; only the visible flag is suppressed.
-  const all = (flags ?? []).filter((f) => !PIPELINE_STATUS_PATTERN.test(f.label))
+  // Two filters at once:
+  //   1. Pipeline-status flags ("Helius unavailable", "GoPlus
+  //      unavailable", etc.) describe OUR plumbing, not the token —
+  //      surfacing them decredibilises the verdict. Founder rule:
+  //      "ne jamais mettre ça, c'est d'aucune utilité a part
+  //      décrédibiliser le projet". Verdict-side safety policy
+  //      (Helius-down → safeBlock) is preserved on the layer object;
+  //      only the visible flag is suppressed.
+  //   2. Bonus "Positive signals" hidden when the verdict is RUG or
+  //      DANGER. Showing "Established token ✓" alongside a RUG verdict
+  //      reads as cognitive dissonance — the green checkmarks look
+  //      like reassurance even though the verdict is the opposite.
+  //      Founder rule: keep bonus visible only for SAFE / CAUTION
+  //      where the positive context actually reinforces the verdict.
+  const verdictUpper = (verdict ?? "").toUpperCase()
+  const hideBonus = verdictUpper === "RUG" || verdictUpper === "DANGER"
+  const all = (flags ?? []).filter((f) => {
+    if (PIPELINE_STATUS_PATTERN.test(f.label)) return false
+    if (hideBonus && f.severity === "bonus") return false
+    return true
+  })
 
   if (all.length === 0) {
     const empty = document.createElement("div")

@@ -276,7 +276,7 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
     } else {
       triggerResultAnimations(el)
     }
-    attachClose(cached.aiSummary ?? null, cached.flags ?? null)
+    attachClose(cached.aiSummary ?? null, cached.flags ?? null, cached.risk ?? null)
     attachAnalysisBtn(ca)
     chrome.storage.local.get(["autoRescan"], (prefs) => {
       if (prefs.autoRescan !== false) scheduleRescanIfPriceCrash(cached, ca)
@@ -391,7 +391,7 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
     } else {
       triggerResultAnimations(el)
     }
-    attachClose(data.aiSummary ?? null, data.flags ?? null)
+    attachClose(data.aiSummary ?? null, data.flags ?? null, data.risk ?? null)
     attachAnalysisBtn(ca)
     chrome.storage.local.get(["autoRescan"], (prefs) => {
       if (prefs.autoRescan !== false) scheduleRescanIfPriceCrash(data, ca)
