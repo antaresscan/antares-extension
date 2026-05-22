@@ -156,7 +156,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v17"; // PR #524: determineVerdict adds clean-blue-chip SAFE path (≥750 score + 0 warning/critical flags + ≥4 sources). Fixes "No issues found / CAUTION" UX contradiction surfaced by corpus-drift issue #519 (BONK/WIF/POPCAT SAFE → CAUTION regression).
+const ENGINE_VERSION_MANUAL = "v18"; // PR #525: ai-summary now passes info+bonus flags to the model (was filtering bonus). Credibility fix — SAFE verdicts no longer hide why a ✗ indicator (e.g. LP unverified at small %) doesn't downgrade. New cache key needed because summary text now changes for tokens whose info-level signals were previously omitted.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.

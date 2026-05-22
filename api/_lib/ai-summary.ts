@@ -126,17 +126,22 @@ function buildUserPrompt(
   bools.push(input.honeypot ? "HONEYPOT detected (BAD)" : "no honeypot (good)")
   lines.push(`Status: ${bools.join(", ")}`)
 
-  // Significant = critical + warning. Bonus and info severities are
-  // already filtered out upstream. We treat criticals and warnings
-  // identically for enumeration purposes — the user sees both in the
-  // flags panel without distinction (just a colour), so the summary
-  // must mirror that.
+  // Significant = critical + warning. Info-level signals (e.g. the
+  // 2-axis LP matrix's "LP holds X% of supply — limited rug impact"
+  // bucket) ARE discussed too — credibility rule per founder feedback:
+  // "même si un token est safe je dois voir tous les flags identifiés
+  // dans critical flags et tout doit être expliqué dans le ai summary".
+  // Hiding info flags created the "no issues found / CAUTION" UX
+  // contradiction. Bonus signals (LP burned ✓ etc.) are now also
+  // surfaced so the verdict reasoning reads complete.
   const significantFlags = topFlags.filter(
     (f) => f.severity === "critical" || f.severity === "warning",
   )
+  const infoFlags = topFlags.filter((f) => f.severity === "info")
+  const bonusFlags = topFlags.filter((f) => f.severity === "bonus")
   if (topFlags.length > 0) {
     lines.push("")
-    lines.push("Detected flags (AUTHORITATIVE — discuss ONLY these as risks; the Metrics line above is for adding numbers to flags that DID fire, never for inventing new risks):")
+    lines.push("Detected flags (AUTHORITATIVE — discuss ONLY these as risks/context; the Metrics line above is for adding numbers to flags that DID fire, never for inventing new risks):")
     for (const f of topFlags) {
       lines.push(`- [${f.severity}] ${f.label} (impact: ${f.impact})`)
     }
@@ -152,11 +157,33 @@ function buildUserPrompt(
   // constraints right next to the flag list, which empirically
   // produces tighter compliance from Gemini than relying on the
   // system prompt only.
-  const enumInstruction =
-    significantFlags.length >= 3
-      ? `Paragraph 2 MUST enumerate ALL ${significantFlags.length} flags above with one short clause each — do NOT skip any, regardless of whether they are critical or warning. ` +
-        "Use a comma-separated list if needed. Skipping flags makes the summary look incomplete to a user who already sees the full list above."
-      : "Paragraph 2 weaves the flags and bonus signals — keep it tight."
+  //
+  // SAFE-verdict tokens with info-level flags (e.g. LP unverified but
+  // small % of supply) MUST get an explicit explanation of why the
+  // flag doesn't downgrade the verdict — otherwise the user sees a
+  // ✗ in the indicator grid and a SAFE pill and loses trust.
+  const enumParts: string[] = []
+  if (significantFlags.length >= 3) {
+    enumParts.push(
+      `Paragraph 2 MUST enumerate ALL ${significantFlags.length} critical/warning flags with one short clause each — do NOT skip any.`,
+    )
+  } else if (significantFlags.length > 0) {
+    enumParts.push("Paragraph 2 weaves the warning flags concisely.")
+  }
+  if (infoFlags.length > 0) {
+    enumParts.push(
+      `Paragraph 2 ALSO addresses the ${infoFlags.length} info-level signal(s) above — name each one and explain why it does not downgrade the verdict (typically: small LP %, mature token, CEX-dominated liquidity). Skipping these creates a credibility gap when the user sees them in the Critical Flags panel.`,
+    )
+  }
+  if (bonusFlags.length > 0) {
+    enumParts.push(
+      `Paragraph 3 references the ${bonusFlags.length} positive signal(s) as part of the closer.`,
+    )
+  }
+  if (enumParts.length === 0) {
+    enumParts.push("Paragraph 2 weaves the flags and bonus signals — keep it tight.")
+  }
+  const enumInstruction = enumParts.join(" ")
 
   lines.push(
     `Write the 3-paragraph AI Verdict block. TOTAL length ${target.min}-${target.max} words. ` +
@@ -744,10 +771,14 @@ export async function generateAISummary(
 
   const primaryModel = process.env.AI_MODEL || "gemini-2.5-flash"
 
-  // Sort flags by severity then impact
+  // Sort flags by severity then impact. KEEP info AND bonus flags now —
+  // founder feedback: SAFE verdicts that hide info-level signals (e.g. the
+  // 2-axis LP matrix's "LP holds X% of supply — limited rug impact" bucket)
+  // produce a credibility gap because the indicator grid shows ✗ on LP
+  // but the summary doesn't explain why. The system prompt asks the AI to
+  // address each info flag with the "why not a downgrade" reasoning.
   const topFlags = input.flags
     .slice()
-    .filter((f) => f.severity !== "bonus")
     .sort((a, b) => {
       const aSev = SEVERITY_ORDER[a.severity] ?? 3
       const bSev = SEVERITY_ORDER[b.severity] ?? 3
