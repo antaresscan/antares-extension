@@ -351,7 +351,10 @@ describe("toggleCriticalFlags — DOM-API rendering", () => {
     const panel = document.getElementById("ant-critical-flags")!
     const empty = panel.querySelector(".cf-panel-empty")
     expect(empty).not.toBeNull()
-    expect(empty!.textContent).toBe("No issues found.")
+    // Wording changed in PR #525 — panel now surfaces ALL severities,
+    // so the empty state only triggers when there are LITERALLY zero
+    // flags (unusual; layers normally emit at least one bonus/info).
+    expect(empty!.textContent).toBe("All signals reviewed. Nothing to display.")
   })
 
   it("renders the empty-state message when flags is null", () => {
@@ -360,16 +363,21 @@ describe("toggleCriticalFlags — DOM-API rendering", () => {
     expect(panel.querySelector(".cf-panel-empty")).not.toBeNull()
   })
 
-  it("excludes bonus flags from the panel", () => {
+  it("INCLUDES bonus + info flags in the panel (post PR #525 credibility fix)", () => {
+    // Founder feedback: hiding bonus + info created the "no issues found
+    // / CAUTION" UX contradiction. Panel now surfaces every signal so
+    // the user can read the full reasoning behind any verdict.
     const flags = [
-      { label: "LP Burned", severity: "bonus", impact: 50 },
+      { label: "LP Burned ✓", severity: "bonus", impact: 50 },
+      { label: "LP holds 1.3% of supply — limited rug impact", severity: "info", impact: 10 },
       { label: "Honeypot detected — cannot sell", severity: "critical", impact: 200 },
     ]
     toggleCriticalFlags(flags)
     const panel = document.getElementById("ant-critical-flags")!
-    expect(panel.querySelectorAll(".cf-flag")).toHaveLength(1)
+    expect(panel.querySelectorAll(".cf-flag")).toHaveLength(3)
     expect(panel.textContent).toContain("Honeypot")
-    expect(panel.textContent).not.toContain("LP Burned")
+    expect(panel.textContent).toContain("LP Burned")
+    expect(panel.textContent).toContain("1.3% of supply")
   })
 
   it("sorts critical flags before warning flags", () => {
