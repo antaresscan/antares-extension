@@ -718,8 +718,14 @@ export function buildResultNode(
   //
   // Bonus and pure-info flags stay filtered: those don't affect verdict
   // and would inflate the count for "good news" rows like "LP burned \u2713".
+  // Pipeline-status flags ("Helius unavailable", "GoPlus unavailable")
+  // are excluded from the summary count — they describe OUR plumbing,
+  // not the token. Founder rule, matches the Critical Flags panel.
+  const PIPELINE_STATUS_PATTERN_C =
+    /^(Helius|GoPlus|RugCheck|Solscan|DexScreener|Birdeye|Helius RPC) (unavailable|rate[- ]limited|timed out|degraded)\b|Holder data unreliable|broken upstream/i
   const summaryFlags = (data.flags || []).filter((f: ScanResponseFlag) => {
     if (f.severity === "bonus" || f.severity === "info") return false
+    if (PIPELINE_STATUS_PATTERN_C.test(f.label)) return false
     return true
   })
   const flagCount = summaryFlags.length

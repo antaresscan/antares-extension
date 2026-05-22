@@ -613,8 +613,15 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // info excluded — so the "No issues found" UX state lines up with the
     // verdict logic. Was the root cause of BONK/WIF showing "No issues found
     // / CAUTION" simultaneously after the LP matrix shipped.
+    // Pipeline-status flags excluded too so the clean-blue-chip SAFE
+    // path triggers consistently with what the user sees in the panel
+    // (which now also drops them). Otherwise a Helius blip would silently
+    // block SAFE without showing any reason in the UI.
+    const _PIPELINE_STATUS = /^(Helius|GoPlus|RugCheck|Solscan|DexScreener|Birdeye|Helius RPC) (unavailable|rate[- ]limited|timed out|degraded)\b|Holder data unreliable|broken upstream/i;
     const _warningFlagsCount = _allFlagsForVerdict.filter(
-      (f) => f.severity === "warning" || f.severity === "critical",
+      (f) =>
+        (f.severity === "warning" || f.severity === "critical") &&
+        !_PIPELINE_STATUS.test(f.label),
     ).length;
 
     const risk: Verdict = determineVerdict({
