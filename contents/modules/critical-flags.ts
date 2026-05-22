@@ -131,6 +131,16 @@ const SEVERITY_ORDER: Record<string, number> = {
   bonus: 3,
 }
 
+// Pipeline-status flags ("Helius unavailable", "GoPlus unavailable",
+// "Holder data unreliable", etc.) are NEVER shown in the panel. They
+// describe OUR plumbing, not the token — surfacing them decredibilises
+// the verdict. Founder rule: "ne jamais mettre ça, c'est d'aucune
+// utilité a part décrédibiliser le projet". Verdict-side safety
+// policy (Helius-down → safeBlock) is preserved on the layer object;
+// only the visible flag is suppressed.
+const PIPELINE_STATUS_PATTERN =
+  /^(Helius|GoPlus|RugCheck|Solscan|DexScreener|Birdeye|Helius RPC) (unavailable|rate[- ]limited|timed out|degraded)\b|Holder data unreliable|broken upstream/i
+
 // Human-facing section headers, in display order.
 const SECTIONS: Array<{
   key: "critical" | "warning" | "info" | "bonus"
@@ -189,7 +199,13 @@ function renderPanel(panel: HTMLElement, flags: ScanResponseFlag[] | null | unde
   // No severity filter — show everything. Empty state only triggers
   // when there are LITERALLY no flags at all (which would be unusual
   // because the layers always emit at least one bonus or info).
-  const all = (flags ?? []).slice()
+  // Drop pipeline-status flags entirely — they describe OUR plumbing
+  // (Helius/GoPlus/RugCheck/Solscan availability), not the token, and
+  // surfacing them decredibilises the verdict. Founder rule: "ne jamais
+  // mettre ça, c'est d'aucune utilité a part décrédibiliser le projet".
+  // Verdict-side safety policy (Helius-down → safeBlock) is preserved
+  // on the layer object; only the visible flag is suppressed.
+  const all = (flags ?? []).filter((f) => !PIPELINE_STATUS_PATTERN.test(f.label))
 
   if (all.length === 0) {
     const empty = document.createElement("div")

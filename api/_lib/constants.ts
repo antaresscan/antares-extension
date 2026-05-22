@@ -156,7 +156,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v18"; // PR #525: ai-summary now passes info+bonus flags to the model (was filtering bonus). Credibility fix — SAFE verdicts no longer hide why a ✗ indicator (e.g. LP unverified at small %) doesn't downgrade. New cache key needed because summary text now changes for tokens whose info-level signals were previously omitted.
+const ENGINE_VERSION_MANUAL = "v19"; // PR #526: filter pipeline-status flags ("Helius unavailable", "GoPlus unavailable", "Holder data unreliable") from UI surface + AI summary + verdict warningFlagsCount. Founder rule: never decredibilise with upstream availability notices. Cache invalidation needed so affected scans re-emit without those labels.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.

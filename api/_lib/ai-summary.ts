@@ -777,8 +777,18 @@ export async function generateAISummary(
   // produce a credibility gap because the indicator grid shows ✗ on LP
   // but the summary doesn't explain why. The system prompt asks the AI to
   // address each info flag with the "why not a downgrade" reasoning.
+  // ALSO drop pipeline-status flags ("Helius unavailable", "GoPlus
+  // unavailable", "Holder data unreliable") — these describe OUR
+  // plumbing, not the token. Feeding them to the AI produces sentences
+  // like "GoPlus was unreachable so we couldn't verify..." which
+  // decredibilises the verdict. Founder rule. Verdict-side safety logic
+  // (Helius-down → safeBlock to refuse false-SAFE) is preserved on the
+  // layer object, not in the flag label.
+  const PIPELINE_STATUS_PATTERN_AI =
+    /^(Helius|GoPlus|RugCheck|Solscan|DexScreener|Birdeye|Helius RPC) (unavailable|rate[- ]limited|timed out|degraded)\b|Holder data unreliable|broken upstream/i
   const topFlags = input.flags
     .slice()
+    .filter((f) => !PIPELINE_STATUS_PATTERN_AI.test(f.label))
     .sort((a, b) => {
       const aSev = SEVERITY_ORDER[a.severity] ?? 3
       const bSev = SEVERITY_ORDER[b.severity] ?? 3
