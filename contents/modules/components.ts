@@ -112,6 +112,7 @@ export function resetState() {
 export function attachClose(
   aiSummary?: string | null,
   flags?: ScanResponseFlag[] | null,
+  verdict?: string | null,
 ) {
   state.shadow?.querySelector("#ant-close")?.addEventListener(
     "click",
@@ -149,7 +150,7 @@ export function attachClose(
     fresh.addEventListener("click", (e) => {
       e.stopPropagation()
       e.preventDefault()
-      toggleCriticalFlags(flags ?? null)
+      toggleCriticalFlags(flags ?? null, verdict ?? null)
     })
   }
 }
