@@ -136,7 +136,7 @@ describe("buildResult — Free-tier gating", () => {
     // (right-click "Open in new tab", crawlers, etc.). Click handler
     // augments with install_id at runtime, but the base contract is
     // a working link.
-    expect(html).toContain("comealamaisongroupe.github.io/antares-website/pricing.html")
+    expect(html).toContain("antaresscan.com/pricing")
   })
 
   it("Pro users get unlocked footer (no .locked, no PRO pill)", () => {

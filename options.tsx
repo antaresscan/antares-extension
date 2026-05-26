@@ -351,7 +351,7 @@ function Options() {
             <button
               type="button"
               onClick={() => {
-                void chrome.tabs.create({ url: `${WEBSITE_BASE}/pricing.html` });
+                void chrome.tabs.create({ url: "https://antaresscan.com/pricing" });
               }}
               style={{
                 padding: "10px 18px",
@@ -456,7 +456,7 @@ function Options() {
                 onClick={(e) => {
                   e.preventDefault();
                   void chrome.tabs.create({
-                    url: `${WEBSITE_BASE}/pricing.html`,
+                    url: "https://antaresscan.com/pricing",
                   });
                 }}
                 style={{ color: "#00a37e" }}
