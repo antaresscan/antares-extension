@@ -37,6 +37,7 @@ import {
   layerSolscan, layerChart, layerCrossValidation,
 } from "./_lib/layers";
 import { computeLpPctOfSupply, getLpRiskBucket } from "./_lib/lp-risk-matrix";
+import { selectBestPair } from "./_lib/dex-pair-select";
 import { computeFinalScore, classifySafeBlockedReasons } from "./_lib/scoring";
 import { evaluatePostLayerFlags, applySafeGateOverride, applyEstablishedBonus, determineVerdict } from "./_lib/pipeline";
 import { setCorsHeaders, getClientIp, getInstallId, checkRateLimit, validateCA, initRateLimiters } from "./_lib/middleware";
@@ -262,9 +263,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       }
     }
     if (dexData?.pairs && dexData.pairs.length > 1) {
-      pair = dexData.pairs.reduce((best: DexScreenerPair, p: DexScreenerPair) =>
-        asNumber(p?.liquidity?.usd) > asNumber(best?.liquidity?.usd) ? p : best
-      , dexData.pairs[0]);
+      pair = selectBestPair(dexData.pairs) ?? pair;
     }
 
     const pairAddress = pair?.pairAddress ?? ca;
