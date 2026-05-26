@@ -45,12 +45,19 @@ import {
   authenticate,
   bindInstallToAccount,
   getAccountByInstall,
+  _resetSessionSecretCacheForTests,
 } from "../api/_lib/account";
 
 beforeEach(() => {
   mocks.store.clear();
   mocks.sets.clear();
   process.env.SESSION_SECRET = "0".repeat(64); // 64-char test secret
+  // getSessionSecret is now memoised at module scope (fires the bootstrap
+  // warn once per cold-start instead of once per request). Vitest reuses
+  // the module across tests, so any test that swaps SESSION_SECRET mid-
+  // run must reset the cache first or it keeps verifying with the stale
+  // key.
+  _resetSessionSecretCacheForTests();
 });
 
 describe("hashPassword + verifyPassword", () => {
@@ -132,6 +139,7 @@ describe("signSession + verifySession", () => {
   it("rejects sessions when SESSION_SECRET is too short and no Redis fallback available", () => {
     process.env.SESSION_SECRET = "short";
     delete process.env.UPSTASH_REDIS_REST_TOKEN;
+    _resetSessionSecretCacheForTests();
     expect(() => signSession("user@example.com")).toThrow();
   });
 
@@ -140,6 +148,7 @@ describe("signSession + verifySession", () => {
     // hasn't set SESSION_SECRET yet. Auth should still work.
     delete process.env.SESSION_SECRET;
     process.env.UPSTASH_REDIS_REST_TOKEN = "x".repeat(64);
+    _resetSessionSecretCacheForTests();
     const token = signSession("bootstrap@example.com");
     const verified = verifySession(token);
     expect(verified).not.toBeNull();
@@ -149,19 +158,23 @@ describe("signSession + verifySession", () => {
   it("explicit SESSION_SECRET takes precedence over Redis fallback", () => {
     process.env.SESSION_SECRET = "1".repeat(64);
     process.env.UPSTASH_REDIS_REST_TOKEN = "y".repeat(64);
+    _resetSessionSecretCacheForTests();
     const tokenA = signSession("user@example.com");
 
     // Switch to fallback only — different key, shouldn't verify the
     // token issued under the explicit secret.
     delete process.env.SESSION_SECRET;
+    _resetSessionSecretCacheForTests();
     expect(verifySession(tokenA)).toBeNull();
   });
 
   it("rotating SESSION_SECRET invalidates every session at once", () => {
     process.env.SESSION_SECRET = "a".repeat(64);
+    _resetSessionSecretCacheForTests();
     const token = signSession("user@example.com");
     expect(verifySession(token)).not.toBeNull();
     process.env.SESSION_SECRET = "b".repeat(64);
+    _resetSessionSecretCacheForTests();
     expect(verifySession(token)).toBeNull();
   });
 });

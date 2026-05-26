@@ -867,7 +867,8 @@ export const SHADOW_CSS = `
 }
 .cf-flag-icon-r { background: rgba(255,60,80,.15); color: #ff5f5f; }
 .cf-flag-icon-y { background: rgba(245,208,0,.12); color: #f5d000; }
-.cf-flag-icon-g { background: rgba(136,136,136,.1); color: #888; }
+.cf-flag-icon-b { background: rgba(80,150,250,.12); color: #6aa5f0; }
+.cf-flag-icon-g { background: rgba(0,229,176,.12); color: #00e5b0; }
 
 .cf-flag-body {
   display: flex;
@@ -886,7 +887,40 @@ export const SHADOW_CSS = `
 }
 .cf-flag-cr .cf-flag-label { color: #cc7070; }
 .cf-flag-wr .cf-flag-label { color: #c8a840; }
-.cf-flag-in .cf-flag-label { color: #888; }
+.cf-flag-in .cf-flag-label { color: #6aa5f0; }
+.cf-flag-bn .cf-flag-label { color: #00d99a; }
+
+/* ── Sections (Critical/Warning/Info/Bonus groups) ─────────────────
+   Each section has a header (count + title) so the user can scan
+   the panel at a glance: "3 critical, 2 warnings, 1 note". */
+.cf-section + .cf-section { margin-top: 14px; }
+.cf-section-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 0 8px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+  margin-bottom: 6px;
+}
+.cf-section-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 16px; height: 16px;
+  border-radius: 8px;
+  padding: 0 6px;
+  font-size: 9px;
+  font-weight: 700;
+}
+.cf-section-title { color: #888; font-weight: 600; }
+.cf-section-critical .cf-section-count { background: rgba(255,60,80,.18); color: #ff5f5f; }
+.cf-section-critical .cf-section-title { color: #cc7070; }
+.cf-section-warning  .cf-section-count { background: rgba(245,208,0,.15); color: #f5d000; }
+.cf-section-warning  .cf-section-title { color: #c8a840; }
+.cf-section-info     .cf-section-count { background: rgba(80,150,250,.15); color: #6aa5f0; }
+.cf-section-info     .cf-section-title { color: #6aa5f0; }
+.cf-section-bonus    .cf-section-count { background: rgba(0,229,176,.15); color: #00e5b0; }
+.cf-section-bonus    .cf-section-title { color: #00d99a; }
 
 .cf-flag-desc {
   font-size: 9px;

@@ -18,6 +18,7 @@ import {
   formatAgeHours,
   formatAgeMin,
   escapeHtml,
+  escapeHtmlAllowBold,
   fmtUsd,
   fmtTok,
   getFlagDescription,
@@ -153,6 +154,44 @@ describe("escapeHtml", () => {
   });
   it("coerces non-strings before escaping", () => {
     expect(escapeHtml(123)).toBe("123");
+  });
+});
+
+// Bold-whitelist variant used for criticalActors.desc / exit-liquidity notes,
+// where the backend intentionally emphasises a numeric span. Anything other
+// than a bare <b></b> must stay escaped — that's the security contract.
+describe("escapeHtmlAllowBold", () => {
+  it("returns empty string for falsy input", () => {
+    expect(escapeHtmlAllowBold(null)).toBe("");
+    expect(escapeHtmlAllowBold(undefined)).toBe("");
+    expect(escapeHtmlAllowBold("")).toBe("");
+  });
+  it("preserves bare <b> and </b>", () => {
+    expect(escapeHtmlAllowBold("Holds <b>3.2%</b> of supply")).toBe(
+      "Holds <b>3.2%</b> of supply",
+    );
+  });
+  it("escapes <script> and other dangerous tags", () => {
+    expect(escapeHtmlAllowBold("<script>alert(1)</script>")).toBe(
+      "&lt;script&gt;alert(1)&lt;/script&gt;",
+    );
+    expect(escapeHtmlAllowBold("<img src=x onerror=alert(1)>")).toBe(
+      "&lt;img src=x onerror=alert(1)&gt;",
+    );
+  });
+  it("keeps <b> with attributes escaped (no <b onclick=...>, no <b/onmouseover=…>)", () => {
+    expect(escapeHtmlAllowBold("<b onclick=alert(1)>x</b>")).toBe(
+      "&lt;b onclick=alert(1)&gt;x</b>",
+    );
+    expect(escapeHtmlAllowBold("<b class='evil'>x</b>")).toBe(
+      "&lt;b class=&#39;evil&#39;&gt;x</b>",
+    );
+  });
+  it("does not unescape an entity that the caller already escaped", () => {
+    // Idempotent vs double-escaped content — caller must not double-escape.
+    expect(escapeHtmlAllowBold("&lt;b&gt;already escaped&lt;/b&gt;")).toBe(
+      "&amp;lt;b&amp;gt;already escaped&amp;lt;/b&amp;gt;",
+    );
   });
 });
 

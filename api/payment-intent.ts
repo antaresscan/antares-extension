@@ -121,7 +121,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!corsOk) return apiError(res, 403, "Origin not allowed.");
   if (req.method !== "POST") return apiError(res, 405, "Method not allowed.");
 
-  if (!nowpaymentsConfigured()) {
+  // Wrap the rest of the handler so a throw from Redis (most commonly:
+  // Upstash daily/monthly quota exceeded → checkRateLimit / saveNewIntent
+  // bubbles a network-style exception) doesn't end up as Vercel's
+  // FUNCTION_INVOCATION_FAILED, which ships a generic 500 page WITHOUT
+  // CORS headers. The browser then sees a CORS rejection and surfaces
+  // "Failed to fetch" / "Network error" to the user instead of our
+  // payload — exactly the symptom on /pricing today. The CORS headers
+  // from setCorsHeaders() above stay attached because we respond with
+  // res.status().json() ourselves below, on the same response object.
+  try {
+    if (!nowpaymentsConfigured()) {
     res.setHeader("Cache-Control", "no-store, max-age=0");
     return res.status(503).json({
       error: "checkout_not_configured",
@@ -272,4 +282,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     amountUsd: intent.amountUsd,
     expiresAt: intent.expiresAt,
   });
+  } catch (err) {
+    // Catches anything the inner try/catches around createInvoice and
+    // saveNewIntent didn't cover — primarily Redis errors from
+    // checkRateLimit and getAccountFromRequest above, plus any future
+    // path that throws unhandled. Classify quota / transient errors
+    // as 503 so the website's pricing.js shows a clear retry message
+    // instead of the misleading "Network error".
+    const errMsg = String((err as Error)?.message || err);
+    logger.error("payment-intent", "unhandled exception", { error: errMsg });
+    captureError(err, { endpoint: "payment-intent", phase: "dispatcher-catch" });
+    if (res.headersSent) return;
+    const lower = errMsg.toLowerCase();
+    const isQuotaOrTransient =
+      lower.includes("upstash") ||
+      lower.includes("daily limit") ||
+      lower.includes("rate limit") ||
+      lower.includes("quota") ||
+      lower.includes("econnreset") ||
+      lower.includes("etimedout") ||
+      lower.includes("max requests");
+    if (isQuotaOrTransient) {
+      return res.status(503).json({
+        error: "service_unavailable",
+        message:
+          "Service temporarily unavailable. Please try again in a few minutes.",
+      });
+    }
+    return res.status(500).json({
+      error: "internal_error",
+      message: "An internal error occurred. Please try again.",
+    });
+  }
 }

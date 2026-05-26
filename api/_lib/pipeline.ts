@@ -197,6 +197,27 @@ export function determineVerdict(input: VerdictInput): Verdict {
 
   // HARDENED: SAFE requires score >= 900 AND at least 5 sources
   if (input.score >= 900 && input.sourcesUsedCount >= 5) return "SAFE";
+
+  // "Clean blue-chip" path: when there are LITERALLY ZERO token-side
+  // warning/critical flags AND the score is still reasonable (>= 750),
+  // grant SAFE at a relaxed bar. Fixes the contradiction where the
+  // overlay shows "No issues found" but the verdict is CAUTION because
+  // infrastructure-side score drag (Helius unavailable, Holder data
+  // unreliable, etc.) prevented the score from reaching 900.
+  //
+  // Gated by sourcesUsedCount >= 4 so a token with thin upstream
+  // coverage can't sneak in via "no warnings because no data".
+  // The score floor (750) is intentionally above the CAUTION floor
+  // (600) so a token that's borderline-clean but actually mediocre
+  // still gets CAUTION.
+  if (
+    input.warningFlagsCount === 0 &&
+    input.score >= 750 &&
+    input.sourcesUsedCount >= 4
+  ) {
+    return "SAFE";
+  }
+
   if (input.score >= 600) return "CAUTION";
   if (input.score >= 350) return "DANGER";
   return "RUG";

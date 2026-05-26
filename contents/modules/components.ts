@@ -112,6 +112,7 @@ export function resetState() {
 export function attachClose(
   aiSummary?: string | null,
   flags?: ScanResponseFlag[] | null,
+  verdict?: string | null,
 ) {
   state.shadow?.querySelector("#ant-close")?.addEventListener(
     "click",
@@ -149,7 +150,7 @@ export function attachClose(
     fresh.addEventListener("click", (e) => {
       e.stopPropagation()
       e.preventDefault()
-      toggleCriticalFlags(flags ?? null)
+      toggleCriticalFlags(flags ?? null, verdict ?? null)
     })
   }
 }
@@ -692,7 +693,9 @@ export function buildResultNode(
   const liq = data.liquidity ?? data.pair?.liquidity?.usd ?? null
 
   const score = data.score || 0
-  const barW = Math.min(100, Math.round(score / 10))
+  const SCORE_BAND: Record<string, number> = { SAFE: 1000, CAUTION: 750, DANGER: 500, RUG: 250 }
+  const displayScore = SCORE_BAND[data.risk] ?? score
+  const barW = Math.min(100, Math.round(displayScore / 10))
 
   const tokenName = data.tokenName || data.pair?.baseToken?.name || ""
   const tokenSymbol = data.tokenSymbol || data.pair?.baseToken?.symbol || ""
@@ -702,7 +705,7 @@ export function buildResultNode(
   // tier-gating class needed here.
   if (state.boxEl) state.boxEl.className = `box ${riskClass}`
 
-  const dotsCount = Math.round((score / 1000) * 5)
+  const dotsCount = Math.round((displayScore / 1000) * 5)
   const dotsNode = el("div", { class: "dots" },
     ...Array.from({ length: 5 }, (_, i) =>
       el("div", { class: `dt ${i < dotsCount ? "on" : "off"}` }),
@@ -718,8 +721,14 @@ export function buildResultNode(
   //
   // Bonus and pure-info flags stay filtered: those don't affect verdict
   // and would inflate the count for "good news" rows like "LP burned \u2713".
+  // Pipeline-status flags ("Helius unavailable", "GoPlus unavailable")
+  // are excluded from the summary count — they describe OUR plumbing,
+  // not the token. Founder rule, matches the Critical Flags panel.
+  const PIPELINE_STATUS_PATTERN_C =
+    /^(Helius|GoPlus|RugCheck|Solscan|DexScreener|Birdeye|Helius RPC) (unavailable|rate[- ]limited|timed out|degraded)\b|Holder data unreliable|broken upstream/i
   const summaryFlags = (data.flags || []).filter((f: ScanResponseFlag) => {
     if (f.severity === "bonus" || f.severity === "info") return false
+    if (PIPELINE_STATUS_PATTERN_C.test(f.label)) return false
     return true
   })
   const flagCount = summaryFlags.length
@@ -859,7 +868,7 @@ export function buildResultNode(
     ),
     el("div", { class: "sr" },
       el("span", { class: "n" },
-        el("b", { class: "ant-score", "data-target": String(score) }, "0"),
+        el("b", { class: "ant-score", "data-target": String(displayScore) }, "0"),
         " / 1000",
       ),
       dotsNode,

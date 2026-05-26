@@ -491,25 +491,81 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   res.setHeader("Cache-Control", "no-store, max-age=0");
 
-  switch (action) {
-    case "signup":
-      return handleSignup(req, res);
-    case "login":
-      return handleLogin(req, res);
-    case "logout":
-      return handleLogout(req, res);
-    case "me":
-      return handleMe(req, res);
-    case "sync-token":
-      return handleSyncToken(req, res);
-    case "nowpayments-ipn":
-      return handleNowpaymentsIpn(req, res);
-    default:
-      return apiError(
-        res,
-        404,
-        "Unknown auth action. Use signup | login | logout | me | sync-token | nowpayments-ipn.",
-      );
+  // Wrap dispatch in a try/catch so an unhandled throw inside a
+  // sub-handler (Upstash quota exceeded, Redis transient flake,
+  // bcrypt OOM, …) doesn't bubble up to Vercel as
+  // FUNCTION_INVOCATION_FAILED — that error path returns Vercel's
+  // generic 500 page without the CORS headers we set above, so the
+  // browser sees a CORS rejection instead of our error JSON and
+  // surfaces "Failed to fetch" to the user. Catching here lets us
+  // emit a proper response with the right CORS headers already in
+  // place, and a structured body the client can show.
+  //
+  // The `await` on each handler is what makes this work — without it
+  // we'd return the Promise unawaited and any rejection would land
+  // back on Vercel, not in our catch.
+  try {
+    switch (action) {
+      case "signup":
+        return await handleSignup(req, res);
+      case "login":
+        return await handleLogin(req, res);
+      case "logout":
+        return await handleLogout(req, res);
+      case "me":
+        return await handleMe(req, res);
+      case "sync-token":
+        return await handleSyncToken(req, res);
+      case "nowpayments-ipn":
+        return await handleNowpaymentsIpn(req, res);
+      default:
+        return apiError(
+          res,
+          404,
+          "Unknown auth action. Use signup | login | logout | me | sync-token | nowpayments-ipn.",
+        );
+    }
+  } catch (err) {
+    // Most likely cause: Upstash daily/monthly quota exceeded — every
+    // mutating auth handler (signup, login, logout, sync-token) writes
+    // to Redis, so when the quota cap is hit those handlers throw and
+    // we land here. Smaller incidents (transient Redis ECONNRESET, a
+    // bcrypt OOM under load, a Vercel function reaching its CPU
+    // budget) follow the same path.
+    //
+    // We classify the error to choose between 503 (transient, retry
+    // makes sense) and 500 (generic). Both responses keep the CORS
+    // headers the dispatcher set earlier, so the browser actually
+    // surfaces our body to the page instead of dropping it as a CORS
+    // failure — the website's auth.js shows the body's `message` to
+    // the user verbatim ("Service temporarily unavailable — retry in
+    // a minute") instead of the misleading "Failed to fetch".
+    const errMsg = String((err as Error)?.message || err);
+    logger.error(`auth/${action}`, "unhandled exception", { error: errMsg });
+    captureError(err, { endpoint: `auth/${action}`, phase: "dispatcher-catch" });
+    if (res.headersSent) return;
+    const lower = errMsg.toLowerCase();
+    const isQuotaOrTransient =
+      lower.includes("upstash") ||
+      lower.includes("daily limit") ||
+      lower.includes("rate limit") ||
+      lower.includes("quota") ||
+      lower.includes("econnreset") ||
+      lower.includes("etimedout") ||
+      lower.includes("max requests");
+    if (isQuotaOrTransient) {
+      return res.status(503).json({
+        ok: false,
+        reason: "service_unavailable",
+        message:
+          "Service temporarily unavailable. Please try again in a few minutes.",
+      });
+    }
+    return res.status(500).json({
+      ok: false,
+      reason: "internal_error",
+      message: "An internal error occurred. Please try again.",
+    });
   }
 }
 

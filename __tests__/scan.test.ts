@@ -1,5 +1,6 @@
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { SCORING_VERSION } from "../api/_lib/constants";
 
 // ---- Mock all external modules BEFORE importing handler ----
 
@@ -293,7 +294,10 @@ describe("scan handler", () => {
     const body = (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as Record<string, unknown>;
     expect(body.score).toBeTypeOf("number");
     expect(body.risk).toBeDefined();
-    expect(body.scoring_version).toBe("7.3.0");
+    // Assert against the imported constant so this test doesn't break every
+    // time SCORING_VERSION is bumped (which is the standard cache-invalidation
+    // step after any scoring or flag-label change — see api/_lib/constants.ts).
+    expect(body.scoring_version).toBe(SCORING_VERSION);
     expect(body.resolvedMint).toBeDefined();
     expect(body.flags).toBeDefined();
     expect(Array.isArray(body.sources_used)).toBe(true);

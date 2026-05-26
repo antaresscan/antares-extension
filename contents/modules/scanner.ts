@@ -8,6 +8,18 @@ import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimation
 import { scanRateLimiter } from "../../shared/rate-limit"
 import { logger } from "../../shared/logger"
 import { getInstallId } from "../../shared/install-id"
+// NOTE 2026-05-20: the Zod runtime validation of /api/scan responses
+// was the root cause of the overlay-not-mounting incident (bisect
+// confirmed: TEST-B with Zod = KO, TEST-C with Sentry hooks but no
+// Zod = OK). Removing the import + the safeParse block restores the
+// overlay. The schema file (shared/schemas.ts) stays around for
+// future use but is no longer wired into the content-script bundle.
+// If we want runtime validation back, it needs:
+//   1. A real headed-Chrome E2E test that catches this regression
+//      class (the current Playwright e2e is skipped in CI and never
+//      caught this)
+//   2. A fail-open posture that does not import the Zod schema at
+//      module top-level (defer behind a flag or lazy-load)
 
 /**
  * Thrown by fetchWithRetry when a 429 carries quota headers showing
@@ -200,8 +212,9 @@ export interface ScanOptions {
 export async function scan(ca: string, opts: ScanOptions = {}) {
   if (!ca) return
 
-  if (!scanRateLimiter.tryAcquire()) {
-    logger.warn("scanner", "scan rate-limited, retry after", scanRateLimiter.getRetryAfterMs())
+  if (!(await scanRateLimiter.tryAcquire())) {
+    const retryAfter = await scanRateLimiter.getRetryAfterMs()
+    logger.warn("scanner", "scan rate-limited, retry after", retryAfter)
     return
   }
 
@@ -263,7 +276,7 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
     } else {
       triggerResultAnimations(el)
     }
-    attachClose(cached.aiSummary ?? null, cached.flags ?? null)
+    attachClose(cached.aiSummary ?? null, cached.flags ?? null, cached.risk ?? null)
     attachAnalysisBtn(ca)
     chrome.storage.local.get(["autoRescan"], (prefs) => {
       if (prefs.autoRescan !== false) scheduleRescanIfPriceCrash(cached, ca)
@@ -315,8 +328,28 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
     const res = await fetchWithRetry(`${API}?ca=${ca}`, controller.signal, headers)
     if (controller.signal.aborted) return
     const quota = extractQuotaFromHeaders(res.headers)
-    const data = await res.json() as ScanResponseData
+    const raw = await res.json()
     if (controller.signal.aborted) return
+    // RUNTIME VALIDATION REMOVED (2026-05-20, incident PR #510).
+    //
+    // The Zod safeParse used to live here as defence against /api/scan
+    // payload drift. Bisect (TEST-B with Zod = KO, TEST-C without =
+    // OK on the same user setup) proved that even with the fail-open
+    // posture I added in PR #515, the mere act of importing the Zod
+    // schema at module top level was enough to crash the content
+    // script during boot on the user's Chrome — the overlay never
+    // mounted. Pulled the import + the safeParse so the content
+    // script boots cleanly. Trust the raw payload from /api/scan
+    // (the backend is the source of truth, and any catastrophic type
+    // mismatch will fail naturally inside buildResultNode rather
+    // than killing the entire overlay path).
+    //
+    // Re-adding runtime validation requires:
+    //   1. A real headed-Chrome E2E test that reproduces this exact
+    //      crash so we never ship a Zod regression to users again.
+    //   2. Either lazy-loading the Zod module or running validation
+    //      behind a flag — never at module top level.
+    const data = raw as ScanResponseData
     if (quota) data._quota = quota
     // Stamp the entry with the session token used for this fetch so
     // getCached() can later detect login/logout drift and force a
@@ -358,7 +391,7 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
     } else {
       triggerResultAnimations(el)
     }
-    attachClose(data.aiSummary ?? null, data.flags ?? null)
+    attachClose(data.aiSummary ?? null, data.flags ?? null, data.risk ?? null)
     attachAnalysisBtn(ca)
     chrome.storage.local.get(["autoRescan"], (prefs) => {
       if (prefs.autoRescan !== false) scheduleRescanIfPriceCrash(data, ca)
