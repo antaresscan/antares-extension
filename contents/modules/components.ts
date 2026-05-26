@@ -308,7 +308,7 @@ const QUOTA_WARN_THRESHOLD = 5
 
 function buildQuotaBadge(
   quota?: QuotaStatus,
-  _installId?: string | null,
+  installId?: string | null,
 ): HTMLElement | null {
   if (!quota) return null
 
@@ -351,17 +351,20 @@ function buildQuotaBadge(
 
   if (remaining === 0) {
     // Limit reached — surface as a clickable link to the pricing page.
-    // The URL stays bare (no ?install=<UUID>) — the bridge content
-    // script transmits install_id to the page via postMessage on load,
-    // and the page also reads it from chrome.storage.local fallback.
-    // Keeping the UUID out of the URL avoids: (1) a visible flash of a
-    // long URL → short URL when the page strips it, and (2) accidental
-    // install_id leakage if the user copy-pastes the link.
+    // install_id is baked into href synchronously by the caller (passed
+    // in via buildHeaderNode), so the native <a target="_blank"> nav
+    // works on a single user-click. Earlier versions wrapped this in
+    // an async window.open inside a click handler — that consumed the
+    // user-gesture grace before the popup could open and silently got
+    // popup-blocked, leaving the link dead.
+    const href = installId
+      ? `${PRICING_URL}?install=${encodeURIComponent(installId)}`
+      : PRICING_URL
     return el(
       "a",
       {
         class: "quota-badge danger",
-        href: PRICING_URL,
+        href,
         target: "_blank",
         rel: "noopener noreferrer",
         title: "Daily limit reached — upgrade to Pro for unlimited scans",
@@ -483,7 +486,7 @@ export function buildHeader(): string {
 // user-gesture grace and got popup-blocked.
 export function buildQuotaExhaustedNode(
   quota: QuotaStatus,
-  _installId?: string | null,
+  installId?: string | null,
 ): HTMLElement {
   if (state.boxEl) state.boxEl.className = "box caution"
 
@@ -508,10 +511,12 @@ export function buildQuotaExhaustedNode(
   // not by how much they've blown past it.
   const usedDisplay = Math.min(quota.used, quota.limit)
 
-  // Bare PRICING_URL — install_id flows to the page via the bridge
-  // content script (postMessage on load), not via the URL. See the
-  // matching comment in buildQuotaBadge for the rationale.
-  const href = PRICING_URL
+  // Bake install_id into href so the link works on a single user-click
+  // without async indirection. Falls back to the bare URL when the
+  // install_id is missing (rare — only on first scan before storage).
+  const href = installId
+    ? `${PRICING_URL}?install=${encodeURIComponent(installId)}`
+    : PRICING_URL
 
   // Design picked from /quota-overlay-demos.html (#91) → Demo 3
   // "Premium / calm". White headline (no all-caps drama), outline
@@ -771,14 +776,14 @@ export function buildResultNode(
   const isFree = data._quota?.tier === "free"
   const foNode = el("div", { class: "fo" })
 
-  // Locked buttons render as <a target="_blank"> with a bare PRICING_URL.
-  // Earlier versions used a click handler that did e.preventDefault() +
-  // await getInstallId() + window.open() \u2014 the async gap consumed the
-  // user-gesture grace, so the popup got blocked and clicks did nothing.
-  // Native <a> nav has no such gap. install_id is transferred to the
-  // pricing page by the bridge content script via postMessage, not via
-  // the URL (see buildQuotaBadge comment).
-  const upgradeHref = PRICING_URL
+  // Locked buttons render as <a target="_blank"> with install_id baked
+  // synchronously into the href. Earlier versions used a click handler
+  // that did e.preventDefault() + await getInstallId() + window.open()
+  // \u2014 the async gap consumed the user-gesture grace, so the popup got
+  // blocked and clicks did nothing. Native <a> nav has no such gap.
+  const upgradeHref = installId
+    ? `${PRICING_URL}?install=${encodeURIComponent(installId)}`
+    : PRICING_URL
 
   // Critical Flags \u2014 <a> for Free (locked, navigates), <button> for
   // Pro/Lifetime (toggles panel). Same id either way so attachClose
