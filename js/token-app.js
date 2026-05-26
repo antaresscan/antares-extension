@@ -279,7 +279,7 @@ function render(d, ca) {
   const change24 = pc24h != null ? pct(pc24h) : null;
   const priceCardHtml = `
     <div class="m-card">
-      <div class="m-label">Market Cap</div>
+      <div class="m-label-row"><div class="m-label">Market Cap</div></div>
       <div class="m-big alt">${escapeHtml(mc != null ? fmt(mc) : "—")}</div>
       ${sparklineHtml}
       ${change24 ? `<div class="m-sub ${change24.cls}">${escapeHtml(change24.txt)} · 24h</div>` : priceUsd ? `<div class="m-sub">${escapeHtml(fmtPrice(priceUsd))} per token</div>` : ""}
