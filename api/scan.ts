@@ -30,32 +30,42 @@ import {
 import {
   DEXSCREENER_BASE, RUGCHECK_BASE, GOPLUS_BASE, LAYER_WEIGHTS, SCORING_VERSION,
   LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS,
-  LP_UNVERIFIED_MIN_HOLDERS, LP_UNVERIFIED_MIN_LIQUIDITY, LP_UNVERIFIED_MIN_AGE_HOURS,
   HARD_BLOCK_REASONS,
 } from "./_lib/constants";
 import {
   layerDexScreener, layerRugCheck, layerGoPlus, layerHelius,
   layerSolscan, layerChart, layerCrossValidation,
 } from "./_lib/layers";
+import { computeLpPctOfSupply, getLpRiskBucket } from "./_lib/lp-risk-matrix";
 import { computeFinalScore, classifySafeBlockedReasons } from "./_lib/scoring";
 import { evaluatePostLayerFlags, applySafeGateOverride, applyEstablishedBonus, determineVerdict } from "./_lib/pipeline";
 import { setCorsHeaders, getClientIp, getInstallId, checkRateLimit, validateCA, initRateLimiters } from "./_lib/middleware";
 import { initQuota, checkDailyQuota, setQuotaHeaders, secondsUntilReset } from "./_lib/quota";
 import { initUserStorage, pushScanHistory, resolveTierAndBypass } from "./_lib/user";
 import { initCache, getCachedResult, setCachedResult, setShortCachedResult } from "./_lib/cache";
-import * as Sentry from "@sentry/node";
+import { initSentry, captureError } from "./_lib/sentry";
 import { generateAISummary } from "./_lib/ai-summary";
 
 import { initRugDb, recordRug } from "./_lib/rugdb";
 import { logger } from "./_lib/logger";
 import { composeCriticalActors } from "./_lib/critical-actors";
 import { buildInsiderGraph, initGraphCache } from "./_lib/insider-graph";
-import { initHistoryCache, pushVerdictHistory, getVerdictHistory, deriveEvent } from "./_lib/verdict-history";
+import { deriveEvent } from "./_lib/verdict-history";
+// initHistoryCache / pushVerdictHistory / getVerdictHistory are no
+// longer imported — the Verdict Timeline feature was decommissioned
+// (see the "Verdict Timeline (decommissioned)" block lower in this
+// file for the full rationale). `deriveEvent` is still imported
+// because the current-scan entry still tags the verdict with a
+// human-readable event label.
 import { composeHolderActivity } from "./_lib/holder-activity";
 import { composeOutcomeStats } from "./_lib/outcome-stats";
-if (process.env.SENTRY_DSN) {
-  Sentry.init({ dsn: process.env.SENTRY_DSN, tracesSampleRate: 0.1 });
-}
+// Route through the centralised initSentry() — it sets sendDefaultPii=false
+// and wires beforeSend(scrubEvent) so `?ca=<contract>`, the client IP, and
+// any email/JWT/auth header attached to an event are stripped before leaving
+// the process. The previous direct Sentry.init() here bypassed both, leaking
+// PII on the hottest endpoint (~95% of traffic) and silently violating the
+// "Sentry: never the contract address or your IP" claim in privacy.html.
+initSentry();
 
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
   const redis = new Redis({
@@ -68,7 +78,8 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
   initUserStorage(redis);
   initRugDb(redis);
   initGraphCache(redis);
-  initHistoryCache(redis);
+  // initHistoryCache deliberately not called — verdict-history is
+  // decommissioned (see decom block lower in this file).
 }
 
 // 24s internal budget against the 25s vercel.json maxDuration. The 9s
@@ -103,13 +114,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // which is what we want.
   res.setHeader("Cache-Control", "no-store, max-age=0");
 
+  // Validate input BEFORE any async work (see /api/graph for the
+  // same rationale). e2e contract: /api/scan (no ca) and ?ca= must
+  // return 400, never 500.
+  const ca = validateCA(req.query.ca);
+  if (!ca) return apiError(res, 400, "Invalid token address.");
+
   const ip = getClientIp(req);
   const installId = getInstallId(req);
   const rateLimitOk = await checkRateLimit(res, ip, installId);
   if (!rateLimitOk) return;
-
-  const ca = validateCA(req.query.ca);
-  if (!ca) return apiError(res, 400, "Invalid token address.");
 
   // Daily quota gate — runs after CA validation (don't charge invalid CAs
   // against the user's budget) but before the cache lookup (cache hits still
@@ -155,16 +169,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       latencyMs: Date.now() - startTime,
       hitKey: "ca",
     });
-    if (installId) {
-      void pushScanHistory(installId, {
-        ca: cached.resolvedMint ?? ca,
-        score: cached.score,
-        verdict: cached.risk,
-        scannedAt: Date.now(),
-        symbol: cached.tokenSymbol ?? undefined,
-        name: cached.tokenName ?? undefined,
-      });
-    }
+    // History push intentionally skipped on cache-hit paths. The first
+    // miss (the bottom of this handler) already recorded the scan; a
+    // user refreshing the same page within the cache TTL would
+    // otherwise stamp identical history entries every reload and
+    // burn 1–2 Redis commands per refresh for zero new information.
     return res.json(cached);
   }
 
@@ -179,7 +188,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (e instanceof Error && e.message === "Global timeout") {
       return apiError(res, 504, "Analysis timed out. Try again.");
     }
-    Sentry.captureException(e); return apiError(res, 500, "Unexpected error.");
+    captureError(e, { endpoint: "scan", requestId, ca });
+    return apiError(res, 500, "Unexpected error.");
   }
 }
 
@@ -245,16 +255,9 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
           latencyMs: Date.now() - startTime,
           hitKey: "resolvedMint",
         });
-        if (installId) {
-          void pushScanHistory(installId, {
-            ca: cachedByMint.resolvedMint ?? resolvedMint,
-            score: cachedByMint.score,
-            verdict: cachedByMint.risk,
-            scannedAt: Date.now(),
-            symbol: cachedByMint.tokenSymbol ?? undefined,
-            name: cachedByMint.tokenName ?? undefined,
-          });
-        }
+        // History push intentionally skipped on cache-hit (see the
+        // comment on the CA-cache branch above for the rationale —
+        // duplicate entries on refresh, no new signal, costs Redis).
         return res.json(cachedByMint);
       }
     }
@@ -455,6 +458,18 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       : _gpEarlyBurnPct >= 50 ? true
       : rugData?.lpBurned === false ? false
       : null;
+    // Compute the share of total supply that sits in the LP. Feeds the
+    // 2-axis LP risk matrix (api/_lib/lp-risk-matrix.ts) so the verdict
+    // reflects actual rug-pull capacity, not just "is LP locked?". See
+    // computeLpPctOfSupply for the back-compute math (DexScreener
+    // doesn't expose liquidity.base directly in our schema, so we derive
+    // it from liquidity.usd × priceUsd × totalSupply, accurate to ~5%
+    // on classic AMM pools).
+    const _lpPctOfSupply = computeLpPctOfSupply(
+      asNumber(pair?.liquidity?.usd),
+      asNumber(pair?.priceUsd),
+      totalSupplyUi,
+    );
     const maturityCtx = {
       holders: holders,
       liquidity: asNumber(pair?.liquidity?.usd),
@@ -463,6 +478,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       freezeAuthority: rugData?.freezeAuthorityEnabled === true,
       honeypot: false,
       lpBurned: _earlyLpBurned,
+      lpPctOfSupply: _lpPctOfSupply,
     };
     const l2 = layerRugCheck(rugData, rugReport, resolvedMint, tokenName, maturityCtx);
     const l3 = layerGoPlus(goplus, maturityCtx);
@@ -518,34 +534,34 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // unknown-age" on every available signal.
     if (!lpBurned && !lpLocked) {
       const anyLpFlag = allLayers.some(l =>
-        l.flags.some(f => /\bLP\b|liquidity (?:not|is)|dev can rug|unverified LP/i.test(f.label))
+        l.flags.some(f => /\bLP\b|liquidity (?:not|is)|dev can rug|unverified LP|holds .+% of supply|rug (?:capacity|exposure|risk|impact)/i.test(f.label))
       );
       if (!anyLpFlag) {
-        const liqNum = asNumber(pair?.liquidity?.usd);
-        const looksMature =
-          (holders ?? 0) >= LP_UNVERIFIED_MIN_HOLDERS ||
-          liqNum >= LP_UNVERIFIED_MIN_LIQUIDITY ||
-          (tokenAgeHours !== null && tokenAgeHours >= LP_UNVERIFIED_MIN_AGE_HOURS);
-        if (looksMature) {
-          // Soft reason → CAUTION ceiling via the score-clip change
-          // below. Mirrors layerRugCheck's mature-LP soft path.
-          postLayerFlags.push(makeFlag(
-            "LP not burned but token is mature and liquid (unverified LP)",
-            "warning",
-            0
-          ));
+        // Fail-closed safety net: when neither RugCheck nor GoPlus emitted
+        // an LP flag (typically because both upstreams returned null lpBurned
+        // and lpLocked — blue chips often hit this because RugCheck is
+        // patchy on long-established mints), we still need to surface SOME
+        // LP signal so the user sees the unverified status.
+        //
+        // SCORING_VERSION 7.6.0+: this path now ALSO uses the 2-axis LP
+        // risk matrix (api/_lib/lp-risk-matrix.ts) — same logic as the
+        // layer-level paths — so blue chips with tiny LP % land in the
+        // info bucket (no safeBlock) instead of being capped at CAUTION
+        // by the old `looksMature` binary. This was the root cause of
+        // BONK / WIF still showing CAUTION after the layer-level matrix
+        // shipped: the safety net was running with the legacy code path
+        // because the layer never emitted an LP flag in the first place.
+        const bucket = getLpRiskBucket(_lpPctOfSupply, tokenAgeHours);
+        postLayerFlags.push(makeFlag(bucket.flagLabel, bucket.severity, 0));
+        if (bucket.safeBlock) {
           safeBlocked = true;
-          if (!safeBlockedReasons.includes("lp_unverified")) safeBlockedReasons.push("lp_unverified");
-        } else {
-          // Hard reason → DANGER. Genuinely young/small token with
-          // unverified LP — exit-liquidity risk is real here.
-          postLayerFlags.push(makeFlag(
-            "LP not burned or locked — dev can rug liquidity",
-            "warning",
-            0
-          ));
-          safeBlocked = true;
-          if (!safeBlockedReasons.includes("lp")) safeBlockedReasons.push("lp");
+          // Critical buckets classify as hard 'lp'; soft buckets as 'lp_unverified'
+          // (back-compat with classifySafeBlockedReasons regex order).
+          const reason = bucket.severity === "critical" ? "lp" : "lp_unverified";
+          if (!safeBlockedReasons.includes(reason)) safeBlockedReasons.push(reason);
+        }
+        if (bucket.forceRug) {
+          forceRug = true;
         }
       }
     }
@@ -590,11 +606,31 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       .filter(l => l.available && l.source !== "crossvalidation")
       .map(l => l.source);
 
+    const _allFlagsForVerdict: ScanFlag[] = allLayers.flatMap(l => l.flags).concat(postLayerFlags);
+    // Count token-side warning/critical flags so determineVerdict can apply
+    // the "clean blue-chip" path when literally zero issues are visible.
+    // Match the same filter the overlay uses (components.ts:721) — bonus +
+    // info excluded — so the "No issues found" UX state lines up with the
+    // verdict logic. Was the root cause of BONK/WIF showing "No issues found
+    // / CAUTION" simultaneously after the LP matrix shipped.
+    // Pipeline-status flags excluded too so the clean-blue-chip SAFE
+    // path triggers consistently with what the user sees in the panel
+    // (which now also drops them). Otherwise a Helius blip would silently
+    // block SAFE without showing any reason in the UI.
+    const _PIPELINE_STATUS = /^(Helius|GoPlus|RugCheck|Solscan|DexScreener|Birdeye|Helius RPC) (unavailable|rate[- ]limited|timed out|degraded)\b|Holder data unreliable|broken upstream/i;
+    const _warningFlagsCount = _allFlagsForVerdict.filter(
+      (f) =>
+        (f.severity === "warning" || f.severity === "critical") &&
+        !_PIPELINE_STATUS.test(f.label),
+    ).length;
+
     const risk: Verdict = determineVerdict({
-      score, forceRug, safeBlocked, safeBlockedReasons, sourcesUsedCount: sources_used.length,
+      score, forceRug, safeBlocked, safeBlockedReasons,
+      sourcesUsedCount: sources_used.length,
+      warningFlagsCount: _warningFlagsCount,
     });
 
-    const flags: ScanFlag[] = allLayers.flatMap(l => l.flags).concat(postLayerFlags);
+    const flags: ScanFlag[] = _allFlagsForVerdict;
     const severityOrder: Record<Severity, number> = { critical:0, warning:1, info:2, bonus:3 };
     flags.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
 
@@ -710,22 +746,22 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       priceChange1h,
     }).catch(() => null);
 
-    // ─── V5 Verdict Timeline ──────────────────────────────────────────
-    // Append the current scan to the per-token history ZSET (deduped on
-    // tight refresh windows + identical verdict/score) and read back
-    // the last N entries so the Timeline tab on the page can show real
-    // verdict progression instead of a static mock.
+    // ─── Verdict Timeline (decommissioned) ───────────────────────────
+    // Was a per-token ZSET (push current verdict, read back last N
+    // entries) feeding the Timeline tab in the overlay. The Timeline
+    // tab was replaced by Insider Watch and the frontend stopped
+    // reading `verdictHistory` long ago; the writes/reads kept burning
+    // ~5 Redis commands per scan for no consumer. Removed on
+    // 2026-05-11 during the Upstash budget audit. The field stays on
+    // `ScanResult` (optional) with a single "current" entry so any
+    // stale frontend that still parses it doesn't crash on a null.
     const currentEntry = {
       ts: Date.now(),
       verdict: risk,
       score,
       event: deriveEvent(risk, flags),
     };
-    void pushVerdictHistory(resolvedMint, currentEntry);
-    const verdictHistory = await getVerdictHistory(resolvedMint).catch(() => []);
-    // First scan or Redis unavailable — synthesize a single "now" entry
-    // so the timeline is never empty when the section is open.
-    const finalHistory = verdictHistory.length > 0 ? verdictHistory : [currentEntry];
+    const finalHistory = [currentEntry];
 
     const result: ScanResult = {
       score, risk, flags, pair, resolvedMint, confidence, sources_used,
@@ -804,7 +840,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     return res.json(result);
   } catch (e) {
     logger.error("scan", "analysis error", { requestId, version: SCORING_VERSION, error: String(e) });
-    Sentry.captureException(e);
+    captureError(e, { endpoint: "scan", requestId, ca });
     return apiError(res, 500, "Analysis error.");
   }
 }

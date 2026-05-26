@@ -279,6 +279,16 @@ export interface VerdictInput {
   safeBlocked: boolean;
   safeBlockedReasons?: string[];
   sourcesUsedCount: number;
+  /**
+   * Number of token-side warning + critical flags visible to the user
+   * (i.e. emitted by any layer with severity ∈ {warning, critical}).
+   * Used by determineVerdict to grant a SAFE verdict at a relaxed score
+   * floor (750+) when there are literally zero token-side issues — fixes
+   * the "no issues found but verdict is CAUTION" UX contradiction caused
+   * by infrastructure-side score drag (Helius unavailable, etc).
+   * Optional for back-compat — undefined falls back to legacy 900+ rule.
+   */
+  warningFlagsCount?: number;
 }
 
 // ─── SCAN RESULT ────────────────────────────────────────────────────────────────────────────────

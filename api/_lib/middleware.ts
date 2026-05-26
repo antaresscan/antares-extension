@@ -19,10 +19,18 @@ export const ALLOWED_ORIGINS = [
   "https://gmgn.ai",
   "https://app.telemetry.io",
   "https://antares-extension.vercel.app",
-  // Website lives on GitHub Pages, not Vercel. Both origins kept here
-  // because (a) older clients may still cache the vercel.app URL and
-  // (b) the auth + payment-intent flow on the website needs CORS to
-  // accept GH-Pages-origin fetches with credentials:include.
+  // Website is now served from the custom domain antaresscan.com (alias of
+  // the antares-website Vercel deployment). Login / signup / logout / sync
+  // calls from auth.html and account.html on antaresscan.com hit
+  // /api/auth/* with credentials:include — without these origins in the
+  // allowlist the OPTIONS preflight 403s and the user can't sign in OR
+  // log out cleanly (the website thinks it logged you out, but the
+  // extension's cached JWT keeps the overlay on Pro indefinitely).
+  //
+  // Older entries (antares-website.vercel.app, GH Pages) stay because
+  // existing clients may still cache the old URLs.
+  "https://antaresscan.com",
+  "https://www.antaresscan.com",
   "https://antares-website.vercel.app",
   "https://comealamaisongroupe.github.io",
 ];

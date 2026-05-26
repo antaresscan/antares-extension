@@ -16,7 +16,8 @@ test.describe('Scan Integration \u2014 Full Flow E2E', () => {
 
     // Step 2: Scan a known token
     const scan = await request.get(`${BASE}/api/scan?ca=${SOL}`);
-    test.skip(!scan.ok(), `Skipped: scan API returned ${scan.status()}`);
+    test.skip(scan.status() === 429, `Rate-limited (429) on shared CI — soft skip`);
+    expect(scan.ok(), `scan API returned ${scan.status()} — production must succeed (retries: 2)`).toBe(true);
     const result = await scan.json();
 
     // Step 3: Verify complete response structure
@@ -30,9 +31,11 @@ test.describe('Scan Integration \u2014 Full Flow E2E', () => {
 
   test('scanning same token twice returns consistent scores', async ({ request }) => {
     const r1 = await request.get(`${BASE}/api/scan?ca=${SOL}`);
-    test.skip(!r1.ok(), `Skipped: API returned ${r1.status()}`);
+    test.skip(r1.status() === 429, `Rate-limited (429) on shared CI — soft skip`);
+    expect(r1.ok(), `API returned ${r1.status()} — first request must succeed`).toBe(true);
     const r2 = await request.get(`${BASE}/api/scan?ca=${SOL}`);
-    test.skip(!r2.ok(), `Skipped: API returned ${r2.status()}`);
+    test.skip(r2.status() === 429, `Rate-limited (429) on shared CI — soft skip`);
+    expect(r2.ok(), `API returned ${r2.status()} — repeat request must succeed (cache path)`).toBe(true);
     const b1 = await r1.json();
     const b2 = await r2.json();
     // Scores should be identical (cached) or within small tolerance
@@ -43,7 +46,8 @@ test.describe('Scan Integration \u2014 Full Flow E2E', () => {
   test('different tokens produce different results', async ({ request }) => {
     const r1 = await request.get(`${BASE}/api/scan?ca=${SOL}`);
     const r2 = await request.get(`${BASE}/api/scan?ca=${USDC}`);
-    test.skip(!r1.ok() || !r2.ok(), `Skipped: API returned ${r1.status()}/${r2.status()}`);
+    test.skip(r1.status() === 429 || r2.status() === 429, `Rate-limited (429) on shared CI — soft skip`);
+    expect(r1.ok() && r2.ok(), `API returned ${r1.status()}/${r2.status()} — both must succeed`).toBe(true);
     const b1 = await r1.json();
     const b2 = await r2.json();
     // requestId may not exist if cached, so just check they responded
@@ -52,8 +56,14 @@ test.describe('Scan Integration \u2014 Full Flow E2E', () => {
   });
 
   test('token page loads and calls API for scan data', async ({ page }) => {
+    // `networkidle` waits for 500ms of no in-flight requests, but the
+    // token page polls /api/scan and the network never goes idle within
+    // the 60s test budget when the API is slow or rate-limiting. We
+    // care that the HTML loads and renders, not that the long-tail
+    // background requests settle — `domcontentloaded` is the right
+    // gate for that.
     await page.goto(`${BASE}/token.html?ca=${SOL}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     const body = await page.textContent('body');
     expect(body).toBeTruthy();
   });

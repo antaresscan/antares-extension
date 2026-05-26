@@ -151,26 +151,53 @@ const SESSION_SECRET_DERIVATION_INFO = "antares-session-secret-v1";
  *      set, which means there's no Redis either, which means storage
  *      is broken and signup wouldn't work regardless.
  */
+// Memoised at module level: getSessionSecret is called on every auth
+// request (signSession + verifySession) and the resolution path is
+// constant for the lifetime of a serverless invocation. Without this
+// cache the bootstrap-fallback `logger.warn` previously fired on every
+// request, spamming Sentry breadcrumbs. With the cache it fires once
+// per cold start — visible enough to act on, quiet enough to read.
+let cachedSessionSecret: Buffer | null = null;
+
 function getSessionSecret(): Buffer {
+  if (cachedSessionSecret) return cachedSessionSecret;
+
   const explicit = process.env.SESSION_SECRET;
   if (typeof explicit === "string" && explicit.length >= 32) {
-    return Buffer.from(explicit, "utf8");
+    cachedSessionSecret = Buffer.from(explicit, "utf8");
+    return cachedSessionSecret;
   }
 
   const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
   if (typeof redisToken === "string" && redisToken.length >= 32) {
+    // Once-per-cold-start (memoised below). The warning is intentionally
+    // loud — the bootstrap fallback was meant as a 5-minute unblocker on
+    // a fresh Vercel project, not as a production posture. If this line
+    // ever appears in production Sentry, set SESSION_SECRET explicitly
+    // and redeploy: existing sessions get invalidated (users re-login
+    // once) and the auth surface decouples from Redis token secrecy.
     logger.warn(
       "auth",
-      "SESSION_SECRET not set — using bootstrap fallback derived from UPSTASH_REDIS_REST_TOKEN. Set a dedicated SESSION_SECRET ASAP via the Vercel dashboard or `vercel env add SESSION_SECRET production`. See AUTH-SETUP.md §2.",
+      "SESSION_SECRET not set — using bootstrap fallback derived from UPSTASH_REDIS_REST_TOKEN. Set a dedicated SESSION_SECRET ASAP via the Vercel dashboard or `vercel env add SESSION_SECRET production`. See AUTH-SETUP.md §2. Session-forge risk if Upstash token leaks.",
     );
-    return createHmac("sha256", redisToken)
+    cachedSessionSecret = createHmac("sha256", redisToken)
       .update(SESSION_SECRET_DERIVATION_INFO)
       .digest();
+    return cachedSessionSecret;
   }
 
   throw new Error(
     "Auth not configured: set SESSION_SECRET (32+ chars) on the deployment, or ensure UPSTASH_REDIS_REST_TOKEN is set so the bootstrap fallback can derive one. Generate a SESSION_SECRET with `openssl rand -hex 32`.",
   );
+}
+
+/**
+ * Test-only helper. Production callers should never reach the cache.
+ * Vitest reuses module state across tests in the same file, so a test
+ * that flips SESSION_SECRET env vars must reset this before re-reading.
+ */
+export function _resetSessionSecretCacheForTests(): void {
+  cachedSessionSecret = null;
 }
 
 const SESSION_TTL_SECONDS = 30 * 24 * 60 * 60; // 30 days
@@ -346,22 +373,19 @@ export async function getAccountByInstall(
 // extension exactly like a paying user would. Same redeem path, same
 // idempotency, same Pro-tier behaviour after redeem.
 
-const DEV_LIFETIME_EMAILS_HARDCODED = [
-  // Founder — keep in code so the deployment always grants this even
-  // before DEV_LIFETIME_EMAILS env var is configured, and so the
-  // grant survives env-var rotation.
-  "lennypierrepro@gmail.com",
-];
-
+// Configure dev/founder grants exclusively via DEV_LIFETIME_EMAILS in the
+// deployment env (comma-separated). Keeping the list out of source code
+// removes the public attack-surface signal "this is the founder's auto-
+// grant address — phish/credential-stuff this account" that a hardcoded
+// list in a published repo provided. Operators set `DEV_LIFETIME_EMAILS`
+// once per Vercel project; missing env var = no auto-grant (paid flow
+// still works for the same email if they pay normally).
 function getDevLifetimeEmails(): Set<string> {
   const fromEnv = (process.env.DEV_LIFETIME_EMAILS ?? "")
     .split(",")
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean);
-  return new Set([
-    ...DEV_LIFETIME_EMAILS_HARDCODED.map((e) => e.toLowerCase()),
-    ...fromEnv,
-  ]);
+  return new Set(fromEnv);
 }
 
 export function isDevLifetimeEmail(email: string): boolean {
@@ -440,22 +464,15 @@ export async function ensureDevLifetimeLicense(
 // redeem in the extension. Tier on the install_id reflects whichever
 // got redeemed last.
 
-const DEV_PRO_EMAILS_HARDCODED = [
-  // Founder — same address as the Lifetime grant. Gets both licences
-  // so they can switch between Pro-renewal-flow testing and
-  // Lifetime-forever testing without rotating accounts.
-  "lennypierrepro@gmail.com",
-];
-
+// Same posture as DEV_LIFETIME_EMAILS — configure via env, not source.
+// Operators wanting both licences for the same account should list the
+// email in BOTH `DEV_LIFETIME_EMAILS` and `DEV_PRO_EMAILS`.
 function getDevProEmails(): Set<string> {
   const fromEnv = (process.env.DEV_PRO_EMAILS ?? "")
     .split(",")
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean);
-  return new Set([
-    ...DEV_PRO_EMAILS_HARDCODED.map((e) => e.toLowerCase()),
-    ...fromEnv,
-  ]);
+  return new Set(fromEnv);
 }
 
 export function isDevProEmail(email: string): boolean {

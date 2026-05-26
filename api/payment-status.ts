@@ -20,7 +20,12 @@
 // they created it.
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Redis } from "@upstash/redis";
-import { setCorsHeaders } from "./_lib/middleware";
+import {
+  setCorsHeaders,
+  checkRateLimit,
+  getClientIp,
+  initRateLimiters,
+} from "./_lib/middleware";
 import { apiError } from "./_lib/helpers";
 import { logger } from "./_lib/logger";
 import { initUserStorage } from "./_lib/user";
@@ -183,6 +188,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return apiError(res, 503, "Storage unavailable.");
   }
   initUserStorage(redis);
+  initRateLimiters(redis);
+
+  // Standard 30-req/min IP limit. Each poll hits NOWPayments REST,
+  // which costs API quota — without this, a leaked reference (URL bar,
+  // Referer log, `?ref=` query string) becomes a DoS-economic vector.
+  // The reference's 2^256 entropy makes guessing infeasible, but
+  // replay of a known reference is otherwise trivially cheap.
+  const ip = getClientIp(req);
+  const allowed = await checkRateLimit(res, ip);
+  if (!allowed) return;
 
   const stored = await getPaymentIntent(redis, reference);
   if (!stored) {
