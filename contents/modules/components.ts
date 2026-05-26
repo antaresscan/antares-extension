@@ -308,7 +308,7 @@ const QUOTA_WARN_THRESHOLD = 5
 
 function buildQuotaBadge(
   quota?: QuotaStatus,
-  installId?: string | null,
+  _installId?: string | null,
 ): HTMLElement | null {
   if (!quota) return null
 
@@ -483,7 +483,7 @@ export function buildHeader(): string {
 // user-gesture grace and got popup-blocked.
 export function buildQuotaExhaustedNode(
   quota: QuotaStatus,
-  installId?: string | null,
+  _installId?: string | null,
 ): HTMLElement {
   if (state.boxEl) state.boxEl.className = "box caution"
 
