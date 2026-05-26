@@ -179,12 +179,13 @@ describe("buildResult — Free-tier gating", () => {
     expect(html).not.toContain("locked")
   })
 
-  it("locked cf-btn and ai-btn render as <a> with synchronous /pricing href", () => {
+  it("locked cf-btn and ai-btn render as <a> with bare /pricing href (no install_id in URL)", () => {
     // The previous implementation rendered them as <button> with an
     // async click handler doing e.preventDefault() + getInstallId()
     // + window.open(). The async gap consumed the user-gesture grace
     // and the popup got blocked — clicks did nothing. Native <a> nav
-    // with install_id baked into href has no such gap.
+    // has no such gap. install_id is transferred to the pricing page
+    // by the bridge content script via postMessage, not via the URL.
     const data = makeScanData({
       _quota: { tier: "free", used: 3, limit: 50, remaining: 47, resetAt: 0 },
     })
@@ -194,17 +195,17 @@ describe("buildResult — Free-tier gating", () => {
     const cf = doc.querySelector("#ant-critical-flags-btn") as HTMLAnchorElement
     expect(cf.tagName).toBe("A")
     expect(cf.getAttribute("href")).toContain("/pricing")
-    expect(cf.getAttribute("href")).toContain("install=install-test-aaaaaaaaaaaa")
+    expect(cf.getAttribute("href")).not.toContain("install=")
     expect(cf.getAttribute("target")).toBe("_blank")
 
     const ai = doc.querySelector("#ant-ai-summary-btn") as HTMLAnchorElement
     expect(ai.tagName).toBe("A")
     expect(ai.getAttribute("href")).toContain("/pricing")
-    expect(ai.getAttribute("href")).toContain("install=install-test-aaaaaaaaaaaa")
+    expect(ai.getAttribute("href")).not.toContain("install=")
 
     const fa = doc.querySelector("#ant-full-analysis") as HTMLAnchorElement
     expect(fa.getAttribute("href")).toContain("/pricing")
-    expect(fa.getAttribute("href")).toContain("install=install-test-aaaaaaaaaaaa")
+    expect(fa.getAttribute("href")).not.toContain("install=")
   })
 
   it("locked buttons fall back to bare /pricing when install_id is absent", () => {
@@ -219,11 +220,12 @@ describe("buildResult — Free-tier gating", () => {
     expect(cf.getAttribute("href")).not.toContain("install=")
   })
 
-  it("at-cap quota badge in header bakes install_id into href synchronously", () => {
+  it("at-cap quota badge in header renders as bare /pricing <a> (no install_id in URL)", () => {
     // Same async-popup-block bug, same fix. The "0/50 → PRO" badge
     // is a fallback handle for users who miss the OUT OF SCANS card
     // (e.g. it scrolled off-screen) — it must navigate on a single
-    // click without async indirection.
+    // click without async indirection. install_id flows via the
+    // bridge content script, not via the URL.
     const data = makeScanData({
       _quota: { tier: "free", used: 50, limit: 50, remaining: 0, resetAt: 0 },
     })
@@ -232,7 +234,8 @@ describe("buildResult — Free-tier gating", () => {
     const badge = doc.querySelector(".quota-badge.danger") as HTMLAnchorElement
     expect(badge).not.toBeNull()
     expect(badge.tagName).toBe("A")
-    expect(badge.getAttribute("href")).toContain("install=install-test-bbbbbbbbbbbb")
+    expect(badge.getAttribute("href")).toContain("/pricing")
+    expect(badge.getAttribute("href")).not.toContain("install=")
   })
 
   it("Pro/Lifetime users still get <button> for cf/ai (toggles panel, doesn't navigate)", () => {
