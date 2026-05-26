@@ -43,6 +43,8 @@ export const config: PlasmoCSConfig = {
   // path under that org), the wildcard one is a defensive net for any
   // future page added to the same org.
   matches: [
+    "https://antaresscan.com/*",
+    "https://www.antaresscan.com/*",
     "https://antares-website.vercel.app/*",
     "https://comealamaisongroupe.github.io/antares-website/*",
     "https://comealamaisongroupe.github.io/*"
