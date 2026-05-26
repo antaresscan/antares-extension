@@ -44,8 +44,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .shell{position:relative;z-index:2;max-width:1140px;margin:0 auto;padding:0 32px 80px}
 
 /* ── NAV (sticky, blurred, compact-mode on scroll) ── */
-nav{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:16px 0;border-bottom:1px solid var(--border);position:sticky;top:3px;z-index:100;background:rgba(10,10,12,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);transition:padding .25s}
-nav.compact{padding:10px 0}
+nav{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:16px 32px;border-bottom:1px solid var(--border);position:sticky;top:3px;z-index:100;background:rgba(10,10,12,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);transition:padding .25s}
+nav.compact{padding:10px 32px}
 nav .brand{font:400 22px/1 'Bebas Neue',sans-serif;letter-spacing:.18em;color:#e0e0e0;text-decoration:none;display:flex;align-items:center;gap:10px;flex-shrink:0}
 nav .brand img{height:24px;width:auto;filter:invert(1)}
 nav .nav-mid{display:flex;align-items:center;gap:14px;opacity:0;transition:opacity .25s;pointer-events:none;flex:1;justify-content:center;min-width:0}
@@ -752,8 +752,6 @@ footer span{color:var(--c)}
 <div class="cursor-glow" id="cursor-glow" aria-hidden="true"></div>
 <canvas id="bg" aria-hidden="true"></canvas>
 
-<div class="shell">
-
 <nav id="nav" aria-label="Token analysis navigation">
   <a class="brand" href="https://antares-website.vercel.app/" aria-label="Antares home"><img src="/favicon.png" alt="">ANTARES</a>
   <div class="nav-mid">
@@ -765,6 +763,8 @@ footer span{color:var(--c)}
     <span class="ca-pill" id="ca-disp">—</span>
   </div>
 </nav>
+
+<div class="shell">
 
 <div id="loading">
   <div class="spin"></div>
