@@ -50,7 +50,8 @@ test.describe('API /api/scan \u2014 Comprehensive E2E', () => {
   test.describe('Successful Scans', () => {
     test('scans wrapped SOL (blue chip) and returns valid structure', async ({ request }) => {
       const r = await request.get(`${BASE}/api/scan?ca=${SOL_WRAPPED}`);
-      test.skip(!r.ok(), `Skipped: API returned ${r.status()}`);
+      test.skip(r.status() === 429, `Rate-limited (429) on shared CI — soft skip, not a product bug`);
+      expect(r.ok(), `API returned ${r.status()} — production /api/scan must succeed (retries: 2)`).toBe(true);
       const b = await r.json();
       // Core fields must exist
       expect(b).toHaveProperty('score');
@@ -75,7 +76,8 @@ test.describe('API /api/scan \u2014 Comprehensive E2E', () => {
 
     test('scans USDC (established token) and expects high score', async ({ request }) => {
       const r = await request.get(`${BASE}/api/scan?ca=${USDC_MINT}`);
-      test.skip(!r.ok(), `Skipped: API returned ${r.status()}`);
+      test.skip(r.status() === 429, `Rate-limited (429) on shared CI — soft skip, not a product bug`);
+      expect(r.ok(), `API returned ${r.status()} — production /api/scan must succeed (retries: 2)`).toBe(true);
       const b = await r.json();
 
       // USDC has millions of holders + massive multi-source data — when
@@ -99,7 +101,8 @@ test.describe('API /api/scan \u2014 Comprehensive E2E', () => {
 
     test('response includes proper CORS headers', async ({ request }) => {
       const r = await request.get(`${BASE}/api/scan?ca=${SOL_WRAPPED}`);
-      test.skip(!r.ok(), `Skipped: API returned ${r.status()}`);
+      test.skip(r.status() === 429, `Rate-limited (429) on shared CI — soft skip, not a product bug`);
+      expect(r.ok(), `API returned ${r.status()} — production /api/scan must succeed (retries: 2)`).toBe(true);
       const cors = r.headers()['access-control-allow-origin'];
       expect(cors).toBeDefined();
     });
@@ -112,7 +115,8 @@ test.describe('API /api/scan \u2014 Comprehensive E2E', () => {
 
     test('each layer has trust field', async ({ request }) => {
       const r = await request.get(`${BASE}/api/scan?ca=${SOL_WRAPPED}`);
-      test.skip(!r.ok(), `Skipped: API returned ${r.status()}`);
+      test.skip(r.status() === 429, `Rate-limited (429) on shared CI — soft skip, not a product bug`);
+      expect(r.ok(), `API returned ${r.status()} — production /api/scan must succeed (retries: 2)`).toBe(true);
       const b = await r.json();
       for (const key of Object.keys(b.layers)) {
         const layer = b.layers[key];
@@ -123,7 +127,8 @@ test.describe('API /api/scan \u2014 Comprehensive E2E', () => {
 
     test('scoring_version matches expected format', async ({ request }) => {
       const r = await request.get(`${BASE}/api/scan?ca=${SOL_WRAPPED}`);
-      test.skip(!r.ok(), `Skipped: API returned ${r.status()}`);
+      test.skip(r.status() === 429, `Rate-limited (429) on shared CI — soft skip, not a product bug`);
+      expect(r.ok(), `API returned ${r.status()} — production /api/scan must succeed (retries: 2)`).toBe(true);
       const b = await r.json();
       expect(b.scoring_version).toMatch(/^\d+\.\d+\.\d+$/);
     });

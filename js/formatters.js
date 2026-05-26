@@ -99,6 +99,19 @@ export function escapeHtml(str) {
   );
 }
 
+/** Escape HTML entities but re-allow bare `<b>` and `</b>` tags only.
+ *  Used for backend-supplied descriptive strings that intentionally emphasise
+ *  a numeric span (e.g. "Holds <b>3.2%</b> of supply"). Any other tag — and
+ *  even <b> with attributes like `<b class=x>` — stays escaped, so a
+ *  compromised upstream cannot inject `<script>`, `<iframe>`, `<b onclick=…>`
+ *  or `<b/onmouseover=…>`. Safe by default; allows the one specific shape
+ *  the API contract documents. */
+export function escapeHtmlAllowBold(str) {
+  if (!str) return "";
+  const esc = escapeHtml(str);
+  return esc.replace(/&lt;b&gt;/g, "<b>").replace(/&lt;\/b&gt;/g, "</b>");
+}
+
 /** Compact USD formatter — like `fmt` but with M/K rounding optimised for
  *  the activity feed (which displays signed values, smaller magnitudes). */
 export function fmtUsd(v) {

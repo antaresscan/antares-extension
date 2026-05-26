@@ -25,8 +25,23 @@
 // and only error captures elsewhere, we have 50× headroom for normal
 // traffic.
 import * as Sentry from "@sentry/node";
+import { scrubEvent, scrubObject } from "../../shared/sentry-scrub";
 
 let initialized = false;
+
+// PII scrubbing now lives in `shared/sentry-scrub.ts` so the browser
+// init in background.ts + contents/antares-inject.ts shares the same
+// SCRUB_KEYS list and the same scrubEvent logic. Before this split,
+// the browser Sentry init bypassed all scrubbing — silently violating
+// privacy.html's "no PII / no contract address" promise on the entire
+// extension overlay.
+
+// scrubEvent + scrubObject now live in `shared/sentry-scrub.ts` —
+// imported at the top of this file. The earlier local copy was
+// re-introduced here by the merge of master (which still carried the
+// pre-refactor version from PR #508 squash). Removed again to avoid
+// the TS2440 "Import declaration conflicts with local declaration"
+// build error.
 
 export function initSentry(): void {
   if (initialized) return;
@@ -35,12 +50,42 @@ export function initSentry(): void {
   Sentry.init({
     dsn,
     tracesSampleRate: 0.1,
+    // Disable Sentry's default PII enrichment — the SDK normally
+    // auto-attaches the client IP and the full request URL (incl.
+    // query string with `?ca=<contract>`) to every event. That
+    // contradicts privacy.html's claim "Sentry: never the contract
+    // address or your IP". sendDefaultPii=false stops the IP capture
+    // upstream of beforeSend; the query-string + user.ip_address
+    // scrubs in scrubEvent below are belt-and-braces against any
+    // auto-enrichment we didn't anticipate.
+    sendDefaultPii: false,
     // Don't auto-capture console — we already log structured events
     // via api/_lib/logger.ts and don't want duplicates in Sentry.
     integrations: (defaults) =>
       defaults.filter((i) => i.name !== "Console"),
+    beforeSend(event) {
+      return scrubEvent(event);
+    },
   });
   initialized = true;
+}
+
+/**
+ * Test-only helper. Exposes the full event scrubber (URL query strip,
+ * user.email + user.ip_address strip, and recursive key scrub) so
+ * tests can pin its behaviour without spinning up Sentry.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function _scrubEventForTests(event: any): any {
+  return scrubEvent(event);
+}
+
+/**
+ * Test-only helper. Exposes the scrubber so unit tests can pin its
+ * behaviour without spinning up a Sentry process.
+ */
+export function _scrubObjectForTests(value: unknown): unknown {
+  return scrubObject(value);
 }
 
 /**

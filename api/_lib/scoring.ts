@@ -44,8 +44,19 @@ export function computeFinalScore(layers: LayerResult[]): number {
 // Without this, LP-flagged tokens had safeBlockedReasons=[] which caused
 // the safe gate to fall through and allow SAFE verdicts on rug-able tokens.
 export const HARD_BLOCK_PATTERNS: Array<[RegExp, SafeBlockedReason]> = [
+  // ── LP RISK MATRIX (SCORING_VERSION 7.6.0+) ───────────────────────────────
+  // The 2-axis matrix (api/_lib/lp-risk-matrix.ts) produces 6 distinct flag
+  // labels keyed off bucket severity. Critical buckets (LP 30 %+ of supply,
+  // or any %  with `forceRug=true`) classify as hard "lp"; info/warning
+  // buckets classify as soft "lp_unverified" (eligible for safe-gate unlock
+  // via established-token signals). Order matters — the critical regex must
+  // win before the general "LP holds" matcher.
+  [/(high|extreme) rug exposure|dev can rug/i, "lp"],
+  [/LP holds [\d.]+% of supply|LP-to-supply ratio could not be computed/i, "lp_unverified"],
+  // Legacy labels (pre-7.6.0). Kept for cached/stored scans that pre-date
+  // the matrix refactor. Safe to remove after the cache fully cycles.
   [/unverified LP|LP not burned but token is mature/i, "lp_unverified"],
-  [/LP not burned|LP not locked|dev can rug/i, "lp"],           // FIX: LP is now a HARD reason
+  [/LP not burned|LP not locked/i, "lp"],
   [/mint authority/i, "mint"],
   [/freeze authority/i, "freeze"],
   [/honeypot/i, "honeypot"],

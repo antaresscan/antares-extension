@@ -42,6 +42,15 @@ vi.mock("@upstash/redis", () => {
       mocks.store.set(k, { ...existing, ...fields });
       return Object.keys(fields).length;
     });
+    // Atomic field-create-if-absent — used by redeemLicense (license.ts)
+    // for HSETNX-based race serialisation. Returns 1 if the field was
+    // set, 0 if it was already present.
+    hsetnx = vi.fn(async (k: string, field: string, value: string) => {
+      const existing = (mocks.store.get(k) as Record<string, string>) ?? {};
+      if (field in existing) return 0;
+      mocks.store.set(k, { ...existing, [field]: value });
+      return 1;
+    });
     hgetall = vi.fn(async (k: string) => {
       const v = mocks.store.get(k);
       return v ? { ...(v as Record<string, string>) } : null;
@@ -139,6 +148,10 @@ function extractTokenFromCookie(setCookie: string): string {
   expect(match).toBeTruthy();
   return decodeURIComponent(match![1]);
 }
+
+// Dev/founder allowlist is env-var only (no hardcoded list in account.ts).
+process.env.DEV_LIFETIME_EMAILS = "test-dev@example.com";
+process.env.DEV_PRO_EMAILS = "test-dev@example.com";
 
 beforeEach(() => {
   mocks.store.clear();
@@ -318,7 +331,7 @@ describe("E2E: account ↔ overlay tier sync (the one the founder kept asking fo
 
   it("REPRODUCES the user's bug: sign up → redeem license → scan must return user's tier (NOT Free)", async () => {
     // This is the founder's exact scenario from their screenshot:
-    //   - Signed in as lennypierrepro@gmail.com
+    //   - Signed in as test-dev@example.com
     //   - Clicked LINK TO MY EXTENSION → redeemed Lifetime licence
     //   - /account.html shows "✓ Linked" + CURRENT TIER: Lifetime
     //   - Overlay STILL shows FREE

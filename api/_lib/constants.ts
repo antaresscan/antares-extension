@@ -156,7 +156,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v15";
+const ENGINE_VERSION_MANUAL = "v20"; // PR #527: hide "Positive signals" section in critical-flags panel when verdict is RUG or DANGER. Bonus checkmarks alongside a RUG verdict read as cognitive dissonance — keep them only for SAFE/CAUTION where they reinforce the verdict. Pure UI change but bumping the cache key keeps the response/UI in sync after deploy.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.
@@ -217,6 +217,13 @@ export const LP_UNVERIFIED_MIN_HOLDERS   = 5000;
 export const LP_UNVERIFIED_MIN_LIQUIDITY = 500_000;
 export const LP_UNVERIFIED_MIN_AGE_HOURS = 336; // 14 days
 
+// NOTE: LP-unverified scoring was rewritten in SCORING_VERSION 7.6.0 to
+// use a 2-axis matrix (LP % of supply × token age). The legacy
+// LP_UNVERIFIED_MIN_* constants above are kept only because some tests
+// still reference the symbol names. The matrix thresholds live in
+// api/_lib/lp-risk-matrix.ts and supersede this section for production
+// scoring. Treat the constants above as legacy/dead for scoring decisions.
+
 // ── EXTERNAL API BASE URLs ───────────────────────────────────
 
 export const HELIUS_REST_BASE = "https://api.helius.xyz";
@@ -247,7 +254,16 @@ export const API_TIMEOUT_DEFAULT = 5000;
 export const API_TIMEOUT_HELIUS = 6000;
 
 // ── SCORING VERSION (single source of truth) ─────────────────
-export const SCORING_VERSION = "7.3.0";
+// 7.4.0 — bumped 2026-05-20 to invalidate the Redis cache after the
+// scoring changes in PRs #510 (TOCTOU + Sentry + safeUrl + scrub
+// keys), #512 (PUMPED 24h warning flag in layerChart) and #513
+// (Wash Volume donut wired to vol/liq ratio + Sniper Map labelling
+// + Liquidity mirage label restoration). Without this bump the Redis
+// cache keeps serving pre-merge scans so users never see the new
+// PUMPED flag or the corrected Liquidity-mirage routing through the
+// AI summary. Standard cache-invalidation step after any scoring or
+// flag-label change.
+export const SCORING_VERSION = "7.6.0";
 
 // ── SOFT REASONS (safe gate unlock) ───────────────────────────
 export const SOFT_REASONS: Record<string, boolean> = { age: true, holders: true, lp_unverified: true };

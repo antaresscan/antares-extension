@@ -119,31 +119,17 @@ export async function checkDailyQuota(
   const key = identityKey ?? "anonymous";
   const tier = precomputedTier ?? (await getUserTier(key));
 
-  // Best-effort INCR for visibility. Failure is silently ignored — the
-  // counter is not a gate any more, just a metric. We still TTL-pin on
-  // first write so old keys clean up and analytics queries can use the
-  // YYYY-MM-DD suffix as a partition.
-  if (tier === "free") {
-    void incrementCounterBestEffort(key);
-  }
+  // The free-tier daily-scan counter that used to live here was REMOVED
+  // on 2026-05-11 after the Upstash command-budget audit. Every free
+  // scan was costing 1–2 Redis commands (INCR plus EXPIRE on the first
+  // scan of the UTC day) for a metric that no production code consumed
+  // — quota gating was decommissioned when all tiers became unlimited
+  // (see the doc-block above this function). At ~30 active users on
+  // the free tier this contributed ~50 K commands / month for zero
+  // operational value. If we ever need that signal back, log it through
+  // the Vercel function logs instead of writing to Redis.
 
   return UNLIMITED_RESULT(tier);
-}
-
-async function incrementCounterBestEffort(key: string): Promise<void> {
-  if (!redis) return;
-  try {
-    const today = getUtcDateKey();
-    const quotaKey = `quota:${key}:${today}`;
-    const used = await redis.incr(quotaKey);
-    if (used === 1) {
-      const resetAt = getResetAt();
-      const ttlSeconds = Math.ceil((resetAt - Date.now()) / 1000) + 60;
-      await redis.expire(quotaKey, ttlSeconds);
-    }
-  } catch {
-    // Silent — counter is not a gate.
-  }
 }
 
 /**

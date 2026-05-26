@@ -24,6 +24,15 @@ vi.mock("@upstash/redis", () => {
       mocks.store.set(k, { ...existing, ...fields });
       return Object.keys(fields).length;
     });
+    // Atomic field-create-if-absent — used by redeemLicense to serialise
+    // the redemption claim across concurrent /api/redeem calls. Returns 1
+    // if the field was set, 0 if it already existed.
+    hsetnx = vi.fn(async (k: string, field: string, value: string) => {
+      const existing = (mocks.store.get(k) as Record<string, string>) ?? {};
+      if (field in existing) return 0;
+      mocks.store.set(k, { ...existing, [field]: value });
+      return 1;
+    });
     hgetall = vi.fn(async (k: string) => {
       const v = mocks.store.get(k);
       return v ? { ...(v as Record<string, string>) } : null;
@@ -341,5 +350,44 @@ describe("redeemLicense", () => {
     const second = await redeemLicense(redis, lic.key, otherInstall);
     expect(second).toEqual({ ok: false, reason: "already_redeemed" });
     expect(setUserTierMock).not.toHaveBeenCalled();
+  });
+
+  // Race condition pin — the atomic HSETNX claim added 2026-05-19
+  // (audit V3 C1) protects against this exact scenario: a stolen or
+  // shared key + two installs hammering /api/redeem at the same time.
+  // Before HSETNX, both passed the `existing.redeemed` check (both
+  // got `redeemed: false`), both wrote the hash, the second
+  // overwriting the first `redeemedBy` and stamping Pro on TWO
+  // installs from ONE paid licence.
+  it("concurrent redeem with two installs awards Pro to exactly one (HSETNX race serialisation)", async () => {
+    const redis = new Redis({ url: "x", token: "y" });
+    const lic = await issueLicense(redis, {
+      email: "buyer@example.com",
+      tier: "monthly",
+      intentReference: "ref-R4",
+      amountUsd: 24.99,
+    });
+
+    const installA = "install-test-aaaaaaaaaaaa";
+    const installB = "install-test-bbbbbbbbbbbb";
+
+    // Promise.all = both redeem calls race the HSETNX inside Redis.
+    // Whichever HSETNX lands first wins; the loser's HSETNX returns
+    // 0, falls into the re-read path, finds a different `redeemedBy`
+    // and returns already_redeemed.
+    const [outA, outB] = await Promise.all([
+      redeemLicense(redis, lic.key, installA),
+      redeemLicense(redis, lic.key, installB),
+    ]);
+
+    const okCount = [outA, outB].filter((o) => o.ok).length;
+    const failCount = [outA, outB].filter(
+      (o) => !o.ok && o.reason === "already_redeemed",
+    ).length;
+    expect(okCount).toBe(1);
+    expect(failCount).toBe(1);
+
+    // setUserTier was called exactly once — Pro flipped on a single install.
+    expect(setUserTierMock).toHaveBeenCalledTimes(1);
   });
 });

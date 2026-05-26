@@ -44,8 +44,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .shell{position:relative;z-index:2;max-width:1140px;margin:0 auto;padding:0 32px 80px}
 
 /* ── NAV (sticky, blurred, compact-mode on scroll) ── */
-nav{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:16px 0;border-bottom:1px solid var(--border);position:sticky;top:3px;z-index:100;background:rgba(10,10,12,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);transition:padding .25s}
-nav.compact{padding:10px 0}
+nav{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:16px 32px;border-bottom:1px solid var(--border);position:sticky;top:3px;z-index:100;background:rgba(10,10,12,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);transition:padding .25s}
+nav.compact{padding:10px 32px}
 nav .brand{font:400 22px/1 'Bebas Neue',sans-serif;letter-spacing:.18em;color:#e0e0e0;text-decoration:none;display:flex;align-items:center;gap:10px;flex-shrink:0}
 nav .brand img{height:24px;width:auto;filter:invert(1)}
 nav .nav-mid{display:flex;align-items:center;gap:14px;opacity:0;transition:opacity .25s;pointer-events:none;flex:1;justify-content:center;min-width:0}
@@ -745,25 +745,12 @@ nav .actions a.warn:hover{color:var(--orange);border-color:rgba(255,95,95,.4);ba
 
 footer{text-align:center;padding:32px 0 20px;color:#2a2a2f;font-size:10px;letter-spacing:.15em;text-transform:uppercase;margin-top:40px;border-top:1px solid var(--border)}
 footer span{color:var(--c)}
-
-/* ── Ask Antares FAB + contextual pills (bottom-right) ── */
-.ask-fab-wrap{position:fixed;bottom:24px;right:24px;z-index:200}
-.ask-fab{width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--cyan));border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;box-shadow:0 8px 32px rgba(167,139,250,.4),0 0 0 1px rgba(255,255,255,.1) inset;transition:transform .25s;animation:fab-glow 3s ease-in-out infinite}
-@keyframes fab-glow{0%,100%{box-shadow:0 8px 32px rgba(167,139,250,.4),0 0 0 1px rgba(255,255,255,.1) inset}50%{box-shadow:0 8px 48px rgba(167,139,250,.6),0 0 0 1px rgba(255,255,255,.15) inset,0 0 60px rgba(34,211,238,.2)}}
-.ask-fab:hover{transform:scale(1.1)}
-.fab-pills{position:absolute;bottom:64px;right:0;display:flex;flex-direction:column;gap:8px;align-items:flex-end;opacity:0;pointer-events:none;transform:translateY(8px);transition:.3s}
-.ask-fab-wrap:hover .fab-pills,.ask-fab-wrap.open .fab-pills{opacity:1;pointer-events:auto;transform:translateY(0)}
-.fab-pill{display:inline-flex;align-items:center;gap:6px;background:#1a1a1e;color:#ccc;padding:8px 14px;border-radius:20px;font-size:11px;letter-spacing:.04em;border:1px solid #2a2a30;cursor:pointer;transition:.2s;white-space:nowrap;font-family:'IBM Plex Mono',monospace}
-.fab-pill:hover{border-color:var(--purple);color:var(--purple);transform:translateX(-2px)}
-.fab-pill .ico{font-size:11px;color:var(--purple)}
 </style>
 </head>
 <body>
 <div class="stripe" aria-hidden="true"></div>
 <div class="cursor-glow" id="cursor-glow" aria-hidden="true"></div>
 <canvas id="bg" aria-hidden="true"></canvas>
-
-<div class="shell">
 
 <nav id="nav" aria-label="Token analysis navigation">
   <a class="brand" href="https://antares-website.vercel.app/" aria-label="Antares home"><img src="/favicon.png" alt="">ANTARES</a>
@@ -776,6 +763,8 @@ footer span{color:var(--c)}
     <span class="ca-pill" id="ca-disp">—</span>
   </div>
 </nav>
+
+<div class="shell">
 
 <div id="loading">
   <div class="spin"></div>
@@ -792,15 +781,6 @@ footer span{color:var(--c)}
 
 <footer>Antares <span>·</span> v1.2.0 <span>·</span> Solana Token Scanner</footer>
 
-</div>
-
-<div class="ask-fab-wrap" id="ask-fab-wrap" aria-hidden="true">
-  <div class="fab-pills">
-    <button class="fab-pill" data-q="why"><span class="ico">▸</span> Why this verdict?</button>
-    <button class="fab-pill" data-q="sell"><span class="ico">▸</span> Should I sell now or wait?</button>
-    <button class="fab-pill" data-q="recent"><span class="ico">▸</span> What changed in the last hour?</button>
-  </div>
-  <button class="ask-fab" aria-label="Ask Antares AI">✦</button>
 </div>
 
 <script type="module" src="/js/token-app.js?v=20260508-clarity"></script>

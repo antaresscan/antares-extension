@@ -11,8 +11,8 @@ import type {
 } from "./types";
 import {
   LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS, OFFICIAL_MINTS,
-  LP_UNVERIFIED_MIN_HOLDERS, LP_UNVERIFIED_MIN_LIQUIDITY, LP_UNVERIFIED_MIN_AGE_HOURS,
 } from "./constants";
+import { getLpRiskBucket } from "./lp-risk-matrix";
 import { asNumber, _mean, _std, _pct } from "./math";
 import { makeFlag, getLpLockDurationDays, riskIncludes } from "./helpers";
 import { extractBundlePct } from "./fetchers";
@@ -145,7 +145,7 @@ export function layerRugCheck(
   rugReportData: RugCheckReport | null,
   resolvedMint: string,
   tokenName?: string | null,
-  maturityContext?: { holders: number | null; liquidity: number; tokenAgeHours: number | null; mintAuthority: boolean; freezeAuthority: boolean; honeypot: boolean }
+  maturityContext?: { holders: number | null; liquidity: number; tokenAgeHours: number | null; mintAuthority: boolean; freezeAuthority: boolean; honeypot: boolean; lpPctOfSupply?: number | null }
 ): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
@@ -212,19 +212,29 @@ export function layerRugCheck(
             // soft-unlock regardless of age/size.
             const ctx = maturityContext;
             const contractClean = !ctx || (!ctx.mintAuthority && !ctx.freezeAuthority && !ctx.honeypot);
-            const looksMature = !!ctx && contractClean && (
-                (ctx.holders ?? 0) >= LP_UNVERIFIED_MIN_HOLDERS ||
-                ctx.liquidity >= LP_UNVERIFIED_MIN_LIQUIDITY ||
-                (ctx.tokenAgeHours ?? 0) >= LP_UNVERIFIED_MIN_AGE_HOURS
-            );
-            if (looksMature) {
-                flags.push(makeFlag("LP not burned but token is mature and liquid (unverified LP)", "warning", 0));
-                penalties.push(0.85);
+            // 2-axis LP risk matrix: (LP % of supply) × (token age).
+            // See api/_lib/lp-risk-matrix.ts for the full rationale. The
+            // single binary "is LP locked?" flag was producing too many false
+            // positives on mature tokens (BONK, WIF) AND false negatives on
+            // fresh tokens with formally-locked-but-100%-of-supply pools.
+            //
+            // If the contract is NOT clean (mint/freeze/honeypot enabled),
+            // we treat the matrix output as if it were the highest-risk
+            // bucket — those are real exit attacks that override any
+            // time-based trust signal.
+            const bucket = getLpRiskBucket(ctx?.lpPctOfSupply ?? null, ctx?.tokenAgeHours ?? null);
+            if (!contractClean) {
+                // Contract has mint/freeze/honeypot → ignore the matrix's
+                // age relaxations and treat LP as hard rug vector. The
+                // contract-attack vector dominates regardless of LP %.
+                flags.push(makeFlag("LP not burned or locked — dev can rug liquidity (contract not clean)", "critical", 0));
+                penalties.push(0.65);
                 safeBlocked = true;
             } else {
-                flags.push(makeFlag("LP not burned or locked — dev can rug liquidity", "warning", 0));
-                penalties.push(0.70);
-                safeBlocked = true;
+                flags.push(makeFlag(bucket.flagLabel, bucket.severity, 0));
+                penalties.push(bucket.penalty);
+                if (bucket.safeBlock) safeBlocked = true;
+                if (bucket.forceRug) forceRug = true;
             }
         }
     }
@@ -254,7 +264,7 @@ export function layerGoPlus(
   // flag (DANGER). Without this context, every legit established token
   // with team-managed LP collapsed to DANGER on the goplus path even
   // though rugcheck classified it as soft.
-  maturityContext?: { holders: number | null; liquidity: number; tokenAgeHours: number | null; mintAuthority: boolean; freezeAuthority: boolean; honeypot: boolean }
+  maturityContext?: { holders: number | null; liquidity: number; tokenAgeHours: number | null; mintAuthority: boolean; freezeAuthority: boolean; honeypot: boolean; lpPctOfSupply?: number | null }
 ): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
@@ -346,19 +356,20 @@ export function layerGoPlus(
             // for the full rationale.
             const ctx = maturityContext;
             const contractClean = !ctx || (!ctx.mintAuthority && !ctx.freezeAuthority && !ctx.honeypot);
-            const looksMature = !!ctx && contractClean && (
-                (ctx.holders ?? 0) >= LP_UNVERIFIED_MIN_HOLDERS ||
-                ctx.liquidity >= LP_UNVERIFIED_MIN_LIQUIDITY ||
-                (ctx.tokenAgeHours ?? 0) >= LP_UNVERIFIED_MIN_AGE_HOURS
-            );
-            if (looksMature) {
-                flags.push(makeFlag("LP not burned but token is mature and liquid (unverified LP)", "warning", 0));
-                penalties.push(0.85);
+            // Same 2-axis LP risk matrix as layerRugCheck — see
+            // api/_lib/lp-risk-matrix.ts. Mirrored here for the GoPlus
+            // burn-percent path so the verdict is consistent regardless
+            // of which upstream resolved the LP-burned signal first.
+            const bucket = getLpRiskBucket(ctx?.lpPctOfSupply ?? null, ctx?.tokenAgeHours ?? null);
+            if (!contractClean) {
+                flags.push(makeFlag("LP not burned or locked — dev can rug liquidity (contract not clean)", "critical", 0));
+                penalties.push(0.65);
                 safeBlocked = true;
             } else {
-                flags.push(makeFlag("LP not burned or locked — dev can rug liquidity", "warning", 0));
-                penalties.push(0.70);
-                safeBlocked = true;
+                flags.push(makeFlag(bucket.flagLabel, bucket.severity, 0));
+                penalties.push(bucket.penalty);
+                if (bucket.safeBlock) safeBlocked = true;
+                if (bucket.forceRug) forceRug = true;
             }
         }
     }
@@ -376,7 +387,7 @@ export function layerHelius(
   // never a rug pattern — it's an exchange / treasury / legit whale.
   // Without context, the geometric-mean dragged MEW (and other blue
   // chips) into DANGER even when every other layer was clean.
-  maturityContext?: { holders: number | null; liquidity: number; tokenAgeHours: number | null; mintAuthority: boolean; freezeAuthority: boolean; honeypot: boolean; lpBurned?: boolean | null }
+  maturityContext?: { holders: number | null; liquidity: number; tokenAgeHours: number | null; mintAuthority: boolean; freezeAuthority: boolean; honeypot: boolean; lpBurned?: boolean | null; lpPctOfSupply?: number | null }
 ): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
@@ -607,7 +618,7 @@ export function layerChart(
   // legit blue-chips like FWOG/NEET get capped at score 500 because
   // chart pattern detectors mistake quiet sideways trading for
   // controlled dumps.
-  maturityContext?: { holders: number | null; liquidity: number; tokenAgeHours: number | null; mintAuthority: boolean; freezeAuthority: boolean; honeypot: boolean; lpBurned?: boolean | null }
+  maturityContext?: { holders: number | null; liquidity: number; tokenAgeHours: number | null; mintAuthority: boolean; freezeAuthority: boolean; honeypot: boolean; lpBurned?: boolean | null; lpPctOfSupply?: number | null }
 ): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
@@ -648,6 +659,68 @@ export function layerChart(
     flags.push(makeFlag("Vertical pump detected (+35% 5m / +120% 1h)", "warning", 0));
     penalties.push(0.55); safeBlocked = true;
   }
+
+  // ── Sustained 24h pump — high retrace risk on entry ──────────────────────────
+  // The "Vertical pump" above catches launch-scam micro-pumps (5m+1h
+  // window). This pattern complements it by catching slower, multi-hour
+  // pumps typical of mature blue-chip memecoins riding momentum
+  // (TROLL +200% in a day, FWOG +150%, etc.) — the contract is still
+  // safe but the trader is buying at a local top, and retrace risk is
+  // disproportionate.
+  //
+  // Calibration (per user feedback 2026-05-19): a pumping blue-chip is
+  // not a "broken" token, so the penalty must stay light enough that
+  // the verdict never falls below CAUTION on this signal alone. We
+  // pair `safeBlock` (force the verdict to CAUTION minimum so the
+  // trader sees the warning surfaced in the badge) with a SMALL score
+  // penalty (≈ -100 to -150 pts on a 1000 base), so the verdict caps
+  // at CAUTION without skidding into DANGER unless OTHER layers also
+  // flag the token. For non-mature tokens the same magnitude is far
+  // more dangerous (thin LP = retrace becomes a dump): stronger
+  // penalties + safeBlock fire as before.
+  //
+  // 5m/1h vertical pumps already fire above with stronger penalties +
+  // safeBlock, so a launch scam doesn't double-count — it's caught
+  // upstream. This pattern is for the "rode the wave for hours" case.
+  if (pc24h >= 100) {
+    const mcP = maturityContext;
+    const matureForPump =
+      (mcP?.holders ?? 0) >= 5_000 ||
+      ((mcP?.tokenAgeHours ?? 0) >= 90 * 24 && (mcP?.liquidity ?? 0) >= 500_000);
+    const pumpPct = Math.round(pc24h);
+
+    if (matureForPump) {
+      // Mature pair (blue-chip memecoin / established token). Retrace
+      // is a real risk but the structural fundamentals haven't changed.
+      // safeBlock on ≥ 200% forces the verdict to CAUTION minimum;
+      // small penalty keeps it from falling further into DANGER on
+      // this signal alone. < 200% stays info-only (no safeBlock,
+      // tiny penalty) so a 100-200% climb on a blue-chip surfaces
+      // visibly but doesn't force the verdict down.
+      if (pc24h >= 200) {
+        flags.push(makeFlag(`Pumped +${pumpPct}% in 24h — elevated retrace risk on entry (blue-chip)`, "warning", 0));
+        penalties.push(0.85); safeBlocked = true;
+      } else {
+        flags.push(makeFlag(`Pumped +${pumpPct}% in 24h — moderate retrace risk on entry (blue-chip)`, "info", 0));
+        penalties.push(0.92);
+      }
+    } else {
+      // Non-mature token. Sustained pump + thin LP = exit-liquidity
+      // trap shape. SafeBlock so the verdict can't return SAFE while
+      // pointing at this risk; heavier penalties as the LP gets
+      // thinner relative to the pump magnitude.
+      if (pc24h >= 300) {
+        flags.push(makeFlag(`Pumped +${pumpPct}% in 24h — exit liquidity risk on thin LP`, "warning", 0));
+        penalties.push(0.45); safeBlocked = true;
+      } else if (pc24h >= 200) {
+        flags.push(makeFlag(`Pumped +${pumpPct}% in 24h — entering at local top (thin LP)`, "warning", 0));
+        penalties.push(0.55); safeBlocked = true;
+      } else {
+        flags.push(makeFlag(`Pumped +${pumpPct}% in 24h — elevated retrace risk on entry`, "warning", 0));
+        penalties.push(0.70);
+      }
+    }
+  }
   if (v24Liq > 12 || v1hLiq > 4) {
     flags.push(makeFlag("Liquidity mirage: volume >> liquidity (wash)", "warning", 0));
     penalties.push(0.60); safeBlocked = true;
@@ -657,8 +730,32 @@ export function layerChart(
     penalties.push(0.65); safeBlocked = true;
   }
   if (drawdownFromPeak < -55) {
-    flags.push(makeFlag("Blow-off top: price collapsed >55% from peak", "critical", 0));
-    penalties.push(0.20); forceRug = true; safeBlocked = true;
+    // Mature pairs (5k+ holders OR 90d+ age with $500k+ liquidity) routinely
+    // sit -60–80% below a local 40-candle peak — that's normal volatility,
+    // not a rug. AURA (DtR4...k9B2) was the canary: 2 years old, $1.95M LP,
+    // all four binary safety checks clean, +133% 24h, but it still got
+    // forceRug'd because the local peak in the recent window happened to
+    // be >55% above the current close. Same shape applies to any blue-chip
+    // memecoin in a normal correction.
+    //
+    // Fix: drop forceRug from this single signal. A 55% drawdown alone is
+    // not a rug pull — that's an exit-scam term reserved for LP drained,
+    // mint authority used, freeze active, or honeypot. Keep severity
+    // critical + safeBlock + penalty for non-mature tokens (where the
+    // signal still feeds into the cumulative score and will land DANGER /
+    // RUG when paired with the other rug fingerprints in this layer and
+    // in cross-validation). For mature pairs, demote to info-only — no
+    // penalty cap, no hard verdict override, no chart-only false rug.
+    const mc = maturityContext;
+    const looksMature =
+      (mc?.holders ?? 0) >= 5_000 ||
+      ((mc?.tokenAgeHours ?? 0) >= 90 * 24 && (mc?.liquidity ?? 0) >= 500_000);
+    if (looksMature) {
+      flags.push(makeFlag("Drawdown >55% from local peak (mature pair, normal volatility)", "info", 0));
+    } else {
+      flags.push(makeFlag("Blow-off top: price collapsed >55% from peak", "critical", 0));
+      penalties.push(0.20); safeBlocked = true;
+    }
   }
   if (tokenAgeMinutes !== null && tokenAgeMinutes < 90 && volumes.length >= 10) {
     const recentVol = volumes.slice(-5);

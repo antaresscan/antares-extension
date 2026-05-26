@@ -135,6 +135,16 @@ describe("setCorsHeaders", () => {
     expect(ALLOWED_ORIGINS).toContain("https://pump.fun");
   });
 
+  // Regression guard for the "logged-out user stays Pro on the extension"
+  // bug. The website is served from the antaresscan.com custom domain;
+  // login / logout / sync calls from auth.html and account.html on that
+  // origin must clear CORS preflight, otherwise the auth flow 403s and the
+  // bridge content script never gets to clear the cached session token.
+  it("ALLOWED_ORIGINS contains the antaresscan.com production website", () => {
+    expect(ALLOWED_ORIGINS).toContain("https://antaresscan.com");
+    expect(ALLOWED_ORIGINS).toContain("https://www.antaresscan.com");
+  });
+
   // ── CDN-cache safety regression tests ────────────────────────────
   // These guard the fix for the "login works sometimes, fails sometimes"
   // bug. With Cache-Control: s-maxage=15 on every response, an OPTIONS
