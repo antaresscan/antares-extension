@@ -109,7 +109,9 @@ function render(d, ca) {
   document.body.className = `risk-${rc}`;
 
   const score = d.score || 0;
-  const barW = Math.min(100, Math.round(score / 10));
+  const SCORE_BAND = { SAFE: 1000, CAUTION: 750, DANGER: 500, RUG: 250 };
+  const displayScore = SCORE_BAND[d.risk] ?? score;
+  const barW = Math.min(100, Math.round(displayScore / 10));
   const conf = typeof d.confidence === "number" ? d.confidence : null;
 
   const mc = d.marketCap ?? d.pair?.marketCap ?? null;
@@ -165,7 +167,7 @@ function render(d, ca) {
     ? `<b>${escapeHtml(sym)}</b>${priceUsd ? " · " + escapeHtml(fmtPrice(priceUsd)) : ""}`
     : "—";
   document.getElementById("nav-verdict").textContent = lb;
-  document.getElementById("nav-score").textContent = `${score}/1000`;
+  document.getElementById("nav-score").textContent = `${displayScore}/1000`;
 
   function safeUrl(u) {
     return typeof u === "string" && /^https?:\/\//i.test(u) ? u : "#";
@@ -422,7 +424,7 @@ function render(d, ca) {
               <div class="m-label">Risk Score</div>
               <button class="refresh-btn" id="refresh-btn" aria-label="Refresh scan" title="Force a fresh scan, bypassing the cache">↻</button>
             </div>
-            <div class="m-big">${score}<span class="denom">/ 1000</span></div>
+            <div class="m-big">${displayScore}<span class="denom">/ 1000</span></div>
             <div class="sbar"><div class="sbar-fill" id="sbarf"></div></div>
             <div class="m-sub risk">${escapeHtml(flagSummary)}${conf !== null ? " · Conf " + conf + "%" : ""}</div>
             <div class="m-fresh" id="m-fresh">Scanned just now</div>
