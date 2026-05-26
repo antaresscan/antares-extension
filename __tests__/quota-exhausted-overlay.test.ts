@@ -62,19 +62,16 @@ describe("buildQuotaExhaustedNode (Demo 3 — premium/calm)", () => {
     expect(state.boxEl?.className).toBe("box caution")
   })
 
-  it("CTA href contains /pricing and bakes install_id when provided", () => {
+  it("CTA href is bare /pricing — install_id is never put in the URL", () => {
+    // install_id is transferred to the pricing page by the bridge
+    // content script via postMessage, not via ?install=<UUID>. Keeping
+    // the UUID out of the URL avoids a visible flash when the page
+    // strips it, and prevents accidental leakage via copy-paste.
     const node = buildQuotaExhaustedNode(makeQuota(), "install-test-aaaaaaaaaaaa")
     const cta = node.querySelector(".qx-cta") as HTMLAnchorElement | null
     expect(cta).not.toBeNull()
     expect(cta?.getAttribute("href")).toContain("/pricing")
-    expect(cta?.getAttribute("href")).toContain("install=install-test-aaaaaaaaaaaa")
-  })
-
-  it("CTA href falls back to bare /pricing without install_id", () => {
-    const node = buildQuotaExhaustedNode(makeQuota())
-    const cta = node.querySelector(".qx-cta") as HTMLAnchorElement
-    expect(cta.getAttribute("href")).toContain("/pricing")
-    expect(cta.getAttribute("href")).not.toContain("install=")
+    expect(cta?.getAttribute("href")).not.toContain("install=")
   })
 
   it("CTA opens in a new tab (target=_blank, rel=noopener)", () => {
