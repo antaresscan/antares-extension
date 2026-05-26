@@ -334,9 +334,39 @@ export async function redeemLicense(
     return { ok: false, reason: "already_redeemed" };
   }
 
-  // Mark redeemed first, then flip the tier. If the tier-flip fails
-  // we don't want to lose the redemption record (the user paid;
-  // operational support can re-flip manually). Order matters.
+  // Atomic claim — HSETNX writes `redeemedBy` only if the field is
+  // absent. issueLicense (line 216-223) creates the hash WITHOUT
+  // `redeemedBy`, so absence is equivalent to "not yet redeemed".
+  // HSETNX returns 1 if we set the field (we won the race), 0 if a
+  // concurrent caller already claimed it. Race window without this
+  // serialisation was the Redis RTT (~50ms): a stolen / shared key +
+  // two installs hammering /api/redeem simultaneously could both
+  // pass the `existing.redeemed` check above, both write the hash,
+  // the second overwriting the first `redeemedBy` and stamping Pro
+  // on both installs from a single paid licence. HSETNX moves the
+  // serialisation point to Redis so exactly one caller wins.
+  const claimed = await redis.hsetnx(
+    LICENSE_KEY(existing.key),
+    "redeemedBy",
+    installId,
+  );
+  if (!claimed) {
+    // Race lost: another caller set `redeemedBy` first. Re-read to
+    // see who won — if it was us (retried request, idempotent path)
+    // re-apply the tier; otherwise surface `already_redeemed` like
+    // any other late attempt.
+    const winner = await getLicense(redis, rawKey);
+    if (winner?.redeemedBy === installId) {
+      await applyTier(redis, installId, winner);
+      return { ok: true, license: winner };
+    }
+    return { ok: false, reason: "already_redeemed" };
+  }
+
+  // We won the atomic claim — finalise the redemption metadata. Order
+  // matters: tier flip last so a failure mid-way leaves the licence
+  // marked as redeemed (the user paid; operational support can re-flip
+  // manually) rather than re-claimable by someone else.
   const updated: License = {
     ...existing,
     redeemed: true,
@@ -345,7 +375,6 @@ export async function redeemLicense(
   };
   await redis.hset(LICENSE_KEY(existing.key), {
     redeemed: "1",
-    redeemedBy: installId,
     redeemedAt: String(now),
   });
   await applyTier(redis, installId, updated);

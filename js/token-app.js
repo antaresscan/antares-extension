@@ -37,7 +37,6 @@ import {
   setupCursorGlow,
   setupStickyNav,
   setupCollapsibles,
-  setupFab,
   setupTabs,
   setupRefreshButton,
   setupFreshnessTicker,
@@ -167,8 +166,46 @@ function render(d, ca) {
   document.getElementById("nav-verdict").textContent = lb;
   document.getElementById("nav-score").textContent = `${score}/1000`;
 
+  // Host-allowlist for hrefs interpolated into the page. Replaces the
+  // earlier regex-based check (^https?://) that accepted ANY HTTPS
+  // host — including attacker-controlled ones if a DexScreener pair's
+  // `websites[].url` / `socials[].url` / `pair.url` was crafted by a
+  // hostile token creator. Clicking from an Antares-trusted page
+  // would have lent our reputation to a phishing site.
+  //
+  // Allows HTTPS only (no HTTP downgrade), exact-match or subdomain
+  // of an explicitly-trusted host. New crypto-ecosystem hosts can be
+  // added here; everything else collapses to "#" so the anchor renders
+  // but does nothing. Anchors also need rel="noopener noreferrer" at
+  // the call site (already in place — see lines below).
+  const ALLOWED_HOSTS = new Set([
+    // Token data / explorers
+    "dexscreener.com", "solscan.io", "rugcheck.xyz", "birdeye.so",
+    "geckoterminal.com", "explorer.solana.com", "solana.fm", "xray.helius.xyz",
+    // Pump / aggregators / DEXes
+    "pump.fun", "raydium.io", "jup.ag", "orca.so", "meteora.ag",
+    "axiom.trade", "photon-sol.tinyastro.io", "gmgn.ai",
+    // Socials (DexScreener returns these in pair.info.socials)
+    "x.com", "twitter.com", "t.me", "telegram.org",
+    "discord.gg", "discord.com", "github.com", "medium.com",
+    "youtube.com", "youtu.be",
+    // Antares-owned
+    "antaresscan.com", "antares-extension.vercel.app",
+  ]);
   function safeUrl(u) {
-    return typeof u === "string" && /^https?:\/\//i.test(u) ? u : "#";
+    if (typeof u !== "string") return "#";
+    let parsed;
+    try { parsed = new URL(u); } catch { return "#"; }
+    if (parsed.protocol !== "https:") return "#";
+    const host = parsed.hostname.toLowerCase().replace(/^www\./, "");
+    if (ALLOWED_HOSTS.has(host)) return u;
+    // Subdomain match — `foo.dexscreener.com` is OK if `dexscreener.com`
+    // is on the allowlist. Endswith `.${host}` (with the dot) prevents
+    // `evildexscreener.com` from matching `dexscreener.com`.
+    for (const allowed of ALLOWED_HOSTS) {
+      if (host.endsWith("." + allowed)) return u;
+    }
+    return "#";
   }
   const dexUrl = d.pair?.url || `https://dexscreener.com/solana/${mint}`;
   document.getElementById("nav-actions").innerHTML = `
@@ -512,7 +549,6 @@ function render(d, ca) {
   setupRevealObserver();
   setupCollapsibles();
   setupTabs();
-  setupFab();
   setupRefreshButton(ca, { onRefresh: (data) => render(data, ca) });
   setupFreshnessTicker(d.fetchedAt);
 

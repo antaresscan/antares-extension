@@ -6,6 +6,75 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.3.2] - 2026-05-18
+
+### Security — pre-launch hardening (5 blockers closed)
+
+External audit (6 independent sub-agent reviews, scored 75/100 globally)
+flagged 5 pre-launch security blockers. All five are closed in this
+release. None are fixes to active exploits — they're defence-in-depth
+gates that close paths an attacker could chain through.
+
+- **Bridge `event.origin` allowlist** — `contents/antares-website-bridge.ts`.
+  Reject `postMessage` traffic from any origin outside the 4 product
+  hosts. Without this gate, an XSS landing on a wildcard-widened match
+  could plant a forged session JWT into `chrome.storage.local`. +9
+  happy-dom tests pin the behaviour.
+- **`criticalActors.desc` XSS hole** — `js/views.js` interpolated
+  `${a.desc}` straight into innerHTML, escaping the discipline used by
+  every other field. New `escapeHtmlAllowBold` whitelists bare
+  `<b>…</b>` (the one shape the backend documents) and escapes
+  everything else — `<b onclick=…>`, `<script>`, `<img onerror=…>`, etc.
+  Also applied to `exit-note`. +5 tests.
+- **`OPEN_TAB` host whitelist** — `background.ts` now restricts the
+  tabs handler to the 5 Antares product hosts + enforces HTTPS. A
+  compromised content script can no longer use the extension's tab
+  privileges to open arbitrary phishing pages under an Antares-trusted-
+  looking pattern.
+- **`SESSION_SECRET` fallback memoisation** — `api/_lib/account.ts`.
+  The Upstash-derived bootstrap fallback now resolves once per cold
+  start instead of once per request. Operators see the loud Sentry
+  signal; spam drops to zero. Adds `_resetSessionSecretCacheForTests`.
+- **Founder grant emails out of source** — removed the hardcoded
+  founder email from `DEV_LIFETIME_EMAILS_HARDCODED` /
+  `DEV_PRO_EMAILS_HARDCODED` arrays — configure exclusively via
+  `DEV_LIFETIME_EMAILS` / `DEV_PRO_EMAILS` env vars. Eliminates a
+  public phish/credential-stuff signal. `.env.example` updated.
+
+### Operator action required ⚠️
+
+Before deploying this version, set these Vercel env vars (or the
+founder auto-grant and session signing stop working):
+
+- `DEV_LIFETIME_EMAILS=<comma-separated dev emails>`
+- `DEV_PRO_EMAILS=<comma-separated dev emails>`
+- `SESSION_SECRET=$(openssl rand -hex 32)` (if not already explicit —
+  the bootstrap fallback now logs a loud Sentry warn on every cold
+  start)
+
+### Changed
+
+- `chore(deps)` — `@vercel/node 5.8.1 → 5.8.2` +
+  `@vercel/build-utils 13.24 → 13.25` + transitive lockfile patches.
+  Resolves 2/81 advisories surfaced by `npm audit`. The remaining 79
+  are build-time only (Plasmo bundler / `@parcel/*` / svelte / undici
+  via devDep `@vercel/node`) and do not affect the bundled extension or
+  Vercel-deployed runtime. `npm audit fix --force` was explicitly
+  rejected because it would regress `plasmo 0.90.5 → 0.50.1`.
+
+### Tests
+
+- Full suite: 1052 passing, 4 skipped, 0 failing (+14 new tests).
+
+## [1.3.1] — unreleased
+
+Version bumped in `package.json` mid-cycle but never tagged on GitHub.
+The work that landed under this number (auth bridge for antaresscan.com,
+CORS hardening, manifest description fit for CWS 132-char limit, copy
+rewrite after Yellow Argon rejection, mature-pair scoring fix, perf
+Redis -75% commands, API error envelope fix, input validation before
+rate-limit) is rolled into [1.3.2] above.
+
 ### Changed — payment provider: Solana Pay → NOWPayments
 - **Why.** Solana Pay was native-crypto-only (USDC/SOL on Solana
   wallets like Phantom). Most non-crypto-native users hit a wall:
