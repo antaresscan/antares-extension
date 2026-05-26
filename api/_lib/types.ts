@@ -59,7 +59,13 @@ export interface DexScreenerSocial {
 
 export interface DexScreenerPair {
   pairAddress?: string;
+  dexId?: string;
   baseToken?: {
+    address?: string;
+    symbol?: string;
+    name?: string;
+  };
+  quoteToken?: {
     address?: string;
     symbol?: string;
     name?: string;
