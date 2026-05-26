@@ -37,7 +37,6 @@ import {
   setupCursorGlow,
   setupStickyNav,
   setupCollapsibles,
-  setupFab,
   setupTabs,
   setupRefreshButton,
   setupFreshnessTicker,
@@ -56,6 +55,217 @@ const _raw = params.get("ca") || params.get("token") || "";
 const ca = CA_RE.test(_raw) ? _raw : "";
 const caShort = ca ? ca.slice(0, 6) + "…" + ca.slice(-4) : "—";
 document.getElementById("ca-disp").textContent = caShort;
+
+const isDemo = params.get("demo") === "1";
+
+// ──────────────────────────────────────────────────────────────────────
+// DEMO_DATA — hardcoded snapshots for the 4 marketing demo tokens.
+// Scores use clean display values: SAFE=1000 CAUTION=750 DANGER=500 RUG=250.
+// Served when token.html is opened with ?demo=1 from antaresscan.com/demo,
+// bypassing the live /api/scan call entirely.
+// ──────────────────────────────────────────────────────────────────────
+const _demoTs = Date.now();
+const DEMO_DATA = {
+  "2zMMhcVQEXDtdE6vsFS7S7D5oUodfJHE8vd1gnBouauv": {
+    score: 1000, risk: "SAFE", confidence: 80,
+    tokenSymbol: "PENGU", tokenName: "Pudgy Penguins",
+    resolvedMint: "2zMMhcVQEXDtdE6vsFS7S7D5oUodfJHE8vd1gnBouauv",
+    mintAuthority: false, freezeAuthority: false, honeypot: false,
+    lpBurned: true, lpLocked: false, lpLockedPct: 100,
+    liquidity: 9083893, marketCap: 639294195, priceUsd: 0.01017,
+    holders: 544390, volume24h: 324.56, volume1h: null,
+    priceChange5m: null, priceChange1h: null, priceChange24h: 3.71,
+    solscanTokenAgeHours: 137,
+    tokenLogo: "https://cdn.dexscreener.com/cms/images/9d5188f603b49ab02f7a75e5d2c2959ec2947c98181501fb11688672e9394efd?width=800&height=800&quality=95&format=auto",
+    flags: [
+      { severity: "info", label: "Helius unavailable" },
+      { severity: "bonus", label: "LP Burned 100% (GoPlus) ✓" },
+      { severity: "bonus", label: "Established token (30d+) ✓" },
+    ],
+    pair: {
+      url: "https://dexscreener.com/solana/5zpphebh8qcevbbpz848p3rjbvqxw7bh18samuygseyb",
+      info: {
+        websites: [{ url: "https://www.pudgypenguins.com", label: "Website" }],
+        socials: [
+          { url: "https://x.com/pudgypenguins", type: "twitter" },
+          { url: "https://discord.gg/pudgypenguins", type: "discord" },
+        ],
+      },
+    },
+    topHolderPct: null, top10HolderPct: null,
+    criticalActors: [],
+    holderActivity: { rows: [], netFlowPct: 0, netFlowDirection: "flat" },
+    outcomeStats: null,
+    verdictHistory: [{ ts: _demoTs - 3600000, verdict: "SAFE", score: 1000, event: "Helius unavailable" }],
+    sources_used: ["dexscreener", "rugcheck", "goplus", "solscan", "chart"],
+    aiSummary: "PENGU shows a SAFE profile with fully burned LP and 30d+ established trading on Solana. Helius source temporarily unavailable lowers confidence to 80% but RugCheck and GoPlus cross-validate the safe verdict. No critical flags detected — strong holder distribution across 544,390 wallets with no concentration risk.",
+    fetchedAt: _demoTs,
+  },
+  "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump": {
+    score: 750, risk: "CAUTION", confidence: 100,
+    tokenSymbol: "Fartcoin", tokenName: "Fartcoin",
+    resolvedMint: "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump",
+    mintAuthority: false, freezeAuthority: false, honeypot: false,
+    lpBurned: true, lpLocked: false, lpLockedPct: 99.71,
+    liquidity: 7634137, marketCap: 205604372, priceUsd: 0.2056,
+    holders: 164066, volume24h: 596852.89, volume1h: 60428.92,
+    priceChange5m: null, priceChange1h: -0.93, priceChange24h: 3.39,
+    solscanTokenAgeHours: 13384,
+    tokenLogo: "https://cdn.dexscreener.com/cms/images/9af5672845c89585e9ff1e3b26a640090324aa4d92222052d1043e60ef8182de?width=800&height=800&quality=95&format=auto",
+    flags: [
+      { severity: "warning", label: "Single wallet holds 11% of supply" },
+      { severity: "bonus", label: "LP Burned 100% (GoPlus) ✓" },
+      { severity: "bonus", label: "Established token (30d+) ✓" },
+    ],
+    pair: {
+      url: "https://dexscreener.com/solana/bzc9nzfmqkxr6fz1dbph7bdf9broyef6pnzesp7v5iiw",
+      info: {
+        websites: [{ url: "https://www.infinitebackrooms.com/dreams/conversation-1721540624-scenario-terminal-of-truths-txt", label: "Website" }],
+        socials: [{ url: "https://x.com/FartCoinOfSOL", type: "twitter" }],
+      },
+    },
+    topHolderPct: 10.54, top10HolderPct: 33.81,
+    criticalActors: [
+      { type: "insider", tag: "Insider", pct: 10.5, addr: "9SLP…7a2w", repLbl: "Concentration risk · single wallet", repWidth: 91.5, repWarn: false, desc: "Holds <b>10.5%</b> of supply — one-wallet dump would crash the price." },
+    ],
+    holderActivity: {
+      rows: [
+        { role: "bot", label: "Static", avatar: "Insider", pctChange: 0, pctChangeDisp: "±0%", addr: "9SLP…KpKS", desc: "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks." },
+        { role: "whale-big", label: "Static", avatar: "Whale", pctChange: 0, pctChangeDisp: "±0%", addr: "u6PJ…Xq2w", desc: "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks." },
+        { role: "whale-big", label: "Static", avatar: "Whale", pctChange: 0, pctChangeDisp: "±0%", addr: "E2Rv…atYy", desc: "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks." },
+      ],
+      netFlowPct: 0, netFlowDirection: "flat",
+    },
+    outcomeStats: {
+      timeToRugMedianDisp: "2d", timeToRugMedianHours: 48, timeToRugSampleSize: 180,
+      pctRugged24h: 54, pctSlowDeath: 30, pctAlive30d: 16,
+      distribution: [1,1.5,2,2.5,3,3.5,4,4.5,5,5,4.5,4,3.5,3,2.7,2.5,2.3,2.1,2,1.9,1.8,1.7,1.6,1.5,1.4,1.3,1.2,1.2,1.1,1.1,1,1,1.1,1.5,2,2.5],
+      youBucketIndex: 25,
+      mostSimilar: [
+        { symbol: "FORGOTBOY", ruggedAfterHours: 72, loss: -78.2 },
+        { symbol: "DEADCOIN", ruggedAfterHours: 168, loss: -82.5 },
+        { symbol: "BLEEDR", ruggedAfterHours: 240, loss: -88 },
+      ],
+    },
+    verdictHistory: [{ ts: _demoTs - 3600000, verdict: "CAUTION", score: 750, event: "Single wallet holds 11% of supply" }],
+    sources_used: ["dexscreener", "rugcheck", "goplus", "helius", "solscan", "chart"],
+    aiSummary: "Fartcoin lands on CAUTION because a single wallet holds 11% of supply — a meaningful concentration risk even with otherwise solid fundamentals. LP is fully burned, mint and freeze authorities are revoked, no honeypot, and the token has 30d+ of trading history. The verdict is not DANGER because the rest of the structural posture is clean; it is not SAFE because the concentrated wallet alone has enough leverage to swing the price.",
+    fetchedAt: _demoTs,
+  },
+  "Dfh5DzRgSvvCFDoYc2ciTkMrbDfRKybA4SoFbPmApump": {
+    score: 500, risk: "DANGER", confidence: 100,
+    tokenSymbol: "pippin", tokenName: "Pippin",
+    resolvedMint: "Dfh5DzRgSvvCFDoYc2ciTkMrbDfRKybA4SoFbPmApump",
+    mintAuthority: false, freezeAuthority: false, honeypot: false,
+    lpBurned: true, lpLocked: false, lpLockedPct: 100,
+    liquidity: 4448431, marketCap: 26242298, priceUsd: 0.02743,
+    holders: 26601, volume24h: 1988123.49, volume1h: 51941.45,
+    priceChange5m: 0.24, priceChange1h: 2.92, priceChange24h: 6.91,
+    solscanTokenAgeHours: 12838,
+    tokenLogo: "https://cdn.dexscreener.com/cms/images/d237de55618e54fd7d66593ff2adf3ad8c092398f9049a31f1dcb1b23ad1dff8?width=800&height=800&quality=95&format=auto",
+    flags: [
+      { severity: "critical", label: "Single wallet holds 27% of supply" },
+      { severity: "warning", label: "Top 10 wallets hold 67% of supply" },
+      { severity: "bonus", label: "LP Burned 100% (GoPlus) ✓" },
+      { severity: "bonus", label: "Established token (30d+) ✓" },
+    ],
+    pair: {
+      url: "https://dexscreener.com/solana/8wwcnqdzjcy5pt7akhupafknv2txca9sq6ybkgzlbvdt",
+      info: {
+        websites: [{ url: "https://pippin.love/", label: "Website" }],
+        socials: [
+          { url: "https://x.com/ThePippinCo", type: "twitter" },
+          { url: "http://t.me/ThePippinCo", type: "telegram" },
+        ],
+      },
+    },
+    topHolderPct: 27.44, top10HolderPct: 68.11,
+    criticalActors: [
+      { type: "insider", tag: "Insider", pct: 27.4, addr: "u6PJ…Xq2w", repLbl: "Concentration risk · single wallet", repWidth: 95, repWarn: false, desc: "Holds <b>27.4%</b> of supply — one-wallet dump would crash the price." },
+    ],
+    holderActivity: {
+      rows: [
+        { role: "bot", label: "Static", avatar: "Insider", pctChange: 0, pctChangeDisp: "±0%", addr: "u6PJ…Xq2w", desc: "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks." },
+        { role: "whale-big", label: "Static", avatar: "Whale", pctChange: 0, pctChangeDisp: "±0%", addr: "9ZPs…E4Y4", desc: "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks." },
+        { role: "whale-big", label: "Static", avatar: "Whale", pctChange: 0, pctChangeDisp: "±0%", addr: "4QuB…s5ru", desc: "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks." },
+      ],
+      netFlowPct: 0, netFlowDirection: "flat",
+    },
+    outcomeStats: {
+      timeToRugMedianDisp: "11h", timeToRugMedianHours: 11, timeToRugSampleSize: 312,
+      pctRugged24h: 76, pctSlowDeath: 16, pctAlive30d: 8,
+      distribution: [3,5,8,11,14,12,9,7,5,4,3,2.5,2,1.8,1.6,1.4,1.2,1,0.9,0.8,0.7,0.7,0.6,0.6,0.5,0.5,0.4,0.4,0.3,0.3,0.3,0.3,0.4,0.5,0.7,0.9],
+      youBucketIndex: 17,
+      mostSimilar: [
+        { symbol: "PUMPDUMP", ruggedAfterHours: 18, loss: -94.1 },
+        { symbol: "FAKEMOON", ruggedAfterHours: 28, loss: -91.6 },
+        { symbol: "SLOWBLEED", ruggedAfterHours: 48, loss: -85.4 },
+      ],
+    },
+    verdictHistory: [{ ts: _demoTs - 3600000, verdict: "DANGER", score: 500, event: "Single wallet holds 27% of supply" }],
+    sources_used: ["dexscreener", "rugcheck", "goplus", "helius", "solscan", "chart"],
+    aiSummary: "Pippin lands on DANGER because of stacked concentration risk — a single wallet holds 27% of supply and the top 10 wallets together control 67%. Either of those alone would already trigger a soft block; together they make a coordinated dump trivially possible. The LP is burned and the contract is clean (no mint, no freeze, no honeypot), which keeps the verdict from collapsing all the way to RUG, but the holder structure alone is enough to treat this as exit-liquidity risk.",
+    fetchedAt: _demoTs,
+  },
+  "4GFe6MBDorSy5bLbiUMrgETr6pZcjyfxMDm5ehSgpump": {
+    score: 250, risk: "RUG", confidence: 100,
+    tokenSymbol: "HawkTuah", tokenName: "Hawk Tuah",
+    resolvedMint: "4GFe6MBDorSy5bLbiUMrgETr6pZcjyfxMDm5ehSgpump",
+    mintAuthority: false, freezeAuthority: false, honeypot: false,
+    lpBurned: true, lpLocked: false, lpLockedPct: 100,
+    liquidity: 70520, marketCap: 155682, priceUsd: 0.0001702,
+    holders: 7430, volume24h: 39.33, volume1h: 11.92,
+    priceChange5m: null, priceChange1h: -0.3, priceChange24h: -0.3,
+    solscanTokenAgeHours: 16275,
+    tokenLogo: "https://cdn.dexscreener.com/cms/images/17c35e4d62131992b5c58bf5cb9d9878a64828389eddc2416416ffac68b38d25?width=800&height=800&quality=95&format=auto",
+    flags: [
+      { severity: "critical", label: "Single wallet holds 44% of supply" },
+      { severity: "bonus", label: "LP Burned 100% (GoPlus) ✓" },
+      { severity: "bonus", label: "Established token (30d+) ✓" },
+    ],
+    pair: {
+      url: "https://dexscreener.com/solana/errdtwwykdz37ogvjdruq2txnc9ntx78x32pnxwpeq7l",
+      info: {
+        websites: [
+          { url: "https://hawktuah.vip/", label: "Website" },
+          { url: "https://coinmarketcap.com/currencies/hawk-tuah", label: "CMC" },
+          { url: "https://www.coingecko.com/en/coins/hawk-tuah", label: "Coin Gecko" },
+        ],
+        socials: [
+          { url: "https://x.com/solhawktuah", type: "twitter" },
+          { url: "https://t.me/hawktuah_sol", type: "telegram" },
+        ],
+      },
+    },
+    topHolderPct: 43.98, top10HolderPct: 53.64,
+    criticalActors: [
+      { type: "insider", tag: "Insider", pct: 44, addr: "HsXp…wG31", repLbl: "Concentration risk · single wallet", repWidth: 95, repWarn: false, desc: "Holds <b>44.0%</b> of supply — one-wallet dump would crash the price." },
+    ],
+    holderActivity: {
+      rows: [
+        { role: "bot", label: "Static", avatar: "Insider", pctChange: 0, pctChangeDisp: "±0%", addr: "HsXp…wG31", desc: "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks." },
+        { role: "whale-big", label: "Static", avatar: "Whale", pctChange: 0, pctChangeDisp: "±0%", addr: "CcSX…1e82", desc: "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks." },
+        { role: "real", label: "Static", avatar: "Retail", pctChange: 0, pctChangeDisp: "±0%", addr: "9eop…AjHo", desc: "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks." },
+      ],
+      netFlowPct: 0, netFlowDirection: "flat",
+    },
+    outcomeStats: {
+      timeToRugMedianDisp: "11h", timeToRugMedianHours: 11, timeToRugSampleSize: 312,
+      pctRugged24h: 76, pctSlowDeath: 16, pctAlive30d: 8,
+      distribution: [3,5,8,11,14,12,9,7,5,4,3,2.5,2,1.8,1.6,1.4,1.2,1,0.9,0.8,0.7,0.7,0.6,0.6,0.5,0.5,0.4,0.4,0.3,0.3,0.3,0.3,0.4,0.5,0.7,0.9],
+      youBucketIndex: 17,
+      mostSimilar: [
+        { symbol: "PUMPDUMP", ruggedAfterHours: 18, loss: -94.1 },
+        { symbol: "FAKEMOON", ruggedAfterHours: 28, loss: -91.6 },
+        { symbol: "SLOWBLEED", ruggedAfterHours: 48, loss: -85.4 },
+      ],
+    },
+    verdictHistory: [{ ts: _demoTs - 3600000, verdict: "RUG", score: 250, event: "Single wallet holds 44% of supply" }],
+    sources_used: ["dexscreener", "rugcheck", "goplus", "helius", "solscan", "chart"],
+    aiSummary: "Hawk Tuah is the textbook concentration rug — a single wallet holds 44% of total supply, more than enough to crash the price to zero in one transaction. LP is technically burned and the token has 30d+ of trading history, but those signals are completely overridden by the wallet concentration: the dev (or whoever controls that wallet) can dump at any moment and the remaining holders cannot defend the price. Hard kill. Treat any remaining liquidity as exit-only.",
+    fetchedAt: _demoTs,
+  },
+};
 
 function setLoadingStatus(msg) {
   const el = document.getElementById("loading-status");
@@ -78,6 +288,9 @@ const onRetryStatus = (attempt, max) =>
 if (!ca) {
   document.getElementById("loading").style.display = "none";
   showError("No token address provided.");
+} else if (isDemo && DEMO_DATA[ca]) {
+  document.getElementById("loading").style.display = "none";
+  render(DEMO_DATA[ca], ca);
 } else {
   document.getElementById("err-retry").addEventListener("click", () => {
     document.getElementById("err").style.display = "none";
@@ -169,8 +382,46 @@ function render(d, ca) {
   document.getElementById("nav-verdict").textContent = lb;
   document.getElementById("nav-score").textContent = `${displayScore}/1000`;
 
+  // Host-allowlist for hrefs interpolated into the page. Replaces the
+  // earlier regex-based check (^https?://) that accepted ANY HTTPS
+  // host — including attacker-controlled ones if a DexScreener pair's
+  // `websites[].url` / `socials[].url` / `pair.url` was crafted by a
+  // hostile token creator. Clicking from an Antares-trusted page
+  // would have lent our reputation to a phishing site.
+  //
+  // Allows HTTPS only (no HTTP downgrade), exact-match or subdomain
+  // of an explicitly-trusted host. New crypto-ecosystem hosts can be
+  // added here; everything else collapses to "#" so the anchor renders
+  // but does nothing. Anchors also need rel="noopener noreferrer" at
+  // the call site (already in place — see lines below).
+  const ALLOWED_HOSTS = new Set([
+    // Token data / explorers
+    "dexscreener.com", "solscan.io", "rugcheck.xyz", "birdeye.so",
+    "geckoterminal.com", "explorer.solana.com", "solana.fm", "xray.helius.xyz",
+    // Pump / aggregators / DEXes
+    "pump.fun", "raydium.io", "jup.ag", "orca.so", "meteora.ag",
+    "axiom.trade", "photon-sol.tinyastro.io", "gmgn.ai",
+    // Socials (DexScreener returns these in pair.info.socials)
+    "x.com", "twitter.com", "t.me", "telegram.org",
+    "discord.gg", "discord.com", "github.com", "medium.com",
+    "youtube.com", "youtu.be",
+    // Antares-owned
+    "antaresscan.com", "antares-extension.vercel.app",
+  ]);
   function safeUrl(u) {
-    return typeof u === "string" && /^https?:\/\//i.test(u) ? u : "#";
+    if (typeof u !== "string") return "#";
+    let parsed;
+    try { parsed = new URL(u); } catch { return "#"; }
+    if (parsed.protocol !== "https:") return "#";
+    const host = parsed.hostname.toLowerCase().replace(/^www\./, "");
+    if (ALLOWED_HOSTS.has(host)) return u;
+    // Subdomain match — `foo.dexscreener.com` is OK if `dexscreener.com`
+    // is on the allowlist. Endswith `.${host}` (with the dot) prevents
+    // `evildexscreener.com` from matching `dexscreener.com`.
+    for (const allowed of ALLOWED_HOSTS) {
+      if (host.endsWith("." + allowed)) return u;
+    }
+    return "#";
   }
   const dexUrl = d.pair?.url || `https://dexscreener.com/solana/${mint}`;
   document.getElementById("nav-actions").innerHTML = `
@@ -422,7 +673,7 @@ function render(d, ca) {
           <div class="m-card">
             <div class="m-label-row">
               <div class="m-label">Risk Score</div>
-              <button class="refresh-btn" id="refresh-btn" aria-label="Refresh scan" title="Force a fresh scan, bypassing the cache">↻</button>
+              ${!isDemo ? `<button class="refresh-btn" id="refresh-btn" aria-label="Refresh scan" title="Force a fresh scan, bypassing the cache">↻</button>` : ""}
             </div>
             <div class="m-big">${displayScore}<span class="denom">/ 1000</span></div>
             <div class="sbar"><div class="sbar-fill" id="sbarf"></div></div>
@@ -514,8 +765,7 @@ function render(d, ca) {
   setupRevealObserver();
   setupCollapsibles();
   setupTabs();
-  setupFab();
-  setupRefreshButton(ca, { onRefresh: (data) => render(data, ca) });
+  setupRefreshButton(ca, { onRefresh: (isDemo && DEMO_DATA[ca]) ? () => render(DEMO_DATA[ca], ca) : (data) => render(data, ca) });
   setupFreshnessTicker(d.fetchedAt);
 
   // Score bar animation
@@ -534,10 +784,13 @@ function render(d, ca) {
   // Async-load Top 10 live activity feed (Insider Watch tab). Fired
   // after the synchronous render so the placeholder skeleton is
   // already painted; the API is server-side cached 60s so most loads
-  // are sub-200ms.
-  setTimeout(() => {
-    loadInsiderActivity();
-  }, 50);
+  // are sub-200ms. Skipped in demo mode — holderActivity rows from
+  // DEMO_DATA are rendered synchronously and must not be overwritten.
+  if (!isDemo || !DEMO_DATA[ca]) {
+    setTimeout(() => {
+      loadInsiderActivity();
+    }, 50);
+  }
 
   // Async-load AI summary if not in initial response
   if (!d.aiSummary) {

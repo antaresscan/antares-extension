@@ -358,37 +358,37 @@ describe("buildInsiderGraph — Helius pooling (PR #294)", () => {
     expect(mockFetchJson.mock.calls.length).toBeLessThanOrEqual(result.stats.analyzedWallets + 1);
   });
 
-  it("reuses cached signatures from Redis instead of hitting Helius again", async () => {
-    // Cache hit path: graph cache MUST miss (so we don't short-circuit at
-    // the entry of buildInsiderGraph), but the per-wallet signature cache
-    // MUST hit so getCachedWalletSignatures skips Helius. Differentiate
-    // by key prefix so the right outcome fires for each redis.get call.
-    const cachedSigs = ["sig-from-cache-1", "sig-from-cache-2"];
-    const mockGet = vi.fn().mockImplementation((key: string) =>
-      Promise.resolve(key.startsWith("igsig:") ? cachedSigs : null)
-    );
+  it("does NOT consult the per-wallet signature cache (decommissioned 2026-05-11)", async () => {
+    // Regression guard for the Upstash-quota audit. The original
+    // per-wallet `igsig:<wallet>` cache was removed because every scan
+    // did N GETs + up to N SETs (N ≤ MAX_HOLDERS = 20) for what turned
+    // out to be a tiny cross-token overlap optimisation — the graph-
+    // level `ig:<mint>` cache already absorbs the dominant
+    // same-token-rescanned-within-5min case. Removing the sig cache
+    // cut ~12 Redis commands per scan.
+    //
+    // This test now asserts that even when a Redis client is wired in,
+    // buildInsiderGraph queries ONLY the graph cache key (`ig:<mint>`)
+    // and never the per-wallet keys. If a future refactor reintroduces
+    // the per-wallet cache by accident, this test fails.
+    const mockGet = vi.fn().mockResolvedValue(null);
     const mockSet = vi.fn().mockResolvedValue("OK");
     initGraphCache({ get: mockGet, set: mockSet } as any);
 
-    // Important: only the parseTransactions call should hit fetchJson.
-    // getCachedWalletSignatures should short-circuit before that.
     mockFetchJson.mockResolvedValue([]);
-
     await buildInsiderGraph(MINT, holders, 100_000, API_KEY, new Set([LP_ADDR]));
 
-    // For each wallet (3 non-LP holders), redis.get was called once.
-    expect(mockGet).toHaveBeenCalledWith(`igsig:${WALLET_A}`);
-    expect(mockGet).toHaveBeenCalledWith(`igsig:${WALLET_B}`);
-    expect(mockGet).toHaveBeenCalledWith(`igsig:${WALLET_C}`);
-    // The graph cache itself was queried first (1 get) plus one per wallet (3) = 4.
-    expect(mockGet.mock.calls.length).toBeGreaterThanOrEqual(4);
+    const getKeys = mockGet.mock.calls.map((c) => c[0] as string);
+    // Graph-level cache GET is allowed (and expected) — exactly one of those.
+    expect(getKeys.filter((k) => k.startsWith("ig:")).length).toBe(1);
+    // Per-wallet signature cache must be zero.
+    expect(getKeys.some((k) => k.startsWith("igsig:"))).toBe(false);
 
-    // fetchJson should only be the parseTransactions call (sigs from
-    // cache => no per-wallet getSignaturesForAddress).
-    expect(mockFetchJson.mock.calls.length).toBeLessThanOrEqual(1);
+    const setKeys = mockSet.mock.calls.map((c) => c[0] as string);
+    // The graph-level cache SET is allowed (the result write); per-
+    // wallet sig cache writes must never happen.
+    expect(setKeys.some((k) => k.startsWith("igsig:"))).toBe(false);
 
-    // Reset for downstream tests — the module-level redis singleton
-    // would otherwise leak into them.
     initGraphCache(null as any);
   });
 });

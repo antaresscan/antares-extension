@@ -68,6 +68,10 @@ import { SESSION_COOKIE_NAME } from "../api/_lib/session-cookie";
 const VALID_INSTALL = "11111111-1111-4111-8111-111111111111";
 const OTHER_INSTALL = "22222222-2222-4222-8222-222222222222";
 
+// Dev/founder allowlist is env-var only (no hardcoded list in account.ts).
+process.env.DEV_LIFETIME_EMAILS = "test-dev@example.com";
+process.env.DEV_PRO_EMAILS = "test-dev@example.com";
+
 beforeEach(() => {
   mocks.store.clear();
   process.env.UPSTASH_REDIS_REST_URL = "https://fake.upstash";
@@ -248,9 +252,9 @@ describe("Integration: overlay tier follows the user's SIGNED-IN EMAIL", () => {
     // After my fix, the founder shouldn't need to redeem or click any
     // button on /account.html — the overlay reflects their tier the
     // moment they're signed in.
-    await seedEmailWithLicense("lennypierrepro@gmail.com", "yearly");
+    await seedEmailWithLicense("test-dev@example.com", "yearly");
 
-    const token = signSession("lennypierrepro@gmail.com");
+    const token = signSession("test-dev@example.com");
     const result = await resolveTierAndBypass(
       reqWithCookie(token),
       VALID_INSTALL,

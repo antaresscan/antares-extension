@@ -6,10 +6,26 @@ import { CA_RE } from "./shared/constants"
 import { config } from "./shared/config"
 import { logger } from "./shared/logger"
 import { getInstallId } from "./shared/install-id"
+import { scrubEvent, scrubBreadcrumb } from "./shared/sentry-scrub"
 
 // ─── SENTRY INITIALIZATION ───────────────────────────────────────────────────
+// `sendDefaultPii: false` + `beforeSend` + `beforeBreadcrumb` wire the
+// same SCRUB_KEYS / URL-query-strip the backend uses (api/_lib/sentry.ts).
+// Without these, the browser Sentry SDK silently shipped:
+//   - the full request URL including `?ca=<contract>` via XHR
+//     breadcrumbs (every overlay scan call),
+//   - any email / JWT / authorization header attached to the scope
+//     via captureException-with-context,
+// violating privacy.html's "Sentry: never the contract address or
+// your IP" promise on the entire extension surface.
 if (config.sentryDsn) {
-  Sentry.init({ dsn: config.sentryDsn, tracesSampleRate: config.sentryTracesSampleRate })
+  Sentry.init({
+    dsn: config.sentryDsn,
+    tracesSampleRate: config.sentryTracesSampleRate,
+    sendDefaultPii: false,
+    beforeSend: (event) => scrubEvent(event),
+    beforeBreadcrumb: (breadcrumb) => scrubBreadcrumb(breadcrumb),
+  })
 }
 
 // ─── SAFE DATA EXTRACTION HELPERS ─────────────────────────────────────────────
@@ -40,6 +56,25 @@ function extractSymbol(data: Record<string, unknown>): string {
   }
   return ""
 }
+
+// Hosts the OPEN_TAB handler is allowed to open. Anything else — even an
+// HTTPS URL — is rejected and the caller falls back to window.open(), which
+// still has the page's CSP + popup-blocker + user-gesture gates in front of
+// it. This is the second line of defence behind `sender.id` checking: it
+// prevents a compromised content script (XSS on a host site that somehow
+// reaches the message handler) from using the extension's tab privileges
+// to spawn a phishing page under an Antares-trusted-looking pattern.
+//
+// Update this list when introducing a new product host. Localhost dev is
+// intentionally excluded — devs working against PLASMO_PUBLIC_ANALYSIS_URL
+// see the window.open fallback and can sideload normally.
+const ALLOWED_OPEN_TAB_HOSTS = new Set([
+  "antares-extension.vercel.app",
+  "antaresscan.com",
+  "www.antaresscan.com",
+  "antares-website.vercel.app",
+  "comealamaisongroupe.github.io"
+])
 
 // ─── KEEPALIVE ────────────────────────────────────────────────────────────────
 void chrome.alarms.create(config.keepaliveAlarmName, { periodInMinutes: config.keepaliveIntervalMinutes })
@@ -80,9 +115,17 @@ function checkRiskEscalation(ca: string, currentRisk: string, tokenSymbol: strin
       }
       const prev = safeString(result[key])
       if (prev && riskWorsened(prev, currentRisk)) {
+        // Plasmo hashes icon paths at build time (icon128.plasmo.<hash>.png),
+        // so we can't hardcode "assets/icon.png" \u2014 that file doesn't exist
+        // in the packaged build. Read the real icon path from the runtime
+        // manifest, which Plasmo populates with the correct hashed names.
+        // Without a resolvable iconUrl, chrome.notifications.create() fails
+        // silently and the user never sees the alert.
+        const icons = chrome.runtime.getManifest().icons as Record<string, string> | undefined
+        const iconPath = icons?.["128"] || icons?.["64"] || icons?.["48"] || icons?.["32"] || ""
         void chrome.notifications.create(`antares_alert_${ca}`, {
           type: "basic",
-          iconUrl: chrome.runtime.getURL("assets/icon.png"),
+          iconUrl: chrome.runtime.getURL(iconPath),
           title: "Antares \u2014 Risk Escalation",
           message: `${tokenSymbol || ca.slice(0, 8)} risk changed: ${prev} \u2192 ${currentRisk}`,
         })
@@ -240,8 +283,27 @@ const handlers: Record<string, MessageHandler> = {
     }
 
     const url = safeString(msg.url)
-    if (!url || !/^https?:\/\//.test(url)) {
+    if (!url) {
       sendResponse({ ok: false, error: "Invalid URL" })
+      return
+    }
+    let parsed: URL
+    try {
+      parsed = new URL(url)
+    } catch {
+      sendResponse({ ok: false, error: "Invalid URL" })
+      return
+    }
+    // HTTPS only — drop the legacy `http?:` allowance. No host on the
+    // allowlist serves over plain HTTP, so http URLs are categorically a
+    // sign of either dev fallback (should go through window.open instead)
+    // or attempted abuse.
+    if (parsed.protocol !== "https:") {
+      sendResponse({ ok: false, error: "Invalid URL: https required" })
+      return
+    }
+    if (!ALLOWED_OPEN_TAB_HOSTS.has(parsed.hostname)) {
+      sendResponse({ ok: false, error: "Invalid URL: host not allowed" })
       return
     }
 

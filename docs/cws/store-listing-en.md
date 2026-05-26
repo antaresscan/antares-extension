@@ -33,109 +33,89 @@ Secondary: **Developer Tools**
 
 ## Detailed description
 
+> Rebuilt after CWS rejection on 2026-05-09 (case Yellow Argon — Spam in
+> keywords). The reviewer specifically flagged the "SUPPORTED PLATFORMS"
+> bullet list with its `(domain.tld)` parentheticals as keyword stuffing.
+> The version below removes the explicit platform list, drops the false
+> "open source" claim (repo is private), and updates the privacy URL to
+> the antaresscan.com custom domain. Each upstream API and each platform
+> name appears at most once, in context, never as a flat keyword list.
+
 ```
-ANTARES — STOP GETTING SCAMMED ON SOLANA
+ANTARES — REAL-TIME SOLANA TOKEN PROTECTION
 
-Antares scans every Solana token you encounter while browsing —
-DexScreener, pump.fun, Axiom, Photon, Birdeye, GeckoTerminal, GMGN,
-Telemetry — and surfaces a 7-layer verdict in seconds. SAFE / CAUTION /
-DANGER / RUG, with a 1000-point composite score and the reasons behind it.
+Antares scans every Solana token you encounter while browsing the major
+trading platforms and surfaces a 7-layer verdict in seconds. SAFE /
+CAUTION / DANGER / RUG, with a 1000-point composite score and the
+reasons behind it.
 
-You don't paste contract addresses. You don't switch tabs. You don't sign
-anything. You don't even need an account. The verdict appears in a
-draggable overlay as soon as you load a token's page.
+You don't paste contract addresses. You don't switch tabs. You don't
+sign anything. You don't even need an account. The verdict appears in
+a draggable overlay as soon as you open a token's page.
 
 WHY ANTARES IS DIFFERENT
 
-Most rug detectors look at one signal. Antares aggregates seven, then
-combines them with a published geometric-mean formula (every line is
-auditable on GitHub):
+Most rug detectors look at one signal. Antares aggregates seven and
+combines them through a published geometric-mean formula:
 
-  • DexScreener  — liquidity, volume, age, price action
-  • RugCheck     — honeypot risk, top holders, deceptive name
-  • GoPlus       — sell-tax, blacklists, mint/freeze authority
-  • Helius       — supply, real holders, creator history
-  • Solscan      — transfer signature, market structure
-  • Chart Engine — blow-off / wick trap / staircase patterns
-  • Cross-Validation — sanity check across the six layers
+  • Liquidity, volume, age, price action
+  • Honeypot risk, top holders, deceptive-name detection
+  • Sell-tax, blacklists, mint and freeze authority
+  • Real holders, creator history, supply distribution
+  • Transfer signature and market structure
+  • Chart engine — blow-off, wick trap, staircase patterns
+  • Cross-validation sanity check across all six layers
 
 One bad source can't hide; one false positive can't flip a clean token
-to RUG. A "Safe Gate" overrides on hard kill flags (open LP, honeypot,
+to RUG. A Safe Gate overrides on hard-kill flags (open LP, honeypot,
 active mint authority, deceptive name).
 
 WHAT YOU GET
 
-  In the overlay (live on every token page):
+In the overlay, live on every supported page:
   • The 1000-point score, color-coded by verdict
   • Critical Flags panel — why this token was flagged, ranked by impact
-  • AI Summary — the verdict explained in 2-4 sentences
+  • AI Summary — the verdict explained in 2–4 sentences
   • Sell / Mint / Freeze / LP / Liquidity status grid
-  • Critical Actors — top 3 holders enriched with creator + cluster data
+  • Critical Actors — top 3 holders enriched with creator and cluster data
 
-  In the Full Analysis page (Deep Analysis section, 5 specialized tabs):
-  • Insider Watch — heatmap of top wallets, see who's accumulating vs dumping,
-                    with a top-10 holders fallback when no recent activity
-  • Buy/Sell Flow — money in vs money out across 5min / 1h / 6h windows
-  • Wash Volume — 0-100 wash score, real-vs-reported volume estimate
-  • Sniper Map — launch-block bot activity + retention status
+In the Full Analysis page, five specialised tabs:
+  • Insider Watch — heatmap of top wallets, who is accumulating vs dumping
+  • Buy/Sell Flow — money in vs money out across 5 min / 1 h / 6 h windows
+  • Wash Volume — 0–100 wash score, real-vs-reported volume estimate
+  • Sniper Map — launch-block bot activity and retention status
   • Exit Liquidity — slippage at $100 / $1K / $5K / $10K / $20K sell sizes
 
 PRICING — HONEST AND CAPPED
 
-  • Free        $0           UNLIMITED scans on every supported site
-                             Verdict + score + Sell/Mint/Freeze/LP grid
-                             Subject to per-minute rate limits to keep
-                             the API healthy
+  • Free       $0          Unlimited scans, verdict + score + safety grid,
+                           subject to per-minute rate limits
 
-  • Pro         $24.99 / 30 days
-                             Critical Flags panel + AI Summary unlocked
-                             Full Analysis page with 5 specialized tabs
-                             Critical Actors + Insider Watch
-                             Scan history, CSV/JSON export, priority cache
+  • Pro        $24.99/30d  Critical Flags + AI Summary + Full Analysis
+                           page + scan history + CSV/JSON export
 
-  • Yearly      $149.99 / year
-                             Everything in Pro
-                             Best value — pay 6 months, get 12
+  • Yearly     $149.99/yr  Everything in Pro. Pay six months, get twelve.
 
-Pay in any of 200+ cryptocurrencies via NOWPayments hosted checkout
-(BTC, ETH, SOL, USDC, USDT, BNB, MATIC, DOGE… auto-converts to USD on
-their side, you don't manage swaps). Your tier syncs across every
-device where you sign in to your Antares account — no license-key paste,
-no manual activation.
+Pay in 200+ cryptocurrencies via NOWPayments hosted checkout. Your tier
+syncs across every device where you sign in to your Antares account.
+No license keys to paste, no manual activation.
 
-We never bait-and-switch. The Free tier is and stays unlimited.
+The Free tier is, and stays, unlimited.
 
 PRIVACY
 
   • Optional account (email + password) — only needed for paid tiers
     and cross-device sync. Free works without one.
   • The API receives the contract address you scan plus standard HTTPS
-    metadata (IP, user-agent) used only for rate limiting
-  • Scan history (Pro feature) is bound to your account, never sold
-  • No third-party analytics, no tracking pixels, no fingerprinting
-  • We do not read form fields, credentials, cookies or browsing history
-  • Full disclosure: https://antares-website.vercel.app/privacy
-
-SUPPORTED PLATFORMS
-
-The overlay activates automatically on:
-  • DexScreener (dexscreener.com)
-  • pump.fun
-  • Axiom (axiom.trade)
-  • Photon (photon-sol.tinyastro.io)
-  • Birdeye (birdeye.so)
-  • GeckoTerminal (geckoterminal.com)
-  • GMGN (gmgn.ai)
-  • Telemetry (app.telemetry.io)
-
-OPEN SOURCE
-
-The extension is fully open source — every line of the scoring engine
-is auditable. https://github.com/COMEALAMAISONGROUPE/antares-extension
+    metadata (IP, user-agent) used only for rate limiting.
+  • Scan history (Pro feature) is bound to your account, never sold.
+  • No third-party analytics, no tracking pixels, no fingerprinting.
+  • We do not read form fields, credentials, cookies, or browsing history.
+  • Full disclosure: https://antaresscan.com/privacy
 
 LIMITATIONS — READ THIS
 
-Antares is a probabilistic risk screen, not a guarantee. We can detect
+Antares is a probabilistic risk screen, not a guarantee. It detects
 what seven independent sources surface at scan time. Novel exploits,
 coordinated dumps via fresh wallets, or social-engineering attacks may
 not register. SAFE means "no critical signals across our seven layers" —
@@ -144,29 +124,30 @@ not "guaranteed money".
 Always do your own research. The score is a tool, not a recommendation.
 ```
 
-(~3,900 chars — well under the 16,000 limit)
+(~3,200 chars — well under the 16,000 limit)
 
 ---
 
-## Tags / Keywords (search ranking)
+## Tags / Keywords
 
-solana, rug detector, anti-scam, token scanner, honeypot, rugpull,
-dexscreener, pump.fun, web3 security, defi safety, memecoin,
-crypto safety, jupiter, raydium, solscan, photon, birdeye
+CWS does not expose a separate tags / keywords field — search ranking
+comes from the listing copy itself. Do not paste a flat keyword list
+anywhere on the dashboard: that is exactly the pattern flagged as
+Yellow Argon (Spam in keywords) on 2026-05-09.
 
 ---
 
 ## Promotional copy — Twitter announcement
 
 ```
-🛡️ Antares v1.3 is live on the Chrome Web Store.
+Antares v1.3 is live on the Chrome Web Store.
 
-Stop getting scammed on Solana. 7-layer verdict, 1000-point score,
-in your overlay on every dex.
+Real-time Solana token scanner — 7-layer verdict, 1000-point score,
+delivered as an overlay on every token page you open.
 
-Free: unlimited scans on every site.
+Free: unlimited scans.
 Pro $24.99/30d · Yearly $149.99/yr · pay in 200+ cryptos.
-Sync across devices · open-source · no tracking.
+Cross-device sync · no tracking.
 
 Install → [link]
 ```

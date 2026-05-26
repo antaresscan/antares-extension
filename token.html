@@ -745,17 +745,6 @@ nav .actions a.warn:hover{color:var(--orange);border-color:rgba(255,95,95,.4);ba
 
 footer{text-align:center;padding:32px 0 20px;color:#2a2a2f;font-size:10px;letter-spacing:.15em;text-transform:uppercase;margin-top:40px;border-top:1px solid var(--border)}
 footer span{color:var(--c)}
-
-/* ── Ask Antares FAB + contextual pills (bottom-right) ── */
-.ask-fab-wrap{position:fixed;bottom:24px;right:24px;z-index:200}
-.ask-fab{width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--cyan));border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;box-shadow:0 8px 32px rgba(167,139,250,.4),0 0 0 1px rgba(255,255,255,.1) inset;transition:transform .25s;animation:fab-glow 3s ease-in-out infinite}
-@keyframes fab-glow{0%,100%{box-shadow:0 8px 32px rgba(167,139,250,.4),0 0 0 1px rgba(255,255,255,.1) inset}50%{box-shadow:0 8px 48px rgba(167,139,250,.6),0 0 0 1px rgba(255,255,255,.15) inset,0 0 60px rgba(34,211,238,.2)}}
-.ask-fab:hover{transform:scale(1.1)}
-.fab-pills{position:absolute;bottom:64px;right:0;display:flex;flex-direction:column;gap:8px;align-items:flex-end;opacity:0;pointer-events:none;transform:translateY(8px);transition:.3s}
-.ask-fab-wrap:hover .fab-pills,.ask-fab-wrap.open .fab-pills{opacity:1;pointer-events:auto;transform:translateY(0)}
-.fab-pill{display:inline-flex;align-items:center;gap:6px;background:#1a1a1e;color:#ccc;padding:8px 14px;border-radius:20px;font-size:11px;letter-spacing:.04em;border:1px solid #2a2a30;cursor:pointer;transition:.2s;white-space:nowrap;font-family:'IBM Plex Mono',monospace}
-.fab-pill:hover{border-color:var(--purple);color:var(--purple);transform:translateX(-2px)}
-.fab-pill .ico{font-size:11px;color:var(--purple)}
 </style>
 </head>
 <body>
@@ -792,15 +781,6 @@ footer span{color:var(--c)}
 
 <footer>Antares <span>·</span> v1.2.0 <span>·</span> Solana Token Scanner</footer>
 
-</div>
-
-<div class="ask-fab-wrap" id="ask-fab-wrap" aria-hidden="true">
-  <div class="fab-pills">
-    <button class="fab-pill" data-q="why"><span class="ico">▸</span> Why this verdict?</button>
-    <button class="fab-pill" data-q="sell"><span class="ico">▸</span> Should I sell now or wait?</button>
-    <button class="fab-pill" data-q="recent"><span class="ico">▸</span> What changed in the last hour?</button>
-  </div>
-  <button class="ask-fab" aria-label="Ask Antares AI">✦</button>
 </div>
 
 <script type="module" src="/js/token-app.js?v=20260508-clarity"></script>
