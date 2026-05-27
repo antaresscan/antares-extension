@@ -37,7 +37,8 @@ export type SafeBlockedReason =
   // when one whale can move price meaningfully on a sell. Lives outside
   // SOFT_REASONS so applySafeGateOverride keeps the gate closed.
   | "concentration_warning"
-  | "lp_unverified"; // SOFT - LP not burned but token is mature and clean
+  | "lp_unverified"  // SOFT - LP not burned but token is mature and clean
+  | "pump_imbalance"; // SOFT - buy/sell imbalance (coordinated pump signal), unlockable for established tokens
 
 // ─── LAYER RESULT ────────────────────────────────────────────────────────────────────
 export interface LayerResult {

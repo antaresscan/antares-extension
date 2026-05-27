@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { computeFinalScore, classifySafeBlockedReasons } from "../api/_lib/scoring";
-import { LAYER_WEIGHTS, TRUST_FLOOR, XV_PENALTY_LP_BURN, XV_PENALTY_MINT_AUTH, XV_PENALTY_HOLDER_CONCENTRATION } from "../api/_lib/constants";
+import { LAYER_WEIGHTS, TRUST_FLOOR, XV_PENALTY_LP_BURN, XV_PENALTY_MINT_AUTH, XV_PENALTY_HOLDER_CONCENTRATION, HARD_BLOCK_REASONS, SOFT_REASONS } from "../api/_lib/constants";
 import type { LayerResult } from "../api/_lib/types";
 
 function makeLayer(source: string, trust: number, available: boolean, flags: LayerResult["flags"] = [], forceRug = false, safeBlocked = false): LayerResult {
@@ -288,5 +288,24 @@ describe("classifySafeBlockedReasons — low_holders HARD reason", () => {
     ];
     const reasons = classifySafeBlockedReasons(layers);
     expect(reasons).not.toContain("low_holders");
+  });
+});
+
+describe("classifySafeBlockedReasons \u2014 pump_imbalance SOFT reason", () => {
+  it("classifies 'Buy/sell imbalance (coordinated pump)' as pump_imbalance", () => {
+    const layers = [
+      makeLayer("dexscreener", 0.8, true, [
+        { label: "Buy/sell imbalance (coordinated pump)", severity: "warning", impact: 0 },
+      ], false, true),
+    ];
+    expect(classifySafeBlockedReasons(layers)).toContain("pump_imbalance");
+  });
+
+  it("pump_imbalance is NOT a hard block reason", () => {
+    expect(HARD_BLOCK_REASONS.has("pump_imbalance")).toBe(false);
+  });
+
+  it("pump_imbalance IS a soft reason", () => {
+    expect(SOFT_REASONS["pump_imbalance"]).toBe(true);
   });
 });

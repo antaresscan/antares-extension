@@ -75,6 +75,7 @@ export const HARD_BLOCK_PATTERNS: Array<[RegExp, SafeBlockedReason]> = [
   // "Pump.fun launch" which is informational, not a hard exit-trap signal.
   [/(?:extreme |coordinated )?pump pattern|parabolic|pump.fun.*exit trap|pump.*newborn/i, "pump"],
   [/chart|blow-off|stair-step|volume exhaustion|liquidity mirage/i, "chart"],
+  [/buy\/sell imbalance/i, "pump_imbalance"],
   [/deceptive name/i, "deceptive_name"],                         // FIX: deceptive names are hard
     [/very few holders|few holders|<15|<50/i, "low_holders"], // FIX: very low holders is a HARD reason
   // Single-wallet concentration of 15% or more cannot soft-unlock.
