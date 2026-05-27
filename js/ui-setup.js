@@ -192,22 +192,23 @@ export function setupRevealObserver() {
 // failure path resolves to a clear empty/error state, never a broken UI.
 // ──────────────────────────────────────────────────────────────────────
 
-// 10 distinct accent colours — one per top-10 wallet rank.
-// Chosen to stand out on the dark background and to be clearly different
-// from each other AND from the buy/sell palette (buy #00e5b0, sell #ff5f5f).
-// Applied as a 2px left border (--wc CSS var) on each transaction row so
-// the same wallet is immediately recognisable across multiple entries.
+// 10 distinct colours — one per top-10 wallet rank.
+// Evenly spaced (~36°) around the hue wheel so every colour is clearly
+// different from its neighbours. Avoids buy (#00e5b0 teal-green) and
+// sell (#ff5f5f red-orange). Applied to the rank pill border+text and
+// the wallet address so the same wallet is instantly recognisable across
+// multiple rows without reading the truncated address.
 const WALLET_COLORS = [
-  "#60a5fa", // #1  blue
-  "#c084fc", // #2  purple
-  "#f97316", // #3  orange
-  "#2dd4bf", // #4  teal
-  "#facc15", // #5  yellow
-  "#f472b6", // #6  pink
-  "#a3e635", // #7  lime
-  "#e879f9", // #8  fuchsia
-  "#38bdf8", // #9  sky
-  "#fb7185", // #10 rose
+  "#f97316", // #1  orange
+  "#eab308", // #2  amber
+  "#84cc16", // #3  lime
+  "#22c55e", // #4  green
+  "#06b6d4", // #5  cyan
+  "#3b82f6", // #6  blue
+  "#6366f1", // #7  indigo
+  "#8b5cf6", // #8  violet
+  "#d946ef", // #9  fuchsia
+  "#ec4899", // #10 pink
 ];
 
 export async function loadInsiderActivity() {

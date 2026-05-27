@@ -432,10 +432,6 @@ nav .actions a.warn:hover{color:var(--orange);border-color:rgba(255,95,95,.4);ba
   align-items:center;
   gap:8px;
   padding:10px 14px;border-top:1px solid #15151a;
-  /* Per-wallet accent border: JS injects --wc on each row based on
-     the wallet's rank in the top 10. Defaults transparent so the
-     header row (no --wc set) has no visible left border. */
-  border-left:2px solid var(--wc,transparent);
   font-family:'IBM Plex Mono',monospace;font-size:11px;
   text-decoration:none;color:#bbb;
   transition:background .15s ease;
@@ -444,15 +440,17 @@ nav .actions a.warn:hover{color:var(--orange);border-color:rgba(255,95,95,.4);ba
 .iw-row:hover{background:rgba(255,255,255,.03)}
 .iw-row-rank{
   font-size:10px;font-weight:700;letter-spacing:.04em;
-  color:#5a5a5a;
-  background:#15151a;border:1px solid #1f1f24;border-radius:3px;
+  /* Wallet color (--wc) injected by JS: one unique colour per top-10
+     rank. Replaces the old buy/sell green/red on the pill so the
+     same wallet is instantly recognisable across rows. */
+  color:var(--wc,#5a5a5a);
+  border:1px solid var(--wc,#1f1f24);border-radius:3px;
+  background:transparent;
   padding:3px 6px;text-align:center;
   font-variant-numeric:tabular-nums;
 }
-.iw-row.buy .iw-row-rank{color:var(--c);border-color:rgba(0,229,176,.25);background:rgba(0,229,176,.04)}
-.iw-row.sell .iw-row-rank{color:var(--orange);border-color:rgba(255,95,95,.25);background:rgba(255,95,95,.04)}
 .iw-row-wallet{
-  color:#888;font-size:10.5px;letter-spacing:.04em;cursor:pointer;
+  color:var(--wc,#888);font-size:10.5px;letter-spacing:.04em;cursor:pointer;
   border-bottom:1px dashed transparent;
 }
 .iw-row-wallet:hover{color:#ddd;border-bottom-color:#444}
@@ -521,7 +519,6 @@ nav .actions a.warn:hover{color:var(--orange);border-color:rgba(255,95,95,.4);ba
   grid-template-columns:34px 1fr 64px 1fr 60px;
   align-items:center;gap:10px;
   padding:10px 14px;border-bottom:1px solid #13131a;
-  border-left:2px solid var(--wc,transparent);
   text-decoration:none;color:#bbb;
   font-family:'IBM Plex Mono',monospace;font-size:10.5px;
   transition:background .12s ease;
