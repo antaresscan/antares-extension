@@ -434,3 +434,124 @@ export async function loadInsiderActivity() {
     renderEmpty("Failed to load insider activity. Re-scan to retry.", "warn");
   }
 }
+
+// ──────────────────────────────────────────────────────────────────────
+// renderDemoInsiderActivity — synchronous twin of loadInsiderActivity
+// for the ?demo=1 path. Receives a pre-baked activity object with the
+// same shape as the inner `data` consumed by loadInsiderActivity:
+//   { activity[], wallets[], walletsWithActivity, totalCheckedWallets,
+//     netFlowUsd, windowHours }
+// and renders the same DOM, so the user sees a fully-populated Insider
+// Watch feed (with wallet colors, ranks, net-flow footer) without any
+// network round-trip. Skipping this in demo mode used to leave the tab
+// stuck on the loading skeleton.
+// ──────────────────────────────────────────────────────────────────────
+export function renderDemoInsiderActivity(demoActivity) {
+  if (!demoActivity) return;
+  const slot = document.getElementById("ant-insider-feed");
+  const meta = document.getElementById("ant-insider-meta");
+  const foot = document.getElementById("ant-insider-foot");
+  if (!slot) return;
+
+  const activity = Array.isArray(demoActivity.activity) ? demoActivity.activity : [];
+  const walletList = Array.isArray(demoActivity.wallets) ? demoActivity.wallets : [];
+
+  // Build rank + color lookups identical to loadInsiderActivity so each
+  // activity row gets the right "#N" pill and the wallet-specific color.
+  const rankByWallet = new Map();
+  const colorByWallet = new Map();
+  walletList.forEach((w, i) => {
+    if (w && typeof w.walletFull === "string") {
+      rankByWallet.set(w.walletFull, i + 1);
+      colorByWallet.set(w.walletFull, WALLET_COLORS[i % WALLET_COLORS.length]);
+    }
+  });
+
+  const rowsHtml = activity
+    .map((e) => {
+      const action = String(e.action || "").toUpperCase();
+      const isBuy = action === "BOUGHT" || action === "TRANSFER_IN";
+      const isSell = action === "SOLD" || action === "TRANSFER_OUT";
+      const cls = isBuy ? "buy" : isSell ? "sell" : "";
+      const usd =
+        typeof e.usdValue === "number" && Number.isFinite(e.usdValue)
+          ? (e.usdValue > 0 ? "+" : e.usdValue < 0 ? "−" : "") +
+            fmtUsd(Math.abs(e.usdValue))
+          : "—";
+      const tokAmt = fmtTok(e.tokenAmount);
+      const ageTxt = formatAgeMin(e.ageMin);
+      // Demo signatures point at Solscan's homepage rather than a fake
+      // tx hash, so a curious user clicking through doesn't land on a
+      // "Transaction not found" error page.
+      const sigUrl = "https://solscan.io/";
+      const actionLbl = action.replace("_", " ");
+      const rank = rankByWallet.get(e.walletFull) || "?";
+      const rankDisp = rank === "?" ? "?" : "#" + rank;
+      const wColor = colorByWallet.get(e.walletFull) || "#333";
+      return `
+      <a class="iw-row ${cls}" style="--wc:${wColor}" href="${escapeHtml(sigUrl)}" target="_blank" rel="noopener noreferrer">
+        <span class="iw-row-rank" title="Rank in top 10 holders">${escapeHtml(rankDisp)}</span>
+        <span class="iw-row-wallet" data-wallet="${escapeHtml(e.walletFull || "")}" title="${escapeHtml(e.walletFull || "")}">${escapeHtml(e.wallet || "")}</span>
+        <span class="iw-row-action">${escapeHtml(actionLbl)}</span>
+        <span class="iw-row-amount">${escapeHtml(tokAmt)}</span>
+        <span class="iw-row-usd">${escapeHtml(usd)}</span>
+        <span class="iw-row-age">${escapeHtml(ageTxt)}</span>
+      </a>
+    `;
+    })
+    .join("");
+
+  slot.innerHTML = rowsHtml || `<div class="iw-feed-empty">No on-chain activity from these wallets in the last 6h.</div>`;
+
+  slot.querySelectorAll(".iw-row-wallet").forEach((el) => {
+    el.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      ev.preventDefault();
+      const w = el.getAttribute("data-wallet");
+      if (w) window.open("https://solscan.io/account/" + encodeURIComponent(w), "_blank", "noopener");
+    });
+  });
+
+  if (meta) {
+    const wActive = typeof demoActivity.walletsWithActivity === "number"
+      ? demoActivity.walletsWithActivity
+      : 0;
+    const wTotal = typeof demoActivity.totalCheckedWallets === "number"
+      ? demoActivity.totalCheckedWallets
+      : walletList.length;
+    meta.textContent = `${wActive}/${wTotal} wallets active`;
+  }
+
+  if (foot) {
+    const nf = typeof demoActivity.netFlowUsd === "number" && Number.isFinite(demoActivity.netFlowUsd)
+      ? demoActivity.netFlowUsd
+      : null;
+    if (nf !== null) {
+      let label;
+      let cls = "";
+      const abs = Math.abs(nf);
+      if (abs < 100) {
+        label = "QUIET · negligible flow";
+      } else if (abs < 1000) {
+        label = nf > 0 ? "BALANCED · slight buying" : "BALANCED · slight selling";
+      } else if (nf > 0) {
+        label = "ACCUMULATING";
+        cls = "buy";
+      } else {
+        label = "DISTRIBUTING";
+        cls = "sell";
+      }
+      const sign = nf > 0 ? "+" : nf < 0 ? "−" : "";
+      const valueDisp = sign + fmtUsd(Math.abs(nf));
+      foot.innerHTML = `
+        <div class="iw-flow ${cls}">
+          <span class="iw-flow-label">NET FLOW (${demoActivity.windowHours || 6}h)</span>
+          <span class="iw-flow-val">${escapeHtml(valueDisp)}</span>
+          <span class="iw-flow-state">${escapeHtml(label)}</span>
+        </div>
+      `;
+    } else {
+      foot.innerHTML = "";
+    }
+  }
+}
