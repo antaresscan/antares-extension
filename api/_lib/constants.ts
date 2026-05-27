@@ -266,7 +266,7 @@ export const API_TIMEOUT_HELIUS = 6000;
 export const SCORING_VERSION = "7.6.0";
 
 // ── SOFT REASONS (safe gate unlock) ───────────────────────────
-export const SOFT_REASONS: Record<string, boolean> = { age: true, holders: true, lp_unverified: true };
+export const SOFT_REASONS: Record<string, boolean> = { age: true, holders: true, lp_unverified: true, pump_imbalance: true };
 
 // ── RUG DATABASE ───────────────────────────────────────────
 export const MAX_RUG_INDEX = 5000;  // increased from 500 for production scale

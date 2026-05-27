@@ -556,3 +556,56 @@ describe("low_holders as HARD reason", () => {
     })).toBe("RUG");
   });
 });
+
+describe("pump_imbalance as SOFT reason — safe gate unlock", () => {
+  it("BONK-class: pump_imbalance + LP burned + 1000+ holders → gate opens (returns false)", () => {
+    // Established token with temporary buy/sell imbalance window should NOT be
+    // locked out of SAFE. LP burned + large holder base is sufficient to unlock.
+    const result = applySafeGateOverride({
+      safeBlocked: true,
+      forceRug: false,
+      safeBlockedReasons: ["pump_imbalance"],
+      tokenAgeHours: 500,
+      sourcesAvailableCount: 5,
+      holders: 5000,
+      lpBurned: true,
+      goPlusClean: true,
+      mint: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+    });
+    expect(result).toBe(false);
+  });
+
+  it("scam-class: pump_imbalance + LP NOT burned → gate stays closed (returns true)", () => {
+    // A scam token where LP is not burned should remain blocked even if
+    // the only classified reason is pump_imbalance. Path 1 requires lpBurned.
+    const result = applySafeGateOverride({
+      safeBlocked: true,
+      forceRug: false,
+      safeBlockedReasons: ["pump_imbalance"],
+      tokenAgeHours: 200,
+      sourcesAvailableCount: 5,
+      holders: 5000,
+      lpBurned: false,
+      goPlusClean: true,
+      mint: "SomeFakeScamTokenCAhere11111111111111111",
+    });
+    expect(result).toBe(true);
+  });
+
+  it("pump_imbalance + LP hard reason → gate stays closed (hard reason wins)", () => {
+    // When both pump_imbalance and a hard LP reason are present, the hard
+    // reason dominates — the token is still blocked.
+    const result = applySafeGateOverride({
+      safeBlocked: true,
+      forceRug: false,
+      safeBlockedReasons: ["pump_imbalance", "lp"],
+      tokenAgeHours: 500,
+      sourcesAvailableCount: 5,
+      holders: 5000,
+      lpBurned: false,
+      goPlusClean: true,
+      mint: "SomeFakeScamTokenCAhere11111111111111111",
+    });
+    expect(result).toBe(true);
+  });
+});
