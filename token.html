@@ -60,6 +60,15 @@ nav .actions a{font-size:9px;color:var(--dim);border:1px solid #1e1e22;padding:6
 nav .actions a:hover{color:var(--c);border-color:rgba(0,229,176,.35);background:rgba(0,229,176,.04)}
 nav .actions a.warn{color:#996060}
 nav .actions a.warn:hover{color:var(--orange);border-color:rgba(255,95,95,.4);background:rgba(255,95,95,.04)}
+/* Demo mode: same visual chrome as the <a> links but pointer-events:none
+   so clicking does nothing. No hover state — keeps the user inside the
+   demo experience rather than launching DexScreener/Solscan/RugCheck. */
+nav .actions .nav-inert{
+  font-size:9px;color:var(--dim);border:1px solid #1e1e22;padding:6px 12px;
+  letter-spacing:.1em;text-transform:uppercase;font-family:'IBM Plex Mono',monospace;
+  pointer-events:none;user-select:none;
+}
+nav .actions .nav-inert.warn{color:#996060}
 
 /* ── Loading + error ── */
 #loading{display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:120px;color:#444;font-size:10px;letter-spacing:.12em}
@@ -417,12 +426,20 @@ nav .actions a.warn:hover{color:var(--orange);border-color:rgba(255,95,95,.4);ba
   display:flex;flex-direction:column;
   background:#0a0a0c;border:1px solid var(--border);border-radius:3px;
   overflow-y:auto;max-height:320px;
+  /* Firefox scrollbar styling — Chrome/WebKit uses ::-webkit-scrollbar
+     below. Without scrollbar-color the FF scrollbar inherits OS default
+     (light grey on light, near-invisible on the dark panel). */
+  scrollbar-width:thin;
+  scrollbar-color:#2a2a35 #0a0a0c;
 }
-/* Thin custom scrollbar — keeps the dark aesthetic */
-.iw-feed::-webkit-scrollbar{width:4px}
+/* Custom scrollbar — bumped from 4px to 8px and lighter thumb so the
+   "feed is scrollable" affordance is visible without hovering. Earlier
+   the 4px dark-on-dark track read as a hairline border rather than a
+   scroll handle. */
+.iw-feed::-webkit-scrollbar{width:8px}
 .iw-feed::-webkit-scrollbar-track{background:#0a0a0c}
-.iw-feed::-webkit-scrollbar-thumb{background:#1f1f24;border-radius:2px}
-.iw-feed::-webkit-scrollbar-thumb:hover{background:#2a2a30}
+.iw-feed::-webkit-scrollbar-thumb{background:#2a2a35;border-radius:4px;border:1px solid #15151a}
+.iw-feed::-webkit-scrollbar-thumb:hover{background:#3a3a45}
 .iw-row{
   display:grid;
   /* Rank pill (#N) added as the first column at 36px so users can
@@ -454,6 +471,13 @@ nav .actions a.warn:hover{color:var(--orange);border-color:rgba(255,95,95,.4);ba
   border-bottom:1px dashed transparent;
 }
 .iw-row-wallet:hover{color:#ddd;border-bottom-color:#444}
+/* Demo rows — same visual layout as real .iw-row but inert: no
+   navigation, no wallet sub-link drill-through. cursor:default makes
+   the inert state obvious; the wallet hover hint is suppressed too. */
+.iw-row-demo{cursor:default}
+.iw-row-demo:hover{background:transparent !important}
+.iw-row-demo .iw-row-wallet{cursor:default}
+.iw-row-demo .iw-row-wallet:hover{color:var(--wc,#888);border-bottom-color:transparent}
 .iw-row-action{
   font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#666;
 }
