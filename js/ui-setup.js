@@ -191,6 +191,25 @@ export function setupRevealObserver() {
 // Tolerant of 200-with-empty / network errors / Helius outages: every
 // failure path resolves to a clear empty/error state, never a broken UI.
 // ──────────────────────────────────────────────────────────────────────
+
+// 10 distinct accent colours — one per top-10 wallet rank.
+// Chosen to stand out on the dark background and to be clearly different
+// from each other AND from the buy/sell palette (buy #00e5b0, sell #ff5f5f).
+// Applied as a 2px left border (--wc CSS var) on each transaction row so
+// the same wallet is immediately recognisable across multiple entries.
+const WALLET_COLORS = [
+  "#60a5fa", // #1  blue
+  "#c084fc", // #2  purple
+  "#f97316", // #3  orange
+  "#2dd4bf", // #4  teal
+  "#facc15", // #5  yellow
+  "#f472b6", // #6  pink
+  "#a3e635", // #7  lime
+  "#e879f9", // #8  fuchsia
+  "#38bdf8", // #9  sky
+  "#fb7185", // #10 rose
+];
+
 export async function loadInsiderActivity() {
   const wrap = document.querySelector(".iw-feed-wrap");
   if (!wrap) return;
@@ -229,9 +248,10 @@ export async function loadInsiderActivity() {
         const hold = w.holdings != null ? `${tok} tokens` : "";
         const status = w.active ? "ACTIVE" : "IDLE";
         const cls = w.active ? "active" : "idle";
+        const wColor = WALLET_COLORS[i % WALLET_COLORS.length];
         const url = `https://solscan.io/account/${encodeURIComponent(w.walletFull || "")}`;
         return `
-        <a class="iw-holder-row ${cls}" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">
+        <a class="iw-holder-row ${cls}" style="--wc:${wColor}" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">
           <span class="iw-holder-rank">#${idx}</span>
           <span class="iw-holder-wallet" title="${escapeHtml(w.walletFull || "")}">${escapeHtml(w.wallet || "")}</span>
           <span class="iw-holder-pct">${escapeHtml(pct)}</span>
@@ -297,9 +317,11 @@ export async function loadInsiderActivity() {
     // to "?" when the wallet isn't in the top 10 snapshot (rare — e.g.
     // out-of-order resolution between activity feed + holders snapshot).
     const rankByWallet = new Map();
+    const colorByWallet = new Map();
     walletList.forEach((w, i) => {
       if (w && typeof w.walletFull === "string") {
         rankByWallet.set(w.walletFull, i + 1);
+        colorByWallet.set(w.walletFull, WALLET_COLORS[i % WALLET_COLORS.length]);
       }
     });
 
@@ -327,8 +349,9 @@ export async function loadInsiderActivity() {
         const actionLbl = action.replace("_", " ");
         const rank = rankByWallet.get(e.walletFull) || "?";
         const rankDisp = rank === "?" ? "?" : "#" + rank;
+        const wColor = colorByWallet.get(e.walletFull) || "#333";
         return `
-        <a class="iw-row ${cls}" href="${escapeHtml(sigUrl)}" target="_blank" rel="noopener noreferrer">
+        <a class="iw-row ${cls}" style="--wc:${wColor}" href="${escapeHtml(sigUrl)}" target="_blank" rel="noopener noreferrer">
           <span class="iw-row-rank" title="Rank in top 10 holders">${escapeHtml(rankDisp)}</span>
           <span class="iw-row-wallet" data-wallet="${escapeHtml(e.walletFull || "")}" title="${escapeHtml(e.walletFull || "")}">${escapeHtml(e.wallet || "")}</span>
           <span class="iw-row-action">${escapeHtml(actionLbl)}</span>

@@ -416,8 +416,13 @@ nav .actions a.warn:hover{color:var(--orange);border-color:rgba(255,95,95,.4);ba
 .iw-feed{
   display:flex;flex-direction:column;
   background:#0a0a0c;border:1px solid var(--border);border-radius:3px;
-  overflow:hidden;
+  overflow-y:auto;max-height:320px;
 }
+/* Thin custom scrollbar — keeps the dark aesthetic */
+.iw-feed::-webkit-scrollbar{width:4px}
+.iw-feed::-webkit-scrollbar-track{background:#0a0a0c}
+.iw-feed::-webkit-scrollbar-thumb{background:#1f1f24;border-radius:2px}
+.iw-feed::-webkit-scrollbar-thumb:hover{background:#2a2a30}
 .iw-row{
   display:grid;
   /* Rank pill (#N) added as the first column at 36px so users can
@@ -427,6 +432,10 @@ nav .actions a.warn:hover{color:var(--orange);border-color:rgba(255,95,95,.4);ba
   align-items:center;
   gap:8px;
   padding:10px 14px;border-top:1px solid #15151a;
+  /* Per-wallet accent border: JS injects --wc on each row based on
+     the wallet's rank in the top 10. Defaults transparent so the
+     header row (no --wc set) has no visible left border. */
+  border-left:2px solid var(--wc,transparent);
   font-family:'IBM Plex Mono',monospace;font-size:11px;
   text-decoration:none;color:#bbb;
   transition:background .15s ease;
@@ -512,6 +521,7 @@ nav .actions a.warn:hover{color:var(--orange);border-color:rgba(255,95,95,.4);ba
   grid-template-columns:34px 1fr 64px 1fr 60px;
   align-items:center;gap:10px;
   padding:10px 14px;border-bottom:1px solid #13131a;
+  border-left:2px solid var(--wc,transparent);
   text-decoration:none;color:#bbb;
   font-family:'IBM Plex Mono',monospace;font-size:10.5px;
   transition:background .12s ease;
