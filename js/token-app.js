@@ -106,11 +106,12 @@ const DEMO_DATA = {
     topHolderPct: 2.8, top10HolderPct: 9.4,
     // 3 cards, all clean — SAFE story: no concentration risk, no prior
     // rugs, organic distribution. repWarn:false on all so the bars
-    // render in neutral grey rather than warn yellow.
+    // render in neutral grey rather than warn yellow. Sorted by pct
+    // descending so the largest position renders leftmost.
     criticalActors: [
-      { type: "dev",     tag: "Dev",          pct: 0.1, addr: "8FmKr…vQ2N",      repLbl: "Reputation · 0 prior rugs · verified",       repWidth: 15, repWarn: false, desc: "Creator wallet dormant since launch. Mint authority renounced, no prior token launches flagged." },
-      { type: "insider", tag: "Top Holder",   pct: 2.8, addr: "7XHk…Xp4N",       repLbl: "Known treasury · multisig",                  repWidth: 22, repWarn: false, desc: "Holds <b>2.8%</b> of supply as multisig treasury — vesting locked, transparent operations." },
       { type: "cluster", tag: "Distribution", pct: 6.6, addr: "Top 2-10 wallets", repLbl: "Coordination · organic market-maker spread", repWidth: 28, repWarn: false, desc: "Top 2-10 hold <b>6.6%</b> combined — well-distributed across CEX hot wallets and long-term holders." },
+      { type: "insider", tag: "Top Holder",   pct: 2.8, addr: "7XHk…Xp4N",       repLbl: "Known treasury · multisig",                  repWidth: 22, repWarn: false, desc: "Holds <b>2.8%</b> of supply as multisig treasury — vesting locked, transparent operations." },
+      { type: "dev",     tag: "Dev",          pct: 0.1, addr: "8FmKr…vQ2N",      repLbl: "Reputation · 0 prior rugs · verified",       repWidth: 15, repWarn: false, desc: "Creator wallet dormant since launch. Mint authority renounced, no prior token launches flagged." },
     ],
     holderActivity: { rows: [], netFlowPct: 0, netFlowDirection: "flat" },
     outcomeStats: null,
@@ -187,11 +188,11 @@ const DEMO_DATA = {
     // concentration risk, cluster is the rest of the top 10. Only the
     // insider card carries the meaningful warning; dev + cluster stay
     // neutral so the user sees "the structural issue is the one wallet,
-    // not everything is broken".
+    // not everything is broken". Sorted by pct descending.
     criticalActors: [
-      { type: "dev",     tag: "Dev",       pct: 0.3,  addr: "5jPdF…aKtR",       repLbl: "Reputation · 0 prior rugs · clean",          repWidth: 18, repWarn: false, desc: "Creator wallet dormant since launch — mint authority renounced, no prior token launches flagged." },
-      { type: "insider", tag: "Insider",   pct: 10.5, addr: "9SLP…KpKS",        repLbl: "Concentration risk · single wallet",         repWidth: 78, repWarn: false, desc: "Holds <b>10.5%</b> of supply — one-wallet dump would meaningfully move the price." },
       { type: "cluster", tag: "Cluster A", pct: 23.3, addr: "Top 2-10 holders", repLbl: "Coordination · moderate cluster activity",   repWidth: 62, repWarn: false, desc: "Remaining top 10 hold <b>23.3%</b> combined — entered within similar windows, monitor for synchronized exits." },
+      { type: "insider", tag: "Insider",   pct: 10.5, addr: "9SLP…KpKS",        repLbl: "Concentration risk · single wallet",         repWidth: 78, repWarn: false, desc: "Holds <b>10.5%</b> of supply — one-wallet dump would meaningfully move the price." },
+      { type: "dev",     tag: "Dev",       pct: 0.3,  addr: "5jPdF…aKtR",       repLbl: "Reputation · 0 prior rugs · clean",          repWidth: 18, repWarn: false, desc: "Creator wallet dormant since launch — mint authority renounced, no prior token launches flagged." },
     ],
     holderActivity: {
       rows: [
@@ -295,9 +296,9 @@ const DEMO_DATA = {
     // All 3 carry repWarn:true → yellow bars across the board so the
     // visual matches the verdict at a glance.
     criticalActors: [
-      { type: "dev",     tag: "Dev",       pct: 0.5,  addr: "3KrTm…wHpL",       repLbl: "Reputation · 1 prior token · flagged",         repWidth: 60, repWarn: true, desc: "Linked to <b>PIPPIN-V1</b> which lost 92% within 30 days. Same funder address pattern." },
-      { type: "insider", tag: "Insider",   pct: 27.4, addr: "u6PJ…Xq2w",        repLbl: "Critical concentration · single wallet",       repWidth: 95, repWarn: true, desc: "Holds <b>27.4%</b> of supply — one-wallet dump would crash the price. Active sells in last 6h." },
       { type: "cluster", tag: "Cluster A", pct: 40.7, addr: "Top 2-10 holders", repLbl: "Coordination · synchronized entry pattern",     repWidth: 85, repWarn: true, desc: "8 sibling wallets (<b>40.7%</b> combined) bought in the same 4-block window. Pattern matches coordinated insider entry." },
+      { type: "insider", tag: "Insider",   pct: 27.4, addr: "u6PJ…Xq2w",        repLbl: "Critical concentration · single wallet",       repWidth: 95, repWarn: true, desc: "Holds <b>27.4%</b> of supply — one-wallet dump would crash the price. Active sells in last 6h." },
+      { type: "dev",     tag: "Dev",       pct: 0.5,  addr: "3KrTm…wHpL",       repLbl: "Reputation · 1 prior token · flagged",         repWidth: 60, repWarn: true, desc: "Linked to <b>PIPPIN-V1</b> which lost 92% within 30 days. Same funder address pattern." },
     ],
     holderActivity: {
       rows: [
@@ -408,9 +409,9 @@ const DEMO_DATA = {
     // sibling wallets sharing the dev's funding source. All maxed at
     // repWarn:true so the section reads as a uniform red wall.
     criticalActors: [
-      { type: "dev",     tag: "Dev",       pct: 1.2,  addr: "GpXr2…bN8K",       repLbl: "Reputation · 3 / 4 prior rugs",                 repWidth: 92, repWarn: true, desc: "Funder traced to <b>3 prior rugs</b> averaging −94% loss. Same wallet pattern and exit timing." },
       { type: "insider", tag: "Insider",   pct: 44.0, addr: "HsXp…wG31",        repLbl: "Extreme concentration · dev-controlled",        repWidth: 100, repWarn: true, desc: "Holds <b>44.0%</b> of supply — likely dev wallet. Can crash to zero in one transaction." },
       { type: "cluster", tag: "Cluster A", pct: 9.6,  addr: "Top 2-10 holders", repLbl: "Coordination · sibling wallet pattern",         repWidth: 78, repWarn: true, desc: "9 wallets (<b>9.6%</b>) share funding source with dev — coordinated sniper entry, sell-and-bounce pattern detected." },
+      { type: "dev",     tag: "Dev",       pct: 1.2,  addr: "GpXr2…bN8K",       repLbl: "Reputation · 3 / 4 prior rugs",                 repWidth: 92, repWarn: true, desc: "Funder traced to <b>3 prior rugs</b> averaging −94% loss. Same wallet pattern and exit timing." },
     ],
     holderActivity: {
       rows: [
@@ -624,12 +625,25 @@ function render(d, ca) {
     return "#";
   }
   const dexUrl = d.pair?.url || `https://dexscreener.com/solana/${mint}`;
-  document.getElementById("nav-actions").innerHTML = `
-    <span class="ca-pill" id="ca-disp">${escapeHtml(caShort)}</span>
+  // In demo mode the three explorer links are rendered as inert <span>
+  // elements — the demo lives inside antaresscan.com/demo and we don't
+  // want a visitor accidentally pulled out to DexScreener/Solscan/Rug-
+  // Check for a token they haven't actually scanned themselves yet.
+  // Same visual styling (the .nav-actions CSS targets the children
+  // regardless of tag) so the header looks identical.
+  const navLinksHtml = isDemo
+    ? `
+    <span class="nav-inert">↗ DexScreener</span>
+    <span class="nav-inert">↗ Solscan</span>
+    <span class="nav-inert warn">⚠ RugCheck</span>
+  `
+    : `
     <a href="${safeUrl(dexUrl)}" target="_blank" rel="noopener noreferrer">↗ DexScreener</a>
     <a href="https://solscan.io/token/${encodeURIComponent(mint)}" target="_blank" rel="noopener noreferrer">↗ Solscan</a>
     <a href="https://rugcheck.xyz/tokens/${encodeURIComponent(mint)}" target="_blank" rel="noopener noreferrer" class="warn">⚠ RugCheck</a>
   `;
+  document.getElementById("nav-actions").innerHTML = `
+    <span class="ca-pill" id="ca-disp">${escapeHtml(caShort)}</span>${navLinksHtml}`;
 
   // ── Build flag rows with severity dots
   function severityClass(sev) {

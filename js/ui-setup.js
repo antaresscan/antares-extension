@@ -480,37 +480,30 @@ export function renderDemoInsiderActivity(demoActivity) {
           : "—";
       const tokAmt = fmtTok(e.tokenAmount);
       const ageTxt = formatAgeMin(e.ageMin);
-      // Demo signatures point at Solscan's homepage rather than a fake
-      // tx hash, so a curious user clicking through doesn't land on a
-      // "Transaction not found" error page.
-      const sigUrl = "https://solscan.io/";
+      // Demo rows are inert — wrapping in <div> instead of <a> means no
+      // navigation on row click. The wallet sub-cell also gets cursor:
+      // default + no click handler so the dashed-underline hover hint
+      // doesn't appear. This keeps the user inside the demo experience
+      // (clicking out to Solscan from a fake tx hash would land them on
+      // a "Transaction not found" page).
       const actionLbl = action.replace("_", " ");
       const rank = rankByWallet.get(e.walletFull) || "?";
       const rankDisp = rank === "?" ? "?" : "#" + rank;
       const wColor = colorByWallet.get(e.walletFull) || "#333";
       return `
-      <a class="iw-row ${cls}" style="--wc:${wColor}" href="${escapeHtml(sigUrl)}" target="_blank" rel="noopener noreferrer">
+      <div class="iw-row iw-row-demo ${cls}" style="--wc:${wColor}">
         <span class="iw-row-rank" title="Rank in top 10 holders">${escapeHtml(rankDisp)}</span>
-        <span class="iw-row-wallet" data-wallet="${escapeHtml(e.walletFull || "")}" title="${escapeHtml(e.walletFull || "")}">${escapeHtml(e.wallet || "")}</span>
+        <span class="iw-row-wallet" title="${escapeHtml(e.walletFull || "")}">${escapeHtml(e.wallet || "")}</span>
         <span class="iw-row-action">${escapeHtml(actionLbl)}</span>
         <span class="iw-row-amount">${escapeHtml(tokAmt)}</span>
         <span class="iw-row-usd">${escapeHtml(usd)}</span>
         <span class="iw-row-age">${escapeHtml(ageTxt)}</span>
-      </a>
+      </div>
     `;
     })
     .join("");
 
   slot.innerHTML = rowsHtml || `<div class="iw-feed-empty">No on-chain activity from these wallets in the last 6h.</div>`;
-
-  slot.querySelectorAll(".iw-row-wallet").forEach((el) => {
-    el.addEventListener("click", (ev) => {
-      ev.stopPropagation();
-      ev.preventDefault();
-      const w = el.getAttribute("data-wallet");
-      if (w) window.open("https://solscan.io/account/" + encodeURIComponent(w), "_blank", "noopener");
-    });
-  });
 
   if (meta) {
     const wActive = typeof demoActivity.walletsWithActivity === "number"
