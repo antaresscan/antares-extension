@@ -147,6 +147,86 @@ describe("layerDexScreener", () => {
     const result = layerDexScreener(pair, 500000, 1440);
     expect(result.flags.some(f => /extreme 24h pump|large 24h pump/i.test(f.label))).toBe(false);
   });
+
+  // ── Slow rug / progressive decline patterns ──────────────────────────────
+
+  const basePair = (priceChange: object, txns?: object): DexScreenerPair => ({
+    liquidity: { usd: 100000 },
+    volume: { h24: 50000 },
+    priceChange,
+    txns: { m5: (txns ?? { buys: 5, sells: 7 }) },
+    info: {
+      socials: [{ type: "twitter", url: "https://twitter.com/test" }],
+      websites: [{ url: "https://test.com" }],
+    },
+  });
+
+  it("sharp 6h sell-off (-35%) triggers safeBlocked", () => {
+    const result = layerDexScreener(basePair({ h6: -35, h1: -5, h24: -10, m5: 1 }), 500000, 1440);
+    expect(result.safeBlocked).toBe(true);
+    expect(result.flags.some(f => /sharp 6h sell-off/i.test(f.label))).toBe(true);
+  });
+
+  it("sharp 6h sell-off does NOT fire when slow-rug check already fired (pc6 = -55, pc1 = -20)", () => {
+    const result = layerDexScreener(basePair({ h6: -55, h1: -20, h24: -30, m5: 1 }), 500000, 1440);
+    expect(result.flags.some(f => /sharp 6h sell-off/i.test(f.label))).toBe(false);
+    expect(result.flags.some(f => /slow rug detected/i.test(f.label))).toBe(true);
+  });
+
+  it("significant 24h dump (-55%) triggers safeBlocked", () => {
+    const result = layerDexScreener(basePair({ h24: -55, h1: -5, h6: -10, m5: 1 }), 500000, 1440);
+    expect(result.safeBlocked).toBe(true);
+    expect(result.flags.some(f => /significant 24h dump/i.test(f.label))).toBe(true);
+  });
+
+  it("brutal dump (-85%) now sets safeBlocked", () => {
+    const result = layerDexScreener(basePair({ h24: -85, h1: -10, h6: -20, m5: 1 }), 500000, 1440);
+    expect(result.safeBlocked).toBe(true);
+    expect(result.flags.some(f => /brutal dump/i.test(f.label))).toBe(true);
+  });
+
+  it("pump reversal (+120% 24h → -25% 6h) triggers safeBlocked", () => {
+    const result = layerDexScreener(basePair({ h24: 120, h6: -25, h1: -5, m5: 1 }), 500000, 1440);
+    expect(result.safeBlocked).toBe(true);
+    expect(result.flags.some(f => /pump reversal/i.test(f.label))).toBe(true);
+  });
+
+  it("pump reversal does NOT fire when pc24 is below 80 threshold", () => {
+    const result = layerDexScreener(basePair({ h24: 70, h6: -25, h1: -5, m5: 1 }), 500000, 1440);
+    expect(result.flags.some(f => /pump reversal/i.test(f.label))).toBe(false);
+  });
+
+  it("progressive dump (-25% 6h + -30% 24h) triggers safeBlocked", () => {
+    const result = layerDexScreener(basePair({ h6: -25, h24: -30, h1: -5, m5: 1 }), 500000, 1440);
+    expect(result.safeBlocked).toBe(true);
+    expect(result.flags.some(f => /progressive dump/i.test(f.label))).toBe(true);
+  });
+
+  it("progressive dump does NOT fire when 6h already hit standalone threshold (-35%)", () => {
+    const result = layerDexScreener(basePair({ h6: -35, h24: -30, h1: -5, m5: 1 }), 500000, 1440);
+    expect(result.flags.some(f => /progressive dump/i.test(f.label))).toBe(false);
+    expect(result.flags.some(f => /sharp 6h sell-off/i.test(f.label))).toBe(true);
+  });
+
+  it("coordinated exit (price -10% + sells 4x buys) triggers safeBlocked", () => {
+    const result = layerDexScreener(
+      basePair({ h1: -10, h6: -5, h24: -15, m5: 1 }, { buys: 3, sells: 12 }),
+      500000, 1440,
+    );
+    expect(result.safeBlocked).toBe(true);
+    expect(result.flags.some(f => /coordinated exit/i.test(f.label))).toBe(true);
+  });
+
+  it("healthy pair is NOT flagged by any slow-rug pattern", () => {
+    const result = layerDexScreener(
+      basePair({ h1: 5, h6: 10, h24: 20, m5: 1 }, { buys: 10, sells: 8 }),
+      500000, 1440,
+    );
+    expect(result.flags.some(f =>
+      /sharp 6h|significant 24h dump|brutal dump|pump reversal|progressive dump|coordinated exit/i.test(f.label)
+    )).toBe(false);
+    expect(result.safeBlocked).toBe(false);
+  });
 });
 
 // ═══ LAYER 2 — RugCheck ═════════════════════════════════════════════════════
