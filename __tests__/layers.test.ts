@@ -217,6 +217,24 @@ describe("layerDexScreener", () => {
     expect(result.flags.some(f => /coordinated exit/i.test(f.label))).toBe(true);
   });
 
+  it("buy/sell imbalance (5:1) sets safeBlocked", () => {
+    const result = layerDexScreener(
+      basePair({ h1: 5, h6: 10, h24: 20, m5: 1 }, { buys: 30, sells: 5 }),
+      500000, 1440,
+    );
+    expect(result.safeBlocked).toBe(true);
+    expect(result.flags.some(f => /buy\/sell imbalance/i.test(f.label))).toBe(true);
+  });
+
+  it("buy/sell imbalance (zero sells) sets safeBlocked", () => {
+    const result = layerDexScreener(
+      basePair({ h1: 5, h6: 10, h24: 20, m5: 1 }, { buys: 10, sells: 0 }),
+      500000, 1440,
+    );
+    expect(result.safeBlocked).toBe(true);
+    expect(result.flags.some(f => /buy\/sell imbalance/i.test(f.label))).toBe(true);
+  });
+
   it("healthy pair is NOT flagged by any slow-rug pattern", () => {
     const result = layerDexScreener(
       basePair({ h1: 5, h6: 10, h24: 20, m5: 1 }, { buys: 10, sells: 8 }),
