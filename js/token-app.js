@@ -42,6 +42,7 @@ import {
   setupFreshnessTicker,
   setupRevealObserver,
   loadInsiderActivity,
+  renderDemoInsiderActivity,
 } from "./ui-setup.js";
 import { API, fetchWithRetry } from "./api-client.js";
 
@@ -73,8 +74,8 @@ const DEMO_DATA = {
     mintAuthority: false, freezeAuthority: false, honeypot: false,
     lpBurned: true, lpLocked: false, lpLockedPct: 100,
     liquidity: 9083893, marketCap: 639294195, priceUsd: 0.01017,
-    holders: 544390, volume24h: 324.56, volume1h: null,
-    priceChange5m: null, priceChange1h: null, priceChange24h: 3.71,
+    holders: 544390, volume24h: 12480000, volume1h: 520000,
+    priceChange5m: 0.18, priceChange1h: 0.91, priceChange24h: 3.71,
     solscanTokenAgeHours: 137,
     tokenLogo: "https://cdn.dexscreener.com/cms/images/9d5188f603b49ab02f7a75e5d2c2959ec2947c98181501fb11688672e9394efd?width=800&height=800&quality=95&format=auto",
     flags: [
@@ -91,8 +92,18 @@ const DEMO_DATA = {
           { url: "https://discord.gg/pudgypenguins", type: "discord" },
         ],
       },
+      txns: {
+        m5:  { buys: 6,    sells: 4    },
+        h1:  { buys: 75,   sells: 50   },
+        h6:  { buys: 450,  sells: 300  },
+        h24: { buys: 1800, sells: 1200 },
+      },
+      volume: { m5: 41667, h1: 520000, h6: 3120000, h24: 12480000 },
     },
-    topHolderPct: null, top10HolderPct: null,
+    // SAFE narrative — well-distributed holders, no whale dominance.
+    // top10 < 15 + top1 < 5 + 0 sniper flags → "CLEAN LAUNCH" verdict
+    // in the Sniper Map tab.
+    topHolderPct: 2.8, top10HolderPct: 9.4,
     criticalActors: [],
     holderActivity: { rows: [], netFlowPct: 0, netFlowDirection: "flat" },
     outcomeStats: null,
@@ -100,6 +111,36 @@ const DEMO_DATA = {
     sources_used: ["dexscreener", "rugcheck", "goplus", "solscan", "chart"],
     aiSummary: "PENGU shows a SAFE profile with fully burned LP and 30d+ established trading on Solana. Helius source temporarily unavailable lowers confidence to 80% but RugCheck and GoPlus cross-validate the safe verdict. No critical flags detected — strong holder distribution across 544,390 wallets with no concentration risk.",
     fetchedAt: _demoTs,
+    // demoActivity — pre-baked top-10 wallet snapshot + 6h activity feed.
+    // Story: legitimate treasury + market makers, organic retail flow,
+    // tiny positive net flow. The wallets[] order drives the rank pill
+    // (#1..#10) and the per-wallet color in the feed rows.
+    demoActivity: {
+      wallets: [
+        { walletFull: "7XHk9aRpDjeqLvCpTreasury2024MultiSigYpKvXp4N", wallet: "7XHk…Xp4N", pctSupply: 2.8, holdings: 6720000000, active: true },
+        { walletFull: "5kQwT3vYpFcN8aHmFoundationVaultPENGUbCdEf9K", wallet: "5kQw…f9K",  pctSupply: 1.9, holdings: 4560000000, active: true },
+        { walletFull: "9MnPrTYzKvPjQrLmBinanceHotWalletPENGUxXY3Z", wallet: "9MnP…Y3Z",  pctSupply: 1.4, holdings: 3360000000, active: true },
+        { walletFull: "2DfGhJ7nVqWxRpKzMarketMakerWintermutePNGUuq", wallet: "2DfG…uq",   pctSupply: 1.1, holdings: 2640000000, active: false },
+        { walletFull: "8VxByU6tQzRpKjmCoinbaseColdStoragePNGUaBcD", wallet: "8VxB…aBcD", pctSupply: 0.8, holdings: 1920000000, active: false },
+        { walletFull: "3JtNcWzQXyPm4QrPRaydiumLPProviderPENGUxyz1", wallet: "3JtN…xyz1", pctSupply: 0.6, holdings: 1440000000, active: false },
+        { walletFull: "6KsXzVnPmQyJ8rT9LongTermHolderPENGUaBcDeF7", wallet: "6KsX…DeF7", pctSupply: 0.5, holdings: 1200000000, active: false },
+        { walletFull: "4FmAqRrTsPyVx8WhDiamondHandsPENGUaBcDeFgHi", wallet: "4FmA…FgHi", pctSupply: 0.4, holdings: 960000000,  active: false },
+        { walletFull: "7HbCxQrPmVtKgN2DActiveTraderPENGUxXyZ2bC3d", wallet: "7HbC…2bC3d", pctSupply: 0.3, holdings: 720000000,  active: false },
+        { walletFull: "9PnErWqXyZ3MkYWaWhaleHolderPENGUjJkLmNoP4q", wallet: "9PnE…NoP4q", pctSupply: 0.2, holdings: 480000000,  active: false },
+      ],
+      activity: [
+        { action: "BOUGHT", walletFull: "9MnPrTYzKvPjQrLmBinanceHotWalletPENGUxXY3Z", wallet: "9MnP…Y3Z",  usdValue: 1140, tokenAmount: 112000, ageMin: 8  },
+        { action: "BOUGHT", walletFull: "7XHk9aRpDjeqLvCpTreasury2024MultiSigYpKvXp4N", wallet: "7XHk…Xp4N", usdValue: 320,  tokenAmount: 31500,  ageMin: 24 },
+        { action: "SOLD",   walletFull: "5kQwT3vYpFcN8aHmFoundationVaultPENGUbCdEf9K", wallet: "5kQw…f9K",  usdValue: -180, tokenAmount: 17700,  ageMin: 47 },
+        { action: "BOUGHT", walletFull: "9MnPrTYzKvPjQrLmBinanceHotWalletPENGUxXY3Z", wallet: "9MnP…Y3Z",  usdValue: 240,  tokenAmount: 23600,  ageMin: 89 },
+        { action: "SOLD",   walletFull: "7XHk9aRpDjeqLvCpTreasury2024MultiSigYpKvXp4N", wallet: "7XHk…Xp4N", usdValue: -425, tokenAmount: 41800,  ageMin: 142 },
+        { action: "BOUGHT", walletFull: "5kQwT3vYpFcN8aHmFoundationVaultPENGUbCdEf9K", wallet: "5kQw…f9K",  usdValue: 815,  tokenAmount: 80100,  ageMin: 218 },
+      ],
+      walletsWithActivity: 3,
+      totalCheckedWallets: 10,
+      netFlowUsd: 1910,
+      windowHours: 6,
+    },
   },
   "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump": {
     score: 750, risk: "CAUTION", confidence: 100,
@@ -108,8 +149,8 @@ const DEMO_DATA = {
     mintAuthority: false, freezeAuthority: false, honeypot: false,
     lpBurned: true, lpLocked: false, lpLockedPct: 99.71,
     liquidity: 7634137, marketCap: 205604372, priceUsd: 0.2056,
-    holders: 164066, volume24h: 596852.89, volume1h: 60428.92,
-    priceChange5m: null, priceChange1h: -0.93, priceChange24h: 3.39,
+    holders: 164066, volume24h: 4080000, volume1h: 198000,
+    priceChange5m: -0.12, priceChange1h: -0.93, priceChange24h: 3.39,
     solscanTokenAgeHours: 13384,
     tokenLogo: "https://cdn.dexscreener.com/cms/images/9af5672845c89585e9ff1e3b26a640090324aa4d92222052d1043e60ef8182de?width=800&height=800&quality=95&format=auto",
     flags: [
@@ -123,6 +164,16 @@ const DEMO_DATA = {
         websites: [{ url: "https://www.infinitebackrooms.com/dreams/conversation-1721540624-scenario-terminal-of-truths-txt", label: "Website" }],
         socials: [{ url: "https://x.com/FartCoinOfSOL", type: "twitter" }],
       },
+      // CAUTION narrative — slightly more sells than buys (distribution
+      // pressure from the 10.5% wallet's smaller siblings) but volume
+      // is genuine (avg trade $2.4K on $7.6M LP → no wash).
+      txns: {
+        m5:  { buys: 3,    sells: 4    },
+        h1:  { buys: 35,   sells: 50   },
+        h6:  { buys: 175,  sells: 250  },
+        h24: { buys: 700,  sells: 1000 },
+      },
+      volume: { m5: 17000, h1: 198000, h6: 1020000, h24: 4080000 },
     },
     topHolderPct: 10.54, top10HolderPct: 33.81,
     criticalActors: [
@@ -151,6 +202,40 @@ const DEMO_DATA = {
     sources_used: ["dexscreener", "rugcheck", "goplus", "helius", "solscan", "chart"],
     aiSummary: "Fartcoin lands on CAUTION because a single wallet holds 11% of supply — a meaningful concentration risk even with otherwise solid fundamentals. LP is fully burned, mint and freeze authorities are revoked, no honeypot, and the token has 30d+ of trading history. The verdict is not DANGER because the rest of the structural posture is clean; it is not SAFE because the concentrated wallet alone has enough leverage to swing the price.",
     fetchedAt: _demoTs,
+    // CAUTION narrative — the 10.5% insider wallet (#1) is mostly idle
+    // but #2 + #3 (its smaller siblings) drip-sell. Net flow slightly
+    // negative. Mostly retail noise underneath. Several rows so the
+    // scrollable feed actually demonstrates the new scroll behaviour.
+    demoActivity: {
+      wallets: [
+        { walletFull: "9SLP7vTw5KpKS3rN8FQzMxYHcVgPq2DnEjRbWaXuKpKS", wallet: "9SLP…KpKS", pctSupply: 10.5, holdings: 105000000, active: true  },
+        { walletFull: "u6PJ4mQzXq2wEr8tYrKpL5nVcBxHaGfDjSwRtPmNxQ2w", wallet: "u6PJ…Xq2w", pctSupply: 6.8,  holdings: 68000000,  active: true  },
+        { walletFull: "E2RvKpL5atYyN8mQzXq2wEr8tYrKpL5nVcBxHaGfDjSw", wallet: "E2Rv…atYy", pctSupply: 4.2,  holdings: 42000000,  active: true  },
+        { walletFull: "3LpMwQrTsVxYzBcDeFgHjKlMnOpQrStUvWxYzAbCdEfG", wallet: "3LpM…CdEfG", pctSupply: 3.1,  holdings: 31000000,  active: true  },
+        { walletFull: "7BfNzVxYpQrTsUwXyZaBcDeFgHjKlMnOpQrStUvWxYz5", wallet: "7BfN…WxYz5", pctSupply: 2.4,  holdings: 24000000,  active: false },
+        { walletFull: "5CgMwQrTsVxYzBcDeFgHjKlMnOpQrStUvWxYzAbCdEf8", wallet: "5CgM…CdEf8", pctSupply: 1.8,  holdings: 18000000,  active: true  },
+        { walletFull: "8DhNwQrTsVxYzBcDeFgHjKlMnOpQrStUvWxYzAbCdEfH", wallet: "8DhN…CdEfH", pctSupply: 1.5,  holdings: 15000000,  active: false },
+        { walletFull: "4EiOwQrTsVxYzBcDeFgHjKlMnOpQrStUvWxYzAbCdEfP", wallet: "4EiO…CdEfP", pctSupply: 1.4,  holdings: 14000000,  active: false },
+        { walletFull: "6FjPwQrTsVxYzBcDeFgHjKlMnOpQrStUvWxYzAbCdEfQ", wallet: "6FjP…CdEfQ", pctSupply: 1.2,  holdings: 12000000,  active: false },
+        { walletFull: "2GkQwQrTsVxYzBcDeFgHjKlMnOpQrStUvWxYzAbCdEfR", wallet: "2GkQ…CdEfR", pctSupply: 0.9,  holdings: 9000000,   active: false },
+      ],
+      activity: [
+        { action: "SOLD",   walletFull: "u6PJ4mQzXq2wEr8tYrKpL5nVcBxHaGfDjSwRtPmNxQ2w", wallet: "u6PJ…Xq2w", usdValue: -2450, tokenAmount: 11900,   ageMin: 12  },
+        { action: "BOUGHT", walletFull: "3LpMwQrTsVxYzBcDeFgHjKlMnOpQrStUvWxYzAbCdEfG", wallet: "3LpM…CdEfG", usdValue: 612,   tokenAmount: 2980,    ageMin: 31  },
+        { action: "SOLD",   walletFull: "E2RvKpL5atYyN8mQzXq2wEr8tYrKpL5nVcBxHaGfDjSw", wallet: "E2Rv…atYy", usdValue: -1820, tokenAmount: 8860,    ageMin: 58  },
+        { action: "SOLD",   walletFull: "u6PJ4mQzXq2wEr8tYrKpL5nVcBxHaGfDjSwRtPmNxQ2w", wallet: "u6PJ…Xq2w", usdValue: -890,  tokenAmount: 4330,    ageMin: 84  },
+        { action: "BOUGHT", walletFull: "5CgMwQrTsVxYzBcDeFgHjKlMnOpQrStUvWxYzAbCdEf8", wallet: "5CgM…CdEf8", usdValue: 1240,  tokenAmount: 6030,    ageMin: 112 },
+        { action: "SOLD",   walletFull: "9SLP7vTw5KpKS3rN8FQzMxYHcVgPq2DnEjRbWaXuKpKS", wallet: "9SLP…KpKS", usdValue: -1380, tokenAmount: 6710,    ageMin: 147 },
+        { action: "BOUGHT", walletFull: "3LpMwQrTsVxYzBcDeFgHjKlMnOpQrStUvWxYzAbCdEfG", wallet: "3LpM…CdEfG", usdValue: 425,   tokenAmount: 2070,    ageMin: 189 },
+        { action: "SOLD",   walletFull: "E2RvKpL5atYyN8mQzXq2wEr8tYrKpL5nVcBxHaGfDjSw", wallet: "E2Rv…atYy", usdValue: -2680, tokenAmount: 13040,   ageMin: 234 },
+        { action: "BOUGHT", walletFull: "5CgMwQrTsVxYzBcDeFgHjKlMnOpQrStUvWxYzAbCdEf8", wallet: "5CgM…CdEf8", usdValue: 318,   tokenAmount: 1550,    ageMin: 281 },
+        { action: "SOLD",   walletFull: "u6PJ4mQzXq2wEr8tYrKpL5nVcBxHaGfDjSwRtPmNxQ2w", wallet: "u6PJ…Xq2w", usdValue: -1140, tokenAmount: 5540,    ageMin: 326 },
+      ],
+      walletsWithActivity: 5,
+      totalCheckedWallets: 10,
+      netFlowUsd: -7765,
+      windowHours: 6,
+    },
   },
   "Dfh5DzRgSvvCFDoYc2ciTkMrbDfRKybA4SoFbPmApump": {
     score: 500, risk: "DANGER", confidence: 100,
@@ -159,8 +244,8 @@ const DEMO_DATA = {
     mintAuthority: false, freezeAuthority: false, honeypot: false,
     lpBurned: true, lpLocked: false, lpLockedPct: 100,
     liquidity: 4448431, marketCap: 26242298, priceUsd: 0.02743,
-    holders: 26601, volume24h: 1988123.49, volume1h: 51941.45,
-    priceChange5m: 0.24, priceChange1h: 2.92, priceChange24h: 6.91,
+    holders: 26601, volume24h: 3060000, volume1h: 158000,
+    priceChange5m: -0.41, priceChange1h: -2.18, priceChange24h: -6.91,
     solscanTokenAgeHours: 12838,
     tokenLogo: "https://cdn.dexscreener.com/cms/images/d237de55618e54fd7d66593ff2adf3ad8c092398f9049a31f1dcb1b23ad1dff8?width=800&height=800&quality=95&format=auto",
     flags: [
@@ -178,6 +263,16 @@ const DEMO_DATA = {
           { url: "http://t.me/ThePippinCo", type: "telegram" },
         ],
       },
+      // DANGER narrative — clear distribution pressure (sells dominate
+      // in every window). volume/LP ratio 0.7× = no wash flag; the
+      // verdict comes from concentration, not wash.
+      txns: {
+        m5:  { buys: 4,   sells: 9    },
+        h1:  { buys: 70,  sells: 145  },
+        h6:  { buys: 380, sells: 700  },
+        h24: { buys: 540, sells: 1010 },
+      },
+      volume: { m5: 12750, h1: 158000, h6: 768000, h24: 3060000 },
     },
     topHolderPct: 27.44, top10HolderPct: 68.11,
     criticalActors: [
@@ -206,6 +301,45 @@ const DEMO_DATA = {
     sources_used: ["dexscreener", "rugcheck", "goplus", "helius", "solscan", "chart"],
     aiSummary: "Pippin lands on DANGER because of stacked concentration risk — a single wallet holds 27% of supply and the top 10 wallets together control 67%. Either of those alone would already trigger a soft block; together they make a coordinated dump trivially possible. The LP is burned and the contract is clean (no mint, no freeze, no honeypot), which keeps the verdict from collapsing all the way to RUG, but the holder structure alone is enough to treat this as exit-liquidity risk.",
     fetchedAt: _demoTs,
+    // DANGER narrative — the 27% insider wallet (#1) is actively
+    // dumping. Top-10 cluster all selling in coordination. Net flow
+    // strongly negative. Feed scrolls past viewport so the user sees
+    // the cascade. The story: someone with concentration is leaving.
+    demoActivity: {
+      wallets: [
+        { walletFull: "u6PJ4mQzXq2wEr8tYrKpL5nVcBxHaGfDjSwRtPmNxQ2w", wallet: "u6PJ…Xq2w", pctSupply: 27.4, holdings: 273000000, active: true  },
+        { walletFull: "9ZPsKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaGfDj", wallet: "9ZPs…E4Y4", pctSupply: 11.2, holdings: 112000000, active: true  },
+        { walletFull: "4QuBpNxMs5ruWyZaBcDeFgHjKlMnOpQrStUvWxYzAbCd", wallet: "4QuB…s5ru", pctSupply: 8.7,  holdings: 87000000,  active: true  },
+        { walletFull: "7TwCpNxMs5ruWyZaBcDeFgHjKlMnOpQrStUvWxYzAb12", wallet: "7TwC…Ab12", pctSupply: 5.4,  holdings: 54000000,  active: true  },
+        { walletFull: "5VxDpNxMs5ruWyZaBcDeFgHjKlMnOpQrStUvWxYzAb34", wallet: "5VxD…Ab34", pctSupply: 4.1,  holdings: 41000000,  active: true  },
+        { walletFull: "3YzEpNxMs5ruWyZaBcDeFgHjKlMnOpQrStUvWxYzAb56", wallet: "3YzE…Ab56", pctSupply: 3.6,  holdings: 36000000,  active: true  },
+        { walletFull: "8AwFpNxMs5ruWyZaBcDeFgHjKlMnOpQrStUvWxYzAb78", wallet: "8AwF…Ab78", pctSupply: 2.9,  holdings: 29000000,  active: false },
+        { walletFull: "6BvGpNxMs5ruWyZaBcDeFgHjKlMnOpQrStUvWxYzAb90", wallet: "6BvG…Ab90", pctSupply: 2.4,  holdings: 24000000,  active: true  },
+        { walletFull: "2CuHpNxMs5ruWyZaBcDeFgHjKlMnOpQrStUvWxYzAbAB", wallet: "2CuH…AbAB", pctSupply: 1.7,  holdings: 17000000,  active: false },
+        { walletFull: "9DtIpNxMs5ruWyZaBcDeFgHjKlMnOpQrStUvWxYzAbCD", wallet: "9DtI…AbCD", pctSupply: 0.7,  holdings: 7000000,   active: false },
+      ],
+      activity: [
+        { action: "SOLD",   walletFull: "u6PJ4mQzXq2wEr8tYrKpL5nVcBxHaGfDjSwRtPmNxQ2w", wallet: "u6PJ…Xq2w", usdValue: -18400, tokenAmount: 670680,  ageMin: 6   },
+        { action: "SOLD",   walletFull: "9ZPsKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaGfDj", wallet: "9ZPs…E4Y4", usdValue: -9650,  tokenAmount: 351850,  ageMin: 14  },
+        { action: "SOLD",   walletFull: "u6PJ4mQzXq2wEr8tYrKpL5nVcBxHaGfDjSwRtPmNxQ2w", wallet: "u6PJ…Xq2w", usdValue: -12200, tokenAmount: 444770,  ageMin: 23  },
+        { action: "SOLD",   walletFull: "4QuBpNxMs5ruWyZaBcDeFgHjKlMnOpQrStUvWxYzAbCd", wallet: "4QuB…s5ru", usdValue: -6840,  tokenAmount: 249360,  ageMin: 37  },
+        { action: "SOLD",   walletFull: "7TwCpNxMs5ruWyZaBcDeFgHjKlMnOpQrStUvWxYzAb12", wallet: "7TwC…Ab12", usdValue: -4250,  tokenAmount: 154940,  ageMin: 52  },
+        { action: "SOLD",   walletFull: "u6PJ4mQzXq2wEr8tYrKpL5nVcBxHaGfDjSwRtPmNxQ2w", wallet: "u6PJ…Xq2w", usdValue: -15800, tokenAmount: 575870,  ageMin: 71  },
+        { action: "BOUGHT", walletFull: "3YzEpNxMs5ruWyZaBcDeFgHjKlMnOpQrStUvWxYzAb56", wallet: "3YzE…Ab56", usdValue: 1840,   tokenAmount: 67080,   ageMin: 88  },
+        { action: "SOLD",   walletFull: "5VxDpNxMs5ruWyZaBcDeFgHjKlMnOpQrStUvWxYzAb34", wallet: "5VxD…Ab34", usdValue: -3920,  tokenAmount: 142890,  ageMin: 104 },
+        { action: "SOLD",   walletFull: "9ZPsKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaGfDj", wallet: "9ZPs…E4Y4", usdValue: -7320,  tokenAmount: 266860,  ageMin: 132 },
+        { action: "SOLD",   walletFull: "6BvGpNxMs5ruWyZaBcDeFgHjKlMnOpQrStUvWxYzAb90", wallet: "6BvG…Ab90", usdValue: -2180,  tokenAmount: 79470,   ageMin: 158 },
+        { action: "SOLD",   walletFull: "u6PJ4mQzXq2wEr8tYrKpL5nVcBxHaGfDjSwRtPmNxQ2w", wallet: "u6PJ…Xq2w", usdValue: -21400, tokenAmount: 780170,  ageMin: 183 },
+        { action: "BOUGHT", walletFull: "3YzEpNxMs5ruWyZaBcDeFgHjKlMnOpQrStUvWxYzAb56", wallet: "3YzE…Ab56", usdValue: 920,    tokenAmount: 33540,   ageMin: 215 },
+        { action: "SOLD",   walletFull: "4QuBpNxMs5ruWyZaBcDeFgHjKlMnOpQrStUvWxYzAbCd", wallet: "4QuB…s5ru", usdValue: -5680,  tokenAmount: 207090,  ageMin: 248 },
+        { action: "SOLD",   walletFull: "9ZPsKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaGfDj", wallet: "9ZPs…E4Y4", usdValue: -4140,  tokenAmount: 150930,  ageMin: 284 },
+        { action: "SOLD",   walletFull: "7TwCpNxMs5ruWyZaBcDeFgHjKlMnOpQrStUvWxYzAb12", wallet: "7TwC…Ab12", usdValue: -2860,  tokenAmount: 104280,  ageMin: 321 },
+      ],
+      walletsWithActivity: 7,
+      totalCheckedWallets: 10,
+      netFlowUsd: -111880,
+      windowHours: 6,
+    },
   },
   "4GFe6MBDorSy5bLbiUMrgETr6pZcjyfxMDm5ehSgpump": {
     score: 250, risk: "RUG", confidence: 100,
@@ -214,8 +348,8 @@ const DEMO_DATA = {
     mintAuthority: false, freezeAuthority: false, honeypot: false,
     lpBurned: true, lpLocked: false, lpLockedPct: 100,
     liquidity: 70520, marketCap: 155682, priceUsd: 0.0001702,
-    holders: 7430, volume24h: 39.33, volume1h: 11.92,
-    priceChange5m: null, priceChange1h: -0.3, priceChange24h: -0.3,
+    holders: 7430, volume24h: 1245, volume1h: 84,
+    priceChange5m: -1.8, priceChange1h: -4.2, priceChange24h: -12.6,
     solscanTokenAgeHours: 16275,
     tokenLogo: "https://cdn.dexscreener.com/cms/images/17c35e4d62131992b5c58bf5cb9d9878a64828389eddc2416416ffac68b38d25?width=800&height=800&quality=95&format=auto",
     flags: [
@@ -236,6 +370,16 @@ const DEMO_DATA = {
           { url: "https://t.me/hawktuah_sol", type: "telegram" },
         ],
       },
+      // RUG narrative — abandoned token. Tiny trades cycling on thin
+      // LP triggers a wash warning (avg $30 trade on $70K LP). Strong
+      // distribution skew. Volume too small for volRatioScore.
+      txns: {
+        m5:  { buys: 0,  sells: 1  },
+        h1:  { buys: 1,  sells: 3  },
+        h6:  { buys: 4,  sells: 14 },
+        h24: { buys: 12, sells: 28 },
+      },
+      volume: { m5: 18, h1: 84, h6: 380, h24: 1245 },
     },
     topHolderPct: 43.98, top10HolderPct: 53.64,
     criticalActors: [
@@ -264,6 +408,35 @@ const DEMO_DATA = {
     sources_used: ["dexscreener", "rugcheck", "goplus", "helius", "solscan", "chart"],
     aiSummary: "Hawk Tuah is the textbook concentration rug — a single wallet holds 44% of total supply, more than enough to crash the price to zero in one transaction. LP is technically burned and the token has 30d+ of trading history, but those signals are completely overridden by the wallet concentration: the dev (or whoever controls that wallet) can dump at any moment and the remaining holders cannot defend the price. Hard kill. Treat any remaining liquidity as exit-only.",
     fetchedAt: _demoTs,
+    // RUG narrative — abandoned post-pump. Dev wallet (#1, 44%) made
+    // its big exit weeks ago; the remaining holders are slowly bleeding
+    // out into a near-dead LP. Net flow tiny but every trade is a sell.
+    demoActivity: {
+      wallets: [
+        { walletFull: "HsXpKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaGwG31", wallet: "HsXp…wG31", pctSupply: 44.0, holdings: 440000000, active: true  },
+        { walletFull: "CcSXKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHa1e82", wallet: "CcSX…1e82", pctSupply: 4.8,  holdings: 48000000,  active: true  },
+        { walletFull: "9eopKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaAjHo", wallet: "9eop…AjHo", pctSupply: 1.6,  holdings: 16000000,  active: false },
+        { walletFull: "5RxpKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaaB1c", wallet: "5Rxp…aB1c", pctSupply: 1.2,  holdings: 12000000,  active: true  },
+        { walletFull: "3FjpKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaaB2d", wallet: "3Fjp…aB2d", pctSupply: 0.7,  holdings: 7000000,   active: false },
+        { walletFull: "8DwpKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaaB3e", wallet: "8Dwp…aB3e", pctSupply: 0.4,  holdings: 4000000,   active: false },
+        { walletFull: "2GxpKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaaB4f", wallet: "2Gxp…aB4f", pctSupply: 0.3,  holdings: 3000000,   active: false },
+        { walletFull: "6HypKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaaB5g", wallet: "6Hyp…aB5g", pctSupply: 0.25, holdings: 2500000,   active: false },
+        { walletFull: "4JzpKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaaB6h", wallet: "4Jzp…aB6h", pctSupply: 0.2,  holdings: 2000000,   active: false },
+        { walletFull: "7KapKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaaB7i", wallet: "7Kap…aB7i", pctSupply: 0.15, holdings: 1500000,   active: false },
+      ],
+      activity: [
+        { action: "SOLD", walletFull: "HsXpKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaGwG31", wallet: "HsXp…wG31", usdValue: -47,  tokenAmount: 276000,  ageMin: 23  },
+        { action: "SOLD", walletFull: "CcSXKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHa1e82", wallet: "CcSX…1e82", usdValue: -28,  tokenAmount: 164500,  ageMin: 67  },
+        { action: "SOLD", walletFull: "5RxpKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaaB1c", wallet: "5Rxp…aB1c", usdValue: -12,  tokenAmount: 70500,   ageMin: 118 },
+        { action: "SOLD", walletFull: "HsXpKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaGwG31", wallet: "HsXp…wG31", usdValue: -82,  tokenAmount: 481800, ageMin: 174 },
+        { action: "SOLD", walletFull: "CcSXKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHa1e82", wallet: "CcSX…1e82", usdValue: -18,  tokenAmount: 105800, ageMin: 234 },
+        { action: "SOLD", walletFull: "5RxpKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaaB1c", wallet: "5Rxp…aB1c", usdValue: -9,   tokenAmount: 52900,  ageMin: 298 },
+      ],
+      walletsWithActivity: 3,
+      totalCheckedWallets: 10,
+      netFlowUsd: -196,
+      windowHours: 6,
+    },
   },
 };
 
@@ -784,9 +957,16 @@ function render(d, ca) {
   // Async-load Top 10 live activity feed (Insider Watch tab). Fired
   // after the synchronous render so the placeholder skeleton is
   // already painted; the API is server-side cached 60s so most loads
-  // are sub-200ms. Skipped in demo mode — holderActivity rows from
-  // DEMO_DATA are rendered synchronously and must not be overwritten.
-  if (!isDemo || !DEMO_DATA[ca]) {
+  // are sub-200ms. In demo mode we render pre-baked demoActivity
+  // synchronously instead — the live /api/graph call would return an
+  // empty feed for the hardcoded PENGU/FARTCOIN/PIPPIN/HAWK CAs anyway
+  // (real top-10 wallets on these tokens vary day-to-day) so the demo
+  // page would land on the loading skeleton forever without this.
+  if (isDemo && DEMO_DATA[ca] && DEMO_DATA[ca].demoActivity) {
+    setTimeout(() => {
+      renderDemoInsiderActivity(DEMO_DATA[ca].demoActivity);
+    }, 50);
+  } else if (!isDemo) {
     setTimeout(() => {
       loadInsiderActivity();
     }, 50);
