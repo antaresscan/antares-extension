@@ -6,6 +6,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.3.4] - 2026-05-27
+
+### User-facing improvements
+
+- **Critical Flags grouped by severity** — flags now render grouped by
+  severity tier with the AI summary explicitly explaining info-level
+  signals instead of swallowing them. Users no longer see a "no flags
+  detected" verdict when there are clearly informational signals being
+  surfaced silently to the scoring engine. (#525)
+- **"Positive signals" hidden on RUG/DANGER verdicts** — surfacing
+  "LP burned ✓" as a positive bullet on a token verdicted RUG read as
+  a contradiction; the section now collapses on the two highest-risk
+  tiers so the verdict reads coherently. (#527)
+- **Pipeline status flags removed from user surface** — flags like
+  "Helius unavailable" or "X source degraded" are now scoring-engine
+  internals only. The user surface shows token-side flags only, and
+  the AI summary mentions reduced confidence inline when relevant. (#526)
+- **Clean band scores in overlay + full analysis** — overlay shows
+  exact display bands (250/500/750/1000) for RUG/DANGER/CAUTION/SAFE
+  on demo paths so verdicts feel deterministic, not jittery. (#544)
+- **PRO buttons route to website pricing** — every "Upgrade to Pro"
+  button across the overlay + full analysis page now lands on
+  antaresscan.com/pricing with the install ID transferred via the
+  website bridge. No install_id in the URL. (#538, #539, #541)
+
+### Web-served full analysis (token.html)
+
+These ride on the Vercel deploy, not the extension bundle, but visible
+to extension users via the "Full Analysis" deeplink:
+
+- Insider Watch feed is now scrollable with per-wallet color coding
+  on the rank pill + wallet address. (#551, #552)
+- Demo page (`?demo=1`) renders fully-populated Deep Analysis tabs
+  for PENGU / FARTCOIN / PIPPIN / HAWK instead of "data unavailable"
+  placeholders — Buy/Sell Flow, Wash Volume, Sniper Map, Exit Liquidity
+  + Insider Watch all populate with pre-baked narratives matching
+  each token's verdict. (#553)
+- Critical Actors section now shows 3 cards on every demo, sorted by
+  pct descending. (#554, #555)
+- All outbound links inert in demo mode (no accidental bounces to
+  Solscan/RugCheck/DexScreener from the marketing surface). (#555)
+
+### Scoring engine
+
+- `pump_imbalance` reclassified as a SOFT block reason so established
+  tokens with buy/sell imbalance can still unlock SAFE via the blue-
+  chip exemption path. (#550)
+- Slow-rug chart pattern detection + 2+ critical flags blocks SAFE
+  even when the score band would otherwise allow it. (#549)
+
 ## [1.3.2] - 2026-05-18
 
 ### Security — pre-launch hardening (5 blockers closed)
