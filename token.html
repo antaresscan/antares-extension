@@ -44,8 +44,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .shell{position:relative;z-index:2;max-width:1140px;margin:0 auto;padding:0 32px 80px}
 
 /* ── NAV (sticky, blurred, compact-mode on scroll) ── */
-nav{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:16px 32px;border-bottom:1px solid var(--border);position:sticky;top:3px;z-index:100;background:rgba(10,10,12,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);transition:padding .25s}
-nav.compact{padding:10px 32px}
+nav{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:16px max(32px,calc((100vw - 1140px) / 2 + 32px));border-bottom:1px solid var(--border);position:sticky;top:3px;z-index:100;background:rgba(10,10,12,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);transition:padding .25s}
+nav.compact{padding:10px max(32px,calc((100vw - 1140px) / 2 + 32px))}
 nav .brand{font:400 22px/1 'Bebas Neue',sans-serif;letter-spacing:.18em;color:#e0e0e0;text-decoration:none;display:flex;align-items:center;gap:10px;flex-shrink:0}
 nav .brand img{height:24px;width:auto;filter:invert(1)}
 nav .nav-mid{display:flex;align-items:center;gap:14px;opacity:0;transition:opacity .25s;pointer-events:none;flex:1;justify-content:center;min-width:0}
@@ -110,7 +110,7 @@ nav .actions a.warn:hover{color:var(--orange);border-color:rgba(255,95,95,.4);ba
 .metrics-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
 .m-card{background:var(--card);border:1px solid var(--border);padding:14px 16px;position:relative;overflow:hidden}
 .m-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--risk-fill),transparent);opacity:.5}
-.m-label-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:10px}
+.m-label-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:10px;min-height:24px}
 .m-label{font-size:9px;color:#444;letter-spacing:.18em;text-transform:uppercase}
 
 /* Refresh button — manual cache bypass. 15s cooldown handled in JS. */
@@ -753,7 +753,7 @@ footer span{color:var(--c)}
 <canvas id="bg" aria-hidden="true"></canvas>
 
 <nav id="nav" aria-label="Token analysis navigation">
-  <a class="brand" href="https://antares-website.vercel.app/" aria-label="Antares home"><img src="/favicon.png" alt="">ANTARES</a>
+  <span class="brand" aria-label="Antares"><img src="/favicon.png" alt="">ANTARES</span>
   <div class="nav-mid">
     <span class="nav-ticker" id="nav-ticker">—</span>
     <span class="nav-verdict" id="nav-verdict">—</span>
