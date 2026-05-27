@@ -117,6 +117,24 @@ describe("verdict bands (no safe block)", () => {
   it("SAFE requires ≥5 sources even with score 1000", () => {
     expect(verdictWith({ score: 1000, sourcesUsedCount: 4 })).toBe("CAUTION")
   })
+
+  it("2 warning flags blocks SAFE — max CAUTION (VIRL-class)", () => {
+    // VIRL: vol/liq warning + LP unverified = 2 flags, score 1000.
+    // Two flags means something is wrong even if each is minor individually.
+    expect(verdictWith({ score: 1000, warningFlagsCount: 2 })).toBe("CAUTION")
+  })
+
+  it("2 warning flags + score 899 → CAUTION (below SAFE floor anyway)", () => {
+    expect(verdictWith({ score: 899, warningFlagsCount: 2 })).toBe("CAUTION")
+  })
+
+  it("1 warning flag + score 900 → SAFE (single minor flag still allowed)", () => {
+    expect(verdictWith({ score: 900, warningFlagsCount: 1 })).toBe("SAFE")
+  })
+
+  it("0 flags + score 900 → SAFE", () => {
+    expect(verdictWith({ score: 900, warningFlagsCount: 0 })).toBe("SAFE")
+  })
 })
 
 // ─── Safe-block routing (hard vs soft) ───────────────────────────────

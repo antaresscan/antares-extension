@@ -142,8 +142,13 @@ const MATRIX: Record<Exclude<LpPctBucket, "unknown">, Record<Exclude<LpAgeBucket
     ">=1y":   { severity: "info",     penalty: 1.00, safeBlock: false, forceRug: false, estimatedImpact: "<5%" },
   },
   "1-5%": {
-    "<14d":   { severity: "warning",  penalty: 0.92, safeBlock: false, forceRug: false, estimatedImpact: "-5% to -15%" },
-    "14-90d": { severity: "info",     penalty: 0.97, safeBlock: false, forceRug: false, estimatedImpact: "-5% to -15%" },
+    // < 90 days: even 1-5 % LP can drop the price 5-15 %. Not enough
+    // time-based trust to award SAFE — cap at CAUTION. (SAOS-class case:
+    // 14d-old token with 4.85 % LP unlocked was scoring SAFE.)
+    "<14d":   { severity: "warning",  penalty: 0.92, safeBlock: true,  forceRug: false, estimatedImpact: "-5% to -15%" },
+    "14-90d": { severity: "warning",  penalty: 0.95, safeBlock: true,  forceRug: false, estimatedImpact: "-5% to -15%" },
+    // ≥ 90 days: 1-5 % LP with that much operating history is genuinely
+    // negligible rug capacity — SAFE is acceptable.
     "90d-1y": { severity: "info",     penalty: 0.98, safeBlock: false, forceRug: false, estimatedImpact: "-5% to -15%" },
     ">=1y":   { severity: "info",     penalty: 0.99, safeBlock: false, forceRug: false, estimatedImpact: "-5% to -15%" },
   },

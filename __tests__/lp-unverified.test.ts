@@ -105,12 +105,14 @@ describe("getLpRiskBucket — matrix cells", () => {
   });
 
   // ── LOW LP (1-5%) — mature tokens pass, fresh still warns ──────
-  it("LP 3% × fresh (<14d) → warning + no safeBlock", () => {
+  it("LP 3% × fresh (<14d) → warning + safeBlock=true (SAOS/VIRL fix)", () => {
+    // 1-5% LP on a token < 14 days old blocks SAFE — not enough time-based trust
+    // even if the absolute LP amount is small. See lp-risk-matrix.ts matrix cell.
     const b = getLpRiskBucket(0.03, 10 * 24);
     expect(b.pctBucket).toBe("1-5%");
     expect(b.ageBucket).toBe("<14d");
     expect(b.severity).toBe("warning");
-    expect(b.safeBlock).toBe(false);
+    expect(b.safeBlock).toBe(true);
   });
 
   it("LP 3% × 1y+ → info + no safeBlock + label mentions exact pct", () => {

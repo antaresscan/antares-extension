@@ -195,8 +195,12 @@ export function determineVerdict(input: VerdictInput): Verdict {
     return "DANGER";
   }
 
-  // HARDENED: SAFE requires score >= 900 AND at least 5 sources
-  if (input.score >= 900 && input.sourcesUsedCount >= 5) return "SAFE";
+  // HARDENED: SAFE requires score >= 900, at least 5 sources, AND at most 1 visible
+  // warning/critical flag. Two or more flags means something is wrong — even if each
+  // is individually minor, the combination disqualifies SAFE. (VIRL-class case: vol/liq
+  // warning + LP unverified = 2 flags, was scoring SAFE at 1000/1000.)
+  // Back-compat: warningFlagsCount undefined (old callers) → treated as 0 → SAFE allowed.
+  if (input.score >= 900 && input.sourcesUsedCount >= 5 && (input.warningFlagsCount ?? 0) <= 1) return "SAFE";
 
   // "Clean blue-chip" path: when there are LITERALLY ZERO token-side
   // warning/critical flags AND the score is still reasonable (>= 750),

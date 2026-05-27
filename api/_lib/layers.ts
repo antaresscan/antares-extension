@@ -108,11 +108,20 @@ export function layerDexScreener(
   if (pc6 < -50 && pc1 < -15) {
     flags.push(makeFlag("Slow rug detected: -50% on 6h + -15% on 1h", "critical", 0));
     penalties.push(0.15); forceRug = true; safeBlocked = true;
+  } else if (pc6 < -30) {
+    flags.push(makeFlag(`Sharp 6h sell-off (${Math.round(pc6)}%)`, "warning", 0));
+    penalties.push(0.55); safeBlocked = true;
   }
   if (!hasWebsite && !hasTwitter && !hasTelegram) { flags.push(makeFlag("No website / Twitter / Telegram — high rug risk", "critical", 0)); penalties.push(0.60); safeBlocked = true; }
   if (txns5m < 5 && mc > 50000 && ageMinutes < 1440) { flags.push(makeFlag("Low 5m transactions vs market cap", "warning", 0)); penalties.push(0.88); }
   if ((sells5m === 0 && buys5m > 0 && txns5m > 5) || (sells5m > 0 && buys5m > sells5m * 5)) { flags.push(makeFlag("Buy/sell imbalance (coordinated pump)", "warning", 0)); penalties.push(0.85); }
-  if (pc24 < -80) { flags.push(makeFlag("Brutal dump 24h (-80%)", "critical", 0)); penalties.push(0.35); }
+  if (pc24 < -80) {
+    flags.push(makeFlag("Brutal dump 24h (-80%)", "critical", 0));
+    penalties.push(0.35); safeBlocked = true;
+  } else if (pc24 < -40) {
+    flags.push(makeFlag(`Significant 24h dump (${Math.round(pc24)}%)`, "warning", 0));
+    penalties.push(0.50); safeBlocked = true;
+  }
 
   // Fix(EXTREME_PUMP_24H): Tokens with +1000% to +5000% 24h are exit traps — TRAP, KERMIT, HOUSETOUR pattern
   // DeFade flags these as HIGH/CRITICAL risk; Antares was letting them pass as SAFE
@@ -126,6 +135,35 @@ export function layerDexScreener(
     flags.push(makeFlag(`Large 24h pump +${Math.round(pc24)}% on token <24h`, "warning", 0));
     penalties.push(0.55); safeBlocked = true;
   }
+  // ── SLOW RUG / PROGRESSIVE DECLINE PATTERNS ───────────────────────────────
+  // These cover the space between the fast-rug thresholds above (pc6 < -50%,
+  // pc24 < -80%) and normal market noise. Order: pump reversal first (most
+  // specific signal), then progressive two-timeframe decline (combo), then
+  // coordinated exit (micro-level sell pressure).
+
+  // Pump-and-dump reversal: token was significantly up over 24h but is now
+  // losing hard in 6h — classic PnD timeline where the dump phase has started.
+  if (pc24 > 80 && pc6 < -20) {
+    flags.push(makeFlag(`Pump reversal: +${Math.round(pc24)}% (24h) → ${Math.round(pc6)}% (6h)`, "critical", 0));
+    penalties.push(0.30); safeBlocked = true;
+  }
+
+  // Progressive multi-timeframe decline: both 6h and 24h are meaningfully
+  // negative but below the standalone thresholds (< -30% and < -40%).
+  // Two timeframes confirming each other = ongoing distribution, not a blip.
+  if (pc6 < -20 && pc6 > -30 && pc24 < -25 && pc24 > -40) {
+    flags.push(makeFlag(`Progressive dump: ${Math.round(pc6)}% (6h) + ${Math.round(pc24)}% (24h)`, "warning", 0));
+    penalties.push(0.55); safeBlocked = true;
+  }
+
+  // Coordinated exit: price is declining in the last hour AND sells are
+  // dominating buys 3-to-1 in the current 5-minute window — typical of
+  // organised wallet groups rotating out.
+  if (pc1 < -8 && sells5m > buys5m * 3 && txns5m > 10) {
+    flags.push(makeFlag(`Coordinated exit: price ${Math.round(pc1)}% + sells 3× buys`, "warning", 0));
+    penalties.push(0.65); safeBlocked = true;
+  }
+
   trust = applyDiminishingPenalties(trust, penalties);
   return { source: "dexscreener", trust: Math.max(0, trust), available: true, flags, forceRug, safeBlocked };
 }
