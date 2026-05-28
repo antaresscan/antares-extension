@@ -44,15 +44,32 @@ let redisConfigured = false;
 
 export function initRateLimiters(redis: Redis): void {
   redisConfigured = true;
+  // ── Per-user rate limits ─────────────────────────────────────────────
+  // Keyed by (ip:install_id) — these are PER-USER limits, not global.
+  // 1000 active users each at burst capacity = 60K req/10s globally,
+  // which is well within Vercel Pro + Upstash Pro 2K capacity. The
+  // numbers here exist to stop ONE abuser, not to throttle aggregate
+  // traffic.
+  //
+  // Earlier limits (5/10s burst + 30/60s sustained) blocked a power
+  // user who opened 8 DexScreener tabs at once — scans 6-8 hit 429
+  // "Burst limit exceeded" and went through the 3-retry exponential-
+  // backoff chain (up to 10s wait), which read as "scans are
+  // randomly broken" in the UI.
+  //
+  // New values support a realistic power-user workflow:
+  //  - Open 15+ token tabs in rapid succession  → fits in 20/10s burst
+  //  - Sustained 1 scan/sec for a minute        → fits in 60/60s
+  //  - Anything beyond is a bot / scraper       → 429s as intended
   ratelimit = new Ratelimit({
     redis,
-    limiter: Ratelimit.slidingWindow(30, "60 s"),
+    limiter: Ratelimit.slidingWindow(60, "60 s"),
     analytics: false,
     prefix: "antares_rl",
   });
   burstRatelimit = new Ratelimit({
     redis,
-    limiter: Ratelimit.slidingWindow(5, "10 s"),
+    limiter: Ratelimit.slidingWindow(20, "10 s"),
     analytics: false,
     prefix: "antares_burst",
   });
@@ -203,7 +220,7 @@ export async function checkRateLimit(res: VercelResponse, ip: string, installId:
 
   if (ratelimit) {
     const { success, remaining } = await ratelimit.limit(key);
-    res.setHeader("X-RateLimit-Limit", "30");
+    res.setHeader("X-RateLimit-Limit", "60");
     res.setHeader("X-RateLimit-Remaining", String(remaining));
     if (!success) {
       apiError(res, 429, "Too many requests. Please slow down.");
