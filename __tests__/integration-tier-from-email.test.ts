@@ -202,17 +202,36 @@ describe("Integration: overlay tier follows the user's SIGNED-IN EMAIL", () => {
     expect(result.tier).toBe("free");
   });
 
-  it("anti-hijack: signed in as A, install bound to B → Free even if A has a Pro licence", async () => {
-    // A paid for Pro
+  it("legitimate account switch: A signs in with own Pro license, install was bound to B → A sees Pro", async () => {
+    // A has her own paid Pro license — she's not hijacking B's anything,
+    // she's just signing in with her own credentials on a browser where B
+    // signed in before. The strict pre-fix behaviour would have shown her
+    // Free because the install was bound to B; user-reported bug "I switch
+    // accounts and the overlay never updates". Session with its own paid
+    // license always wins.
     await seedEmailWithLicense("alice@example.com", "pro");
-    // But the install was bound to bob (e.g. bob redeemed a license here first)
     mocks.store.set(`account:install:${OTHER_INSTALL}`, "bob@example.com");
 
     const token = signSession("alice@example.com");
     const result = await resolveTierAndBypass(reqWithCookie(token), OTHER_INSTALL);
     expect(
       result.tier,
-      "Alice signing in on Bob's browser must NOT see Alice's tier — strict anti-hijack",
+      "Alice has her own Pro license — must see Pro, not Free, even when install was bound to Bob first",
+    ).toBe("pro");
+  });
+
+  it("anti-hijack still applies: session has NO license + install bound to someone else → Free", async () => {
+    // Eve signs in but has no licenses of her own. The install is bound
+    // to Bob who paid. Without Eve's own license to fall back on, the
+    // anti-hijack denies her any tier elevation from the install binding.
+    // This is the actual hijack case the binding was built to protect.
+    mocks.store.set(`account:install:${OTHER_INSTALL}`, "bob@example.com");
+
+    const token = signSession("eve@example.com"); // no license seeded
+    const result = await resolveTierAndBypass(reqWithCookie(token), OTHER_INSTALL);
+    expect(
+      result.tier,
+      "Eve (no license) on Bob's install must stay Free — anti-hijack",
     ).toBe("free");
   });
 
