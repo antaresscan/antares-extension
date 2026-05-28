@@ -6,6 +6,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.3.7] - 2026-05-28
+
+### Fixed
+
+- **Disabled state now respected by newly-opened tabs.** Clicking the
+  toolbar icon to disable the extension (badge turns red) only fired
+  the EXTENSION_TOGGLE message to tabs already open at toggle time —
+  newly-opened DexScreener / pump.fun tabs booted with
+  `state.enabled` defaulting to `true` and rendered the overlay
+  anyway. Content-script boot now reads
+  `chrome.storage.local.extensionEnabled` and short-circuits the
+  entire host-creation + poll path when disabled. Same fix covers
+  the discarded-then-revived tab edge case. (#562)
+- **Client-side scan rate-limit raised** from 10 → 50 per 60 s, to
+  match the new server cap (60/60 s) and stop blocking power users
+  opening 15-20 token tabs in rapid succession. The limiter is still
+  shared across all tabs (chrome.storage.local), so a runaway loop
+  in the extension still hits a fast client-side gate before the
+  server. (#561)
+
+### Server-only changes (no extension code) shipped to prod the same day
+
+- Anti-hijack reorder in `api/_lib/user.ts`: legitimate account
+  switching with own-license accounts no longer forced to Free.
+  Previously, once an install was bound to email A via auto-bind
+  on first sign-in, any subsequent session for email B was refused
+  at the binding check — even when B had their own paid license.
+  Reordered so session-owned licenses always win; anti-hijack only
+  applies when the session has no license of its own (the actual
+  abuse case). (#560)
+- Per-user rate limits bumped (5/10 s burst → 20/10 s, 30/60 s
+  sustained → 60/60 s). Caps are still keyed by `(ip:install_id)`,
+  so 1000 active users at burst capacity = ~2000 req/s globally,
+  well within Vercel Pro + Upstash Pro 2K. (#561)
+
 ## [1.3.6] - 2026-05-28
 
 ### Fixed
