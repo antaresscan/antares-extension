@@ -35,7 +35,7 @@ import { state } from "./modules/state"
 import { hydrateCacheFromLS, clearAllScanCache } from "./modules/cache"
 import { createHost, hideBox } from "./modules/components"
 import { poll, setupNavListeners, cleanupNavListeners, getInitialDelay } from "./modules/address-detector"
-import { scan } from "./modules/scanner"
+import { scan, applyOptimisticTierUpdate } from "./modules/scanner"
 import { logger } from "../shared/logger"
 
 /**
@@ -117,16 +117,43 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (!Object.prototype.hasOwnProperty.call(changes, "antares_session_token")) return
   if (!state.enabled) return
   state.manuallyDismissed = false
-  clearAllScanCache()
-  if (state.lastCA) {
-    // Currently-displayed CA: silent re-scan keeps the overlay visible
-    // and swaps in the new tier without a skeleton flash.
-    void scan(state.lastCA, { silent: true })
-  } else {
-    // CA not yet resolved on this tab (initial poll never landed) —
-    // run normal poll path which will scan once the page settles.
-    poll()
-  }
+
+  // ── OPTIMISTIC TIER SWAP ────────────────────────────────────────────
+  // Previously this listener wiped the cache and fired a full silent
+  // /api/scan rescan. The user perceived this as "the overlay takes 2-5
+  // seconds to update my tier after login" — the scan call dominates
+  // the latency, even though the scan data itself (verdict, score,
+  // flags) is identical between Free and Pro.
+  //
+  // applyOptimisticTierUpdate patches `_quota.tier` on the cached scan
+  // data and re-renders the box in place. Logout = instant Free (no
+  // API call). Login = ~100ms /api/quota call. Either way the user
+  // sees the tier flip in <300ms instead of waiting on a full rescan.
+  //
+  // The full silent rescan still runs in the background to refresh
+  // price/score data, but it no longer gates the tier UI.
+  //
+  // Ordering matters: the optimistic update reads `scanCache.get(ca)`,
+  // so it MUST complete before clearAllScanCache() wipes the entry.
+  // The IIFE serializes them; clearAllScanCache then drops stale
+  // entries for OTHER CAs (current CA's DOM is already patched and
+  // the upcoming silent rescan preserves the visible overlay).
+  const newToken = changes.antares_session_token.newValue as string | undefined
+  void (async () => {
+    try {
+      await applyOptimisticTierUpdate(newToken)
+    } catch (err) {
+      logger.warn("inject", "optimistic tier update failed", err)
+    }
+    clearAllScanCache()
+    if (state.lastCA) {
+      void scan(state.lastCA, { silent: true })
+    } else {
+      // CA not yet resolved on this tab (initial poll never landed) —
+      // run normal poll path which will scan once the page settles.
+      poll()
+    }
+  })()
 })
 
 // ─── TAB-FOCUS SELF-HEAL ──────────────────────────────────────────────────

@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.3.5] - 2026-05-27
+
+### Fixed — overlay tier sync
+
+- **Optimistic tier swap on login/logout** — chrome.storage.onChanged
+  used to wipe the cache and fire a full /api/scan rescan, which made
+  the user wait 2-5s before the overlay's Pro/Free badge flipped. Now
+  the listener patches `_quota.tier` on the cached scan data and re-
+  renders in place: logout swaps to Free instantly (no API call); login
+  hits the lightweight /api/quota endpoint (~100ms) before re-rendering.
+  The full silent rescan still runs in the background to refresh
+  price/score data but no longer gates the tier UI. Net effect: tier
+  flip is now <300ms vs 2-5s before. Pairs with the website-side
+  logout-race fix shipped on antares-website.
+
 ## [1.3.4] - 2026-05-27
 
 ### User-facing improvements
