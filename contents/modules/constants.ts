@@ -1,13 +1,6 @@
 // Use env var for API URL so local dev can point to localhost
 // Plasmo exposes PLASMO_PUBLIC_* vars to content scripts at build time
 export const API           = process.env.PLASMO_PUBLIC_API_URL || "https://antares-extension.vercel.app/api/scan"
-// Lightweight quota/tier endpoint — read-only, doesn't increment the
-// daily counter, returns the tier in ~100ms vs /api/scan's 2-5s.
-// Used by the optimistic-tier-sync path on chrome.storage.onChanged so
-// login/logout updates the overlay tier immediately instead of after a
-// full rescan. Derived from API so a custom PLASMO_PUBLIC_API_URL
-// (local dev) picks up the matching /quota endpoint on the same origin.
-export const QUOTA_URL     = API.replace(/\/scan$/, "/quota")
 export const ANALYSIS_PAGE = process.env.PLASMO_PUBLIC_ANALYSIS_URL || "https://antares-extension.vercel.app/token.html"
 export const PRICING_URL   = "https://antaresscan.com/pricing"
 export const LS_PREFIX     = "antares_scan_"
