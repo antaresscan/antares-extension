@@ -61,33 +61,58 @@ if (document.documentElement.hasAttribute(GUARD)) {
   // Hydrate scan cache from localStorage
   hydrateCacheFromLS()
 
-  
-  // MutationObserver to re-inject host if the page strips it. Reference is
-  // held on `state` so the EXTENSION_TOGGLE handler below can disconnect it
-  // when the user disables the extension — otherwise the observer keeps
-  // firing on every DOM mutation forever.
-  state.hostObserver = new MutationObserver(() => {
-    if (!state.host || !document.documentElement.contains(state.host)) {
-      if (state.isInjecting) return
-      state.isInjecting = true
-      setTimeout(() => { createHost(); state.isInjecting = false }, 150)
+  // ── BOOT-TIME ENABLE/DISABLE GATE ─────────────────────────────────
+  // The icon-click toggle in background.ts persists the user's
+  // preference to chrome.storage.local.extensionEnabled and fires
+  // EXTENSION_TOGGLE to ALREADY-OPEN tabs. But brand-new tabs (opened
+  // AFTER the user toggled the extension off) never receive that
+  // message — they boot fresh with state.enabled defaulting to true,
+  // call createHost() + poll() unconditionally, and the overlay
+  // appears anyway despite the red icon. Visible user bug:
+  // "je clique le bouton pour désactiver l'overlay et il apparaît
+  //  quand même" on any newly-opened token tab.
+  //
+  // Fix: read the persisted preference at boot. Treat undefined as
+  // enabled (clean install default). Anything explicitly false skips
+  // the entire host-creation + poll path so no DOM is created and
+  // no network goes out until the user re-enables.
+  chrome.storage.local.get(["extensionEnabled"], (result) => {
+    const persisted = result?.extensionEnabled
+    // `undefined` = never toggled (clean install) → enabled.
+    // Only explicit `false` disables.
+    state.enabled = persisted !== false
+    if (!state.enabled) {
+      logger.info("Extension disabled at boot — skipping host + poll")
+      return
     }
+
+    // MutationObserver to re-inject host if the page strips it. Reference is
+    // held on `state` so the EXTENSION_TOGGLE handler below can disconnect it
+    // when the user disables the extension — otherwise the observer keeps
+    // firing on every DOM mutation forever.
+    state.hostObserver = new MutationObserver(() => {
+      if (!state.host || !document.documentElement.contains(state.host)) {
+        if (state.isInjecting) return
+        state.isInjecting = true
+        setTimeout(() => { createHost(); state.isInjecting = false }, 150)
+      }
+    })
+    state.hostObserver.observe(document.documentElement, { childList: true, subtree: false })
+
+    // Init
+    state.lastNavPath = window.location.pathname
+    createHost()
+
+    /**
+     * SINGLE initial poll with adapter-specific delayed retry.
+     * The delay gives the SPA time to render token data in the DOM.
+     */
+    setTimeout(() => {
+      poll()
+    }, getInitialDelay())
+
+    setupNavListeners()
   })
-  state.hostObserver.observe(document.documentElement, { childList: true, subtree: false })
-
-  // Init
-  state.lastNavPath = window.location.pathname
-  createHost()
-
-  /**
-   * SINGLE initial poll with adapter-specific delayed retry.
-   * The delay gives the SPA time to render token data in the DOM.
-   */
-  setTimeout(() => {
-    poll()
-  }, getInitialDelay())
-
-  setupNavListeners()
 }
 
 // ─── LIVE SESSION SYNC ────────────────────────────────────────────────────────
