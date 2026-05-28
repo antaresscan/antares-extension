@@ -6,6 +6,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.3.6] - 2026-05-28
+
+### Fixed
+
+- **Overlay tier sync now actually works on account switches.** v1.3.5
+  attempted an "optimistic tier update" path that introduced two new
+  bugs: (a) when a /api/scan was already in flight at the moment of
+  the storage change, the new-session scan() was dropped because scan()
+  early-returns on `state.currentScanController` set; (b) the old
+  scan's response landed last and overwrote the optimistic overlay
+  with stale data. Visible symptom: log out of account A and log in
+  to account B, overlay stuck on A's tier (or Free) until you manually
+  refresh the page.
+  - The fix is surgical: abort the in-flight scan controller BEFORE
+    clearing the cache and starting the new scan. The optimistic
+    update was removed entirely — the 2-5s wait on the silent rescan
+    is back, but the sync is now reliable (which is what users
+    actually want from a "you're now Pro" signal).
+  - The listener body is now in its own module
+    (`contents/modules/session-handler.ts`) with a 7-case unit-test
+    suite pinning the abort + cache-clear + rescan sequence, including
+    the account-switch double-fire scenario that broke v1.3.5.
+
 ## [1.3.5] - 2026-05-27
 
 ### Fixed — overlay tier sync

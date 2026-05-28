@@ -1,6 +1,6 @@
 import type { ScanResponseData, QuotaStatus } from "../../shared/types"
 import * as Sentry from "@sentry/browser"
-import { API, QUOTA_URL, LS_PREFIX, IGNORE } from "./constants"
+import { API, LS_PREFIX, IGNORE } from "./constants"
 import { state, scanCache } from "./state"
 import { getCached, saveToLS } from "./cache"
 import { readSessionToken } from "./session-token"
@@ -76,89 +76,6 @@ function extractQuotaFromHeaders(headers: Headers): QuotaStatus | undefined {
   const resetAt = parseInt(headers.get("X-Antares-Quota-Reset") ?? "0", 10)
   if (!Number.isFinite(used) || !Number.isFinite(limit)) return undefined
   return { tier, used, limit, remaining, resetAt }
-}
-
-/**
- * Optimistic tier sync — re-render the visible overlay with a new tier
- * WITHOUT waiting for a full /api/scan refetch.
- *
- * Why this exists: the previous tier-sync path on chrome.storage.onChanged
- * was "clearCache + silent rescan" which forced the user to wait 2-5s for
- * /api/scan to roundtrip before the Pro/Free badge flipped. Login felt
- * "stuck on Free" for several seconds, and logout often appeared not to
- * work at all if the user navigated away during the rescan window.
- *
- * The scan DATA (verdict, score, flags) doesn't change with tier — only
- * the UI gating does. So on a session change we can:
- *   1. Resolve the new tier (logout = instant Free, login = /api/quota in
- *      ~100ms vs /api/scan's 2-5s).
- *   2. Patch `_quota.tier` on the already-cached scan data.
- *   3. Re-render the box in place.
- *
- * Net effect: tier badge swaps in <300ms (down from 2-5s) and the
- * background silent rescan still runs to refresh price/score data.
- *
- * Returns when the optimistic UI commit is done. Failures fail silently
- * — the background silent rescan is the safety net that always corrects
- * the visible tier eventually.
- */
-export async function applyOptimisticTierUpdate(newToken: string | undefined): Promise<void> {
-  const ca = state.lastCA
-  if (!ca) return // no token page currently visible, nothing to update
-  const entry = scanCache.get(ca)
-  if (!entry) return // no cached scan to patch — the background rescan will produce a fresh one
-
-  // Resolve the new quota status. Logout is unconditional Free; login
-  // hits the lightweight /api/quota endpoint which already does session-
-  // gated tier resolution server-side and doesn't increment any counter.
-  let quota: QuotaStatus
-  if (!newToken) {
-    quota = { tier: "free", used: 0, limit: 50, remaining: 50, resetAt: 0 }
-  } else {
-    try {
-      const installId = await getInstallId()
-      const headers: Record<string, string> = { "X-Antares-Session": newToken }
-      if (installId) headers["X-Antares-Install"] = installId
-      const res = await fetch(QUOTA_URL, { headers, credentials: "include" })
-      if (!res.ok) return // silent: background rescan will catch this
-      const body = await res.json()
-      // /api/quota response shape matches QuotaStatus exactly. Defensive
-      // narrowing in case of future API drift — if the tier field is
-      // missing or invalid, skip the optimistic update and let the
-      // background rescan handle it.
-      if (
-        body?.tier !== "free" && body?.tier !== "pro" &&
-        body?.tier !== "yearly" && body?.tier !== "lifetime"
-      ) {
-        return
-      }
-      quota = {
-        tier: body.tier,
-        used: typeof body.used === "number" ? body.used : 0,
-        limit: typeof body.limit === "number" ? body.limit : -1,
-        remaining: typeof body.remaining === "number" ? body.remaining : -1,
-        resetAt: typeof body.resetAt === "number" ? body.resetAt : 0,
-      }
-    } catch {
-      return
-    }
-  }
-
-  // Patch the cache entry in place. The data fields stay byte-identical
-  // except for _quota — buildResultNode reads _quota.tier to decide the
-  // gating, so this is enough to flip the overlay's tier UI.
-  const newData: ScanResponseData = { ...entry.data, _quota: quota }
-  scanCache.set(ca, { data: newData, ts: entry.ts, session: newToken ?? null })
-
-  // Re-render the box in place. getBox() returns the content container
-  // that scan() also writes to; replaceChildren is atomic, no flicker.
-  const el = getBox()
-  if (state.boxEl?.style.display === "none") return // overlay hidden, no DOM update needed
-  const installId = await getInstallId()
-  el.replaceChildren(buildResultNode(newData, ca, installId))
-  applyFinalAnimationValues(el)
-  attachClose(newData.aiSummary ?? null, newData.flags ?? null, newData.risk ?? null)
-  attachAnalysisBtn(ca)
 }
 
 export function isValid(addr: string): boolean {
