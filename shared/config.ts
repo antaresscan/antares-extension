@@ -32,8 +32,23 @@ export const config = {
   /** Keepalive interval in minutes */
   keepaliveIntervalMinutes: 1,
 
-  /** Rate limiting: max scans per window */
-  rateLimitMaxScans: 10,
+  /**
+   * Rate limiting: max scans per window (client-side).
+   *
+   * Power users opening 15-20 token tabs in rapid succession (typical
+   * "scan-the-trending-page" workflow) need to fit comfortably under
+   * this cap. The earlier 10/60s blocked them at scan #11 with a
+   * silent retry chain that read as "scans are randomly broken".
+   *
+   * Set just below the server-side sustained cap (60/60s, see
+   * api/_lib/middleware.ts) so a runaway loop in the extension fails
+   * fast client-side instead of burning server quota.
+   *
+   * The limiter is persisted to chrome.storage.local under a single
+   * key, so all host-script tabs share one window per browser profile
+   * (not per-tab).
+   */
+  rateLimitMaxScans: 50,
 
   /** Rate limiting: window duration in ms */
   rateLimitWindowMs: 60_000,
