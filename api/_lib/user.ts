@@ -242,21 +242,17 @@ export async function resolveTierAndBypass(
     return { tier: "free", bypassQuota: false };
   }
 
-  // Read install→email binding (if any).
+  // Read install→email binding (if any). We consult it AFTER the
+  // session-email license lookup below — a session with its own paid
+  // license is never a hijack attempt, regardless of how the install
+  // was previously bound. The anti-hijack only applies when the session
+  // has no license of its own and is trying to ride the install's
+  // legacy tier.
   let boundEmail: string | null = null;
   try {
     boundEmail = await redis.get<string>(`account:install:${installId}`);
   } catch (err) {
     logger.warn("user", "binding read failed during tier resolve", { error: String(err) });
-  }
-  // Anti-hijack: if the install is bound to a DIFFERENT email than the
-  // session, refuse. An unbound install is fine — we'll resolve tier
-  // from the session email's licences instead.
-  if (boundEmail && boundEmail !== sessionEmail) {
-    logger.metric("tier-resolve.hijack-block", {
-      installId, authSource, sessionEmail, boundEmail, tier: "free",
-    });
-    return { tier: "free", bypassQuota: false };
   }
 
   // Dev check.
@@ -275,13 +271,34 @@ export async function resolveTierAndBypass(
     }
   }
 
-  // PRIMARY: resolve tier from the session email's licences.
+  // PRIMARY: resolve tier from the session email's licences. A signed-
+  // in user with their own paid license should always see that tier,
+  // even when the install was previously bound to a different email
+  // (e.g. the user logged out of account A and signed in to their own
+  // account B — both are legitimate, neither is a hijack). The earlier
+  // version did the install-binding anti-hijack check BEFORE this
+  // lookup, which permanently broke account switching for anyone who
+  // had signed in on a given browser before.
   const emailTier = await resolveTierFromEmail(sessionEmail);
   if (emailTier !== "free") {
     logger.metric("tier-resolve.from-email", {
       installId, authSource, sessionEmail, tier: emailTier, isDev,
+      // log the binding state so we still see hijack attempts in
+      // metrics — they just no longer get a Free penalty when the
+      // session has its own paid license.
+      boundEmail: boundEmail ?? null,
     });
     return { tier: emailTier, bypassQuota: isDev };
+  }
+
+  // From here: session has NO license of its own. Anti-hijack now
+  // applies — a session without licenses trying to use an install bound
+  // to a different email is exactly the case the binding exists for.
+  if (boundEmail && boundEmail !== sessionEmail) {
+    logger.metric("tier-resolve.hijack-block", {
+      installId, authSource, sessionEmail, boundEmail, tier: "free",
+    });
+    return { tier: "free", bypassQuota: false };
   }
 
   // FALLBACK: when the email has no licences but the install IS bound
