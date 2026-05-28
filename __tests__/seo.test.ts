@@ -71,10 +71,15 @@ describe("vercel.json — root redirect to canonical site", () => {
   }
   const config = JSON.parse(readFileSync(join(repoRoot, "vercel.json"), "utf-8")) as VercelConfig
 
-  it("redirects bare / to the antares-website GitHub Pages landing", () => {
+  it("redirects bare / to the antaresscan.com canonical site", () => {
+    // Updated from the legacy GH Pages mirror (comealamaisongroupe.github.io
+    // /antares-website/) to the custom domain antaresscan.com that's been
+    // canonical since v1.3.2. CWS reviewers + organic Google traffic landing
+    // on antares-extension.vercel.app/ should bounce to the real marketing
+    // site, not the deprecated mirror.
     const rootRedirect = config.redirects?.find(r => r.source === "/")
     expect(rootRedirect).toBeDefined()
-    expect(rootRedirect?.destination).toBe("https://comealamaisongroupe.github.io/antares-website/")
+    expect(rootRedirect?.destination).toBe("https://antaresscan.com/")
     expect(rootRedirect?.permanent).toBe(true)
   })
 })
