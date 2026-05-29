@@ -508,11 +508,12 @@ describe("layerHelius", () => {
     expect(result.trust).toBeGreaterThanOrEqual(0.65);
   });
 
-  it("mature dampening BLOCKED: top-1 ≥ 10% does NOT lift to SAFE even on 100k+ holders + LP burned (FARTCOIN case)", () => {
-    // FARTCOIN: 11% top-1, 164k holders, LP burned. Used to lift to
-    // SAFE 963 because mature dampening fired regardless. Now the
-    // dampening is gated on top-1 < 10% — concentration that real
-    // even on a mature blue-chip stays as a CAUTION-band penalty.
+  it("mature dampening BLOCKED: top-1 10-14% gives warning flag + medium penalty (FARTCOIN case, 7.7.3)", () => {
+    // FARTCOIN: 11% top-1, 164k holders, LP burned.
+    // 7.7.3 (founder rule refined): 10-14% = max CAUTION, never SAFE.
+    // The 10-14% band now emits a warning (not critical) with a lighter
+    // penalty (0.50 retention) so the geometric-mean score lands in
+    // CAUTION territory (~840) rather than DANGER (~500).
     const holders: HeliusHolder[] = [
       { address: "whale", owner: "whale", uiAmount: 11_000 }, // 11% — elevated
       ...Array.from({ length: 9 }, (_, i) => ({
@@ -532,10 +533,11 @@ describe("layerHelius", () => {
       lpBurned: true,
     };
     const result = layerHelius(holders, 100_000, ctx);
-    // Trust stays low — no lift to 0.65. Geometric mean × 1000 lands
-    // in CAUTION (700-849) or low-end SAFE band, NOT clean SAFE 950+.
-    expect(result.trust).toBeLessThan(0.40);
-    expect(result.flags.some(f => /11%/.test(f.label))).toBe(true);
+    // penalty=0.50 → trust ≈ 0.50. Not a full kill, but still penalised.
+    // Geometric mean × 1000 should land in CAUTION range (700-900).
+    expect(result.trust).toBeGreaterThanOrEqual(0.40); // lighter than before (was < 0.40)
+    expect(result.trust).toBeLessThan(0.65);            // still penalised — not clean
+    expect(result.flags.some(f => /11%/.test(f.label) && f.severity === "warning")).toBe(true);
     expect(result.safeBlocked).toBe(true);
     expect(result.forceRug).toBe(false);
   });

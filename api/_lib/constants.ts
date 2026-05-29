@@ -156,7 +156,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v21"; // 2026-05-29: gate the Helius "broken upstream view" data-quality fallback on STRUCTURALLY-IMPOSSIBLE concentration (top1>80% OR top10>95%) instead of just "macro big + reported holders < 200". RIV (40% top-1, $651k liq, 67d) was hitting the fallback because Solscan returned no holder count → `mc.holders` fell back to Helius top-20 list size (20) → concentration flag silently dropped → SAFE 795. The fallback was designed for GOAT/PNUT pump.fun-survivor artefacts where the top1 reads ~99%; on a real whale at 40%, the flag must stay. Bumping the cache key evicts every stale SAFE entry produced before this gate was tightened.
+const ENGINE_VERSION_MANUAL = "v22"; // 2026-05-29: split concentration into two tiers per founder rule. 10-14% → "concentration_light" (soft, max CAUTION, never SAFE). 15%+ → "concentration" (hard, DANGER/RUG). Previously all single-wallet concentrations ≥10% were hard-blocked to DANGER, causing false positives on legitimate blue-chips like FARTCOIN (11%) and WIF (12%) which should land CAUTION, not DANGER.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.
@@ -298,7 +298,13 @@ export const API_TIMEOUT_HELIUS = 6000;
 // Real-whale ranges (10–50%) stay flagged. SCORING_VERSION bump
 // pairs with the ENGINE_VERSION_MANUAL v21 bump in this file to
 // flush cached SAFE entries produced by the old fallback.
-export const SCORING_VERSION = "7.7.2";
+//
+// 7.7.3 bump (2026-05-29): split concentration into two tiers.
+// 10-14% → "concentration_light" (soft, max CAUTION, never SAFE).
+// 15%+   → "concentration" (hard, DANGER or RUG, no exceptions).
+// Previously all ≥10% were hard → FARTCOIN (11%) and WIF (12%) were
+// landing DANGER 500 instead of CAUTION.
+export const SCORING_VERSION = "7.7.3";
 
 // ── SOFT REASONS (safe gate unlock) ───────────────────────────
 // A reason listed here CAN be unlocked by applySafeGateOverride when
@@ -317,7 +323,12 @@ export const SCORING_VERSION = "7.7.2";
 // doesn't imply distribution. Without VERIFIED concentration data
 // (Helius largestAccounts → topHolderPct + top10HolderPct), the gate
 // must stay closed. CAUTION is the correct ceiling, not SAFE.
-export const SOFT_REASONS: Record<string, boolean> = { age: true, lp_unverified: true, pump_imbalance: true };
+// "concentration_light" = single wallet 10-14% of supply. Blocks SAFE
+// (a wallet of this size can still move the price meaningfully) but
+// allows CAUTION when the rest of the token looks clean. The verdict
+// floors at CAUTION regardless of how high the score is — SAFE is never
+// appropriate when any wallet controls 10%+ of supply.
+export const SOFT_REASONS: Record<string, boolean> = { age: true, lp_unverified: true, pump_imbalance: true, concentration_light: true };
 
 // ── RUG DATABASE ───────────────────────────────────────────
 export const MAX_RUG_INDEX = 5000;  // increased from 500 for production scale

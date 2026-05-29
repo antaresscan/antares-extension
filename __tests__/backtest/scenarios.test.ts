@@ -238,17 +238,17 @@ describe("reason classification", () => {
     expect(reasons).toContain("concentration")
   })
 
-  it("single wallet 10-14% now classifies as HARD concentration (7.7.1)", () => {
-    // 7.7.1 (founder rule): "si un wallet du top 10 dépasse 10% c'est
-    // danger automatiquement". 10-14% used to be its own soft-warning
-    // reason (CAUTION ceiling); now folded into hard "concentration"
-    // so the verdict goes to DANGER (score ≥ 400) or RUG (< 400).
-    const flagLabel = "Single wallet holds 11% of supply"
+  it("single wallet 10-14% classifies as SOFT concentration_light (7.7.3)", () => {
+    // Founder rule refined (2026-05-29): 10-14% = max CAUTION (never SAFE).
+    // 15%+ = hard DANGER. The 10-14% band emits "concentration_light"
+    // (soft-block) so the verdict can reach CAUTION with clean other layers.
+    const flagLabel = "Single wallet holds 11% of supply — elevated concentration"
     const layers = defaultLayers({
-      helius: layer("helius", 0.6, [flag(flagLabel, "critical")], { safeBlocked: true }),
+      helius: layer("helius", 0.6, [flag(flagLabel, "warning")], { safeBlocked: true }),
     })
     const reasons = classifySafeBlockedReasons(layers)
-    expect(reasons).toContain("concentration")
+    expect(reasons).toContain("concentration_light")
+    expect(reasons).not.toContain("concentration")      // hard "concentration" only for 15%+
     expect(reasons).not.toContain("concentration_warning")
   })
 })
