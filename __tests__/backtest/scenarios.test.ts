@@ -271,7 +271,65 @@ describe("safe gate unlock paths", () => {
   })
 
   it("soft-only unlocks via Path 1: age>48h + holders>1k + lpBurned + goPlusClean", () => {
+    // 7.7.0 (RIV case): "holders" reclassified hard, so this Path-1
+    // unlock test now uses ONLY ["age"] as the soft reason. Mixing
+    // "holders" into the list would (correctly) keep the gate closed.
     const blocked = applySafeGateOverride({
+      safeBlocked: true,
+      safeBlockedReasons: ["age"] as SafeBlockedReason[],
+      forceRug: false,
+      holders: 5_000,
+      lpBurned: true,
+      goPlusClean: true,
+      tokenAgeHours: 100,
+      sourcesAvailableCount: 6,
+    })
+    expect(blocked).toBe(false)
+  })
+
+  // ─── REGRESSION ─────────────────────────────────────────────────────
+  // RIV case (user-reported 2026-05-28). Token had:
+  //   - 5,136 holder ADDRESSES (count looked solid)
+  //   - 40% top-1 holder (catastrophic concentration)
+  //   - Helius unavailable → engine couldn't see distribution
+  // Old SOFT_REASONS classed "holders" as unlockable, so the count-based
+  // established check (Path 2) flipped the verdict to SAFE 1000. Visible
+  // user bug: "le token est safe alors qu'il y a un wallet qui détient
+  // 40% de la supply".
+  //
+  // 7.7.0 fix: "holders" is no longer SOFT. Without verified distribution
+  // data, the gate stays closed regardless of holder COUNT.
+  it("REGRESSION (RIV): reasons=['holders'] stays blocked under every established-token combo", () => {
+    // Path 1 attempt: LP burned, big holder count, mature, GoPlus clean
+    const blockedPath1 = applySafeGateOverride({
+      safeBlocked: true,
+      safeBlockedReasons: ["holders"] as SafeBlockedReason[],
+      forceRug: false,
+      holders: 5_136, // RIV's actual holder address count
+      lpBurned: true,
+      goPlusClean: true,
+      tokenAgeHours: 60 * 24, // 2 months old
+      sourcesAvailableCount: 6,
+    })
+    expect(blockedPath1, "RIV-style holders-only must stay blocked under Path 1").toBe(true)
+
+    // Path 2 attempt: 100k holders, LP NOT burned, very mature
+    // (matches the prior blue-chip-without-LP-burn unlock that broke
+    // the safe-gate for RIV-class false positives)
+    const blockedPath2 = applySafeGateOverride({
+      safeBlocked: true,
+      safeBlockedReasons: ["holders"] as SafeBlockedReason[],
+      forceRug: false,
+      holders: 100_000,
+      lpBurned: false,
+      goPlusClean: true,
+      tokenAgeHours: 31 * 24,
+      sourcesAvailableCount: 6,
+    })
+    expect(blockedPath2, "RIV-style holders-only must stay blocked under Path 2 even with 100k holders").toBe(true)
+
+    // Mixed with another soft reason: still blocked because "holders" is hard
+    const blockedMixed = applySafeGateOverride({
       safeBlocked: true,
       safeBlockedReasons: ["age", "holders"] as SafeBlockedReason[],
       forceRug: false,
@@ -281,7 +339,7 @@ describe("safe gate unlock paths", () => {
       tokenAgeHours: 100,
       sourcesAvailableCount: 6,
     })
-    expect(blocked).toBe(false)
+    expect(blockedMixed, "any 'holders' reason in the list keeps the gate closed").toBe(true)
   })
 
   it("soft-only stays blocked under 48h of age", () => {
@@ -447,30 +505,38 @@ describe("safe gate unlock paths", () => {
     expect(blocked).toBe(false)
   })
 
-  it("soft-only with NO LP burn unlocks ONLY via Path 2 blue-chip override", () => {
-    const blockedWithBigHolders = applySafeGateOverride({
+  // Pre-7.7.0 this test asserted Path 2 unlocked when reasons=["holders"]
+  // + 100k holders + LP not burned. After the RIV reclassification,
+  // "holders" no longer participates in any soft-unlock path: the gate
+  // stays blocked regardless of holder count when distribution is
+  // unverified. Test reframed accordingly.
+  it("reasons=['holders'] (alone or with others) NEVER unlocks via any path", () => {
+    // Even with 100k holders + 30d+ age + GoPlus clean, the gate
+    // stays closed because we have no verified DISTRIBUTION.
+    const stillBlocked100k = applySafeGateOverride({
       safeBlocked: true,
       safeBlockedReasons: ["holders"] as SafeBlockedReason[],
       forceRug: false,
-      holders: 100_000, // way past the 50k blue-chip threshold
-      lpBurned: false,
-      goPlusClean: true,
-      tokenAgeHours: 31 * 24, // > 30 days
-      sourcesAvailableCount: 6,
-    })
-    expect(blockedWithBigHolders).toBe(false)
-
-    const blockedWithoutBigHolders = applySafeGateOverride({
-      safeBlocked: true,
-      safeBlockedReasons: ["holders"] as SafeBlockedReason[],
-      forceRug: false,
-      holders: 10_000, // not enough for blue-chip override
+      holders: 100_000,
       lpBurned: false,
       goPlusClean: true,
       tokenAgeHours: 31 * 24,
       sourcesAvailableCount: 6,
     })
-    expect(blockedWithoutBigHolders).toBe(true)
+    expect(stillBlocked100k).toBe(true)
+
+    // Same with insufficient holders — still blocked.
+    const stillBlocked10k = applySafeGateOverride({
+      safeBlocked: true,
+      safeBlockedReasons: ["holders"] as SafeBlockedReason[],
+      forceRug: false,
+      holders: 10_000,
+      lpBurned: false,
+      goPlusClean: true,
+      tokenAgeHours: 31 * 24,
+      sourcesAvailableCount: 6,
+    })
+    expect(stillBlocked10k).toBe(true)
   })
 })
 
@@ -489,10 +555,21 @@ describe("HARD_BLOCK_REASONS contract", () => {
     }
   })
 
-  it("'age', 'holders' and 'lp_unverified' are NOT hard reasons", () => {
-    // These three are the only valid soft-unlock paths.
+  it("'age' and 'lp_unverified' are NOT hard reasons (still soft-unlockable)", () => {
+    // Soft-unlockable: can flip from blocked to unlocked when the
+    // token shows enough established-token signals.
     expect(HARD_BLOCK_REASONS.has("age")).toBe(false)
-    expect(HARD_BLOCK_REASONS.has("holders")).toBe(false)
     expect(HARD_BLOCK_REASONS.has("lp_unverified")).toBe(false)
+  })
+
+  it("'holders' is NOT in HARD_BLOCK_REASONS but is also NOT soft-unlockable (7.7.0)", () => {
+    // After RIV (2026-05-28): "holders" sits in a third bucket — neither
+    // explicit-hard (HARD_BLOCK_REASONS) nor soft-unlockable
+    // (SOFT_REASONS). The default-block fall-through in
+    // applySafeGateOverride keeps the gate closed. Listing it as
+    // explicit-hard would force DANGER on every Helius-unavailable
+    // scan; the current placement caps the verdict at CAUTION while
+    // still refusing to grant SAFE.
+    expect(HARD_BLOCK_REASONS.has("holders")).toBe(false)
   })
 })
