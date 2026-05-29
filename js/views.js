@@ -72,41 +72,32 @@ export function buildSniperMapTab(d) {
   const sniperFlags = flags.filter((f) => /sniper|bundle/i.test(f.label || ""));
   const hasActivity = sniperFlags.length > 0;
   // Field-first, flag-fallback. The structured fields are populated by
-  // Helius; on tokens where Helius didn't return the backend still emits
-  // flags like "Top 10 hold X%" which we parse here as a fallback.
+  // Helius; on tokens where Helius didn't return (BONK-style) the
+  // backend still emits flags like "Top 10 wallets hold X%" which we
+  // parse here so the visual still has a measured percentage.
   let top10 = typeof d.top10HolderPct === "number" ? d.top10HolderPct : null;
   let top1 = typeof d.topHolderPct === "number" ? d.topHolderPct : null;
-  if (top10 == null) top10 = parsePctFromFlags(flags, /top\s*10(?:\s+holders?)?\s+(?:hold|[>≥])\s*(\d+(?:\.\d+)?)\s*%/i);
-  if (top1 == null) top1 = parsePctFromFlags(flags, /(?:Owner|Creator)\s*holds\s*[>≥]\s*(\d+(?:\.\d+)?)\s*%/i);
+  if (top10 == null) top10 = parsePctFromFlags(flags, /top\s*10\b[^%]*?(\d+(?:\.\d+)?)\s*%/i);
+  if (top1 == null) top1 = parsePctFromFlags(flags, /single\s+wallet[^%]*?(\d+(?:\.\d+)?)\s*%/i);
   const heliusUnavailable = flags.some((f) => /helius\s+unavailable/i.test(f.label || ""));
 
-  // ── Is this an established token? ──────────────────────────────────────
-  // Same definition as layerHelius: ≥ 30 days old AND ≥ 5k holders.
-  // Used to show context-aware labels in the Sniper Map ("exchange wallets"
-  // vs "cluster risk") so a user seeing 36% top-10 on FARTCOIN understands
-  // why the verdict is SAFE while a 36% top-10 on a 3-hour token is CAUTION.
-  const ageDays = typeof d.solscanTokenAgeHours === "number" ? d.solscanTokenAgeHours / 24 : null;
-  const isEstablished = (d.holders ?? 0) >= 5_000 && (ageDays ?? 0) >= 30;
+  // ── Concentration verdict — strict bands calibrated against actual
+  // distribution risk, NOT the toxic memecoin median. The market norm
+  // (40-70% top 10) is itself the reason most retail traders get rinsed.
+  // We rank both top10 and top1 independently, then take the worse one,
+  // and add a "top-heavy" modifier when one wallet dominates the cluster.
 
-  // ── Concentration bands — 2 tiers (mirrors layerHelius 7.7.5) ──────────
-  // Severity: 0 good, 1 info, 2 warn, 3 bad. Numeric so we can take max.
-  function top10BandFresh(t10) {
+  // Severity ladder: 0 good, 1 info, 2 warn, 3 bad. Numeric so we can
+  // pick max(top10, top1).
+  function top10Band(t10) {
     if (t10 == null) return null;
-    if (t10 >= 75) return { rank: 3, label: "EXTREME CONCENTRATION", cls: "bad" };
-    if (t10 >= 55) return { rank: 3, label: "HIGH CONCENTRATION · CONTROL RISK", cls: "bad" };
-    if (t10 >= 35) return { rank: 2, label: "ELEVATED CONCENTRATION · CLUSTER RISK", cls: "warn" };
-    if (t10 >= 20) return { rank: 1, label: "MODERATE CONCENTRATION", cls: "info" };
+    if (t10 >= 70) return { rank: 3, label: "EXTREME CONCENTRATION", cls: "bad" };
+    if (t10 >= 50) return { rank: 3, label: "VERY HIGH CONCENTRATION", cls: "bad" };
+    if (t10 >= 35) return { rank: 2, label: "HIGH CONCENTRATION", cls: "warn" };
+    if (t10 >= 20) return { rank: 2, label: "ELEVATED CONCENTRATION", cls: "warn" };
+    if (t10 >= 10) return { rank: 1, label: "NORMAL DISTRIBUTION", cls: "info" };
     return { rank: 0, label: "WELL DISTRIBUTED", cls: "good" };
   }
-  function top10BandEstablished(t10) {
-    if (t10 == null) return null;
-    if (t10 >= 80) return { rank: 3, label: "EXTREME CONCENTRATION", cls: "bad" };
-    if (t10 >= 65) return { rank: 3, label: "HIGH CONCENTRATION", cls: "bad" };
-    if (t10 >= 45) return { rank: 2, label: "ELEVATED · EXCHANGES MAY BE INCLUDED", cls: "warn" };
-    if (t10 >= 25) return { rank: 1, label: "NORMAL DISTRIBUTION · EXCHANGES INCLUDED", cls: "info" };
-    return { rank: 0, label: "WELL DISTRIBUTED", cls: "good" };
-  }
-  const top10BandFn = isEstablished ? top10BandEstablished : top10BandFresh;
   function top1Band(t1) {
     if (t1 == null) return null;
     if (t1 >= 25) return { rank: 3, label: "WHALE CRITICAL", cls: "bad" };
@@ -149,7 +140,7 @@ export function buildSniperMapTab(d) {
   const concentrated = Math.round(Math.max(0, Math.min(100, top10)));
   const distributed = 100 - concentrated;
   const top1Disp = top1 != null ? top1.toFixed(1) + "%" : "—";
-  const t10b = top10BandFn(top10);
+  const t10b = top10Band(top10);
   const t1b = top1Band(top1);
   // Top-heavy: top1 captures more than 40% of the top10 cluster. Means
   // one wallet dominates and can dump unilaterally — orthogonal risk on
@@ -182,25 +173,16 @@ export function buildSniperMapTab(d) {
     // Spread within top 10 — softer interpretation
     alertParts.push(`Largest wallet only ${top1.toFixed(1)}% — concentration is spread across the top 10 cluster.`);
   }
-  // Severity-specific phrasing — with exchange context for established tokens
+  // Severity-specific phrasing
   switch (primary.cls) {
     case "bad":
       alertParts.push("Coordinated exit can crash the price at any moment.");
       break;
     case "warn":
-      if (isEstablished && /exchanges/i.test(primary.label)) {
-        alertParts.push("Even with exchange wallets present, this concentration level is elevated — watch for coordinated sells.");
-      } else {
-        alertParts.push("Watch whale moves and large transfers carefully.");
-      }
+      alertParts.push("Watch whale moves and large transfers carefully.");
       break;
     case "info":
-      if (isEstablished && /exchanges/i.test(primary.label)) {
-        // Key UX note: explain why 36% on an established token ≠ 36% on a fresh one
-        alertParts.push(`For an established token (${ageDays != null ? Math.round(ageDays) + "d old, " : ""}${d.holders != null ? d.holders.toLocaleString() + " holders" : "large holder base"}), this distribution is within normal range. Top wallets at this maturity level are typically exchanges, custodians, and long-term diamond-hand holders — not coordinated dump groups.`);
-      } else {
-        alertParts.push("Within normal range — monitor as positions evolve.");
-      }
+      alertParts.push("Within normal range — monitor as positions evolve.");
       break;
     case "good":
       // Reserved for the strict "clean" path below

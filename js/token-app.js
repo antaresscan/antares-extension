@@ -151,7 +151,7 @@ const DEMO_DATA = {
     },
   },
   "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump": {
-    score: 918, risk: "SAFE", confidence: 100,
+    score: 750, risk: "CAUTION", confidence: 100,
     tokenSymbol: "Fartcoin", tokenName: "Fartcoin",
     resolvedMint: "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump",
     mintAuthority: false, freezeAuthority: false, honeypot: false,
@@ -162,7 +162,7 @@ const DEMO_DATA = {
     solscanTokenAgeHours: 13384,
     tokenLogo: "https://cdn.dexscreener.com/cms/images/9af5672845c89585e9ff1e3b26a640090324aa4d92222052d1043e60ef8182de?width=800&height=800&quality=95&format=auto",
     flags: [
-      { severity: "info", label: "Top 10 hold 34% — normal for established token · likely exchanges & long-term holders" },
+      { severity: "warning", label: "Single wallet holds 11% of supply" },
       { severity: "bonus", label: "LP Burned 100% (GoPlus) ✓" },
       { severity: "bonus", label: "Established token (30d+) ✓" },
     ],
@@ -184,9 +184,11 @@ const DEMO_DATA = {
       volume: { m5: 17000, h1: 198000, h6: 1020000, h24: 4080000 },
     },
     topHolderPct: 10.54, top10HolderPct: 33.81,
-    // 3 cards — SAFE story (7.7.5): 33.8% top-10 on a 2-year-old blue-chip
-    // is normal exchange distribution, not a rug risk. The Critical Actors
-    // still show the cluster for transparency but without the warning badge.
+    // 3 cards — CAUTION story: dev is clean, insider is the 10.5%
+    // concentration risk, cluster is the rest of the top 10. Only the
+    // insider card carries the meaningful warning; dev + cluster stay
+    // neutral so the user sees "the structural issue is the one wallet,
+    // not everything is broken". Sorted by pct descending.
     criticalActors: [
       { type: "cluster", tag: "Cluster A", pct: 23.3, addr: "Top 2-10 holders", repLbl: "Coordination · moderate cluster activity",   repWidth: 62, repWarn: false, desc: "Remaining top 10 hold <b>23.3%</b> combined — entered within similar windows, monitor for synchronized exits." },
       { type: "insider", tag: "Insider",   pct: 10.5, addr: "9SLP…KpKS",        repLbl: "Concentration risk · single wallet",         repWidth: 78, repWarn: false, desc: "Holds <b>10.5%</b> of supply — one-wallet dump would meaningfully move the price." },
@@ -211,9 +213,9 @@ const DEMO_DATA = {
         { symbol: "BLEEDR", ruggedAfterHours: 240, loss: -88 },
       ],
     },
-    verdictHistory: [{ ts: _demoTs - 3600000, verdict: "SAFE", score: 918, event: "Top 10 hold 34% — normal for established token · likely exchanges & long-term holders" }],
+    verdictHistory: [{ ts: _demoTs - 3600000, verdict: "CAUTION", score: 750, event: "Single wallet holds 11% of supply" }],
     sources_used: ["dexscreener", "rugcheck", "goplus", "helius", "solscan", "chart"],
-    aiSummary: "Fartcoin shows a SAFE profile with fully burned LP and 30d+ established trading on Solana. The top 10 wallets hold 34% of supply — within normal range for a token of this maturity. At this age and holder count, top wallets are typically exchange cold wallets, custodians, and long-term holders rather than coordinated sellers. Mint and freeze authorities are revoked, no honeypot, all structural signals clean.",
+    aiSummary: "Fartcoin lands on CAUTION because a single wallet holds 11% of supply — a meaningful concentration risk even with otherwise solid fundamentals. LP is fully burned, mint and freeze authorities are revoked, no honeypot, and the token has 30d+ of trading history. The verdict is not DANGER because the rest of the structural posture is clean; it is not SAFE because the concentrated wallet alone has enough leverage to swing the price.",
     fetchedAt: _demoTs,
     // CAUTION narrative — the 10.5% insider wallet (#1) is mostly idle
     // but #2 + #3 (its smaller siblings) drip-sell. Net flow slightly
@@ -262,7 +264,7 @@ const DEMO_DATA = {
     solscanTokenAgeHours: 12838,
     tokenLogo: "https://cdn.dexscreener.com/cms/images/d237de55618e54fd7d66593ff2adf3ad8c092398f9049a31f1dcb1b23ad1dff8?width=800&height=800&quality=95&format=auto",
     flags: [
-      { severity: "critical", label: "Top 10 hold 68% — high concentration · control risk" },
+      { severity: "critical", label: "Single wallet holds 27% of supply" },
       { severity: "warning", label: "Top 10 wallets hold 67% of supply" },
       { severity: "bonus", label: "LP Burned 100% (GoPlus) ✓" },
       { severity: "bonus", label: "Established token (30d+) ✓" },
@@ -317,7 +319,7 @@ const DEMO_DATA = {
         { symbol: "SLOWBLEED", ruggedAfterHours: 48, loss: -85.4 },
       ],
     },
-    verdictHistory: [{ ts: _demoTs - 3600000, verdict: "DANGER", score: 500, event: "Top 10 hold 68% — high concentration · control risk" }],
+    verdictHistory: [{ ts: _demoTs - 3600000, verdict: "DANGER", score: 500, event: "Single wallet holds 27% of supply" }],
     sources_used: ["dexscreener", "rugcheck", "goplus", "helius", "solscan", "chart"],
     aiSummary: "Pippin lands on DANGER because of stacked concentration risk — a single wallet holds 27% of supply and the top 10 wallets together control 67%. Either of those alone would already trigger a soft block; together they make a coordinated dump trivially possible. The LP is burned and the contract is clean (no mint, no freeze, no honeypot), which keeps the verdict from collapsing all the way to RUG, but the holder structure alone is enough to treat this as exit-liquidity risk.",
     fetchedAt: _demoTs,
@@ -373,7 +375,7 @@ const DEMO_DATA = {
     solscanTokenAgeHours: 16275,
     tokenLogo: "https://cdn.dexscreener.com/cms/images/17c35e4d62131992b5c58bf5cb9d9878a64828389eddc2416416ffac68b38d25?width=800&height=800&quality=95&format=auto",
     flags: [
-      { severity: "critical", label: "Top 10 hold 54% — high concentration · control risk" },
+      { severity: "critical", label: "Single wallet holds 44% of supply" },
       { severity: "bonus", label: "LP Burned 100% (GoPlus) ✓" },
       { severity: "bonus", label: "Established token (30d+) ✓" },
     ],
@@ -430,7 +432,7 @@ const DEMO_DATA = {
         { symbol: "SLOWBLEED", ruggedAfterHours: 48, loss: -85.4 },
       ],
     },
-    verdictHistory: [{ ts: _demoTs - 3600000, verdict: "RUG", score: 250, event: "Top 10 hold 54% — high concentration · control risk" }],
+    verdictHistory: [{ ts: _demoTs - 3600000, verdict: "RUG", score: 250, event: "Single wallet holds 44% of supply" }],
     sources_used: ["dexscreener", "rugcheck", "goplus", "helius", "solscan", "chart"],
     aiSummary: "Hawk Tuah is the textbook concentration rug — a single wallet holds 44% of total supply, more than enough to crash the price to zero in one transaction. LP is technically burned and the token has 30d+ of trading history, but those signals are completely overridden by the wallet concentration: the dev (or whoever controls that wallet) can dump at any moment and the remaining holders cannot defend the price. Hard kill. Treat any remaining liquidity as exit-only.",
     fetchedAt: _demoTs,
@@ -777,19 +779,12 @@ function render(d, ca) {
     const remainder = 100 - top10Pct;
     const t50 = Math.round(remainder * 0.5);
     const rest = 100 - t1 - t10 - t50;
-    // Context-aware label: for established tokens in the normal/moderate range,
-    // explain that top wallets are likely exchanges — not rug operators.
-    const holderAgeDays = typeof d.solscanTokenAgeHours === "number" ? d.solscanTokenAgeHours / 24 : null;
-    const holderIsEstablished = (d.holders ?? 0) >= 5_000 && (holderAgeDays ?? 0) >= 30;
-    const holderCardLbl = holderIsEstablished && top10Pct <= 44
-      ? `${escapeHtml(d.holders.toLocaleString())} holders · top wallets include exchanges & long-term holders`
-      : `${escapeHtml(d.holders.toLocaleString())} holders · top wallet distribution`;
     holdersSectionHtml = `
       <div class="section-label" data-toggle="holders-card">
         <span>Holder Concentration</span><span class="hr"></span><span class="chev">▾</span>
       </div>
       <div class="holders-card" id="holders-card">
-        <div class="lbl">${holderCardLbl}</div>
+        <div class="lbl">${escapeHtml(d.holders.toLocaleString())} holders · top wallets dominate supply</div>
         <div class="hbar">
           <div class="seg top1" style="width:${t1}%">${t1 >= 6 ? t1 + "%" : ""}</div>
           <div class="seg top10" style="width:${t10}%">${t10 >= 6 ? t10 + "%" : ""}</div>

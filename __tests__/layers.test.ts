@@ -447,11 +447,6 @@ describe("layerHelius", () => {
   });
 
   it("foundation wallet detection — excludes foundation wallets from holder analysis", () => {
-    // LP wallet (675k...) holds 500 of 1000 supply → excluded from concentration.
-    // After exclusion: 10 real wallets × 50 = 500 = top-10 = 50% of total supply.
-    // No maturityContext = fresh tier → 35-54% = "elevated · cluster risk" (soft block).
-    // Key assertion: the LP program address is NOT treated as a real whale.
-    // The concentration flag mentions nothing about the LP address.
     const holders: HeliusHolder[] = [
       { address: "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8", owner: "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8", uiAmount: 500 },
       { address: "wallet1abc", owner: "wallet1abc", uiAmount: 50 },
@@ -466,12 +461,8 @@ describe("layerHelius", () => {
       { address: "wallet10abc", owner: "wallet10abc", uiAmount: 50 },
     ];
     const result = layerHelius(holders, 1000);
-    // The LP address is NOT mentioned in any flag (it was filtered out)
-    expect(result.flags.some(f => /675k/i.test(f.label))).toBe(false);
-    // No forceRug — 10 equal wallets at 5% each is not an extreme rug pattern
+    expect(result.trust).toBeGreaterThan(0.9);
     expect(result.forceRug).toBe(false);
-    // The flag labels don't say "500" (the LP wallet's amount) as a whale
-    expect(result.flags.some(f => f.label.includes("500%"))).toBe(false);
   });
 
   it("well distributed supply gets bonus", () => {
@@ -510,76 +501,58 @@ describe("layerHelius", () => {
     expect(result.trust).toBeGreaterThanOrEqual(0.65);
   });
 
-  it("FARTCOIN established (top-10=36%): exchange note, no safeBlock (7.7.5 2-tier rule)", () => {
-    // FARTCOIN: established (164k holders, 2y), top-10=36%.
-    // 7.7.5 established tier: 25-44% = info with exchange context note.
-    // No scary whale warning, no safeBlock, SAFE possible.
+  it("FARTCOIN profile (top-10=36%): moderate info flag, no safeBlock (7.7.4 top-10 rule)", () => {
+    // FARTCOIN: top-1=11% (likely exchange cold wallet), top-10≈36%.
+    // 7.7.4: verdict based on top-10 distribution only — single wallet
+    // not mentioned. top-10=36% → "moderate" info, no penalty, no safeBlock.
+    // Users see a neutral flag, no scary "whale" warning from one exchange.
     const holders: HeliusHolder[] = [
-      { address: "whale", owner: "whale", uiAmount: 11_000 },
+      { address: "whale", owner: "whale", uiAmount: 11_000 }, // 11%
       ...Array.from({ length: 9 }, (_, i) => ({
-        address: `top${i+2}`, owner: `top${i+2}`, uiAmount: 2_778,
+        address: `top${i+2}`, owner: `top${i+2}`, uiAmount: 2_778, // ~2.8% each
       })),
       ...Array.from({ length: 90 }, (_, i) => ({
         address: `r${i}`, owner: `r${i}`, uiAmount: 700,
       })),
     ];
-    const ctx = {
-      holders: 164_000, liquidity: 9_000_000, tokenAgeHours: 760 * 24,
-      mintAuthority: false, freezeAuthority: false, honeypot: false, lpBurned: true,
-    };
-    const result = layerHelius(holders, 100_000, ctx);
+    // top-10 ≈ (11000 + 9×2778)/100000 ≈ 36000/100000 = 36%
+    const result = layerHelius(holders, 100_000);
+    // No top-1 flag emitted — single wallet not mentioned
     expect(result.flags.some(f => /11%/.test(f.label))).toBe(false);
-    expect(result.flags.some(f => /likely exchanges/i.test(f.label))).toBe(true);
-    expect(result.flags.some(f => /likely exchanges/i.test(f.label) && f.severity === "info")).toBe(true);
+    // top-10 = 36% → "moderate" info flag
+    expect(result.flags.some(f => /moderate concentration/i.test(f.label))).toBe(true);
+    // No safe block, no force rug — 36% top-10 is not alarming
     expect(result.safeBlocked).toBe(false);
     expect(result.forceRug).toBe(false);
   });
 
-  it("SAME top-10=36% on FRESH token (no ctx): cluster risk soft block (7.7.5)", () => {
-    // Same 36% but no maturityContext = fresh tier.
-    // 35-54% = elevated concentration / cluster risk (warning, soft, CAUTION max).
+  it("elevated concentration (top-10=65%): warning flag + soft safeBlock (max CAUTION)", () => {
+    // top-10 = 65% → "elevated concentration" band (60-74%) → warning,
+    // soft (concentration_light), penalty=0.50, safeBlocked=true.
+    // Verdict: max CAUTION, never SAFE.
     const holders: HeliusHolder[] = [
-      { address: "whale", owner: "whale", uiAmount: 11_000 },
+      { address: "w1", owner: "w1", uiAmount: 20_000 }, // 20%
       ...Array.from({ length: 9 }, (_, i) => ({
-        address: `top${i+2}`, owner: `top${i+2}`, uiAmount: 2_778,
-      })),
-      ...Array.from({ length: 90 }, (_, i) => ({
-        address: `r${i}`, owner: `r${i}`, uiAmount: 700,
-      })),
-    ];
-    const result = layerHelius(holders, 100_000); // no context = fresh
-    expect(result.flags.some(f => /cluster risk/i.test(f.label))).toBe(true);
-    expect(result.flags.some(f => /cluster risk/i.test(f.label) && f.severity === "warning")).toBe(true);
-    expect(result.safeBlocked).toBe(true);
-    expect(result.forceRug).toBe(false);
-  });
-
-  it("elevated concentration (top-10=65%) on fresh token: warning flag + soft safeBlock (max CAUTION)", () => {
-    // Fresh token, top-10=65% = high concentration (55-74%) → critical, hard, DANGER.
-    // (No maturity context = fresh tier applies.)
-    const holders: HeliusHolder[] = [
-      { address: "w1", owner: "w1", uiAmount: 20_000 },
-      ...Array.from({ length: 9 }, (_, i) => ({
-        address: `t${i+2}`, owner: `t${i+2}`, uiAmount: 5_000,
+        address: `t${i+2}`, owner: `t${i+2}`, uiAmount: 5_000, // 5% each
       })),
       ...Array.from({ length: 20 }, (_, i) => ({
         address: `r${i}`, owner: `r${i}`, uiAmount: 250,
       })),
     ];
-    // top-10 = (20000 + 9×5000)/100000 = 65% → fresh tier: 55-74% = high/control risk
+    // top-10 = (20000 + 9×5000)/100000 = 65000/100000 = 65%
     const result = layerHelius(holders, 100_000);
-    expect(result.flags.some(f => /control risk/i.test(f.label))).toBe(true);
-    expect(result.flags.some(f => /control risk/i.test(f.label) && f.severity === "critical")).toBe(true);
+    expect(result.flags.some(f => /elevated concentration/i.test(f.label))).toBe(true);
+    expect(result.flags.some(f => /elevated concentration/i.test(f.label) && f.severity === "warning")).toBe(true);
     expect(result.safeBlocked).toBe(true);
-    expect(result.forceRug).toBe(false); // 65% < 75% forceRug threshold for fresh
-    expect(result.trust).toBeGreaterThanOrEqual(0.20);
-    expect(result.trust).toBeLessThan(0.40);
+    expect(result.forceRug).toBe(false); // 65% < 80% forceRug threshold
+    expect(result.trust).toBeGreaterThanOrEqual(0.40);
+    expect(result.trust).toBeLessThan(0.65);
   });
 
-  it("mature dampening: top-10=65% (established, elevated band) does not get the trust floor", () => {
-    // top-10 ≈ 65% → established tier: 45-64% = elevated (soft band).
+  it("mature dampening: top-10=65% without lpBurned does not get the trust floor", () => {
+    // top-10 = (35000 + 9×3300)/100000 = 64700/100000 ≈ 65% → elevated band
     // concentrationAllowsLift=false (band is "soft", not "none"/"moderate")
-    // → no trust floor applies regardless of LP status
+    // → no floor applies regardless of LP status
     const holders: HeliusHolder[] = [
       { address: "whale", owner: "whale", uiAmount: 35_000 },
       ...Array.from({ length: 9 }, (_, i) => ({
@@ -667,10 +640,8 @@ describe("layerHelius", () => {
       lpBurned: null,
     };
     const result = layerHelius(holders, 100_000, ctx);
-    // ctx.holders=20 → NOT established (< 5k) → fresh tier.
-    // top-10=63% → fresh tier 55-74% = "high concentration · control risk" (hard).
-    // The concentration flag MUST remain (not dropped by the broken-view fallback).
-    expect(result.flags.some(f => /high concentration|control risk/i.test(f.label))).toBe(true);
+    // The top-10 concentration flag MUST remain (not dropped by the fallback).
+    expect(result.flags.some(f => /elevated concentration/i.test(f.label))).toBe(true);
     // The broken-view info flag MUST NOT have been emitted.
     expect(result.flags.some(f => /Holder data unreliable/i.test(f.label))).toBe(false);
     // Safe gate must stay closed.

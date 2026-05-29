@@ -192,45 +192,30 @@ describe("classifySafeBlockedReasons", () => {
     expect(classifySafeBlockedReasons(layers)).toContain("age");
   });
 
-  it("detects concentration (hard) reason from top-10 high/extreme flag (7.7.5+)", () => {
-    // top-10 high or extreme: hard "concentration" regardless of tier.
-    // Tests both fresh ("control risk" suffix) and established (no suffix) formats.
-    const freshLayer: LayerResult[] = [
-      makeLayer("helius", 0.25, true, [
-        { label: "Top 10 hold 65% — high concentration · control risk", severity: "critical", impact: 0 }
-      ], false, true),
-    ];
-    expect(classifySafeBlockedReasons(freshLayer)).toContain("concentration");
-
-    const estLayer: LayerResult[] = [
+  it("detects concentration (hard) reason from top-10 high/extreme flag (7.7.4+)", () => {
+    // top-10 ≥ 75%: "high" or "extreme" concentration → hard "concentration" reason.
+    // The safe-gate stays closed — 75%+ top-10 means coordinated sell risk
+    // regardless of how established the token looks.
+    const layers: LayerResult[] = [
       makeLayer("helius", 0.25, true, [
         { label: "Top 10 hold 82% — extreme concentration", severity: "critical", impact: 0 }
       ], false, true),
     ];
-    expect(classifySafeBlockedReasons(estLayer)).toContain("concentration");
+    expect(classifySafeBlockedReasons(layers)).toContain("concentration");
   });
 
-  it("classifies top-10 elevated flags as SOFT concentration_light (7.7.5 — both tiers)", () => {
-    // Fresh tier: "elevated concentration · cluster risk" → concentration_light
-    const freshLayer: LayerResult[] = [
+  it("classifies top-10 elevated (60-74%) flags as SOFT concentration_light (7.7.4)", () => {
+    // top-10 60-74%: "elevated concentration" → soft "concentration_light".
+    // Max CAUTION — verdict can land CAUTION with clean other layers, never SAFE.
+    const layers: LayerResult[] = [
       makeLayer("helius", 0.5, true, [
-        { label: "Top 10 hold 42% — elevated concentration · cluster risk", severity: "warning", impact: 0 }
+        { label: "Top 10 hold 65% — elevated concentration", severity: "warning", impact: 0 }
       ], false, true),
     ];
-    const freshReasons = classifySafeBlockedReasons(freshLayer);
-    expect(freshReasons).toContain("concentration_light");
-    expect(freshReasons).not.toContain("concentration");
-
-    // Established tier: "elevated · exchanges may be included" → concentration_light
-    const estLayer: LayerResult[] = [
-      makeLayer("helius", 0.5, true, [
-        { label: "Top 10 hold 52% — elevated · exchanges may be included", severity: "warning", impact: 0 }
-      ], false, true),
-    ];
-    const estReasons = classifySafeBlockedReasons(estLayer);
-    expect(estReasons).toContain("concentration_light");
-    expect(estReasons).not.toContain("concentration");
-    expect(estReasons).not.toContain("concentration_warning");
+    const reasons = classifySafeBlockedReasons(layers);
+    expect(reasons).toContain("concentration_light");
+    expect(reasons).not.toContain("concentration"); // hard only for 75%+
+    expect(reasons).not.toContain("concentration_warning");
   });
 });
 
