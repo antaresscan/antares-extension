@@ -168,11 +168,15 @@ const DEMO_DATA = {
     lpBurned: true, lpLocked: false, lpLockedPct: 100,
     liquidity: 4448431, marketCap: 26242298, priceUsd: 0.02743,
     holders: 26601, volume24h: 3060000, volume1h: 158000,
-    priceChange5m: -0.41, priceChange1h: -2.18, priceChange24h: -6.91,
+    priceChange5m: -0.8, priceChange1h: -8, priceChange24h: -28,
     solscanTokenAgeHours: 12838,
     tokenLogo: "https://cdn.dexscreener.com/cms/images/d237de55618e54fd7d66593ff2adf3ad8c092398f9049a31f1dcb1b23ad1dff8?width=800&height=800&quality=95&format=auto",
     flags: [
       { severity: "critical", label: "Top 10 hold 68% — high concentration" },
+      { severity: "critical", label: "Sniper activity detected" },
+      { severity: "warning", label: "Progressive dump: -8% (1h) + -28% (24h)" },
+      { severity: "warning", label: "Dev wallet sold tokens" },
+      { severity: "warning", label: "Metadata mutable" },
       { severity: "bonus", label: "LP Burned 100% (GoPlus) ✓" },
       { severity: "bonus", label: "Established token (30d+) ✓" },
     ],
@@ -185,9 +189,10 @@ const DEMO_DATA = {
           { url: "http://t.me/ThePippinCo", type: "telegram" },
         ],
       },
-      // DANGER narrative — clear distribution pressure (sells dominate
-      // in every window). volume/LP ratio 0.7× = no wash flag; the
-      // verdict comes from concentration, not wash.
+      // DANGER narrative — systematic sell pressure across all timeframes.
+      // Multi-timeframe progressive dump: -8% 1h, -18% 6h, -28% 24h.
+      // Not a crash, a controlled bleed — the insider distribution pattern.
+      priceChange: { m5: -0.8, h1: -8, h6: -18, h24: -28 },
       txns: {
         m5:  { buys: 4,   sells: 9    },
         h1:  { buys: 70,  sells: 145  },
@@ -226,9 +231,9 @@ const DEMO_DATA = {
         { symbol: "SLOWBLEED", ruggedAfterHours: 48, loss: -85.4 },
       ],
     },
-    verdictHistory: [{ ts: _demoTs - 3600000, verdict: "DANGER", score: 500, event: "Top 10 hold 68% — high concentration" }],
+    verdictHistory: [{ ts: _demoTs - 3600000, verdict: "DANGER", score: 500, event: "5 flags across 4 analysis layers — coordinated insider exit in progress" }],
     sources_used: ["dexscreener", "rugcheck", "goplus", "helius", "solscan", "chart"],
-    aiSummary: "Pippin lands on DANGER because the top 10 wallets control 68% of supply — high concentration. Within that cluster the largest wallet holds 27% and is actively selling. The LP is burned and the contract is clean (no mint, no freeze, no honeypot), which keeps the verdict from collapsing all the way to RUG, but with two-thirds of supply in 10 hands a coordinated dump is trivially possible — treat this as exit-liquidity risk.",
+    aiSummary: "Pippin lands on DANGER because five independent signals from four different analysis layers all describe the same thing: an organized insider exit in progress. Helius shows the top 10 wallets controlling 68% of supply. RugCheck independently confirms sniper activity at launch (pre-planned entry) and that the dev wallet has already sold. DexScreener shows a systematic multi-timeframe decline — -8% in 1h, -18% in 6h, -28% in 24h — the controlled-bleed shape of a distribution, not a crash. Metadata remains mutable: the team can rebrand mid-exit.\n\nLP is burned and the contract has no mint or freeze authority. These are real positives. They confirm you can still sell. They do not change the underlying reality: 68% of supply is in organized hands that entered at launch and are currently reducing positions into retail.\n\nFive flags from four sources do not coincide by accident. This is not speculation about what might happen — it is a description of what is already happening on-chain. DANGER is the correct floor.",
     fetchedAt: _demoTs,
     // DANGER narrative — the 27% insider wallet (#1) is actively
     // dumping. Top-10 cluster all selling in coordination. Net flow
@@ -277,12 +282,16 @@ const DEMO_DATA = {
     mintAuthority: false, freezeAuthority: false, honeypot: false,
     lpBurned: true, lpLocked: false, lpLockedPct: 100,
     liquidity: 70520, marketCap: 155682, priceUsd: 0.0001702,
-    holders: 7430, volume24h: 1245, volume1h: 84,
-    priceChange5m: -1.8, priceChange1h: -4.2, priceChange24h: -12.6,
+    holders: 7430, volume24h: 1480000, volume1h: 84,
+    priceChange5m: -1.8, priceChange1h: -18, priceChange24h: -82,
     solscanTokenAgeHours: 16275,
     tokenLogo: "https://cdn.dexscreener.com/cms/images/17c35e4d62131992b5c58bf5cb9d9878a64828389eddc2416416ffac68b38d25?width=800&height=800&quality=95&format=auto",
     flags: [
       { severity: "critical", label: "Top 10 hold 87% — extreme concentration" },
+      { severity: "critical", label: "Bundle holds ~87% of supply — coordinated buy/dump" },
+      { severity: "critical", label: "Wash trading detected (vol/liq > 20) — bundler dump" },
+      { severity: "critical", label: "Post-ATH dump -82% — rug exit in progress" },
+      { severity: "critical", label: "Sniper activity detected" },
       { severity: "bonus", label: "LP Burned 100% (GoPlus) ✓" },
       { severity: "bonus", label: "Established token (30d+) ✓" },
     ],
@@ -299,16 +308,17 @@ const DEMO_DATA = {
           { url: "https://t.me/hawktuah_sol", type: "telegram" },
         ],
       },
-      // RUG narrative — abandoned token. Tiny trades cycling on thin
-      // LP triggers a wash warning (avg $30 trade on $70K LP). Strong
-      // distribution skew. Volume too small for volRatioScore.
+      // RUG narrative — rug executed. The 24h vol/liq ratio = 1480000/70520 ≈ 21
+      // (wash trading threshold > 20). Fake volume manufactured during the pump.
+      // Post-ATH dump: -82% from peak. Chart shows completed exit. Only sells left.
+      priceChange: { m5: -1.8, h1: -18, h6: -52, h24: -82 },
       txns: {
         m5:  { buys: 0,  sells: 1  },
         h1:  { buys: 1,  sells: 3  },
         h6:  { buys: 4,  sells: 14 },
         h24: { buys: 12, sells: 28 },
       },
-      volume: { m5: 18, h1: 84, h6: 380, h24: 1245 },
+      volume: { m5: 18, h1: 84, h6: 380, h24: 1480000 },
     },
     topHolderPct: 43.98, top10HolderPct: 87.0,
     // 3 cards — RUG story: verdict driven by 87% top-10 (extreme), which
@@ -339,9 +349,9 @@ const DEMO_DATA = {
         { symbol: "SLOWBLEED", ruggedAfterHours: 48, loss: -85.4 },
       ],
     },
-    verdictHistory: [{ ts: _demoTs - 3600000, verdict: "RUG", score: 250, event: "Top 10 hold 87% — extreme concentration" }],
+    verdictHistory: [{ ts: _demoTs - 3600000, verdict: "RUG", score: 250, event: "5 critical flags — zero mitigating signals across all layers" }],
     sources_used: ["dexscreener", "rugcheck", "goplus", "helius", "solscan", "chart"],
-    aiSummary: "Hawk Tuah is the textbook concentration rug — the top 10 wallets control 87% of total supply, with the dev-controlled wallet alone holding 44%. That is more than enough to crash the price to zero in one coordinated move. LP is technically burned and the token has 30d+ of trading history, but those signals are completely overridden by the concentration: the cluster can dump at any moment and the remaining holders cannot defend the price. Hard kill. Treat any remaining liquidity as exit-only.",
+    aiSummary: "Five critical flags, zero mitigating signals — every analysis layer returns red. The Helius top-holder analysis and the RugCheck bundle detection are two completely independent algorithms reading different on-chain data; both return 87% controlled by a coordinated cluster. That cross-source convergence is not coincidence. The DexScreener vol/liq ratio exceeded 20:1 — the technical threshold for manufactured volume — meaning the 'organic' trading activity that attracted retail buyers was the cluster trading with itself. The chart layer confirms a post-ATH dump of -82%: the exit already executed. Snipers loaded at launch, coordinated the pump into that fake volume, then liquidated.\n\nLP is technically burned. This is structurally irrelevant. Burning LP on a token where 87% of supply is in 10 coordinated wallets does not protect any holder — it just means the liquidation had to go through open-market dumps instead of a pool drain. The result is identical.\n\nThe rug is complete. What remains is the bleed phase: no buyers, thin residual liquidity, slow dilution to zero as retail holders attempt to exit into each other. Do not trade this token in any direction.",
     fetchedAt: _demoTs,
     // RUG narrative — abandoned post-pump. Dev wallet (#1, 44%) made
     // its big exit weeks ago; the remaining holders are slowly bleeding
@@ -380,12 +390,14 @@ const DEMO_DATA = {
     mintAuthority: false, freezeAuthority: false, honeypot: false,
     lpBurned: true, lpLocked: false, lpLockedPct: 100,
     liquidity: 6480000, marketCap: 342000000, priceUsd: 0.003841,
-    holders: 164210, volume24h: 28500000, volume1h: 1320000,
-    priceChange5m: 0.21, priceChange1h: -0.84, priceChange24h: 2.13,
+    holders: 164210, volume24h: 112000000, volume1h: 18400000,
+    priceChange5m: 3.8, priceChange1h: 18.4, priceChange24h: 187,
     solscanTokenAgeHours: 13080,
     tokenLogo: "https://dd.dexscreener.com/ds-data/tokens/solana/MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5.png",
     flags: [
       { severity: "warning", label: "Top 10 hold 55% — elevated · exchanges may be included" },
+      { severity: "warning", label: "Pumped +187% in 24h — elevated retrace risk on entry (blue-chip)" },
+      { severity: "warning", label: "Buy/sell imbalance (coordinated pump)" },
       { severity: "bonus", label: "LP Burned 100% (GoPlus) ✓" },
       { severity: "bonus", label: "Established token (30d+) ✓" },
     ],
@@ -395,15 +407,16 @@ const DEMO_DATA = {
         websites: [{ url: "https://mew.fun/", label: "Website" }],
         socials: [{ url: "https://x.com/mewsolana", type: "twitter" }],
       },
-      // CAUTION narrative — balanced two-way flow on a deep LP (no wash).
-      // The verdict comes from the 55% top-10 concentration, not from trading.
+      // CAUTION narrative — heavily buy-side right now (momentum pump).
+      // 0 sells in 5m window + heavy buy pressure = coordinated pump flag.
+      priceChange: { m5: 3.8, h1: 18.4, h6: 72.0, h24: 187 },
       txns: {
-        m5:  { buys: 8,    sells: 7    },
-        h1:  { buys: 95,   sells: 90   },
-        h6:  { buys: 480,  sells: 470  },
-        h24: { buys: 1900, sells: 1850 },
+        m5:  { buys: 38,   sells: 0    },
+        h1:  { buys: 420,  sells: 48   },
+        h6:  { buys: 1840, sells: 210  },
+        h24: { buys: 7200, sells: 980  },
       },
-      volume: { m5: 60000, h1: 1320000, h6: 6800000, h24: 28500000 },
+      volume: { m5: 228000, h1: 18400000, h6: 68000000, h24: 112000000 },
     },
     topHolderPct: 35.0, top10HolderPct: 55.0,
     // 3 cards — CAUTION story: the verdict is the 55% top-10 concentration.
@@ -426,9 +439,9 @@ const DEMO_DATA = {
     // CAUTION blue-chip — no time-to-rug profiling (contract is clean; the
     // only concern is concentration, not an active rug pattern).
     outcomeStats: null,
-    verdictHistory: [{ ts: _demoTs - 3600000, verdict: "CAUTION", score: 750, event: "Top 10 hold 55% — elevated · exchanges may be included" }],
+    verdictHistory: [{ ts: _demoTs - 3600000, verdict: "CAUTION", score: 750, event: "Pumped +187% in 24h — elevated retrace risk on entry (blue-chip)" }],
     sources_used: ["dexscreener", "rugcheck", "goplus", "helius", "solscan", "chart"],
-    aiSummary: "MEW lands on CAUTION because the top 10 wallets hold 55% of supply — elevated concentration. The contract is clean (LP burned, no mint or freeze authority, no honeypot) and the token has 30d+ of history with 164k holders, so the largest wallets are most likely exchanges and long-term holders rather than a coordinated dump group. But with more than half the supply in 10 wallets, a synchronized exit could still move the price hard — that keeps the verdict at CAUTION rather than SAFE.",
+    aiSummary: "MEW lands on CAUTION from three compounding signals across three different analysis layers. Helius flags 55% top-10 concentration — elevated, though on a 164k-holder blue-chip the large wallets are most likely exchanges and custodians. The chart layer flags a +187% 24h run: you are not buying a base, you are buying someone's retrace entry point. DexScreener confirms the momentum: 38 buys vs 0 sells in the last 5 minutes — the textbook fingerprint of a coordinated pump that has not yet found its top.\n\nThe contract is structurally sound: LP fully burned, no mint or freeze authority, no honeypot. These are genuine positives. They explain why this is CAUTION and not DANGER — the fundamentals are clean, the timing is not.\n\nIf MEW retraces 40-60% from the current high — statistically common after a +187% run — the verdict stays SAFE at that level. CAUTION here is about entry timing: the three flags are not predicting a rug, they are telling you that you are entering at the worst possible moment.",
     fetchedAt: _demoTs,
     // CAUTION narrative — blue-chip, top wallets mostly static. Light
     // two-way retail flow underneath, marginally negative net flow.
