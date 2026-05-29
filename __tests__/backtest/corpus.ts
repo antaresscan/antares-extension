@@ -237,15 +237,23 @@ export const SEED_CORPUS: CorpusEntry[] = [
 
 // ─── MERGED CORPUS ───────────────────────────────────────────────────
 // The full corpus is SEED_CORPUS (hand-vetted spine) + DISCOVERED
-// (auto-labelled wave from scripts/corpus-discover.ts). The discovered
-// entries have wide tolerated bands because external metrics alone
-// can't see concentration / LP burn / honeypot — the engine has the
-// final say.
+// (auto-labelled wave from scripts/corpus-discover.ts), deduped by
+// mint address. When the same token appears in both lists the
+// hand-vetted SEED_CORPUS entry WINS — its expectedVerdict +
+// tolerated were chosen with the engine's on-chain signal in mind,
+// while DISCOVERED uses only external metrics that can't see
+// concentration / LP burn / honeypot. Without this dedup, GIGA
+// (SEED says SAFE, DISCOVERED auto-labels CAUTION) would be tested
+// twice with conflicting labels and one would always fail.
 //
 // To grow the corpus: run `npm run corpus:discover` to refresh the
 // DISCOVERED list, then `npm run corpus:capture` to fetch fixtures
 // for any new entries. The accuracy backtest surfaces divergences.
-export const CORPUS: CorpusEntry[] = [...SEED_CORPUS, ...DISCOVERED]
+const _seedMints = new Set(SEED_CORPUS.map(e => e.ca))
+export const CORPUS: CorpusEntry[] = [
+  ...SEED_CORPUS,
+  ...DISCOVERED.filter(e => !_seedMints.has(e.ca)),
+]
 
 // ─── HELPERS ─────────────────────────────────────────────────────────
 
