@@ -67,89 +67,7 @@ const isDemo = params.get("demo") === "1";
 // ──────────────────────────────────────────────────────────────────────
 const _demoTs = Date.now();
 const DEMO_DATA = {
-  "2zMMhcVQEXDtdE6vsFS7S7D5oUodfJHE8vd1gnBouauv": {
-    score: 1000, risk: "SAFE", confidence: 80,
-    tokenSymbol: "PENGU", tokenName: "Pudgy Penguins",
-    resolvedMint: "2zMMhcVQEXDtdE6vsFS7S7D5oUodfJHE8vd1gnBouauv",
-    mintAuthority: false, freezeAuthority: false, honeypot: false,
-    lpBurned: true, lpLocked: false, lpLockedPct: 100,
-    liquidity: 9083893, marketCap: 639294195, priceUsd: 0.01017,
-    holders: 544390, volume24h: 12480000, volume1h: 520000,
-    priceChange5m: 0.18, priceChange1h: 0.91, priceChange24h: 3.71,
-    solscanTokenAgeHours: 137,
-    tokenLogo: "https://cdn.dexscreener.com/cms/images/9d5188f603b49ab02f7a75e5d2c2959ec2947c98181501fb11688672e9394efd?width=800&height=800&quality=95&format=auto",
-    flags: [
-      { severity: "info", label: "Helius unavailable" },
-      { severity: "bonus", label: "LP Burned 100% (GoPlus) ✓" },
-      { severity: "bonus", label: "Established token (30d+) ✓" },
-    ],
-    pair: {
-      url: "https://dexscreener.com/solana/5zpphebh8qcevbbpz848p3rjbvqxw7bh18samuygseyb",
-      info: {
-        websites: [{ url: "https://www.pudgypenguins.com", label: "Website" }],
-        socials: [
-          { url: "https://x.com/pudgypenguins", type: "twitter" },
-          { url: "https://discord.gg/pudgypenguins", type: "discord" },
-        ],
-      },
-      txns: {
-        m5:  { buys: 6,    sells: 4    },
-        h1:  { buys: 75,   sells: 50   },
-        h6:  { buys: 450,  sells: 300  },
-        h24: { buys: 1800, sells: 1200 },
-      },
-      volume: { m5: 41667, h1: 520000, h6: 3120000, h24: 12480000 },
-    },
-    // SAFE narrative — well-distributed holders, no whale dominance.
-    // top10 < 15 + top1 < 5 + 0 sniper flags → "CLEAN LAUNCH" verdict
-    // in the Sniper Map tab.
-    topHolderPct: 2.8, top10HolderPct: 9.4,
-    // 3 cards, all clean — SAFE story: no concentration risk, no prior
-    // rugs, organic distribution. repWarn:false on all so the bars
-    // render in neutral grey rather than warn yellow. Sorted by pct
-    // descending so the largest position renders leftmost.
-    criticalActors: [
-      { type: "cluster", tag: "Distribution", pct: 6.6, addr: "Top 2-10 wallets", repLbl: "Coordination · organic market-maker spread", repWidth: 28, repWarn: false, desc: "Top 2-10 hold <b>6.6%</b> combined — well-distributed across CEX hot wallets and long-term holders." },
-      { type: "insider", tag: "Top Holder",   pct: 2.8, addr: "7XHk…Xp4N",       repLbl: "Known treasury · multisig",                  repWidth: 22, repWarn: false, desc: "Holds <b>2.8%</b> of supply as multisig treasury — vesting locked, transparent operations." },
-      { type: "dev",     tag: "Dev",          pct: 0.1, addr: "8FmKr…vQ2N",      repLbl: "Reputation · 0 prior rugs · verified",       repWidth: 15, repWarn: false, desc: "Creator wallet dormant since launch. Mint authority renounced, no prior token launches flagged." },
-    ],
-    holderActivity: { rows: [], netFlowPct: 0, netFlowDirection: "flat" },
-    outcomeStats: null,
-    verdictHistory: [{ ts: _demoTs - 3600000, verdict: "SAFE", score: 1000, event: "Helius unavailable" }],
-    sources_used: ["dexscreener", "rugcheck", "goplus", "solscan", "chart"],
-    aiSummary: "PENGU shows a SAFE profile with fully burned LP and 30d+ established trading on Solana. Helius source temporarily unavailable lowers confidence to 80% but RugCheck and GoPlus cross-validate the safe verdict. No critical flags detected — strong holder distribution across 544,390 wallets with no concentration risk.",
-    fetchedAt: _demoTs,
-    // demoActivity — pre-baked top-10 wallet snapshot + 6h activity feed.
-    // Story: legitimate treasury + market makers, organic retail flow,
-    // tiny positive net flow. The wallets[] order drives the rank pill
-    // (#1..#10) and the per-wallet color in the feed rows.
-    demoActivity: {
-      wallets: [
-        { walletFull: "7XHk9aRpDjeqLvCpTreasury2024MultiSigYpKvXp4N", wallet: "7XHk…Xp4N", pctSupply: 2.8, holdings: 6720000000, active: true },
-        { walletFull: "5kQwT3vYpFcN8aHmFoundationVaultPENGUbCdEf9K", wallet: "5kQw…f9K",  pctSupply: 1.9, holdings: 4560000000, active: true },
-        { walletFull: "9MnPrTYzKvPjQrLmBinanceHotWalletPENGUxXY3Z", wallet: "9MnP…Y3Z",  pctSupply: 1.4, holdings: 3360000000, active: true },
-        { walletFull: "2DfGhJ7nVqWxRpKzMarketMakerWintermutePNGUuq", wallet: "2DfG…uq",   pctSupply: 1.1, holdings: 2640000000, active: false },
-        { walletFull: "8VxByU6tQzRpKjmCoinbaseColdStoragePNGUaBcD", wallet: "8VxB…aBcD", pctSupply: 0.8, holdings: 1920000000, active: false },
-        { walletFull: "3JtNcWzQXyPm4QrPRaydiumLPProviderPENGUxyz1", wallet: "3JtN…xyz1", pctSupply: 0.6, holdings: 1440000000, active: false },
-        { walletFull: "6KsXzVnPmQyJ8rT9LongTermHolderPENGUaBcDeF7", wallet: "6KsX…DeF7", pctSupply: 0.5, holdings: 1200000000, active: false },
-        { walletFull: "4FmAqRrTsPyVx8WhDiamondHandsPENGUaBcDeFgHi", wallet: "4FmA…FgHi", pctSupply: 0.4, holdings: 960000000,  active: false },
-        { walletFull: "7HbCxQrPmVtKgN2DActiveTraderPENGUxXyZ2bC3d", wallet: "7HbC…2bC3d", pctSupply: 0.3, holdings: 720000000,  active: false },
-        { walletFull: "9PnErWqXyZ3MkYWaWhaleHolderPENGUjJkLmNoP4q", wallet: "9PnE…NoP4q", pctSupply: 0.2, holdings: 480000000,  active: false },
-      ],
-      activity: [
-        { action: "BOUGHT", walletFull: "9MnPrTYzKvPjQrLmBinanceHotWalletPENGUxXY3Z", wallet: "9MnP…Y3Z",  usdValue: 1140, tokenAmount: 112000, ageMin: 8  },
-        { action: "BOUGHT", walletFull: "7XHk9aRpDjeqLvCpTreasury2024MultiSigYpKvXp4N", wallet: "7XHk…Xp4N", usdValue: 320,  tokenAmount: 31500,  ageMin: 24 },
-        { action: "SOLD",   walletFull: "5kQwT3vYpFcN8aHmFoundationVaultPENGUbCdEf9K", wallet: "5kQw…f9K",  usdValue: -180, tokenAmount: 17700,  ageMin: 47 },
-        { action: "BOUGHT", walletFull: "9MnPrTYzKvPjQrLmBinanceHotWalletPENGUxXY3Z", wallet: "9MnP…Y3Z",  usdValue: 240,  tokenAmount: 23600,  ageMin: 89 },
-        { action: "SOLD",   walletFull: "7XHk9aRpDjeqLvCpTreasury2024MultiSigYpKvXp4N", wallet: "7XHk…Xp4N", usdValue: -425, tokenAmount: 41800,  ageMin: 142 },
-        { action: "BOUGHT", walletFull: "5kQwT3vYpFcN8aHmFoundationVaultPENGUbCdEf9K", wallet: "5kQw…f9K",  usdValue: 815,  tokenAmount: 80100,  ageMin: 218 },
-      ],
-      walletsWithActivity: 3,
-      totalCheckedWallets: 10,
-      netFlowUsd: 1910,
-      windowHours: 6,
-    },
-  },
+  // 4 tokens — one per verdict band: SAFE · CAUTION · DANGER · RUG
   "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump": {
     score: 918, risk: "SAFE", confidence: 100,
     tokenSymbol: "Fartcoin", tokenName: "Fartcoin",
@@ -172,57 +90,49 @@ const DEMO_DATA = {
         websites: [{ url: "https://www.infinitebackrooms.com/dreams/conversation-1721540624-scenario-terminal-of-truths-txt", label: "Website" }],
         socials: [{ url: "https://x.com/FartCoinOfSOL", type: "twitter" }],
       },
-      // CAUTION narrative — slightly more sells than buys (distribution
-      // pressure from the 10.5% wallet's smaller siblings) but volume
-      // is genuine (avg trade $2.4K on $7.6M LP → no wash).
+      // SAFE narrative — balanced flow on a deep $7.6M LP (avg trade
+      // ~$2.4K → no wash). Slightly more buys than sells, consistent
+      // with the +3.4% 24h move.
       txns: {
-        m5:  { buys: 3,    sells: 4    },
-        h1:  { buys: 35,   sells: 50   },
-        h6:  { buys: 175,  sells: 250  },
-        h24: { buys: 700,  sells: 1000 },
+        m5:  { buys: 5,    sells: 4   },
+        h1:  { buys: 60,   sells: 50  },
+        h6:  { buys: 300,  sells: 260 },
+        h24: { buys: 1150, sells: 980 },
       },
       volume: { m5: 17000, h1: 198000, h6: 1020000, h24: 4080000 },
     },
     topHolderPct: 10.54, top10HolderPct: 33.81,
-    // 3 cards — SAFE story (7.7.5): 33.8% top-10 on a 2-year-old blue-chip
-    // is normal exchange distribution, not a rug risk. The Critical Actors
-    // still show the cluster for transparency but without the warning badge.
+    // 3 cards — SAFE story (7.7.5): 34% top-10 on a 2-year-old, 164k-holder
+    // blue-chip is normal exchange/custodial distribution, not a rug risk.
+    // No warning badges; the largest wallet is framed as a likely exchange.
     criticalActors: [
-      { type: "cluster", tag: "Cluster A", pct: 23.3, addr: "Top 2-10 holders", repLbl: "Coordination · moderate cluster activity",   repWidth: 62, repWarn: false, desc: "Remaining top 10 hold <b>23.3%</b> combined — entered within similar windows, monitor for synchronized exits." },
-      { type: "insider", tag: "Insider",   pct: 10.5, addr: "9SLP…KpKS",        repLbl: "Concentration risk · single wallet",         repWidth: 78, repWarn: false, desc: "Holds <b>10.5%</b> of supply — one-wallet dump would meaningfully move the price." },
+      { type: "cluster", tag: "Cluster A", pct: 23.3, addr: "Top 2-10 holders", repLbl: "Distribution · exchanges & long-term holders", repWidth: 40, repWarn: false, desc: "Remaining top 10 hold <b>23.3%</b> combined across exchange and custodial wallets — normal spread for an established token." },
+      { type: "insider", tag: "Top Holder", pct: 10.5, addr: "9SLP…KpKS",        repLbl: "Likely exchange cold wallet",                 repWidth: 32, repWarn: false, desc: "Holds <b>10.5%</b> of supply — consistent with an exchange or custodial wallet on a 164k-holder token, not a single-entity dump risk." },
       { type: "dev",     tag: "Dev",       pct: 0.3,  addr: "5jPdF…aKtR",       repLbl: "Reputation · 0 prior rugs · clean",          repWidth: 18, repWarn: false, desc: "Creator wallet dormant since launch — mint authority renounced, no prior token launches flagged." },
     ],
     holderActivity: {
       rows: [
-        { role: "bot", label: "Static", avatar: "Insider", pctChange: 0, pctChangeDisp: "±0%", addr: "9SLP…KpKS", desc: "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks." },
-        { role: "whale-big", label: "Static", avatar: "Whale", pctChange: 0, pctChangeDisp: "±0%", addr: "u6PJ…Xq2w", desc: "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks." },
-        { role: "whale-big", label: "Static", avatar: "Whale", pctChange: 0, pctChangeDisp: "±0%", addr: "E2Rv…atYy", desc: "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks." },
+        { role: "real", label: "Holding", avatar: "Exchange", pctChange: 0, pctChangeDisp: "±0%", addr: "9SLP…KpKS", desc: "No movement <b>last 1h</b>. Exchange-pattern wallet — steady custody, no distribution signal." },
+        { role: "whale-big", label: "Holding", avatar: "Whale", pctChange: 0, pctChangeDisp: "±0%", addr: "u6PJ…Xq2w", desc: "No movement <b>last 1h</b>. Long-term holder, position stable across the window." },
+        { role: "whale-big", label: "Holding", avatar: "Whale", pctChange: 0, pctChangeDisp: "±0%", addr: "E2Rv…atYy", desc: "No movement <b>last 1h</b>. Long-term holder, position stable across the window." },
       ],
       netFlowPct: 0, netFlowDirection: "flat",
     },
-    outcomeStats: {
-      timeToRugMedianDisp: "2d", timeToRugMedianHours: 48, timeToRugSampleSize: 180,
-      pctRugged24h: 54, pctSlowDeath: 30, pctAlive30d: 16,
-      distribution: [1,1.5,2,2.5,3,3.5,4,4.5,5,5,4.5,4,3.5,3,2.7,2.5,2.3,2.1,2,1.9,1.8,1.7,1.6,1.5,1.4,1.3,1.2,1.2,1.1,1.1,1,1,1.1,1.5,2,2.5],
-      youBucketIndex: 25,
-      mostSimilar: [
-        { symbol: "FORGOTBOY", ruggedAfterHours: 72, loss: -78.2 },
-        { symbol: "DEADCOIN", ruggedAfterHours: 168, loss: -82.5 },
-        { symbol: "BLEEDR", ruggedAfterHours: 240, loss: -88 },
-      ],
-    },
+    // SAFE blue-chip — no time-to-rug profiling (same as PENGU). Showing
+    // rug-outcome stats on a clean established token would contradict the
+    // verdict.
+    outcomeStats: null,
     verdictHistory: [{ ts: _demoTs - 3600000, verdict: "SAFE", score: 918, event: "Top 10 hold 34% — normal for established token · likely exchanges & long-term holders" }],
     sources_used: ["dexscreener", "rugcheck", "goplus", "helius", "solscan", "chart"],
     aiSummary: "Fartcoin shows a SAFE profile with fully burned LP and 30d+ established trading on Solana. The top 10 wallets hold 34% of supply — within normal range for a token of this maturity. At this age and holder count, top wallets are typically exchange cold wallets, custodians, and long-term holders rather than coordinated sellers. Mint and freeze authorities are revoked, no honeypot, all structural signals clean.",
     fetchedAt: _demoTs,
-    // CAUTION narrative — the 10.5% insider wallet (#1) is mostly idle
-    // but #2 + #3 (its smaller siblings) drip-sell. Net flow slightly
-    // negative. Mostly retail noise underneath. Several rows so the
-    // scrollable feed actually demonstrates the new scroll behaviour.
+    // SAFE narrative — exchange / long-term wallets sit mostly idle;
+    // organic two-way retail flow underneath nets slightly positive.
+    // Several rows so the scrollable feed demonstrates the scroll behaviour.
     demoActivity: {
       wallets: [
-        { walletFull: "9SLP7vTw5KpKS3rN8FQzMxYHcVgPq2DnEjRbWaXuKpKS", wallet: "9SLP…KpKS", pctSupply: 10.5, holdings: 105000000, active: true  },
-        { walletFull: "u6PJ4mQzXq2wEr8tYrKpL5nVcBxHaGfDjSwRtPmNxQ2w", wallet: "u6PJ…Xq2w", pctSupply: 6.8,  holdings: 68000000,  active: true  },
+        { walletFull: "9SLP7vTw5KpKS3rN8FQzMxYHcVgPq2DnEjRbWaXuKpKS", wallet: "9SLP…KpKS", pctSupply: 10.5, holdings: 105000000, active: false },
+        { walletFull: "u6PJ4mQzXq2wEr8tYrKpL5nVcBxHaGfDjSwRtPmNxQ2w", wallet: "u6PJ…Xq2w", pctSupply: 6.8,  holdings: 68000000,  active: false },
         { walletFull: "E2RvKpL5atYyN8mQzXq2wEr8tYrKpL5nVcBxHaGfDjSw", wallet: "E2Rv…atYy", pctSupply: 4.2,  holdings: 42000000,  active: true  },
         { walletFull: "3LpMwQrTsVxYzBcDeFgHjKlMnOpQrStUvWxYzAbCdEfG", wallet: "3LpM…CdEfG", pctSupply: 3.1,  holdings: 31000000,  active: true  },
         { walletFull: "7BfNzVxYpQrTsUwXyZaBcDeFgHjKlMnOpQrStUvWxYz5", wallet: "7BfN…WxYz5", pctSupply: 2.4,  holdings: 24000000,  active: false },
@@ -233,20 +143,20 @@ const DEMO_DATA = {
         { walletFull: "2GkQwQrTsVxYzBcDeFgHjKlMnOpQrStUvWxYzAbCdEfR", wallet: "2GkQ…CdEfR", pctSupply: 0.9,  holdings: 9000000,   active: false },
       ],
       activity: [
-        { action: "SOLD",   walletFull: "u6PJ4mQzXq2wEr8tYrKpL5nVcBxHaGfDjSwRtPmNxQ2w", wallet: "u6PJ…Xq2w", usdValue: -2450, tokenAmount: 11900,   ageMin: 12  },
-        { action: "BOUGHT", walletFull: "3LpMwQrTsVxYzBcDeFgHjKlMnOpQrStUvWxYzAbCdEfG", wallet: "3LpM…CdEfG", usdValue: 612,   tokenAmount: 2980,    ageMin: 31  },
-        { action: "SOLD",   walletFull: "E2RvKpL5atYyN8mQzXq2wEr8tYrKpL5nVcBxHaGfDjSw", wallet: "E2Rv…atYy", usdValue: -1820, tokenAmount: 8860,    ageMin: 58  },
-        { action: "SOLD",   walletFull: "u6PJ4mQzXq2wEr8tYrKpL5nVcBxHaGfDjSwRtPmNxQ2w", wallet: "u6PJ…Xq2w", usdValue: -890,  tokenAmount: 4330,    ageMin: 84  },
-        { action: "BOUGHT", walletFull: "5CgMwQrTsVxYzBcDeFgHjKlMnOpQrStUvWxYzAbCdEf8", wallet: "5CgM…CdEf8", usdValue: 1240,  tokenAmount: 6030,    ageMin: 112 },
-        { action: "SOLD",   walletFull: "9SLP7vTw5KpKS3rN8FQzMxYHcVgPq2DnEjRbWaXuKpKS", wallet: "9SLP…KpKS", usdValue: -1380, tokenAmount: 6710,    ageMin: 147 },
-        { action: "BOUGHT", walletFull: "3LpMwQrTsVxYzBcDeFgHjKlMnOpQrStUvWxYzAbCdEfG", wallet: "3LpM…CdEfG", usdValue: 425,   tokenAmount: 2070,    ageMin: 189 },
-        { action: "SOLD",   walletFull: "E2RvKpL5atYyN8mQzXq2wEr8tYrKpL5nVcBxHaGfDjSw", wallet: "E2Rv…atYy", usdValue: -2680, tokenAmount: 13040,   ageMin: 234 },
-        { action: "BOUGHT", walletFull: "5CgMwQrTsVxYzBcDeFgHjKlMnOpQrStUvWxYzAbCdEf8", wallet: "5CgM…CdEf8", usdValue: 318,   tokenAmount: 1550,    ageMin: 281 },
-        { action: "SOLD",   walletFull: "u6PJ4mQzXq2wEr8tYrKpL5nVcBxHaGfDjSwRtPmNxQ2w", wallet: "u6PJ…Xq2w", usdValue: -1140, tokenAmount: 5540,    ageMin: 326 },
+        { action: "BOUGHT", walletFull: "3LpMwQrTsVxYzBcDeFgHjKlMnOpQrStUvWxYzAbCdEfG", wallet: "3LpM…CdEfG", usdValue: 2450,  tokenAmount: 11900,  ageMin: 12  },
+        { action: "BOUGHT", walletFull: "5CgMwQrTsVxYzBcDeFgHjKlMnOpQrStUvWxYzAbCdEf8", wallet: "5CgM…CdEf8", usdValue: 1820,  tokenAmount: 8860,   ageMin: 31  },
+        { action: "SOLD",   walletFull: "E2RvKpL5atYyN8mQzXq2wEr8tYrKpL5nVcBxHaGfDjSw", wallet: "E2Rv…atYy", usdValue: -1240, tokenAmount: 6030,   ageMin: 58  },
+        { action: "BOUGHT", walletFull: "3LpMwQrTsVxYzBcDeFgHjKlMnOpQrStUvWxYzAbCdEfG", wallet: "3LpM…CdEfG", usdValue: 1380,  tokenAmount: 6710,   ageMin: 84  },
+        { action: "BOUGHT", walletFull: "5CgMwQrTsVxYzBcDeFgHjKlMnOpQrStUvWxYzAbCdEf8", wallet: "5CgM…CdEf8", usdValue: 890,   tokenAmount: 4330,   ageMin: 112 },
+        { action: "SOLD",   walletFull: "E2RvKpL5atYyN8mQzXq2wEr8tYrKpL5nVcBxHaGfDjSw", wallet: "E2Rv…atYy", usdValue: -2680, tokenAmount: 13040,  ageMin: 147 },
+        { action: "BOUGHT", walletFull: "3LpMwQrTsVxYzBcDeFgHjKlMnOpQrStUvWxYzAbCdEfG", wallet: "3LpM…CdEfG", usdValue: 612,   tokenAmount: 2980,   ageMin: 189 },
+        { action: "BOUGHT", walletFull: "5CgMwQrTsVxYzBcDeFgHjKlMnOpQrStUvWxYzAbCdEf8", wallet: "5CgM…CdEf8", usdValue: 1240,  tokenAmount: 6030,   ageMin: 234 },
+        { action: "SOLD",   walletFull: "E2RvKpL5atYyN8mQzXq2wEr8tYrKpL5nVcBxHaGfDjSw", wallet: "E2Rv…atYy", usdValue: -890,  tokenAmount: 4330,   ageMin: 281 },
+        { action: "BOUGHT", walletFull: "3LpMwQrTsVxYzBcDeFgHjKlMnOpQrStUvWxYzAbCdEfG", wallet: "3LpM…CdEfG", usdValue: 425,   tokenAmount: 2070,   ageMin: 326 },
       ],
-      walletsWithActivity: 5,
+      walletsWithActivity: 3,
       totalCheckedWallets: 10,
-      netFlowUsd: -7765,
+      netFlowUsd: 4007,
       windowHours: 6,
     },
   },
@@ -262,8 +172,7 @@ const DEMO_DATA = {
     solscanTokenAgeHours: 12838,
     tokenLogo: "https://cdn.dexscreener.com/cms/images/d237de55618e54fd7d66593ff2adf3ad8c092398f9049a31f1dcb1b23ad1dff8?width=800&height=800&quality=95&format=auto",
     flags: [
-      { severity: "critical", label: "Top 10 hold 68% — high concentration · control risk" },
-      { severity: "warning", label: "Top 10 wallets hold 67% of supply" },
+      { severity: "critical", label: "Top 10 hold 68% — high concentration" },
       { severity: "bonus", label: "LP Burned 100% (GoPlus) ✓" },
       { severity: "bonus", label: "Established token (30d+) ✓" },
     ],
@@ -288,14 +197,14 @@ const DEMO_DATA = {
       volume: { m5: 12750, h1: 158000, h6: 768000, h24: 3060000 },
     },
     topHolderPct: 27.44, top10HolderPct: 68.11,
-    // 3 cards — DANGER story: dev linked to a prior failed launch
-    // (flagged), insider is the 27% wallet actively dumping (critical),
-    // cluster of 8 sibling wallets that bought in same block window.
-    // All 3 carry repWarn:true → yellow bars across the board so the
-    // visual matches the verdict at a glance.
+    // 3 cards — DANGER story: verdict is driven by the 68% top-10
+    // concentration. Within that cluster, the largest wallet (27%) is
+    // actively dumping; 8 sibling wallets bought in the same block window;
+    // dev linked to a prior failed launch. All repWarn:true so the visual
+    // matches the verdict at a glance.
     criticalActors: [
       { type: "cluster", tag: "Cluster A", pct: 40.7, addr: "Top 2-10 holders", repLbl: "Coordination · synchronized entry pattern",     repWidth: 85, repWarn: true, desc: "8 sibling wallets (<b>40.7%</b> combined) bought in the same 4-block window. Pattern matches coordinated insider entry." },
-      { type: "insider", tag: "Insider",   pct: 27.4, addr: "u6PJ…Xq2w",        repLbl: "Critical concentration · single wallet",       repWidth: 95, repWarn: true, desc: "Holds <b>27.4%</b> of supply — one-wallet dump would crash the price. Active sells in last 6h." },
+      { type: "insider", tag: "Insider",   pct: 27.4, addr: "u6PJ…Xq2w",        repLbl: "Largest of the 68% top-10 cluster",            repWidth: 95, repWarn: true, desc: "Holds <b>27.4%</b> — the largest of the 10 wallets that together control 68% of supply. Active sells in last 6h." },
       { type: "dev",     tag: "Dev",       pct: 0.5,  addr: "3KrTm…wHpL",       repLbl: "Reputation · 1 prior token · flagged",         repWidth: 60, repWarn: true, desc: "Linked to <b>PIPPIN-V1</b> which lost 92% within 30 days. Same funder address pattern." },
     ],
     holderActivity: {
@@ -317,9 +226,9 @@ const DEMO_DATA = {
         { symbol: "SLOWBLEED", ruggedAfterHours: 48, loss: -85.4 },
       ],
     },
-    verdictHistory: [{ ts: _demoTs - 3600000, verdict: "DANGER", score: 500, event: "Top 10 hold 68% — high concentration · control risk" }],
+    verdictHistory: [{ ts: _demoTs - 3600000, verdict: "DANGER", score: 500, event: "Top 10 hold 68% — high concentration" }],
     sources_used: ["dexscreener", "rugcheck", "goplus", "helius", "solscan", "chart"],
-    aiSummary: "Pippin lands on DANGER because of stacked concentration risk — a single wallet holds 27% of supply and the top 10 wallets together control 67%. Either of those alone would already trigger a soft block; together they make a coordinated dump trivially possible. The LP is burned and the contract is clean (no mint, no freeze, no honeypot), which keeps the verdict from collapsing all the way to RUG, but the holder structure alone is enough to treat this as exit-liquidity risk.",
+    aiSummary: "Pippin lands on DANGER because the top 10 wallets control 68% of supply — high concentration. Within that cluster the largest wallet holds 27% and is actively selling. The LP is burned and the contract is clean (no mint, no freeze, no honeypot), which keeps the verdict from collapsing all the way to RUG, but with two-thirds of supply in 10 hands a coordinated dump is trivially possible — treat this as exit-liquidity risk.",
     fetchedAt: _demoTs,
     // DANGER narrative — the 27% insider wallet (#1) is actively
     // dumping. Top-10 cluster all selling in coordination. Net flow
@@ -373,7 +282,7 @@ const DEMO_DATA = {
     solscanTokenAgeHours: 16275,
     tokenLogo: "https://cdn.dexscreener.com/cms/images/17c35e4d62131992b5c58bf5cb9d9878a64828389eddc2416416ffac68b38d25?width=800&height=800&quality=95&format=auto",
     flags: [
-      { severity: "critical", label: "Top 10 hold 54% — high concentration · control risk" },
+      { severity: "critical", label: "Top 10 hold 87% — extreme concentration" },
       { severity: "bonus", label: "LP Burned 100% (GoPlus) ✓" },
       { severity: "bonus", label: "Established token (30d+) ✓" },
     ],
@@ -401,14 +310,14 @@ const DEMO_DATA = {
       },
       volume: { m5: 18, h1: 84, h6: 380, h24: 1245 },
     },
-    topHolderPct: 43.98, top10HolderPct: 53.64,
-    // 3 cards — RUG story: dev linked to 3 prior rugs (max warn),
-    // insider is the 44% dev-controlled wallet (max bar), cluster of
-    // sibling wallets sharing the dev's funding source. All maxed at
-    // repWarn:true so the section reads as a uniform red wall.
+    topHolderPct: 43.98, top10HolderPct: 87.0,
+    // 3 cards — RUG story: verdict driven by 87% top-10 (extreme), which
+    // triggers the concentration kill-switch. Within it, the dev-controlled
+    // wallet alone holds 44%; the other 9 sibling wallets share the dev's
+    // funder and hold ~43% combined. All repWarn:true → uniform red wall.
     criticalActors: [
-      { type: "insider", tag: "Insider",   pct: 44.0, addr: "HsXp…wG31",        repLbl: "Extreme concentration · dev-controlled",        repWidth: 100, repWarn: true, desc: "Holds <b>44.0%</b> of supply — likely dev wallet. Can crash to zero in one transaction." },
-      { type: "cluster", tag: "Cluster A", pct: 9.6,  addr: "Top 2-10 holders", repLbl: "Coordination · sibling wallet pattern",         repWidth: 78, repWarn: true, desc: "9 wallets (<b>9.6%</b>) share funding source with dev — coordinated sniper entry, sell-and-bounce pattern detected." },
+      { type: "insider", tag: "Insider",   pct: 44.0, addr: "HsXp…wG31",        repLbl: "Largest of an 87% top-10 cluster",             repWidth: 100, repWarn: true, desc: "Holds <b>44.0%</b> of supply — likely dev wallet, the largest of 10 wallets that together control 87%. Can crash to zero in one transaction." },
+      { type: "cluster", tag: "Cluster A", pct: 43.0, addr: "Top 2-10 holders", repLbl: "Coordination · sibling wallet pattern",         repWidth: 96, repWarn: true, desc: "9 wallets (<b>43.0%</b> combined) share funding source with the dev — coordinated sniper entry, sell-and-bounce pattern detected." },
       { type: "dev",     tag: "Dev",       pct: 1.2,  addr: "GpXr2…bN8K",       repLbl: "Reputation · 3 / 4 prior rugs",                 repWidth: 92, repWarn: true, desc: "Funder traced to <b>3 prior rugs</b> averaging −94% loss. Same wallet pattern and exit timing." },
     ],
     holderActivity: {
@@ -430,9 +339,9 @@ const DEMO_DATA = {
         { symbol: "SLOWBLEED", ruggedAfterHours: 48, loss: -85.4 },
       ],
     },
-    verdictHistory: [{ ts: _demoTs - 3600000, verdict: "RUG", score: 250, event: "Top 10 hold 54% — high concentration · control risk" }],
+    verdictHistory: [{ ts: _demoTs - 3600000, verdict: "RUG", score: 250, event: "Top 10 hold 87% — extreme concentration" }],
     sources_used: ["dexscreener", "rugcheck", "goplus", "helius", "solscan", "chart"],
-    aiSummary: "Hawk Tuah is the textbook concentration rug — a single wallet holds 44% of total supply, more than enough to crash the price to zero in one transaction. LP is technically burned and the token has 30d+ of trading history, but those signals are completely overridden by the wallet concentration: the dev (or whoever controls that wallet) can dump at any moment and the remaining holders cannot defend the price. Hard kill. Treat any remaining liquidity as exit-only.",
+    aiSummary: "Hawk Tuah is the textbook concentration rug — the top 10 wallets control 87% of total supply, with the dev-controlled wallet alone holding 44%. That is more than enough to crash the price to zero in one coordinated move. LP is technically burned and the token has 30d+ of trading history, but those signals are completely overridden by the concentration: the cluster can dump at any moment and the remaining holders cannot defend the price. Hard kill. Treat any remaining liquidity as exit-only.",
     fetchedAt: _demoTs,
     // RUG narrative — abandoned post-pump. Dev wallet (#1, 44%) made
     // its big exit weeks ago; the remaining holders are slowly bleeding
@@ -440,15 +349,15 @@ const DEMO_DATA = {
     demoActivity: {
       wallets: [
         { walletFull: "HsXpKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaGwG31", wallet: "HsXp…wG31", pctSupply: 44.0, holdings: 440000000, active: true  },
-        { walletFull: "CcSXKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHa1e82", wallet: "CcSX…1e82", pctSupply: 4.8,  holdings: 48000000,  active: true  },
-        { walletFull: "9eopKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaAjHo", wallet: "9eop…AjHo", pctSupply: 1.6,  holdings: 16000000,  active: false },
-        { walletFull: "5RxpKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaaB1c", wallet: "5Rxp…aB1c", pctSupply: 1.2,  holdings: 12000000,  active: true  },
-        { walletFull: "3FjpKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaaB2d", wallet: "3Fjp…aB2d", pctSupply: 0.7,  holdings: 7000000,   active: false },
-        { walletFull: "8DwpKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaaB3e", wallet: "8Dwp…aB3e", pctSupply: 0.4,  holdings: 4000000,   active: false },
-        { walletFull: "2GxpKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaaB4f", wallet: "2Gxp…aB4f", pctSupply: 0.3,  holdings: 3000000,   active: false },
-        { walletFull: "6HypKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaaB5g", wallet: "6Hyp…aB5g", pctSupply: 0.25, holdings: 2500000,   active: false },
-        { walletFull: "4JzpKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaaB6h", wallet: "4Jzp…aB6h", pctSupply: 0.2,  holdings: 2000000,   active: false },
-        { walletFull: "7KapKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaaB7i", wallet: "7Kap…aB7i", pctSupply: 0.15, holdings: 1500000,   active: false },
+        { walletFull: "CcSXKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHa1e82", wallet: "CcSX…1e82", pctSupply: 18.0, holdings: 180000000, active: true  },
+        { walletFull: "9eopKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaAjHo", wallet: "9eop…AjHo", pctSupply: 9.0,  holdings: 90000000,  active: false },
+        { walletFull: "5RxpKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaaB1c", wallet: "5Rxp…aB1c", pctSupply: 6.0,  holdings: 60000000,  active: true  },
+        { walletFull: "3FjpKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaaB2d", wallet: "3Fjp…aB2d", pctSupply: 4.0,  holdings: 40000000,  active: false },
+        { walletFull: "8DwpKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaaB3e", wallet: "8Dwp…aB3e", pctSupply: 2.5,  holdings: 25000000,  active: false },
+        { walletFull: "2GxpKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaaB4f", wallet: "2Gxp…aB4f", pctSupply: 1.5,  holdings: 15000000,  active: false },
+        { walletFull: "6HypKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaaB5g", wallet: "6Hyp…aB5g", pctSupply: 1.0,  holdings: 10000000,  active: false },
+        { walletFull: "4JzpKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaaB6h", wallet: "4Jzp…aB6h", pctSupply: 0.6,  holdings: 6000000,   active: false },
+        { walletFull: "7KapKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaaB7i", wallet: "7Kap…aB7i", pctSupply: 0.4,  holdings: 4000000,   active: false },
       ],
       activity: [
         { action: "SOLD", walletFull: "HsXpKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaGwG31", wallet: "HsXp…wG31", usdValue: -47,  tokenAmount: 276000,  ageMin: 23  },
@@ -461,6 +370,92 @@ const DEMO_DATA = {
       walletsWithActivity: 3,
       totalCheckedWallets: 10,
       netFlowUsd: -196,
+      windowHours: 6,
+    },
+  },
+  "MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5": {
+    score: 750, risk: "CAUTION", confidence: 100,
+    tokenSymbol: "MEW", tokenName: "cat in a dogs world",
+    resolvedMint: "MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5",
+    mintAuthority: false, freezeAuthority: false, honeypot: false,
+    lpBurned: true, lpLocked: false, lpLockedPct: 100,
+    liquidity: 6480000, marketCap: 342000000, priceUsd: 0.003841,
+    holders: 164210, volume24h: 28500000, volume1h: 1320000,
+    priceChange5m: 0.21, priceChange1h: -0.84, priceChange24h: 2.13,
+    solscanTokenAgeHours: 13080,
+    tokenLogo: "https://dd.dexscreener.com/ds-data/tokens/solana/MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5.png",
+    flags: [
+      { severity: "warning", label: "Top 10 hold 55% — elevated · exchanges may be included" },
+      { severity: "bonus", label: "LP Burned 100% (GoPlus) ✓" },
+      { severity: "bonus", label: "Established token (30d+) ✓" },
+    ],
+    pair: {
+      url: "https://dexscreener.com/solana/mew",
+      info: {
+        websites: [{ url: "https://mew.fun/", label: "Website" }],
+        socials: [{ url: "https://x.com/mewsolana", type: "twitter" }],
+      },
+      // CAUTION narrative — balanced two-way flow on a deep LP (no wash).
+      // The verdict comes from the 55% top-10 concentration, not from trading.
+      txns: {
+        m5:  { buys: 8,    sells: 7    },
+        h1:  { buys: 95,   sells: 90   },
+        h6:  { buys: 480,  sells: 470  },
+        h24: { buys: 1900, sells: 1850 },
+      },
+      volume: { m5: 60000, h1: 1320000, h6: 6800000, h24: 28500000 },
+    },
+    topHolderPct: 35.0, top10HolderPct: 55.0,
+    // 3 cards — CAUTION story: the verdict is the 55% top-10 concentration.
+    // The largest wallet (35%) is most likely an exchange/treasury on a
+    // 164k-holder blue-chip, but at this size it still carries price-impact
+    // risk → repWarn on the two holder cards, clean dev.
+    criticalActors: [
+      { type: "cluster", tag: "Cluster A",  pct: 20.0, addr: "Top 2-10 holders", repLbl: "Distribution · part exchanges, part whales",  repWidth: 58, repWarn: true,  desc: "Wallets 2-10 hold <b>20%</b> combined — mix of exchange and large private holders. Elevated, but no coordinated-entry pattern." },
+      { type: "insider", tag: "Top Holder", pct: 35.0, addr: "BkRn…9xQa",        repLbl: "Large holder · likely exchange/treasury",  repWidth: 70, repWarn: true,  desc: "Holds <b>35%</b> of supply. On a 164k-holder blue-chip this is most likely an exchange or treasury wallet — but at this size it still carries real price-impact risk." },
+      { type: "dev",     tag: "Dev",        pct: 0.4,  addr: "9hPk…m2Vt",        repLbl: "Reputation · 0 prior rugs · clean",       repWidth: 18, repWarn: false, desc: "Creator wallet dormant — mint authority renounced, no prior token launches flagged." },
+    ],
+    holderActivity: {
+      rows: [
+        { role: "whale-big", label: "Holding", avatar: "Whale", pctChange: 0, pctChangeDisp: "±0%", addr: "BkRn…9xQa", desc: "No movement <b>last 1h</b>. The 35% holder is static — but watch for any large transfer, it would move the price." },
+        { role: "real", label: "Holding", avatar: "Exchange", pctChange: 0, pctChangeDisp: "±0%", addr: "3Vd2…Kp7m", desc: "No movement <b>last 1h</b>. Exchange-pattern wallet — steady custody." },
+        { role: "whale-big", label: "Holding", avatar: "Whale", pctChange: 0, pctChangeDisp: "±0%", addr: "7Qw9…Lz4n", desc: "No movement <b>last 1h</b>. Large holder, position stable across the window." },
+      ],
+      netFlowPct: 0, netFlowDirection: "flat",
+    },
+    // CAUTION blue-chip — no time-to-rug profiling (contract is clean; the
+    // only concern is concentration, not an active rug pattern).
+    outcomeStats: null,
+    verdictHistory: [{ ts: _demoTs - 3600000, verdict: "CAUTION", score: 750, event: "Top 10 hold 55% — elevated · exchanges may be included" }],
+    sources_used: ["dexscreener", "rugcheck", "goplus", "helius", "solscan", "chart"],
+    aiSummary: "MEW lands on CAUTION because the top 10 wallets hold 55% of supply — elevated concentration. The contract is clean (LP burned, no mint or freeze authority, no honeypot) and the token has 30d+ of history with 164k holders, so the largest wallets are most likely exchanges and long-term holders rather than a coordinated dump group. But with more than half the supply in 10 wallets, a synchronized exit could still move the price hard — that keeps the verdict at CAUTION rather than SAFE.",
+    fetchedAt: _demoTs,
+    // CAUTION narrative — blue-chip, top wallets mostly static. Light
+    // two-way retail flow underneath, marginally negative net flow.
+    demoActivity: {
+      wallets: [
+        { walletFull: "BkRn9xQaMEWtreasuryExchangeColdWalletSo1anaXyZ", wallet: "BkRn…9xQa", pctSupply: 35.0, holdings: 31150000000, active: false },
+        { walletFull: "3Vd2Kp7mMEWbinanceHotWalletSo1anaAbCdEfGhInkLm", wallet: "3Vd2…Kp7m", pctSupply: 6.0,  holdings: 5340000000,  active: false },
+        { walletFull: "7Qw9Lz4nMEWlongTermWhaleSo1anaAbCdEfGhInkLmNoP", wallet: "7Qw9…Lz4n", pctSupply: 4.0,  holdings: 3560000000,  active: true  },
+        { walletFull: "5Tg8Rm2pMEWmarketMakerSo1anaAbCdEfGhInkLmNoPqR", wallet: "5Tg8…Rm2p", pctSupply: 3.0,  holdings: 2670000000,  active: false },
+        { walletFull: "9Hn4Wc6sMEWcoinbaseColdSo1anaAbCdEfGhInkLmNoPq", wallet: "9Hn4…Wc6s", pctSupply: 2.5,  holdings: 2225000000,  active: false },
+        { walletFull: "2Jb7Yx1tMEWlongTermHolderSo1anaAbCdEfGhInkLmNo", wallet: "2Jb7…Yx1t", pctSupply: 1.5,  holdings: 1335000000,  active: false },
+        { walletFull: "6Kc3Zv9uMEWretailWhaleSo1anaAbCdEfGhInkLmNoPqR", wallet: "6Kc3…Zv9u", pctSupply: 1.0,  holdings: 890000000,   active: true  },
+        { walletFull: "4Ld5Xw8vMEWdiamondHandsSo1anaAbCdEfGhInkLmNoPq", wallet: "4Ld5…Xw8v", pctSupply: 0.9,  holdings: 801000000,   active: false },
+        { walletFull: "8Me6Vu7wMEWearlyHolderSo1anaAbCdEfGhInkLmNoPqRs", wallet: "8Me6…Vu7w", pctSupply: 0.7,  holdings: 623000000,   active: false },
+        { walletFull: "1Nf2Tt5xMEWactiveTraderSo1anaAbCdEfGhInkLmNoPqR", wallet: "1Nf2…Tt5x", pctSupply: 0.4,  holdings: 356000000,   active: false },
+      ],
+      activity: [
+        { action: "BOUGHT", walletFull: "7Qw9Lz4nMEWlongTermWhaleSo1anaAbCdEfGhInkLmNoP", wallet: "7Qw9…Lz4n", usdValue: 3850,  tokenAmount: 1002600, ageMin: 19  },
+        { action: "SOLD",   walletFull: "6Kc3Zv9uMEWretailWhaleSo1anaAbCdEfGhInkLmNoPqR", wallet: "6Kc3…Zv9u", usdValue: -2940, tokenAmount: 765400,  ageMin: 44  },
+        { action: "BOUGHT", walletFull: "7Qw9Lz4nMEWlongTermWhaleSo1anaAbCdEfGhInkLmNoP", wallet: "7Qw9…Lz4n", usdValue: 1620,  tokenAmount: 421800,  ageMin: 88  },
+        { action: "SOLD",   walletFull: "6Kc3Zv9uMEWretailWhaleSo1anaAbCdEfGhInkLmNoPqR", wallet: "6Kc3…Zv9u", usdValue: -4120, tokenAmount: 1072900, ageMin: 142 },
+        { action: "BOUGHT", walletFull: "7Qw9Lz4nMEWlongTermWhaleSo1anaAbCdEfGhInkLmNoP", wallet: "7Qw9…Lz4n", usdValue: 2280,  tokenAmount: 593700,  ageMin: 211 },
+        { action: "SOLD",   walletFull: "6Kc3Zv9uMEWretailWhaleSo1anaAbCdEfGhInkLmNoPqR", wallet: "6Kc3…Zv9u", usdValue: -1490, tokenAmount: 388000,  ageMin: 288 },
+      ],
+      walletsWithActivity: 2,
+      totalCheckedWallets: 10,
+      netFlowUsd: -800,
       windowHours: 6,
     },
   },
