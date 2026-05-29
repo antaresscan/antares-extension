@@ -576,11 +576,27 @@ export function layerHelius(
     // Triggers on tokens like GOAT/PNUT where Solscan/Helius only see
     // pump.fun bonding-curve survivors (~20 wallets) instead of all
     // 100k+ holders post-AMM-migration.
+    //
+    // CRITICAL GATE (2026-05-29, RIV case): the fallback was misfiring
+    // on tokens where the concentration is REAL but the holder count
+    // couldn't be confirmed. RIV had a 40% top-1 wallet on a $651k-liq
+    // 67d-old token. Solscan returned no holder count, so `mc.holders`
+    // fell back to the Helius top-20 list size (20) → reportedHoldersTooLow
+    // = true → the genuine 40% concentration flag got silently dropped
+    // → safeBlocked cleared → SAFE 795/1000. Catastrophic false positive.
+    //
+    // Fix: only treat the data as "broken" when the concentration values
+    // themselves are STRUCTURALLY IMPOSSIBLE (top1 > 80% OR top10 > 95%).
+    // The GOAT/PNUT pump.fun-survivor case shows ~99% on one wallet —
+    // physically impossible on a $50M-mcap blue-chip, so we mask it.
+    // A 40% top-1 is a PLAUSIBLE real-whale concentration risk, so we
+    // keep the flag and let the hard-concentration path through.
     const macroLooksBig =
       (mc.liquidity ?? 0) >= 250_000 &&
       (mc.tokenAgeHours ?? 0) >= 30 * 24;
     const reportedHoldersTooLow = (mc.holders ?? Infinity) < 200;
-    if (macroLooksBig && reportedHoldersTooLow) {
+    const concentrationImplausiblyExtreme = top1Pct > 0.8 || top10Pct > 0.95;
+    if (macroLooksBig && reportedHoldersTooLow && concentrationImplausiblyExtreme) {
       // Drop the misleading concentration flags; emit one info flag.
       const concentrationLabel = /supply/i;
       for (let i = flags.length - 1; i >= 0; i--) {

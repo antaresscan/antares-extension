@@ -156,7 +156,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v20"; // PR #527: hide "Positive signals" section in critical-flags panel when verdict is RUG or DANGER. Bonus checkmarks alongside a RUG verdict read as cognitive dissonance — keep them only for SAFE/CAUTION where they reinforce the verdict. Pure UI change but bumping the cache key keeps the response/UI in sync after deploy.
+const ENGINE_VERSION_MANUAL = "v21"; // 2026-05-29: gate the Helius "broken upstream view" data-quality fallback on STRUCTURALLY-IMPOSSIBLE concentration (top1>80% OR top10>95%) instead of just "macro big + reported holders < 200". RIV (40% top-1, $651k liq, 67d) was hitting the fallback because Solscan returned no holder count → `mc.holders` fell back to Helius top-20 list size (20) → concentration flag silently dropped → SAFE 795. The fallback was designed for GOAT/PNUT pump.fun-survivor artefacts where the top1 reads ~99%; on a real whale at 40%, the flag must stay. Bumping the cache key evicts every stale SAFE entry produced before this gate was tightened.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.
@@ -275,14 +275,30 @@ export const API_TIMEOUT_HELIUS = 6000;
 // SAFE. Count != distribution. Without verified concentration data
 // we cannot honestly say SAFE — the gate now stays closed.
 //
-// 7.7.1 bump (this commit): single-wallet concentration threshold
+// 7.7.1 bump: single-wallet concentration threshold
 // lowered from 15% → 10%. Founder rule: "si un wallet du top 10
 // dépasse 10% c'est danger automatiquement". The 10-14% band that
 // used to emit a soft-warning ("concentration_warning") is now folded
 // into the hard "concentration" band — same verdict path as 15%+,
 // no exceptions for blue-chips. layers.ts emits the flag as
 // critical at this threshold; scoring.ts regex matches 10%+.
-export const SCORING_VERSION = "7.7.1";
+//
+// 7.7.2 bump (this commit, 2026-05-29): tighten the Helius "broken
+// upstream view" data-quality fallback. Previously any token where
+// the engine could not confirm holder count (mc.holders < 200) and
+// macro looked big (≥$250k liq, ≥30d) would have its concentration
+// flag SILENTLY DROPPED — designed for GOAT/PNUT-style pump.fun
+// bonding-curve artefacts (~99% top-1 on tokens that are actually
+// blue-chips). The fallback misfired on RIV (40% top-1, $651k liq,
+// 67d) because Solscan returned no holder count → mc.holders fell
+// back to Helius top-20 list size → fallback fired → 40% wallet
+// flag dropped → SAFE 795. The new gate also requires the
+// concentration values themselves to be structurally impossible
+// (top1 > 80% OR top10 > 95%) before treating the data as broken.
+// Real-whale ranges (10–50%) stay flagged. SCORING_VERSION bump
+// pairs with the ENGINE_VERSION_MANUAL v21 bump in this file to
+// flush cached SAFE entries produced by the old fallback.
+export const SCORING_VERSION = "7.7.2";
 
 // ── SOFT REASONS (safe gate unlock) ───────────────────────────
 // A reason listed here CAN be unlocked by applySafeGateOverride when
