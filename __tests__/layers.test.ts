@@ -406,10 +406,15 @@ describe("layerHelius", () => {
     expect(result.available).toBe(false);
   });
 
-  it("top-10 extreme concentration triggers forceRug on non-mature tokens (HAWK case)", () => {
-    // HAWK-style: 5 wallets control 100% of supply (60%+40% combined).
-    // top-10 = 100% → extreme band (≥85%) → critical, hard, penalty=0.10.
-    // forceRug fires at top-10 > 80% when there's no blue-chip (50k+) shield.
+  it("penalty for top holder > 60% triggers forceRug on non-mature tokens (HAWK case)", () => {
+    // Concentration > 40% on a token without strong maturity signals
+    // (LP burned + many holders) is the textbook rug set-up — HAWK
+    // (44%, post-pump dump), HORNY, etc. PR #339 had removed forceRug
+    // from concentration entirely; now it's re-enabled selectively
+    // for tokens that don't look like established blue-chips. MEW
+    // (164k holders, LP burned) is shielded by the mature-context
+    // gate and does NOT get forceRug. forceRug also stays reserved
+    // for honeypot / deceptive-name patterns alongside.
     const holders: HeliusHolder[] = [
       { address: "wallet1abc", owner: "wallet1abc", uiAmount: 600 },
       { address: "wallet2abc", owner: "wallet2abc", uiAmount: 100 },
@@ -424,10 +429,10 @@ describe("layerHelius", () => {
     expect(result.safeBlocked).toBe(true);
   });
 
-  it("top-10 = 72% on MATURE token (LP burned + 100k holders + 30d) does NOT forceRug", () => {
-    // MEW-style profile: top-1=45%, top-10=72% on a mature blue-chip.
-    // 72% → elevated band (60-74%) → warning, soft (concentration_light).
-    // forceRug stays false: 72% < 80% threshold AND mature shield active.
+  it("top1 > 40% on MATURE token (LP burned + 100k holders + 30d) does NOT forceRug", () => {
+    // MEW-style profile: heavy whale but on a mature blue-chip. The
+    // concentration penalty stays (safeBlocked + hard reason for Path 3
+    // to evaluate) but forceRug is suppressed.
     const holders: HeliusHolder[] = [
       { address: "whale", owner: "whale", uiAmount: 45_000 },
       ...Array.from({ length: 9 }, (_, i) => ({
@@ -476,9 +481,11 @@ describe("layerHelius", () => {
     expect(result.flags.some(f => /well distributed/i.test(f.label))).toBe(true);
   });
 
-  it("mature dampening: top-10 < 30% on 100k+ holders + LP burned + 30d gets trust ≥ 0.65", () => {
-    // Mature blue-chip with WELL-DISTRIBUTED supply (top-10 < 30%) gets the lift.
-    // top-10=26% → "Well distributed ✓" bonus (< 30% threshold).
+  it("mature dampening: top-1 < 10% on 100k+ holders + LP burned + 30d gets trust ≥ 0.65", () => {
+    // Mature blue-chip with WELL-DISTRIBUTED supply gets the lift.
+    // Top-1 must stay below 10% — above that, even on a mature token,
+    // a single wallet at 11%+ can still crash the price and the user
+    // expectation is CAUTION (not SAFE).
     const holders: HeliusHolder[] = [
       { address: "lead", owner: "lead", uiAmount: 8_000 }, // 8% — well-distributed
       ...Array.from({ length: 9 }, (_, i) => ({
@@ -501,58 +508,41 @@ describe("layerHelius", () => {
     expect(result.trust).toBeGreaterThanOrEqual(0.65);
   });
 
-  it("FARTCOIN profile (top-10=36%): moderate info flag, no safeBlock (7.7.4 top-10 rule)", () => {
-    // FARTCOIN: top-1=11% (likely exchange cold wallet), top-10≈36%.
-    // 7.7.4: verdict based on top-10 distribution only — single wallet
-    // not mentioned. top-10=36% → "moderate" info, no penalty, no safeBlock.
-    // Users see a neutral flag, no scary "whale" warning from one exchange.
+  it("mature dampening BLOCKED: top-1 10-14% gives warning flag + medium penalty (FARTCOIN case, 7.7.3)", () => {
+    // FARTCOIN: 11% top-1, 164k holders, LP burned.
+    // 7.7.3 (founder rule refined): 10-14% = max CAUTION, never SAFE.
+    // The 10-14% band now emits a warning (not critical) with a lighter
+    // penalty (0.50 retention) so the geometric-mean score lands in
+    // CAUTION territory (~840) rather than DANGER (~500).
     const holders: HeliusHolder[] = [
-      { address: "whale", owner: "whale", uiAmount: 11_000 }, // 11%
+      { address: "whale", owner: "whale", uiAmount: 11_000 }, // 11% — elevated
       ...Array.from({ length: 9 }, (_, i) => ({
-        address: `top${i+2}`, owner: `top${i+2}`, uiAmount: 2_778, // ~2.8% each
+        address: `top${i+2}`, owner: `top${i+2}`, uiAmount: 2_000,
       })),
       ...Array.from({ length: 90 }, (_, i) => ({
         address: `r${i}`, owner: `r${i}`, uiAmount: 700,
       })),
     ];
-    // top-10 ≈ (11000 + 9×2778)/100000 ≈ 36000/100000 = 36%
-    const result = layerHelius(holders, 100_000);
-    // No top-1 flag emitted — single wallet not mentioned
-    expect(result.flags.some(f => /11%/.test(f.label))).toBe(false);
-    // top-10 = 36% → "moderate" info flag
-    expect(result.flags.some(f => /moderate concentration/i.test(f.label))).toBe(true);
-    // No safe block, no force rug — 36% top-10 is not alarming
-    expect(result.safeBlocked).toBe(false);
+    const ctx = {
+      holders: 164_000,
+      liquidity: 9_000_000,
+      tokenAgeHours: 760 * 24,
+      mintAuthority: false,
+      freezeAuthority: false,
+      honeypot: false,
+      lpBurned: true,
+    };
+    const result = layerHelius(holders, 100_000, ctx);
+    // penalty=0.50 → trust ≈ 0.50. Not a full kill, but still penalised.
+    // Geometric mean × 1000 should land in CAUTION range (700-900).
+    expect(result.trust).toBeGreaterThanOrEqual(0.40); // lighter than before (was < 0.40)
+    expect(result.trust).toBeLessThan(0.65);            // still penalised — not clean
+    expect(result.flags.some(f => /11%/.test(f.label) && f.severity === "warning")).toBe(true);
+    expect(result.safeBlocked).toBe(true);
     expect(result.forceRug).toBe(false);
   });
 
-  it("elevated concentration (top-10=65%): warning flag + soft safeBlock (max CAUTION)", () => {
-    // top-10 = 65% → "elevated concentration" band (60-74%) → warning,
-    // soft (concentration_light), penalty=0.50, safeBlocked=true.
-    // Verdict: max CAUTION, never SAFE.
-    const holders: HeliusHolder[] = [
-      { address: "w1", owner: "w1", uiAmount: 20_000 }, // 20%
-      ...Array.from({ length: 9 }, (_, i) => ({
-        address: `t${i+2}`, owner: `t${i+2}`, uiAmount: 5_000, // 5% each
-      })),
-      ...Array.from({ length: 20 }, (_, i) => ({
-        address: `r${i}`, owner: `r${i}`, uiAmount: 250,
-      })),
-    ];
-    // top-10 = (20000 + 9×5000)/100000 = 65000/100000 = 65%
-    const result = layerHelius(holders, 100_000);
-    expect(result.flags.some(f => /elevated concentration/i.test(f.label))).toBe(true);
-    expect(result.flags.some(f => /elevated concentration/i.test(f.label) && f.severity === "warning")).toBe(true);
-    expect(result.safeBlocked).toBe(true);
-    expect(result.forceRug).toBe(false); // 65% < 80% forceRug threshold
-    expect(result.trust).toBeGreaterThanOrEqual(0.40);
-    expect(result.trust).toBeLessThan(0.65);
-  });
-
-  it("mature dampening: top-10=65% without lpBurned does not get the trust floor", () => {
-    // top-10 = (35000 + 9×3300)/100000 = 64700/100000 ≈ 65% → elevated band
-    // concentrationAllowsLift=false (band is "soft", not "none"/"moderate")
-    // → no floor applies regardless of LP status
+  it("mature dampening: same profile WITHOUT lpBurned does not get the floor", () => {
     const holders: HeliusHolder[] = [
       { address: "whale", owner: "whale", uiAmount: 35_000 },
       ...Array.from({ length: 9 }, (_, i) => ({
@@ -567,11 +557,10 @@ describe("layerHelius", () => {
       liquidity: 9_000_000,
       tokenAgeHours: 760 * 24,
       mintAuthority: false, freezeAuthority: false, honeypot: false,
-      lpBurned: false,
+      lpBurned: false,  // ← mature but LP not burned, no floor
     };
     const result = layerHelius(holders, 100_000, ctx);
-    // Elevated band (65%) blocks the floor → trust stays at 0.50 from penalty
-    expect(result.trust).toBeLessThan(0.65);
+    expect(result.trust).toBeLessThan(0.2);  // back to vanilla penalty
   });
 
   it("data-quality fallback: <200 reported holders + $250k+ liq + 30d+ floors trust at 0.4", () => {
@@ -619,14 +608,17 @@ describe("layerHelius", () => {
     expect(result.trust).toBeLessThan(0.2);
   });
 
-  it("RIV case: top-10=63% + broken holder count must NOT trigger broken-view fallback", () => {
-    // 2026-05-29 user-reported false positive. RIV had a real 40% top-1,
-    // 15% top-2, $651k liquidity, 67d old.
-    // top-10 = (40000+15000+8×1000)/100000 = 63% → elevated band.
-    // 63% is NOT implausibly extreme (< 95%), so the broken-view
-    // fallback must NOT fire — concentration flag stays, safeBlocked=true.
+  it("RIV case: real 40% top-1 + broken holder count must NOT trigger broken-view fallback", () => {
+    // 2026-05-29 user-reported false positive. RIV had a real 40% top-1
+    // wallet, $651k liquidity, 67d old. Solscan returned no holder count
+    // so `mc.holders` fell back to the Helius top-20 list size (20).
+    // Old gate: macroLooksBig + reportedHoldersTooLow → drop concentration
+    //           flag → safeBlocked=false → SAFE 795/1000 (catastrophic).
+    // New gate: also requires top1>80% OR top10>95% (structurally
+    //           impossible values that signal a real pump.fun-survivor
+    //           artefact). 40% is a plausible-real whale → flag stays.
     const holders: HeliusHolder[] = [
-      { address: "whale40", owner: "whale40", uiAmount: 40_000 }, // 40%
+      { address: "whale40", owner: "whale40", uiAmount: 40_000 }, // 40% of 100k
       { address: "whale15", owner: "whale15", uiAmount: 15_000 }, // 15%
       ...Array.from({ length: 18 }, (_, i) => ({
         address: `t${i}`, owner: `t${i}`, uiAmount: 1_000,
@@ -634,14 +626,14 @@ describe("layerHelius", () => {
     ];
     const ctx = {
       holders: 20,             // broken — Solscan returned no count
-      liquidity: 651_000,
+      liquidity: 651_000,      // real RIV value
       tokenAgeHours: 1610,     // ~67 days
       mintAuthority: false, freezeAuthority: false, honeypot: false,
       lpBurned: null,
     };
     const result = layerHelius(holders, 100_000, ctx);
-    // The top-10 concentration flag MUST remain (not dropped by the fallback).
-    expect(result.flags.some(f => /elevated concentration/i.test(f.label))).toBe(true);
+    // The 40% wallet flag MUST remain (not dropped by the fallback).
+    expect(result.flags.some(f => /Single wallet holds 40% of supply/i.test(f.label))).toBe(true);
     // The broken-view info flag MUST NOT have been emitted.
     expect(result.flags.some(f => /Holder data unreliable/i.test(f.label))).toBe(false);
     // Safe gate must stay closed.

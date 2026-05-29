@@ -29,9 +29,9 @@ export type SafeBlockedReason =
   | "sniper"          // HARD
     | "chart"            // HARD
   | "low_holders"     // HARD — tokens with <50 holders
-  | "concentration"        // HARD — top 10 hold ≥75% of supply → DANGER/RUG (7.7.4+)
-  | "concentration_light"  // SOFT-BLOCK — top 10 hold 60-74% → max CAUTION, never SAFE (7.7.4+)
-  // Legacy name kept for cached scans pre-7.7.4. Behaves like concentration_light.
+  | "concentration"        // HARD — single wallet holds >=15% of supply → DANGER/RUG
+  | "concentration_light"  // SOFT-BLOCK — single wallet holds 10-14% → max CAUTION, never SAFE
+  // Legacy name kept for cached scans pre-7.7.3. Behaves like concentration_light.
   | "concentration_warning"
   | "lp_unverified"  // SOFT - LP not burned but token is mature and clean
   | "pump_imbalance"; // SOFT - buy/sell imbalance (coordinated pump signal), unlockable for established tokens

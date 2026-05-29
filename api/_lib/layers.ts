@@ -281,10 +281,10 @@ export function layerRugCheck(
         penalties.push(0.82);
     }
 const top10 = asNumber(rugData?.topHolders?.top10Percentage);
-  // Top-1 holder check removed (7.7.4) — replaced by top-10 distribution in layerHelius.
-  // RugCheck's top-10 threshold is kept as a cross-check signal only.
-  if (top10 > 70) { flags.push(makeFlag("Top 10 holders > 70% (RugCheck)", "critical", 0)); penalties.push(0.45); }
-  else if (top10 > 50) { flags.push(makeFlag("Top 10 holders > 50% (RugCheck)", "warning", 0)); penalties.push(0.70); }
+  const top1 = asNumber(rugData?.topHolders?.top1Percentage ?? rugData?.topHolders?.top1HolderPercentage);
+  if (top10 > 70) { flags.push(makeFlag("Top 10 holders > 70%", "critical", 0)); penalties.push(0.45); }
+  else if (top10 > 50) { flags.push(makeFlag("Top 10 holders > 50%", "warning", 0)); penalties.push(0.70); }
+  if (top1 > 20) { flags.push(makeFlag("Top 1 holder > 20%", "critical", 0)); penalties.push(0.45); }
   if (riskIncludes(rugReportData, /sniper/i)) { flags.push(makeFlag("Sniper activity detected", "critical", 0)); penalties.push(0.15); safeBlocked = true; }
   if (riskIncludes(rugReportData, /rug/i)) { flags.push(makeFlag("Rug pull history", "critical", 0)); penalties.push(0.15); forceRug = true; }
   if (riskIncludes(rugReportData, /creator.*sell|dev.*sell/i)) { flags.push(makeFlag("Dev wallet sold tokens", "warning", 0)); penalties.push(0.65); }
@@ -472,81 +472,111 @@ export function layerHelius(
   const top1Pct = top1Amount / totalSupplyUi;
   const top10Amount = accounts.slice(0, 10).reduce((s, h) => s + asNumber(h.uiAmount), 0);
   const top10Pct = top10Amount / totalSupplyUi;
-  // ── Top-10 distribution ladder (7.7.4+) ─────────────────────────────────
-  // Replaced the top-1 single-wallet ladder (7.7.3 and prior). Top-1 caused
-  // false positives on established tokens where the #1 holder is likely an
-  // exchange cold wallet (FARTCOIN top-1=11%, WIF top-1=12%). The top-10
-  // distribution is a far better signal: harder to disguise, captures
-  // coordinated multi-wallet exits, and avoids flagging custodial whales.
+  // Single-wallet concentration ladder. Bands map to scoring outcomes
+  // via the safe-gate path:
+  //   >30% → critical, hard concentration block, very heavy penalty.
+  //          Concentration alone is no longer forceRug — the
+  //          forceRug slam was over-flagging legitimate blue-chip
+  //          memecoins like MEW (164k holders + LP burned + a 35%
+  //          whale) as RUG. Keep the safeBlocked + hard reason so
+  //          the safe gate trips, but let Path 3 decide whether
+  //          blue-chip signals warrant CAUTION rather than RUG.
+  //          forceRug stays reserved for honeypot / deceptive-name
+  //          patterns (absolute kills regardless of context).
+  //   >20% → critical, hard concentration block (DANGER/RUG)
+  //   >15% → critical, hard concentration block (DANGER/RUG)
+  //   >10% → critical, HARD concentration block (DANGER/RUG)
+  //          (changed 2026-05-28, founder rule: "si un wallet du top
+  //          10 dépasse 10% c'est danger automatiquement". RIV case
+  //          had a 40% wallet flagged but the prior 10-14% band was
+  //          warning-only → soft → safe-gate could unlock. Bumping to
+  //          critical pulls all single-wallet concentrations ≥ 10%
+  //          into the hard-concentration path, no exceptions.)
+  // Track the top-1 band so the maturity dampening below knows whether
+  // it's allowed to lift the score back up to SAFE. Above 10% we keep
+  // the geometric-mean penalty regardless of holder count: a single
+  // wallet at 11% can still crash the price even on a 164k-holder token.
+  // Using string for openness — we only care about the >=10% threshold
+  // for the lift gate.
+  // Concentration ladder — 3 tiers (founder rule 2026-05-29):
+  //   10–14%  → warning, safeBlocked (max CAUTION). A single wallet at
+  //             this level can move the price but isn't an automatic exit
+  //             scam. The token can still score CAUTION with clean other
+  //             layers; it CANNOT score SAFE. Emits "concentration_light"
+  //             so pipeline.ts can soft-gate (CAUTION allowed, SAFE never).
+  //   15–19%  → critical, hard block (DANGER). Single wallet can crash the
+  //             price significantly; verdict floors at DANGER.
+  //   20%+    → critical, hard block (DANGER or RUG). Founder: "danger
+  //             maximum ou rug simple". Same hard path as 15–19% but with
+  //             heavier score penalty; forceRug fires at 30%+ (see below).
   //
-  // Bands (7.7.4):
-  //   < 30%:   "Well distributed ✓" — bonus, +5% trust
-  //   30–59%:  "Moderate" — info only, SAFE still possible
-  //   60–74%:  "Elevated" — warning, soft (concentration_light), max CAUTION
-  //   75–84%:  "High"     — critical, hard (concentration), DANGER floor
-  //   ≥ 85%:   "Extreme"  — critical, hard (concentration), heavy penalty
-  //
-  // Penalty RETENTION rates:
-  //   0.50 → trust ≈ 0.50 → score ≈ 840 (CAUTION)
-  //   0.25 → trust ≈ 0.25 → score ≈ 500 (DANGER)
-  //   0.10 → trust ≈ 0.10 → score ≈ 200 (DANGER/RUG)
-  let top10ConcentrationBand: "none" | "moderate" | "soft" | "hard" = "none";
+  // Penalty values are RETENTION rates passed to applyDiminishingPenalties:
+  //   penalty=0.50 → helius trust ≈ 0.50 → geometric score ≈ 840 (CAUTION)
+  //   penalty=0.35 → helius trust ≈ 0.35 → geometric score ≈ 500 (DANGER)
+  //   penalty=0.20 → helius trust ≈ 0.20 → geometric score ≈ 350 (DANGER/RUG)
+  //   penalty=0.08 → helius trust ≈ 0.08 → geometric score ≈ 100 (RUG)
+  // Helper: top-10 context suffix appended to top-1 flag labels so users
+  // see the full picture in one line rather than hunting across two flags.
+  const top10Suffix = top10Pct > 0 ? ` · top 10 hold ${Math.round(top10Pct*100)}%` : "";
 
-  if (top10Pct >= 0.85) {
-    flags.push(makeFlag(`Top 10 hold ${Math.round(top10Pct*100)}% — extreme concentration`, "critical", 0));
-    penalties.push(0.10); safeBlocked = true; top10ConcentrationBand = "hard";
-  } else if (top10Pct >= 0.75) {
-    flags.push(makeFlag(`Top 10 hold ${Math.round(top10Pct*100)}% — high concentration`, "critical", 0));
-    penalties.push(0.25); safeBlocked = true; top10ConcentrationBand = "hard";
-  } else if (top10Pct >= 0.60) {
-    flags.push(makeFlag(`Top 10 hold ${Math.round(top10Pct*100)}% — elevated concentration`, "warning", 0));
-    penalties.push(0.50); safeBlocked = true; top10ConcentrationBand = "soft";
-  } else if (top10Pct >= 0.30) {
-    flags.push(makeFlag(`Top 10 hold ${Math.round(top10Pct*100)}% — moderate concentration`, "info", 0));
-    top10ConcentrationBand = "moderate";
-  } else {
-    flags.push(makeFlag("Well distributed supply ✓", "bonus", 0));
-    trust = Math.min(1.0, trust * 1.05);
-  }
+  let top1ConcentrationBand: string = "none";
+  if (top1Pct > 0.3) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply${top10Suffix}`, "critical", 0)); penalties.push(0.08); safeBlocked = true; top1ConcentrationBand = "extreme"; }
+  else if (top1Pct > 0.2) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply${top10Suffix}`, "critical", 0)); penalties.push(0.20); safeBlocked = true; top1ConcentrationBand = "heavy"; }
+  else if (top1Pct > 0.15) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply${top10Suffix}`, "critical", 0)); penalties.push(0.35); safeBlocked = true; top1ConcentrationBand = "heavy"; }
+  else if (top1Pct > 0.1) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply${top10Suffix} — elevated concentration`, "warning", 0)); penalties.push(0.50); safeBlocked = true; top1ConcentrationBand = "light"; }
+  if (top10Pct > 0.8) { flags.push(makeFlag(`Top 10 wallets hold ${Math.round(top10Pct*100)}% of supply`, "critical", 0)); penalties.push(0.30); safeBlocked = true; }
+  else if (top10Pct > 0.6) { flags.push(makeFlag(`Top 10 wallets hold ${Math.round(top10Pct*100)}% of supply`, "warning", 0)); penalties.push(0.45); safeBlocked = true; }
+  // 30-59%: not alarming but worth surfacing so users understand the distribution.
+  // No penalty, no safeBlock — informational context only.
+  else if (top10Pct >= 0.3 && top1Pct <= 0.1) { flags.push(makeFlag(`Top 10 wallets hold ${Math.round(top10Pct*100)}% of supply — moderate concentration`, "info", 0)); }
+  else if (top10Pct < 0.3) { flags.push(makeFlag("Well distributed supply ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.05); }
   trust = applyDiminishingPenalties(trust, penalties);
 
-  // ── Extreme concentration kill-switch ───────────────────────────────────
-  // forceRug fires when top-10 > 80% on non-blue-chip tokens.
-  // A token where 10 wallets control 80%+ of supply is structurally a rug.
+  // ── Concentration kill-switch — top1 > 30% on non-blue-chip tokens ─
+  // ALSO triggers on extreme top10 concentration (>80%) — a token
+  // where 10 wallets control 80%+ of supply is structurally a rug.
   //
   // Reference cases:
-  //   HAWK (top-10 87%, 7k holders)  → forceRug ✓
-  //   HORNY (similar profile)         → forceRug ✓
-  //   MEW (top-10 ~70%, 164k holders) → blue-chip shield, no forceRug ✓
+  //   HAWK (top-1 31%, top-10 87%, 7k holders) → forceRug ✓
+  //   HORNY (similar profile) → forceRug ✓
+  //   PIPPIN (27% top-1, ~10k holders) → stays DANGER (under threshold)
+  //   MEW (35% top-1, 164k holders) → blue-chip shield, no forceRug ✓
   //
-  // The 50k-holder cutoff protects established blue-chips. For everything
-  // below that, top-10 > 80% IS the rug pattern.
-  // GOAT/PNUT (broken-data artefacts) are caught by the data-quality
-  // fallback below which clears forceRug.
+  // The 50k-holder cutoff protects real established memecoins (MEW
+  // has a 35% top-1 wallet that's an exchange / treasury, not a rug
+  // operator). For everything below that, top-1 > 30% OR top-10 > 80%
+  // IS the rug pattern.
+  //
+  // GOAT/PNUT (broken-data 20-holder reports from Solscan) are caught
+  // by the data-quality fallback below which clears forceRug too.
   {
     const mcRug = maturityContext;
     const isBlueChipDistribution = (mcRug?.holders ?? 0) >= 50_000;
-    if (top10Pct > 0.80 && !isBlueChipDistribution) {
+    const extremeTop1 = top1Pct > 0.3;
+    const extremeTop10 = top10Pct > 0.8;
+    if ((extremeTop1 || extremeTop10) && !isBlueChipDistribution) {
       forceRug = true;
     }
   }
 
-  // ── Maturity dampening ────────────────────────────────────────────────────
-  // For established memecoins (LP burned, 30d+) with well-distributed supply
-  // (top-10 < 60%), the score floors at a minimum trust so infrastructure
-  // drag (Helius down) doesn't collapse a clean token to DANGER. Floors:
-  //   holders ≥ 100k + LP burned + 30d + top10 < 60%  → trust ≥ 0.65
-  //   holders ≥ 50k  + LP burned + 30d + top10 < 60%  → trust ≥ 0.50
-  //   holders ≥ 10k  + LP burned + 30d + top10 < 60%  → trust ≥ 0.35
-  //   top10 ≥ 60% on any token                        → no dampening
+  // ── Maturity dampening ────────────────────────────────────────────
+  // For established memecoins (50k+ holders, 30d+, LP burned) with
+  // WELL-DISTRIBUTED supply (top-1 < 10%), the concentration penalty
+  // above is over-stated and we let the score recover. But if top-1
+  // is ≥ 10% we KEEP the penalty: a single wallet at 11%+ can crash
+  // the price regardless of how mature the rest of the token looks
+  // — the user-facing verdict has to stay CAUTION. Floors:
+  //   holders ≥ 100k + LP burned + 30d + top1 < 10%  → trust ≥ 0.65
+  //   holders ≥ 50k  + LP burned + 30d + top1 < 10%  → trust ≥ 0.50
+  //   holders ≥ 10k  + LP burned + 30d + top1 < 10%  → trust ≥ 0.35
+  //   top1 ≥ 10% on any token                        → no dampening
   // The flags + safeBlocked stay so Path 3 / DAO allowlist still gates
-  // the safe verdict on additional signals.
+  // the safe verdict on additional signals; we're only protecting the
+  // geometric-mean score from collapsing on a single concentration cue.
   const mc = maturityContext;
   if (mc) {
     const looksMatureBase = (mc.tokenAgeHours ?? 0) >= 30 * 24 && mc.lpBurned === true;
-    // Lift only when top-10 is in "none" (well distributed) or "moderate" band.
-    // Elevated/hard concentration (60%+) keeps its penalty even on mature tokens.
-    const concentrationAllowsLift = top10ConcentrationBand === "none" || top10ConcentrationBand === "moderate";
+    const concentrationAllowsLift = top1ConcentrationBand === "none" || top1ConcentrationBand === "soft";
     if (looksMatureBase && concentrationAllowsLift) {
       if ((mc.holders ?? 0) >= 100_000) trust = Math.max(trust, 0.65);
       else if ((mc.holders ?? 0) >= 50_000) trust = Math.max(trust, 0.50);
@@ -592,7 +622,7 @@ export function layerHelius(
     const concentrationImplausiblyExtreme = top1Pct > 0.8 || top10Pct > 0.95;
     if (macroLooksBig && reportedHoldersTooLow && concentrationImplausiblyExtreme) {
       // Drop the misleading concentration flags; emit one info flag.
-      const concentrationLabel = /concentration|well distributed/i;
+      const concentrationLabel = /supply/i;
       for (let i = flags.length - 1; i >= 0; i--) {
         if (concentrationLabel.test(flags[i].label)) flags.splice(i, 1);
       }
