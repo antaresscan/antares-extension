@@ -229,27 +229,32 @@ describe("reason classification", () => {
     expect(reasons).not.toContain("lp")
   })
 
-  it("single wallet ≥15% routes to hard 'concentration'", () => {
-    const flagLabel = "Single wallet holds 27% of supply"
-    const layers = defaultLayers({
-      helius: layer("helius", 0.4, [flag(flagLabel, "critical")], { safeBlocked: true }),
-    })
-    const reasons = classifySafeBlockedReasons(layers)
-    expect(reasons).toContain("concentration")
+  it("top-10 high/extreme → hard 'concentration' (7.7.5 — fresh & established labels)", () => {
+    for (const lbl of [
+      "Top 10 hold 82% — extreme concentration",
+      "Top 10 hold 65% — high concentration · control risk",
+      "Top 10 hold 70% — high concentration",
+    ]) {
+      const layers = defaultLayers({
+        helius: layer("helius", 0.2, [flag(lbl, "critical")], { safeBlocked: true }),
+      })
+      expect(classifySafeBlockedReasons(layers)).toContain("concentration")
+    }
   })
 
-  it("single wallet 10-14% classifies as SOFT concentration_light (7.7.3)", () => {
-    // Founder rule refined (2026-05-29): 10-14% = max CAUTION (never SAFE).
-    // 15%+ = hard DANGER. The 10-14% band emits "concentration_light"
-    // (soft-block) so the verdict can reach CAUTION with clean other layers.
-    const flagLabel = "Single wallet holds 11% of supply — elevated concentration"
-    const layers = defaultLayers({
-      helius: layer("helius", 0.6, [flag(flagLabel, "warning")], { safeBlocked: true }),
-    })
-    const reasons = classifySafeBlockedReasons(layers)
-    expect(reasons).toContain("concentration_light")
-    expect(reasons).not.toContain("concentration")      // hard "concentration" only for 15%+
-    expect(reasons).not.toContain("concentration_warning")
+  it("top-10 elevated → soft 'concentration_light' (7.7.5 — fresh & established labels)", () => {
+    for (const lbl of [
+      "Top 10 hold 42% — elevated concentration · cluster risk",
+      "Top 10 hold 52% — elevated · exchanges may be included",
+    ]) {
+      const layers = defaultLayers({
+        helius: layer("helius", 0.6, [flag(lbl, "warning")], { safeBlocked: true }),
+      })
+      const reasons = classifySafeBlockedReasons(layers)
+      expect(reasons).toContain("concentration_light")
+      expect(reasons).not.toContain("concentration")
+      expect(reasons).not.toContain("concentration_warning")
+    }
   })
 })
 

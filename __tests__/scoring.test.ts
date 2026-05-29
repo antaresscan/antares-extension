@@ -192,34 +192,45 @@ describe("classifySafeBlockedReasons", () => {
     expect(classifySafeBlockedReasons(layers)).toContain("age");
   });
 
-  it("detects concentration reason from helius single-wallet flag (>=15%)", () => {
-    // Single-wallet holdings >=15% now route to the dedicated
-    // "concentration" hard reason rather than the generic "holders"
-    // soft reason. The safe-gate stays closed even on mature, high-
-    // holder-count tokens — a 60%-concentrated wallet can rug
-    // regardless of how established the token looks.
-    const layers: LayerResult[] = [
-      makeLayer("helius", 0.5, true, [
-        { label: "Single wallet holds 60% of supply", severity: "critical", impact: 0 }
+  it("detects concentration (hard) reason from top-10 high/extreme flag (7.7.5+)", () => {
+    // top-10 high or extreme: hard "concentration" regardless of tier.
+    // Tests both fresh ("control risk" suffix) and established (no suffix) formats.
+    const freshLayer: LayerResult[] = [
+      makeLayer("helius", 0.25, true, [
+        { label: "Top 10 hold 65% — high concentration · control risk", severity: "critical", impact: 0 }
       ], false, true),
     ];
-    expect(classifySafeBlockedReasons(layers)).toContain("concentration");
+    expect(classifySafeBlockedReasons(freshLayer)).toContain("concentration");
+
+    const estLayer: LayerResult[] = [
+      makeLayer("helius", 0.25, true, [
+        { label: "Top 10 hold 82% — extreme concentration", severity: "critical", impact: 0 }
+      ], false, true),
+    ];
+    expect(classifySafeBlockedReasons(estLayer)).toContain("concentration");
   });
 
-  it("classifies 10-14% single-wallet flags as SOFT concentration_light (7.7.3)", () => {
-    // Founder rule refined (2026-05-29): 10-14% = max CAUTION (never SAFE).
-    // 15%+ = DANGER. 20%+ = DANGER or RUG.
-    // 10-14% is now "concentration_light" (soft-block) so the verdict can
-    // land at CAUTION with clean other layers — not DANGER.
-    const layers: LayerResult[] = [
+  it("classifies top-10 elevated flags as SOFT concentration_light (7.7.5 — both tiers)", () => {
+    // Fresh tier: "elevated concentration · cluster risk" → concentration_light
+    const freshLayer: LayerResult[] = [
       makeLayer("helius", 0.5, true, [
-        { label: "Single wallet holds 11% of supply — elevated concentration", severity: "warning", impact: 0 }
+        { label: "Top 10 hold 42% — elevated concentration · cluster risk", severity: "warning", impact: 0 }
       ], false, true),
     ];
-    const reasons = classifySafeBlockedReasons(layers);
-    expect(reasons).toContain("concentration_light");
-    expect(reasons).not.toContain("concentration"); // hard "concentration" only for 15%+
-    expect(reasons).not.toContain("concentration_warning");
+    const freshReasons = classifySafeBlockedReasons(freshLayer);
+    expect(freshReasons).toContain("concentration_light");
+    expect(freshReasons).not.toContain("concentration");
+
+    // Established tier: "elevated · exchanges may be included" → concentration_light
+    const estLayer: LayerResult[] = [
+      makeLayer("helius", 0.5, true, [
+        { label: "Top 10 hold 52% — elevated · exchanges may be included", severity: "warning", impact: 0 }
+      ], false, true),
+    ];
+    const estReasons = classifySafeBlockedReasons(estLayer);
+    expect(estReasons).toContain("concentration_light");
+    expect(estReasons).not.toContain("concentration");
+    expect(estReasons).not.toContain("concentration_warning");
   });
 });
 

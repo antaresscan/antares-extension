@@ -78,31 +78,21 @@ export const HARD_BLOCK_PATTERNS: Array<[RegExp, SafeBlockedReason]> = [
   [/buy\/sell imbalance/i, "pump_imbalance"],
   [/deceptive name/i, "deceptive_name"],                         // FIX: deceptive names are hard
     [/very few holders|few holders|<15|<50/i, "low_holders"], // FIX: very low holders is a HARD reason
-  // Single-wallet concentration of 10% or more is a HARD block.
+  // Top-10 distribution concentration (7.7.5+, 2-tier system).
+  // Two tiers: fresh tokens (stricter) vs established tokens (looser).
   //
-  // Founder rule (2026-05-28): "si un wallet du top 10 dépasse 10%
-  // c'est danger automatiquement". Since the top-10 list is sorted by
-  // holdings, this reduces to "top-1 > 10%" — the regex captures
-  // any flag mentioning "single wallet holds X% of supply" where X
-  // is 10-99 or 100+.
+  // "elevated" labels (soft → max CAUTION, never SAFE):
+  //   Fresh:       "Top 10 hold X% — elevated concentration · cluster risk"
+  //   Established: "Top 10 hold X% — elevated · exchanges may be included"
+  //   → Both caught by /elevated\b/ word-boundary match.
   //
-  // The previous tiered approach (15%+ hard, 10-14% "concentration_
-  // warning" soft) was reframed because:
-  //   - 10-14% wallets had let RIV-class tokens land on SAFE when
-  //     paired with established-token signals
-  //   - asymmetric risk: missing a small pump on a clean token is
-  //     a much smaller loss than getting rugged at 11%
-  //   - simpler rule = easier to reason about + harder to misclassify
-  //
-  // Regex split into two tiers (founder rule 2026-05-29):
-  //   10–14%: "concentration_light" → soft reason → max CAUTION, never SAFE
-  //   15%+:   "concentration"       → hard reason → DANGER or RUG, never CAUTION
-  //
-  // 10-14% regex: `1[0-4]` matches 10, 11, 12, 13, 14.
-  // 15%+  regex: `1[5-9]|[2-9]\d|\d{3,}` matches 15-19, 20-99, 100+.
-  [/single wallet holds 1[0-4]% of supply/i, "concentration_light"],
-  [/single wallet holds (1[5-9]|[2-9]\d|\d{3,})% of supply/i, "concentration"],
-  [/top 1 holder > 20%/i, "concentration"],
+  // "high / extreme" labels (hard → DANGER/RUG, no exceptions):
+  //   Fresh:       "Top 10 hold X% — high concentration · control risk"
+  //   Established: "Top 10 hold X% — high concentration"
+  //   Both:        "Top 10 hold X% — extreme concentration"
+  //   → Caught by /(high|extreme) concentration/.
+  [/top 10 hold \d+% — elevated\b/i, "concentration_light"],
+  [/top 10 hold \d+% — (high|extreme) concentration/i, "concentration"],
 ];
 
 export function classifySafeBlockedReasons(layers: LayerResult[]): SafeBlockedReason[] {

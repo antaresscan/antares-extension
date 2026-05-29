@@ -500,8 +500,20 @@ function buildStructuredFallback(
   // flag list). The flag list is the authoritative source of risks; the
   // metric is only allowed to anchor para1 when there IS a flag for it.
   const concentrationFlag = topFlags.find((f) =>
-    /single wallet|top\s*holder|top\s*1[^0]|top\s*10|holder concentration|concentration/i.test(f.label),
+    // "single wallet" kept for backward compat — cached scans pre-7.7.4 still
+    // have "Single wallet holds X%" flags; the engine no longer emits them but
+    // the static fallback must still narrate them correctly on replay.
+    /single wallet|top\s*10|top\s*holder|holder concentration|concentration/i.test(f.label),
   )
+  // Is the concentration flag about an established-token's exchange distribution?
+  // "likely exchanges" and "exchanges may be included" are the two labels
+  // emitted by layerHelius 7.7.5 for the info/elevated bands of established tokens.
+  const isExchangeDistribution = concentrationFlag != null &&
+    /exchanges?|long.term\s+holders?/i.test(concentrationFlag.label)
+  // Extract top-10 % from the new "Top 10 hold X%" flag format (7.7.4+)
+  const top10PctFromFlag = concentrationFlag
+    ? (() => { const m = concentrationFlag.label.match(/top 10 hold (\d+)%/i); return m ? parseInt(m[1]) : null; })()
+    : null
   // Did the engine flag the LP? Same fidelity rule for the LP-anchored
   // RUG / DANGER branches — we only narrate "liquidity unlocked" or
   // "exit-scam pattern" when an LP flag is actually in the list.
@@ -552,8 +564,11 @@ function buildStructuredFallback(
     if (bundleFlag) {
       const pctClause = bundlePct ? `roughly ${bundlePct}% of supply` : "a meaningful share of supply"
       para1 = `${sym} lands on DANGER because of bundle activity — coordinated wallets hold ${pctClause}, masking concentration that visible top-holder metrics don't catch.`
-    } else if (concentrationFlag && top1 !== null && top1 >= 20) {
-      para1 = `${sym} lands on DANGER because of stacked concentration risk — a single wallet holds ${top1.toFixed(1)}% of supply, enough to dictate price action on its own.`
+    } else if (concentrationFlag && (top10PctFromFlag != null ? top10PctFromFlag >= 55 : top1 !== null && top1 >= 20)) {
+      const concDisp = top10PctFromFlag != null
+        ? `the top 10 wallets collectively hold ${top10PctFromFlag}% of supply`
+        : `a single wallet holds ${top1!.toFixed(1)}% of supply`
+      para1 = `${sym} lands on DANGER because of stacked concentration risk — ${concDisp}, enough to dictate price action through coordinated selling.`
     } else if (lpFlag && !lpProtected) {
       para1 = `${sym} lands on DANGER because liquidity is neither locked nor burned — the dev retains the option to drain the pool whenever they choose.`
     } else if ((mintFlag && input.mintAuthority === true) || (freezeFlag && input.freezeAuthority === true)) {
@@ -568,13 +583,16 @@ function buildStructuredFallback(
     if (bundleFlag) {
       const pctClause = bundlePct ? `roughly ${bundlePct}% of supply` : "a meaningful share of supply"
       para1 = `${sym} lands on CAUTION because of bundle activity — coordinated wallets hold ${pctClause}, invisible to standard concentration metrics even with otherwise solid fundamentals.`
-    } else if (concentrationFlag && top1 !== null && top1 >= 8) {
-      // Only narrate concentration when the engine actually flagged it.
-      // Without this gate we would invent the FARTCOIN-style narrative
-      // for any token with a top-1 ≥8% even when the only fired flag
-      // was about LP/mint/freeze/socials/etc — exactly the CHILLHOUSE
-      // bug (8.1% top1, 1 LP flag, but the AI summary led with concentration).
-      para1 = `${sym} lands on CAUTION because a single wallet holds ${top1.toFixed(1)}% of supply — a meaningful concentration risk even with otherwise solid fundamentals.`
+    } else if (concentrationFlag && !isExchangeDistribution && (top10PctFromFlag != null ? top10PctFromFlag >= 35 : top1 !== null && top1 >= 8)) {
+      // Only narrate concentration when the engine actually flagged it AND
+      // the flag is NOT an established-token exchange distribution note.
+      // Without this gate we invent a "concentration risk" narrative even
+      // when the flag says "normal for established token · likely exchanges"
+      // (FARTCOIN-style: top-10=34%, SAFE, no real risk).
+      const concDisp = top10PctFromFlag != null
+        ? `the top 10 wallets hold ${top10PctFromFlag}% of supply — elevated concentration`
+        : `a single wallet holds ${top1!.toFixed(1)}% of supply`
+      para1 = `${sym} lands on CAUTION because ${concDisp} — a meaningful risk even with otherwise solid fundamentals.`
     } else if (dominantFlag) {
       para1 = `${sym} lands on CAUTION because of ${dominantFlag} — a meaningful risk even with otherwise solid fundamentals.`
     } else {
@@ -584,7 +602,16 @@ function buildStructuredFallback(
     // SAFE
     const safeOpener = lpVerb ? `${lpVerb} liquidity` : "a clean contract"
     const ageOpener = mature30d ? " and 30d+ established trading on Solana" : ""
-    para1 = `${sym} shows a SAFE profile with ${safeOpener}${ageOpener}.`
+    // If the only visible flag is an established-token exchange distribution note,
+    // add a sentence explaining why the top-10 concentration is not alarming.
+    // Computed inline (not via `significantFlags`, declared later in para2).
+    const hasOtherSignificantFlag = topFlags.some(
+      (f) => (f.severity === "critical" || f.severity === "warning") && f !== concentrationFlag,
+    )
+    const exchangeNote = isExchangeDistribution && !hasOtherSignificantFlag && top10PctFromFlag != null
+      ? ` The top 10 wallets hold ${top10PctFromFlag}% of supply — within normal range for this maturity level, where top wallets are typically exchanges, custodians, and long-term holders.`
+      : ""
+    para1 = `${sym} shows a SAFE profile with ${safeOpener}${ageOpener}.${exchangeNote}`
   }
 
   // ── PARA 2 ── counter-context.
