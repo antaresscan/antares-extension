@@ -78,18 +78,20 @@ export const HARD_BLOCK_PATTERNS: Array<[RegExp, SafeBlockedReason]> = [
   [/buy\/sell imbalance/i, "pump_imbalance"],
   [/deceptive name/i, "deceptive_name"],                         // FIX: deceptive names are hard
     [/very few holders|few holders|<15|<50/i, "low_holders"], // FIX: very low holders is a HARD reason
-  // Top-10 distribution concentration (7.7.4+, replaces top-1 single-wallet regexes).
-  // The top-1 ladder was removed because a single large wallet is often an
-  // exchange cold wallet — misleading on blue-chips like FARTCOIN (11%)
-  // and WIF (12%). The top-10 distribution is harder to disguise and
-  // captures coordinated multi-wallet exit risk more accurately.
+  // Top-10 distribution concentration (7.7.5+, 2-tier system).
+  // Two tiers: fresh tokens (stricter) vs established tokens (looser).
   //
-  // Tier mapping:
-  //   "elevated concentration" (60–74%)  → soft "concentration_light"
-  //     → max CAUTION, never SAFE, unlockable by established-token gate
-  //   "high / extreme concentration" (75%+) → hard "concentration"
-  //     → DANGER/RUG, never CAUTION, no exceptions
-  [/top 10 hold \d+% — elevated concentration/i, "concentration_light"],
+  // "elevated" labels (soft → max CAUTION, never SAFE):
+  //   Fresh:       "Top 10 hold X% — elevated concentration · cluster risk"
+  //   Established: "Top 10 hold X% — elevated · exchanges may be included"
+  //   → Both caught by /elevated\b/ word-boundary match.
+  //
+  // "high / extreme" labels (hard → DANGER/RUG, no exceptions):
+  //   Fresh:       "Top 10 hold X% — high concentration · control risk"
+  //   Established: "Top 10 hold X% — high concentration"
+  //   Both:        "Top 10 hold X% — extreme concentration"
+  //   → Caught by /(high|extreme) concentration/.
+  [/top 10 hold \d+% — elevated\b/i, "concentration_light"],
   [/top 10 hold \d+% — (high|extreme) concentration/i, "concentration"],
 ];
 
