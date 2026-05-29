@@ -381,11 +381,17 @@ function label(t: Enriched): Label {
 
   // ── DANGER: thin liq + fresh launch (no time to mature, can't trust)
   // OR ultra-thin liq regardless of age (something pulled it down).
+  //
+  // Asymmetric tolerated: WORSE-than-expected is fine (engine catches a
+  // rug we labelled DANGER → OK), BETTER-than-expected is suspicious.
+  // SAFE/CAUTION on a token labelled DANGER from thin-liquidity signal
+  // is exactly the RIV-class false-positive we want to surface, so we
+  // do NOT tolerate them.
   if (liq < 15_000 && age < 7) {
     return {
       expectedVerdict: "DANGER",
       expectedScore: [100, 600],
-      tolerated: ["RUG", "CAUTION", "SAFE"],
+      tolerated: ["RUG"],
       why: `liq $${(liq/1000).toFixed(1)}k, age ${age}d — fresh-launch thin liquidity.`,
     }
   }
@@ -393,7 +399,7 @@ function label(t: Enriched): Label {
     return {
       expectedVerdict: "DANGER",
       expectedScore: [100, 600],
-      tolerated: ["RUG", "CAUTION", "SAFE"],
+      tolerated: ["RUG"],
       why: `liq $${(liq/1000).toFixed(1)}k — ultra-thin liquidity, exit risk.`,
     }
   }
@@ -421,16 +427,22 @@ function label(t: Enriched): Label {
     }
   }
 
-  // ── CAUTION default: every mid-tier token. Wide tolerated band
-  // because we genuinely don't know without on-chain data. RUG is in
-  // tolerated because the engine routinely escalates obvious shitcoins
-  // (no socials, mintAuthority active, post-pump dump) that the
-  // external metrics alone label CAUTION as default — and the engine
-  // is usually right on those.
+  // ── CAUTION default: every mid-tier token. Tolerated DANGER/RUG
+  // because the engine routinely escalates obvious shitcoins (no
+  // socials, mintAuthority active, post-pump dump) that the external
+  // metrics alone label CAUTION as default — engine usually right.
+  //
+  // Asymmetric: SAFE is NOT tolerated. A token the auto-labeller
+  // pegged CAUTION (because external metrics alone couldn't justify
+  // SAFE) showing up SAFE in the engine is the exact RIV-class false
+  // positive we want the drift check to flag — token had 5k holders
+  // but a 40% wallet, engine missed concentration, returned SAFE,
+  // and the previous "SAFE is OK" tolerated hid the failure. Strict
+  // tolerated lets that surface as a drift alert.
   return {
     expectedVerdict: "CAUTION",
     expectedScore: [300, 900],
-    tolerated: ["SAFE", "DANGER", "RUG"],
+    tolerated: ["DANGER", "RUG"],
     why: `mcap $${(mcap/1_000_000).toFixed(2)}M, age ${age}d, liq $${(liq/1000).toFixed(0)}k — mid-cap default (engine has final say).`,
   }
 }
