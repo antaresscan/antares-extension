@@ -297,17 +297,22 @@ function renderPanel(
 
       const label = document.createElement("div")
       label.className = "cf-flag-label"
-      label.textContent = flag.label
       body.appendChild(label)
 
-      // Suppress LP-risk descriptions for SAFE and CAUTION verdicts.
-      // On a 2-year-old blue-chip, showing "A pull would crash the price
-      // 80-95%" contradicts the SAFE verdict and misleads the user.
-      // The flag label (the percentage) is still visible — only the
-      // alarmist explanation is hidden. On DANGER and RUG these
-      // descriptions are accurate and actionable so they stay.
+      // For SAFE and CAUTION: LP hold flags only show the percentage —
+      // strip the " — [risk tier]" suffix (e.g. "— significant rug capacity",
+      // "— limited rug impact"). The token is SAFE or CAUTION; showing
+      // "rug capacity / rug impact" on a 2-year-old blue-chip contradicts
+      // the verdict and misleads the user. On DANGER/RUG the full label
+      // and description stay — they are accurate and actionable.
       const isLpFlag = /^LP holds|^LP not burned|^LP-to-supply/i.test(flag.label)
-      const suppressDesc = isLpFlag && (verdictUpper === "SAFE" || verdictUpper === "CAUTION")
+      const isSafeOrCaution = verdictUpper === "SAFE" || verdictUpper === "CAUTION"
+      const displayLabel = (isLpFlag && isSafeOrCaution)
+        ? flag.label.replace(/\s*—.*$/, "").trim()
+        : flag.label
+      label.textContent = displayLabel
+
+      const suppressDesc = isLpFlag && isSafeOrCaution
       const desc = suppressDesc ? null : getFlagDescription(flag.label)
       if (desc) {
         const descEl = document.createElement("div")
