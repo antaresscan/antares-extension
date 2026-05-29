@@ -156,7 +156,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v22"; // 2026-05-29: split concentration into two tiers per founder rule. 10-14% → "concentration_light" (soft, max CAUTION, never SAFE). 15%+ → "concentration" (hard, DANGER/RUG). Previously all single-wallet concentrations ≥10% were hard-blocked to DANGER, causing false positives on legitimate blue-chips like FARTCOIN (11%) and WIF (12%) which should land CAUTION, not DANGER.
+const ENGINE_VERSION_MANUAL = "v23"; // 2026-05-29: remove top-1 single-wallet concentration flag entirely. Replace with top-10 distribution ladder. Verdict now based on collective distribution (top-10 ≥ 60% = elevated soft, ≥ 75% = high hard, ≥ 85% = extreme hard). Eliminates false positives on blue-chips where #1 holder is an exchange cold wallet (FARTCOIN 11%, WIF 12%).
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.
@@ -236,13 +236,13 @@ export const LIQ_MEDIUM = 20000;        // <$20k = info
 // Wash trading
 export const WASH_VOL_LIQ_RATIO = 20;   // vol/liq > 20 = wash trading
 export const HIGH_VOL_LIQ_RATIO = 5;    // vol/liq > 5 = high ratio warning
-// Holder thresholds (Helius)
-export const TOP1_CRITICAL_PCT = 0.30;   // single wallet > 30% = forceRug
-export const TOP1_HIGH_PCT = 0.20;       // single wallet > 20% = critical
-export const TOP1_WARN_PCT = 0.10;       // single wallet > 10% = warning
-export const TOP10_CRITICAL_PCT = 0.80;  // top 10 > 80% = critical
-export const TOP10_WARN_PCT = 0.60;      // top 10 > 60% = warning
-export const TOP10_GOOD_PCT = 0.30;      // top 10 < 30% = well distributed
+// Holder thresholds (Helius) — top-10 distribution bands (7.7.4+)
+// Top-1 thresholds removed; verdict now based on top-10 distribution only.
+export const TOP10_EXTREME_PCT  = 0.85;  // top 10 ≥ 85% = extreme  (critical, hard, forceRug potential)
+export const TOP10_HIGH_PCT     = 0.75;  // top 10 ≥ 75% = high     (critical, hard, DANGER floor)
+export const TOP10_ELEVATED_PCT = 0.60;  // top 10 ≥ 60% = elevated (warning, soft, max CAUTION)
+export const TOP10_MODERATE_PCT = 0.30;  // top 10 ≥ 30% = moderate (info, no block)
+export const TOP10_GOOD_PCT     = 0.30;  // top 10 < 30% = well distributed (bonus)
 // Solscan holder counts
 export const HOLDERS_CRITICAL = 15;      // <15 = very few
 export const HOLDERS_LOW = 50;           // <50 = low
@@ -304,7 +304,16 @@ export const API_TIMEOUT_HELIUS = 6000;
 // 15%+   → "concentration" (hard, DANGER or RUG, no exceptions).
 // Previously all ≥10% were hard → FARTCOIN (11%) and WIF (12%) were
 // landing DANGER 500 instead of CAUTION.
-export const SCORING_VERSION = "7.7.3";
+//
+// 7.7.4 bump (2026-05-29): remove top-1 single-wallet concentration flag
+// entirely. Replace with top-10 distribution ladder in layerHelius.
+// A single large wallet is often an exchange cold wallet — misleading
+// on blue-chips. Top-10 distribution is harder to game, captures
+// coordinated multi-wallet exits, and avoids penalising custodial
+// whales. New bands: <30% bonus · 30-59% info · 60-74% soft-block
+// (concentration_light) · 75-84% hard (concentration) · ≥85% extreme.
+// Also removes "Top 1 holder > 20%" from layerRugCheck.
+export const SCORING_VERSION = "7.7.4";
 
 // ── SOFT REASONS (safe gate unlock) ───────────────────────────
 // A reason listed here CAN be unlocked by applySafeGateOverride when
@@ -323,11 +332,10 @@ export const SCORING_VERSION = "7.7.3";
 // doesn't imply distribution. Without VERIFIED concentration data
 // (Helius largestAccounts → topHolderPct + top10HolderPct), the gate
 // must stay closed. CAUTION is the correct ceiling, not SAFE.
-// "concentration_light" = single wallet 10-14% of supply. Blocks SAFE
-// (a wallet of this size can still move the price meaningfully) but
-// allows CAUTION when the rest of the token looks clean. The verdict
-// floors at CAUTION regardless of how high the score is — SAFE is never
-// appropriate when any wallet controls 10%+ of supply.
+// "concentration_light" = top-10 wallets hold 60-74% of supply (7.7.4+).
+// Blocks SAFE — collective 60%+ concentration means coordinated selling
+// could crash the price — but allows CAUTION when the rest of the token
+// looks clean. The verdict floors at CAUTION; SAFE is never appropriate.
 export const SOFT_REASONS: Record<string, boolean> = { age: true, lp_unverified: true, pump_imbalance: true, concentration_light: true };
 
 // ── RUG DATABASE ───────────────────────────────────────────

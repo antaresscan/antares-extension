@@ -192,33 +192,29 @@ describe("classifySafeBlockedReasons", () => {
     expect(classifySafeBlockedReasons(layers)).toContain("age");
   });
 
-  it("detects concentration reason from helius single-wallet flag (>=15%)", () => {
-    // Single-wallet holdings >=15% now route to the dedicated
-    // "concentration" hard reason rather than the generic "holders"
-    // soft reason. The safe-gate stays closed even on mature, high-
-    // holder-count tokens — a 60%-concentrated wallet can rug
+  it("detects concentration (hard) reason from top-10 high/extreme flag (7.7.4+)", () => {
+    // top-10 ≥ 75%: "high" or "extreme" concentration → hard "concentration" reason.
+    // The safe-gate stays closed — 75%+ top-10 means coordinated sell risk
     // regardless of how established the token looks.
     const layers: LayerResult[] = [
-      makeLayer("helius", 0.5, true, [
-        { label: "Single wallet holds 60% of supply", severity: "critical", impact: 0 }
+      makeLayer("helius", 0.25, true, [
+        { label: "Top 10 hold 82% — extreme concentration", severity: "critical", impact: 0 }
       ], false, true),
     ];
     expect(classifySafeBlockedReasons(layers)).toContain("concentration");
   });
 
-  it("classifies 10-14% single-wallet flags as SOFT concentration_light (7.7.3)", () => {
-    // Founder rule refined (2026-05-29): 10-14% = max CAUTION (never SAFE).
-    // 15%+ = DANGER. 20%+ = DANGER or RUG.
-    // 10-14% is now "concentration_light" (soft-block) so the verdict can
-    // land at CAUTION with clean other layers — not DANGER.
+  it("classifies top-10 elevated (60-74%) flags as SOFT concentration_light (7.7.4)", () => {
+    // top-10 60-74%: "elevated concentration" → soft "concentration_light".
+    // Max CAUTION — verdict can land CAUTION with clean other layers, never SAFE.
     const layers: LayerResult[] = [
       makeLayer("helius", 0.5, true, [
-        { label: "Single wallet holds 11% of supply — elevated concentration", severity: "warning", impact: 0 }
+        { label: "Top 10 hold 65% — elevated concentration", severity: "warning", impact: 0 }
       ], false, true),
     ];
     const reasons = classifySafeBlockedReasons(layers);
     expect(reasons).toContain("concentration_light");
-    expect(reasons).not.toContain("concentration"); // hard "concentration" only for 15%+
+    expect(reasons).not.toContain("concentration"); // hard only for 75%+
     expect(reasons).not.toContain("concentration_warning");
   });
 });
