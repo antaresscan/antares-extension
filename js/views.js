@@ -86,7 +86,12 @@ export function buildSniperMapTab(d) {
   // vs "cluster risk") so a user seeing 36% top-10 on FARTCOIN understands
   // why the verdict is SAFE while a 36% top-10 on a 3-hour token is CAUTION.
   const ageDays = typeof d.solscanTokenAgeHours === "number" ? d.solscanTokenAgeHours / 24 : null;
-  const isEstablished = (d.holders ?? 0) >= 5_000 && (ageDays ?? 0) >= 30;
+  // 7.7.6 fix: mirror layerHelius — age ≥ 30d always, then EITHER
+  // verified holders ≥ 5k OR age ≥ 180d (6 months). The 180d threshold
+  // protects true blue-chips from data-gap misclassification while keeping
+  // shorter-lived tokens in the strict fresh tier.
+  const isEstablished = (ageDays ?? 0) >= 30 &&
+    ((d.holders ?? 0) >= 5_000 || (ageDays ?? 0) >= 180);
 
   // ── Concentration bands — 2 tiers (mirrors layerHelius 7.7.5) ──────────
   // Severity: 0 good, 1 info, 2 warn, 3 bad. Numeric so we can take max.
