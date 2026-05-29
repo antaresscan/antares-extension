@@ -31,7 +31,7 @@
 
 const API_BASE = process.env.WARMUP_API_BASE || "https://antares-extension.vercel.app";
 const DEXSCREENER_TRENDING = "https://api.dexscreener.com/token-boosts/top/v1";
-const DEXSCREENER_SEARCH = "https://api.dexscreener.com/latest/dex/search?q=solana";
+
 
 const args = process.argv.slice(2);
 const DRY_RUN = args.includes("--dry-run");
