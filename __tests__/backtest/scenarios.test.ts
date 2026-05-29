@@ -238,18 +238,18 @@ describe("reason classification", () => {
     expect(reasons).toContain("concentration")
   })
 
-  it("single wallet 10-14% classifies as concentration_warning", () => {
-    // Sub-15% concentration is a CAUTION ceiling, not a DANGER hard block.
-    // The dedicated concentration_warning reason blocks the blue-chip
-    // exemption so PENGU / FARTCOIN-tier tokens with one whale at 11%
-    // get CAUTION instead of SAFE — per founder's rule.
+  it("single wallet 10-14% now classifies as HARD concentration (7.7.1)", () => {
+    // 7.7.1 (founder rule): "si un wallet du top 10 dépasse 10% c'est
+    // danger automatiquement". 10-14% used to be its own soft-warning
+    // reason (CAUTION ceiling); now folded into hard "concentration"
+    // so the verdict goes to DANGER (score ≥ 400) or RUG (< 400).
     const flagLabel = "Single wallet holds 11% of supply"
     const layers = defaultLayers({
-      helius: layer("helius", 0.6, [flag(flagLabel, "warning")], { safeBlocked: true }),
+      helius: layer("helius", 0.6, [flag(flagLabel, "critical")], { safeBlocked: true }),
     })
     const reasons = classifySafeBlockedReasons(layers)
-    expect(reasons).not.toContain("concentration")
-    expect(reasons).toContain("concentration_warning")
+    expect(reasons).toContain("concentration")
+    expect(reasons).not.toContain("concentration_warning")
   })
 })
 
@@ -359,7 +359,12 @@ describe("safe gate unlock paths", () => {
   // Path 3 — Blue-chip concentration exemption.
   // Lets DAO tokens with team multi-sigs at 15-25% land on SAFE/CAUTION
   // instead of DANGER, but only under strict blue-chip conditions.
-  it("Path 3: blue-chip with only concentration hard + 50k holders + LP burned → unlocks", () => {
+  it("Path 3 (RETIRED 7.7.1): metric-based blue-chip unlock no longer fires regardless of holder count", () => {
+    // Pre-7.7.1: 90k holders + LP burned + concentration → blue-chip
+    // exemption unlocks → SAFE/CAUTION.
+    // 7.7.1: founder rule "si un wallet du top 10 dépasse 10% c'est
+    // danger automatiquement" — metric-based exemption retired.
+    // Only the hardcoded isKnownDaoTreasury allowlist can bypass.
     const blocked = applySafeGateOverride({
       safeBlocked: true,
       safeBlockedReasons: ["concentration"] as SafeBlockedReason[],
@@ -367,10 +372,11 @@ describe("safe gate unlock paths", () => {
       holders: 90_000,
       lpBurned: true,
       goPlusClean: true,
-      tokenAgeHours: null, // age unknown is OK with other strong signals
+      tokenAgeHours: null,
       sourcesAvailableCount: 6,
+      mint: "NOT_A_KNOWN_DAO_XYZ",
     })
-    expect(blocked).toBe(false)
+    expect(blocked).toBe(true)
   })
 
   it("Path 3: still blocked when holders < 50k even with LP burned + clean", () => {
@@ -417,21 +423,23 @@ describe("safe gate unlock paths", () => {
     expect(blocked).toBe(true)
   })
 
-  it("Path 3: PENGU-style 11% top-1 wallet keeps gate closed even on a blue-chip (CAUTION not SAFE)", () => {
-    // Founder rule: a single wallet at 10-14% should always be CAUTION,
-    // even on Pudgy Penguins / FARTCOIN-tier blue-chips. The dedicated
-    // concentration_warning reason lives outside SOFT_REASONS so the
-    // blue-chip soft-unlock branch refuses to fire. Other paths (only-
-    // soft, blue-chip onlyConcentrationHard) also reject it.
+  it("Path 3: blue-chip metric exemption RETIRED (7.7.1) — concentration → DANGER regardless of holder count", () => {
+    // 7.7.1 (founder rule): "si un wallet du top 10 dépasse 10% c'est
+    // danger automatiquement". The previous metric-based blue-chip
+    // exemption (50k+ holders + LP burned + 30d+ → unlock) is RETIRED.
+    // Only the hardcoded isKnownDaoTreasury allowlist can bypass
+    // concentration — every other token, regardless of holder count
+    // or LP status, stays blocked and routes to DANGER.
     const blocked = applySafeGateOverride({
       safeBlocked: true,
-      safeBlockedReasons: ["concentration_warning"] as SafeBlockedReason[],
+      safeBlockedReasons: ["concentration"] as SafeBlockedReason[],
       forceRug: false,
       holders: 150_000, // PENGU-tier holder count
       lpBurned: true,
       goPlusClean: true,
       tokenAgeHours: 365 * 24, // years old
       sourcesAvailableCount: 6,
+      mint: "NOT_A_KNOWN_DAO_MINT_XYZ",
     })
     expect(blocked).toBe(true)
   })
@@ -489,9 +497,11 @@ describe("safe gate unlock paths", () => {
     expect(blocked).toBe(true)
   })
 
-  it("Path 3: concentration + soft reasons together (e.g. lp_unverified) still unlocks if blue-chip", () => {
-    // soft reasons coexisting with concentration are allowed — what
-    // matters is that no OTHER hard reason is present.
+  it("Path 3 (RETIRED 7.7.1): concentration + soft reasons no longer unlocks via metric-based blue-chip path", () => {
+    // Pre-7.7.1 this test asserted that concentration + lp_unverified
+    // on a blue-chip metric-passing token unlocked the gate. After the
+    // metric-based exemption was retired, the gate stays closed for
+    // every token not on the isKnownDaoTreasury allowlist.
     const blocked = applySafeGateOverride({
       safeBlocked: true,
       safeBlockedReasons: ["concentration", "lp_unverified"] as SafeBlockedReason[],
@@ -501,8 +511,9 @@ describe("safe gate unlock paths", () => {
       goPlusClean: true,
       tokenAgeHours: 365 * 24,
       sourcesAvailableCount: 6,
+      mint: "NOT_A_KNOWN_DAO_XYZ",
     })
-    expect(blocked).toBe(false)
+    expect(blocked).toBe(true)
   })
 
   // Pre-7.7.0 this test asserted Path 2 unlocked when reasons=["holders"]

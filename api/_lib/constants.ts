@@ -264,9 +264,9 @@ export const API_TIMEOUT_HELIUS = 6000;
 // AI summary. Standard cache-invalidation step after any scoring or
 // flag-label change.
 //
-// 7.7.0 bump (this commit): "holders" reclassified from SOFT → HARD
-// in the safe-gate logic. Previously the override let mature tokens
-// (LP burned + holders count ≥ ESTABLISHED_HOLDERS_THRESHOLD) unlock
+// 7.7.0 bump: "holders" reclassified from SOFT → not-soft in the
+// safe-gate logic. Previously the override let mature tokens (LP
+// burned + holders count ≥ ESTABLISHED_HOLDERS_THRESHOLD) unlock
 // the SAFE verdict even when Helius was unavailable and the actual
 // holder DISTRIBUTION was unknown. User-reported RIV case: token had
 // 5,136 holder addresses (count) but a single wallet held 40% of
@@ -274,7 +274,15 @@ export const API_TIMEOUT_HELIUS = 6000;
 // "holders" being soft let the count-based established check unlock
 // SAFE. Count != distribution. Without verified concentration data
 // we cannot honestly say SAFE — the gate now stays closed.
-export const SCORING_VERSION = "7.7.0";
+//
+// 7.7.1 bump (this commit): single-wallet concentration threshold
+// lowered from 15% → 10%. Founder rule: "si un wallet du top 10
+// dépasse 10% c'est danger automatiquement". The 10-14% band that
+// used to emit a soft-warning ("concentration_warning") is now folded
+// into the hard "concentration" band — same verdict path as 15%+,
+// no exceptions for blue-chips. layers.ts emits the flag as
+// critical at this threshold; scoring.ts regex matches 10%+.
+export const SCORING_VERSION = "7.7.1";
 
 // ── SOFT REASONS (safe gate unlock) ───────────────────────────
 // A reason listed here CAN be unlocked by applySafeGateOverride when

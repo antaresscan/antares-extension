@@ -73,31 +73,27 @@ export function applySafeGateOverride(input: SafeGateInput): boolean {
 
   const hasEnoughSources = input.sourcesAvailableCount >= 5;
 
-  // Path 3: BLUE-CHIP CONCENTRATION EXEMPTION ─────────────────────────
-  // Established DAO tokens (ORCA, JTO and similar) carry team multi-
-  // sigs that hold 15-25% of supply by design — locked under DAO
-  // governance rules, not a rug setup. Without this exemption every
-  // such token gets DANGER because `concentration` is a hard reason.
+  // Path 3: BLUE-CHIP CONCENTRATION EXEMPTION (allowlist-only) ─────────
   //
-  // Only fires when the ONLY hard reason is concentration AND the
-  // token shows every other strong blue-chip signal (50k+ holders,
-  // LP burned, GoPlus clean, contract-level clean). Sub-blue-chip
-  // tokens with concentration stay DANGER as before.
+  // 7.7.1 (founder rule, 2026-05-28): "si un wallet du top 10 dépasse
+  // 10% c'est danger automatiquement". The previous metric-based
+  // heuristic (50k+ holders + LP burned + 30d+ → unlock) was retired
+  // because it let too many borderline tokens reach SAFE/CAUTION when
+  // a wallet was actually sitting at 15-25%. New policy: only tokens
+  // on the hardcoded `isKnownDaoTreasury` allowlist (JTO, ORCA, and a
+  // small curated list) can bypass concentration. Every other token
+  // with concentration → DANGER, no exceptions.
   //
-  // Hard guard: presence of `concentration_warning` (single wallet
-  // 10-14%) blocks this exemption regardless of blue-chip status.
-  // PENGU was getting SAFE under the previous logic because 11%
-  // emits a soft "holders" reason that the all-soft branch would
-  // unlock — the founder explicitly called this out: at 11% top-1
-  // even a blue-chip should be CAUTION, never SAFE. Listing
-  // concentration_warning here keeps the gate closed without
-  // forcing DANGER (which the hard `concentration` reason does).
+  // Maintained because real DAOs (JTO multi-sig at ~17%) still need
+  // a verdict that isn't DANGER. The allowlist is a single hardcoded
+  // set in source — auditable, no per-token override surface for
+  // attackers.
   //
-  // Limitation: relies on holder count from the upstream sources.
-  // When Solscan/RugCheck/GoPlus are simultaneously down, holder
-  // count can collapse to the Helius top-20 view (=20) and the
-  // exemption misses. The hardcoded-treasury allowlist (planned
-  // follow-up) will handle that data-quality fallback.
+  // concentration_warning historically lived here to keep 10-14%
+  // tokens out of this exemption. Since 7.7.1 the 10-14% band is
+  // folded into hard concentration, so the warning isn't needed
+  // — but we keep the check in case any legacy cache still carries
+  // the old reason name. Harmless if it never fires.
   const hasConcentrationWarning =
     input.safeBlockedReasons.includes("concentration_warning");
   const onlyConcentrationHard =
@@ -106,21 +102,8 @@ export function applySafeGateOverride(input: SafeGateInput): boolean {
     input.safeBlockedReasons.every(r =>
       r === "concentration" || SOFT_REASONS[r] === true,
     );
-  const looksLikeBlueChipDao =
-    hasEnoughSources &&
-    (input.holders ?? 0) >= 50_000 &&
-    input.lpBurned === true &&
-    input.goPlusClean &&
-    // age unknown is OK if every other strong signal is true — Solscan
-    // age is the most data-quality-fragile field, so we don't gate on it
-    (input.tokenAgeHours === null || input.tokenAgeHours >= 30 * 24);
-  // Data-quality fallback: when the mint is on the known-DAO-treasury
-  // allowlist we accept the blue-chip exemption regardless of the
-  // metric-based heuristic. Covers cases where Solscan/RugCheck/GoPlus
-  // are simultaneously degraded and the holder count collapses to the
-  // Helius top-20 view (=20). JTO is the canonical case.
   const isKnownDao = isKnownDaoTreasury(input.mint);
-  if (onlyConcentrationHard && (looksLikeBlueChipDao || isKnownDao)) {
+  if (onlyConcentrationHard && isKnownDao) {
     return false;
   }
 

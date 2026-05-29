@@ -206,18 +206,20 @@ describe("classifySafeBlockedReasons", () => {
     expect(classifySafeBlockedReasons(layers)).toContain("concentration");
   });
 
-  it("classifies sub-15% single-wallet flags as concentration_warning", () => {
-    // 10-14% concentration is now its own dedicated reason that
-    // sits BETWEEN soft (unlocks blue-chip) and hard (forces DANGER):
-    // the gate stays closed (no blue-chip soft-unlock) but verdict
-    // routes to CAUTION rather than DANGER. Per the founder's call —
-    // PENGU at 11% top-1 must be CAUTION even though it's a blue-chip.
+  it("classifies 10-14% single-wallet flags as HARD concentration (7.7.1)", () => {
+    // Founder rule (2026-05-28): "si un wallet du top 10 dépasse 10%
+    // c'est danger automatiquement". Previously the 10-14% band emitted
+    // a "concentration_warning" reason that capped verdict at CAUTION;
+    // it's now folded into the hard "concentration" band → DANGER/RUG
+    // per the standard safe-gate path.
     const layers: LayerResult[] = [
       makeLayer("helius", 0.5, true, [
-        { label: "Single wallet holds 11% of supply", severity: "warning", impact: 0 }
+        { label: "Single wallet holds 11% of supply", severity: "critical", impact: 0 }
       ], false, true),
     ];
-    expect(classifySafeBlockedReasons(layers)).toContain("concentration_warning");
+    const reasons = classifySafeBlockedReasons(layers);
+    expect(reasons).toContain("concentration");
+    expect(reasons).not.toContain("concentration_warning");
   });
 });
 
