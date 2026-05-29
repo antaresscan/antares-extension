@@ -300,7 +300,15 @@ function renderPanel(
       label.textContent = flag.label
       body.appendChild(label)
 
-      const desc = getFlagDescription(flag.label)
+      // Suppress LP-risk descriptions for SAFE and CAUTION verdicts.
+      // On a 2-year-old blue-chip, showing "A pull would crash the price
+      // 80-95%" contradicts the SAFE verdict and misleads the user.
+      // The flag label (the percentage) is still visible — only the
+      // alarmist explanation is hidden. On DANGER and RUG these
+      // descriptions are accurate and actionable so they stay.
+      const isLpFlag = /^LP holds|^LP not burned|^LP-to-supply/i.test(flag.label)
+      const suppressDesc = isLpFlag && (verdictUpper === "SAFE" || verdictUpper === "CAUTION")
+      const desc = suppressDesc ? null : getFlagDescription(flag.label)
       if (desc) {
         const descEl = document.createElement("div")
         descEl.className = "cf-flag-desc"
