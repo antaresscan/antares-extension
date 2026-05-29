@@ -671,11 +671,22 @@ function render(d, ca) {
             const cls = isCrit ? "cr" : "wr";
             const ic = isCrit ? "r" : "y";
             const ico = isCrit ? "✕" : "!";
-            const desc = getFlagDescription(f.label || f);
+            // Strip " — [risk tier]" from LP labels on SAFE/CAUTION — the token
+            // is clean enough; showing "significant rug capacity" on a SAFE
+            // blue-chip contradicts the verdict. Full label kept on DANGER/RUG.
+            const rawLabel = String(f.label || f);
+            const isLpLabel = /^LP holds|^LP not burned|^LP-to-supply/i.test(rawLabel);
+            const riskUpper = (d.risk || "").toUpperCase();
+            const displayLabel = (isLpLabel && (riskUpper === "SAFE" || riskUpper === "CAUTION"))
+              ? rawLabel.replace(/\s*—.*$/, "").trim()
+              : rawLabel;
+            const desc = (isLpLabel && (riskUpper === "SAFE" || riskUpper === "CAUTION"))
+              ? null
+              : getFlagDescription(rawLabel);
             return `<div class="flag-row">
             <div class="flag-icon ${ic}">${ico}</div>
             <div class="flag-body">
-              <div class="flag-label ${cls}">${escapeHtml(f.label || f)}</div>
+              <div class="flag-label ${cls}">${escapeHtml(displayLabel)}</div>
               ${desc ? `<div class="flag-desc">${escapeHtml(desc)}</div>` : ""}
             </div>
             <div class="sev ${severityClass(sev)}"><div class="d"></div><div class="d"></div><div class="d"></div></div>
