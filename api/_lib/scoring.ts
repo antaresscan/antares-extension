@@ -94,10 +94,14 @@ export const HARD_BLOCK_PATTERNS: Array<[RegExp, SafeBlockedReason]> = [
   //     a much smaller loss than getting rugged at 11%
   //   - simpler rule = easier to reason about + harder to misclassify
   //
-  // Regex: `(1[0-9]|[2-9]\d|\d{3,})` matches 10-19, 20-99, 100+.
-  // Layers.ts emits these as `critical` severity so the verdict
-  // logic routes them to DANGER (score >= 400) or RUG (< 400).
-  [/single wallet holds (1[0-9]|[2-9]\d|\d{3,})% of supply/i, "concentration"],
+  // Regex split into two tiers (founder rule 2026-05-29):
+  //   10–14%: "concentration_light" → soft reason → max CAUTION, never SAFE
+  //   15%+:   "concentration"       → hard reason → DANGER or RUG, never CAUTION
+  //
+  // 10-14% regex: `1[0-4]` matches 10, 11, 12, 13, 14.
+  // 15%+  regex: `1[5-9]|[2-9]\d|\d{3,}` matches 15-19, 20-99, 100+.
+  [/single wallet holds 1[0-4]% of supply/i, "concentration_light"],
+  [/single wallet holds (1[5-9]|[2-9]\d|\d{3,})% of supply/i, "concentration"],
   [/top 1 holder > 20%/i, "concentration"],
 ];
 

@@ -206,19 +206,19 @@ describe("classifySafeBlockedReasons", () => {
     expect(classifySafeBlockedReasons(layers)).toContain("concentration");
   });
 
-  it("classifies 10-14% single-wallet flags as HARD concentration (7.7.1)", () => {
-    // Founder rule (2026-05-28): "si un wallet du top 10 dépasse 10%
-    // c'est danger automatiquement". Previously the 10-14% band emitted
-    // a "concentration_warning" reason that capped verdict at CAUTION;
-    // it's now folded into the hard "concentration" band → DANGER/RUG
-    // per the standard safe-gate path.
+  it("classifies 10-14% single-wallet flags as SOFT concentration_light (7.7.3)", () => {
+    // Founder rule refined (2026-05-29): 10-14% = max CAUTION (never SAFE).
+    // 15%+ = DANGER. 20%+ = DANGER or RUG.
+    // 10-14% is now "concentration_light" (soft-block) so the verdict can
+    // land at CAUTION with clean other layers — not DANGER.
     const layers: LayerResult[] = [
       makeLayer("helius", 0.5, true, [
-        { label: "Single wallet holds 11% of supply", severity: "critical", impact: 0 }
+        { label: "Single wallet holds 11% of supply — elevated concentration", severity: "warning", impact: 0 }
       ], false, true),
     ];
     const reasons = classifySafeBlockedReasons(layers);
-    expect(reasons).toContain("concentration");
+    expect(reasons).toContain("concentration_light");
+    expect(reasons).not.toContain("concentration"); // hard "concentration" only for 15%+
     expect(reasons).not.toContain("concentration_warning");
   });
 });

@@ -29,13 +29,9 @@ export type SafeBlockedReason =
   | "sniper"          // HARD
     | "chart"            // HARD
   | "low_holders"     // HARD — tokens with <50 holders
-  | "concentration"   // HARD — single wallet holds >=15% of supply
-  // Single wallet holds 10-14% of supply. Not a hard block (DANGER would
-  // be too strong for a blue-chip with otherwise solid fundamentals) but
-  // strong enough that it should NOT be soft-unlocked by the blue-chip
-  // exemption — even Pudgy Penguins / FARTCOIN tier tokens get CAUTION
-  // when one whale can move price meaningfully on a sell. Lives outside
-  // SOFT_REASONS so applySafeGateOverride keeps the gate closed.
+  | "concentration"        // HARD — single wallet holds >=15% of supply → DANGER/RUG
+  | "concentration_light"  // SOFT-BLOCK — single wallet holds 10-14% → max CAUTION, never SAFE
+  // Legacy name kept for cached scans pre-7.7.3. Behaves like concentration_light.
   | "concentration_warning"
   | "lp_unverified"  // SOFT - LP not burned but token is mature and clean
   | "pump_imbalance"; // SOFT - buy/sell imbalance (coordinated pump signal), unlockable for established tokens
