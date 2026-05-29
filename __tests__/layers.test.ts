@@ -605,6 +605,61 @@ describe("layerHelius", () => {
     const result = layerHelius(holders, 100_000, ctx);
     expect(result.trust).toBeLessThan(0.2);
   });
+
+  it("RIV case: real 40% top-1 + broken holder count must NOT trigger broken-view fallback", () => {
+    // 2026-05-29 user-reported false positive. RIV had a real 40% top-1
+    // wallet, $651k liquidity, 67d old. Solscan returned no holder count
+    // so `mc.holders` fell back to the Helius top-20 list size (20).
+    // Old gate: macroLooksBig + reportedHoldersTooLow → drop concentration
+    //           flag → safeBlocked=false → SAFE 795/1000 (catastrophic).
+    // New gate: also requires top1>80% OR top10>95% (structurally
+    //           impossible values that signal a real pump.fun-survivor
+    //           artefact). 40% is a plausible-real whale → flag stays.
+    const holders: HeliusHolder[] = [
+      { address: "whale40", owner: "whale40", uiAmount: 40_000 }, // 40% of 100k
+      { address: "whale15", owner: "whale15", uiAmount: 15_000 }, // 15%
+      ...Array.from({ length: 18 }, (_, i) => ({
+        address: `t${i}`, owner: `t${i}`, uiAmount: 1_000,
+      })),
+    ];
+    const ctx = {
+      holders: 20,             // broken — Solscan returned no count
+      liquidity: 651_000,      // real RIV value
+      tokenAgeHours: 1610,     // ~67 days
+      mintAuthority: false, freezeAuthority: false, honeypot: false,
+      lpBurned: null,
+    };
+    const result = layerHelius(holders, 100_000, ctx);
+    // The 40% wallet flag MUST remain (not dropped by the fallback).
+    expect(result.flags.some(f => /Single wallet holds 40% of supply/i.test(f.label))).toBe(true);
+    // The broken-view info flag MUST NOT have been emitted.
+    expect(result.flags.some(f => /Holder data unreliable/i.test(f.label))).toBe(false);
+    // Safe gate must stay closed.
+    expect(result.safeBlocked).toBe(true);
+  });
+
+  it("GOAT/PNUT case still triggers: 99% top-1 + broken count + mature pair → flag dropped", () => {
+    // Verify the original GOAT/PNUT fallback still fires when the
+    // concentration is structurally impossible (≥80%). This is the
+    // pump.fun bonding-curve survivor artefact the fallback was
+    // designed for: the upstream view shows one bonding-curve
+    // wallet at 99% because the post-AMM holders are invisible.
+    const holders: HeliusHolder[] = [
+      { address: "bonding-curve", owner: "bonding-curve", uiAmount: 99_000 }, // 99%
+      { address: "tail", owner: "tail", uiAmount: 100 },
+    ];
+    const ctx = {
+      holders: 20,
+      liquidity: 1_500_000,
+      tokenAgeHours: 100 * 24,
+      mintAuthority: false, freezeAuthority: false, honeypot: false,
+      lpBurned: null,
+    };
+    const result = layerHelius(holders, 100_000, ctx);
+    expect(result.flags.some(f => /Holder data unreliable/i.test(f.label))).toBe(true);
+    expect(result.flags.some(f => /supply/i.test(f.label))).toBe(false);
+    expect(result.safeBlocked).toBe(false);
+  });
 });
 
 // ═══ LAYER 5 — Solscan ═══════════════════════════════════════════════════════
