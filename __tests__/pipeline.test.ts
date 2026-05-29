@@ -258,15 +258,23 @@ describe("applySafeGateOverride", () => {
     }))).toBe(true);
   });
 
-  it("4. Soft reason 'holders' + all conditions met -> returns true (HARDENED: holders < 1000)", () => {
+  it("4. 'holders' alone -> returns true (7.7.0: no longer soft-unlockable)", () => {
+    // Pre-7.7.0 'holders' was soft and could unlock when holders ≥ 1000
+    // + established conditions. After RIV (false-positive SAFE on a
+    // token with 40% top-1 wallet), 'holders' is no longer SOFT —
+    // without verified distribution we cannot be SAFE. Even with
+    // generous holder count and LP burned the gate now stays closed.
     expect(applySafeGateOverride(makeSafeGateInput({
-      safeBlockedReasons: ["holders"], holders: 600, lpBurned: true, goPlusClean: true,
+      safeBlockedReasons: ["holders"], holders: 5000, lpBurned: true, goPlusClean: true,
     }))).toBe(true);
   });
 
-  it("5. Both soft reasons ['age','holders'] + all conditions met -> returns true (HARDENED: holders < 1000)", () => {
+  it("5. Mixed ['age','holders'] -> returns true (any 'holders' keeps the gate closed)", () => {
+    // 'age' alone would unlock if all conditions are met (Path 1), but
+    // the presence of 'holders' poisons the all-soft check. This is
+    // intentional after the 7.7.0 reclassification.
     expect(applySafeGateOverride(makeSafeGateInput({
-      safeBlockedReasons: ["age", "holders"], holders: 600, lpBurned: true, goPlusClean: true,
+      safeBlockedReasons: ["age", "holders"], holders: 5000, lpBurned: true, goPlusClean: true,
     }))).toBe(true);
   });
 

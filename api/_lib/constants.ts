@@ -263,10 +263,45 @@ export const API_TIMEOUT_HELIUS = 6000;
 // PUMPED flag or the corrected Liquidity-mirage routing through the
 // AI summary. Standard cache-invalidation step after any scoring or
 // flag-label change.
-export const SCORING_VERSION = "7.6.0";
+//
+// 7.7.0 bump: "holders" reclassified from SOFT → not-soft in the
+// safe-gate logic. Previously the override let mature tokens (LP
+// burned + holders count ≥ ESTABLISHED_HOLDERS_THRESHOLD) unlock
+// the SAFE verdict even when Helius was unavailable and the actual
+// holder DISTRIBUTION was unknown. User-reported RIV case: token had
+// 5,136 holder addresses (count) but a single wallet held 40% of
+// supply — engine couldn't verify distribution (Helius down), but
+// "holders" being soft let the count-based established check unlock
+// SAFE. Count != distribution. Without verified concentration data
+// we cannot honestly say SAFE — the gate now stays closed.
+//
+// 7.7.1 bump (this commit): single-wallet concentration threshold
+// lowered from 15% → 10%. Founder rule: "si un wallet du top 10
+// dépasse 10% c'est danger automatiquement". The 10-14% band that
+// used to emit a soft-warning ("concentration_warning") is now folded
+// into the hard "concentration" band — same verdict path as 15%+,
+// no exceptions for blue-chips. layers.ts emits the flag as
+// critical at this threshold; scoring.ts regex matches 10%+.
+export const SCORING_VERSION = "7.7.1";
 
 // ── SOFT REASONS (safe gate unlock) ───────────────────────────
-export const SOFT_REASONS: Record<string, boolean> = { age: true, holders: true, lp_unverified: true, pump_imbalance: true };
+// A reason listed here CAN be unlocked by applySafeGateOverride when
+// the token meets the established-token criteria (LP burned, holders
+// count threshold, GoPlus clean, sources count). Everything NOT here
+// is a HARD reason — the safe gate stays closed regardless of how
+// mature the token is.
+//
+// Why "holders" is NOT in this map any more (2026-05-28, RIV case):
+// "holders" is added to safeBlockedReasons by classifySafeBlockedReasons
+// whenever a holder-related flag fires — including the catastrophic
+// "Helius unavailable — holder concentration unverified" flag. Marking
+// it soft used to mean "if the token is mature enough, trust the
+// distribution is OK". That's wrong: a token can have 100,000 holder
+// addresses and still have one wallet holding 40% of supply. Count
+// doesn't imply distribution. Without VERIFIED concentration data
+// (Helius largestAccounts → topHolderPct + top10HolderPct), the gate
+// must stay closed. CAUTION is the correct ceiling, not SAFE.
+export const SOFT_REASONS: Record<string, boolean> = { age: true, lp_unverified: true, pump_imbalance: true };
 
 // ── RUG DATABASE ───────────────────────────────────────────
 export const MAX_RUG_INDEX = 5000;  // increased from 500 for production scale

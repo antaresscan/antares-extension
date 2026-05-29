@@ -78,20 +78,27 @@ export const HARD_BLOCK_PATTERNS: Array<[RegExp, SafeBlockedReason]> = [
   [/buy\/sell imbalance/i, "pump_imbalance"],
   [/deceptive name/i, "deceptive_name"],                         // FIX: deceptive names are hard
     [/very few holders|few holders|<15|<50/i, "low_holders"], // FIX: very low holders is a HARD reason
-  // Single-wallet concentration of 15% or more cannot soft-unlock.
-  // Layers.ts emits the flag as critical at this threshold; we trap
-  // it here as a hard reason so applySafeGateOverride keeps the gate
-  // closed and verdict.ts routes the score band to DANGER/RUG.
-  [/single wallet holds (1[5-9]|[2-9]\d|\d{3,})% of supply/i, "concentration"],
+  // Single-wallet concentration of 10% or more is a HARD block.
+  //
+  // Founder rule (2026-05-28): "si un wallet du top 10 dépasse 10%
+  // c'est danger automatiquement". Since the top-10 list is sorted by
+  // holdings, this reduces to "top-1 > 10%" — the regex captures
+  // any flag mentioning "single wallet holds X% of supply" where X
+  // is 10-99 or 100+.
+  //
+  // The previous tiered approach (15%+ hard, 10-14% "concentration_
+  // warning" soft) was reframed because:
+  //   - 10-14% wallets had let RIV-class tokens land on SAFE when
+  //     paired with established-token signals
+  //   - asymmetric risk: missing a small pump on a clean token is
+  //     a much smaller loss than getting rugged at 11%
+  //   - simpler rule = easier to reason about + harder to misclassify
+  //
+  // Regex: `(1[0-9]|[2-9]\d|\d{3,})` matches 10-19, 20-99, 100+.
+  // Layers.ts emits these as `critical` severity so the verdict
+  // logic routes them to DANGER (score >= 400) or RUG (< 400).
+  [/single wallet holds (1[0-9]|[2-9]\d|\d{3,})% of supply/i, "concentration"],
   [/top 1 holder > 20%/i, "concentration"],
-  // Single-wallet concentration in the 10-14% band is a "soft warning".
-  // It's NOT in HARD_BLOCK_REASONS (so verdict can still be CAUTION,
-  // not DANGER) but it's NOT in SOFT_REASONS either — applySafeGate-
-  // OverRide refuses to apply the blue-chip DAO exemption when this
-  // signal is present, so PENGU / FARTCOIN-tier tokens with one
-  // whale at 11% get CAUTION instead of SAFE. Per founder rule:
-  // "any token, even bluechip, must be CAUTION at 11% top-1 wallet".
-  [/single wallet holds 1[0-4]% of supply/i, "concentration_warning"],
 ];
 
 export function classifySafeBlockedReasons(layers: LayerResult[]): SafeBlockedReason[] {

@@ -238,18 +238,18 @@ describe("reason classification", () => {
     expect(reasons).toContain("concentration")
   })
 
-  it("single wallet 10-14% classifies as concentration_warning", () => {
-    // Sub-15% concentration is a CAUTION ceiling, not a DANGER hard block.
-    // The dedicated concentration_warning reason blocks the blue-chip
-    // exemption so PENGU / FARTCOIN-tier tokens with one whale at 11%
-    // get CAUTION instead of SAFE — per founder's rule.
+  it("single wallet 10-14% now classifies as HARD concentration (7.7.1)", () => {
+    // 7.7.1 (founder rule): "si un wallet du top 10 dépasse 10% c'est
+    // danger automatiquement". 10-14% used to be its own soft-warning
+    // reason (CAUTION ceiling); now folded into hard "concentration"
+    // so the verdict goes to DANGER (score ≥ 400) or RUG (< 400).
     const flagLabel = "Single wallet holds 11% of supply"
     const layers = defaultLayers({
-      helius: layer("helius", 0.6, [flag(flagLabel, "warning")], { safeBlocked: true }),
+      helius: layer("helius", 0.6, [flag(flagLabel, "critical")], { safeBlocked: true }),
     })
     const reasons = classifySafeBlockedReasons(layers)
-    expect(reasons).not.toContain("concentration")
-    expect(reasons).toContain("concentration_warning")
+    expect(reasons).toContain("concentration")
+    expect(reasons).not.toContain("concentration_warning")
   })
 })
 
@@ -271,7 +271,65 @@ describe("safe gate unlock paths", () => {
   })
 
   it("soft-only unlocks via Path 1: age>48h + holders>1k + lpBurned + goPlusClean", () => {
+    // 7.7.0 (RIV case): "holders" reclassified hard, so this Path-1
+    // unlock test now uses ONLY ["age"] as the soft reason. Mixing
+    // "holders" into the list would (correctly) keep the gate closed.
     const blocked = applySafeGateOverride({
+      safeBlocked: true,
+      safeBlockedReasons: ["age"] as SafeBlockedReason[],
+      forceRug: false,
+      holders: 5_000,
+      lpBurned: true,
+      goPlusClean: true,
+      tokenAgeHours: 100,
+      sourcesAvailableCount: 6,
+    })
+    expect(blocked).toBe(false)
+  })
+
+  // ─── REGRESSION ─────────────────────────────────────────────────────
+  // RIV case (user-reported 2026-05-28). Token had:
+  //   - 5,136 holder ADDRESSES (count looked solid)
+  //   - 40% top-1 holder (catastrophic concentration)
+  //   - Helius unavailable → engine couldn't see distribution
+  // Old SOFT_REASONS classed "holders" as unlockable, so the count-based
+  // established check (Path 2) flipped the verdict to SAFE 1000. Visible
+  // user bug: "le token est safe alors qu'il y a un wallet qui détient
+  // 40% de la supply".
+  //
+  // 7.7.0 fix: "holders" is no longer SOFT. Without verified distribution
+  // data, the gate stays closed regardless of holder COUNT.
+  it("REGRESSION (RIV): reasons=['holders'] stays blocked under every established-token combo", () => {
+    // Path 1 attempt: LP burned, big holder count, mature, GoPlus clean
+    const blockedPath1 = applySafeGateOverride({
+      safeBlocked: true,
+      safeBlockedReasons: ["holders"] as SafeBlockedReason[],
+      forceRug: false,
+      holders: 5_136, // RIV's actual holder address count
+      lpBurned: true,
+      goPlusClean: true,
+      tokenAgeHours: 60 * 24, // 2 months old
+      sourcesAvailableCount: 6,
+    })
+    expect(blockedPath1, "RIV-style holders-only must stay blocked under Path 1").toBe(true)
+
+    // Path 2 attempt: 100k holders, LP NOT burned, very mature
+    // (matches the prior blue-chip-without-LP-burn unlock that broke
+    // the safe-gate for RIV-class false positives)
+    const blockedPath2 = applySafeGateOverride({
+      safeBlocked: true,
+      safeBlockedReasons: ["holders"] as SafeBlockedReason[],
+      forceRug: false,
+      holders: 100_000,
+      lpBurned: false,
+      goPlusClean: true,
+      tokenAgeHours: 31 * 24,
+      sourcesAvailableCount: 6,
+    })
+    expect(blockedPath2, "RIV-style holders-only must stay blocked under Path 2 even with 100k holders").toBe(true)
+
+    // Mixed with another soft reason: still blocked because "holders" is hard
+    const blockedMixed = applySafeGateOverride({
       safeBlocked: true,
       safeBlockedReasons: ["age", "holders"] as SafeBlockedReason[],
       forceRug: false,
@@ -281,7 +339,7 @@ describe("safe gate unlock paths", () => {
       tokenAgeHours: 100,
       sourcesAvailableCount: 6,
     })
-    expect(blocked).toBe(false)
+    expect(blockedMixed, "any 'holders' reason in the list keeps the gate closed").toBe(true)
   })
 
   it("soft-only stays blocked under 48h of age", () => {
@@ -301,7 +359,12 @@ describe("safe gate unlock paths", () => {
   // Path 3 — Blue-chip concentration exemption.
   // Lets DAO tokens with team multi-sigs at 15-25% land on SAFE/CAUTION
   // instead of DANGER, but only under strict blue-chip conditions.
-  it("Path 3: blue-chip with only concentration hard + 50k holders + LP burned → unlocks", () => {
+  it("Path 3 (RETIRED 7.7.1): metric-based blue-chip unlock no longer fires regardless of holder count", () => {
+    // Pre-7.7.1: 90k holders + LP burned + concentration → blue-chip
+    // exemption unlocks → SAFE/CAUTION.
+    // 7.7.1: founder rule "si un wallet du top 10 dépasse 10% c'est
+    // danger automatiquement" — metric-based exemption retired.
+    // Only the hardcoded isKnownDaoTreasury allowlist can bypass.
     const blocked = applySafeGateOverride({
       safeBlocked: true,
       safeBlockedReasons: ["concentration"] as SafeBlockedReason[],
@@ -309,10 +372,11 @@ describe("safe gate unlock paths", () => {
       holders: 90_000,
       lpBurned: true,
       goPlusClean: true,
-      tokenAgeHours: null, // age unknown is OK with other strong signals
+      tokenAgeHours: null,
       sourcesAvailableCount: 6,
+      mint: "NOT_A_KNOWN_DAO_XYZ",
     })
-    expect(blocked).toBe(false)
+    expect(blocked).toBe(true)
   })
 
   it("Path 3: still blocked when holders < 50k even with LP burned + clean", () => {
@@ -359,21 +423,23 @@ describe("safe gate unlock paths", () => {
     expect(blocked).toBe(true)
   })
 
-  it("Path 3: PENGU-style 11% top-1 wallet keeps gate closed even on a blue-chip (CAUTION not SAFE)", () => {
-    // Founder rule: a single wallet at 10-14% should always be CAUTION,
-    // even on Pudgy Penguins / FARTCOIN-tier blue-chips. The dedicated
-    // concentration_warning reason lives outside SOFT_REASONS so the
-    // blue-chip soft-unlock branch refuses to fire. Other paths (only-
-    // soft, blue-chip onlyConcentrationHard) also reject it.
+  it("Path 3: blue-chip metric exemption RETIRED (7.7.1) — concentration → DANGER regardless of holder count", () => {
+    // 7.7.1 (founder rule): "si un wallet du top 10 dépasse 10% c'est
+    // danger automatiquement". The previous metric-based blue-chip
+    // exemption (50k+ holders + LP burned + 30d+ → unlock) is RETIRED.
+    // Only the hardcoded isKnownDaoTreasury allowlist can bypass
+    // concentration — every other token, regardless of holder count
+    // or LP status, stays blocked and routes to DANGER.
     const blocked = applySafeGateOverride({
       safeBlocked: true,
-      safeBlockedReasons: ["concentration_warning"] as SafeBlockedReason[],
+      safeBlockedReasons: ["concentration"] as SafeBlockedReason[],
       forceRug: false,
       holders: 150_000, // PENGU-tier holder count
       lpBurned: true,
       goPlusClean: true,
       tokenAgeHours: 365 * 24, // years old
       sourcesAvailableCount: 6,
+      mint: "NOT_A_KNOWN_DAO_MINT_XYZ",
     })
     expect(blocked).toBe(true)
   })
@@ -431,9 +497,11 @@ describe("safe gate unlock paths", () => {
     expect(blocked).toBe(true)
   })
 
-  it("Path 3: concentration + soft reasons together (e.g. lp_unverified) still unlocks if blue-chip", () => {
-    // soft reasons coexisting with concentration are allowed — what
-    // matters is that no OTHER hard reason is present.
+  it("Path 3 (RETIRED 7.7.1): concentration + soft reasons no longer unlocks via metric-based blue-chip path", () => {
+    // Pre-7.7.1 this test asserted that concentration + lp_unverified
+    // on a blue-chip metric-passing token unlocked the gate. After the
+    // metric-based exemption was retired, the gate stays closed for
+    // every token not on the isKnownDaoTreasury allowlist.
     const blocked = applySafeGateOverride({
       safeBlocked: true,
       safeBlockedReasons: ["concentration", "lp_unverified"] as SafeBlockedReason[],
@@ -443,34 +511,43 @@ describe("safe gate unlock paths", () => {
       goPlusClean: true,
       tokenAgeHours: 365 * 24,
       sourcesAvailableCount: 6,
+      mint: "NOT_A_KNOWN_DAO_XYZ",
     })
-    expect(blocked).toBe(false)
+    expect(blocked).toBe(true)
   })
 
-  it("soft-only with NO LP burn unlocks ONLY via Path 2 blue-chip override", () => {
-    const blockedWithBigHolders = applySafeGateOverride({
+  // Pre-7.7.0 this test asserted Path 2 unlocked when reasons=["holders"]
+  // + 100k holders + LP not burned. After the RIV reclassification,
+  // "holders" no longer participates in any soft-unlock path: the gate
+  // stays blocked regardless of holder count when distribution is
+  // unverified. Test reframed accordingly.
+  it("reasons=['holders'] (alone or with others) NEVER unlocks via any path", () => {
+    // Even with 100k holders + 30d+ age + GoPlus clean, the gate
+    // stays closed because we have no verified DISTRIBUTION.
+    const stillBlocked100k = applySafeGateOverride({
       safeBlocked: true,
       safeBlockedReasons: ["holders"] as SafeBlockedReason[],
       forceRug: false,
-      holders: 100_000, // way past the 50k blue-chip threshold
-      lpBurned: false,
-      goPlusClean: true,
-      tokenAgeHours: 31 * 24, // > 30 days
-      sourcesAvailableCount: 6,
-    })
-    expect(blockedWithBigHolders).toBe(false)
-
-    const blockedWithoutBigHolders = applySafeGateOverride({
-      safeBlocked: true,
-      safeBlockedReasons: ["holders"] as SafeBlockedReason[],
-      forceRug: false,
-      holders: 10_000, // not enough for blue-chip override
+      holders: 100_000,
       lpBurned: false,
       goPlusClean: true,
       tokenAgeHours: 31 * 24,
       sourcesAvailableCount: 6,
     })
-    expect(blockedWithoutBigHolders).toBe(true)
+    expect(stillBlocked100k).toBe(true)
+
+    // Same with insufficient holders — still blocked.
+    const stillBlocked10k = applySafeGateOverride({
+      safeBlocked: true,
+      safeBlockedReasons: ["holders"] as SafeBlockedReason[],
+      forceRug: false,
+      holders: 10_000,
+      lpBurned: false,
+      goPlusClean: true,
+      tokenAgeHours: 31 * 24,
+      sourcesAvailableCount: 6,
+    })
+    expect(stillBlocked10k).toBe(true)
   })
 })
 
@@ -489,10 +566,21 @@ describe("HARD_BLOCK_REASONS contract", () => {
     }
   })
 
-  it("'age', 'holders' and 'lp_unverified' are NOT hard reasons", () => {
-    // These three are the only valid soft-unlock paths.
+  it("'age' and 'lp_unverified' are NOT hard reasons (still soft-unlockable)", () => {
+    // Soft-unlockable: can flip from blocked to unlocked when the
+    // token shows enough established-token signals.
     expect(HARD_BLOCK_REASONS.has("age")).toBe(false)
-    expect(HARD_BLOCK_REASONS.has("holders")).toBe(false)
     expect(HARD_BLOCK_REASONS.has("lp_unverified")).toBe(false)
+  })
+
+  it("'holders' is NOT in HARD_BLOCK_REASONS but is also NOT soft-unlockable (7.7.0)", () => {
+    // After RIV (2026-05-28): "holders" sits in a third bucket — neither
+    // explicit-hard (HARD_BLOCK_REASONS) nor soft-unlockable
+    // (SOFT_REASONS). The default-block fall-through in
+    // applySafeGateOverride keeps the gate closed. Listing it as
+    // explicit-hard would force DANGER on every Helius-unavailable
+    // scan; the current placement caps the verdict at CAUTION while
+    // still refusing to grant SAFE.
+    expect(HARD_BLOCK_REASONS.has("holders")).toBe(false)
   })
 })
