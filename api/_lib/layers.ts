@@ -472,41 +472,76 @@ export function layerHelius(
   const top1Pct = top1Amount / totalSupplyUi;
   const top10Amount = accounts.slice(0, 10).reduce((s, h) => s + asNumber(h.uiAmount), 0);
   const top10Pct = top10Amount / totalSupplyUi;
-  // ── Top-10 distribution ladder (7.7.4+) ─────────────────────────────────
-  // Replaced the top-1 single-wallet ladder (7.7.3 and prior). Top-1 caused
-  // false positives on established tokens where the #1 holder is likely an
-  // exchange cold wallet (FARTCOIN top-1=11%, WIF top-1=12%). The top-10
-  // distribution is a far better signal: harder to disguise, captures
-  // coordinated multi-wallet exits, and avoids flagging custodial whales.
+  // ── Top-10 distribution ladder — 2 tiers (7.7.5) ────────────────────────
+  // Tier is determined by token maturity: an established token (≥ 30d AND
+  // ≥ 5k holders) gets looser thresholds because its top-10 likely includes
+  // exchange cold wallets, custodians, and diamond-hand long-term holders —
+  // not a coordinated dump group. A fresh/unknown token gets strict thresholds
+  // because the same % = early buyers / bundler cluster with real dump risk.
   //
-  // Bands (7.7.4):
-  //   < 30%:   "Well distributed ✓" — bonus, +5% trust
-  //   30–59%:  "Moderate" — info only, SAFE still possible
-  //   60–74%:  "Elevated" — warning, soft (concentration_light), max CAUTION
-  //   75–84%:  "High"     — critical, hard (concentration), DANGER floor
-  //   ≥ 85%:   "Extreme"  — critical, hard (concentration), heavy penalty
+  // FRESH tokens (no context OR < 30d OR < 5k holders):
+  //   < 20%:   bonus — exceptional clean launch
+  //   20–34%:  info, no block — early adopters spread
+  //   35–54%:  warning, soft (concentration_light), max CAUTION — cluster risk
+  //   55–74%:  critical, hard (concentration), DANGER — control risk
+  //   ≥ 75%:   critical, hard (concentration), DANGER/RUG — extreme
   //
-  // Penalty RETENTION rates:
+  // ESTABLISHED tokens (≥ 30d AND ≥ 5k holders):
+  //   < 25%:   bonus — institutional-quality distribution
+  //   25–44%:  info, no block — NORMAL, context note explains exchanges
+  //   45–64%:  warning, soft (concentration_light), max CAUTION — still notable
+  //   65–79%:  critical, hard (concentration), DANGER — even for established tokens
+  //   ≥ 80%:   critical, hard (concentration), DANGER/RUG — extreme
+  //
+  // Penalty RETENTION rates (same for both tiers):
   //   0.50 → trust ≈ 0.50 → score ≈ 840 (CAUTION)
   //   0.25 → trust ≈ 0.25 → score ≈ 500 (DANGER)
   //   0.10 → trust ≈ 0.10 → score ≈ 200 (DANGER/RUG)
+  const isEstablishedToken = !!(maturityContext &&
+    (maturityContext.holders ?? 0) >= 5_000 &&
+    (maturityContext.tokenAgeHours ?? 0) >= 30 * 24
+  );
   let top10ConcentrationBand: "none" | "moderate" | "soft" | "hard" = "none";
+  const t10pct = Math.round(top10Pct * 100);
 
-  if (top10Pct >= 0.85) {
-    flags.push(makeFlag(`Top 10 hold ${Math.round(top10Pct*100)}% — extreme concentration`, "critical", 0));
-    penalties.push(0.10); safeBlocked = true; top10ConcentrationBand = "hard";
-  } else if (top10Pct >= 0.75) {
-    flags.push(makeFlag(`Top 10 hold ${Math.round(top10Pct*100)}% — high concentration`, "critical", 0));
-    penalties.push(0.25); safeBlocked = true; top10ConcentrationBand = "hard";
-  } else if (top10Pct >= 0.60) {
-    flags.push(makeFlag(`Top 10 hold ${Math.round(top10Pct*100)}% — elevated concentration`, "warning", 0));
-    penalties.push(0.50); safeBlocked = true; top10ConcentrationBand = "soft";
-  } else if (top10Pct >= 0.30) {
-    flags.push(makeFlag(`Top 10 hold ${Math.round(top10Pct*100)}% — moderate concentration`, "info", 0));
-    top10ConcentrationBand = "moderate";
+  if (isEstablishedToken) {
+    // Established tier — looser thresholds, contextual labels
+    if (top10Pct >= 0.80) {
+      flags.push(makeFlag(`Top 10 hold ${t10pct}% — extreme concentration`, "critical", 0));
+      penalties.push(0.10); safeBlocked = true; top10ConcentrationBand = "hard";
+    } else if (top10Pct >= 0.65) {
+      flags.push(makeFlag(`Top 10 hold ${t10pct}% — high concentration`, "critical", 0));
+      penalties.push(0.25); safeBlocked = true; top10ConcentrationBand = "hard";
+    } else if (top10Pct >= 0.45) {
+      flags.push(makeFlag(`Top 10 hold ${t10pct}% — elevated · exchanges may be included`, "warning", 0));
+      penalties.push(0.50); safeBlocked = true; top10ConcentrationBand = "soft";
+    } else if (top10Pct >= 0.25) {
+      // Context note: explains to the user why a 36% top-10 on a 2-year-old
+      // token is NOT the same risk as 36% on a 3-hour token.
+      flags.push(makeFlag(`Top 10 hold ${t10pct}% — normal for established token · likely exchanges & long-term holders`, "info", 0));
+      top10ConcentrationBand = "moderate";
+    } else {
+      flags.push(makeFlag("Well distributed supply ✓", "bonus", 0));
+      trust = Math.min(1.0, trust * 1.05);
+    }
   } else {
-    flags.push(makeFlag("Well distributed supply ✓", "bonus", 0));
-    trust = Math.min(1.0, trust * 1.05);
+    // Fresh / unknown tier — strict thresholds
+    if (top10Pct >= 0.75) {
+      flags.push(makeFlag(`Top 10 hold ${t10pct}% — extreme concentration`, "critical", 0));
+      penalties.push(0.10); safeBlocked = true; top10ConcentrationBand = "hard";
+    } else if (top10Pct >= 0.55) {
+      flags.push(makeFlag(`Top 10 hold ${t10pct}% — high concentration · control risk`, "critical", 0));
+      penalties.push(0.25); safeBlocked = true; top10ConcentrationBand = "hard";
+    } else if (top10Pct >= 0.35) {
+      flags.push(makeFlag(`Top 10 hold ${t10pct}% — elevated concentration · cluster risk`, "warning", 0));
+      penalties.push(0.50); safeBlocked = true; top10ConcentrationBand = "soft";
+    } else if (top10Pct >= 0.20) {
+      flags.push(makeFlag(`Top 10 hold ${t10pct}% — moderate concentration`, "info", 0));
+      top10ConcentrationBand = "moderate";
+    } else {
+      flags.push(makeFlag("Well distributed supply ✓", "bonus", 0));
+      trust = Math.min(1.0, trust * 1.05);
+    }
   }
   trust = applyDiminishingPenalties(trust, penalties);
 
@@ -526,7 +561,10 @@ export function layerHelius(
   {
     const mcRug = maturityContext;
     const isBlueChipDistribution = (mcRug?.holders ?? 0) >= 50_000;
-    if (top10Pct > 0.80 && !isBlueChipDistribution) {
+    // Fresh threshold: > 75% (aligns with the 75% extreme band for fresh tokens)
+    // Established threshold: > 80% (aligns with the 80% extreme band for established tokens)
+    const forceRugThreshold = isEstablishedToken ? 0.80 : 0.75;
+    if (top10Pct > forceRugThreshold && !isBlueChipDistribution) {
       forceRug = true;
     }
   }

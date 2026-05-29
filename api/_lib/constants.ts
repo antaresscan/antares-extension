@@ -156,7 +156,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v23"; // 2026-05-29: remove top-1 single-wallet concentration flag entirely. Replace with top-10 distribution ladder. Verdict now based on collective distribution (top-10 ≥ 60% = elevated soft, ≥ 75% = high hard, ≥ 85% = extreme hard). Eliminates false positives on blue-chips where #1 holder is an exchange cold wallet (FARTCOIN 11%, WIF 12%).
+const ENGINE_VERSION_MANUAL = "v24"; // 2026-05-29: 2-tier top-10 concentration. Fresh tokens (<30d or <5k holders): 35%+ = soft CAUTION, 55%+ = DANGER, 75%+ = extreme. Established tokens (≥30d AND ≥5k holders): 25-44% = info (exchanges note), 45%+ = soft CAUTION, 65%+ = DANGER, 80%+ = extreme. Removes custodian-wallet false positives on blue-chips while staying strict on new launches.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.
@@ -236,13 +236,19 @@ export const LIQ_MEDIUM = 20000;        // <$20k = info
 // Wash trading
 export const WASH_VOL_LIQ_RATIO = 20;   // vol/liq > 20 = wash trading
 export const HIGH_VOL_LIQ_RATIO = 5;    // vol/liq > 5 = high ratio warning
-// Holder thresholds (Helius) — top-10 distribution bands (7.7.4+)
-// Top-1 thresholds removed; verdict now based on top-10 distribution only.
-export const TOP10_EXTREME_PCT  = 0.85;  // top 10 ≥ 85% = extreme  (critical, hard, forceRug potential)
-export const TOP10_HIGH_PCT     = 0.75;  // top 10 ≥ 75% = high     (critical, hard, DANGER floor)
-export const TOP10_ELEVATED_PCT = 0.60;  // top 10 ≥ 60% = elevated (warning, soft, max CAUTION)
-export const TOP10_MODERATE_PCT = 0.30;  // top 10 ≥ 30% = moderate (info, no block)
-export const TOP10_GOOD_PCT     = 0.30;  // top 10 < 30% = well distributed (bonus)
+// Holder thresholds (Helius) — top-10 distribution bands (7.7.5+)
+// Two tiers: FRESH (no context / <30d / <5k holders) vs ESTABLISHED (≥30d AND ≥5k).
+// FRESH:       extreme ≥75%, high ≥55%, elevated ≥35%, moderate ≥20%, bonus <20%
+// ESTABLISHED: extreme ≥80%, high ≥65%, elevated ≥45%, moderate ≥25%, bonus <25%
+export const TOP10_FRESH_EXTREME_PCT      = 0.75;
+export const TOP10_FRESH_HIGH_PCT         = 0.55;
+export const TOP10_FRESH_ELEVATED_PCT     = 0.35;
+export const TOP10_FRESH_MODERATE_PCT     = 0.20;
+export const TOP10_EST_EXTREME_PCT        = 0.80;
+export const TOP10_EST_HIGH_PCT           = 0.65;
+export const TOP10_EST_ELEVATED_PCT       = 0.45;
+export const TOP10_EST_MODERATE_PCT       = 0.25;
+export const TOP10_GOOD_PCT               = 0.25;  // bonus threshold (established tier)
 // Solscan holder counts
 export const HOLDERS_CRITICAL = 15;      // <15 = very few
 export const HOLDERS_LOW = 50;           // <50 = low
@@ -307,13 +313,15 @@ export const API_TIMEOUT_HELIUS = 6000;
 //
 // 7.7.4 bump (2026-05-29): remove top-1 single-wallet concentration flag
 // entirely. Replace with top-10 distribution ladder in layerHelius.
-// A single large wallet is often an exchange cold wallet — misleading
-// on blue-chips. Top-10 distribution is harder to game, captures
-// coordinated multi-wallet exits, and avoids penalising custodial
-// whales. New bands: <30% bonus · 30-59% info · 60-74% soft-block
-// (concentration_light) · 75-84% hard (concentration) · ≥85% extreme.
-// Also removes "Top 1 holder > 20%" from layerRugCheck.
-export const SCORING_VERSION = "7.7.4";
+//
+// 7.7.5 bump (2026-05-29): 2-tier concentration system.
+// Fresh tokens (<30d OR <5k holders): 20%+ moderate, 35%+ soft CAUTION,
+//   55%+ hard DANGER, 75%+ extreme DANGER/RUG.
+// Established tokens (≥30d AND ≥5k holders): 25-44% info with exchange
+//   context note (SAFE possible), 45%+ soft CAUTION, 65%+ hard DANGER,
+//   80%+ extreme DANGER/RUG. Contextual labels in flag and Sniper Map
+//   explain that top wallets likely include exchanges & long-term holders.
+export const SCORING_VERSION = "7.7.5";
 
 // ── SOFT REASONS (safe gate unlock) ───────────────────────────
 // A reason listed here CAN be unlocked by applySafeGateOverride when
