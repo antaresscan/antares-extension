@@ -515,13 +515,20 @@ export function layerHelius(
   //   penalty=0.35 → helius trust ≈ 0.35 → geometric score ≈ 500 (DANGER)
   //   penalty=0.20 → helius trust ≈ 0.20 → geometric score ≈ 350 (DANGER/RUG)
   //   penalty=0.08 → helius trust ≈ 0.08 → geometric score ≈ 100 (RUG)
+  // Helper: top-10 context suffix appended to top-1 flag labels so users
+  // see the full picture in one line rather than hunting across two flags.
+  const top10Suffix = top10Pct > 0 ? ` · top 10 hold ${Math.round(top10Pct*100)}%` : "";
+
   let top1ConcentrationBand: string = "none";
-  if (top1Pct > 0.3) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "critical", 0)); penalties.push(0.08); safeBlocked = true; top1ConcentrationBand = "extreme"; }
-  else if (top1Pct > 0.2) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "critical", 0)); penalties.push(0.20); safeBlocked = true; top1ConcentrationBand = "heavy"; }
-  else if (top1Pct > 0.15) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply`, "critical", 0)); penalties.push(0.35); safeBlocked = true; top1ConcentrationBand = "heavy"; }
-  else if (top1Pct > 0.1) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply — elevated concentration`, "warning", 0)); penalties.push(0.50); safeBlocked = true; top1ConcentrationBand = "light"; }
+  if (top1Pct > 0.3) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply${top10Suffix}`, "critical", 0)); penalties.push(0.08); safeBlocked = true; top1ConcentrationBand = "extreme"; }
+  else if (top1Pct > 0.2) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply${top10Suffix}`, "critical", 0)); penalties.push(0.20); safeBlocked = true; top1ConcentrationBand = "heavy"; }
+  else if (top1Pct > 0.15) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply${top10Suffix}`, "critical", 0)); penalties.push(0.35); safeBlocked = true; top1ConcentrationBand = "heavy"; }
+  else if (top1Pct > 0.1) { flags.push(makeFlag(`Single wallet holds ${Math.round(top1Pct*100)}% of supply${top10Suffix} — elevated concentration`, "warning", 0)); penalties.push(0.50); safeBlocked = true; top1ConcentrationBand = "light"; }
   if (top10Pct > 0.8) { flags.push(makeFlag(`Top 10 wallets hold ${Math.round(top10Pct*100)}% of supply`, "critical", 0)); penalties.push(0.30); safeBlocked = true; }
   else if (top10Pct > 0.6) { flags.push(makeFlag(`Top 10 wallets hold ${Math.round(top10Pct*100)}% of supply`, "warning", 0)); penalties.push(0.45); safeBlocked = true; }
+  // 30-59%: not alarming but worth surfacing so users understand the distribution.
+  // No penalty, no safeBlock — informational context only.
+  else if (top10Pct >= 0.3 && top1Pct <= 0.1) { flags.push(makeFlag(`Top 10 wallets hold ${Math.round(top10Pct*100)}% of supply — moderate concentration`, "info", 0)); }
   else if (top10Pct < 0.3) { flags.push(makeFlag("Well distributed supply ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.05); }
   trust = applyDiminishingPenalties(trust, penalties);
 
