@@ -156,7 +156,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v24"; // 2026-05-29: 2-tier top-10 concentration. Fresh tokens (<30d or <5k holders): 35%+ = soft CAUTION, 55%+ = DANGER, 75%+ = extreme. Established tokens (≥30d AND ≥5k holders): 25-44% = info (exchanges note), 45%+ = soft CAUTION, 65%+ = DANGER, 80%+ = extreme. Removes custodian-wallet false positives on blue-chips while staying strict on new launches.
+const ENGINE_VERSION_MANUAL = "v25"; // 2026-05-30: fix established-tier holder fallback. isEstablishedToken now requires age >= 30d AND (holders >= 5k OR age >= 60d). Prevents blue-chips (FARTCOIN, WIF) from falling into fresh tier -> CAUTION when GoPlus + Solscan are simultaneously down and holders collapses to top20NonZero = 20.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.
@@ -321,7 +321,12 @@ export const API_TIMEOUT_HELIUS = 6000;
 //   context note (SAFE possible), 45%+ soft CAUTION, 65%+ hard DANGER,
 //   80%+ extreme DANGER/RUG. Contextual labels in flag and Sniper Map
 //   explain that top wallets likely include exchanges & long-term holders.
-export const SCORING_VERSION = "7.7.5";
+//
+// 7.7.6 bump (2026-05-30): fix established-tier detection when holder-count
+//   sources are simultaneously unavailable. isEstablishedToken now accepts
+//   age >= 60d as an alternative to verified holders >= 5k — blue-chips
+//   like FARTCOIN were landing CAUTION/fresh-tier when GoPlus was down.
+export const SCORING_VERSION = "7.7.6";
 
 // ── SOFT REASONS (safe gate unlock) ───────────────────────────
 // A reason listed here CAN be unlocked by applySafeGateOverride when

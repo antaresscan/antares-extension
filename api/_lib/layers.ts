@@ -472,34 +472,42 @@ export function layerHelius(
   const top1Pct = top1Amount / totalSupplyUi;
   const top10Amount = accounts.slice(0, 10).reduce((s, h) => s + asNumber(h.uiAmount), 0);
   const top10Pct = top10Amount / totalSupplyUi;
-  // ── Top-10 distribution ladder — 2 tiers (7.7.5) ────────────────────────
-  // Tier is determined by token maturity: an established token (≥ 30d AND
-  // ≥ 5k holders) gets looser thresholds because its top-10 likely includes
-  // exchange cold wallets, custodians, and diamond-hand long-term holders —
-  // not a coordinated dump group. A fresh/unknown token gets strict thresholds
-  // because the same % = early buyers / bundler cluster with real dump risk.
+  // ── Top-10 distribution ladder — 2 tiers (7.7.6) ────────────────────────
+  // Tier is determined by token maturity. An established token gets looser
+  // thresholds because its top-10 likely includes exchange cold wallets and
+  // long-term holders — not a coordinated dump group.
   //
-  // FRESH tokens (no context OR < 30d OR < 5k holders):
+  // FRESH tokens (no context OR < 30d OR neither condition below):
   //   < 20%:   bonus — exceptional clean launch
   //   20–34%:  info, no block — early adopters spread
   //   35–54%:  warning, soft (concentration_light), max CAUTION — cluster risk
   //   55–74%:  critical, hard (concentration), DANGER — control risk
   //   ≥ 75%:   critical, hard (concentration), DANGER/RUG — extreme
   //
-  // ESTABLISHED tokens (≥ 30d AND ≥ 5k holders):
+  // ESTABLISHED tokens (≥ 30d AND (≥ 5k holders OR ≥ 60d)):
   //   < 25%:   bonus — institutional-quality distribution
   //   25–44%:  info, no block — NORMAL, context note explains exchanges
   //   45–64%:  warning, soft (concentration_light), max CAUTION — still notable
   //   65–79%:  critical, hard (concentration), DANGER — even for established tokens
   //   ≥ 80%:   critical, hard (concentration), DANGER/RUG — extreme
   //
-  // Penalty RETENTION rates (same for both tiers):
-  //   0.50 → trust ≈ 0.50 → score ≈ 840 (CAUTION)
-  //   0.25 → trust ≈ 0.25 → score ≈ 500 (DANGER)
-  //   0.10 → trust ≈ 0.10 → score ≈ 200 (DANGER/RUG)
+  // Bug-fix note (7.7.6): the previous check required BOTH holders >= 5k AND
+  // tokenAgeHours >= 720. When GoPlus + Solscan fail simultaneously, `holders`
+  // collapses to top20NonZero = 20 (just the Helius largest-accounts list).
+  // A 2-year-old token would therefore fall into the fresh tier and emit
+  // "cluster risk" instead of the exchange-context label — FARTCOIN landed
+  // CAUTION instead of SAFE in prod whenever GoPlus was down.
+  // Fix: require age ≥ 30d always, then accept EITHER verified holders ≥ 5k
+  // OR age ≥ 180d (6 months). The 180d threshold is deliberately conservative:
+  // it protects 6-month+ blue-chips (FARTCOIN ~730d, WIF ~600d) from data-gap
+  // misclassification while keeping shorter-lived tokens (RIV 67d, typical
+  // rugs 30-90d) in the strict fresh tier even when holder sources are down.
   const isEstablishedToken = !!(maturityContext &&
-    (maturityContext.holders ?? 0) >= 5_000 &&
-    (maturityContext.tokenAgeHours ?? 0) >= 30 * 24
+    (maturityContext.tokenAgeHours ?? 0) >= 30 * 24 &&
+    (
+      (maturityContext.holders ?? 0) >= 5_000 ||
+      (maturityContext.tokenAgeHours ?? 0) >= 180 * 24
+    )
   );
   let top10ConcentrationBand: "none" | "moderate" | "soft" | "hard" = "none";
   const t10pct = Math.round(top10Pct * 100);
