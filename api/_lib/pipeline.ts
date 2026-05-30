@@ -178,12 +178,13 @@ export function determineVerdict(input: VerdictInput): Verdict {
     return "DANGER";
   }
 
-  // HARDENED: SAFE requires score >= 900, at least 5 sources, AND at most 1 visible
-  // warning/critical flag. Two or more flags means something is wrong — even if each
-  // is individually minor, the combination disqualifies SAFE. (VIRL-class case: vol/liq
-  // warning + LP unverified = 2 flags, was scoring SAFE at 1000/1000.)
+  // SAFE requires ZERO warning/critical flags.
+  // If Antares flagged any problem — even a single warning — the verdict
+  // cannot be SAFE. Showing "SAFE" alongside "1 flag detected" is
+  // contradictory and destroys credibility: either we detected a problem
+  // (→ CAUTION at minimum) or we didn't (→ SAFE). Never both.
   // Back-compat: warningFlagsCount undefined (old callers) → treated as 0 → SAFE allowed.
-  if (input.score >= 900 && input.sourcesUsedCount >= 5 && (input.warningFlagsCount ?? 0) <= 1) return "SAFE";
+  if (input.score >= 900 && input.sourcesUsedCount >= 5 && (input.warningFlagsCount ?? 0) === 0) return "SAFE";
 
   // "Clean blue-chip" path: when there are LITERALLY ZERO token-side
   // warning/critical flags AND the score is still reasonable (>= 750),

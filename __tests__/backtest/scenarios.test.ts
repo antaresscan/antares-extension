@@ -128,8 +128,11 @@ describe("verdict bands (no safe block)", () => {
     expect(verdictWith({ score: 899, warningFlagsCount: 2 })).toBe("CAUTION")
   })
 
-  it("1 warning flag + score 900 → SAFE (single minor flag still allowed)", () => {
-    expect(verdictWith({ score: 900, warningFlagsCount: 1 })).toBe("SAFE")
+  it("1 warning flag + score 900 → CAUTION (any flag = no SAFE)", () => {
+    // 7.7.8: ANY detected warning/critical flag caps verdict at CAUTION.
+    // "SAFE + 1 flag detected" is contradictory — if we flagged a problem,
+    // SAFE is not credible regardless of the score.
+    expect(verdictWith({ score: 900, warningFlagsCount: 1 })).toBe("CAUTION")
   })
 
   it("0 flags + score 900 → SAFE", () => {
