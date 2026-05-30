@@ -156,7 +156,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v26"; // 2026-05-30: LP risk matrix — "1-5%" and "5-15%" at "14-90d" now info+safeBlock:false instead of warning+safeBlock:true. A 3-7% LP on a 14-90d token is not a CAUTION trigger (CATCOIN 7.6%, SPCX 3.1% false-positive cases). Only LP>=15% or age<14d keeps safeBlock.
+const ENGINE_VERSION_MANUAL = "v27"; // 2026-05-30: LP risk matrix split at 10%. LP<10% NEVER safeBlocks (any age). LP 10-15% safeBlocks only on fresh pairs (<14d). Adds "5-10%" bucket between "1-5%" and former "5-15%" for clean 10% threshold.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.
@@ -326,11 +326,12 @@ export const API_TIMEOUT_HELIUS = 6000;
 //   sources are simultaneously unavailable. isEstablishedToken now accepts
 //   age >= 60d as an alternative to verified holders >= 5k — blue-chips
 //   like FARTCOIN were landing CAUTION/fresh-tier when GoPlus was down.
-// 7.7.7 bump (2026-05-30): LP risk matrix fix. "1-5%" and "5-15%" LP
-//   buckets at "14-90d" age now info + safeBlock:false (was warning +
-//   safeBlock:true). A 3-15% LP on a 14-90d token with an otherwise clean
-//   profile no longer blocks SAFE — the flag appears in Context & Notes.
-//   Only LP >= 15% or age < 14d retains safeBlock.
+// 7.7.7 bump (2026-05-30): LP risk matrix split at 10% threshold.
+//   LP < 10% (buckets "<1%", "1-5%", "5-10%"): NEVER safeBlock regardless
+//   of age. Price impact on full drain < 20% — survivable, not rug-zero.
+//   LP 10-15% (new "10-15%" bucket): safeBlock only on fresh pairs (<14d).
+//   After 2 weeks the time-based trust outweighs the LP risk.
+//   LP >= 15%: unchanged (existing safeBlock calibration retained).
 export const SCORING_VERSION = "7.7.7";
 
 // ── SOFT REASONS (safe gate unlock) ───────────────────────────
