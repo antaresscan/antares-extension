@@ -142,19 +142,27 @@ const MATRIX: Record<Exclude<LpPctBucket, "unknown">, Record<Exclude<LpAgeBucket
     ">=1y":   { severity: "info",     penalty: 1.00, safeBlock: false, forceRug: false, estimatedImpact: "<5%" },
   },
   "1-5%": {
-    // < 90 days: even 1-5 % LP can drop the price 5-15 %. Not enough
-    // time-based trust to award SAFE — cap at CAUTION. (SAOS-class case:
-    // 14d-old token with 4.85 % LP unlocked was scoring SAFE.)
+    // < 14 days: no track record yet — keep safeBlock so a 5-day-old token
+    // with 4% LP can't trivially score SAFE.
     "<14d":   { severity: "warning",  penalty: 0.92, safeBlock: true,  forceRug: false, estimatedImpact: "-5% to -15%" },
-    "14-90d": { severity: "warning",  penalty: 0.95, safeBlock: true,  forceRug: false, estimatedImpact: "-5% to -15%" },
-    // ≥ 90 days: 1-5 % LP with that much operating history is genuinely
-    // negligible rug capacity — SAFE is acceptable.
+    // 14-90 days: 1-5% LP with 2+ weeks of operation is genuinely negligible.
+    // Even a full drain would cause a <15% price drop — absorbed by the market.
+    // Showing as Context & Notes (info) instead of Warnings; does NOT block SAFE.
+    // Fix: was warning+safeBlock=true → caused CAUTION on clean 30-60d tokens
+    // like SPCX (3.1% LP) where the pump was the real reason, not the LP.
+    "14-90d": { severity: "info",     penalty: 0.96, safeBlock: false, forceRug: false, estimatedImpact: "-5% to -15%" },
     "90d-1y": { severity: "info",     penalty: 0.98, safeBlock: false, forceRug: false, estimatedImpact: "-5% to -15%" },
     ">=1y":   { severity: "info",     penalty: 0.99, safeBlock: false, forceRug: false, estimatedImpact: "-5% to -15%" },
   },
   "5-15%": {
+    // < 14 days: 10% LP on a very fresh token is notable — keep safeBlock.
     "<14d":   { severity: "warning",  penalty: 0.85, safeBlock: true,  forceRug: false, estimatedImpact: "-20% to -50%" },
-    "14-90d": { severity: "warning",  penalty: 0.92, safeBlock: true,  forceRug: false, estimatedImpact: "-20% to -50%" },
+    // 14-90 days: 5-15% LP with 2+ weeks of history is a contextual note,
+    // not a CAUTION trigger. A full drain would cause a meaningful but
+    // survivable 20-50% drop — worth showing but not verdict-blocking.
+    // Fix: was warning+safeBlock=true → caused false CAUTION on tokens like
+    // CATCOIN (7.6% LP, 35 days old) with otherwise clean profiles.
+    "14-90d": { severity: "info",     penalty: 0.94, safeBlock: false, forceRug: false, estimatedImpact: "-20% to -50%" },
     "90d-1y": { severity: "info",     penalty: 0.95, safeBlock: false, forceRug: false, estimatedImpact: "-20% to -50%" },
     ">=1y":   { severity: "info",     penalty: 0.97, safeBlock: false, forceRug: false, estimatedImpact: "-20% to -50%" },
   },
