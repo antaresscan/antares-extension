@@ -104,23 +104,28 @@ describe("getLpRiskBucket — matrix cells", () => {
     }
   });
 
-  // ── LOW LP (1-5%) — mature tokens pass, fresh still warns ──────
-  it("LP 3% × fresh (<14d) → warning + safeBlock=true (SAOS/VIRL fix)", () => {
-    // 1-5% LP on a token < 14 days old blocks SAFE — not enough time-based trust
-    // even if the absolute LP amount is small. See lp-risk-matrix.ts matrix cell.
+  // ── LOW LP (1-5%) — LP < 10% NEVER safeBlocks (7.7.7 rule) ────
+  it("LP 3% × fresh (<14d) → warning but safeBlock=false (LP<10% never blocks)", () => {
+    // 7.7.7: LP < 10% never blocks SAFE regardless of age. The flag is still
+    // warning severity on fresh tokens (visible, score-penalised) but the
+    // verdict is NOT capped. A 3% LP drain causes <15% price impact — not
+    // a rug-zero event even on a brand-new token.
     const b = getLpRiskBucket(0.03, 10 * 24);
     expect(b.pctBucket).toBe("1-5%");
     expect(b.ageBucket).toBe("<14d");
     expect(b.severity).toBe("warning");
-    expect(b.safeBlock).toBe(true);
+    expect(b.safeBlock).toBe(false);  // ← changed: LP < 10% never blocks
   });
 
-  it("LP 3% × 1y+ → info + no safeBlock + label mentions exact pct", () => {
+  it("LP 3% × 1y+ → info + no safeBlock + label shows pct only (no risk suffix)", () => {
+    // 7.7.7: labels for LP < 10% buckets show only the percentage — no
+    // "limited rug impact" suffix (that text was confusing on SAFE tokens).
     const b = getLpRiskBucket(0.03, 400 * 24);
     expect(b.severity).toBe("info");
     expect(b.safeBlock).toBe(false);
     expect(b.flagLabel).toMatch(/3\.0% of supply/);
-    expect(b.flagLabel).toMatch(/limited rug impact/i);
+    // No risk-tier suffix on buckets <10%
+    expect(b.flagLabel).not.toMatch(/limited rug impact/i);
   });
 
   // ── MODERATE LP (5-15%) — fresh blocks, mature passes ─────────
