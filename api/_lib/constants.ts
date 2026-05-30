@@ -156,7 +156,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v25"; // 2026-05-30: fix established-tier holder fallback. isEstablishedToken now requires age >= 30d AND (holders >= 5k OR age >= 60d). Prevents blue-chips (FARTCOIN, WIF) from falling into fresh tier -> CAUTION when GoPlus + Solscan are simultaneously down and holders collapses to top20NonZero = 20.
+const ENGINE_VERSION_MANUAL = "v26"; // 2026-05-30: LP risk matrix — "1-5%" and "5-15%" at "14-90d" now info+safeBlock:false instead of warning+safeBlock:true. A 3-7% LP on a 14-90d token is not a CAUTION trigger (CATCOIN 7.6%, SPCX 3.1% false-positive cases). Only LP>=15% or age<14d keeps safeBlock.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.
@@ -326,7 +326,12 @@ export const API_TIMEOUT_HELIUS = 6000;
 //   sources are simultaneously unavailable. isEstablishedToken now accepts
 //   age >= 60d as an alternative to verified holders >= 5k — blue-chips
 //   like FARTCOIN were landing CAUTION/fresh-tier when GoPlus was down.
-export const SCORING_VERSION = "7.7.6";
+// 7.7.7 bump (2026-05-30): LP risk matrix fix. "1-5%" and "5-15%" LP
+//   buckets at "14-90d" age now info + safeBlock:false (was warning +
+//   safeBlock:true). A 3-15% LP on a 14-90d token with an otherwise clean
+//   profile no longer blocks SAFE — the flag appears in Context & Notes.
+//   Only LP >= 15% or age < 14d retains safeBlock.
+export const SCORING_VERSION = "7.7.7";
 
 // ── SOFT REASONS (safe gate unlock) ───────────────────────────
 // A reason listed here CAN be unlocked by applySafeGateOverride when
