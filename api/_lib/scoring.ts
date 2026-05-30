@@ -93,6 +93,10 @@ export const HARD_BLOCK_PATTERNS: Array<[RegExp, SafeBlockedReason]> = [
   //   → Caught by /(high|extreme) concentration/.
   [/top 10 hold \d+% — elevated\b/i, "concentration_light"],
   [/top 10 hold \d+% — (high|extreme) concentration/i, "concentration"],
+  // Single-wallet safety net (7.7.11): a single wallet >40% routes to the
+  // hard "concentration" reason → DANGER/RUG. Catches the HAWK-class case
+  // (one giant wallet + moderate top-10) the top-10 ladder alone misses.
+  [/single wallet holds \d+% — (high|extreme) concentration/i, "concentration"],
 ];
 
 export function classifySafeBlockedReasons(layers: LayerResult[]): SafeBlockedReason[] {

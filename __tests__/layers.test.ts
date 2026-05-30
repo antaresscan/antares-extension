@@ -576,6 +576,56 @@ describe("layerHelius", () => {
     expect(result.trust).toBeLessThan(0.40);
   });
 
+  // ── SINGLE-WALLET SAFETY NET (7.7.11) ─────────────────────────────────────
+  it("single-wallet net: top-1 44% + top-10 54% (HAWK-class) → hard concentration, DANGER", () => {
+    // One 44% wallet, rest tiny → top-10 ≈ 54% (established "elevated" = soft,
+    // which alone would only be CAUTION). The single-wallet net catches the
+    // 44% wallet and routes it to hard concentration. This is the exact gap
+    // the top-10-only system missed on the real Hawk Tuah token.
+    const holders: HeliusHolder[] = [
+      { address: "dev", owner: "dev", uiAmount: 44_000 }, // 44%
+      ...Array.from({ length: 9 }, (_, i) => ({ address: `t${i+2}`, owner: `t${i+2}`, uiAmount: 1_100 })), // +9.9%
+      ...Array.from({ length: 90 }, (_, i) => ({ address: `r${i}`, owner: `r${i}`, uiAmount: 500 })),
+    ];
+    const ctx = { holders: 7_430, liquidity: 70_000, tokenAgeHours: 600 * 24, mintAuthority: false, freezeAuthority: false, honeypot: false, lpBurned: true };
+    // top-10 = (44000 + 9×1100)/100000 = 53.9% → established elevated (soft)
+    const result = layerHelius(holders, 100_000, ctx);
+    expect(result.flags.some(f => /single wallet holds 44% — high concentration/i.test(f.label))).toBe(true);
+    expect(result.flags.some(f => /single wallet/i.test(f.label) && f.severity === "critical")).toBe(true);
+    expect(result.safeBlocked).toBe(true);
+    expect(result.forceRug).toBe(false); // 44% < 55% → DANGER, not RUG
+  });
+
+  it("single-wallet net: top-1 60% established non-blue-chip → forceRug (RUG)", () => {
+    const holders: HeliusHolder[] = [
+      { address: "dev", owner: "dev", uiAmount: 60_000 }, // 60%
+      ...Array.from({ length: 9 }, (_, i) => ({ address: `t${i}`, owner: `t${i}`, uiAmount: 100 })),
+      ...Array.from({ length: 90 }, (_, i) => ({ address: `r${i}`, owner: `r${i}`, uiAmount: 400 })),
+    ];
+    const ctx = { holders: 8_000, liquidity: 100_000, tokenAgeHours: 400 * 24, mintAuthority: false, freezeAuthority: false, honeypot: false, lpBurned: true };
+    // top-10 = (60000 + 9×100)/100000 = 60.9% → established elevated (soft) → net not guarded
+    const result = layerHelius(holders, 100_000, ctx);
+    expect(result.flags.some(f => /single wallet holds 60% — extreme concentration/i.test(f.label))).toBe(true);
+    expect(result.forceRug).toBe(true);   // >55% + non-blue-chip
+    expect(result.safeBlocked).toBe(true);
+  });
+
+  it("single-wallet net does NOT fire on a 35% exchange wallet (blue-chip protection)", () => {
+    // MEW-style: top-1 35% (exchange cold wallet) on a 164k-holder blue-chip.
+    // 35% < 40% threshold → the net stays silent. The token is handled by the
+    // top-10 ladder, NOT hard-blocked by a single-wallet rule. This is the
+    // false-positive the 7.7.4 top-1 removal eliminated — it must stay gone.
+    const holders: HeliusHolder[] = [
+      { address: "exch", owner: "exch", uiAmount: 35_000 }, // 35% exchange
+      ...Array.from({ length: 9 }, (_, i) => ({ address: `t${i}`, owner: `t${i}`, uiAmount: 2_800 })),
+      ...Array.from({ length: 90 }, (_, i) => ({ address: `r${i}`, owner: `r${i}`, uiAmount: 444 })),
+    ];
+    const ctx = { holders: 164_000, liquidity: 9_000_000, tokenAgeHours: 760 * 24, mintAuthority: false, freezeAuthority: false, honeypot: false, lpBurned: true };
+    const result = layerHelius(holders, 100_000, ctx);
+    expect(result.flags.some(f => /single wallet holds/i.test(f.label))).toBe(false);
+    expect(result.forceRug).toBe(false);
+  });
+
   it("mature dampening: top-10=65% (established, elevated band) does not get the trust floor", () => {
     // top-10 ≈ 65% → established tier: 45-64% = elevated (soft band).
     // concentrationAllowsLift=false (band is "soft", not "none"/"moderate")
