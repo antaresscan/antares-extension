@@ -156,7 +156,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v28"; // 2026-05-30: SAFE requires zero warning/critical flags. ANY detected flag (warning or critical) = CAUTION max. Previously SAFE was possible with 1 warning flag — showing "SAFE + 1 flag detected" was contradictory and not credible.
+const ENGINE_VERSION_MANUAL = "v29"; // 2026-05-30: 4 flags demoted warning→info: #8 Low 5m txns vs mcap, #15 Metadata mutable, #23 Trading cooldown, #53 LP 1-10% on fresh (<14d). These alone do not justify CAUTION verdict.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.
@@ -333,7 +333,9 @@ export const API_TIMEOUT_HELIUS = 6000;
 //   After 2 weeks the time-based trust outweighs the LP risk.
 //   LP >= 15%: unchanged (existing safeBlock calibration retained).
 // 7.7.8 bump: SAFE requires zero warning/critical flags. ANY flag = CAUTION max.
-export const SCORING_VERSION = "7.7.8";
+// 7.7.9 bump: 4 flags demoted warning→info: Low 5m txns, Metadata mutable,
+//   Trading cooldown, LP 1-10% on fresh tokens. These alone do not justify CAUTION.
+export const SCORING_VERSION = "7.7.9";
 
 // ── SOFT REASONS (safe gate unlock) ───────────────────────────
 // A reason listed here CAN be unlocked by applySafeGateOverride when

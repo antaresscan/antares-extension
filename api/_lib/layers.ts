@@ -113,7 +113,7 @@ export function layerDexScreener(
     penalties.push(0.55); safeBlocked = true;
   }
   if (!hasWebsite && !hasTwitter && !hasTelegram) { flags.push(makeFlag("No website / Twitter / Telegram — high rug risk", "critical", 0)); penalties.push(0.60); safeBlocked = true; }
-  if (txns5m < 5 && mc > 50000 && ageMinutes < 1440) { flags.push(makeFlag("Low 5m transactions vs market cap", "warning", 0)); penalties.push(0.88); }
+  if (txns5m < 5 && mc > 50000 && ageMinutes < 1440) { flags.push(makeFlag("Low 5m transactions vs market cap", "info", 0)); penalties.push(0.92); }
   if ((sells5m === 0 && buys5m > 0 && txns5m > 5) || (sells5m > 0 && buys5m > sells5m * 5)) { flags.push(makeFlag("Buy/sell imbalance (coordinated pump)", "warning", 0)); penalties.push(0.85); }
   if (pc24 < -80) {
     flags.push(makeFlag("Brutal dump 24h (-80%)", "critical", 0));
@@ -277,8 +277,8 @@ export function layerRugCheck(
         }
     }
     if (rugData.metaMutable === true) {
-        flags.push(makeFlag("Metadata mutable", "warning", 0));
-        penalties.push(0.82);
+        flags.push(makeFlag("Metadata mutable", "info", 0));
+        penalties.push(0.90);
     }
 const top10 = asNumber(rugData?.topHolders?.top10Percentage);
   // Top-1 holder check removed (7.7.4) — replaced by top-10 distribution in layerHelius.
@@ -364,7 +364,7 @@ export function layerGoPlus(
   if (gp("is_mintable")) { flags.push(makeFlag("Token is mintable", "warning", 0)); penalties.push(0.60); }
   if (gp("slippage_modifiable")) { flags.push(makeFlag("Slippage/tax modifiable", "warning", 0)); penalties.push(0.75); }
   if (gp("is_anti_whale_modifiable")) { flags.push(makeFlag("Anti-whale rules modifiable", "warning", 0)); penalties.push(0.80); }
-  if (gp("trading_cooldown")) { flags.push(makeFlag("Trading cooldown enabled", "warning", 0)); penalties.push(0.80); }
+  if (gp("trading_cooldown")) { flags.push(makeFlag("Trading cooldown enabled", "info", 0)); penalties.push(0.90); }
   if (gp("is_whitelisted")) { flags.push(makeFlag("Whitelist system detected", "warning", 0)); penalties.push(0.80); }
 
           // Fix(LP_GOPLUS): LP burn/lock detection using GoPlus dex[].burn_percent
