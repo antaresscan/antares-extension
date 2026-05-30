@@ -131,14 +131,30 @@ export async function releaseScanLock(ca: string): Promise<void> {
 export async function waitForCachedResult<T extends { aiSummary?: unknown }>(
   ca: string,
   requestId: string,
-  { timeoutMs = 18000, intervalMs = 300 }: { timeoutMs?: number; intervalMs?: number } = {},
+  { timeoutMs = 18000, intervalMs = 250, maxIntervalMs = 900 }:
+    { timeoutMs?: number; intervalMs?: number; maxIntervalMs?: number } = {},
 ): Promise<T | null> {
   if (!scanCacheRedis) return null;
   const deadline = Date.now() + timeoutMs;
+  let attempt = 0;
   while (Date.now() < deadline) {
-    await new Promise((r) => setTimeout(r, intervalMs));
+    // Jittered backoff — critical for extreme stampedes (1000+ waiters on
+    // ONE token). Two properties:
+    //   • GROWTH: the interval widens each attempt (capped at maxIntervalMs)
+    //     so early polls stay snappy for fast scans, while a long-running
+    //     holder doesn't get hammered. Cuts total polls ~2× vs a fixed tick.
+    //   • JITTER: a random offset de-synchronizes the waiters so 1000 of
+    //     them don't all hit Redis on the same 250ms boundary (which would
+    //     produce 1000-command bursts). Spreads the GET load smoothly.
+    // Worst case Redis is still overwhelmed → getCachedResult fails open
+    // (returns null) → the waiter keeps trying, then falls back to its own
+    // scan on timeout. Never a crash.
+    const grow = Math.min(maxIntervalMs, intervalMs * (1 + attempt * 0.2));
+    const wait = grow + Math.random() * 120;
+    await new Promise((r) => setTimeout(r, wait));
     const r = await getCachedResult<T>(ca, requestId);
     if (r && r.aiSummary) return r;
+    attempt++;
   }
   return null;
 }
