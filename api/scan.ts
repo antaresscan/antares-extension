@@ -43,7 +43,7 @@ import { evaluatePostLayerFlags, applySafeGateOverride, applyEstablishedBonus, d
 import { setCorsHeaders, getClientIp, getInstallId, checkRateLimit, validateCA, initRateLimiters } from "./_lib/middleware";
 import { initQuota, checkDailyQuota, setQuotaHeaders, secondsUntilReset } from "./_lib/quota";
 import { initUserStorage, pushScanHistory, resolveTierAndBypass } from "./_lib/user";
-import { initCache, getCachedResult, setCachedResult, setShortCachedResult } from "./_lib/cache";
+import { initCache, getCachedResult, setCachedResult, setShortCachedResult, acquireScanLock, releaseScanLock, waitForCachedResult } from "./_lib/cache";
 import { initSentry, captureError } from "./_lib/sentry";
 import { generateAISummary } from "./_lib/ai-summary";
 
@@ -178,6 +178,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.json(cached);
   }
 
+  // ─── Single-flight coalescing (cache-stampede protection) ────────────
+  // Cache miss. When a token trends, many users hit the same uncached CA
+  // inside the ~10s cold-scan window. Without coordination each one runs
+  // its own full cold scan → N× upstream quota burned + inconsistent
+  // verdicts (degraded scans resolve different source subsets). Instead:
+  // the first miss wins the lock and runs THE scan; everyone else waits
+  // for it to land in the cache and reads the identical result.
+  //
+  // fresh=1 bypasses coalescing — the manual refresh button must always
+  // trigger a real scan. Fail-open throughout: any Redis hiccup → scan.
+  let holdsLock = false;
+  if (!fresh) {
+    holdsLock = await acquireScanLock(ca);
+    if (!holdsLock) {
+      const coalesced = await waitForCachedResult<ScanResult>(ca, requestId);
+      if (coalesced && coalesced.aiSummary) {
+        logger.metric("scan.coalesced", {
+          requestId,
+          mint: ca,
+          verdict: coalesced.risk,
+          score: coalesced.score,
+          latencyMs: Date.now() - startTime,
+        });
+        return res.json(coalesced);
+      }
+      // Lock holder didn't finish within the wait window (rare: slow scan
+      // or crash). Fall through and scan ourselves with whatever budget
+      // remains — runAnalysis self-bounds via remainingMs(), so this can't
+      // exceed the function's maxDuration.
+    }
+  }
+
   const timeoutPromise = new Promise<never>((_, reject) =>
     setTimeout(() => reject(new Error("Global timeout")), GLOBAL_TIMEOUT_MS)
   );
@@ -191,6 +223,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     captureError(e, { endpoint: "scan", requestId, ca });
     return apiError(res, 500, "Unexpected error.");
+  } finally {
+    // Always release the lock — even on error/timeout — so the next scan
+    // of this CA isn't blocked. TTL expiry is only the crash backstop.
+    if (holdsLock) void releaseScanLock(ca);
   }
 }
 
