@@ -156,7 +156,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v30"; // 2026-05-30: "Pumped +N% in 24h" mature pump flag — 100-200% tier promoted info→warning+safeBlock (was info-only). Both tiers now warning, "(blue-chip)" suffix removed from labels. Any 24h pump >=100% on a mature token now caps the verdict at CAUTION.
+const ENGINE_VERSION_MANUAL = "v31"; // 2026-05-30: single-wallet safety net. top-1 >40% → hard concentration DANGER, >55% → forceRug (unless blue-chip ≥50k holders). Layered under the top-10 ladder (only fires when top-10 didn't already hard-block). Catches HAWK-class rugs (one 44% wallet + moderate 54% top-10) the top-10-only system missed. Threshold 40% is above the exchange range (MEW 35%) → measured zero blue-chip false positives.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.
@@ -337,7 +337,11 @@ export const API_TIMEOUT_HELIUS = 6000;
 //   Trading cooldown, LP 1-10% on fresh tokens. These alone do not justify CAUTION.
 // 7.7.10 bump: "Pumped +N% in 24h" mature 100-200% tier promoted info→warning
 //   + safeBlock. Both pump tiers are now warnings; "(blue-chip)" suffix removed.
-export const SCORING_VERSION = "7.7.10";
+// 7.7.11 bump: single-wallet safety net. top-1 >40% → DANGER, >55% → RUG
+//   (unless blue-chip ≥50k holders). Backstops the top-10 ladder for the
+//   HAWK-class single-giant-wallet rug it missed. No blue-chip impact (40%
+//   threshold sits above the exchange-cold-wallet range).
+export const SCORING_VERSION = "7.7.11";
 
 // ── SOFT REASONS (safe gate unlock) ───────────────────────────
 // A reason listed here CAN be unlocked by applySafeGateOverride when

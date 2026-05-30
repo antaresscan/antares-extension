@@ -551,6 +551,44 @@ export function layerHelius(
       trust = Math.min(1.0, trust * 1.05);
     }
   }
+
+  // ── SINGLE-WALLET SAFETY NET (7.7.11) ────────────────────────────────────
+  // Layered UNDER the top-10 ladder. The top-10 system is the primary verdict
+  // driver, but it misses ONE pattern: a single giant wallet on a token whose
+  // top-10 is otherwise moderate. HAWK is the canonical case — top-1 ~44%,
+  // top-10 ~54% → the top-10 ladder only sees "elevated" (soft → CAUTION),
+  // but a single wallet at 44% is a dump risk on its own. This net catches
+  // exactly that gap and routes it to DANGER/RUG.
+  //
+  // The 40% threshold is deliberately ABOVE the legitimate exchange /
+  // custodial range (the largest single custodial wallet on blue-chips like
+  // MEW is ~35%), so it does NOT re-introduce the exchange-cold-wallet false
+  // positives that the top-1 removal in 7.7.4 eliminated. Measured blast
+  // radius on the 325-token holder-data corpus: a single flip (one 87%-
+  // single-wallet token), zero hand-vetted blue-chips touched.
+  //
+  // Guarded by `top10ConcentrationBand !== "hard"` so it doesn't double-flag
+  // a token the top-10 ladder already hard-blocked (those are already
+  // DANGER/RUG). Only fires on the soft/moderate/none bands the net exists
+  // to backstop.
+  //
+  //   >55%: extreme — hard block + forceRug (unless blue-chip ≥50k holders).
+  //   >40%: high     — hard block → DANGER. Stays DANGER (not RUG) so a legit
+  //         locked-vesting / issuer-concentrated holder gets a strong warning
+  //         rather than an absolute kill.
+  if (top10ConcentrationBand !== "hard") {
+    const isBlueChipHolders = (maturityContext?.holders ?? 0) >= 50_000;
+    const t1pct = Math.round(top1Pct * 100);
+    if (top1Pct > 0.55) {
+      flags.push(makeFlag(`Single wallet holds ${t1pct}% — extreme concentration`, "critical", 0));
+      penalties.push(0.10); safeBlocked = true;
+      if (!isBlueChipHolders) forceRug = true;
+    } else if (top1Pct > 0.40) {
+      flags.push(makeFlag(`Single wallet holds ${t1pct}% — high concentration`, "critical", 0));
+      penalties.push(0.25); safeBlocked = true;
+    }
+  }
+
   trust = applyDiminishingPenalties(trust, penalties);
 
   // ── Extreme concentration kill-switch ───────────────────────────────────
