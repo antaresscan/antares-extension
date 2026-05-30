@@ -156,7 +156,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v27"; // 2026-05-30: LP risk matrix split at 10%. LP<10% NEVER safeBlocks (any age). LP 10-15% safeBlocks only on fresh pairs (<14d). Adds "5-10%" bucket between "1-5%" and former "5-15%" for clean 10% threshold.
+const ENGINE_VERSION_MANUAL = "v28"; // 2026-05-30: SAFE requires zero warning/critical flags. ANY detected flag (warning or critical) = CAUTION max. Previously SAFE was possible with 1 warning flag — showing "SAFE + 1 flag detected" was contradictory and not credible.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.
@@ -332,7 +332,8 @@ export const API_TIMEOUT_HELIUS = 6000;
 //   LP 10-15% (new "10-15%" bucket): safeBlock only on fresh pairs (<14d).
 //   After 2 weeks the time-based trust outweighs the LP risk.
 //   LP >= 15%: unchanged (existing safeBlock calibration retained).
-export const SCORING_VERSION = "7.7.7";
+// 7.7.8 bump: SAFE requires zero warning/critical flags. ANY flag = CAUTION max.
+export const SCORING_VERSION = "7.7.8";
 
 // ── SOFT REASONS (safe gate unlock) ───────────────────────────
 // A reason listed here CAN be unlocked by applySafeGateOverride when
