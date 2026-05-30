@@ -42,6 +42,11 @@ vi.mock("../api/_lib/cache", () => ({
   getCachedResult: vi.fn().mockResolvedValue(null),
   setCachedResult: vi.fn(),
   setShortCachedResult: vi.fn(),
+  // Single-flight lock: acquire always wins (fail-open), waiter no-ops, in
+  // unit tests so the handler proceeds straight to runAnalysis as before.
+  acquireScanLock: vi.fn().mockResolvedValue(true),
+  releaseScanLock: vi.fn().mockResolvedValue(undefined),
+  waitForCachedResult: vi.fn().mockResolvedValue(null),
   getCacheRedis: vi.fn().mockReturnValue({ setex: mockSetex }),
 }));
 

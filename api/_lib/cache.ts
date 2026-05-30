@@ -14,6 +14,7 @@ import { ENGINE_VERSION } from "./constants";
 let scanCacheRedis: Redis | null = null;
 
 const cacheKey = (ca: string): string => `antares:${ENGINE_VERSION}:${ca}`;
+const lockKey  = (ca: string): string => `antares:lock:${ENGINE_VERSION}:${ca}`;
 
 export function initCache(redis: Redis): void {
   scanCacheRedis = redis;
@@ -65,4 +66,79 @@ export function setShortCachedResult(
   scanCacheRedis.setex(cacheKey(ca), ttlSeconds, result).catch((e: unknown) => {
     logger.warn("cache", "Redis short-cache write failed", { error: String(e) });
   });
+}
+
+// ─── SINGLE-FLIGHT SCAN LOCK (cache-stampede protection) ─────────────────
+//
+// When a token starts trending, dozens of users scan the same uncached CA
+// within the ~10s cold-scan window. Without coordination, every one of them
+// sees a cache miss and runs its OWN full cold scan → N× upstream API calls
+// (Helius/Solscan/RugCheck) and — because degraded scans resolve a different
+// subset of sources — N inconsistent verdicts for the same token.
+//
+// The lock fixes this: the FIRST request to miss the cache acquires a short
+// Redis lock and runs the single cold scan; everyone else waits for that
+// scan to populate the cache and reads the identical result.
+//
+// CRITICAL: fail-open. Coalescing is an optimization, never a hard
+// dependency — if Redis is unavailable or errors, acquireScanLock returns
+// true so the scan ALWAYS proceeds. Worst case without Redis = the old
+// behaviour (every request scans). We never block a scan on lock infra.
+
+/**
+ * Try to acquire the single-flight lock for `ca`.
+ * @returns true  → THIS caller won the race; it must run the cold scan and
+ *                  call releaseScanLock() when done.
+ *          false → another request already holds the lock; this caller should
+ *                  wait for the cache via waitForCachedResult().
+ *
+ * TTL (default 28s) is the safety net: it sits just above the 25s Vercel
+ * function maxDuration so a crashed lock holder can't wedge the lock for
+ * longer than its own function could possibly live.
+ */
+export async function acquireScanLock(ca: string, ttlSeconds = 28): Promise<boolean> {
+  if (!scanCacheRedis) return true; // no Redis → no coalescing, always scan
+  try {
+    // Upstash SET ... NX EX — returns "OK" when set, null when the key
+    // already exists (i.e. another request holds the lock).
+    const res = await scanCacheRedis.set(lockKey(ca), "1", { nx: true, ex: ttlSeconds });
+    return res === "OK";
+  } catch (e: unknown) {
+    logger.warn("cache", "scan lock acquire failed — failing open", { error: String(e) });
+    return true; // fail-open: proceed with the scan
+  }
+}
+
+/** Release the single-flight lock. Best-effort — TTL expiry is the backstop. */
+export async function releaseScanLock(ca: string): Promise<void> {
+  if (!scanCacheRedis) return;
+  try {
+    await scanCacheRedis.del(lockKey(ca));
+  } catch {
+    /* lock TTL will expire it; nothing to do */
+  }
+}
+
+/**
+ * Poll the cache until a COMPLETE (aiSummary-present) result appears for `ca`
+ * or `timeoutMs` elapses. Used by requests that lost the single-flight race:
+ * they wait for the lock holder's scan to land in the cache instead of
+ * running a redundant cold scan.
+ *
+ * Returns the cached result, or null if the holder didn't finish in time
+ * (caller then falls back to scanning itself with whatever budget remains).
+ */
+export async function waitForCachedResult<T extends { aiSummary?: unknown }>(
+  ca: string,
+  requestId: string,
+  { timeoutMs = 18000, intervalMs = 300 }: { timeoutMs?: number; intervalMs?: number } = {},
+): Promise<T | null> {
+  if (!scanCacheRedis) return null;
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, intervalMs));
+    const r = await getCachedResult<T>(ca, requestId);
+    if (r && r.aiSummary) return r;
+  }
+  return null;
 }
