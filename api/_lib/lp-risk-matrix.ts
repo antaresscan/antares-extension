@@ -160,7 +160,7 @@ const MATRIX: Record<Exclude<LpPctBucket, "unknown">, Record<Exclude<LpAgeBucket
   // absorbed by orderbook arbitrage. Show as warning on fresh tokens
   // (score penalty applies) but never cap the verdict.
   "1-5%": {
-    "<14d":   { severity: "warning", penalty: 0.92, safeBlock: false, forceRug: false, estimatedImpact: "-5% to -15%" },
+    "<14d":   { severity: "info",    penalty: 0.92, safeBlock: false, forceRug: false, estimatedImpact: "-5% to -15%" },
     "14-90d": { severity: "info",    penalty: 0.96, safeBlock: false, forceRug: false, estimatedImpact: "-5% to -15%" },
     "90d-1y": { severity: "info",    penalty: 0.98, safeBlock: false, forceRug: false, estimatedImpact: "-5% to -15%" },
     ">=1y":   { severity: "info",    penalty: 0.99, safeBlock: false, forceRug: false, estimatedImpact: "-5% to -15%" },
@@ -170,7 +170,7 @@ const MATRIX: Record<Exclude<LpPctBucket, "unknown">, Record<Exclude<LpAgeBucket
   // < 10 % rule: NEVER safeBlock. A drain causes < 20 % impact — survivable.
   // Warning on fresh tokens (visible, penalised), info once established.
   "5-10%": {
-    "<14d":   { severity: "warning", penalty: 0.87, safeBlock: false, forceRug: false, estimatedImpact: "-10% to -20%" },
+    "<14d":   { severity: "info",    penalty: 0.87, safeBlock: false, forceRug: false, estimatedImpact: "-10% to -20%" },
     "14-90d": { severity: "info",    penalty: 0.93, safeBlock: false, forceRug: false, estimatedImpact: "-10% to -20%" },
     "90d-1y": { severity: "info",    penalty: 0.96, safeBlock: false, forceRug: false, estimatedImpact: "-10% to -20%" },
     ">=1y":   { severity: "info",    penalty: 0.98, forceRug: false, safeBlock: false, estimatedImpact: "-10% to -20%" },

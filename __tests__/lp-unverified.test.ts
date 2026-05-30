@@ -105,16 +105,14 @@ describe("getLpRiskBucket — matrix cells", () => {
   });
 
   // ── LOW LP (1-5%) — LP < 10% NEVER safeBlocks (7.7.7 rule) ────
-  it("LP 3% × fresh (<14d) → warning but safeBlock=false (LP<10% never blocks)", () => {
-    // 7.7.7: LP < 10% never blocks SAFE regardless of age. The flag is still
-    // warning severity on fresh tokens (visible, score-penalised) but the
-    // verdict is NOT capped. A 3% LP drain causes <15% price impact — not
-    // a rug-zero event even on a brand-new token.
+  it("LP 3% × fresh (<14d) → info + safeBlock=false (LP<10% = info any age, 7.7.9)", () => {
+    // 7.7.9: LP 1-5% is info on ALL ages including fresh <14d.
+    // A 3% LP drain causes <15% price impact — not worth CAUTION on its own.
     const b = getLpRiskBucket(0.03, 10 * 24);
     expect(b.pctBucket).toBe("1-5%");
     expect(b.ageBucket).toBe("<14d");
-    expect(b.severity).toBe("warning");
-    expect(b.safeBlock).toBe(false);  // ← changed: LP < 10% never blocks
+    expect(b.severity).toBe("info");
+    expect(b.safeBlock).toBe(false);
   });
 
   it("LP 3% × 1y+ → info + no safeBlock + label shows pct only (no risk suffix)", () => {
