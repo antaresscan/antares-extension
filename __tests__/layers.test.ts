@@ -953,32 +953,32 @@ describe("layerChart", () => {
       expect(pumpFlag).toBeUndefined();
     });
 
-    it("mature pair @ +150% in 24h: info-only flag, no safeBlock (TROLL-case)", () => {
+    it("mature pair @ +150% in 24h: warning flag + safeBlock, no blue-chip suffix (7.7.10)", () => {
+      // 7.7.10: the 100-200% mature tier is now a warning (was info). Any 24h
+      // pump >= 100% on a mature token is an entry-timing risk worth a warning
+      // that caps the verdict at CAUTION. The "(blue-chip)" suffix is removed.
       const r = layerChart(flatCandles(), mkPair(150), 730 * 24 * 60, matureContext);
       const pumpFlag = r.flags.find((f) => /pumped \+\d+% in 24h/i.test(f.label));
       expect(pumpFlag).toBeDefined();
-      expect(pumpFlag?.severity).toBe("info");
-      expect(pumpFlag?.label).toMatch(/blue-chip/i);
-      // safeBlock can be triggered by OTHER patterns in layerChart, so we
-      // only assert that the pump pattern itself didn't set it. Test the
-      // contribution by checking flags don't carry the warning severity.
-    });
-
-    it("mature pair @ +250% in 24h: warning flag + safeBlock (forces verdict to CAUTION, not DANGER)", () => {
-      const r = layerChart(flatCandles(), mkPair(250), 730 * 24 * 60, matureContext);
-      const pumpFlag = r.flags.find((f) => /pumped \+\d+% in 24h.*blue-chip/i.test(f.label));
-      expect(pumpFlag).toBeDefined();
       expect(pumpFlag?.severity).toBe("warning");
-      expect(pumpFlag?.label).toMatch(/elevated retrace risk/i);
-      // Per user calibration 2026-05-19: a blue-chip pumping ≥ 200% in
-      // 24h must trigger safeBlock so the verdict caps at CAUTION
-      // ("doit passer en caution"). The penalty itself stays small
-      // (0.85 = ~-150 pts) so the verdict doesn't slide into DANGER
-      // on this signal alone ("pas forcément en danger").
+      expect(pumpFlag?.label).toMatch(/moderate retrace risk/i);
+      expect(pumpFlag?.label).not.toMatch(/blue-chip/i);
       expect(r.safeBlocked).toBe(true);
     });
 
-    it("non-mature token @ +150% in 24h: warning flag (no blue-chip label)", () => {
+    it("mature pair @ +250% in 24h: warning flag + safeBlock, no blue-chip suffix", () => {
+      const r = layerChart(flatCandles(), mkPair(250), 730 * 24 * 60, matureContext);
+      const pumpFlag = r.flags.find((f) => /pumped \+\d+% in 24h/i.test(f.label));
+      expect(pumpFlag).toBeDefined();
+      expect(pumpFlag?.severity).toBe("warning");
+      expect(pumpFlag?.label).toMatch(/elevated retrace risk/i);
+      expect(pumpFlag?.label).not.toMatch(/blue-chip/i);
+      // A mature token pumping >= 200% in 24h must safeBlock so the verdict
+      // caps at CAUTION; the small penalty (0.85) keeps it out of DANGER.
+      expect(r.safeBlocked).toBe(true);
+    });
+
+    it("non-mature token @ +150% in 24h: warning flag", () => {
       const r = layerChart(flatCandles(), mkPair(150), 6 * 60, youngContext);
       const pumpFlag = r.flags.find((f) => /pumped \+\d+% in 24h/i.test(f.label));
       expect(pumpFlag).toBeDefined();
