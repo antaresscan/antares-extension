@@ -788,19 +788,19 @@ export function layerChart(
     const pumpPct = Math.round(pc24h);
 
     if (matureForPump) {
-      // Mature pair (blue-chip memecoin / established token). Retrace
-      // is a real risk but the structural fundamentals haven't changed.
-      // safeBlock on ≥ 200% forces the verdict to CAUTION minimum;
-      // small penalty keeps it from falling further into DANGER on
-      // this signal alone. < 200% stays info-only (no safeBlock,
-      // tiny penalty) so a 100-200% climb on a blue-chip surfaces
-      // visibly but doesn't force the verdict down.
+      // Mature pair (established token). Retrace is a real risk but the
+      // structural fundamentals haven't changed. Both tiers are warnings
+      // that safeBlock (cap the verdict at CAUTION) — a token pumping 100%+
+      // in 24h is an entry-timing risk worth flagging, never SAFE. The
+      // penalty stays small so the verdict doesn't slide into DANGER on
+      // this signal alone. (Removed the internal "(blue-chip)" suffix and
+      // the info-only 100-200% tier — any 24h pump ≥100% is now a warning.)
       if (pc24h >= 200) {
-        flags.push(makeFlag(`Pumped +${pumpPct}% in 24h — elevated retrace risk on entry (blue-chip)`, "warning", 0));
+        flags.push(makeFlag(`Pumped +${pumpPct}% in 24h — elevated retrace risk on entry`, "warning", 0));
         penalties.push(0.85); safeBlocked = true;
       } else {
-        flags.push(makeFlag(`Pumped +${pumpPct}% in 24h — moderate retrace risk on entry (blue-chip)`, "info", 0));
-        penalties.push(0.92);
+        flags.push(makeFlag(`Pumped +${pumpPct}% in 24h — moderate retrace risk on entry`, "warning", 0));
+        penalties.push(0.88); safeBlocked = true;
       }
     } else {
       // Non-mature token. Sustained pump + thin LP = exit-liquidity

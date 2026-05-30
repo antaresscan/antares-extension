@@ -156,7 +156,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v29"; // 2026-05-30: 4 flags demoted warning→info: #8 Low 5m txns vs mcap, #15 Metadata mutable, #23 Trading cooldown, #53 LP 1-10% on fresh (<14d). These alone do not justify CAUTION verdict.
+const ENGINE_VERSION_MANUAL = "v30"; // 2026-05-30: "Pumped +N% in 24h" mature pump flag — 100-200% tier promoted info→warning+safeBlock (was info-only). Both tiers now warning, "(blue-chip)" suffix removed from labels. Any 24h pump >=100% on a mature token now caps the verdict at CAUTION.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.
@@ -335,7 +335,9 @@ export const API_TIMEOUT_HELIUS = 6000;
 // 7.7.8 bump: SAFE requires zero warning/critical flags. ANY flag = CAUTION max.
 // 7.7.9 bump: 4 flags demoted warning→info: Low 5m txns, Metadata mutable,
 //   Trading cooldown, LP 1-10% on fresh tokens. These alone do not justify CAUTION.
-export const SCORING_VERSION = "7.7.9";
+// 7.7.10 bump: "Pumped +N% in 24h" mature 100-200% tier promoted info→warning
+//   + safeBlock. Both pump tiers are now warnings; "(blue-chip)" suffix removed.
+export const SCORING_VERSION = "7.7.10";
 
 // ── SOFT REASONS (safe gate unlock) ───────────────────────────
 // A reason listed here CAN be unlocked by applySafeGateOverride when

@@ -396,7 +396,7 @@ const DEMO_DATA = {
     tokenLogo: "https://dd.dexscreener.com/ds-data/tokens/solana/MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5.png",
     flags: [
       { severity: "warning", label: "Top 10 hold 55% — elevated · exchanges may be included" },
-      { severity: "warning", label: "Pumped +187% in 24h — elevated retrace risk on entry (blue-chip)" },
+      { severity: "warning", label: "Pumped +187% in 24h — elevated retrace risk on entry" },
       { severity: "warning", label: "Buy/sell imbalance (coordinated pump)" },
       { severity: "bonus", label: "LP Burned 100% (GoPlus) ✓" },
       { severity: "bonus", label: "Established token (30d+) ✓" },
@@ -439,7 +439,7 @@ const DEMO_DATA = {
     // CAUTION blue-chip — no time-to-rug profiling (contract is clean; the
     // only concern is concentration, not an active rug pattern).
     outcomeStats: null,
-    verdictHistory: [{ ts: _demoTs - 3600000, verdict: "CAUTION", score: 750, event: "Pumped +187% in 24h — elevated retrace risk on entry (blue-chip)" }],
+    verdictHistory: [{ ts: _demoTs - 3600000, verdict: "CAUTION", score: 750, event: "Pumped +187% in 24h — elevated retrace risk on entry" }],
     sources_used: ["dexscreener", "rugcheck", "goplus", "helius", "solscan", "chart"],
     aiSummary: "MEW lands on CAUTION from three compounding signals across three different analysis layers. Helius flags 55% top-10 concentration — elevated, though on a 164k-holder blue-chip the large wallets are most likely exchanges and custodians. The chart layer flags a +187% 24h run: you are not buying a base, you are buying someone's retrace entry point. DexScreener confirms the momentum: 38 buys vs 0 sells in the last 5 minutes — the textbook fingerprint of a coordinated pump that has not yet found its top.\n\nThe contract is structurally sound: LP fully burned, no mint or freeze authority, no honeypot. These are genuine positives. They explain why this is CAUTION and not DANGER — the fundamentals are clean, the timing is not.\n\nIf MEW retraces 40-60% from the current high — statistically common after a +187% run — the verdict stays SAFE at that level. CAUTION here is about entry timing: the three flags are not predicting a rug, they are telling you that you are entering at the worst possible moment.",
     fetchedAt: _demoTs,
