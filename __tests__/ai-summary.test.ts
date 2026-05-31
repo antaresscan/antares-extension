@@ -814,7 +814,7 @@ describe("generateAISummary", () => {
       expect(paragraphs[0]).toContain("concentration rug")
       expect(paragraphs[0]).toContain("44.0%")
       // PARA 2: mentions positives that get overridden
-      expect(paragraphs[1].toLowerCase()).toMatch(/lp|burn|history|renounce|honeypot/)
+      expect(paragraphs[1].toLowerCase()).toMatch(/overrides everything else|collapse the price/)
       // PARA 3: hard-kill action
       expect(paragraphs[2]).toContain("Hard kill")
     })
@@ -848,8 +848,8 @@ describe("generateAISummary", () => {
       expect(paragraphs[0]).toContain("DANGER")
       expect(paragraphs[0]).toContain("27.0%")
       // PARA 2: clean LP / authorities
-      expect(paragraphs[1].toLowerCase()).toMatch(/lp|burn|renounce|clean/)
-      // PARA 3: boundary "but ... exit-liquidity risk"
+      expect(paragraphs[1].toLowerCase()).toMatch(/stands on its own|offsets the exit-liquidity/)
+      // PARA 3: risk action — exit-liquidity risk
       expect(paragraphs[2].toLowerCase()).toContain("exit-liquidity risk")
     })
 

@@ -589,6 +589,42 @@ export function layerHelius(
     }
   }
 
+  // ── YOUNG-TOKEN SINGLE-WALLET TIERS (7.7.12) ─────────────────────────────
+  // Stricter single-wallet thresholds for tokens < 30 days old.
+  // A large wallet on a new token has no exchange / vesting / long-term-holder
+  // context yet — the same % means far more risk than on an established token.
+  //
+  //   > 15%: hard "concentration" → DANGER (same verdict path as top-10 hard)
+  //   10–15%: critical, soft "concentration_light" → CAUTION max, never auto-DANGER
+  //    5–10%: warning → blocks SAFE only
+  //
+  // Guards:
+  //  - top10ConcentrationBand !== "hard": top-10 ladder already hard-blocked → skip
+  //  - top1Pct < 0.40: existing safety net (7.7.11) already caught it → skip
+  //  - maturityContext must provide tokenAgeHours (no data = no penalty)
+  if (
+    maturityContext &&
+    typeof maturityContext.tokenAgeHours === "number" &&
+    maturityContext.tokenAgeHours < 720 &&   // < 30 days
+    top10ConcentrationBand !== "hard" &&
+    top1Pct < 0.40
+  ) {
+    const yt1pct = Math.round(top1Pct * 100);
+    if (top1Pct > 0.15) {
+      // Hard → DANGER via "concentration" reason (HARD_BLOCK_PATTERNS regex match)
+      flags.push(makeFlag(`Single wallet holds ${yt1pct}% — high concentration · young token`, "critical", 0));
+      penalties.push(0.20); safeBlocked = true;
+    } else if (top1Pct > 0.10) {
+      // Soft → CAUTION max via "concentration_light" reason (new HARD_BLOCK_PATTERNS entry)
+      flags.push(makeFlag(`Single wallet holds ${yt1pct}% — elevated concentration · young token`, "critical", 0));
+      penalties.push(0.45); safeBlocked = true;
+    } else if (top1Pct > 0.05) {
+      // Warning → blocks SAFE only
+      flags.push(makeFlag(`Single wallet holds ${yt1pct}% — moderate · young token`, "warning", 0));
+      penalties.push(0.65); safeBlocked = true;
+    }
+  }
+
   trust = applyDiminishingPenalties(trust, penalties);
 
   // ── Extreme concentration kill-switch ───────────────────────────────────

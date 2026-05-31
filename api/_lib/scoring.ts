@@ -96,6 +96,10 @@ export const HARD_BLOCK_PATTERNS: Array<[RegExp, SafeBlockedReason]> = [
   // Single-wallet safety net (7.7.11): a single wallet >40% routes to the
   // hard "concentration" reason → DANGER/RUG. Catches the HAWK-class case
   // (one giant wallet + moderate top-10) the top-10 ladder alone misses.
+  // Young-token elevated tier (7.7.12, 10-15%): soft → CAUTION max.
+  // Must come BEFORE the hard "concentration" pattern so "elevated" labels
+  // don't accidentally match the (high|extreme) regex below.
+  [/single wallet holds \d+% — elevated\b/i, "concentration_light"],
   [/single wallet holds \d+% — (high|extreme) concentration/i, "concentration"],
 ];
 

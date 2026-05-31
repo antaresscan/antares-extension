@@ -258,12 +258,12 @@ function buildSystemPrompt(target: { min: number; max: number }): string {
   "If 3+ flags fired in total (critical + warning), paragraph 2 MUST name each one with a one-clause reason \u2014 e.g. \u201cBundle holds 37%, top-10 hold 78%, deceptive name, wash trading, single wallet 14%, high vol/liquidity ratio\u201d. " +
   "Do NOT skip flags: a user already sees the full flag list above your block, and explaining only one when many fired reads as incomplete. " +
   "Treat warnings with the same enumeration discipline as criticals \u2014 a 4-warning DANGER token must name all 4. " +
-  "For RUG / DANGER: state whether positives save the verdict or get overridden. " +
+  "For RUG / DANGER: paragraph 2 names ONLY the risk flags. NEVER mention positive or clean signals (LP burned, authorities renounced, no honeypot, age) and NEVER explain why the verdict is 'not worse' or 'not RUG'. No reassurance, no counter-context. " +
   "For SAFE / CAUTION: list positives matter-of-factly; reference sources by name when they cross-validate. " +
   "\n\n" +
   "PARAGRAPH 3 \u2014 BOUNDARY OR ACTION (1 or 2 sentences, \u226420 words). " +
   "\u2022 RUG: trader action only. \"Hard kill. Treat any remaining liquidity as exit-only.\" or similar. " +
-  "\u2022 DANGER: \"The verdict is not RUG because {what's clean}, but {dominant flag} alone is enough to treat this as exit-liquidity risk.\" " +
+  "\u2022 DANGER: \"{dominant flag} alone is enough to treat this as exit-liquidity risk. Do NOT explain why it is 'not RUG' or reference any clean signal.\" " +
   "\u2022 CAUTION: \"The verdict is not DANGER because the rest is clean; it is not SAFE because {flag} alone has enough leverage.\" " +
   "\u2022 SAFE: brief confirming closer. \"Strong holder distribution.\" or \"Cross-validates across the 7 layers.\" " +
   "\n\n" +
@@ -271,7 +271,7 @@ function buildSystemPrompt(target: { min: number; max: number }): string {
   "\n\n" +
   "[RUG \u00b7 105/1000 \u00b7 single wallet 44%, 1 critical flag]\n" +
   "Hawk Tuah is the textbook concentration rug \u2014 a single wallet holds 44% of total supply, more than enough to crash the price to zero in one transaction.\n\n" +
-  "LP is technically burned and the token has 30d+ of trading history, but those signals are completely overridden by the wallet concentration.\n\n" +
+  "There are no offsetting structural signals worth weighing; the wallet concentration alone defines the outcome.\n\n" +
   "Hard kill. Treat any remaining liquidity as exit-only." +
   "\n\n" +
   "[RUG \u00b7 60/1000 \u00b7 6 critical flags] (note the longer paragraph 2 enumerating each flag)\n" +
@@ -281,7 +281,7 @@ function buildSystemPrompt(target: { min: number; max: number }): string {
   "\n\n" +
   "[DANGER \u00b7 525/1000 \u00b7 top1 27%, top10 67%]\n" +
   "Pippin lands on DANGER because of stacked concentration risk \u2014 a single wallet holds 27% of supply and the top 10 wallets together control 67%.\n\n" +
-  "The LP is burned and the contract is clean (no mint, no freeze, no honeypot), which keeps the verdict from collapsing all the way to RUG.\n\n" +
+  "That level of concentration lets a handful of coordinated wallets dump into the same thin liquidity, with nothing structural to cushion the fall.\n\n" +
   "But the holder structure alone is enough to treat this as exit-liquidity risk." +
   "\n\n" +
   "[CAUTION \u00b7 825/1000 \u00b7 top1 11%]\n" +
@@ -641,22 +641,22 @@ function buildStructuredFallback(
     if (significantFlags.length >= 3 && otherFlags.length > 0) {
       // Heavy-flag rug — enumerate the supporting flags.
       const cleanClause =
-        positives.length > 0 ? `${capitalize(joinCommaList(positives))} are present, but ` : "There are no clean structural counter-signals; "
+        positives.length > 0 ? "" : "There are no clean structural counter-signals; "
       para2 = `${cleanClause}the engine also flags ${joinCommaList(otherFlags)} — every structural surface that should protect a holder is compromised.`
     } else if (positives.length > 0) {
-      para2 = `${capitalize(joinCommaList(positives))}, but those signals are completely overridden by the dominant flag — the dev (or whoever controls that wallet) can collapse the price at any moment.`
+      para2 = `The dominant flag overrides everything else — the dev (or whoever controls that wallet) can collapse the price at any moment.`
     } else {
       para2 = `No structural counter-signals to mitigate — the contract is compromised across multiple layers and there is no clean signal to weigh against the verdict.`
     }
   } else if (verdict === "DANGER") {
     if (significantFlags.length >= 3 && otherFlags.length > 0) {
       const cleanClause =
-        positives.length >= 1 ? `${capitalize(joinCommaList(positives))}, which keeps the verdict short of RUG. The engine ` : "The engine "
+        positives.length >= 1 ? `The engine ` : "The engine "
       para2 = `${cleanClause}also flags ${joinCommaList(otherFlags)} — each one a meaningful risk on its own.`
     } else if (positives.length >= 2) {
-      para2 = `${capitalize(joinCommaList(positives))} — the contract surface itself is clean, which is why the verdict does not collapse all the way to RUG.`
+      para2 = `The dominant risk stands on its own; nothing in the contract structure offsets the exit-liquidity exposure.`
     } else if (positives.length === 1) {
-      para2 = `${capitalize(positives[0])} — the only counter-signal that keeps the verdict from collapsing all the way to RUG.`
+      para2 = `The dominant risk stands on its own; nothing here offsets the exit-liquidity exposure.`
     } else {
       para2 = `No clean structural counter-signals to weigh against the dominant risk — the contract has nothing in its favor to soften the verdict.`
     }

@@ -156,7 +156,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v31"; // 2026-05-30: single-wallet safety net. top-1 >40% → hard concentration DANGER, >55% → forceRug (unless blue-chip ≥50k holders). Layered under the top-10 ladder (only fires when top-10 didn't already hard-block). Catches HAWK-class rugs (one 44% wallet + moderate 54% top-10) the top-10-only system missed. Threshold 40% is above the exchange range (MEW 35%) → measured zero blue-chip false positives.
+const ENGINE_VERSION_MANUAL = "v32"; // 2026-05-31: young-token (<30d) single-wallet tiers. >15% → hard concentration DANGER; 10-15% → critical soft (CAUTION max, concentration_light); 5-10% → warning (blocks SAFE). Restores founder rule scoped to fresh tokens only — avoids blue-chip false positives. Bump flushes Redis cache.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.
@@ -341,7 +341,10 @@ export const API_TIMEOUT_HELIUS = 6000;
 //   (unless blue-chip ≥50k holders). Backstops the top-10 ladder for the
 //   HAWK-class single-giant-wallet rug it missed. No blue-chip impact (40%
 //   threshold sits above the exchange-cold-wallet range).
-export const SCORING_VERSION = "7.7.11";
+// 7.7.12 bump: young-token (<30d) single-wallet tiers added on top of the
+//   7.7.11 net. top-1 >15% → hard DANGER; 10-15% → critical soft CAUTION max;
+//   5-10% → warning. Scoped to <30d so blue-chips are untouched.
+export const SCORING_VERSION = "7.7.12";
 
 // ── SOFT REASONS (safe gate unlock) ───────────────────────────
 // A reason listed here CAN be unlocked by applySafeGateOverride when
