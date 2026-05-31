@@ -218,10 +218,14 @@ function renderPanel(
   //      Founder rule: keep bonus visible only for SAFE / CAUTION
   //      where the positive context actually reinforces the verdict.
   const verdictUpper = (verdict ?? "").toUpperCase()
-  const hideBonus = verdictUpper === "RUG" || verdictUpper === "DANGER"
+  const isKillVerdict = verdictUpper === "RUG" || verdictUpper === "DANGER"
+  // On kill verdicts (RUG / DANGER): hide both reassuring signals.
+  //   "bonus"  → positive signals like "Established token ✓" read as cognitive dissonance
+  //   "info"   → "Context & notes" (e.g. "Top 10 hold 24% — moderate") softens a kill verdict
+  // Both are kept for CAUTION and SAFE where context genuinely helps.
   const all = (flags ?? []).filter((f) => {
     if (PIPELINE_STATUS_PATTERN.test(f.label)) return false
-    if (hideBonus && f.severity === "bonus") return false
+    if (isKillVerdict && (f.severity === "bonus" || f.severity === "info")) return false
     return true
   })
 
