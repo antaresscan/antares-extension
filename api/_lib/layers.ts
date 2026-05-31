@@ -524,9 +524,12 @@ export function layerHelius(
       flags.push(makeFlag(`Top 10 hold ${t10pct}% — elevated · exchanges may be included`, "warning", 0));
       penalties.push(0.50); safeBlocked = true; top10ConcentrationBand = "soft";
     } else if (top10Pct >= 0.25) {
-      // Context note: explains to the user why a 36% top-10 on a 2-year-old
-      // token is NOT the same risk as 36% on a 3-hour token.
-      flags.push(makeFlag(`Top 10 hold ${t10pct}% — normal for established token · likely exchanges & long-term holders`, "info", 0));
+      // Kept as INFO + no safeBlocked for established tokens: on a 2-year-old
+      // blue-chip, 25-44% top-10 is normal (exchange cold wallets). Making it
+      // WARNING would block SAFE for FARTCOIN/WIF/MEW unfairly.
+      // The overlay whitelists concentration info flags so they stay visible
+      // even on DANGER/RUG verdicts (critical-flags.ts filter).
+      flags.push(makeFlag(`Top 10 hold ${t10pct}% — moderate · exchanges likely included`, "info", 0));
       top10ConcentrationBand = "moderate";
     } else {
       flags.push(makeFlag("Well distributed supply ✓", "bonus", 0));
@@ -544,8 +547,9 @@ export function layerHelius(
       flags.push(makeFlag(`Top 10 hold ${t10pct}% — elevated concentration · cluster risk`, "warning", 0));
       penalties.push(0.50); safeBlocked = true; top10ConcentrationBand = "soft";
     } else if (top10Pct >= 0.20) {
-      flags.push(makeFlag(`Top 10 hold ${t10pct}% — moderate concentration`, "info", 0));
-      top10ConcentrationBand = "moderate";
+      // Promoted info→warning so it stays visible even on DANGER/RUG verdicts.
+      flags.push(makeFlag(`Top 10 hold ${t10pct}% — moderate concentration`, "warning", 0));
+      safeBlocked = true; top10ConcentrationBand = "moderate";
     } else {
       flags.push(makeFlag("Well distributed supply ✓", "bonus", 0));
       trust = Math.min(1.0, trust * 1.05);
@@ -594,9 +598,9 @@ export function layerHelius(
   // A large wallet on a new token has no exchange / vesting / long-term-holder
   // context yet — the same % means far more risk than on an established token.
   //
-  //   > 15%: hard "concentration" → DANGER (same verdict path as top-10 hard)
-  //   10–15%: critical, soft "concentration_light" → CAUTION max, never auto-DANGER
-  //    5–10%: warning → blocks SAFE only
+  //   > 15%: hard "concentration" → DANGER
+  //   10–15%: critical, soft "concentration_light" → CAUTION max
+  //   < 10%: no flag — top-10 ladder already captures cluster risk at this level
   //
   // Guards:
   //  - top10ConcentrationBand !== "hard": top-10 ladder already hard-blocked → skip
@@ -615,13 +619,9 @@ export function layerHelius(
       flags.push(makeFlag(`Single wallet holds ${yt1pct}% — high concentration · young token`, "critical", 0));
       penalties.push(0.20); safeBlocked = true;
     } else if (top1Pct > 0.10) {
-      // Soft → CAUTION max via "concentration_light" reason (new HARD_BLOCK_PATTERNS entry)
+      // Soft → CAUTION max via "concentration_light" reason
       flags.push(makeFlag(`Single wallet holds ${yt1pct}% — elevated concentration · young token`, "critical", 0));
       penalties.push(0.45); safeBlocked = true;
-    } else if (top1Pct > 0.05) {
-      // Warning → blocks SAFE only
-      flags.push(makeFlag(`Single wallet holds ${yt1pct}% — moderate · young token`, "warning", 0));
-      penalties.push(0.65); safeBlocked = true;
     }
   }
 

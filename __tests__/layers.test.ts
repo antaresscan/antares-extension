@@ -529,8 +529,8 @@ describe("layerHelius", () => {
     };
     const result = layerHelius(holders, 100_000, ctx);
     expect(result.flags.some(f => /11%/.test(f.label))).toBe(false);
-    expect(result.flags.some(f => /likely exchanges/i.test(f.label))).toBe(true);
-    expect(result.flags.some(f => /likely exchanges/i.test(f.label) && f.severity === "info")).toBe(true);
+    expect(result.flags.some(f => /exchanges likely included/i.test(f.label))).toBe(true);
+    expect(result.flags.some(f => /exchanges likely included/i.test(f.label) && f.severity === "info")).toBe(true);
     expect(result.safeBlocked).toBe(false);
     expect(result.forceRug).toBe(false);
   });
