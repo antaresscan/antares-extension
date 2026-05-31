@@ -665,7 +665,46 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       warningFlagsCount: _warningFlagsCount,
     });
 
-    const flags: ScanFlag[] = _allFlagsForVerdict;
+    // ── Flag deduplication ────────────────────────────────────────────────────
+    // Multiple layers can fire semantically identical flags for the same signal
+    // (e.g. layerDexScreener AND layerChart both flag "pump +553%"). We keep
+    // only one flag per distinct risk signal, preferring the most severe.
+    //
+    // Two passes:
+    //  1. Exact label → keep the occurrence with the highest severity.
+    //  2. Pump-percentage → if two flags both mention "pump" and share the same
+    //     rounded percentage (±0 tolerance), keep only the most severe.
+    //     Catches "Large 24h pump +553% on token <24h" vs
+    //     "Pumped +553% in 24h — exit liquidity risk on thin LP".
+    const _severityRank: Record<string, number> = { critical:0, warning:1, info:2, bonus:3 };
+    const _dedupe = (input: ScanFlag[]): ScanFlag[] => {
+      // Pass 1: exact label
+      const byLabel = new Map<string, ScanFlag>();
+      for (const f of input) {
+        const existing = byLabel.get(f.label);
+        if (!existing || _severityRank[f.severity] < _severityRank[existing.severity]) {
+          byLabel.set(f.label, f);
+        }
+      }
+      const pass1 = [...byLabel.values()];
+
+      // Pass 2: pump-percentage — extract the first integer % from pump flags
+      // and group by it, keeping the most severe representative.
+      const pumpPctMap = new Map<number, ScanFlag>();
+      const nonPump: ScanFlag[] = [];
+      for (const f of pass1) {
+        if (!/pump|pumped/i.test(f.label)) { nonPump.push(f); continue; }
+        const m = f.label.match(/\+(\d+)%/);
+        if (!m) { nonPump.push(f); continue; }
+        const pct = parseInt(m[1], 10);
+        const existing = pumpPctMap.get(pct);
+        if (!existing || _severityRank[f.severity] < _severityRank[existing.severity]) {
+          pumpPctMap.set(pct, f);
+        }
+      }
+      return [...nonPump, ...pumpPctMap.values()];
+    };
+    const flags: ScanFlag[] = _dedupe(_allFlagsForVerdict);
     const severityOrder: Record<Severity, number> = { critical:0, warning:1, info:2, bonus:3 };
     flags.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
 
