@@ -21,21 +21,50 @@ export async function heliusGetLargestAccounts(mint: string, key: string) {
 }
 
 
-// Resolve token account addresses to their owner wallet addresses.
-// Two-pass approach to catch AMM pool PDAs (PumpSwap, Meteora, etc.):
+// Decode bytes 32-63 of a base64-encoded SPL / Token-2022 account to get the
+// token account authority (the wallet or PDA that can transfer tokens).
+// SPL token account layout: mint(0-31) | authority(32-63) | amount(64-71) | ...
+// Token-2022 uses the same 165-byte base before extensions, so the same offset works.
+// This is more reliable than jsonParsed which Helius may not support for Token-2022.
+function extractTokenAuthority(base64Data: string): string | null {
+    try {
+        const buf = Buffer.from(base64Data, "base64");
+        if (buf.length < 64) return null;
+        const authBytes = buf.subarray(32, 64);
+        // base58 encode (no external dep needed — authority addresses are always 32 bytes)
+        const ALPHA = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+        const d: number[] = [];
+        for (const byte of authBytes) {
+            let c = byte;
+            for (let j = 0; j < d.length; j++) { const x = d[j] * 256 + c; d[j] = x % 58; c = Math.floor(x / 58); }
+            while (c > 0) { d.push(c % 58); c = Math.floor(c / 58); }
+        }
+        let s = "";
+        for (const b of authBytes) { if (b === 0) s += "1"; else break; }
+        for (let i = d.length - 1; i >= 0; i--) s += ALPHA[d[i]];
+        return s || null;
+    } catch {
+        return null;
+    }
+}
+
+// Resolve token account addresses to their owner wallet / programme addresses.
 //
-// Pass 1: getMultipleAccounts (jsonParsed) → authority of each token account
-//   e.g. PumpSwap vault → authority = pool PDA (e.g. EYsDErow…)
-//   Raydium vault → authority = fixed Raydium authority (already in LP_PROGRAM_ADDRESSES)
+// Strategy (works for SPL Token, Token-2022, and ALL AMMs generically):
 //
-// Pass 2: for authorities NOT already in LP_PROGRAM_ADDRESSES, fetch THEIR
-//   account info. If their programme-owner IS in LP_PROGRAM_ADDRESSES, the
-//   authority is a pool PDA owned by a known LP programme → it's an LP vault.
-//   We substitute the owner with the LP programme address so the caller's
-//   LP_PROGRAM_ADDRESSES filter correctly excludes the vault.
+// Step 1 — fetch raw base64 account data via getMultipleAccounts.
+//   Decode bytes 32-63 → the token account authority (who can transfer).
+//   • Raydium vault: authority = 5Q544f… (fixed, in LP_PROGRAM_ADDRESSES) ✓
+//   • PumpSwap vault (Token-2022): authority = pool PDA (not hardcoded) → step 2
+//   Avoids jsonParsed which Helius does not reliably support for Token-2022.
 //
-// This fixes false-positive top-holder flags on PumpSwap pools whose per-pool
-// PDAs are unknown at deploy time and cannot be hardcoded.
+// Step 2 — for authorities NOT in LP_PROGRAM_ADDRESSES, fetch THEIR account.
+//   If their programme-owner IS in LP_PROGRAM_ADDRESSES, the authority is a
+//   pool PDA → it's an LP vault. Substitute with the LP programme address so
+//   the LP_PROGRAM_ADDRESSES filter in layerHelius excludes it.
+//
+// This ends false-positive "Single wallet holds X%" flags on PumpSwap (and any
+// other AMM that uses per-pool PDAs as vault authority) without hardcoding addresses.
 export async function heliusResolveAccountOwners(
     holders: HeliusHolder[],
     key: string
@@ -43,48 +72,47 @@ export async function heliusResolveAccountOwners(
     if (!holders.length) return [];
     const addresses = holders.map(h => h.address);
     try {
-        // ── Pass 1: resolve token account authorities ─────────────────────────
+        // ── Step 1: decode authority from raw base64 ──────────────────────────
         const res = await fetchJsonPost(HELIUS_BASE, {
             jsonrpc: "2.0", id: "owners", method: "getMultipleAccounts",
-            params: [addresses, { encoding: "jsonParsed" }],
+            params: [addresses, { encoding: "base64" }],
         }, 6000, 1, heliusHeaders(key));
-        type RpcAccount = { data?: { parsed?: { info?: { owner?: string } } }; owner?: string };
-        const rpcRes = res as { result?: { value?: RpcAccount[] } } | null;
+        type RpcAccountB64 = { data?: [string, string] | null };
+        const rpcRes = res as { result?: { value?: (RpcAccountB64 | null)[] } } | null;
         const accounts = rpcRes?.result?.value ?? [];
         const resolved = holders.map((h, i) => {
-            const parsed = accounts[i]?.data?.parsed?.info?.owner;
-            return { ...h, owner: parsed ?? h.address };
+            const b64 = Array.isArray(accounts[i]?.data) ? (accounts[i]!.data as [string, string])[0] : null;
+            const authority = b64 ? extractTokenAuthority(b64) : null;
+            return { ...h, owner: authority ?? h.address };
         });
 
-        // ── Pass 2: detect pool PDAs owned by known LP programmes ─────────────
-        // Collect unique authorities not already in LP_PROGRAM_ADDRESSES.
+        // ── Step 2: detect pool PDAs whose parent is a known LP programme ─────
         const unknownOwners = [...new Set(
             resolved.map(h => h.owner).filter(o => !LP_PROGRAM_ADDRESSES.has(o))
         )];
         if (unknownOwners.length === 0) return resolved;
 
-        let ownerProgramMap = new Map<string, string>();
+        const ownerProgramMap = new Map<string, string>();
         try {
             const res2 = await fetchJsonPost(HELIUS_BASE, {
                 jsonrpc: "2.0", id: "owner-programs", method: "getMultipleAccounts",
                 params: [unknownOwners, { encoding: "base64" }],
             }, 6000, 1, heliusHeaders(key));
-            type RpcAccountBase = { owner?: string };
-            const rpcRes2 = res2 as { result?: { value?: (RpcAccountBase | null)[] } } | null;
+            type RpcAccountOwner = { owner?: string };
+            const rpcRes2 = res2 as { result?: { value?: (RpcAccountOwner | null)[] } } | null;
             const ownerAccounts = rpcRes2?.result?.value ?? [];
             unknownOwners.forEach((addr, i) => {
                 const prog = ownerAccounts[i]?.owner;
                 if (prog) ownerProgramMap.set(addr, prog);
             });
         } catch {
-            // If pass 2 fails, fall back to pass-1 results (no LP substitution)
+            // Step 2 failure is non-fatal — step 1 results are already an improvement.
         }
 
         return resolved.map(h => {
             const parentProg = ownerProgramMap.get(h.owner);
             if (parentProg && LP_PROGRAM_ADDRESSES.has(parentProg)) {
-                // Authority is a PDA of a known LP programme → it's an LP vault
-                return { ...h, owner: parentProg };
+                return { ...h, owner: parentProg }; // pool PDA → treat as LP vault
             }
             return h;
         });
