@@ -425,7 +425,14 @@ export function layerHelius(
   // never a rug pattern — it's an exchange / treasury / legit whale.
   // Without context, the geometric-mean dragged MEW (and other blue
   // chips) into DANGER even when every other layer was clean.
-  maturityContext?: { holders: number | null; liquidity: number; tokenAgeHours: number | null; mintAuthority: boolean; freezeAuthority: boolean; honeypot: boolean; lpBurned?: boolean | null; lpPctOfSupply?: number | null }
+  maturityContext?: { holders: number | null; liquidity: number; tokenAgeHours: number | null; mintAuthority: boolean; freezeAuthority: boolean; honeypot: boolean; lpBurned?: boolean | null; lpPctOfSupply?: number | null },
+  // DEXScreener pair addresses for this token. For AMMs that use per-pool
+  // PDAs as vault authority (PumpSwap, Meteora DBC, etc.), the pair address
+  // IS the authority of the LP vault token account. Passing them here lets
+  // us exclude LP vaults that our static LP_PROGRAM_ADDRESSES list misses —
+  // without any extra RPC calls (the data comes from the DEXScreener response
+  // we already fetched). This is the most reliable LP detection available.
+  dexPairAddresses?: Set<string>,
 ): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
@@ -466,7 +473,9 @@ export function layerHelius(
     };
   }
   const accounts = rawHolderAccounts.filter(
-    h => !LP_PROGRAM_ADDRESSES.has(h.owner) && !FOUNDATION_WALLETS.has(h.owner)
+    h => !LP_PROGRAM_ADDRESSES.has(h.owner)
+      && !FOUNDATION_WALLETS.has(h.owner)
+      && !(dexPairAddresses?.has(h.owner))   // LP vault whose authority = DEXScreener pair PDA
   );
   const top1Amount = asNumber(accounts[0]?.uiAmount);
   const top1Pct = top1Amount / totalSupplyUi;

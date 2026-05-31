@@ -156,7 +156,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v34"; // 2026-05-31: moderate top-10 concentration tier info→warning (always visible); young-token 5-10% single-wallet tier removed; LP vault base64 decode fix; flag deduplication.
+const ENGINE_VERSION_MANUAL = "v35"; // 2026-05-31: LP vault detection via DEXScreener pair addresses — definitive fix, no RPC guessing. layerHelius now excludes any holder whose decoded authority matches a known DEX pair PDA.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.
@@ -344,10 +344,11 @@ export const API_TIMEOUT_HELIUS = 6000;
 // 7.7.12 bump: young-token (<30d) single-wallet tiers added on top of the
 //   7.7.11 net. top-1 >15% → hard DANGER; 10-15% → critical soft CAUTION max;
 //   5-10% → warning. Scoped to <30d so blue-chips are untouched.
-// 7.7.14 bump: moderate top-10 concentration tiers promoted info→warning so
-//   they stay visible in Critical Flags on DANGER/RUG verdicts. Young-token
-//   5-10% single-wallet warning tier removed. Flag deduplication.
-export const SCORING_VERSION = "7.7.14";
+// 7.7.15 bump: definitive LP vault fix — DEXScreener pair addresses passed to
+//   layerHelius and excluded from top-holder list. For PumpSwap/Meteora pools
+//   the pair address IS the vault authority, so this catches them without any
+//   extra RPC calls or guessing about program ownership.
+export const SCORING_VERSION = "7.7.15";
 
 // ── SOFT REASONS (safe gate unlock) ───────────────────────────
 // A reason listed here CAN be unlocked by applySafeGateOverride when

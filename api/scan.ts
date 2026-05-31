@@ -517,7 +517,17 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     };
     const l2 = layerRugCheck(rugData, rugReport, resolvedMint, tokenName, maturityCtx);
     const l3 = layerGoPlus(goplus, maturityCtx);
-    const l4 = layerHelius(resolvedHolderAccounts, totalSupplyUi, maturityCtx);
+    // Collect all DEXScreener pair addresses for this token.
+    // For AMMs that use per-pool PDAs as vault authority (PumpSwap, Meteora DBC…)
+    // the pair address IS the decoded authority of the LP vault token account.
+    // Passing it here lets layerHelius exclude the LP vault without any extra
+    // RPC calls — the data is already in memory from the DEXScreener fetch.
+    const dexPairAddresses = new Set<string>(
+      (dexData?.pairs ?? [])
+        .map((p: DexScreenerPair) => p.pairAddress)
+        .filter((a: unknown): a is string => typeof a === "string" && a.length > 0)
+    );
+    const l4 = layerHelius(resolvedHolderAccounts, totalSupplyUi, maturityCtx, dexPairAddresses);
     const l5 = layerSolscan(solscanHoldersCount, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h);
     const l6 = layerChart(candles, pair, tokenAgeMinutes, maturityCtx);
     const l7 = layerCrossValidation(rugData, resolvedHolderAccounts, goplus, solscanTokenAgeHours, dexTokenAgeHours, totalSupplyUi);
