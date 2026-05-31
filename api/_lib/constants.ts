@@ -156,7 +156,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v37"; // 2026-05-31: tighten 30d pump thresholds to match 7d (200%/500%). 400%/1000% was too lax — a 200% monthly pump carries the same retrace risk as a 200% weekly pump.
+const ENGINE_VERSION_MANUAL = "v39"; // 2026-05-31: switch pump candles from /day to /hour?aggregate=4&limit=182 (4h candles, 30d coverage). More reliable than /day which returns 0 on rate-limit → was causing SAFE fluctuation on TROLL.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.
@@ -352,10 +352,11 @@ export const API_TIMEOUT_HELIUS = 6000;
 // 7.7.12 bump: young-token (<30d) single-wallet tiers added on top of the
 //   7.7.11 net. top-1 >15% → hard DANGER; 10-15% → critical soft CAUTION max;
 //   5-10% → warning. Scoped to <30d so blue-chips are untouched.
-// 7.7.17 bump: tighten 30d pump thresholds — 400%→200% and 1000%→500%,
-//   now matching the 7d thresholds. A 200% monthly pump is as risky as a
-//   200% weekly pump from a retrace standpoint.
-export const SCORING_VERSION = "7.7.17";
+// 7.7.19 bump: switch pump candle source /day→/hour?agg=4&limit=182.
+//   GeckoTerminal /day returns 0 candles under rate-limit → pump flags silent
+//   → TROLL/blue-chips fluctuate CAUTION↔SAFE. 4h candles are far more stable.
+//   Also: pump ≥500% → critical severity (red flag). 200-499% stays warning.
+export const SCORING_VERSION = "7.7.19";
 
 // ── SOFT REASONS (safe gate unlock) ───────────────────────────
 // A reason listed here CAN be unlocked by applySafeGateOverride when

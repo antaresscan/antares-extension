@@ -315,16 +315,22 @@ export async function fetchDexCandles(
     }));
 }
 
-// Fetch daily OHLCV candles (up to 31 days) for weekly/monthly pump detection.
-// Uses GeckoTerminal's /day endpoint — same pool address, different resolution.
+// Fetch 4-hour OHLCV candles covering ~30 days for weekly/monthly pump detection.
+//
+// WHY 4-hour instead of /day:
+//   GeckoTerminal's /ohlcv/day endpoint is unreliable — it frequently returns
+//   0 candles (rate-limit, missing data, cold pools) while the intraday
+//   endpoints are much more stable. 4h candles × 182 = 728h ≈ 30.3 days,
+//   enough to compute both 7-day (42 candles back) and 30-day (182 back) changes.
+//
 // Returns candles sorted ascending by timestamp (oldest first).
 export async function fetchDexCandlesDaily(
     pairAddress: string
 ): Promise<OHLCVCandle[]> {
-    const url = "https://api.geckoterminal.com/api/v2/networks/solana/pools/" + pairAddress + "/ohlcv/day?aggregate=1&limit=31";
+    const url = "https://api.geckoterminal.com/api/v2/networks/solana/pools/" + pairAddress + "/ohlcv/hour?aggregate=4&limit=182";
     const raw = await fetchJson(url, {
         headers: { "Accept": "application/json;version=20230302" }
-    }, 6000) as GeckoTerminalOHLCVResponse | null;
+    }, 8000) as GeckoTerminalOHLCVResponse | null;
     const ohlcv = raw?.data?.attributes?.ohlcv_list;
     if (!Array.isArray(ohlcv) || ohlcv.length === 0) return [];
     const candles = ohlcv.map((b: number[]) => ({
