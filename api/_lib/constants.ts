@@ -156,7 +156,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v32"; // 2026-05-31: young-token (<30d) single-wallet tiers. >15% → hard concentration DANGER; 10-15% → critical soft (CAUTION max, concentration_light); 5-10% → warning (blocks SAFE). Restores founder rule scoped to fresh tokens only — avoids blue-chip false positives. Bump flushes Redis cache.
+const ENGINE_VERSION_MANUAL = "v33"; // 2026-05-31: LP vault PDA detection (PumpSwap 2-pass resolve) + hide Context & notes on RUG/DANGER. Bump flushes Redis cache so old results with LP-as-top-holder are evicted.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.
@@ -344,7 +344,9 @@ export const API_TIMEOUT_HELIUS = 6000;
 // 7.7.12 bump: young-token (<30d) single-wallet tiers added on top of the
 //   7.7.11 net. top-1 >15% → hard DANGER; 10-15% → critical soft CAUTION max;
 //   5-10% → warning. Scoped to <30d so blue-chips are untouched.
-export const SCORING_VERSION = "7.7.12";
+// 7.7.13 bump: LP vault PDA detection (2-pass heliusResolveAccountOwners) and
+//   hide "Context & notes" (info-level flags) on RUG/DANGER overlay.
+export const SCORING_VERSION = "7.7.13";
 
 // ── SOFT REASONS (safe gate unlock) ───────────────────────────
 // A reason listed here CAN be unlocked by applySafeGateOverride when
