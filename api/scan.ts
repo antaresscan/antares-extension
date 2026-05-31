@@ -313,7 +313,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       solMeta, solTransfers, solMarkets,
     ] = await Promise.all([
       withBudget(fetchDexCandles(pairAddress), remainingMs()),
-      withBudget(fetchDexCandlesDaily(pairAddress), remainingMs()),
+      withBudget(fetchDexCandlesDaily(pairAddress, resolvedMint), remainingMs()),
       withBudget(fetchJson(`${GOPLUS_BASE}/solana/token_security?contract_addresses=${resolvedMint}`, {}, 4000), remainingMs()),
       HELIUS_API_KEY ? withBudget(heliusGetLargestAccounts(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
       HELIUS_API_KEY ? withBudget(heliusGetTokenSupply(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,

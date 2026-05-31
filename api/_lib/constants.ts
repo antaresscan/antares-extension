@@ -156,7 +156,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v39"; // 2026-05-31: switch pump candles from /day to /hour?aggregate=4&limit=182 (4h candles, 30d coverage). More reliable than /day which returns 0 on rate-limit → was causing SAFE fluctuation on TROLL.
+const ENGINE_VERSION_MANUAL = "v40"; // 2026-05-31: GT token pool fallback in fetchDexCandlesDaily — when primary pool returns <5 candles, queries /tokens/{mint}/pools then tries top-3 GT pools. Covers PumpSwap + any pool where DEXScreener pairAddress != GT pool ID.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.
@@ -352,11 +352,12 @@ export const API_TIMEOUT_HELIUS = 6000;
 // 7.7.12 bump: young-token (<30d) single-wallet tiers added on top of the
 //   7.7.11 net. top-1 >15% → hard DANGER; 10-15% → critical soft CAUTION max;
 //   5-10% → warning. Scoped to <30d so blue-chips are untouched.
-// 7.7.19 bump: switch pump candle source /day→/hour?agg=4&limit=182.
-//   GeckoTerminal /day returns 0 candles under rate-limit → pump flags silent
-//   → TROLL/blue-chips fluctuate CAUTION↔SAFE. 4h candles are far more stable.
-//   Also: pump ≥500% → critical severity (red flag). 200-499% stays warning.
-export const SCORING_VERSION = "7.7.19";
+// 7.7.20 bump: GeckoTerminal token-pool fallback in fetchDexCandlesDaily.
+//   When primary pool address returns <5 candles (GT doesn't know that pool),
+//   query /tokens/{mint}/pools to get GT's own pool list → try top-3 by volume.
+//   Covers PumpSwap, Meteora DBC, any AMM where DEXScreener pairAddr ≠ GT ID.
+//   Zero additional API keys required.
+export const SCORING_VERSION = "7.7.20";
 
 // ── SOFT REASONS (safe gate unlock) ───────────────────────────
 // A reason listed here CAN be unlocked by applySafeGateOverride when
