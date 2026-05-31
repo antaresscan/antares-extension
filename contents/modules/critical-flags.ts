@@ -219,13 +219,17 @@ function renderPanel(
   //      where the positive context actually reinforces the verdict.
   const verdictUpper = (verdict ?? "").toUpperCase()
   const isKillVerdict = verdictUpper === "RUG" || verdictUpper === "DANGER"
-  // On kill verdicts (RUG / DANGER): hide both reassuring signals.
+  // On kill verdicts (RUG / DANGER): hide reassuring signals.
   //   "bonus"  → positive signals like "Established token ✓" read as cognitive dissonance
-  //   "info"   → "Context & notes" (e.g. "Top 10 hold 24% — moderate") softens a kill verdict
-  // Both are kept for CAUTION and SAFE where context genuinely helps.
+  //   "info"   → most context/notes soften a kill verdict
+  // Exception: top-10 concentration info flags are always shown — the user
+  // needs to see the holder distribution regardless of the verdict level.
+  // Both bonus and non-concentration info are kept for CAUTION and SAFE.
+  const TOP10_CONCENTRATION_RE = /^top 10 hold \d+%/i
   const all = (flags ?? []).filter((f) => {
     if (PIPELINE_STATUS_PATTERN.test(f.label)) return false
-    if (isKillVerdict && (f.severity === "bonus" || f.severity === "info")) return false
+    if (isKillVerdict && f.severity === "bonus") return false
+    if (isKillVerdict && f.severity === "info" && !TOP10_CONCENTRATION_RE.test(f.label)) return false
     return true
   })
 

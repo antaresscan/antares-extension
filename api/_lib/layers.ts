@@ -524,9 +524,12 @@ export function layerHelius(
       flags.push(makeFlag(`Top 10 hold ${t10pct}% — elevated · exchanges may be included`, "warning", 0));
       penalties.push(0.50); safeBlocked = true; top10ConcentrationBand = "soft";
     } else if (top10Pct >= 0.25) {
-      // Context note: explains to the user why a 36% top-10 on a 2-year-old
-      // token is NOT the same risk as 36% on a 3-hour token.
-      flags.push(makeFlag(`Top 10 hold ${t10pct}% — normal for established token · likely exchanges & long-term holders`, "info", 0));
+      // Kept as INFO + no safeBlocked for established tokens: on a 2-year-old
+      // blue-chip, 25-44% top-10 is normal (exchange cold wallets). Making it
+      // WARNING would block SAFE for FARTCOIN/WIF/MEW unfairly.
+      // The overlay whitelists concentration info flags so they stay visible
+      // even on DANGER/RUG verdicts (critical-flags.ts filter).
+      flags.push(makeFlag(`Top 10 hold ${t10pct}% — moderate · exchanges likely included`, "info", 0));
       top10ConcentrationBand = "moderate";
     } else {
       flags.push(makeFlag("Well distributed supply ✓", "bonus", 0));
@@ -544,8 +547,9 @@ export function layerHelius(
       flags.push(makeFlag(`Top 10 hold ${t10pct}% — elevated concentration · cluster risk`, "warning", 0));
       penalties.push(0.50); safeBlocked = true; top10ConcentrationBand = "soft";
     } else if (top10Pct >= 0.20) {
-      flags.push(makeFlag(`Top 10 hold ${t10pct}% — moderate concentration`, "info", 0));
-      top10ConcentrationBand = "moderate";
+      // Promoted info→warning so it stays visible even on DANGER/RUG verdicts.
+      flags.push(makeFlag(`Top 10 hold ${t10pct}% — moderate concentration`, "warning", 0));
+      safeBlocked = true; top10ConcentrationBand = "moderate";
     } else {
       flags.push(makeFlag("Well distributed supply ✓", "bonus", 0));
       trust = Math.min(1.0, trust * 1.05);
