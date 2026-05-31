@@ -6,7 +6,7 @@ import type {
     OHLCVCandle, GeckoTerminalOHLCVResponse,
     RugCheckReport, RugCheckRisk,
 } from "./types";
-import { HELIUS_BASE, PUBLIC_SOLANA_RPCS, SOLSCAN_PUBLIC_BASE, SOLSCAN_BASE, HELIUS_REST_BASE } from "./constants";
+import { HELIUS_BASE, PUBLIC_SOLANA_RPCS, SOLSCAN_PUBLIC_BASE, SOLSCAN_BASE, HELIUS_REST_BASE, LP_PROGRAM_ADDRESSES } from "./constants";
 import { fetchJson, fetchJsonPost } from "./http";
 import { asNumber } from "./math";
 import { logger } from "./logger";
@@ -21,7 +21,21 @@ export async function heliusGetLargestAccounts(mint: string, key: string) {
 }
 
 
-// Resolve token account addresses to their owner wallet addresses
+// Resolve token account addresses to their owner wallet addresses.
+// Two-pass approach to catch AMM pool PDAs (PumpSwap, Meteora, etc.):
+//
+// Pass 1: getMultipleAccounts (jsonParsed) → authority of each token account
+//   e.g. PumpSwap vault → authority = pool PDA (e.g. EYsDErow…)
+//   Raydium vault → authority = fixed Raydium authority (already in LP_PROGRAM_ADDRESSES)
+//
+// Pass 2: for authorities NOT already in LP_PROGRAM_ADDRESSES, fetch THEIR
+//   account info. If their programme-owner IS in LP_PROGRAM_ADDRESSES, the
+//   authority is a pool PDA owned by a known LP programme → it's an LP vault.
+//   We substitute the owner with the LP programme address so the caller's
+//   LP_PROGRAM_ADDRESSES filter correctly excludes the vault.
+//
+// This fixes false-positive top-holder flags on PumpSwap pools whose per-pool
+// PDAs are unknown at deploy time and cannot be hardcoded.
 export async function heliusResolveAccountOwners(
     holders: HeliusHolder[],
     key: string
@@ -29,19 +43,53 @@ export async function heliusResolveAccountOwners(
     if (!holders.length) return [];
     const addresses = holders.map(h => h.address);
     try {
+        // ── Pass 1: resolve token account authorities ─────────────────────────
         const res = await fetchJsonPost(HELIUS_BASE, {
             jsonrpc: "2.0", id: "owners", method: "getMultipleAccounts",
             params: [addresses, { encoding: "jsonParsed" }],
         }, 6000, 1, heliusHeaders(key));
-                type RpcAccount = { data?: { parsed?: { info?: { owner?: string } } } };
-            const rpcRes = res as { result?: { value?: RpcAccount[] } } | null;
-            const accounts = rpcRes?.result?.value ?? [];
-            return holders.map((h, i) => {
-                const parsed = accounts[i]?.data?.parsed?.info?.owner;
-                return { ...h, owner: parsed ?? h.address };
+        type RpcAccount = { data?: { parsed?: { info?: { owner?: string } } }; owner?: string };
+        const rpcRes = res as { result?: { value?: RpcAccount[] } } | null;
+        const accounts = rpcRes?.result?.value ?? [];
+        const resolved = holders.map((h, i) => {
+            const parsed = accounts[i]?.data?.parsed?.info?.owner;
+            return { ...h, owner: parsed ?? h.address };
+        });
+
+        // ── Pass 2: detect pool PDAs owned by known LP programmes ─────────────
+        // Collect unique authorities not already in LP_PROGRAM_ADDRESSES.
+        const unknownOwners = [...new Set(
+            resolved.map(h => h.owner).filter(o => !LP_PROGRAM_ADDRESSES.has(o))
+        )];
+        if (unknownOwners.length === 0) return resolved;
+
+        let ownerProgramMap = new Map<string, string>();
+        try {
+            const res2 = await fetchJsonPost(HELIUS_BASE, {
+                jsonrpc: "2.0", id: "owner-programs", method: "getMultipleAccounts",
+                params: [unknownOwners, { encoding: "base64" }],
+            }, 6000, 1, heliusHeaders(key));
+            type RpcAccountBase = { owner?: string };
+            const rpcRes2 = res2 as { result?: { value?: (RpcAccountBase | null)[] } } | null;
+            const ownerAccounts = rpcRes2?.result?.value ?? [];
+            unknownOwners.forEach((addr, i) => {
+                const prog = ownerAccounts[i]?.owner;
+                if (prog) ownerProgramMap.set(addr, prog);
+            });
+        } catch {
+            // If pass 2 fails, fall back to pass-1 results (no LP substitution)
+        }
+
+        return resolved.map(h => {
+            const parentProg = ownerProgramMap.get(h.owner);
+            if (parentProg && LP_PROGRAM_ADDRESSES.has(parentProg)) {
+                // Authority is a PDA of a known LP programme → it's an LP vault
+                return { ...h, owner: parentProg };
+            }
+            return h;
         });
     } catch (e) {
-                logger.warn("fetchers", "resolve account owners failed, using fallback", { error: String(e) });
+        logger.warn("fetchers", "resolve account owners failed, using fallback", { error: String(e) });
         return holders.map(h => ({ ...h, owner: h.address }));
     }
 }
