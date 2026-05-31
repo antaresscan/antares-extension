@@ -315,34 +315,70 @@ export async function fetchDexCandles(
     }));
 }
 
-// Fetch 4-hour OHLCV candles covering ~30 days for weekly/monthly pump detection.
+// Fetch 4-hour OHLCV candles (~30 days) for weekly/monthly pump detection.
 //
-// WHY 4-hour instead of /day:
-//   GeckoTerminal's /ohlcv/day endpoint is unreliable — it frequently returns
-//   0 candles (rate-limit, missing data, cold pools) while the intraday
-//   endpoints are much more stable. 4h candles × 182 = 728h ≈ 30.3 days,
-//   enough to compute both 7-day (42 candles back) and 30-day (182 back) changes.
+// Strategy — zero extra API keys, maximises coverage:
 //
-// Returns candles sorted ascending by timestamp (oldest first).
+// 1. Try pool OHLCV using the DEXScreener pairAddress directly.
+//    Works for Raydium, Orca, and pools GeckoTerminal indexes by their
+//    on-chain address.
+//
+// 2. If < 5 candles returned (pool not indexed by GT or rate-limited),
+//    call GeckoTerminal's /tokens/{mint}/pools to get the pools GT knows
+//    about for this token, then try each top pool (up to 3) until we get
+//    usable data. This covers PumpSwap, Meteora DBC, and other AMMs where
+//    GT's internal pool ID differs from the DEXScreener pairAddress.
+//
+// Returns candles sorted ascending by timestamp (oldest first), or [].
 export async function fetchDexCandlesDaily(
-    pairAddress: string
+    pairAddress: string,
+    mint?: string,
 ): Promise<OHLCVCandle[]> {
-    const url = "https://api.geckoterminal.com/api/v2/networks/solana/pools/" + pairAddress + "/ohlcv/hour?aggregate=4&limit=182";
-    const raw = await fetchJson(url, {
-        headers: { "Accept": "application/json;version=20230302" }
-    }, 8000) as GeckoTerminalOHLCVResponse | null;
-    const ohlcv = raw?.data?.attributes?.ohlcv_list;
-    if (!Array.isArray(ohlcv) || ohlcv.length === 0) return [];
-    const candles = ohlcv.map((b: number[]) => ({
-        ts: asNumber(b[0]),
-        o: asNumber(b[1]),
-        h: asNumber(b[2]),
-        l: asNumber(b[3]),
-        c: asNumber(b[4]),
-        v: asNumber(b[5]),
-    }));
-    // GeckoTerminal returns newest-first; reverse for chronological order.
-    return candles.sort((a, b) => a.ts - b.ts);
+    const GT = "https://api.geckoterminal.com/api/v2";
+    const headers = { "Accept": "application/json;version=20230302" };
+
+    async function poolCandles(poolAddr: string): Promise<OHLCVCandle[]> {
+        const url = `${GT}/networks/solana/pools/${poolAddr}/ohlcv/hour?aggregate=4&limit=182`;
+        const raw = await fetchJson(url, { headers }, 8000) as GeckoTerminalOHLCVResponse | null;
+        const ohlcv = raw?.data?.attributes?.ohlcv_list;
+        if (!Array.isArray(ohlcv) || ohlcv.length < 5) return [];
+        return ohlcv
+            .map((b: number[]) => ({ ts: asNumber(b[0]), o: asNumber(b[1]), h: asNumber(b[2]), l: asNumber(b[3]), c: asNumber(b[4]), v: asNumber(b[5]) }))
+            .sort((a, b) => a.ts - b.ts);
+    }
+
+    // Step 1: try the DEXScreener pair address directly.
+    const direct = await poolCandles(pairAddress).catch(() => []);
+    if (direct.length >= 5) return direct;
+
+    // Step 2: no usable data — ask GeckoTerminal for its own pool list.
+    if (!mint) return [];
+    try {
+        type GTPool = { id?: string; attributes?: { address?: string; volume_usd?: { h24?: string } } };
+        type GTPoolsResp = { data?: GTPool[] };
+        const poolsRaw = await fetchJson(
+            `${GT}/networks/solana/tokens/${mint}/pools?page=1`,
+            { headers }, 6000
+        ) as GTPoolsResp | null;
+        const pools = poolsRaw?.data ?? [];
+        // Sort by 24h volume descending (highest liquidity pool first).
+        const sorted = pools
+            .filter((p: GTPool) => p.attributes?.address && p.attributes.address !== pairAddress)
+            .sort((a: GTPool, b: GTPool) => {
+                const va = parseFloat(a.attributes?.volume_usd?.h24 ?? "0");
+                const vb = parseFloat(b.attributes?.volume_usd?.h24 ?? "0");
+                return vb - va;
+            })
+            .slice(0, 3);
+        for (const pool of sorted) {
+            const addr = pool.attributes?.address;
+            if (!addr) continue;
+            const candles = await poolCandles(addr).catch(() => []);
+            if (candles.length >= 5) return candles;
+        }
+    } catch { /* fallback failed silently */ }
+
+    return [];
 }
 
 // ─── BUNDLE DETECTION ──────────────────────────────────────────────────────
