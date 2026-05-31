@@ -1047,39 +1047,48 @@ export function layerChart(
     }
   }
 
-  // ── WEEKLY / MONTHLY PUMP (7.7.16) ──────────────────────────────────────────
+  // ── WEEKLY / MONTHLY PUMP (7.7.16+) ─────────────────────────────────────────
   // Tokens that have pumped heavily over 7 or 30 days carry elevated retrace
   // risk even when the contract is clean. These flags block SAFE so blue chips
   // show CAUTION rather than a false-positive green signal.
   //
-  // dailyCandles are sorted oldest-first (fetchDexCandlesDaily guarantees this).
-  // We compare the most recent close against the close from ~7d / ~30d ago.
-  // Requires at least 2 candles; gracefully does nothing if data is missing.
-  if (dailyCandles && dailyCandles.length >= 2) {
+  // Two severity tiers (same thresholds for 7d and 30d):
+  //   200–499%: "warning"  → ⚠️ orange — CAUTION max
+  //   ≥ 500%:  "critical" → ❌ red    — CAUTION max (no HARD_BLOCK_PATTERNS match
+  //                                     → stays soft, verdict stays CAUTION)
+  //
+  // dailyCandles are 4-hour candles from fetchDexCandlesDaily (sorted oldest-first).
+  //   7-day  = 42 candles back  (42 × 4h = 168h = 7 days)
+  //   30-day = 182 candles back (182 × 4h ≈ 30.3 days)
+  // 4h candles are far more reliably available on GeckoTerminal than /day.
+  // Requires at least 5 candles to avoid false positives on brand-new pairs.
+  if (dailyCandles && dailyCandles.length >= 5) {
     const latestClose = dailyCandles[dailyCandles.length - 1].c;
     if (latestClose > 0) {
-      // 7-day: candle from 7 days ago (index = length - 8, or first if fewer)
-      const idx7 = Math.max(0, dailyCandles.length - 8);
+      // 7-day: 42 × 4h candles back
+      const idx7 = Math.max(0, dailyCandles.length - 43); // -43 so candle AT -42 is the ref
       const close7d = dailyCandles[idx7].c;
-      if (close7d > 0 && idx7 < dailyCandles.length - 1) {
+      // Only compute if reference candle is meaningfully older (> 5 candles away)
+      if (close7d > 0 && (dailyCandles.length - 1 - idx7) >= 5) {
         const pct7d = ((latestClose - close7d) / close7d) * 100;
         if (pct7d >= PUMP_7D_HIGH_PCT) {
-          flags.push(makeFlag(`Pumped +${Math.round(pct7d)}% over 7 days — high retrace risk at current prices`, "warning", 0));
-          penalties.push(0.65); safeBlocked = true;
+          flags.push(makeFlag(`Pumped +${Math.round(pct7d)}% over 7 days — high retrace risk at current prices`, "critical", 0));
+          penalties.push(0.55); safeBlocked = true;
         } else if (pct7d >= PUMP_7D_WARN_PCT) {
           flags.push(makeFlag(`Pumped +${Math.round(pct7d)}% over 7 days — elevated retrace risk at current prices`, "warning", 0));
           penalties.push(0.75); safeBlocked = true;
         }
       }
 
-      // 30-day: candle from 30 days ago (index = 0 if we have ~31 candles)
-      const idx30 = Math.max(0, dailyCandles.length - 31);
+      // 30-day: 182 × 4h candles back (or oldest available)
+      const idx30 = Math.max(0, dailyCandles.length - 183);
       const close30d = dailyCandles[idx30].c;
-      if (close30d > 0 && idx30 < dailyCandles.length - 1) {
+      // Only compute if we have at least 42 candles (> 7 days) for meaningful 30d reading
+      if (close30d > 0 && (dailyCandles.length - 1 - idx30) >= 42) {
         const pct30d = ((latestClose - close30d) / close30d) * 100;
         if (pct30d >= PUMP_30D_HIGH_PCT) {
-          flags.push(makeFlag(`Pumped +${Math.round(pct30d)}% over 30 days — high retrace risk at current prices`, "warning", 0));
-          penalties.push(0.65); safeBlocked = true;
+          flags.push(makeFlag(`Pumped +${Math.round(pct30d)}% over 30 days — high retrace risk at current prices`, "critical", 0));
+          penalties.push(0.55); safeBlocked = true;
         } else if (pct30d >= PUMP_30D_WARN_PCT) {
           flags.push(makeFlag(`Pumped +${Math.round(pct30d)}% over 30 days — elevated retrace risk at current prices`, "warning", 0));
           penalties.push(0.75); safeBlocked = true;
