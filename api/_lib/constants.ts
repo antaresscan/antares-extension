@@ -156,7 +156,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v36"; // 2026-05-31: weekly + monthly pump warning flags (7d >200%, 30d >400%). Daily OHLCV candles fetched from GeckoTerminal. Blocks SAFE on pumped blue-chips.
+const ENGINE_VERSION_MANUAL = "v37"; // 2026-05-31: tighten 30d pump thresholds to match 7d (200%/500%). 400%/1000% was too lax — a 200% monthly pump carries the same retrace risk as a 200% weekly pump.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.
@@ -261,8 +261,8 @@ export const DAMPENING_FACTOR = 0.3;     // applyDiminishingPenalties factor
 // that pumped 500%+ show CAUTION rather than a false-positive green signal.
 export const PUMP_7D_WARN_PCT  = 200;   // >200% in 7 days  → warning (blocks SAFE)
 export const PUMP_7D_HIGH_PCT  = 500;   // >500% in 7 days  → stronger warning
-export const PUMP_30D_WARN_PCT = 400;   // >400% in 30 days → warning (blocks SAFE)
-export const PUMP_30D_HIGH_PCT = 1000;  // >1000% in 30 days → stronger warning
+export const PUMP_30D_WARN_PCT = 200;   // >200% in 30 days → warning (blocks SAFE)
+export const PUMP_30D_HIGH_PCT = 500;   // >500% in 30 days → stronger warning
 // HTTP timeouts (ms)
 export const API_TIMEOUT_DEFAULT = 5000;
 export const API_TIMEOUT_HELIUS = 6000;
@@ -352,10 +352,10 @@ export const API_TIMEOUT_HELIUS = 6000;
 // 7.7.12 bump: young-token (<30d) single-wallet tiers added on top of the
 //   7.7.11 net. top-1 >15% → hard DANGER; 10-15% → critical soft CAUTION max;
 //   5-10% → warning. Scoped to <30d so blue-chips are untouched.
-// 7.7.16 bump: weekly + monthly pump warning (7d >200% / 30d >400% → safeBlocked).
-//   Prevents "SAFE" verdict on blue chips that have pumped 500%+ this week.
-//   Daily candles fetched separately from GeckoTerminal (/ohlcv/day, limit=31).
-export const SCORING_VERSION = "7.7.16";
+// 7.7.17 bump: tighten 30d pump thresholds — 400%→200% and 1000%→500%,
+//   now matching the 7d thresholds. A 200% monthly pump is as risky as a
+//   200% weekly pump from a retrace standpoint.
+export const SCORING_VERSION = "7.7.17";
 
 // ── SOFT REASONS (safe gate unlock) ───────────────────────────
 // A reason listed here CAN be unlocked by applySafeGateOverride when
