@@ -156,7 +156,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v35"; // 2026-05-31: LP vault detection via DEXScreener pair addresses — definitive fix, no RPC guessing. layerHelius now excludes any holder whose decoded authority matches a known DEX pair PDA.
+const ENGINE_VERSION_MANUAL = "v36"; // 2026-05-31: weekly + monthly pump warning flags (7d >200%, 30d >400%). Daily OHLCV candles fetched from GeckoTerminal. Blocks SAFE on pumped blue-chips.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.
@@ -255,6 +255,14 @@ export const HOLDERS_LOW = 50;           // <50 = low
 export const HOLDERS_STRONG = 5000;      // >5000 = strong
 // Chart pattern thresholds
 export const DAMPENING_FACTOR = 0.3;     // applyDiminishingPenalties factor
+// Weekly / monthly pump thresholds.
+// Tokens that have pumped heavily over 7 or 30 days carry elevated retrace
+// risk — even if the contract is clean. These flags block SAFE so blue chips
+// that pumped 500%+ show CAUTION rather than a false-positive green signal.
+export const PUMP_7D_WARN_PCT  = 200;   // >200% in 7 days  → warning (blocks SAFE)
+export const PUMP_7D_HIGH_PCT  = 500;   // >500% in 7 days  → stronger warning
+export const PUMP_30D_WARN_PCT = 400;   // >400% in 30 days → warning (blocks SAFE)
+export const PUMP_30D_HIGH_PCT = 1000;  // >1000% in 30 days → stronger warning
 // HTTP timeouts (ms)
 export const API_TIMEOUT_DEFAULT = 5000;
 export const API_TIMEOUT_HELIUS = 6000;
@@ -344,11 +352,10 @@ export const API_TIMEOUT_HELIUS = 6000;
 // 7.7.12 bump: young-token (<30d) single-wallet tiers added on top of the
 //   7.7.11 net. top-1 >15% → hard DANGER; 10-15% → critical soft CAUTION max;
 //   5-10% → warning. Scoped to <30d so blue-chips are untouched.
-// 7.7.15 bump: definitive LP vault fix — DEXScreener pair addresses passed to
-//   layerHelius and excluded from top-holder list. For PumpSwap/Meteora pools
-//   the pair address IS the vault authority, so this catches them without any
-//   extra RPC calls or guessing about program ownership.
-export const SCORING_VERSION = "7.7.15";
+// 7.7.16 bump: weekly + monthly pump warning (7d >200% / 30d >400% → safeBlocked).
+//   Prevents "SAFE" verdict on blue chips that have pumped 500%+ this week.
+//   Daily candles fetched separately from GeckoTerminal (/ohlcv/day, limit=31).
+export const SCORING_VERSION = "7.7.16";
 
 // ── SOFT REASONS (safe gate unlock) ───────────────────────────
 // A reason listed here CAN be unlocked by applySafeGateOverride when

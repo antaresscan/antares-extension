@@ -24,7 +24,7 @@ import {
   heliusGetHoldersCount,
   heliusResolveAccountOwners,
   publicRpcGetLargestAccounts, publicRpcGetTokenSupply, publicRpcGetMintInfo,
-  solscanGetHoldersCount, fetchSolscan, fetchDexCandles,
+  solscanGetHoldersCount, fetchSolscan, fetchDexCandles, fetchDexCandlesDaily,
   type CreatorReputation,
 } from "./_lib/fetchers";
 import {
@@ -307,12 +307,13 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       ? (Date.now() - pair.pairCreatedAt) / 60000 : null;
 
     const [
-      candlesRaw, goplusRaw,
+      candlesRaw, candlesDailyRaw, goplusRaw,
       heliusHoldersRaw, heliusSupplyRaw, heliusHoldersCountRaw,
       solscanHoldersCount,
       solMeta, solTransfers, solMarkets,
     ] = await Promise.all([
       withBudget(fetchDexCandles(pairAddress), remainingMs()),
+      withBudget(fetchDexCandlesDaily(pairAddress), remainingMs()),
       withBudget(fetchJson(`${GOPLUS_BASE}/solana/token_security?contract_addresses=${resolvedMint}`, {}, 4000), remainingMs()),
       HELIUS_API_KEY ? withBudget(heliusGetLargestAccounts(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
       HELIUS_API_KEY ? withBudget(heliusGetTokenSupply(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
@@ -331,6 +332,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     ]);
 
     const candles: OHLCVCandle[] = Array.isArray(candlesRaw) ? candlesRaw : [];
+    const dailyCandles: OHLCVCandle[] = Array.isArray(candlesDailyRaw) ? candlesDailyRaw : [];
     const goplus = pickGoPlusResult(goplusRaw, resolvedMint);
     const heliusResponse = isHeliusLargestAccountsResponse(heliusHoldersRaw) ? heliusHoldersRaw : null;
     let rawHolderAccounts: HeliusHolder[] = heliusResponse?.result?.value ?? [];
@@ -529,7 +531,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     );
     const l4 = layerHelius(resolvedHolderAccounts, totalSupplyUi, maturityCtx, dexPairAddresses);
     const l5 = layerSolscan(solscanHoldersCount, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h);
-    const l6 = layerChart(candles, pair, tokenAgeMinutes, maturityCtx);
+    const l6 = layerChart(candles, pair, tokenAgeMinutes, maturityCtx, dailyCandles.length >= 2 ? dailyCandles : undefined);
     const l7 = layerCrossValidation(rugData, resolvedHolderAccounts, goplus, solscanTokenAgeHours, dexTokenAgeHours, totalSupplyUi);
 
     const allLayers = [l1, l2, l3, l4, l5, l6, l7];

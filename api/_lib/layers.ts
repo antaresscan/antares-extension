@@ -11,6 +11,7 @@ import type {
 } from "./types";
 import {
   LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS, OFFICIAL_MINTS,
+  PUMP_7D_WARN_PCT, PUMP_7D_HIGH_PCT, PUMP_30D_WARN_PCT, PUMP_30D_HIGH_PCT,
 } from "./constants";
 import { getLpRiskBucket } from "./lp-risk-matrix";
 import { asNumber, _mean, _std, _pct } from "./math";
@@ -799,7 +800,11 @@ export function layerChart(
   // legit blue-chips like FWOG/NEET get capped at score 500 because
   // chart pattern detectors mistake quiet sideways trading for
   // controlled dumps.
-  maturityContext?: { holders: number | null; liquidity: number; tokenAgeHours: number | null; mintAuthority: boolean; freezeAuthority: boolean; honeypot: boolean; lpBurned?: boolean | null; lpPctOfSupply?: number | null }
+  maturityContext?: { holders: number | null; liquidity: number; tokenAgeHours: number | null; mintAuthority: boolean; freezeAuthority: boolean; honeypot: boolean; lpBurned?: boolean | null; lpPctOfSupply?: number | null },
+  // Daily candles (up to 31 days) for weekly / monthly pump detection.
+  // Sorted ascending (oldest first). Fetched separately from GeckoTerminal
+  // /ohlcv/day so short-term candles stay cheap (40 × 5-min).
+  dailyCandles?: OHLCVCandle[],
 ): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
@@ -1039,6 +1044,47 @@ export function layerChart(
     if (wickTrapCount >= 3) {
       flags.push(makeFlag("Wick trap: 3+ candles with dominant upper wick — repeated selling at highs", "warning", 0));
       penalties.push(0.65); safeBlocked = true;
+    }
+  }
+
+  // ── WEEKLY / MONTHLY PUMP (7.7.16) ──────────────────────────────────────────
+  // Tokens that have pumped heavily over 7 or 30 days carry elevated retrace
+  // risk even when the contract is clean. These flags block SAFE so blue chips
+  // show CAUTION rather than a false-positive green signal.
+  //
+  // dailyCandles are sorted oldest-first (fetchDexCandlesDaily guarantees this).
+  // We compare the most recent close against the close from ~7d / ~30d ago.
+  // Requires at least 2 candles; gracefully does nothing if data is missing.
+  if (dailyCandles && dailyCandles.length >= 2) {
+    const latestClose = dailyCandles[dailyCandles.length - 1].c;
+    if (latestClose > 0) {
+      // 7-day: candle from 7 days ago (index = length - 8, or first if fewer)
+      const idx7 = Math.max(0, dailyCandles.length - 8);
+      const close7d = dailyCandles[idx7].c;
+      if (close7d > 0 && idx7 < dailyCandles.length - 1) {
+        const pct7d = ((latestClose - close7d) / close7d) * 100;
+        if (pct7d >= PUMP_7D_HIGH_PCT) {
+          flags.push(makeFlag(`Pumped +${Math.round(pct7d)}% over 7 days — high retrace risk at current prices`, "warning", 0));
+          penalties.push(0.65); safeBlocked = true;
+        } else if (pct7d >= PUMP_7D_WARN_PCT) {
+          flags.push(makeFlag(`Pumped +${Math.round(pct7d)}% over 7 days — elevated retrace risk at current prices`, "warning", 0));
+          penalties.push(0.75); safeBlocked = true;
+        }
+      }
+
+      // 30-day: candle from 30 days ago (index = 0 if we have ~31 candles)
+      const idx30 = Math.max(0, dailyCandles.length - 31);
+      const close30d = dailyCandles[idx30].c;
+      if (close30d > 0 && idx30 < dailyCandles.length - 1) {
+        const pct30d = ((latestClose - close30d) / close30d) * 100;
+        if (pct30d >= PUMP_30D_HIGH_PCT) {
+          flags.push(makeFlag(`Pumped +${Math.round(pct30d)}% over 30 days — high retrace risk at current prices`, "warning", 0));
+          penalties.push(0.65); safeBlocked = true;
+        } else if (pct30d >= PUMP_30D_WARN_PCT) {
+          flags.push(makeFlag(`Pumped +${Math.round(pct30d)}% over 30 days — elevated retrace risk at current prices`, "warning", 0));
+          penalties.push(0.75); safeBlocked = true;
+        }
+      }
     }
   }
 
