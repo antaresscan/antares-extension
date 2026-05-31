@@ -315,6 +315,30 @@ export async function fetchDexCandles(
     }));
 }
 
+// Fetch daily OHLCV candles (up to 31 days) for weekly/monthly pump detection.
+// Uses GeckoTerminal's /day endpoint — same pool address, different resolution.
+// Returns candles sorted ascending by timestamp (oldest first).
+export async function fetchDexCandlesDaily(
+    pairAddress: string
+): Promise<OHLCVCandle[]> {
+    const url = "https://api.geckoterminal.com/api/v2/networks/solana/pools/" + pairAddress + "/ohlcv/day?aggregate=1&limit=31";
+    const raw = await fetchJson(url, {
+        headers: { "Accept": "application/json;version=20230302" }
+    }, 6000) as GeckoTerminalOHLCVResponse | null;
+    const ohlcv = raw?.data?.attributes?.ohlcv_list;
+    if (!Array.isArray(ohlcv) || ohlcv.length === 0) return [];
+    const candles = ohlcv.map((b: number[]) => ({
+        ts: asNumber(b[0]),
+        o: asNumber(b[1]),
+        h: asNumber(b[2]),
+        l: asNumber(b[3]),
+        c: asNumber(b[4]),
+        v: asNumber(b[5]),
+    }));
+    // GeckoTerminal returns newest-first; reverse for chronological order.
+    return candles.sort((a, b) => a.ts - b.ts);
+}
+
 // ─── BUNDLE DETECTION ──────────────────────────────────────────────────────
 export function extractBundlePct(rugReportData: RugCheckReport | null | undefined): number {
     const risks: RugCheckRisk[] = rugReportData?.risks ?? [];

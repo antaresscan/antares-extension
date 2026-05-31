@@ -79,6 +79,7 @@ vi.mock("../api/_lib/fetchers", () => ({
   solscanGetHoldersCount: (...args: unknown[]) => mockSolscanGetHoldersCount(...args),
   fetchSolscan: (...args: unknown[]) => mockFetchSolscan(...args),
   fetchDexCandles: (...args: unknown[]) => mockFetchDexCandles(...args),
+  fetchDexCandlesDaily: vi.fn().mockResolvedValue([]), // no daily candles in unit tests
   heliusResolveAccountOwners: (...args: unknown[]) => mockHeliusResolveAccountOwners(...args),
   publicRpcGetLargestAccounts: (...args: unknown[]) => mockPublicRpcGetLargestAccounts(...args),
   publicRpcGetTokenSupply: (...args: unknown[]) => mockPublicRpcGetTokenSupply(...args),
