@@ -173,6 +173,21 @@ export function determineVerdict(input: VerdictInput): Verdict {
     // A token where LP is not burned can rug at any time — must return DANGER or RUG.
     const hasHardReason = input.safeBlockedReasons?.some(r => HARD_BLOCK_REASONS.has(r));
     if (hasHardReason) return input.score >= 400 ? "DANGER" : "RUG";
+
+    // "No flags → SAFE" override for soft safeBlocked reasons (e.g. Helius
+    // unavailable, partial data). The same rule exists below for the non-
+    // safeBlocked path but was unreachable here — the early CAUTION return
+    // at line 177 killed it. TRUMP-class case: LP "<1%" + "≥1y" gives
+    // safeBlock=false (matrix), so safeBlocked must come from infrastructure
+    // (Helius down). No user-visible flags exist yet the verdict was CAUTION.
+    // Rule: if ZERO visible warnings AND no hard structural risk AND good
+    // score AND enough data sources → override and grant SAFE.
+    if (
+      (input.warningFlagsCount ?? 0) === 0 &&
+      input.score >= 750 &&
+      (input.sourcesUsedCount ?? 0) >= 4
+    ) return "SAFE";
+
     // Soft reasons (age/holders) only: tightened from 550 to 700 for CAUTION
     if (input.score >= 700) return "CAUTION";
     return "DANGER";
