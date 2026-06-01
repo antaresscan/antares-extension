@@ -75,6 +75,16 @@ export function saveToLS(ca: string, data: ScanResponseData, session: string | n
 }
 
 /**
+ * Evict a single CA from both the in-memory Map and the localStorage mirror.
+ * Used when token.html signals a fresh rescan for a specific token so the
+ * overlay re-fetches instead of serving the stale cached verdict.
+ */
+export function evictCached(ca: string) {
+  scanCache.delete(ca)
+  try { localStorage.removeItem(LS_PREFIX + ca) } catch { /* LS write may fail in private mode */ }
+}
+
+/**
  * Wipe every cached scan, both the in-memory Map and the localStorage
  * mirror. Called on session-token changes so that signing in/out from
  * the website forces a fresh API call on the next scan instead of

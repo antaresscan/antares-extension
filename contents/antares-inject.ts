@@ -32,7 +32,7 @@ if (process.env.PLASMO_PUBLIC_SENTRY_DSN) {
 }
 
 import { state } from "./modules/state"
-import { hydrateCacheFromLS } from "./modules/cache"
+import { hydrateCacheFromLS, evictCached } from "./modules/cache"
 import { createHost, hideBox } from "./modules/components"
 import { poll, setupNavListeners, cleanupNavListeners, getInitialDelay } from "./modules/address-detector"
 import { scan } from "./modules/scanner"
@@ -140,11 +140,28 @@ if (document.documentElement.hasAttribute(GUARD)) {
 // few entries) and runs only on auth state change.
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local") return
-  if (!Object.prototype.hasOwnProperty.call(changes, "antares_session_token")) return
+
+  // ── Session-token change (login / logout from website) ─────────────────
   // Listener body is in session-handler.ts so the abort + clear + scan
   // logic can be unit-tested in isolation. See that module for the
   // why-this-exists comments.
-  handleSessionTokenChange()
+  if (Object.prototype.hasOwnProperty.call(changes, "antares_session_token")) {
+    handleSessionTokenChange()
+  }
+
+  // ── token.html rescan notification ─────────────────────────────────────
+  // When the user hits Refresh in the Full Analysis tab, token.html writes
+  // { ca, ts } to antares_rescan_done after receiving the fresh API result.
+  // We evict that CA from the content-script cache and re-render the overlay
+  // immediately — no need to wait for the 5-minute CACHE_TTL to expire.
+  if (Object.prototype.hasOwnProperty.call(changes, "antares_rescan_done")) {
+    const val = changes.antares_rescan_done?.newValue as { ca?: string; ts?: number } | undefined
+    if (val?.ca && val.ca === state.lastCA && !state.manuallyDismissed) {
+      evictCached(val.ca)
+      state.lastCA = ""            // force scan() to treat this as a new address
+      void scan(val.ca)
+    }
+  }
 })
 
 // ─── TAB-FOCUS SELF-HEAL ──────────────────────────────────────────────────
