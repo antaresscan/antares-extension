@@ -234,7 +234,7 @@ export const LIQ_CRITICAL = 1000;       // <$1k = critical
 export const LIQ_LOW = 5000;            // <$5k = warning
 export const LIQ_MEDIUM = 20000;        // <$20k = info
 // Wash trading
-export const WASH_VOL_LIQ_RATIO = 20;   // vol/liq > 20 = wash trading
+export const WASH_VOL_LIQ_RATIO = 15;   // vol/liq > 15 = wash trading (lowered from 20: DexScreener liq fluctuates ±20% between calls, old threshold caused DANGER↔CAUTION flips on borderline tokens)
 export const HIGH_VOL_LIQ_RATIO = 5;    // vol/liq > 5 = high ratio warning
 // Holder thresholds (Helius) — top-10 distribution bands (7.7.5+)
 // Two tiers: FRESH (no context / <30d / <5k holders) vs ESTABLISHED (≥30d AND ≥5k).
