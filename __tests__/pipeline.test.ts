@@ -456,8 +456,17 @@ describe("determineVerdict", () => {
     expect(determineVerdict(makeVerdictInput({ sourcesUsedCount: 0, score: 500 }))).toBe("DANGER");
   });
 
-  it("4. safeBlocked=true, score=850 -> CAUTION (blocked + score>=600)", () => {
-    expect(determineVerdict(makeVerdictInput({ safeBlocked: true, score: 850 }))).toBe("CAUTION");
+  it("4. safeBlocked=true, score=850, 0 flags -> SAFE (no-flags override inside safeBlocked)", () => {
+    // No visible warnings + good score + enough sources → SAFE even when
+    // safeBlocked is set by infrastructure (e.g. Helius unavailable).
+    // The old expected value was CAUTION — that was the bug: "No issues found"
+    // showing next to a CAUTION badge is a direct contradiction.
+    expect(determineVerdict(makeVerdictInput({ safeBlocked: true, score: 850 }))).toBe("SAFE");
+  });
+
+  it("4b. safeBlocked=true, score=850, warningFlagsCount=1 -> CAUTION (flag present, no-flags override blocked)", () => {
+    // If there IS a visible flag the no-flags override must NOT fire.
+    expect(determineVerdict(makeVerdictInput({ safeBlocked: true, score: 850, warningFlagsCount: 1 }))).toBe("CAUTION");
   });
 
     it("5. safeBlocked=true, score=600 -> DANGER (HARDENED: blocked needs score>=700 for CAUTION)", () => {
