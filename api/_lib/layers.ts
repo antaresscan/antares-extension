@@ -68,8 +68,14 @@ export function layerDexScreener(
   if (liq === 0 && vol > 10000) {
     flags.push(makeFlag("Volume with zero liquidity — abandoned pool", "critical", 0));
     penalties.push(0.10); forceRug = true; safeBlocked = true;
-  } else if (liq > 0 && vol / liq > 20) {
-    flags.push(makeFlag("Wash trading detected (vol/liq > 20) — bundler dump", "critical", 0));
+  } else if (liq > 0 && vol / liq > 15) {
+    // Threshold lowered 20→15: at ×15-20 the fake-volume signal is just as
+    // damning as >20 but DexScreener's liquidity figure fluctuates ±20%
+    // between API calls, causing the verdict to flip DANGER↔CAUTION on the
+    // same token within minutes. A stable ×15 floor keeps borderline cases
+    // (DOGEUS-class: ratio ~19-24) consistently in DANGER instead of
+    // randomly crossing the old hard edge.
+    flags.push(makeFlag("Wash trading detected (vol/liq > 15) — bundler dump", "critical", 0));
     penalties.push(0.20); forceRug = true; safeBlocked = true;
   } else if (liq > 0 && vol / liq > 5) {
     flags.push(makeFlag("High vol/liquidity ratio", "warning", 0));
