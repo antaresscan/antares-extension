@@ -911,7 +911,7 @@ function render(d, ca) {
           <div class="m-card">
             <div class="m-label-row">
               <div class="m-label">Risk Score</div>
-              ${!isDemo ? `<button class="refresh-btn" id="refresh-btn" aria-label="Refresh scan" title="Force a fresh scan, bypassing the cache">↻</button>` : ""}
+              ${!isDemo ? `<button class="refresh-btn" id="refresh-btn" aria-label="Refresh scan" title="Force a fresh scan, bypassing the cache"><span>↻</span></button>` : ""}
             </div>
             <div class="m-big">${displayScore}<span class="denom">/ 1000</span></div>
             <div class="sbar"><div class="sbar-fill" id="sbarf"></div></div>
