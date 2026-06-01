@@ -201,6 +201,31 @@ document.addEventListener("visibilitychange", () => {
   }
 })
 
+// ─── TOKEN.HTML RESCAN RELAY ──────────────────────────────────────────────────
+//
+// Background broadcasts RESCAN_DONE after token.html completes a ?fresh=1
+// scan. We evict the stale cache entry and re-render the overlay immediately
+// rather than waiting up to 5 min for CACHE_TTL.
+//
+// This uses chrome.runtime.onMessage (background → content script) instead of
+// the previous chrome.storage.onChanged approach. The storage event only fires
+// in content scripts already running the NEW extension version; if the user
+// updated without reloading the trading-platform tab, the old content script
+// had no antares_rescan_done listener and silently dropped the event.
+// chrome.runtime.onMessage works regardless of content-script version because
+// this handler has existed since v1.0.
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg.type === "RESCAN_DONE") {
+    const ca = typeof msg.ca === "string" ? msg.ca : ""
+    if (ca && ca === state.lastCA && !state.manuallyDismissed) {
+      evictCached(ca)
+      state.lastCA = ""
+      void scan(ca)
+    }
+    return
+  }
+})
+
 // ─── EXTENSION TOGGLE (icon click) ─────────────────────────────────────────
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type !== "EXTENSION_TOGGLE") return
