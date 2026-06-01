@@ -120,13 +120,17 @@ export function setupRefreshButton(ca, { onRefresh } = {}) {
       const r = await fetch(`${API}?ca=${encodeURIComponent(ca)}&fresh=1`);
       if (r.ok) {
         const data = await r.json();
-        // Notify overlay content scripts on every open DexScreener /
-        // pump.fun / Axiom tab so they evict their stale cached verdict
-        // and re-render immediately instead of waiting up to 5 min for
-        // the CACHE_TTL to expire naturally.
+        // Notify the background service-worker so it can broadcast a
+        // RESCAN_DONE message to all open trading-platform tabs. The
+        // background relay is used instead of chrome.storage.onChanged
+        // because the latter only fires in content scripts that are already
+        // running the NEW extension version — if the user updated without
+        // reloading the tab, the old content script (no storage listener)
+        // silently drops the event. The background SW restarts immediately
+        // on update, so it always carries the current relay code.
         try {
-          chrome.storage.local.set({ antares_rescan_done: { ca, ts: Date.now() } });
-        } catch { /* chrome.storage may be unavailable in some environments */ }
+          chrome.runtime.sendMessage({ type: "RESCAN_DONE", ca }).catch(() => {});
+        } catch { /* extension context may be invalidated */ }
         if (onRefresh) onRefresh(data);
       }
     } catch {
