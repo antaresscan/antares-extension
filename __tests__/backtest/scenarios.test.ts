@@ -163,13 +163,26 @@ describe("safeBlocked routing", () => {
     })).toBe("RUG")
   })
 
-  it("safeBlocked + soft only + score ≥700 → CAUTION", () => {
-    // Regression: this used to drop to DANGER because score was
-    // clipped to 500 before reaching the verdict.
+  it("safeBlocked + soft only + score ≥750 + 0 flags → SAFE (no-flags override)", () => {
+    // Rule: if safeBlocked is set by infrastructure (soft reasons only,
+    // e.g. Helius unavailable / lp_unverified) but there are ZERO
+    // user-visible warning/critical flags, the verdict must be SAFE.
+    // Showing "No issues found" next to CAUTION is a contradiction.
+    // (Old expected value was CAUTION — that was the bug.)
     expect(verdictWith({
       safeBlocked: true,
       safeBlockedReasons: ["lp_unverified"],
       score: 750,
+    })).toBe("SAFE")
+  })
+
+  it("safeBlocked + soft only + score ≥700 + warningFlagsCount=1 → CAUTION", () => {
+    // When there IS a visible flag, the no-flags override must NOT fire.
+    expect(verdictWith({
+      safeBlocked: true,
+      safeBlockedReasons: ["lp_unverified"],
+      score: 750,
+      warningFlagsCount: 1,
     })).toBe("CAUTION")
   })
 
