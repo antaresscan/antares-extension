@@ -120,6 +120,13 @@ export function setupRefreshButton(ca, { onRefresh } = {}) {
       const r = await fetch(`${API}?ca=${encodeURIComponent(ca)}&fresh=1`);
       if (r.ok) {
         const data = await r.json();
+        // Notify overlay content scripts on every open DexScreener /
+        // pump.fun / Axiom tab so they evict their stale cached verdict
+        // and re-render immediately instead of waiting up to 5 min for
+        // the CACHE_TTL to expire naturally.
+        try {
+          chrome.storage.local.set({ antares_rescan_done: { ca, ts: Date.now() } });
+        } catch { /* chrome.storage may be unavailable in some environments */ }
         if (onRefresh) onRefresh(data);
       }
     } catch {
