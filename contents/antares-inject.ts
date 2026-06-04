@@ -150,19 +150,6 @@ chrome.storage.onChanged.addListener((changes, area) => {
     handleSessionTokenChange()
   }
 
-  // ── token.html rescan notification ─────────────────────────────────────
-  // When the user hits Refresh in the Full Analysis tab, token.html writes
-  // { ca, ts } to antares_rescan_done after receiving the fresh API result.
-  // We evict that CA from the content-script cache and re-render the overlay
-  // immediately — no need to wait for the 5-minute CACHE_TTL to expire.
-  if (Object.prototype.hasOwnProperty.call(changes, "antares_rescan_done")) {
-    const val = changes.antares_rescan_done?.newValue as { ca?: string; ts?: number } | undefined
-    if (val?.ca && val.ca === state.lastCA && !state.manuallyDismissed) {
-      evictCached(val.ca)
-      state.lastCA = ""            // force scan() to treat this as a new address
-      void scan(val.ca)
-    }
-  }
 })
 
 // ─── TAB-FOCUS SELF-HEAL ──────────────────────────────────────────────────
