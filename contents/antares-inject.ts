@@ -31,6 +31,7 @@ if (process.env.PLASMO_PUBLIC_SENTRY_DSN) {
   });
 }
 
+import type { ScanResponseData } from "../shared/types"
 import { state } from "./modules/state"
 import { hydrateCacheFromLS } from "./modules/cache"
 import { createHost, hideBox } from "./modules/components"
@@ -143,13 +144,30 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local") return
 
   // ── Session-token change (login / logout from website) ─────────────────
-  // Listener body is in session-handler.ts so the abort + clear + scan
-  // logic can be unit-tested in isolation. See that module for the
-  // why-this-exists comments.
   if (Object.prototype.hasOwnProperty.call(changes, "antares_session_token")) {
     handleSessionTokenChange()
   }
 
+  // ── token.html fresh rescan result ─────────────────────────────────────
+  // token.html writes { ca, data, ts } to antares_fresh_scan after a
+  // ?fresh=1 API call. chrome.storage.onChanged fires HERE automatically
+  // with the new value embedded — no message relay, no additional get().
+  //
+  // Previous approaches failed because:
+  //   1. (PR #604) Stored only { ca, ts } → overlay re-fetched from API
+  //      → Redis cache returned old verdict for several more minutes.
+  //   2. (PR #608) Background relay via chrome.tabs.sendMessage → SW
+  //      timing issues + silent errors from .catch(() => {}).
+  //   3. (PR #613 v1) handleRescanDone read from storage via .get() AFTER
+  //      receiving a message → same Redis cache problem.
+  //
+  // This version: data is IN the change event. No network. No Redis.
+  if (Object.prototype.hasOwnProperty.call(changes, "antares_fresh_scan")) {
+    const val = changes.antares_fresh_scan?.newValue as { ca?: string; data?: ScanResponseData; ts?: number } | undefined
+    if (val?.ca && val.data) {
+      handleRescanDone(val.ca, val.data as ScanResponseData)
+    }
+  }
 })
 
 // ─── TAB-FOCUS SELF-HEAL ──────────────────────────────────────────────────
@@ -189,15 +207,6 @@ document.addEventListener("visibilitychange", () => {
   }
 })
 
-// ─── TOKEN.HTML RESCAN RELAY ──────────────────────────────────────────────────
-// Logic extracted to rescan-handler.ts for testability. See that module for
-// full documentation of the flow and why we store the result in storage.
-chrome.runtime.onMessage.addListener((msg) => {
-  if (msg.type === "RESCAN_DONE") {
-    handleRescanDone(typeof msg.ca === "string" ? msg.ca : "")
-    return
-  }
-})
 
 // ─── EXTENSION TOGGLE (icon click) ─────────────────────────────────────────
 chrome.runtime.onMessage.addListener((msg) => {

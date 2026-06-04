@@ -1,33 +1,28 @@
 // contents/modules/rescan-handler.ts
 //
-// Extracted handler for the RESCAN_DONE message sent by token.html after
-// a successful ?fresh=1 rescan. Keeping the logic in its own module makes
-// it unit-testable without needing to stub chrome.runtime.onMessage or
-// the entire antares-inject.ts entrypoint.
+// Handler called when token.html completes a ?fresh=1 rescan and the
+// chrome.storage.onChanged listener fires with the new result.
 //
-// Flow (happy path):
-//   1. token.html writes { ca, data, ts } to chrome.storage.local under
-//      the key "antares_fresh_scan" before sending RESCAN_DONE.
-//   2. This handler reads that entry; if it matches the CA currently shown
-//      in the overlay and is < 30s old, it injects the result directly into
-//      the local cache (scanCache Map + localStorage mirror).
-//   3. scan(ca) is called — it hits the warm cache and re-renders immediately.
-//      No network call, no server Redis cache hit, no stale data.
+// WHY chrome.storage.onChanged instead of message passing:
+//   - storage.onChanged fires automatically in every content script that
+//     is RUNNING when storage changes — no relay, no sendMessage, no SW
+//   - The new value is embedded directly in the change event, so no
+//     additional chrome.storage.local.get() call is needed
+//   - Previous message-relay approaches failed because the background SW
+//     relay added failure modes (SW dormant, tabs.sendMessage timing)
 //
-// Fallback (storage miss / stale / CA mismatch):
-//   Evict the local cache entry and call scan(ca) without the warmed cache.
-//   scan() will re-fetch from the API (may return cached server result, but
-//   at least the local 5-minute lock is broken).
+// WHY the full data is stored (not just { ca, ts }):
+//   - Previous versions stored only { ca, ts }, then re-fetched from API
+//   - The API returns the OLD result from Redis cache for several minutes
+//   - Storing the full result lets the overlay render the EXACT same data
+//     as token.html — no network call, no Redis cache hit
 
 import type { ScanResponseData } from "../../shared/types"
 import { state, scanCache } from "./state"
 import { evictCached, saveToLS } from "./cache"
 import { scan } from "./scanner"
 
-/** Key used by token.html to store the fresh scan result. */
 export const FRESH_SCAN_KEY = "antares_fresh_scan"
-
-/** How long (ms) a stored fresh result is considered valid. */
 export const FRESH_SCAN_TTL_MS = 30_000
 
 export interface FreshScanEntry {
@@ -37,43 +32,25 @@ export interface FreshScanEntry {
 }
 
 /**
- * Handle a RESCAN_DONE message from the background relay.
+ * Handle a fresh scan result received directly from chrome.storage.onChanged.
  *
- * @param ca  The contract address that was rescanned in token.html.
- *            Must match state.lastCA for the overlay to update.
+ * @param ca        The CA from the storage entry (already validated by caller)
+ * @param freshData The fresh API result written by token.html
  */
-export function handleRescanDone(ca: string): void {
-  // Guard: only act if the overlay is currently showing this CA and
-  // the user hasn't manually dismissed it.
+export function handleRescanDone(ca: string, freshData?: ScanResponseData): void {
   if (!ca || ca !== state.lastCA || state.manuallyDismissed) return
 
-  chrome.storage.local.get([FRESH_SCAN_KEY], (result) => {
-    const fresh = result?.[FRESH_SCAN_KEY] as FreshScanEntry | undefined
+  if (freshData) {
+    // Inject the fresh result directly into the local cache.
+    // scan() will hit this warm entry and re-render with zero network cost.
+    saveToLS(ca, freshData, null)
+    scanCache.set(ca, { data: freshData, ts: Date.now(), session: null })
+  } else {
+    // No data available — evict the stale local cache so scan() re-fetches.
+    evictCached(ca)
+  }
 
-    const isValid =
-      fresh?.ca === ca &&
-      fresh?.data != null &&
-      typeof fresh.ts === "number" &&
-      Date.now() - fresh.ts < FRESH_SCAN_TTL_MS
-
-    if (isValid && fresh) {
-      // Warm the local cache with the result already fetched by token.html.
-      // scan() will hit this cache entry and re-render with zero network cost.
-      // session: null — token.html doesn't know the session token; null is
-      // safe here because getCached() only evicts on session MISMATCH, and a
-      // null entry will be replaced by the next organic scan which is session-
-      // aware.
-      saveToLS(ca, fresh.data, null)
-      scanCache.set(ca, { data: fresh.data, ts: Date.now(), session: null })
-    } else {
-      // Fresh result unavailable (storage miss, stale, or CA mismatch) —
-      // evict the stale local cache so scan() re-fetches from the API.
-      evictCached(ca)
-    }
-
-    // In both paths, reset lastCA so scan()'s early-return guard doesn't
-    // short-circuit, then trigger re-render.
-    state.lastCA = ""
-    void scan(ca)
-  })
+  // Reset lastCA so scan()'s early-return guard doesn't short-circuit.
+  state.lastCA = ""
+  void scan(ca)
 }

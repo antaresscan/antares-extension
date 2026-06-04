@@ -120,17 +120,13 @@ export function setupRefreshButton(ca, { onRefresh } = {}) {
       const r = await fetch(`${API}?ca=${encodeURIComponent(ca)}&fresh=1`);
       if (r.ok) {
         const data = await r.json();
-        // Push the fresh scan result + CA into chrome.storage.local so
-        // the overlay content script can read it directly without making
-        // another API call. This bypasses both the local LS cache AND the
-        // server-side Redis cache (which would return the old verdict for
-        // several minutes even if the overlay re-fetches without ?fresh=1).
-        //
-        // The content script reads antares_fresh_scan on RESCAN_DONE and
-        // renders the result directly — no network round-trip, no cache.
+        // Write the fresh result to chrome.storage.local.
+        // The content script's chrome.storage.onChanged listener fires
+        // automatically with the new value embedded — no message relay,
+        // no background SW, no additional get(). The overlay reads the
+        // data directly from the change event and re-renders instantly.
         try {
           chrome.storage.local.set({ antares_fresh_scan: { ca, data, ts: Date.now() } });
-          chrome.runtime.sendMessage({ type: "RESCAN_DONE", ca }).catch(() => {});
         } catch { /* extension context may be invalidated */ }
         if (onRefresh) onRefresh(data);
       }
