@@ -120,15 +120,16 @@ export function setupRefreshButton(ca, { onRefresh } = {}) {
       const r = await fetch(`${API}?ca=${encodeURIComponent(ca)}&fresh=1`);
       if (r.ok) {
         const data = await r.json();
-        // Notify the background service-worker so it can broadcast a
-        // RESCAN_DONE message to all open trading-platform tabs. The
-        // background relay is used instead of chrome.storage.onChanged
-        // because the latter only fires in content scripts that are already
-        // running the NEW extension version — if the user updated without
-        // reloading the tab, the old content script (no storage listener)
-        // silently drops the event. The background SW restarts immediately
-        // on update, so it always carries the current relay code.
+        // Push the fresh scan result + CA into chrome.storage.local so
+        // the overlay content script can read it directly without making
+        // another API call. This bypasses both the local LS cache AND the
+        // server-side Redis cache (which would return the old verdict for
+        // several minutes even if the overlay re-fetches without ?fresh=1).
+        //
+        // The content script reads antares_fresh_scan on RESCAN_DONE and
+        // renders the result directly — no network round-trip, no cache.
         try {
+          chrome.storage.local.set({ antares_fresh_scan: { ca, data, ts: Date.now() } });
           chrome.runtime.sendMessage({ type: "RESCAN_DONE", ca }).catch(() => {});
         } catch { /* extension context may be invalidated */ }
         if (onRefresh) onRefresh(data);

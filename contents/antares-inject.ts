@@ -31,8 +31,9 @@ if (process.env.PLASMO_PUBLIC_SENTRY_DSN) {
   });
 }
 
-import { state } from "./modules/state"
-import { hydrateCacheFromLS, evictCached } from "./modules/cache"
+import type { ScanResponseData } from "../shared/types"
+import { state, scanCache } from "./modules/state"
+import { hydrateCacheFromLS, evictCached, saveToLS } from "./modules/cache"
 import { createHost, hideBox } from "./modules/components"
 import { poll, setupNavListeners, cleanupNavListeners, getInitialDelay } from "./modules/address-detector"
 import { scan } from "./modules/scanner"
@@ -203,25 +204,42 @@ document.addEventListener("visibilitychange", () => {
 
 // ─── TOKEN.HTML RESCAN RELAY ──────────────────────────────────────────────────
 //
-// Background broadcasts RESCAN_DONE after token.html completes a ?fresh=1
-// scan. We evict the stale cache entry and re-render the overlay immediately
-// rather than waiting up to 5 min for CACHE_TTL.
+// When the user clicks ↻ in Full Analysis, token.html:
+//   1. Stores the fresh API result in chrome.storage.local (antares_fresh_scan)
+//   2. Sends RESCAN_DONE via background relay
 //
-// This uses chrome.runtime.onMessage (background → content script) instead of
-// the previous chrome.storage.onChanged approach. The storage event only fires
-// in content scripts already running the NEW extension version; if the user
-// updated without reloading the trading-platform tab, the old content script
-// had no antares_rescan_done listener and silently dropped the event.
-// chrome.runtime.onMessage works regardless of content-script version because
-// this handler has existed since v1.0.
+// We read the stored result directly and inject it into the local cache, then
+// call scan(ca) which will hit the warm cache and re-render immediately.
+//
+// WHY we store the result instead of re-fetching:
+//   - Re-fetching without ?fresh=1 hits the server Redis cache → old verdict
+//   - Re-fetching with ?fresh=1 makes a full external API round-trip again
+//   - Reading from chrome.storage is instant, zero network, zero cache issue
+//   - The overlay shows EXACTLY the same result as token.html
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type === "RESCAN_DONE") {
     const ca = typeof msg.ca === "string" ? msg.ca : ""
-    if (ca && ca === state.lastCA && !state.manuallyDismissed) {
-      evictCached(ca)
-      state.lastCA = ""
-      void scan(ca)
-    }
+    if (!ca || ca !== state.lastCA || state.manuallyDismissed) return
+
+    chrome.storage.local.get(["antares_fresh_scan"], (result) => {
+      const fresh = result?.antares_fresh_scan as { ca?: string; data?: ScanResponseData; ts?: number } | undefined
+      // Only use the stored result if it's for the same CA and is recent (< 30s)
+      if (fresh?.ca === ca && fresh?.data && typeof fresh.ts === "number" && Date.now() - fresh.ts < 30_000) {
+        // Inject the fresh result directly into the local cache so scan()
+        // renders it without any network call.
+        const session = null // token.html doesn't know the session, null = anonymous
+        saveToLS(ca, fresh.data, session)
+        scanCache.set(ca, { data: fresh.data, ts: Date.now(), session })
+        // Reset lastCA so the scan() early-return guard doesn't short-circuit
+        state.lastCA = ""
+        void scan(ca)
+      } else {
+        // Stored result missing or stale — fall back to evict + re-fetch
+        evictCached(ca)
+        state.lastCA = ""
+        void scan(ca)
+      }
+    })
     return
   }
 })
