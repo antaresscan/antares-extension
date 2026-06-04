@@ -31,14 +31,12 @@ if (process.env.PLASMO_PUBLIC_SENTRY_DSN) {
   });
 }
 
-import type { ScanResponseData } from "../shared/types"
 import { state } from "./modules/state"
 import { hydrateCacheFromLS } from "./modules/cache"
 import { createHost, hideBox } from "./modules/components"
 import { poll, setupNavListeners, cleanupNavListeners, getInitialDelay } from "./modules/address-detector"
 import { scan } from "./modules/scanner"
 import { handleSessionTokenChange } from "./modules/session-handler"
-import { handleRescanDone } from "./modules/rescan-handler"
 import { logger } from "../shared/logger"
 
 /**
@@ -148,26 +146,6 @@ chrome.storage.onChanged.addListener((changes, area) => {
     handleSessionTokenChange()
   }
 
-  // ── token.html fresh rescan result ─────────────────────────────────────
-  // token.html writes { ca, data, ts } to antares_fresh_scan after a
-  // ?fresh=1 API call. chrome.storage.onChanged fires HERE automatically
-  // with the new value embedded — no message relay, no additional get().
-  //
-  // Previous approaches failed because:
-  //   1. (PR #604) Stored only { ca, ts } → overlay re-fetched from API
-  //      → Redis cache returned old verdict for several more minutes.
-  //   2. (PR #608) Background relay via chrome.tabs.sendMessage → SW
-  //      timing issues + silent errors from .catch(() => {}).
-  //   3. (PR #613 v1) handleRescanDone read from storage via .get() AFTER
-  //      receiving a message → same Redis cache problem.
-  //
-  // This version: data is IN the change event. No network. No Redis.
-  if (Object.prototype.hasOwnProperty.call(changes, "antares_fresh_scan")) {
-    const val = changes.antares_fresh_scan?.newValue as { ca?: string; data?: ScanResponseData; ts?: number } | undefined
-    if (val?.ca && val.data) {
-      void handleRescanDone(val.ca, val.data as ScanResponseData)
-    }
-  }
 })
 
 // ─── TAB-FOCUS SELF-HEAL ──────────────────────────────────────────────────
