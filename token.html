@@ -123,11 +123,6 @@ nav .actions .nav-inert.warn{color:#996060}
 .m-label{font-size:9px;color:#444;letter-spacing:.18em;text-transform:uppercase}
 
 /* Refresh button — manual cache bypass. 15s cooldown handled in JS. */
-.refresh-btn{background:transparent;border:1px solid var(--border);color:var(--dim);width:24px;height:24px;border-radius:3px;cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;transition:color .25s,border-color .25s,background .25s,transform .3s;font-family:'IBM Plex Mono',monospace;padding:0}
-.refresh-btn:hover:not(:disabled){color:var(--c);border-color:rgba(0,229,176,.35);background:rgba(0,229,176,.04)}
-.refresh-btn:disabled{opacity:.35;cursor:not-allowed}
-.refresh-btn.spinning{color:var(--c);border-color:rgba(0,229,176,.35)}
-.refresh-btn.spinning span{animation:refresh-spin 1s linear infinite;display:inline-block}
 @keyframes refresh-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 
 .m-fresh{font-size:9px;color:#444;margin-top:8px;letter-spacing:.04em;font-family:'IBM Plex Mono',monospace}

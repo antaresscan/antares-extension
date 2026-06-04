@@ -38,7 +38,6 @@ import {
   setupStickyNav,
   setupCollapsibles,
   setupTabs,
-  setupRefreshButton,
   setupFreshnessTicker,
   setupRevealObserver,
   loadInsiderActivity,
@@ -911,7 +910,6 @@ function render(d, ca) {
           <div class="m-card">
             <div class="m-label-row">
               <div class="m-label">Risk Score</div>
-              ${!isDemo ? `<button class="refresh-btn" id="refresh-btn" aria-label="Refresh scan" title="Force a fresh scan, bypassing the cache"><span>↻</span></button>` : ""}
             </div>
             <div class="m-big">${displayScore}<span class="denom">/ 1000</span></div>
             <div class="sbar"><div class="sbar-fill" id="sbarf"></div></div>
@@ -1003,7 +1001,6 @@ function render(d, ca) {
   setupRevealObserver();
   setupCollapsibles();
   setupTabs();
-  setupRefreshButton(ca, { onRefresh: (isDemo && DEMO_DATA[ca]) ? () => render(DEMO_DATA[ca], ca) : (data) => render(data, ca) });
   setupFreshnessTicker(d.fetchedAt);
 
   // Score bar animation

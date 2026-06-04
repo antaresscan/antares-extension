@@ -32,7 +32,7 @@ if (process.env.PLASMO_PUBLIC_SENTRY_DSN) {
 }
 
 import { state } from "./modules/state"
-import { hydrateCacheFromLS, evictCached } from "./modules/cache"
+import { hydrateCacheFromLS } from "./modules/cache"
 import { createHost, hideBox } from "./modules/components"
 import { poll, setupNavListeners, cleanupNavListeners, getInitialDelay } from "./modules/address-detector"
 import { scan } from "./modules/scanner"
@@ -142,26 +142,10 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local") return
 
   // ── Session-token change (login / logout from website) ─────────────────
-  // Listener body is in session-handler.ts so the abort + clear + scan
-  // logic can be unit-tested in isolation. See that module for the
-  // why-this-exists comments.
   if (Object.prototype.hasOwnProperty.call(changes, "antares_session_token")) {
     handleSessionTokenChange()
   }
 
-  // ── token.html rescan notification ─────────────────────────────────────
-  // When the user hits Refresh in the Full Analysis tab, token.html writes
-  // { ca, ts } to antares_rescan_done after receiving the fresh API result.
-  // We evict that CA from the content-script cache and re-render the overlay
-  // immediately — no need to wait for the 5-minute CACHE_TTL to expire.
-  if (Object.prototype.hasOwnProperty.call(changes, "antares_rescan_done")) {
-    const val = changes.antares_rescan_done?.newValue as { ca?: string; ts?: number } | undefined
-    if (val?.ca && val.ca === state.lastCA && !state.manuallyDismissed) {
-      evictCached(val.ca)
-      state.lastCA = ""            // force scan() to treat this as a new address
-      void scan(val.ca)
-    }
-  }
 })
 
 // ─── TAB-FOCUS SELF-HEAL ──────────────────────────────────────────────────
@@ -201,30 +185,6 @@ document.addEventListener("visibilitychange", () => {
   }
 })
 
-// ─── TOKEN.HTML RESCAN RELAY ──────────────────────────────────────────────────
-//
-// Background broadcasts RESCAN_DONE after token.html completes a ?fresh=1
-// scan. We evict the stale cache entry and re-render the overlay immediately
-// rather than waiting up to 5 min for CACHE_TTL.
-//
-// This uses chrome.runtime.onMessage (background → content script) instead of
-// the previous chrome.storage.onChanged approach. The storage event only fires
-// in content scripts already running the NEW extension version; if the user
-// updated without reloading the trading-platform tab, the old content script
-// had no antares_rescan_done listener and silently dropped the event.
-// chrome.runtime.onMessage works regardless of content-script version because
-// this handler has existed since v1.0.
-chrome.runtime.onMessage.addListener((msg) => {
-  if (msg.type === "RESCAN_DONE") {
-    const ca = typeof msg.ca === "string" ? msg.ca : ""
-    if (ca && ca === state.lastCA && !state.manuallyDismissed) {
-      evictCached(ca)
-      state.lastCA = ""
-      void scan(ca)
-    }
-    return
-  }
-})
 
 // ─── EXTENSION TOGGLE (icon click) ─────────────────────────────────────────
 chrome.runtime.onMessage.addListener((msg) => {

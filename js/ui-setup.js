@@ -90,59 +90,6 @@ export function setupTabs() {
   });
 }
 
-// ──────────────────────────────────────────────────────────────────────
-// Refresh button + freshness ticker. Lets the user manually re-scan the
-// token without waiting for the Redis cache TTL. The button posts
-// `?fresh=1` which bypasses cache reads server-side. A 15s cooldown
-// between clicks keeps the upstream API budget under control while
-// still feeling responsive.
-//
-// `onRefresh(data)` is invoked with the fresh /api/scan payload after a
-// successful fetch — the page wires it to its own render() function so
-// this module stays decoupled from the orchestrator.
-// ──────────────────────────────────────────────────────────────────────
-const REFRESH_COOLDOWN_MS = 15000;
-
-export function setupRefreshButton(ca, { onRefresh } = {}) {
-  if (window.__refreshInit) return;
-  window.__refreshInit = true;
-  const btn = document.getElementById("refresh-btn");
-  if (!btn) return;
-  let lastRefresh = 0;
-
-  btn.addEventListener("click", async () => {
-    const since = Date.now() - lastRefresh;
-    if (since < REFRESH_COOLDOWN_MS) return;
-    lastRefresh = Date.now();
-    btn.disabled = true;
-    btn.classList.add("spinning");
-    try {
-      const r = await fetch(`${API}?ca=${encodeURIComponent(ca)}&fresh=1`);
-      if (r.ok) {
-        const data = await r.json();
-        // Notify the background service-worker so it can broadcast a
-        // RESCAN_DONE message to all open trading-platform tabs. The
-        // background relay is used instead of chrome.storage.onChanged
-        // because the latter only fires in content scripts that are already
-        // running the NEW extension version — if the user updated without
-        // reloading the tab, the old content script (no storage listener)
-        // silently drops the event. The background SW restarts immediately
-        // on update, so it always carries the current relay code.
-        try {
-          chrome.runtime.sendMessage({ type: "RESCAN_DONE", ca }).catch(() => {});
-        } catch { /* extension context may be invalidated */ }
-        if (onRefresh) onRefresh(data);
-      }
-    } catch {
-      /* silent — keep current data on the page */
-    }
-    btn.classList.remove("spinning");
-    const remaining = REFRESH_COOLDOWN_MS - (Date.now() - lastRefresh);
-    setTimeout(() => {
-      btn.disabled = false;
-    }, Math.max(0, remaining));
-  });
-}
 
 // ──────────────────────────────────────────────────────────────────────
 // "Scanned just now" / "Scanned 5m ago" label that updates every second.

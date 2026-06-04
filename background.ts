@@ -335,37 +335,6 @@ const handlers: Record<string, MessageHandler> = {
     }
   },
 
-  // Relay from token.html → all content-script tabs.
-  // token.html calls chrome.runtime.sendMessage({ type: 'RESCAN_DONE', ca })
-  // after a successful ?fresh=1 fetch. We broadcast to every tab so the
-  // overlay on whichever trading platform the user has open can evict its
-  // stale cache and re-render with the fresh verdict immediately.
-  //
-  // Why background relay instead of chrome.storage.onChanged:
-  //   chrome.storage.onChanged fires only in content scripts that are
-  //   ALREADY RUNNING the new extension version. If the user updated the
-  //   extension without reloading the trading-platform tab, the old content
-  //   script (which has no antares_rescan_done listener) is still active —
-  //   the storage event is silently dropped. The background service-worker
-  //   restarts immediately on extension update, so it always has the current
-  //   code; tabs.sendMessage reaches any content script, old or new, via the
-  //   chrome.runtime.onMessage listener that has existed since v1.0.
-  RESCAN_DONE: (msg, sender, sendResponse) => {
-    if (sender.id !== chrome.runtime.id) {
-      sendResponse({ ok: false, error: "Unauthorized sender" })
-      return
-    }
-    const ca = typeof msg.ca === "string" ? msg.ca.trim() : ""
-    chrome.tabs.query({}, (tabs) => {
-      for (const t of tabs) {
-        if (t.id) {
-          chrome.tabs.sendMessage(t.id, { type: "RESCAN_DONE", ca })
-            .catch(() => { /* tab has no content script — normal */ })
-        }
-      }
-    })
-    sendResponse({ ok: true })
-  },
 }
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
