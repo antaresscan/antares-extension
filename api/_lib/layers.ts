@@ -12,6 +12,7 @@ import type {
 import {
   LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS, OFFICIAL_MINTS,
   PUMP_7D_WARN_PCT, PUMP_7D_HIGH_PCT, PUMP_30D_WARN_PCT, PUMP_30D_HIGH_PCT,
+  LP_UNVERIFIED_MIN_LIQUIDITY,
 } from "./constants";
 import { getLpRiskBucket } from "./lp-risk-matrix";
 import { asNumber, _mean, _std, _pct } from "./math";
@@ -878,7 +879,7 @@ export function layerChart(
     const mcP = maturityContext;
     const matureForPump =
       (mcP?.holders ?? 0) >= 5_000 ||
-      ((mcP?.tokenAgeHours ?? 0) >= 90 * 24 && (mcP?.liquidity ?? 0) >= 500_000);
+      ((mcP?.tokenAgeHours ?? 0) >= 90 * 24 && (mcP?.liquidity ?? 0) >= LP_UNVERIFIED_MIN_LIQUIDITY);
     const pumpPct = Math.round(pc24h);
 
     if (matureForPump) {
@@ -941,7 +942,7 @@ export function layerChart(
     const mc = maturityContext;
     const looksMature =
       (mc?.holders ?? 0) >= 5_000 ||
-      ((mc?.tokenAgeHours ?? 0) >= 90 * 24 && (mc?.liquidity ?? 0) >= 500_000);
+      ((mc?.tokenAgeHours ?? 0) >= 90 * 24 && (mc?.liquidity ?? 0) >= LP_UNVERIFIED_MIN_LIQUIDITY);
     if (looksMature) {
       flags.push(makeFlag("Drawdown >55% from local peak (mature pair, normal volatility)", "info", 0));
     } else {
@@ -1028,7 +1029,7 @@ export function layerChart(
       const mc = maturityContext;
       const looksMature =
         (mc?.holders ?? 0) >= 5_000 ||
-        ((mc?.tokenAgeHours ?? 0) >= 90 * 24 && (mc?.liquidity ?? 0) >= 500_000);
+        ((mc?.tokenAgeHours ?? 0) >= 90 * 24 && (mc?.liquidity ?? 0) >= LP_UNVERIFIED_MIN_LIQUIDITY);
       if (looksMature) {
         flags.push(makeFlag("Volume tapering during consolidation (mature pair)", "info", 0));
         penalties.push(0.85);

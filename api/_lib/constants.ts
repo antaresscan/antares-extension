@@ -214,7 +214,7 @@ export const HARD_BLOCK_REASONS = new Set([
 // than "fresh rug setup". The relaxed values pick up that mid-cap
 // band while still gating fresh launches and tiny tokens.
 export const LP_UNVERIFIED_MIN_HOLDERS   = 5000;
-export const LP_UNVERIFIED_MIN_LIQUIDITY = 500_000;
+export const LP_UNVERIFIED_MIN_LIQUIDITY = 250_000; // lowered 500k→250k: tokens with $250-500K liq were incorrectly treated as non-mature when on-chain holder sources (Helius/GoPlus/RugCheck) returned stale data, causing single chart-pattern warnings to route to DANGER instead of CAUTION (WOJAK case)
 export const LP_UNVERIFIED_MIN_AGE_HOURS = 336; // 14 days
 
 // NOTE: LP-unverified scoring was rewritten in SCORING_VERSION 7.6.0 to
