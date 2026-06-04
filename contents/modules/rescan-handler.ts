@@ -20,6 +20,7 @@
 import type { ScanResponseData } from "../../shared/types"
 import { state, scanCache } from "./state"
 import { evictCached, saveToLS } from "./cache"
+import { readSessionToken } from "./session-token"
 import { scan } from "./scanner"
 
 export const FRESH_SCAN_KEY = "antares_fresh_scan"
@@ -34,19 +35,27 @@ export interface FreshScanEntry {
 /**
  * Handle a fresh scan result received directly from chrome.storage.onChanged.
  *
+ * IMPORTANT: we must read the current session token before storing the cache
+ * entry. getCached() validates that e.session === currentSession and evicts on
+ * mismatch — if we store session:null while the user is logged in, getCached()
+ * immediately evicts the warm entry and scan() falls back to a cold API fetch
+ * (which returns the Redis-cached old verdict). This was the root cause of all
+ * previous sync failures.
+ *
  * @param ca        The CA from the storage entry (already validated by caller)
  * @param freshData The fresh API result written by token.html
  */
-export function handleRescanDone(ca: string, freshData?: ScanResponseData): void {
+export async function handleRescanDone(ca: string, freshData?: ScanResponseData): Promise<void> {
   if (!ca || ca !== state.lastCA || state.manuallyDismissed) return
 
   if (freshData) {
-    // Inject the fresh result directly into the local cache.
-    // scan() will hit this warm entry and re-render with zero network cost.
-    saveToLS(ca, freshData, null)
-    scanCache.set(ca, { data: freshData, ts: Date.now(), session: null })
+    // Read the current session token so the cache entry survives getCached()'s
+    // session-validation check. Without this, a logged-in user's null-session
+    // entry is evicted immediately → cold API fetch → stale Redis result.
+    const session = await readSessionToken()
+    saveToLS(ca, freshData, session)
+    scanCache.set(ca, { data: freshData, ts: Date.now(), session })
   } else {
-    // No data available — evict the stale local cache so scan() re-fetches.
     evictCached(ca)
   }
 

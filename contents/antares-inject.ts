@@ -165,7 +165,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (Object.prototype.hasOwnProperty.call(changes, "antares_fresh_scan")) {
     const val = changes.antares_fresh_scan?.newValue as { ca?: string; data?: ScanResponseData; ts?: number } | undefined
     if (val?.ca && val.data) {
-      handleRescanDone(val.ca, val.data as ScanResponseData)
+      void handleRescanDone(val.ca, val.data as ScanResponseData)
     }
   }
 })
