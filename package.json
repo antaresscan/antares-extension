@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@sentry/browser": "^10.52.0",
-    "@sentry/node": "^10.52.0",
+    "@sentry/node": "^10.56.0",
     "@upstash/ratelimit": "^2.0.5",
     "@upstash/redis": "^1.38.0",
     "plasmo": "0.90.5",
