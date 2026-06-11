@@ -93,7 +93,9 @@ export const SHADOW_CSS = `
   overflow: hidden;
   position: relative;
   border: 1px solid rgba(255,255,255,.06);
-  box-shadow: 0 40px 80px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.02) inset;
+  border-radius: 14px;
+  box-shadow: 0 40px 80px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.02) inset,
+    inset 0 1px 0 rgba(255,255,255,.09), inset 0 0 24px rgba(255,255,255,.02);
   display: none;
   opacity: 0;
   transform: translateY(8px);
@@ -137,10 +139,13 @@ export const SHADOW_CSS = `
   z-index: 0;
 }
 
-.box.safe   { background: linear-gradient(180deg,#0b100f 0%,#090b0a 100%); }
-.box.caution{ background: linear-gradient(180deg,#0e0d0a 0%,#0a0a09 100%); }
-.box.danger { background: linear-gradient(180deg,#0e0a0a 0%,#0a0909 100%); }
-.box.rug    { background: linear-gradient(180deg,#100809 0%,#0a0808 100%); }
+/* Vernis: a faint top-left sheen layered over each verdict gradient,
+   paired with the inset top light line on .box. Keeps the verdict
+   colours untouched underneath. */
+.box.safe   { background: linear-gradient(160deg,rgba(255,255,255,.09) 0%,rgba(255,255,255,.035) 30%,rgba(255,255,255,0) 52%), linear-gradient(180deg,#0b100f 0%,#090b0a 100%); }
+.box.caution{ background: linear-gradient(160deg,rgba(255,255,255,.09) 0%,rgba(255,255,255,.035) 30%,rgba(255,255,255,0) 52%), linear-gradient(180deg,#0e0d0a 0%,#0a0a09 100%); }
+.box.danger { background: linear-gradient(160deg,rgba(255,255,255,.09) 0%,rgba(255,255,255,.035) 30%,rgba(255,255,255,0) 52%), linear-gradient(180deg,#0e0a0a 0%,#0a0909 100%); }
+.box.rug    { background: linear-gradient(160deg,rgba(255,255,255,.09) 0%,rgba(255,255,255,.035) 30%,rgba(255,255,255,0) 52%), linear-gradient(180deg,#100809 0%,#0a0808 100%); }
 
 .box.safe::before   { background: #00e5b0; }
 .box.caution::before{ background: #f5d000; }
