@@ -1059,10 +1059,12 @@ export function layerChart(
   // risk even when the contract is clean. These flags block SAFE so blue chips
   // show CAUTION rather than a false-positive green signal.
   //
-  // Two severity tiers (same thresholds for 7d and 30d):
-  //   200–499%: "warning"  → ⚠️ orange — CAUTION max
-  //   ≥ 500%:  "critical" → ❌ red    — CAUTION max (no HARD_BLOCK_PATTERNS match
-  //                                     → stays soft, verdict stays CAUTION)
+  // Both tiers are "warning" severity — a pump alone is NEVER critical,
+  // whatever the percentage: legit blue chips can do +10000% at launch.
+  // The flag informs the trader of the retrace risk and lets them decide;
+  // only the label escalates ("elevated" → "high") with the magnitude.
+  //   200–499%: "elevated retrace risk" — CAUTION max
+  //   ≥ 500%:  "high retrace risk"     — CAUTION max (stronger penalty)
   //
   // dailyCandles are 4-hour candles from fetchDexCandlesDaily (sorted oldest-first).
   //   7-day  = 42 candles back  (42 × 4h = 168h = 7 days)
@@ -1079,7 +1081,7 @@ export function layerChart(
       if (close7d > 0 && (dailyCandles.length - 1 - idx7) >= 5) {
         const pct7d = ((latestClose - close7d) / close7d) * 100;
         if (pct7d >= PUMP_7D_HIGH_PCT) {
-          flags.push(makeFlag(`Pumped +${Math.round(pct7d)}% over 7 days — high retrace risk at current prices`, "critical", 0));
+          flags.push(makeFlag(`Pumped +${Math.round(pct7d)}% over 7 days — high retrace risk at current prices`, "warning", 0));
           penalties.push(0.55); safeBlocked = true;
         } else if (pct7d >= PUMP_7D_WARN_PCT) {
           flags.push(makeFlag(`Pumped +${Math.round(pct7d)}% over 7 days — elevated retrace risk at current prices`, "warning", 0));
@@ -1094,7 +1096,7 @@ export function layerChart(
       if (close30d > 0 && (dailyCandles.length - 1 - idx30) >= 42) {
         const pct30d = ((latestClose - close30d) / close30d) * 100;
         if (pct30d >= PUMP_30D_HIGH_PCT) {
-          flags.push(makeFlag(`Pumped +${Math.round(pct30d)}% over 30 days — high retrace risk at current prices`, "critical", 0));
+          flags.push(makeFlag(`Pumped +${Math.round(pct30d)}% over 30 days — high retrace risk at current prices`, "warning", 0));
           penalties.push(0.55); safeBlocked = true;
         } else if (pct30d >= PUMP_30D_WARN_PCT) {
           flags.push(makeFlag(`Pumped +${Math.round(pct30d)}% over 30 days — elevated retrace risk at current prices`, "warning", 0));
