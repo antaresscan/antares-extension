@@ -80,7 +80,7 @@ export function layerDexScreener(
     penalties.push(0.20); forceRug = true; safeBlocked = true;
   } else if (liq > 0 && vol / liq > 10) {
     flags.push(makeFlag("High vol/liquidity ratio (>10×) — probable wash volume", "critical", 0));
-    penalties.push(0.35);
+    penalties.push(0.35); safeBlocked = true;
   } else if (liq > 0 && vol / liq > 5) {
     flags.push(makeFlag("High vol/liquidity ratio (>5×)", "warning", 0));
     penalties.push(0.75);

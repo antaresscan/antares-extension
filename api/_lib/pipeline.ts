@@ -167,6 +167,11 @@ export function applyEstablishedBonus(input: EstablishedBonusInput): number {
 export function determineVerdict(input: VerdictInput): Verdict {
   if (input.forceRug) return "RUG";
   if (!input.sourcesUsedCount || input.sourcesUsedCount <= 0) return "DANGER";
+  // Flag-count hard floors: 1+ critical OR 3+ total token-side flags → minimum DANGER.
+  // Prevents tokens with many accumulated risk signals from staying at CAUTION when
+  // individual layer penalties are offset by clean scores from other layers.
+  if ((input.criticalFlagsCount ?? 0) >= 1) return "DANGER";
+  if ((input.warningFlagsCount ?? 0) >= 3) return "DANGER";
 
   if (input.safeBlocked) {
     // HARD reasons: 'lp' and 'deceptive_name' added alongside existing hard reasons.

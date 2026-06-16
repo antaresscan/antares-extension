@@ -292,6 +292,8 @@ export interface VerdictInput {
    * Optional for back-compat — undefined falls back to legacy 900+ rule.
    */
   warningFlagsCount?: number;
+  /** Number of critical-severity token-side flags (pipeline-status flags excluded). */
+  criticalFlagsCount?: number;
 }
 
 // ─── SCAN RESULT ────────────────────────────────────────────────────────────────────────────────

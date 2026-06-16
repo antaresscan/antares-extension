@@ -665,16 +665,19 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // (which now also drops them). Otherwise a Helius blip would silently
     // block SAFE without showing any reason in the UI.
     const _PIPELINE_STATUS = /^(Helius|GoPlus|RugCheck|Solscan|DexScreener|Birdeye|Helius RPC) (unavailable|rate[- ]limited|timed out|degraded)\b|Holder data unreliable|broken upstream/i;
-    const _warningFlagsCount = _allFlagsForVerdict.filter(
+    const _tokenFlags = _allFlagsForVerdict.filter(
       (f) =>
         (f.severity === "warning" || f.severity === "critical") &&
         !_PIPELINE_STATUS.test(f.label),
-    ).length;
+    );
+    const _warningFlagsCount = _tokenFlags.length;
+    const _criticalFlagsCount = _tokenFlags.filter(f => f.severity === "critical").length;
 
     const risk: Verdict = determineVerdict({
       score, forceRug, safeBlocked, safeBlockedReasons,
       sourcesUsedCount: sources_used.length,
       warningFlagsCount: _warningFlagsCount,
+      criticalFlagsCount: _criticalFlagsCount,
     });
 
     // ── Flag deduplication ────────────────────────────────────────────────────
