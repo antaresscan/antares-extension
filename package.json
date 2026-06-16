@@ -40,7 +40,7 @@
     "@types/react-dom": "^19.2.3",
     "@vercel/node": "^5.8.8",
     "@vitest/coverage-v8": "^4.1.6",
-    "eslint": "^10.4.0",
+    "eslint": "^10.4.1",
     "globals": "^16.0.0",
     "happy-dom": "^20.10.1",
     "prettier": "^3.8.3",
