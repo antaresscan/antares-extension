@@ -1,6 +1,11 @@
 export {}
 
-import * as Sentry from "@sentry/browser"
+// Named imports only — a namespace import (`import * as Sentry`) defeats
+// tree-shaking and drags lazyLoadIntegration() + getReportDialogEndpoint()
+// into the bundle. Those build `<script src="https://browser.sentry-cdn.com/...">`
+// at runtime → "remotely-hosted code" → MV3 / CWS rejection. Importing only
+// the two symbols we use lets the bundler drop the CDN-loading code paths.
+import { init as sentryInit, captureException as sentryCapture } from "@sentry/browser"
 import type { HistoryEntry } from "./shared/types"
 import { CA_RE } from "./shared/constants"
 import { config } from "./shared/config"
@@ -19,7 +24,7 @@ import { scrubEvent, scrubBreadcrumb } from "./shared/sentry-scrub"
 // violating privacy.html's "Sentry: never the contract address or
 // your IP" promise on the entire extension surface.
 if (config.sentryDsn) {
-  Sentry.init({
+  sentryInit({
     dsn: config.sentryDsn,
     tracesSampleRate: config.sentryTracesSampleRate,
     sendDefaultPii: false,
@@ -239,7 +244,7 @@ const handlers: Record<string, MessageHandler> = {
       })
       .catch((e: Error) => {
         clearTimeout(timer)
-        Sentry.captureException(e)
+        sentryCapture(e)
         sendResponse({ ok: false, error: e.message })
       })
   },
@@ -285,7 +290,7 @@ const handlers: Record<string, MessageHandler> = {
     const stack = typeof msg.stack === "string" ? msg.stack : undefined
     const err = new Error(message)
     if (stack) err.stack = stack
-    Sentry.captureException(err)
+    sentryCapture(err)
     sendResponse({ ok: true })
   },
 
