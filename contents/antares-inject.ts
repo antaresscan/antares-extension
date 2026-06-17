@@ -1,6 +1,4 @@
 import type { PlasmoCSConfig } from "plasmo"
-import * as Sentry from "@sentry/browser"
-import { scrubEvent, scrubBreadcrumb } from "../shared/sentry-scrub"
 
 export const config: PlasmoCSConfig = {
   matches: [
@@ -16,20 +14,12 @@ export const config: PlasmoCSConfig = {
   run_at: "document_idle"
 }
 
-// Wire shared PII scrubbing — same SCRUB_KEYS + URL-query-strip the
-// backend uses (api/_lib/sentry.ts). Without this, every XHR
-// breadcrumb from /api/scan shipped `?ca=<contract>` to Sentry and
-// captureException-with-context sites leaked email / JWT, violating
-// privacy.html's "no PII" promise on the content-script side.
-if (process.env.PLASMO_PUBLIC_SENTRY_DSN) {
-  Sentry.init({
-    dsn: process.env.PLASMO_PUBLIC_SENTRY_DSN,
-    tracesSampleRate: 0.1,
-    sendDefaultPii: false,
-    beforeSend: (event) => scrubEvent(event),
-    beforeBreadcrumb: (breadcrumb) => scrubBreadcrumb(breadcrumb),
-  });
-}
+// Sentry is intentionally NOT imported here. @sentry/browser bundles
+// lazyLoadIntegration() and showReportDialog() which create <script>
+// elements with remote CDN URLs — a hard MV3 policy violation (CWS
+// rejects the ZIP). Errors in the content script are forwarded to the
+// background service worker via LOG_ERROR messages; background.ts holds
+// the single Sentry.init() and calls captureException there.
 
 import { state } from "./modules/state"
 import { hydrateCacheFromLS } from "./modules/cache"

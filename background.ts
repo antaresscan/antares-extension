@@ -276,6 +276,19 @@ const handlers: Record<string, MessageHandler> = {
    *   - url: the full URL to open
    *   - reusePattern: optional URL match string; if an existing tab matches, reuse it
    */
+  LOG_ERROR: (msg, sender, sendResponse) => {
+    if (sender.id !== chrome.runtime.id) {
+      sendResponse({ ok: false, error: "Unauthorized sender" })
+      return
+    }
+    const message = typeof msg.message === "string" ? msg.message : "Unknown content-script error"
+    const stack = typeof msg.stack === "string" ? msg.stack : undefined
+    const err = new Error(message)
+    if (stack) err.stack = stack
+    Sentry.captureException(err)
+    sendResponse({ ok: true })
+  },
+
   OPEN_TAB: (msg, sender, sendResponse) => {
     if (sender.id !== chrome.runtime.id) {
       sendResponse({ ok: false, error: "Unauthorized sender" })
