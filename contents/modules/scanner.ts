@@ -1,5 +1,4 @@
 import type { ScanResponseData, QuotaStatus } from "../../shared/types"
-import * as Sentry from "@sentry/browser"
 import { API, LS_PREFIX, IGNORE } from "./constants"
 import { state, scanCache } from "./state"
 import { getCached, saveToLS } from "./cache"
@@ -416,7 +415,7 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
       return
     }
     logger.warn("scanner", "scan failed after retries", e)
-    try { Sentry.captureException(e) } catch { /* Sentry not initialized */ }
+    chrome.runtime.sendMessage({ type: "LOG_ERROR", message: (e as Error).message, stack: (e as Error).stack }).catch(() => {})
     // Don't tear down a visible overlay on a silent-fetch failure —
     // a transient network blip during a session-change refresh shouldn't
     // make the user's working overlay disappear. Preserve what they had
