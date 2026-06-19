@@ -19,7 +19,7 @@
     "test:corpus": "vitest run __tests__/backtest"
   },
   "dependencies": {
-    "@sentry/browser": "^10.52.0",
+    "@sentry/browser": "^10.59.0",
     "@sentry/node": "10.58.0",
     "@upstash/ratelimit": "^2.0.5",
     "@upstash/redis": "^1.38.0",
