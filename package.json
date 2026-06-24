@@ -19,7 +19,7 @@
     "test:corpus": "vitest run __tests__/backtest"
   },
   "dependencies": {
-    "@sentry/browser": "^10.52.0",
+    "@sentry/browser": "^10.60.0",
     "@sentry/node": "10.58.0",
     "@upstash/ratelimit": "^2.0.5",
     "@upstash/redis": "^1.38.0",
@@ -35,6 +35,7 @@
     "@types/chrome": "0.1.42",
     "@types/node": "20.19.43",
     "@types/react": "^19.2.14",
+    "@types/chrome": "0.2.0",
     "@types/node": "20.19.41",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
