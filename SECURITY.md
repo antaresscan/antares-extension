@@ -16,7 +16,7 @@ request for security problems** — doing so exposes users before a fix
 is available.
 
 Instead, report the issue privately via GitHub's
-**[Private Vulnerability Reporting](https://github.com/COMEALAMAISONGROUPE/antares-extension/security/advisories/new)**
+**[Private Vulnerability Reporting](https://github.com/antaresscan/antares-extension/security/advisories/new)**
 form. That channel is end-to-end private between reporters and
 maintainers, and it is the only supported intake for security issues.
 
