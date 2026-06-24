@@ -1,17 +1,17 @@
 # Antares — Anti-Scam Scanner for Solana
 
-[![CI](https://github.com/COMEALAMAISONGROUPE/antares-extension/actions/workflows/ci.yml/badge.svg)](https://github.com/COMEALAMAISONGROUPE/antares-extension/actions/workflows/ci.yml)
+[![CI](https://github.com/antaresscan/antares-extension/actions/workflows/ci.yml/badge.svg)](https://github.com/antaresscan/antares-extension/actions/workflows/ci.yml)
 
 **Antares** is a Chrome extension that automatically detects the Solana token address on any page you visit and runs a real-time multi-source security scan. The verdict appears in a draggable overlay — `SAFE / CAUTION / DANGER / RUG` with a 1000-point composite score and the reasons behind it — without you ever pasting a contract address, switching tabs, or signing anything.
 
 > **Marketing landing site lives in a separate repo:**
-> [github.com/COMEALAMAISONGROUPE/antares-website](https://github.com/COMEALAMAISONGROUPE/antares-website) → deployed at <https://antares-website.vercel.app/>.
+> [github.com/antaresscan/antares-website](https://github.com/antaresscan/antares-website) → deployed at <https://antares-website.vercel.app/>.
 > This repo only ships the extension itself, the backend API at
 > `antares-extension.vercel.app/api/*`, and the in-extension utility
 > pages (`/privacy.html`, `/token.html`). The bare `/` here 301-redirects
 > to the marketing site.
 
-> **Supported chain: Solana only.** Ethereum and BNB chain support is on the roadmap — see [#120](https://github.com/COMEALAMAISONGROUPE/antares-extension/issues/120).
+> **Supported chain: Solana only.** Ethereum and BNB chain support is on the roadmap — see [#120](https://github.com/antaresscan/antares-extension/issues/120).
 
 ---
 
