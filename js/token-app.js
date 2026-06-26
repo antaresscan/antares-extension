@@ -389,7 +389,7 @@ const DEMO_DATA = {
     mintAuthority: false, freezeAuthority: false, honeypot: false,
     lpBurned: true, lpLocked: false, lpLockedPct: 100,
     liquidity: 6480000, marketCap: 342000000, priceUsd: 0.003841,
-    holders: 164210, volume24h: 112000000, volume1h: 18400000,
+    holders: 164210, volume24h: 18000000, volume1h: 2950000,
     priceChange5m: 3.8, priceChange1h: 18.4, priceChange24h: 187,
     solscanTokenAgeHours: 13080,
     tokenLogo: "https://dd.dexscreener.com/ds-data/tokens/solana/MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5.png",
@@ -415,7 +415,7 @@ const DEMO_DATA = {
         h6:  { buys: 1840, sells: 210  },
         h24: { buys: 7200, sells: 980  },
       },
-      volume: { m5: 228000, h1: 18400000, h6: 68000000, h24: 112000000 },
+      volume: { m5: 36500, h1: 2950000, h6: 10900000, h24: 18000000 },
     },
     topHolderPct: 35.0, top10HolderPct: 55.0,
     // 3 cards — CAUTION story: the verdict is the 55% top-10 concentration.
