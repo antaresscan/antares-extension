@@ -90,10 +90,10 @@ describe("buildResult — XSS regression", () => {
 
 describe("buildResult — Free-tier gating", () => {
   // The Pro v1 monetisation lever: AI Summary, Critical Flags, and Full
-  // Analysis are paid features but stay visible to Free users so they
-  // can see what they're missing. The buttons carry a "PRO" lock-pill,
-  // are dimmed, and clicking any of them opens /pricing instead of the
-  // feature.
+  // Analysis are paid features but stay visible to Free users (full
+  // colour) so they can see what they're missing. The buttons carry a
+  // giant translucent "PRO" watermark (.pro-ghost) behind the label,
+  // and clicking any of them opens /pricing instead of the feature.
 
   it("Free users see all 3 deep-dive buttons (visible, not hidden)", () => {
     const data = makeScanData({
@@ -106,7 +106,7 @@ describe("buildResult — Free-tier gating", () => {
     expect(html).toContain('id="ant-ai-summary-btn"')
   })
 
-  it("Free users see the buttons in a locked state with a PRO pill", () => {
+  it("Free users see the buttons in a locked state with a PRO ghost watermark", () => {
     const data = makeScanData({
       _quota: { tier: "free", used: 3, limit: 50, remaining: 47, resetAt: 0 },
     })
@@ -121,9 +121,11 @@ describe("buildResult — Free-tier gating", () => {
     const anchor = new DOMParser().parseFromString(html, "text/html")
       .querySelector("a#ant-full-analysis")
     expect(anchor?.getAttribute("class")).toBe("locked")
-    // 3 lock-pills, one per button
-    const pillMatches = html.match(/class="lock-pill">PRO/g) ?? []
-    expect(pillMatches.length).toBe(3)
+    // 3 ghost watermarks + 3 label wrappers, one pair per button
+    const ghostMatches = html.match(/class="pro-ghost">PRO/g) ?? []
+    expect(ghostMatches.length).toBe(3)
+    const labelMatches = html.match(/class="locked-label">/g) ?? []
+    expect(labelMatches.length).toBe(3)
   })
 
   it("Free Full Analysis link points at the pricing page (so no-JS still works)", () => {
@@ -139,7 +141,7 @@ describe("buildResult — Free-tier gating", () => {
     expect(html).toContain("antaresscan.com/pricing")
   })
 
-  it("Pro users get unlocked footer (no .locked, no PRO pill)", () => {
+  it("Pro users get unlocked footer (no .locked, no PRO ghost)", () => {
     const data = makeScanData({
       _quota: { tier: "pro", used: 100, limit: -1, remaining: -1, resetAt: 0 },
     })
@@ -149,10 +151,10 @@ describe("buildResult — Free-tier gating", () => {
     expect(html).toContain('id="ant-full-analysis"')
     expect(html).toContain('id="ant-ai-summary-btn"')
     expect(html).not.toContain("locked")
-    expect(html).not.toContain("lock-pill")
+    expect(html).not.toContain("pro-ghost")
   })
 
-  it("Lifetime users get unlocked footer (no .locked, no PRO pill)", () => {
+  it("Lifetime users get unlocked footer (no .locked, no PRO ghost)", () => {
     const data = makeScanData({
       _quota: { tier: "lifetime", used: 9999, limit: -1, remaining: -1, resetAt: 0 },
     })
@@ -162,7 +164,7 @@ describe("buildResult — Free-tier gating", () => {
     expect(html).toContain('id="ant-full-analysis"')
     expect(html).toContain('id="ant-ai-summary-btn"')
     expect(html).not.toContain("locked")
-    expect(html).not.toContain("lock-pill")
+    expect(html).not.toContain("pro-ghost")
   })
 
   it("Missing _quota (pre-quota cached responses) defaults to unlocked", () => {

@@ -767,11 +767,12 @@ export function buildResultNode(
   // \u2014 toggled inline via toggleCriticalFlags, never opens a new tab.
   //
   // Free-tier gating: Critical Flags, Full Analysis, and AI Summary are
-  // Pro/Lifetime features. Free users still see all three buttons (so
-  // they know what they're missing \u2014 invisible features don't sell
-  // upgrades) but the buttons are visually locked, carry a small "PRO"
-  // pill, and clicking any of them opens /pricing instead of activating
-  // the underlying feature. We gate by `_quota.tier === "free"`
+  // Pro/Lifetime features. Free users still see all three buttons at
+  // full colour (so they know what they're missing \u2014 invisible features
+  // don't sell upgrades), with a giant translucent "PRO" watermark behind
+  // the label (.pro-ghost, see styles.ts) instead of a corner pill \u2014
+  // clicking any of them opens /pricing instead of activating the
+  // underlying feature. We gate by `_quota.tier === "free"`
   // specifically: pre-quota cached responses without a _quota field
   // default to unlocked so we don't downgrade users who were paying
   // yesterday but whose response just happens to be missing the headers.
@@ -800,8 +801,8 @@ export function buildResultNode(
       rel: "noopener noreferrer",
       title: "Unlock with Pro",
     },
-      "\u26a0 Critical Flags",
-      el("span", { class: "lock-pill" }, "PRO"),
+      el("span", { class: "pro-ghost" }, "PRO"),
+      el("span", { class: "locked-label" }, "\u26a0 Critical Flags"),
     )
   } else {
     cfBtn = el("button", {
@@ -816,18 +817,24 @@ export function buildResultNode(
   // background worker because chrome.tabs.create isn't available in
   // content scripts in MV3). For Free (locked), attachAnalysisBtn
   // skips the rebind, leaving the synchronous href in charge.
-  const faBtn = el("a", {
-    href: isFree ? upgradeHref : "#",
-    id: "ant-full-analysis",
-    "data-ca": encodeURIComponent(mint),
-    class: isFree ? "locked" : undefined,
-    title: isFree ? "Unlock with Pro" : undefined,
-    target: isFree ? "_blank" : undefined,
-    rel: isFree ? "noopener noreferrer" : undefined,
-  }, "Full Analysis \u2192")
-  if (isFree) {
-    faBtn.appendChild(el("span", { class: "lock-pill" }, "PRO"))
-  }
+  const faBtn = isFree
+    ? el("a", {
+        href: upgradeHref,
+        id: "ant-full-analysis",
+        "data-ca": encodeURIComponent(mint),
+        class: "locked",
+        title: "Unlock with Pro",
+        target: "_blank",
+        rel: "noopener noreferrer",
+      },
+        el("span", { class: "pro-ghost" }, "PRO"),
+        el("span", { class: "locked-label" }, "Full Analysis \u2192"),
+      )
+    : el("a", {
+        href: "#",
+        id: "ant-full-analysis",
+        "data-ca": encodeURIComponent(mint),
+      }, "Full Analysis \u2192")
   foNode.appendChild(faBtn)
 
   // AI Summary \u2014 same shape as cf-btn above.
@@ -841,8 +848,8 @@ export function buildResultNode(
       rel: "noopener noreferrer",
       title: "Unlock with Pro",
     },
-      "\u2b21 AI Summary",
-      el("span", { class: "lock-pill" }, "PRO"),
+      el("span", { class: "pro-ghost" }, "PRO"),
+      el("span", { class: "locked-label" }, "\u2b21 AI Summary"),
     )
   } else {
     aiBtn = el("button", {
