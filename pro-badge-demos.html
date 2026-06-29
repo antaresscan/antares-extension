@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Antares — Overlay final</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap"></noscript>
+<style>
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  body{background:#0a0a0c;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace}
+
+  .box{
+    width:290px;border-radius:14px;overflow:hidden;position:relative;
+    border:1px solid rgba(255,255,255,.06);
+    box-shadow:0 40px 80px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.02) inset, inset 0 1px 0 rgba(255,255,255,.09);
+    background:linear-gradient(160deg,rgba(255,255,255,.09) 0%,rgba(255,255,255,.035) 30%,rgba(255,255,255,0) 52%), linear-gradient(180deg,#100809 0%,#0a0808 100%);
+  }
+  .topbar{height:2px;background:linear-gradient(90deg,transparent,#ff2244,transparent)}
+  .hd{display:flex;justify-content:space-between;align-items:center;padding:10px 14px 0}
+  .brand{font-size:9px;color:#888;font-weight:400;letter-spacing:.55em;text-transform:uppercase;font-family:'Bebas Neue',sans-serif}
+  .x{color:#3a3a42;font-size:13px;line-height:1}
+
+  .tk{padding:0 14px;margin-top:6px;font-size:14px;color:#999;font-weight:400;letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'Bebas Neue',sans-serif}
+  .tk b{color:#e6e6e6;font-weight:400}
+
+  .vb{padding:2px 14px 6px;position:relative;z-index:1}
+  .vb .lbl{font-size:7px;color:#666;letter-spacing:.2em;text-transform:uppercase;margin-bottom:2px}
+  .vb h1{font-family:'Bebas Neue','Arial Black',sans-serif;font-size:46px;line-height:.88;font-weight:400;letter-spacing:.04em;color:#ff2244;text-shadow:0 0 40px rgba(255,34,68,.2)}
+
+  .sr{display:flex;align-items:center;gap:8px;padding:0 14px;margin-top:10px;font-family:'Bebas Neue',sans-serif}
+  .sr .n{font-size:15px;color:#888;font-weight:400}
+  .sr .n b{color:#f0f0f0;font-weight:400}
+  .dots{display:flex;gap:2px;align-items:center}
+  .dt{width:4px;height:4px;border-radius:50%;background:#222226}
+  .dt.on{background:#ff2244}
+
+  .sbar{margin:6px 14px 0;height:2px;background:#181818;border-radius:1px;overflow:hidden}
+  .sbar-fill{height:100%;border-radius:1px;width:25%;background:linear-gradient(90deg,#ff224444,#ff2244)}
+
+  .sum{padding:13px 14px 5px;font-size:12px;font-weight:400;letter-spacing:.08em;word-spacing:.15em;color:#ff5566;font-family:'Bebas Neue',sans-serif}
+  .sep{height:1px;margin:8px 14px;background:#1a1a1e}
+
+  .ss{display:flex;margin:0 14px;background:#0a0a0c;border-radius:3px;overflow:hidden;border:1px solid #1a1a1e}
+  .si{flex:1;text-align:center;padding:7px 2px;position:relative}
+  .si+.si::before{content:'';position:absolute;left:0;top:25%;height:50%;width:1px;background:#1a1a1e}
+  .si span{display:block;font-size:9px;color:#888;font-weight:400;letter-spacing:.12em;text-transform:uppercase;margin-bottom:3px;font-family:'Bebas Neue',sans-serif}
+  .si b{font-size:10px;letter-spacing:.02em;font-weight:700;color:#f0f0f0}
+  .si b.y{color:#00e5b0}
+  .si b.n{color:#ff5f5f}
+
+  .fo{display:flex;margin:14px 14px 14px;gap:4px}
+  .fo .locked{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:8px;font-size:11px;font-weight:400;letter-spacing:.12em;line-height:1.35;
+    text-transform:uppercase;text-align:center;text-decoration:none;border-radius:2px;
+    font-family:'Bebas Neue',sans-serif;cursor:pointer;position:relative;overflow:hidden;
+  }
+  .fo .cf-btn.locked{color:#cc7070;border:1px solid rgba(255,95,95,.25);background:rgba(255,95,95,.05)}
+  .fo .cf-btn.locked:hover{color:#ff5f5f;border-color:rgba(255,95,95,.5);background:rgba(255,95,95,.1)}
+  .fo a.locked:not(.cf-btn):not(.ai-btn){color:#b0b0b0;border:1px solid #2a2a2e;background:transparent}
+  .fo a.locked:not(.cf-btn):not(.ai-btn):hover{color:#f0f0f0;border-color:#555;background:rgba(255,255,255,.04)}
+  .fo .ai-btn.locked{color:#a78bfa;border:1px solid rgba(167,139,250,.25);background:rgba(167,139,250,.05)}
+  .fo .ai-btn.locked:hover{color:#c4b5fd;border-color:rgba(167,139,250,.5);background:rgba(167,139,250,.1)}
+  .fo .locked .pro-ghost{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-family:'Bebas Neue','Arial Black',sans-serif;font-size:34px;letter-spacing:.04em;
+    color:rgba(245,208,0,.18);line-height:1;z-index:1;pointer-events:none;
+  }
+  .fo .locked:hover .pro-ghost{color:rgba(245,208,0,.28)}
+  .fo .locked .locked-label{position:relative;z-index:2;display:block}
+
+  .cap{margin-top:22px;text-align:center;font-size:10px;color:#555;letter-spacing:.04em}
+</style>
+</head>
+<body>
+<div>
+  <div class="box">
+    <div class="topbar"></div>
+    <div class="hd"><span class="brand">ANTARES</span><span class="x">✕</span></div>
+    <div class="tk"><b>ANSEM</b> The Black Bull</div>
+    <div class="vb"><h1>RUG PULL</h1></div>
+    <div class="sr">
+      <span class="n"><b>250</b> / 1000</span>
+      <div class="dots"><div class="dt on"></div><div class="dt"></div><div class="dt"></div><div class="dt"></div><div class="dt"></div></div>
+    </div>
+    <div class="sbar"><div class="sbar-fill"></div></div>
+    <div class="sum">5 flags — 2 critical</div>
+    <div class="sep"></div>
+    <div class="ss">
+      <div class="si"><span>Sell</span><b class="y">✓</b></div>
+      <div class="si"><span>Mint</span><b class="y">✓</b></div>
+      <div class="si"><span>Freeze</span><b class="y">✓</b></div>
+      <div class="si"><span>LP Lock</span><b class="n">✗</b></div>
+      <div class="si"><span>Liq</span><b class="y">$1.24M</b></div>
+    </div>
+    <div class="fo">
+      <a class="cf-btn locked" title="Unlock with Pro"><span class="pro-ghost">PRO</span><span class="locked-label">⚠ Critical Flags</span></a>
+      <a class="locked" title="Unlock with Pro"><span class="pro-ghost">PRO</span><span class="locked-label">Full Analysis →</span></a>
+      <a class="ai-btn locked" title="Unlock with Pro"><span class="pro-ghost">PRO</span><span class="locked-label">⬡ AI Summary</span></a>
+    </div>
+  </div>
+  <div class="cap">Carte complète — markup + CSS copiés de components.ts / styles.ts</div>
+</div>
+</body>
+</html>
