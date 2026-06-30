@@ -207,7 +207,7 @@ const DEMO_DATA = {
     // dev linked to a prior failed launch. All repWarn:true so the visual
     // matches the verdict at a glance.
     criticalActors: [
-      { type: "cluster", tag: "Cluster A", pct: 40.7, addr: "Top 2-10 holders", repLbl: "Coordination · synchronized entry pattern",     repWidth: 85, repWarn: true, desc: "8 sibling wallets (<b>40.7%</b> combined) bought in the same 4-block window. Pattern matches coordinated insider entry." },
+      { type: "cluster", tag: "Cluster A", pct: 40.7, addr: "Top 2-10 holders", repLbl: "Coordination · synchronized entry pattern",     repWidth: 85, repWarn: true, desc: "8 sibling wallets <b>40.7%</b> combined bought in the same 4-block window. Pattern matches coordinated insider entry." },
       { type: "insider", tag: "Insider",   pct: 27.4, addr: "u6PJ…Xq2w",        repLbl: "Largest of the 68% top-10 cluster",            repWidth: 95, repWarn: true, desc: "Holds <b>27.4%</b> — the largest of the 10 wallets that together control 68% of supply. Active sells in last 6h." },
       { type: "dev",     tag: "Dev",       pct: 0.5,  addr: "3KrTm…wHpL",       repLbl: "Reputation · 1 prior token · flagged",         repWidth: 60, repWarn: true, desc: "Linked to <b>PIPPIN-V1</b> which lost 92% within 30 days. Same funder address pattern." },
     ],
@@ -326,7 +326,7 @@ const DEMO_DATA = {
     // funder and hold ~43% combined. All repWarn:true → uniform red wall.
     criticalActors: [
       { type: "insider", tag: "Insider",   pct: 44.0, addr: "HsXp…wG31",        repLbl: "Largest of an 87% top-10 cluster",             repWidth: 100, repWarn: true, desc: "Holds <b>44.0%</b> of supply — likely dev wallet, the largest of 10 wallets that together control 87%. Can crash to zero in one transaction." },
-      { type: "cluster", tag: "Cluster A", pct: 43.0, addr: "Top 2-10 holders", repLbl: "Coordination · sibling wallet pattern",         repWidth: 96, repWarn: true, desc: "9 wallets (<b>43.0%</b> combined) share funding source with the dev — coordinated sniper entry, sell-and-bounce pattern detected." },
+      { type: "cluster", tag: "Cluster A", pct: 43.0, addr: "Top 2-10 holders", repLbl: "Coordination · sibling wallet pattern",         repWidth: 96, repWarn: true, desc: "9 wallets <b>43.0%</b> combined share funding source with the dev — coordinated sniper entry, sell-and-bounce pattern detected." },
       { type: "dev",     tag: "Dev",       pct: 1.2,  addr: "GpXr2…bN8K",       repLbl: "Reputation · 3 / 4 prior rugs",                 repWidth: 92, repWarn: true, desc: "Funder traced to <b>3 prior rugs</b> averaging −94% loss. Same wallet pattern and exit timing." },
     ],
     holderActivity: {
