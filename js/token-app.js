@@ -368,6 +368,10 @@ const DEMO_DATA = {
         { walletFull: "4JzpKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaaB6h", wallet: "4Jzp…aB6h", pctSupply: 0.6,  holdings: 6000000,   active: false },
         { walletFull: "7KapKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaaB7i", wallet: "7Kap…aB7i", pctSupply: 0.4,  holdings: 4000000,   active: false },
       ],
+      // 12 rows spread across the full 6h window so the feed overflows
+      // its 320px max-height and the scrollbar is actually reachable —
+      // 6 rows (the original count) fit entirely on-screen with no
+      // overflow at all.
       activity: [
         { action: "SOLD", walletFull: "HsXpKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaGwG31", wallet: "HsXp…wG31", usdValue: -47,  tokenAmount: 276000,  ageMin: 23  },
         { action: "SOLD", walletFull: "CcSXKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHa1e82", wallet: "CcSX…1e82", usdValue: -28,  tokenAmount: 164500,  ageMin: 67  },
@@ -375,6 +379,12 @@ const DEMO_DATA = {
         { action: "SOLD", walletFull: "HsXpKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaGwG31", wallet: "HsXp…wG31", usdValue: -82,  tokenAmount: 481800, ageMin: 174 },
         { action: "SOLD", walletFull: "CcSXKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHa1e82", wallet: "CcSX…1e82", usdValue: -18,  tokenAmount: 105800, ageMin: 234 },
         { action: "SOLD", walletFull: "5RxpKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaaB1c", wallet: "5Rxp…aB1c", usdValue: -9,   tokenAmount: 52900,  ageMin: 298 },
+        { action: "SOLD", walletFull: "HsXpKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaGwG31", wallet: "HsXp…wG31", usdValue: -64,  tokenAmount: 379000, ageMin: 312 },
+        { action: "SOLD", walletFull: "CcSXKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHa1e82", wallet: "CcSX…1e82", usdValue: -22,  tokenAmount: 129600, ageMin: 327 },
+        { action: "SOLD", walletFull: "5RxpKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaaB1c", wallet: "5Rxp…aB1c", usdValue: -7,   tokenAmount: 41200,  ageMin: 341 },
+        { action: "SOLD", walletFull: "HsXpKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaGwG31", wallet: "HsXp…wG31", usdValue: -51,  tokenAmount: 301000, ageMin: 348 },
+        { action: "SOLD", walletFull: "CcSXKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHa1e82", wallet: "CcSX…1e82", usdValue: -15,  tokenAmount: 88300,  ageMin: 354 },
+        { action: "SOLD", walletFull: "5RxpKvWyE4Y4nR8TmQzXq2wEr8tYrKpL5nVcBxHaaB1c", wallet: "5Rxp…aB1c", usdValue: -6,   tokenAmount: 35900,  ageMin: 359 },
       ],
       walletsWithActivity: 3,
       totalCheckedWallets: 10,

@@ -303,7 +303,7 @@ export function buildExitLiquidityTab(liq) {
       <div class="exit-note">Outcome</div>
     </div>
     ${rows}
-    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:14px;color:#888">Total LP available: <b style="color:#eee;letter-spacing:.04em">${escapeHtml(fmt(liq))}</b></div>
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:18px;color:#888">Total LP available: <b style="color:#eee;letter-spacing:.04em">${escapeHtml(fmt(liq))}</b></div>
   `;
 }
 
