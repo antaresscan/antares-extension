@@ -647,7 +647,7 @@ function buildSiBool(siLabel: string, val: unknown, invert = false): HTMLElement
   const yes = invert ? !val : !!val
   return el("div", { class: "si" },
     el("span", undefined, siLabel),
-    el("b", { class: yes ? "y" : "n" }, yes ? "\u2713" : "\u2717"),
+    el("b", { class: yes ? "ok" : "no" }),
   )
 }
 
@@ -655,7 +655,7 @@ function buildSiLp(data: ScanResponseData): HTMLElement {
   if (data.lpBurned) {
     return el("div", { class: "si" },
       el("span", undefined, "LP Burned"),
-      el("b", { class: "y" }, "\u2713"),
+      el("b", { class: "ok" }),
     )
   }
   if (data.lpLocked) {
@@ -663,7 +663,7 @@ function buildSiLp(data: ScanResponseData): HTMLElement {
     const dur = data.lpLockDurationDays != null ? ` (${data.lpLockDurationDays}d)` : ""
     return el("div", { class: "si" },
       el("span", undefined, "LP Locked" + pct + dur),
-      el("b", { class: "y" }, "\u2713"),
+      el("b", { class: "ok" }),
     )
   }
   if (data.lpBurned == null && data.lpLocked == null) {
@@ -674,7 +674,7 @@ function buildSiLp(data: ScanResponseData): HTMLElement {
   }
   return el("div", { class: "si" },
     el("span", undefined, "LP Lock"),
-    el("b", { class: "n" }, "\u2717"),
+    el("b", { class: "no" }),
   )
 }
 
@@ -749,7 +749,7 @@ export function buildResultNode(
   const ssNode = el("div", { class: "ss" },
     el("div", { class: "si" },
       el("span", undefined, "Sell"),
-      el("b", { class: data.honeypot ? "n" : "y" }, data.honeypot ? "\u2717" : "\u2713"),
+      el("b", { class: data.honeypot ? "no" : "ok" }),
     ),
     buildSiBool("Mint", data.mintAuthority, true),
     buildSiBool("Freeze", data.freezeAuthority, true),
@@ -802,13 +802,13 @@ export function buildResultNode(
       title: "Unlock with Pro",
     },
       el("span", { class: "pro-ghost" }, "PRO"),
-      el("span", { class: "locked-label" }, "\u26a0 Critical Flags"),
+      el("span", { class: "locked-label" }, "Critical Flags"),
     )
   } else {
     cfBtn = el("button", {
       class: "cf-btn",
       id: "ant-critical-flags-btn",
-    }, "\u26a0 Critical Flags")
+    }, "Critical Flags")
   }
   foNode.appendChild(cfBtn)
 
@@ -828,13 +828,13 @@ export function buildResultNode(
         rel: "noopener noreferrer",
       },
         el("span", { class: "pro-ghost" }, "PRO"),
-        el("span", { class: "locked-label" }, "Full Analysis \u2192"),
+        el("span", { class: "locked-label" }, "Full Analysis"),
       )
     : el("a", {
         href: "#",
         id: "ant-full-analysis",
         "data-ca": encodeURIComponent(mint),
-      }, "Full Analysis \u2192")
+      }, "Full Analysis")
   foNode.appendChild(faBtn)
 
   // AI Summary \u2014 same shape as cf-btn above.
@@ -849,13 +849,13 @@ export function buildResultNode(
       title: "Unlock with Pro",
     },
       el("span", { class: "pro-ghost" }, "PRO"),
-      el("span", { class: "locked-label" }, "\u2b21 AI Summary"),
+      el("span", { class: "locked-label" }, "AI Summary"),
     )
   } else {
     aiBtn = el("button", {
       class: "ai-btn ai-btn--active",
       id: "ant-ai-summary-btn",
-    }, "\u2b21 AI Summary")
+    }, "AI Summary")
   }
   foNode.appendChild(aiBtn)
 
