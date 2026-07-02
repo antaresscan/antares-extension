@@ -195,7 +195,7 @@ export const SHADOW_CSS = `
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 14px 0;
+  padding: 10px 14px 0 12px;
   cursor: grab;
   touch-action: none;
 }
@@ -211,10 +211,10 @@ export const SHADOW_CSS = `
    change so it never reads as "the wordmark is animating" during
    a button click. */
 .brand {
-  font-size: 9px;
+  font-size: 10.5px;
   color: #888;
   font-weight: 400;
-  letter-spacing: .55em;
+  letter-spacing: .3em;
   text-transform: uppercase;
   font-family: 'Bebas Neue', sans-serif;
 }
@@ -351,9 +351,9 @@ export const SHADOW_CSS = `
   border-color: #2a2a30;
 }
 .tk {
-  padding: 0 14px;
+  padding: 0 14px 0 12px;
   margin-top: 6px;
-  font-size: 14px;
+  font-size: 15.5px;
   color: #999;
   font-weight: 400;
   letter-spacing: .06em;
@@ -365,7 +365,7 @@ export const SHADOW_CSS = `
 .tk b { color: #e6e6e6; font-weight: 400; }
 
 /* FIX: .vb padding-bottom augmenté pour séparer le verdict h1 du score */
-.vb { padding: 2px 14px 6px; position: relative; z-index: 1; }
+.vb { padding: 2px 14px 6px 12px; position: relative; z-index: 1; }
 .vb h1 { font-family: 'Bebas Neue', 'Arial Black', sans-serif; font-size: 46px; line-height: .88; font-weight: 400; letter-spacing: .04em; }
 .box.safe    .vb h1 { color: #00e5b0; text-shadow: 0 0 30px rgba(0,229,176,.15); }
 .box.caution .vb h1 { color: #f5d000; text-shadow: 0 0 30px rgba(245,208,0,.12); }
@@ -432,15 +432,21 @@ export const SHADOW_CSS = `
   letter-spacing: .12em; text-transform: uppercase; margin-bottom: 3px;
   font-family: 'Bebas Neue', sans-serif;
 }
-.si b { font-size: 10px; letter-spacing: .02em; font-weight: 700; font-family: 'IBM Plex Mono', monospace; color: #f0f0f0; }
+.si b { font-size: 8.5px; letter-spacing: .06em; font-weight: 400; font-family: 'IBM Plex Mono', monospace; color: #f0f0f0; }
 .si b.y { color: #00e5b0; }
 .si b.n { color: #ff5f5f; }
 .si b.w { color: #f5d000; }
+.si b.ok { display: inline-flex; align-items: center; justify-content: center; width: 12px; height: 12px; position: relative; font-size: 0; }
+.si b.ok::before { content: ''; position: absolute; width: 7px; height: 4px; border-left: 1.5px solid #00e5b0; border-bottom: 1.5px solid #00e5b0; transform: rotate(-45deg) translate(1px, -1px); }
+.si b.no { display: inline-flex; align-items: center; justify-content: center; width: 12px; height: 12px; position: relative; font-size: 0; }
+.si b.no::before, .si b.no::after { content: ''; position: absolute; width: 9px; height: 1.5px; background: #ff5f5f; border-radius: .75px; top: 50%; left: 50%; }
+.si b.no::before { transform: translate(-50%, -50%) rotate(45deg); }
+.si b.no::after { transform: translate(-50%, -50%) rotate(-45deg); }
 
 .fo { display: flex; margin: 8px 14px 10px; gap: 4px; }
 .fo a {
-  flex: 1; display: block; padding: 8px;
-  font-size: 11px; color: #b0b0b0; font-weight: 400; letter-spacing: .12em;
+  flex: 1; display: flex; align-items: center; justify-content: center; padding: 8px;
+  font-size: 12px; color: #b0b0b0; font-weight: 400; letter-spacing: .12em;
   text-transform: uppercase; text-decoration: none; text-align: center;
   border: 1px solid #2a2a2e; border-radius: 2px; transition: .2s;
   font-family: 'Bebas Neue', sans-serif; line-height: 1.1;
@@ -656,11 +662,11 @@ export const SHADOW_CSS = `
 
 /* ── AI Summary button ─────────────────────────────────────────── */
 .ai-btn {
-  flex: 1; display: block; padding: 8px;
-  font-size: 11px; font-weight: 400; letter-spacing: .12em;
-  text-transform: uppercase; text-align: center;
+  flex: 1; display: flex; align-items: center; justify-content: center; padding: 8px;
+  font-size: 12px; font-weight: 400; letter-spacing: .12em;
+  text-transform: uppercase; text-align: center; line-height: 1.1;
   border-radius: 2px; transition: color .2s, border-color .2s, background .2s;
-  font-family: 'Bebas Neue', sans-serif; background: none; cursor: pointer;
+  font-family: 'Bebas Neue', sans-serif; cursor: pointer;
   color: #a78bfa;
   border: 1px solid rgba(167,139,250,.25);
   background: rgba(167,139,250,.05);
@@ -805,9 +811,9 @@ export const SHADOW_CSS = `
 
 /* ── Critical Flags button + panel (inline, replaces DexScreener) ─── */
 .cf-btn {
-  flex: 1; display: block; padding: 8px;
-  font-size: 11px; font-weight: 400; letter-spacing: .12em;
-  text-transform: uppercase; text-align: center;
+  flex: 1; display: flex; align-items: center; justify-content: center; padding: 8px;
+  font-size: 12px; font-weight: 400; letter-spacing: .12em;
+  text-transform: uppercase; text-align: center; line-height: 1.1;
   border-radius: 2px; transition: color .2s, border-color .2s, background .2s;
   font-family: 'Bebas Neue', sans-serif; background: rgba(255,95,95,.05);
   cursor: pointer;
