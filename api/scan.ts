@@ -665,10 +665,15 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // (which now also drops them). Otherwise a Helius blip would silently
     // block SAFE without showing any reason in the UI.
     const _PIPELINE_STATUS = /^(Helius|GoPlus|RugCheck|Solscan|DexScreener|Birdeye|Helius RPC) (unavailable|rate[- ]limited|timed out|degraded)\b|Holder data unreliable|broken upstream/i;
+    // Pump-only flags are informational market signals, not structural rug risks.
+    // They must remain visible to the user but must never count toward the
+    // 3-warnings → forced-DANGER threshold in determineVerdict.
+    const _PUMP_PRICE_ONLY = /Pumped \+[\d,]+% (in 24h|over \d+ days)|Large 24h pump|Extreme pump .* on newborn token|Vertical pump detected/i;
     const _tokenFlags = _allFlagsForVerdict.filter(
       (f) =>
         (f.severity === "warning" || f.severity === "critical") &&
-        !_PIPELINE_STATUS.test(f.label),
+        !_PIPELINE_STATUS.test(f.label) &&
+        !_PUMP_PRICE_ONLY.test(f.label),
     );
     const _warningFlagsCount = _tokenFlags.length;
     const _criticalFlagsCount = _tokenFlags.filter(f => f.severity === "critical").length;

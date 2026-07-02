@@ -1,7 +1,7 @@
 {
   "name": "antares-extension",
-  "displayName": "Antares \u2014 Anti-Scam Scanner for Solana",
-  "version": "1.3.12",
+  "displayName": "Antares — Anti-Scam Scanner for Solana",
+  "version": "1.3.15",
   "description": "Real-time Solana token scanner. 7-layer scoring on every token page. Free unlimited scans, Pro for power users.",
   "author": "COMEALAMAISONGROUPE",
   "scripts": {
@@ -32,9 +32,6 @@
     "@eslint/js": "^10.0.0",
     "@ianvs/prettier-plugin-sort-imports": "4.7.1",
     "@playwright/test": "^1.61.1",
-    "@types/chrome": "0.1.42",
-    "@types/node": "20.19.43",
-    "@types/react": "^19.2.14",
     "@types/chrome": "0.2.0",
     "@types/node": "20.19.41",
     "@types/react": "^19.2.17",

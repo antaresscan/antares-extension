@@ -374,10 +374,10 @@ export const SHADOW_CSS = `
 
 /* FIX: .sr margin-top augmenté pour éviter que le score colle au verdict */
 .sr { display: flex; align-items: center; gap: 8px; padding: 0 14px; margin-top: 10px; }
-.sr .n { font-size: 15px; color: #888; font-weight: 400; font-family: 'Bebas Neue', sans-serif; }
+.sr .n { font-size: 17px; color: #888; font-weight: 400; font-family: 'Bebas Neue', sans-serif; word-spacing: 2px; }
 .sr .n b { color: #f0f0f0; font-weight: 400; }
-.dots { display: flex; gap: 2px; align-items: center; }
-.dt { width: 4px; height: 4px; border-radius: 50%; }
+.dots { display: flex; gap: 3px; align-items: center; }
+.dt { width: 5px; height: 5px; border-radius: 50%; }
 .dt.on  { background: #00e5b0; }
 .dt.off { background: #222226; }
 
@@ -443,7 +443,7 @@ export const SHADOW_CSS = `
   font-size: 11px; color: #b0b0b0; font-weight: 400; letter-spacing: .12em;
   text-transform: uppercase; text-decoration: none; text-align: center;
   border: 1px solid #2a2a2e; border-radius: 2px; transition: .2s;
-  font-family: 'Bebas Neue', sans-serif;
+  font-family: 'Bebas Neue', sans-serif; line-height: 1.1;
 }
 .fo a:hover { color: #f0f0f0; border-color: #555; background: rgba(255,255,255,.04); }
 .fo a.warn  { border-color: rgba(255,95,95,.2); color: #cc5555; }
