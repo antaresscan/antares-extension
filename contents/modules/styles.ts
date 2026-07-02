@@ -432,16 +432,16 @@ export const SHADOW_CSS = `
   letter-spacing: .12em; text-transform: uppercase; margin-bottom: 3px;
   font-family: 'Bebas Neue', sans-serif;
 }
-.si b { font-size: 8.5px; letter-spacing: .06em; font-weight: 400; font-family: 'IBM Plex Mono', monospace; color: #f0f0f0; }
-.si b.y { color: #00e5b0; }
+.si b { font-size: 8.5px; letter-spacing: .06em; font-weight: 400; line-height: 1; font-family: 'IBM Plex Mono', monospace; color: #f0f0f0; vertical-align: top; }
+.si b.y { color: #00e5b0; position: relative; top: 1.5px; }
 .si b.n { color: #ff5f5f; }
 .si b.w { color: #f5d000; }
-.si b.ok { display: inline-flex; align-items: center; justify-content: center; width: 12px; height: 12px; position: relative; font-size: 0; }
-.si b.ok::before { content: ''; position: absolute; width: 7px; height: 4px; border-left: 1.5px solid #00e5b0; border-bottom: 1.5px solid #00e5b0; transform: rotate(-45deg) translate(1px, -1px); }
-.si b.no { display: inline-flex; align-items: center; justify-content: center; width: 12px; height: 12px; position: relative; font-size: 0; }
-.si b.no::before, .si b.no::after { content: ''; position: absolute; width: 9px; height: 1.5px; background: #ff5f5f; border-radius: .75px; top: 50%; left: 50%; }
-.si b.no::before { transform: translate(-50%, -50%) rotate(45deg); }
-.si b.no::after { transform: translate(-50%, -50%) rotate(-45deg); }
+.si b.ok { display: inline-flex; align-items: flex-start; justify-content: center; width: 12px; height: 12px; position: relative; font-size: 0; vertical-align: top; }
+.si b.ok::before { content: ''; position: absolute; width: 7px; height: 4px; border-left: 1.5px solid #00e5b0; border-bottom: 1.5px solid #00e5b0; top: 3px; left: 50%; transform: translateX(-50%) rotate(-45deg); }
+.si b.no { display: inline-flex; align-items: flex-start; justify-content: center; width: 12px; height: 12px; position: relative; top: 1.5px; font-size: 0; vertical-align: top; }
+.si b.no::before, .si b.no::after { content: ''; position: absolute; width: 9px; height: 1.5px; background: #ff5f5f; border-radius: .75px; top: 5px; left: 50%; }
+.si b.no::before { transform: translateX(-50%) rotate(45deg); }
+.si b.no::after { transform: translateX(-50%) rotate(-45deg); }
 
 .fo { display: flex; margin: 8px 14px 10px; gap: 4px; }
 .fo a {
