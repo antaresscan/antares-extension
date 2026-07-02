@@ -705,9 +705,9 @@ export function buildResultNode(
   // tier-gating class needed here.
   if (state.boxEl) state.boxEl.className = `box ${riskClass}`
 
-  const dotsCount = Math.round((displayScore / 1000) * 5)
+  const dotsCount = Math.round((displayScore / 1000) * 4)
   const dotsNode = el("div", { class: "dots" },
-    ...Array.from({ length: 5 }, (_, i) =>
+    ...Array.from({ length: 4 }, (_, i) =>
       el("div", { class: `dt ${i < dotsCount ? "on" : "off"}` }),
     ),
   )
