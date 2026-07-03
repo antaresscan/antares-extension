@@ -44,7 +44,7 @@ describe("layerDexScreener", () => {
     expect(result.available).toBe(true);
   });
 
-  it("forceRug when vol/liq > 20", () => {
+  it("vol/liq > 15 → danger via points, no force rug (ledger #13: metric is too noisy — DexScreener liquidity fluctuates ±20% — to justify the harshest verdict)", () => {
     const pair: DexScreenerPair = {
       liquidity: { usd: 1 },
       volume: { h24: 100 },
@@ -52,8 +52,13 @@ describe("layerDexScreener", () => {
       txns: { m5: { buys: 1, sells: 1 } },
     };
     const result = layerDexScreener(pair, null, null);
-    expect(result.forceRug).toBe(true);
+    expect(result.forceRug).toBe(false);
     expect(result.safeBlocked).toBe(true);
+    const volFlag = result.flags.find(f => /vol\/liquidity ratio \(>15×\)/i.test(f.label));
+    expect(volFlag).toBeTruthy();
+    expect(volFlag?.severity).toBe("critical");
+    expect(volFlag?.impact).toBe(550);
+    expect(volFlag?.flagClass).toBe("behavioral");
   });
 
   it("vol/liq in 10–15× band → warning only (not critical, not blocking)", () => {
@@ -122,7 +127,7 @@ describe("layerDexScreener", () => {
   });
 
     // Fix(EXTREME_PUMP_24H): Extreme 24h pump detection
-  it("Fix(EXTREME_PUMP_24H): pc24 > 5000 sets forceRug and safeBlocked", () => {
+  it("Fix(EXTREME_PUMP_24H): pc24 > 5000 is a pure pump signal — warning, 0 points, never blocks SAFE (ledger #19)", () => {
     const pair: DexScreenerPair = {
       liquidity: { usd: 50000 },
       volume: { h24: 100000 },
@@ -134,12 +139,15 @@ describe("layerDexScreener", () => {
       },
     };
     const result = layerDexScreener(pair, 500000, 1440);
-    expect(result.forceRug).toBe(true);
-    expect(result.safeBlocked).toBe(true);
-    expect(result.flags.some(f => /extreme 24h pump/i.test(f.label))).toBe(true);
+    expect(result.forceRug).toBe(false);
+    expect(result.safeBlocked).toBe(false);
+    const pumpFlag = result.flags.find(f => /extreme 24h pump/i.test(f.label));
+    expect(pumpFlag).toBeTruthy();
+    expect(pumpFlag?.severity).toBe("warning");
+    expect(pumpFlag?.impact).toBe(0);
   });
 
-  it("Fix(EXTREME_PUMP_24H): pc24 > 1000 sets safeBlocked (not forceRug)", () => {
+  it("Fix(EXTREME_PUMP_24H): pc24 > 1000 is a pure pump signal — warning, 0 points, never blocks SAFE (ledger #23)", () => {
     const pair: DexScreenerPair = {
       liquidity: { usd: 50000 },
       volume: { h24: 100000 },
@@ -152,11 +160,14 @@ describe("layerDexScreener", () => {
     };
     const result = layerDexScreener(pair, 500000, 1440);
     expect(result.forceRug).toBe(false);
-    expect(result.safeBlocked).toBe(true);
-    expect(result.flags.some(f => /extreme 24h pump/i.test(f.label))).toBe(true);
+    expect(result.safeBlocked).toBe(false);
+    const pumpFlag = result.flags.find(f => /extreme 24h pump/i.test(f.label));
+    expect(pumpFlag).toBeTruthy();
+    expect(pumpFlag?.severity).toBe("warning");
+    expect(pumpFlag?.impact).toBe(0);
   });
 
-  it("Fix(EXTREME_PUMP_24H): pc24 > 500 on token <24h sets safeBlocked", () => {
+  it("Fix(EXTREME_PUMP_24H): pc24 > 500 on token <24h is a pure pump signal — never blocks SAFE", () => {
     const pair: DexScreenerPair = {
       liquidity: { usd: 50000 },
       volume: { h24: 100000 },
@@ -168,7 +179,7 @@ describe("layerDexScreener", () => {
       },
     };
     const result = layerDexScreener(pair, 500000, 720);
-    expect(result.safeBlocked).toBe(true);
+    expect(result.safeBlocked).toBe(false);
     expect(result.flags.some(f => /large 24h pump/i.test(f.label))).toBe(true);
   });
 
@@ -409,16 +420,22 @@ describe("layerGoPlus", () => {
     expect(result.trust).toBeLessThan(1.0);
   });
 
-  it("Fix(TAX_WARNING): sell_tax '0.15' (=15%) is hard flagged as > 10%", () => {
+  it("Fix(TAX_WARNING): sell_tax '0.15' (=15%) lands in the 10-25% tier (ledger #10)", () => {
     const goplus: GoPlusTokenResult = { sell_tax: "0.15", buy_tax: "0" };
     const result = layerGoPlus(goplus);
-    expect(result.flags.some(f => /sell tax > 10%/i.test(f.label))).toBe(true);
+    const taxFlag = result.flags.find(f => /sell tax 15%/i.test(f.label));
+    expect(taxFlag).toBeTruthy();
+    expect(taxFlag?.severity).toBe("critical");
+    expect(taxFlag?.impact).toBe(350);
   });
 
-  it("Fix(TAX_WARNING): sell_tax '11' (=11%) is hard flagged as > 10%", () => {
+  it("Fix(TAX_WARNING): sell_tax '11' (=11%) lands in the 10-25% tier (ledger #10)", () => {
     const goplus: GoPlusTokenResult = { sell_tax: "11", buy_tax: "0" };
     const result = layerGoPlus(goplus);
-    expect(result.flags.some(f => /sell tax > 10%/i.test(f.label))).toBe(true);
+    const taxFlag = result.flags.find(f => /sell tax 11%/i.test(f.label));
+    expect(taxFlag).toBeTruthy();
+    expect(taxFlag?.severity).toBe("critical");
+    expect(taxFlag?.impact).toBe(350);
   });
 
   it("clean token (sell_tax=0, buy_tax=0) returns trust 1.0", () => {

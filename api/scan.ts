@@ -17,7 +17,7 @@ import {
   isSolscanMarketsResponse, isSolscanMeta, isSolscanTransfersResponse,
   isRugCheckReport,
   sanitizeString, sanitizeUrl,
-  makeFlag,
+  makeFlag, penaltyToPoints,
 } from "./_lib/helpers";
 import {
   heliusGetLargestAccounts, heliusGetTokenSupply, heliusGetCreatorReputation,
@@ -536,7 +536,6 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const l7 = layerCrossValidation(rugData, resolvedHolderAccounts, goplus, solscanTokenAgeHours, dexTokenAgeHours, totalSupplyUi);
 
     const allLayers = [l1, l2, l3, l4, l5, l6, l7];
-    let score       = computeFinalScore(allLayers);
     let forceRug    = allLayers.some(l => l.forceRug);
     let safeBlocked = allLayers.some(l => l.safeBlocked);
 
@@ -600,7 +599,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
         // shipped: the safety net was running with the legacy code path
         // because the layer never emitted an LP flag in the first place.
         const bucket = getLpRiskBucket(_lpPctOfSupply, tokenAgeHours);
-        postLayerFlags.push(makeFlag(bucket.flagLabel, bucket.severity, 0));
+        postLayerFlags.push(makeFlag(bucket.flagLabel, bucket.severity, penaltyToPoints(bucket.penalty)));
         if (bucket.safeBlock) {
           safeBlocked = true;
           // Critical buckets classify as hard 'lp'; soft buckets as 'lp_unverified'
@@ -617,6 +616,16 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       .filter(l => l.available && l.source !== "crossvalidation")
       .length;
 
+    // Additive score: computed from the FULL flat flag list (every layer +
+    // pipeline-level flags + the LP fail-closed safety net above, which can
+    // still push a flag into postLayerFlags right before this point) so
+    // every real point deduction is accounted for. Must run after the
+    // fail-closed block, not before it — moving this earlier would silently
+    // drop that flag's points from the score. Reused below for the verdict
+    // flag counts instead of rebuilding the same list twice.
+    const _allFlagsForVerdict: ScanFlag[] = allLayers.flatMap(l => l.flags).concat(postLayerFlags);
+    let score = computeFinalScore(_allFlagsForVerdict);
+
     const newSafeBlocked = applySafeGateOverride({
       safeBlocked, safeBlockedReasons, forceRug,
       holders, lpBurned, goPlusClean,
@@ -628,20 +637,22 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     }
     safeBlocked = newSafeBlocked;
 
-    // Reason-aware score clipping. Splitting hard from soft reasons
-    // here is what lets a mature token with only `lp_unverified` /
-    // `holders` reasons land on CAUTION (≥700) instead of being
-    // forced to DANGER (<700) by a blanket cap at 500.
-    //   forceRug          → 100 (RUG)
-    //   hard reason       → 500 (DANGER)
-    //   soft reason only  → 850 (high CAUTION ceiling, lets the
-    //                       layer geometric mean express how good
-    //                       the rest of the profile actually is)
+    // Reason-aware score clipping. Under the additive model each flag's
+    // point value should already pull the score into the right band on its
+    // own — this clip is a display-consistency safety net, not the primary
+    // mechanism: a token can never show a numeric score that contradicts its
+    // verdict (e.g. "RUG" next to "950/1000" is exactly as contradictory as
+    // "SAFE" next to "1 flag detected" — never both).
+    //   forceRug          → ≤150 (deep in the RUG band, 0-250)
+    //   hard reason        → ≤490 (top of the DANGER band, 250-500 — matches
+    //                        determineVerdict's own hasHardReason≥250→DANGER split)
+    //   soft reason only   → ≤740 (just under the SAFE floor of 750, so a
+    //                        safeBlocked token can never visually read SAFE)
     if (forceRug) {
-      score = Math.min(score, 100);
+      score = Math.min(score, 150);
     } else if (safeBlocked) {
       const hasHardReasonForClip = safeBlockedReasons.some(r => HARD_BLOCK_REASONS.has(r));
-      score = Math.min(score, hasHardReasonForClip ? 500 : 850);
+      score = Math.min(score, hasHardReasonForClip ? 490 : 740);
     }
 
     const newScore = applyEstablishedBonus({ score, tokenAgeHours, holders, lpBurned, goPlusClean });
@@ -654,7 +665,6 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       .filter(l => l.available && l.source !== "crossvalidation")
       .map(l => l.source);
 
-    const _allFlagsForVerdict: ScanFlag[] = allLayers.flatMap(l => l.flags).concat(postLayerFlags);
     // Count token-side warning/critical flags so determineVerdict can apply
     // the "clean blue-chip" path when literally zero issues are visible.
     // Match the same filter the overlay uses (components.ts:721) — bonus +

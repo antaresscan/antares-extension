@@ -66,56 +66,48 @@ function verdictWith(input: Partial<VerdictInput>): Verdict {
 }
 
 // ─── Score computation ──────────────────────────────────────────────
-// Sanity checks on the geometric mean. Kept narrow because the math
-// is well-tested elsewhere; we just confirm the wiring.
+// computeFinalScore now takes a flat ScanFlag[] list under the additive
+// model (see __tests__/scoring.test.ts for full dampening-algorithm
+// coverage) — the old per-layer geometric-mean tests (trust=0 hard kill,
+// 0.5-trust layer dilution) tested a mechanism that no longer exists and
+// were removed rather than adapted.
 
 describe("score computation", () => {
-  it("all layers at trust=1 → score 1000", () => {
-    expect(computeFinalScore(defaultLayers())).toBe(1000)
-  })
-
-  it("any layer at trust=0 nukes the score to 0", () => {
-    const layers = defaultLayers({ goplus: layer("goplus", 0) })
-    expect(computeFinalScore(layers)).toBe(0)
-  })
-
-  it("a single 0.5 layer drops geometric mean meaningfully", () => {
-    const layers = defaultLayers({ rugcheck: layer("rugcheck", 0.5) })
-    const score = computeFinalScore(layers)
-    expect(score).toBeLessThan(900)
-    expect(score).toBeGreaterThan(700)
+  it("no flags → score 1000", () => {
+    expect(computeFinalScore([])).toBe(1000)
   })
 })
 
 // ─── Verdict band edges ──────────────────────────────────────────────
+// Bands: rug 0-250, danger 250-500, caution 500-750, safe 750-1000.
 
 describe("verdict bands (no safe block)", () => {
-  it("score 900 + 5 sources → SAFE", () => {
-    expect(verdictWith({ score: 900 })).toBe("SAFE")
+  it("score 750 + 5 sources → SAFE", () => {
+    expect(verdictWith({ score: 750 })).toBe("SAFE")
   })
 
-  it("score 899 → CAUTION (just under SAFE threshold)", () => {
-    expect(verdictWith({ score: 899 })).toBe("CAUTION")
+  it("score 749 → CAUTION (just under the SAFE threshold)", () => {
+    expect(verdictWith({ score: 749 })).toBe("CAUTION")
   })
 
-  it("score 600 → CAUTION (lower CAUTION edge)", () => {
-    expect(verdictWith({ score: 600 })).toBe("CAUTION")
+  it("score 500 → CAUTION (lower CAUTION edge)", () => {
+    expect(verdictWith({ score: 500 })).toBe("CAUTION")
   })
 
-  it("score 599 → DANGER", () => {
-    expect(verdictWith({ score: 599 })).toBe("DANGER")
+  it("score 499 → DANGER", () => {
+    expect(verdictWith({ score: 499 })).toBe("DANGER")
   })
 
-  it("score 350 → DANGER (lower DANGER edge)", () => {
-    expect(verdictWith({ score: 350 })).toBe("DANGER")
+  it("score 250 → DANGER (lower DANGER edge)", () => {
+    expect(verdictWith({ score: 250 })).toBe("DANGER")
   })
 
-  it("score 349 → RUG", () => {
-    expect(verdictWith({ score: 349 })).toBe("RUG")
+  it("score 249 → RUG", () => {
+    expect(verdictWith({ score: 249 })).toBe("RUG")
   })
 
-  it("SAFE requires ≥5 sources even with score 1000", () => {
-    expect(verdictWith({ score: 1000, sourcesUsedCount: 4 })).toBe("CAUTION")
+  it("SAFE requires ≥4 sources even with score 1000 (consolidated single floor — see determineVerdict)", () => {
+    expect(verdictWith({ score: 1000, sourcesUsedCount: 3 })).toBe("CAUTION")
   })
 
   it("2 warning flags blocks SAFE — max CAUTION (VIRL-class)", () => {
@@ -155,11 +147,11 @@ describe("safeBlocked routing", () => {
     })).toBe("DANGER")
   })
 
-  it("safeBlocked + hard reason + score 399 → RUG", () => {
+  it("safeBlocked + hard reason + score 200 → RUG (below the 250 hard-reason floor)", () => {
     expect(verdictWith({
       safeBlocked: true,
       safeBlockedReasons: ["honeypot"],
-      score: 399,
+      score: 200,
     })).toBe("RUG")
   })
 
@@ -186,11 +178,11 @@ describe("safeBlocked routing", () => {
     })).toBe("CAUTION")
   })
 
-  it("safeBlocked + soft only + score <700 → DANGER", () => {
+  it("safeBlocked + soft only + score <500 → DANGER (soft caution floor is now 500)", () => {
     expect(verdictWith({
       safeBlocked: true,
       safeBlockedReasons: ["holders"],
-      score: 699,
+      score: 499,
     })).toBe("DANGER")
   })
 

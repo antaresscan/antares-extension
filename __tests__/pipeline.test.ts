@@ -469,36 +469,36 @@ describe("determineVerdict", () => {
     expect(determineVerdict(makeVerdictInput({ safeBlocked: true, score: 850, warningFlagsCount: 1 }))).toBe("CAUTION");
   });
 
-    it("5. safeBlocked=true, score=600 -> DANGER (HARDENED: blocked needs score>=700 for CAUTION)", () => {
-        expect(determineVerdict(makeVerdictInput({ safeBlocked: true, score: 600 }))).toBe("DANGER");
+    it("5. safeBlocked=true, score=600 -> CAUTION (soft-blocked caution floor is now 500, matching the score-band chart)", () => {
+        expect(determineVerdict(makeVerdictInput({ safeBlocked: true, score: 600 }))).toBe("CAUTION");
   });
 
-    it("6. safeBlocked=true, score=599 -> DANGER (HARDENED: soft-blocked needs score>=700)", () => {
-        expect(determineVerdict(makeVerdictInput({ safeBlocked: true, score: 599 }))).toBe("DANGER");
+    it("6. safeBlocked=true, score=499 -> DANGER (just below the 500 caution floor)", () => {
+        expect(determineVerdict(makeVerdictInput({ safeBlocked: true, score: 499 }))).toBe("DANGER");
   });
 
-    it("7. score=850 -> CAUTION (HARDENED: SAFE needs >=900)", () => {
-    expect(determineVerdict(makeVerdictInput({ score: 850 }))).toBe("CAUTION");
+    it("7. score=850, 0 flags -> SAFE (single 750 floor, no more stricter 900 sub-tier)", () => {
+    expect(determineVerdict(makeVerdictInput({ score: 850 }))).toBe("SAFE");
   });
 
-  it("8. score=849 -> CAUTION (just below SAFE)", () => {
-    expect(determineVerdict(makeVerdictInput({ score: 849 }))).toBe("CAUTION");
+  it("8. score=749, 0 flags -> CAUTION (just below the 750 SAFE floor)", () => {
+    expect(determineVerdict(makeVerdictInput({ score: 749 }))).toBe("CAUTION");
   });
 
   it("9. score=600 -> CAUTION", () => {
     expect(determineVerdict(makeVerdictInput({ score: 600 }))).toBe("CAUTION");
   });
 
-  it("10. score=599 -> DANGER (just below CAUTION)", () => {
-    expect(determineVerdict(makeVerdictInput({ score: 599 }))).toBe("DANGER");
+  it("10. score=499 -> DANGER (just below the 500 caution floor)", () => {
+    expect(determineVerdict(makeVerdictInput({ score: 499 }))).toBe("DANGER");
   });
 
-  it("11. score=350 -> DANGER", () => {
-    expect(determineVerdict(makeVerdictInput({ score: 350 }))).toBe("DANGER");
+  it("11. score=250 -> DANGER", () => {
+    expect(determineVerdict(makeVerdictInput({ score: 250 }))).toBe("DANGER");
   });
 
-  it("12. score=349 -> RUG (<350)", () => {
-    expect(determineVerdict(makeVerdictInput({ score: 349 }))).toBe("RUG");
+  it("12. score=249 -> RUG (<250)", () => {
+    expect(determineVerdict(makeVerdictInput({ score: 249 }))).toBe("RUG");
   });
 
   it("13. score=0, sourcesUsedCount=3 -> RUG", () => {
@@ -583,18 +583,18 @@ describe("determineVerdict safeBlocked granularity", () => {
     })).toBe("DANGER");
   });
 
-  it("should return RUG for hard-blocked token with score 300", () => {
+  it("should return RUG for hard-blocked token with score 200 (below the 250 hard-reason floor)", () => {
     expect(determineVerdict({
-      score: 300, forceRug: false, safeBlocked: true,
+      score: 200, forceRug: false, safeBlocked: true,
       safeBlockedReasons: ["mint"], sourcesUsedCount: 5
     })).toBe("RUG");
   });
 
-    it("should return DANGER for soft-blocked token with score 600 (HARDENED: needs >=700)", () => {
+    it("should return CAUTION for soft-blocked token with score 600 (soft caution floor is now 500)", () => {
     expect(determineVerdict({
       score: 600, forceRug: false, safeBlocked: true,
       safeBlockedReasons: ["age"], sourcesUsedCount: 5
-        })).toBe("DANGER");
+        })).toBe("CAUTION");
   });
 
   it("should return DANGER for soft-blocked token with score 400", () => {
@@ -628,9 +628,9 @@ describe("low_holders as HARD reason", () => {
     })).toBe("DANGER");
   });
 
-  it("determineVerdict returns RUG for low_holders with score 300", () => {
+  it("determineVerdict returns RUG for low_holders with score 200 (below the 250 hard-reason floor)", () => {
     expect(determineVerdict({
-      score: 300, forceRug: false, safeBlocked: true,
+      score: 200, forceRug: false, safeBlocked: true,
       safeBlockedReasons: ["low_holders"], sourcesUsedCount: 5
     })).toBe("RUG");
   });
