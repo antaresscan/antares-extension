@@ -929,6 +929,13 @@ export function layerChart(
   // Sorted ascending (oldest first). Fetched separately from GeckoTerminal
   // /ohlcv/day so short-term candles stay cheap (40 × 5-min).
   dailyCandles?: OHLCVCandle[],
+  // ~180 daily candles (~6 months) for all-time-high drawdown detection.
+  // Sorted ascending. See fetchDexCandlesLongTerm — a separate, longer
+  // look-back than dailyCandles because the failure mode this catches
+  // (a token that already crashed months ago and now sits quiet) is
+  // invisible to every other signal in this file, which only look at the
+  // last few minutes to ~30 days.
+  longTermCandles?: OHLCVCandle[],
 ): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
@@ -1237,6 +1244,42 @@ export function layerChart(
           flags.push(makeFlag(`Pumped +${Math.round(pct30d)}% over 30 days — elevated retrace risk at current prices`, "warning", 0));
           penalties.push(0.75);
         }
+      }
+    }
+  }
+
+  // Pattern 6: All-time-high drawdown — a token that already crashed
+  // months ago and now sits quietly at a fraction of its peak reads
+  // "clean" on every other signal here: recent price windows are flat,
+  // age looks established, holders/LP% reflect what's left after the
+  // damage, not the damage itself. Nothing else in this file looks back
+  // further than ~30 days, so a token whose crash happened earlier than
+  // that is invisible to the rest of the engine.
+  //
+  // Gated to an ATH that's >=30 days old so this doesn't overlap with the
+  // 7d/30d pump-reversal signals above, which already cover recent peaks.
+  // No forceRug: the drawdown is strong retrospective evidence, not a
+  // structural proof (unlike honeypot/LP-pull mechanics) — but the point
+  // value alone puts an isolated hit in the RUG band, and it always
+  // blocks SAFE. flagClass structural: this is a durable multi-month
+  // fact, not noisy short-window price/volume data, so a single hit is
+  // allowed to floor the verdict like other structural flags.
+  if (longTermCandles && longTermCandles.length >= 10) {
+    const highs = longTermCandles.map(c => c.h);
+    const athHigh = Math.max(...highs);
+    const athIdx = highs.indexOf(athHigh);
+    const daysSinceATH = longTermCandles.length - 1 - athIdx;
+    const currentPrice = asNumber(pair?.priceUsd) || longTermCandles[longTermCandles.length - 1].c;
+    if (athHigh > 0 && currentPrice > 0 && daysSinceATH >= 30) {
+      const drawdownPct = ((currentPrice - athHigh) / athHigh) * 100;
+      if (drawdownPct < -85) {
+        flags.push(makeFlag(`Trading ${Math.round(drawdownPct)}% below its all-time high (peak ${daysSinceATH}+ days ago) — likely already rugged`, "critical", 800));
+        penalties.push(0.05);
+        safeBlocked = true;
+      } else if (drawdownPct < -70) {
+        flags.push(makeFlag(`Trading ${Math.round(drawdownPct)}% below its all-time high (peak ${daysSinceATH}+ days ago)`, "warning", 350));
+        penalties.push(0.55);
+        safeBlocked = true;
       }
     }
   }

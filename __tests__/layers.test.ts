@@ -1125,4 +1125,80 @@ describe("layerChart", () => {
       // Both should be present — independent signals.
     });
   });
+
+  describe("layerChart — all-time-high drawdown (BRYAN case)", () => {
+    // Builds a longTermCandles series: peak at index `peakIdx`, flat near
+    // `bottomPrice` for the rest — simulating a token that pumped once,
+    // long ago, then died. Length 60 (>=10 minimum, plenty of days-since-ATH
+    // headroom past the 30-day gate).
+    function mkLongTerm(peakIdx: number, peakPrice: number, bottomPrice: number, length = 60) {
+      return Array.from({ length }, (_, i) => {
+        const price = i === peakIdx ? peakPrice : bottomPrice;
+        return { ts: Date.now() - (length - i) * 86_400_000, o: price, h: price, l: price, c: price, v: 100 };
+      });
+    }
+
+    it("severe drawdown (>85%, ATH 30+ days ago) fires critical/structural, 800pts, safeBlocked, no forceRug", () => {
+      const longTerm = mkLongTerm(5, 1.0, 0.1); // -90% from peak, peak is 54 candles ago
+      const candles = Array.from({ length: 20 }, () => ({ ts: Date.now(), o: 0.1, h: 0.1, l: 0.1, c: 0.1, v: 10 }));
+      const pair = { priceUsd: "0.1" } as unknown as Parameters<typeof layerChart>[1];
+      const r = layerChart(candles, pair, 200 * 24 * 60, undefined, undefined, longTerm);
+      const athFlag = r.flags.find(f => /all-time high/i.test(f.label));
+      expect(athFlag).toBeTruthy();
+      expect(athFlag?.severity).toBe("critical");
+      expect(athFlag?.impact).toBe(800);
+      expect(athFlag?.flagClass).toBe("structural");
+      expect(r.safeBlocked).toBe(true);
+      expect(r.forceRug).toBe(false);
+    });
+
+    it("moderate drawdown (70-85%, ATH 30+ days ago) fires warning, 350pts, safeBlocked", () => {
+      const longTerm = mkLongTerm(5, 1.0, 0.25); // -75% from peak
+      const candles = Array.from({ length: 20 }, () => ({ ts: Date.now(), o: 0.25, h: 0.25, l: 0.25, c: 0.25, v: 10 }));
+      const pair = { priceUsd: "0.25" } as unknown as Parameters<typeof layerChart>[1];
+      const r = layerChart(candles, pair, 200 * 24 * 60, undefined, undefined, longTerm);
+      const athFlag = r.flags.find(f => /all-time high/i.test(f.label));
+      expect(athFlag).toBeTruthy();
+      expect(athFlag?.severity).toBe("warning");
+      expect(athFlag?.impact).toBe(350);
+      expect(r.safeBlocked).toBe(true);
+    });
+
+    it("does NOT fire when the ATH is recent (<30 days ago) — overlaps with pump-reversal signals instead", () => {
+      const longTerm = mkLongTerm(55, 1.0, 0.1, 60); // peak only 4 candles ago
+      const candles = Array.from({ length: 20 }, () => ({ ts: Date.now(), o: 0.1, h: 0.1, l: 0.1, c: 0.1, v: 10 }));
+      const pair = { priceUsd: "0.1" } as unknown as Parameters<typeof layerChart>[1];
+      const r = layerChart(candles, pair, 10 * 24 * 60, undefined, undefined, longTerm);
+      expect(r.flags.some(f => /all-time high/i.test(f.label))).toBe(false);
+    });
+
+    it("does NOT fire on mild drawdown (<70%)", () => {
+      const longTerm = mkLongTerm(5, 1.0, 0.5); // -50% from peak
+      const candles = Array.from({ length: 20 }, () => ({ ts: Date.now(), o: 0.5, h: 0.5, l: 0.5, c: 0.5, v: 10 }));
+      const pair = { priceUsd: "0.5" } as unknown as Parameters<typeof layerChart>[1];
+      const r = layerChart(candles, pair, 200 * 24 * 60, undefined, undefined, longTerm);
+      expect(r.flags.some(f => /all-time high/i.test(f.label))).toBe(false);
+    });
+
+    it("does not crash and does not fire when longTermCandles is omitted", () => {
+      const candles = Array.from({ length: 20 }, () => ({ ts: Date.now(), o: 1, h: 1, l: 1, c: 1, v: 10 }));
+      const r = layerChart(candles, null, 200 * 24 * 60);
+      expect(r.available).toBe(true);
+      expect(r.flags.some(f => /all-time high/i.test(f.label))).toBe(false);
+    });
+
+    it("prefers live pair.priceUsd over the last candle close for the current price", () => {
+      // Last long-term candle close is 0.3 (mild drawdown, wouldn't fire),
+      // but live priceUsd is 0.1 (severe drawdown) — the flag should use
+      // the live price, since it's fresher than a daily-candle close.
+      const longTerm = mkLongTerm(5, 1.0, 0.3);
+      longTerm[longTerm.length - 1].c = 0.3;
+      const candles = Array.from({ length: 20 }, () => ({ ts: Date.now(), o: 0.1, h: 0.1, l: 0.1, c: 0.1, v: 10 }));
+      const pair = { priceUsd: "0.1" } as unknown as Parameters<typeof layerChart>[1];
+      const r = layerChart(candles, pair, 200 * 24 * 60, undefined, undefined, longTerm);
+      const athFlag = r.flags.find(f => /all-time high/i.test(f.label));
+      expect(athFlag).toBeTruthy();
+      expect(athFlag?.impact).toBe(800); // severe tier, proves live price (0.1) was used not 0.3
+    });
+  });
 });
