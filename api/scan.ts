@@ -497,15 +497,16 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       : null;
     // Compute the share of total supply that sits in the LP. Feeds the
     // 2-axis LP risk matrix (api/_lib/lp-risk-matrix.ts) so the verdict
-    // reflects actual rug-pull capacity, not just "is LP locked?". See
-    // computeLpPctOfSupply for the back-compute math (DexScreener
-    // doesn't expose liquidity.base directly in our schema, so we derive
-    // it from liquidity.usd × priceUsd × totalSupply, accurate to ~5%
-    // on classic AMM pools).
+    // reflects actual rug-pull capacity, not just "is LP locked?". Prefers
+    // DexScreener's reported liquidity.base (real on-chain reserve of the
+    // queried token — accurate even for concentrated/CLMM pools) and falls
+    // back to the liquidity.usd × priceUsd × totalSupply estimate only when
+    // the reserve isn't reported. See computeLpPctOfSupply for both paths.
     const _lpPctOfSupply = computeLpPctOfSupply(
       asNumber(pair?.liquidity?.usd),
       asNumber(pair?.priceUsd),
       totalSupplyUi,
+      asNumber(pair?.liquidity?.base),
     );
     const maturityCtx = {
       holders: holders,
@@ -676,13 +677,27 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
         !_PUMP_PRICE_ONLY.test(f.label),
     );
     const _warningFlagsCount = _tokenFlags.length;
-    const _criticalFlagsCount = _tokenFlags.filter(f => f.severity === "critical").length;
+    const _criticalTokenFlags = _tokenFlags.filter(f => f.severity === "critical");
+    const _criticalFlagsCount = _criticalTokenFlags.length;
+    // Split criticals by class: structural vectors (honeypot, LP, authorities,
+    // deceptive name) hard-floor to DANGER on their own; behavioral signals
+    // (wash, pump, sniper, weak socials) need corroboration (≥2). Flags default
+    // to "structural" when unclassified, preserving legacy behaviour.
+    const _structuralCriticalCount = _criticalTokenFlags.filter(f => (f.flagClass ?? "structural") === "structural").length;
+    const _behavioralCriticalCount = _criticalTokenFlags.filter(f => f.flagClass === "behavioral").length;
+    // SAFE requires the honeypot / authority oracle (GoPlus, l3) to have
+    // answered. If it's down we cannot affirm the token isn't a honeypot, so
+    // structural data is incomplete → SAFE is withheld (capped at CAUTION).
+    const _structuralDataComplete = l3.available;
 
     const risk: Verdict = determineVerdict({
       score, forceRug, safeBlocked, safeBlockedReasons,
       sourcesUsedCount: sources_used.length,
       warningFlagsCount: _warningFlagsCount,
       criticalFlagsCount: _criticalFlagsCount,
+      structuralCriticalCount: _structuralCriticalCount,
+      behavioralCriticalCount: _behavioralCriticalCount,
+      structuralDataComplete: _structuralDataComplete,
     });
 
     // ── Flag deduplication ────────────────────────────────────────────────────

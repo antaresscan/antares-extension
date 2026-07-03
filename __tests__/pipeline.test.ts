@@ -510,6 +510,68 @@ describe("determineVerdict", () => {
   });
 });
 
+// ─── determineVerdict flag-class (structural vs behavioral) ──────────────────
+
+describe("determineVerdict flag class", () => {
+  it("1 structural critical → DANGER even at a high score", () => {
+    expect(determineVerdict(makeVerdictInput({
+      score: 950, structuralCriticalCount: 1, warningFlagsCount: 1,
+    }))).toBe("DANGER");
+  });
+
+  it("1 behavioral critical alone → NOT auto-DANGER (score-driven → CAUTION)", () => {
+    // A lone noisy signal must not condemn: score 850, no structural critical,
+    // one behavioral critical → falls through to the CAUTION band.
+    expect(determineVerdict(makeVerdictInput({
+      score: 850, behavioralCriticalCount: 1, warningFlagsCount: 1,
+    }))).toBe("CAUTION");
+  });
+
+  it("2 behavioral criticals → DANGER (corroboration)", () => {
+    expect(determineVerdict(makeVerdictInput({
+      score: 850, behavioralCriticalCount: 2, warningFlagsCount: 2,
+    }))).toBe("DANGER");
+  });
+
+  it("back-compat: legacy criticalFlagsCount (unclassified) still hard-floors to DANGER", () => {
+    expect(determineVerdict(makeVerdictInput({
+      score: 950, criticalFlagsCount: 1, warningFlagsCount: 1,
+    }))).toBe("DANGER");
+  });
+});
+
+// ─── determineVerdict SAFE data-completeness gate ────────────────────────────
+
+describe("determineVerdict SAFE completeness gate", () => {
+  it("structuralDataComplete=false blocks SAFE → CAUTION even at score 1000, 0 warnings", () => {
+    expect(determineVerdict(makeVerdictInput({
+      score: 1000, warningFlagsCount: 0, structuralDataComplete: false,
+    }))).toBe("CAUTION");
+  });
+
+  it("structuralDataComplete=true allows SAFE", () => {
+    expect(determineVerdict(makeVerdictInput({
+      score: 1000, warningFlagsCount: 0, structuralDataComplete: true,
+    }))).toBe("SAFE");
+  });
+
+  it("structuralDataComplete undefined (back-compat) does not block SAFE", () => {
+    expect(determineVerdict(makeVerdictInput({
+      score: 1000, warningFlagsCount: 0,
+    }))).toBe("SAFE");
+  });
+
+  it("data-complete gate also applies on the safeBlocked soft path", () => {
+    // Soft block (age), clean warnings, good score, but structural data missing
+    // → must not sneak into SAFE via the safeBlocked override.
+    expect(determineVerdict({
+      score: 800, forceRug: false, safeBlocked: true,
+      safeBlockedReasons: ["age"], sourcesUsedCount: 5,
+      warningFlagsCount: 0, structuralDataComplete: false,
+    })).toBe("CAUTION");
+  });
+});
+
 // ─── determineVerdict safeBlocked granularity ─────────────────────────────
 
 

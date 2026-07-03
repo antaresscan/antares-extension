@@ -55,7 +55,7 @@ export function evaluatePostLayerFlags(input: PostLayerFlagsInput): PostLayerFla
   }
 
   if (input.ageMin > 0 && input.ageMin < 60 && input.volLiqRatio > 15) {
-    flags.push(makeFlag("Pump.fun-style launch: <1h + vol/liq >15 \u2014 DANGER", "critical", 0));
+    flags.push(makeFlag("Pump.fun-style launch: <1h + vol/liq >15 \u2014 DANGER", "critical", 0, "behavioral"));
     safeBlocked = true;
   }
 
@@ -167,10 +167,23 @@ export function applyEstablishedBonus(input: EstablishedBonusInput): number {
 export function determineVerdict(input: VerdictInput): Verdict {
   if (input.forceRug) return "RUG";
   if (!input.sourcesUsedCount || input.sourcesUsedCount <= 0) return "DANGER";
-  // Flag-count hard floors: 1+ critical OR 3+ total token-side flags → minimum DANGER.
-  // Prevents tokens with many accumulated risk signals from staying at CAUTION when
-  // individual layer penalties are offset by clean scores from other layers.
-  if ((input.criticalFlagsCount ?? 0) >= 1) return "DANGER";
+  // Flag-count hard floors, split by flag class so a single noisy signal can't
+  // condemn a token (false-RUG) while true structural vectors still hard-floor.
+  //
+  // Structural criticals (honeypot, LP pullable, mint/freeze authority,
+  // deceptive name, blacklist/pausable) are definitive — a single one forces
+  // at-least-DANGER. Back-compat: unclassified callers pass only
+  // criticalFlagsCount, so we treat every critical as structural (legacy).
+  const structuralCritical =
+    input.structuralCriticalCount ?? input.criticalFlagsCount ?? 0;
+  if (structuralCritical >= 1) return "DANGER";
+  // Behavioral criticals (wash, pump, sniper, weak socials) are noisy and
+  // probabilistic: one alone must not force DANGER. Require corroboration —
+  // two or more independent behavioral criticals. A lone behavioral critical
+  // falls through to the score bands below; its score penalty already applied,
+  // so it typically lands CAUTION unless the score is genuinely low.
+  if ((input.behavioralCriticalCount ?? 0) >= 2) return "DANGER";
+  // 3+ total token-side warnings still floor to DANGER (accumulated risk).
   if ((input.warningFlagsCount ?? 0) >= 3) return "DANGER";
 
   if (input.safeBlocked) {
@@ -190,7 +203,8 @@ export function determineVerdict(input: VerdictInput): Verdict {
     if (
       (input.warningFlagsCount ?? 0) === 0 &&
       input.score >= 750 &&
-      (input.sourcesUsedCount ?? 0) >= 4
+      (input.sourcesUsedCount ?? 0) >= 4 &&
+      input.structuralDataComplete !== false
     ) return "SAFE";
 
     // Soft reasons (age/holders) only: tightened from 550 to 700 for CAUTION
@@ -204,7 +218,7 @@ export function determineVerdict(input: VerdictInput): Verdict {
   // contradictory and destroys credibility: either we detected a problem
   // (→ CAUTION at minimum) or we didn't (→ SAFE). Never both.
   // Back-compat: warningFlagsCount undefined (old callers) → treated as 0 → SAFE allowed.
-  if (input.score >= 900 && input.sourcesUsedCount >= 5 && (input.warningFlagsCount ?? 0) === 0) return "SAFE";
+  if (input.score >= 900 && input.sourcesUsedCount >= 5 && (input.warningFlagsCount ?? 0) === 0 && input.structuralDataComplete !== false) return "SAFE";
 
   // "Clean blue-chip" path: when there are LITERALLY ZERO token-side
   // warning/critical flags AND the score is still reasonable (>= 750),
@@ -221,7 +235,8 @@ export function determineVerdict(input: VerdictInput): Verdict {
   if (
     input.warningFlagsCount === 0 &&
     input.score >= 750 &&
-    input.sourcesUsedCount >= 4
+    input.sourcesUsedCount >= 4 &&
+    input.structuralDataComplete !== false
   ) {
     return "SAFE";
   }

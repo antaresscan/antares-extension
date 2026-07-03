@@ -56,6 +56,45 @@ describe("layerDexScreener", () => {
     expect(result.safeBlocked).toBe(true);
   });
 
+  it("vol/liq in 10–15× band → warning only (not critical, not blocking)", () => {
+    // A 10–15× turnover ratio on an otherwise-clean token is a yellow flag.
+    // It must NOT force DANGER on its own: warning severity (not critical),
+    // no safeBlocked, no forceRug. The score penalty still applies.
+    const pair: DexScreenerPair = {
+      liquidity: { usd: 30000 },
+      volume: { h24: 360000 }, // ratio 12×
+      priceChange: { h1: 5, h6: 10, h24: 20, m5: 1 },
+      txns: { m5: { buys: 10, sells: 8 } },
+      info: {
+        socials: [{ type: "twitter", url: "https://twitter.com/test" }],
+        websites: [{ url: "https://test.com" }],
+      },
+    };
+    const result = layerDexScreener(pair, 500000, 1440);
+    const volFlag = result.flags.find(f => /vol\/liquidity ratio/i.test(f.label));
+    expect(volFlag).toBeTruthy();
+    expect(volFlag?.severity).toBe("warning");
+    expect(volFlag?.label).toContain("wash volume");
+    expect(volFlag?.label).not.toContain("probable");
+    expect(result.forceRug).toBe(false);
+    expect(result.safeBlocked).toBe(false);
+  });
+
+  it("vol/liq in 5–10× band → no flag (removed as noise)", () => {
+    const pair: DexScreenerPair = {
+      liquidity: { usd: 30000 },
+      volume: { h24: 240000 }, // ratio 8×
+      priceChange: { h1: 5, h6: 10, h24: 20, m5: 1 },
+      txns: { m5: { buys: 10, sells: 8 } },
+      info: {
+        socials: [{ type: "twitter", url: "https://twitter.com/test" }],
+        websites: [{ url: "https://test.com" }],
+      },
+    };
+    const result = layerDexScreener(pair, 500000, 1440);
+    expect(result.flags.some(f => /vol\/liquidity ratio/i.test(f.label))).toBe(false);
+  });
+
   it("forceRug when liq=0 and high volume (abandoned pool)", () => {
     const pair: DexScreenerPair = {
       liquidity: { usd: 0 },

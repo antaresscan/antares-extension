@@ -3,7 +3,7 @@
 
 import type { VercelResponse } from "@vercel/node";
 import type {
-  Severity, ScanFlag,
+  Severity, ScanFlag, FlagClass,
   GoPlusTokenResult, GoPlusResponse,
   DexScreenerResponse, RugCheckSummary, RugCheckReport, RugCheckRisk,
 } from "./types";
@@ -42,8 +42,13 @@ export function goPlusBool(val: unknown): boolean {
   return val === "1" || val === 1 || val === true;
 }
 
-export function makeFlag(label: string, severity: Severity, impact: number): ScanFlag {
-  return { label, severity, impact };
+export function makeFlag(
+  label: string,
+  severity: Severity,
+  impact: number,
+  flagClass: FlagClass = "structural",
+): ScanFlag {
+  return { label, severity, impact, flagClass };
 }
 
 export function getLpLockDurationDays(rugData: RugCheckSummary): number {

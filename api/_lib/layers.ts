@@ -79,11 +79,14 @@ export function layerDexScreener(
     flags.push(makeFlag("Wash trading detected (vol/liq > 15) — bundler dump", "critical", 0));
     penalties.push(0.20); forceRug = true; safeBlocked = true;
   } else if (liq > 0 && vol / liq > 10) {
-    flags.push(makeFlag("High vol/liquidity ratio (>10×) — probable wash volume", "critical", 0));
-    penalties.push(0.35); safeBlocked = true;
-  } else if (liq > 0 && vol / liq > 5) {
-    flags.push(makeFlag("High vol/liquidity ratio (>5×)", "warning", 0));
-    penalties.push(0.75);
+    // Warning (not critical) + no safeBlocked: a 10–15× turnover ratio on an
+    // otherwise-clean token is a yellow signal, not a red one. It must never
+    // read SAFE (guaranteed by the ≥1-warning gate in determineVerdict) but
+    // shouldn't single-handedly force DANGER via the 1-critical floor or the
+    // wash_trading hard-block. The 0.35 penalty still drags the score hard;
+    // stacked with any other flag it escalates back to DANGER on its own.
+    flags.push(makeFlag("High vol/liquidity ratio (>10×) — wash volume", "warning", 0));
+    penalties.push(0.35);
   }
 
   const hasStructuralWeakness =
@@ -123,7 +126,7 @@ export function layerDexScreener(
     flags.push(makeFlag(`Sharp 6h sell-off (${Math.round(pc6)}%)`, "warning", 0));
     penalties.push(0.55); safeBlocked = true;
   }
-  if (!hasWebsite && !hasTwitter && !hasTelegram) { flags.push(makeFlag("No website / Twitter / Telegram — high rug risk", "critical", 0)); penalties.push(0.60); safeBlocked = true; }
+  if (!hasWebsite && !hasTwitter && !hasTelegram) { flags.push(makeFlag("No website / Twitter / Telegram — high rug risk", "critical", 0, "behavioral")); penalties.push(0.60); }
   if (txns5m < 5 && mc > 50000 && ageMinutes < 1440) { flags.push(makeFlag("Low 5m transactions vs market cap", "info", 0)); penalties.push(0.92); }
   if ((sells5m === 0 && buys5m > 0 && txns5m > 5) || (sells5m > 0 && buys5m > sells5m * 5)) { flags.push(makeFlag("Buy/sell imbalance (coordinated pump)", "warning", 0)); penalties.push(0.85); }
   if (pc24 < -80) {
@@ -296,7 +299,7 @@ const top10 = asNumber(rugData?.topHolders?.top10Percentage);
   // RugCheck's top-10 threshold is kept as a cross-check signal only.
   if (top10 > 70) { flags.push(makeFlag("Top 10 holders > 70% (RugCheck)", "critical", 0)); penalties.push(0.45); }
   else if (top10 > 50) { flags.push(makeFlag("Top 10 holders > 50% (RugCheck)", "warning", 0)); penalties.push(0.70); }
-  if (riskIncludes(rugReportData, /sniper/i)) { flags.push(makeFlag("Sniper activity detected", "critical", 0)); penalties.push(0.15); safeBlocked = true; }
+  if (riskIncludes(rugReportData, /sniper/i)) { flags.push(makeFlag("Sniper activity detected", "critical", 0, "behavioral")); penalties.push(0.15); }
   if (riskIncludes(rugReportData, /rug/i)) { flags.push(makeFlag("Rug pull history", "critical", 0)); penalties.push(0.15); forceRug = true; }
   if (riskIncludes(rugReportData, /creator.*sell|dev.*sell/i)) { flags.push(makeFlag("Dev wallet sold tokens", "warning", 0)); penalties.push(0.65); }
   if (rugData.mintAuthorityEnabled) { flags.push(makeFlag("Mint Authority enabled (RugCheck)", "critical", 0)); penalties.push(0.25); }
@@ -777,7 +780,9 @@ export function layerSolscan(
   }
   let washTradingDetected = false;
   if (trades24h !== null && traders24h !== null && traders24h === 0 && trades24h > 0) {
-    flags.push(makeFlag("Wash trading: trades with zero identified traders", "critical", 0));
+    // Labelled behavioral (statistical wash signal) but keeps safeBlocked for
+    // now: strong signal, softening deferred until backtest-validated.
+    flags.push(makeFlag("Wash trading: trades with zero identified traders", "critical", 0, "behavioral"));
     penalties.push(0.40); safeBlocked = true;
     washTradingDetected = true;
   }
@@ -848,7 +853,7 @@ export function layerChart(
 
   // ── Existing patterns ──────────────────────────────────────────────────────
   if (greenRatio >= 0.82 && runUpPct >= 100 && pullbackRange <= 10) {
-    flags.push(makeFlag("Crashcoin pattern: near-perfect parabolic chart", "critical", 0));
+    flags.push(makeFlag("Crashcoin pattern: near-perfect parabolic chart", "critical", 0, "behavioral"));
     penalties.push(0.35); safeBlocked = true;
   }
   if (pc5m > 35 && pc1h > 120) {
@@ -949,7 +954,7 @@ export function layerChart(
     if (looksMature) {
       flags.push(makeFlag("Drawdown >55% from local peak (mature pair, normal volatility)", "info", 0));
     } else {
-      flags.push(makeFlag("Blow-off top: price collapsed >55% from peak", "critical", 0));
+      flags.push(makeFlag("Blow-off top: price collapsed >55% from peak", "critical", 0, "behavioral"));
       penalties.push(0.20); safeBlocked = true;
     }
   }
