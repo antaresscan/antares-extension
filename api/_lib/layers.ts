@@ -137,18 +137,24 @@ export function layerDexScreener(
     penalties.push(0.15);
     if (points > 0) safeBlocked = true;
   } else if (pc6 < -30) {
-    // Milder single-timeframe dump signal, not individually calibrated in
-    // the scoring pass — flat value proportionate to the graduated dump
-    // family above (roughly the "1-7d" tier of a slow-rug-class signal).
-    flags.push(makeFlag(`Sharp 6h sell-off (${Math.round(pc6)}%)`, "warning", 200));
-    penalties.push(0.55); safeBlocked = true;
+    // Weaker, unconfirmed version of the slow-rug signal above (single
+    // timeframe, no 1h continuation) — age-graduated at roughly half the
+    // slow-rug severity at every tier, since it's meaningfully weaker
+    // evidence but still more concerning on a fresh token.
+    const points = ageTieredPoints(ageMinutes, { under2h: 300, h2to24: 150, d1to7: 75, over7d: 0 });
+    flags.push(makeFlag(`Sharp 6h sell-off (${Math.round(pc6)}%)`, "warning", points));
+    penalties.push(0.55);
+    if (points > 0) safeBlocked = true;
   }
   // Ledger: "No website/Twitter/Telegram" already reclassified behavioral
   // (softened off safeBlocked) earlier this session; point value set here.
   if (!hasWebsite && !hasTwitter && !hasTelegram) { flags.push(makeFlag("No website / Twitter / Telegram — high rug risk", "critical", 250, "behavioral")); penalties.push(0.60); }
   // Ledger #32 (LOT B — behaviour)
   if (txns5m < 5 && mc > 50000 && ageMinutes < 1440) { flags.push(makeFlag("Low 5m transactions vs market cap", "info", 50)); penalties.push(0.92); }
-  if ((sells5m === 0 && buys5m > 0 && txns5m > 5) || (sells5m > 0 && buys5m > sells5m * 5)) { flags.push(makeFlag("Buy/sell imbalance (coordinated pump)", "warning", 200)); penalties.push(0.85); }
+  // Order-flow imbalance, not a price pump — the pump=warning/0pt rule
+  // doesn't apply. Flat value: no clear age-dependent read on a noisy
+  // 5-minute window.
+  if ((sells5m === 0 && buys5m > 0 && txns5m > 5) || (sells5m > 0 && buys5m > sells5m * 5)) { flags.push(makeFlag("Buy/sell imbalance (coordinated pump)", "warning", 250)); penalties.push(0.85); }
   if (pc24 < -80) {
     // Dump family, same age-graduated treatment as the -50%/6h slow rug
     // above (comparably severe standalone 24h dump signal).
@@ -157,8 +163,13 @@ export function layerDexScreener(
     penalties.push(0.35);
     if (points > 0) safeBlocked = true;
   } else if (pc24 < -40) {
-    flags.push(makeFlag(`Significant 24h dump (${Math.round(pc24)}%)`, "warning", 200));
-    penalties.push(0.50); safeBlocked = true;
+    // Milder tier of the same dump family (-40 to -80%), age-graduated at
+    // ~70% of the brutal-dump severity — a substantial decline, not as
+    // extreme but not ambiguous either.
+    const points = ageTieredPoints(ageMinutes, { under2h: 400, h2to24: 250, d1to7: 100, over7d: 0 });
+    flags.push(makeFlag(`Significant 24h dump (${Math.round(pc24)}%)`, "warning", points));
+    penalties.push(0.50);
+    if (points > 0) safeBlocked = true;
   }
 
   // Ledger #19/#23: pure 24h pump signals. Pump rule — warning shown, never
@@ -181,28 +192,35 @@ export function layerDexScreener(
 
   // Pump-and-dump reversal: token was significantly up over 24h but is now
   // losing hard in 6h — classic PnD timeline where the dump phase has
-  // started. Dump-dominant (the danger is the reversal, not the prior
-  // pump) — age-graduated like the other standalone dump signals.
+  // started. Two measurements (confirmed prior rise + current reversal),
+  // so a notch above the single-signal dump family, though looser in time
+  // than the tightly-coupled post-ATH pattern (no "immediate" requirement).
   if (pc24 > 80 && pc6 < -20) {
-    const points = ageTieredPoints(ageMinutes, { under2h: 550, h2to24: 350, d1to7: 150, over7d: 0 });
+    const points = ageTieredPoints(ageMinutes, { under2h: 600, h2to24: 400, d1to7: 200, over7d: 50 });
     flags.push(makeFlag(`Pump reversal: +${Math.round(pc24)}% (24h) → ${Math.round(pc6)}% (6h)`, "critical", points));
     penalties.push(0.30);
-    if (points > 0) safeBlocked = true;
+    safeBlocked = true;
   }
 
   // Progressive multi-timeframe decline: both 6h and 24h are meaningfully
   // negative but below the standalone thresholds (< -30% and < -40%).
-  // Two timeframes confirming each other = ongoing distribution, not a blip.
+  // Two timeframes confirming each other = ongoing distribution, not a blip
+  // — a modest bump over the single-signal "sharp 6h sell-off" tier for the
+  // 2-signal convergence, age-graduated the same way.
   if (pc6 < -20 && pc6 > -30 && pc24 < -25 && pc24 > -40) {
-    flags.push(makeFlag(`Progressive dump: ${Math.round(pc6)}% (6h) + ${Math.round(pc24)}% (24h)`, "warning", 200));
+    const points = ageTieredPoints(ageMinutes, { under2h: 350, h2to24: 200, d1to7: 100, over7d: 25 });
+    flags.push(makeFlag(`Progressive dump: ${Math.round(pc6)}% (6h) + ${Math.round(pc24)}% (24h)`, "warning", points));
     penalties.push(0.55); safeBlocked = true;
   }
 
   // Coordinated exit: price is declining in the last hour AND sells are
   // dominating buys 3-to-1 in the current 5-minute window — typical of
-  // organised wallet groups rotating out.
+  // organised wallet groups rotating out. Two converging signal types
+  // (price trend + order flow), more specific than the imbalance flag
+  // above (which has no price-confirmation requirement) — flat value,
+  // no clear age read on a noisy 5-minute window.
   if (pc1 < -8 && sells5m > buys5m * 3 && txns5m > 10) {
-    flags.push(makeFlag(`Coordinated exit: price ${Math.round(pc1)}% + sells 3× buys`, "warning", 250));
+    flags.push(makeFlag(`Coordinated exit: price ${Math.round(pc1)}% + sells 3× buys`, "warning", 350));
     penalties.push(0.65); safeBlocked = true;
   }
 
@@ -271,7 +289,7 @@ export function layerRugCheck(
     } else if (rugData.lpLocked === true) {
         const days = getLpLockDurationDays(rugData);
         if (days > 180) { flags.push(makeFlag("LP Locked > 180 days ✓", "bonus", -50)); trust = Math.min(1.0, trust * 1.05); }
-        else if (days > 0 && days < 30) { flags.push(makeFlag("LP lock duration < 30 days", "warning", 200)); penalties.push(0.75); }
+        else if (days > 0 && days < 30) { flags.push(makeFlag("LP lock duration < 30 days", "warning", 100)); penalties.push(0.75); }
     } else {
         const lpDataPresent =
             rugData.lpBurned === false ||
@@ -471,7 +489,7 @@ export function layerGoPlus(
             flags.push(makeFlag(`LP Burned ${Math.round(maxBurnPct)}% (GoPlus) ✓`, "bonus", -75));
             trust = Math.min(1.0, trust * 1.10);
         } else if (maxBurnPct >= 1) {
-            flags.push(makeFlag(`LP partially burned ${Math.round(maxBurnPct)}% — not fully secured`, "warning", 200));
+            flags.push(makeFlag(`LP partially burned ${Math.round(maxBurnPct)}% — not fully secured`, "warning", 100));
             penalties.push(0.80);
         } else {
             // Same maturity classification as layerRugCheck. A mature,
@@ -854,7 +872,7 @@ export function layerSolscan(
     forceRug: false, safeBlocked: false,
   };
   if (holderCount !== null) {
-    if (holderCount < 15) { flags.push(makeFlag("Very few holders (<15)", "critical", 400)); penalties.push(0.20); safeBlocked = true; }
+    if (holderCount < 15) { flags.push(makeFlag("Very few holders (<15)", "critical", 450)); penalties.push(0.20); safeBlocked = true; }
     else if (holderCount < 50) { flags.push(makeFlag("Low holders (<50)", "warning", 200)); penalties.push(0.35); safeBlocked = true; }
     else if (holderCount > 5000) { flags.push(makeFlag("Strong holder base (5K+) ✓", "bonus", -50)); trust = Math.min(1.0, trust * 1.05); }
   }
@@ -872,7 +890,7 @@ export function layerSolscan(
   if (trades24h !== null && traders24h !== null && traders24h === 0 && trades24h > 0) {
     // Labelled behavioral (statistical wash signal) but keeps safeBlocked for
     // now: strong signal, softening deferred until backtest-validated.
-    flags.push(makeFlag("Wash trading: trades with zero identified traders", "critical", 450, "behavioral"));
+    flags.push(makeFlag("Wash trading: trades with zero identified traders", "critical", 500, "behavioral"));
     penalties.push(0.40); safeBlocked = true;
     washTradingDetected = true;
   }
@@ -939,7 +957,7 @@ export function layerChart(
 
   // ── Existing patterns ──────────────────────────────────────────────────────
   if (greenRatio >= 0.82 && runUpPct >= 100 && pullbackRange <= 10) {
-    flags.push(makeFlag("Crashcoin pattern: near-perfect parabolic chart", "critical", 400, "behavioral"));
+    flags.push(makeFlag("Crashcoin pattern: near-perfect parabolic chart", "critical", 500, "behavioral"));
     penalties.push(0.35); safeBlocked = true;
   }
   // Ledger #35: pure pump signal (5m/1h price only). Pump rule applies.
