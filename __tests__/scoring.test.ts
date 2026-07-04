@@ -1,73 +1,159 @@
 import { describe, it, expect } from "vitest";
 import { computeFinalScore, classifySafeBlockedReasons } from "../api/_lib/scoring";
-import { HARD_BLOCK_REASONS, SOFT_REASONS } from "../api/_lib/constants";
-import type { LayerResult, ScanFlag } from "../api/_lib/types";
+import { LAYER_WEIGHTS, TRUST_FLOOR, XV_PENALTY_LP_BURN, XV_PENALTY_MINT_AUTH, XV_PENALTY_HOLDER_CONCENTRATION, HARD_BLOCK_REASONS, SOFT_REASONS } from "../api/_lib/constants";
+import type { LayerResult } from "../api/_lib/types";
 
 function makeLayer(source: string, trust: number, available: boolean, flags: LayerResult["flags"] = [], forceRug = false, safeBlocked = false): LayerResult {
   return { source, trust, available, flags, forceRug, safeBlocked };
 }
 
-function flag(impact: number, severity: ScanFlag["severity"] = "critical", label = "test flag"): ScanFlag {
-  return { label, severity, impact, flagClass: "structural" };
-}
-
-// ═══ computeFinalScore — additive model ════════════════════════════════════
-// Score = 1000 - sum(dampened deductions) + sum(bonuses), floored at 0,
-// capped at 1000. Deductions are flags with impact > 0, sorted worst-first,
-// weighted 100% / 75% / 50% / 25% (plateau from the 4th flag on). Bonuses
-// are flags with impact < 0, added back flat (undamped).
-describe("computeFinalScore (additive model)", () => {
-  it("returns 1000 for no flags", () => {
-    expect(computeFinalScore([])).toBe(1000);
+describe("computeFinalScore", () => {
+  it("returns high score with all trust=1", () => {
+    const layers: LayerResult[] = [
+      makeLayer("dexscreener", 1, true),
+      makeLayer("rugcheck", 1, true),
+      makeLayer("goplus", 1, true),
+      makeLayer("helius", 1, true),
+      makeLayer("solscan", 1, true),
+      makeLayer("chart", 1, true),
+      makeLayer("crossvalidation", 1, true),
+    ];
+    expect(computeFinalScore(layers)).toBeGreaterThan(900);
   });
 
-  it("info/bonus-free flags with impact=0 don't affect score", () => {
-    expect(computeFinalScore([flag(0, "info")])).toBe(1000);
+  it("hard kill: returns 0 when any available layer has trust === 0", () => {
+    const layers: LayerResult[] = [
+      makeLayer("dexscreener", 1, true),
+      makeLayer("rugcheck", 0, true),
+      makeLayer("goplus", 1, true),
+      makeLayer("helius", 1, true),
+      makeLayer("solscan", 1, true),
+      makeLayer("chart", 1, true),
+      makeLayer("crossvalidation", 1, true),
+    ];
+    expect(computeFinalScore(layers)).toBe(0);
   });
 
-  it("single flag deducts its full impact (100% weight)", () => {
-    expect(computeFinalScore([flag(300)])).toBe(700);
+  it("no hard kill for unavailable layer with trust 0", () => {
+    const layers: LayerResult[] = [
+      makeLayer("dexscreener", 1, true),
+      makeLayer("rugcheck", 0, false),
+      makeLayer("goplus", 1, true),
+      makeLayer("helius", 1, true),
+      makeLayer("solscan", 1, true),
+      makeLayer("chart", 1, true),
+      makeLayer("crossvalidation", 1, true),
+    ];
+    const score = computeFinalScore(layers);
+    expect(score).toBeGreaterThan(0);
+    expect(score).toBe(1000);
   });
 
-  it("two flags: 1st at 100%, 2nd at 75%", () => {
-    // 1000 - (500*1.00) - (300*0.75) = 1000 - 500 - 225 = 275
-    expect(computeFinalScore([flag(300), flag(500)])).toBe(275);
+  it("LAYER_WEIGHTS does NOT contain identity (removed)", () => {
+    expect(LAYER_WEIGHTS).not.toHaveProperty("identity");
   });
 
-  it("three flags: 100% / 75% / 50%, sorted worst-first regardless of input order", () => {
-    // worst-first: 400, 300, 200 → 400*1 + 300*.75 + 200*.5 = 400+225+100 = 725
-    expect(computeFinalScore([flag(200), flag(400), flag(300)])).toBe(1000 - 725);
+  it("LAYER_WEIGHTS sum to 1.0", () => {
+    const sum = Object.values(LAYER_WEIGHTS).reduce((a: number, b: number) => a + b, 0);
+    expect(sum).toBeCloseTo(1.0, 10);
   });
 
-  it("4th flag and beyond plateau at 25% (not a return to 0%)", () => {
-    // four 250-point flags: 250*1 + 250*.75 + 250*.5 + 250*.25 = 250*2.5 = 625
-    const flags = [flag(250), flag(250), flag(250), flag(250)];
-    expect(computeFinalScore(flags)).toBe(1000 - 625);
+  it("crossvalidation not in weighted mean (post-multiplier only)", () => {
+    expect(LAYER_WEIGHTS).not.toHaveProperty("crossvalidation");
   });
 
-  it("6 flags at 25 all plateau after the 3rd — more real flags still make it worse", () => {
-    const four = [flag(250), flag(250), flag(250), flag(250)];
-    const six = [...four, flag(250), flag(250)];
-    const scoreFour = computeFinalScore(four);
-    const scoreSix = computeFinalScore(six);
-    expect(scoreSix).toBeLessThan(scoreFour);
-    // matches the ledger-validated example: 6×-250 → 250, 4×-250 → 375
-    expect(scoreFour).toBe(375);
-    expect(scoreSix).toBe(250);
+  it("XV_PENALTY_HOLDER_CONCENTRATION applied", () => {
+    const layers: LayerResult[] = [
+      makeLayer("dexscreener", 1, true),
+      makeLayer("rugcheck", 1, true),
+      makeLayer("goplus", 1, true),
+      makeLayer("helius", 1, true),
+      makeLayer("solscan", 1, true),
+      makeLayer("chart", 1, true),
+      makeLayer("crossvalidation", 1, true, [
+        { label: "holder concentration conflict", severity: "warning", impact: 0 }
+      ]),
+    ];
+    const score = computeFinalScore(layers);
+    expect(score).toBe(Math.round(1000 * XV_PENALTY_HOLDER_CONCENTRATION));
   });
 
-  it("score never goes negative — floors at 0", () => {
-    expect(computeFinalScore([flag(650), flag(650)])).toBe(0);
+  it("returns 0 when no sources available", () => {
+    const layers: LayerResult[] = [
+      makeLayer("dexscreener", 1, false),
+      makeLayer("rugcheck", 1, false),
+      makeLayer("goplus", 1, false),
+      makeLayer("helius", 1, false),
+      makeLayer("solscan", 1, false),
+      makeLayer("chart", 1, false),
+    ];
+    expect(computeFinalScore(layers)).toBe(0);
   });
 
-  it("bonus flags (negative impact) add back undamped", () => {
-    // -50 impact = a +50 bonus
-    expect(computeFinalScore([flag(-50)])).toBe(1000); // capped at 1000
-    expect(computeFinalScore([flag(300), flag(-50)])).toBe(750);
+  it("TRUST_FLOOR is 0.001 (not 0.10)", () => {
+    expect(TRUST_FLOOR).toBe(0.001);
   });
 
-  it("score caps at 1000 even with only bonuses", () => {
-    expect(computeFinalScore([flag(-50), flag(-50), flag(-50)])).toBe(1000);
+  it("XV penalties reduce score for LP burn conflict", () => {
+    const layers: LayerResult[] = [
+      makeLayer("dexscreener", 1, true),
+      makeLayer("rugcheck", 1, true),
+      makeLayer("goplus", 1, true),
+      makeLayer("helius", 1, true),
+      makeLayer("solscan", 1, true),
+      makeLayer("chart", 1, true),
+      makeLayer("crossvalidation", 1, true, [
+        { label: "LP burn conflict: RugCheck vs on-chain data", severity: "warning", impact: 0 }
+      ]),
+    ];
+    const score = computeFinalScore(layers);
+    expect(score).toBeLessThan(1000);
+    expect(score).toBe(Math.round(1000 * XV_PENALTY_LP_BURN));
+  });
+
+  it("XV penalties reduce score for mint authority conflict", () => {
+    const layers: LayerResult[] = [
+      makeLayer("dexscreener", 1, true),
+      makeLayer("rugcheck", 1, true),
+      makeLayer("goplus", 1, true),
+      makeLayer("helius", 1, true),
+      makeLayer("solscan", 1, true),
+      makeLayer("chart", 1, true),
+      makeLayer("crossvalidation", 1, true, [
+        { label: "Mint authority conflict: GoPlus vs RugCheck", severity: "warning", impact: 0 }
+      ]),
+    ];
+    const score = computeFinalScore(layers);
+    expect(score).toBe(Math.round(1000 * XV_PENALTY_MINT_AUTH));
+  });
+
+  it("score caps at 1000", () => {
+    const layers: LayerResult[] = [
+      makeLayer("dexscreener", 1, true),
+      makeLayer("rugcheck", 1, true),
+      makeLayer("goplus", 1, true),
+      makeLayer("helius", 1, true),
+      makeLayer("solscan", 1, true),
+      makeLayer("chart", 1, true),
+      makeLayer("crossvalidation", 1, true),
+    ];
+    expect(computeFinalScore(layers)).toBeLessThanOrEqual(1000);
+  });
+
+  it("chart weight at 0.10 gives chart influence on final score", () => {
+    const base: LayerResult[] = [
+      makeLayer("dexscreener", 1, true),
+      makeLayer("rugcheck", 1, true),
+      makeLayer("goplus", 1, true),
+      makeLayer("helius", 1, true),
+      makeLayer("solscan", 1, true),
+      makeLayer("crossvalidation", 1, true),
+    ];
+    const withGoodChart = [...base, makeLayer("chart", 1, true)];
+    const withBadChart = [...base, makeLayer("chart", 0.2, true)];
+    const goodScore = computeFinalScore(withGoodChart);
+    const badScore = computeFinalScore(withBadChart);
+    expect(goodScore - badScore).toBeGreaterThan(100);
   });
 });
 
@@ -148,6 +234,48 @@ describe("classifySafeBlockedReasons", () => {
   });
 });
 
+function makeMockLayer(source: string, trust: number, available = true): LayerResult {
+  return { source, trust, available, flags: [], forceRug: false, safeBlocked: false };
+}
+
+describe("computeFinalScore normalization", () => {
+  it("should give equal scores regardless of source count when trusts are equal", () => {
+    const allSources = [
+      makeMockLayer("dexscreener", 0.8),
+      makeMockLayer("rugcheck", 0.8),
+      makeMockLayer("goplus", 0.8),
+      makeMockLayer("helius", 0.8),
+      makeMockLayer("solscan", 0.8),
+      makeMockLayer("chart", 0.8),
+      makeMockLayer("crossvalidation", 1.0),
+    ];
+    const scoreAll = computeFinalScore(allSources);
+
+    const fewerSources = [
+      makeMockLayer("dexscreener", 0.8),
+      makeMockLayer("rugcheck", 0.8),
+      makeMockLayer("goplus", 0.8),
+      makeMockLayer("helius", 0.8, false),
+      makeMockLayer("solscan", 0.8, false),
+      makeMockLayer("chart", 0.8, false),
+      makeMockLayer("crossvalidation", 1.0),
+    ];
+    const scoreFewer = computeFinalScore(fewerSources);
+
+    expect(scoreAll).toBe(scoreFewer);
+    expect(scoreAll).toBe(800);
+  });
+
+  it("should return 0 if any available layer has trust 0 (hard kill)", () => {
+    const layers = [
+      makeMockLayer("dexscreener", 0),
+      makeMockLayer("rugcheck", 0.9),
+      makeMockLayer("goplus", 0.9),
+      makeMockLayer("crossvalidation", 1.0),
+    ];
+    expect(computeFinalScore(layers)).toBe(0);
+  });
+});
 
 
 describe("classifySafeBlockedReasons — low_holders HARD reason", () => {

@@ -328,41 +328,29 @@ export function getLpRiskBucket(
 }
 
 /**
- * Compute the share of total supply that sits in the LP, given:
- *  - liquidityUsd:       total USD value of the pool (DexScreener `liquidity.usd`)
- *  - priceUsd:            current token price in USD (DexScreener `priceUsd`)
- *  - totalSupply:         total token supply (RugCheck / GoPlus)
- *  - reportedBaseReserve: actual reserve of the queried token in the pool, in
- *                          token units (DexScreener `liquidity.base`), when available
+ * Back-compute the share of total supply that sits in the LP, given:
+ *  - liquidityUsd: total USD value of the pool (DexScreener `liquidity.usd`)
+ *  - priceUsd:    current token price in USD (DexScreener `priceUsd`)
+ *  - totalSupply: total token supply (RugCheck / GoPlus)
  *
- * Preferred path: when `reportedBaseReserve` is present, use it directly —
- * `pct = reportedBaseReserve / totalSupply`. DexScreener computes this from
- * real on-chain reserves, so it's accurate for concentrated-liquidity pools
- * (Orca CLMM, Meteora DLMM) where the naive 50/50-by-USD split doesn't hold.
+ * Classic AMM pools (Uniswap V2 / Raydium AMM) hold ~50% base / 50% quote
+ * by USD value, so `tokensInLp ≈ (liquidityUsd / 2) / priceUsd`. The
+ * approximation is accurate to within ~5% for healthy pools; CLMM pools
+ * (Orca CLMM, Meteora DLMM) can deviate more but average out similarly
+ * in practice.
  *
- * Fallback path: when the reserve isn't reported, back-compute from USD
- * value assuming a classic 50/50 AMM split — `tokensInLp ≈ (liquidityUsd / 2)
- * / priceUsd`. Accurate to within ~5% on classic AMM pools; can deviate more
- * on concentrated pools, which is exactly the case the preferred path fixes.
- *
- * Returns null when the inputs needed for either path are missing, zero, or
- * negative — callers should treat null as "unknown bucket" and fall back to
- * conservative scoring.
+ * Returns null when any input is missing, zero, or negative — callers
+ * should treat null as "unknown bucket" and fall back to conservative
+ * scoring.
  */
 export function computeLpPctOfSupply(
   liquidityUsd: number | null,
   priceUsd: number | null,
   totalSupply: number | null,
-  reportedBaseReserve?: number | null,
 ): number | null {
-  if (!totalSupply || totalSupply <= 0) return null
-
-  if (reportedBaseReserve && reportedBaseReserve > 0) {
-    return Math.min(1, Math.max(0, reportedBaseReserve / totalSupply))
-  }
-
   if (!liquidityUsd || liquidityUsd <= 0) return null
   if (!priceUsd || priceUsd <= 0) return null
+  if (!totalSupply || totalSupply <= 0) return null
   const tokensInLp = (liquidityUsd / 2) / priceUsd
   const pct = tokensInLp / totalSupply
   // Cap at 1.0 (100%) — any computed value > 1 is an approximation error

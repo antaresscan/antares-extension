@@ -1,53 +1,42 @@
 // api/scoring.ts — Final scoring, verdict & safe-block classification
 
-import type { LayerResult, ScanFlag, SafeBlockedReason } from "./types";
+import type { LayerResult, SafeBlockedReason } from "./types";
+import { LAYER_WEIGHTS, TRUST_FLOOR, XV_PENALTY_LP_BURN, XV_PENALTY_MINT_AUTH, XV_PENALTY_AGE, XV_PENALTY_HOLDER_CONCENTRATION } from "./constants";
 
-// ═══ ADDITIVE SCORING MODEL ══════════════════════════════════════════════════
-//
-// Replaces the previous per-layer geometric-mean trust model. Every flag now
-// carries its own point cost in `impact` (positive = deduct, negative = bonus,
-// set by the layer that raises it). The final score is a flat additive
-// deduction from 1000 across every flag from every layer + pipeline check,
-// not a weighted product of per-layer trust scores.
-//
-// Why: the old model let layer WEIGHTS (not flag severity) decide how much a
-// problem mattered, and one bad flag on a low-weight layer could get diluted
-// by clean scores elsewhere. The additive model makes each flag's cost
-// explicit and comparable regardless of which layer raised it.
-//
-// Stacking dampening — sort flags worst-first, then weight by rank:
-//   1st (worst)     → 100%
-//   2nd             → 75%
-//   3rd             → 50%
-//   4th and beyond  → 25% (plateau, not a return to 0%)
-// This means real additional flags always make the score worse (no ceiling
-// on how many flags "count"), while a handful of moderate, uncorroborated
-// signals can't alone crash a token to RUG — that still takes either one
-// severe/structural flag or several flags stacking together.
-const STACK_WEIGHTS = [1, 0.75, 0.5];
-const STACK_PLATEAU_WEIGHT = 0.25;
+export function computeFinalScore(layers: LayerResult[]): number {
+  if (layers.filter(l => l.available).some(l => l.trust === 0)) return 0;
 
-export function computeFinalScore(flags: ScanFlag[]): number {
-  const deductions = flags
-    .map(f => f.impact)
-    .filter(points => points > 0)
-    .sort((a, b) => b - a);
+  const weightedSources = Object.keys(LAYER_WEIGHTS);
+  let totalWeight = 0;
+  const availableLayers: Array<{ trust: number; weight: number; source: string }> = [];
 
-  let totalDeduction = 0;
-  deductions.forEach((points, i) => {
-    totalDeduction += points * (STACK_WEIGHTS[i] ?? STACK_PLATEAU_WEIGHT);
-  });
+  for (const src of weightedSources) {
+    const layer = layers.find(l => l.source === src);
+    const w = LAYER_WEIGHTS[src] ?? 0;
+    if (!layer || !layer.available) continue;
+    availableLayers.push({ trust: Math.max(TRUST_FLOOR, layer.trust), weight: w, source: src });
+    totalWeight += w;
+  }
 
-  // Bonus flags (negative impact) add back flat, undamped points — clean
-  // contracts aren't penalized for lacking bonuses, but genuine positive
-  // signals (LP burned, established token, well-distributed supply) still
-  // nudge the score up.
-  const bonusTotal = flags
-    .map(f => f.impact)
-    .filter(points => points < 0)
-    .reduce((sum, points) => sum + Math.abs(points), 0);
+  if (!totalWeight || totalWeight <= 0) return 0;
 
-  return Math.max(0, Math.min(1000, Math.round(1000 - totalDeduction + bonusTotal)));
+  let product = 1.0;
+  for (const { trust, weight } of availableLayers) {
+    const normalizedWeight = weight / totalWeight;
+    product *= Math.pow(trust, normalizedWeight);
+  }
+
+  const xv = layers.find(l => l.source === "crossvalidation");
+  if (xv?.available && xv.flags.length > 0) {
+    for (const f of xv.flags) {
+      if (/LP burn conflict/i.test(f.label)) product *= XV_PENALTY_LP_BURN;
+      else if (/Mint authority conflict/i.test(f.label)) product *= XV_PENALTY_MINT_AUTH;
+      else if (/age conflict/i.test(f.label)) product *= XV_PENALTY_AGE;
+      else if (/holder concentration/i.test(f.label)) product *= XV_PENALTY_HOLDER_CONCENTRATION;
+    }
+  }
+
+  return Math.round(Math.max(0, Math.min(1, product)) * 1000);
 }
 
 // HARD_BLOCK_PATTERNS: flags that classify as hard safeBlocked reasons.

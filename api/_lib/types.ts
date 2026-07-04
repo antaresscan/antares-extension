@@ -4,22 +4,10 @@
 // ─── SEVERITY & FLAGS ─────────────────────────────────────────────────────────────────
 export type Severity = "critical" | "warning" | "info" | "bonus";
 
-// Flag class separates two fundamentally different kinds of signal:
-//  • "structural" — definitive rug vectors (honeypot, LP pullable, mint/freeze
-//    authority, deceptive name, blacklist/pausable). High precision: a single
-//    one justifies condemning the token.
-//  • "behavioral" — statistical / price / volume signals (wash, pumps, sniper,
-//    weak socials). Noisy and probabilistic: one alone must NOT force the harsh
-//    verdicts — it feeds the score and needs corroboration (≥2) for DANGER.
-// Default is "structural" so any flag not explicitly reclassified keeps its
-// legacy hard-floor behaviour.
-export type FlagClass = "structural" | "behavioral";
-
 export interface ScanFlag {
   label: string;
   severity: Severity;
   impact: number;
-  flagClass?: FlagClass;
 }
 
 // IMPORTANT: 'lp' and 'deceptive_name' are HARD reasons — they can never
@@ -79,12 +67,7 @@ export interface DexScreenerPair {
     symbol?: string;
     name?: string;
   };
-  // `base` = actual reserve of the queried token (baseToken) sitting in the
-  // pool, in token units. DexScreener computes this from real on-chain
-  // reserves, so it's accurate for concentrated-liquidity pools (CLMM/DLMM)
-  // where the naive 50/50-by-USD assumption breaks down. Prefer it over the
-  // derived estimate in computeLpPctOfSupply whenever present.
-  liquidity?: { usd?: number; base?: number; quote?: number };
+  liquidity?: { usd?: number };
   volume?: { h24?: number; h1?: number };
   priceChange?: { m5?: number; h1?: number; h6?: number; h24?: number };
   txns?: {
@@ -311,27 +294,6 @@ export interface VerdictInput {
   warningFlagsCount?: number;
   /** Number of critical-severity token-side flags (pipeline-status flags excluded). */
   criticalFlagsCount?: number;
-  /**
-   * Critical flags that are STRUCTURAL rug vectors (honeypot, LP pullable,
-   * mint/freeze authority, deceptive name, …). Any ≥1 forces at-least-DANGER.
-   * Back-compat: when undefined, determineVerdict falls back to criticalFlagsCount
-   * (i.e. treats every critical flag as structural — the legacy behaviour).
-   */
-  structuralCriticalCount?: number;
-  /**
-   * Critical flags that are BEHAVIORAL / statistical (wash, pump, sniper, weak
-   * socials). One alone must not condemn; ≥2 (corroboration) forces DANGER. A
-   * single behavioral critical falls through to the score-driven bands.
-   */
-  behavioralCriticalCount?: number;
-  /**
-   * True when the security-critical structural fields (mint authority, freeze
-   * authority, honeypot, LP burn/lock status) were actually resolved by an
-   * upstream source. SAFE requires this — missing data caps the verdict at
-   * CAUTION so "no data → no flags → SAFE" can never happen. Back-compat:
-   * undefined is treated as complete (does not block SAFE).
-   */
-  structuralDataComplete?: boolean;
 }
 
 // ─── SCAN RESULT ────────────────────────────────────────────────────────────────────────────────

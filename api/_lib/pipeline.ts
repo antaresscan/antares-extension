@@ -35,9 +35,7 @@ export function evaluatePostLayerFlags(input: PostLayerFlagsInput): PostLayerFla
     ageInHoneypotWindow &&
     totalTxns5m > 5
   ) {
-    // Ledger #3: FORCE RUG \u2014 behavioral honeypot detection (0 sells despite
-    // coordinated buy pressure), same treatment as a technical honeypot.
-    flags.push(makeFlag("Sells blocked (social honeypot)", "critical", 700));
+    flags.push(makeFlag("Sells blocked (social honeypot)", "critical", 0));
     forceRug = true;
     safeBlocked = true;
   }
@@ -51,26 +49,18 @@ export function evaluatePostLayerFlags(input: PostLayerFlagsInput): PostLayerFla
       if (typeof to === "string") wallets.add(to);
     }
     if (wallets.size <= 3) {
-      // Same "coordinated wallet cluster" principle as bundle detection
-      // (ledger #6) \u2014 \u22643 wallets moving 10+ transfers is a provable
-      // coordination fact, not a noisy price signal. FORCE RUG kept.
-      flags.push(makeFlag("Wash trading via transfers (\u22643 unique wallets in 10+ txs)", "critical", 700));
+      flags.push(makeFlag("Wash trading via transfers (\u22643 unique wallets in 10+ txs)", "critical", 0));
       forceRug = true;
     }
   }
 
   if (input.ageMin > 0 && input.ageMin < 60 && input.volLiqRatio > 15) {
-    // Same underlying signal as the DexScreener-layer vol/liq >15\u00d7 flag
-    // (ledger #13), just additionally gated to <1h-old tokens. Consistent
-    // treatment: danger, no force rug, always blocks SAFE.
-    flags.push(makeFlag("Pump.fun-style launch: <1h + vol/liq >15 \u2014 DANGER", "critical", 550, "behavioral"));
+    flags.push(makeFlag("Pump.fun-style launch: <1h + vol/liq >15 \u2014 DANGER", "critical", 0));
     safeBlocked = true;
   }
 
   if (input.creatorReputation?.flagged && input.creatorReputation.reason) {
-    // A known-bad creator identity is closer to a structural fact (this
-    // wallet has a track record) than a noisy price signal.
-    flags.push(makeFlag(input.creatorReputation.reason, "critical", 500));
+    flags.push(makeFlag(input.creatorReputation.reason, "critical", 0));
     safeBlocked = true;
   }
 
@@ -177,30 +167,17 @@ export function applyEstablishedBonus(input: EstablishedBonusInput): number {
 export function determineVerdict(input: VerdictInput): Verdict {
   if (input.forceRug) return "RUG";
   if (!input.sourcesUsedCount || input.sourcesUsedCount <= 0) return "DANGER";
-  // Flag-count hard floors, split by flag class so a single noisy signal can't
-  // condemn a token (false-RUG) while true structural vectors still hard-floor.
-  //
-  // Structural criticals (honeypot, LP pullable, mint/freeze authority,
-  // deceptive name, blacklist/pausable) are definitive — a single one forces
-  // at-least-DANGER. Back-compat: unclassified callers pass only
-  // criticalFlagsCount, so we treat every critical as structural (legacy).
-  const structuralCritical =
-    input.structuralCriticalCount ?? input.criticalFlagsCount ?? 0;
-  if (structuralCritical >= 1) return "DANGER";
-  // Behavioral criticals (wash, pump, sniper, weak socials) are noisy and
-  // probabilistic: one alone must not force DANGER. Require corroboration —
-  // two or more independent behavioral criticals. A lone behavioral critical
-  // falls through to the score bands below; its score penalty already applied,
-  // so it typically lands CAUTION unless the score is genuinely low.
-  if ((input.behavioralCriticalCount ?? 0) >= 2) return "DANGER";
-  // 3+ total token-side warnings still floor to DANGER (accumulated risk).
+  // Flag-count hard floors: 1+ critical OR 3+ total token-side flags → minimum DANGER.
+  // Prevents tokens with many accumulated risk signals from staying at CAUTION when
+  // individual layer penalties are offset by clean scores from other layers.
+  if ((input.criticalFlagsCount ?? 0) >= 1) return "DANGER";
   if ((input.warningFlagsCount ?? 0) >= 3) return "DANGER";
 
   if (input.safeBlocked) {
     // HARD reasons: 'lp' and 'deceptive_name' added alongside existing hard reasons.
     // A token where LP is not burned can rug at any time — must return DANGER or RUG.
     const hasHardReason = input.safeBlockedReasons?.some(r => HARD_BLOCK_REASONS.has(r));
-    if (hasHardReason) return input.score >= 250 ? "DANGER" : "RUG";
+    if (hasHardReason) return input.score >= 400 ? "DANGER" : "RUG";
 
     // "No flags → SAFE" override for soft safeBlocked reasons (e.g. Helius
     // unavailable, partial data). The same rule exists below for the non-
@@ -213,13 +190,11 @@ export function determineVerdict(input: VerdictInput): Verdict {
     if (
       (input.warningFlagsCount ?? 0) === 0 &&
       input.score >= 750 &&
-      (input.sourcesUsedCount ?? 0) >= 4 &&
-      input.structuralDataComplete !== false
+      (input.sourcesUsedCount ?? 0) >= 4
     ) return "SAFE";
 
-    // Soft reasons (age/holders) only: caution floor matches the standard
-    // score band (500) — see the band chart below.
-    if (input.score >= 500) return "CAUTION";
+    // Soft reasons (age/holders) only: tightened from 550 to 700 for CAUTION
+    if (input.score >= 700) return "CAUTION";
     return "DANGER";
   }
 
@@ -229,27 +204,29 @@ export function determineVerdict(input: VerdictInput): Verdict {
   // contradictory and destroys credibility: either we detected a problem
   // (→ CAUTION at minimum) or we didn't (→ SAFE). Never both.
   // Back-compat: warningFlagsCount undefined (old callers) → treated as 0 → SAFE allowed.
+  if (input.score >= 900 && input.sourcesUsedCount >= 5 && (input.warningFlagsCount ?? 0) === 0) return "SAFE";
+
+  // "Clean blue-chip" path: when there are LITERALLY ZERO token-side
+  // warning/critical flags AND the score is still reasonable (>= 750),
+  // grant SAFE at a relaxed bar. Fixes the contradiction where the
+  // overlay shows "No issues found" but the verdict is CAUTION because
+  // infrastructure-side score drag (Helius unavailable, Holder data
+  // unreliable, etc.) prevented the score from reaching 900.
   //
-  // Single SAFE floor at score >= 750, matching the score-band chart
-  // (rug 0-250 / danger 250-500 / caution 500-750 / safe 750-1000). The old
-  // multiplicative model needed two overlapping SAFE thresholds (900 and a
-  // looser 750 "clean blue-chip" override) because per-layer trust dilution
-  // made 900+ hard to reach even for genuinely clean tokens. The additive
-  // model doesn't have that noise — a token with zero flags scores exactly
-  // 1000 — so one clean floor is enough. sourcesUsedCount >= 4 still guards
-  // against thin upstream coverage sneaking in via "no warnings because no
-  // data", and structuralDataComplete still withholds SAFE when the
-  // honeypot/authority oracle hasn't answered.
+  // Gated by sourcesUsedCount >= 4 so a token with thin upstream
+  // coverage can't sneak in via "no warnings because no data".
+  // The score floor (750) is intentionally above the CAUTION floor
+  // (600) so a token that's borderline-clean but actually mediocre
+  // still gets CAUTION.
   if (
-    (input.warningFlagsCount ?? 0) === 0 &&
+    input.warningFlagsCount === 0 &&
     input.score >= 750 &&
-    (input.sourcesUsedCount ?? 0) >= 4 &&
-    input.structuralDataComplete !== false
+    input.sourcesUsedCount >= 4
   ) {
     return "SAFE";
   }
 
-  if (input.score >= 500) return "CAUTION";
-  if (input.score >= 250) return "DANGER";
+  if (input.score >= 600) return "CAUTION";
+  if (input.score >= 350) return "DANGER";
   return "RUG";
 }
