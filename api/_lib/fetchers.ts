@@ -315,21 +315,30 @@ export async function fetchDexCandles(
     }));
 }
 
-// Shared GeckoTerminal OHLCV fetch: try the DEXScreener pairAddress
-// directly, fall back to GT's own pool list (by 24h volume) if that pool
-// isn't indexed by GT or is rate-limited. `timeframePath` is the GT OHLCV
-// URL suffix, e.g. "hour?aggregate=4&limit=182" or "day?aggregate=1&limit=180".
+// Fetch 4-hour OHLCV candles (~30 days) for weekly/monthly pump detection.
+//
+// Strategy — zero extra API keys, maximises coverage:
+//
+// 1. Try pool OHLCV using the DEXScreener pairAddress directly.
+//    Works for Raydium, Orca, and pools GeckoTerminal indexes by their
+//    on-chain address.
+//
+// 2. If < 5 candles returned (pool not indexed by GT or rate-limited),
+//    call GeckoTerminal's /tokens/{mint}/pools to get the pools GT knows
+//    about for this token, then try each top pool (up to 3) until we get
+//    usable data. This covers PumpSwap, Meteora DBC, and other AMMs where
+//    GT's internal pool ID differs from the DEXScreener pairAddress.
+//
 // Returns candles sorted ascending by timestamp (oldest first), or [].
-async function fetchGTCandles(
+export async function fetchDexCandlesDaily(
     pairAddress: string,
-    mint: string | undefined,
-    timeframePath: string,
+    mint?: string,
 ): Promise<OHLCVCandle[]> {
     const GT = "https://api.geckoterminal.com/api/v2";
     const headers = { "Accept": "application/json;version=20230302" };
 
     async function poolCandles(poolAddr: string): Promise<OHLCVCandle[]> {
-        const url = `${GT}/networks/solana/pools/${poolAddr}/ohlcv/${timeframePath}`;
+        const url = `${GT}/networks/solana/pools/${poolAddr}/ohlcv/hour?aggregate=4&limit=182`;
         const raw = await fetchJson(url, { headers }, 8000) as GeckoTerminalOHLCVResponse | null;
         const ohlcv = raw?.data?.attributes?.ohlcv_list;
         if (!Array.isArray(ohlcv) || ohlcv.length < 5) return [];
@@ -370,30 +379,6 @@ async function fetchGTCandles(
     } catch { /* fallback failed silently */ }
 
     return [];
-}
-
-// Fetch 4-hour OHLCV candles (~30 days) for weekly/monthly pump detection.
-// Strategy — zero extra API keys, maximises coverage. See fetchGTCandles.
-export async function fetchDexCandlesDaily(
-    pairAddress: string,
-    mint?: string,
-): Promise<OHLCVCandle[]> {
-    return fetchGTCandles(pairAddress, mint, "hour?aggregate=4&limit=182");
-}
-
-// Fetch ~180 daily OHLCV candles (~6 months) for all-time-high drawdown
-// detection. GeckoTerminal caps OHLCV responses around 180 candles per
-// call regardless of timeframe granularity, so "day" resolution is what
-// buys the longest real look-back without pagination. A token whose true
-// launch is older than ~180 days will have its EARLIEST candle short of
-// its real all-time high in rare cases — the computed drawdown is then a
-// floor (the real number can only be worse), which is the safe direction
-// to be wrong in for a rug-risk signal.
-export async function fetchDexCandlesLongTerm(
-    pairAddress: string,
-    mint?: string,
-): Promise<OHLCVCandle[]> {
-    return fetchGTCandles(pairAddress, mint, "day?aggregate=1&limit=180");
 }
 
 // ─── BUNDLE DETECTION ──────────────────────────────────────────────────────

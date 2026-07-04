@@ -71,53 +71,6 @@ describe("computeLpPctOfSupply", () => {
     const pct = computeLpPctOfSupply(10_000_000, 0.01, 1000);
     expect(pct).toBe(1);
   });
-
-  // ── Preferred path: reportedBaseReserve (DexScreener liquidity.base) ──────
-  // Real on-chain reserve, accurate for concentrated-liquidity pools (Orca
-  // CLMM, Meteora DLMM) where the 50/50-by-USD assumption below doesn't hold.
-  describe("with reportedBaseReserve (real reserve, preferred over the 50/50 estimate)", () => {
-    it("uses reportedBaseReserve directly: pct = reserve / totalSupply", () => {
-      const pct = computeLpPctOfSupply(5_000_000, 0.00002, 58_500_000_000_000, 250_000_000_000);
-      expect(pct).toBeCloseTo(250_000_000_000 / 58_500_000_000_000, 10);
-    });
-
-    it("ignores liquidityUsd/priceUsd entirely when a valid reserve is given (even if those are null)", () => {
-      const pct = computeLpPctOfSupply(null, null, 1_000_000_000, 900_000_000);
-      expect(pct).toBe(0.9);
-    });
-
-    it("fixes the concentrated-pool case: 50/50 estimate would be wrong, reserve is exact", () => {
-      // A CLMM pool skewed 90/10 instead of 50/50: liquidityUsd=$100k,
-      // priceUsd=$0.001 → naive 50/50 estimate = (100_000/2)/0.001 = 50M
-      // tokens (5% of a 1B supply). The real reserve (reported by
-      // DexScreener from actual pool state) is 90M tokens (9% of supply) —
-      // nearly double the naive estimate, which matters for bucket selection
-      // (5-10% vs 1-5% has different safeBlock behaviour at <14 days).
-      const naive = computeLpPctOfSupply(100_000, 0.001, 1_000_000_000);
-      const real = computeLpPctOfSupply(100_000, 0.001, 1_000_000_000, 90_000_000);
-      expect(naive).toBeCloseTo(0.05, 10);
-      expect(real).toBeCloseTo(0.09, 10);
-      expect(real).not.toBeCloseTo(naive!, 3);
-    });
-
-    it("falls back to the 50/50 estimate when reportedBaseReserve is 0, negative, or omitted", () => {
-      const fallbackZero = computeLpPctOfSupply(5_000_000, 0.00002, 58_500_000_000_000, 0);
-      const fallbackNegative = computeLpPctOfSupply(5_000_000, 0.00002, 58_500_000_000_000, -100);
-      const fallbackOmitted = computeLpPctOfSupply(5_000_000, 0.00002, 58_500_000_000_000);
-      expect(fallbackZero).toBeCloseTo(fallbackOmitted!, 10);
-      expect(fallbackNegative).toBeCloseTo(fallbackOmitted!, 10);
-    });
-
-    it("clamps reserve-derived pct to [0, 1]", () => {
-      const pct = computeLpPctOfSupply(1, 1, 1000, 5000); // reserve > totalSupply
-      expect(pct).toBe(1);
-    });
-
-    it("still requires a valid totalSupply even with a reported reserve", () => {
-      expect(computeLpPctOfSupply(5_000_000, 0.00002, null, 900_000_000)).toBeNull();
-      expect(computeLpPctOfSupply(5_000_000, 0.00002, 0, 900_000_000)).toBeNull();
-    });
-  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

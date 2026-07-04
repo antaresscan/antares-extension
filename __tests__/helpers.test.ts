@@ -75,21 +75,11 @@ describe("_pct", () => {
 });
 
 describe("makeFlag", () => {
-  it("creates flag object (defaults to structural class)", () => {
+  it("creates flag object", () => {
     expect(makeFlag("test", "warning", 5)).toEqual({
       label: "test",
       severity: "warning",
       impact: 5,
-      flagClass: "structural",
-    });
-  });
-
-  it("accepts an explicit behavioral class", () => {
-    expect(makeFlag("wash", "critical", 0, "behavioral")).toEqual({
-      label: "wash",
-      severity: "critical",
-      impact: 0,
-      flagClass: "behavioral",
     });
   });
 });

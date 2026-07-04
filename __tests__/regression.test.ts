@@ -8,7 +8,7 @@ import {
 import {
   layerGoPlus, layerRugCheck,
 } from "../api/_lib/layers";
-import type { ScanFlag, GoPlusTokenResult, RugCheckSummary } from "../api/_lib/types";
+import type { LayerResult, GoPlusTokenResult, RugCheckSummary } from "../api/_lib/types";
 import { computeCacheTTL } from "../api/_lib/helpers";
 
 // ─── Session 1: Safety overhaul regressions ──────────────────────────────────
@@ -40,20 +40,30 @@ describe("Session 1 regressions", () => {
 // ─── Session 3: Scoring math regressions ────────────────────────────────────
 
 describe("Session 3 regressions", () => {
-  it("Score never exceeds 1000, even stacking many bonus flags", () => {
-    const flags: ScanFlag[] = Array.from({ length: 8 }, (_, i) => ({
-      label: `bonus${i}`, severity: "bonus", impact: -100, flagClass: "structural",
+  it("Score never exceeds 1000", () => {
+    const layers: LayerResult[] = Array.from({ length: 8 }, (_, i) => ({
+      source: `source${i}`,
+      available: true,
+      trust: 1.0,
+      flags: [],
+      forceRug: false,
+      safeBlocked: false,
     }));
-    const score = computeFinalScore(flags);
+    const score = computeFinalScore(layers);
     expect(score).toBeLessThanOrEqual(1000);
     expect(score).toBeGreaterThanOrEqual(0);
   });
 
-  it("Score never goes below 0, even stacking many severe deductions", () => {
-    const flags: ScanFlag[] = Array.from({ length: 8 }, (_, i) => ({
-      label: `critical${i}`, severity: "critical", impact: 700, flagClass: "structural",
+  it("Score never goes below 0", () => {
+    const layers: LayerResult[] = Array.from({ length: 8 }, (_, i) => ({
+      source: `source${i}`,
+      available: true,
+      trust: 0.0,
+      flags: [],
+      forceRug: false,
+      safeBlocked: false,
     }));
-    const score = computeFinalScore(flags);
+    const score = computeFinalScore(layers);
     expect(score).toBeGreaterThanOrEqual(0);
   });
 });
@@ -61,7 +71,7 @@ describe("Session 3 regressions", () => {
 // ─── Session 5: Verdict logic regressions ────────────────────────────────────
 
 describe("Session 5 regressions", () => {
-    it("Soft safeBlock with score 570 -> CAUTION (soft caution floor is now 500)", () => {
+    it("Soft safeBlock with score 570 -> DANGER (HARDENED: needs >=700 for CAUTION)", () => {
     const verdict = determineVerdict({
       score: 570,
       forceRug: false,
@@ -69,7 +79,7 @@ describe("Session 5 regressions", () => {
       safeBlockedReasons: ["age"],
       sourcesUsedCount: 5,
     });
-        expect(verdict).toBe("CAUTION");
+        expect(verdict).toBe("DANGER");
   });
 
   it("Hard safeBlock with score 400 -> RUG or DANGER", () => {

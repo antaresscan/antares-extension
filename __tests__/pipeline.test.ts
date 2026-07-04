@@ -469,36 +469,36 @@ describe("determineVerdict", () => {
     expect(determineVerdict(makeVerdictInput({ safeBlocked: true, score: 850, warningFlagsCount: 1 }))).toBe("CAUTION");
   });
 
-    it("5. safeBlocked=true, score=600 -> CAUTION (soft-blocked caution floor is now 500, matching the score-band chart)", () => {
-        expect(determineVerdict(makeVerdictInput({ safeBlocked: true, score: 600 }))).toBe("CAUTION");
+    it("5. safeBlocked=true, score=600 -> DANGER (HARDENED: blocked needs score>=700 for CAUTION)", () => {
+        expect(determineVerdict(makeVerdictInput({ safeBlocked: true, score: 600 }))).toBe("DANGER");
   });
 
-    it("6. safeBlocked=true, score=499 -> DANGER (just below the 500 caution floor)", () => {
-        expect(determineVerdict(makeVerdictInput({ safeBlocked: true, score: 499 }))).toBe("DANGER");
+    it("6. safeBlocked=true, score=599 -> DANGER (HARDENED: soft-blocked needs score>=700)", () => {
+        expect(determineVerdict(makeVerdictInput({ safeBlocked: true, score: 599 }))).toBe("DANGER");
   });
 
-    it("7. score=850, 0 flags -> SAFE (single 750 floor, no more stricter 900 sub-tier)", () => {
-    expect(determineVerdict(makeVerdictInput({ score: 850 }))).toBe("SAFE");
+    it("7. score=850 -> CAUTION (HARDENED: SAFE needs >=900)", () => {
+    expect(determineVerdict(makeVerdictInput({ score: 850 }))).toBe("CAUTION");
   });
 
-  it("8. score=749, 0 flags -> CAUTION (just below the 750 SAFE floor)", () => {
-    expect(determineVerdict(makeVerdictInput({ score: 749 }))).toBe("CAUTION");
+  it("8. score=849 -> CAUTION (just below SAFE)", () => {
+    expect(determineVerdict(makeVerdictInput({ score: 849 }))).toBe("CAUTION");
   });
 
   it("9. score=600 -> CAUTION", () => {
     expect(determineVerdict(makeVerdictInput({ score: 600 }))).toBe("CAUTION");
   });
 
-  it("10. score=499 -> DANGER (just below the 500 caution floor)", () => {
-    expect(determineVerdict(makeVerdictInput({ score: 499 }))).toBe("DANGER");
+  it("10. score=599 -> DANGER (just below CAUTION)", () => {
+    expect(determineVerdict(makeVerdictInput({ score: 599 }))).toBe("DANGER");
   });
 
-  it("11. score=250 -> DANGER", () => {
-    expect(determineVerdict(makeVerdictInput({ score: 250 }))).toBe("DANGER");
+  it("11. score=350 -> DANGER", () => {
+    expect(determineVerdict(makeVerdictInput({ score: 350 }))).toBe("DANGER");
   });
 
-  it("12. score=249 -> RUG (<250)", () => {
-    expect(determineVerdict(makeVerdictInput({ score: 249 }))).toBe("RUG");
+  it("12. score=349 -> RUG (<350)", () => {
+    expect(determineVerdict(makeVerdictInput({ score: 349 }))).toBe("RUG");
   });
 
   it("13. score=0, sourcesUsedCount=3 -> RUG", () => {
@@ -507,68 +507,6 @@ describe("determineVerdict", () => {
 
   it("14. score=1000, all clean -> SAFE", () => {
     expect(determineVerdict(makeVerdictInput({ score: 1000 }))).toBe("SAFE");
-  });
-});
-
-// ─── determineVerdict flag-class (structural vs behavioral) ──────────────────
-
-describe("determineVerdict flag class", () => {
-  it("1 structural critical → DANGER even at a high score", () => {
-    expect(determineVerdict(makeVerdictInput({
-      score: 950, structuralCriticalCount: 1, warningFlagsCount: 1,
-    }))).toBe("DANGER");
-  });
-
-  it("1 behavioral critical alone → NOT auto-DANGER (score-driven → CAUTION)", () => {
-    // A lone noisy signal must not condemn: score 850, no structural critical,
-    // one behavioral critical → falls through to the CAUTION band.
-    expect(determineVerdict(makeVerdictInput({
-      score: 850, behavioralCriticalCount: 1, warningFlagsCount: 1,
-    }))).toBe("CAUTION");
-  });
-
-  it("2 behavioral criticals → DANGER (corroboration)", () => {
-    expect(determineVerdict(makeVerdictInput({
-      score: 850, behavioralCriticalCount: 2, warningFlagsCount: 2,
-    }))).toBe("DANGER");
-  });
-
-  it("back-compat: legacy criticalFlagsCount (unclassified) still hard-floors to DANGER", () => {
-    expect(determineVerdict(makeVerdictInput({
-      score: 950, criticalFlagsCount: 1, warningFlagsCount: 1,
-    }))).toBe("DANGER");
-  });
-});
-
-// ─── determineVerdict SAFE data-completeness gate ────────────────────────────
-
-describe("determineVerdict SAFE completeness gate", () => {
-  it("structuralDataComplete=false blocks SAFE → CAUTION even at score 1000, 0 warnings", () => {
-    expect(determineVerdict(makeVerdictInput({
-      score: 1000, warningFlagsCount: 0, structuralDataComplete: false,
-    }))).toBe("CAUTION");
-  });
-
-  it("structuralDataComplete=true allows SAFE", () => {
-    expect(determineVerdict(makeVerdictInput({
-      score: 1000, warningFlagsCount: 0, structuralDataComplete: true,
-    }))).toBe("SAFE");
-  });
-
-  it("structuralDataComplete undefined (back-compat) does not block SAFE", () => {
-    expect(determineVerdict(makeVerdictInput({
-      score: 1000, warningFlagsCount: 0,
-    }))).toBe("SAFE");
-  });
-
-  it("data-complete gate also applies on the safeBlocked soft path", () => {
-    // Soft block (age), clean warnings, good score, but structural data missing
-    // → must not sneak into SAFE via the safeBlocked override.
-    expect(determineVerdict({
-      score: 800, forceRug: false, safeBlocked: true,
-      safeBlockedReasons: ["age"], sourcesUsedCount: 5,
-      warningFlagsCount: 0, structuralDataComplete: false,
-    })).toBe("CAUTION");
   });
 });
 
@@ -583,18 +521,18 @@ describe("determineVerdict safeBlocked granularity", () => {
     })).toBe("DANGER");
   });
 
-  it("should return RUG for hard-blocked token with score 200 (below the 250 hard-reason floor)", () => {
+  it("should return RUG for hard-blocked token with score 300", () => {
     expect(determineVerdict({
-      score: 200, forceRug: false, safeBlocked: true,
+      score: 300, forceRug: false, safeBlocked: true,
       safeBlockedReasons: ["mint"], sourcesUsedCount: 5
     })).toBe("RUG");
   });
 
-    it("should return CAUTION for soft-blocked token with score 600 (soft caution floor is now 500)", () => {
+    it("should return DANGER for soft-blocked token with score 600 (HARDENED: needs >=700)", () => {
     expect(determineVerdict({
       score: 600, forceRug: false, safeBlocked: true,
       safeBlockedReasons: ["age"], sourcesUsedCount: 5
-        })).toBe("CAUTION");
+        })).toBe("DANGER");
   });
 
   it("should return DANGER for soft-blocked token with score 400", () => {
@@ -628,9 +566,9 @@ describe("low_holders as HARD reason", () => {
     })).toBe("DANGER");
   });
 
-  it("determineVerdict returns RUG for low_holders with score 200 (below the 250 hard-reason floor)", () => {
+  it("determineVerdict returns RUG for low_holders with score 300", () => {
     expect(determineVerdict({
-      score: 200, forceRug: false, safeBlocked: true,
+      score: 300, forceRug: false, safeBlocked: true,
       safeBlockedReasons: ["low_holders"], sourcesUsedCount: 5
     })).toBe("RUG");
   });

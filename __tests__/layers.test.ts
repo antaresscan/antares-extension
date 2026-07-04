@@ -44,7 +44,7 @@ describe("layerDexScreener", () => {
     expect(result.available).toBe(true);
   });
 
-  it("vol/liq > 15 → danger via points, no force rug (ledger #13: metric is too noisy — DexScreener liquidity fluctuates ±20% — to justify the harshest verdict)", () => {
+  it("forceRug when vol/liq > 20", () => {
     const pair: DexScreenerPair = {
       liquidity: { usd: 1 },
       volume: { h24: 100 },
@@ -52,52 +52,8 @@ describe("layerDexScreener", () => {
       txns: { m5: { buys: 1, sells: 1 } },
     };
     const result = layerDexScreener(pair, null, null);
-    expect(result.forceRug).toBe(false);
+    expect(result.forceRug).toBe(true);
     expect(result.safeBlocked).toBe(true);
-    const volFlag = result.flags.find(f => /vol\/liquidity ratio \(>15×\)/i.test(f.label));
-    expect(volFlag).toBeTruthy();
-    expect(volFlag?.severity).toBe("critical");
-    expect(volFlag?.impact).toBe(550);
-    expect(volFlag?.flagClass).toBe("behavioral");
-  });
-
-  it("vol/liq in 10–15× band → warning only (not critical, not blocking)", () => {
-    // A 10–15× turnover ratio on an otherwise-clean token is a yellow flag.
-    // It must NOT force DANGER on its own: warning severity (not critical),
-    // no safeBlocked, no forceRug. The score penalty still applies.
-    const pair: DexScreenerPair = {
-      liquidity: { usd: 30000 },
-      volume: { h24: 360000 }, // ratio 12×
-      priceChange: { h1: 5, h6: 10, h24: 20, m5: 1 },
-      txns: { m5: { buys: 10, sells: 8 } },
-      info: {
-        socials: [{ type: "twitter", url: "https://twitter.com/test" }],
-        websites: [{ url: "https://test.com" }],
-      },
-    };
-    const result = layerDexScreener(pair, 500000, 1440);
-    const volFlag = result.flags.find(f => /vol\/liquidity ratio/i.test(f.label));
-    expect(volFlag).toBeTruthy();
-    expect(volFlag?.severity).toBe("warning");
-    expect(volFlag?.label).toContain("wash volume");
-    expect(volFlag?.label).not.toContain("probable");
-    expect(result.forceRug).toBe(false);
-    expect(result.safeBlocked).toBe(false);
-  });
-
-  it("vol/liq in 5–10× band → no flag (removed as noise)", () => {
-    const pair: DexScreenerPair = {
-      liquidity: { usd: 30000 },
-      volume: { h24: 240000 }, // ratio 8×
-      priceChange: { h1: 5, h6: 10, h24: 20, m5: 1 },
-      txns: { m5: { buys: 10, sells: 8 } },
-      info: {
-        socials: [{ type: "twitter", url: "https://twitter.com/test" }],
-        websites: [{ url: "https://test.com" }],
-      },
-    };
-    const result = layerDexScreener(pair, 500000, 1440);
-    expect(result.flags.some(f => /vol\/liquidity ratio/i.test(f.label))).toBe(false);
   });
 
   it("forceRug when liq=0 and high volume (abandoned pool)", () => {
@@ -127,7 +83,7 @@ describe("layerDexScreener", () => {
   });
 
     // Fix(EXTREME_PUMP_24H): Extreme 24h pump detection
-  it("Fix(EXTREME_PUMP_24H): pc24 > 5000 is a pure pump signal — warning, 0 points, never blocks SAFE (ledger #19)", () => {
+  it("Fix(EXTREME_PUMP_24H): pc24 > 5000 sets forceRug and safeBlocked", () => {
     const pair: DexScreenerPair = {
       liquidity: { usd: 50000 },
       volume: { h24: 100000 },
@@ -139,15 +95,12 @@ describe("layerDexScreener", () => {
       },
     };
     const result = layerDexScreener(pair, 500000, 1440);
-    expect(result.forceRug).toBe(false);
-    expect(result.safeBlocked).toBe(false);
-    const pumpFlag = result.flags.find(f => /extreme 24h pump/i.test(f.label));
-    expect(pumpFlag).toBeTruthy();
-    expect(pumpFlag?.severity).toBe("warning");
-    expect(pumpFlag?.impact).toBe(0);
+    expect(result.forceRug).toBe(true);
+    expect(result.safeBlocked).toBe(true);
+    expect(result.flags.some(f => /extreme 24h pump/i.test(f.label))).toBe(true);
   });
 
-  it("Fix(EXTREME_PUMP_24H): pc24 > 1000 is a pure pump signal — warning, 0 points, never blocks SAFE (ledger #23)", () => {
+  it("Fix(EXTREME_PUMP_24H): pc24 > 1000 sets safeBlocked (not forceRug)", () => {
     const pair: DexScreenerPair = {
       liquidity: { usd: 50000 },
       volume: { h24: 100000 },
@@ -160,14 +113,11 @@ describe("layerDexScreener", () => {
     };
     const result = layerDexScreener(pair, 500000, 1440);
     expect(result.forceRug).toBe(false);
-    expect(result.safeBlocked).toBe(false);
-    const pumpFlag = result.flags.find(f => /extreme 24h pump/i.test(f.label));
-    expect(pumpFlag).toBeTruthy();
-    expect(pumpFlag?.severity).toBe("warning");
-    expect(pumpFlag?.impact).toBe(0);
+    expect(result.safeBlocked).toBe(true);
+    expect(result.flags.some(f => /extreme 24h pump/i.test(f.label))).toBe(true);
   });
 
-  it("Fix(EXTREME_PUMP_24H): pc24 > 500 on token <24h is a pure pump signal — never blocks SAFE", () => {
+  it("Fix(EXTREME_PUMP_24H): pc24 > 500 on token <24h sets safeBlocked", () => {
     const pair: DexScreenerPair = {
       liquidity: { usd: 50000 },
       volume: { h24: 100000 },
@@ -179,7 +129,7 @@ describe("layerDexScreener", () => {
       },
     };
     const result = layerDexScreener(pair, 500000, 720);
-    expect(result.safeBlocked).toBe(false);
+    expect(result.safeBlocked).toBe(true);
     expect(result.flags.some(f => /large 24h pump/i.test(f.label))).toBe(true);
   });
 
@@ -420,22 +370,16 @@ describe("layerGoPlus", () => {
     expect(result.trust).toBeLessThan(1.0);
   });
 
-  it("Fix(TAX_WARNING): sell_tax '0.15' (=15%) lands in the 10-25% tier (ledger #10)", () => {
+  it("Fix(TAX_WARNING): sell_tax '0.15' (=15%) is hard flagged as > 10%", () => {
     const goplus: GoPlusTokenResult = { sell_tax: "0.15", buy_tax: "0" };
     const result = layerGoPlus(goplus);
-    const taxFlag = result.flags.find(f => /sell tax 15%/i.test(f.label));
-    expect(taxFlag).toBeTruthy();
-    expect(taxFlag?.severity).toBe("critical");
-    expect(taxFlag?.impact).toBe(350);
+    expect(result.flags.some(f => /sell tax > 10%/i.test(f.label))).toBe(true);
   });
 
-  it("Fix(TAX_WARNING): sell_tax '11' (=11%) lands in the 10-25% tier (ledger #10)", () => {
+  it("Fix(TAX_WARNING): sell_tax '11' (=11%) is hard flagged as > 10%", () => {
     const goplus: GoPlusTokenResult = { sell_tax: "11", buy_tax: "0" };
     const result = layerGoPlus(goplus);
-    const taxFlag = result.flags.find(f => /sell tax 11%/i.test(f.label));
-    expect(taxFlag).toBeTruthy();
-    expect(taxFlag?.severity).toBe("critical");
-    expect(taxFlag?.impact).toBe(350);
+    expect(result.flags.some(f => /sell tax > 10%/i.test(f.label))).toBe(true);
   });
 
   it("clean token (sell_tax=0, buy_tax=0) returns trust 1.0", () => {
@@ -1123,82 +1067,6 @@ describe("layerChart", () => {
       expect(verticalFlag).toBeDefined();
       expect(sustainedFlag).toBeDefined();
       // Both should be present — independent signals.
-    });
-  });
-
-  describe("layerChart — all-time-high drawdown (BRYAN case)", () => {
-    // Builds a longTermCandles series: peak at index `peakIdx`, flat near
-    // `bottomPrice` for the rest — simulating a token that pumped once,
-    // long ago, then died. Length 60 (>=10 minimum, plenty of days-since-ATH
-    // headroom past the 30-day gate).
-    function mkLongTerm(peakIdx: number, peakPrice: number, bottomPrice: number, length = 60) {
-      return Array.from({ length }, (_, i) => {
-        const price = i === peakIdx ? peakPrice : bottomPrice;
-        return { ts: Date.now() - (length - i) * 86_400_000, o: price, h: price, l: price, c: price, v: 100 };
-      });
-    }
-
-    it("severe drawdown (>85%, ATH 30+ days ago) fires critical/structural, 800pts, safeBlocked, no forceRug", () => {
-      const longTerm = mkLongTerm(5, 1.0, 0.1); // -90% from peak, peak is 54 candles ago
-      const candles = Array.from({ length: 20 }, () => ({ ts: Date.now(), o: 0.1, h: 0.1, l: 0.1, c: 0.1, v: 10 }));
-      const pair = { priceUsd: "0.1" } as unknown as Parameters<typeof layerChart>[1];
-      const r = layerChart(candles, pair, 200 * 24 * 60, undefined, undefined, longTerm);
-      const athFlag = r.flags.find(f => /all-time high/i.test(f.label));
-      expect(athFlag).toBeTruthy();
-      expect(athFlag?.severity).toBe("critical");
-      expect(athFlag?.impact).toBe(800);
-      expect(athFlag?.flagClass).toBe("structural");
-      expect(r.safeBlocked).toBe(true);
-      expect(r.forceRug).toBe(false);
-    });
-
-    it("moderate drawdown (70-85%, ATH 30+ days ago) fires warning, 350pts, safeBlocked", () => {
-      const longTerm = mkLongTerm(5, 1.0, 0.25); // -75% from peak
-      const candles = Array.from({ length: 20 }, () => ({ ts: Date.now(), o: 0.25, h: 0.25, l: 0.25, c: 0.25, v: 10 }));
-      const pair = { priceUsd: "0.25" } as unknown as Parameters<typeof layerChart>[1];
-      const r = layerChart(candles, pair, 200 * 24 * 60, undefined, undefined, longTerm);
-      const athFlag = r.flags.find(f => /all-time high/i.test(f.label));
-      expect(athFlag).toBeTruthy();
-      expect(athFlag?.severity).toBe("warning");
-      expect(athFlag?.impact).toBe(350);
-      expect(r.safeBlocked).toBe(true);
-    });
-
-    it("does NOT fire when the ATH is recent (<30 days ago) — overlaps with pump-reversal signals instead", () => {
-      const longTerm = mkLongTerm(55, 1.0, 0.1, 60); // peak only 4 candles ago
-      const candles = Array.from({ length: 20 }, () => ({ ts: Date.now(), o: 0.1, h: 0.1, l: 0.1, c: 0.1, v: 10 }));
-      const pair = { priceUsd: "0.1" } as unknown as Parameters<typeof layerChart>[1];
-      const r = layerChart(candles, pair, 10 * 24 * 60, undefined, undefined, longTerm);
-      expect(r.flags.some(f => /all-time high/i.test(f.label))).toBe(false);
-    });
-
-    it("does NOT fire on mild drawdown (<70%)", () => {
-      const longTerm = mkLongTerm(5, 1.0, 0.5); // -50% from peak
-      const candles = Array.from({ length: 20 }, () => ({ ts: Date.now(), o: 0.5, h: 0.5, l: 0.5, c: 0.5, v: 10 }));
-      const pair = { priceUsd: "0.5" } as unknown as Parameters<typeof layerChart>[1];
-      const r = layerChart(candles, pair, 200 * 24 * 60, undefined, undefined, longTerm);
-      expect(r.flags.some(f => /all-time high/i.test(f.label))).toBe(false);
-    });
-
-    it("does not crash and does not fire when longTermCandles is omitted", () => {
-      const candles = Array.from({ length: 20 }, () => ({ ts: Date.now(), o: 1, h: 1, l: 1, c: 1, v: 10 }));
-      const r = layerChart(candles, null, 200 * 24 * 60);
-      expect(r.available).toBe(true);
-      expect(r.flags.some(f => /all-time high/i.test(f.label))).toBe(false);
-    });
-
-    it("prefers live pair.priceUsd over the last candle close for the current price", () => {
-      // Last long-term candle close is 0.3 (mild drawdown, wouldn't fire),
-      // but live priceUsd is 0.1 (severe drawdown) — the flag should use
-      // the live price, since it's fresher than a daily-candle close.
-      const longTerm = mkLongTerm(5, 1.0, 0.3);
-      longTerm[longTerm.length - 1].c = 0.3;
-      const candles = Array.from({ length: 20 }, () => ({ ts: Date.now(), o: 0.1, h: 0.1, l: 0.1, c: 0.1, v: 10 }));
-      const pair = { priceUsd: "0.1" } as unknown as Parameters<typeof layerChart>[1];
-      const r = layerChart(candles, pair, 200 * 24 * 60, undefined, undefined, longTerm);
-      const athFlag = r.flags.find(f => /all-time high/i.test(f.label));
-      expect(athFlag).toBeTruthy();
-      expect(athFlag?.impact).toBe(800); // severe tier, proves live price (0.1) was used not 0.3
     });
   });
 });
