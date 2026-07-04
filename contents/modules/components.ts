@@ -726,9 +726,17 @@ export function buildResultNode(
   // not the token. Founder rule, matches the Critical Flags panel.
   const PIPELINE_STATUS_PATTERN_C =
     /^(Helius|GoPlus|RugCheck|Solscan|DexScreener|Birdeye|Helius RPC) (unavailable|rate[- ]limited|timed out|degraded)\b|Holder data unreliable|broken upstream/i
+  // Pure price-pump flags are informational market signals, not structural
+  // rug risks \u2014 they're excluded from the verdict's warningFlagsCount
+  // server-side (api/scan.ts, same pattern) specifically so a pump alone
+  // never blocks SAFE. Must stay excluded here too, or a SAFE token whose
+  // only flags are pump notices shows a contradictory "N flags detected".
+  const PUMP_PRICE_ONLY_PATTERN_C =
+    /Pumped \+[\d,]+% (in 24h|over \d+ days)|Large 24h pump|Extreme pump .* on newborn token|Vertical pump detected/i
   const summaryFlags = (data.flags || []).filter((f: ScanResponseFlag) => {
     if (f.severity === "bonus" || f.severity === "info") return false
     if (PIPELINE_STATUS_PATTERN_C.test(f.label)) return false
+    if (PUMP_PRICE_ONLY_PATTERN_C.test(f.label)) return false
     return true
   })
   const flagCount = summaryFlags.length
@@ -737,8 +745,17 @@ export function buildResultNode(
   // Plain, neutral wording \u2014 never editorialise about data quality. The
   // panel surfaces each flag's actual label so users can read the
   // specifics there. The summary is just a count + critical breakdown.
+  //
+  // Hard backstop: SAFE always reads "No issues found", full stop. The
+  // verdict is the single source of truth for "is this safe" \u2014 if the
+  // server says SAFE, nothing in this summary is allowed to contradict
+  // it, even if some future flag/label mismatch reintroduces a counting
+  // gap like the two above. determineVerdict already guarantees SAFE
+  // means zero warning/critical flags; this just makes that guarantee
+  // impossible to violate on the display side too.
   let summary = ""
-  if (flagCount === 0) summary = "No issues found"
+  if (data.risk === "SAFE") summary = "No issues found"
+  else if (flagCount === 0) summary = "No issues found"
   else if (critCount > 0) summary = `${flagCount} flag${flagCount > 1 ? "s" : ""} \u2014 ${critCount} critical`
   else summary = `${flagCount} flag${flagCount > 1 ? "s" : ""} detected`
 
