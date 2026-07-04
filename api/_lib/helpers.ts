@@ -3,7 +3,7 @@
 
 import type { VercelResponse } from "@vercel/node";
 import type {
-  Severity, ScanFlag,
+  Severity, ScanFlag, FlagClass,
   GoPlusTokenResult, GoPlusResponse,
   DexScreenerResponse, RugCheckSummary, RugCheckReport, RugCheckRisk,
 } from "./types";
@@ -42,8 +42,42 @@ export function goPlusBool(val: unknown): boolean {
   return val === "1" || val === 1 || val === true;
 }
 
-export function makeFlag(label: string, severity: Severity, impact: number): ScanFlag {
-  return { label, severity, impact };
+export function makeFlag(
+  label: string,
+  severity: Severity,
+  impact: number,
+  flagClass: FlagClass = "structural",
+): ScanFlag {
+  return { label, severity, impact, flagClass };
+}
+
+/**
+ * Point value for a price/chart signal that only matters on young tokens —
+ * a fresh launch hasn't had time for the market to "prove" the move wasn't
+ * orchestrated, an established token has. Used for pump/dump chart patterns
+ * (post-ATH dump, slow rug, active dump, dead cat bounce, etc.) that are
+ * single noisy price signals: real risk on a brand-new token, much less
+ * meaningful the longer the token has traded cleanly.
+ */
+export function ageTieredPoints(
+  ageMinutes: number,
+  tiers: { under2h: number; h2to24: number; d1to7: number; over7d: number },
+): number {
+  if (ageMinutes < 120) return tiers.under2h;
+  if (ageMinutes < 1440) return tiers.h2to24;
+  if (ageMinutes < 10080) return tiers.d1to7;
+  return tiers.over7d;
+}
+
+/**
+ * Converts a legacy multiplicative trust penalty (0-1, where 1.0 = no
+ * effect) into an additive point deduction (0-1000). Used for structures
+ * that keep their internal multiplicative calibration — like the 2-axis LP
+ * risk matrix — so their relative severity across cells is preserved
+ * without hand-recalibrating every cell individually.
+ */
+export function penaltyToPoints(penalty: number): number {
+  return Math.round((1 - Math.max(0, Math.min(1, penalty))) * 1000);
 }
 
 export function getLpLockDurationDays(rugData: RugCheckSummary): number {

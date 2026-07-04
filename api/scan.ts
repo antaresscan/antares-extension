@@ -17,14 +17,14 @@ import {
   isSolscanMarketsResponse, isSolscanMeta, isSolscanTransfersResponse,
   isRugCheckReport,
   sanitizeString, sanitizeUrl,
-  makeFlag,
+  makeFlag, penaltyToPoints,
 } from "./_lib/helpers";
 import {
   heliusGetLargestAccounts, heliusGetTokenSupply, heliusGetCreatorReputation,
   heliusGetHoldersCount,
   heliusResolveAccountOwners,
   publicRpcGetLargestAccounts, publicRpcGetTokenSupply, publicRpcGetMintInfo,
-  solscanGetHoldersCount, fetchSolscan, fetchDexCandles, fetchDexCandlesDaily,
+  solscanGetHoldersCount, fetchSolscan, fetchDexCandles, fetchDexCandlesDaily, fetchDexCandlesLongTerm,
   type CreatorReputation,
 } from "./_lib/fetchers";
 import {
@@ -307,13 +307,14 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       ? (Date.now() - pair.pairCreatedAt) / 60000 : null;
 
     const [
-      candlesRaw, candlesDailyRaw, goplusRaw,
+      candlesRaw, candlesDailyRaw, candlesLongTermRaw, goplusRaw,
       heliusHoldersRaw, heliusSupplyRaw, heliusHoldersCountRaw,
       solscanHoldersCount,
       solMeta, solTransfers, solMarkets,
     ] = await Promise.all([
       withBudget(fetchDexCandles(pairAddress), remainingMs()),
       withBudget(fetchDexCandlesDaily(pairAddress, resolvedMint), remainingMs()),
+      withBudget(fetchDexCandlesLongTerm(pairAddress, resolvedMint), remainingMs()),
       withBudget(fetchJson(`${GOPLUS_BASE}/solana/token_security?contract_addresses=${resolvedMint}`, {}, 4000), remainingMs()),
       HELIUS_API_KEY ? withBudget(heliusGetLargestAccounts(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
       HELIUS_API_KEY ? withBudget(heliusGetTokenSupply(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
@@ -333,6 +334,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
 
     const candles: OHLCVCandle[] = Array.isArray(candlesRaw) ? candlesRaw : [];
     const dailyCandles: OHLCVCandle[] = Array.isArray(candlesDailyRaw) ? candlesDailyRaw : [];
+    const longTermCandles: OHLCVCandle[] = Array.isArray(candlesLongTermRaw) ? candlesLongTermRaw : [];
     const goplus = pickGoPlusResult(goplusRaw, resolvedMint);
     const heliusResponse = isHeliusLargestAccountsResponse(heliusHoldersRaw) ? heliusHoldersRaw : null;
     let rawHolderAccounts: HeliusHolder[] = heliusResponse?.result?.value ?? [];
@@ -497,15 +499,16 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       : null;
     // Compute the share of total supply that sits in the LP. Feeds the
     // 2-axis LP risk matrix (api/_lib/lp-risk-matrix.ts) so the verdict
-    // reflects actual rug-pull capacity, not just "is LP locked?". See
-    // computeLpPctOfSupply for the back-compute math (DexScreener
-    // doesn't expose liquidity.base directly in our schema, so we derive
-    // it from liquidity.usd × priceUsd × totalSupply, accurate to ~5%
-    // on classic AMM pools).
+    // reflects actual rug-pull capacity, not just "is LP locked?". Prefers
+    // DexScreener's reported liquidity.base (real on-chain reserve of the
+    // queried token — accurate even for concentrated/CLMM pools) and falls
+    // back to the liquidity.usd × priceUsd × totalSupply estimate only when
+    // the reserve isn't reported. See computeLpPctOfSupply for both paths.
     const _lpPctOfSupply = computeLpPctOfSupply(
       asNumber(pair?.liquidity?.usd),
       asNumber(pair?.priceUsd),
       totalSupplyUi,
+      asNumber(pair?.liquidity?.base),
     );
     const maturityCtx = {
       holders: holders,
@@ -531,11 +534,10 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     );
     const l4 = layerHelius(resolvedHolderAccounts, totalSupplyUi, maturityCtx, dexPairAddresses);
     const l5 = layerSolscan(solscanHoldersCount, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h);
-    const l6 = layerChart(candles, pair, tokenAgeMinutes, maturityCtx, dailyCandles.length >= 2 ? dailyCandles : undefined);
+    const l6 = layerChart(candles, pair, tokenAgeMinutes, maturityCtx, dailyCandles.length >= 2 ? dailyCandles : undefined, longTermCandles.length >= 10 ? longTermCandles : undefined);
     const l7 = layerCrossValidation(rugData, resolvedHolderAccounts, goplus, solscanTokenAgeHours, dexTokenAgeHours, totalSupplyUi);
 
     const allLayers = [l1, l2, l3, l4, l5, l6, l7];
-    let score       = computeFinalScore(allLayers);
     let forceRug    = allLayers.some(l => l.forceRug);
     let safeBlocked = allLayers.some(l => l.safeBlocked);
 
@@ -599,7 +601,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
         // shipped: the safety net was running with the legacy code path
         // because the layer never emitted an LP flag in the first place.
         const bucket = getLpRiskBucket(_lpPctOfSupply, tokenAgeHours);
-        postLayerFlags.push(makeFlag(bucket.flagLabel, bucket.severity, 0));
+        postLayerFlags.push(makeFlag(bucket.flagLabel, bucket.severity, penaltyToPoints(bucket.penalty)));
         if (bucket.safeBlock) {
           safeBlocked = true;
           // Critical buckets classify as hard 'lp'; soft buckets as 'lp_unverified'
@@ -616,6 +618,16 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       .filter(l => l.available && l.source !== "crossvalidation")
       .length;
 
+    // Additive score: computed from the FULL flat flag list (every layer +
+    // pipeline-level flags + the LP fail-closed safety net above, which can
+    // still push a flag into postLayerFlags right before this point) so
+    // every real point deduction is accounted for. Must run after the
+    // fail-closed block, not before it — moving this earlier would silently
+    // drop that flag's points from the score. Reused below for the verdict
+    // flag counts instead of rebuilding the same list twice.
+    const _allFlagsForVerdict: ScanFlag[] = allLayers.flatMap(l => l.flags).concat(postLayerFlags);
+    let score = computeFinalScore(_allFlagsForVerdict);
+
     const newSafeBlocked = applySafeGateOverride({
       safeBlocked, safeBlockedReasons, forceRug,
       holders, lpBurned, goPlusClean,
@@ -627,20 +639,22 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     }
     safeBlocked = newSafeBlocked;
 
-    // Reason-aware score clipping. Splitting hard from soft reasons
-    // here is what lets a mature token with only `lp_unverified` /
-    // `holders` reasons land on CAUTION (≥700) instead of being
-    // forced to DANGER (<700) by a blanket cap at 500.
-    //   forceRug          → 100 (RUG)
-    //   hard reason       → 500 (DANGER)
-    //   soft reason only  → 850 (high CAUTION ceiling, lets the
-    //                       layer geometric mean express how good
-    //                       the rest of the profile actually is)
+    // Reason-aware score clipping. Under the additive model each flag's
+    // point value should already pull the score into the right band on its
+    // own — this clip is a display-consistency safety net, not the primary
+    // mechanism: a token can never show a numeric score that contradicts its
+    // verdict (e.g. "RUG" next to "950/1000" is exactly as contradictory as
+    // "SAFE" next to "1 flag detected" — never both).
+    //   forceRug          → ≤150 (deep in the RUG band, 0-250)
+    //   hard reason        → ≤490 (top of the DANGER band, 250-500 — matches
+    //                        determineVerdict's own hasHardReason≥250→DANGER split)
+    //   soft reason only   → ≤740 (just under the SAFE floor of 750, so a
+    //                        safeBlocked token can never visually read SAFE)
     if (forceRug) {
-      score = Math.min(score, 100);
+      score = Math.min(score, 150);
     } else if (safeBlocked) {
       const hasHardReasonForClip = safeBlockedReasons.some(r => HARD_BLOCK_REASONS.has(r));
-      score = Math.min(score, hasHardReasonForClip ? 500 : 850);
+      score = Math.min(score, hasHardReasonForClip ? 490 : 740);
     }
 
     const newScore = applyEstablishedBonus({ score, tokenAgeHours, holders, lpBurned, goPlusClean });
@@ -653,7 +667,6 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       .filter(l => l.available && l.source !== "crossvalidation")
       .map(l => l.source);
 
-    const _allFlagsForVerdict: ScanFlag[] = allLayers.flatMap(l => l.flags).concat(postLayerFlags);
     // Count token-side warning/critical flags so determineVerdict can apply
     // the "clean blue-chip" path when literally zero issues are visible.
     // Match the same filter the overlay uses (components.ts:721) — bonus +
@@ -676,13 +689,27 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
         !_PUMP_PRICE_ONLY.test(f.label),
     );
     const _warningFlagsCount = _tokenFlags.length;
-    const _criticalFlagsCount = _tokenFlags.filter(f => f.severity === "critical").length;
+    const _criticalTokenFlags = _tokenFlags.filter(f => f.severity === "critical");
+    const _criticalFlagsCount = _criticalTokenFlags.length;
+    // Split criticals by class: structural vectors (honeypot, LP, authorities,
+    // deceptive name) hard-floor to DANGER on their own; behavioral signals
+    // (wash, pump, sniper, weak socials) need corroboration (≥2). Flags default
+    // to "structural" when unclassified, preserving legacy behaviour.
+    const _structuralCriticalCount = _criticalTokenFlags.filter(f => (f.flagClass ?? "structural") === "structural").length;
+    const _behavioralCriticalCount = _criticalTokenFlags.filter(f => f.flagClass === "behavioral").length;
+    // SAFE requires the honeypot / authority oracle (GoPlus, l3) to have
+    // answered. If it's down we cannot affirm the token isn't a honeypot, so
+    // structural data is incomplete → SAFE is withheld (capped at CAUTION).
+    const _structuralDataComplete = l3.available;
 
     const risk: Verdict = determineVerdict({
       score, forceRug, safeBlocked, safeBlockedReasons,
       sourcesUsedCount: sources_used.length,
       warningFlagsCount: _warningFlagsCount,
       criticalFlagsCount: _criticalFlagsCount,
+      structuralCriticalCount: _structuralCriticalCount,
+      behavioralCriticalCount: _behavioralCriticalCount,
+      structuralDataComplete: _structuralDataComplete,
     });
 
     // ── Flag deduplication ────────────────────────────────────────────────────
