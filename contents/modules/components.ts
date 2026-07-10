@@ -726,17 +726,18 @@ export function buildResultNode(
   // not the token. Founder rule, matches the Critical Flags panel.
   const PIPELINE_STATUS_PATTERN_C =
     /^(Helius|GoPlus|RugCheck|Solscan|DexScreener|Birdeye|Helius RPC) (unavailable|rate[- ]limited|timed out|degraded)\b|Holder data unreliable|broken upstream/i
-  // Pure price-pump flags are informational market signals, not structural
-  // rug risks \u2014 they're excluded from the verdict's warningFlagsCount
-  // server-side (api/scan.ts, same pattern) specifically so a pump alone
-  // never blocks SAFE. Must stay excluded here too, or a SAFE token whose
-  // only flags are pump notices shows a contradictory "N flags detected".
-  const PUMP_PRICE_ONLY_PATTERN_C =
-    /Pumped \+[\d,]+% (in 24h|over \d+ days)|Large 24h pump|Extreme pump .* on newborn token|Vertical pump detected/i
+  // Pure price-pump flags used to be excluded here too (so a SAFE token
+  // whose only flags were pump notices wouldn't show a contradictory "N
+  // flags detected"). That's now handled unconditionally by the SAFE
+  // hard-backstop below, so excluding pump flags from the count served
+  // no purpose for SAFE \u2014 and it actively broke non-SAFE verdicts:
+  // a DANGER token whose only flags are pump-pattern ones collapsed to
+  // flagCount 0 and printed "No issues found" while the Warnings panel
+  // (unfiltered) correctly showed those same flags. Keep pump flags in
+  // the count so the summary never contradicts what the panel renders.
   const summaryFlags = (data.flags || []).filter((f: ScanResponseFlag) => {
     if (f.severity === "bonus" || f.severity === "info") return false
     if (PIPELINE_STATUS_PATTERN_C.test(f.label)) return false
-    if (PUMP_PRICE_ONLY_PATTERN_C.test(f.label)) return false
     return true
   })
   const flagCount = summaryFlags.length
