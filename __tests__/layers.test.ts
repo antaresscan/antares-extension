@@ -44,7 +44,7 @@ describe("layerDexScreener", () => {
     expect(result.available).toBe(true);
   });
 
-  it("forceRug when vol/liq > 20", () => {
+  it("safeBlocked (not forceRug) when vol/liq > 15", () => {
     const pair: DexScreenerPair = {
       liquidity: { usd: 1 },
       volume: { h24: 100 },
@@ -52,7 +52,7 @@ describe("layerDexScreener", () => {
       txns: { m5: { buys: 1, sells: 1 } },
     };
     const result = layerDexScreener(pair, null, null);
-    expect(result.forceRug).toBe(true);
+    expect(result.forceRug).toBe(false);
     expect(result.safeBlocked).toBe(true);
   });
 
