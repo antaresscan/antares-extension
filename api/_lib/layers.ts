@@ -76,8 +76,18 @@ export function layerDexScreener(
     // same token within minutes. A stable ×15 floor keeps borderline cases
     // (DOGEUS-class: ratio ~19-24) consistently in DANGER instead of
     // randomly crossing the old hard edge.
+    //
+    // NOT forceRug: a noisy single-snapshot ratio (same ±20% liquidity
+    // fluctuation noted above) isn't a strong enough signal to bypass
+    // every other safety valve in the system — every other hard reason
+    // (mint, freeze, honeypot, bundle, sniper...) goes through the
+    // score-gated safeBlocked path (DANGER if score>=400, RUG below),
+    // not an instant unconditional RUG. Confirmed wash trading via
+    // on-chain wallet-concentration (evaluatePostLayerFlags, ≤3 unique
+    // wallets in 10+ transfers) is a strictly stronger signal and keeps
+    // its forceRug.
     flags.push(makeFlag("Wash trading detected (vol/liq > 15) — bundler dump", "critical", 0));
-    penalties.push(0.20); forceRug = true; safeBlocked = true;
+    penalties.push(0.20); safeBlocked = true;
   } else if (liq > 0 && vol / liq > 10) {
     flags.push(makeFlag("High vol/liquidity ratio (>10×) — probable wash volume", "critical", 0));
     penalties.push(0.35); safeBlocked = true;
