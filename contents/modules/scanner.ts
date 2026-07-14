@@ -88,41 +88,67 @@ export function isValid(addr: string): boolean {
 // [5.2] Price-based forced rescan
 //
 // If a token has dropped >30% in the last hour we re-fetch the verdict
-// after a short delay so the overlay reflects post-crash state. Side
-// effect we have to manage: the rescan calls scan() which replaces
-// the box subtree via el.replaceChildren(buildResultNode(...)) and
-// wipes the .open class on whichever disclosure panel the user might
-// be reading at that moment. The user-reported "panel refreshes
-// itself every 5 seconds and closes" symptom on volatile RUG tokens
-// (e.g. AMC at -52%/1h) was exactly this — they'd open Critical
-// Flags or AI Summary and the rescan timer would fire under them.
+// a few times so the overlay reflects the post-crash state as it settles
+// (e.g. a CAUTION token that flips to DANGER once the crash is priced in).
 //
-// Fix: if a panel is open when the rescan timer fires, skip the
-// rescan and re-arm. The overlay stays stable as long as the user
-// is actively reading; once they close the panel the rescan resumes
-// on its normal cadence.
+// TWO failure modes this guards against, both reported as "the overlay
+// refreshes itself non-stop":
+//
+//  1. INFINITE LOOP. A crashed/rugged token stays below -30%/1h forever,
+//     so the timer re-armed on every scan() completion with no stop
+//     condition — an endless 5s refresh. Fixed with a hard cap
+//     (MAX_PRICE_CRASH_RESCANS): the feature only needs to catch the
+//     verdict settling in the first ~15s after a crash, not poll for the
+//     lifetime of the tab.
+//
+//  2. VISIBLE RELOAD. The rescan used a non-silent scan(), which reset
+//     the box to a skeleton and replayed the score count-up animation on
+//     every tick. Now it uses silent mode — the existing "update in place
+//     without a visible reload" path (keeps the overlay on screen, no
+//     skeleton, no re-animation, just a subtle topbar flash on swap).
+//
+// Side effect still handled: scan() replaces the box subtree and wipes any
+// open disclosure panel. If a panel is open when the timer fires we skip
+// the rescan and re-arm (without consuming budget) so the overlay stays
+// stable while the user is reading.
+const MAX_PRICE_CRASH_RESCANS = 3
+
 export function scheduleRescanIfPriceCrash(data: ScanResponseData, ca: string) {
   if (state.rescanTimer) { clearTimeout(state.rescanTimer); state.rescanTimer = null }
-  const pc1h = typeof data.priceChange1h === "number" ? data.priceChange1h : null
-  if (pc1h !== null && pc1h < -30) {
-    state.rescanTimer = setTimeout(() => {
-      state.rescanTimer = null
-      // Postpone the rescan if the user has a disclosure panel open
-      // — re-rendering the overlay underneath them would close the
-      // panel and feel like a refresh bug.
-      const aiOpen = state.shadow?.querySelector("#ant-ai-summary.open")
-      const cfOpen = state.shadow?.querySelector("#ant-critical-flags.open")
-      if (aiOpen || cfOpen) {
-        scheduleRescanIfPriceCrash(data, ca)
-        return
-      }
-      scanCache.delete(ca)
-      try { localStorage.removeItem(LS_PREFIX + ca) } catch (e: unknown) { logger.warn("scanner", "Failed to remove LS cache", e) }
-      state.lastCA = ""
-      state.manuallyDismissed = false
-      void scan(ca)
-    }, 5_000)
+
+  // Reset the rescan budget when the active token changes.
+  if (state.rescanCountCA !== ca) {
+    state.rescanCountCA = ca
+    state.rescanCount = 0
   }
+
+  const pc1h = typeof data.priceChange1h === "number" ? data.priceChange1h : null
+  if (pc1h === null || pc1h >= -30) return
+
+  // Budget exhausted: stop re-arming. This is what breaks the infinite
+  // loop for a token that never climbs back above -30%/1h.
+  if (state.rescanCount >= MAX_PRICE_CRASH_RESCANS) return
+
+  state.rescanTimer = setTimeout(() => {
+    state.rescanTimer = null
+    // Postpone (don't consume budget) if the user has a disclosure panel
+    // open — re-rendering underneath them would close it and feel like a
+    // refresh bug.
+    const aiOpen = state.shadow?.querySelector("#ant-ai-summary.open")
+    const cfOpen = state.shadow?.querySelector("#ant-critical-flags.open")
+    if (aiOpen || cfOpen) {
+      scheduleRescanIfPriceCrash(data, ca)
+      return
+    }
+    state.rescanCount++
+    scanCache.delete(ca)
+    try { localStorage.removeItem(LS_PREFIX + ca) } catch (e: unknown) { logger.warn("scanner", "Failed to remove LS cache", e) }
+    state.lastCA = ""
+    state.manuallyDismissed = false
+    // silent: keep the overlay on screen, no skeleton flash, no score
+    // count-up replay — just refresh the data in place.
+    void scan(ca, { silent: true })
+  }, 5_000)
 }
 
 const MAX_RETRIES = 3

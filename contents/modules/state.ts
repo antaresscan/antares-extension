@@ -27,6 +27,13 @@ export const state = {
   currentScanController: null as AbortController | null,
   isInjecting: false,
   rescanTimer: null as ReturnType<typeof setTimeout> | null,
+  // Budget for the post-price-crash auto-rescan (scheduleRescanIfPriceCrash).
+  // A crashed token stays below the -30%/1h trigger indefinitely, so without
+  // a cap the 5s rescan re-arms forever — the "overlay refreshes non-stop"
+  // bug. rescanCount tracks how many rescans we've fired for rescanCountCA;
+  // it resets when the active token changes.
+  rescanCount: 0,
+  rescanCountCA: "",
   // Reference to the host-reinjection MutationObserver so we can disconnect
   // it on extension disable. Audit flagged the previous unreferenced
   // observer as a permanent listener leaking on every DOM mutation.
