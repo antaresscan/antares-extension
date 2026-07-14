@@ -106,6 +106,8 @@ export function resetState() {
   state.currentScanController?.abort()
   state.currentScanController = null
   if (state.rescanTimer) { clearTimeout(state.rescanTimer); state.rescanTimer = null }
+  state.rescanCount = 0
+  state.rescanCountCA = ""
   hideBox()
 }
 
