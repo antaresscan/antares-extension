@@ -22,7 +22,7 @@
     "@sentry/browser": "^10.60.0",
     "@sentry/node": "10.63.0",
     "@sentry/browser": "^10.63.0",
-    "@sentry/node": "10.65.0",
+    "@sentry/node": "10.66.0",
     "@upstash/ratelimit": "^2.0.5",
     "@upstash/redis": "^1.38.0",
     "plasmo": "0.90.5",
