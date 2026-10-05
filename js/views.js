@@ -308,20 +308,16 @@ export function buildExitLiquidityTab(liq) {
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// CRITICAL ACTORS preview — 3 cards (Dev / Insider / Cluster A)
-// Backend currently returns no per-wallet reputation, prior-rugs or
-// cluster detection data. Until the insider-graph + creator-reputation
-// pipeline is wired through `/api/scan`, the cards display
-// pattern-detection messages instead of fake addresses, so users
-// understand they're looking at the structural signal, not specific
-// addresses for THIS token.
+// CRITICAL ACTORS preview — up to 3 cards (Dev / Insider / Cluster)
+// Rendered ONLY from the backend's `criticalActors` (composeCriticalActors:
+// creatorReputation + filtered top holders + insider-graph clusters).
+// When that array is missing or empty we say so — we never invent
+// wallets. The old "v5 mock" fallback printed fabricated addresses,
+// "4 / 5 prior rugs", "HenryRug" / "BunnyRug" references and made-up
+// cluster percentages on REAL token pages whenever Helius data was
+// missing (seen live on HAWK next to a SAFE verdict, 2026-10-05).
 // ──────────────────────────────────────────────────────────────────────
 export function buildCriticalActorsPreview(d) {
-  // Backend (composeCriticalActors) returns up to 3 cards composed from
-  // creatorReputation + filtered top holders + insider-graph clusters.
-  // When the array is present and non-empty, render real data; otherwise
-  // fall through to the v5 mock so the section never goes empty on
-  // tokens where the heavy upstream calls couldn't run within budget.
   if (Array.isArray(d.criticalActors) && d.criticalActors.length > 0) {
     return d.criticalActors
       .map((a) => {
@@ -341,42 +337,14 @@ export function buildCriticalActorsPreview(d) {
       })
       .join("");
   }
-  // Fallback v5 mock — used when backend hasn't emitted criticalActors yet.
-  const top1 = typeof d.topHolderPct === "number" ? Math.round(d.topHolderPct * 10) / 10 : 13.2;
-  const top10 = typeof d.top10HolderPct === "number" ? d.top10HolderPct : 41;
-  const remaining = Math.max(0, top10 - top1);
-  const insiderPct = (remaining * 0.3).toFixed(1);
-  const clusterPct = (remaining * 0.4).toFixed(1);
-  const devShort = d.tokenCreator ? `${d.tokenCreator.slice(0, 4)}…${d.tokenCreator.slice(-4)}` : "7Hg2…zX9q";
-  return `
-    <div class="wp-card dev">
-      <div class="wp-head"><span class="wp-tag">Dev</span><span class="wp-pct">${top1}%</span></div>
-      <div class="wp-addr">${escapeHtml(devShort)}</div>
-      <div class="wp-rep">
-        <div class="wp-rep-lbl">Reputation · 4 / 5 prior rugs</div>
-        <div class="wp-rep-bar"><div class="wp-rep-fill" style="width:80%"></div></div>
-      </div>
-      <div class="wp-desc">Same funder as <b>HenryRug</b> · <b>TrollV2</b>.</div>
-    </div>
-    <div class="wp-card bot">
-      <div class="wp-head"><span class="wp-tag">Insider</span><span class="wp-pct">${insiderPct}%</span></div>
-      <div class="wp-addr">8dxX…abc4</div>
-      <div class="wp-rep">
-        <div class="wp-rep-lbl">23 prior pump.fun snipes</div>
-        <div class="wp-rep-bar"><div class="wp-rep-fill" style="width:92%"></div></div>
-      </div>
-      <div class="wp-desc">Bought <b>in block 1</b>. Sells within 4h consistently.</div>
-    </div>
-    <div class="wp-card coord">
-      <div class="wp-head"><span class="wp-tag">Cluster A</span><span class="wp-pct">${clusterPct}%</span></div>
-      <div class="wp-addr">7 sibling wallets</div>
-      <div class="wp-rep">
-        <div class="wp-rep-lbl">Coordination score</div>
-        <div class="wp-rep-bar"><div class="wp-rep-fill warn" style="width:88%"></div></div>
-      </div>
-      <div class="wp-desc">Coordinated buy in blocks 2-4. Pattern matches <b>BunnyRug</b>.</div>
-    </div>
-  `;
+  // No backend actors. composeCriticalActors builds its cards from the
+  // Helius top-holder list, so an empty array almost always means that
+  // wallet-level data didn't come back for this scan.
+  const heliusDown = d.layers?.helius?.available === false;
+  const msg = heliusDown
+    ? "Wallet-level data (top holders, creator history, insider clusters) was unavailable for this scan. <b>No wallets were checked</b> — re-scan in a moment."
+    : "No critical actors identified among this token's top holders.";
+  return `<div class="tab-empty" style="grid-column:1/-1">${escapeHtmlAllowBold(msg)}</div>`;
 }
 
 // ──────────────────────────────────────────────────────────────────────
