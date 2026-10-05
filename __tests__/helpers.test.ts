@@ -436,6 +436,27 @@ describe("upstream schema enforcement", () => {
       expect(r).not.toBeNull();
       expect(r?.is_honeypot).toBe("0");
     });
+    it("keeps the token result when a dex pool reports burn_percent: null", () => {
+      // Live GoPlus shape since ~2026-09 (BONK/WIF/HAWK/USDC): unmeasured
+      // pools come back with `burn_percent: null`. Rejecting that dropped
+      // the whole result and the goplus layer read as unavailable.
+      const raw = {
+        result: {
+          So11111111111111111111111111111111111111112: {
+            is_honeypot: "0",
+            dex: [
+              { dex_name: "Raydium", type: "Standard", tvl: "12345.6", burn_percent: null },
+              { dex_name: "Orca", type: "Whirlpool", tvl: 999, burn_percent: 100 },
+            ],
+          },
+        },
+      };
+      const r = pickGoPlusResult(raw, "So11111111111111111111111111111111111111112");
+      expect(r).not.toBeNull();
+      expect(r?.dex).toHaveLength(2);
+      expect(r?.dex?.[0].burn_percent).toBeNull();
+      expect(r?.dex?.[1].burn_percent).toBe(100);
+    });
     it("returns null when the token result has a wrong-type field", () => {
       const raw = {
         result: {

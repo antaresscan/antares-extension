@@ -27,7 +27,11 @@ import { z } from "zod";
 const GoPlusFlagSchema = z.union([z.string(), z.number(), z.boolean()]);
 
 export const GoPlusDexEntrySchema = z.object({
-  burn_percent: z.number().optional(),
+  // GoPlus returns `burn_percent: null` for pools it can't measure (seen on
+  // BONK/WIF/HAWK/USDC since ~2026-09). Rejecting null here dropped the
+  // WHOLE token result, so the goplus layer read as "unavailable" on most
+  // scans. Every consumer already guards with `typeof === "number"`.
+  burn_percent: z.number().nullable().optional(),
   dex_name: z.string().optional(),
   lp_amount: z.string().nullable().optional(),
   tvl: z.union([z.string(), z.number()]).optional(),

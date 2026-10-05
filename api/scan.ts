@@ -489,7 +489,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // (LP burn confirmed by GoPlus only) get the established-context
     // treatment in helius, not just in rugcheck/goplus.
     const _gpEarlyBurnPct = (goplus?.dex && Array.isArray(goplus.dex) && goplus.dex.length > 0)
-      ? Math.max(...goplus.dex.map((d: { burn_percent?: number }) => typeof d.burn_percent === "number" ? d.burn_percent : 0))
+      ? Math.max(...goplus.dex.map((d: { burn_percent?: number | null }) => typeof d.burn_percent === "number" ? d.burn_percent : 0))
       : 0;
     const _earlyLpBurned = rugData?.lpBurned === true ? true
       : _gpEarlyBurnPct >= 50 ? true
@@ -554,7 +554,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     if (postLayerResult.safeBlocked) safeBlocked = true;
 
     const safeBlockedReasons = classifySafeBlockedReasons(allLayers);
-    const _gpBP = (goplus?.dex && Array.isArray(goplus.dex) && goplus.dex.length > 0) ? Math.max(...goplus.dex.map((d: { burn_percent?: number }) => typeof d.burn_percent === "number" ? d.burn_percent : 0)) : 0; const lpBurned = _gpBP >= 50 || rugData?.lpBurned === true;
+    const _gpBP = (goplus?.dex && Array.isArray(goplus.dex) && goplus.dex.length > 0) ? Math.max(...goplus.dex.map((d: { burn_percent?: number | null }) => typeof d.burn_percent === "number" ? d.burn_percent : 0)) : 0; const lpBurned = _gpBP >= 50 || rugData?.lpBurned === true;
     // Surface lpLocked from RugCheck instead of hard-wiring false. The
     // response was previously claiming "LP not locked" even when
     // RugCheck reported a real lock — which read like a contradiction
