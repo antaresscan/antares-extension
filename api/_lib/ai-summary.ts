@@ -110,6 +110,7 @@ function buildUserPrompt(
   }
   if (input.priceChange1h !== null) metrics.push(`1h price change: ${input.priceChange1h}%`)
   if (input.topHolderPct !== null) metrics.push(`top holder owns ${input.topHolderPct.toFixed(1)}% of supply`)
+  else metrics.push(`holder concentration: NOT VERIFIED on this scan (do not describe the holder distribution)`)
   if (metrics.length > 0) lines.push(`Metrics: ${metrics.join(", ")}`)
 
   // Explicitly list BOTH positive and negative status — not just the
@@ -265,7 +266,7 @@ function buildSystemPrompt(target: { min: number; max: number }): string {
   "\u2022 RUG: trader action only. \"Hard kill. Treat any remaining liquidity as exit-only.\" or similar. " +
   "\u2022 DANGER: \"{dominant flag} alone is enough to treat this as exit-liquidity risk. Do NOT explain why it is 'not RUG' or reference any clean signal.\" " +
   "\u2022 CAUTION: \"The verdict is not DANGER because the rest is clean; it is not SAFE because {flag} alone has enough leverage.\" " +
-  "\u2022 SAFE: brief confirming closer. \"Strong holder distribution.\" or \"Cross-validates across the 7 layers.\" " +
+  "\u2022 SAFE: brief confirming closer, e.g. \"Cross-validates across the available scanning layers.\" Say \"Strong holder distribution.\" ONLY when the metrics include the top holder's share of supply. Never describe holder distribution when that metric is absent \u2014 say it could not be verified instead. " +
   "\n\n" +
   "REFERENCE OUTPUTS (copy structure and tone \u2014 these are the target. Lengths scale with flag count):" +
   "\n\n" +
@@ -289,9 +290,9 @@ function buildSystemPrompt(target: { min: number; max: number }): string {
   "LP is fully burned, mint and freeze authorities are revoked, no honeypot, and the token has 30d+ of trading history.\n\n" +
   "The verdict is not DANGER because the rest is clean; it is not SAFE because the concentrated wallet alone has enough leverage to swing the price." +
   "\n\n" +
-  "[SAFE \u00b7 880/1000 \u00b7 sources cross-validated]\n" +
+  "[SAFE \u00b7 880/1000 \u00b7 sources cross-validated, top holder 4%]\n" +
   "PENGU shows a SAFE profile with locked liquidity and 30d+ established trading on Solana.\n\n" +
-  "RugCheck and GoPlus cross-validate the safe verdict; Helius temporarily unavailable lowers confidence to 80%.\n\n" +
+  "RugCheck, GoPlus and Helius cross-validate the safe verdict; the largest wallet holds 4% of supply.\n\n" +
   "Strong holder distribution." +
   "\n\n" +
   "Output ONLY the 3 paragraphs. Do not include the verdict tag or score in your output. Do not add quotation marks. Do not preface."
@@ -447,6 +448,10 @@ function buildStructuredFallback(
 ): string {
   const sym = input.tokenSymbol || "This token"
   const top1 = input.topHolderPct
+  // Holder concentration counts as verified only when the scan actually
+  // returned the top holder's share. None of the `positives` below are
+  // about holders, so they must never be read as "distribution is fine".
+  const holdersVerified = typeof top1 === "number"
   const lpProtected = input.lpBurned === true || input.lpLocked === true
   const lpVerb = input.lpBurned === true ? "burned" : input.lpLocked === true ? "locked" : null
   const mintRen = input.mintAuthority === false
@@ -677,7 +682,11 @@ function buildStructuredFallback(
     const expected = ["dexscreener", "rugcheck", "goplus", "helius", "solscan"]
     const missing = expected.filter((s) => !present.has(s))
     const validators = expected.filter((s) => present.has(s)).slice(0, 2).map(prettySource)
-    if (missing.length > 0 && validators.length >= 2) {
+    if (!holdersVerified && validators.length >= 2) {
+      para2 = `${validators.join(" and ")} cross-validate the contract and liquidity checks, but holder concentration could not be verified on this scan.`
+    } else if (!holdersVerified) {
+      para2 = `The contract surface checks out across the available scanning layers, but holder concentration could not be verified on this scan.`
+    } else if (missing.length > 0 && validators.length >= 2) {
       para2 = `${validators.join(" and ")} cross-validate the safe verdict; ${prettySource(missing[0])} temporarily unavailable lowers confidence slightly.`
     } else if (validators.length >= 2) {
       para2 = `${validators.join(" and ")} cross-validate the safe verdict across independent layers.`
@@ -697,7 +706,7 @@ function buildStructuredFallback(
   } else if (verdict === "CAUTION") {
     para3 = "The verdict is not DANGER because the rest is clean; it is not SAFE because the dominant flag alone has enough leverage to swing the price."
   } else {
-    para3 = positives.length >= 3 ? "Strong holder distribution." : "Cross-validates across the available scanning layers."
+    para3 = holdersVerified && positives.length >= 3 ? "Strong holder distribution." : "Cross-validates across the available scanning layers."
   }
 
   const summary = `${para1}\n\n${para2}\n\n${para3}`

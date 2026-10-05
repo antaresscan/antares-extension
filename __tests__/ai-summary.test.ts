@@ -1070,3 +1070,66 @@ describe("generateAISummary", () => {
     })
   })
 })
+
+// The SAFE closer used to say "Strong holder distribution." whenever 3
+// structural positives (LP, authorities, honeypot, age) were present —
+// none of which are about holders. With Helius down, HAWK's page read
+// "Strong holder distribution" with no holder data at all (2026-10-05).
+describe("holder-distribution claims require holder data", () => {
+  const safeWithoutHolderData: AISummaryInput = {
+    score: 850,
+    risk: "SAFE",
+    flags: [],
+    tokenSymbol: "HAWK",
+    holders: null,
+    marketCap: 187_000,
+    liquidity: 92_600,
+    lpBurned: true,
+    lpLocked: false,
+    mintAuthority: false,
+    freezeAuthority: false,
+    honeypot: false,
+    tokenAgeHours: 24 * 800,
+    sourcesUsed: ["dexscreener", "rugcheck", "solscan", "chart"],
+    topHolderPct: null,
+    volume24h: 1_000,
+    priceChange1h: 0.2,
+  }
+
+  it("SAFE fallback never vouches for the holder distribution without holder data", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "")
+    delete process.env.GEMINI_API_KEY
+    const result = await generateAISummary(safeWithoutHolderData)
+    expect(result).not.toBeNull()
+    expect(result).not.toMatch(/strong holder distribution|holder distribution both check out/i)
+    expect(result).toContain("holder concentration could not be verified")
+    expect(result!.split(/\n\s*\n/).filter((p) => p.trim().length > 0)).toHaveLength(3)
+  })
+
+  it("SAFE fallback keeps the holder closer when the top holder's share is known", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "")
+    delete process.env.GEMINI_API_KEY
+    const result = await generateAISummary({
+      ...safeWithoutHolderData,
+      holders: 250_000,
+      topHolderPct: 3.1,
+      sourcesUsed: ["dexscreener", "rugcheck", "goplus", "helius", "solscan"],
+    })
+    expect(result).toContain("Strong holder distribution.")
+    expect(result).not.toContain("could not be verified")
+  })
+
+  it("tells Gemini that holder concentration is NOT VERIFIED when the metric is missing", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key-123")
+    const mockFetch = vi.fn<typeof fetch>().mockResolvedValue(
+      mockFetchResponse({ choices: [{ message: { content: "too short" } }] }),
+    )
+    vi.stubGlobal("fetch", mockFetch)
+    await generateAISummary(safeWithoutHolderData)
+    const init = mockFetch.mock.calls[0][1]
+    const body = JSON.parse(String(init?.body)) as { messages: Array<{ role: string; content: string }> }
+    const userPrompt = body.messages.find((m) => m.role === "user")?.content ?? ""
+    expect(userPrompt).toContain("holder concentration: NOT VERIFIED")
+    expect(userPrompt).not.toContain("top holder owns")
+  })
+})
