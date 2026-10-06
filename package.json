@@ -19,10 +19,8 @@
     "test:corpus": "vitest run __tests__/backtest"
   },
   "dependencies": {
-    "@sentry/browser": "^10.60.0",
-    "@sentry/node": "10.63.0",
     "@sentry/browser": "^10.66.0",
-    "@sentry/node": "10.65.0",
+    "@sentry/node": "10.66.0",
     "@upstash/ratelimit": "^2.0.5",
     "@upstash/redis": "^1.38.0",
     "plasmo": "0.90.5",
@@ -33,13 +31,13 @@
   "devDependencies": {
     "@eslint/js": "^10.0.0",
     "@ianvs/prettier-plugin-sort-imports": "4.7.1",
-    "@playwright/test": "^1.61.1",
+    "@playwright/test": "^1.62.1",
     "@types/chrome": "0.2.2",
-    "@types/node": "20.19.41",
+    "@types/node": "20.19.43",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vercel/node": "^5.8.26",
-    "@vitest/coverage-v8": "^4.1.6",
+    "@vitest/coverage-v8": "^4.1.11",
     "eslint": "^10.4.0",
     "globals": "^16.0.0",
     "happy-dom": "^20.10.6",
@@ -49,7 +47,7 @@
     "tsx": "^4.23.1",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.64.0",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
   },
   "manifest": {
     "permissions": [
