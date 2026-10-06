@@ -127,15 +127,18 @@ export function apiError(res: VercelResponse, status: number, message: string, d
  *   `<project>-<deploy-hash>-<team>-projects.vercel.app`       (one-off)
  *
  * We accept any host that ends in `.vercel.app` AND starts with
- * `antares-website-` (project slug + a separator). Vercel guarantees
- * only deployments owned by this project can serve under that prefix,
- * so the hostname shape alone is a sufficient origin check — we don't
- * need a deploy-token round-trip.
+ * `antares-website-` (project slug + a separator).
  *
- * Production `antares-website.vercel.app` is still matched via the
- * explicit ALLOWED_ORIGINS list (canonical, audit-friendly). This
- * helper only adds the *preview* deployments to the allowed set so QA
- * and pre-merge testing don't 403 with "Origin not allowed".
+ * This is a *shape* check, NOT proof of ownership: anyone can create a
+ * Vercel project called `antares-website-whatever` and get a matching
+ * `*.vercel.app` hostname. A preview origin may therefore read public API
+ * responses (QA, pre-merge testing) but must never be handed credentials;
+ * see CREDENTIALED_ORIGINS in middleware.ts, which is an exact-match list.
+ *
+ * Production `antares-website.vercel.app` is matched via the explicit
+ * ALLOWED_ORIGINS list (canonical, audit-friendly). This helper only adds
+ * the *preview* deployments to the allowed set so QA and pre-merge testing
+ * don't 403 with "Origin not allowed".
  */
 function isAntaresWebsitePreview(hostname: string): boolean {
   return (
@@ -144,17 +147,37 @@ function isAntaresWebsitePreview(hostname: string): boolean {
   );
 }
 
-export function isCorsAllowed(origin: string, allowedOrigins: string[]): boolean {
+/**
+ * Serialised origin (scheme + host + port) of an Origin header or URL, or
+ * null when there is none to compare: opaque origins (`null`, `file://`,
+ * `chrome-extension://…`) and anything unparseable.
+ */
+function originOf(value: string): string | null {
   try {
-    const h = new URL(origin).hostname;
-    if (isAntaresWebsitePreview(h)) return true;
-    return allowedOrigins.some(o => {
-      try { return h === new URL(o).hostname; }
-      catch { return false; }
-    });
+    const { origin } = new URL(value);
+    return origin === "null" ? null : origin;
   } catch {
-    return false;
+    return null;
   }
+}
+
+/**
+ * Exact origin match: scheme, host AND port must all agree. Comparing the
+ * hostname alone let `http://antaresscan.com` (downgradable to a network
+ * attacker) and `https://antaresscan.com:8443` through.
+ */
+export function isOriginInList(origin: string, list: readonly string[]): boolean {
+  const o = originOf(origin);
+  if (!o) return false;
+  return list.some((entry) => originOf(entry) === o);
+}
+
+export function isCorsAllowed(origin: string, allowedOrigins: string[]): boolean {
+  const o = originOf(origin);
+  if (!o) return false;
+  const { protocol, hostname } = new URL(o);
+  if (protocol === "https:" && isAntaresWebsitePreview(hostname)) return true;
+  return isOriginInList(o, allowedOrigins);
 }
 export function isValidDexScreenerResponse(data: unknown): data is DexScreenerResponse {
   if (!isObject(data)) return false;

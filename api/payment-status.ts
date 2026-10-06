@@ -170,7 +170,7 @@ async function maybeConfirmFromProvider(
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const corsOk = setCorsHeaders(req, res);
+  const corsOk = setCorsHeaders(req, res, { credentialedOnly: true }); // account state: first-party origins only
   if (req.method === "OPTIONS") return res.status(204).end();
   if (!corsOk) return apiError(res, 403, "Origin not allowed.");
   if (req.method !== "GET") return apiError(res, 405, "Method not allowed.");

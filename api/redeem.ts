@@ -54,7 +54,7 @@ function readBody(req: VercelRequest): Record<string, unknown> {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const corsOk = setCorsHeaders(req, res);
+  const corsOk = setCorsHeaders(req, res, { credentialedOnly: true }); // account state: first-party origins only
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   if (req.method === "OPTIONS") return res.status(204).end();
   if (!corsOk) return apiError(res, 403, "Origin not allowed.");

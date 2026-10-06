@@ -45,7 +45,7 @@ const storageMock = {
 };
 
 // Side-effect import: registers the window message listener.
-await import("../contents/antares-website-bridge");
+const bridge = await import("../contents/antares-website-bridge");
 
 describe("antares-website-bridge origin allowlist", () => {
   beforeEach(() => {
@@ -98,12 +98,32 @@ describe("antares-website-bridge origin allowlist", () => {
     expect(storageMock.set).toHaveBeenCalledTimes(1);
   });
 
-  it("accepts set-session-token from the github.io mirror", async () => {
+  // The GitHub account behind comealamaisongroupe.github.io no longer exists,
+  // so anyone can register the name and serve a page from it. Trusting that
+  // origin would let them plant a session token in every visitor's extension.
+  it("drops set-session-token from the retired github.io mirror", async () => {
     dispatch(
-      { type: "antares:set-session-token", token: "legit.jwt.here" },
+      { type: "antares:set-session-token", token: "forged.jwt.here" },
       "https://comealamaisongroupe.github.io",
     );
-    expect(storageMock.set).toHaveBeenCalledTimes(1);
+    expect(storageMock.set).not.toHaveBeenCalled();
+  });
+
+  it("drops get-install-id requests from the retired github.io mirror", async () => {
+    const posted = vi.spyOn(window, "postMessage");
+    dispatch(
+      { type: "antares:get-install-id", nonce: "n1" },
+      "https://comealamaisongroupe.github.io",
+    );
+    await Promise.resolve();
+    expect(posted).not.toHaveBeenCalled();
+    posted.mockRestore();
+  });
+
+  it("is not injected on any github.io page", () => {
+    const matches = bridge.config.matches ?? [];
+    expect(matches.length).toBeGreaterThan(0);
+    expect(matches.some((m) => m.includes("github.io"))).toBe(false);
   });
 
   it("drops clear-session-token from a non-allowlisted origin", async () => {
