@@ -176,6 +176,17 @@ describe("safeBlocked routing", () => {
     })).toBe("SAFE")
   })
 
+  it("safeBlocked + holders unverified + score ≥750 + 0 flags → CAUTION (RIV rule, 7.7.21)", () => {
+    // layerHelius marks the verdict safeBlocked with the "holders" reason when
+    // it has no holder data. The no-flags override above must not lift it:
+    // without verified concentration the ceiling is CAUTION, never SAFE.
+    expect(verdictWith({
+      safeBlocked: true,
+      safeBlockedReasons: ["holders"],
+      score: 850,
+    })).toBe("CAUTION")
+  })
+
   it("safeBlocked + soft only + score ≥700 + warningFlagsCount=1 → CAUTION", () => {
     // When there IS a visible flag, the no-flags override must NOT fire.
     expect(verdictWith({
