@@ -1,8 +1,8 @@
 // contents/antares-website-bridge.ts
 //
-// Tiny bridge content-script that runs on the Antares website + GitHub-Pages
-// mirror. Its only job is to expose the extension's install_id to the
-// website's pricing modal and /account.html so paying customers don't
+// Tiny bridge content-script that runs on the Antares website. Its only job
+// is to expose the extension's install_id to the website's pricing modal and
+// /account.html so paying customers don't
 // have to manually copy-paste a license key into the extension Options.
 //
 // Flow when the user is buying Pro/Lifetime:
@@ -38,10 +38,10 @@ export const config: PlasmoCSConfig = {
   // projects.vercel.app`) — auto-link is production-only; preview
   // users still get the manual paste-key path.
   //
-  // The two GH Pages entries are kept overlapping intentionally: the
-  // narrower one captures user intent (we own only the antares-website
-  // path under that org), the wildcard one is a defensive net for any
-  // future page added to the same org.
+  // No GitHub Pages mirror, on purpose: the account behind
+  // comealamaisongroupe.github.io no longer exists, so anyone could register
+  // that name and get this bridge injected on their page (install_id read,
+  // forged session token planted). Only origins we control belong here.
   matches: [
     // Production custom domain — primary website host. Without this entry
     // the bridge is never injected on antaresscan.com pages, so:
@@ -53,10 +53,8 @@ export const config: PlasmoCSConfig = {
     //     sending the still-valid JWT and stays on Pro forever).
     "https://antaresscan.com/*",
     "https://www.antaresscan.com/*",
-    // Legacy + preview origins kept for older installs / Vercel previews.
-    "https://antares-website.vercel.app/*",
-    "https://comealamaisongroupe.github.io/antares-website/*",
-    "https://comealamaisongroupe.github.io/*"
+    // Legacy alias, kept for older installs.
+    "https://antares-website.vercel.app/*"
   ]
 }
 
@@ -99,8 +97,7 @@ const SESSION_TOKEN_KEY = "antares_session_token"
 const ALLOWED_BRIDGE_ORIGINS = new Set([
   "https://antaresscan.com",
   "https://www.antaresscan.com",
-  "https://antares-website.vercel.app",
-  "https://comealamaisongroupe.github.io"
+  "https://antares-website.vercel.app"
 ])
 
 function setStoredSessionToken(token: string): Promise<void> {

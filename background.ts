@@ -77,8 +77,7 @@ const ALLOWED_OPEN_TAB_HOSTS = new Set([
   "antares-extension.vercel.app",
   "antaresscan.com",
   "www.antaresscan.com",
-  "antares-website.vercel.app",
-  "comealamaisongroupe.github.io"
+  "antares-website.vercel.app"
 ])
 
 // ─── KEEPALIVE ────────────────────────────────────────────────────────────────
