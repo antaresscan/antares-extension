@@ -3,7 +3,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { CA_RE } from "./constants";
-import { isCorsAllowed, apiError } from "./helpers";
+import { isCorsAllowed, isOriginInList, apiError } from "./helpers";
 import { logger } from "./logger";
 
 export const ALLOWED_ORIGINS = [
@@ -27,13 +27,47 @@ export const ALLOWED_ORIGINS = [
   // log out cleanly (the website thinks it logged you out, but the
   // extension's cached JWT keeps the overlay on Pro indefinitely).
   //
-  // Older entries (antares-website.vercel.app, GH Pages) stay because
-  // existing clients may still cache the old URLs.
+  // The legacy antares-website.vercel.app alias stays because existing
+  // clients may still cache that URL. The old GitHub Pages mirror
+  // (comealamaisongroupe.github.io) is gone on purpose: the GitHub account
+  // behind it no longer exists, so anyone could register the name and
+  // serve a page from it.
   "https://antaresscan.com",
   "https://www.antaresscan.com",
   "https://antares-website.vercel.app",
-  "https://comealamaisongroupe.github.io",
 ];
+
+/**
+ * Origins allowed to exchange cookies with the API (CORS credentials).
+ *
+ * Deliberately a short EXACT-match list, separate from ALLOWED_ORIGINS:
+ *   - ALLOWED_ORIGINS answers "may this page read public scan data?". It
+ *     includes the third-party trading sites the content script runs on,
+ *     plus website previews, none of which we control.
+ *   - CREDENTIALED_ORIGINS answers "may this page act as the signed-in
+ *     user?". Only the first-party website qualifies. The session cookie is
+ *     SameSite=None, so any origin that receives Allow-Credentials can call
+ *     /api/auth/sync-token with the visitor's cookie, read the 30-day JWT
+ *     and bind its own install to their account.
+ *
+ * chrome-extension:// origins are handled separately in setCorsHeaders.
+ */
+export const CREDENTIALED_ORIGINS = [
+  "https://antaresscan.com",
+  "https://www.antaresscan.com",
+  "https://antares-website.vercel.app",
+  "https://antares-extension.vercel.app",
+];
+
+export interface CorsOptions {
+  /**
+   * Accept ONLY credentialed origins (first-party website + the extension).
+   * Set it on every endpoint that reads or changes account state: any other
+   * allowed origin (trading sites, website previews) then gets a 403 and no
+   * Access-Control-Allow-Origin header at all.
+   */
+  credentialedOnly?: boolean;
+}
 
 // ——— RATE LIMITERS ————————————————————————————————————————————————————————————
 let ratelimit: Ratelimit | null = null;
@@ -90,7 +124,11 @@ const EXPOSED_RESPONSE_HEADERS = [
   "Retry-After",
 ].join(", ");
 
-export function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean {
+export function setCorsHeaders(
+  req: VercelRequest,
+  res: VercelResponse,
+  opts: CorsOptions = {},
+): boolean {
   const origin = (req.headers.origin as string) || "";
 
   // ALWAYS set Vary: Origin first, before any conditional branches.
@@ -150,14 +188,22 @@ export function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean
     }
   }
 
-  const corsOk = isCorsAllowed(origin, ALLOWED_ORIGINS);
+  const credentialed = isOriginInList(origin, CREDENTIALED_ORIGINS);
+  const corsOk = opts.credentialedOnly
+    ? credentialed
+    : isCorsAllowed(origin, ALLOWED_ORIGINS);
   if (corsOk) {
     res.setHeader("Access-Control-Allow-Origin", origin);
-    // Allow cross-site cookies (session cookie set by API origin needs
-    // to flow on website-origin fetches). Browsers refuse to attach
+    // Allow cross-site cookies (the session cookie set by the API origin
+    // has to flow on website-origin fetches). Browsers refuse to attach
     // cookies cross-site unless the response carries this header AND
     // the request was made with `credentials: "include"`.
-    res.setHeader("Access-Control-Allow-Credentials", "true");
+    //
+    // First-party origins only. Trading sites and website previews can read
+    // public scan data, but must never be able to act as the signed-in user.
+    if (credentialed) {
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+    }
   }
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Antares-Key, X-Antares-Token, X-Antares-Install, X-Antares-Dev-Tier, X-Antares-Session, Authorization");

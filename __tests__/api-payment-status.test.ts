@@ -162,6 +162,24 @@ describe("GET /api/payment-status (NOWPayments)", () => {
     expect(res.status).toHaveBeenCalledWith(403);
   });
 
+  // These endpoints read or change account state: being on the general CORS
+  // allowlist (a trading site, a website preview) is not enough.
+  it("rejects an origin that is only on the general CORS allowlist with 403", async () => {
+    const req = mockReq({ headers: { origin: "https://dexscreener.com" } });
+    const res = mockRes();
+    await handler(req, res);
+    expect(res.status).toHaveBeenCalledWith(403);
+  });
+
+  it("rejects a website preview origin with 403 (anyone can register antares-website-*)", async () => {
+    const req = mockReq({
+      headers: { origin: "https://antares-website-evil-comealamaisongroupes-projects.vercel.app" },
+    });
+    const res = mockRes();
+    await handler(req, res);
+    expect(res.status).toHaveBeenCalledWith(403);
+  });
+
   it("rejects missing reference query param with 400", async () => {
     const req = mockReq({ headers: { origin: ORIGIN } });
     const res = mockRes();

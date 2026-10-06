@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import {
   asNumber, _mean, _std, _pct, makeFlag, computeCacheTTL,
-  apiError, isCorsAllowed, isValidDexScreenerResponse, isValidRugCheckSummary,
+  apiError, isCorsAllowed, isOriginInList, isValidDexScreenerResponse, isValidRugCheckSummary,
   isHeliusLargestAccountsResponse, isHeliusSupplyResponse,
   isSolscanMarketsResponse, isSolscanMeta, isSolscanTransfersResponse,
   isRugCheckReport, withBudget, pickGoPlusResult,
@@ -238,6 +238,61 @@ describe("isCorsAllowed", () => {
 
   it("antares-website.evil.app (TLD-shadowing attempt) -> false", () => {
     expect(isCorsAllowed("https://antares-website-x.evil.app", origins)).toBe(false);
+  });
+
+  // Origins are compared exactly (scheme + host + port). Matching on the
+  // hostname alone let a downgraded http:// page, or another port, through.
+  it("http:// variant of an allowed https origin -> false", () => {
+    expect(isCorsAllowed("http://dexscreener.com", origins)).toBe(false);
+  });
+
+  it("allowed host on another port -> false", () => {
+    expect(isCorsAllowed("https://dexscreener.com:8443", origins)).toBe(false);
+  });
+
+  it("opaque 'null' origin -> false", () => {
+    expect(isCorsAllowed("null", origins)).toBe(false);
+  });
+
+  it("http:// preview-shaped origin -> false (previews are https only)", () => {
+    expect(
+      isCorsAllowed("http://antares-website-abc123-comealamaisongroupes-projects.vercel.app", origins),
+    ).toBe(false);
+  });
+});
+
+describe("isOriginInList", () => {
+  const list = ["https://antaresscan.com", "https://www.antaresscan.com"];
+
+  it("exact origin -> true", () => {
+    expect(isOriginInList("https://antaresscan.com", list)).toBe(true);
+    expect(isOriginInList("https://www.antaresscan.com", list)).toBe(true);
+  });
+
+  it("same host over http -> false", () => {
+    expect(isOriginInList("http://antaresscan.com", list)).toBe(false);
+  });
+
+  it("same host on another port -> false", () => {
+    expect(isOriginInList("https://antaresscan.com:8443", list)).toBe(false);
+  });
+
+  it("unlisted subdomain -> false", () => {
+    expect(isOriginInList("https://evil.antaresscan.com", list)).toBe(false);
+  });
+
+  it("a preview-shaped *.vercel.app host is not an exact match -> false", () => {
+    expect(isOriginInList("https://antares-website-x.vercel.app", list)).toBe(false);
+  });
+
+  it("opaque origins never match, even against an opaque list entry", () => {
+    expect(isOriginInList("null", ["null"])).toBe(false);
+    expect(isOriginInList("chrome-extension://abc", ["chrome-extension://abc"])).toBe(false);
+  });
+
+  it("empty or malformed input -> false", () => {
+    expect(isOriginInList("", list)).toBe(false);
+    expect(isOriginInList("not a url", list)).toBe(false);
   });
 });
 

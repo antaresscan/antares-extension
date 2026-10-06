@@ -484,7 +484,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  const corsOk = setCorsHeaders(req, res);
+  // Every browser-facing auth action reads or mints a session, so only
+  // first-party origins (the website and the extension) get through. A
+  // trading site or a website preview that merely passes the general CORS
+  // allowlist must not be able to drive login / sync-token with the
+  // visitor's cookie: sync-token returns a 30-day JWT and binds the
+  // caller's install to the account.
+  const corsOk = setCorsHeaders(req, res, { credentialedOnly: true });
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   if (req.method === "OPTIONS") return res.status(204).end();
   if (!corsOk) return apiError(res, 403, "Origin not allowed.");

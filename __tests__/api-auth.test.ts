@@ -457,3 +457,108 @@ describe("POST /api/auth/sync-token", () => {
     expect(res.status).toHaveBeenCalledWith(405);
   });
 });
+
+// ── origin gate ───────────────────────────────────────────────────────────
+//
+// sync-token returns a 30-day JWT and binds the caller's install to the
+// account, and the session cookie is SameSite=None, so the browser attaches
+// it to a cross-site request. An origin that merely passes the general CORS
+// allowlist (a trading site, a website preview, the retired GitHub Pages
+// mirror) must therefore not reach ANY auth action.
+describe("auth origin gate", () => {
+  // Anyone can register a Vercel project called antares-website-<anything>.
+  const PREVIEW = "https://antares-website-evil-comealamaisongroupes-projects.vercel.app";
+  const VICTIM_INSTALL = "33333333-3333-4333-8333-333333333333";
+  const NOT_FIRST_PARTY: [string, string][] = [
+    ["a trading site on the CORS allowlist", "https://dexscreener.com"],
+    ["a website preview deployment", PREVIEW],
+    ["the retired GitHub Pages mirror", "https://comealamaisongroupe.github.io"],
+    ["an http:// downgrade of the website", "http://antaresscan.com"],
+  ];
+
+  beforeEach(async () => {
+    await signupHandler(
+      mockReq({
+        headers: { origin: ORIGIN },
+        body: { email: "alice@example.com", password: "supersecret1" },
+      }),
+      mockRes(),
+    );
+  });
+
+  for (const [label, origin] of NOT_FIRST_PARTY) {
+    it(`sync-token is refused for ${label}, even with the visitor's cookie`, async () => {
+      const cookie = signSession("alice@example.com");
+      const req = mockReq({
+        headers: {
+          origin,
+          cookie: `${SESSION_COOKIE_NAME}=${cookie}`,
+          "x-antares-install": VICTIM_INSTALL,
+        },
+      });
+      const res = mockRes();
+      await syncTokenHandler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      // No success payload (and therefore no JWT) went back to the caller.
+      expect(res.json).not.toHaveBeenCalledWith(expect.objectContaining({ ok: true }));
+      // The caller's install was not bound to the visitor's account either.
+      expect(mocks.store.get(`account:install:${VICTIM_INSTALL}`)).toBeUndefined();
+    });
+  }
+
+  it("login, signup, logout and me are refused for a trading-site origin too", async () => {
+    const handlers = [loginHandler, signupHandler, logoutHandler, meHandler];
+    for (const handler of handlers) {
+      const res = mockRes();
+      await handler(mockReq({ headers: { origin: "https://dexscreener.com" } }), res);
+      expect(res.status).toHaveBeenCalledWith(403);
+    }
+  });
+
+  it("a preflight from a non-first-party origin gets no Allow-Origin, so the browser blocks the real request", async () => {
+    const req = mockReq({
+      method: "OPTIONS",
+      headers: { origin: "https://dexscreener.com" },
+    });
+    const res = mockRes();
+    await syncTokenHandler(req, res);
+
+    expect(res.setHeader).not.toHaveBeenCalledWith("Access-Control-Allow-Origin", expect.anything());
+    expect(res.setHeader).not.toHaveBeenCalledWith("Access-Control-Allow-Credentials", "true");
+  });
+
+  it("the production website origins still get a JWT and Allow-Credentials", async () => {
+    for (const origin of ["https://antaresscan.com", "https://www.antaresscan.com"]) {
+      const cookie = signSession("alice@example.com");
+      const req = mockReq({
+        headers: { origin, cookie: `${SESSION_COOKIE_NAME}=${cookie}` },
+      });
+      const res = mockRes();
+      await syncTokenHandler(req, res);
+
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ ok: true, email: "alice@example.com" }),
+      );
+      expect(res.setHeader).toHaveBeenCalledWith("Access-Control-Allow-Origin", origin);
+      expect(res.setHeader).toHaveBeenCalledWith("Access-Control-Allow-Credentials", "true");
+    }
+  });
+
+  it("the extension origin still reaches /me (the options page calls it)", async () => {
+    const token = signSession("alice@example.com");
+    const req = mockReq({
+      method: "GET",
+      headers: {
+        origin: "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+        cookie: `${SESSION_COOKIE_NAME}=${token}`,
+      },
+    });
+    const res = mockRes();
+    await meHandler(req, res);
+
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ ok: true, email: "alice@example.com" }),
+    );
+  });
+});

@@ -6,6 +6,7 @@ import {
   setCorsHeaders,
   checkRateLimit,
   ALLOWED_ORIGINS,
+  CREDENTIALED_ORIGINS,
 } from "../api/_lib/middleware";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
@@ -195,6 +196,126 @@ describe("setCorsHeaders", () => {
       "Cache-Control",
       "s-maxage=15, stale-while-revalidate=30",
     );
+  });
+
+  // ── Credentials: first-party origins only ──────────────────────────
+  // The session cookie is SameSite=None, so any origin that receives
+  // Access-Control-Allow-Credentials can call /api/auth/sync-token as the
+  // visitor, read the 30-day JWT and bind its own install to the account.
+  // Only the first-party website may receive it.
+  describe("credentials", () => {
+    // Anyone can register a Vercel project called antares-website-<anything>.
+    const PREVIEW = "https://antares-website-evil-comealamaisongroupes-projects.vercel.app";
+
+    it("sends Allow-Credentials to the first-party website origins", () => {
+      for (const origin of [
+        "https://antaresscan.com",
+        "https://www.antaresscan.com",
+        "https://antares-website.vercel.app",
+      ]) {
+        const res = mockRes();
+        expect(setCorsHeaders(mockReq({ origin }), res)).toBe(true);
+        expect(res.setHeader).toHaveBeenCalledWith("Access-Control-Allow-Origin", origin);
+        expect(res.setHeader).toHaveBeenCalledWith("Access-Control-Allow-Credentials", "true");
+      }
+    });
+
+    it("lets trading sites read public data but WITHOUT credentials", () => {
+      const res = mockRes();
+      expect(setCorsHeaders(mockReq({ origin: "https://dexscreener.com" }), res)).toBe(true);
+      expect(res.setHeader).toHaveBeenCalledWith("Access-Control-Allow-Origin", "https://dexscreener.com");
+      expect(res.setHeader).not.toHaveBeenCalledWith("Access-Control-Allow-Credentials", "true");
+    });
+
+    it("lets website previews read public data but WITHOUT credentials", () => {
+      const res = mockRes();
+      expect(setCorsHeaders(mockReq({ origin: PREVIEW }), res)).toBe(true);
+      expect(res.setHeader).toHaveBeenCalledWith("Access-Control-Allow-Origin", PREVIEW);
+      expect(res.setHeader).not.toHaveBeenCalledWith("Access-Control-Allow-Credentials", "true");
+    });
+
+    it("rejects the retired GitHub Pages origin (the account is gone, the name is claimable)", () => {
+      const res = mockRes();
+      expect(setCorsHeaders(mockReq({ origin: "https://comealamaisongroupe.github.io" }), res)).toBe(false);
+      expect(res.setHeader).not.toHaveBeenCalledWith("Access-Control-Allow-Origin", expect.anything());
+      expect(res.setHeader).not.toHaveBeenCalledWith("Access-Control-Allow-Credentials", "true");
+    });
+
+    it("rejects http:// and other-port variants of a first-party origin", () => {
+      for (const origin of ["http://antaresscan.com", "https://antaresscan.com:8443"]) {
+        const res = mockRes();
+        expect(setCorsHeaders(mockReq({ origin }), res)).toBe(false);
+        expect(res.setHeader).not.toHaveBeenCalledWith("Access-Control-Allow-Credentials", "true");
+      }
+    });
+
+    it("ALLOWED_ORIGINS no longer lists the GitHub Pages mirror", () => {
+      expect(ALLOWED_ORIGINS.some((o) => o.includes("github.io"))).toBe(false);
+    });
+
+    it("every credentialed origin is also in ALLOWED_ORIGINS", () => {
+      for (const o of CREDENTIALED_ORIGINS) expect(ALLOWED_ORIGINS).toContain(o);
+    });
+
+    it("the credentialed list holds only our own https hosts", () => {
+      for (const o of CREDENTIALED_ORIGINS) {
+        const { protocol, hostname } = new URL(o);
+        expect(protocol).toBe("https:");
+        expect(hostname).toMatch(
+          /^(www\.)?antaresscan\.com$|^antares-(website|extension)\.vercel\.app$/,
+        );
+      }
+    });
+  });
+
+  // `credentialedOnly` is what every endpoint that reads or changes account
+  // state passes: the general allowlist is not enough there.
+  describe("credentialedOnly", () => {
+    const PREVIEW = "https://antares-website-evil-comealamaisongroupes-projects.vercel.app";
+
+    it("accepts the first-party website, with credentials", () => {
+      for (const origin of ["https://antaresscan.com", "https://www.antaresscan.com"]) {
+        const res = mockRes();
+        expect(setCorsHeaders(mockReq({ origin }), res, { credentialedOnly: true })).toBe(true);
+        expect(res.setHeader).toHaveBeenCalledWith("Access-Control-Allow-Credentials", "true");
+      }
+    });
+
+    it("accepts chrome-extension origins (the options page calls /api/auth/me)", () => {
+      const res = mockRes();
+      expect(
+        setCorsHeaders(mockReq({ origin: "chrome-extension://abcdef123456" }), res, { credentialedOnly: true }),
+      ).toBe(true);
+    });
+
+    it("rejects a trading site that the general allowlist accepts, and sets no Allow-Origin", () => {
+      const res = mockRes();
+      expect(
+        setCorsHeaders(mockReq({ origin: "https://dexscreener.com" }), res, { credentialedOnly: true }),
+      ).toBe(false);
+      expect(res.setHeader).not.toHaveBeenCalledWith("Access-Control-Allow-Origin", expect.anything());
+      expect(res.setHeader).not.toHaveBeenCalledWith("Access-Control-Allow-Credentials", "true");
+    });
+
+    it("rejects website previews and sets no Allow-Origin", () => {
+      const res = mockRes();
+      expect(setCorsHeaders(mockReq({ origin: PREVIEW }), res, { credentialedOnly: true })).toBe(false);
+      expect(res.setHeader).not.toHaveBeenCalledWith("Access-Control-Allow-Origin", expect.anything());
+    });
+
+    it("still accepts a same-origin request on our own host (no Origin header)", () => {
+      const res = mockRes();
+      expect(
+        setCorsHeaders(mockReq({ host: "antares-extension.vercel.app" }), res, { credentialedOnly: true }),
+      ).toBe(true);
+    });
+
+    it("rejects a no-Origin request from any other host", () => {
+      const res = mockRes();
+      expect(
+        setCorsHeaders(mockReq({ host: "some-other-project.vercel.app" }), res, { credentialedOnly: true }),
+      ).toBe(false);
+    });
   });
 });
 
