@@ -41,8 +41,6 @@
     "eslint": "^10.4.0",
     "globals": "^16.0.0",
     "happy-dom": "^20.10.6",
-    "prettier": "^3.9.4",
-    "tsx": "^4.22.3",
     "prettier": "^3.9.5",
     "tsx": "^4.23.1",
     "typescript": "^5.9.3",
