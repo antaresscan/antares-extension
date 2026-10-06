@@ -10,6 +10,10 @@ import { describe, it, expect } from "vitest";
 import {
   computeExitLiquidity,
   parsePctFromFlags,
+  visibleFlags,
+  isHoldersUnverifiedFlag,
+  displayFlagLabel,
+  HOLDERS_UNVERIFIED_LABEL,
 } from "../js/compute.js";
 
 describe("computeExitLiquidity", () => {
@@ -97,5 +101,70 @@ describe("parsePctFromFlags", () => {
   it("returns null when the regex matches but no numeric capture", () => {
     const noNumber = [{ label: "Top wallets dominate (extreme)" }];
     expect(parsePctFromFlags(noNumber, /Top wallets ([a-z]+)/i)).toBeNull();
+  });
+});
+
+// ─── Flags shown on the token page ─────────────────────────────────────
+// A scan with no holder data carries "Helius unavailable — holder
+// concentration unverified" and the API caps the verdict at CAUTION. The page
+// hides pipeline-status flags, except this one: it is why the verdict is not
+// SAFE. Before, the page read "0 flags detected / All sources agree" next to
+// a CAUTION verdict.
+describe("visibleFlags", () => {
+  const HOLDERS = {
+    label: "Helius unavailable — holder concentration unverified",
+    severity: "warning",
+  };
+
+  it("keeps the unverified-holders flag", () => {
+    expect(visibleFlags([HOLDERS])).toEqual([HOLDERS]);
+  });
+
+  it("drops bonus and info flags", () => {
+    expect(
+      visibleFlags([
+        { label: "LP Burned ✓", severity: "bonus" },
+        { label: "LP holds 2% of supply", severity: "info" },
+      ]),
+    ).toEqual([]);
+  });
+
+  it("control: other pipeline-status flags stay hidden, even at warning severity", () => {
+    expect(
+      visibleFlags([
+        { label: "GoPlus unavailable", severity: "warning" },
+        { label: "RugCheck unavailable", severity: "info" },
+        { label: "Solscan unavailable", severity: "warning" },
+      ]),
+    ).toEqual([]);
+  });
+
+  it("keeps real warning and critical flags next to it", () => {
+    const real = [
+      { label: "Mint Authority enabled", severity: "critical" },
+      { label: "Top 10 holders > 50%", severity: "warning" },
+    ];
+    expect(visibleFlags([...real, HOLDERS])).toEqual([...real, HOLDERS]);
+  });
+
+  it("tolerates a missing flags array", () => {
+    expect(visibleFlags(undefined)).toEqual([]);
+    expect(visibleFlags(null)).toEqual([]);
+  });
+});
+
+describe("isHoldersUnverifiedFlag / displayFlagLabel", () => {
+  it("recognises the layer flag and shows it under a neutral label", () => {
+    const label = "Helius unavailable — holder concentration unverified";
+    expect(isHoldersUnverifiedFlag(label)).toBe(true);
+    expect(displayFlagLabel(label)).toBe(HOLDERS_UNVERIFIED_LABEL);
+    // The label names the missing check, not the data vendor.
+    expect(HOLDERS_UNVERIFIED_LABEL).not.toMatch(/helius/i);
+  });
+
+  it("leaves every other label untouched", () => {
+    expect(isHoldersUnverifiedFlag("GoPlus unavailable")).toBe(false);
+    expect(isHoldersUnverifiedFlag(undefined)).toBe(false);
+    expect(displayFlagLabel("Mint Authority enabled")).toBe("Mint Authority enabled");
   });
 });

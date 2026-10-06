@@ -151,3 +151,40 @@ export function parsePctFromFlags(flags, regex) {
   }
   return null;
 }
+
+// ─── Flags shown on the token page ───────────────────────────────────────
+//
+// A scan with no holder data carries the layer flag
+// "Helius unavailable — holder concentration unverified" and the API caps
+// that verdict at CAUTION. The page hides pipeline-status flags ("X
+// unavailable") because they describe our plumbing, not the token; this one
+// is the exception, since it is the reason the verdict is not SAFE. Plain-JS
+// copy of shared/holders-unverified.ts (the extension side). Keep in sync.
+export const HOLDERS_UNVERIFIED_LABEL = "Holder concentration unverified";
+
+export function isHoldersUnverifiedFlag(label) {
+  return typeof label === "string" && /holder concentration unverified/i.test(label);
+}
+
+/** Label to display for a flag: the unverified-holders flag is shown under a
+ *  neutral name (the check that is missing), every other label is unchanged. */
+export function displayFlagLabel(label) {
+  return isHoldersUnverifiedFlag(label) ? HOLDERS_UNVERIFIED_LABEL : label;
+}
+
+/** Flags that count and are listed on the page: warning/critical only, minus
+ *  pipeline-status ones ("... unavailable"), except the unverified-holders
+ *  flag, which explains the verdict. */
+export function visibleFlags(flags) {
+  return (flags || []).filter((f) => {
+    if (f.severity === "bonus" || f.severity === "info") return false;
+    if (
+      typeof f.label === "string" &&
+      /\bunavailable\b/i.test(f.label) &&
+      !isHoldersUnverifiedFlag(f.label)
+    ) {
+      return false;
+    }
+    return true;
+  });
+}

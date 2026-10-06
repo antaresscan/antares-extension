@@ -1,6 +1,7 @@
 import { state } from "./state"
 import { closePanelAnimated } from "./panel-close"
 import type { ScanResponseFlag } from "../../shared/types"
+import { HOLDERS_UNVERIFIED_LABEL, isHoldersUnverifiedFlag } from "../../shared/holders-unverified"
 
 // ─── FLAG DESCRIPTIONS ────────────────────────────────────────────
 // Plain-English descriptions for every common flag label. The Critical
@@ -48,7 +49,7 @@ const FLAG_DESCRIPTIONS: Record<string, string> = {
   "LP not burned or locked": "The dev can pull all liquidity in one transaction and crash the price to zero.",
   "LP not burned but token is mature and liquid (unverified LP)": "Liquidity is not locked — the dev could still rug, but the token's age and depth make this less likely.",
   // ── pipeline / data gap flags ──
-  "Helius unavailable — holder concentration unverified": "Our holder-distribution data source is temporarily unreachable. We can't verify wallet concentration right now — the verdict reflects this uncertainty conservatively.",
+  "Helius unavailable — holder concentration unverified": "Holder-distribution data was not available for this scan, so a very large wallet cannot be ruled out. The verdict is capped at CAUTION until it can be checked: re-scan in a moment.",
   "GoPlus unavailable": "One of our backup analysis sources is unreachable. Other sources still cover the same checks.",
   "RugCheck unavailable": "One of our primary analysis sources is unreachable. Other sources still cover the same checks.",
   "Solscan unavailable": "Our on-chain data source is unreachable. Some metrics (transaction count, age) may be approximate.",
@@ -227,7 +228,9 @@ function renderPanel(
   // Both bonus and non-concentration info are kept for CAUTION and SAFE.
   const TOP10_CONCENTRATION_RE = /^top 10 hold \d+%/i
   const all = (flags ?? []).filter((f) => {
-    if (PIPELINE_STATUS_PATTERN.test(f.label)) return false
+    // Exception: "holder concentration unverified" is why the verdict is
+    // capped at CAUTION, so it is shown (see shared/holders-unverified.ts).
+    if (PIPELINE_STATUS_PATTERN.test(f.label) && !isHoldersUnverifiedFlag(f.label)) return false
     if (isKillVerdict && f.severity === "bonus") return false
     if (isKillVerdict && f.severity === "info" && !TOP10_CONCENTRATION_RE.test(f.label)) return false
     return true
@@ -318,7 +321,7 @@ function renderPanel(
       const displayLabel = (isLpFlag && isSafeOrCaution)
         ? flag.label.replace(/\s*—.*$/, "").trim()
         : flag.label
-      label.textContent = displayLabel
+      label.textContent = isHoldersUnverifiedFlag(flag.label) ? HOLDERS_UNVERIFIED_LABEL : displayLabel
 
       const suppressDesc = isLpFlag && isSafeOrCaution
       const desc = suppressDesc ? null : getFlagDescription(flag.label)
