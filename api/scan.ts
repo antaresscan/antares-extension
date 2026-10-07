@@ -22,12 +22,13 @@ import {
   heliusGetLargestAccounts, heliusGetTokenSupply, heliusGetCreatorReputation,
   heliusGetHoldersCount,
   heliusResolveAccountOwners,
-  publicRpcGetLargestAccounts, publicRpcGetTokenSupply, publicRpcGetMintInfo,
-  solscanGetHoldersCount, fetchSolscan, fetchDexCandles, fetchDexCandlesDaily,
+  publicRpcGetTokenSupply, publicRpcGetMintInfo,
+  fetchSolscan, fetchDexCandles, fetchDexCandlesDaily,
   type CreatorReputation,
 } from "./_lib/fetchers";
 import { readHeliusKey } from "./_lib/helius";
 import { rugCheckConcentration } from "./_lib/rugcheck";
+import { goplusHolderAccounts, goplusHolderCount, goplusTotalSupply } from "./_lib/goplus";
 import {
   DEXSCREENER_BASE, RUGCHECK_BASE, GOPLUS_BASE, LAYER_WEIGHTS, SCORING_VERSION,
   LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS,
@@ -312,7 +313,6 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const [
       candlesRaw, candlesDailyRaw, goplusRaw,
       heliusHoldersRaw, heliusSupplyRaw, heliusHoldersCountRaw,
-      solscanHoldersCount,
       solMeta, solTransfers, solMarkets,
     ] = await Promise.all([
       withBudget(fetchDexCandles(pairAddress), remainingMs()),
@@ -321,7 +321,6 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       HELIUS_API_KEY ? withBudget(heliusGetLargestAccounts(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
       HELIUS_API_KEY ? withBudget(heliusGetTokenSupply(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
       HELIUS_API_KEY ? withBudget(heliusGetHoldersCount(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
-      withBudget(solscanGetHoldersCount(resolvedMint), remainingMs()),
       withBudget(fetchSolscan(`/token/meta?address=${resolvedMint}`), remainingMs()),
       // page_size=50 (was 10): the Holder Activity tab classifies the
       // last hour of activity per top-6 holder. With only 10 token-wide
@@ -342,18 +341,22 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const supplyResponse = isHeliusSupplyResponse(heliusSupplyRaw) ? heliusSupplyRaw : null;
     let totalSupplyUi: number = asNumber(supplyResponse?.result?.value?.uiAmount);
 
-    // Free public Solana RPC fallback for the two Helius RPC calls that
-    // matter for holder concentration. Same JSON-RPC interface, same
-    // response shape, no API key. Triggered when Helius is unset or
-    // returned no usable data — gives a token-distribution signal even
-    // for users running without a paid Helius tier.
+    // Holder list when Helius gave none: GoPlus's Solana answer (already fetched
+    // above, so no extra call) lists the top holders with their balance. The
+    // public Solana RPCs used to be tried here, but both refuse
+    // getTokenLargestAccounts now (api.mainnet-beta.solana.com answers 429,
+    // solana-rpc.publicnode.com 403), so that call only spent time.
+    let holdersFromGoPlus = false;
     if (rawHolderAccounts.length === 0) {
-      try {
-        const fallback = await withBudget(publicRpcGetLargestAccounts(resolvedMint), remainingMs());
-        const parsed = isHeliusLargestAccountsResponse(fallback) ? fallback : null;
-        rawHolderAccounts = parsed?.result?.value ?? [];
-      } catch { /* keep empty — section will gracefully degrade */ }
+      const fromGoPlus = goplusHolderAccounts(goplus);
+      if (fromGoPlus.length > 0) {
+        rawHolderAccounts = fromGoPlus;
+        holdersFromGoPlus = true;
+      }
     }
+    // Supply: Helius, then GoPlus (same answer, no call), then the public RPCs,
+    // whose getTokenSupply and getAccountInfo still answer.
+    if (totalSupplyUi <= 0) totalSupplyUi = goplusTotalSupply(goplus);
     if (totalSupplyUi <= 0) {
       try {
         const fallback = await withBudget(publicRpcGetTokenSupply(resolvedMint), remainingMs());
@@ -373,7 +376,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     }
 
     const solMarketsData = isSolscanMarketsResponse(solMarkets) ? solMarkets : null;
-    const resolvedHolderAccounts: HeliusHolder[] = HELIUS_API_KEY && rawHolderAccounts.length > 0
+    // GoPlus already names the owner wallets, so only a Helius list needs its token accounts resolved.
+    const resolvedHolderAccounts: HeliusHolder[] = HELIUS_API_KEY && rawHolderAccounts.length > 0 && !holdersFromGoPlus
       ? await withBudget(heliusResolveAccountOwners(rawHolderAccounts, HELIUS_API_KEY), remainingMs()) ?? rawHolderAccounts.map(h => ({ ...h, owner: h.owner ?? h.address }))
       : rawHolderAccounts.map(h => ({ ...h, owner: h.owner ?? h.address }));
     const solMarketPool: SolscanMarketPool | null =
@@ -438,16 +442,15 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const heliusHoldersCount: number | null = typeof heliusHoldersCountRaw === "number" && heliusHoldersCountRaw > 0
       ? heliusHoldersCountRaw : null;
     const top20NonZero = rawHolderAccounts.filter(h => asNumber(h?.uiAmount) > 0).length;
-    const goplusHolderCount: number | null = (() => {
-      const raw = goplus?.holder_count;
-      if (raw == null) return null;
-      const n = typeof raw === "number" ? raw : parseInt(String(raw), 10);
-      return Number.isFinite(n) && n > 0 ? n : null;
-    })();
+    // Counts a source really reports. Kept apart from top20NonZero (the size of the
+    // holder list we got, at most 20) so they can feed the holder-count flags
+    // without ever making a big token look tiny. The public Solscan holders
+    // endpoint this used to read now answers 404; GoPlus's count is alive.
+    const reportedHolderCounts = [heliusHoldersCount, goplusHolderCount(goplus)]
+      .filter((n): n is number => typeof n === "number" && n > 0);
+    const reportedHolderCount: number | null = reportedHolderCounts.length > 0 ? Math.max(...reportedHolderCounts) : null;
     const holderCandidates = [
-      solscanHoldersCount,
-      heliusHoldersCount,
-      goplusHolderCount,
+      reportedHolderCount,
       top20NonZero > 0 ? top20NonZero : null,
     ].filter((n): n is number => typeof n === "number" && n > 0);
     const holders: number | null = holderCandidates.length > 0 ? Math.max(...holderCandidates) : null;
@@ -533,7 +536,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
         .filter((a: unknown): a is string => typeof a === "string" && a.length > 0)
     );
     const l4 = layerHelius(resolvedHolderAccounts, totalSupplyUi, maturityCtx, dexPairAddresses);
-    const l5 = layerSolscan(solscanHoldersCount, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h);
+    const l5 = layerSolscan(reportedHolderCount, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h);
     const l6 = layerChart(candles, pair, tokenAgeMinutes, maturityCtx, dailyCandles.length >= 2 ? dailyCandles : undefined);
     const l7 = layerCrossValidation(solscanTokenAgeHours, dexTokenAgeHours);
 
@@ -878,6 +881,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       candles: candles.slice(-20).map(c => ({ close: c.c })),
       topHolderPct,
       top10HolderPct,
+      holdersSource: realHolderAccounts.length > 0 ? (holdersFromGoPlus ? "goplus" : "helius") : null,
       criticalActors,
       verdictHistory: finalHistory,
       holderActivity,
