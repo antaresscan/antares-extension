@@ -1,29 +1,48 @@
-# Nightly corpus drift detection
+# Weekly corpus drift detection
 #
-# Re-scans every captured fixture against the live /api/scan engine
-# and reports verdict changes / score drift. Without this the corpus
-# ages silently — a SAFE memecoin can rug overnight and the fixture
-# still says SAFE forever, making the accuracy report mislead.
+# Re-scans a rotating sample of the captured fixtures against the live
+# /api/scan engine and reports verdict changes / score drift. Without this
+# the corpus ages silently: a SAFE memecoin can rug overnight and the
+# fixture still says SAFE forever, making the accuracy report mislead.
+#
+# Why weekly, on a sample: every scan is a fresh, full pipeline run on
+# production (Helius RPC, RugCheck, GoPlus, Solscan, the AI summary). Doing
+# the whole corpus every night meant ~500 of them a day and ~100 minutes of
+# runner time, 82 near-identical issues, for a signal that does not move daily.
 #
 # Behaviour:
-#   - Runs daily at 03:00 UTC (low traffic, after data refresh).
+#   - Runs every Monday at 03:00 UTC on 100 entries. The window rotates with
+#     the ISO week, so the whole corpus is covered in about five runs.
 #   - Uses scripts/corpus-drift-check.ts which spaces requests by 2.5s
 #     to respect the /api/scan rate limit (30 req/min).
 #   - Hits the deployed production endpoint; doesn't write fixtures
 #     (read-only check, never mutates the repo).
-#   - On drift > 5%, opens (or updates) a tracking issue so a human
-#     can recapture / update labels.
-#   - Manually triggerable via workflow_dispatch.
+#   - Exit code 1 (drift > 5% of the compared entries): opens ONE tracking
+#     issue, or refreshes it if it is still open.
+#   - Any other non-zero exit code means the check itself is broken
+#     (production down, too many failed captures, crash). The job then FAILS,
+#     so it is visible, instead of passing green having measured nothing.
+#   - Manually triggerable via workflow_dispatch, with an optional sample
+#     size (0 = the whole corpus, about two hours).
 name: Corpus drift check
 on:
   schedule:
-    - cron: "0 3 * * *" # 03:00 UTC daily
+    - cron: "0 3 * * 1" # Mondays, 03:00 UTC
   workflow_dispatch: # manual trigger from Actions UI
+    inputs:
+      sample:
+        description: "Entries to re-scan (0 = the whole corpus)"
+        required: false
+        default: "100"
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+concurrency:
+  group: corpus-drift
+  cancel-in-progress: false
 jobs:
   drift:
     runs-on: ubuntu-latest
+    timeout-minutes: 150
     permissions:
       contents: read
       issues: write # needed to open the drift issue
@@ -39,14 +58,21 @@ jobs:
 
       - name: Run drift check (threshold 5%)
         id: drift
+        env:
+          SAMPLE: ${{ github.event.inputs.sample || '100' }}
         run: |
-          # Capture exit code without failing the step — we want the
-          # report rendered + issue opened even when drift exceeds.
+          case "$SAMPLE" in
+            ''|*[!0-9]*) echo "::error::sample must be a whole number, got '$SAMPLE'"; exit 1 ;;
+          esac
+          # Keep the exit code instead of failing the step: the report is
+          # uploaded either way, and the steps below decide what it means
+          # (1 = drift to triage, anything else = the check is broken).
           set +e
-          npx tsx scripts/corpus-drift-check.ts --threshold=0.05 \
+          npx tsx scripts/corpus-drift-check.ts --threshold=0.05 --sample="$SAMPLE" \
             > drift-report.txt 2>&1
-          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          code=$?
           set -e
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
           # Always show the report in the action log.
           cat drift-report.txt
 
@@ -58,21 +84,25 @@ jobs:
           path: drift-report.txt
           retention-days: 30
 
-      - name: Open issue when drift exceeds threshold
+      - name: Open or refresh the drift issue
         if: steps.drift.outputs.exit_code == '1'
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
+            const { owner, repo } = context.repo;
             const report = fs.readFileSync('drift-report.txt', 'utf8');
             const today = new Date().toISOString().slice(0, 10);
-            const title = `Corpus drift detected — ${today}`;
+            const run = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+            const title = 'Corpus drift above threshold';
             const body = [
-              '> Auto-opened by `.github/workflows/corpus-drift.yml`.',
+              '> Kept up to date by `.github/workflows/corpus-drift.yml`.',
+              '> One issue, refreshed by each run that finds drift.',
               '',
-              'The nightly drift check found that more than 5% of the',
-              'captured fixtures have either changed verdict or moved',
-              '> 150 score points against the live engine.',
+              `Last run: ${today} ([run](${run}))`,
+              '',
+              'More than 5% of the re-scanned fixtures have either changed',
+              'verdict or moved > 150 score points against the live engine.',
               '',
               '## Drift report',
               '',
@@ -89,10 +119,25 @@ jobs:
               '  to recapture if the new score still falls in the band.',
               '- Verify with `npm run test:corpus` after.',
             ].join('\n');
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title,
-              body,
-              labels: ['drift', 'corpus', 'automated'],
+
+            const open = await github.paginate(github.rest.issues.listForRepo, {
+              owner, repo, state: 'open', labels: 'drift', per_page: 100,
             });
+            const existing = open.find((i) => !i.pull_request && i.title === title);
+            if (existing) {
+              await github.rest.issues.update({ owner, repo, issue_number: existing.number, body });
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: existing.number,
+                body: `Still above the threshold on ${today} ([run](${run})). The description holds the latest report.`,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner, repo, title, body, labels: ['drift', 'corpus', 'automated'],
+              });
+            }
+
+      - name: Fail when the check itself could not run
+        if: steps.drift.outputs.exit_code != '0' && steps.drift.outputs.exit_code != '1'
+        run: |
+          echo "::error::The drift check produced no result (exit code ${{ steps.drift.outputs.exit_code }}). See the drift-report artifact."
+          exit 1

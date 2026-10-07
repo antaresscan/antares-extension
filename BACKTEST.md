@@ -14,9 +14,10 @@ Acceptable rate   : 1510/1510 (100%)
   └─ Tolerated    : 1401/1510 (92.8%)
 Hard fail         : 0/1510 (0%)
 
-Tested daily      : 539 / 1510 (35.7%) — 18 SEED + 521 DISCOVERED with
+Tested            : 539 / 1510 (35.7%) — 18 SEED + 521 DISCOVERED with
                                          live captured fixtures, re-checked
-                                         every night by the drift-check job
+                                         weekly (rotating sample) by the
+                                         drift-check job
 Tracked weekly    : 971 / 1510 (64.3%) — flagged skipFixture, present in
                                          corpus but their first /api/scan
                                          capture hasn't landed yet; the
@@ -84,7 +85,7 @@ For each corpus entry:
 - These two are the contract between engine and user. Everything else
   surfaces as a warning in the report but doesn't block CI.
 
-## Drift detection (nightly)
+## Drift detection (weekly)
 
 Captured fixtures are deterministic for CI but freeze a point-in-time
 view. Real on-chain state moves: a SAFE memecoin gets rugged, a
@@ -92,15 +93,27 @@ DANGER token matures into CAUTION. Without re-checks the corpus
 silently goes stale.
 
 `.github/workflows/corpus-drift.yml` runs `corpus-drift-check.ts`
-every night at 03:00 UTC. It re-scans every fixture against the live
-engine and:
+every Monday at 03:00 UTC on a rotating sample of 100 fixtures (the
+window moves with the ISO week, so the whole corpus is covered in about
+five runs). Each re-scan is a fresh run of the full pipeline on
+production (Helius, RugCheck, GoPlus, Solscan, the AI summary), which
+is why it is not done nightly on the whole corpus. It compares the
+live engine with the fixtures and:
 
 - Reports verdict changes (any RUG↔SAFE swap is critical).
 - Reports score drift > 150 pts inside the same verdict (warning).
-- Auto-opens an issue if drift exceeds 5% of the corpus, flagging
-  which fixtures need recapture or label update.
+- Measures drift over the entries that were actually compared; failed
+  captures are listed, never counted as stable.
+- Opens one tracking issue when drift exceeds 5%, and refreshes that
+  same issue on later runs, flagging which fixtures need recapture or
+  a label update.
+- Fails the job when the check itself is unreliable (more than 20% of
+  the captures failed, nothing to compare, a crash), so a run that
+  measured nothing can never show green.
 
-Manual trigger: GitHub → Actions → Corpus drift check → Run workflow.
+Manual trigger: GitHub → Actions → Corpus drift check → Run workflow
+(the sample size is an input; 0 re-scans the whole corpus, about two
+hours).
 
 ## Adding a token
 
