@@ -6,6 +6,7 @@ import { initDrag } from "./drag"
 import { encodeHashPayload } from "../../shared/hash-payload"
 import { toggleAiSummary } from "./ai-summary"
 import { toggleCriticalFlags } from "./critical-flags"
+import { isHoldersUnverifiedFlag } from "../../shared/holders-unverified"
 
 // DOM-API element builder. Used by buildResult instead of string template
 // literals so every text interpolation goes through textContent (which the
@@ -739,7 +740,10 @@ export function buildResultNode(
   // the count so the summary never contradicts what the panel renders.
   const summaryFlags = (data.flags || []).filter((f: ScanResponseFlag) => {
     if (f.severity === "bonus" || f.severity === "info") return false
-    if (PIPELINE_STATUS_PATTERN_C.test(f.label)) return false
+    // "Holder concentration unverified" is the one status flag that stays
+    // visible: it is why a CAUTION verdict is not SAFE (see
+    // shared/holders-unverified.ts).
+    if (PIPELINE_STATUS_PATTERN_C.test(f.label) && !isHoldersUnverifiedFlag(f.label)) return false
     return true
   })
   const flagCount = summaryFlags.length

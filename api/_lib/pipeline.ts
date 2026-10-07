@@ -187,7 +187,19 @@ export function determineVerdict(input: VerdictInput): Verdict {
     // (Helius down). No user-visible flags exist yet the verdict was CAUTION.
     // Rule: if ZERO visible warnings AND no hard structural risk AND good
     // score AND enough data sources → override and grant SAFE.
+    //
+    // Exception (7.7.21): unverified holders are NOT a "no visible issue"
+    // case. layerHelius sets safeBlocked plus the "holders" reason when it
+    // has no holder data (Helius down, no largest-accounts result), and
+    // constants.ts (7.7.0, RIV case) says that without verified
+    // concentration the gate stays closed: CAUTION is the ceiling. The
+    // override above only exists so the overlay never prints "No issues
+    // found" next to a CAUTION badge; the clients now show the
+    // unverified-holders flag, so that contradiction is gone and SAFE would
+    // be a false reassurance (HAWK, a rug, came out SAFE 893 this way).
+    const holdersUnverified = input.safeBlockedReasons?.includes("holders") ?? false;
     if (
+      !holdersUnverified &&
       (input.warningFlagsCount ?? 0) === 0 &&
       input.score >= 750 &&
       (input.sourcesUsedCount ?? 0) >= 4

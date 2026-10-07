@@ -44,6 +44,14 @@ import {
   renderDemoInsiderActivity,
 } from "./ui-setup.js";
 import { API, fetchWithRetry } from "./api-client.js";
+// Versioned on purpose: this module gained new exports, and a copy of
+// compute.js cached from before the deploy (max-age=300) would not have them,
+// which breaks the whole page until it expires.
+import {
+  visibleFlags,
+  isHoldersUnverifiedFlag,
+  displayFlagLabel,
+} from "./compute.js?v=20261007-holders";
 
 // ──────────────────────────────────────────────────────────────────────
 // Boot — parse the CA from the URL, kick off the initial fetch, and
@@ -577,19 +585,20 @@ function render(d, ca) {
   // unavailable", "GoPlus unavailable") describe pipeline health, not
   // token risk — they show up under Conf X% already, no need to also
   // appear in flag totals or the Critical Flags expansion.
-  const fAll = (d.flags || []).filter((f) => {
-    if (f.severity === "bonus" || f.severity === "info") return false;
-    if (typeof f.label === "string" && /\bunavailable\b/i.test(f.label)) return false;
-    return true;
-  });
+  //
+  // One exception: "holder concentration unverified" stays listed, because it
+  // is why a verdict is capped at CAUTION. Without it the page read "0 flags
+  // detected / All sources agree" next to a CAUTION verdict (see
+  // visibleFlags in compute.js).
+  const fAll = visibleFlags(d.flags);
   const fCrit = fAll.filter((f) => f.severity === "critical");
   const fWarn = fAll.filter((f) => f.severity !== "critical");
   const flagSummary =
     fAll.length === 0
       ? "No issues found"
       : fCrit.length > 0
-        ? `${fAll.length} flags — ${fCrit.length} critical`
-        : `${fAll.length} flags detected`;
+        ? `${fAll.length} flag${fAll.length === 1 ? "" : "s"} — ${fCrit.length} critical`
+        : `${fAll.length} flag${fAll.length === 1 ? "" : "s"} detected`;
 
   // ── Update sticky nav (visible on scroll past hero)
   document.getElementById("nav-ticker").innerHTML = sym
@@ -672,7 +681,7 @@ function render(d, ca) {
       : fAll
           .filter((f) => {
             const l = f.label || f;
-            return !String(l).toLowerCase().includes("unavailable");
+            return isHoldersUnverifiedFlag(l) || !String(l).toLowerCase().includes("unavailable");
           })
           .map((f) => {
             const sev = f.severity || "warning";
@@ -688,7 +697,7 @@ function render(d, ca) {
             const riskUpper = (d.risk || "").toUpperCase();
             const displayLabel = (isLpLabel && (riskUpper === "SAFE" || riskUpper === "CAUTION"))
               ? rawLabel.replace(/\s*—.*$/, "").trim()
-              : rawLabel;
+              : displayFlagLabel(rawLabel);
             const desc = (isLpLabel && (riskUpper === "SAFE" || riskUpper === "CAUTION"))
               ? null
               : getFlagDescription(rawLabel);
@@ -704,7 +713,9 @@ function render(d, ca) {
           .join("");
 
   const flagsCount =
-    fAll.length === 0 ? "0 flags detected" : `${fAll.length} flags detected`;
+    fAll.length === 0
+      ? "0 flags detected"
+      : `${fAll.length} flag${fAll.length === 1 ? "" : "s"} detected`;
   const critWarnText =
     fCrit.length > 0 || fWarn.length > 0 ? `${fCrit.length} critical · ${fWarn.length} warning` : "";
 

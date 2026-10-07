@@ -156,7 +156,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v40"; // 2026-05-31: GT token pool fallback in fetchDexCandlesDaily — when primary pool returns <5 candles, queries /tokens/{mint}/pools then tries top-3 GT pools. Covers PumpSwap + any pool where DEXScreener pairAddress != GT pool ID.
+const ENGINE_VERSION_MANUAL = "v41"; // 2026-10-07: unverified holders never reach SAFE (determineVerdict no longer applies the no-flags override when the "holders" safe-block reason is present); flushes cached SAFE entries.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.
@@ -357,7 +357,13 @@ export const API_TIMEOUT_HELIUS = 6000;
 //   query /tokens/{mint}/pools to get GT's own pool list → try top-3 by volume.
 //   Covers PumpSwap, Meteora DBC, any AMM where DEXScreener pairAddr ≠ GT ID.
 //   Zero additional API keys required.
-export const SCORING_VERSION = "7.7.20";
+// 7.7.21 bump (2026-10-07): restore the 7.7.0 rule that the no-flags SAFE
+//   override in determineVerdict had bypassed since PR #607. When holder
+//   concentration is unverified (the "holders" safe-block reason set by
+//   layerHelius), the verdict is capped at CAUTION. Before this, a token with
+//   no visible warning, score >= 750 and >= 4 sources came out SAFE with
+//   Helius down, including HAWK (a rug), which scanned SAFE 893.
+export const SCORING_VERSION = "7.7.21";
 
 // ── SOFT REASONS (safe gate unlock) ───────────────────────────
 // A reason listed here CAN be unlocked by applySafeGateOverride when

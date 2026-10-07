@@ -469,6 +469,35 @@ describe("determineVerdict", () => {
     expect(determineVerdict(makeVerdictInput({ safeBlocked: true, score: 850, warningFlagsCount: 1 }))).toBe("CAUTION");
   });
 
+  // 7.7.21: unverified holders are the one soft-block case the no-flags
+  // override must never lift. layerHelius sets the "holders" reason when it
+  // has no holder data; without verified concentration SAFE is not honest.
+  it("4c. safeBlocked + 'holders' reason, score=850, 0 visible flags -> CAUTION (never SAFE)", () => {
+    expect(
+      determineVerdict(makeVerdictInput({ safeBlocked: true, safeBlockedReasons: ["holders"], score: 850 })),
+    ).toBe("CAUTION");
+  });
+
+  it("4d. 'holders' reason mixed with another soft reason still blocks SAFE", () => {
+    expect(
+      determineVerdict(
+        makeVerdictInput({ safeBlocked: true, safeBlockedReasons: ["lp_unverified", "holders"], score: 880 }),
+      ),
+    ).toBe("CAUTION");
+  });
+
+  it("4e. 'holders' reason, score=699 -> DANGER (the CAUTION floor is unchanged)", () => {
+    expect(
+      determineVerdict(makeVerdictInput({ safeBlocked: true, safeBlockedReasons: ["holders"], score: 699 })),
+    ).toBe("DANGER");
+  });
+
+  it("4f. other soft reasons keep the existing no-flags override (change is scoped to holders)", () => {
+    expect(
+      determineVerdict(makeVerdictInput({ safeBlocked: true, safeBlockedReasons: ["lp_unverified"], score: 850 })),
+    ).toBe("SAFE");
+  });
+
     it("5. safeBlocked=true, score=600 -> DANGER (HARDENED: blocked needs score>=700 for CAUTION)", () => {
         expect(determineVerdict(makeVerdictInput({ safeBlocked: true, score: 600 }))).toBe("DANGER");
   });
