@@ -79,32 +79,36 @@ See `api/_lib/constants.ts` for the canonical version + fingerprint logic.
 
 ---
 
-## Backtest accuracy
+## Regression corpus
 
-The engine is tested live against **539 real Solana tokens** with captured
-`/api/scan` fixtures (18 hand-vetted SEEDs + 521 auto-discovered). A
-weekly drift check re-scans a rotating sample of them (100 per run) and
-opens an issue if more than 5% moved. A wider 1,510-token tracked corpus (memecoin-heavy +
-verified mid-cap) feeds future fixture captures.
+`__tests__/backtest/` keeps a corpus of about 1,500 Solana tokens: 18 picked
+by hand and the rest found automatically in DexScreener, GeckoTerminal,
+CoinGecko and Jupiter lists. For 504 of them a `/api/scan` response was
+captured (a fixture), and CI checks that each stored verdict falls in the set
+of verdicts the corpus tolerates for that token.
 
-```
-Tested live       : 539 Solana tokens
-Acceptable rate   : 100% (539/539)
-  ├─ Exact match  : 20.2%  (109/539)
-  └─ Tolerated    : 79.8%  (430/539)
-Hard fail         : 0%     (0/539)
+That is a **regression check, not a measure of accuracy**:
 
-False-positive on SAFE  : 0  (no blue-chip flagged DANGER/RUG)
-False-negative on RUG   : 0  (no confirmed rug returned SAFE)
+- It does not run the engine. A fixture is a response captured at some date, by
+  whichever engine version was live then, with whatever data sources were
+  working at that moment. It only changes when someone recaptures it.
+- Labels of the automatically found entries come from DexScreener signals only
+  (market cap, liquidity, age, 24h price change), and the tolerated verdicts
+  are wide: a token labelled SAFE tolerates CAUTION, DANGER and RUG. "Every
+  stored verdict is inside its band" is therefore close to true by
+  construction, and says nothing about blue-chips or rugs.
+- The corpus is kept by hand and has had errors: three hand-picked entries
+  pointed at the wrong token until 2026-10-07, and 454 of its 1,495 distinct
+  mints have no trading pair (mostly dead tokens).
 
-Tracked corpus    : 1,510 tokens total — 971 (64%) are queued for
-                                         their first fixture capture
-                                         and treated as warnings, not
-                                         failures, until the capture
-                                         lands.
-```
+Antares is a heuristic screen, not an oracle. A SAFE verdict means no layer
+found a critical signal at scan time; it is not a guarantee. False negatives
+happen: on 2026-10-07 an audit found a rug scoring SAFE while its holder data
+was unavailable (fixed the same day).
 
-Full methodology, sources, and confusion matrix in [BACKTEST.md](./BACKTEST.md).
+A weekly job re-scans a rotating sample of 100 fixtures against production and
+opens an issue when more than 5% moved. Numbers and method in
+[BACKTEST.md](./BACKTEST.md).
 
 ---
 
