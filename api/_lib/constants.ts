@@ -155,7 +155,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v46"; // 2026-10-07: Mint / Freeze / Sell indicators read GoPlus's real answer (null when it gave none) instead of flag labels no layer produced; flushes cached scans that showed every token as revoked.
+const ENGINE_VERSION_MANUAL = "v45"; // 2026-10-07: the GoPlus layer reads GoPlus's real Solana answer (authorities still held, Token-2022 hazards) instead of EVM fields it never had; flushes cached scans scored without them.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.

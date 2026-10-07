@@ -28,7 +28,7 @@ import {
 } from "./_lib/fetchers";
 import { readHeliusKey } from "./_lib/helius";
 import { rugCheckConcentration } from "./_lib/rugcheck";
-import { goplusAuthorityState, goplusHolderAccounts, goplusHolderCount, goplusTotalSupply } from "./_lib/goplus";
+import { goplusHolderAccounts, goplusHolderCount, goplusTotalSupply } from "./_lib/goplus";
 import {
   DEXSCREENER_BASE, RUGCHECK_BASE, GOPLUS_BASE, LAYER_WEIGHTS, SCORING_VERSION,
   LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS,
@@ -510,12 +510,10 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       holders: holders,
       liquidity: asNumber(pair?.liquidity?.usd),
       tokenAgeHours: solscanTokenAgeHours,
-      // Kept false on purpose, whatever GoPlus says. Authorities still held are one
-      // warning in layerGoPlus (information only for an established asset): 118 of
-      // the 505 corpus tokens hold a mint authority, nearly all of them legitimate
-      // issuer- or DAO-run assets. Feeding them to the LP matrix as "contract not
-      // clean" would turn those DANGER through the LP path. The indicators the
-      // clients show (authorityState below) do read the real answer.
+      // No authority reading is wired in yet: this was always false (it read a
+      // RugCheck field that does not exist) and the GoPlus layer reads EVM-style
+      // fields its Solana answer does not have. Kept false on purpose until an
+      // authority rule exists (see layerRugCheck).
       mintAuthority: false,
       freezeAuthority: false,
       honeypot: false,
@@ -527,12 +525,6 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const holderListAvailable = resolvedHolderAccounts.length > 0 && totalSupplyUi > 0;
     const l2 = layerRugCheck(rugData, tokenName, holderListAvailable);
     const l3 = layerGoPlus(goplus, maturityCtx);
-    // What the clients show for Mint, Freeze and Sell, and what the AI summary is
-    // told: GoPlus's own answer, or null when it gave none (the overlay then prints
-    // a dash). These used to be read off flag labels no layer ever produced, so every
-    // token showed Mint and Freeze as revoked and the summary said so.
-    const authorityState = goplusAuthorityState(goplus);
-    const honeypot = l3.available ? l3.trust === 0 && l3.flags.some(f => /honeypot/i.test(f.label)) : null;
     // Collect all DEXScreener pair addresses for this token.
     // For AMMs that use per-pool PDAs as vault authority (PumpSwap, Meteora DBC…)
     // the pair address IS the decoded authority of the LP vault token account.
@@ -842,9 +834,9 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       holders, marketCap, liquidity,
       lpBurned,
       lpLocked,
-      mintAuthority: authorityState.mint,
-      freezeAuthority: authorityState.freeze,
-      honeypot,
+      mintAuthority: allLayers.some(l => l.flags.some(f => /mint authority/i.test(f.label) && f.severity === "critical")),
+      freezeAuthority: allLayers.some(l => l.flags.some(f => /freeze authority/i.test(f.label) && f.severity === "critical")),
+      honeypot: l3.available && l3.trust === 0 && l3.flags.some(f => /honeypot/i.test(f.label)),
       tokenAgeHours: solscanTokenAgeHours ?? dexTokenAgeHours ?? null,
       sourcesUsed: sources_used,
       topHolderPct,
@@ -880,9 +872,9 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       tokenDecimals, tokenSupply, recentTransfers,
       solscanTokenAgeHours, solscanVolume24h, solscanTrades24h, solscanTraders24h,
       layers: layersSnapshot,
-      honeypot,
-      mintAuthority: authorityState.mint,
-      freezeAuthority: authorityState.freeze,
+      honeypot: l3.available && l3.trust === 0 && l3.flags.some(f => /honeypot/i.test(f.label)),
+      mintAuthority: allLayers.some(l => l.flags.some(f => /mint authority/i.test(f.label) && f.severity === "critical")),
+      freezeAuthority: allLayers.some(l => l.flags.some(f => /freeze authority/i.test(f.label) && f.severity === "critical")),
       lpBurned,
       lpLocked,
       lpLockedPct: _gpBP > 0 ? _gpBP : null,

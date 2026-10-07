@@ -547,25 +547,6 @@ describe("scan handler", () => {
       const authorityFlag = (flags: Array<{ label: string; severity: string }>) =>
         flags.find((f) => /^Authorities still active/.test(f.label));
 
-      type Indicators = { mintAuthority?: boolean | null; freezeAuthority?: boolean | null; honeypot?: boolean | null };
-      /** Scan, and return the indicators the clients show next to what the AI summary was told. */
-      async function indicators() {
-        const res = createMockRes();
-        await handler(createMockReq({ ca: WSOL, fresh: "1" }), res);
-        const body = (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as Indicators;
-        const { generateAISummary } = await import("../api/_lib/ai-summary");
-        const told = vi.mocked(generateAISummary).mock.calls[0][0] as Indicators;
-        const pick = (r: Indicators) => ({ mintAuthority: r.mintAuthority, freezeAuthority: r.freezeAuthority, honeypot: r.honeypot });
-        return { shown: pick(body), told: pick(told) };
-      }
-      function goplusDown() {
-        const base = mockFetch.getMockImplementation() as (...args: unknown[]) => Promise<Reply>;
-        mockFetch.mockImplementation(async (url: string, ...rest: unknown[]) => {
-          if (url.includes("gopluslabs")) return { ok: false, json: () => Promise.resolve(null) };
-          return base(url, ...rest);
-        });
-      }
-
       /** A token created 3 days ago: DexScreener's pair and Solscan's mint time agree. */
       function threeDaysOld() {
         const base = mockFetch.getMockImplementation() as (...args: unknown[]) => Promise<Reply>;
@@ -613,57 +594,6 @@ describe("scan handler", () => {
         });
         expect(body.flags.filter((f) => /^Authorities still active/.test(f.label))).toHaveLength(1);
         expect(body.risk).not.toBe("SAFE");
-      });
-
-      // The Mint and Freeze marks the overlay and the token page draw, and what the
-      // AI summary is told, came from flag labels no layer produced: every token
-      // showed both as revoked, and the summary said so.
-      it("shows a held mint and freeze authority as held, to the clients and to the AI summary alike (USDG)", async () => {
-        setupGoodTokenMocks();
-        goplusSays(goplusFixtures.tokens.USDG.result);
-
-        const { shown, told } = await indicators();
-
-        expect(shown).toEqual({ mintAuthority: true, freezeAuthority: true, honeypot: false });
-        expect(told).toEqual(shown);
-      });
-
-      it("shows revoked authorities as revoked (HAWK)", async () => {
-        setupGoodTokenMocks();
-        goplusSays(goplusFixtures.tokens.HAWK.result);
-
-        const { shown, told } = await indicators();
-
-        expect(shown).toEqual({ mintAuthority: false, freezeAuthority: false, honeypot: false });
-        expect(told).toEqual(shown);
-      });
-
-      it("a mint authority alone does not light the freeze mark (ORCA)", async () => {
-        setupGoodTokenMocks();
-        goplusSays(goplusFixtures.tokens.ORCA.result);
-
-        const { shown } = await indicators();
-
-        expect(shown).toMatchObject({ mintAuthority: true, freezeAuthority: false });
-      });
-
-      it("with GoPlus down, nothing is claimed: null for Mint, Freeze and Sell, to the clients and the summary", async () => {
-        setupGoodTokenMocks();
-        goplusDown();
-
-        const { shown, told } = await indicators();
-
-        expect(shown).toEqual({ mintAuthority: null, freezeAuthority: null, honeypot: null });
-        expect(told).toEqual(shown);
-      });
-
-      it("a soulbound token (cannot be sold) shows as a honeypot", async () => {
-        setupGoodTokenMocks();
-        goplusSays({ ...(goplusFixtures.tokens.HAWK.result as object), non_transferable: "1" });
-
-        const { shown } = await indicators();
-
-        expect(shown.honeypot).toBe(true);
       });
 
       it("a token with every authority revoked has no such flag", async () => {

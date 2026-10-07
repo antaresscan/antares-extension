@@ -9,7 +9,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { goplusAuthorityState, goplusHazards, goplusHolderAccounts, goplusHolderCount, goplusTotalSupply } from "../api/_lib/goplus";
+import { goplusHazards, goplusHolderAccounts, goplusHolderCount, goplusTotalSupply } from "../api/_lib/goplus";
 import { layerGoPlus, layerHelius } from "../api/_lib/layers";
 import { determineVerdict } from "../api/_lib/pipeline";
 import { GoPlusTokenResultSchema } from "../api/_lib/upstream-schemas";
@@ -328,38 +328,5 @@ describe("what the authorities flag does to the verdict", () => {
 
   it("a token that is not established is capped at CAUTION by the one warning, never DANGER", () => {
     expect(determineVerdict({ ...base, warningFlagsCount: 1 })).toBe("CAUTION");
-  });
-});
-
-// ─── Mint / Freeze as the clients show them ──────────────────────────────────
-
-describe("goplusAuthorityState", () => {
-  it("real answers: HAWK and BONK revoked, USDG and TSLAx held, ORCA mint only", () => {
-    expect(goplusAuthorityState(real("HAWK"))).toEqual({ mint: false, freeze: false });
-    expect(goplusAuthorityState(real("BONK"))).toEqual({ mint: false, freeze: false });
-    expect(goplusAuthorityState(real("USDG"))).toEqual({ mint: true, freeze: true });
-    expect(goplusAuthorityState(real("TSLAX"))).toEqual({ mint: true, freeze: true });
-    expect(goplusAuthorityState(real("ORCA"))).toEqual({ mint: true, freeze: false });
-  });
-
-  it("agrees with goplusHazards on which authorities are held", () => {
-    for (const key of Object.keys(FIXTURES.tokens)) {
-      const hazards = goplusHazards(real(key)).authorities;
-      const state = goplusAuthorityState(real(key));
-      expect(state.mint, key).toBe(hazards.includes("mint"));
-      expect(state.freeze, key).toBe(hazards.includes("freeze"));
-    }
-  });
-
-  it("no answer, or an answer without the object, is unknown (null), never revoked", () => {
-    expect(goplusAuthorityState(null)).toEqual({ mint: null, freeze: null });
-    expect(goplusAuthorityState(undefined)).toEqual({ mint: null, freeze: null });
-    expect(goplusAuthorityState({})).toEqual({ mint: null, freeze: null });
-    expect(goplusAuthorityState({ mintable: { authority: [] } })).toEqual({ mint: null, freeze: null });
-  });
-
-  it("reads the status as a string or a number, and shrugs at shapes it does not know", () => {
-    expect(goplusAuthorityState({ mintable: { status: 1 }, freezable: { status: 0 } })).toEqual({ mint: true, freeze: false });
-    expect(goplusAuthorityState({ mintable: { status: "yes" }, freezable: "1" })).toEqual({ mint: null, freeze: null });
   });
 });
