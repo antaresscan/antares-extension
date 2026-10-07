@@ -8,11 +8,15 @@
 // and "plan out of credits" all looked the same: a silent null.
 //
 // What this does:
-//   - Tries the way that last worked first (Bearer by default, as used since
-//     March 2026), then, ONLY if Helius answers 401/403 (or a JSON-RPC error
-//     that names the key), retries once with the documented `?api-key=` form.
+//   - Starts with the documented `?api-key=` form (production was refused with
+//     the Bearer header on 2026-10-07, and probing it first cost an extra round
+//     trip on every cold instance), then, ONLY if Helius answers 401/403 (or a
+//     JSON-RPC error that names the key), retries once with the Bearer header.
 //   - Remembers the form that worked for the life of the warm instance, so the
 //     extra request is paid once, not on every scan.
+//   - Optional `usable` check: an answer that is not an auth refusal but lacks
+//     what the caller needs (HTTP 200 without `result`) gets one retry in the
+//     other form, for that call only.
 //   - Logs which form was rejected (status codes only, never the key or the
 //     URL), once per minute, so Vercel's runtime logs say what is wrong.
 //
@@ -87,8 +91,9 @@ export function describeHeliusKey(raw: string | null | undefined): {
 }
 
 // Module scope: lives as long as the warm serverless instance.
-let rpcAuthMode: HeliusAuthMode = "bearer";
+let rpcAuthMode: HeliusAuthMode = "query";
 let lastRejectedLogAt = 0;
+let lastUnusableLogAt = 0;
 const REJECTED_LOG_INTERVAL_MS = 60_000;
 
 // What the last Helius RPC call looked like (HTTP statuses only, never the key),
@@ -123,9 +128,11 @@ export function getHeliusDiagnostics(): {
 
 /** Test hook: restore the default mode, the log throttle and the last outcome. */
 export function _resetHeliusAuthForTests(): void {
-  rpcAuthMode = "bearer";
+  rpcAuthMode = "query";
   lastRejectedLogAt = 0;
+  lastUnusableLogAt = 0;
   lastRpc = null;
+  probedAt = 0;
 }
 
 export function getHeliusRpcAuthMode(): HeliusAuthMode {
@@ -182,34 +189,65 @@ function rejected<T>(a: Attempt<T>): boolean {
   return looksLikeAuthError(a.res);
 }
 
+export interface HeliusRpcOptions<T> {
+  /**
+   * Does this answer carry what the caller needs? An answer that is not usable
+   * but is not an auth refusal either (an HTTP 200 without `result`, which the
+   * activity feed once hit with `?api-key=`) gets ONE retry in the other form,
+   * for this call only: the remembered mode is left alone.
+   */
+  usable?: (res: T) => boolean;
+}
+
 /** POST a JSON-RPC body to Helius, negotiating how the key is sent. */
 export async function heliusRpc<T = unknown>(
   key: string,
   body: object,
   ms = 6000,
   maxRetries = 1,
+  opts: HeliusRpcOptions<T> = {},
 ): Promise<T | null> {
   const k = normalizeHeliusKey(key);
   if (!k) return null;
 
   const first = rpcAuthMode;
+  const second: HeliusAuthMode = first === "bearer" ? "query" : "bearer";
+  const isUsable = (r: T | null): r is T => r !== null && (opts.usable ? opts.usable(r) : true);
+
   const a = await attempt<T>(k, body, ms, maxRetries, first);
-  if (!rejected(a)) {
+  const aRefused = rejected(a);
+  const aUnusable = !aRefused && a.res !== null && !isUsable(a.res);
+  if (!aRefused && !aUnusable) {
     record(a.res !== null ? "ok" : "failed", first, a.status);
     return a.res;
   }
 
-  const second: HeliusAuthMode = first === "bearer" ? "query" : "bearer";
   const b = await attempt<T>(k, body, ms, maxRetries, second);
-  if (b.res !== null && !rejected(b)) {
-    record("switched", first, a.status, second, b.status);
-    rpcAuthMode = second;
-    logger.warn("helius", "RPC auth mode switched: the previous form was rejected", {
-      from: first,
-      to: second,
-      status: a.status,
-    });
+  if (!rejected(b) && isUsable(b.res)) {
+    record(aRefused ? "switched" : "ok", first, a.status, second, b.status);
+    if (aRefused) {
+      rpcAuthMode = second;
+      logger.warn("helius", "RPC auth mode switched: the previous form was rejected", {
+        from: first,
+        to: second,
+        status: a.status,
+      });
+    } else if (Date.now() - lastUnusableLogAt >= REJECTED_LOG_INTERVAL_MS) {
+      lastUnusableLogAt = Date.now();
+      logger.warn("helius", "RPC answer was unusable in the current form but fine in the other", {
+        method: (body as { method?: unknown }).method,
+        form: first,
+        status: a.status,
+      });
+    }
     return b.res;
+  }
+
+  if (aUnusable) {
+    // Not an authentication problem: keep the first answer and do not claim
+    // that the key is refused.
+    record("failed", first, a.status, second, b.status);
+    return a.res;
   }
 
   record("rejected", first, a.status, second, b.status);
@@ -223,4 +261,23 @@ export async function heliusRpc<T = unknown>(
     );
   }
   return a.res;
+}
+
+// ─── Active probe, for /api/health?probe=1 ───────────────────────────────────
+// Each Vercel function has its own memory, so /api/health never sees the calls
+// made by /api/scan. The probe makes ONE cheap JSON-RPC call from the health
+// function itself, so its diagnostics (getHeliusDiagnostics) describe a real
+// request. At most once a minute per instance: a public URL must not be able to
+// burn the Helius quota.
+const PROBE_MIN_INTERVAL_MS = 60_000;
+let probedAt = 0;
+
+export async function probeHelius(): Promise<boolean> {
+  const key = readHeliusKey();
+  if (!key) return false;
+  const now = Date.now();
+  if (now - probedAt < PROBE_MIN_INTERVAL_MS) return false;
+  probedAt = now;
+  await heliusRpc(key, { jsonrpc: "2.0", id: "probe", method: "getSlot", params: [] }, 4000, 0);
+  return true;
 }

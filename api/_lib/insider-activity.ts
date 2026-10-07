@@ -19,7 +19,8 @@
 import { Redis } from "@upstash/redis"
 import { fetchJson } from "./http"
 import { runWithConcurrency } from "./concurrency"
-import { HELIUS_BASE, HELIUS_REST_BASE } from "./constants"
+import { HELIUS_REST_BASE } from "./constants"
+import { heliusRpc } from "./helius"
 
 // Match insider-graph.ts — 5-in-flight cap keeps the combined burst
 // under Helius free tier's 10 req/s ceiling.
@@ -149,30 +150,24 @@ async function getWalletSignaturesV2(
   apiKey: string,
 ): Promise<HeliusSignatureV2[]> {
   try {
-    // Match the auth convention used by insider-graph.ts (which is
-    // proven to work in production): Authorization: Bearer header,
-    // no api-key in URL. Earlier version used `?api-key=` in URL
-    // which silently returned empty results — looks valid (HTTP 200)
-    // but `result` is undefined, so the helper falls back to [] and
-    // the activity feed renders as empty for every token.
-    const res = await fetchJson(
-      HELIUS_BASE,
+    // Sent through heliusRpc: it negotiates how the key is sent (header or
+    // ?api-key=) and logs when Helius refuses it. An earlier version sent the
+    // key in the URL and got HTTP 200 with no `result`, so the feed rendered
+    // empty for every token; the `usable` check retries once in the other
+    // form when that happens.
+    const res = await heliusRpc<{ result?: HeliusSignatureV2[] }>(
+      apiKey,
       {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          jsonrpc: "2.0",
-          id: 1,
-          method: "getSignaturesForAddress",
-          params: [wallet, { limit: MAX_SIGS_PER_WALLET }],
-        }),
+        jsonrpc: "2.0",
+        id: 1,
+        method: "getSignaturesForAddress",
+        params: [wallet, { limit: MAX_SIGS_PER_WALLET }],
       },
       5000,
+      1,
+      { usable: (r) => Array.isArray(r.result) },
     )
-    const sigs = (res as { result?: HeliusSignatureV2[] })?.result ?? []
+    const sigs = res?.result ?? []
     return Array.isArray(sigs) ? sigs : []
   } catch {
     return []
@@ -190,7 +185,7 @@ async function parseTxBatch(
     try {
       // Helius Enhanced Transactions endpoint authenticates via the
       // `?api-key=` query param, NOT a Bearer header. The Bearer
-      // pattern works for the JSON-RPC mainnet endpoint but the REST
+      // pattern worked for the JSON-RPC mainnet endpoint until mid-2026 but the REST
       // /v0/* surface accepts only the query-param form. Sending
       // Authorization Bearer here returns 401 (which our generic
       // fetchJson swallows as null), so the helper saw 0 parsed txs.

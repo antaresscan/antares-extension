@@ -6,6 +6,17 @@ vi.mock("../api/_lib/helpers", () => ({
   fetchJson: vi.fn(),
 }));
 
+// The RPC (getSignaturesForAddress) goes through heliusRpc, which negotiates how
+// the key is sent. Route it into the same fetchJson mock so every test keeps
+// scripting one call per wallet, in order.
+const heliusRpcMock = vi.fn(
+  (_key: string, body: object, ms?: number, _retries?: number, _opts?: { usable?: (r: any) => boolean }) =>
+    mockFetchJson("https://mainnet.helius-rpc.com", { method: "POST", body: JSON.stringify(body) }, ms),
+);
+vi.mock("../api/_lib/helius", () => ({
+  heliusRpc: (...args: Parameters<typeof heliusRpcMock>) => heliusRpcMock(...args),
+}));
+
 import { fetchJson } from "../api/_lib/helpers";
 const mockFetchJson = vi.mocked(fetchJson);
 
@@ -390,5 +401,23 @@ describe("buildInsiderGraph — Helius pooling (PR #294)", () => {
     expect(setKeys.some((k) => k.startsWith("igsig:"))).toBe(false);
 
     initGraphCache(null as any);
+  });
+});
+
+describe("buildInsiderGraph — how the Helius key is sent", () => {
+  it("sends getSignaturesForAddress through heliusRpc, checking that the answer carries a result array", async () => {
+    mockFetchJson.mockResolvedValue({ result: [] });
+
+    await buildInsiderGraph(MINT, holders, 100000, API_KEY, new Set<string>());
+
+    expect(heliusRpcMock).toHaveBeenCalled();
+    const [key, body, , , opts] = heliusRpcMock.mock.calls[0];
+    expect(key).toBe(API_KEY);
+    expect((body as { method: string }).method).toBe("getSignaturesForAddress");
+    // HTTP 200 without a result array is retried in the other form; a real empty array is fine.
+    expect(opts?.usable?.({ result: [] })).toBe(true);
+    expect(opts?.usable?.({ result: [{ signature: "s" }] })).toBe(true);
+    expect(opts?.usable?.({})).toBe(false);
+    expect(opts?.usable?.({ result: null })).toBe(false);
   });
 });

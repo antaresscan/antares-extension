@@ -43,6 +43,17 @@ vi.mock("../api/_lib/http", async () => {
   };
 });
 
+// getSignaturesForAddress goes through heliusRpc, which negotiates how the key
+// is sent. Route it into the same fetchJson mock, as a POST to HELIUS_BASE, so
+// scriptHelius keeps dispatching on it.
+const heliusRpcMock = vi.fn(
+  (_key: string, body: object, ms?: number, _retries?: number, _opts?: { usable?: (r: { result?: unknown }) => boolean }) =>
+    fetchJsonMock(HELIUS_BASE, { method: "POST", body: JSON.stringify(body) }, ms),
+);
+vi.mock("../api/_lib/helius", () => ({
+  heliusRpc: (...args: Parameters<typeof heliusRpcMock>) => heliusRpcMock(...args),
+}));
+
 // Helpers to build canonical Helius shapes without typing each test by hand.
 interface MockSig {
   signature: string;
@@ -614,5 +625,28 @@ describe("buildInsiderActivity — Redis cache hit", () => {
     );
     expect(out).toEqual(cachedResult);
     expect(fetchJsonMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("buildInsiderActivity — how the Helius key is sent", () => {
+  it("sends getSignaturesForAddress through heliusRpc, checking that the answer carries a result array", async () => {
+    heliusRpcMock.mockClear();
+    scriptHelius({ sigsByWallet: { [HOLDER_A]: [] } });
+
+    await buildInsiderActivity(
+      MINT,
+      [{ owner: HOLDER_A, uiAmount: 100_000 } satisfies InsiderActivityHolder],
+      1_000_000,
+      0.5,
+      "the-key",
+    );
+
+    expect(heliusRpcMock).toHaveBeenCalled();
+    const [key, body, , , opts] = heliusRpcMock.mock.calls[0];
+    expect(key).toBe("the-key");
+    expect((body as { method: string }).method).toBe("getSignaturesForAddress");
+    expect(opts?.usable?.({ result: [] })).toBe(true);
+    expect(opts?.usable?.({})).toBe(false);
+    expect(opts?.usable?.({ result: undefined })).toBe(false);
   });
 });
