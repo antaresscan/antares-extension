@@ -18,6 +18,7 @@ import { Redis } from "@upstash/redis";
 import { setCorsHeaders, validateCA, checkRateLimit, getClientIp, initRateLimiters } from "./_lib/middleware";
 import { apiError, settled } from "./_lib/helpers";
 import { heliusGetLargestAccounts, heliusGetTokenSupply, heliusResolveAccountOwners } from "./_lib/fetchers";
+import { readHeliusKey } from "./_lib/helius";
 import { LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS } from "./_lib/constants";
 import { buildInsiderGraph, initGraphCache } from "./_lib/insider-graph";
 import { buildInsiderActivity, initActivityCache } from "./_lib/insider-activity";
@@ -53,7 +54,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const allowed = await checkRateLimit(res, ip);
   if (!allowed) return;
 
-  const HELIUS_API_KEY = process.env.HELIUS_API_KEY;
+  const HELIUS_API_KEY = readHeliusKey();
   if (!HELIUS_API_KEY) return apiError(res, 503, "Helius API key not configured.");
 
   try {
