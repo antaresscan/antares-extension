@@ -167,16 +167,16 @@ function setupGoodTokenMocks() {
         ok: true,
         json: () => Promise.resolve({
           result: {
+            // The shape GoPlus really sends for Solana: nothing held, nothing
+            // special on the token. (Holders and supply come from the Helius mocks.)
             So11111111111111111111111111111111111111112: {
-              is_honeypot: "0",
-              cannot_sell_all: "0",
-              mint_authority: "0",
-              freeze_authority: "0",
-              is_blacklisted: "0",
-              sell_tax: "0",
-              buy_tax: "0",
-              owner_percent: "0",
-              creator_percent: "0",
+              mintable: { authority: [], status: "0" },
+              freezable: { authority: [], status: "0" },
+              balance_mutable_authority: { authority: [], status: "0" },
+              default_account_state: "1",
+              non_transferable: "0",
+              transfer_fee: {},
+              transfer_hook: [],
             },
           },
         }),
@@ -538,6 +538,73 @@ describe("scan handler", () => {
       const body = await scan();
 
       expect(body.flags.find((f) => /very few holders/i.test(f.label))?.severity).toBe("critical");
+    });
+
+    // Authorities still held (mint, freeze, permanent delegate...). The engine read none of
+    // them before: its GoPlus layer looked for EVM fields. 118 of the 505 corpus tokens hold
+    // a mint authority, almost all legitimate issuer- or DAO-run assets.
+    describe("authorities", () => {
+      const authorityFlag = (flags: Array<{ label: string; severity: string }>) =>
+        flags.find((f) => /^Authorities still active/.test(f.label));
+
+      /** A token created 3 days ago: DexScreener's pair and Solscan's mint time agree. */
+      function threeDaysOld() {
+        const base = mockFetch.getMockImplementation() as (...args: unknown[]) => Promise<Reply>;
+        mockFetch.mockImplementation(async (url: string, ...rest: unknown[]) => {
+          const r = await base(url, ...rest);
+          if (url.includes("dexscreener")) {
+            const j = (await r.json()) as { pairs: Array<Record<string, unknown>> };
+            for (const p of j.pairs) p.pairCreatedAt = Date.now() - 3 * 24 * 3600 * 1000;
+            return { ok: true, json: () => Promise.resolve(j) };
+          }
+          return r;
+        });
+        const prior = mockFetchSolscan.getMockImplementation() as (endpoint: string) => Promise<unknown>;
+        mockFetchSolscan.mockImplementation((endpoint: string) => {
+          if (endpoint.includes("meta")) {
+            return Promise.resolve({ data: { created_time: Math.floor(Date.now() / 1000) - 3 * 24 * 3600, icon: "https://img.test.com/icon.png", creator: "creator123", decimals: 9, supply: 100000 } });
+          }
+          return prior(endpoint);
+        });
+      }
+
+      it("an established issuer-run asset (USDG): the API says so, as information, and nothing is held against it", async () => {
+        setupGoodTokenMocks();
+        goplusSays(goplusFixtures.tokens.USDG.result);
+
+        const body = await scan();
+
+        expect(authorityFlag(body.flags)).toMatchObject({
+          severity: "info",
+          label: "Authorities still active (established asset): mint, freeze, permanent delegate, transfer fee, transfer hook",
+        });
+        expect(body.flags.some((f) => f.severity === "warning" && /authorit/i.test(f.label))).toBe(false);
+      });
+
+      it("the same asset 3 days old: one warning, never SAFE", async () => {
+        setupGoodTokenMocks();
+        threeDaysOld();
+        goplusSays(goplusFixtures.tokens.USDG.result);
+
+        const body = await scan();
+
+        expect(authorityFlag(body.flags)).toMatchObject({
+          severity: "warning",
+          label: "Authorities still active: mint, freeze, permanent delegate, transfer fee, transfer hook",
+        });
+        expect(body.flags.filter((f) => /^Authorities still active/.test(f.label))).toHaveLength(1);
+        expect(body.risk).not.toBe("SAFE");
+      });
+
+      it("a token with every authority revoked has no such flag", async () => {
+        setupGoodTokenMocks();
+        threeDaysOld();
+        goplusSays(goplusFixtures.tokens.HAWK.result);
+
+        const body = await scan();
+
+        expect(authorityFlag(body.flags)).toBeUndefined();
+      });
     });
 
     it("does not call the public Solscan holders endpoint any more (it answers 404)", async () => {
