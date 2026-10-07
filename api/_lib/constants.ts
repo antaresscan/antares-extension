@@ -155,7 +155,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v44"; // 2026-10-07: holders fall back on GoPlus's top-holders list when Helius gives none, and the holder-count flags get a real count (Helius or GoPlus) instead of the dead public Solscan endpoint; flushes cached scans scored without them.
+const ENGINE_VERSION_MANUAL = "v45"; // 2026-10-07: the GoPlus layer reads GoPlus's real Solana answer (authorities still held, Token-2022 hazards) instead of EVM fields it never had; flushes cached scans scored without them.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.
@@ -401,7 +401,19 @@ export const API_TIMEOUT_HELIUS = 6000;
 //     strong holder base) got their count from public-api.solscan.io, which now
 //     answers 404, so they never fired. They read the count Helius or GoPlus
 //     reports instead (never the size of the holder list, at most 20).
-export const SCORING_VERSION = "7.7.24";
+// 7.7.25 bump (2026-10-07): the GoPlus layer reads what GoPlus sends for Solana.
+//   It read the EVM answer's fields (is_honeypot, mint_authority, freeze_authority,
+//   sell_tax, is_proxy...), which a Solana answer does not have, so apart from the
+//   LP burn it checked nothing: no mint or freeze authority was ever flagged.
+//   Now: authorities still held (mint, freeze, permanent delegate, a changeable
+//   transfer fee or hook) are one warning, information only for an established
+//   asset (30 days, 5,000 holders, $250k liquidity); a non-transferable token
+//   (honeypot), accounts frozen by default and a transfer fee of 10%+ are
+//   critical; a smaller fee or a transfer hook is a warning. 118 of 505 corpus
+//   tokens hold a mint authority, almost all legitimate issuer- or DAO-run assets,
+//   which is why it is not a blanket critical. The LP matrix's "contract not
+//   clean" input stays false (it would turn those assets DANGER through the LP).
+export const SCORING_VERSION = "7.7.25";
 
 // ── SOFT REASONS (safe gate unlock) ───────────────────────────
 // A reason listed here CAN be unlocked by applySafeGateOverride when

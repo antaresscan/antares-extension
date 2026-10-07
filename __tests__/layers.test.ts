@@ -3,7 +3,7 @@ import {
   layerChart, layerDexScreener, layerGoPlus, layerHelius,
   layerSolscan, layerCrossValidation,
 } from "../api/_lib/layers";
-import type { DexScreenerPair, GoPlusTokenResult, HeliusHolder } from "../api/_lib/types";
+import type { DexScreenerPair, HeliusHolder } from "../api/_lib/types";
 
 // ═══ LAYER 1 — DexScreener ══════════════════════════════════════════════════
 
@@ -313,71 +313,10 @@ describe("layerGoPlus", () => {
     expect(result.available).toBe(false);
   });
 
-  it("honeypot sets trust:0 AND safeBlocked:true", () => {
-    const result = layerGoPlus({ is_honeypot: "1" });
-    expect(result.trust).toBe(0);
-    expect(result.forceRug).toBe(true);
-    expect(result.safeBlocked).toBe(true);
-  });
-
-  it("cannot_sell_all sets safeBlocked", () => {
-    const result = layerGoPlus({ cannot_sell_all: "1" });
-    expect(result.trust).toBe(0);
-    expect(result.forceRug).toBe(true);
-    expect(result.safeBlocked).toBe(true);
-  });
-
-  it("mint + freeze both active sets safeBlocked", () => {
-    const goplus: GoPlusTokenResult = {
-      mint_authority: "active",
-      freeze_authority: "active",
-    };
-    const result = layerGoPlus(goplus);
-    expect(result.safeBlocked).toBe(true);
-    expect(result.forceRug).toBe(true);
-    expect(result.flags.some(f => /mint.*freeze/i.test(f.label))).toBe(true);
-  });
-
-  it("Fix(TAX_WARNING): sell_tax '10' (=10%) is at boundary — triggers warning (>0.02 && <=0.10)", () => {
-    // sell_tax='10' -> normalized to 0.10 -> 0.10 > 0.02 && 0.10 <= 0.10 → TRUE → warning flag present
-    const goplus: GoPlusTokenResult = { sell_tax: "10", buy_tax: "0" };
-    const result = layerGoPlus(goplus);
-    expect(result.flags.some(f => /sell tax.*suspicious/i.test(f.label))).toBe(true);
-  });
-
-  it("Fix(TAX_WARNING): sell_tax '4.5' (VDOR-style) triggers warning flag", () => {
-    const goplus: GoPlusTokenResult = { sell_tax: "4.5", buy_tax: "0" };
-    const result = layerGoPlus(goplus);
-    expect(result.flags.some(f => /sell tax.*suspicious/i.test(f.label))).toBe(true);
-    expect(result.trust).toBeLessThan(1.0);
-  });
-
-  it("Fix(TAX_WARNING): sell_tax '0.15' (=15%) is hard flagged as > 10%", () => {
-    const goplus: GoPlusTokenResult = { sell_tax: "0.15", buy_tax: "0" };
-    const result = layerGoPlus(goplus);
-    expect(result.flags.some(f => /sell tax > 10%/i.test(f.label))).toBe(true);
-  });
-
-  it("Fix(TAX_WARNING): sell_tax '11' (=11%) is hard flagged as > 10%", () => {
-    const goplus: GoPlusTokenResult = { sell_tax: "11", buy_tax: "0" };
-    const result = layerGoPlus(goplus);
-    expect(result.flags.some(f => /sell tax > 10%/i.test(f.label))).toBe(true);
-  });
-
-  it("clean token (sell_tax=0, buy_tax=0) returns trust 1.0", () => {
-    const goplus: GoPlusTokenResult = {
-      is_honeypot: "0",
-      cannot_sell_all: "0",
-      mint_authority: "0",
-      freeze_authority: "0",
-      sell_tax: "0",
-      buy_tax: "0",
-    };
-    const result = layerGoPlus(goplus);
-    expect(result.trust).toBe(1.0);
-    expect(result.safeBlocked).toBe(false);
-    expect(result.forceRug).toBe(false);
-  });
+  // The layer is tested on real GoPlus answers for Solana in __tests__/goplus.test.ts.
+  // The tests that used to live here fed it is_honeypot, mint_authority, sell_tax...,
+  // fields of GoPlus's EVM answer that a Solana answer does not have, which is how the
+  // layer could check nothing on every real token while its tests passed.
 });
 
 // ═══ LAYER 4 — Helius ═══════════════════════════════════════════════════════

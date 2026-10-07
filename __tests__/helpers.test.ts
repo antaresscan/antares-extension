@@ -485,15 +485,16 @@ describe("upstream schema enforcement", () => {
       const raw = {
         result: {
           So11111111111111111111111111111111111111112: {
-            is_honeypot: "0",
-            buy_tax: "0.05",
-            mint_authority: "",
+            holder_count: "7007",
+            total_supply: "913988565.299819",
+            non_transferable: "0",
           },
         },
       };
       const r = pickGoPlusResult(raw, "So11111111111111111111111111111111111111112");
       expect(r).not.toBeNull();
-      expect(r?.is_honeypot).toBe("0");
+      expect(r?.holder_count).toBe("7007");
+      expect(r?.total_supply).toBe("913988565.299819");
     });
     it("keeps the token result when a dex pool reports burn_percent: null", () => {
       // Live GoPlus shape since ~2026-09 (BONK/WIF/HAWK/USDC): unmeasured
@@ -502,7 +503,7 @@ describe("upstream schema enforcement", () => {
       const raw = {
         result: {
           So11111111111111111111111111111111111111112: {
-            is_honeypot: "0",
+            holder_count: "7007",
             dex: [
               { dex_name: "Raydium", type: "Standard", tvl: "12345.6", burn_percent: null },
               { dex_name: "Orca", type: "Whirlpool", tvl: 999, burn_percent: 100 },
@@ -520,8 +521,8 @@ describe("upstream schema enforcement", () => {
       const raw = {
         result: {
           So11111111111111111111111111111111111111112: {
-            // buy_tax must be string | number, not an object
-            buy_tax: { nested: true },
+            // holder_count must be string | number, not an object
+            holder_count: { nested: true },
           },
         },
       };

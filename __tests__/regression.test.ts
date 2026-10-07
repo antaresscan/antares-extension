@@ -119,17 +119,13 @@ describe("VDOR-class rug regression", () => {
     expect(result.flags.some(f => /deceptive name/i.test(f.label))).toBe(true);
   });
 
-  it("sell tax 4.5% (VDOR-style) triggers warning flag in layerGoPlus", () => {
+  it("a 4.5% transfer fee (the Solana counterpart of VDOR's sell tax) triggers a warning in layerGoPlus", () => {
+    // Token-2022 transfer fee, in basis points, as GoPlus reports it.
     const goplus: GoPlusTokenResult = {
-      is_honeypot: "0",
-      cannot_sell_all: "0",
-      mint_authority: "0",
-      freeze_authority: "0",
-      sell_tax: "4.5",
-      buy_tax: "0",
+      transfer_fee: { current_fee_rate: { fee_rate: "450", maximum_fee: "1000000" } },
     };
     const result = layerGoPlus(goplus);
-    expect(result.flags.some(f => /sell tax.*suspicious/i.test(f.label))).toBe(true);
+    expect(result.flags.some(f => /transfer fee 4\.5% .* suspicious/i.test(f.label))).toBe(true);
     expect(result.trust).toBeLessThan(1.0);
   });
 
