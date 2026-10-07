@@ -83,8 +83,8 @@ See `api/_lib/constants.ts` for the canonical version + fingerprint logic.
 
 The engine is tested live against **539 real Solana tokens** with captured
 `/api/scan` fixtures (18 hand-vetted SEEDs + 521 auto-discovered). A
-nightly drift check re-scans every one of them and opens an issue if
-the verdict moves. A wider 1,510-token tracked corpus (memecoin-heavy +
+weekly drift check re-scans a rotating sample of them (100 per run) and
+opens an issue if more than 5% moved. A wider 1,510-token tracked corpus (memecoin-heavy +
 verified mid-cap) feeds future fixture captures.
 
 ```
@@ -151,7 +151,7 @@ api/
   history.ts                 — GET /api/history                 Pro-tier scan history
   quota.ts                   — GET /api/quota                   Per-install quota status
   rugs.ts                    — GET /api/rugs                    Confirmed-rug fingerprint cache
-  health.ts                  — GET /api/health                  Liveness probe
+  health.ts                  — GET /api/health                  Liveness, live commit + scoring version, configured integrations
 
   payment-intent.ts          — POST /api/payment-intent         Create NOWPayments invoice
   payment-status.ts          — GET  /api/payment-status         Poll an in-flight payment

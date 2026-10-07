@@ -1,0 +1,33 @@
+# Lint the workflow files themselves.
+#
+# On 2026-10-07 secret-scan.yml was merged with duplicated `uses:` keys (two
+# Dependabot PRs on the same line). GitHub treats such a file as invalid and
+# starts no job for it, so the PR checks it was meant to provide silently
+# disappeared and nothing in CI said so. actionlint rejects duplicated keys,
+# bad `needs`/expressions and unknown inputs before that happens.
+#
+# Kept in its own workflow, not in ci.yml: a mistake here can never stop the
+# required `build` check from reporting.
+name: Lint workflows
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/**"
+  push:
+    branches: [master]
+    paths:
+      - ".github/workflows/**"
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+permissions:
+  contents: read
+jobs:
+  actionlint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: actionlint
+        # Official image from the actionlint maintainer, pinned to a version.
+        run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.12 -color
