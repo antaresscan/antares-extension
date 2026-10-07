@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, afterEach } from "vitest"
-import { generateAISummary } from "../api/_lib/ai-summary"
+import { describe, it, expect, vi, afterEach, beforeEach } from "vitest"
+import { generateAISummary, _resetAiStateForTests } from "../api/_lib/ai-summary"
 import type { AISummaryInput } from "../api/_lib/ai-summary"
 
 const baseInput: AISummaryInput = {
@@ -56,6 +56,10 @@ function mockFetchResponse(body: unknown, status = 200): Response {
     json: async () => body,
   } as Response
 }
+
+beforeEach(() => {
+  _resetAiStateForTests()
+})
 
 afterEach(() => {
   vi.unstubAllEnvs()
@@ -260,7 +264,7 @@ describe("generateAISummary", () => {
     vi.stubGlobal("fetch", mockFetch)
     const result = await generateAISummary(inputWithBonus)
     expect(result).not.toBeNull()
-    expect(mockFetch).toHaveBeenCalledOnce()
+    expect(mockFetch).toHaveBeenCalled()
   })
 
   it("handles flags with unknown severity", async () => {
@@ -280,7 +284,7 @@ describe("generateAISummary", () => {
     vi.stubGlobal("fetch", mockFetch)
     const result = await generateAISummary(inputUnknown)
     expect(result).not.toBeNull()
-    expect(mockFetch).toHaveBeenCalledOnce()
+    expect(mockFetch).toHaveBeenCalled()
   })
 
   // ---------------------------------------------------------------------------

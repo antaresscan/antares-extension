@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { describeHeliusKey, getHeliusDiagnostics, probeHelius } from "./_lib/helius";
-import { ENGINE_VERSION, SCORING_VERSION } from "./_lib/constants";
+import { DEFAULT_AI_MODEL, ENGINE_VERSION, SCORING_VERSION } from "./_lib/constants";
 
 /**
  * Which upstream credentials this deployment has, as booleans only. A missing
@@ -40,6 +40,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     scoringVersion: SCORING_VERSION,
     engineVersion: ENGINE_VERSION,
     configured: configuredIntegrations(),
+    // The Gemini model the AI summary asks for (AI_MODEL, else the default).
+    aiModel: process.env.AI_MODEL || DEFAULT_AI_MODEL,
     // Why holder data may be missing, without exposing the key: the shape of the
     // HELIUS_API_KEY value (missing, a bare UUID, a pasted URL, quoted, ...), and
     // the HTTP statuses of the last Helius call made by this instance (see probe).
