@@ -353,12 +353,6 @@ export interface ScanResult {
   lpBurned?: boolean | null;
   candles?: Array<{ close: number }>;
   aiSummary?: string | null;
-  /**
-   * Where the summary came from: "gemini", "fallback" (the template, because a Gemini
-   * call failed, was skipped or ran out of time) or "local" (the template, because no
-   * key is set). null when there is no summary.
-   */
-  aiSummarySource?: "gemini" | "fallback" | "local" | null;
       lpLocked?: boolean | null;
   lpLockedPct?: number | null;
   lpLockDurationDays?: number | null;

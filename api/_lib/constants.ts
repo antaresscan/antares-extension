@@ -190,9 +190,6 @@ function fingerprint(): string {
 
 export const ENGINE_VERSION = `${ENGINE_VERSION_MANUAL}-${fingerprint()}`;
 
-/** Gemini model for the AI summary unless the AI_MODEL variable says otherwise. */
-export const DEFAULT_AI_MODEL = "gemini-2.5-flash";
-
 // ── HARD BLOCK REASONS (single source of truth) ──────────────
 export const HARD_BLOCK_REASONS = new Set([
   "lp", "deceptive_name", "honeypot", "mint", "freeze",

@@ -4,7 +4,6 @@ import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { SCORING_VERSION } from "../api/_lib/constants";
-import { computeCacheTTL } from "../api/_lib/helpers";
 
 // ---- Mock all external modules BEFORE importing handler ----
 
@@ -554,8 +553,8 @@ describe("scan handler", () => {
         const res = createMockRes();
         await handler(createMockReq({ ca: WSOL, fresh: "1" }), res);
         const body = (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as Indicators;
-        const { generateAISummaryWithSource } = await import("../api/_lib/ai-summary");
-        const told = vi.mocked(generateAISummaryWithSource).mock.calls[0][0] as Indicators;
+        const { generateAISummary } = await import("../api/_lib/ai-summary");
+        const told = vi.mocked(generateAISummary).mock.calls[0][0] as Indicators;
         const pick = (r: Indicators) => ({ mintAuthority: r.mintAuthority, freezeAuthority: r.freezeAuthority, honeypot: r.honeypot });
         return { shown: pick(body), told: pick(told) };
       }
@@ -687,110 +686,6 @@ describe("scan handler", () => {
     });
   });
 
-  // The template that stands in for a failed Gemini call is never null, so it used
-  // to be cached for the full TTL as if Gemini had written it, and nothing in the
-  // response said which one the user was reading.
-  describe("AI summary", () => {
-    const MINT = "So11111111111111111111111111111111111111112";
-    type Source = "gemini" | "fallback" | "local";
-
-    /** The same token, but created this many minutes ago. */
-    function createdMinutesAgo(minutes: number) {
-      type Reply = { json: () => Promise<{ pairs: Array<Record<string, unknown>> }> };
-      const base = mockFetch.getMockImplementation() as (...args: unknown[]) => Promise<Reply>;
-      mockFetch.mockImplementation(async (url: string, ...rest: unknown[]) => {
-        const r = await base(url, ...rest);
-        if (url.includes("dexscreener")) {
-          const j = await r.json();
-          for (const p of j.pairs) p.pairCreatedAt = Date.now() - minutes * 60_000;
-          return { ok: true, json: () => Promise.resolve(j) };
-        }
-        return r;
-      });
-      const prior = mockFetchSolscan.getMockImplementation() as (endpoint: string) => Promise<unknown>;
-      mockFetchSolscan.mockImplementation((endpoint: string) => {
-        if (endpoint.includes("meta")) {
-          return Promise.resolve({ data: { created_time: Math.floor(Date.now() / 1000) - minutes * 60, icon: "https://img.test.com/icon.png", creator: "creator123", decimals: 9, supply: 100000 } });
-        }
-        return prior(endpoint);
-      });
-    }
-
-    /** Scan while the AI layer answers as given; returns the response, the cache writes and the AI calls. */
-    async function scanWith(ai: { text: string; source: Source } | null, minutesOld?: number) {
-      setupGoodTokenMocks();
-      if (minutesOld !== undefined) createdMinutesAgo(minutesOld);
-      const { generateAISummaryWithSource } = await import("../api/_lib/ai-summary");
-      const cache = await import("../api/_lib/cache");
-      vi.mocked(generateAISummaryWithSource).mockResolvedValueOnce(ai);
-      const res = createMockRes();
-      await handler(createMockReq({ ca: MINT, fresh: "1" }), res);
-      return {
-        body: (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as {
-          risk: "SAFE" | "CAUTION" | "DANGER" | "RUG";
-          aiSummary: string | null;
-          aiSummarySource: string | null;
-        },
-        full: vi.mocked(cache.setCachedResult),
-        short: vi.mocked(cache.setShortCachedResult),
-        asked: vi.mocked(generateAISummaryWithSource),
-      };
-    }
-
-    it("a summary Gemini wrote is cached for the full TTL, and the response says it is Gemini's", async () => {
-      const { body, full, short } = await scanWith({ text: "Written by the model.", source: "gemini" });
-
-      expect(body).toMatchObject({ aiSummary: "Written by the model.", aiSummarySource: "gemini" });
-      expect(full).toHaveBeenCalledWith(MINT, expect.any(Object), expect.any(Number), body.risk);
-      expect(short).not.toHaveBeenCalled();
-    });
-
-    it("the template used because no key is set is final too: asking again cannot change it", async () => {
-      const { body, full, short } = await scanWith({ text: "Template.", source: "local" });
-
-      expect(body.aiSummarySource).toBe("local");
-      expect(full).toHaveBeenCalled();
-      expect(short).not.toHaveBeenCalled();
-    });
-
-    it("the template that stands in for a failed Gemini call is labelled, and cached for two minutes so the next scan asks again", async () => {
-      const { body, full, short } = await scanWith({ text: "Template.", source: "fallback" });
-
-      expect(body).toMatchObject({ aiSummary: "Template.", aiSummarySource: "fallback" });
-      expect(full).not.toHaveBeenCalled();
-      expect(short).toHaveBeenCalledWith(MINT, expect.any(Object), 120);
-    });
-
-    it("...and never longer than the regular TTL: a young token's SAFE must not outlive it", async () => {
-      const { body, full, short } = await scanWith({ text: "Template.", source: "fallback" }, 10);
-
-      const ttl = Math.min(120, computeCacheTTL(10, body.risk));
-      expect(full).not.toHaveBeenCalled();
-      expect(short).toHaveBeenCalledWith(MINT, expect.any(Object), ttl);
-      // the regular TTL for a good verdict on a 10 minute old token is 20 s
-      expect(Math.min(120, computeCacheTTL(10, "SAFE"))).toBe(20);
-    });
-
-    it("with no summary at all, keeps the 30 s retry", async () => {
-      const { body, full, short } = await scanWith(null);
-
-      expect(body.aiSummary).toBeNull();
-      expect(body.aiSummarySource).toBeNull();
-      expect(full).not.toHaveBeenCalled();
-      expect(short).toHaveBeenCalledWith(MINT, expect.any(Object), 30);
-    });
-
-    it("gives the summary until a second before the scan's own deadline, never longer", async () => {
-      const { asked } = await scanWith({ text: "x", source: "gemini" });
-
-      const [, options] = asked.mock.calls[0] as unknown as [unknown, { deadlineAt: number }];
-      const left = options.deadlineAt - Date.now();
-      // 24 s budget, 0.5 s kept by the scan, 1 s kept for answering: 22.5 s from the start
-      expect(left).toBeLessThanOrEqual(22_500);
-      expect(left).toBeGreaterThan(20_000);
-    });
-  });
-
   it("includes layer snapshots in result", async () => {
     setupGoodTokenMocks();
     const req = createMockReq({ ca: "So11111111111111111111111111111111111111112" });
@@ -836,7 +731,6 @@ describe("scan handler", () => {
     // Force generateAISummary to return null
     vi.mock("../api/_lib/ai-summary", () => ({
       generateAISummary: vi.fn().mockResolvedValue(null),
-      generateAISummaryWithSource: vi.fn().mockResolvedValue(null),
     }));
     const req = createMockReq({ ca: "So11111111111111111111111111111111111111112" });
     const res = createMockRes();
