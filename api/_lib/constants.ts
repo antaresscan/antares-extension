@@ -156,7 +156,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v41"; // 2026-10-07: unverified holders never reach SAFE (determineVerdict no longer applies the no-flags override when the "holders" safe-block reason is present); flushes cached SAFE entries.
+const ENGINE_VERSION_MANUAL = "v42"; // 2026-10-07: a missing DexScreener website/socials profile is info only (no DANGER floor, no penalty, no safe-gate block); flushes cached DANGER entries that carried it.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.
@@ -363,7 +363,16 @@ export const API_TIMEOUT_HELIUS = 6000;
 //   layerHelius), the verdict is capped at CAUTION. Before this, a token with
 //   no visible warning, score >= 750 and >= 4 sources came out SAFE with
 //   Helius down, including HAWK (a rug), which scanned SAFE 893.
-export const SCORING_VERSION = "7.7.21";
+// 7.7.22 bump (2026-10-07): "No website / Twitter / Telegram" is info, not
+//   critical. As a critical flag it forced DANGER on any token without a
+//   DexScreener profile (determineVerdict: 1+ critical => DANGER), whatever
+//   the on-chain layers said, and cost 0.60 of DexScreener trust plus a
+//   safe-gate block. A clean token scanned SAFE 1000 with a link and DANGER
+//   850 without; stablecoins, tokenized stocks and liquid-staking tokens
+//   (no profile) were the usual victims. Real risks (mint/freeze, LP,
+//   concentration, wash trading) are untouched; tokens under 6h old still
+//   get the "Fresh token on-chain" warning (CAUTION).
+export const SCORING_VERSION = "7.7.22";
 
 // ── SOFT REASONS (safe gate unlock) ───────────────────────────
 // A reason listed here CAN be unlocked by applySafeGateOverride when

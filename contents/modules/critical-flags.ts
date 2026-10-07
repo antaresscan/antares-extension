@@ -44,7 +44,6 @@ const FLAG_DESCRIPTIONS: Record<string, string> = {
   "Hidden owner": "The real owner of the contract is hidden — a known red flag for rug pulls.",
   "Upgradeable/proxy contract": "The contract code can be replaced after launch — any security audit becomes worthless.",
   "Metadata mutable": "The dev can change the token name, symbol and logo after launch — common in rug setups.",
-  "No website / Twitter / Telegram": "Zero social presence — the team can disappear without any trace.",
   // ── legacy LP labels (kept for back-compat with cached scans) ──
   "LP not burned or locked": "The dev can pull all liquidity in one transaction and crash the price to zero.",
   "LP not burned but token is mature and liquid (unverified LP)": "Liquidity is not locked — the dev could still rug, but the token's age and depth make this less likely.",

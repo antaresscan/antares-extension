@@ -70,16 +70,85 @@ describe("layerDexScreener", () => {
   });
 
   it("diminishing returns for multiple penalties", () => {
-    const pair: DexScreenerPair = {
+    // Liquidity under $1k (0.25) alone, then the same pool with a vol/liq > 5
+    // ratio on top (0.75): the second penalty lowers trust but never zeroes it.
+    const thin: DexScreenerPair = {
       liquidity: { usd: 800 },
       volume: { h24: 100 },
       priceChange: {},
       txns: { m5: { buys: 1, sells: 1 } },
-      info: { socials: [], websites: [] },
     };
-    const result = layerDexScreener(pair, null, null);
-    expect(result.trust).toBeGreaterThan(0);
-    expect(result.trust).toBeLessThan(0.25);
+    const alone = layerDexScreener(thin, null, null);
+    const stacked = layerDexScreener({ ...thin, volume: { h24: 5000 } }, null, null);
+    expect(alone.trust).toBeCloseTo(0.25, 5);
+    expect(stacked.trust).toBeGreaterThan(0);
+    expect(stacked.trust).toBeLessThan(alone.trust);
+  });
+
+  // ── No website / Twitter / Telegram listed on DexScreener ─────────────────
+  // Information only. A profile is something many legitimate assets never set
+  // up (stablecoins, tokenized stocks, liquid-staking tokens) and a link costs
+  // a scammer nothing, so its absence says nothing about whether the token can
+  // rug. It used to be critical, which forced DANGER on its own.
+  describe("no website or socials", () => {
+    const NO_SOCIALS = /^No website \/ Twitter \/ Telegram/;
+    const healthy = (info?: DexScreenerPair["info"]): DexScreenerPair => ({
+      liquidity: { usd: 100000 },
+      volume: { h24: 50000 },
+      priceChange: { h1: 5, h6: 10, h24: 20, m5: 1 },
+      txns: { m5: { buys: 10, sells: 8 } },
+      ...(info ? { info } : {}),
+    });
+    const twitter = { type: "twitter", url: "https://twitter.com/test" };
+    const telegram = { type: "telegram", url: "https://t.me/test" };
+
+    it("is reported as info, whether the profile is absent or empty", () => {
+      for (const info of [undefined, { socials: [], websites: [] }]) {
+        const flag = layerDexScreener(healthy(info), 500000, 1440).flags.find((f) => NO_SOCIALS.test(f.label));
+        expect(flag?.severity).toBe("info");
+      }
+    });
+
+    it("no longer calls the absence a rug risk", () => {
+      const flag = layerDexScreener(healthy(), 500000, 1440).flags.find((f) => NO_SOCIALS.test(f.label));
+      expect(flag?.label).not.toMatch(/rug/i);
+    });
+
+    it("costs no trust, blocks no SAFE verdict and forces nothing", () => {
+      const withLinks = layerDexScreener(
+        healthy({ socials: [twitter], websites: [{ url: "https://test.com" }] }),
+        500000,
+        1440,
+      );
+      const without = layerDexScreener(healthy(), 500000, 1440);
+
+      expect(withLinks.trust).toBe(1);
+      expect(without.trust).toBe(withLinks.trust);
+      expect(without.safeBlocked).toBe(false);
+      expect(without.forceRug).toBe(false);
+      expect(without.flags.filter((f) => f.severity === "critical" || f.severity === "warning")).toEqual([]);
+    });
+
+    it("adds no flag at all once any one of website, Twitter or Telegram is listed", () => {
+      const listed = [
+        { websites: [{ url: "https://test.com" }] },
+        { socials: [twitter] },
+        { socials: [telegram] },
+      ];
+      for (const info of listed) {
+        const flags = layerDexScreener(healthy(info), 500000, 1440).flags;
+        expect(flags.some((f) => NO_SOCIALS.test(f.label))).toBe(false);
+      }
+    });
+
+    it("leaves the real risks to their own flags: wash trading without a profile is still critical and blocking", () => {
+      const wash: DexScreenerPair = { ...healthy(), volume: { h24: 2_000_000 } }; // vol/liq 20
+      const result = layerDexScreener(wash, 500000, 1440);
+
+      expect(result.safeBlocked).toBe(true);
+      expect(result.flags.some((f) => f.severity === "critical" && /wash trading/i.test(f.label))).toBe(true);
+      expect(result.trust).toBeLessThan(0.3);
+    });
   });
 
     // Fix(EXTREME_PUMP_24H): Extreme 24h pump detection

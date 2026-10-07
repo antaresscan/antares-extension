@@ -152,7 +152,6 @@ export const FLAG_DESCRIPTIONS = {
   "Top 10 holders > 50%": "Half the supply is in 10 wallets — high dump risk.",
   "Single wallet holds": "One wallet controls a huge portion of supply and can crash the price alone.",
   "Metadata mutable": "The dev can change the token name, symbol and logo after launch — common in rug setups.",
-  "No website / Twitter / Telegram": "Zero social presence — the team can disappear without any trace.",
   "Helius unavailable — holder concentration unverified": "Holder-distribution data was not available for this scan, so a very large wallet cannot be ruled out. The verdict is capped at CAUTION until it can be checked: re-scan in a moment.",
   "Wash trading detected": "The trading volume is fake — bots trading with themselves to create false activity.",
   "Sell tax": "A hidden fee is taken every time you sell — often used to bleed holders slowly.",
