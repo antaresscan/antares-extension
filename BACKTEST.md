@@ -1,42 +1,54 @@
-# Antares — Live Backtest
+# Antares — Regression corpus
 
 Antares is a Solana memecoin scanner. The verdict it returns (SAFE /
-CAUTION / DANGER / RUG) directly affects user trading decisions. To
-make that verdict trustworthy we maintain a public corpus of real
-memecoins and re-test the engine against it continuously.
+CAUTION / DANGER / RUG) affects trading decisions, so the repository keeps a
+corpus of real Solana tokens and checks stored scan results against it.
 
-## Numbers (as of latest commit)
+**This is a regression harness. It is not a measure of the engine's accuracy,
+and this page does not claim one.**
 
-```
-Corpus size       : 1510 Solana tokens (memecoin-heavy + verified mid-cap)
-Acceptable rate   : 1510/1510 (100%)
-  ├─ Exact match  : 109/1510 (7.2%)
-  └─ Tolerated    : 1401/1510 (92.8%)
-Hard fail         : 0/1510 (0%)
-
-Tested            : 539 / 1510 (35.7%) — 18 SEED + 521 DISCOVERED with
-                                         live captured fixtures, re-checked
-                                         weekly (rotating sample) by the
-                                         drift-check job
-Tracked weekly    : 971 / 1510 (64.3%) — flagged skipFixture, present in
-                                         corpus but their first /api/scan
-                                         capture hasn't landed yet; the
-                                         accuracy test treats them as
-                                         warnings rather than failures
-
-False-positive on SAFE  : 0  (no blue-chip flagged DANGER/RUG)
-False-negative on RUG   : 0  (no confirmed rug returned SAFE)
-```
-
-Confusion matrix (rows = expected label, cols = engine verdict, fixtures only):
+## Numbers (2026-10-07)
 
 ```
-                 RUG  DANGER  CAUTION  SAFE
-expected RUG     60    0       0       0
-expected DANGER 148    7       0       1
-expected CAUTION 40   28      28      16
-expected SAFE    0    0       7      14
+Entries in the corpus         : 1,493  (18 picked by hand, 1,475 found automatically)
+With a captured response      :   504  (the other 989 are marked skipFixture: not captured yet)
+Stored verdict inside its set :   504 / 504  (130 exactly as labelled, 374 tolerated)
 ```
+
+Verdict stored in the fixture, by corpus label:
+
+```
+                    RUG  DANGER  CAUTION  SAFE
+labelled RUG         62       0        0     0
+labelled DANGER     164       7        0     0
+labelled CAUTION    134      44       51     0
+labelled SAFE         9       6       17    10
+```
+
+How to read this:
+
+- **504 / 504 is close to true by construction.** The tolerated verdicts are
+  fixed by label: CAUTION tolerates DANGER and RUG, DANGER tolerates RUG (and
+  often CAUTION), RUG tolerates DANGER, and SAFE tolerates CAUTION, DANGER and
+  RUG. A blue-chip labelled SAFE and stored as RUG is "acceptable". Of the 42
+  entries labelled SAFE, 10 are stored as SAFE, 17 as CAUTION, 6 as DANGER and 9
+  as RUG.
+- **The fixtures are not today's engine.** Each is a response captured at some
+  date, by the engine and with the data sources of that day. Many were captured
+  while Helius (holders) returned nothing and GoPlus could not be parsed, which
+  probably explains why 164 of the 171 entries labelled DANGER are stored as
+  RUG. They need recapturing (`npm run corpus:refresh`, about 100 minutes, one
+  fresh production scan per entry) before the matrix says anything about the
+  current engine.
+- **Most labels are not an investigation.** The automatically found entries are
+  labelled from DexScreener signals only (market cap, liquidity, age, 24h
+  price change): "SAFE only when overwhelming, RUG only on textbook dumps,
+  CAUTION by default" (`scripts/corpus-discover.ts`).
+- **Mints are not independently verified.** A check against DexScreener on
+  2026-10-07 found 454 of the 1,495 distinct mints with no trading pair (mostly
+  dead pump.fun tokens, but also assets that do not trade on a DEX) and three
+  hand-picked entries (GOAT, PNUT, USELESS) pointing at the wrong token. The
+  three are fixed.
 
 ## What's in the corpus
 
@@ -44,7 +56,7 @@ expected SAFE    0    0       7      14
   every verdict band (BONK, WIF, MEW, HAWK, HORNY, …) with tight score
   bands. These are the spine — they protect the engine from regression
   on the canonical names.
-- **632 auto-discovered entries** — pulled from 6 sources, deduped,
+- **About 1,475 auto-discovered entries** — pulled from 6 sources, deduped,
   enriched, labelled with conservative external-signal rules:
   - DexScreener `/token-boosts/top` (paid promo, often shitcoins)
   - DexScreener `/token-boosts/latest` (fresh launches)
@@ -59,8 +71,8 @@ expected SAFE    0    0       7      14
     excluding stablecoins/wrapped majors. Adds the mid-cap Solana
     layer that DexScreener / GeckoTerminal under-cover.
 
-Every entry has its **canonical mint verified on-chain** before being
-captured. No ticker-matching shortcuts.
+Every entry carries the mint address its source gave it. It is not verified
+independently (see the numbers above).
 
 ## How a single test runs
 
@@ -75,15 +87,17 @@ For each corpus entry:
    each fixture against the corpus expectations and emits a confusion
    matrix.
 
-## Hard guarantees (fail CI)
+## What CI enforces, and what it cannot
 
-- **Zero false-negatives on rugs** — no token labelled RUG/DANGER may
-  return SAFE (unless the entry explicitly tolerates SAFE for known
-  data-quality reasons, e.g. a memecoin whose pool just refilled).
-- **Zero false-positives on blue-chips** — no token labelled SAFE may
-  return DANGER/RUG outside its tolerated band.
-- These two are the contract between engine and user. Everything else
-  surfaces as a warning in the report but doesn't block CI.
+- Every non-skipped entry has a captured fixture.
+- Every stored verdict is inside the entry's tolerated set (see "How to read
+  this" above for how loose that is).
+- The score is checked against the entry's band when it has one (secondary).
+
+CI does **not** enforce "no blue-chip is flagged DANGER or RUG" or "no rug is
+ever SAFE": the first cannot fail while SAFE-labelled entries tolerate DANGER
+and RUG, and neither says anything about a token that is not in the corpus.
+The accuracy test reads stored files; it does not run the engine.
 
 ## Drift detection (weekly)
 
@@ -128,21 +142,13 @@ npm run corpus:capture <SYMBOL>
 npm run test:corpus
 ```
 
-## Why we don't claim "100% accuracy"
+## What the engine is
 
-The corpus is conservative on purpose. Most auto-discovered entries
-default to `CAUTION` with wide tolerated bands because external
-metrics (mcap, liq, age, holders) can't see what the engine sees
-on-chain (top wallet %, LP burn status, honeypot flags, GoPlus
-risks). The 16.6% exact-match number reflects that conservatism — the
-engine routinely escalates a token from external-CAUTION to engine-RUG
-when on-chain signals are damning, and that escalation is correct.
-
-The number we *do* claim:
-
-> Antares has been tested live on **650 real Solana tokens**.
-> Zero blue-chips flagged DANGER. Zero rugs flagged SAFE.
-
-That's the contract. (Bulk fixture capture for the 313 newest entries
-trickles in via the nightly bulk run — they sit `skipFixture: true`
-in the corpus until their `/api/scan` response lands.)
+A heuristic screen, not an oracle. A SAFE verdict means no detection layer
+found a critical signal at scan time; it is not a guarantee, and false
+negatives happen. The audit of 2026-10-07 found a rug (HAWK) scoring SAFE 893
+while its holder data was unavailable (fixed), and found that two of the data
+sources (RugCheck, GoPlus) were read through fields they do not send. This page
+used to claim a 100% acceptable rate, "zero rugs flagged SAFE" and "tested live
+on 650 real Solana tokens": none of that was supported by what the corpus
+measures, and it has been removed.
