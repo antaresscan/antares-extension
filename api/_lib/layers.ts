@@ -133,7 +133,14 @@ export function layerDexScreener(
     flags.push(makeFlag(`Sharp 6h sell-off (${Math.round(pc6)}%)`, "warning", 0));
     penalties.push(0.55); safeBlocked = true;
   }
-  if (!hasWebsite && !hasTwitter && !hasTelegram) { flags.push(makeFlag("No website / Twitter / Telegram — high rug risk", "critical", 0)); penalties.push(0.60); safeBlocked = true; }
+  // Information only, no penalty and no safe-gate block. A DexScreener profile
+  // (website, socials) is something many legitimate assets never set up
+  // (stablecoins, tokenized stocks, liquid-staking tokens), and anyone can put
+  // a link on a scam, so its absence tells nothing about whether the token can
+  // rug. As a critical flag it forced DANGER on its own: the same clean token
+  // scanned SAFE 1000 with a link and DANGER 850 without. The on-chain layers
+  // (mint, freeze, LP, holders) decide the verdict.
+  if (!hasWebsite && !hasTwitter && !hasTelegram) flags.push(makeFlag("No website / Twitter / Telegram on DexScreener", "info", 0));
   if (txns5m < 5 && mc > 50000 && ageMinutes < 1440) { flags.push(makeFlag("Low 5m transactions vs market cap", "info", 0)); penalties.push(0.92); }
   if ((sells5m === 0 && buys5m > 0 && txns5m > 5) || (sells5m > 0 && buys5m > sells5m * 5)) { flags.push(makeFlag("Buy/sell imbalance (coordinated pump)", "warning", 0)); penalties.push(0.85); }
   if (pc24 < -80) {

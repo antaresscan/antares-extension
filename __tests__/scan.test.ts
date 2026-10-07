@@ -323,6 +323,45 @@ describe("scan handler", () => {
     expect(body.risk).not.toBe("RUG");
   });
 
+  // A DexScreener profile (website, socials) says nothing about whether a token
+  // can rug. "No website / Twitter / Telegram" used to be a critical flag, and
+  // determineVerdict turns any critical flag into DANGER: the same clean token
+  // scanned SAFE 1000 with a profile and DANGER 850 without one.
+  it("scores a token the same with or without a DexScreener website and socials", async () => {
+    async function scan(withProfile: boolean) {
+      setupGoodTokenMocks();
+      type Reply = { json: () => Promise<{ pairs: Array<Record<string, unknown>> }> };
+      const base = mockFetch.getMockImplementation() as (...args: unknown[]) => Promise<Reply>;
+      mockFetch.mockImplementation(async (url: string, ...rest: unknown[]) => {
+        const r = await base(url, ...rest);
+        if (!withProfile && url.includes("dexscreener")) {
+          const j = await r.json();
+          for (const p of j.pairs) delete p.info; // keep the pair, drop the profile
+          return { ok: true, json: () => Promise.resolve(j) };
+        }
+        return r;
+      });
+      const res = createMockRes();
+      await handler(createMockReq({ ca: "So11111111111111111111111111111111111111112", fresh: "1" }), res);
+      return (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as {
+        risk: string;
+        score: number;
+        flags: Array<{ label: string; severity: string }>;
+      };
+    }
+    const noProfile = /^No website \/ Twitter \/ Telegram/;
+
+    const withProfile = await scan(true);
+    const without = await scan(false);
+
+    expect(withProfile.flags.some((f) => noProfile.test(f.label))).toBe(false);
+    expect(without.flags.find((f) => noProfile.test(f.label))?.severity).toBe("info");
+    expect(without.flags.some((f) => f.severity === "critical")).toBe(false);
+    expect(without.risk).not.toBe("DANGER");
+    expect(without.risk).toBe(withProfile.risk);
+    expect(without.score).toBe(withProfile.score);
+  });
+
   it("includes layer snapshots in result", async () => {
     setupGoodTokenMocks();
     const req = createMockReq({ ca: "So11111111111111111111111111111111111111112" });

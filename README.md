@@ -59,7 +59,7 @@ Score starts at **1000** and is reduced by weighted penalties across **6 weighte
 
 | Layer | Source | Weight | What it checks |
 |---|---|---|---|
-| L1 | DexScreener | 0.20 | Liquidity, volume, price changes, social presence |
+| L1 | DexScreener | 0.20 | Liquidity, volume, price changes |
 | L2 | RugCheck | 0.20 | LP burn/lock, bundler activity, metadata, top holders |
 | L3 | GoPlus | 0.20 | Honeypot, mint/freeze authority, tax, proxy contracts |
 | L4 | Helius | 0.20 | On-chain holder distribution (top 1 / top 10), creator history |
