@@ -74,6 +74,23 @@ const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "obj
 /** GoPlus's authority objects: { authority: [...], status: "1" } when held. */
 const held = (v: unknown): boolean => isRecord(v) && String(v.status ?? "") === "1";
 
+/** An authority object's state: true when held, false when revoked, null when it does not say. */
+const heldOrNull = (v: unknown): boolean | null => {
+  if (!isRecord(v)) return null;
+  const status = String(v.status ?? "");
+  return status === "1" ? true : status === "0" ? false : null;
+};
+
+/**
+ * Mint and freeze authority the way the clients show them: held (true), revoked
+ * (false), or null when GoPlus gave no answer or no such object. Not the same as
+ * goplusHazards, where an absent answer reads as "nothing found": a Mint check mark
+ * must never come from a token nobody looked at.
+ */
+export function goplusAuthorityState(goplus: GoPlusTokenResult | null | undefined): { mint: boolean | null; freeze: boolean | null } {
+  return { mint: heldOrNull(goplus?.mintable), freeze: heldOrNull(goplus?.freezable) };
+}
+
 /**
  * What GoPlus says can still hurt a holder of a Solana token. Every field is read
  * defensively, since an unexpected shape must degrade to "nothing found", not throw.

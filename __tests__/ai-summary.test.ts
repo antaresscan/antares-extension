@@ -1133,3 +1133,39 @@ describe("holder-distribution claims require holder data", () => {
     expect(userPrompt).not.toContain("top holder owns")
   })
 })
+
+describe("the Status line of the prompt", () => {
+  /** What the model is told about this input, without calling anything. */
+  async function statusLine(over: Partial<AISummaryInput>): Promise<string> {
+    vi.stubEnv("GEMINI_API_KEY", "test-key")
+    const mockFetch = vi.fn().mockResolvedValue(mockFetchResponse({ choices: [{ message: { content: "x" } }] }, 500))
+    vi.stubGlobal("fetch", mockFetch)
+    await generateAISummary({ ...baseInput, flags: [], ...over })
+    const body = JSON.parse((mockFetch.mock.calls[0][1] as { body: string }).body) as { messages: Array<{ content: string }> }
+    return body.messages[1].content.split("\n").find((l) => l.startsWith("Status:")) ?? ""
+  }
+
+  it("says renounced only for what the scan read as renounced", async () => {
+    const line = await statusLine({ mintAuthority: false, freezeAuthority: false, honeypot: false })
+    expect(line).toContain("mint authority renounced (good)")
+    expect(line).toContain("freeze authority renounced (good)")
+    expect(line).toContain("no honeypot (good)")
+  })
+
+  it("states a held authority plainly", async () => {
+    const line = await statusLine({ mintAuthority: true, freezeAuthority: true })
+    expect(line).toContain("mint authority still active")
+    expect(line).toContain("freeze authority still active")
+    expect(line).not.toMatch(/renounced/)
+  })
+
+  it("says nothing at all about what the scan could not read (null), instead of claiming it clean", async () => {
+    const line = await statusLine({ mintAuthority: null, freezeAuthority: null, honeypot: null })
+    expect(line).not.toMatch(/mint|freeze|honeypot/i)
+    expect(line).toContain("LP burned (good)")
+  })
+
+  it("a detected honeypot is still called out", async () => {
+    expect(await statusLine({ honeypot: true })).toContain("HONEYPOT detected (BAD)")
+  })
+})

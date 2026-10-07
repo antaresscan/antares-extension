@@ -345,9 +345,10 @@ export interface ScanResult {
   layers: Record<string, LayerSnapshot>;
   scoring_version: string;
   fetchedAt: number;
-  honeypot?: boolean;
-  mintAuthority?: boolean;
-  freezeAuthority?: boolean;
+  // null: the source did not answer, so the clients show a dash, never a check mark.
+  honeypot?: boolean | null;
+  mintAuthority?: boolean | null;
+  freezeAuthority?: boolean | null;
   requestId: string;
   lpBurned?: boolean | null;
   candles?: Array<{ close: number }>;

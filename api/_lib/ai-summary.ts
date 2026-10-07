@@ -122,9 +122,17 @@ function buildUserPrompt(
   if (input.lpBurned) bools.push("LP burned (good)")
   else if (input.lpLocked) bools.push("LP locked (good)")
   else bools.push("LP NOT burned or locked (BAD)")
-  bools.push(input.mintAuthority ? "mint authority ENABLED (BAD)" : "mint authority renounced (good)")
-  bools.push(input.freezeAuthority ? "freeze authority ENABLED (BAD)" : "freeze authority renounced (good)")
-  bools.push(input.honeypot ? "HONEYPOT detected (BAD)" : "no honeypot (good)")
+  // null = the scan could not read it: say nothing rather than claim either way.
+  // "renounced (good)" used to be printed for every token, because the scan never
+  // read the authorities and passed false. A held authority is stated plainly; how
+  // much it weighs is in the flag list (a warning, or information for an
+  // established asset).
+  if (input.mintAuthority === true) bools.push("mint authority still active")
+  else if (input.mintAuthority === false) bools.push("mint authority renounced (good)")
+  if (input.freezeAuthority === true) bools.push("freeze authority still active")
+  else if (input.freezeAuthority === false) bools.push("freeze authority renounced (good)")
+  if (input.honeypot === true) bools.push("HONEYPOT detected (BAD)")
+  else if (input.honeypot === false) bools.push("no honeypot (good)")
   lines.push(`Status: ${bools.join(", ")}`)
 
   // Significant = critical + warning. Info-level signals (e.g. the
