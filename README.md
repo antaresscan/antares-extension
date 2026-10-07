@@ -182,7 +182,7 @@ api/
     layers.ts                — 6 analysis layer functions (pure)
     scoring.ts               — Geometric-mean scoring + cross-validation penalties
     pipeline.ts              — Post-layer flags, safe-gate, established bonus, verdict
-    ai-summary.ts            — Gemini-powered 2-4 sentence verdict synthesis
+    ai-summary.ts            — Gemini-written 3-paragraph verdict; a deterministic template when Gemini fails (aiSummarySource says which)
     upstream-schemas.ts      — Zod-style guards for noisy upstream responses
     server-errors.ts         — Standard error responses
     known-treasuries.ts      — Foundation / DAO / LP wallet allowlists

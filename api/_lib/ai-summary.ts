@@ -1,4 +1,5 @@
 import { logger } from "./logger"
+import { DEFAULT_AI_MODEL } from "./constants"
 
 export type AISummaryInput = {
   score: number
@@ -35,6 +36,19 @@ const MIN_LENGTH = 20
 const MAX_LENGTH = 2600
 const MAX_RETRIES = 2
 const RETRY_DELAYS = [1500, 3000]
+// 400 -> 1024. Through Gemini's OpenAI-compatible endpoint the thinking tokens of a
+// 2.5 model count against max_tokens (Google's thinking docs: "including thought
+// tokens"), so 400 could be eaten whole and leave the visible answer empty: rejected
+// as too short, replaced by the template. The word-count check is what keeps the
+// summary short, not this cap.
+const MAX_OUTPUT_TOKENS = 1024
+// A Gemini call that cannot finish in this much time is not started.
+const MIN_ATTEMPT_MS = 2500
+// After this many scans in a row with no Gemini summary, Gemini is left alone for
+// the cooldown: an exhausted quota or a revoked key would otherwise add seconds to
+// every single scan.
+const BREAKER_THRESHOLD = 3
+const BREAKER_COOLDOWN_MS = 60_000
 
 const SEVERITY_ORDER: Record<string, number> = {
   critical: 0,
@@ -312,16 +326,63 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
- * Single Gemini call. Returns:
- * - the summary string on success
- * - "__RETRY__" if the error is recoverable (429 or timeout)
- * - null for all other errors
- *
- * `target` is the per-scan word budget (computed by computeWordTarget).
- * The validator uses a wider tolerance band around it (target.min - 20
- * down to a hard floor of 25, and target.max + 25) so a slightly
- * over/under output isn't rejected — but a wall-of-text or two-word
- * regression still gets caught.
+ * Where a summary came from. "gemini": written by the model. "fallback": the
+ * template, because a Gemini call failed, was skipped or ran out of time (worth
+ * asking again soon). "local": the template, because no key is set (asking again
+ * cannot change that).
+ */
+export type AISummarySource = "gemini" | "fallback" | "local"
+export interface AISummaryResult { text: string; source: AISummarySource }
+export interface AISummaryOptions {
+  /** Epoch ms by which the summary must be done: Gemini is not started, nor waited on, past it. */
+  deadlineAt?: number
+}
+
+// Per warm instance. See BREAKER_THRESHOLD.
+let consecutiveFailedScans = 0
+let breakerOpenUntil = 0
+// Set once Gemini has accepted a request without reasoning_effort that it refused with it.
+let reasoningEffortRefused = false
+
+/** Test hook: forget past failures and what was learned about the endpoint. */
+export function _resetAiStateForTests(): void {
+  consecutiveFailedScans = 0
+  breakerOpenUntil = 0
+  reasoningEffortRefused = false
+}
+
+function recordScan(gotGeminiSummary: boolean): void {
+  if (gotGeminiSummary) {
+    consecutiveFailedScans = 0
+    return
+  }
+  consecutiveFailedScans++
+  if (consecutiveFailedScans >= BREAKER_THRESHOLD) breakerOpenUntil = Date.now() + BREAKER_COOLDOWN_MS
+}
+
+/**
+ * Gemini 2.5 Flash thinks by default, and for this summary (a fixed three-paragraph
+ * text written from numbers we hand it) thinking only costs latency and tokens.
+ * `reasoning_effort: "none"` switches it off; Google documents it for the 2.5
+ * models other than Pro. Flash-Lite does not think by default, and Pro and the 3.x
+ * models cannot stop, so only Flash gets it.
+ */
+function thinkingOptions(model: string): Record<string, unknown> {
+  return !reasoningEffortRefused && /^gemini-2\.5-flash(?!-lite)/i.test(model) ? { reasoning_effort: "none" } : {}
+}
+
+type GeminiOutcome =
+  | { kind: "ok"; text: string }
+  | { kind: "retry" }     // rate limit or timeout: worth another attempt after a pause
+  | { kind: "rejected" }  // answered, but not in the contract: empty, wrong shape or length
+  | { kind: "error" }     // HTTP error, unreadable body or network error
+
+/**
+ * Single Gemini call. `target` is the per-scan word budget (computed by
+ * computeWordTarget). The validator uses a wider tolerance band around it
+ * (target.min - 20 down to a hard floor of 25, and target.max + 25) so a slightly
+ * over/under output isn't rejected, but a wall-of-text or two-word regression
+ * still gets caught. `timeoutMs` covers the whole call, body included.
  */
 async function callGemini(
   apiKey: string,
@@ -329,12 +390,13 @@ async function callGemini(
   systemPrompt: string,
   userPrompt: string,
   target: { min: number; max: number },
-): Promise<string | "__RETRY__" | null> {
+  timeoutMs: number,
+): Promise<GeminiOutcome> {
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS)
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
 
-  try {
-    const response = await fetch(GEMINI_URL, {
+  const post = (extra: Record<string, unknown>) =>
+    fetch(GEMINI_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -342,18 +404,14 @@ async function callGemini(
       },
       body: JSON.stringify({
         model,
-        // max_tokens 850 → 400. Earlier 850 was a safety margin for
-        // a "5–9 sentences" instruction that turned out to encourage
-        // wall-of-text outputs. The new strict 45–75 word format
-        // never needs more than ~110 tokens — 400 gives a 3.5×
-        // safety margin against mid-word truncation while making
-        // it physically harder for Gemini to over-produce.
-        max_tokens: 400,
-        // temperature 0.35→0.25. Lower temp keeps the output focused
+        // A cap on the answer, not on the model's thinking: see MAX_OUTPUT_TOKENS.
+        max_tokens: MAX_OUTPUT_TOKENS,
+        // temperature 0.35->0.25. Lower temp keeps the output focused
         // on the concrete numbers we feed in (top holder %, holders,
         // liquidity, age) instead of drifting into generic risk
         // narratives. Same model, sharper output.
         temperature: 0.25,
+        ...extra,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
@@ -361,11 +419,26 @@ async function callGemini(
       }),
       signal: controller.signal,
     })
-    clearTimeout(timeout)
+
+  try {
+    const thinking = thinkingOptions(model)
+    let response = await post(thinking)
+    // An HTTP 400 may mean the endpoint does not take reasoning_effort for this
+    // model (Google documents it for 2.5 Flash, but it could not be tried against
+    // the live API when this was written). Ask again without it, and stop sending
+    // it once that works: only the thinking switch is lost.
+    if (response.status === 400 && Object.keys(thinking).length > 0) {
+      const plain = await post({})
+      if (plain.ok) {
+        reasoningEffortRefused = true
+        logger.warn("ai-summary", "Gemini refused reasoning_effort, not sending it any more", { model })
+      }
+      response = plain
+    }
 
     if (response.status === 429) {
       logger.warn("ai-summary", "Gemini rate-limited", { status: 429 })
-      return "__RETRY__"
+      return { kind: "retry" }
     }
 
     if (!response.ok) {
@@ -374,7 +447,7 @@ async function callGemini(
         status: response.status,
         body: errorText.slice(0, 500),
       })
-      return null
+      return { kind: "error" }
     }
 
     const raw = await response.text()
@@ -383,21 +456,20 @@ async function callGemini(
       data = JSON.parse(raw) as { choices?: Array<{ message?: { content?: string } }> }
     } catch {
       logger.warn("ai-summary", "Failed to parse Gemini response as JSON")
-      return null
+      return { kind: "error" }
     }
 
     const msg = data?.choices?.[0]?.message?.content?.trim()
-    if (typeof msg !== "string") return null
-    if (msg.length < MIN_LENGTH) return null
-    if (msg.length > MAX_LENGTH) return msg.slice(0, MAX_LENGTH).replace(/\s+\S*$/, "") + "."
+    if (typeof msg !== "string") return { kind: "rejected" }
+    if (msg.length < MIN_LENGTH) return { kind: "rejected" }
+    if (msg.length > MAX_LENGTH) return { kind: "ok", text: msg.slice(0, MAX_LENGTH).replace(/\s+\S*$/, "") + "." }
 
     // Enforce the 3-paragraph 45–75 word contract that the prompt
     // declares. Gemini is good but not deterministic; ~10% of outputs
     // come back as a single dense paragraph or a 2-paragraph short
-    // version. When that happens we'd rather use the deterministic
-    // local fallback (which always honors the format) than ship the
-    // off-format Gemini reply. Returning null here makes the caller
-    // fall through to the local builder.
+    // version. When that happens we'd rather ask once more, then use the
+    // deterministic local fallback (which always honors the format) than
+    // ship the off-format Gemini reply.
     const cleaned = msg.replace(/^\s+|\s+$/g, "")
     const paragraphs = cleaned.split(/\n\s*\n/).filter((p) => p.trim().length > 0)
     const wordCount = cleaned.split(/\s+/).filter((w) => w.length > 0).length
@@ -406,7 +478,7 @@ async function callGemini(
         paragraphs: paragraphs.length,
         wordCount,
       })
-      return null
+      return { kind: "rejected" }
     }
     // Tolerance band keyed off the dynamic target. Lower floor
     // is hard-set at 25 — the canonical PENGU /demo summary is ~30
@@ -421,19 +493,20 @@ async function callGemini(
         wordCount,
         target: `${target.min}-${target.max} typical, ${acceptMin}-${acceptMax} hard limits`,
       })
-      return null
+      return { kind: "rejected" }
     }
-    return cleaned
+    return { kind: "ok", text: cleaned }
   } catch (err: unknown) {
-    clearTimeout(timeout)
     if (err instanceof Error && err.name === "AbortError") {
       logger.warn("ai-summary", "Gemini call timed out")
-      return "__RETRY__"
+      return { kind: "retry" }
     }
     logger.warn("ai-summary", "Gemini call error", {
       error: err instanceof Error ? err.message : String(err),
     })
-    return null
+    return { kind: "error" }
+  } finally {
+    clearTimeout(timeout)
   }
 }
 
@@ -805,15 +878,29 @@ function generateLocalFallback(
   return buildStructuredFallback(input, topFlags)
 }
 
+/** The summary text, or null. See generateAISummaryWithSource for where it came from. */
 export async function generateAISummary(
   input: AISummaryInput
 ): Promise<string | null> {
+  return (await generateAISummaryWithSource(input))?.text ?? null
+}
+
+/**
+ * The summary and where it came from. The template that replaces a failed Gemini
+ * call used to be returned as if Gemini had written it, so nothing could tell the
+ * two apart and a scan whose Gemini call failed was cached with the template as
+ * long as one that succeeded.
+ */
+export async function generateAISummaryWithSource(
+  input: AISummaryInput,
+  opts: AISummaryOptions = {},
+): Promise<AISummaryResult | null> {
   const apiKey = process.env.GEMINI_API_KEY
-  if (!apiKey || apiKey === "") {
+  if (!apiKey) {
     logger.info("ai-summary", "No GEMINI_API_KEY found, using local fallback")
   }
 
-  const primaryModel = process.env.AI_MODEL || "gemini-2.5-flash"
+  const primaryModel = process.env.AI_MODEL || DEFAULT_AI_MODEL
 
   // Sort flags by severity then impact. KEEP info AND bonus flags now —
   // founder feedback: SAFE verdicts that hide info-level signals (e.g. the
@@ -852,51 +939,76 @@ export async function generateAISummary(
   const systemPrompt = buildSystemPrompt(target)
   const userPrompt = buildUserPrompt(input, topFlags, target)
 
-  // Try Gemini with retries
-  if (apiKey && apiKey !== "") {
-    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-      if (attempt > 0) {
-        const delay = RETRY_DELAYS[attempt - 1] || 3000
-        logger.info("ai-summary", "Retrying Gemini call", {
-          attempt,
-          maxRetries: MAX_RETRIES,
-          delayMs: delay,
-        })
-        await sleep(delay)
-      }
-
-      logger.info("ai-summary", "Calling Gemini", {
-        model: primaryModel,
-        attempt: attempt + 1,
-        totalAttempts: MAX_RETRIES + 1,
-        significantCount,
-        targetWords: `${target.min}-${target.max}`,
+  // Try Gemini, within the time left and unless it keeps failing.
+  if (apiKey) {
+    const deadlineAt = opts.deadlineAt ?? Infinity
+    if (Date.now() < breakerOpenUntil) {
+      logger.warn("ai-summary", "Gemini skipped: recent scans got no usable answer, cooling down", {
+        resumesInMs: breakerOpenUntil - Date.now(),
       })
-      const result = await callGemini(apiKey, primaryModel, systemPrompt, userPrompt, target)
+    } else {
+      let called = false
+      let retryDelayMs = 0
+      let rejections = 0
+      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        if (retryDelayMs > 0) {
+          // Not worth waiting for an attempt that could not finish before the deadline.
+          if (deadlineAt - Date.now() - retryDelayMs < MIN_ATTEMPT_MS) break
+          logger.info("ai-summary", "Retrying Gemini call", {
+            attempt,
+            maxRetries: MAX_RETRIES,
+            delayMs: retryDelayMs,
+          })
+          await sleep(retryDelayMs)
+        }
+        const remaining = deadlineAt - Date.now()
+        if (remaining < MIN_ATTEMPT_MS) {
+          logger.warn("ai-summary", "No time left for Gemini, using the fallback", { remainingMs: remaining })
+          break
+        }
 
-      if (result === "__RETRY__") {
-        // Continue to next retry attempt
-        continue
+        logger.info("ai-summary", "Calling Gemini", {
+          model: primaryModel,
+          attempt: attempt + 1,
+          totalAttempts: MAX_RETRIES + 1,
+          significantCount,
+          targetWords: `${target.min}-${target.max}`,
+        })
+        called = true
+        const outcome = await callGemini(
+          apiKey, primaryModel, systemPrompt, userPrompt, target,
+          Math.min(TIMEOUT_MS, remaining - 300),
+        )
+
+        if (outcome.kind === "ok") {
+          recordScan(true)
+          logger.info("ai-summary", "Gemini success", { attempt: attempt + 1, chars: outcome.text.length })
+          return { text: outcome.text, source: "gemini" }
+        }
+        if (outcome.kind === "retry") {
+          // Rate limit or timeout: back off before asking again.
+          retryDelayMs = RETRY_DELAYS[attempt] ?? 3000
+          continue
+        }
+        if (outcome.kind === "rejected" && ++rejections < 2) {
+          // An off-format answer (about one in ten): ask again at once, but only once.
+          retryDelayMs = 0
+          continue
+        }
+        // error, or rejected twice: not worth more attempts.
+        logger.warn("ai-summary", "Gemini returned no usable answer, using fallback", { outcome: outcome.kind })
+        break
       }
-
-      if (result !== null) {
-        logger.info("ai-summary", "Gemini success", { attempt: attempt + 1, chars: result.length })
-        return result
-      }
-
-      // null = non-recoverable error, fall through to fallback
-      logger.warn("ai-summary", "Gemini returned non-recoverable error, using fallback")
-      break
+      if (called) recordScan(false)
+      logger.warn("ai-summary", "No Gemini summary, using local fallback")
     }
-
-    logger.warn("ai-summary", "All Gemini attempts exhausted, using local fallback")
   }
 
   // Local fallback: generate summary from flag dictionary
   const fallback = generateLocalFallback(input, topFlags)
   if (fallback) {
     logger.info("ai-summary", "Returning local fallback", { chars: fallback.length })
-    return fallback
+    return { text: fallback, source: apiKey ? "fallback" : "local" }
   }
 
   logger.error("ai-summary", "No fallback could be generated either")

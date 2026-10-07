@@ -11,7 +11,7 @@ import type {
 } from "./_lib/types";
 import {
   fetchJson, asNumber, pickGoPlusResult,
-  withBudget, apiError,
+  withBudget, apiError, computeCacheTTL,
   isValidDexScreenerResponse, isValidRugCheckSummary,
   isHeliusLargestAccountsResponse, isHeliusSupplyResponse,
   isSolscanMarketsResponse, isSolscanMeta, isSolscanTransfersResponse,
@@ -47,7 +47,7 @@ import { initQuota, checkDailyQuota, setQuotaHeaders, secondsUntilReset } from "
 import { initUserStorage, pushScanHistory, resolveTierAndBypass } from "./_lib/user";
 import { initCache, getCachedResult, setCachedResult, setShortCachedResult, acquireScanLock, releaseScanLock, waitForCachedResult } from "./_lib/cache";
 import { initSentry, captureError } from "./_lib/sentry";
-import { generateAISummary } from "./_lib/ai-summary";
+import { generateAISummaryWithSource } from "./_lib/ai-summary";
 
 import { initRugDb, recordRug } from "./_lib/rugdb";
 import { logger } from "./_lib/logger";
@@ -91,6 +91,11 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
 // enrich). 25s is enough headroom even for the heaviest tokens while
 // still bounding worst-case wait for users on warm calls.
 const GLOBAL_TIMEOUT_MS = Number(process.env.VERCEL_TIMEOUT) || 24000;
+
+// How long a scan whose Gemini call failed is cached: the template summary it
+// carries is worth replacing as soon as Gemini answers, but not worth re-running
+// the whole pipeline for on every reload.
+const AI_FALLBACK_CACHE_SECONDS = 120;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const requestId = randomUUID();
@@ -835,7 +840,10 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       flags,
     });
 
-    const aiSummary = await generateAISummary({
+    // The summary may take until a second before the scan's own deadline, never
+    // longer: past that the whole scan is a 504 and the user gets nothing. Gemini
+    // used to be retried for up to 28 s whatever time was left.
+    const ai = await generateAISummaryWithSource({
       score, risk,
       flags: flags.map(f => ({ label: f.label, severity: f.severity, impact: f.impact })),
       tokenSymbol: sanitizeString(pair?.baseToken?.symbol) ?? null,
@@ -850,7 +858,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       topHolderPct,
       volume24h,
       priceChange1h,
-    }).catch(() => null);
+    }, { deadlineAt: scanDeadline - 1000 }).catch(() => null);
+    const aiSummary = ai?.text ?? null;
 
     // ─── Verdict Timeline (decommissioned) ───────────────────────────
     // Was a per-token ZSET (push current verdict, read back last N
@@ -898,22 +907,29 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       fetchedAt: Date.now(),
       requestId,
       aiSummary: aiSummary ?? null,
+      aiSummarySource: ai?.source ?? null,
     };
 
-    // Cache only if aiSummary was generated — otherwise keep TTL short (30s) so the
-    // next request retries AI generation instead of serving a null-summary forever.
+    // Cache for the full TTL only when the summary is final: written by Gemini, or
+    // the template because no key is set (asking again cannot change that). The
+    // template that stands in when a Gemini call failed, was skipped or ran out of
+    // time used to be cached as long as a real summary, because it is never null.
     // The verdict is passed so computeCacheTTL can apply asymmetric caching:
     // bad verdicts cache long (stale-RUG is safe), good verdicts on young
     // tokens cache short (stale-SAFE is dangerous).
-    if (result.aiSummary) {
+    if (result.aiSummary && ai?.source !== "fallback") {
       setCachedResult(ca, result, tokenAgeMinutes, result.risk);
       if (resolvedMint !== ca) setCachedResult(resolvedMint, result, tokenAgeMinutes, result.risk);
     } else {
-      // No AI summary yet — short-TTL cache so a same-CA reload within
-      // 30s skips re-running the whole pipeline, but the cache expires
-      // fast enough to pick up the AI summary on the next scan tick.
-      setShortCachedResult(ca, result, 30);
-      if (resolvedMint !== ca) setShortCachedResult(resolvedMint, result, 30);
+      // No final AI summary yet: a same-CA reload shortly after skips re-running the
+      // whole pipeline, and the entry expires soon enough for the next scan to ask
+      // Gemini again. A fallback is never kept longer than the regular TTL, which is
+      // short on purpose for a young token's SAFE.
+      const retryTtl = ai?.source === "fallback"
+        ? Math.min(AI_FALLBACK_CACHE_SECONDS, computeCacheTTL(tokenAgeMinutes, result.risk))
+        : 30;
+      setShortCachedResult(ca, result, retryTtl);
+      if (resolvedMint !== ca) setShortCachedResult(resolvedMint, result, retryTtl);
     }
 
     void recordRug({ mint: resolvedMint, symbol: sanitizeString(pair?.baseToken?.symbol) ?? null, score, risk, flags, creator: tokenCreator });
