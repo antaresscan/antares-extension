@@ -149,8 +149,10 @@ describe("heliusGetLargestAccounts", () => {
     const result = await heliusGetLargestAccounts("mint123", "key456");
     expect(mockFetchJsonPost).toHaveBeenCalledOnce();
     const [url, body, , , headers] = mockFetchJsonPost.mock.calls[0] as [string, Record<string, unknown>, number, number, Record<string, string>];
-    expect(url).not.toContain("api-key");
-    expect(headers).toEqual({ "Authorization": "Bearer key456" });
+    // The documented ?api-key= form goes first; the Bearer header is the fallback
+    // (see __tests__/helius.test.ts).
+    expect(url).toBe("https://mainnet.helius-rpc.com/?api-key=key456");
+    expect(headers).toEqual({});
     expect(body.method).toBe("getTokenLargestAccounts");
     expect(body.params).toEqual(["mint123"]);
     expect(result).toEqual({ result: { value: [] } });

@@ -1,9 +1,10 @@
 // api/_lib/insider-graph.ts — Insider Network Graph builder
 // Analyzes top holder wallets to detect coordinated clusters
 import { fetchJson } from "./helpers";
+import { heliusRpc } from "./helius";
 import { runWithConcurrency } from "./concurrency";
 import {
-  HELIUS_BASE, HELIUS_REST_BASE,
+  HELIUS_REST_BASE,
   INSIDER_MAX_HOLDERS, INSIDER_MAX_SIGNATURES,
   INSIDER_GRAPH_CACHE_TTL, INSIDER_GRAPH_CACHE_PREFIX,
   // INSIDER_SIG_CACHE_TTL / INSIDER_SIG_CACHE_PREFIX intentionally not
@@ -123,20 +124,16 @@ async function getWalletSignatures(
   wallet: string, apiKey: string
 ): Promise<string[]> {
   try {
-    const res = await fetchJson(HELIUS_BASE, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        jsonrpc: "2.0", id: 1,
-        method: "getSignaturesForAddress",
-        params: [wallet, { limit: MAX_SIGNATURES }],
-      }),
-    }, 5000);
-    const sigs = (res as { result?: HeliusSignature[] })?.result ?? [];
-    return sigs.map(s => s.signature);
+    // Sent through heliusRpc: it negotiates how the key is sent (header or
+    // ?api-key=) and logs when Helius refuses it. The `usable` check retries
+    // once in the other form if a 200 comes back without a result array.
+    const res = await heliusRpc<{ result?: HeliusSignature[] }>(apiKey, {
+      jsonrpc: "2.0", id: 1,
+      method: "getSignaturesForAddress",
+      params: [wallet, { limit: MAX_SIGNATURES }],
+    }, 5000, 1, { usable: (r) => Array.isArray(r.result) });
+    const sigs = res?.result ?? [];
+    return Array.isArray(sigs) ? sigs.map(s => s.signature) : [];
   } catch {
     return [];
   }
@@ -172,7 +169,7 @@ async function parseTransactions(
   if (!signatures.length) return [];
   try {
     // Helius Enhanced Transactions: `?api-key=` query param auth ONLY
-    // — the Bearer header works for the RPC mainnet endpoint but
+    // — the Bearer header worked for the RPC mainnet endpoint until mid-2026 but
     // returns 401 here. Was silently swallowed by fetchJson (null
     // result), making `parsedTxs` always empty → graph edges + clusters
     // were always [] in production. Diagnosed via the activity-feed
