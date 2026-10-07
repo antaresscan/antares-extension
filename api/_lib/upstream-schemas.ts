@@ -38,6 +38,15 @@ export const GoPlusDexEntrySchema = z.object({
   type: z.string().optional(),
 });
 
+export const GoPlusHolderSchema = z.object({
+  account: z.string().optional(),
+  token_account: z.string().optional(),
+  balance: z.union([z.string(), z.number()]).optional(),
+  percent: z.union([z.string(), z.number()]).optional(),
+  tag: z.string().optional(),
+  is_locked: z.number().optional(),
+});
+
 export const GoPlusTokenResultSchema = z.object({
   is_honeypot: GoPlusFlagSchema.optional(),
   cannot_sell_all: GoPlusFlagSchema.optional(),
@@ -58,6 +67,8 @@ export const GoPlusTokenResultSchema = z.object({
   is_whitelisted: GoPlusFlagSchema.optional(),
   dex: z.array(GoPlusDexEntrySchema).optional(),
   holder_count: z.union([z.string(), z.number()]).optional(),
+  holders: z.array(GoPlusHolderSchema).optional(),
+  total_supply: z.union([z.string(), z.number()]).optional(),
 });
 
 export const GoPlusResponseSchema = z.object({

@@ -65,11 +65,9 @@ const mockHeliusGetTokenSupply = vi.fn();
 const mockHeliusGetCreatorReputation = vi.fn();
 const mockHeliusGetHoldersCount = vi.fn();
 const mockHeliusGetProgramAccountHolderCount = vi.fn();
-const mockSolscanGetHoldersCount = vi.fn();
 const mockFetchSolscan = vi.fn();
 const mockFetchDexCandles = vi.fn();
 const mockHeliusResolveAccountOwners = vi.fn();
-const mockPublicRpcGetLargestAccounts = vi.fn();
 const mockPublicRpcGetTokenSupply = vi.fn();
 const mockPublicRpcGetMintInfo = vi.fn();
 
@@ -79,12 +77,10 @@ vi.mock("../api/_lib/fetchers", () => ({
   heliusGetCreatorReputation: (...args: unknown[]) => mockHeliusGetCreatorReputation(...args),
   heliusGetHoldersCount: (...args: unknown[]) => mockHeliusGetHoldersCount(...args),
   heliusGetProgramAccountHolderCount: (...args: unknown[]) => mockHeliusGetProgramAccountHolderCount(...args),
-  solscanGetHoldersCount: (...args: unknown[]) => mockSolscanGetHoldersCount(...args),
   fetchSolscan: (...args: unknown[]) => mockFetchSolscan(...args),
   fetchDexCandles: (...args: unknown[]) => mockFetchDexCandles(...args),
   fetchDexCandlesDaily: vi.fn().mockResolvedValue([]), // no daily candles in unit tests
   heliusResolveAccountOwners: (...args: unknown[]) => mockHeliusResolveAccountOwners(...args),
-  publicRpcGetLargestAccounts: (...args: unknown[]) => mockPublicRpcGetLargestAccounts(...args),
   publicRpcGetTokenSupply: (...args: unknown[]) => mockPublicRpcGetTokenSupply(...args),
   publicRpcGetMintInfo: (...args: unknown[]) => mockPublicRpcGetMintInfo(...args),
 }));
@@ -205,10 +201,8 @@ function setupGoodTokenMocks() {
     result: { value: { uiAmount: 100000 } },
   });
   mockHeliusGetCreatorReputation.mockResolvedValue(null);
-  mockHeliusGetHoldersCount.mockResolvedValue(null);
+  mockHeliusGetHoldersCount.mockResolvedValue(5000);
   mockHeliusGetProgramAccountHolderCount.mockResolvedValue(null);
-  mockSolscanGetHoldersCount.mockResolvedValue(5000);
-  mockPublicRpcGetLargestAccounts.mockResolvedValue(null);
   mockPublicRpcGetTokenSupply.mockResolvedValue(null);
   mockPublicRpcGetMintInfo.mockResolvedValue(null);
   mockFetchSolscan.mockImplementation((endpoint: string) => {
@@ -379,7 +373,6 @@ describe("scan handler", () => {
     }
     function heliusDown() {
       mockHeliusGetLargestAccounts.mockResolvedValue(null);
-      mockPublicRpcGetLargestAccounts.mockResolvedValue(null);
     }
     async function scan() {
       const res = createMockRes();
@@ -456,6 +449,106 @@ describe("scan handler", () => {
     });
   });
 
+  describe("holders from GoPlus", () => {
+    // Real GoPlus answers for Solana (see __tests__/fixtures/goplus-solana.json).
+    const here = dirname(fileURLToPath(import.meta.url));
+    const goplusFixtures = JSON.parse(
+      readFileSync(join(here, "fixtures", "goplus-solana.json"), "utf8"),
+    ) as { tokens: Record<string, { result: unknown }> };
+    const WSOL = "So11111111111111111111111111111111111111112";
+
+    type Reply = { json: () => Promise<unknown> };
+    /** Answer GoPlus requests with this token result (keyed by the scanned mint), everything else as before. */
+    function goplusSays(result: unknown) {
+      const base = mockFetch.getMockImplementation() as (...args: unknown[]) => Promise<Reply>;
+      mockFetch.mockImplementation(async (url: string, ...rest: unknown[]) => {
+        if (url.includes("gopluslabs")) {
+          return { ok: true, json: () => Promise.resolve({ code: 1, result: { [WSOL]: result } }) };
+        }
+        return base(url, ...rest);
+      });
+    }
+    /** Helius down: no holder list, no supply, no holder count. */
+    function heliusDown() {
+      mockHeliusGetLargestAccounts.mockResolvedValue(null);
+      mockHeliusGetTokenSupply.mockResolvedValue(null);
+      mockHeliusGetHoldersCount.mockResolvedValue(null);
+    }
+    async function scan() {
+      const res = createMockRes();
+      await handler(createMockReq({ ca: WSOL, fresh: "1" }), res);
+      return (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as {
+        risk: string;
+        topHolderPct: number | null;
+        holdersSource: string | null;
+        flags: Array<{ label: string; severity: string }>;
+      };
+    }
+
+    it("with Helius down, GoPlus's holder list gives the concentration: HAWK is DANGER and the source says so", async () => {
+      setupGoodTokenMocks();
+      heliusDown();
+      goplusSays(goplusFixtures.tokens.HAWK.result);
+
+      const body = await scan();
+
+      expect(body.holdersSource).toBe("goplus");
+      expect(body.flags.find((f) => /single wallet holds 44%/i.test(f.label))?.severity).toBe("critical");
+      expect(body.risk).toBe("DANGER");
+      expect(body.topHolderPct).toBeCloseTo(43.98, 1);
+    });
+
+    it("with Helius up, the list is Helius's and GoPlus's is not used", async () => {
+      setupGoodTokenMocks();
+      goplusSays(goplusFixtures.tokens.HAWK.result);
+
+      const body = await scan();
+
+      expect(body.holdersSource).toBe("helius");
+      expect(body.flags.some((f) => /single wallet holds 44%/i.test(f.label))).toBe(false);
+    });
+
+    it("a GoPlus list that cannot be right (balances ten times the supply) is dropped: holders stay unverified", async () => {
+      setupGoodTokenMocks();
+      heliusDown();
+      goplusSays(goplusFixtures.tokens.NFLXX.result);
+
+      const body = await scan();
+
+      expect(body.holdersSource).toBeNull();
+      expect(body.risk).not.toBe("SAFE");
+      expect(body.topHolderPct).toBeNull();
+    });
+
+    it("takes the supply from GoPlus before asking a public RPC", async () => {
+      setupGoodTokenMocks();
+      heliusDown();
+      goplusSays(goplusFixtures.tokens.HAWK.result);
+
+      await scan();
+
+      expect(mockPublicRpcGetTokenSupply).not.toHaveBeenCalled();
+    });
+
+    it("the holder count GoPlus reports reaches the holder-count flags: a 2-holder token is flagged", async () => {
+      setupGoodTokenMocks();
+      mockHeliusGetHoldersCount.mockResolvedValue(null);
+      goplusSays(goplusFixtures.tokens.BEAR.result);
+
+      const body = await scan();
+
+      expect(body.flags.find((f) => /very few holders/i.test(f.label))?.severity).toBe("critical");
+    });
+
+    it("does not call the public Solscan holders endpoint any more (it answers 404)", async () => {
+      setupGoodTokenMocks();
+      await scan();
+
+      const urls = mockFetch.mock.calls.map((c) => String(c[0]));
+      expect(urls.some((u) => u.includes("public-api.solscan.io"))).toBe(false);
+    });
+  });
+
   it("includes layer snapshots in result", async () => {
     setupGoodTokenMocks();
     const req = createMockReq({ ca: "So11111111111111111111111111111111111111112" });
@@ -485,10 +578,8 @@ describe("scan handler", () => {
     mockHeliusGetCreatorReputation.mockResolvedValue(null);
     mockHeliusGetHoldersCount.mockResolvedValue(null);
     mockHeliusGetProgramAccountHolderCount.mockResolvedValue(null);
-    mockSolscanGetHoldersCount.mockResolvedValue(null);
     mockFetchSolscan.mockResolvedValue(null);
     mockFetchDexCandles.mockResolvedValue([]);
-    mockPublicRpcGetLargestAccounts.mockResolvedValue(null);
     mockPublicRpcGetTokenSupply.mockResolvedValue(null);
     mockPublicRpcGetMintInfo.mockResolvedValue(null);
 

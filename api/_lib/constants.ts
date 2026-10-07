@@ -24,7 +24,6 @@ export const PUBLIC_SOLANA_RPCS = [
   "https://api.mainnet-beta.solana.com",
   "https://solana-rpc.publicnode.com",
 ] as const;
-export const SOLSCAN_PUBLIC_BASE = "https://public-api.solscan.io";
 export const SOLSCAN_BASE = "https://pro-api.solscan.io/v2.0";
 
 // CA_RE — single source of truth from shared/constants.ts
@@ -156,7 +155,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v43"; // 2026-10-07: the RugCheck layer reads RugCheck's real summary (creator history, mutable metadata, concentration fallback, LP locked share); flushes cached scans scored with the empty layer.
+const ENGINE_VERSION_MANUAL = "v44"; // 2026-10-07: holders fall back on GoPlus's top-holders list when Helius gives none, and the holder-count flags get a real count (Helius or GoPlus) instead of the dead public Solscan endpoint; flushes cached scans scored without them.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.
@@ -390,7 +389,19 @@ export const API_TIMEOUT_HELIUS = 6000;
 //   and lpLockedPct >= 90 counts as LP locked. The mint/freeze authority is
 //   deliberately NOT flagged yet (issuer-controlled assets: USDG, CASH, ORCA,
 //   tokenized stocks). See api/_lib/rugcheck.ts and layerRugCheck.
-export const SCORING_VERSION = "7.7.23";
+// 7.7.24 bump (2026-10-07): the holder data no longer has a single source.
+//   - When Helius returns no holder list, GoPlus's Solana answer (already
+//     fetched on every scan) supplies the top holders and the total supply, and
+//     goes through the same ladder, LP and foundation exclusions. Checked on 16
+//     reference tokens: top-1 identical to Helius, top-10 0 to 2 points lower
+//     (it lists 10 accounts, pools included). The response says where the list
+//     came from (holdersSource). The public Solana RPC call for the list is gone:
+//     both providers refuse getTokenLargestAccounts (429 / 403).
+//   - The Solscan layer's holder-count flags (very few holders, low holders,
+//     strong holder base) got their count from public-api.solscan.io, which now
+//     answers 404, so they never fired. They read the count Helius or GoPlus
+//     reports instead (never the size of the holder list, at most 20).
+export const SCORING_VERSION = "7.7.24";
 
 // ── SOFT REASONS (safe gate unlock) ───────────────────────────
 // A reason listed here CAN be unlocked by applySafeGateOverride when

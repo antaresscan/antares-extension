@@ -143,6 +143,20 @@ export interface GoPlusTokenResult {
     // themselves and it matches what DexScreener / Solscan show. Free
     // endpoint, already in the response we fetch for honeypot detection.
     holder_count?: string | number;
+    // The Solana answer lists the top holders (2 to 10) with their balance, and
+    // the total supply as a UI amount. See api/_lib/goplus.ts.
+    holders?: GoPlusHolder[];
+    total_supply?: string | number;
+}
+
+/** One entry of GoPlus's top-holders list. `percent` is a fraction ("0.4398"). */
+export interface GoPlusHolder {
+  account?: string;
+  token_account?: string;
+  balance?: string | number;
+  percent?: string | number;
+  tag?: string;
+  is_locked?: number;
 }
 
 export interface GoPlusResponse {
@@ -347,6 +361,9 @@ export interface ScanResult {
   // render the concentration bar without regex-extracting from flag labels.
   topHolderPct?: number | null;
   top10HolderPct?: number | null;
+  // Where the holder list behind those two figures came from: Helius, or GoPlus
+  // when Helius returned nothing. Null when neither had a list.
+  holdersSource?: "helius" | "goplus" | null;
   // V5 Critical Actors preview — composed from creatorReputation + filtered
   // top holders + (optional) insider-graph cluster detection. Each card
   // describes one structural risk vector (Dev / Insider / Cluster).
