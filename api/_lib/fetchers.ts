@@ -6,18 +6,21 @@ import type {
     OHLCVCandle, GeckoTerminalOHLCVResponse,
     RugCheckReport, RugCheckRisk,
 } from "./types";
-import { HELIUS_BASE, PUBLIC_SOLANA_RPCS, SOLSCAN_PUBLIC_BASE, SOLSCAN_BASE, HELIUS_REST_BASE, LP_PROGRAM_ADDRESSES } from "./constants";
+import { PUBLIC_SOLANA_RPCS, SOLSCAN_PUBLIC_BASE, SOLSCAN_BASE, LP_PROGRAM_ADDRESSES } from "./constants";
 import { fetchJson, fetchJsonPost } from "./http";
+import { heliusRpc, heliusRestUrl } from "./helius";
 import { asNumber } from "./math";
 import { logger } from "./logger";
 
 
 // ─── HELIUS HELPERS ─────────────────────────────────────────────────────────
-const heliusHeaders = (key: string) => ({ "Authorization": "Bearer " + key });
+// Every Helius RPC call goes through heliusRpc (api/_lib/helius.ts): it sends the
+// key the way Helius accepts it (Bearer header or ?api-key=, detected at run
+// time) and logs when Helius refuses the key, instead of failing silently.
 export async function heliusGetLargestAccounts(mint: string, key: string) {
-    return fetchJsonPost(HELIUS_BASE, {
+    return heliusRpc(key, {
         jsonrpc: "2.0", id: "holders", method: "getTokenLargestAccounts", params: [mint],
-    }, 6000, 1, heliusHeaders(key));
+    }, 6000, 1);
 }
 
 
@@ -73,10 +76,10 @@ export async function heliusResolveAccountOwners(
     const addresses = holders.map(h => h.address);
     try {
         // ── Step 1: decode authority from raw base64 ──────────────────────────
-        const res = await fetchJsonPost(HELIUS_BASE, {
+        const res = await heliusRpc(key, {
             jsonrpc: "2.0", id: "owners", method: "getMultipleAccounts",
             params: [addresses, { encoding: "base64" }],
-        }, 6000, 1, heliusHeaders(key));
+        }, 6000, 1);
         type RpcAccountB64 = { data?: [string, string] | null };
         const rpcRes = res as { result?: { value?: (RpcAccountB64 | null)[] } } | null;
         const accounts = rpcRes?.result?.value ?? [];
@@ -94,10 +97,10 @@ export async function heliusResolveAccountOwners(
 
         const ownerProgramMap = new Map<string, string>();
         try {
-            const res2 = await fetchJsonPost(HELIUS_BASE, {
+            const res2 = await heliusRpc(key, {
                 jsonrpc: "2.0", id: "owner-programs", method: "getMultipleAccounts",
                 params: [unknownOwners, { encoding: "base64" }],
-            }, 6000, 1, heliusHeaders(key));
+            }, 6000, 1);
             type RpcAccountOwner = { owner?: string };
             const rpcRes2 = res2 as { result?: { value?: (RpcAccountOwner | null)[] } } | null;
             const ownerAccounts = rpcRes2?.result?.value ?? [];
@@ -122,17 +125,17 @@ export async function heliusResolveAccountOwners(
     }
 }
 export async function heliusGetTokenSupply(mint: string, key: string) {
-    return fetchJsonPost(HELIUS_BASE, {
+    return heliusRpc(key, {
         jsonrpc: "2.0", id: "supply", method: "getTokenSupply", params: [mint],
-    }, 6000, 1, heliusHeaders(key));
+    }, 6000, 1);
 }
 
 export async function heliusGetHoldersCount(mint: string, key: string): Promise<number | null> {
-    const res = await fetchJsonPost(HELIUS_BASE, {
+    const res = await heliusRpc<HeliusTokenAccountsResponse>(key, {
         jsonrpc: "2.0", id: "holders-count",
         method: "getTokenAccounts",
         params: { mint, limit: 1, page: 1 },
-    }, 6000, 1, heliusHeaders(key)) as HeliusTokenAccountsResponse | null;
+    }, 6000, 1);
     const total = res?.result?.total ?? res?.total;
     return typeof total === "number" ? total : null;
 }
@@ -158,7 +161,7 @@ export async function heliusGetProgramAccountHolderCount(
     key: string,
 ): Promise<number | null> {
     try {
-        const res = await fetchJsonPost(HELIUS_BASE, {
+        const res = await heliusRpc<{ result?: unknown[] }>(key, {
             jsonrpc: "2.0",
             id: "holders-pa",
             method: "getProgramAccounts",
@@ -173,7 +176,7 @@ export async function heliusGetProgramAccountHolderCount(
                     dataSlice: { offset: 0, length: 0 },
                 },
             ],
-        }, 5000, 1, heliusHeaders(key)) as { result?: unknown[] } | null;
+        }, 5000, 1);
         if (!res || !Array.isArray(res.result)) return null;
         return res.result.length;
     } catch {
@@ -193,10 +196,13 @@ export async function heliusGetCreatorReputation(
     key: string
 ): Promise<CreatorReputation | null> {
     if (!creator || !key) return null;
-    // Use Authorization header instead of query param for security
+    // The Enhanced Transactions REST API (/v0/*) only accepts the key as an
+    // `?api-key=` query parameter: a Bearer header gets a 401, which used to be
+    // swallowed as null, so creator reputation never resolved. The URL is never
+    // logged, and scrubSensitive redacts api-key at the log boundary.
     const res = await fetchJson(
-        HELIUS_REST_BASE + "/v0/addresses/" + creator + "/transactions?limit=200",
-        { headers: heliusHeaders(key) }, 6000
+        heliusRestUrl("/v0/addresses/" + creator + "/transactions?limit=200", key),
+        {}, 6000
     ) as Array<{ type?: string; description?: string }> | null;
     if (!Array.isArray(res)) return null;
     let priorTokens = 0;

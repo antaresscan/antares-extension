@@ -101,6 +101,26 @@ export function scrubSensitive(input: string): string {
   return out;
 }
 
+// 401/403 from an upstream mean OUR credentials were refused (expired key, plan
+// out of credits, wrong auth form, domain/IP restriction). Callers swallow 4xx
+// as a silent null, which hid a month-long Helius outage. Log the host and the
+// status, never the URL (it can carry the key), at most once a minute per host
+// and status so a dead key does not flood the runtime logs.
+const authLogAt = new Map<string, number>();
+const AUTH_LOG_INTERVAL_MS = 60_000;
+function logAuthRejected(host: string | null, status: number, now: number = Date.now()): void {
+  if (!host || (status !== 401 && status !== 403)) return;
+  const k = `${host}:${status}`;
+  if (now - (authLogAt.get(k) ?? 0) < AUTH_LOG_INTERVAL_MS) return;
+  authLogAt.set(k, now);
+  logger.warn("http", "upstream rejected our credentials", { host, status });
+}
+
+/** Test-only helper to reset the 401/403 log throttle between tests. */
+export function _resetAuthLogThrottleForTests(): void {
+  authLogAt.clear();
+}
+
 // Default maxRetries is 1 (one retry on 429/503 or network error).
 // Rationale: scan.ts runs under Vercel's 10s maxDuration. With timeout=5000ms
 // and backoff 500ms, maxRetries=1 caps worst-case latency per fetch at ~10.5s,
@@ -118,6 +138,7 @@ export async function fetchJson<T = unknown>(url: string, init: RequestInit = {}
     try {
       const r = await fetch(url, { ...init, signal: t.signal });
       t.clear();
+      logAuthRejected(host, r.status);
       if (r.status === 429 || r.status === 503) {
         if (attempt < maxRetries) {
           await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
@@ -148,7 +169,19 @@ export async function fetchJson<T = unknown>(url: string, init: RequestInit = {}
   return null;
 }
 
-export async function fetchJsonPost<T = unknown>(url: string, body: object, ms = 5000, maxRetries = 1, extraHeaders: Record<string, string> = {}): Promise<T | null> {
+/**
+ * POST JSON and parse the answer, or null on any failure. `onStatus` receives
+ * the HTTP status of every response, so a caller can tell "refused" (401/403)
+ * from "down" or "rate limited" even though the return value is null for all.
+ */
+export async function fetchJsonPost<T = unknown>(
+  url: string,
+  body: object,
+  ms = 5000,
+  maxRetries = 1,
+  extraHeaders: Record<string, string> = {},
+  onStatus?: (status: number) => void,
+): Promise<T | null> {
   const host = hostnameOf(url);
   if (host && isCircuitOpen(host)) return null;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -161,6 +194,8 @@ export async function fetchJsonPost<T = unknown>(url: string, body: object, ms =
         signal: t.signal,
       });
       t.clear();
+      onStatus?.(r.status);
+      logAuthRejected(host, r.status);
       if (r.status === 429 || r.status === 503) {
         if (attempt < maxRetries) {
           await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
