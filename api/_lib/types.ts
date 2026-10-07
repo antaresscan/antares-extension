@@ -120,42 +120,29 @@ export interface RugCheckSummary {
 }
 
 // ─── GOPLUS ────────────────────────────────────────────────────────────────────────────────────
-// What GoPlus really sends for a Solana token (see api/_lib/goplus.ts). The
-// fields of its EVM answer (is_honeypot, mint_authority, sell_tax...) are not in
-// it. The Token-2022 fields are typed loosely on purpose: a field of an
-// unexpected shape must not make the whole answer unreadable.
 export interface GoPlusTokenResult {
-  /** { status: "1" } when the mint authority is still held. */
-  mintable?: unknown;
-  freezable?: unknown;
-  /** Token-2022 permanent delegate: its holder can move or burn any balance. */
-  balance_mutable_authority?: unknown;
-  /** "2" when new token accounts are frozen by default. */
-  default_account_state?: string | number;
-  /** "1" for a soulbound token: it cannot be transferred, so not sold. */
-  non_transferable?: string | number;
-  transfer_fee?: unknown;
-  transfer_fee_upgradable?: unknown;
-  transfer_hook?: unknown;
-  transfer_hook_upgradable?: unknown;
-  dex?: Array<{ burn_percent?: number | null; dex_name?: string; lp_amount?: string | null; tvl?: string | number; type?: string }>;
-  // GoPlus exposes the actual on-chain holder count — they index this
-  // themselves and it matches what DexScreener / Solscan show.
-  holder_count?: string | number;
-  // The Solana answer lists the top holders (2 to 10) with their balance, and
-  // the total supply as a UI amount.
-  holders?: GoPlusHolder[];
-  total_supply?: string | number;
-}
-
-/** One entry of GoPlus's top-holders list. `percent` is a fraction ("0.4398"). */
-export interface GoPlusHolder {
-  account?: string;
-  token_account?: string;
-  balance?: string | number;
-  percent?: string | number;
-  tag?: string;
-  is_locked?: number;
+  is_honeypot?: string | number | boolean;
+  cannot_sell_all?: string | number | boolean;
+  mint_authority?: string;
+  freeze_authority?: string;
+  is_blacklisted?: string | number | boolean;
+  transfer_pausable?: string | number | boolean;
+  hidden_owner?: string | number | boolean;
+  is_proxy?: string | number | boolean;
+  sell_tax?: string | number;
+  buy_tax?: string | number;
+  owner_percent?: string | number;
+  creator_percent?: string | number;
+  is_mintable?: string | number | boolean;
+  slippage_modifiable?: string | number | boolean;
+  is_anti_whale_modifiable?: string | number | boolean;
+  trading_cooldown?: string | number | boolean;
+  is_whitelisted?: string | number | boolean;
+    dex?: Array<{ burn_percent?: number | null; dex_name?: string; lp_amount?: string | null; tvl?: string | number; type?: string }>;
+    // GoPlus exposes the actual on-chain holder count — they index this
+    // themselves and it matches what DexScreener / Solscan show. Free
+    // endpoint, already in the response we fetch for honeypot detection.
+    holder_count?: string | number;
 }
 
 export interface GoPlusResponse {
@@ -345,10 +332,9 @@ export interface ScanResult {
   layers: Record<string, LayerSnapshot>;
   scoring_version: string;
   fetchedAt: number;
-  // null: the source did not answer, so the clients show a dash, never a check mark.
-  honeypot?: boolean | null;
-  mintAuthority?: boolean | null;
-  freezeAuthority?: boolean | null;
+  honeypot?: boolean;
+  mintAuthority?: boolean;
+  freezeAuthority?: boolean;
   requestId: string;
   lpBurned?: boolean | null;
   candles?: Array<{ close: number }>;
@@ -361,9 +347,6 @@ export interface ScanResult {
   // render the concentration bar without regex-extracting from flag labels.
   topHolderPct?: number | null;
   top10HolderPct?: number | null;
-  // Where the holder list behind those two figures came from: Helius, or GoPlus
-  // when Helius returned nothing. Null when neither had a list.
-  holdersSource?: "helius" | "goplus" | null;
   // V5 Critical Actors preview — composed from creatorReputation + filtered
   // top holders + (optional) insider-graph cluster detection. Each card
   // describes one structural risk vector (Dev / Insider / Cluster).

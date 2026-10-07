@@ -12,13 +12,12 @@ import type {
 import {
   LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS,
   PUMP_7D_WARN_PCT, PUMP_7D_HIGH_PCT, PUMP_30D_WARN_PCT, PUMP_30D_HIGH_PCT,
-  LP_UNVERIFIED_MIN_LIQUIDITY, LP_UNVERIFIED_MIN_HOLDERS, ESTABLISHED_AGE_THRESHOLD_HOURS,
+  LP_UNVERIFIED_MIN_LIQUIDITY,
 } from "./constants";
 import { getLpRiskBucket } from "./lp-risk-matrix";
 import { asNumber, _mean, _std, _pct } from "./math";
 import { makeFlag } from "./helpers";
 import { rugCheckConcentration, rugCheckRisk } from "./rugcheck";
-import { goplusHazards } from "./goplus";
 
 function applyDiminishingPenalties(trust: number, penalties: number[]): number {
   if (penalties.length > 0) {
@@ -297,27 +296,6 @@ export function layerRugCheck(
 }
 
 // ═══ LAYER 3 — GoPlus ═════════════════════════════════════════════════════════
-// Reads GoPlus's Solana answer (api/_lib/goplus.ts). The layer used to read the
-// EVM answer's fields (is_honeypot, mint_authority, sell_tax, is_proxy...), which
-// a Solana answer does not have: apart from the LP burn it checked nothing, so no
-// mint, freeze or Token-2022 hazard was ever flagged.
-//
-// Authorities still held (mint, freeze, permanent delegate, a changeable
-// transfer fee or hook) are ONE flag, because they usually come together and the
-// verdict counts warnings. They are a warning, not a critical: of the 118 corpus
-// tokens with an active mint authority, almost all are legitimate issuer- or
-// DAO-run assets (USDG, CASH, ORCA, tokenized stocks, liquid-staking tokens), and
-// none is labelled a rug. For an established asset (30 days, 5,000 holders,
-// $250k liquidity, the engine's usual bar) it is information only. The hazards no
-// legitimate tradable token has (cannot be transferred, accounts frozen by
-// default, a transfer fee of 10% or more) stay critical.
-function isEstablishedAsset(ctx?: { holders: number | null; liquidity: number; tokenAgeHours: number | null }): boolean {
-  return !!ctx &&
-    (ctx.tokenAgeHours ?? 0) >= ESTABLISHED_AGE_THRESHOLD_HOURS &&
-    (ctx.holders ?? 0) >= LP_UNVERIFIED_MIN_HOLDERS &&
-    (ctx.liquidity ?? 0) >= LP_UNVERIFIED_MIN_LIQUIDITY;
-}
-
 export function layerGoPlus(
   goplus: GoPlusTokenResult | null,
   // Mirror layerRugCheck: when LP is unburned, mature tokens deserve the
@@ -337,43 +315,58 @@ export function layerGoPlus(
     flags: [makeFlag("GoPlus unavailable", "info", 0)],
     forceRug: false, safeBlocked: false,
   };
-  const hazards = goplusHazards(goplus);
-
-  // A token that cannot be transferred cannot be sold: the honeypot case.
-  if (hazards.nonTransferable) {
-    flags.push(makeFlag("Honeypot detected \u2014 cannot sell", "critical", 0));
-    return { source: "goplus", trust: 0, available: true, flags, forceRug: true, safeBlocked: true };
-  }
-  // New token accounts frozen by default: nobody can sell until the freeze
-  // authority thaws their account.
-  if (hazards.defaultFrozen) {
-    flags.push(makeFlag("New token accounts are frozen by default", "critical", 0));
-    penalties.push(0.10); safeBlocked = true;
-  }
-  // Token-2022 transfer fee, the Solana counterpart of a sell tax: current or
-  // scheduled, in basis points.
-  const feePct = Math.round(hazards.transferFeeBps) / 100;
-  if (hazards.transferFeeBps >= 1000) {
-    flags.push(makeFlag(`Transfer fee ${feePct}% on every transfer`, "critical", 0));
-    penalties.push(0.35);
-  } else if (hazards.transferFeeBps >= 200) {
-    flags.push(makeFlag(`Transfer fee ${feePct}% \u2014 suspicious`, "warning", 0));
-    penalties.push(0.80);
-  }
-  // A transfer hook runs a program on every transfer, which can refuse sells.
-  if (hazards.transferHook) {
-    flags.push(makeFlag("Transfer hook: a program runs on every transfer", "warning", 0));
-    penalties.push(0.80);
-  }
-  if (hazards.authorities.length > 0) {
-    const list = hazards.authorities.join(", ");
-    if (isEstablishedAsset(maturityContext)) {
-      flags.push(makeFlag(`Authorities still active (established asset): ${list}`, "info", 0));
-    } else {
-      flags.push(makeFlag(`Authorities still active: ${list}`, "warning", 0));
-      penalties.push(0.85);
+  const gp = (field: keyof GoPlusTokenResult) => {
+    const v = goplus[field];
+    if (v === "1" || v === 1 || v === true) return true;
+    if (typeof v === "string") {
+      const s = v.trim().toLowerCase();
+      if (s === "true" || s === "yes") return true;
     }
+    return false;
+  };
+  const gpNum = (field: keyof GoPlusTokenResult) => asNumber(goplus[field]);
+  const authorityActive = (val: unknown) =>
+    Boolean(val) && !["0","false","null",""].includes(String(val).trim().toLowerCase());
+  if (gp("is_honeypot")) {
+    flags.push(makeFlag("Honeypot detected — cannot sell", "critical", 0));
+    trust = 0; forceRug = true; safeBlocked = true;
+    return { source: "goplus", trust: 0, available: true, flags, forceRug, safeBlocked };
   }
+  if (gp("cannot_sell_all")) {
+    flags.push(makeFlag("Cannot sell all tokens", "critical", 0));
+    trust = 0; forceRug = true; safeBlocked = true;
+    return { source: "goplus", trust: 0, available: true, flags, forceRug, safeBlocked };
+  }
+  const hasMint = authorityActive(goplus.mint_authority);
+  const hasFreeze = authorityActive(goplus.freeze_authority);
+  if (hasMint && hasFreeze) {
+    flags.push(makeFlag("Mint + Freeze authority both active", "critical", 0));
+    penalties.push(0.05); forceRug = true; safeBlocked = true;
+  } else {
+    if (hasMint) { flags.push(makeFlag("Mint Authority enabled", "critical", 0)); penalties.push(0.25); }
+    if (hasFreeze) { flags.push(makeFlag("Freeze Authority enabled", "critical", 0)); penalties.push(0.25); }
+  }
+  if (gp("is_blacklisted")) { flags.push(makeFlag("Blacklist capability", "critical", 0)); penalties.push(0.30); safeBlocked = true; }
+  if (gp("transfer_pausable")) { flags.push(makeFlag("Transfer pausable", "critical", 0)); penalties.push(0.30); safeBlocked = true; }
+  if (gp("hidden_owner")) { flags.push(makeFlag("Hidden owner detected", "critical", 0)); penalties.push(0.30); safeBlocked = true; }
+  if (gp("is_proxy")) { flags.push(makeFlag("Upgradeable/proxy contract", "critical", 0)); penalties.push(0.50); safeBlocked = true; }
+  const sellTaxRaw = gpNum("sell_tax");
+  const buyTaxRaw  = gpNum("buy_tax");
+  const sellTax = sellTaxRaw > 1 ? sellTaxRaw / 100 : sellTaxRaw;
+  const buyTax  = buyTaxRaw  > 1 ? buyTaxRaw  / 100 : buyTaxRaw;
+  if (sellTax > 0.10) { flags.push(makeFlag("Sell tax > 10%", "critical", 0)); penalties.push(0.35); }
+  if (buyTax  > 0.10) { flags.push(makeFlag("Buy tax > 10%",  "critical", 0)); penalties.push(0.35); }
+  // Fix(TAX_WARNING): Tax between 2% and 10% is a common rug mechanic — flag it.
+  // VDOR had 4.5% tax which previously passed through completely undetected.
+  if (sellTax > 0.02 && sellTax <= 0.10) { flags.push(makeFlag(`Sell tax ${Math.round(sellTax * 100)}% — suspicious`, "warning", 0)); penalties.push(0.80); }
+  if (buyTax  > 0.02 && buyTax  <= 0.10) { flags.push(makeFlag(`Buy tax ${Math.round(buyTax  * 100)}% — suspicious`,  "warning", 0)); penalties.push(0.80); }
+  if (gpNum("owner_percent") > 0.05) { flags.push(makeFlag("Owner holds > 5%", "critical", 0)); penalties.push(0.50); }
+  if (gpNum("creator_percent") > 0.05) { flags.push(makeFlag("Creator holds > 5%", "critical", 0)); penalties.push(0.50); }
+  if (gp("is_mintable")) { flags.push(makeFlag("Token is mintable", "warning", 0)); penalties.push(0.60); }
+  if (gp("slippage_modifiable")) { flags.push(makeFlag("Slippage/tax modifiable", "warning", 0)); penalties.push(0.75); }
+  if (gp("is_anti_whale_modifiable")) { flags.push(makeFlag("Anti-whale rules modifiable", "warning", 0)); penalties.push(0.80); }
+  if (gp("trading_cooldown")) { flags.push(makeFlag("Trading cooldown enabled", "info", 0)); penalties.push(0.90); }
+  if (gp("is_whitelisted")) { flags.push(makeFlag("Whitelist system detected", "warning", 0)); penalties.push(0.80); }
 
           // Fix(LP_GOPLUS): LP burn/lock detection using GoPlus dex[].burn_percent
     // RugCheck does NOT return lpBurned/lpLocked booleans — only lpLockedPct which is unreliable
