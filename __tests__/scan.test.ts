@@ -1,5 +1,8 @@
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { readFileSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { SCORING_VERSION } from "../api/_lib/constants";
 
 // ---- Mock all external modules BEFORE importing handler ----
@@ -147,25 +150,19 @@ function setupGoodTokenMocks() {
         }),
       });
     }
-    if (url.includes("rugcheck") && url.includes("summary")) {
+    // RugCheck: the summary in the shape the API really sends (a token it found
+    // nothing on, LP 99.5% locked or burned). The full /report is not requested
+    // any more, so it has no mock: a test below checks that it stays that way.
+    if (url.includes("rugcheck") && url.includes("report/summary")) {
       return Promise.resolve({
         ok: true,
         json: () => Promise.resolve({
-          lpBurned: true,
-          lpLocked: false,
-          metaMutable: false,
-          topHolders: { top10Percentage: 25, top1Percentage: 5 },
+          tokenProgram: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+          tokenType: "",
           risks: [],
-        }),
-      });
-    }
-    if (url.includes("rugcheck") && url.includes("report")) {
-      return Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({
-          risks: [],
-          topHolders: { top10Percentage: 25, top1Percentage: 5 },
-          totalHolders: 5000,
+          score: 1,
+          score_normalised: 1,
+          lpLockedPct: 99.5,
         }),
       });
     }
@@ -360,6 +357,103 @@ describe("scan handler", () => {
     expect(without.risk).not.toBe("DANGER");
     expect(without.risk).toBe(withProfile.risk);
     expect(without.score).toBe(withProfile.score);
+  });
+
+  describe("RugCheck", () => {
+    // Real answers of api.rugcheck.xyz, captured and not edited.
+    const here = dirname(fileURLToPath(import.meta.url));
+    const rugCheckFixtures = JSON.parse(
+      readFileSync(join(here, "fixtures", "rugcheck-summaries.json"), "utf8"),
+    ) as { summaries: Record<string, { summary: unknown }> };
+
+    type Reply = { json: () => Promise<unknown> };
+    /** Answer RugCheck summary requests with this payload, everything else as before. */
+    function rugCheckSays(summary: unknown) {
+      const base = mockFetch.getMockImplementation() as (...args: unknown[]) => Promise<Reply>;
+      mockFetch.mockImplementation(async (url: string, ...rest: unknown[]) => {
+        if (url.includes("rugcheck") && url.includes("report/summary")) {
+          return { ok: true, json: () => Promise.resolve(summary) };
+        }
+        return base(url, ...rest);
+      });
+    }
+    function heliusDown() {
+      mockHeliusGetLargestAccounts.mockResolvedValue(null);
+      mockPublicRpcGetLargestAccounts.mockResolvedValue(null);
+    }
+    async function scan() {
+      const res = createMockRes();
+      await handler(createMockReq({ ca: "So11111111111111111111111111111111111111112", fresh: "1" }), res);
+      return (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as {
+        risk: string;
+        score: number;
+        topHolderPct: number | null;
+        flags: Array<{ label: string; severity: string }>;
+        sources_used: string[];
+      };
+    }
+
+    it("asks for the summary only, never for the full report (up to 2.5 MB, thrown away by the validator)", async () => {
+      setupGoodTokenMocks();
+      await scan();
+
+      const rugCheckUrls = mockFetch.mock.calls.map((c) => String(c[0])).filter((u) => u.includes("rugcheck"));
+      expect(rugCheckUrls.length).toBeGreaterThan(0);
+      expect(rugCheckUrls.every((u) => u.endsWith("/report/summary"))).toBe(true);
+    });
+
+    it("with Helius down, RugCheck says one wallet holds 44%: DANGER, where it was capped at CAUTION", async () => {
+      setupGoodTokenMocks();
+      heliusDown();
+      rugCheckSays(rugCheckFixtures.summaries.HAWK.summary);
+
+      const body = await scan();
+
+      expect(body.risk).toBe("DANGER");
+      const flag = body.flags.find((f) => /single wallet holds 44%/i.test(f.label));
+      expect(flag?.severity).toBe("critical");
+      expect(body.topHolderPct).toBeCloseTo(43.98, 2);
+    });
+
+    it("with Helius down and nothing raised by RugCheck, the holders stay unverified: CAUTION, never SAFE", async () => {
+      setupGoodTokenMocks();
+      heliusDown();
+      rugCheckSays(rugCheckFixtures.summaries.WIF.summary);
+
+      const body = await scan();
+
+      expect(body.risk).toBe("CAUTION");
+      expect(body.flags.some((f) => f.severity === "critical")).toBe(false);
+      expect(body.topHolderPct).toBeNull();
+    });
+
+    it("with Helius up, RugCheck's concentration is not added on top of the engine's own reading", async () => {
+      setupGoodTokenMocks();
+      rugCheckSays(rugCheckFixtures.summaries.HAWK.summary);
+
+      const body = await scan();
+
+      expect(body.flags.some((f) => /(RugCheck)/.test(f.label) && /wallet holds|top 10/i.test(f.label))).toBe(false);
+    });
+
+    it("a creator RugCheck knows to have rugged before makes the token DANGER", async () => {
+      setupGoodTokenMocks();
+      rugCheckSays(rugCheckFixtures.summaries.CREATOR_RUGGED.summary);
+
+      const body = await scan();
+
+      expect(body.risk).toBe("DANGER");
+      expect(body.flags.find((f) => /creator history of rugged tokens/i.test(f.label))?.severity).toBe("critical");
+    });
+
+    it("an error answer from RugCheck is no data: the source is left out, not counted as clean", async () => {
+      setupGoodTokenMocks();
+      rugCheckSays({ error: "unable to generate report" });
+
+      const body = await scan();
+
+      expect(body.sources_used).not.toContain("rugcheck");
+    });
   });
 
   it("includes layer snapshots in result", async () => {

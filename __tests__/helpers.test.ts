@@ -4,7 +4,7 @@ import {
   apiError, isCorsAllowed, isOriginInList, isValidDexScreenerResponse, isValidRugCheckSummary,
   isHeliusLargestAccountsResponse, isHeliusSupplyResponse,
   isSolscanMarketsResponse, isSolscanMeta, isSolscanTransfersResponse,
-  isRugCheckReport, withBudget, pickGoPlusResult,
+  withBudget, pickGoPlusResult,
 } from "../api/_lib/helpers";
 import { CA_RE } from "../api/_lib/constants";
 
@@ -331,8 +331,21 @@ describe("isValidDexScreenerResponse", () => {
 });
 
 describe("isValidRugCheckSummary", () => {
-  it("{ lpBurned: true } -> true", () => {
-    expect(isValidRugCheckSummary({ lpBurned: true })).toBe(true);
+  it("a real summary (BONK) -> true", () => {
+    expect(
+      isValidRugCheckSummary({
+        tokenProgram: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+        tokenType: "",
+        risks: [{ name: "Mutable metadata", value: "", description: "Token metadata can be changed by the owner", score: 100, level: "warn" }],
+        score: 101,
+        score_normalised: 7,
+        lpLockedPct: 15.268917447130463,
+      }),
+    ).toBe(true);
+  });
+
+  it("{ lpBurned: true } -> false (a field RugCheck never sent, and nothing else)", () => {
+    expect(isValidRugCheckSummary({ lpBurned: true })).toBe(false);
   });
 
   it("{ risks: [] } -> true", () => {
@@ -343,8 +356,8 @@ describe("isValidRugCheckSummary", () => {
     expect(isValidRugCheckSummary({ error: "not found" })).toBe(true);
   });
 
-  it("{ lpBurned: false, risks: [], mintAuthorityEnabled: true } -> true", () => {
-    expect(isValidRugCheckSummary({ lpBurned: false, risks: [], mintAuthorityEnabled: true })).toBe(true);
+  it("{ score: 1 } -> true (a summary with no risks list yet)", () => {
+    expect(isValidRugCheckSummary({ score: 1 })).toBe(true);
   });
 
   it("null -> false", () => {
@@ -413,18 +426,6 @@ describe("isSolscanTransfersResponse", () => {
   });
 });
 
-describe("isRugCheckReport", () => {
-  it("accepts report with risks", () => {
-    expect(isRugCheckReport({ risks: [] })).toBe(true);
-  });
-  it("accepts report with topHolders", () => {
-    expect(isRugCheckReport({ topHolders: {} })).toBe(true);
-  });
-  it("rejects empty object", () => {
-    expect(isRugCheckReport({})).toBe(false);
-  });
-});
-
 describe("CA_RE consistency", () => {
   it("should match valid Solana addresses", () => {
     expect(CA_RE.test("So11111111111111111111111111111111111111112")).toBe(true);
@@ -443,8 +444,11 @@ describe("CA_RE consistency", () => {
 // a real failure mode: an API changing a field's type without telling us.
 describe("upstream schema enforcement", () => {
   describe("isValidRugCheckSummary", () => {
-    it("rejects lpBurned as a string (wrong type)", () => {
-      expect(isValidRugCheckSummary({ lpBurned: "true", risks: [] })).toBe(false);
+    it("rejects lpLockedPct as a string (wrong type)", () => {
+      expect(isValidRugCheckSummary({ lpLockedPct: "99", risks: [] })).toBe(false);
+    });
+    it("rejects risks[0].level as a number (wrong type)", () => {
+      expect(isValidRugCheckSummary({ risks: [{ name: "x", level: 2 }] })).toBe(false);
     });
     it("rejects risks as an object (wrong type)", () => {
       expect(isValidRugCheckSummary({ risks: { not: "an array" } })).toBe(false);
@@ -454,7 +458,7 @@ describe("upstream schema enforcement", () => {
     });
     it("still accepts a well-formed summary with unknown extra fields", () => {
       expect(
-        isValidRugCheckSummary({ lpBurned: true, risks: [], someNewFieldUpstreamAdded: 42 }),
+        isValidRugCheckSummary({ risks: [], someNewFieldUpstreamAdded: 42 }),
       ).toBe(true);
     });
   });
