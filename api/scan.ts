@@ -15,6 +15,7 @@ import {
   isValidDexScreenerResponse, isValidRugCheckSummary,
   isHeliusLargestAccountsResponse, isHeliusSupplyResponse,
   isSolscanMarketsResponse, isSolscanMeta, isSolscanTransfersResponse,
+  isRugCheckReport,
   sanitizeString, sanitizeUrl,
   makeFlag,
 } from "./_lib/helpers";
@@ -27,11 +28,10 @@ import {
   type CreatorReputation,
 } from "./_lib/fetchers";
 import { readHeliusKey } from "./_lib/helius";
-import { rugCheckConcentration } from "./_lib/rugcheck";
 import {
   DEXSCREENER_BASE, RUGCHECK_BASE, GOPLUS_BASE, LAYER_WEIGHTS, SCORING_VERSION,
   LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS,
-  HARD_BLOCK_REASONS, RUGCHECK_LP_LOCKED_PCT_SECURE,
+  HARD_BLOCK_REASONS,
 } from "./_lib/constants";
 import {
   layerDexScreener, layerRugCheck, layerGoPlus, layerHelius,
@@ -242,12 +242,10 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
   const remainingMs = () => Math.max(200, scanDeadline - Date.now());
 
   try {
-    // RugCheck: the ~300 byte summary only. The full /report (up to 2.5 MB) used
-    // to be fetched on every scan too, and thrown away: the validator rejected
-    // every real one and its `risks` list is the same as the summary's.
-    const [dexRes, rugRes] = await Promise.all([
+    const [dexRes, rugRes, rugReportRes] = await Promise.all([
       withBudget(fetchJson(`${DEXSCREENER_BASE}/tokens/${ca}`, {}, 5000), remainingMs()),
       withBudget(fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report/summary`, {}, 5000), remainingMs()),
+      withBudget(fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report`, {}, 5000), remainingMs()),
     ]);
 
     let dexData = isValidDexScreenerResponse(dexRes) ? dexRes : null;
@@ -424,6 +422,10 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const tokenSupply   = solMetaData?.data?.supply   ?? null;
     const solTransfersData = isSolscanTransfersResponse(solTransfers) ? solTransfers : null;
     const recentTransfers: SolscanTransfer[] = solTransfersData?.data || [];
+    const rugReport = isRugCheckReport(rugReportRes) ? rugReportRes : null;
+    const rugTotalHolders: number | null =
+      typeof rugReport?.totalHolders === "number" && rugReport.totalHolders > 0
+      ? rugReport.totalHolders : null;
     // Holders count: query all available sources and take the MAX. Single-
     // source failures often manifest as 0 / 1 / null (Solscan rate-limited
     // or mid-indexing, RugCheck stale, etc.); the previous behaviour took
@@ -446,6 +448,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     })();
     const holderCandidates = [
       solscanHoldersCount,
+      rugTotalHolders,
       heliusHoldersCount,
       goplusHolderCount,
       top20NonZero > 0 ? top20NonZero : null,
@@ -483,14 +486,16 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // the maturity dampening miss every token where Helius/GoPlus
     // were the only sources reporting holders (most blue-chips).
     //
-    // _earlyLpBurned comes from GoPlus (MEW/FARTCOIN: LP burn confirmed by
-    // GoPlus only) so helius gets the established-context treatment too.
-    // RugCheck's summary has no burn flag: its lpLockedPct mixes burned and
-    // locked LP, and is used below for the locked state, not for this one.
+    // _earlyLpBurned ORs rugcheck and goplus signals so MEW/FARTCOIN
+    // (LP burn confirmed by GoPlus only) get the established-context
+    // treatment in helius, not just in rugcheck/goplus.
     const _gpEarlyBurnPct = (goplus?.dex && Array.isArray(goplus.dex) && goplus.dex.length > 0)
       ? Math.max(...goplus.dex.map((d: { burn_percent?: number | null }) => typeof d.burn_percent === "number" ? d.burn_percent : 0))
       : 0;
-    const _earlyLpBurned = _gpEarlyBurnPct >= 50 ? true : null;
+    const _earlyLpBurned = rugData?.lpBurned === true ? true
+      : _gpEarlyBurnPct >= 50 ? true
+      : rugData?.lpBurned === false ? false
+      : null;
     // Compute the share of total supply that sits in the LP. Feeds the
     // 2-axis LP risk matrix (api/_lib/lp-risk-matrix.ts) so the verdict
     // reflects actual rug-pull capacity, not just "is LP locked?". See
@@ -507,20 +512,13 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       holders: holders,
       liquidity: asNumber(pair?.liquidity?.usd),
       tokenAgeHours: solscanTokenAgeHours,
-      // No authority reading is wired in yet: this was always false (it read a
-      // RugCheck field that does not exist) and the GoPlus layer reads EVM-style
-      // fields its Solana answer does not have. Kept false on purpose until an
-      // authority rule exists (see layerRugCheck).
-      mintAuthority: false,
-      freezeAuthority: false,
+      mintAuthority: rugData?.mintAuthorityEnabled === true,
+      freezeAuthority: rugData?.freezeAuthorityEnabled === true,
       honeypot: false,
       lpBurned: _earlyLpBurned,
       lpPctOfSupply: _lpPctOfSupply,
     };
-    // RugCheck's own concentration risks only count when the engine has no
-    // holder list of its own (see layerRugCheck).
-    const holderListAvailable = resolvedHolderAccounts.length > 0 && totalSupplyUi > 0;
-    const l2 = layerRugCheck(rugData, tokenName, holderListAvailable);
+    const l2 = layerRugCheck(rugData, rugReport, resolvedMint, tokenName, maturityCtx);
     const l3 = layerGoPlus(goplus, maturityCtx);
     // Collect all DEXScreener pair addresses for this token.
     // For AMMs that use per-pool PDAs as vault authority (PumpSwap, Meteora DBC…)
@@ -535,7 +533,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const l4 = layerHelius(resolvedHolderAccounts, totalSupplyUi, maturityCtx, dexPairAddresses);
     const l5 = layerSolscan(solscanHoldersCount, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h);
     const l6 = layerChart(candles, pair, tokenAgeMinutes, maturityCtx, dailyCandles.length >= 2 ? dailyCandles : undefined);
-    const l7 = layerCrossValidation(solscanTokenAgeHours, dexTokenAgeHours);
+    const l7 = layerCrossValidation(rugData, resolvedHolderAccounts, goplus, solscanTokenAgeHours, dexTokenAgeHours, totalSupplyUi);
 
     const allLayers = [l1, l2, l3, l4, l5, l6, l7];
     let score       = computeFinalScore(allLayers);
@@ -557,11 +555,12 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     if (postLayerResult.safeBlocked) safeBlocked = true;
 
     const safeBlockedReasons = classifySafeBlockedReasons(allLayers);
-    const _gpBP = (goplus?.dex && Array.isArray(goplus.dex) && goplus.dex.length > 0) ? Math.max(...goplus.dex.map((d: { burn_percent?: number | null }) => typeof d.burn_percent === "number" ? d.burn_percent : 0)) : 0; const lpBurned = _gpBP >= 50;
-    // lpLocked from RugCheck's lpLockedPct (LP tokens locked or burned, 0-100):
-    // the old code read a lpLocked boolean the summary never had, so the
-    // response always claimed "LP not locked" even for a 99% locked pool.
-    const lpLocked = asNumber(rugData?.lpLockedPct) >= RUGCHECK_LP_LOCKED_PCT_SECURE;
+    const _gpBP = (goplus?.dex && Array.isArray(goplus.dex) && goplus.dex.length > 0) ? Math.max(...goplus.dex.map((d: { burn_percent?: number | null }) => typeof d.burn_percent === "number" ? d.burn_percent : 0)) : 0; const lpBurned = _gpBP >= 50 || rugData?.lpBurned === true;
+    // Surface lpLocked from RugCheck instead of hard-wiring false. The
+    // response was previously claiming "LP not locked" even when
+    // RugCheck reported a real lock — which read like a contradiction
+    // when the verdict surfaced LP-locked bonuses elsewhere.
+    const lpLocked = rugData?.lpLocked === true;
     const goPlusClean = l3.available && l3.trust >= 0.95 && !l3.forceRug;
     const tokenAgeHours = solscanTokenAgeHours ?? dexTokenAgeHours ?? null;
 
@@ -747,22 +746,22 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     );
     // Fallback chain for top-N holder concentration:
     //   1. Helius-derived from realHolderAccounts (richest signal)
-    //   2. RugCheck's "Single holder ownership" figure, for the top-1 only
+    //   2. RugCheck topHolders.top10Percentage / top1Percentage
     //
-    // The Insider Watch tab + the Sniper Map's concentration view both rely
-    // on these fields: leaving them null left those tabs blank on every
-    // token where Helius was down. RugCheck's summary gives no top-10
-    // figure (only "more than 50 / 70%" bands, and it counts pool accounts),
-    // and no top-1 below about 20%, so the top-10 stays null rather than
-    // being invented. The old code read topHolders.top1Percentage /
-    // top10Percentage, fields the summary never had.
-    const rugTop1Pct = rugCheckConcentration(rugData).top1Pct;
+    // The previous version returned null when Helius was unavailable
+    // even on tokens where RugCheck had the same data. The Insider
+    // Watch tab + the Sniper Map's concentration view both rely on
+    // these fields — leaving them null left those tabs blank on
+    // every token where Helius was down (BONK, large established
+    // tokens that are too big for Helius to walk in time).
+    const rugTopHolders = (rugData as { topHolders?: { top1Percentage?: number; top1HolderPercentage?: number; top10Percentage?: number } } | null)?.topHolders;
     const topHolderPct: number | null = (() => {
       if (realHolderAccounts.length > 0 && totalSupplyUi > 0) {
         const topAmt = asNumber(realHolderAccounts[0]?.uiAmount);
         if (topAmt > 0) return (topAmt / totalSupplyUi) * 100;
       }
-      return rugTop1Pct !== null && rugTop1Pct > 0 ? Math.min(100, rugTop1Pct) : null;
+      const rcTop1 = asNumber(rugTopHolders?.top1Percentage ?? rugTopHolders?.top1HolderPercentage);
+      return rcTop1 > 0 ? Math.min(100, rcTop1) : null;
     })();
     const top10HolderPct: number | null = (() => {
       if (realHolderAccounts.length > 0 && totalSupplyUi > 0) {
@@ -770,7 +769,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
           .reduce((sum, h) => sum + asNumber(h?.uiAmount), 0);
         if (top10Sum > 0) return Math.min(100, (top10Sum / totalSupplyUi) * 100);
       }
-      return null;
+      const rcTop10 = asNumber(rugTopHolders?.top10Percentage);
+      return rcTop10 > 0 ? Math.min(100, rcTop10) : null;
     })();
 
     // ─── V5 Critical Actors preview ───────────────────────────────────

@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
-  layerChart, layerDexScreener, layerGoPlus, layerHelius,
+  layerChart, layerDexScreener, layerGoPlus, layerRugCheck, layerHelius,
   layerSolscan, layerCrossValidation,
 } from "../api/_lib/layers";
-import type { DexScreenerPair, GoPlusTokenResult, HeliusHolder } from "../api/_lib/types";
+import type { DexScreenerPair, RugCheckSummary, GoPlusTokenResult, HeliusHolder } from "../api/_lib/types";
 
 // ═══ LAYER 1 — DexScreener ══════════════════════════════════════════════════
 
@@ -70,85 +70,16 @@ describe("layerDexScreener", () => {
   });
 
   it("diminishing returns for multiple penalties", () => {
-    // Liquidity under $1k (0.25) alone, then the same pool with a vol/liq > 5
-    // ratio on top (0.75): the second penalty lowers trust but never zeroes it.
-    const thin: DexScreenerPair = {
+    const pair: DexScreenerPair = {
       liquidity: { usd: 800 },
       volume: { h24: 100 },
       priceChange: {},
       txns: { m5: { buys: 1, sells: 1 } },
+      info: { socials: [], websites: [] },
     };
-    const alone = layerDexScreener(thin, null, null);
-    const stacked = layerDexScreener({ ...thin, volume: { h24: 5000 } }, null, null);
-    expect(alone.trust).toBeCloseTo(0.25, 5);
-    expect(stacked.trust).toBeGreaterThan(0);
-    expect(stacked.trust).toBeLessThan(alone.trust);
-  });
-
-  // ── No website / Twitter / Telegram listed on DexScreener ─────────────────
-  // Information only. A profile is something many legitimate assets never set
-  // up (stablecoins, tokenized stocks, liquid-staking tokens) and a link costs
-  // a scammer nothing, so its absence says nothing about whether the token can
-  // rug. It used to be critical, which forced DANGER on its own.
-  describe("no website or socials", () => {
-    const NO_SOCIALS = /^No website \/ Twitter \/ Telegram/;
-    const healthy = (info?: DexScreenerPair["info"]): DexScreenerPair => ({
-      liquidity: { usd: 100000 },
-      volume: { h24: 50000 },
-      priceChange: { h1: 5, h6: 10, h24: 20, m5: 1 },
-      txns: { m5: { buys: 10, sells: 8 } },
-      ...(info ? { info } : {}),
-    });
-    const twitter = { type: "twitter", url: "https://twitter.com/test" };
-    const telegram = { type: "telegram", url: "https://t.me/test" };
-
-    it("is reported as info, whether the profile is absent or empty", () => {
-      for (const info of [undefined, { socials: [], websites: [] }]) {
-        const flag = layerDexScreener(healthy(info), 500000, 1440).flags.find((f) => NO_SOCIALS.test(f.label));
-        expect(flag?.severity).toBe("info");
-      }
-    });
-
-    it("no longer calls the absence a rug risk", () => {
-      const flag = layerDexScreener(healthy(), 500000, 1440).flags.find((f) => NO_SOCIALS.test(f.label));
-      expect(flag?.label).not.toMatch(/rug/i);
-    });
-
-    it("costs no trust, blocks no SAFE verdict and forces nothing", () => {
-      const withLinks = layerDexScreener(
-        healthy({ socials: [twitter], websites: [{ url: "https://test.com" }] }),
-        500000,
-        1440,
-      );
-      const without = layerDexScreener(healthy(), 500000, 1440);
-
-      expect(withLinks.trust).toBe(1);
-      expect(without.trust).toBe(withLinks.trust);
-      expect(without.safeBlocked).toBe(false);
-      expect(without.forceRug).toBe(false);
-      expect(without.flags.filter((f) => f.severity === "critical" || f.severity === "warning")).toEqual([]);
-    });
-
-    it("adds no flag at all once any one of website, Twitter or Telegram is listed", () => {
-      const listed = [
-        { websites: [{ url: "https://test.com" }] },
-        { socials: [twitter] },
-        { socials: [telegram] },
-      ];
-      for (const info of listed) {
-        const flags = layerDexScreener(healthy(info), 500000, 1440).flags;
-        expect(flags.some((f) => NO_SOCIALS.test(f.label))).toBe(false);
-      }
-    });
-
-    it("leaves the real risks to their own flags: wash trading without a profile is still critical and blocking", () => {
-      const wash: DexScreenerPair = { ...healthy(), volume: { h24: 2_000_000 } }; // vol/liq 20
-      const result = layerDexScreener(wash, 500000, 1440);
-
-      expect(result.safeBlocked).toBe(true);
-      expect(result.flags.some((f) => f.severity === "critical" && /wash trading/i.test(f.label))).toBe(true);
-      expect(result.trust).toBeLessThan(0.3);
-    });
+    const result = layerDexScreener(pair, null, null);
+    expect(result.trust).toBeGreaterThan(0);
+    expect(result.trust).toBeLessThan(0.25);
   });
 
     // Fix(EXTREME_PUMP_24H): Extreme 24h pump detection
@@ -300,10 +231,97 @@ describe("layerDexScreener", () => {
 
 // ═══ LAYER 2 — RugCheck ═════════════════════════════════════════════════════
 
-// layerRugCheck is tested on real RugCheck answers in __tests__/rugcheck.test.ts.
-// The tests that used to live here fed it fields RugCheck never sends (lpBurned,
-// metaMutable, mintAuthorityEnabled...), which is how the layer could be dead
-// for every real token while its tests passed.
+describe("layerRugCheck", () => {
+  it("returns unavailable for null rugData", () => {
+    const result = layerRugCheck(null, null, "abc");
+    expect(result.available).toBe(false);
+  });
+
+  it("trust 1.0 when LP burned + no risks", () => {
+    const rugData: RugCheckSummary = {
+      lpBurned: true,
+      metaMutable: false,
+    };
+    const result = layerRugCheck(rugData, null, "someMint123");
+    expect(result.trust).toBeGreaterThan(0.95);
+    expect(result.available).toBe(true);
+    expect(result.forceRug).toBe(false);
+    expect(result.safeBlocked).toBe(false);
+  });
+
+  it("metaMutable undefined does NOT penalize (fix: only penalize if explicitly true)", () => {
+    const rugData: RugCheckSummary = { lpBurned: true };
+    const result = layerRugCheck(rugData, null, "someMint123");
+    expect(result.trust).toBeGreaterThan(0.95);
+    expect(result.flags.some(f => /metadata mutable/i.test(f.label))).toBe(false);
+  });
+
+  it("metaMutable true penalizes", () => {
+    const rugData: RugCheckSummary = { lpBurned: true, metaMutable: true };
+    const result = layerRugCheck(rugData, null, "someMint123");
+    expect(result.flags.some(f => /metadata mutable/i.test(f.label))).toBe(true);
+  });
+
+  it("mint authority penalty reduces trust", () => {
+    const rugData: RugCheckSummary = {
+      lpBurned: true,
+      metaMutable: false,
+      mintAuthorityEnabled: true,
+    };
+    const result = layerRugCheck(rugData, null, "someMint123");
+    expect(result.trust).toBeLessThan(0.5);
+    expect(result.flags.some(f => /mint authority/i.test(f.label))).toBe(true);
+  });
+
+  it("freeze authority safeBlocked", () => {
+    const rugData: RugCheckSummary = {
+      lpBurned: true,
+      metaMutable: false,
+      freezeAuthorityEnabled: true,
+    };
+    const result = layerRugCheck(rugData, null, "someMint123");
+    expect(result.trust).toBeLessThan(0.5);
+    expect(result.flags.some(f => /freeze authority/i.test(f.label))).toBe(true);
+  });
+
+  it("Fix(DECEPTIVE_NAME): 'Vanguard' in name triggers safeBlocked", () => {
+    const rugData: RugCheckSummary = { lpBurned: true, metaMutable: false };
+    const result = layerRugCheck(rugData, null, "mintABC", "Vanguard Digital Oil Reserve");
+    expect(result.safeBlocked).toBe(true);
+    expect(result.flags.some(f => /deceptive name/i.test(f.label))).toBe(true);
+  });
+
+  it("Fix(DECEPTIVE_NAME): 'BlackRock' in name triggers safeBlocked", () => {
+    const rugData: RugCheckSummary = { lpBurned: true, metaMutable: false };
+    const result = layerRugCheck(rugData, null, "mintABC", "BlackRock Treasury Token");
+    expect(result.safeBlocked).toBe(true);
+  });
+
+  it("Fix(DECEPTIVE_NAME): non-deceptive name does NOT trigger", () => {
+    const rugData: RugCheckSummary = { lpBurned: true, metaMutable: false };
+    const result = layerRugCheck(rugData, null, "mintABC", "Bonk");
+    expect(result.flags.some(f => /deceptive name/i.test(f.label))).toBe(false);
+  });
+
+  it("Fix(LP_SAFE_BLOCK): LP not burned or locked still sets safeBlocked=true (matrix unknown bucket)", () => {
+    const rugData: RugCheckSummary = {
+      lpBurned: false,
+      lpLocked: false,
+    };
+    // No maturityContext → matrix returns the 'unknown' bucket which is
+    // conservative (warning + safeBlocked=true). This preserves the
+    // original LP_SAFE_BLOCK protection. SCORING_VERSION 7.6.0+ flag
+    // label changed: "LP not burned" → either matrix label or fallback.
+    const result = layerRugCheck(rugData, null, "someMint123");
+    expect(result.safeBlocked).toBe(true);
+    const hasLpFlag = result.flags.some(f =>
+      /LP not burned or locked/i.test(f.label) ||
+      /could not be computed/i.test(f.label) ||
+      /LP holds .+% of supply/i.test(f.label)
+    );
+    expect(hasLpFlag).toBe(true);
+  });
+});
 
 // ═══ LAYER 3 — GoPlus ═══════════════════════════════════════════════════════
 
@@ -762,27 +780,43 @@ describe("layerSolscan", () => {
 // ═══ LAYER 7 (formerly 8) — CrossValidation ═════════════════════════════════
 
 describe("layerCrossValidation", () => {
-  // Only the age comparison is left; the others compared RugCheck with the other
-  // sources through fields RugCheck never sent (see the layer).
-  it("detects an age conflict between sources", () => {
-    const result = layerCrossValidation(100, 10);
-    expect(result.flags.some(f => /age conflict/i.test(f.label))).toBe(true);
-    expect(result.flags[0].severity).toBe("info");
+  it("safeBlocked on LP burn conflict", () => {
+    const rugData: RugCheckSummary = { lpBurned: true };
+    const holders: HeliusHolder[] = [
+      { address: "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1", owner: "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1", uiAmount: 1000 },
+      { address: "wallet1abc", owner: "wallet1abc", uiAmount: 500 },
+    ];
+    const result = layerCrossValidation(rugData, holders, null, null, null);
+    expect(result.safeBlocked).toBe(true);
+    expect(result.flags.some(f => /LP burn conflict/i.test(f.label))).toBe(true);
   });
 
-  it("does not call a gap of 72h or less a conflict", () => {
-    expect(layerCrossValidation(80, 10).flags).toHaveLength(0);
+  it("safeBlocked on mint authority conflict", () => {
+    const rugData: RugCheckSummary = { mintAuthorityEnabled: true };
+    const goplus: GoPlusTokenResult = { mint_authority: "0" };
+    const result = layerCrossValidation(rugData, [], goplus, null, null);
+    expect(result.safeBlocked).toBe(true);
+    expect(result.flags.some(f => /mint authority conflict/i.test(f.label))).toBe(true);
   });
 
-  it("says nothing when an age is missing", () => {
-    expect(layerCrossValidation(null, 10).flags).toHaveLength(0);
-    expect(layerCrossValidation(100, null).flags).toHaveLength(0);
-  });
-
-  it("never blocks the safe gate and its trust is always 1.0 (post-multiplier only)", () => {
-    const result = layerCrossValidation(500, 1);
+  it("no safeBlocked when no conflicts", () => {
+    const rugData: RugCheckSummary = { lpBurned: false };
+    const result = layerCrossValidation(rugData, [], null, null, null);
     expect(result.safeBlocked).toBe(false);
-    expect(result.forceRug).toBe(false);
+    expect(result.flags).toHaveLength(0);
+  });
+
+  it("detects age conflict between sources", () => {
+    const result = layerCrossValidation(null, [], null, 100, 10);
+    expect(result.flags.some(f => /age conflict/i.test(f.label))).toBe(true);
+  });
+
+  it("trust is always 1.0 (post-multiplier only)", () => {
+    const rugData: RugCheckSummary = { lpBurned: true };
+    const holders: HeliusHolder[] = [
+      { address: "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1", owner: "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1", uiAmount: 1000 },
+    ];
+    const result = layerCrossValidation(rugData, holders, null, null, null);
     expect(result.trust).toBe(1.0);
   });
 });

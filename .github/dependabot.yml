@@ -5,15 +5,6 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
-    # One PR a week for all the minor and patch bumps instead of one PR each.
-    # Separate PRs edit the same lines (package.json, the lockfile, a workflow's
-    # `uses:`), conflict with each other, and resolving that by hand is how
-    # secret-scan.yml ended up with duplicated keys and no jobs at all.
-    groups:
-      npm-minor-and-patch:
-        update-types:
-          - "minor"
-          - "patch"
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
@@ -22,10 +13,6 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 3
-    groups:
-      github-actions:
-        patterns:
-          - "*"
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]

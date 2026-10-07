@@ -90,33 +90,37 @@ export interface DexScreenerResponse {
 }
 
 // ─── RUGCHECK ───────────────────────────────────────────────────────────────────────────────
-// The public report summary, GET /v1/tokens/{mint}/report/summary, about 300
-// bytes. A real answer (BONK):
-//   {"tokenProgram":"Tokenkeg...","tokenType":"","risks":[{"name":"Mutable metadata",
-//    "value":"","description":"Token metadata can be changed by the owner",
-//    "score":100,"level":"warn"}],"score":101,"score_normalised":7,"lpLockedPct":15.27}
-// It has no holder list, no authority fields and no LP burn booleans; those are
-// only in the full report (up to 2.5 MB), which the engine no longer downloads.
 export interface RugCheckRisk {
   name?: string;
-  /** A figure as text ("36.77%", "$2410.49"), empty when the risk has none. */
-  value?: string;
-  description?: string;
   score?: number;
-  /** "danger" or "warn" so far. */
-  level?: string;
+  description?: string;
+}
+
+export interface RugCheckTopHolders {
+  top1Percentage?: number;
+  top1HolderPercentage?: number;
+  top10Percentage?: number;
 }
 
 export interface RugCheckSummary {
-  tokenProgram?: string;
-  tokenType?: string;
+  lpBurned?: boolean | null;
+  lpLocked?: boolean | null;
+  lpLockDurationDays?: number;
+  lpLockDuration?: number;
+  lockDurationDays?: number;
+  metaMutable?: boolean;
+  topHolders?: RugCheckTopHolders;
+  mintAuthorityEnabled?: boolean;
+  freezeAuthorityEnabled?: boolean;
   risks?: RugCheckRisk[];
-  score?: number;
-  score_normalised?: number;
-  /** Share of the LP tokens locked or burned, 0 to 100. */
-  lpLockedPct?: number;
   error?: string;
   message?: string;
+}
+
+export interface RugCheckReport {
+  risks?: RugCheckRisk[];
+  topHolders?: RugCheckTopHolders;
+  totalHolders?: number;
 }
 
 // ─── GOPLUS ────────────────────────────────────────────────────────────────────────────────────

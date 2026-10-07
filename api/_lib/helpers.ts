@@ -5,11 +5,12 @@ import type { VercelResponse } from "@vercel/node";
 import type {
   Severity, ScanFlag,
   GoPlusTokenResult, GoPlusResponse,
-  DexScreenerResponse, RugCheckSummary,
+  DexScreenerResponse, RugCheckSummary, RugCheckReport, RugCheckRisk,
 } from "./types";
 import {
   GoPlusTokenResultSchema,
   RugCheckSummarySchema,
+  RugCheckReportSchema,
   HeliusLargestAccountsResponseSchema,
   HeliusSupplyResponseSchema,
 } from "./upstream-schemas";
@@ -17,6 +18,9 @@ import {
 // Re-export split modules
 export { asNumber, _mean, _std, _pct } from "./math";
 export { withTimeout, fetchJson, fetchJsonPost } from "./http";
+
+// Import for local use
+import { asNumber } from "./math";
 
 export function isObject(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
@@ -40,6 +44,16 @@ export function goPlusBool(val: unknown): boolean {
 
 export function makeFlag(label: string, severity: Severity, impact: number): ScanFlag {
   return { label, severity, impact };
+}
+
+export function getLpLockDurationDays(rugData: RugCheckSummary): number {
+  const raw = rugData?.lpLockDurationDays ?? rugData?.lpLockDuration ?? rugData?.lockDurationDays ?? 0;
+  return asNumber(raw);
+}
+
+export function riskIncludes(data: RugCheckSummary | RugCheckReport | null | undefined, matcher: RegExp): boolean {
+  if (!data || !Array.isArray(data.risks)) return false;
+  return data.risks.some((r: RugCheckRisk) => matcher.test(String(r?.name || "")));
 }
 
 export function settled<T>(p: Promise<T>): Promise<T | null> {
@@ -172,9 +186,9 @@ export function isValidDexScreenerResponse(data: unknown): data is DexScreenerRe
 
 export function isValidRugCheckSummary(data: unknown): data is RugCheckSummary {
   if (!isObject(data)) return false;
-  // At least one of the keys a real summary (or its "not found" answer) carries,
-  // so an empty or unrelated object fails fast. Zod adds the per-field type check.
-  if (!("risks" in data) && !("score" in data) && !("error" in data)) return false;
+  // Preserve the original "at least one of these keys is present" gate so
+  // an empty response still fails fast. Zod adds the per-field type check.
+  if (!("lpBurned" in data) && !("risks" in data) && !("error" in data)) return false;
   return RugCheckSummarySchema.safeParse(data).success;
 }
 
@@ -206,6 +220,12 @@ export function isSolscanMeta(data: unknown): data is import("./types").SolscanM
 export function isSolscanTransfersResponse(data: unknown): data is import("./types").SolscanTransfersResponse {
   if (!isObject(data)) return false;
   return Array.isArray(data.data);
+}
+
+export function isRugCheckReport(data: unknown): data is import("./types").RugCheckReport {
+  if (!isObject(data)) return false;
+  if (!("risks" in data) && !("topHolders" in data) && !("totalHolders" in data)) return false;
+  return RugCheckReportSchema.safeParse(data).success;
 }
 
 // ─── XSS SANITIZATION ────────────────────────────────────────────────────────

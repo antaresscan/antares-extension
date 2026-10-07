@@ -112,9 +112,12 @@ describe("Session 6 regressions", () => {
 
 describe("VDOR-class rug regression", () => {
   it("deceptive name (Vanguard) triggers safeBlocked in layerRugCheck", () => {
-    // The summary as RugCheck sends it: no risks raised.
-    const rugData: RugCheckSummary = { risks: [], score: 1, score_normalised: 1, lpLockedPct: 0 };
-    const result = layerRugCheck(rugData, "Vanguard Digital Oil Reserve");
+    const rugData: RugCheckSummary = {
+      lpBurned: false,
+      lpLocked: false,
+      metaMutable: false,
+    };
+    const result = layerRugCheck(rugData, null, "VDORmint123", "Vanguard Digital Oil Reserve");
     expect(result.safeBlocked).toBe(true);
     expect(result.flags.some(f => /deceptive name/i.test(f.label))).toBe(true);
   });
@@ -133,14 +136,16 @@ describe("VDOR-class rug regression", () => {
     expect(result.trust).toBeLessThan(1.0);
   });
 
-  it("LP not locked/burned sets safeBlocked in layerGoPlus (matrix or fallback)", () => {
-    // GoPlus reports the pool as not burned (burn_percent 0).
-    const goplusLpOpen: GoPlusTokenResult = { dex: [{ burn_percent: 0 }] };
+  it("LP not locked/burned sets safeBlocked in layerRugCheck (matrix or fallback)", () => {
+    const rugData: RugCheckSummary = {
+      lpBurned: false,
+      lpLocked: false,
+    };
     // SCORING_VERSION 7.6.0+: with no maturityContext the matrix returns
     // the 'unknown' bucket which still safeBlocks. Original VDOR regression
     // protection is preserved; only the flag label string varies depending
     // on whether lpPctOfSupply was computable.
-    const result = layerGoPlus(goplusLpOpen);
+    const result = layerRugCheck(rugData, null, "VDORmint123");
     expect(result.safeBlocked).toBe(true);
     const hasLpFlag = result.flags.some(f =>
       /LP not burned or locked/i.test(f.label) ||

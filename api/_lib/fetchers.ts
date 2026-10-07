@@ -4,6 +4,7 @@ import type {
     HeliusTokenAccountsResponse,
         HeliusHolder,
     OHLCVCandle, GeckoTerminalOHLCVResponse,
+    RugCheckReport, RugCheckRisk,
 } from "./types";
 import { PUBLIC_SOLANA_RPCS, SOLSCAN_PUBLIC_BASE, SOLSCAN_BASE, LP_PROGRAM_ADDRESSES } from "./constants";
 import { fetchJson, fetchJsonPost } from "./http";
@@ -384,4 +385,19 @@ export async function fetchDexCandlesDaily(
     } catch { /* fallback failed silently */ }
 
     return [];
+}
+
+// ─── BUNDLE DETECTION ──────────────────────────────────────────────────────
+export function extractBundlePct(rugReportData: RugCheckReport | null | undefined): number {
+    const risks: RugCheckRisk[] = rugReportData?.risks ?? [];
+    const bundleRisk = risks.find((r: RugCheckRisk) => /bundle/i.test(r.name ?? ""));
+    if (!bundleRisk) return 0;
+    const match = bundleRisk.description?.match(/(\d+(?:\.\d+)?)\s*%/);
+    if (match) return parseFloat(match[1]) / 100;
+    const scoreVal = asNumber(bundleRisk.score);
+    if (scoreVal >= 10000) return 0.50;
+    if (scoreVal >= 8000) return 0.35;
+    if (scoreVal >= 5000) return 0.20;
+    if (scoreVal >= 2000) return 0.10;
+    return 0.08;
 }

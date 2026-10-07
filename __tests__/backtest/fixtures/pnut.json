@@ -25,24 +25,24 @@
   ],
   "pair": {
     "chainId": "solana",
-    "dexId": "meteora",
-    "url": "https://dexscreener.com/solana/3bnjd8vphvgpuao9exvss7ckbmzfg6sgxc19joqmv5gj",
-    "pairAddress": "3bnjD8vpHvGpuAo9ExVSs7CKBMzfG6SgxC19joqMV5gJ",
+    "dexId": "raydium",
+    "url": "https://dexscreener.com/solana/e3pzhtvkkukbv63cpevln9tumq5fhsayxr4amy1ypxpm",
+    "pairAddress": "E3PzhTVKKuKbv63cPevLn9TuMq5fHSayxr4Amy1YPxPm",
     "labels": [
-      "DLMM"
+      "CLMM"
     ],
     "baseToken": {
-      "address": "7tGwuFAyV3xQjYGdGDwXzxegx419WgE4WwtEbJq9x1Es",
-      "name": "Goatseus Maximus",
-      "symbol": "GOAT"
+      "address": "Dn3DFUNDKEyMJGrEsuzTiYrfEwtPo86iH5qTKzbbtiag",
+      "name": "Peanut the Squirrel",
+      "symbol": "PNUT"
     },
     "quoteToken": {
       "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
       "name": "USD Coin",
       "symbol": "USDC"
     },
-    "priceNative": "0.1637",
-    "priceUsd": "0.1637",
+    "priceNative": "0.3573",
+    "priceUsd": "0.3573",
     "txns": {
       "m5": {
         "buys": 0,
@@ -67,39 +67,38 @@
       "h1": 0,
       "m5": 0
     },
-    "priceChange": {
-      "h24": -0.02
-    },
+    "priceChange": {},
     "liquidity": {
-      "usd": 162770556.89,
-      "base": 993893505,
-      "quote": 5.4188
+      "usd": 356288081.35,
+      "base": 997036825,
+      "quote": 8.05572
     },
-    "fdv": 163770616,
-    "marketCap": 163770616,
-    "pairCreatedAt": 1746850031000
+    "fdv": 357294455,
+    "marketCap": 357294455,
+    "pairCreatedAt": 1746847077000
   },
-  "resolvedMint": "7tGwuFAyV3xQjYGdGDwXzxegx419WgE4WwtEbJq9x1Es",
-  "confidence": 90,
+  "resolvedMint": "Dn3DFUNDKEyMJGrEsuzTiYrfEwtPo86iH5qTKzbbtiag",
+  "confidence": 100,
   "sources_used": [
     "dexscreener",
     "rugcheck",
     "goplus",
     "helius",
-    "solscan"
+    "solscan",
+    "chart"
   ],
-  "holders": 20,
-  "marketCap": 163770616,
-  "priceUsd": 0.1637,
-  "liquidity": 162770556.89,
+  "holders": 19,
+  "marketCap": 357294455,
+  "priceUsd": 0.3573,
+  "liquidity": 356288081.35,
   "volume24h": 3.99,
   "volume1h": null,
   "priceChange5m": null,
   "priceChange1h": null,
-  "priceChange24h": -0.02,
-  "tokenSymbol": "GOAT",
-  "tokenName": "Goatseus Maximus",
-  "pairCreatedAt": 1746850031000,
+  "priceChange24h": null,
+  "tokenSymbol": "PNUT",
+  "tokenName": "Peanut the Squirrel",
+  "pairCreatedAt": 1746847077000,
   "safeBlocked": true,
   "safeBlockedReasons": [
     "lp_unverified"
@@ -109,7 +108,7 @@
   "tokenDecimals": null,
   "tokenSupply": null,
   "recentTransfers": "[0 transfers, redacted for fixture]",
-  "solscanTokenAgeHours": 8487,
+  "solscanTokenAgeHours": 8488,
   "solscanVolume24h": 3.99,
   "solscanTrades24h": null,
   "solscanTraders24h": null,
@@ -123,7 +122,7 @@
       "available": true
     },
     "goplus": {
-      "trust": 1,
+      "trust": 0.85,
       "available": true
     },
     "helius": {
@@ -136,7 +135,7 @@
     },
     "chart": {
       "trust": 1,
-      "available": false
+      "available": true
     },
     "crossvalidation": {
       "trust": 1,
@@ -149,36 +148,36 @@
   "lpBurned": false,
   "lpLocked": false,
   "lpLockedPct": null,
-  "candles": "[0 candles, redacted for fixture]",
-  "topHolderPct": 99.38935055774316,
-  "top10HolderPct": 99.91104946218671,
+  "candles": "[13 candles, redacted for fixture]",
+  "topHolderPct": 99.71833271717063,
+  "top10HolderPct": 99.98628508723279,
   "criticalActors": [
     {
       "type": "insider",
       "tag": "Insider",
-      "pct": 99.4,
-      "addr": "3bnj…V5gJ",
+      "pct": 99.7,
+      "addr": "E3Pz…PxPm",
       "repLbl": "Concentration risk · single wallet",
       "repWidth": 95,
       "repWarn": false,
-      "desc": "Holds <b>99.4%</b> of supply — one-wallet dump would crash the price."
+      "desc": "Holds <b>99.7%</b> of supply — one-wallet dump would crash the price."
     }
   ],
   "verdictHistory": [
     {
-      "ts": 1777386540098,
+      "ts": 1777386549929,
       "verdict": "RUG",
       "score": 100,
       "event": "No website / Twitter / Telegram — high rug risk"
     },
     {
-      "ts": 1777396033568,
+      "ts": 1777396043619,
       "verdict": "DANGER",
-      "score": 467,
+      "score": 452,
       "event": "No website / Twitter / Telegram — high rug risk"
     },
     {
-      "ts": 1777399105646,
+      "ts": 1777399117140,
       "verdict": "DANGER",
       "score": 500,
       "event": "No website / Twitter / Telegram — high rug risk"
@@ -192,7 +191,7 @@
         "avatar": "Insider",
         "pctChange": 0,
         "pctChangeDisp": "±0%",
-        "addr": "3bnj…V5gJ",
+        "addr": "E3Pz…PxPm",
         "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
       },
       {
@@ -201,7 +200,7 @@
         "avatar": "Retail",
         "pctChange": 0,
         "pctChangeDisp": "±0%",
-        "addr": "6GUm…W62C",
+        "addr": "99tL…Wius",
         "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
       },
       {
@@ -210,7 +209,7 @@
         "avatar": "Retail",
         "pctChange": 0,
         "pctChangeDisp": "±0%",
-        "addr": "Bnm2…KCat",
+        "addr": "Fqo2…Z7BY",
         "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
       },
       {
@@ -219,7 +218,7 @@
         "avatar": "Retail",
         "pctChange": 0,
         "pctChangeDisp": "±0%",
-        "addr": "9nSL…3ifs",
+        "addr": "76nb…u6wi",
         "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
       },
       {
@@ -228,7 +227,7 @@
         "avatar": "Retail",
         "pctChange": 0,
         "pctChangeDisp": "±0%",
-        "addr": "21UD…1ezm",
+        "addr": "8zdx…Bvoo",
         "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
       },
       {
@@ -237,7 +236,7 @@
         "avatar": "Retail",
         "pctChange": 0,
         "pctChangeDisp": "±0%",
-        "addr": "DaR7…Uvgh",
+        "addr": "5dsp…RNbh",
         "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
       }
     ],
@@ -309,7 +308,7 @@
     ]
   },
   "scoring_version": "7.3.0",
-  "fetchedAt": 1777404661442,
-  "requestId": "e343a79d-c3d5-41b3-939e-86539f891007",
-  "aiSummary": "The developer can remove all liquidity in one transaction. When that happens, the token price drops to zero and nobody can sell. The top wallet holds 99.4% of supply with only 20 holders, creating extreme dump risk."
+  "fetchedAt": 1777404673446,
+  "requestId": "9b299999-b81c-45c9-bd06-2f3f6c350da5",
+  "aiSummary": "The developer can remove all liquidity in one transaction. When that happens, the token price drops to zero and nobody can sell. The top wallet holds 99.7% of supply with only 19 holders, creating extreme dump risk."
 }

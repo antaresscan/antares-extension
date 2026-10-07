@@ -4,20 +4,20 @@
 import type {
     LayerResult, ScanFlag,
   DexScreenerPair, DexScreenerSocial,
-  RugCheckSummary,
+  RugCheckSummary, RugCheckReport,
   GoPlusTokenResult,
   HeliusHolder,
   OHLCVCandle,
 } from "./types";
 import {
-  LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS,
+  LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS, OFFICIAL_MINTS,
   PUMP_7D_WARN_PCT, PUMP_7D_HIGH_PCT, PUMP_30D_WARN_PCT, PUMP_30D_HIGH_PCT,
   LP_UNVERIFIED_MIN_LIQUIDITY,
 } from "./constants";
 import { getLpRiskBucket } from "./lp-risk-matrix";
 import { asNumber, _mean, _std, _pct } from "./math";
-import { makeFlag } from "./helpers";
-import { rugCheckConcentration, rugCheckRisk } from "./rugcheck";
+import { makeFlag, getLpLockDurationDays, riskIncludes } from "./helpers";
+import { extractBundlePct } from "./fetchers";
 
 function applyDiminishingPenalties(trust: number, penalties: number[]): number {
   if (penalties.length > 0) {
@@ -133,14 +133,7 @@ export function layerDexScreener(
     flags.push(makeFlag(`Sharp 6h sell-off (${Math.round(pc6)}%)`, "warning", 0));
     penalties.push(0.55); safeBlocked = true;
   }
-  // Information only, no penalty and no safe-gate block. A DexScreener profile
-  // (website, socials) is something many legitimate assets never set up
-  // (stablecoins, tokenized stocks, liquid-staking tokens), and anyone can put
-  // a link on a scam, so its absence tells nothing about whether the token can
-  // rug. As a critical flag it forced DANGER on its own: the same clean token
-  // scanned SAFE 1000 with a link and DANGER 850 without. The on-chain layers
-  // (mint, freeze, LP, holders) decide the verdict.
-  if (!hasWebsite && !hasTwitter && !hasTelegram) flags.push(makeFlag("No website / Twitter / Telegram on DexScreener", "info", 0));
+  if (!hasWebsite && !hasTwitter && !hasTelegram) { flags.push(makeFlag("No website / Twitter / Telegram — high rug risk", "critical", 0)); penalties.push(0.60); safeBlocked = true; }
   if (txns5m < 5 && mc > 50000 && ageMinutes < 1440) { flags.push(makeFlag("Low 5m transactions vs market cap", "info", 0)); penalties.push(0.92); }
   if ((sells5m === 0 && buys5m > 0 && txns5m > 5) || (sells5m > 0 && buys5m > sells5m * 5)) { flags.push(makeFlag("Buy/sell imbalance (coordinated pump)", "warning", 0)); penalties.push(0.85); }
   if (pc24 < -80) {
@@ -206,46 +199,18 @@ const DECEPTIVE_NAME_PATTERNS: RegExp[] = [
   /\bcredit suisse\b/i, /\bubs group\b/i, /\braymond james\b/i,
 ];
 
-// Reads the public report summary (see api/_lib/rugcheck.ts for what it holds
-// and for the risk names). The engine used to read fields the summary never had
-// (lpBurned, topHolders.top10Percentage, mintAuthorityEnabled...), so this layer
-// was available, scored 1.0 and said nothing for every token.
-//
-// What it adds over the other layers:
-//   - the creator's history: RugCheck flags a token whose creator already
-//     rugged others (7 tokens in a 506-token corpus, 6 of them labelled DANGER);
-//   - holder concentration, but only when the engine has no holder list of its
-//     own (`holderDataAvailable` false, Helius down). RugCheck counts pool
-//     accounts as holders, so its top-10 bands read higher than the engine's;
-//     with the engine's list in hand the finer reading wins and these are not
-//     added on top.
-//
-// RugCheck's other risks are left out on purpose. The mint and freeze authority
-// is the big one: RugCheck reports it on 118 and 65 of 506 corpus tokens, among
-// them USDG, CASH, ORCA and the tokenized stocks (issuer- or DAO-controlled
-// assets), and flagging it here alone would turn 19 of the 43 tokens labelled
-// SAFE into DANGER. The engine flags no authority at all today (see the GoPlus
-// layer), and doing it needs a rule that tells an issuer's authority from a rug's.
-// "Low Liquidity" is measured
-// directly by the DexScreener layer, "Large Amount of LP Unlocked" would stack
-// on the LP risk matrix (which weighs age and size, and RugCheck's flag sits on
-// dead pools: 152 of its 159 corpus tokens are RUG in the fixtures), and the
-// copycat / symbol / name mismatch risks fire on legitimate assets (stablecoins,
-// tokenized stocks) as often as on scams; the engine's own copycat layer was
-// removed for the same false positives.
 export function layerRugCheck(
   rugData: RugCheckSummary | null,
+  rugReportData: RugCheckReport | null,
+  resolvedMint: string,
   tokenName?: string | null,
-  holderDataAvailable = true,
+  maturityContext?: { holders: number | null; liquidity: number; tokenAgeHours: number | null; mintAuthority: boolean; freezeAuthority: boolean; honeypot: boolean; lpPctOfSupply?: number | null }
 ): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
   const penalties: number[] = [];
-  const forceRug = false;
-  let safeBlocked = false;
-  // A usable summary carries a `risks` list (empty when RugCheck found nothing).
-  // An error body or an unrelated object is no data, not a clean token.
-  if (!rugData || !Array.isArray(rugData.risks)) return {
+  let forceRug = false, safeBlocked = false;
+  if (!rugData) return {
     source: "rugcheck", trust: 1.0, available: false,
     flags: [makeFlag("RugCheck unavailable", "info", 0)],
     forceRug: false, safeBlocked: false,
@@ -255,42 +220,97 @@ export function layerRugCheck(
   if (tokenName) {
     const isDeceptive = DECEPTIVE_NAME_PATTERNS.some(p => p.test(tokenName));
     if (isDeceptive) {
-      flags.push(makeFlag(`Deceptive name \u2014 impersonates real institution: "${tokenName}"`, "critical", 0));
+      flags.push(makeFlag(`Deceptive name — impersonates real institution: "${tokenName}"`, "critical", 0));
       penalties.push(0.20); safeBlocked = true;
     }
   }
 
-  if (rugCheckRisk(rugData, "Creator history of rugged tokens")) {
-    flags.push(makeFlag("Creator history of rugged tokens (RugCheck)", "critical", 0));
-    penalties.push(0.35); safeBlocked = true;
+  const bundleInReport = riskIncludes(rugReportData, /bundle/i);
+  const bundledPct = bundleInReport ? extractBundlePct(rugReportData) : 0;
+  if (bundleInReport && bundledPct > 0.20) {
+    flags.push(makeFlag(`Bundle holds ~${Math.round(bundledPct * 100)}% of supply — coordinated buy/dump`, "critical", 0));
+    penalties.push(0.05); forceRug = true; safeBlocked = true;
+  } else if (bundleInReport && bundledPct > 0.05) {
+    flags.push(makeFlag(`Bundle detected (~${Math.round(bundledPct * 100)}% of supply)`, "critical", 0));
+    penalties.push(0.20); safeBlocked = true;
+  } else if (bundleInReport) {
+    flags.push(makeFlag("Bundle activity detected (RugCheck)", "critical", 0));
+    penalties.push(0.20); forceRug = true; safeBlocked = true;
   }
-
-  if (rugCheckRisk(rugData, "Mutable metadata")) {
-    flags.push(makeFlag("Metadata mutable", "info", 0));
-    penalties.push(0.90);
+  if (!bundleInReport && riskIncludes(rugData, /bundler|bundle/i)) {
+    flags.push(makeFlag("Bundler detected (RugCheck summary)", "critical", 0));
+    penalties.push(0.15); forceRug = true; safeBlocked = true;
   }
-
-  if (!holderDataAvailable) {
-    const c = rugCheckConcentration(rugData);
-    if (c.top1Pct !== null) {
-      const pct = Math.round(c.top1Pct);
-      if (c.top1Level === "danger") {
-        flags.push(makeFlag(`Single wallet holds ${pct}% \u2014 high concentration (RugCheck)`, "critical", 0));
-        penalties.push(0.45); safeBlocked = true;
-      } else {
-        flags.push(makeFlag(`Single wallet holds ${pct}% \u2014 elevated (RugCheck)`, "warning", 0));
-        penalties.push(0.70); safeBlocked = true;
-      }
+            if (rugData.lpBurned === true) {
+        flags.push(makeFlag("LP Burned ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.10);
+    } else if (rugData.lpLocked === true) {
+        const days = getLpLockDurationDays(rugData);
+        if (days > 180) { flags.push(makeFlag("LP Locked > 180 days ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.05); }
+        else if (days > 0 && days < 30) { flags.push(makeFlag("LP lock duration < 30 days", "warning", 0)); penalties.push(0.75); }
+    } else {
+        const lpDataPresent =
+            rugData.lpBurned === false ||
+            rugData.lpLocked === false ||
+            typeof rugData.lpLockDurationDays === "number" ||
+            typeof rugData.lpLockDuration === "number" ||
+            typeof rugData.lockDurationDays === "number";
+        const isOfficialMint = OFFICIAL_MINTS.has(resolvedMint);
+        if (lpDataPresent && !isOfficialMint) {
+            // Mature classification with OR'd maturity signals. Previous
+            // gate AND'd holders + liq + age, which collapsed mid-cap
+            // tokens like NEET (10k holders + $1.34M liq + age unknown)
+            // straight to DANGER because tokenAgeHours was undefined.
+            // The OR-gate keeps the strict-on-fresh-launches behaviour
+            // (a token with <5k holders AND <$500k liq AND <14d age
+            // still hits the hard branch) while letting any single
+            // strong maturity signal route to soft lp_unverified
+            // (CAUTION ceiling).
+            //
+            // The contract-clean check (no mint/freeze/honeypot) still
+            // ANDs because those are real exit attacks — never let them
+            // soft-unlock regardless of age/size.
+            const ctx = maturityContext;
+            const contractClean = !ctx || (!ctx.mintAuthority && !ctx.freezeAuthority && !ctx.honeypot);
+            // 2-axis LP risk matrix: (LP % of supply) × (token age).
+            // See api/_lib/lp-risk-matrix.ts for the full rationale. The
+            // single binary "is LP locked?" flag was producing too many false
+            // positives on mature tokens (BONK, WIF) AND false negatives on
+            // fresh tokens with formally-locked-but-100%-of-supply pools.
+            //
+            // If the contract is NOT clean (mint/freeze/honeypot enabled),
+            // we treat the matrix output as if it were the highest-risk
+            // bucket — those are real exit attacks that override any
+            // time-based trust signal.
+            const bucket = getLpRiskBucket(ctx?.lpPctOfSupply ?? null, ctx?.tokenAgeHours ?? null);
+            if (!contractClean) {
+                // Contract has mint/freeze/honeypot → ignore the matrix's
+                // age relaxations and treat LP as hard rug vector. The
+                // contract-attack vector dominates regardless of LP %.
+                flags.push(makeFlag("LP not burned or locked — dev can rug liquidity (contract not clean)", "critical", 0));
+                penalties.push(0.65);
+                safeBlocked = true;
+            } else {
+                flags.push(makeFlag(bucket.flagLabel, bucket.severity, 0));
+                penalties.push(bucket.penalty);
+                if (bucket.safeBlock) safeBlocked = true;
+                if (bucket.forceRug) forceRug = true;
+            }
+        }
     }
-    if (c.top10Over === 70) {
-      flags.push(makeFlag("Top 10 holders > 70% (RugCheck)", "critical", 0));
-      penalties.push(0.45); safeBlocked = true;
-    } else if (c.top10Over === 50) {
-      flags.push(makeFlag("Top 10 holders > 50% (RugCheck)", "warning", 0));
-      penalties.push(0.70); safeBlocked = true;
+    if (rugData.metaMutable === true) {
+        flags.push(makeFlag("Metadata mutable", "info", 0));
+        penalties.push(0.90);
     }
-  }
-
+const top10 = asNumber(rugData?.topHolders?.top10Percentage);
+  // Top-1 holder check removed (7.7.4) — replaced by top-10 distribution in layerHelius.
+  // RugCheck's top-10 threshold is kept as a cross-check signal only.
+  if (top10 > 70) { flags.push(makeFlag("Top 10 holders > 70% (RugCheck)", "critical", 0)); penalties.push(0.45); }
+  else if (top10 > 50) { flags.push(makeFlag("Top 10 holders > 50% (RugCheck)", "warning", 0)); penalties.push(0.70); }
+  if (riskIncludes(rugReportData, /sniper/i)) { flags.push(makeFlag("Sniper activity detected", "critical", 0)); penalties.push(0.15); safeBlocked = true; }
+  if (riskIncludes(rugReportData, /rug/i)) { flags.push(makeFlag("Rug pull history", "critical", 0)); penalties.push(0.15); forceRug = true; }
+  if (riskIncludes(rugReportData, /creator.*sell|dev.*sell/i)) { flags.push(makeFlag("Dev wallet sold tokens", "warning", 0)); penalties.push(0.65); }
+  if (rugData.mintAuthorityEnabled) { flags.push(makeFlag("Mint Authority enabled (RugCheck)", "critical", 0)); penalties.push(0.25); }
+  if (rugData.freezeAuthorityEnabled) { flags.push(makeFlag("Freeze Authority enabled (RugCheck)", "critical", 0)); penalties.push(0.25); }
   trust = applyDiminishingPenalties(trust, penalties);
   return { source: "rugcheck", trust: Math.max(0, trust), available: true, flags, forceRug, safeBlocked };
 }
@@ -1105,19 +1125,47 @@ export function layerChart(
 
 // ═══ LAYER 7 (CrossValidation, formerly Layer 8) ════════════════════════════
 export function layerCrossValidation(
+  rugData: RugCheckSummary | null,
+  rawHolderAccounts: HeliusHolder[],
+  goplus: GoPlusTokenResult | null,
   solscanAgeHours: number | null,
   dexAgeHours: number | null,
+  totalSupplyUi: number = 0
 ): LayerResult {
   const flags: ScanFlag[] = [];
   const forceRug = false;
-  const safeBlocked = false;
-  // Only the age comparison is left. The others compared RugCheck with the
-  // other sources through fields RugCheck never sent (LP burn, top-10 share), and
-  // the mint-authority comparison needs GoPlus's Solana answer read for what it
-  // really contains (it has `mintable`, not `mint_authority`).
+  let safeBlocked = false;
+  if (rugData?.lpBurned === true) {
+    const lpStillActive = rawHolderAccounts.some(h => LP_PROGRAM_ADDRESSES.has(h.owner));
+    if (lpStillActive) {
+      flags.push(makeFlag("LP burn conflict: RugCheck vs on-chain data", "warning", 0));
+      safeBlocked = true;
+    }
+  }
+  if (goplus && rugData) {
+    const gpMint = goplus.mint_authority;
+    const gpOff = ["0","false","null",""].includes(String(gpMint).trim().toLowerCase());
+    if (gpOff && rugData.mintAuthorityEnabled === true) {
+      flags.push(makeFlag("Mint authority conflict: GoPlus vs RugCheck", "warning", 0));
+      safeBlocked = true;
+    }
+  }
   if (solscanAgeHours !== null && dexAgeHours !== null) {
     if (Math.abs(solscanAgeHours - dexAgeHours) > 72)
       flags.push(makeFlag("Token age conflict between sources (>72h diff)", "info", 0));
+  }
+  if (rugData?.topHolders?.top10Percentage && rawHolderAccounts.length > 0) {
+    const rugTop10 = asNumber(rugData.topHolders.top10Percentage);
+    const heliusAccounts = rawHolderAccounts.filter(
+      h => !LP_PROGRAM_ADDRESSES.has(h.owner) && !FOUNDATION_WALLETS.has(h.owner)
+    );
+    const heliusTop10Pct = totalSupplyUi > 0
+      ? (heliusAccounts.slice(0, 10).reduce((s, h) => s + asNumber(h.uiAmount), 0) / totalSupplyUi) * 100
+      : 0;
+    if (Math.abs(rugTop10 - heliusTop10Pct) > 25) {
+      flags.push(makeFlag("Holder concentration conflict between RugCheck and Helius", "warning", 0));
+      safeBlocked = true;
+    }
   }
   return { source: "crossvalidation", trust: 1.0, available: true, flags, forceRug, safeBlocked };
 }
