@@ -199,6 +199,17 @@ describe("heliusGetCreatorReputation", () => {
     expect(result?.flagged).toBe(false);
   });
 
+  // Helius Enhanced Transactions (/v0/*) only accepts the key as ?api-key=:
+  // a Bearer header gets a 401 that fetchJson swallowed as null, so creator
+  // reputation never resolved. The key is a query parameter, with no header.
+  it("sends the key as ?api-key= and no Authorization header", async () => {
+    mockFetchJson.mockResolvedValue([]);
+    await heliusGetCreatorReputation("creator9", "key-xyz");
+    const [url, init] = mockFetchJson.mock.calls[0] as [string, RequestInit | undefined];
+    expect(url).toBe("https://api.helius.xyz/v0/addresses/creator9/transactions?limit=200&api-key=key-xyz");
+    expect(init?.headers).toBeUndefined();
+  });
+
   it("returns null for non-array response", async () => {
     mockFetchJson.mockResolvedValue({ error: "invalid" });
     const result = await heliusGetCreatorReputation("creator3", "key3");

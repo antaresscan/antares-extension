@@ -27,6 +27,7 @@ import {
   solscanGetHoldersCount, fetchSolscan, fetchDexCandles, fetchDexCandlesDaily,
   type CreatorReputation,
 } from "./_lib/fetchers";
+import { readHeliusKey } from "./_lib/helius";
 import {
   DEXSCREENER_BASE, RUGCHECK_BASE, GOPLUS_BASE, LAYER_WEIGHTS, SCORING_VERSION,
   LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS,
@@ -231,7 +232,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 }
 
 async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: string, ca: string, startTime: number = Date.now(), installId: string | null = null) {
-  const HELIUS_API_KEY = process.env.HELIUS_API_KEY || "";
+  const HELIUS_API_KEY = readHeliusKey();
 
   // Dynamic per-fetch budget: each external call is capped by the time
   // remaining until the scan deadline. Ensures one slow upstream can't make
