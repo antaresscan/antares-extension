@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { layerRugCheck } from "../api/_lib/layers";
+import { layerGoPlus } from "../api/_lib/layers";
+import type { GoPlusTokenResult } from "../api/_lib/types";
 import { classifySafeBlockedReasons, HARD_BLOCK_PATTERNS } from "../api/_lib/scoring";
 import { applySafeGateOverride, determineVerdict, applyEstablishedBonus } from "../api/_lib/pipeline";
 import { HARD_BLOCK_REASONS } from "../api/_lib/constants";
@@ -7,14 +8,12 @@ import { computeLpPctOfSupply, getLpRiskBucket } from "../api/_lib/lp-risk-matri
 
 // ─── Test fixtures ───────────────────────────────────────────────────────────
 
-const rugDataUnverified = {
-  lpBurned: false,
-  lpLocked: false,
-  metaMutable: false,
-  mintAuthorityEnabled: false,
-  freezeAuthorityEnabled: false,
-  topHolders: { top10Percentage: 25, top1Percentage: 5 },
-};
+// A pool GoPlus reports as not burned (burn_percent 0). The LP risk matrix runs
+// from here (layerGoPlus) and from the safety net in scan.ts. It used to be wired
+// into the RugCheck layer too, but only through fields RugCheck never sends
+// (lpBurned, lpLocked), so that path never ran on a real token; these tests ran
+// it anyway.
+const goplusLpOpen: GoPlusTokenResult = { dex: [{ burn_percent: 0 }] };
 
 const cleanContract = {
   mintAuthority: false,
@@ -187,12 +186,12 @@ describe("getLpRiskBucket — matrix cells", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// layerRugCheck integration — matrix output flows into the layer result
+// layerGoPlus integration — matrix output flows into the layer result
 // ─────────────────────────────────────────────────────────────────────────────
-describe("layerRugCheck — matrix integration", () => {
+describe("layerGoPlus — matrix integration (LP not burned)", () => {
   it("BONK-like (2y, LP 0.5%, clean) → no safeBlock, SAFE possible", () => {
-    const result = layerRugCheck(
-      rugDataUnverified, null, "BONK", "BONK",
+    const result = layerGoPlus(
+      goplusLpOpen,
       ctx({ ageHours: 18_000, lpPctOfSupply: 0.005, ...cleanContract }),
     );
     expect(result.safeBlocked).toBe(false);
@@ -200,8 +199,8 @@ describe("layerRugCheck — matrix integration", () => {
   });
 
   it("6mo × 25% LP (THE USER'S CASE) → no safeBlock — was CAUTION before matrix", () => {
-    const result = layerRugCheck(
-      rugDataUnverified, null, "MIDCAP", "MidCap",
+    const result = layerGoPlus(
+      goplusLpOpen,
       ctx({ ageHours: 180 * 24, lpPctOfSupply: 0.25, ...cleanContract }),
     );
     expect(result.safeBlocked).toBe(false);
@@ -209,8 +208,8 @@ describe("layerRugCheck — matrix integration", () => {
   });
 
   it("pump.fun fresh (LP 95%, <14d) → forceRug=true", () => {
-    const result = layerRugCheck(
-      rugDataUnverified, null, "PUMP123", "PumpFresh",
+    const result = layerGoPlus(
+      goplusLpOpen,
       ctx({ ageHours: 12, lpPctOfSupply: 0.95, ...cleanContract }),
     );
     expect(result.forceRug).toBe(true);
@@ -218,8 +217,8 @@ describe("layerRugCheck — matrix integration", () => {
   });
 
   it("contract NOT clean (freeze auth on) → matrix relaxations bypassed, hard rug flag", () => {
-    const result = layerRugCheck(
-      rugDataUnverified, null, "FRZ", "FreezableToken",
+    const result = layerGoPlus(
+      goplusLpOpen,
       ctx({ ageHours: 18_000, lpPctOfSupply: 0.005, freezeAuthority: true }),
     );
     expect(result.safeBlocked).toBe(true);
@@ -227,8 +226,8 @@ describe("layerRugCheck — matrix integration", () => {
   });
 
   it("missing LP % data → falls back to 'unknown' bucket (conservative CAUTION)", () => {
-    const result = layerRugCheck(
-      rugDataUnverified, null, "X", "X",
+    const result = layerGoPlus(
+      goplusLpOpen,
       ctx({ ageHours: 18_000, lpPctOfSupply: null, ...cleanContract }),
     );
     expect(result.safeBlocked).toBe(true);
@@ -308,8 +307,8 @@ describe("applySafeGateOverride — soft unlock back-compat", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 describe("determineVerdict — end-to-end on matrix output", () => {
   it("blue chip (matrix says safeBlock=false) with high score lands on SAFE", () => {
-    const result = layerRugCheck(
-      rugDataUnverified, null, "BONK", "BONK",
+    const result = layerGoPlus(
+      goplusLpOpen,
       ctx({ ageHours: 18_000, lpPctOfSupply: 0.005, ...cleanContract }),
     );
     expect(result.safeBlocked).toBe(false);
@@ -324,8 +323,8 @@ describe("determineVerdict — end-to-end on matrix output", () => {
   });
 
   it("pump fresh + LP 95% (matrix forceRug=true) → RUG", () => {
-    const result = layerRugCheck(
-      rugDataUnverified, null, "PUMP", "Pump",
+    const result = layerGoPlus(
+      goplusLpOpen,
       ctx({ ageHours: 12, lpPctOfSupply: 0.95, ...cleanContract }),
     );
     expect(result.forceRug).toBe(true);

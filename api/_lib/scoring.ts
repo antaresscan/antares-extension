@@ -101,6 +101,11 @@ export const HARD_BLOCK_PATTERNS: Array<[RegExp, SafeBlockedReason]> = [
   // don't accidentally match the (high|extreme) regex below.
   [/single wallet holds \d+% — elevated\b/i, "concentration_light"],
   [/single wallet holds \d+% — (high|extreme) concentration/i, "concentration"],
+  // RugCheck's own top-10 bands, emitted by layerRugCheck only when the engine
+  // has no holder list of its own: "more than 70%" is hard like the engine's
+  // 65%+ tiers, "more than 50%" soft.
+  [/top 10 holders > (?:70|80)% \(RugCheck\)/i, "concentration"],
+  [/top 10 holders > 50% \(RugCheck\)/i, "concentration_light"],
 ];
 
 export function classifySafeBlockedReasons(layers: LayerResult[]): SafeBlockedReason[] {

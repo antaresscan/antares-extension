@@ -1,0 +1,543 @@
+{
+ "_source": "Real answers of GET https://api.rugcheck.xyz/v1/tokens/{mint}/report/summary, captured 2026-10-07. Not edited.",
+ "summaries": {
+  "BONK": {
+   "mint": "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+   "summary": {
+    "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "tokenType": "",
+    "risks": [
+     {
+      "name": "Mutable metadata",
+      "value": "",
+      "description": "Token metadata can be changed by the owner",
+      "score": 100,
+      "level": "warn"
+     }
+    ],
+    "score": 101,
+    "score_normalised": 7,
+    "lpLockedPct": 15.268917447130463
+   }
+  },
+  "WIF": {
+   "mint": "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm",
+   "summary": {
+    "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "tokenType": "",
+    "risks": [],
+    "score": 1,
+    "score_normalised": 1,
+    "lpLockedPct": 45.99085576108575
+   }
+  },
+  "MYRO": {
+   "mint": "HhJpBhRRn4g56VsyLuT8DL5Bv31HkXqsrahTTUCZeZg4",
+   "summary": {
+    "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "tokenType": "",
+    "risks": [
+     {
+      "name": "Mutable metadata",
+      "value": "",
+      "description": "Token metadata can be changed by the owner",
+      "score": 100,
+      "level": "warn"
+     }
+    ],
+    "score": 101,
+    "score_normalised": 7,
+    "lpLockedPct": 93.17526548633084
+   }
+  },
+  "HAWK": {
+   "mint": "4GFe6MBDorSy5bLbiUMrgETr6pZcjyfxMDm5ehSgpump",
+   "summary": {
+    "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "tokenType": "",
+    "risks": [
+     {
+      "name": "Single holder ownership",
+      "value": "43.98%",
+      "description": "One user holds a large amount of the token supply",
+      "score": 4398,
+      "level": "danger"
+     },
+     {
+      "name": "High holder concentration",
+      "value": "",
+      "description": "The top 10 users hold more than 50% token supply",
+      "score": 1024,
+      "level": "warn"
+     }
+    ],
+    "score": 5423,
+    "score_normalised": 42,
+    "lpLockedPct": 0
+   }
+  },
+  "MEW": {
+   "mint": "MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5",
+   "summary": {
+    "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "tokenType": "",
+    "risks": [
+     {
+      "name": "Single holder ownership",
+      "value": "36.77%",
+      "description": "One user holds a large amount of the token supply",
+      "score": 3676,
+      "level": "warn"
+     },
+     {
+      "name": "High holder concentration",
+      "value": "",
+      "description": "The top 10 users hold more than 50% token supply",
+      "score": 1144,
+      "level": "warn"
+     }
+    ],
+    "score": 4821,
+    "score_normalised": 40,
+    "lpLockedPct": 99.56621507002329
+   }
+  },
+  "PNUT": {
+   "mint": "2qEHjDLDLbuBgRYvsxhc5D6uDWAivNFZGan56P1tpump",
+   "summary": {
+    "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "tokenType": "",
+    "risks": [
+     {
+      "name": "Single holder ownership",
+      "value": "30.00%",
+      "description": "One user holds a large amount of the token supply",
+      "score": 3000,
+      "level": "warn"
+     },
+     {
+      "name": "High holder concentration",
+      "value": "",
+      "description": "The top 10 users hold more than 50% token supply",
+      "score": 1154,
+      "level": "warn"
+     }
+    ],
+    "score": 4155,
+    "score_normalised": 38,
+    "lpLockedPct": 99.43558929373764
+   }
+  },
+  "TRUMP": {
+   "mint": "6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN",
+   "summary": {
+    "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "tokenType": "",
+    "risks": [
+     {
+      "name": "Top 10 holders high ownership",
+      "value": "",
+      "description": "The top 10 users hold more than 70% token supply",
+      "score": 9002,
+      "level": "danger"
+     },
+     {
+      "name": "Single holder ownership",
+      "value": "72.69%",
+      "description": "One user holds a large amount of the token supply",
+      "score": 7268,
+      "level": "danger"
+     },
+     {
+      "name": "High ownership",
+      "value": "",
+      "description": "The top users hold more than 80% token supply",
+      "score": 1390,
+      "level": "danger"
+     }
+    ],
+    "score": 17661,
+    "score_normalised": 58,
+    "lpLockedPct": 0.018907014419236708
+   }
+  },
+  "PIPPIN": {
+   "mint": "Dfh5DzRgSvvCFDoYc2ciTkMrbDfRKybA4SoFbPmApump",
+   "summary": {
+    "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "tokenType": "",
+    "risks": [
+     {
+      "name": "Single holder ownership",
+      "value": "26.83%",
+      "description": "One user holds a large amount of the token supply",
+      "score": 2683,
+      "level": "warn"
+     },
+     {
+      "name": "High holder concentration",
+      "value": "",
+      "description": "The top 10 users hold more than 50% token supply",
+      "score": 1096,
+      "level": "warn"
+     }
+    ],
+    "score": 3780,
+    "score_normalised": 37,
+    "lpLockedPct": 97.83914566392195
+   }
+  },
+  "USDC": {
+   "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+   "summary": {
+    "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "tokenType": "",
+    "risks": [],
+    "score": 1,
+    "score_normalised": 1,
+    "lpLockedPct": 0
+   }
+  },
+  "HORNY": {
+   "mint": "69HZnSz3XDHyTeBrrsn5NFbjpiryhHbYJZUGDx3QXH69",
+   "summary": {
+    "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "tokenType": "",
+    "risks": [
+     {
+      "name": "Low Liquidity",
+      "value": "$2410.49",
+      "description": "Low amount of liquidity in the token pool",
+      "score": 589,
+      "level": "warn"
+     }
+    ],
+    "score": 590,
+    "score_normalised": 17,
+    "lpLockedPct": 0
+   }
+  },
+  "CREATOR_RUGGED": {
+   "mint": "GU8u7Ebp583iEZJHTvYtEntM8nEaqpA3RJiWfRJo2ZQW",
+   "note": "corpus entry XCHAT (label DANGER)",
+   "summary": {
+    "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "tokenType": "",
+    "risks": [
+     {
+      "name": "Creator history of rugged tokens",
+      "value": "",
+      "description": "Creator has a history of rugging tokens.",
+      "score": 48000,
+      "level": "danger"
+     },
+     {
+      "name": "Large Amount of LP Unlocked",
+      "value": "99.96%",
+      "description": "A large amount of LP tokens are unlocked, allowing the owner to remove liquidity at any point.",
+      "score": 10995,
+      "level": "danger"
+     },
+     {
+      "name": "Top 10 holders high ownership",
+      "value": "",
+      "description": "The top 10 users hold more than 70% token supply",
+      "score": 10099,
+      "level": "danger"
+     },
+     {
+      "name": "Single holder ownership",
+      "value": "88.97%",
+      "description": "One user holds a large amount of the token supply",
+      "score": 8897,
+      "level": "danger"
+     },
+     {
+      "name": "Low Liquidity",
+      "value": "$1.35",
+      "description": "Low amount of liquidity in the token pool",
+      "score": 2998,
+      "level": "danger"
+     },
+     {
+      "name": "High ownership",
+      "value": "",
+      "description": "The top users hold more than 80% token supply",
+      "score": 1499,
+      "level": "danger"
+     },
+     {
+      "name": "Low amount of LP Providers",
+      "value": "",
+      "description": "Only a few users are providing liquidity",
+      "score": 500,
+      "level": "warn"
+     }
+    ],
+    "score": 82989,
+    "score_normalised": 77,
+    "lpLockedPct": 0
+   }
+  },
+  "MINT_AND_FREEZE": {
+   "mint": "Xs8drBWy3Sd5QY3aifG9kt9KFs2K3PGZmx7jWrsrk57",
+   "note": "corpus entry TMOX (label CAUTION)",
+   "summary": {
+    "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "tokenType": "",
+    "risks": [
+     {
+      "name": "Mint Authority still enabled",
+      "value": "",
+      "description": "More tokens can be minted by the owner",
+      "score": 50000,
+      "level": "danger"
+     },
+     {
+      "name": "Permanent Control Enabled",
+      "value": "",
+      "description": "The token creator can permanently control all tokens",
+      "score": 50000,
+      "level": "danger"
+     },
+     {
+      "name": "Freeze Authority still enabled",
+      "value": "",
+      "description": "Tokens can be frozen and prevented from trading",
+      "score": 25000,
+      "level": "danger"
+     },
+     {
+      "name": "Large Amount of LP Unlocked",
+      "value": "100.00%",
+      "description": "A large amount of LP tokens are unlocked, allowing the owner to remove liquidity at any point.",
+      "score": 11000,
+      "level": "danger"
+     },
+     {
+      "name": "Top 10 holders high ownership",
+      "value": "",
+      "description": "The top 10 users hold more than 70% token supply",
+      "score": 10099,
+      "level": "danger"
+     },
+     {
+      "name": "High market cap per holder",
+      "value": "",
+      "description": "The token's market cap is very high relative to its number of holders",
+      "score": 10000,
+      "level": "warn"
+     },
+     {
+      "name": "Single holder ownership",
+      "value": "83.31%",
+      "description": "One user holds a large amount of the token supply",
+      "score": 8330,
+      "level": "danger"
+     },
+     {
+      "name": "Low Liquidity",
+      "value": "$0.83",
+      "description": "Low amount of liquidity in the token pool",
+      "score": 2999,
+      "level": "danger"
+     },
+     {
+      "name": "High ownership",
+      "value": "",
+      "description": "The top users hold more than 80% token supply",
+      "score": 1499,
+      "level": "danger"
+     },
+     {
+      "name": "Mutable metadata",
+      "value": "",
+      "description": "Token metadata can be changed by the owner",
+      "score": 100,
+      "level": "warn"
+     }
+    ],
+    "score": 169028,
+    "score_normalised": 83,
+    "lpLockedPct": 0
+   }
+  },
+  "MINT_ONLY": {
+   "mint": "J6pQQ3FAcJQeWPPGppWRb4nM8jU3wLyYbRrLh7feMfvd",
+   "note": "corpus entry 2Z (label CAUTION)",
+   "summary": {
+    "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "tokenType": "",
+    "risks": [
+     {
+      "name": "Mint Authority still enabled",
+      "value": "",
+      "description": "More tokens can be minted by the owner",
+      "score": 50000,
+      "level": "danger"
+     },
+     {
+      "name": "Mutable metadata",
+      "value": "",
+      "description": "Token metadata can be changed by the owner",
+      "score": 100,
+      "level": "warn"
+     }
+    ],
+    "score": 50101,
+    "score_normalised": 71,
+    "lpLockedPct": 0
+   }
+  },
+  "SINGLE_HOLDER_OVER_100": {
+   "mint": "axiom1dWfDXKn6r4pn3jjaYuLTExG5TdLuAqXQohNuG",
+   "note": "corpus entry AXISOL (label CAUTION)",
+   "summary": {
+    "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "tokenType": "",
+    "risks": [
+     {
+      "name": "Top 10 holders high ownership",
+      "value": "",
+      "description": "The top 10 users hold more than 70% token supply",
+      "score": 1283034,
+      "level": "danger"
+     },
+     {
+      "name": "Single holder ownership",
+      "value": "12763.08%",
+      "description": "One user holds a large amount of the token supply",
+      "score": 1276307,
+      "level": "danger"
+     },
+     {
+      "name": "High ownership",
+      "value": "",
+      "description": "The top users hold more than 80% token supply",
+      "score": 128793,
+      "level": "danger"
+     },
+     {
+      "name": "Mint Authority still enabled",
+      "value": "",
+      "description": "More tokens can be minted by the owner",
+      "score": 50000,
+      "level": "danger"
+     },
+     {
+      "name": "Low Liquidity",
+      "value": "$0.00",
+      "description": "Low amount of liquidity in the token pool",
+      "score": 3000,
+      "level": "danger"
+     },
+     {
+      "name": "Mutable metadata",
+      "value": "",
+      "description": "Token metadata can be changed by the owner",
+      "score": 100,
+      "level": "warn"
+     }
+    ],
+    "score": 2741235,
+    "score_normalised": 96,
+    "lpLockedPct": 0
+   }
+  },
+  "DEAD_POOL_IGNORED_RISKS": {
+   "mint": "DUVHLxLFkC5Ks1poMkmiHqhKhwPdbaXMV2c3GRshmha1",
+   "note": "corpus entry CR7 (label DANGER)",
+   "summary": {
+    "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "tokenType": "",
+    "risks": [
+     {
+      "name": "Large Amount of LP Unlocked",
+      "value": "100.00%",
+      "description": "A large amount of LP tokens are unlocked, allowing the owner to remove liquidity at any point.",
+      "score": 10999,
+      "level": "danger"
+     },
+     {
+      "name": "Top 10 holders high ownership",
+      "value": "",
+      "description": "The top 10 users hold more than 70% token supply",
+      "score": 10098,
+      "level": "danger"
+     },
+     {
+      "name": "Single holder ownership",
+      "value": "86.73%",
+      "description": "One user holds a large amount of the token supply",
+      "score": 8672,
+      "level": "danger"
+     },
+     {
+      "name": "Low Liquidity",
+      "value": "$8.68",
+      "description": "Low amount of liquidity in the token pool",
+      "score": 2991,
+      "level": "danger"
+     },
+     {
+      "name": "High ownership",
+      "value": "",
+      "description": "The top users hold more than 80% token supply",
+      "score": 1499,
+      "level": "danger"
+     },
+     {
+      "name": "Low amount of LP Providers",
+      "value": "",
+      "description": "Only a few users are providing liquidity",
+      "score": 500,
+      "level": "warn"
+     }
+    ],
+    "score": 34760,
+    "score_normalised": 67,
+    "lpLockedPct": 0
+   }
+  },
+  "COPYCAT": {
+   "mint": "CPqPxhXo4pWyfLa21G2rR1YxUqdaiJgKjFRgGmxnpump",
+   "note": "corpus entry USD1 (label DANGER)",
+   "summary": {
+    "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "tokenType": "",
+    "risks": [
+     {
+      "name": "Copycat token",
+      "value": "USD1ttGY1N17NEEHLmELoaybftRBUSErhqYiQzvEmuB",
+      "description": "This token is using a verified tokens symbol",
+      "score": 2000,
+      "level": "warn"
+     }
+    ],
+    "score": 2001,
+    "score_normalised": 29,
+    "lpLockedPct": 0
+   }
+  },
+  "SYMBOL_MISMATCH": {
+   "mint": "EJPtJEDogxzDbvM8qvAsqYbLmPj5n1vQeqoAzj9Yfv3q",
+   "note": "corpus entry BOZO (label CAUTION)",
+   "summary": {
+    "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "tokenType": "",
+    "risks": [
+     {
+      "name": "Symbol Mismatch",
+      "value": "Token: \"\", File: \"bozo\"",
+      "description": "Token symbol does not match the file metadata",
+      "score": 1500,
+      "level": "danger"
+     }
+    ],
+    "score": 1501,
+    "score_normalised": 26,
+    "lpLockedPct": 67.9091295825502
+   }
+  }
+ }
+}

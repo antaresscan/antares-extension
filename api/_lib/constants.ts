@@ -156,7 +156,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v42"; // 2026-10-07: a missing DexScreener website/socials profile is info only (no DANGER floor, no penalty, no safe-gate block); flushes cached DANGER entries that carried it.
+const ENGINE_VERSION_MANUAL = "v43"; // 2026-10-07: the RugCheck layer reads RugCheck's real summary (creator history, mutable metadata, concentration fallback, LP locked share); flushes cached scans scored with the empty layer.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.
@@ -201,6 +201,14 @@ export const HARD_BLOCK_REASONS = new Set([
   // the verdict pass through to SAFE while concentration is severe.
   "concentration",
 ]);
+
+// ── RUGCHECK LP LOCK ─────────────────────────────────────────
+// RugCheck's summary gives lpLockedPct (0-100): the share of LP tokens locked
+// or burned. From this share the pool counts as secured for the "LP locked"
+// state. Pools seen in real answers: MEW 99.6, PNUT 99.4, ACT 99.8, PIPPIN 97.8,
+// MYRO 93.2 (burned or locked by design); HAWK 0, HORNY 0 (open). Mid-sized
+// shares come from tokens with several pools (BONK 15, WIF 46) and say nothing.
+export const RUGCHECK_LP_LOCKED_PCT_SECURE = 90;
 
 // ── LP-UNVERIFIED MATURITY THRESHOLDS ────────────────────────
 // A token that meets all three of these thresholds (plus no mint /
@@ -372,7 +380,17 @@ export const API_TIMEOUT_HELIUS = 6000;
 //   (no profile) were the usual victims. Real risks (mint/freeze, LP,
 //   concentration, wash trading) are untouched; tokens under 6h old still
 //   get the "Fresh token on-chain" warning (CAUTION).
-export const SCORING_VERSION = "7.7.22";
+// 7.7.23 bump (2026-10-07): the RugCheck layer reads what RugCheck really sends.
+//   It used to read fields the summary never had (lpBurned, topHolders,
+//   mintAuthorityEnabled...), so it was "available", scored 1.0 and said nothing
+//   for every token; the full /report (up to 2.5 MB) was downloaded on every
+//   scan and rejected by the validator. Now: a creator with a history of rugged
+//   tokens is critical, mutable metadata is a real info flag (-10% layer trust),
+//   RugCheck's concentration bands apply only while Helius has no holder list,
+//   and lpLockedPct >= 90 counts as LP locked. The mint/freeze authority is
+//   deliberately NOT flagged yet (issuer-controlled assets: USDG, CASH, ORCA,
+//   tokenized stocks). See api/_lib/rugcheck.ts and layerRugCheck.
+export const SCORING_VERSION = "7.7.23";
 
 // ── SOFT REASONS (safe gate unlock) ───────────────────────────
 // A reason listed here CAN be unlocked by applySafeGateOverride when

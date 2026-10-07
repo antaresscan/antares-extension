@@ -60,7 +60,7 @@ Score starts at **1000** and is reduced by weighted penalties across **6 weighte
 | Layer | Source | Weight | What it checks |
 |---|---|---|---|
 | L1 | DexScreener | 0.20 | Liquidity, volume, price changes |
-| L2 | RugCheck | 0.20 | LP burn/lock, bundler activity, metadata, top holders |
+| L2 | RugCheck | 0.20 | Creator history of rugged tokens, mint/freeze authority, mutable metadata; holder concentration while Helius has no holder list |
 | L3 | GoPlus | 0.20 | Honeypot, mint/freeze authority, tax, proxy contracts |
 | L4 | Helius | 0.20 | On-chain holder distribution (top 1 / top 10), creator history |
 | L5 | Solscan | 0.10 | Holder count, token age, wash trading patterns |

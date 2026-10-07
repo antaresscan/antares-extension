@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
-  layerChart, layerDexScreener, layerGoPlus, layerRugCheck, layerHelius,
+  layerChart, layerDexScreener, layerGoPlus, layerHelius,
   layerSolscan, layerCrossValidation,
 } from "../api/_lib/layers";
-import type { DexScreenerPair, RugCheckSummary, GoPlusTokenResult, HeliusHolder } from "../api/_lib/types";
+import type { DexScreenerPair, GoPlusTokenResult, HeliusHolder } from "../api/_lib/types";
 
 // ═══ LAYER 1 — DexScreener ══════════════════════════════════════════════════
 
@@ -300,97 +300,10 @@ describe("layerDexScreener", () => {
 
 // ═══ LAYER 2 — RugCheck ═════════════════════════════════════════════════════
 
-describe("layerRugCheck", () => {
-  it("returns unavailable for null rugData", () => {
-    const result = layerRugCheck(null, null, "abc");
-    expect(result.available).toBe(false);
-  });
-
-  it("trust 1.0 when LP burned + no risks", () => {
-    const rugData: RugCheckSummary = {
-      lpBurned: true,
-      metaMutable: false,
-    };
-    const result = layerRugCheck(rugData, null, "someMint123");
-    expect(result.trust).toBeGreaterThan(0.95);
-    expect(result.available).toBe(true);
-    expect(result.forceRug).toBe(false);
-    expect(result.safeBlocked).toBe(false);
-  });
-
-  it("metaMutable undefined does NOT penalize (fix: only penalize if explicitly true)", () => {
-    const rugData: RugCheckSummary = { lpBurned: true };
-    const result = layerRugCheck(rugData, null, "someMint123");
-    expect(result.trust).toBeGreaterThan(0.95);
-    expect(result.flags.some(f => /metadata mutable/i.test(f.label))).toBe(false);
-  });
-
-  it("metaMutable true penalizes", () => {
-    const rugData: RugCheckSummary = { lpBurned: true, metaMutable: true };
-    const result = layerRugCheck(rugData, null, "someMint123");
-    expect(result.flags.some(f => /metadata mutable/i.test(f.label))).toBe(true);
-  });
-
-  it("mint authority penalty reduces trust", () => {
-    const rugData: RugCheckSummary = {
-      lpBurned: true,
-      metaMutable: false,
-      mintAuthorityEnabled: true,
-    };
-    const result = layerRugCheck(rugData, null, "someMint123");
-    expect(result.trust).toBeLessThan(0.5);
-    expect(result.flags.some(f => /mint authority/i.test(f.label))).toBe(true);
-  });
-
-  it("freeze authority safeBlocked", () => {
-    const rugData: RugCheckSummary = {
-      lpBurned: true,
-      metaMutable: false,
-      freezeAuthorityEnabled: true,
-    };
-    const result = layerRugCheck(rugData, null, "someMint123");
-    expect(result.trust).toBeLessThan(0.5);
-    expect(result.flags.some(f => /freeze authority/i.test(f.label))).toBe(true);
-  });
-
-  it("Fix(DECEPTIVE_NAME): 'Vanguard' in name triggers safeBlocked", () => {
-    const rugData: RugCheckSummary = { lpBurned: true, metaMutable: false };
-    const result = layerRugCheck(rugData, null, "mintABC", "Vanguard Digital Oil Reserve");
-    expect(result.safeBlocked).toBe(true);
-    expect(result.flags.some(f => /deceptive name/i.test(f.label))).toBe(true);
-  });
-
-  it("Fix(DECEPTIVE_NAME): 'BlackRock' in name triggers safeBlocked", () => {
-    const rugData: RugCheckSummary = { lpBurned: true, metaMutable: false };
-    const result = layerRugCheck(rugData, null, "mintABC", "BlackRock Treasury Token");
-    expect(result.safeBlocked).toBe(true);
-  });
-
-  it("Fix(DECEPTIVE_NAME): non-deceptive name does NOT trigger", () => {
-    const rugData: RugCheckSummary = { lpBurned: true, metaMutable: false };
-    const result = layerRugCheck(rugData, null, "mintABC", "Bonk");
-    expect(result.flags.some(f => /deceptive name/i.test(f.label))).toBe(false);
-  });
-
-  it("Fix(LP_SAFE_BLOCK): LP not burned or locked still sets safeBlocked=true (matrix unknown bucket)", () => {
-    const rugData: RugCheckSummary = {
-      lpBurned: false,
-      lpLocked: false,
-    };
-    // No maturityContext → matrix returns the 'unknown' bucket which is
-    // conservative (warning + safeBlocked=true). This preserves the
-    // original LP_SAFE_BLOCK protection. SCORING_VERSION 7.6.0+ flag
-    // label changed: "LP not burned" → either matrix label or fallback.
-    const result = layerRugCheck(rugData, null, "someMint123");
-    expect(result.safeBlocked).toBe(true);
-    const hasLpFlag = result.flags.some(f =>
-      /LP not burned or locked/i.test(f.label) ||
-      /could not be computed/i.test(f.label) ||
-      /LP holds .+% of supply/i.test(f.label)
-    );
-    expect(hasLpFlag).toBe(true);
-  });
-});
+// layerRugCheck is tested on real RugCheck answers in __tests__/rugcheck.test.ts.
+// The tests that used to live here fed it fields RugCheck never sends (lpBurned,
+// metaMutable, mintAuthorityEnabled...), which is how the layer could be dead
+// for every real token while its tests passed.
 
 // ═══ LAYER 3 — GoPlus ═══════════════════════════════════════════════════════
 
@@ -849,43 +762,27 @@ describe("layerSolscan", () => {
 // ═══ LAYER 7 (formerly 8) — CrossValidation ═════════════════════════════════
 
 describe("layerCrossValidation", () => {
-  it("safeBlocked on LP burn conflict", () => {
-    const rugData: RugCheckSummary = { lpBurned: true };
-    const holders: HeliusHolder[] = [
-      { address: "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1", owner: "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1", uiAmount: 1000 },
-      { address: "wallet1abc", owner: "wallet1abc", uiAmount: 500 },
-    ];
-    const result = layerCrossValidation(rugData, holders, null, null, null);
-    expect(result.safeBlocked).toBe(true);
-    expect(result.flags.some(f => /LP burn conflict/i.test(f.label))).toBe(true);
-  });
-
-  it("safeBlocked on mint authority conflict", () => {
-    const rugData: RugCheckSummary = { mintAuthorityEnabled: true };
-    const goplus: GoPlusTokenResult = { mint_authority: "0" };
-    const result = layerCrossValidation(rugData, [], goplus, null, null);
-    expect(result.safeBlocked).toBe(true);
-    expect(result.flags.some(f => /mint authority conflict/i.test(f.label))).toBe(true);
-  });
-
-  it("no safeBlocked when no conflicts", () => {
-    const rugData: RugCheckSummary = { lpBurned: false };
-    const result = layerCrossValidation(rugData, [], null, null, null);
-    expect(result.safeBlocked).toBe(false);
-    expect(result.flags).toHaveLength(0);
-  });
-
-  it("detects age conflict between sources", () => {
-    const result = layerCrossValidation(null, [], null, 100, 10);
+  // Only the age comparison is left; the others compared RugCheck with the other
+  // sources through fields RugCheck never sent (see the layer).
+  it("detects an age conflict between sources", () => {
+    const result = layerCrossValidation(100, 10);
     expect(result.flags.some(f => /age conflict/i.test(f.label))).toBe(true);
+    expect(result.flags[0].severity).toBe("info");
   });
 
-  it("trust is always 1.0 (post-multiplier only)", () => {
-    const rugData: RugCheckSummary = { lpBurned: true };
-    const holders: HeliusHolder[] = [
-      { address: "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1", owner: "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1", uiAmount: 1000 },
-    ];
-    const result = layerCrossValidation(rugData, holders, null, null, null);
+  it("does not call a gap of 72h or less a conflict", () => {
+    expect(layerCrossValidation(80, 10).flags).toHaveLength(0);
+  });
+
+  it("says nothing when an age is missing", () => {
+    expect(layerCrossValidation(null, 10).flags).toHaveLength(0);
+    expect(layerCrossValidation(100, null).flags).toHaveLength(0);
+  });
+
+  it("never blocks the safe gate and its trust is always 1.0 (post-multiplier only)", () => {
+    const result = layerCrossValidation(500, 1);
+    expect(result.safeBlocked).toBe(false);
+    expect(result.forceRug).toBe(false);
     expect(result.trust).toBe(1.0);
   });
 });
