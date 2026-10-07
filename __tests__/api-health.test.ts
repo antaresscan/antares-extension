@@ -18,7 +18,7 @@ vi.mock("../api/_lib/logger", () => ({
 
 import handler from "../api/health";
 import { _resetHeliusAuthForTests } from "../api/_lib/helius";
-import { DEFAULT_AI_MODEL, ENGINE_VERSION, SCORING_VERSION } from "../api/_lib/constants";
+import { ENGINE_VERSION, SCORING_VERSION } from "../api/_lib/constants";
 
 const UUID = "8c739183-1a2b-4c3d-8e4f-0123456789ab";
 
@@ -193,7 +193,6 @@ describe("GET /api/health deployment info", () => {
     "UPSTASH_REDIS_REST_URL",
     "UPSTASH_REDIS_REST_TOKEN",
     "GEMINI_API_KEY",
-    "AI_MODEL",
     "SOLSCAN_API_KEY",
     "SENTRY_DSN",
   ] as const;
@@ -219,7 +218,6 @@ describe("GET /api/health deployment info", () => {
     scoringVersion: string;
     engineVersion: string;
     configured: Record<string, boolean>;
-    aiModel: string;
   };
   const deployment = async () => (await call()).body as unknown as Deployment;
 
@@ -242,17 +240,6 @@ describe("GET /api/health deployment info", () => {
     const d = await deployment();
     expect(d.commit).toBeNull();
     expect(d.environment).toBeNull();
-  });
-
-  it("says which Gemini model the AI summary asks for: the default, or AI_MODEL", async () => {
-    expect((await deployment()).aiModel).toBe(DEFAULT_AI_MODEL);
-    expect(DEFAULT_AI_MODEL).toBe("gemini-2.5-flash");
-
-    process.env.AI_MODEL = "gemini-2.5-flash-lite";
-    expect((await deployment()).aiModel).toBe("gemini-2.5-flash-lite");
-
-    process.env.AI_MODEL = "";
-    expect((await deployment()).aiModel).toBe(DEFAULT_AI_MODEL);
   });
 
   it("reports which integrations are configured, as booleans", async () => {
