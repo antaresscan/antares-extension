@@ -1,7 +1,7 @@
 // api/_lib/upstream-schemas.ts — Runtime validation for third-party API responses.
 //
 // Scoring correctness depends on us correctly reading fields like GoPlus
-// `is_honeypot`, RugCheck's `risks` list, or Helius holder `uiAmount`. Previously
+// `is_honeypot`, RugCheck `lpBurned`, or Helius holder `uiAmount`. Previously
 // these responses were cast via `as unknown as T` with only a shallow
 // top-level existence check, which meant a silent upstream schema change
 // could propagate into the scoring engine undetected — the exact failure
@@ -65,28 +65,37 @@ export const GoPlusResponseSchema = z.object({
 });
 
 // ─── RUGCHECK ───────────────────────────────────────────────────────────────
-// Mirrors the real /report/summary payload (see RugCheckSummary in types.ts).
-// The earlier schema described fields RugCheck never sent (`lpBurned`,
-// `topHolders.top10Percentage`...), and the full-report schema expected
-// `topHolders` to be an object when it is a list, so it rejected every real
-// report.
 export const RugCheckRiskSchema = z.object({
   name: z.string().optional(),
-  value: z.string().optional(),
-  description: z.string().optional(),
   score: z.number().optional(),
-  level: z.string().optional(),
+  description: z.string().optional(),
+});
+
+export const RugCheckTopHoldersSchema = z.object({
+  top1Percentage: z.number().optional(),
+  top1HolderPercentage: z.number().optional(),
+  top10Percentage: z.number().optional(),
 });
 
 export const RugCheckSummarySchema = z.object({
-  tokenProgram: z.string().optional(),
-  tokenType: z.string().optional(),
+  lpBurned: z.boolean().nullable().optional(),
+  lpLocked: z.boolean().nullable().optional(),
+  lpLockDurationDays: z.number().optional(),
+  lpLockDuration: z.number().optional(),
+  lockDurationDays: z.number().optional(),
+  metaMutable: z.boolean().optional(),
+  topHolders: RugCheckTopHoldersSchema.optional(),
+  mintAuthorityEnabled: z.boolean().optional(),
+  freezeAuthorityEnabled: z.boolean().optional(),
   risks: z.array(RugCheckRiskSchema).optional(),
-  score: z.number().optional(),
-  score_normalised: z.number().optional(),
-  lpLockedPct: z.number().optional(),
   error: z.string().optional(),
   message: z.string().optional(),
+});
+
+export const RugCheckReportSchema = z.object({
+  risks: z.array(RugCheckRiskSchema).optional(),
+  topHolders: RugCheckTopHoldersSchema.optional(),
+  totalHolders: z.number().optional(),
 });
 
 // ─── HELIUS ─────────────────────────────────────────────────────────────────

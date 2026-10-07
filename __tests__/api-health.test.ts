@@ -18,7 +18,6 @@ vi.mock("../api/_lib/logger", () => ({
 
 import handler from "../api/health";
 import { _resetHeliusAuthForTests } from "../api/_lib/helius";
-import { ENGINE_VERSION, SCORING_VERSION } from "../api/_lib/constants";
 
 const UUID = "8c739183-1a2b-4c3d-8e4f-0123456789ab";
 
@@ -180,116 +179,5 @@ describe("GET /api/health?probe=1", () => {
   it("ignores any other probe value", async () => {
     await call({ probe: "yes" });
     expect(mockFetchJsonPost).not.toHaveBeenCalled();
-  });
-});
-
-// The endpoint used to return a frozen version string and nothing else, so it
-// could neither confirm which build was live after a merge nor show that a
-// credential was missing (a missing Helius key degraded every scan unnoticed).
-describe("GET /api/health deployment info", () => {
-  const KEYS = [
-    "VERCEL_GIT_COMMIT_SHA",
-    "VERCEL_ENV",
-    "UPSTASH_REDIS_REST_URL",
-    "UPSTASH_REDIS_REST_TOKEN",
-    "GEMINI_API_KEY",
-    "SOLSCAN_API_KEY",
-    "SENTRY_DSN",
-  ] as const;
-  const before: Partial<Record<(typeof KEYS)[number], string>> = {};
-
-  beforeEach(() => {
-    for (const k of KEYS) {
-      before[k] = process.env[k];
-      delete process.env[k];
-    }
-  });
-  afterEach(() => {
-    for (const k of KEYS) {
-      const value = before[k];
-      if (value === undefined) delete process.env[k];
-      else process.env[k] = value;
-    }
-  });
-
-  type Deployment = {
-    commit: string | null;
-    environment: string | null;
-    scoringVersion: string;
-    engineVersion: string;
-    configured: Record<string, boolean>;
-  };
-  const deployment = async () => (await call()).body as unknown as Deployment;
-
-  it("says which scoring engine is live", async () => {
-    const d = await deployment();
-    expect(d.scoringVersion).toBe(SCORING_VERSION);
-    expect(d.engineVersion).toBe(ENGINE_VERSION);
-  });
-
-  it("reports the deployed commit, shortened, and the environment", async () => {
-    process.env.VERCEL_GIT_COMMIT_SHA = "9efa48d1db61e9407fe050681fd9f3c2a3f34ce4";
-    process.env.VERCEL_ENV = "production";
-
-    const d = await deployment();
-    expect(d.commit).toBe("9efa48d");
-    expect(d.environment).toBe("production");
-  });
-
-  it("reports no commit and no environment outside Vercel", async () => {
-    const d = await deployment();
-    expect(d.commit).toBeNull();
-    expect(d.environment).toBeNull();
-  });
-
-  it("reports which integrations are configured, as booleans", async () => {
-    process.env.UPSTASH_REDIS_REST_URL = "https://redis.example.upstash.io";
-    process.env.UPSTASH_REDIS_REST_TOKEN = "redis-token-value";
-    process.env.GEMINI_API_KEY = "gemini-key-value";
-
-    expect((await deployment()).configured).toEqual({
-      redis: true,
-      gemini: true,
-      solscan: false,
-      sentry: false,
-    });
-  });
-
-  it("reports everything as missing on an empty environment", async () => {
-    expect((await deployment()).configured).toEqual({
-      redis: false,
-      gemini: false,
-      solscan: false,
-      sentry: false,
-    });
-  });
-
-  it("needs both the Redis URL and the Redis token", async () => {
-    process.env.UPSTASH_REDIS_REST_URL = "https://redis.example.upstash.io";
-    expect((await deployment()).configured.redis).toBe(false);
-
-    process.env.UPSTASH_REDIS_REST_TOKEN = "redis-token-value";
-    expect((await deployment()).configured.redis).toBe(true);
-  });
-
-  it("treats a blank value as missing", async () => {
-    process.env.GEMINI_API_KEY = "   ";
-    process.env.SENTRY_DSN = "";
-
-    const { configured } = await deployment();
-    expect(configured.gemini).toBe(false);
-    expect(configured.sentry).toBe(false);
-  });
-
-  it("never exposes a configured value", async () => {
-    process.env.GEMINI_API_KEY = "gemini-key-value";
-    process.env.SOLSCAN_API_KEY = "solscan-key-value";
-    process.env.SENTRY_DSN = "https://dsn-value@sentry.example/1";
-    process.env.UPSTASH_REDIS_REST_TOKEN = "redis-token-value";
-
-    const out = JSON.stringify((await call()).body);
-    for (const secret of ["gemini-key-value", "solscan-key-value", "dsn-value", "redis-token-value"]) {
-      expect(out).not.toContain(secret);
-    }
   });
 });

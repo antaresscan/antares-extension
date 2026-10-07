@@ -3,12 +3,7 @@
   "risk": "SAFE",
   "flags": [
     {
-      "label": "Top 10 hold 36% — moderate · exchanges likely included",
-      "severity": "info",
-      "impact": 0
-    },
-    {
-      "label": "LP Burned 98% (GoPlus) ✓",
+      "label": "LP Burned 100% (GoPlus) ✓",
       "severity": "bonus",
       "impact": 0
     },
@@ -21,80 +16,79 @@
   "pair": {
     "chainId": "solana",
     "dexId": "raydium",
-    "url": "https://dexscreener.com/solana/q2sphpduwfmg7m7wwrqklrn619caucfrsmhvjffodsp",
-    "pairAddress": "Q2sPHPdUWFMg7M7wwrQKLrn619cAucfRsmhVJffodSp",
-    "labels": [
-      "CPMM"
-    ],
+    "url": "https://dexscreener.com/solana/5wgyajm1xtly3qrlhgsx4ypwsso3jrjesbu1vivuerzk",
+    "pairAddress": "5WGYajM1xtLy3QrLHGSX4YPwsso3jrjEsbU1VivUErzk",
     "baseToken": {
-      "address": "Dz9mQ9NzkBcCsuGPFJ3r1bS4wgqKMHBPiVuniW8Mbonk",
-      "name": "USELESS COIN",
-      "symbol": "USELESS"
+      "address": "HhJpBhRRn4g56VsyLuT8DL5Bv31HkXqsrahTTUCZeZg4",
+      "name": "Myro",
+      "symbol": "$MYRO"
     },
     "quoteToken": {
-      "address": "So11111111111111111111111111111111111111112",
-      "name": "Wrapped SOL",
-      "symbol": "SOL"
+      "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "name": "USD Coin",
+      "symbol": "USDC"
     },
-    "priceNative": "0.001805",
-    "priceUsd": "0.2125",
+    "priceNative": "0.002767",
+    "priceUsd": "0.002767",
     "txns": {
       "m5": {
         "buys": 0,
-        "sells": 1
+        "sells": 0
       },
       "h1": {
-        "buys": 11,
-        "sells": 49
+        "buys": 0,
+        "sells": 0
       },
       "h6": {
-        "buys": 508,
-        "sells": 536
+        "buys": 28,
+        "sells": 22
       },
       "h24": {
-        "buys": 2810,
-        "sells": 3094
+        "buys": 128,
+        "sells": 140
       }
     },
     "volume": {
-      "h24": 1127979.19,
-      "h6": 221187.24,
-      "h1": 7204.94,
-      "m5": 0.37
+      "h24": 41954.14,
+      "h6": 1501.79,
+      "h1": 0,
+      "m5": 0
     },
     "priceChange": {
-      "m5": -0.04,
-      "h1": -1.12,
-      "h6": -2.23,
-      "h24": -7.57
+      "h6": -0.64,
+      "h24": -4.76
     },
     "liquidity": {
-      "usd": 5017444.96,
-      "base": 11802191,
-      "quote": 21310
+      "usd": 641534.5,
+      "base": 115806330,
+      "quote": 321048
     },
-    "fdv": 212564116,
-    "marketCap": 212548814,
-    "pairCreatedAt": 1746886996000,
+    "fdv": 2767335,
+    "marketCap": 2767335,
+    "pairCreatedAt": 1699554931000,
     "info": {
-      "imageUrl": "https://cdn.dexscreener.com/cms/images/4f8af59f26d45252fb4379d4b1a1e61d0b419fd34dab2ec9f3ba77585d1783cb?width=800&height=800&quality=95&format=auto",
-      "header": "https://cdn.dexscreener.com/cms/images/4af13fd39d5f1f010e5dc4b972a21349778e4f86a275bfcc74f1d26cfc98f1a6?width=1500&height=500&quality=95&format=auto",
-      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/Dz9mQ9NzkBcCsuGPFJ3r1bS4wgqKMHBPiVuniW8Mbonk?timestamp=1791366600000",
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/6918fd479428c8043ef3b4cb921d30b4b027012e4ed4ef311f4cc5f3eaf441aa?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/c4bf2165dc91a1ce255466ce003b402e0eb3219149618601528bc4cc2827c834?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/HhJpBhRRn4g56VsyLuT8DL5Bv31HkXqsrahTTUCZeZg4?timestamp=1777402500000",
       "websites": [
         {
-          "url": "https://theuselesscoin.com/",
+          "url": "http://myrothedog.com",
           "label": "Website"
         }
       ],
       "socials": [
         {
-          "url": "https://x.com/theuselesscoin",
+          "url": "https://twitter.com/myrosol",
           "type": "twitter"
+        },
+        {
+          "url": "https://t.me/myrosol",
+          "type": "telegram"
         }
       ]
     }
   },
-  "resolvedMint": "Dz9mQ9NzkBcCsuGPFJ3r1bS4wgqKMHBPiVuniW8Mbonk",
+  "resolvedMint": "HhJpBhRRn4g56VsyLuT8DL5Bv31HkXqsrahTTUCZeZg4",
   "confidence": 100,
   "sources_used": [
     "dexscreener",
@@ -104,27 +98,27 @@
     "solscan",
     "chart"
   ],
-  "holders": 69693,
-  "marketCap": 212548814,
-  "priceUsd": 0.2125,
-  "liquidity": 5017444.96,
-  "volume24h": 1127979.19,
-  "volume1h": 7204.94,
-  "priceChange5m": -0.04,
-  "priceChange1h": -1.12,
-  "priceChange24h": -7.57,
-  "tokenSymbol": "USELESS",
-  "tokenName": "USELESS COIN",
-  "pairCreatedAt": 1746886996000,
+  "holders": 51650,
+  "marketCap": 2767335,
+  "priceUsd": 0.002767,
+  "liquidity": 641534.5,
+  "volume24h": 41954.14,
+  "volume1h": null,
+  "priceChange5m": null,
+  "priceChange1h": null,
+  "priceChange24h": -4.76,
+  "tokenSymbol": "$MYRO",
+  "tokenName": "Myro",
+  "pairCreatedAt": 1699554931000,
   "safeBlocked": false,
   "safeBlockedReasons": [],
-  "tokenLogo": "https://cdn.dexscreener.com/cms/images/4f8af59f26d45252fb4379d4b1a1e61d0b419fd34dab2ec9f3ba77585d1783cb?width=800&height=800&quality=95&format=auto",
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/6918fd479428c8043ef3b4cb921d30b4b027012e4ed4ef311f4cc5f3eaf441aa?width=800&height=800&quality=95&format=auto",
   "tokenCreator": null,
   "tokenDecimals": null,
   "tokenSupply": null,
   "recentTransfers": "[0 transfers, redacted for fixture]",
-  "solscanTokenAgeHours": 12355,
-  "solscanVolume24h": 1127979.19,
+  "solscanTokenAgeHours": 21624,
+  "solscanVolume24h": 41954.14,
   "solscanTrades24h": null,
   "solscanTraders24h": null,
   "layers": {
@@ -162,48 +156,28 @@
   "freezeAuthority": false,
   "lpBurned": true,
   "lpLocked": false,
-  "lpLockedPct": 98.34,
+  "lpLockedPct": 99.88,
   "candles": "[20 candles, redacted for fixture]",
-  "topHolderPct": 9.334018029240623,
-  "top10HolderPct": 36.478680762245446,
+  "topHolderPct": 8.330110963001783,
+  "top10HolderPct": 43.342512422652064,
   "criticalActors": [
     {
       "type": "insider",
-      "tag": "Holder #1",
-      "pct": 9.3,
-      "addr": "GSAE…bnDR",
-      "repLbl": "Concentration risk · single wallet",
-      "repWidth": 87.9,
-      "repWarn": true,
-      "desc": "Holds <b>9.3%</b> of supply — one-wallet dump would crash the price."
-    },
-    {
-      "type": "insider",
-      "tag": "Holder #2",
-      "pct": 6,
+      "tag": "Insider",
+      "pct": 8.3,
       "addr": "u6PJ…Xq2w",
       "repLbl": "Concentration risk · single wallet",
-      "repWidth": 78,
-      "repWarn": true,
-      "desc": "Holds <b>6.0%</b> of supply — one-wallet dump would crash the price."
-    },
-    {
-      "type": "insider",
-      "tag": "Holder #3",
-      "pct": 4.4,
-      "addr": "6LY1…zkzF",
-      "repLbl": "Significant single-wallet position",
-      "repWidth": 65.2,
+      "repWidth": 84.9,
       "repWarn": false,
-      "desc": "Holds <b>4.4%</b> of supply — large enough to move the chart on exit."
+      "desc": "Holds <b>8.3%</b> of supply — one-wallet dump would crash the price."
     }
   ],
   "verdictHistory": [
     {
-      "ts": 1791366814790,
+      "ts": 1777384140102,
       "verdict": "SAFE",
       "score": 1000,
-      "event": "Top 10 hold 36% — moderate · exchanges likely included"
+      "event": "LP Burned 100% (GoPlus) ✓"
     }
   ],
   "holderActivity": {
@@ -212,15 +186,6 @@
         "role": "bot",
         "label": "Static",
         "avatar": "Insider",
-        "pctChange": 0,
-        "pctChangeDisp": "±0%",
-        "addr": "GSAE…bnDR",
-        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
-      },
-      {
-        "role": "whale-big",
-        "label": "Static",
-        "avatar": "Whale",
         "pctChange": 0,
         "pctChangeDisp": "±0%",
         "addr": "u6PJ…Xq2w",
@@ -232,7 +197,7 @@
         "avatar": "Whale",
         "pctChange": 0,
         "pctChangeDisp": "±0%",
-        "addr": "6LY1…zkzF",
+        "addr": "22Wn…zkBa",
         "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
       },
       {
@@ -241,7 +206,7 @@
         "avatar": "Whale",
         "pctChange": 0,
         "pctChangeDisp": "±0%",
-        "addr": "FZay…wK4g",
+        "addr": "AGVh…Ak8N",
         "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
       },
       {
@@ -250,7 +215,7 @@
         "avatar": "Whale",
         "pctChange": 0,
         "pctChangeDisp": "±0%",
-        "addr": "8hyW…V43S",
+        "addr": "5PAh…PRj5",
         "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
       },
       {
@@ -259,7 +224,16 @@
         "avatar": "Whale",
         "pctChange": 0,
         "pctChangeDisp": "±0%",
-        "addr": "GtuX…qXt3",
+        "addr": "7cAu…4xR8",
+        "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
+      },
+      {
+        "role": "whale-big",
+        "label": "Static",
+        "avatar": "Whale",
+        "pctChange": 0,
+        "pctChangeDisp": "±0%",
+        "addr": "2Ejn…Ps3e",
         "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
       }
     ],
@@ -267,8 +241,8 @@
     "netFlowDirection": "flat"
   },
   "outcomeStats": null,
-  "scoring_version": "7.7.21",
-  "fetchedAt": 1791366814790,
-  "requestId": "f2b5600b-8790-4dd5-afef-76b64a1c079c",
-  "aiSummary": "USELESS shows a SAFE profile with burned liquidity and 30d+ established trading on Solana. The top 10 wallets hold 36% of supply — within normal range for this maturity level, where top wallets are typically exchanges, custodians, and long-term holders.\n\nDexScreener and RugCheck cross-validate the safe verdict across independent layers.\n\nStrong holder distribution."
+  "scoring_version": "7.3.0",
+  "fetchedAt": 1777402493158,
+  "requestId": "3f98d5c4-bffa-4c83-a093-ee399272ebd8",
+  "aiSummary": "Score 1000/1000. LP is burned, mint authority is disabled, freeze authority is disabled, 51650 holders show organic distribution. No critical risks were detected in the contract or holder analysis."
 }
