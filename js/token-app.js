@@ -125,10 +125,6 @@ const DEMO_DATA = {
       ],
       netFlowPct: 0, netFlowDirection: "flat",
     },
-    // SAFE blue-chip — no time-to-rug profiling (same as PENGU). Showing
-    // rug-outcome stats on a clean established token would contradict the
-    // verdict.
-    outcomeStats: null,
     verdictHistory: [{ ts: _demoTs - 3600000, verdict: "SAFE", score: 918, event: "Top 10 hold 34% — normal for established token · likely exchanges & long-term holders" }],
     sources_used: ["dexscreener", "rugcheck", "goplus", "helius", "solscan", "chart"],
     aiSummary: "Fartcoin shows a SAFE profile with fully burned LP and 30d+ established trading on Solana. The top 10 wallets hold 34% of supply — within normal range for a token of this maturity. At this age and holder count, top wallets are typically exchange cold wallets, custodians, and long-term holders rather than coordinated sellers. Mint and freeze authorities are revoked, no honeypot, all structural signals clean.",
@@ -226,17 +222,6 @@ const DEMO_DATA = {
         { role: "whale-big", label: "Static", avatar: "Whale", pctChange: 0, pctChangeDisp: "±0%", addr: "4QuB…s5ru", desc: "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks." },
       ],
       netFlowPct: 0, netFlowDirection: "flat",
-    },
-    outcomeStats: {
-      timeToRugMedianDisp: "11h", timeToRugMedianHours: 11, timeToRugSampleSize: 312,
-      pctRugged24h: 76, pctSlowDeath: 16, pctAlive30d: 8,
-      distribution: [3,5,8,11,14,12,9,7,5,4,3,2.5,2,1.8,1.6,1.4,1.2,1,0.9,0.8,0.7,0.7,0.6,0.6,0.5,0.5,0.4,0.4,0.3,0.3,0.3,0.3,0.4,0.5,0.7,0.9],
-      youBucketIndex: 17,
-      mostSimilar: [
-        { symbol: "PUMPDUMP", ruggedAfterHours: 18, loss: -94.1 },
-        { symbol: "FAKEMOON", ruggedAfterHours: 28, loss: -91.6 },
-        { symbol: "SLOWBLEED", ruggedAfterHours: 48, loss: -85.4 },
-      ],
     },
     verdictHistory: [{ ts: _demoTs - 3600000, verdict: "DANGER", score: 500, event: "5 flags across 4 analysis layers — coordinated insider exit in progress" }],
     sources_used: ["dexscreener", "rugcheck", "goplus", "helius", "solscan", "chart"],
@@ -345,17 +330,6 @@ const DEMO_DATA = {
       ],
       netFlowPct: 0, netFlowDirection: "flat",
     },
-    outcomeStats: {
-      timeToRugMedianDisp: "11h", timeToRugMedianHours: 11, timeToRugSampleSize: 312,
-      pctRugged24h: 76, pctSlowDeath: 16, pctAlive30d: 8,
-      distribution: [3,5,8,11,14,12,9,7,5,4,3,2.5,2,1.8,1.6,1.4,1.2,1,0.9,0.8,0.7,0.7,0.6,0.6,0.5,0.5,0.4,0.4,0.3,0.3,0.3,0.3,0.4,0.5,0.7,0.9],
-      youBucketIndex: 17,
-      mostSimilar: [
-        { symbol: "PUMPDUMP", ruggedAfterHours: 18, loss: -94.1 },
-        { symbol: "FAKEMOON", ruggedAfterHours: 28, loss: -91.6 },
-        { symbol: "SLOWBLEED", ruggedAfterHours: 48, loss: -85.4 },
-      ],
-    },
     verdictHistory: [{ ts: _demoTs - 3600000, verdict: "RUG", score: 250, event: "5 critical flags — zero mitigating signals across all layers" }],
     sources_used: ["dexscreener", "rugcheck", "goplus", "helius", "solscan", "chart"],
     aiSummary: "Five critical flags, zero mitigating signals — every analysis layer returns red. The Helius top-holder analysis and the RugCheck bundle detection are two completely independent algorithms reading different on-chain data; both return 87% controlled by a coordinated cluster. That cross-source convergence is not coincidence. The DexScreener vol/liq ratio exceeded 20:1 — the technical threshold for manufactured volume — meaning the 'organic' trading activity that attracted retail buyers was the cluster trading with itself. The chart layer confirms a post-ATH dump of -82%: the exit already executed. Snipers loaded at launch, coordinated the pump into that fake volume, then liquidated.\n\nLP is technically burned. This is structurally irrelevant. Burning LP on a token where 87% of supply is in 10 coordinated wallets does not protect any holder — it just means the liquidation had to go through open-market dumps instead of a pool drain. The result is identical.\n\nThe rug is complete. What remains is the bleed phase: no buyers, thin residual liquidity, slow dilution to zero as retail holders attempt to exit into each other. Do not trade this token in any direction.",
@@ -455,7 +429,6 @@ const DEMO_DATA = {
     },
     // CAUTION blue-chip — no time-to-rug profiling (contract is clean; the
     // only concern is concentration, not an active rug pattern).
-    outcomeStats: null,
     verdictHistory: [{ ts: _demoTs - 3600000, verdict: "CAUTION", score: 750, event: "Pumped +187% in 24h — elevated retrace risk on entry" }],
     sources_used: ["dexscreener", "rugcheck", "goplus", "helius", "solscan", "chart"],
     aiSummary: "MEW lands on CAUTION from three compounding signals across three different analysis layers. Helius flags 55% top-10 concentration — elevated, though on a 164k-holder blue-chip the large wallets are most likely exchanges and custodians. The chart layer flags a +187% 24h run: you are not buying a base, you are buying someone's retrace entry point. DexScreener confirms the momentum: 38 buys vs 0 sells in the last 5 minutes — the textbook fingerprint of a coordinated pump that has not yet found its top.\n\nThe contract is structurally sound: LP fully burned, no mint or freeze authority, no honeypot. These are genuine positives. They explain why this is CAUTION and not DANGER — the fundamentals are clean, the timing is not.\n\nIf MEW retraces 40-60% from the current high — statistically common after a +187% run — the verdict stays SAFE at that level. CAUTION here is about entry timing: the three flags are not predicting a rug, they are telling you that you are entering at the worst possible moment.",

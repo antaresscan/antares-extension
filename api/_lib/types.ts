@@ -380,28 +380,6 @@ export interface ScanResult {
   // V5 Holder Activity — derived from recentTransfers (last 60min window
   // per top holder). Composed at scan-time, not persisted.
   holderActivity?: HolderActivityPayload;
-  // V5 Outcome Stats — Time-to-Rug ring + Outcome Histogram payload.
-  // Heuristic profile-match v1; corpus-based KNN matcher is the
-  // backend follow-up (J3-J5 backtest harness).
-  outcomeStats?: OutcomeStatsPayload | null;
-}
-
-export interface OutcomeSimilarTokenEntry {
-  symbol: string;
-  ruggedAfterHours: number;
-  loss: number;
-}
-
-export interface OutcomeStatsPayload {
-  timeToRugMedianDisp: string;
-  timeToRugMedianHours: number;
-  timeToRugSampleSize: number;
-  pctRugged24h: number;
-  pctSlowDeath: number;
-  pctAlive30d: number;
-  distribution: number[];
-  youBucketIndex: number;
-  mostSimilar: OutcomeSimilarTokenEntry[];
 }
 
 export interface HolderActivityRow {
