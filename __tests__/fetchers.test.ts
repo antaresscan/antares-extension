@@ -20,6 +20,7 @@ const {
   heliusGetTokenSupply,
   heliusGetCreatorReputation,
   heliusGetHoldersCount,
+  heliusIsMint,
   heliusGetProgramAccountHolderCount,
   fetchDexCandles,
   publicRpcGetTokenSupply,
@@ -137,6 +138,50 @@ describe("fetchDexCandles", () => {
 });
 
 // ─── Helius DAS getTokenAccounts (DAS API extension) ────────────────────────
+describe("heliusIsMint", () => {
+  const TOKEN = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
+  const TOKEN_2022 = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb";
+  const answer = (value: unknown) => mockFetchJsonPost.mockResolvedValue({ result: { value } });
+
+  it("asks for the account, parsed", async () => {
+    answer({ owner: TOKEN, data: { parsed: { type: "mint" } } });
+    await heliusIsMint("someMint", "k");
+    const [, body] = mockFetchJsonPost.mock.calls[0] as [string, Record<string, unknown>];
+    expect(body.method).toBe("getAccountInfo");
+    expect(body.params).toEqual(["someMint", { encoding: "jsonParsed" }]);
+  });
+
+  it("a mint of either token program is a mint", async () => {
+    answer({ owner: TOKEN, data: { parsed: { type: "mint" } } });
+    expect(await heliusIsMint("m", "k")).toBe(true);
+    answer({ owner: TOKEN_2022, data: { parsed: { type: "mint" } } });
+    expect(await heliusIsMint("m", "k")).toBe(true);
+  });
+
+  it("a token account, a wallet, a pool and an address with no account are not mints", async () => {
+    answer({ owner: TOKEN, data: { parsed: { type: "account" } } });
+    expect(await heliusIsMint("a", "k")).toBe(false);
+    answer({ owner: "11111111111111111111111111111111", data: ["", "base64"] });
+    expect(await heliusIsMint("a", "k")).toBe(false);
+    answer({ owner: "pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA", data: ["AAAA", "base64"] });
+    expect(await heliusIsMint("a", "k")).toBe(false);
+    answer(null);
+    expect(await heliusIsMint("a", "k")).toBe(false);
+  });
+
+  it("no answer is unknown (null), not 'not a mint'", async () => {
+    mockFetchJsonPost.mockResolvedValue(null);
+    expect(await heliusIsMint("m", "k")).toBeNull();
+    mockFetchJsonPost.mockResolvedValue({ error: { message: "rate limited" } });
+    expect(await heliusIsMint("m", "k")).toBeNull();
+  });
+
+  it("an account of a token program that Helius would not parse is unknown", async () => {
+    answer({ owner: TOKEN, data: ["AAAA", "base64"] });
+    expect(await heliusIsMint("m", "k")).toBeNull();
+  });
+});
+
 describe("heliusGetHoldersCount", () => {
   it("returns total holders count from result.total", async () => {
     mockFetchJsonPost.mockResolvedValue({ result: { total: 1234, items: [] } });

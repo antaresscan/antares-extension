@@ -20,7 +20,7 @@ import {
 } from "./_lib/helpers";
 import {
   heliusGetLargestAccounts, heliusGetTokenSupply, heliusGetCreatorReputation,
-  heliusGetHoldersCount,
+  heliusGetHoldersCount, heliusIsMint,
   heliusResolveAccountOwners,
   publicRpcGetTokenSupply, publicRpcGetMintInfo,
   fetchSolscan, fetchDexCandles, fetchDexCandlesDaily,
@@ -29,6 +29,7 @@ import {
 import { readHeliusKey } from "./_lib/helius";
 import { rugCheckConcentration } from "./_lib/rugcheck";
 import { goplusAuthorityState, goplusHolderAccounts, goplusHolderCount, goplusTotalSupply } from "./_lib/goplus";
+import { geckoLookup } from "./_lib/geckoterminal";
 import {
   DEXSCREENER_BASE, RUGCHECK_BASE, GOPLUS_BASE, LAYER_WEIGHTS, SCORING_VERSION,
   LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS,
@@ -287,6 +288,33 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       }
     }
 
+    // DexScreener gave no pair. When its API is down (2026-10-07: {"pairs": null} for
+    // every token, USDC included) the address of a dexscreener.com page, a PAIR address,
+    // used to be scored as if it were a token. GeckoTerminal knows the same pools:
+    // take the market data from it, and the token behind a pair address.
+    let marketDataSource: "dexscreener" | "geckoterminal" | null = pair ? "dexscreener" : null;
+    if (!pair) {
+      const gecko = await withBudget(geckoLookup(ca), remainingMs());
+      if (gecko) {
+        pair = gecko.pair;
+        dexData = { pairs: gecko.pairs };
+        marketDataSource = "geckoterminal";
+        if (gecko.baseMint !== ca) {
+          resolvedMint = gecko.baseMint;
+          // What RugCheck was asked for was the pair address.
+          const rugRetry = await withBudget(fetchJson(`${RUGCHECK_BASE}/tokens/${resolvedMint}/report/summary`, {}, 5000), remainingMs());
+          rugData = isValidRugCheckSummary(rugRetry) ? rugRetry : null;
+        }
+        logger.warn("scan", "DexScreener had no pair, market data from GeckoTerminal", { requestId, ca, resolvedMint });
+      } else if (HELIUS_API_KEY && resolvedMint === ca) {
+        // Nowhere to be found. An address that is not a token mint at all (a pool, a
+        // wallet) must not be scored as one: that gave "Very few holders" and DANGER.
+        // Only a definite answer stops the scan: no answer (null) carries on.
+        const isMint = await withBudget(heliusIsMint(ca, HELIUS_API_KEY), remainingMs());
+        if (isMint === false) return apiError(res, 404, "This address is not a token mint, and no market was found for it.");
+      }
+    }
+
     if (pair?.baseToken?.address) resolvedMint = pair.baseToken.address;
 
     const fresh = req.query?.fresh === "1" || req.query?.fresh === "true";
@@ -515,6 +543,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       holders: holders,
       liquidity: asNumber(pair?.liquidity?.usd),
       tokenAgeHours: solscanTokenAgeHours,
+      // No pair from any source: liquidity is unknown, not zero (see isEstablishedAsset).
+      marketDataMissing: !pair,
       // Kept false on purpose, whatever GoPlus says. Authorities still held are one
       // warning in layerGoPlus (information only for an established asset): 118 of
       // the 505 corpus tokens hold a mint authority, nearly all of them legitimate
@@ -899,6 +929,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       topHolderPct,
       top10HolderPct,
       holdersSource: realHolderAccounts.length > 0 ? (holdersFromGoPlus ? "goplus" : "helius") : null,
+      marketDataSource,
       criticalActors,
       verdictHistory: finalHistory,
       holderActivity,
@@ -917,7 +948,10 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // The verdict is passed so computeCacheTTL can apply asymmetric caching:
     // bad verdicts cache long (stale-RUG is safe), good verdicts on young
     // tokens cache short (stale-SAFE is dangerous).
-    if (result.aiSummary && ai?.source !== "fallback") {
+    // Same for a scan with no market data at all: either the token is not listed yet or
+    // the sources are down, and either way it will change soon. Cached for the regular
+    // TTL, an outage's DANGER on a blue chip stayed for ten minutes.
+    if (result.aiSummary && ai?.source !== "fallback" && pair) {
       setCachedResult(ca, result, tokenAgeMinutes, result.risk);
       if (resolvedMint !== ca) setCachedResult(resolvedMint, result, tokenAgeMinutes, result.risk);
     } else {
@@ -925,9 +959,11 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       // whole pipeline, and the entry expires soon enough for the next scan to ask
       // Gemini again. A fallback is never kept longer than the regular TTL, which is
       // short on purpose for a young token's SAFE.
-      const retryTtl = ai?.source === "fallback"
-        ? Math.min(AI_FALLBACK_CACHE_SECONDS, computeCacheTTL(tokenAgeMinutes, result.risk))
-        : 30;
+      const retryTtl = !pair
+        ? 30
+        : ai?.source === "fallback"
+          ? Math.min(AI_FALLBACK_CACHE_SECONDS, computeCacheTTL(tokenAgeMinutes, result.risk))
+          : 30;
       setShortCachedResult(ca, result, retryTtl);
       if (resolvedMint !== ca) setShortCachedResult(resolvedMint, result, retryTtl);
     }

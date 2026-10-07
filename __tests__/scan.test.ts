@@ -65,6 +65,7 @@ const mockHeliusGetLargestAccounts = vi.fn();
 const mockHeliusGetTokenSupply = vi.fn();
 const mockHeliusGetCreatorReputation = vi.fn();
 const mockHeliusGetHoldersCount = vi.fn();
+const mockHeliusIsMint = vi.fn();
 const mockHeliusGetProgramAccountHolderCount = vi.fn();
 const mockFetchSolscan = vi.fn();
 const mockFetchDexCandles = vi.fn();
@@ -77,6 +78,7 @@ vi.mock("../api/_lib/fetchers", () => ({
   heliusGetTokenSupply: (...args: unknown[]) => mockHeliusGetTokenSupply(...args),
   heliusGetCreatorReputation: (...args: unknown[]) => mockHeliusGetCreatorReputation(...args),
   heliusGetHoldersCount: (...args: unknown[]) => mockHeliusGetHoldersCount(...args),
+  heliusIsMint: (...args: unknown[]) => mockHeliusIsMint(...args),
   heliusGetProgramAccountHolderCount: (...args: unknown[]) => mockHeliusGetProgramAccountHolderCount(...args),
   fetchSolscan: (...args: unknown[]) => mockFetchSolscan(...args),
   fetchDexCandles: (...args: unknown[]) => mockFetchDexCandles(...args),
@@ -203,6 +205,7 @@ function setupGoodTokenMocks() {
   });
   mockHeliusGetCreatorReputation.mockResolvedValue(null);
   mockHeliusGetHoldersCount.mockResolvedValue(5000);
+  mockHeliusIsMint.mockResolvedValue(true);
   mockHeliusGetProgramAccountHolderCount.mockResolvedValue(null);
   mockPublicRpcGetTokenSupply.mockResolvedValue(null);
   mockPublicRpcGetMintInfo.mockResolvedValue(null);
@@ -788,6 +791,162 @@ describe("scan handler", () => {
       // 24 s budget, 0.5 s kept by the scan, 1 s kept for answering: 22.5 s from the start
       expect(left).toBeLessThanOrEqual(22_500);
       expect(left).toBeGreaterThan(20_000);
+    });
+  });
+
+  // DexScreener's API answered {"pairs": null} for every token on 2026-10-07. The address
+  // dexscreener.com puts in its URLs is a PAIR address, which the scan could only turn into
+  // the token through DexScreener: it scored the pool's own address as a token ("Very few
+  // holders (<15)", DANGER), and USDC went DANGER too.
+  describe("DexScreener down", () => {
+    const here = dirname(fileURLToPath(import.meta.url));
+    const gecko = JSON.parse(readFileSync(join(here, "fixtures", "geckoterminal.json"), "utf8")) as Record<string, unknown>;
+    const goplusFixtures = JSON.parse(readFileSync(join(here, "fixtures", "goplus-solana.json"), "utf8")) as { tokens: Record<string, { result: unknown }> };
+    const POOL = "HU22UBaTZa7AjMkDJaSyoDHtfFw6XVS6d9bSXLt9ugDB";
+    const MINT = "J9qzFhTLYnmf3tZYvHBaF96rH3YKToELAAVMzz66pump";
+
+    type Reply = { ok: boolean; status?: number; json: () => Promise<unknown> };
+    const answer = (body: unknown): Reply => ({ ok: true, status: 200, json: () => Promise.resolve(body) });
+    const gone: Reply = { ok: false, status: 404, json: () => Promise.resolve(gecko.notFound) };
+
+    /** DexScreener has no pairs. GeckoTerminal knows the SNDWITCH pool and token (or nothing). GoPlus answers for the TOKEN. */
+    function outage({ geckoKnows = true, goplusFor = "HAWK" }: { geckoKnows?: boolean; goplusFor?: string } = {}) {
+      setupGoodTokenMocks();
+      const base = mockFetch.getMockImplementation() as (...args: unknown[]) => Promise<Reply>;
+      mockFetch.mockImplementation(async (url: string, ...rest: unknown[]) => {
+        if (url.includes("dexscreener")) return answer({ schemaVersion: "1.0.0", pairs: null });
+        if (url.includes("geckoterminal")) {
+          if (!geckoKnows) return gone;
+          if (url.includes(`/pools/${POOL}`)) return answer(gecko.sndwitchPool);
+          if (url.includes(`/tokens/${MINT}/pools`)) return answer(gecko.sndwitchTokenPools);
+          return gone;
+        }
+        if (url.includes("gopluslabs")) return answer({ code: 1, result: { [MINT]: goplusFixtures.tokens[goplusFor].result } });
+        return base(url, ...rest);
+      });
+    }
+
+    type Body = {
+      risk: string;
+      resolvedMint: string;
+      marketDataSource: string | null;
+      sources_used: string[];
+      tokenSymbol: string | null;
+      flags: Array<{ label: string; severity: string }>;
+    };
+    async function scan(ca: string) {
+      const res = createMockRes();
+      await handler(createMockReq({ ca, fresh: "1" }), res);
+      return { res, body: (res.json as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as Body };
+    }
+    const urlsRequested = () => mockFetch.mock.calls.map((c) => String(c[0]));
+
+    it("scans the TOKEN behind a pair address, with GeckoTerminal's market data", async () => {
+      outage();
+
+      const { body } = await scan(POOL);
+
+      expect(body.resolvedMint).toBe(MINT);
+      expect(body.tokenSymbol).toBe("SNDWITCH");
+      expect(body.marketDataSource).toBe("geckoterminal");
+      expect(body.sources_used).toContain("dexscreener");
+      expect(body.flags.some((f) => /not indexed on dexscreener/i.test(f.label))).toBe(false);
+    });
+
+    it("asks RugCheck, GoPlus and Helius about the token, never about the pool", async () => {
+      outage();
+
+      await scan(POOL);
+
+      const urls = urlsRequested();
+      expect(urls.some((u) => u.includes("rugcheck") && u.includes(`/tokens/${MINT}/report/summary`))).toBe(true);
+      expect(urls.some((u) => u.includes("gopluslabs") && u.includes(MINT))).toBe(true);
+      expect(urls.some((u) => u.includes("gopluslabs") && u.includes(POOL))).toBe(false);
+      expect(mockHeliusGetLargestAccounts).toHaveBeenCalledWith(MINT, expect.any(String));
+      expect(mockHeliusGetLargestAccounts).not.toHaveBeenCalledWith(POOL, expect.anything());
+    });
+
+    it("a token mint is scanned too, from GeckoTerminal's pools", async () => {
+      outage();
+
+      const { body } = await scan(MINT);
+
+      expect(body.resolvedMint).toBe(MINT);
+      expect(body.marketDataSource).toBe("geckoterminal");
+    });
+
+    it("while DexScreener works, GeckoTerminal's market data is not even asked for", async () => {
+      setupGoodTokenMocks();
+
+      const { body } = await scan("So11111111111111111111111111111111111111112");
+
+      expect(body.marketDataSource).toBe("dexscreener");
+      expect(urlsRequested().some((u) => u.includes("geckoterminal"))).toBe(false);
+    });
+
+    it("an address that is not a token mint, and that nothing knows, is refused instead of scored as a token", async () => {
+      outage({ geckoKnows: false });
+      mockHeliusIsMint.mockResolvedValue(false);
+
+      const { res } = await scan(POOL);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(mockHeliusGetLargestAccounts).not.toHaveBeenCalled();
+    });
+
+    it("when Helius cannot say whether it is a mint, the scan carries on as before", async () => {
+      outage({ geckoKnows: false });
+      mockHeliusIsMint.mockResolvedValue(null);
+
+      const { body } = await scan(MINT);
+
+      expect(body.marketDataSource).toBeNull();
+      expect(body.flags.some((f) => /not indexed on dexscreener/i.test(f.label))).toBe(true);
+    });
+
+    it("a real mint nobody lists yet is scanned, not refused", async () => {
+      outage({ geckoKnows: false });
+      mockHeliusIsMint.mockResolvedValue(true);
+
+      const { res, body } = await scan(MINT);
+
+      expect(res.status).not.toHaveBeenCalledWith(404);
+      expect(body.resolvedMint).toBe(MINT);
+    });
+
+    it("USDC-like (old, 5,000+ holders, mint and freeze authorities held) with no market data: information, not the third warning that makes DANGER", async () => {
+      outage({ geckoKnows: false, goplusFor: "USDG" });
+
+      const { body } = await scan(MINT);
+
+      const authorities = body.flags.find((f) => /^Authorities still active/.test(f.label));
+      expect(authorities).toMatchObject({ severity: "info", label: expect.stringContaining("established asset") });
+      expect(body.risk).not.toBe("DANGER");
+    });
+
+    it("...but a token younger than 30 days keeps the warning, market data or not", async () => {
+      outage({ geckoKnows: false, goplusFor: "USDG" });
+      mockFetchSolscan.mockImplementation((endpoint: string) =>
+        endpoint.includes("meta")
+          ? Promise.resolve({ data: { created_time: Math.floor(Date.now() / 1000) - 3 * 24 * 3600, icon: "https://img.test.com/icon.png", creator: "creator123", decimals: 9, supply: 100000 } })
+          : Promise.resolve(null),
+      );
+
+      const { body } = await scan(MINT);
+
+      expect(body.flags.find((f) => /^Authorities still active/.test(f.label))?.severity).toBe("warning");
+    });
+
+    it("a scan with no market data anywhere is cached for 30 s, even with a Gemini summary: it will change soon", async () => {
+      outage({ geckoKnows: false });
+      const { generateAISummaryWithSource } = await import("../api/_lib/ai-summary");
+      const cache = await import("../api/_lib/cache");
+      vi.mocked(generateAISummaryWithSource).mockResolvedValueOnce({ text: "Written by the model.", source: "gemini" });
+
+      await scan(MINT);
+
+      expect(vi.mocked(cache.setCachedResult)).not.toHaveBeenCalled();
+      expect(vi.mocked(cache.setShortCachedResult)).toHaveBeenCalledWith(MINT, expect.any(Object), 30);
     });
   });
 

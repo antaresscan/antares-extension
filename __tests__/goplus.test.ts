@@ -268,6 +268,16 @@ describe("layerGoPlus on real answers", () => {
     expect(authorityFlags(layerGoPlus(real("ORCA")))[0].severity).toBe("warning");
   });
 
+  it("with no market data at all, liquidity is unknown, not zero: that leg of the bar cannot be failed, the other two still count", () => {
+    const noMarket = { ...establishedCtx, liquidity: 0 };
+    const severity = (ctx: typeof establishedCtx & { marketDataMissing?: boolean }) => authorityFlags(layerGoPlus(real("ORCA"), ctx))[0].severity;
+
+    expect(severity(noMarket)).toBe("warning"); // a pair that really has no liquidity
+    expect(severity({ ...noMarket, marketDataMissing: true })).toBe("info");
+    expect(severity({ ...noMarket, marketDataMissing: true, tokenAgeHours: 100 })).toBe("warning");
+    expect(severity({ ...noMarket, marketDataMissing: true, holders: 100 })).toBe("warning");
+  });
+
   it("the established bar is 30 days, 5,000 holders and $250,000, all three", () => {
     const at = (over: Partial<typeof establishedCtx>) => authorityFlags(layerGoPlus(real("ORCA"), { ...establishedCtx, ...over }))[0].severity;
     const bar = { tokenAgeHours: 720, holders: 5_000, liquidity: 250_000 };

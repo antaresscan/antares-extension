@@ -311,11 +311,15 @@ export function layerRugCheck(
 // $250k liquidity, the engine's usual bar) it is information only. The hazards no
 // legitimate tradable token has (cannot be transferred, accounts frozen by
 // default, a transfer fee of 10% or more) stay critical.
-function isEstablishedAsset(ctx?: { holders: number | null; liquidity: number; tokenAgeHours: number | null }): boolean {
+// With no market data at all (DexScreener and GeckoTerminal both silent), liquidity is
+// unknown, not zero: the liquidity leg of the bar cannot be failed. Counting it as zero
+// made USDC DANGER during DexScreener's outage of 2026-10-07 (the authorities warning
+// next to "Not indexed" and "LP-to-supply ratio could not be computed" made three).
+function isEstablishedAsset(ctx?: { holders: number | null; liquidity: number; tokenAgeHours: number | null; marketDataMissing?: boolean }): boolean {
   return !!ctx &&
     (ctx.tokenAgeHours ?? 0) >= ESTABLISHED_AGE_THRESHOLD_HOURS &&
     (ctx.holders ?? 0) >= LP_UNVERIFIED_MIN_HOLDERS &&
-    (ctx.liquidity ?? 0) >= LP_UNVERIFIED_MIN_LIQUIDITY;
+    (ctx.marketDataMissing === true || (ctx.liquidity ?? 0) >= LP_UNVERIFIED_MIN_LIQUIDITY);
 }
 
 export function layerGoPlus(
@@ -325,7 +329,7 @@ export function layerGoPlus(
   // flag (DANGER). Without this context, every legit established token
   // with team-managed LP collapsed to DANGER on the goplus path even
   // though rugcheck classified it as soft.
-  maturityContext?: { holders: number | null; liquidity: number; tokenAgeHours: number | null; mintAuthority: boolean; freezeAuthority: boolean; honeypot: boolean; lpPctOfSupply?: number | null }
+  maturityContext?: { holders: number | null; liquidity: number; tokenAgeHours: number | null; mintAuthority: boolean; freezeAuthority: boolean; honeypot: boolean; lpPctOfSupply?: number | null; marketDataMissing?: boolean }
 ): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;

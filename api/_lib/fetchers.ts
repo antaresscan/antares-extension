@@ -129,6 +129,30 @@ export async function heliusGetTokenSupply(mint: string, key: string) {
     }, 6000, 1);
 }
 
+const TOKEN_PROGRAMS = new Set([
+    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", // SPL Token
+    "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb", // Token-2022
+]);
+
+/**
+ * Whether an address is a token mint: true or false when Helius says, null when it
+ * did not answer (the caller must then carry on as if it were). A pool, a wallet
+ * or an account that does not exist is false.
+ */
+export async function heliusIsMint(address: string, key: string): Promise<boolean | null> {
+    type AccountInfo = { result?: { value?: { owner?: string; data?: { parsed?: { type?: string } } } | null } };
+    const res = await heliusRpc<AccountInfo>(key, {
+        jsonrpc: "2.0", id: "is-mint", method: "getAccountInfo", params: [address, { encoding: "jsonParsed" }],
+    }, 4000, 1, { usable: (r) => r.result !== undefined });
+    if (!res || res.result === undefined) return null;
+    const value = res.result?.value;
+    if (value === null || value === undefined) return false;
+    if (!value.owner || !TOKEN_PROGRAMS.has(value.owner)) return false;
+    const type = value.data?.parsed?.type;
+    if (type === "mint") return true;
+    return typeof type === "string" ? false : null;
+}
+
 export async function heliusGetHoldersCount(mint: string, key: string): Promise<number | null> {
     const res = await heliusRpc<HeliusTokenAccountsResponse>(key, {
         jsonrpc: "2.0", id: "holders-count",

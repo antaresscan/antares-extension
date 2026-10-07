@@ -155,7 +155,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v46"; // 2026-10-07: Mint / Freeze / Sell indicators read GoPlus's real answer (null when it gave none) instead of flag labels no layer produced; flushes cached scans that showed every token as revoked.
+const ENGINE_VERSION_MANUAL = "v47"; // 2026-10-07: no market data no longer fails an established asset's liquidity bar (USDC was DANGER during DexScreener's outage); flushes the DANGERs cached meanwhile.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.
@@ -416,7 +416,13 @@ export const API_TIMEOUT_HELIUS = 6000;
 //   tokens hold a mint authority, almost all legitimate issuer- or DAO-run assets,
 //   which is why it is not a blanket critical. The LP matrix's "contract not
 //   clean" input stays false (it would turn those assets DANGER through the LP).
-export const SCORING_VERSION = "7.7.25";
+// 7.7.26 bump (2026-10-07): an established asset (30 days, 5,000 holders) whose
+//   market data is missing altogether is no longer failed on liquidity. During
+//   DexScreener's outage the authorities warning counted, with "Not indexed on
+//   DexScreener" and "LP-to-supply ratio could not be computed", as the third
+//   warning that makes DANGER: USDC scanned DANGER. With the liquidity leg unknown
+//   the authorities stay information, as for any established asset.
+export const SCORING_VERSION = "7.7.26";
 
 // ── SOFT REASONS (safe gate unlock) ───────────────────────────
 // A reason listed here CAN be unlocked by applySafeGateOverride when

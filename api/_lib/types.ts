@@ -370,6 +370,8 @@ export interface ScanResult {
   // Where the holder list behind those two figures came from: Helius, or GoPlus
   // when Helius returned nothing. Null when neither had a list.
   holdersSource?: "helius" | "goplus" | null;
+  /** Where the pair data came from: DexScreener, or GeckoTerminal when DexScreener had nothing. null when neither did. */
+  marketDataSource?: "dexscreener" | "geckoterminal" | null;
   // V5 Critical Actors preview — composed from creatorReputation + filtered
   // top holders + (optional) insider-graph cluster detection. Each card
   // describes one structural risk vector (Dev / Insider / Cluster).

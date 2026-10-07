@@ -1,0 +1,686 @@
+{
+ "_about": "Real answers of api.geckoterminal.com captured 2026-10-07 while DexScreener answered {pairs:null} for every token, not edited, except that the USDC pool list is cut to its first 3 pools (all 20 had USDC as the quote token).",
+ "sndwitchPool": {
+  "data": {
+   "id": "solana_HU22UBaTZa7AjMkDJaSyoDHtfFw6XVS6d9bSXLt9ugDB",
+   "type": "pool",
+   "attributes": {
+    "base_token_price_usd": "0.000216638396037051860725361330152587750220281409558053747666286302",
+    "base_token_price_native_currency": "0.00000189053936750821",
+    "quote_token_price_usd": "116.160101384748672254283782365811508268198566953",
+    "quote_token_price_native_currency": "1.0",
+    "base_token_price_quote_token": "0.000001890539368",
+    "quote_token_price_base_token": "528949.577663665",
+    "address": "HU22UBaTZa7AjMkDJaSyoDHtfFw6XVS6d9bSXLt9ugDB",
+    "name": "SNDWITCH / SOL",
+    "pool_name": "SNDWITCH / SOL",
+    "pool_fee_percentage": null,
+    "pool_created_at": "2026-10-06T19:37:18Z",
+    "fdv_usd": "213872.338689954",
+    "market_cap_usd": null,
+    "price_change_percentage": {
+     "m5": "0.642",
+     "m15": "6.226",
+     "m30": "7.644",
+     "h1": "8.14",
+     "h6": "-48.393",
+     "h24": "-35.059"
+    },
+    "transactions": {
+     "m5": {
+      "buys": 280,
+      "sells": 32,
+      "buyers": 124,
+      "sellers": 26
+     },
+     "m15": {
+      "buys": 1067,
+      "sells": 127,
+      "buyers": 431,
+      "sellers": 84
+     },
+     "m30": {
+      "buys": 2264,
+      "sells": 265,
+      "buyers": 850,
+      "sellers": 179
+     },
+     "h1": {
+      "buys": 4701,
+      "sells": 580,
+      "buyers": 1715,
+      "sellers": 377
+     },
+     "h6": {
+      "buys": 28094,
+      "sells": 12855,
+      "buyers": 6242,
+      "sellers": 5113
+     },
+     "h24": {
+      "buys": 137987,
+      "sells": 58599,
+      "buyers": 18020,
+      "sellers": 7029
+     }
+    },
+    "volume_usd": {
+     "m5": "3984.4588926343",
+     "m15": "16639.6661910808",
+     "m30": "33607.2647696166",
+     "h1": "67124.9851571963",
+     "h6": "1478683.50819531",
+     "h24": "5242579.8144223"
+    },
+    "reserve_in_usd": "49047.2198",
+    "locked_liquidity_percentage": "100.0"
+   },
+   "relationships": {
+    "base_token": {
+     "data": {
+      "id": "solana_J9qzFhTLYnmf3tZYvHBaF96rH3YKToELAAVMzz66pump",
+      "type": "token"
+     }
+    },
+    "quote_token": {
+     "data": {
+      "id": "solana_So11111111111111111111111111111111111111112",
+      "type": "token"
+     }
+    },
+    "dex": {
+     "data": {
+      "id": "pumpswap",
+      "type": "dex"
+     }
+    }
+   }
+  },
+  "included": [
+   {
+    "id": "solana_J9qzFhTLYnmf3tZYvHBaF96rH3YKToELAAVMzz66pump",
+    "type": "token",
+    "attributes": {
+     "address": "J9qzFhTLYnmf3tZYvHBaF96rH3YKToELAAVMzz66pump",
+     "name": "Sand Witch Kitten",
+     "symbol": "SNDWITCH",
+     "decimals": 6,
+     "image_url": "https://assets.geckoterminal.com/95xyeo1hww19qs1oip1smxpxxf0b",
+     "coingecko_coin_id": null
+    }
+   },
+   {
+    "id": "solana_So11111111111111111111111111111111111111112",
+    "type": "token",
+    "attributes": {
+     "address": "So11111111111111111111111111111111111111112",
+     "name": "Wrapped SOL",
+     "symbol": "SOL",
+     "decimals": 9,
+     "image_url": "https://coin-images.coingecko.com/coins/images/21629/large/solana.jpg?1696520989",
+     "coingecko_coin_id": "wrapped-solana"
+    }
+   }
+  ]
+ },
+ "sndwitchTokenPools": {
+  "data": [
+   {
+    "id": "solana_HU22UBaTZa7AjMkDJaSyoDHtfFw6XVS6d9bSXLt9ugDB",
+    "type": "pool",
+    "attributes": {
+     "base_token_price_usd": "0.0002173826233",
+     "base_token_price_native_currency": "0.00000186855320283177",
+     "quote_token_price_usd": "116.16018852407345338140404610152880572428596779",
+     "quote_token_price_native_currency": "1.0",
+     "base_token_price_quote_token": "0.000001868553203",
+     "quote_token_price_base_token": "535173.415712495",
+     "address": "HU22UBaTZa7AjMkDJaSyoDHtfFw6XVS6d9bSXLt9ugDB",
+     "name": "SNDWITCH / SOL",
+     "pool_created_at": "2026-10-06T19:37:18Z",
+     "token_price_usd": "0.0002173826233",
+     "fdv_usd": "215569.873140885",
+     "market_cap_usd": null,
+     "price_change_percentage": {
+      "m5": "1.44",
+      "m15": "7.069",
+      "m30": "8.498",
+      "h1": "9",
+      "h6": "-47.98",
+      "h24": "-34.54"
+     },
+     "transactions": {
+      "m5": {
+       "buys": 321,
+       "sells": 35,
+       "buyers": 138,
+       "sellers": 27
+      },
+      "m15": {
+       "buys": 1108,
+       "sells": 130,
+       "buyers": 444,
+       "sellers": 85
+      },
+      "m30": {
+       "buys": 2305,
+       "sells": 268,
+       "buyers": 863,
+       "sellers": 180
+      },
+      "h1": {
+       "buys": 4742,
+       "sells": 583,
+       "buyers": 1725,
+       "sellers": 378
+      },
+      "h6": {
+       "buys": 28135,
+       "sells": 12858,
+       "buyers": 6244,
+       "sellers": 5113
+      },
+      "h24": {
+       "buys": 138028,
+       "sells": 58602,
+       "buyers": 18022,
+       "sellers": 7029
+      }
+     },
+     "volume_usd": {
+      "m5": "4513.7812159164",
+      "m15": "17168.9885143629",
+      "m30": "34136.5870928987",
+      "h1": "67654.3074804784",
+      "h6": "1479212.83051859",
+      "h24": "5243109.13674559"
+     },
+     "reserve_in_usd": "49102.4218"
+    },
+    "relationships": {
+     "base_token": {
+      "data": {
+       "id": "solana_J9qzFhTLYnmf3tZYvHBaF96rH3YKToELAAVMzz66pump",
+       "type": "token"
+      }
+     },
+     "quote_token": {
+      "data": {
+       "id": "solana_So11111111111111111111111111111111111111112",
+       "type": "token"
+      }
+     },
+     "dex": {
+      "data": {
+       "id": "pumpswap",
+       "type": "dex"
+      }
+     }
+    }
+   },
+   {
+    "id": "solana_AUJ3eN8f7WKqS5t2VrN8Jyzvr6Z9bpuYdaMkLmnVosMy",
+    "type": "pool",
+    "attributes": {
+     "base_token_price_usd": "0.000003390644056",
+     "base_token_price_native_currency": null,
+     "quote_token_price_usd": "120.478759967822758907007932901582897981489887149",
+     "quote_token_price_native_currency": null,
+     "base_token_price_quote_token": null,
+     "quote_token_price_base_token": null,
+     "address": "AUJ3eN8f7WKqS5t2VrN8Jyzvr6Z9bpuYdaMkLmnVosMy",
+     "name": "SNDWITCH / SOL",
+     "pool_created_at": "2026-10-06T19:37:18Z",
+     "token_price_usd": "0.000003390644056",
+     "fdv_usd": "3362.3695303792",
+     "market_cap_usd": null,
+     "price_change_percentage": {
+      "m5": "0",
+      "m15": "0",
+      "m30": "0",
+      "h1": "0",
+      "h6": "0",
+      "h24": "0"
+     },
+     "transactions": {
+      "m5": {
+       "buys": 0,
+       "sells": 0,
+       "buyers": 0,
+       "sellers": 0
+      },
+      "m15": {
+       "buys": 0,
+       "sells": 0,
+       "buyers": 0,
+       "sellers": 0
+      },
+      "m30": {
+       "buys": 0,
+       "sells": 0,
+       "buyers": 0,
+       "sellers": 0
+      },
+      "h1": {
+       "buys": 0,
+       "sells": 0,
+       "buyers": 0,
+       "sellers": 0
+      },
+      "h6": {
+       "buys": 0,
+       "sells": 0,
+       "buyers": 0,
+       "sellers": 0
+      },
+      "h24": {
+       "buys": 0,
+       "sells": 0,
+       "buyers": 0,
+       "sellers": 0
+      }
+     },
+     "volume_usd": {
+      "m5": "0.0",
+      "m15": "0.0",
+      "m30": "0.0",
+      "h1": "0.0",
+      "h6": "0.0",
+      "h24": "0.0"
+     },
+     "reserve_in_usd": "0.0"
+    },
+    "relationships": {
+     "base_token": {
+      "data": {
+       "id": "solana_J9qzFhTLYnmf3tZYvHBaF96rH3YKToELAAVMzz66pump",
+       "type": "token"
+      }
+     },
+     "quote_token": {
+      "data": {
+       "id": "solana_So11111111111111111111111111111111111111112",
+       "type": "token"
+      }
+     },
+     "dex": {
+      "data": {
+       "id": "pump-fun",
+       "type": "dex"
+      }
+     }
+    }
+   }
+  ],
+  "included": [
+   {
+    "id": "solana_J9qzFhTLYnmf3tZYvHBaF96rH3YKToELAAVMzz66pump",
+    "type": "token",
+    "attributes": {
+     "address": "J9qzFhTLYnmf3tZYvHBaF96rH3YKToELAAVMzz66pump",
+     "name": "Sand Witch Kitten",
+     "symbol": "SNDWITCH",
+     "decimals": 6,
+     "image_url": "https://assets.geckoterminal.com/95xyeo1hww19qs1oip1smxpxxf0b",
+     "coingecko_coin_id": null
+    }
+   },
+   {
+    "id": "solana_So11111111111111111111111111111111111111112",
+    "type": "token",
+    "attributes": {
+     "address": "So11111111111111111111111111111111111111112",
+     "name": "Wrapped SOL",
+     "symbol": "SOL",
+     "decimals": 9,
+     "image_url": "https://coin-images.coingecko.com/coins/images/21629/large/solana.jpg?1696520989",
+     "coingecko_coin_id": "wrapped-solana"
+    }
+   }
+  ]
+ },
+ "usdcTokenPools": {
+  "data": [
+   {
+    "id": "solana_Czfq3xZZDmsdGdUyrNLtRhGc47cXcZtLG4crryfu44zE",
+    "type": "pool",
+    "attributes": {
+     "base_token_price_usd": "116.1805310949",
+     "base_token_price_native_currency": "1.0",
+     "quote_token_price_usd": "0.99998454659870876952628421296701626477034234",
+     "quote_token_price_native_currency": "0.00860710554695313",
+     "base_token_price_quote_token": "116.183076244",
+     "quote_token_price_base_token": "0.008607105547",
+     "address": "Czfq3xZZDmsdGdUyrNLtRhGc47cXcZtLG4crryfu44zE",
+     "name": "SOL / USDC",
+     "pool_created_at": "2023-07-05T14:34:02Z",
+     "token_price_usd": "0.99998454659870876952628421296701626477034234",
+     "fdv_usd": "7643625631.52433",
+     "market_cap_usd": "73810231591.3705",
+     "price_change_percentage": {
+      "m5": "0.02",
+      "m15": "0.15",
+      "m30": "-0.08",
+      "h1": "0.12",
+      "h6": "0.08",
+      "h24": "0.2"
+     },
+     "transactions": {
+      "m5": {
+       "buys": 123,
+       "sells": 23,
+       "buyers": 74,
+       "sellers": 18
+      },
+      "m15": {
+       "buys": 341,
+       "sells": 385,
+       "buyers": 143,
+       "sellers": 147
+      },
+      "m30": {
+       "buys": 559,
+       "sells": 920,
+       "buyers": 201,
+       "sellers": 260
+      },
+      "h1": {
+       "buys": 1198,
+       "sells": 1284,
+       "buyers": 359,
+       "sellers": 356
+      },
+      "h6": {
+       "buys": 9913,
+       "sells": 9956,
+       "buyers": 1765,
+       "sellers": 1791
+      },
+      "h24": {
+       "buys": 36310,
+       "sells": 39397,
+       "buyers": 4603,
+       "sellers": 5284
+      }
+     },
+     "volume_usd": {
+      "m5": "71201.1627817057",
+      "m15": "520373.252535264",
+      "m30": "1251665.33735732",
+      "h1": "2234588.90795901",
+      "h6": "22926717.2115718",
+      "h24": "121882833.093607"
+     },
+     "reserve_in_usd": "30356831.4176"
+    },
+    "relationships": {
+     "base_token": {
+      "data": {
+       "id": "solana_So11111111111111111111111111111111111111112",
+       "type": "token"
+      }
+     },
+     "quote_token": {
+      "data": {
+       "id": "solana_EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+       "type": "token"
+      }
+     },
+     "dex": {
+      "data": {
+       "id": "orca",
+       "type": "dex"
+      }
+     }
+    }
+   },
+   {
+    "id": "solana_Bu9HQ5sLf2obAW8sHubP3VP3n3yKMPADNQq2U9xNumFD",
+    "type": "pool",
+    "attributes": {
+     "base_token_price_usd": "0.5017096961",
+     "base_token_price_native_currency": "0.00430858898190999",
+     "quote_token_price_usd": "1.001232599672846122941822347879673954323575491",
+     "quote_token_price_native_currency": "0.0085966786",
+     "base_token_price_quote_token": "0.5011922839",
+     "quote_token_price_base_token": "1.9952422095",
+     "address": "Bu9HQ5sLf2obAW8sHubP3VP3n3yKMPADNQq2U9xNumFD",
+     "name": "PONS / USDC",
+     "pool_created_at": "2026-09-03T06:40:13Z",
+     "token_price_usd": "1.001232599672846122941822347879673954323575491",
+     "fdv_usd": "7653165429.41363",
+     "market_cap_usd": "73902352101.3861",
+     "price_change_percentage": {
+      "m5": "0",
+      "m15": "0",
+      "m30": "0",
+      "h1": "0",
+      "h6": "0.18",
+      "h24": "-0.29"
+     },
+     "transactions": {
+      "m5": {
+       "buys": 0,
+       "sells": 0,
+       "buyers": 0,
+       "sellers": 0
+      },
+      "m15": {
+       "buys": 0,
+       "sells": 0,
+       "buyers": 0,
+       "sellers": 0
+      },
+      "m30": {
+       "buys": 0,
+       "sells": 0,
+       "buyers": 0,
+       "sellers": 0
+      },
+      "h1": {
+       "buys": 0,
+       "sells": 0,
+       "buyers": 0,
+       "sellers": 0
+      },
+      "h6": {
+       "buys": 3,
+       "sells": 3,
+       "buyers": 1,
+       "sellers": 1
+      },
+      "h24": {
+       "buys": 12,
+       "sells": 12,
+       "buyers": 1,
+       "sellers": 1
+      }
+     },
+     "volume_usd": {
+      "m5": "0.0",
+      "m15": "0.0",
+      "m30": "0.0",
+      "h1": "0.0",
+      "h6": "114610.073258156",
+      "h24": "469186.68065963"
+     },
+     "reserve_in_usd": "4482320284.2383"
+    },
+    "relationships": {
+     "base_token": {
+      "data": {
+       "id": "solana_3Ut2VTzbztc5tjb2HgG2gRcCUXFE4GcMuNkoY8BX7LMN",
+       "type": "token"
+      }
+     },
+     "quote_token": {
+      "data": {
+       "id": "solana_EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+       "type": "token"
+      }
+     },
+     "dex": {
+      "data": {
+       "id": "raydium-clmm",
+       "type": "dex"
+      }
+     }
+    }
+   },
+   {
+    "id": "solana_BS68LUcz5CfFmudXYxqKKnxhKu2cHGP72vE8QRoMvRnr",
+    "type": "pool",
+    "attributes": {
+     "base_token_price_usd": "0.8106340047",
+     "base_token_price_native_currency": "0.00699038367956307",
+     "quote_token_price_usd": "0.99825171958875938728076551549",
+     "quote_token_price_native_currency": "0.00861342863383901",
+     "base_token_price_quote_token": "0.8115680731",
+     "quote_token_price_base_token": "1.232182528",
+     "address": "BS68LUcz5CfFmudXYxqKKnxhKu2cHGP72vE8QRoMvRnr",
+     "name": "APT / USDC",
+     "pool_created_at": "2026-09-28T13:59:50Z",
+     "token_price_usd": "0.99825171958875938728076551549",
+     "fdv_usd": "7630380345.89137",
+     "market_cap_usd": "73682329251.9322",
+     "price_change_percentage": {
+      "m5": "0",
+      "m15": "0",
+      "m30": "0",
+      "h1": "0",
+      "h6": "-0.27",
+      "h24": "0.09"
+     },
+     "transactions": {
+      "m5": {
+       "buys": 0,
+       "sells": 0,
+       "buyers": 0,
+       "sellers": 0
+      },
+      "m15": {
+       "buys": 0,
+       "sells": 0,
+       "buyers": 0,
+       "sellers": 0
+      },
+      "m30": {
+       "buys": 0,
+       "sells": 0,
+       "buyers": 0,
+       "sellers": 0
+      },
+      "h1": {
+       "buys": 0,
+       "sells": 0,
+       "buyers": 0,
+       "sellers": 0
+      },
+      "h6": {
+       "buys": 4,
+       "sells": 4,
+       "buyers": 4,
+       "sellers": 4
+      },
+      "h24": {
+       "buys": 9,
+       "sells": 9,
+       "buyers": 6,
+       "sellers": 6
+      }
+     },
+     "volume_usd": {
+      "m5": "0.0",
+      "m15": "0.0",
+      "m30": "0.0",
+      "h1": "0.0",
+      "h6": "41592.0643181718",
+      "h24": "200801.405390677"
+     },
+     "reserve_in_usd": "8097215700.6117"
+    },
+    "relationships": {
+     "base_token": {
+      "data": {
+       "id": "solana_AJCX2KgE6bRLyokmZyT4nw847MwN6N83DQM2x7mGppdq",
+       "type": "token"
+      }
+     },
+     "quote_token": {
+      "data": {
+       "id": "solana_EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+       "type": "token"
+      }
+     },
+     "dex": {
+      "data": {
+       "id": "raydium-clmm",
+       "type": "dex"
+      }
+     }
+    }
+   }
+  ],
+  "included": [
+   {
+    "id": "solana_So11111111111111111111111111111111111111112",
+    "type": "token",
+    "attributes": {
+     "address": "So11111111111111111111111111111111111111112",
+     "name": "Wrapped SOL",
+     "symbol": "SOL",
+     "decimals": 9,
+     "image_url": "https://coin-images.coingecko.com/coins/images/21629/large/solana.jpg?1696520989",
+     "coingecko_coin_id": "wrapped-solana"
+    }
+   },
+   {
+    "id": "solana_EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "type": "token",
+    "attributes": {
+     "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+     "name": "USD Coin",
+     "symbol": "USDC",
+     "decimals": 6,
+     "image_url": "https://coin-images.coingecko.com/coins/images/6319/large/USDC.png?1769615602",
+     "coingecko_coin_id": "usd-coin"
+    }
+   },
+   {
+    "id": "solana_3Ut2VTzbztc5tjb2HgG2gRcCUXFE4GcMuNkoY8BX7LMN",
+    "type": "token",
+    "attributes": {
+     "address": "3Ut2VTzbztc5tjb2HgG2gRcCUXFE4GcMuNkoY8BX7LMN",
+     "name": "Pons",
+     "symbol": "PONS",
+     "decimals": 6,
+     "image_url": "https://assets.geckoterminal.com/843hggycxu1w9l2j6k6gpfls3q2h",
+     "coingecko_coin_id": null
+    }
+   },
+   {
+    "id": "solana_AJCX2KgE6bRLyokmZyT4nw847MwN6N83DQM2x7mGppdq",
+    "type": "token",
+    "attributes": {
+     "address": "AJCX2KgE6bRLyokmZyT4nw847MwN6N83DQM2x7mGppdq",
+     "name": "Aptos",
+     "symbol": "APT",
+     "decimals": 8,
+     "image_url": "https://assets.geckoterminal.com/mdfd0wyryixrzimctyueyv3m0p4t",
+     "coingecko_coin_id": null
+    }
+   }
+  ]
+ },
+ "notFound": {
+  "errors": [
+   {
+    "status": "404",
+    "title": "Not Found"
+   }
+  ],
+  "meta": {
+   "ref_id": "1066c8db-1499-46be-8657-5316cccfbd97"
+  }
+ }
+}
