@@ -45,10 +45,6 @@ const FLAG_DESCRIPTIONS: Record<string, string> = {
   "Upgradeable/proxy contract": "The contract code can be replaced after launch — any security audit becomes worthless.",
   "Metadata mutable": "The dev can change the token name, symbol and logo after launch — common in rug setups.",
   "Creator history of rugged tokens": "The wallet that created this token has launched other tokens that were later rugged.",
-  "Authorities still active": "The mint, freeze or permanent-delegate authority has not been revoked: its holder can create supply, freeze accounts or move balances. Expected for an issuer-run asset, a rug lever for anything else.",
-  "New token accounts are frozen by default": "Every new holder account starts frozen, so nobody can sell until the freeze authority thaws it.",
-  "Transfer fee": "A fee is taken on every transfer of this token, sales included.",
-  "Transfer hook": "A program runs on every transfer and can refuse sells.",
   // ── legacy LP labels (kept for back-compat with cached scans) ──
   "LP not burned or locked": "The dev can pull all liquidity in one transaction and crash the price to zero.",
   "LP not burned but token is mature and liquid (unverified LP)": "Liquidity is not locked — the dev could still rug, but the token's age and depth make this less likely.",

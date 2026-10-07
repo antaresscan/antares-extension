@@ -24,6 +24,7 @@ export const PUBLIC_SOLANA_RPCS = [
   "https://api.mainnet-beta.solana.com",
   "https://solana-rpc.publicnode.com",
 ] as const;
+export const SOLSCAN_PUBLIC_BASE = "https://public-api.solscan.io";
 export const SOLSCAN_BASE = "https://pro-api.solscan.io/v2.0";
 
 // CA_RE — single source of truth from shared/constants.ts
@@ -155,7 +156,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v46"; // 2026-10-07: Mint / Freeze / Sell indicators read GoPlus's real answer (null when it gave none) instead of flag labels no layer produced; flushes cached scans that showed every token as revoked.
+const ENGINE_VERSION_MANUAL = "v43"; // 2026-10-07: the RugCheck layer reads RugCheck's real summary (creator history, mutable metadata, concentration fallback, LP locked share); flushes cached scans scored with the empty layer.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.
@@ -389,31 +390,7 @@ export const API_TIMEOUT_HELIUS = 6000;
 //   and lpLockedPct >= 90 counts as LP locked. The mint/freeze authority is
 //   deliberately NOT flagged yet (issuer-controlled assets: USDG, CASH, ORCA,
 //   tokenized stocks). See api/_lib/rugcheck.ts and layerRugCheck.
-// 7.7.24 bump (2026-10-07): the holder data no longer has a single source.
-//   - When Helius returns no holder list, GoPlus's Solana answer (already
-//     fetched on every scan) supplies the top holders and the total supply, and
-//     goes through the same ladder, LP and foundation exclusions. Checked on 16
-//     reference tokens: top-1 identical to Helius, top-10 0 to 2 points lower
-//     (it lists 10 accounts, pools included). The response says where the list
-//     came from (holdersSource). The public Solana RPC call for the list is gone:
-//     both providers refuse getTokenLargestAccounts (429 / 403).
-//   - The Solscan layer's holder-count flags (very few holders, low holders,
-//     strong holder base) got their count from public-api.solscan.io, which now
-//     answers 404, so they never fired. They read the count Helius or GoPlus
-//     reports instead (never the size of the holder list, at most 20).
-// 7.7.25 bump (2026-10-07): the GoPlus layer reads what GoPlus sends for Solana.
-//   It read the EVM answer's fields (is_honeypot, mint_authority, freeze_authority,
-//   sell_tax, is_proxy...), which a Solana answer does not have, so apart from the
-//   LP burn it checked nothing: no mint or freeze authority was ever flagged.
-//   Now: authorities still held (mint, freeze, permanent delegate, a changeable
-//   transfer fee or hook) are one warning, information only for an established
-//   asset (30 days, 5,000 holders, $250k liquidity); a non-transferable token
-//   (honeypot), accounts frozen by default and a transfer fee of 10%+ are
-//   critical; a smaller fee or a transfer hook is a warning. 118 of 505 corpus
-//   tokens hold a mint authority, almost all legitimate issuer- or DAO-run assets,
-//   which is why it is not a blanket critical. The LP matrix's "contract not
-//   clean" input stays false (it would turn those assets DANGER through the LP).
-export const SCORING_VERSION = "7.7.25";
+export const SCORING_VERSION = "7.7.23";
 
 // ── SOFT REASONS (safe gate unlock) ───────────────────────────
 // A reason listed here CAN be unlocked by applySafeGateOverride when

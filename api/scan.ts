@@ -22,13 +22,12 @@ import {
   heliusGetLargestAccounts, heliusGetTokenSupply, heliusGetCreatorReputation,
   heliusGetHoldersCount,
   heliusResolveAccountOwners,
-  publicRpcGetTokenSupply, publicRpcGetMintInfo,
-  fetchSolscan, fetchDexCandles, fetchDexCandlesDaily,
+  publicRpcGetLargestAccounts, publicRpcGetTokenSupply, publicRpcGetMintInfo,
+  solscanGetHoldersCount, fetchSolscan, fetchDexCandles, fetchDexCandlesDaily,
   type CreatorReputation,
 } from "./_lib/fetchers";
 import { readHeliusKey } from "./_lib/helius";
 import { rugCheckConcentration } from "./_lib/rugcheck";
-import { goplusAuthorityState, goplusHolderAccounts, goplusHolderCount, goplusTotalSupply } from "./_lib/goplus";
 import {
   DEXSCREENER_BASE, RUGCHECK_BASE, GOPLUS_BASE, LAYER_WEIGHTS, SCORING_VERSION,
   LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS,
@@ -313,6 +312,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const [
       candlesRaw, candlesDailyRaw, goplusRaw,
       heliusHoldersRaw, heliusSupplyRaw, heliusHoldersCountRaw,
+      solscanHoldersCount,
       solMeta, solTransfers, solMarkets,
     ] = await Promise.all([
       withBudget(fetchDexCandles(pairAddress), remainingMs()),
@@ -321,6 +321,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       HELIUS_API_KEY ? withBudget(heliusGetLargestAccounts(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
       HELIUS_API_KEY ? withBudget(heliusGetTokenSupply(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
       HELIUS_API_KEY ? withBudget(heliusGetHoldersCount(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
+      withBudget(solscanGetHoldersCount(resolvedMint), remainingMs()),
       withBudget(fetchSolscan(`/token/meta?address=${resolvedMint}`), remainingMs()),
       // page_size=50 (was 10): the Holder Activity tab classifies the
       // last hour of activity per top-6 holder. With only 10 token-wide
@@ -341,22 +342,18 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const supplyResponse = isHeliusSupplyResponse(heliusSupplyRaw) ? heliusSupplyRaw : null;
     let totalSupplyUi: number = asNumber(supplyResponse?.result?.value?.uiAmount);
 
-    // Holder list when Helius gave none: GoPlus's Solana answer (already fetched
-    // above, so no extra call) lists the top holders with their balance. The
-    // public Solana RPCs used to be tried here, but both refuse
-    // getTokenLargestAccounts now (api.mainnet-beta.solana.com answers 429,
-    // solana-rpc.publicnode.com 403), so that call only spent time.
-    let holdersFromGoPlus = false;
+    // Free public Solana RPC fallback for the two Helius RPC calls that
+    // matter for holder concentration. Same JSON-RPC interface, same
+    // response shape, no API key. Triggered when Helius is unset or
+    // returned no usable data — gives a token-distribution signal even
+    // for users running without a paid Helius tier.
     if (rawHolderAccounts.length === 0) {
-      const fromGoPlus = goplusHolderAccounts(goplus);
-      if (fromGoPlus.length > 0) {
-        rawHolderAccounts = fromGoPlus;
-        holdersFromGoPlus = true;
-      }
+      try {
+        const fallback = await withBudget(publicRpcGetLargestAccounts(resolvedMint), remainingMs());
+        const parsed = isHeliusLargestAccountsResponse(fallback) ? fallback : null;
+        rawHolderAccounts = parsed?.result?.value ?? [];
+      } catch { /* keep empty — section will gracefully degrade */ }
     }
-    // Supply: Helius, then GoPlus (same answer, no call), then the public RPCs,
-    // whose getTokenSupply and getAccountInfo still answer.
-    if (totalSupplyUi <= 0) totalSupplyUi = goplusTotalSupply(goplus);
     if (totalSupplyUi <= 0) {
       try {
         const fallback = await withBudget(publicRpcGetTokenSupply(resolvedMint), remainingMs());
@@ -376,8 +373,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     }
 
     const solMarketsData = isSolscanMarketsResponse(solMarkets) ? solMarkets : null;
-    // GoPlus already names the owner wallets, so only a Helius list needs its token accounts resolved.
-    const resolvedHolderAccounts: HeliusHolder[] = HELIUS_API_KEY && rawHolderAccounts.length > 0 && !holdersFromGoPlus
+    const resolvedHolderAccounts: HeliusHolder[] = HELIUS_API_KEY && rawHolderAccounts.length > 0
       ? await withBudget(heliusResolveAccountOwners(rawHolderAccounts, HELIUS_API_KEY), remainingMs()) ?? rawHolderAccounts.map(h => ({ ...h, owner: h.owner ?? h.address }))
       : rawHolderAccounts.map(h => ({ ...h, owner: h.owner ?? h.address }));
     const solMarketPool: SolscanMarketPool | null =
@@ -442,15 +438,16 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const heliusHoldersCount: number | null = typeof heliusHoldersCountRaw === "number" && heliusHoldersCountRaw > 0
       ? heliusHoldersCountRaw : null;
     const top20NonZero = rawHolderAccounts.filter(h => asNumber(h?.uiAmount) > 0).length;
-    // Counts a source really reports. Kept apart from top20NonZero (the size of the
-    // holder list we got, at most 20) so they can feed the holder-count flags
-    // without ever making a big token look tiny. The public Solscan holders
-    // endpoint this used to read now answers 404; GoPlus's count is alive.
-    const reportedHolderCounts = [heliusHoldersCount, goplusHolderCount(goplus)]
-      .filter((n): n is number => typeof n === "number" && n > 0);
-    const reportedHolderCount: number | null = reportedHolderCounts.length > 0 ? Math.max(...reportedHolderCounts) : null;
+    const goplusHolderCount: number | null = (() => {
+      const raw = goplus?.holder_count;
+      if (raw == null) return null;
+      const n = typeof raw === "number" ? raw : parseInt(String(raw), 10);
+      return Number.isFinite(n) && n > 0 ? n : null;
+    })();
     const holderCandidates = [
-      reportedHolderCount,
+      solscanHoldersCount,
+      heliusHoldersCount,
+      goplusHolderCount,
       top20NonZero > 0 ? top20NonZero : null,
     ].filter((n): n is number => typeof n === "number" && n > 0);
     const holders: number | null = holderCandidates.length > 0 ? Math.max(...holderCandidates) : null;
@@ -510,12 +507,10 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       holders: holders,
       liquidity: asNumber(pair?.liquidity?.usd),
       tokenAgeHours: solscanTokenAgeHours,
-      // Kept false on purpose, whatever GoPlus says. Authorities still held are one
-      // warning in layerGoPlus (information only for an established asset): 118 of
-      // the 505 corpus tokens hold a mint authority, nearly all of them legitimate
-      // issuer- or DAO-run assets. Feeding them to the LP matrix as "contract not
-      // clean" would turn those DANGER through the LP path. The indicators the
-      // clients show (authorityState below) do read the real answer.
+      // No authority reading is wired in yet: this was always false (it read a
+      // RugCheck field that does not exist) and the GoPlus layer reads EVM-style
+      // fields its Solana answer does not have. Kept false on purpose until an
+      // authority rule exists (see layerRugCheck).
       mintAuthority: false,
       freezeAuthority: false,
       honeypot: false,
@@ -527,12 +522,6 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const holderListAvailable = resolvedHolderAccounts.length > 0 && totalSupplyUi > 0;
     const l2 = layerRugCheck(rugData, tokenName, holderListAvailable);
     const l3 = layerGoPlus(goplus, maturityCtx);
-    // What the clients show for Mint, Freeze and Sell, and what the AI summary is
-    // told: GoPlus's own answer, or null when it gave none (the overlay then prints
-    // a dash). These used to be read off flag labels no layer ever produced, so every
-    // token showed Mint and Freeze as revoked and the summary said so.
-    const authorityState = goplusAuthorityState(goplus);
-    const honeypot = l3.available ? l3.trust === 0 && l3.flags.some(f => /honeypot/i.test(f.label)) : null;
     // Collect all DEXScreener pair addresses for this token.
     // For AMMs that use per-pool PDAs as vault authority (PumpSwap, Meteora DBC…)
     // the pair address IS the decoded authority of the LP vault token account.
@@ -544,7 +533,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
         .filter((a: unknown): a is string => typeof a === "string" && a.length > 0)
     );
     const l4 = layerHelius(resolvedHolderAccounts, totalSupplyUi, maturityCtx, dexPairAddresses);
-    const l5 = layerSolscan(reportedHolderCount, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h);
+    const l5 = layerSolscan(solscanHoldersCount, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h);
     const l6 = layerChart(candles, pair, tokenAgeMinutes, maturityCtx, dailyCandles.length >= 2 ? dailyCandles : undefined);
     const l7 = layerCrossValidation(solscanTokenAgeHours, dexTokenAgeHours);
 
@@ -842,9 +831,9 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       holders, marketCap, liquidity,
       lpBurned,
       lpLocked,
-      mintAuthority: authorityState.mint,
-      freezeAuthority: authorityState.freeze,
-      honeypot,
+      mintAuthority: allLayers.some(l => l.flags.some(f => /mint authority/i.test(f.label) && f.severity === "critical")),
+      freezeAuthority: allLayers.some(l => l.flags.some(f => /freeze authority/i.test(f.label) && f.severity === "critical")),
+      honeypot: l3.available && l3.trust === 0 && l3.flags.some(f => /honeypot/i.test(f.label)),
       tokenAgeHours: solscanTokenAgeHours ?? dexTokenAgeHours ?? null,
       sourcesUsed: sources_used,
       topHolderPct,
@@ -880,16 +869,15 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       tokenDecimals, tokenSupply, recentTransfers,
       solscanTokenAgeHours, solscanVolume24h, solscanTrades24h, solscanTraders24h,
       layers: layersSnapshot,
-      honeypot,
-      mintAuthority: authorityState.mint,
-      freezeAuthority: authorityState.freeze,
+      honeypot: l3.available && l3.trust === 0 && l3.flags.some(f => /honeypot/i.test(f.label)),
+      mintAuthority: allLayers.some(l => l.flags.some(f => /mint authority/i.test(f.label) && f.severity === "critical")),
+      freezeAuthority: allLayers.some(l => l.flags.some(f => /freeze authority/i.test(f.label) && f.severity === "critical")),
       lpBurned,
       lpLocked,
       lpLockedPct: _gpBP > 0 ? _gpBP : null,
       candles: candles.slice(-20).map(c => ({ close: c.c })),
       topHolderPct,
       top10HolderPct,
-      holdersSource: realHolderAccounts.length > 0 ? (holdersFromGoPlus ? "goplus" : "helius") : null,
       criticalActors,
       verdictHistory: finalHistory,
       holderActivity,

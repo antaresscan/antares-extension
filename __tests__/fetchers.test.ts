@@ -21,7 +21,9 @@ const {
   heliusGetCreatorReputation,
   heliusGetHoldersCount,
   heliusGetProgramAccountHolderCount,
+  solscanGetHoldersCount,
   fetchDexCandles,
+  publicRpcGetLargestAccounts,
   publicRpcGetTokenSupply,
   publicRpcGetMintInfo,
 } = await import("../api/_lib/fetchers");
@@ -102,6 +104,26 @@ describe("heliusGetCreatorReputation", () => {
   it("returns null for non-array response", async () => {
     mockFetchJson.mockResolvedValue({ error: "invalid" });
     const result = await heliusGetCreatorReputation("creator3", "key3");
+    expect(result).toBeNull();
+  });
+});
+
+describe("solscanGetHoldersCount", () => {
+  it("returns total when valid", async () => {
+    mockFetchJson.mockResolvedValue({ total: 5000 });
+    const result = await solscanGetHoldersCount("mint123");
+    expect(result).toBe(5000);
+  });
+
+  it("returns null when total is 0", async () => {
+    mockFetchJson.mockResolvedValue({ total: 0 });
+    const result = await solscanGetHoldersCount("mint123");
+    expect(result).toBeNull();
+  });
+
+  it("returns null on failure", async () => {
+    mockFetchJson.mockResolvedValue(null);
+    const result = await solscanGetHoldersCount("mint123");
     expect(result).toBeNull();
   });
 });
@@ -218,6 +240,12 @@ describe("publicRpc helpers", () => {
     mockFetchJsonPost.mockResolvedValue({ error: { message: "blocked" } });
     const res = await publicRpcGetTokenSupply("mint");
     expect(res).toBeNull();
+  });
+
+  it("publicRpcGetLargestAccounts uses the same pool iteration", async () => {
+    mockFetchJsonPost.mockResolvedValue({ result: { value: [{ address: "a", uiAmount: 10 }] } });
+    const res = await publicRpcGetLargestAccounts("mint") as { result?: { value?: unknown[] } } | null;
+    expect(Array.isArray(res?.result?.value)).toBe(true);
   });
 
   it("publicRpcGetMintInfo parses supply + decimals from getAccountInfo response", async () => {

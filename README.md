@@ -61,7 +61,7 @@ Score starts at **1000** and is reduced by weighted penalties across **6 weighte
 |---|---|---|---|
 | L1 | DexScreener | 0.20 | Liquidity, volume, price changes |
 | L2 | RugCheck | 0.20 | Creator history of rugged tokens, mint/freeze authority, mutable metadata; holder concentration while Helius has no holder list |
-| L3 | GoPlus | 0.20 | Mint / freeze / permanent-delegate authorities, Token-2022 hazards (non-transferable, frozen by default, transfer fee or hook), LP burn; top-holders list when Helius has none |
+| L3 | GoPlus | 0.20 | Honeypot, mint/freeze authority, tax, proxy contracts |
 | L4 | Helius | 0.20 | On-chain holder distribution (top 1 / top 10), creator history |
 | L5 | Solscan | 0.10 | Holder count, token age, wash trading patterns |
 | L6 | Chart | 0.10 | OHLCV pattern analysis (pump, dump, wash, stair-step) |

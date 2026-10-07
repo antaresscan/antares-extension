@@ -5,7 +5,7 @@ import type {
         HeliusHolder,
     OHLCVCandle, GeckoTerminalOHLCVResponse,
 } from "./types";
-import { PUBLIC_SOLANA_RPCS, SOLSCAN_BASE, LP_PROGRAM_ADDRESSES } from "./constants";
+import { PUBLIC_SOLANA_RPCS, SOLSCAN_PUBLIC_BASE, SOLSCAN_BASE, LP_PROGRAM_ADDRESSES } from "./constants";
 import { fetchJson, fetchJsonPost } from "./http";
 import { heliusRpc, heliusRestUrl } from "./helius";
 import { asNumber } from "./math";
@@ -242,6 +242,10 @@ async function publicRpcCall(method: string, params: unknown[]) {
     return null;
 }
 
+export async function publicRpcGetLargestAccounts(mint: string) {
+    return publicRpcCall("getTokenLargestAccounts", [mint]);
+}
+
 export async function publicRpcGetTokenSupply(mint: string) {
     return publicRpcCall("getTokenSupply", [mint]);
 }
@@ -281,7 +285,15 @@ export async function publicRpcGetMintInfo(mint: string): Promise<{
 }
 
 // ─── SOLSCAN HELPERS ───────────────────────────────────────────────────────
-// (The public holders-count endpoint this file used to call answers 404 now.)
+export async function solscanGetHoldersCount(mint: string): Promise<number | null> {
+    const res = await fetchJson(
+        SOLSCAN_PUBLIC_BASE + "/token/holders?tokenAddress=" + mint + "&limit=1&offset=0",
+        { headers: { "User-Agent": "Antares/1.0" } }, 5000
+    ) as { total?: number } | null;
+    const total = res?.total;
+    return typeof total === "number" && total > 0 ? total : null;
+}
+
 export async function fetchSolscan(endpoint: string) {
     const key = process.env.SOLSCAN_API_KEY || "";
     if (!key) return null;

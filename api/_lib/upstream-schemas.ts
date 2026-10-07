@@ -22,6 +22,10 @@
 import { z } from "zod";
 
 // ─── GOPLUS ─────────────────────────────────────────────────────────────────
+// GoPlus returns booleans as "0"/"1"/0/1/true/false depending on the field —
+// every flag-like field is therefore a union.
+const GoPlusFlagSchema = z.union([z.string(), z.number(), z.boolean()]);
+
 export const GoPlusDexEntrySchema = z.object({
   // GoPlus returns `burn_percent: null` for pools it can't measure (seen on
   // BONK/WIF/HAWK/USDC since ~2026-09). Rejecting null here dropped the
@@ -34,30 +38,26 @@ export const GoPlusDexEntrySchema = z.object({
   type: z.string().optional(),
 });
 
-export const GoPlusHolderSchema = z.object({
-  account: z.string().optional(),
-  token_account: z.string().optional(),
-  balance: z.union([z.string(), z.number()]).optional(),
-  percent: z.union([z.string(), z.number()]).optional(),
-  tag: z.string().optional(),
-  is_locked: z.number().optional(),
-});
-
 export const GoPlusTokenResultSchema = z.object({
-  // Token-2022 fields: unknown on purpose, read defensively by api/_lib/goplus.ts.
-  mintable: z.unknown().optional(),
-  freezable: z.unknown().optional(),
-  balance_mutable_authority: z.unknown().optional(),
-  default_account_state: z.union([z.string(), z.number()]).optional(),
-  non_transferable: z.union([z.string(), z.number()]).optional(),
-  transfer_fee: z.unknown().optional(),
-  transfer_fee_upgradable: z.unknown().optional(),
-  transfer_hook: z.unknown().optional(),
-  transfer_hook_upgradable: z.unknown().optional(),
+  is_honeypot: GoPlusFlagSchema.optional(),
+  cannot_sell_all: GoPlusFlagSchema.optional(),
+  mint_authority: z.string().optional(),
+  freeze_authority: z.string().optional(),
+  is_blacklisted: GoPlusFlagSchema.optional(),
+  transfer_pausable: GoPlusFlagSchema.optional(),
+  hidden_owner: GoPlusFlagSchema.optional(),
+  is_proxy: GoPlusFlagSchema.optional(),
+  sell_tax: z.union([z.string(), z.number()]).optional(),
+  buy_tax: z.union([z.string(), z.number()]).optional(),
+  owner_percent: z.union([z.string(), z.number()]).optional(),
+  creator_percent: z.union([z.string(), z.number()]).optional(),
+  is_mintable: GoPlusFlagSchema.optional(),
+  slippage_modifiable: GoPlusFlagSchema.optional(),
+  is_anti_whale_modifiable: GoPlusFlagSchema.optional(),
+  trading_cooldown: GoPlusFlagSchema.optional(),
+  is_whitelisted: GoPlusFlagSchema.optional(),
   dex: z.array(GoPlusDexEntrySchema).optional(),
   holder_count: z.union([z.string(), z.number()]).optional(),
-  holders: z.array(GoPlusHolderSchema).optional(),
-  total_supply: z.union([z.string(), z.number()]).optional(),
 });
 
 export const GoPlusResponseSchema = z.object({
