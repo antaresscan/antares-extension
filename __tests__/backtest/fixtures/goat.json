@@ -1,20 +1,15 @@
 {
-  "score": 728,
+  "score": 915,
   "risk": "CAUTION",
   "flags": [
     {
-      "label": "No website / Twitter / Telegram — high rug risk",
-      "severity": "critical",
-      "impact": 0
-    },
-    {
-      "label": "LP not burned but token is mature and liquid (unverified LP)",
+      "label": "Top 10 hold 46% — elevated · exchanges may be included",
       "severity": "warning",
       "impact": 0
     },
     {
-      "label": "Holder data unreliable (broken upstream view) — mature pair, deep liquidity",
-      "severity": "info",
+      "label": "LP Burned 100% (GoPlus) ✓",
+      "severity": "bonus",
       "impact": 0
     },
     {
@@ -25,97 +20,119 @@
   ],
   "pair": {
     "chainId": "solana",
-    "dexId": "meteora",
-    "url": "https://dexscreener.com/solana/3bnjd8vphvgpuao9exvss7ckbmzfg6sgxc19joqmv5gj",
-    "pairAddress": "3bnjD8vpHvGpuAo9ExVSs7CKBMzfG6SgxC19joqMV5gJ",
-    "labels": [
-      "DLMM"
-    ],
+    "dexId": "raydium",
+    "url": "https://dexscreener.com/solana/9tb2ohu5p16bpbarqd3n27wnkf51ukfs8z1gzzldxvzw",
+    "pairAddress": "9Tb2ohu5P16BpBarqd3N27WnkF51Ukfs8Z1GzzLDxVZW",
     "baseToken": {
-      "address": "7tGwuFAyV3xQjYGdGDwXzxegx419WgE4WwtEbJq9x1Es",
+      "address": "CzLSujWBLFsSjncfkh59rUFqvafWcY5tzedWJSuypump",
       "name": "Goatseus Maximus",
       "symbol": "GOAT"
     },
     "quoteToken": {
-      "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-      "name": "USD Coin",
-      "symbol": "USDC"
+      "address": "So11111111111111111111111111111111111111112",
+      "name": "Wrapped SOL",
+      "symbol": "SOL"
     },
-    "priceNative": "0.1637",
-    "priceUsd": "0.1637",
+    "priceNative": "0.0001487",
+    "priceUsd": "0.01751",
     "txns": {
       "m5": {
-        "buys": 0,
-        "sells": 0
+        "buys": 3,
+        "sells": 1
       },
       "h1": {
-        "buys": 0,
-        "sells": 0
+        "buys": 14,
+        "sells": 76
       },
       "h6": {
-        "buys": 0,
-        "sells": 0
+        "buys": 160,
+        "sells": 176
       },
       "h24": {
-        "buys": 1,
-        "sells": 1
+        "buys": 851,
+        "sells": 943
       }
     },
     "volume": {
-      "h24": 3.99,
-      "h6": 0,
-      "h1": 0,
-      "m5": 0
+      "h24": 172480.52,
+      "h6": 25600.44,
+      "h1": 7000.19,
+      "m5": 565.33
     },
     "priceChange": {
-      "h24": -0.02
+      "m5": 0.2,
+      "h1": -1.18,
+      "h6": -1.65,
+      "h24": -5.68
     },
     "liquidity": {
-      "usd": 162770556.89,
-      "base": 993893505,
-      "quote": 5.4188
+      "usd": 1709864.82,
+      "base": 48867898,
+      "quote": 7253.3294
     },
-    "fdv": 163770616,
-    "marketCap": 163770616,
-    "pairCreatedAt": 1746850031000
+    "fdv": 17516584,
+    "marketCap": 17516584,
+    "pairCreatedAt": 1728595144000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/e857505d98436d21d13451a83c93ff4db36d0b53829af8070ddae75845d9b459?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/10b541bd45a02adfb2b90aaa4dd2e9f68097bdbfa5d208e491e6d8cf81c0b434?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/CzLSujWBLFsSjncfkh59rUFqvafWcY5tzedWJSuypump?timestamp=1791366600000",
+      "websites": [
+        {
+          "url": "https://goatchan.xyz/",
+          "label": "Website"
+        }
+      ],
+      "socials": [
+        {
+          "url": "https://x.com/truth_terminal",
+          "type": "twitter"
+        },
+        {
+          "url": "https://t.me/GoatseusMaximusSolanaPortal",
+          "type": "telegram"
+        }
+      ]
+    }
   },
-  "resolvedMint": "7tGwuFAyV3xQjYGdGDwXzxegx419WgE4WwtEbJq9x1Es",
-  "confidence": 90,
+  "resolvedMint": "CzLSujWBLFsSjncfkh59rUFqvafWcY5tzedWJSuypump",
+  "confidence": 100,
   "sources_used": [
     "dexscreener",
     "rugcheck",
     "goplus",
     "helius",
-    "solscan"
+    "solscan",
+    "chart"
   ],
-  "holders": 20,
-  "marketCap": 163770616,
-  "priceUsd": 0.1637,
-  "liquidity": 162770556.89,
-  "volume24h": 3.99,
-  "volume1h": null,
-  "priceChange5m": null,
-  "priceChange1h": null,
-  "priceChange24h": -0.02,
+  "holders": 75623,
+  "marketCap": 17516584,
+  "priceUsd": 0.01751,
+  "liquidity": 1709864.82,
+  "volume24h": 172480.52,
+  "volume1h": 7000.19,
+  "priceChange5m": 0.2,
+  "priceChange1h": -1.18,
+  "priceChange24h": -5.68,
   "tokenSymbol": "GOAT",
   "tokenName": "Goatseus Maximus",
-  "pairCreatedAt": 1746850031000,
-  "safeBlocked": true,
+  "pairCreatedAt": 1728595144000,
+  "safeBlocked": false,
   "safeBlockedReasons": [
-    "lp_unverified"
+    "concentration_light"
   ],
-  "tokenLogo": null,
+  "tokenLogo": "https://cdn.dexscreener.com/cms/images/e857505d98436d21d13451a83c93ff4db36d0b53829af8070ddae75845d9b459?width=800&height=800&quality=95&format=auto",
   "tokenCreator": null,
   "tokenDecimals": null,
   "tokenSupply": null,
   "recentTransfers": "[0 transfers, redacted for fixture]",
-  "solscanTokenAgeHours": 8487,
-  "solscanVolume24h": 3.99,
+  "solscanTokenAgeHours": 17436,
+  "solscanVolume24h": 172480.52,
   "solscanTrades24h": null,
   "solscanTraders24h": null,
   "layers": {
     "dexscreener": {
-      "trust": 0.6,
+      "trust": 1,
       "available": true
     },
     "rugcheck": {
@@ -127,7 +144,7 @@
       "available": true
     },
     "helius": {
-      "trust": 0.4,
+      "trust": 0.5,
       "available": true
     },
     "solscan": {
@@ -136,7 +153,7 @@
     },
     "chart": {
       "trust": 1,
-      "available": false
+      "available": true
     },
     "crossvalidation": {
       "trust": 1,
@@ -146,42 +163,50 @@
   "honeypot": false,
   "mintAuthority": false,
   "freezeAuthority": false,
-  "lpBurned": false,
+  "lpBurned": true,
   "lpLocked": false,
-  "lpLockedPct": null,
-  "candles": "[0 candles, redacted for fixture]",
-  "topHolderPct": 99.38935055774316,
-  "top10HolderPct": 99.91104946218671,
+  "lpLockedPct": 99.74,
+  "candles": "[20 candles, redacted for fixture]",
+  "topHolderPct": 6.798602413741628,
+  "top10HolderPct": 45.573719450509934,
   "criticalActors": [
     {
       "type": "insider",
-      "tag": "Insider",
-      "pct": 99.4,
-      "addr": "3bnj…V5gJ",
+      "tag": "Holder #1",
+      "pct": 6.8,
+      "addr": "Gem2…oTka",
       "repLbl": "Concentration risk · single wallet",
-      "repWidth": 95,
-      "repWarn": false,
-      "desc": "Holds <b>99.4%</b> of supply — one-wallet dump would crash the price."
+      "repWidth": 80.4,
+      "repWarn": true,
+      "desc": "Holds <b>6.8%</b> of supply — one-wallet dump would crash the price."
+    },
+    {
+      "type": "insider",
+      "tag": "Holder #2",
+      "pct": 6.5,
+      "addr": "EZ41…xjsJ",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 79.5,
+      "repWarn": true,
+      "desc": "Holds <b>6.5%</b> of supply — one-wallet dump would crash the price."
+    },
+    {
+      "type": "insider",
+      "tag": "Holder #3",
+      "pct": 6.5,
+      "addr": "AMMg…P4kX",
+      "repLbl": "Concentration risk · single wallet",
+      "repWidth": 79.5,
+      "repWarn": true,
+      "desc": "Holds <b>6.5%</b> of supply — one-wallet dump would crash the price."
     }
   ],
   "verdictHistory": [
     {
-      "ts": 1777386540098,
-      "verdict": "RUG",
-      "score": 100,
-      "event": "No website / Twitter / Telegram — high rug risk"
-    },
-    {
-      "ts": 1777396033568,
-      "verdict": "DANGER",
-      "score": 467,
-      "event": "No website / Twitter / Telegram — high rug risk"
-    },
-    {
-      "ts": 1777399105646,
-      "verdict": "DANGER",
-      "score": 500,
-      "event": "No website / Twitter / Telegram — high rug risk"
+      "ts": 1791366805400,
+      "verdict": "CAUTION",
+      "score": 915,
+      "event": "Top 10 hold 46% — elevated · exchanges may be included"
     }
   ],
   "holderActivity": {
@@ -192,52 +217,52 @@
         "avatar": "Insider",
         "pctChange": 0,
         "pctChangeDisp": "±0%",
-        "addr": "3bnj…V5gJ",
+        "addr": "Gem2…oTka",
         "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
       },
       {
-        "role": "real",
+        "role": "whale-big",
         "label": "Static",
-        "avatar": "Retail",
+        "avatar": "Whale",
         "pctChange": 0,
         "pctChangeDisp": "±0%",
-        "addr": "6GUm…W62C",
+        "addr": "EZ41…xjsJ",
         "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
       },
       {
-        "role": "real",
+        "role": "whale-big",
         "label": "Static",
-        "avatar": "Retail",
+        "avatar": "Whale",
         "pctChange": 0,
         "pctChangeDisp": "±0%",
-        "addr": "Bnm2…KCat",
+        "addr": "AMMg…P4kX",
         "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
       },
       {
-        "role": "real",
+        "role": "whale-big",
         "label": "Static",
-        "avatar": "Retail",
+        "avatar": "Whale",
         "pctChange": 0,
         "pctChangeDisp": "±0%",
-        "addr": "9nSL…3ifs",
+        "addr": "C68a…dqyo",
         "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
       },
       {
-        "role": "real",
+        "role": "whale-big",
         "label": "Static",
-        "avatar": "Retail",
+        "avatar": "Whale",
         "pctChange": 0,
         "pctChangeDisp": "±0%",
-        "addr": "21UD…1ezm",
+        "addr": "Am8M…B4hg",
         "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
       },
       {
-        "role": "real",
+        "role": "whale-big",
         "label": "Static",
-        "avatar": "Retail",
+        "avatar": "Whale",
         "pctChange": 0,
         "pctChangeDisp": "±0%",
-        "addr": "DaR7…Uvgh",
+        "addr": "4vmj…mGMZ",
         "desc": "No movement <b>last 1h</b>. Position dormant — wallets at this size often wake near concentration peaks."
       }
     ],
@@ -308,8 +333,8 @@
       }
     ]
   },
-  "scoring_version": "7.3.0",
-  "fetchedAt": 1777404661442,
-  "requestId": "e343a79d-c3d5-41b3-939e-86539f891007",
-  "aiSummary": "The developer can remove all liquidity in one transaction. When that happens, the token price drops to zero and nobody can sell. The top wallet holds 99.4% of supply with only 20 holders, creating extreme dump risk."
+  "scoring_version": "7.7.21",
+  "fetchedAt": 1791366805400,
+  "requestId": "676a2ec6-0dd0-4fdf-8f17-22f0226ee2bd",
+  "aiSummary": "GOAT lands on CAUTION because of top 10 hold 46% — elevated · exchanges may be included — a meaningful risk even with otherwise solid fundamentals.\n\nLP is burned, mint and freeze authorities are revoked, no honeypot, and 30d+ trading history — the rest of the structural posture is clean.\n\nThe verdict is not DANGER because the rest is clean; it is not SAFE because the dominant flag alone has enough leverage to swing the price."
 }

@@ -98,24 +98,28 @@ export const SEED_CORPUS: CorpusEntry[] = [
     skipFixture: true, // pending recapture after forceRug fix deploy (PR #...)
   },
   {
-    ca: "7tGwuFAyV3xQjYGdGDwXzxegx419WgE4WwtEbJq9x1Es",
+    // Was 7tGwuFAy..., an address with no market (20 holders, no DexScreener pair).
+    ca: "CzLSujWBLFsSjncfkh59rUFqvafWcY5tzedWJSuypump",
     symbol: "GOAT",
     expectedVerdict: "SAFE",
     tolerated: ["CAUTION"],
     expectedScore: [750, 1000],
     why: "Goatseus Maximus. AI-narrative memecoin, deep liquidity, established trading.",
     source: "live",
-    skipFixture: true, // pending recapture after forceRug fix deploy
   },
   {
-    ca: "Dn3DFUNDKEyMJGrEsuzTiYrfEwtPo86iH5qTKzbbtiag",
+    // Was Dn3DFUND..., an address with no market (19 holders, 99.7% in one wallet).
+    ca: "2qEHjDLDLbuBgRYvsxhc5D6uDWAivNFZGan56P1tpump",
     symbol: "PNUT",
     expectedVerdict: "SAFE",
     tolerated: ["CAUTION"],
     expectedScore: [750, 1000],
     why: "Peanut the Squirrel. Viral-launch memecoin, large liquidity pool.",
     source: "live",
-    skipFixture: true, // pending recapture after forceRug fix deploy
+    // No fixture on purpose: the real PNUT scans DANGER (top 10 hold 67%, top wallet 30%),
+    // so a fixture would fail this label. Capture one once the established-token
+    // concentration rule is settled and the label is revisited.
+    skipFixture: true,
   },
 
   // ─── ESTABLISHED MID-CAP MEMECOINS — typically CAUTION ────────────
@@ -225,12 +229,13 @@ export const SEED_CORPUS: CorpusEntry[] = [
   // Kept in the corpus as a "label-evolution test case" — proves the
   // corpus encodes reality, not priors.
   {
-    ca: "HhJpBhRRn4g56VsyLuT8DL5Bv31HkXqsrahTTUCZeZg4",
+    // Was HhJpBhRR..., the MYRO mint: the fixture and the "51k holders" below were MYRO data.
+    ca: "Dz9mQ9NzkBcCsuGPFJ3r1bS4wgqKMHBPiVuniW8Mbonk",
     symbol: "USELESS",
     expectedVerdict: "SAFE",
     tolerated: ["CAUTION"],
     expectedScore: [800, 1000],
-    why: "Matured into legit memecoin: 51k holders, LP burned, 30d+, clean contract.",
+    why: "Matured into legit memecoin: ~70k holders, LP burned, 500+ days, clean contract.",
     source: "live",
   },
 ]
