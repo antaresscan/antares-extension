@@ -1133,3 +1133,116 @@ describe("holder-distribution claims require holder data", () => {
     expect(userPrompt).not.toContain("top holder owns")
   })
 })
+
+// ---------------------------------------------------------------------------
+// Time budget
+//
+// A Gemini that hung used to be aborted at 8 s, retried, aborted again and
+// retried once more: 28.5 s, past the scan's 24 s budget. The scan then
+// answered 504 to everyone, and each request waiting on the single-flight
+// lock started its own scan (measured with 1000 simultaneous requests for
+// one token: 1000 x 504 and 15 006 upstream calls). The whole Gemini phase
+// is now capped, so a degraded Gemini costs a local fallback summary and
+// never a failed scan.
+// ---------------------------------------------------------------------------
+describe("generateAISummary — time budget", () => {
+  const validThreeParagraph =
+    "TEST lands on CAUTION because of moderate concentration risk — a single wallet holds 12.5% of supply.\n\n" +
+    "LP is burned, mint and freeze authorities are revoked, no honeypot, and the token has 2 days of trading history — the rest of the structural posture is clean.\n\n" +
+    "The verdict is not DANGER because the rest is clean; it is not SAFE because the concentrated wallet alone has enough leverage to swing the price."
+
+  /** A fetch that never answers until its AbortSignal fires — a hung Gemini. */
+  function hangingFetch() {
+    return vi.fn((_url: unknown, init?: RequestInit) =>
+      new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener(
+          "abort",
+          () => reject(Object.assign(new Error("aborted"), { name: "AbortError" })),
+          { once: true },
+        )
+      }),
+    )
+  }
+
+  /** Runs generateAISummary on a fake clock; returns how long it took (fake ms). */
+  async function timed(options?: { budgetMs?: number }) {
+    vi.useFakeTimers()
+    const start = Date.now()
+    let settledAt = -1
+    const promise = generateAISummary(baseInput, options).then((r) => {
+      settledAt = Date.now()
+      return r
+    })
+    await vi.advanceTimersByTimeAsync(60_000)
+    const result = await promise
+    return { result, elapsedMs: settledAt - start }
+  }
+
+  it("gives up on a hung Gemini after ONE 8 s attempt instead of retrying for 28.5 s", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key")
+    const mockFetch = hangingFetch()
+    vi.stubGlobal("fetch", mockFetch)
+    const { result, elapsedMs } = await timed()
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+    expect(elapsedMs).toBe(8000)
+    expect(typeof result).toBe("string") // local fallback, not null
+  })
+
+  it("shortens the attempt to the budget the caller can spare", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key")
+    const mockFetch = hangingFetch()
+    vi.stubGlobal("fetch", mockFetch)
+    const { result, elapsedMs } = await timed({ budgetMs: 3000 })
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+    expect(elapsedMs).toBe(3000)
+    expect(typeof result).toBe("string")
+  })
+
+  it("a caller cannot raise the cap: a 60 s budget is still cut at the 8 s attempt limit", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key")
+    const mockFetch = hangingFetch()
+    vi.stubGlobal("fetch", mockFetch)
+    const { elapsedMs } = await timed({ budgetMs: 60_000 })
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+    expect(elapsedMs).toBe(8000)
+  })
+
+  it("skips Gemini entirely when too little time is left for one useful attempt", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key")
+    for (const budgetMs of [800, 0, -5000]) {
+      const mockFetch = hangingFetch()
+      vi.stubGlobal("fetch", mockFetch)
+      const { result, elapsedMs } = await timed({ budgetMs })
+      expect(mockFetch, `budgetMs=${budgetMs}`).not.toHaveBeenCalled()
+      expect(elapsedMs).toBe(0)
+      expect(typeof result).toBe("string")
+      vi.useRealTimers()
+    }
+  })
+
+  it("does not sleep through a retry pause that would leave no room for another attempt", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key")
+    const mockFetch = vi.fn().mockResolvedValue(mockFetchResponse({ error: "rate limit" }, 429))
+    vi.stubGlobal("fetch", mockFetch)
+    // 2 s budget: after the 429 only 2 s remain, less than the 1.5 s pause + 1 s attempt.
+    const { result, elapsedMs } = await timed({ budgetMs: 2000 })
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+    expect(elapsedMs).toBe(0)
+    expect(typeof result).toBe("string")
+  })
+
+  it("still uses a slow Gemini that does answer inside the cap (7 s)", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key")
+    const mockFetch = vi.fn(
+      () =>
+        new Promise<Response>((resolve) =>
+          setTimeout(() => resolve(mockFetchResponse({ choices: [{ message: { content: validThreeParagraph } }] })), 7000),
+        ),
+    )
+    vi.stubGlobal("fetch", mockFetch)
+    const { result, elapsedMs } = await timed()
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+    expect(elapsedMs).toBe(7000)
+    expect(result).toBe(validThreeParagraph)
+  })
+})

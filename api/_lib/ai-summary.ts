@@ -36,6 +36,24 @@ const MAX_LENGTH = 2600
 const MAX_RETRIES = 2
 const RETRY_DELAYS = [1500, 3000]
 
+/**
+ * Hard cap on the WHOLE Gemini phase (every attempt plus the pauses between
+ * them). Before this cap a Gemini that timed out was retried twice more:
+ * 3 x 8 s + 4.5 s of pauses = 28.5 s, past the scan's 24 s budget. The scan
+ * then answered 504 to everyone, and every request that had been waiting on
+ * the single-flight lock (cache.ts waits ~18 s) started its own full scan.
+ * Measured with 1000 simultaneous requests for one token: 1000 x 504 and
+ * 15 006 upstream calls, instead of 1 scan and 999 shared results.
+ *
+ * 9 s keeps every first attempt that succeeds today (TIMEOUT_MS is 8 s)
+ * while leaving a worst-case scan (~3 s of data fetching + 9 s) far below
+ * the lock-wait window. A degraded Gemini now costs one local fallback
+ * summary instead of a failed scan.
+ */
+export const AI_PHASE_BUDGET_MS = 9000
+/** Don't start an attempt with less than this left: it would only time out. */
+const MIN_ATTEMPT_MS = 1000
+
 const SEVERITY_ORDER: Record<string, number> = {
   critical: 0,
   warning: 1,
@@ -321,9 +339,10 @@ async function callGemini(
   systemPrompt: string,
   userPrompt: string,
   target: { min: number; max: number },
+  timeoutMs: number = TIMEOUT_MS,
 ): Promise<string | "__RETRY__" | null> {
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS)
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
 
   try {
     const response = await fetch(GEMINI_URL, {
@@ -797,9 +816,22 @@ function generateLocalFallback(
   return buildStructuredFallback(input, topFlags)
 }
 
+export interface GenerateAISummaryOptions {
+  /**
+   * Time the caller can spare for the Gemini phase. Never raises the cap:
+   * the effective budget is min(budgetMs, AI_PHASE_BUDGET_MS). Zero or
+   * negative skips Gemini and goes straight to the local fallback — the
+   * right answer when the scan itself is already running late.
+   */
+  budgetMs?: number
+}
+
 export async function generateAISummary(
-  input: AISummaryInput
+  input: AISummaryInput,
+  options: GenerateAISummaryOptions = {},
 ): Promise<string | null> {
+  const budgetMs = Math.min(options.budgetMs ?? AI_PHASE_BUDGET_MS, AI_PHASE_BUDGET_MS)
+  const deadline = Date.now() + Math.max(0, budgetMs)
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey || apiKey === "") {
     logger.info("ai-summary", "No GEMINI_API_KEY found, using local fallback")
@@ -849,12 +881,24 @@ export async function generateAISummary(
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       if (attempt > 0) {
         const delay = RETRY_DELAYS[attempt - 1] || 3000
+        // A pause that leaves no room for a real attempt afterwards is
+        // wasted time: stop and use the fallback now.
+        if (deadline - Date.now() < delay + MIN_ATTEMPT_MS) {
+          logger.warn("ai-summary", "Gemini time budget exhausted, skipping retry", { attempt })
+          break
+        }
         logger.info("ai-summary", "Retrying Gemini call", {
           attempt,
           maxRetries: MAX_RETRIES,
           delayMs: delay,
         })
         await sleep(delay)
+      }
+
+      const timeLeft = deadline - Date.now()
+      if (timeLeft < MIN_ATTEMPT_MS) {
+        logger.warn("ai-summary", "Gemini time budget exhausted, using fallback", { attempt, timeLeft })
+        break
       }
 
       logger.info("ai-summary", "Calling Gemini", {
@@ -864,7 +908,8 @@ export async function generateAISummary(
         significantCount,
         targetWords: `${target.min}-${target.max}`,
       })
-      const result = await callGemini(apiKey, primaryModel, systemPrompt, userPrompt, target)
+      // Each attempt gets the usual 8 s, but never more than what is left.
+      const result = await callGemini(apiKey, primaryModel, systemPrompt, userPrompt, target, Math.min(TIMEOUT_MS, timeLeft))
 
       if (result === "__RETRY__") {
         // Continue to next retry attempt
