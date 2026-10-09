@@ -1,6 +1,5 @@
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { SCORING_VERSION } from "../api/_lib/constants";
 
 // ---- Mock all external modules BEFORE importing handler ----
 
@@ -333,7 +332,7 @@ describe("cold-scan limiter in the scan handler", () => {
   it("never counts a request served by the result of another scan (coalesced)", async () => {
     setupGoodTokenMocks();
     vi.mocked(acquireScanLock).mockResolvedValue(false);
-    vi.mocked(waitForCachedResult).mockResolvedValue({ risk: "SAFE", score: 950, aiSummary: "shared" });
+    vi.mocked(waitForCachedResult).mockResolvedValue({ risk: "SAFE", score: 950, aiSummary: "shared" } as { aiSummary?: unknown });
     vi.mocked(checkColdScanLimit).mockResolvedValue({ ok: false, retryAfterSec: 9 });
     const res = createMockRes();
 
