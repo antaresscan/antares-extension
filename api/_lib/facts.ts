@@ -131,3 +131,23 @@ export function deriveAuthorityFacts(chain: MintState | null, goplus: GoPlusToke
 
   return { mint, freeze, sellBlocked, trusted: gpStatus(goplus?.trusted_token) === true, source, compared, conflicts, riskyExtensions };
 }
+
+/**
+ * Share of the MEASURABLE liquidity that is burned, weighted by pool TVL, instead of the best single pool.
+ * Pools whose burn GoPlus cannot measure (concentrated-liquidity pools have no LP token to burn) are left out of the
+ * share. null when no pool reports both a TVL and a burn percentage (nothing to weigh).
+ * Why not the maximum: BONK's 94 % came from a $5k pool, while its large pools are burned at 0-24 %.
+ */
+export function weightedBurnPct(dex: ReadonlyArray<{ burn_percent?: number | null; tvl?: string | number }> | undefined): number | null {
+  if (!Array.isArray(dex)) return null;
+  let tvlSum = 0;
+  let burned = 0;
+  for (const d of dex) {
+    const tvl = Number(d?.tvl);
+    if (!Number.isFinite(tvl) || tvl <= 0) continue;
+    if (typeof d.burn_percent !== "number") continue;
+    tvlSum += tvl;
+    burned += (tvl * d.burn_percent) / 100;
+  }
+  return tvlSum > 0 ? (burned / tvlSum) * 100 : null;
+}

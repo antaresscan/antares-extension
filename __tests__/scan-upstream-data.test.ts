@@ -1,9 +1,10 @@
-import { vi, describe, it, expect, beforeEach } from "vitest";
+import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import { readFileSync } from "node:fs";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { _resetGoPlusAuthForTests } from "../api/_lib/goplus-auth";
 
-// What the scan handler does with the upstream data: holder count source order, Solscan availability, and the mint /
-// freeze / sell pills read from the chain. The mock harness below mirrors scan.test.ts (each scan test file in this repo
+// What the scan handler does with the upstream data: holder count source order, Solscan availability, the mint /
+// freeze / sell pills read from the chain, and the GoPlus credentials. The mock harness below mirrors scan.test.ts (each scan test file in this repo
 // carries its own copy of it).
 
 // ---- Mock all external modules BEFORE importing handler ----
@@ -385,6 +386,7 @@ const fxGoplus = (name: string): Record<string, unknown> => {
 
 interface ScanBody {
   risk: string;
+  lpBurned: boolean;
   flags: Array<{ label: string; severity: string }>;
   mintAuthority: boolean | null; freezeAuthority: boolean | null; honeypot: boolean | null;
   aiSummary: string | null;
@@ -503,5 +505,99 @@ describe("the summary never narrates what was not verified", () => {
   it("active authorities (RENDER): the summary names an authority", async () => {
     setupContract({ heliusMint: fxMint("render"), goplus: fxGoplus("render") });
     expect((await scanFull()).aiSummary ?? "").toMatch(/(mint|freeze) authority/i);
+  });
+});
+
+// ─── GOPLUS CREDENTIALS IN THE SCAN ───────────────────────────────────────────────
+//
+// With GOPLUS_APP_KEY and GOPLUS_APP_SECRET the scan exchanges them for a token (verified live: the token GoPlus returns
+// already starts with "Bearer", and adding a second prefix gives code 4012) and calls GoPlus authenticated. Without them,
+// or when the exchange fails, it is the same anonymous call as before: credentials can only add headroom.
+interface GoplusCall { url: string; method: string; authorization: string | undefined; body: string | undefined }
+
+function setupGoplusAuth(tokenOk: boolean): GoplusCall[] {
+  setupGoodTokenMocks();
+  const base = mockFetch.getMockImplementation()!;
+  const calls: GoplusCall[] = [];
+  const reply = (body: unknown) => Promise.resolve({ ok: true, json: () => Promise.resolve(body) });
+  mockFetch.mockImplementation((url: string, init?: { method?: string; headers?: Record<string, string>; body?: string }) => {
+    if (!url.includes("gopluslabs")) return base(url, init);
+    calls.push({ url, method: init?.method ?? "GET", authorization: init?.headers?.Authorization, body: init?.body });
+    if (url.endsWith("/token")) {
+      return reply(tokenOk ? { code: 1, message: "ok", result: { access_token: "Bearer tok-123", expires_in: 7200 } } : { code: 4010, message: "bad credentials" });
+    }
+    const authed = init?.headers?.Authorization === "Bearer tok-123";
+    if (init?.headers?.Authorization && !authed) return reply({ code: 4012, message: "signature verification failure" }); // e.g. a doubled Bearer prefix
+    return reply({ code: 1, result: { [MINT]: { holder_count: authed ? "777" : "100", mintable: { status: "0" }, freezable: { status: "0" } } } });
+  });
+  return calls;
+}
+
+describe("GoPlus credentials in the scan", () => {
+  beforeEach(() => {
+    _resetGoPlusAuthForTests();
+    process.env.GOPLUS_APP_KEY = "test-app-key";
+    process.env.GOPLUS_APP_SECRET = "test-app-secret";
+  });
+  afterEach(() => {
+    _resetGoPlusAuthForTests();
+    delete process.env.GOPLUS_APP_KEY;
+    delete process.env.GOPLUS_APP_SECRET;
+  });
+
+  it("exchanges the credentials once and calls GoPlus with the token exactly as returned (no second Bearer)", async () => {
+    const calls = setupGoplusAuth(true);
+    const body = await scan();
+    expect(body.holders).toBe(777); // the authenticated answer was used
+    const exchange = calls.find((c) => c.url.endsWith("/token"));
+    expect(exchange?.method).toBe("POST");
+    expect(JSON.parse(exchange?.body ?? "{}")).toMatchObject({ app_key: "test-app-key" });
+    expect(exchange?.body).not.toContain("test-app-secret"); // the secret never leaves: only the signature does
+    const security = calls.filter((c) => c.url.includes("token_security"));
+    expect(security).toHaveLength(1);
+    expect(security[0].authorization).toBe("Bearer tok-123");
+  });
+
+  it("reuses the token on the next scan: a single exchange", async () => {
+    const calls = setupGoplusAuth(true);
+    await scan();
+    await scan();
+    expect(calls.filter((c) => c.url.endsWith("/token"))).toHaveLength(1);
+    expect(calls.filter((c) => c.url.includes("token_security"))).toHaveLength(2);
+  });
+
+  it("the exchange fails: the scan still reads GoPlus anonymously and does not fail", async () => {
+    const calls = setupGoplusAuth(false);
+    const body = await scan();
+    expect(body.holders).toBe(100); // the anonymous answer
+    const security = calls.filter((c) => c.url.includes("token_security"));
+    expect(security).toHaveLength(1);
+    expect(security[0].authorization).toBeUndefined();
+  });
+
+  it("no credentials: one anonymous call and no token request", async () => {
+    delete process.env.GOPLUS_APP_KEY;
+    delete process.env.GOPLUS_APP_SECRET;
+    const calls = setupGoplusAuth(true);
+    const body = await scan();
+    expect(body.holders).toBe(100);
+    expect(calls.some((c) => c.url.endsWith("/token"))).toBe(false);
+    expect(calls.filter((c) => c.url.includes("token_security"))).toHaveLength(1);
+  });
+});
+
+describe("lpBurned in the response comes from the burn of the measurable liquidity, not from the best single pool", () => {
+  it("BONK: not burned (about 28 %: its $5k pool burned at 94 % no longer makes the whole token read as burned)", async () => {
+    setupContract({ heliusMint: fxMint("bonk"), goplus: fxGoplus("bonk") });
+    const b = await scanFull();
+    expect(b.lpBurned).toBe(false);
+    expect(b.flags.some((f) => /LP Burned/i.test(f.label))).toBe(false);
+  });
+
+  it("WIF: burned", async () => {
+    setupContract({ heliusMint: fxMint("bonk"), goplus: fxGoplus("wif") });
+    const b = await scanFull();
+    expect(b.lpBurned).toBe(true);
+    expect(b.flags.some((f) => /LP Burned/i.test(f.label))).toBe(true);
   });
 });

@@ -27,9 +27,10 @@ import {
   type CreatorReputation,
 } from "./_lib/fetchers";
 import { readHeliusKey } from "./_lib/helius";
-import { parseMintState, mintSupplyUi, deriveAuthorityFacts } from "./_lib/facts";
+import { parseMintState, mintSupplyUi, deriveAuthorityFacts, weightedBurnPct } from "./_lib/facts";
+import { fetchGoPlusSecurity } from "./_lib/goplus-auth";
 import {
-  DEXSCREENER_BASE, RUGCHECK_BASE, GOPLUS_BASE, LAYER_WEIGHTS, SCORING_VERSION,
+  DEXSCREENER_BASE, RUGCHECK_BASE, LAYER_WEIGHTS, SCORING_VERSION,
   LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS,
   HARD_BLOCK_REASONS,
 } from "./_lib/constants";
@@ -367,7 +368,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     ] = await Promise.all([
       withBudget(fetchDexCandles(pairAddress), remainingMs()),
       withBudget(fetchDexCandlesDaily(pairAddress, resolvedMint), remainingMs()),
-      withBudget(fetchJson(`${GOPLUS_BASE}/solana/token_security?contract_addresses=${resolvedMint}`, {}, 4000), remainingMs()),
+      withBudget(fetchGoPlusSecurity(resolvedMint), remainingMs()),
       HELIUS_API_KEY ? withBudget(heliusGetLargestAccounts(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
       HELIUS_API_KEY ? withBudget(heliusGetMintAccount(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
       // (No Solscan holders-count call: the public endpoint it used answers
@@ -543,9 +544,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // _earlyLpBurned ORs rugcheck and goplus signals so MEW/FARTCOIN
     // (LP burn confirmed by GoPlus only) get the established-context
     // treatment in helius, not just in rugcheck/goplus.
-    const _gpEarlyBurnPct = (goplus?.dex && Array.isArray(goplus.dex) && goplus.dex.length > 0)
-      ? Math.max(...goplus.dex.map((d: { burn_percent?: number | null }) => typeof d.burn_percent === "number" ? d.burn_percent : 0))
-      : 0;
+    const _gpEarlyBurnPct = weightedBurnPct(goplus?.dex) ?? 0;
     const _earlyLpBurned = rugData?.lpBurned === true ? true
       : _gpEarlyBurnPct >= 50 ? true
       : rugData?.lpBurned === false ? false
@@ -610,7 +609,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     if (postLayerResult.safeBlocked) safeBlocked = true;
 
     const safeBlockedReasons = classifySafeBlockedReasons(allLayers);
-    const _gpBP = (goplus?.dex && Array.isArray(goplus.dex) && goplus.dex.length > 0) ? Math.max(...goplus.dex.map((d: { burn_percent?: number | null }) => typeof d.burn_percent === "number" ? d.burn_percent : 0)) : 0; const lpBurned = _gpBP >= 50 || rugData?.lpBurned === true;
+    const _gpBP = weightedBurnPct(goplus?.dex) ?? 0; const lpBurned = _gpBP >= 50 || rugData?.lpBurned === true;
     // Surface lpLocked from RugCheck instead of hard-wiring false. The
     // response was previously claiming "LP not locked" even when
     // RugCheck reported a real lock — which read like a contradiction
@@ -933,7 +932,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       freezeAuthority: authFacts.freeze,
       lpBurned,
       lpLocked,
-      lpLockedPct: _gpBP > 0 ? _gpBP : null,
+      lpLockedPct: _gpBP > 0 ? Math.round(_gpBP * 100) / 100 : null,
       candles: candles.slice(-20).map(c => ({ close: c.c })),
       topHolderPct,
       top10HolderPct,

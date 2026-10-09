@@ -18,7 +18,7 @@ import { getLpRiskBucket } from "./lp-risk-matrix";
 import { asNumber, _mean, _std, _pct } from "./math";
 import { makeFlag, getLpLockDurationDays, riskIncludes } from "./helpers";
 import { extractBundlePct } from "./fetchers";
-import type { AuthorityFacts } from "./facts";
+import { gpStatus, weightedBurnPct, type AuthorityFacts } from "./facts";
 
 /** True when the upstream object carries at least one field we know how to read (error / message fields do not count). */
 function hasReadableField(o: object, ignore: readonly string[] = []): boolean {
@@ -405,6 +405,11 @@ export function layerGoPlus(
       if (!facts.trusted) safeBlocked = true;
     }
   }
+  // Solana structural fields (real GoPlus contract, all absent / "0" on a clean token)
+  if (gpStatus(goplus.balance_mutable_authority) === true) { flags.push(makeFlag("Balances can be changed by an authority", "critical", 0)); penalties.push(0.10); safeBlocked = true; }
+  if (gpStatus(goplus.non_transferable) === true) { flags.push(makeFlag("Non-transferable token — cannot be sold", "critical", 0)); penalties.push(0.05); safeBlocked = true; }
+  if (gpStatus(goplus.closable) === true) { flags.push(makeFlag("Token accounts can be closed by an authority", "warning", 0)); penalties.push(0.80); }
+  if (Array.isArray(goplus.transfer_hook) && goplus.transfer_hook.length > 0) { flags.push(makeFlag("Transfer hook installed — a custom program runs on every transfer", "warning", 0)); penalties.push(0.75); }
   if (gp("is_blacklisted")) { flags.push(makeFlag("Blacklist capability", "critical", 0)); penalties.push(0.30); safeBlocked = true; }
   if (gp("transfer_pausable")) { flags.push(makeFlag("Transfer pausable", "critical", 0)); penalties.push(0.30); safeBlocked = true; }
   if (gp("hidden_owner")) { flags.push(makeFlag("Hidden owner detected", "critical", 0)); penalties.push(0.30); safeBlocked = true; }
@@ -431,14 +436,15 @@ export function layerGoPlus(
     // RugCheck does NOT return lpBurned/lpLocked booleans — only lpLockedPct which is unreliable
     // GoPlus dex[] array provides accurate burn_percent per pool
     if (goplus.dex && Array.isArray(goplus.dex) && goplus.dex.length > 0) {
-        const maxBurnPct = Math.max(...goplus.dex.map(d => typeof d.burn_percent === "number" ? d.burn_percent : 0));
-        if (maxBurnPct >= 50) {
-            flags.push(makeFlag(`LP Burned ${Math.round(maxBurnPct)}% (GoPlus) ✓`, "bonus", 0));
+        // Share of the MEASURABLE liquidity that is burned, weighted by pool TVL (it was the best single pool: a $5k pool
+        // burned at 94% made BONK read "LP Burned 94%" while its large pools are burned at 0-24%).
+        const burnPct = weightedBurnPct(goplus.dex) ?? 0;
+        if (burnPct >= 50) {
+            flags.push(makeFlag(`LP Burned ${Math.round(burnPct)}% (GoPlus) ✓`, "bonus", 0));
             trust = Math.min(1.0, trust * 1.10);
-        } else if (maxBurnPct >= 1) {
-            flags.push(makeFlag(`LP partially burned ${Math.round(maxBurnPct)}% — not fully secured`, "warning", 0));
-            penalties.push(0.80);
         } else {
+            // Below 50% burned (including partially burned) the LP risk matrix decides (share of supply x age), exactly like
+            // an unburned LP: a fixed warning would cap mature tokens on a dust-pool burn figure.
             // Same maturity classification as layerRugCheck. A mature,
             // liquid, well-distributed token whose LP isn't burned still
             // carries rug-able liquidity, but the operational risk is
