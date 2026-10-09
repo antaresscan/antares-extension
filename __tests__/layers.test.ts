@@ -4,6 +4,10 @@ import {
   layerSolscan, layerCrossValidation,
 } from "../api/_lib/layers";
 import type { DexScreenerPair, RugCheckSummary, GoPlusTokenResult, HeliusHolder } from "../api/_lib/types";
+import { deriveAuthorityFacts, type MintState } from "../api/_lib/facts";
+
+// Authorities are facts read from the chain (see facts.ts), then handed to the layers.
+const chainMint = (o: Partial<MintState> = {}): MintState => ({ program: "spl-token", decimals: 6, supplyRaw: "1000000", mintAuthority: false, freezeAuthority: false, extensions: [], ...o });
 
 // ═══ LAYER 1 — DexScreener ══════════════════════════════════════════════════
 
@@ -345,15 +349,28 @@ describe("layerGoPlus", () => {
     expect(result.safeBlocked).toBe(true);
   });
 
-  it("mint + freeze both active sets safeBlocked", () => {
-    const goplus: GoPlusTokenResult = {
-      mint_authority: "active",
-      freeze_authority: "active",
-    };
-    const result = layerGoPlus(goplus);
+  it("active mint + freeze authorities (read on-chain) raise critical flags and block SAFE, without forcing RUG", () => {
+    const facts = deriveAuthorityFacts(chainMint({ mintAuthority: true, freezeAuthority: true }), null);
+    const result = layerGoPlus({ holder_count: "10" } as GoPlusTokenResult, undefined, facts);
     expect(result.safeBlocked).toBe(true);
-    expect(result.forceRug).toBe(true);
-    expect(result.flags.some(f => /mint.*freeze/i.test(f.label))).toBe(true);
+    expect(result.forceRug).toBe(false);
+    expect(result.flags.some(f => f.severity === "critical" && /mint authority active/i.test(f.label))).toBe(true);
+    expect(result.flags.some(f => f.severity === "critical" && /freeze authority active/i.test(f.label))).toBe(true);
+    expect(result.trust).toBeLessThan(1);
+  });
+
+  it("a token GoPlus lists as trusted shows its authorities as information only", () => {
+    const facts = deriveAuthorityFacts(chainMint({ mintAuthority: true }), { trusted_token: 1 } as GoPlusTokenResult);
+    const result = layerGoPlus({ holder_count: "10" } as GoPlusTokenResult, undefined, facts);
+    expect(result.flags.some(f => /mint authority active/i.test(f.label) && f.severity === "info")).toBe(true);
+    expect(result.flags.some(f => f.severity === "critical")).toBe(false);
+    expect(result.safeBlocked).toBe(false);
+  });
+
+  it("renounced authorities and unknown facts raise no authority flag", () => {
+    const renounced = deriveAuthorityFacts(chainMint(), null);
+    expect(layerGoPlus({ holder_count: "10" } as GoPlusTokenResult, undefined, renounced).flags.some(f => /authority/i.test(f.label))).toBe(false);
+    expect(layerGoPlus({ holder_count: "10" } as GoPlusTokenResult).flags.some(f => /authority/i.test(f.label))).toBe(false); // no facts at all
   });
 
   it("Fix(TAX_WARNING): sell_tax '10' (=10%) is at boundary — triggers warning (>0.02 && <=0.10)", () => {
@@ -791,12 +808,27 @@ describe("layerCrossValidation", () => {
     expect(result.flags.some(f => /LP burn conflict/i.test(f.label))).toBe(true);
   });
 
-  it("safeBlocked on mint authority conflict", () => {
-    const rugData: RugCheckSummary = { mintAuthorityEnabled: true };
-    const goplus: GoPlusTokenResult = { mint_authority: "0" };
-    const result = layerCrossValidation(rugData, [], goplus, null, null);
+  it("surfaces a mint authority conflict between the chain and GoPlus, and blocks SAFE", () => {
+    const goplus = { mintable: { status: "0", authority: [] } } as GoPlusTokenResult;
+    const facts = deriveAuthorityFacts(chainMint({ mintAuthority: true }), goplus);
+    const result = layerCrossValidation(null, [], goplus, null, null, 0, facts);
     expect(result.safeBlocked).toBe(true);
+    expect(result.available).toBe(true);
     expect(result.flags.some(f => /mint authority conflict/i.test(f.label))).toBe(true);
+  });
+
+  it("is available (and quiet) when the chain and GoPlus agree", () => {
+    const goplus = { mintable: { status: "0", authority: [] }, freezable: { status: "0", authority: [] } } as GoPlusTokenResult;
+    const result = layerCrossValidation(null, [], goplus, null, null, 0, deriveAuthorityFacts(chainMint(), goplus));
+    expect(result.available).toBe(true);
+    expect(result.flags).toEqual([]);
+    expect(result.safeBlocked).toBe(false);
+  });
+
+  it("is NOT available when it had nothing to compare (it used to claim availability anyway)", () => {
+    expect(layerCrossValidation(null, [], null, null, null).available).toBe(false);
+    const goplusOnly = { mintable: { status: "0", authority: [] } } as GoPlusTokenResult;
+    expect(layerCrossValidation(null, [], goplusOnly, null, null, 0, deriveAuthorityFacts(null, goplusOnly)).available).toBe(false); // chain unreadable
   });
 
   it("no safeBlocked when no conflicts", () => {

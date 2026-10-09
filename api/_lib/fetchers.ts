@@ -129,6 +129,14 @@ export async function heliusGetTokenSupply(mint: string, key: string) {
     }, 6000, 1);
 }
 
+// getAccountInfo on the mint: supply, decimals, mintAuthority, freezeAuthority and (Token-2022) extensions in ONE
+// call. Replaces getTokenSupply on the main path: same number of requests, and the authorities come from the chain.
+export async function heliusGetMintAccount(mint: string, key: string) {
+    return heliusRpc(key, {
+        jsonrpc: "2.0", id: "mint", method: "getAccountInfo", params: [mint, { encoding: "jsonParsed" }],
+    }, 6000, 1);
+}
+
 // Canonical holder-count via getProgramAccounts on the SPL Token Program,
 // filtered by mint. Same approach every Solana indexer uses. Returns the
 // count of token accounts ever created for this mint; slightly inflated
@@ -238,6 +246,11 @@ export async function publicRpcGetLargestAccounts(mint: string) {
 
 export async function publicRpcGetTokenSupply(mint: string) {
     return publicRpcCall("getTokenSupply", [mint]);
+}
+
+// Same getAccountInfo on the mint, on the free public RPC pool (used when Helius is unset or did not answer).
+export async function publicRpcGetMintAccount(mint: string) {
+    return publicRpcCall("getAccountInfo", [mint, { encoding: "jsonParsed" }]);
 }
 
 // getAccountInfo on the mint address returns the SPL-Token mint state:

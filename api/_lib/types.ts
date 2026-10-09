@@ -357,9 +357,10 @@ export interface ScanResult {
   layers: Record<string, LayerSnapshot>;
   scoring_version: string;
   fetchedAt: number;
-  honeypot?: boolean;
-  mintAuthority?: boolean;
-  freezeAuthority?: boolean;
+  // Tri-state: true = present / blocked, false = verified absent, null = NOT verified (never shown as OK).
+  honeypot?: boolean | null;
+  mintAuthority?: boolean | null;
+  freezeAuthority?: boolean | null;
   requestId: string;
   lpBurned?: boolean | null;
   candles?: Array<{ close: number }>;

@@ -58,6 +58,7 @@ vi.mock("@sentry/node", () => ({
 // Mock fetchers
 const mockHeliusGetLargestAccounts = vi.fn();
 const mockHeliusGetTokenSupply = vi.fn();
+const mockHeliusGetMintAccount = vi.fn();
 const mockHeliusGetCreatorReputation = vi.fn();
 const mockHeliusGetHoldersCount = vi.fn();
 const mockHeliusGetProgramAccountHolderCount = vi.fn();
@@ -67,10 +68,37 @@ const mockHeliusResolveAccountOwners = vi.fn();
 const mockPublicRpcGetLargestAccounts = vi.fn();
 const mockPublicRpcGetTokenSupply = vi.fn();
 const mockPublicRpcGetMintInfo = vi.fn();
+const mockPublicRpcGetMintAccount = vi.fn();
+
+// getAccountInfo(jsonParsed) on a mint, in the real shape (supply + authorities, as the Helius call now returns).
+// Defaults: a classic mint, 100,000 supply, both authorities renounced.
+function mintAccountResponse(o: { supply?: number; decimals?: number; mintAuthority?: string | null; freezeAuthority?: string | null; program?: string; extensions?: string[] } = {}) {
+  const decimals = o.decimals ?? 0;
+  return {
+    result: {
+      value: {
+        data: {
+          program: o.program ?? "spl-token",
+          parsed: {
+            type: "mint",
+            info: {
+              decimals,
+              supply: String((o.supply ?? 100000) * 10 ** decimals),
+              mintAuthority: o.mintAuthority ?? null,
+              freezeAuthority: o.freezeAuthority ?? null,
+              ...(o.extensions ? { extensions: o.extensions.map((extension) => ({ extension })) } : {}),
+            },
+          },
+        },
+      },
+    },
+  };
+}
 
 vi.mock("../api/_lib/fetchers", () => ({
   heliusGetLargestAccounts: (...args: unknown[]) => mockHeliusGetLargestAccounts(...args),
   heliusGetTokenSupply: (...args: unknown[]) => mockHeliusGetTokenSupply(...args),
+  heliusGetMintAccount: (...args: unknown[]) => mockHeliusGetMintAccount(...args),
   heliusGetCreatorReputation: (...args: unknown[]) => mockHeliusGetCreatorReputation(...args),
   heliusGetHoldersCount: (...args: unknown[]) => mockHeliusGetHoldersCount(...args),
   heliusGetProgramAccountHolderCount: (...args: unknown[]) => mockHeliusGetProgramAccountHolderCount(...args),
@@ -81,6 +109,7 @@ vi.mock("../api/_lib/fetchers", () => ({
   publicRpcGetLargestAccounts: (...args: unknown[]) => mockPublicRpcGetLargestAccounts(...args),
   publicRpcGetTokenSupply: (...args: unknown[]) => mockPublicRpcGetTokenSupply(...args),
   publicRpcGetMintInfo: (...args: unknown[]) => mockPublicRpcGetMintInfo(...args),
+  publicRpcGetMintAccount: (...args: unknown[]) => mockPublicRpcGetMintAccount(...args),
 }));
 
 // Mock global fetch for DexScreener, RugCheck, GoPlus
@@ -201,9 +230,8 @@ function setupGoodTokenMocks() {
   mockHeliusResolveAccountOwners.mockImplementation(async (holders: Record<string, unknown>[]) =>
     holders.map((h: Record<string, unknown>) => ({ ...h, owner: h.owner || h.address }))
   );
-  mockHeliusGetTokenSupply.mockResolvedValue({
-    result: { value: { uiAmount: 100000 } },
-  });
+  mockHeliusGetMintAccount.mockResolvedValue(mintAccountResponse());
+  mockPublicRpcGetMintAccount.mockResolvedValue(null);
   mockHeliusGetCreatorReputation.mockResolvedValue(null);
   mockHeliusGetHoldersCount.mockResolvedValue(null);
   mockHeliusGetProgramAccountHolderCount.mockResolvedValue(null);
@@ -300,7 +328,7 @@ describe("scan deadline", () => {
     // no holders and no supply, which would normally trigger the public-RPC fallbacks.
     const late = GLOBAL_MS - SCAN_RESERVE_MS - 300;
     mockHeliusGetLargestAccounts.mockImplementation(() => after(late, { result: { value: [] } }));
-    mockHeliusGetTokenSupply.mockImplementation(() => after(late, { result: { value: { uiAmount: 0 } } }));
+    mockHeliusGetMintAccount.mockImplementation(() => after(late, null));
     const res = createMockRes();
 
     const { elapsedMs } = await run(createMockReq({ ca: WSOL }), res);
@@ -392,7 +420,7 @@ describe("scan deadline — what gets cached", () => {
     setupGoodTokenMocks();
     const late = GLOBAL_MS - SCAN_RESERVE_MS - 300; // data arrives with ~0.3 s of budget left
     mockHeliusGetLargestAccounts.mockImplementation(() => after(late, { result: { value: [] } }));
-    mockHeliusGetTokenSupply.mockImplementation(() => after(late, { result: { value: { uiAmount: 0 } } }));
+    mockHeliusGetMintAccount.mockImplementation(() => after(late, null));
 
     await run(createMockReq({ ca: WSOL }), createMockRes());
 

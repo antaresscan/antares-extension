@@ -1,8 +1,10 @@
 import { vi, describe, it, expect, beforeEach } from "vitest";
+import { readFileSync } from "node:fs";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
-// Holder-count and Solscan-availability tests of the scan handler. The mock harness below mirrors scan.test.ts (each
-// scan test file in this repo carries its own copy of it).
+// What the scan handler does with the upstream data: holder count source order, Solscan availability, and the mint /
+// freeze / sell pills read from the chain. The mock harness below mirrors scan.test.ts (each scan test file in this repo
+// carries its own copy of it).
 
 // ---- Mock all external modules BEFORE importing handler ----
 
@@ -61,6 +63,7 @@ vi.mock("@sentry/node", () => ({
 // Mock fetchers
 const mockHeliusGetLargestAccounts = vi.fn();
 const mockHeliusGetTokenSupply = vi.fn();
+const mockHeliusGetMintAccount = vi.fn();
 const mockHeliusGetCreatorReputation = vi.fn();
 const mockHeliusGetHoldersCount = vi.fn();
 const mockHeliusGetProgramAccountHolderCount = vi.fn();
@@ -70,10 +73,37 @@ const mockHeliusResolveAccountOwners = vi.fn();
 const mockPublicRpcGetLargestAccounts = vi.fn();
 const mockPublicRpcGetTokenSupply = vi.fn();
 const mockPublicRpcGetMintInfo = vi.fn();
+const mockPublicRpcGetMintAccount = vi.fn();
+
+// getAccountInfo(jsonParsed) on a mint, in the real shape (supply + authorities, as the Helius call now returns).
+// Defaults: a classic mint, 100,000 supply, both authorities renounced.
+function mintAccountResponse(o: { supply?: number; decimals?: number; mintAuthority?: string | null; freezeAuthority?: string | null; program?: string; extensions?: string[] } = {}) {
+  const decimals = o.decimals ?? 0;
+  return {
+    result: {
+      value: {
+        data: {
+          program: o.program ?? "spl-token",
+          parsed: {
+            type: "mint",
+            info: {
+              decimals,
+              supply: String((o.supply ?? 100000) * 10 ** decimals),
+              mintAuthority: o.mintAuthority ?? null,
+              freezeAuthority: o.freezeAuthority ?? null,
+              ...(o.extensions ? { extensions: o.extensions.map((extension) => ({ extension })) } : {}),
+            },
+          },
+        },
+      },
+    },
+  };
+}
 
 vi.mock("../api/_lib/fetchers", () => ({
   heliusGetLargestAccounts: (...args: unknown[]) => mockHeliusGetLargestAccounts(...args),
   heliusGetTokenSupply: (...args: unknown[]) => mockHeliusGetTokenSupply(...args),
+  heliusGetMintAccount: (...args: unknown[]) => mockHeliusGetMintAccount(...args),
   heliusGetCreatorReputation: (...args: unknown[]) => mockHeliusGetCreatorReputation(...args),
   heliusGetHoldersCount: (...args: unknown[]) => mockHeliusGetHoldersCount(...args),
   heliusGetProgramAccountHolderCount: (...args: unknown[]) => mockHeliusGetProgramAccountHolderCount(...args),
@@ -84,6 +114,7 @@ vi.mock("../api/_lib/fetchers", () => ({
   publicRpcGetLargestAccounts: (...args: unknown[]) => mockPublicRpcGetLargestAccounts(...args),
   publicRpcGetTokenSupply: (...args: unknown[]) => mockPublicRpcGetTokenSupply(...args),
   publicRpcGetMintInfo: (...args: unknown[]) => mockPublicRpcGetMintInfo(...args),
+  publicRpcGetMintAccount: (...args: unknown[]) => mockPublicRpcGetMintAccount(...args),
 }));
 
 // Mock global fetch for DexScreener, RugCheck, GoPlus
@@ -204,9 +235,8 @@ function setupGoodTokenMocks() {
   mockHeliusResolveAccountOwners.mockImplementation(async (holders: Record<string, unknown>[]) =>
     holders.map((h: Record<string, unknown>) => ({ ...h, owner: h.owner || h.address }))
   );
-  mockHeliusGetTokenSupply.mockResolvedValue({
-    result: { value: { uiAmount: 100000 } },
-  });
+  mockHeliusGetMintAccount.mockResolvedValue(mintAccountResponse());
+  mockPublicRpcGetMintAccount.mockResolvedValue(null);
   mockHeliusGetCreatorReputation.mockResolvedValue(null);
   mockHeliusGetHoldersCount.mockResolvedValue(null);
   mockHeliusGetProgramAccountHolderCount.mockResolvedValue(null);
@@ -339,5 +369,139 @@ describe("Solscan is only an available source when Solscan answered", () => {
     const body = await scan();
     expect(body.layers.solscan.available).toBe(false);
     expect(body.sources_used).not.toContain("solscan");
+  });
+});
+
+// ─── MINT / FREEZE / SELL PILLS: what the overlay receives ────────────────────────
+//
+// The overlay used to show "Mint check, Freeze check, Sell check" for EVERY token: the pills were derived from flag labels
+// that nothing ever produced. They now come from the chain (getAccountInfo on the mint, one Helius call that replaces
+// getTokenSupply), with GoPlus as a relay, and "not verified" stays null. Real on-chain mint accounts are used below.
+const fxMint = (name: string): unknown => JSON.parse(readFileSync(new URL(`./fixtures/upstream-real/mint-${name}.json`, import.meta.url), "utf8"));
+const fxGoplus = (name: string): Record<string, unknown> => {
+  const raw = JSON.parse(readFileSync(new URL(`./fixtures/upstream-real/goplus-${name}.json`, import.meta.url), "utf8")) as { result: Record<string, Record<string, unknown>> };
+  return Object.values(raw.result)[0];
+};
+
+interface ScanBody {
+  risk: string;
+  flags: Array<{ label: string; severity: string }>;
+  mintAuthority: boolean | null; freezeAuthority: boolean | null; honeypot: boolean | null;
+  aiSummary: string | null;
+  layers: Record<string, { available: boolean }>;
+}
+
+function setupContract(opts: { heliusMint?: unknown; publicMint?: unknown; goplus?: Record<string, unknown> }) {
+  setupGoodTokenMocks();
+  const base = mockFetch.getMockImplementation()!;
+  mockFetch.mockImplementation((url: string, init?: unknown) => {
+    // RugCheck in its REAL shape (the shared harness answers in an older, invented one: topHolders.top10Percentage...),
+    // so no legacy comparison muddies what these tests look at.
+    if (url.includes("rugcheck") && url.includes("summary")) {
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ tokenProgram: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", risks: [], score: 1, score_normalised: 1, lpLockedPct: 0 }) });
+    }
+    if (url.includes("gopluslabs")) {
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ code: 1, result: { [MINT]: { holder_count: "100000", dex: [{ burn_percent: 100, tvl: "500000" }], ...opts.goplus } } }),
+      });
+    }
+    return base(url, init);
+  });
+  mockHeliusGetMintAccount.mockResolvedValue(opts.heliusMint ?? null);
+  mockPublicRpcGetMintAccount.mockResolvedValue(opts.publicMint ?? null);
+}
+
+async function scanFull(): Promise<ScanBody> {
+  const res = createMockRes();
+  await handler(createMockReq({ ca: MINT }), res);
+  return (res as unknown as { getBody: () => unknown }).getBody() as ScanBody;
+}
+
+const GP_CLEAN = { mintable: { status: "0", authority: [] }, freezable: { status: "0", authority: [] } };
+const authorityFlags = (b: ScanBody) => b.flags.filter((f) => /authority/i.test(f.label));
+
+describe("pills come from the chain, not from flag labels", () => {
+  it("RENDER (mint AND freeze authority active on-chain): both pills are true, the sale is not guaranteed, and the verdict leaves SAFE", async () => {
+    setupContract({ heliusMint: fxMint("render"), goplus: fxGoplus("render") });
+    const b = await scanFull();
+    expect([b.mintAuthority, b.freezeAuthority, b.honeypot]).toEqual([true, true, null]);
+    expect(authorityFlags(b).map((f) => f.severity)).toEqual(["critical", "critical"]);
+    expect(b.risk).not.toBe("SAFE");
+  });
+
+  it("BONK (renounced): pills are false / false / false and no authority flag is raised", async () => {
+    setupContract({ heliusMint: fxMint("bonk"), goplus: fxGoplus("bonk") });
+    const b = await scanFull();
+    expect([b.mintAuthority, b.freezeAuthority, b.honeypot]).toEqual([false, false, false]);
+    expect(authorityFlags(b)).toEqual([]);
+  });
+
+  it("HNT (mint authority active but GoPlus lists it as trusted): the pill is true, the flag is information, not critical", async () => {
+    setupContract({ heliusMint: fxMint("hnt"), goplus: fxGoplus("hnt") });
+    const b = await scanFull();
+    expect(b.mintAuthority).toBe(true);
+    expect(authorityFlags(b).map((f) => f.severity)).toEqual(["info"]);
+    expect(b.flags.some((f) => f.severity === "critical" && /authority/i.test(f.label))).toBe(false);
+  });
+
+  it("Token-2022: harmless extensions keep the sale verdict false, risky ones make it unknown", async () => {
+    setupContract({ heliusMint: fxMint("paper"), goplus: GP_CLEAN });
+    expect((await scanFull()).honeypot).toBe(false);
+    const risky = JSON.parse(JSON.stringify(fxMint("pyusd"))) as { result: { value: { data: { parsed: { info: { freezeAuthority: string | null } } } } } };
+    risky.result.value.data.parsed.info.freezeAuthority = null; // isolate the extensions
+    setupContract({ heliusMint: risky, goplus: GP_CLEAN });
+    expect((await scanFull()).honeypot).toBeNull();
+  });
+
+  it("Helius did not answer: the free public RPC pool provides the same on-chain facts", async () => {
+    setupContract({ heliusMint: null, publicMint: fxMint("render"), goplus: GP_CLEAN });
+    const b = await scanFull();
+    expect([b.mintAuthority, b.freezeAuthority]).toEqual([true, true]);
+  });
+
+  it("the chain is unreadable: GoPlus relays the authorities, and the sale stays unknown without its hook / fee fields", async () => {
+    setupContract({ goplus: GP_CLEAN });
+    const b = await scanFull();
+    expect([b.mintAuthority, b.freezeAuthority, b.honeypot]).toEqual([false, false, null]);
+  });
+
+  it("nothing readable anywhere: every pill is null (shown as unknown), never false, and no authority flag", async () => {
+    setupContract({ goplus: {} });
+    const b = await scanFull();
+    expect([b.mintAuthority, b.freezeAuthority, b.honeypot]).toEqual([null, null, null]);
+    expect(authorityFlags(b)).toEqual([]);
+  });
+
+  it("the chain and GoPlus disagree: the chain wins, a warning is raised, and the cross-validation layer is a real source", async () => {
+    setupContract({ heliusMint: fxMint("render"), goplus: { mintable: { status: "0" }, freezable: { status: "1" } } });
+    const b = await scanFull();
+    expect(b.mintAuthority).toBe(true);
+    expect(b.flags.some((f) => f.severity === "warning" && /mint authority conflict/i.test(f.label))).toBe(true);
+    expect(b.layers.crossvalidation.available).toBe(true);
+  });
+
+  it("the cross-validation layer is not available when there was nothing to compare", async () => {
+    setupContract({ goplus: GP_CLEAN }); // chain unreadable
+    expect((await scanFull()).layers.crossvalidation.available).toBe(false);
+  });
+
+  it("asks Helius for the mint account (supply + authorities in one call) and no longer for getTokenSupply", async () => {
+    setupContract({ heliusMint: fxMint("bonk"), goplus: GP_CLEAN });
+    await scanFull();
+    expect(mockHeliusGetMintAccount).toHaveBeenCalledWith(MINT, "mock-helius-key");
+    expect(mockHeliusGetTokenSupply).not.toHaveBeenCalled();
+  });
+});
+
+describe("the summary never narrates what was not verified", () => {
+  it("nothing verified: no renounced / revoked / honeypot claim at all", async () => {
+    setupContract({ goplus: {} });
+    expect((await scanFull()).aiSummary ?? "").not.toMatch(/renounced|revoked|no honeypot/i);
+  });
+
+  it("active authorities (RENDER): the summary names an authority", async () => {
+    setupContract({ heliusMint: fxMint("render"), goplus: fxGoplus("render") });
+    expect((await scanFull()).aiSummary ?? "").toMatch(/(mint|freeze) authority/i);
   });
 });
