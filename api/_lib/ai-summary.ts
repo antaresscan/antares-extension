@@ -140,9 +140,10 @@ function buildUserPrompt(
   if (input.lpBurned) bools.push("LP burned (good)")
   else if (input.lpLocked) bools.push("LP locked (good)")
   else bools.push("LP NOT burned or locked (BAD)")
-  bools.push(input.mintAuthority ? "mint authority ENABLED (BAD)" : "mint authority renounced (good)")
-  bools.push(input.freezeAuthority ? "freeze authority ENABLED (BAD)" : "freeze authority renounced (good)")
-  bools.push(input.honeypot ? "HONEYPOT detected (BAD)" : "no honeypot (good)")
+  // Tri-state: null means "not verified", which must never be narrated as "renounced" / "no honeypot".
+  bools.push(input.mintAuthority === true ? "mint authority ENABLED (BAD)" : input.mintAuthority === false ? "mint authority renounced (good)" : "mint authority NOT VERIFIED (do not say it is renounced)")
+  bools.push(input.freezeAuthority === true ? "freeze authority ENABLED (BAD)" : input.freezeAuthority === false ? "freeze authority renounced (good)" : "freeze authority NOT VERIFIED (do not say it is renounced)")
+  bools.push(input.honeypot === true ? "token cannot be sold (BAD)" : input.honeypot === false ? "no token-level sale restriction found (good)" : "sale restrictions NOT VERIFIED (do not claim there is no honeypot)")
   lines.push(`Status: ${bools.join(", ")}`)
 
   // Significant = critical + warning. Info-level signals (e.g. the

@@ -1,0 +1,51 @@
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "context": {
+      "apiVersion": "4.3.0",
+      "slot": 455029695
+    },
+    "value": {
+      "data": {
+        "parsed": {
+          "info": {
+            "decimals": 6,
+            "extensions": [
+              {
+                "extension": "metadataPointer",
+                "state": {
+                  "authority": null,
+                  "metadataAddress": "GesEHJvkMwsaNKKVPowAhDD7P8XooDKtpswTQQ3Fpump"
+                }
+              },
+              {
+                "extension": "tokenMetadata",
+                "state": {
+                  "additionalMetadata": [],
+                  "mint": "GesEHJvkMwsaNKKVPowAhDD7P8XooDKtpswTQQ3Fpump",
+                  "name": "paperai.tech",
+                  "symbol": "paper",
+                  "updateAuthority": null,
+                  "uri": "https://gatewaypinata.online/api/meta/7ecc8f5d02a97fbf5f35efce.json"
+                }
+              }
+            ],
+            "freezeAuthority": null,
+            "isInitialized": true,
+            "mintAuthority": null,
+            "supply": "908042899967700"
+          },
+          "type": "mint"
+        },
+        "program": "spl-token-2022",
+        "space": 402
+      },
+      "executable": false,
+      "lamports": 2692400,
+      "owner": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "rentEpoch": 18446744073709552000,
+      "space": 402
+    }
+  },
+  "id": "mint"
+}

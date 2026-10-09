@@ -771,10 +771,7 @@ export function buildResultNode(
     liq !== null && liq < 5000 ? "n" : liq !== null && liq > 50000 ? "y" : undefined
 
   const ssNode = el("div", { class: "ss" },
-    el("div", { class: "si" },
-      el("span", undefined, "Sell"),
-      el("b", { class: data.honeypot ? "no" : "ok" }),
-    ),
+    buildSiBool("Sell", data.honeypot, true),
     buildSiBool("Mint", data.mintAuthority, true),
     buildSiBool("Freeze", data.freezeAuthority, true),
     buildSiLp(data),

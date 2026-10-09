@@ -129,6 +129,7 @@ vi.mock("../api/_lib/http", async () => {
 const {
   heliusGetLargestAccounts,
   heliusGetTokenSupply,
+  heliusGetMintAccount,
   heliusGetCreatorReputation,
   heliusGetProgramAccountHolderCount,
   fetchSolscan,
@@ -137,6 +138,7 @@ const {
   publicRpcGetLargestAccounts,
   publicRpcGetTokenSupply,
   publicRpcGetMintInfo,
+  publicRpcGetMintAccount,
 } = await import("../api/_lib/fetchers");
 
 beforeEach(() => {
@@ -172,6 +174,23 @@ describe("heliusGetTokenSupply", () => {
     const [, body] = mockFetchJsonPost.mock.calls[0] as [string, Record<string, unknown>];
     expect(body.method).toBe("getTokenSupply");
     expect(result).toEqual({ result: { value: { uiAmount: 1000000 } } });
+  });
+});
+
+describe("heliusGetMintAccount", () => {
+  it("asks getAccountInfo on the mint with the jsonParsed encoding (supply + authorities + extensions in one call)", async () => {
+    mockFetchJsonPost.mockResolvedValue({ result: { value: { data: { parsed: { type: "mint" } } } } });
+    const result = await heliusGetMintAccount("mint123", "key456");
+    const [url, body] = mockFetchJsonPost.mock.calls[0] as [string, Record<string, unknown>];
+    expect(url).toBe("https://mainnet.helius-rpc.com/?api-key=key456");
+    expect(body.method).toBe("getAccountInfo");
+    expect(body.params).toEqual(["mint123", { encoding: "jsonParsed" }]);
+    expect(result).toEqual({ result: { value: { data: { parsed: { type: "mint" } } } } });
+  });
+
+  it("returns null when Helius does not answer", async () => {
+    mockFetchJsonPost.mockResolvedValue(null);
+    expect(await heliusGetMintAccount("mint", "key")).toBeNull();
   });
 });
 
@@ -380,6 +399,22 @@ describe("publicRpc helpers", () => {
     mockFetchJsonPost.mockResolvedValue({ result: { value: [{ address: "a", uiAmount: 10 }] } });
     const res = await publicRpcGetLargestAccounts("mint") as { result?: { value?: unknown[] } } | null;
     expect(Array.isArray(res?.result?.value)).toBe(true);
+  });
+
+  it("publicRpcGetMintAccount returns the parsed mint account from the first provider that answers", async () => {
+    mockFetchJsonPost
+      .mockResolvedValueOnce({ error: { message: "rate limit" } })
+      .mockResolvedValueOnce({ result: { value: { data: { parsed: { type: "mint", info: { mintAuthority: null } } } } } });
+    const res = await publicRpcGetMintAccount("mintXYZ") as { result?: { value?: { data?: { parsed?: { type?: string } } } } } | null;
+    expect(res?.result?.value?.data?.parsed?.type).toBe("mint");
+    const [, body] = mockFetchJsonPost.mock.calls[1] as [string, Record<string, unknown>];
+    expect(body.method).toBe("getAccountInfo");
+    expect(body.params).toEqual(["mintXYZ", { encoding: "jsonParsed" }]);
+  });
+
+  it("publicRpcGetMintAccount returns null when every provider fails", async () => {
+    mockFetchJsonPost.mockResolvedValue({ error: { message: "blocked" } });
+    expect(await publicRpcGetMintAccount("mintXYZ")).toBeNull();
   });
 
   it("publicRpcGetMintInfo parses supply + decimals from getAccountInfo response", async () => {

@@ -18,6 +18,7 @@ import { getLpRiskBucket } from "./lp-risk-matrix";
 import { asNumber, _mean, _std, _pct } from "./math";
 import { makeFlag, getLpLockDurationDays, riskIncludes } from "./helpers";
 import { extractBundlePct } from "./fetchers";
+import type { AuthorityFacts } from "./facts";
 
 /** True when the upstream object carries at least one field we know how to read (error / message fields do not count). */
 function hasReadableField(o: object, ignore: readonly string[] = []): boolean {
@@ -355,7 +356,9 @@ export function layerGoPlus(
   // flag (DANGER). Without this context, every legit established token
   // with team-managed LP collapsed to DANGER on the goplus path even
   // though rugcheck classified it as soft.
-  maturityContext?: { holders: number | null; liquidity: number; tokenAgeHours: number | null; mintAuthority: boolean; freezeAuthority: boolean; honeypot: boolean; lpPctOfSupply?: number | null }
+  maturityContext?: { holders: number | null; liquidity: number; tokenAgeHours: number | null; mintAuthority: boolean; freezeAuthority: boolean; honeypot: boolean; lpPctOfSupply?: number | null },
+  // Mint / freeze / sell facts, read from the chain first (see facts.ts). Without them no authority flag is raised.
+  facts?: AuthorityFacts | null
 ): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
@@ -378,8 +381,6 @@ export function layerGoPlus(
     return false;
   };
   const gpNum = (field: keyof GoPlusTokenResult) => asNumber(goplus[field]);
-  const authorityActive = (val: unknown) =>
-    Boolean(val) && !["0","false","null",""].includes(String(val).trim().toLowerCase());
   if (gp("is_honeypot")) {
     flags.push(makeFlag("Honeypot detected — cannot sell", "critical", 0));
     trust = 0; forceRug = true; safeBlocked = true;
@@ -390,14 +391,19 @@ export function layerGoPlus(
     trust = 0; forceRug = true; safeBlocked = true;
     return { source: "goplus", trust: 0, available: true, flags, forceRug, safeBlocked };
   }
-  const hasMint = authorityActive(goplus.mint_authority);
-  const hasFreeze = authorityActive(goplus.freeze_authority);
-  if (hasMint && hasFreeze) {
-    flags.push(makeFlag("Mint + Freeze authority both active", "critical", 0));
-    penalties.push(0.05); forceRug = true; safeBlocked = true;
-  } else {
-    if (hasMint) { flags.push(makeFlag("Mint Authority enabled", "critical", 0)); penalties.push(0.25); }
-    if (hasFreeze) { flags.push(makeFlag("Freeze Authority enabled", "critical", 0)); penalties.push(0.25); }
+  if (facts) {
+    // Authorities come from the chain (GoPlus only as a relay): an active authority is a critical flag, unless GoPlus
+    // lists the token as trusted (major issuers hold authorities by design): then it is shown, not alarming.
+    const sev = facts.trusted ? "info" : "critical";
+    const pen = facts.trusted ? 0.95 : 0.25;
+    if (facts.mint === true) {
+      flags.push(makeFlag("Mint authority active — supply can be inflated", sev, 0)); penalties.push(pen);
+      if (!facts.trusted) safeBlocked = true;
+    }
+    if (facts.freeze === true) {
+      flags.push(makeFlag("Freeze authority active — wallets can be frozen", sev, 0)); penalties.push(pen);
+      if (!facts.trusted) safeBlocked = true;
+    }
   }
   if (gp("is_blacklisted")) { flags.push(makeFlag("Blacklist capability", "critical", 0)); penalties.push(0.30); safeBlocked = true; }
   if (gp("transfer_pausable")) { flags.push(makeFlag("Transfer pausable", "critical", 0)); penalties.push(0.30); safeBlocked = true; }
@@ -1166,23 +1172,22 @@ export function layerCrossValidation(
   goplus: GoPlusTokenResult | null,
   solscanAgeHours: number | null,
   dexAgeHours: number | null,
-  totalSupplyUi: number = 0
+  totalSupplyUi: number = 0,
+  facts?: AuthorityFacts | null
 ): LayerResult {
   const flags: ScanFlag[] = [];
   const forceRug = false;
   let safeBlocked = false;
+  // Chain vs GoPlus on mint / freeze: two independent sources. A disagreement is surfaced, never silently resolved.
+  const compared = !!facts?.compared;
+  for (const c of facts?.conflicts ?? []) {
+    flags.push(makeFlag(`${c === "mint" ? "Mint" : "Freeze"} authority conflict: on-chain vs GoPlus`, "warning", 0));
+    safeBlocked = true;
+  }
   if (rugData?.lpBurned === true) {
     const lpStillActive = rawHolderAccounts.some(h => LP_PROGRAM_ADDRESSES.has(h.owner));
     if (lpStillActive) {
       flags.push(makeFlag("LP burn conflict: RugCheck vs on-chain data", "warning", 0));
-      safeBlocked = true;
-    }
-  }
-  if (goplus && rugData) {
-    const gpMint = goplus.mint_authority;
-    const gpOff = ["0","false","null",""].includes(String(gpMint).trim().toLowerCase());
-    if (gpOff && rugData.mintAuthorityEnabled === true) {
-      flags.push(makeFlag("Mint authority conflict: GoPlus vs RugCheck", "warning", 0));
       safeBlocked = true;
     }
   }
@@ -1203,5 +1208,6 @@ export function layerCrossValidation(
       safeBlocked = true;
     }
   }
-  return { source: "crossvalidation", trust: 1.0, available: true, flags, forceRug, safeBlocked };
+  // Available only if it compared something (or found a conflict): it used to claim availability while comparing nothing.
+  return { source: "crossvalidation", trust: 1.0, available: compared || flags.length > 0, flags, forceRug, safeBlocked };
 }

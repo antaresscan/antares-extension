@@ -20,13 +20,14 @@ import {
   makeFlag,
 } from "./_lib/helpers";
 import {
-  heliusGetLargestAccounts, heliusGetTokenSupply, heliusGetCreatorReputation,
+  heliusGetLargestAccounts, heliusGetMintAccount, heliusGetCreatorReputation,
   heliusResolveAccountOwners,
-  publicRpcGetLargestAccounts, publicRpcGetTokenSupply, publicRpcGetMintInfo,
+  publicRpcGetLargestAccounts, publicRpcGetTokenSupply, publicRpcGetMintInfo, publicRpcGetMintAccount,
   fetchSolscan, fetchDexCandles, fetchDexCandlesDaily,
   type CreatorReputation,
 } from "./_lib/fetchers";
 import { readHeliusKey } from "./_lib/helius";
+import { parseMintState, mintSupplyUi, deriveAuthorityFacts } from "./_lib/facts";
 import {
   DEXSCREENER_BASE, RUGCHECK_BASE, GOPLUS_BASE, LAYER_WEIGHTS, SCORING_VERSION,
   LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS,
@@ -368,7 +369,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       withBudget(fetchDexCandlesDaily(pairAddress, resolvedMint), remainingMs()),
       withBudget(fetchJson(`${GOPLUS_BASE}/solana/token_security?contract_addresses=${resolvedMint}`, {}, 4000), remainingMs()),
       HELIUS_API_KEY ? withBudget(heliusGetLargestAccounts(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
-      HELIUS_API_KEY ? withBudget(heliusGetTokenSupply(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
+      HELIUS_API_KEY ? withBudget(heliusGetMintAccount(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
       // (No Solscan holders-count call: the public endpoint it used answers
       // 404 for every token, so it only ever contributed `null`.)
       withBudget(fetchSolscan(`/token/meta?address=${resolvedMint}`), remainingMs()),
@@ -388,8 +389,16 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const goplus = pickGoPlusResult(goplusRaw, resolvedMint);
     const heliusResponse = isHeliusLargestAccountsResponse(heliusHoldersRaw) ? heliusHoldersRaw : null;
     let rawHolderAccounts: HeliusHolder[] = heliusResponse?.result?.value ?? [];
-    const supplyResponse = isHeliusSupplyResponse(heliusSupplyRaw) ? heliusSupplyRaw : null;
-    let totalSupplyUi: number = asNumber(supplyResponse?.result?.value?.uiAmount);
+    // heliusSupplyRaw is a getAccountInfo(jsonParsed) response on the mint: supply AND authorities in one request.
+    let mintState = parseMintState(heliusSupplyRaw);
+    let totalSupplyUi: number = mintSupplyUi(mintState);
+    if (!mintState) {
+      try { mintState = parseMintState(await stepBudget(() => publicRpcGetMintAccount(resolvedMint))); }
+      catch { /* the authorities stay "not verified" */ }
+      if (mintState && totalSupplyUi <= 0) totalSupplyUi = mintSupplyUi(mintState);
+    }
+    // Contract facts: the chain first, GoPlus second; never defaulted to "OK".
+    const authFacts = deriveAuthorityFacts(mintState, goplus);
 
     // Free public Solana RPC fallback for the two Helius RPC calls that
     // matter for holder concentration. Same JSON-RPC interface, same
@@ -557,14 +566,14 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       holders: holders,
       liquidity: asNumber(pair?.liquidity?.usd),
       tokenAgeHours: solscanTokenAgeHours,
-      mintAuthority: rugData?.mintAuthorityEnabled === true,
-      freezeAuthority: rugData?.freezeAuthorityEnabled === true,
-      honeypot: false,
+      mintAuthority: authFacts.mint === true && !authFacts.trusted,
+      freezeAuthority: authFacts.freeze === true && !authFacts.trusted,
+      honeypot: authFacts.sellBlocked === true,
       lpBurned: _earlyLpBurned,
       lpPctOfSupply: _lpPctOfSupply,
     };
     const l2 = layerRugCheck(rugData, rugReport, resolvedMint, tokenName, maturityCtx);
-    const l3 = layerGoPlus(goplus, maturityCtx);
+    const l3 = layerGoPlus(goplus, maturityCtx, authFacts);
     // Collect all DEXScreener pair addresses for this token.
     // For AMMs that use per-pool PDAs as vault authority (PumpSwap, Meteora DBC…)
     // the pair address IS the decoded authority of the LP vault token account.
@@ -579,7 +588,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // Holder count: null, as it effectively always was (the Solscan holders endpoint is dead).
     const l5 = layerSolscan(null, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h, solMetaData !== null || solTransfersData !== null || solMarketsData !== null);
     const l6 = layerChart(candles, pair, tokenAgeMinutes, maturityCtx, dailyCandles.length >= 2 ? dailyCandles : undefined);
-    const l7 = layerCrossValidation(rugData, resolvedHolderAccounts, goplus, solscanTokenAgeHours, dexTokenAgeHours, totalSupplyUi);
+    const l7 = layerCrossValidation(rugData, resolvedHolderAccounts, goplus, solscanTokenAgeHours, dexTokenAgeHours, totalSupplyUi, authFacts);
 
     const allLayers = [l1, l2, l3, l4, l5, l6, l7];
     let score       = computeFinalScore(allLayers);
@@ -876,9 +885,9 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       holders, marketCap, liquidity,
       lpBurned,
       lpLocked,
-      mintAuthority: allLayers.some(l => l.flags.some(f => /mint authority/i.test(f.label) && f.severity === "critical")),
-      freezeAuthority: allLayers.some(l => l.flags.some(f => /freeze authority/i.test(f.label) && f.severity === "critical")),
-      honeypot: l3.available && l3.trust === 0 && l3.flags.some(f => /honeypot/i.test(f.label)),
+      mintAuthority: authFacts.mint,
+      freezeAuthority: authFacts.freeze,
+      honeypot: authFacts.sellBlocked,
       tokenAgeHours: solscanTokenAgeHours ?? dexTokenAgeHours ?? null,
       sourcesUsed: sources_used,
       topHolderPct,
@@ -919,9 +928,9 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       tokenDecimals, tokenSupply, recentTransfers,
       solscanTokenAgeHours, solscanVolume24h, solscanTrades24h, solscanTraders24h,
       layers: layersSnapshot,
-      honeypot: l3.available && l3.trust === 0 && l3.flags.some(f => /honeypot/i.test(f.label)),
-      mintAuthority: allLayers.some(l => l.flags.some(f => /mint authority/i.test(f.label) && f.severity === "critical")),
-      freezeAuthority: allLayers.some(l => l.flags.some(f => /freeze authority/i.test(f.label) && f.severity === "critical")),
+      honeypot: authFacts.sellBlocked,
+      mintAuthority: authFacts.mint,
+      freezeAuthority: authFacts.freeze,
       lpBurned,
       lpLocked,
       lpLockedPct: _gpBP > 0 ? _gpBP : null,
