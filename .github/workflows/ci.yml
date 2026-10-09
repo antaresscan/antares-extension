@@ -86,9 +86,32 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     needs: build
-    timeout-minutes: 20
+    # Waiting for Vercel to finish building this commit can take a few minutes.
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      deployments: read
     steps:
       - uses: actions/checkout@v4
+
+      # The e2e used to test production (https://antares-extension.vercel.app)
+      # on EVERY run, so its result described production at that moment instead
+      # of the commit under test: a PR was judged on the old code, the run a merge
+      # triggers started before the deploy finished, and live market data could
+      # turn any PR red. It now tests the Vercel deployment built from THIS commit
+      # (Preview for a branch / PR, Production for master) — see the script.
+      - name: Wait for the deployment of this commit
+        id: target
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          WANT_ENV: ${{ github.ref == 'refs/heads/master' && 'Production' || 'Preview' }}
+          FALLBACK_URL: https://antares-extension.vercel.app
+        run: |
+          url=$(bash .github/scripts/resolve-deployment.sh)
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "E2E target: $url"
 
       - uses: actions/setup-node@v4
         with:
@@ -112,7 +135,10 @@ jobs:
         run: npx playwright test --project=api --project=integration
         env:
           CI: true
-          E2E_BASE_URL: https://antares-extension.vercel.app
+          E2E_BASE_URL: ${{ steps.target.outputs.url }}
+          # The Origin the tests present is a fixed, allowed one: it must not
+          # follow the deployment URL (a preview host is not an allowed origin).
+          E2E_ORIGIN: https://antares-extension.vercel.app
 
       - name: Upload E2E report
         if: always()

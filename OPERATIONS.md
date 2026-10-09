@@ -1,6 +1,24 @@
 # Operations
 
-How to load-test the scan safely, and which signals to watch (and alert on) in production.
+How the CI end-to-end job picks what it tests, how to load-test the scan safely, and which signals to watch (and alert on) in production.
+
+## 0. The e2e job (CI)
+
+The `e2e` job tests **the Vercel deployment built from the commit under test**, not production:
+
+| Run | What it waits for and tests |
+|---|---|
+| Pull request / push to a branch | the `Preview` deployment of that commit |
+| Push to `master` (a merge) | the `Production` deployment of that commit |
+
+`.github/scripts/resolve-deployment.sh` waits (up to 15 minutes) for Vercel to report that deployment through the GitHub Deployments API and prints its unique URL. Consequences:
+
+- A PR is judged on **its own code**, and the run a merge triggers waits for the deploy instead of racing it.
+- If Vercel's build of the commit failed, the job fails with that reason (there is nothing to test).
+- If no deployment shows up in time, the job falls back to production and says so in a warning: that run describes production, not the commit.
+- The tests send a fixed, allowed `Origin` (`E2E_ORIGIN`), because a deployment host is not an allowed origin.
+
+What gates a PR is the **contract**: fields, types, ranges, status codes, headers, CORS. What the engine *says* about a real token (its verdict) depends on live market data and on which upstream answered in time, which a PR cannot control. Those checks are **probes**: a surprising answer appears as a `::warning::` annotation in the run (look for `Live verdict probe`), it does not fail the PR. Add new live-market checks the same way.
 
 ## 1. Load tests
 
