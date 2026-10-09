@@ -50,7 +50,8 @@ export const ALLOWED_ORIGINS = [
  *     /api/auth/sync-token with the visitor's cookie, read the 30-day JWT
  *     and bind its own install to their account.
  *
- * chrome-extension:// origins are handled separately in setCorsHeaders.
+ * chrome-extension:// origins are handled separately in setCorsHeaders
+ * (only the IDs returned by allowedExtensionOrigins()).
  */
 export const CREDENTIALED_ORIGINS = [
   "https://antaresscan.com",
@@ -58,6 +59,33 @@ export const CREDENTIALED_ORIGINS = [
   "https://antares-website.vercel.app",
   "https://antares-extension.vercel.app",
 ];
+
+/**
+ * Chrome Web Store ID of the official Antares extension. It is public (it is
+ * in the store URL), so it lives in code rather than in an env var.
+ */
+export const OFFICIAL_EXTENSION_ID = "noemghbbbgcpnocdcflcaccnhnfehpfa";
+
+// Extension IDs are 32 characters from a–p (the hex digits mapped onto a–p).
+const EXTENSION_ID_RE = /^[a-p]{32}$/;
+
+/**
+ * Exact `chrome-extension://<id>` origins that may call the API: the official
+ * extension plus any IDs listed in the ALLOWED_EXTENSION_IDS env var
+ * (comma-separated — an unpacked dev build, a second store listing).
+ * Malformed entries are ignored, so a typo can never open the door wider.
+ * Read on every call so tests (and a redeploy) pick up changes.
+ */
+export function allowedExtensionOrigins(): Set<string> {
+  const extra = (process.env.ALLOWED_EXTENSION_IDS ?? "")
+    .split(",")
+    .map((id) => id.trim().toLowerCase());
+  return new Set(
+    [OFFICIAL_EXTENSION_ID, ...extra]
+      .filter((id) => EXTENSION_ID_RE.test(id))
+      .map((id) => `chrome-extension://${id}`),
+  );
+}
 
 export interface CorsOptions {
   /**
@@ -151,8 +179,14 @@ export function setCorsHeaders(
   // separate cache entries.
   res.setHeader("Vary", "Origin");
 
-      // chrome-extension:// origins: allow all extensions via rate limiting
-    if (origin.startsWith("chrome-extension://")) {
+  // chrome-extension:// origins: ONLY our own extension (popup, options page,
+  // service worker). Every other extension falls through to the generic
+  // checks below and is rejected like any unknown origin: no
+  // Access-Control-Allow-Origin, 403 on the endpoint. Previously any
+  // installed extension — even one requesting zero permissions — received
+  // Allow-Credentials here, before the `credentialedOnly` check, and could
+  // read account routes with the visitor's session cookie.
+  if (allowedExtensionOrigins().has(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Antares-Token, X-Antares-Install, X-Antares-Dev-Tier, X-Antares-Session");
