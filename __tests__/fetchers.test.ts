@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { extractBundlePct } from "../api/_lib/fetchers";
 
 // ─── extractBundlePct (pure function, no mocking needed) ─────────────────────
@@ -132,7 +132,8 @@ const {
   heliusGetCreatorReputation,
   heliusGetHoldersCount,
   heliusGetProgramAccountHolderCount,
-  solscanGetHoldersCount,
+  fetchSolscan,
+  _resetSolscanBackoffForTests,
   fetchDexCandles,
   publicRpcGetLargestAccounts,
   publicRpcGetTokenSupply,
@@ -219,23 +220,69 @@ describe("heliusGetCreatorReputation", () => {
   });
 });
 
-describe("solscanGetHoldersCount", () => {
-  it("returns total when valid", async () => {
-    mockFetchJson.mockResolvedValue({ total: 5000 });
-    const result = await solscanGetHoldersCount("mint123");
-    expect(result).toBe(5000);
+// Solscan Pro refuses our key (401) in production: without a back-off every
+// scan sent three requests that could only fail, each also counted against
+// their rate limit. A 404 is a normal "unknown token" answer.
+describe("fetchSolscan", () => {
+  const BACKOFF_MS = 10 * 60_000;
+  const NOW = 1_800_000_000_000;
+
+  /** Make the mocked fetchJson answer with `status` through its onStatus callback. */
+  function solscanAnswers(status: number, body: unknown = null) {
+    mockFetchJson.mockImplementation(async (...args: unknown[]) => {
+      (args[4] as ((s: number) => void) | undefined)?.(status);
+      return status >= 200 && status < 300 ? body : null;
+    });
+  }
+
+  beforeEach(() => {
+    vi.stubEnv("SOLSCAN_API_KEY", "solscan-test-key");
+    vi.spyOn(Date, "now").mockReturnValue(NOW);
+    _resetSolscanBackoffForTests();
   });
 
-  it("returns null when total is 0", async () => {
-    mockFetchJson.mockResolvedValue({ total: 0 });
-    const result = await solscanGetHoldersCount("mint123");
-    expect(result).toBeNull();
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
-  it("returns null on failure", async () => {
-    mockFetchJson.mockResolvedValue(null);
-    const result = await solscanGetHoldersCount("mint123");
-    expect(result).toBeNull();
+  it("does not touch the network without an API key", async () => {
+    vi.stubEnv("SOLSCAN_API_KEY", "");
+    expect(await fetchSolscan("/token/meta?address=m")).toBeNull();
+    expect(mockFetchJson).not.toHaveBeenCalled();
+  });
+
+  it("calls Solscan Pro with the key and returns the data", async () => {
+    solscanAnswers(200, { data: { decimals: 6 } });
+    const res = await fetchSolscan("/token/meta?address=m");
+    expect(res).toEqual({ data: { decimals: 6 } });
+    const [url, init] = mockFetchJson.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://pro-api.solscan.io/v2.0/token/meta?address=m");
+    expect(init.headers).toEqual({ token: "solscan-test-key" });
+  });
+
+  it.each([401, 403])("stops calling for 10 minutes after a %i, then tries again", async (status) => {
+    solscanAnswers(status);
+    await fetchSolscan("/token/meta?address=m");
+    expect(mockFetchJson).toHaveBeenCalledTimes(1);
+
+    // Same instance, next scans: no request at all while the back-off lasts.
+    vi.spyOn(Date, "now").mockReturnValue(NOW + BACKOFF_MS - 1);
+    expect(await fetchSolscan("/token/transfer?address=m")).toBeNull();
+    expect(await fetchSolscan("/token/markets?address=m")).toBeNull();
+    expect(mockFetchJson).toHaveBeenCalledTimes(1);
+
+    // Back-off over: a corrected key starts working again without a redeploy.
+    vi.spyOn(Date, "now").mockReturnValue(NOW + BACKOFF_MS + 1);
+    solscanAnswers(200, { data: [] });
+    expect(await fetchSolscan("/token/transfer?address=m")).toEqual({ data: [] });
+    expect(mockFetchJson).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([404, 500, 429])("a %i is NOT a refusal: the next call still goes out", async (status) => {
+    solscanAnswers(status);
+    await fetchSolscan("/token/meta?address=m");
+    await fetchSolscan("/token/transfer?address=m");
+    expect(mockFetchJson).toHaveBeenCalledTimes(2);
   });
 });
 

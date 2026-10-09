@@ -24,7 +24,7 @@ import {
   heliusGetHoldersCount,
   heliusResolveAccountOwners,
   publicRpcGetLargestAccounts, publicRpcGetTokenSupply, publicRpcGetMintInfo,
-  solscanGetHoldersCount, fetchSolscan, fetchDexCandles, fetchDexCandlesDaily,
+  fetchSolscan, fetchDexCandles, fetchDexCandlesDaily,
   type CreatorReputation,
 } from "./_lib/fetchers";
 import { readHeliusKey } from "./_lib/helius";
@@ -312,7 +312,6 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const [
       candlesRaw, candlesDailyRaw, goplusRaw,
       heliusHoldersRaw, heliusSupplyRaw, heliusHoldersCountRaw,
-      solscanHoldersCount,
       solMeta, solTransfers, solMarkets,
     ] = await Promise.all([
       withBudget(fetchDexCandles(pairAddress), remainingMs()),
@@ -321,7 +320,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       HELIUS_API_KEY ? withBudget(heliusGetLargestAccounts(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
       HELIUS_API_KEY ? withBudget(heliusGetTokenSupply(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
       HELIUS_API_KEY ? withBudget(heliusGetHoldersCount(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
-      withBudget(solscanGetHoldersCount(resolvedMint), remainingMs()),
+      // (No Solscan holders-count call: the public endpoint it used answers
+      // 404 for every token, so it only ever contributed `null`.)
       withBudget(fetchSolscan(`/token/meta?address=${resolvedMint}`), remainingMs()),
       // page_size=50 (was 10): the Holder Activity tab classifies the
       // last hour of activity per top-6 holder. With only 10 token-wide
@@ -449,7 +449,6 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       return Number.isFinite(n) && n > 0 ? n : null;
     })();
     const holderCandidates = [
-      solscanHoldersCount,
       rugTotalHolders,
       heliusHoldersCount,
       goplusHolderCount,
@@ -533,7 +532,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
         .filter((a: unknown): a is string => typeof a === "string" && a.length > 0)
     );
     const l4 = layerHelius(resolvedHolderAccounts, totalSupplyUi, maturityCtx, dexPairAddresses);
-    const l5 = layerSolscan(solscanHoldersCount, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h);
+    // Holder count: null, as it effectively always was (the Solscan holders endpoint is dead).
+    const l5 = layerSolscan(null, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h);
     const l6 = layerChart(candles, pair, tokenAgeMinutes, maturityCtx, dailyCandles.length >= 2 ? dailyCandles : undefined);
     const l7 = layerCrossValidation(rugData, resolvedHolderAccounts, goplus, solscanTokenAgeHours, dexTokenAgeHours, totalSupplyUi);
 

@@ -127,3 +127,40 @@ describe("401/403 are logged, safely", () => {
     expect(authLogs()).toHaveLength(0);
   });
 });
+
+describe("fetchJson — status callback", () => {
+  it("reports 401 so the caller can tell 'refused' from 'unknown', and still returns null", async () => {
+    stubFetch(401);
+    const onStatus = vi.fn();
+
+    const res = await fetchJson("https://pro-api.solscan.io/v2.0/token/meta", {}, 1000, 0, onStatus);
+
+    expect(res).toBeNull();
+    expect(onStatus).toHaveBeenCalledWith(401);
+  });
+
+  it("reports 404 as 404 (an unknown token is a normal answer, not a refusal)", async () => {
+    stubFetch(404);
+    const onStatus = vi.fn();
+
+    await fetchJson("https://pro-api.solscan.io/v2.0/token/meta", {}, 1000, 0, onStatus);
+
+    expect(onStatus).toHaveBeenCalledWith(404);
+    expect(onStatus).not.toHaveBeenCalledWith(401);
+  });
+
+  it("reports 200 and returns the parsed body", async () => {
+    stubFetch(200, { data: { ok: true } });
+    const onStatus = vi.fn();
+
+    const res = await fetchJson("https://pro-api.solscan.io/v2.0/token/meta", {}, 1000, 0, onStatus);
+
+    expect(res).toEqual({ data: { ok: true } });
+    expect(onStatus).toHaveBeenCalledWith(200);
+  });
+
+  it("works unchanged without a callback", async () => {
+    stubFetch(200, { a: 1 });
+    expect(await fetchJson("https://pro-api.solscan.io/v2.0/x", {}, 1000, 0)).toEqual({ a: 1 });
+  });
+});

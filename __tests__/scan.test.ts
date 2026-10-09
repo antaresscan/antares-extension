@@ -62,7 +62,6 @@ const mockHeliusGetTokenSupply = vi.fn();
 const mockHeliusGetCreatorReputation = vi.fn();
 const mockHeliusGetHoldersCount = vi.fn();
 const mockHeliusGetProgramAccountHolderCount = vi.fn();
-const mockSolscanGetHoldersCount = vi.fn();
 const mockFetchSolscan = vi.fn();
 const mockFetchDexCandles = vi.fn();
 const mockHeliusResolveAccountOwners = vi.fn();
@@ -76,7 +75,6 @@ vi.mock("../api/_lib/fetchers", () => ({
   heliusGetCreatorReputation: (...args: unknown[]) => mockHeliusGetCreatorReputation(...args),
   heliusGetHoldersCount: (...args: unknown[]) => mockHeliusGetHoldersCount(...args),
   heliusGetProgramAccountHolderCount: (...args: unknown[]) => mockHeliusGetProgramAccountHolderCount(...args),
-  solscanGetHoldersCount: (...args: unknown[]) => mockSolscanGetHoldersCount(...args),
   fetchSolscan: (...args: unknown[]) => mockFetchSolscan(...args),
   fetchDexCandles: (...args: unknown[]) => mockFetchDexCandles(...args),
   fetchDexCandlesDaily: vi.fn().mockResolvedValue([]), // no daily candles in unit tests
@@ -210,7 +208,6 @@ function setupGoodTokenMocks() {
   mockHeliusGetCreatorReputation.mockResolvedValue(null);
   mockHeliusGetHoldersCount.mockResolvedValue(null);
   mockHeliusGetProgramAccountHolderCount.mockResolvedValue(null);
-  mockSolscanGetHoldersCount.mockResolvedValue(5000);
   mockPublicRpcGetLargestAccounts.mockResolvedValue(null);
   mockPublicRpcGetTokenSupply.mockResolvedValue(null);
   mockPublicRpcGetMintInfo.mockResolvedValue(null);
@@ -352,7 +349,6 @@ describe("scan handler", () => {
     mockHeliusGetCreatorReputation.mockResolvedValue(null);
     mockHeliusGetHoldersCount.mockResolvedValue(null);
     mockHeliusGetProgramAccountHolderCount.mockResolvedValue(null);
-    mockSolscanGetHoldersCount.mockResolvedValue(null);
     mockFetchSolscan.mockResolvedValue(null);
     mockFetchDexCandles.mockResolvedValue([]);
     mockPublicRpcGetLargestAccounts.mockResolvedValue(null);

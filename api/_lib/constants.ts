@@ -24,7 +24,6 @@ export const PUBLIC_SOLANA_RPCS = [
   "https://api.mainnet-beta.solana.com",
   "https://solana-rpc.publicnode.com",
 ] as const;
-export const SOLSCAN_PUBLIC_BASE = "https://public-api.solscan.io";
 export const SOLSCAN_BASE = "https://pro-api.solscan.io/v2.0";
 
 // CA_RE — single source of truth from shared/constants.ts
