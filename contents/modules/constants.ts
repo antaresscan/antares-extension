@@ -3,7 +3,22 @@
 export const API           = process.env.PLASMO_PUBLIC_API_URL || "https://antares-extension.vercel.app/api/scan"
 export const ANALYSIS_PAGE = process.env.PLASMO_PUBLIC_ANALYSIS_URL || "https://antares-extension.vercel.app/token.html"
 export const PRICING_URL   = "https://antaresscan.com/pricing"
+/**
+ * LEGACY page-localStorage prefix. Earlier versions mirrored scans (plus the
+ * session JWT) into the HOST SITE's localStorage under this prefix. It is now
+ * only used to purge those leftovers (cache.ts purgeLegacyPageStorage) —
+ * never write anything under it again.
+ */
 export const LS_PREFIX     = "antares_scan_"
+/**
+ * Scan-cache key prefix in chrome.storage.local (extension-private: host
+ * pages can neither read nor forge it). Deliberately NOT "antares_scan_":
+ * that prefix also matches `antares_scan_history`, which a prefix-wide
+ * sweep or clear would wipe.
+ */
+export const SCAN_CACHE_PREFIX = "antares_cache:scan:"
+/** Upper bound on persisted scans (a scan payload is ~15-40 KB). */
+export const SCAN_CACHE_MAX_ENTRIES = 60
 export const CACHE_TTL    = 5 * 60 * 1000
 export const POS_KEY       = "antares_popup_pos"
 

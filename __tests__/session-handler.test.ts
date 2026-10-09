@@ -12,9 +12,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 // so the imports inside it resolve to our spies, not the real ones.
 vi.mock("../contents/modules/cache", () => ({
   clearAllScanCache: vi.fn(),
-  hydrateCacheFromLS: vi.fn(),
+  purgeLegacyPageStorage: vi.fn(),
+  sweepScanCache: vi.fn(),
   getCached: vi.fn(),
-  saveToLS: vi.fn(),
+  cacheScan: vi.fn(),
+  evictCached: vi.fn(),
 }))
 
 vi.mock("../contents/modules/scanner", () => ({

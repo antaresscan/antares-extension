@@ -1,7 +1,7 @@
 import type { ScanResponseData, QuotaStatus } from "../../shared/types"
-import { API, LS_PREFIX, IGNORE } from "./constants"
-import { state, scanCache } from "./state"
-import { getCached, saveToLS } from "./cache"
+import { API, IGNORE } from "./constants"
+import { state } from "./state"
+import { getCached, cacheScan, evictCached } from "./cache"
 import { readSessionToken } from "./session-token"
 import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimations, applyFinalAnimationValues, buildResultNode, buildSkeletonNode, buildQuotaExhaustedNode, buildErrorNode } from "./components"
 import { scanRateLimiter } from "../../shared/rate-limit"
@@ -141,8 +141,8 @@ export function scheduleRescanIfPriceCrash(data: ScanResponseData, ca: string) {
       return
     }
     state.rescanCount++
-    scanCache.delete(ca)
-    try { localStorage.removeItem(LS_PREFIX + ca) } catch (e: unknown) { logger.warn("scanner", "Failed to remove LS cache", e) }
+    // Evict from memory AND the extension-private storage mirror.
+    void evictCached(ca)
     state.lastCA = ""
     state.manuallyDismissed = false
     // silent: keep the overlay on screen, no skeleton flash, no score
@@ -376,11 +376,12 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
     //      behind a flag — never at module top level.
     const data = raw as ScanResponseData
     if (quota) data._quota = quota
-    // Stamp the entry with the session token used for this fetch so
-    // getCached() can later detect login/logout drift and force a
-    // re-fetch instead of serving the stale tier.
-    scanCache.set(ca, { data, ts: Date.now(), session: sessionToken ?? null })
-    saveToLS(ca, data, sessionToken ?? null)
+    // Tag the entry with a fingerprint of the session used for this fetch
+    // (never the token itself) so getCached() can later detect login/logout
+    // drift and force a re-fetch instead of serving the stale tier. The
+    // persistent mirror lives in chrome.storage.local — NOT the host page's
+    // localStorage, which any script on the site can read and forge.
+    await cacheScan(ca, data, sessionToken ?? null)
     // Hold the shimmer for the minimum visible duration before swapping
     // in the result. Only matters on silent rescans (where the shimmer
     // is the loading affordance) — non-silent paths show a skeleton

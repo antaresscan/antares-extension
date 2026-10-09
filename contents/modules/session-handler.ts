@@ -17,7 +17,7 @@
 //
 //   2. The scan cache is wiped. Every entry was session-tagged on
 //      write; getCached's session-mismatch check would evict them on
-//      the next read anyway. Wiping proactively keeps LS small and
+//      the next read anyway. Wiping proactively keeps storage small and
 //      forces the next scan through the API rather than serving a
 //      one-off from a tagged-but-about-to-evict entry.
 //
@@ -51,7 +51,9 @@ export function handleSessionTokenChange(): void {
     state.currentScanController = null
   }
 
-  clearAllScanCache()
+  // The in-memory part of the wipe is synchronous; the storage part finishes
+  // in the background and cannot serve stale data (entries are fingerprinted).
+  void clearAllScanCache()
 
   if (state.lastCA) {
     // Currently-displayed CA: silent rescan keeps the overlay visible
