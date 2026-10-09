@@ -4,6 +4,25 @@ How the CI end-to-end job picks what it tests, how to load-test the scan safely,
 
 ## 0. The e2e job (CI)
 
+### When it runs
+
+The e2e only tells you something when a run can change an HTTP response, so it **decides by itself, per run**. `.github/scripts/e2e-needed.mjs` looks at the files the run changes (it asks the GitHub API, no checkout history needed):
+
+| What changed | e2e |
+|---|---|
+| `api/`, `shared/`, `js/`, root `*.html`, `vercel.json`, `tsconfig.json` | runs |
+| `e2e/`, `playwright.config.ts`, `.github/scripts/`, `.github/workflows/ci.yml` | runs (a change to the e2e must be tested) |
+| `package.json` / `package-lock.json`: a **production** dependency, the Node engine or a build script | runs |
+| `package.json` / `package-lock.json`: `@playwright/test` (the e2e runner) | runs |
+| `package.json` / `package-lock.json`: devDependencies only (`typescript-eslint`, `tsx`, `@types/*`...) | skipped |
+| extension code (`contents/`, `background.ts`, `popup.tsx`, `options.tsx`), tests, scripts, docs, other workflows | skipped |
+| a push to a branch that already has an open pull request | skipped (the `pull_request` run of the same commit does it) |
+| anything it cannot determine (API error, more than 300 files, unreadable lockfile) | **runs** |
+
+A skipped run still ends green, in a few seconds, and its summary says why. To change the rules, edit `DEPLOYED` / `E2E_INFRA` in the script; `__tests__/e2e-needed.test.ts` pins them. The `build` job (unit tests, lint, types, bundle smoke) is unaffected and always runs.
+
+### What it tests
+
 The `e2e` job tests **the Vercel deployment built from the commit under test**, not production:
 
 | Run | What it waits for and tests |
