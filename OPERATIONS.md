@@ -1,6 +1,43 @@
 # Operations
 
-How to load-test the scan safely, and which signals to watch (and alert on) in production.
+How the CI end-to-end job picks what it tests, how to load-test the scan safely, and which signals to watch (and alert on) in production.
+
+## 0. The e2e job (CI)
+
+### When it runs
+
+The e2e only tells you something when a run can change an HTTP response, so it **decides by itself, per run**. `.github/scripts/e2e-needed.mjs` looks at the files the run changes (it asks the GitHub API, no checkout history needed):
+
+| What changed | e2e |
+|---|---|
+| `api/`, `shared/`, `js/`, root `*.html`, `vercel.json`, `tsconfig.json` | runs |
+| `e2e/`, `playwright.config.ts`, `.github/scripts/`, `.github/workflows/ci.yml` | runs (a change to the e2e must be tested) |
+| `package.json` / `package-lock.json`: a **production** dependency, the Node engine or a build script | runs |
+| `package.json` / `package-lock.json`: `@playwright/test` (the e2e runner) | runs |
+| `package.json` / `package-lock.json`: devDependencies only (`typescript-eslint`, `tsx`, `@types/*`...) | skipped |
+| extension code (`contents/`, `background.ts`, `popup.tsx`, `options.tsx`), tests, scripts, docs, other workflows | skipped |
+| a push to a branch that already has an open pull request | skipped (the `pull_request` run of the same commit does it) |
+| anything it cannot determine (API error, more than 300 files, unreadable lockfile) | **runs** |
+
+A skipped run still ends green, in a few seconds, and its summary says why. To change the rules, edit `DEPLOYED` / `E2E_INFRA` in the script; `__tests__/e2e-needed.test.ts` pins them. The `build` job (unit tests, lint, types, bundle smoke) is unaffected and always runs.
+
+### What it tests
+
+The `e2e` job tests **the Vercel deployment built from the commit under test**, not production:
+
+| Run | What it waits for and tests |
+|---|---|
+| Pull request / push to a branch | the `Preview` deployment of that commit |
+| Push to `master` (a merge) | the `Production` deployment of that commit |
+
+`.github/scripts/resolve-deployment.sh` waits (up to 15 minutes) for Vercel to report that deployment through the GitHub Deployments API and prints its unique URL. Consequences:
+
+- A PR is judged on **its own code**, and the run a merge triggers waits for the deploy instead of racing it.
+- If Vercel's build of the commit failed, the job fails with that reason (there is nothing to test).
+- If no deployment shows up in time, the job falls back to production and says so in a warning: that run describes production, not the commit.
+- The tests send a fixed, allowed `Origin` (`E2E_ORIGIN`), because a deployment host is not an allowed origin.
+
+What gates a PR is the **contract**: fields, types, ranges, status codes, headers, CORS. What the engine *says* about a real token (its verdict) depends on live market data and on which upstream answered in time, which a PR cannot control. Those checks are **probes**: a surprising answer appears as a `::warning::` annotation in the run (look for `Live verdict probe`), it does not fail the PR. Add new live-market checks the same way.
 
 ## 1. Load tests
 

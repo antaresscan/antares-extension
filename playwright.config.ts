@@ -3,6 +3,10 @@ import path from "path";
 
 const BASE_URL =
   process.env.E2E_BASE_URL || "https://antares-extension.vercel.app";
+// The Origin header the API tests present. Fixed and allowed on purpose: when
+// BASE_URL is a deployment URL (a Vercel preview), that host is not one of the
+// API's allowed origins and every request would be refused with a 403.
+const ORIGIN = process.env.E2E_ORIGIN || "https://antares-extension.vercel.app";
 const EXTENSION_PATH = path.resolve(__dirname, "build/chrome-mv3-prod");
 const IS_CI = !!process.env.CI;
 
@@ -19,7 +23,7 @@ export default defineConfig({
     : [["html", { open: "on-failure" }], ["list"]],
   use: {
     baseURL: BASE_URL,
-        extraHTTPHeaders: { "User-Agent": "Antares-E2E/2.0", "Origin": BASE_URL },
+        extraHTTPHeaders: { "User-Agent": "Antares-E2E/2.0", "Origin": ORIGIN },
     screenshot: "only-on-failure",
     video: IS_CI ? "retain-on-failure" : "off",
     trace: IS_CI ? "retain-on-failure" : "off",
