@@ -1,0 +1,53 @@
+{
+  "code": 1,
+  "message": "ok",
+  "result": {
+    "GesEHJvkMwsaNKKVPowAhDD7P8XooDKtpswTQQ3Fpump": {
+      "balance_mutable_authority": {
+        "authority": [],
+        "status": "0"
+      },
+      "closable": {
+        "authority": [],
+        "status": "0"
+      },
+      "creators": [],
+      "default_account_state": "1",
+      "default_account_state_upgradable": {
+        "authority": [],
+        "status": "0"
+      },
+      "freezable": {
+        "authority": [],
+        "status": "0"
+      },
+      "metadata": {
+        "description": "use ai to accumulate and stake PAPER, then distribute net USDC income to holders.",
+        "name": "paperai.tech",
+        "symbol": "paper",
+        "uri": "https://gatewaypinata.online/api/meta/7ecc8f5d02a97fbf5f35efce.json"
+      },
+      "metadata_mutable": {
+        "metadata_upgrade_authority": [],
+        "status": "0"
+      },
+      "mintable": {
+        "authority": [],
+        "status": "0"
+      },
+      "non_transferable": "0",
+      "total_supply": "1000000000",
+      "transfer_fee": {},
+      "transfer_fee_upgradable": {
+        "authority": [],
+        "status": "0"
+      },
+      "transfer_hook": [],
+      "transfer_hook_upgradable": {
+        "authority": [],
+        "status": "0"
+      },
+      "trusted_token": 0
+    }
+  }
+}

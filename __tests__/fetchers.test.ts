@@ -130,7 +130,6 @@ const {
   heliusGetLargestAccounts,
   heliusGetTokenSupply,
   heliusGetCreatorReputation,
-  heliusGetHoldersCount,
   heliusGetProgramAccountHolderCount,
   fetchSolscan,
   _resetSolscanBackoffForTests,
@@ -316,29 +315,6 @@ describe("fetchDexCandles", () => {
   });
 });
 
-// ─── Helius DAS getTokenAccounts (DAS API extension) ────────────────────────
-describe("heliusGetHoldersCount", () => {
-  it("returns total holders count from result.total", async () => {
-    mockFetchJsonPost.mockResolvedValue({ result: { total: 1234, items: [] } });
-    const result = await heliusGetHoldersCount("mintXYZ", "k");
-    expect(result).toBe(1234);
-  });
-
-  it("returns null when total is missing", async () => {
-    mockFetchJsonPost.mockResolvedValue({ result: { items: [] } });
-    expect(await heliusGetHoldersCount("mintXYZ", "k")).toBeNull();
-  });
-
-  it("returns null on null response", async () => {
-    mockFetchJsonPost.mockResolvedValue(null);
-    expect(await heliusGetHoldersCount("mintXYZ", "k")).toBeNull();
-  });
-
-  it("falls back to top-level total field", async () => {
-    mockFetchJsonPost.mockResolvedValue({ total: 42 });
-    expect(await heliusGetHoldersCount("mintXYZ", "k")).toBe(42);
-  });
-});
 
 // ─── Helius getProgramAccounts holder count (canonical method) ──────────────
 describe("heliusGetProgramAccountHolderCount", () => {

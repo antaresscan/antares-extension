@@ -19,6 +19,24 @@ import { asNumber, _mean, _std, _pct } from "./math";
 import { makeFlag, getLpLockDurationDays, riskIncludes } from "./helpers";
 import { extractBundlePct } from "./fetchers";
 
+/** True when the upstream object carries at least one field we know how to read (error / message fields do not count). */
+function hasReadableField(o: object, ignore: readonly string[] = []): boolean {
+  return Object.entries(o).some(([k, v]) => !ignore.includes(k) && v !== undefined && v !== null);
+}
+
+// RugCheck risk names (real contract: risks[] = { name, value, level, score }). Authority risks (mint / freeze) are NOT
+// turned into flags here: the mint/freeze truth comes from the chain, so it is counted once, elsewhere. Bundle, sniper,
+// rug history and creator-sell keep their dedicated checks above and are skipped in the table loop.
+const RC_RULES: Array<[RegExp, { sev: "critical" | "warning" | "info"; pen: number; block?: boolean }]> = [
+  [/^Permanent Control Enabled$/i, { sev: "critical", pen: 0.10, block: true }],
+  [/^Large Amount of LP Unlocked$/i, { sev: "warning", pen: 0.60 }],
+  [/^Fee config enabled$/i, { sev: "warning", pen: 0.80 }],
+  [/^High holder correlation$/i, { sev: "warning", pen: 0.75 }],
+  [/^Copycat token$/i, { sev: "warning", pen: 0.80 }],
+  [/^Mutable metadata$/i, { sev: "info", pen: 0.95 }],
+];
+const RC_HANDLED_ELSEWHERE = /bundle|sniper|rug|creator.*sell|dev.*sell|mint authority|freeze authority|low liquidity/i;
+
 function applyDiminishingPenalties(trust: number, penalties: number[]): number {
   if (penalties.length > 0) {
     penalties.sort((a, b) => a - b); // worst first
@@ -210,7 +228,8 @@ export function layerRugCheck(
   let trust = 1.0;
   const penalties: number[] = [];
   let forceRug = false, safeBlocked = false;
-  if (!rugData) return {
+  // "Available" means RugCheck told us something we can read, not merely that it answered.
+  if (!rugData || !hasReadableField(rugData, ["error", "message"])) return {
     source: "rugcheck", trust: 1.0, available: false,
     flags: [makeFlag("RugCheck unavailable", "info", 0)],
     forceRug: false, safeBlocked: false,
@@ -309,6 +328,19 @@ const top10 = asNumber(rugData?.topHolders?.top10Percentage);
   if (riskIncludes(rugReportData, /sniper/i)) { flags.push(makeFlag("Sniper activity detected", "critical", 0)); penalties.push(0.15); safeBlocked = true; }
   if (riskIncludes(rugReportData, /rug/i)) { flags.push(makeFlag("Rug pull history", "critical", 0)); penalties.push(0.15); forceRug = true; }
   if (riskIncludes(rugReportData, /creator.*sell|dev.*sell/i)) { flags.push(makeFlag("Dev wallet sold tokens", "warning", 0)); penalties.push(0.65); }
+  for (const r of Array.isArray(rugData.risks) ? rugData.risks : []) {
+    const name = String(r?.name ?? "");
+    if (!name || RC_HANDLED_ELSEWHERE.test(name)) continue;
+    const rule = RC_RULES.find(([re]) => re.test(name))?.[1];
+    if (rule) {
+      flags.push(makeFlag(r.value ? `${name} ${r.value.startsWith("(") ? r.value : `(${r.value})`}` : name, rule.sev, 0));
+      penalties.push(rule.pen);
+      if (rule.block) safeBlocked = true;
+    } else if (r?.level === "danger") {
+      flags.push(makeFlag(`RugCheck: ${name}`, "warning", 0)); // an unknown risk is not automatically critical
+      penalties.push(0.85);
+    }
+  }
   if (rugData.mintAuthorityEnabled) { flags.push(makeFlag("Mint Authority enabled (RugCheck)", "critical", 0)); penalties.push(0.25); }
   if (rugData.freezeAuthorityEnabled) { flags.push(makeFlag("Freeze Authority enabled (RugCheck)", "critical", 0)); penalties.push(0.25); }
   trust = applyDiminishingPenalties(trust, penalties);
@@ -330,7 +362,8 @@ export function layerGoPlus(
   const penalties: number[] = [];
   let forceRug = false;
   let safeBlocked = false;
-  if (!goplus) return {
+  // "Available" means GoPlus told us something we can read, not merely that it answered.
+  if (!goplus || !hasReadableField(goplus)) return {
     source: "goplus", trust: 1.0, available: false,
     flags: [makeFlag("GoPlus unavailable", "info", 0)],
     forceRug: false, safeBlocked: false,
@@ -761,7 +794,10 @@ export function layerSolscan(
   holderCount: number | null,
   tokenAgeHours: number | null,
   trades24h: number | null,
-  traders24h: number | null
+  traders24h: number | null,
+  // false = nothing in this layer came from Solscan (the age is DexScreener's): the age safeguards below still apply,
+  // but the layer is not reported as an available source.
+  hasSolscanData: boolean = true
 ): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
@@ -806,7 +842,7 @@ export function layerSolscan(
     forceRug = true;
   }
   trust = applyDiminishingPenalties(trust, penalties);
-  return { source: "solscan", trust: Math.max(0, trust), available: true, flags, forceRug, safeBlocked };
+  return { source: "solscan", trust: Math.max(0, trust), available: hasSolscanData, flags, forceRug, safeBlocked };
 }
 
 // ═══ LAYER 6 — Chart patterns ══════════════════════════════════════════════════

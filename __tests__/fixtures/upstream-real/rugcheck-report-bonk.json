@@ -1,0 +1,65 @@
+{
+  "mint": "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+  "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+  "creator": "9AhKqLR67hwapvG8SA2JFXaCshXc9nALJjpKaHZrsbkw",
+  "creatorBalance": 14608186413,
+  "token": {
+    "mintAuthority": null,
+    "supply": 8799436470017709000,
+    "decimals": 5,
+    "isInitialized": true,
+    "freezeAuthority": null
+  },
+  "topHolders": [
+    {
+      "address": "5hpfC9VBxVcoW9opCnM2PqR6YWRLBzrBpabJTZnwwNiw",
+      "amount": 777051506316643100,
+      "decimals": 5,
+      "pct": 8.83069624929151,
+      "uiAmount": 7770515063166.431,
+      "uiAmountString": "7770515063166.43106",
+      "owner": "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
+      "insider": false
+    },
+    {
+      "address": "2vPvEovB1gw8bAUqasThEv6YMAdJ77AU3RxiUNqknEiw",
+      "amount": 597259351183795300,
+      "decimals": 5,
+      "pct": 6.787472734405607,
+      "uiAmount": 5972593511837.953,
+      "uiAmountString": "5972593511837.95277",
+      "owner": "51yZyDSnec4xnUv7XLRVYcDyV4x3wUtzrDcRaYbmQU5j",
+      "insider": false
+    },
+    {
+      "address": "6LozHQrLbEPeJGWKpN6wnnk76GhD4bGAVSoTBE5xXpsf",
+      "amount": 318798144087791740,
+      "decimals": 5,
+      "pct": 3.6229381867126564,
+      "uiAmount": 3187981440877.9175,
+      "uiAmountString": "3187981440877.91744",
+      "owner": "4xLpwxgYuPwPvtQjE94RLS4WZ4aD8NJYYKr2AJk99Qdg",
+      "insider": false
+    }
+  ],
+  "freezeAuthority": null,
+  "mintAuthority": null,
+  "risks": [
+    {
+      "name": "Mutable metadata",
+      "value": "",
+      "description": "Token metadata can be changed by the owner",
+      "score": 100,
+      "level": "warn"
+    }
+  ],
+  "score": 101,
+  "score_normalised": 7,
+  "totalMarketLiquidity": 1707869.1079597296,
+  "totalHolders": 2088973,
+  "price": 0.0000033224755201663777,
+  "rugged": false,
+  "tokenType": "",
+  "detectedAt": "2024-06-13T13:21:32.560276226Z",
+  "launchpad": null
+}

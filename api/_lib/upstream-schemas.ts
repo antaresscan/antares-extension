@@ -26,6 +26,19 @@ import { z } from "zod";
 // every flag-like field is therefore a union.
 const GoPlusFlagSchema = z.union([z.string(), z.number(), z.boolean()]);
 
+// Solana contract: authorities arrive as { status: "0" | "1", authority: [{ address, malicious_address }] }
+// (mintable, freezable, closable, balance_mutable_authority, metadata_mutable); a few others are plain flags.
+const GoPlusAuthoritySchema = z.union([
+  GoPlusFlagSchema,
+  z.object({
+    status: z.union([z.string(), z.number()]).optional(),
+    authority: z.array(z.object({
+      address: z.string().optional(),
+      malicious_address: z.union([z.string(), z.number()]).optional(),
+    })).optional(),
+  }),
+]);
+
 export const GoPlusDexEntrySchema = z.object({
   // GoPlus returns `burn_percent: null` for pools it can't measure (seen on
   // BONK/WIF/HAWK/USDC since ~2026-09). Rejecting null here dropped the
@@ -58,6 +71,24 @@ export const GoPlusTokenResultSchema = z.object({
   is_whitelisted: GoPlusFlagSchema.optional(),
   dex: z.array(GoPlusDexEntrySchema).optional(),
   holder_count: z.union([z.string(), z.number()]).optional(),
+  // Solana contract (real field names, checked against live responses)
+  mintable: GoPlusAuthoritySchema.optional(),
+  freezable: GoPlusAuthoritySchema.optional(),
+  closable: GoPlusAuthoritySchema.optional(),
+  balance_mutable_authority: GoPlusAuthoritySchema.optional(),
+  metadata_mutable: GoPlusAuthoritySchema.optional(),
+  non_transferable: GoPlusFlagSchema.optional(),
+  trusted_token: GoPlusFlagSchema.optional(),
+  transfer_fee: z.unknown().optional(),
+  transfer_hook: z.unknown().optional(),
+  holders: z.array(z.object({
+    token_account: z.string().optional(),
+    account: z.string().optional(),
+    balance: z.union([z.string(), z.number()]).optional(),
+    percent: z.union([z.string(), z.number()]).optional(),
+    is_locked: z.union([z.string(), z.number()]).optional(),
+    tag: z.string().optional(),
+  })).optional(),
 });
 
 export const GoPlusResponseSchema = z.object({
@@ -67,8 +98,17 @@ export const GoPlusResponseSchema = z.object({
 // ─── RUGCHECK ───────────────────────────────────────────────────────────────
 export const RugCheckRiskSchema = z.object({
   name: z.string().optional(),
+  value: z.string().optional(),
   score: z.number().optional(),
+  level: z.string().optional(),
   description: z.string().optional(),
+});
+
+// /report returns topHolders as an ARRAY of holders (the summary has no such field).
+export const RugCheckHolderSchema = z.object({
+  pct: z.number().optional(),
+  owner: z.string().optional(),
+  insider: z.boolean().optional(),
 });
 
 export const RugCheckTopHoldersSchema = z.object({
@@ -87,6 +127,7 @@ export const RugCheckSummarySchema = z.object({
   topHolders: RugCheckTopHoldersSchema.optional(),
   mintAuthorityEnabled: z.boolean().optional(),
   freezeAuthorityEnabled: z.boolean().optional(),
+  lpLockedPct: z.number().nullable().optional(),
   risks: z.array(RugCheckRiskSchema).optional(),
   error: z.string().optional(),
   message: z.string().optional(),
@@ -94,8 +135,9 @@ export const RugCheckSummarySchema = z.object({
 
 export const RugCheckReportSchema = z.object({
   risks: z.array(RugCheckRiskSchema).optional(),
-  topHolders: RugCheckTopHoldersSchema.optional(),
+  topHolders: z.union([RugCheckTopHoldersSchema, z.array(RugCheckHolderSchema)]).optional(),
   totalHolders: z.number().optional(),
+  creator: z.string().nullable().optional(),
 });
 
 // ─── HELIUS ─────────────────────────────────────────────────────────────────

@@ -1,7 +1,6 @@
 // api/fetchers.ts — External API fetcher functions
 
 import type {
-    HeliusTokenAccountsResponse,
         HeliusHolder,
     OHLCVCandle, GeckoTerminalOHLCVResponse,
     RugCheckReport, RugCheckRisk,
@@ -128,16 +127,6 @@ export async function heliusGetTokenSupply(mint: string, key: string) {
     return heliusRpc(key, {
         jsonrpc: "2.0", id: "supply", method: "getTokenSupply", params: [mint],
     }, 6000, 1);
-}
-
-export async function heliusGetHoldersCount(mint: string, key: string): Promise<number | null> {
-    const res = await heliusRpc<HeliusTokenAccountsResponse>(key, {
-        jsonrpc: "2.0", id: "holders-count",
-        method: "getTokenAccounts",
-        params: { mint, limit: 1, page: 1 },
-    }, 6000, 1);
-    const total = res?.result?.total ?? res?.total;
-    return typeof total === "number" ? total : null;
 }
 
 // Canonical holder-count via getProgramAccounts on the SPL Token Program,
