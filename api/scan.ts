@@ -90,6 +90,8 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
 // enrich). 25s is enough headroom even for the heaviest tokens while
 // still bounding worst-case wait for users on warm calls.
 const GLOBAL_TIMEOUT_MS = Number(process.env.VERCEL_TIMEOUT) || 24000;
+// Time kept free after the AI summary for the cache writes and the response.
+const AI_RESERVE_MS = 1500;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const requestId = randomUUID();
@@ -839,6 +841,11 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       topHolderPct,
       volume24h,
       priceChange1h,
+    }, {
+      // The summary is cosmetic: it may use what is left of the scan budget,
+      // minus a reserve for the cache writes and the response, and never
+      // more than AI_PHASE_BUDGET_MS. Out of time -> local fallback summary.
+      budgetMs: remainingMs() - AI_RESERVE_MS,
     }).catch(() => null);
 
     // ─── Verdict Timeline (decommissioned) ───────────────────────────
