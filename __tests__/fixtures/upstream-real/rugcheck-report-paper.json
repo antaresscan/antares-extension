@@ -1,0 +1,70 @@
+{
+  "mint": "GesEHJvkMwsaNKKVPowAhDD7P8XooDKtpswTQQ3Fpump",
+  "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+  "creator": "FC4mpX3opMBgozfTYJmcMEz9ym1F29YCZTWuThvNeD4c",
+  "creatorBalance": 0,
+  "token": {
+    "mintAuthority": null,
+    "supply": 908043054162902,
+    "decimals": 6,
+    "isInitialized": true,
+    "freezeAuthority": null
+  },
+  "topHolders": [
+    {
+      "address": "52ceZS8CEcrmE2CSvosSJ6czae4HDe1FBKihGieEeKsS",
+      "amount": 894811163741795,
+      "decimals": 6,
+      "pct": 98.54281244039633,
+      "uiAmount": 894811163.741795,
+      "uiAmountString": "894811163.741795",
+      "owner": "6M16MpiWMLsVsexsNDsjmhUMQPckPrSZoJfWkgnwAke2",
+      "insider": false
+    },
+    {
+      "address": "45Yrjwid3bkHMdXvC6r4rjiYTeiv3nXKdFcehCHztZEj",
+      "amount": 5354545554513,
+      "decimals": 6,
+      "pct": 0.5896796996535806,
+      "uiAmount": 5354545.554513,
+      "uiAmountString": "5354545.554513",
+      "owner": "BryM4sdA259vrSywYzaZSLNssWYe4Jngqp9mP1cfnapP",
+      "insider": false
+    },
+    {
+      "address": "6EWuUyEneYUw9iVehm8pg5ZkSku1gCEGqHaJG3RVhtgC",
+      "amount": 940118753999,
+      "decimals": 6,
+      "pct": 0.10353239856734191,
+      "uiAmount": 940118.753999,
+      "uiAmountString": "940118.753999",
+      "owner": "Bu2FGmyTA8RrMt83SroR5j6L9TE2HxpMJgbKUgTW2Fi8",
+      "insider": false
+    }
+  ],
+  "freezeAuthority": null,
+  "mintAuthority": null,
+  "risks": [
+    {
+      "name": "Low Liquidity",
+      "value": "$226.45",
+      "description": "Low amount of liquidity in the token pool",
+      "score": 2773,
+      "level": "danger"
+    }
+  ],
+  "score": 2774,
+  "score_normalised": 33,
+  "totalMarketLiquidity": 2342.069644422151,
+  "totalHolders": 536,
+  "price": 0.0000023643163810740247,
+  "rugged": false,
+  "tokenType": "",
+  "detectedAt": "2026-10-09T20:20:32.673593186Z",
+  "launchpad": {
+    "name": "Pump.Fun",
+    "logo": "https://api.rugcheck.xyz/public/logos/pump_fun.png",
+    "url": "https://x.com/pumpfun",
+    "platform": "pump_fun"
+  }
+}

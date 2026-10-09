@@ -92,8 +92,16 @@ export interface DexScreenerResponse {
 // ─── RUGCHECK ───────────────────────────────────────────────────────────────────────────────
 export interface RugCheckRisk {
   name?: string;
+  value?: string;
   score?: number;
+  level?: string;
   description?: string;
+}
+
+export interface RugCheckHolder {
+  pct?: number;
+  owner?: string;
+  insider?: boolean;
 }
 
 export interface RugCheckTopHolders {
@@ -112,6 +120,7 @@ export interface RugCheckSummary {
   topHolders?: RugCheckTopHolders;
   mintAuthorityEnabled?: boolean;
   freezeAuthorityEnabled?: boolean;
+  lpLockedPct?: number | null;
   risks?: RugCheckRisk[];
   error?: string;
   message?: string;
@@ -119,8 +128,9 @@ export interface RugCheckSummary {
 
 export interface RugCheckReport {
   risks?: RugCheckRisk[];
-  topHolders?: RugCheckTopHolders;
+  topHolders?: RugCheckTopHolders | RugCheckHolder[];
   totalHolders?: number;
+  creator?: string | null;
 }
 
 // ─── GOPLUS ────────────────────────────────────────────────────────────────────────────────────
@@ -147,6 +157,17 @@ export interface GoPlusTokenResult {
     // themselves and it matches what DexScreener / Solscan show. Free
     // endpoint, already in the response we fetch for honeypot detection.
     holder_count?: string | number;
+    // Solana contract (real field names)
+    mintable?: unknown;
+    freezable?: unknown;
+    closable?: unknown;
+    balance_mutable_authority?: unknown;
+    metadata_mutable?: unknown;
+    non_transferable?: string | number | boolean;
+    trusted_token?: string | number | boolean;
+    transfer_fee?: unknown;
+    transfer_hook?: unknown;
+    holders?: Array<{ token_account?: string; account?: string; balance?: string | number; percent?: string | number; is_locked?: string | number; tag?: string }>;
 }
 
 export interface GoPlusResponse {

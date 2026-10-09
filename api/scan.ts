@@ -21,7 +21,6 @@ import {
 } from "./_lib/helpers";
 import {
   heliusGetLargestAccounts, heliusGetTokenSupply, heliusGetCreatorReputation,
-  heliusGetHoldersCount,
   heliusResolveAccountOwners,
   publicRpcGetLargestAccounts, publicRpcGetTokenSupply, publicRpcGetMintInfo,
   fetchSolscan, fetchDexCandles, fetchDexCandlesDaily,
@@ -362,7 +361,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
 
     const [
       candlesRaw, candlesDailyRaw, goplusRaw,
-      heliusHoldersRaw, heliusSupplyRaw, heliusHoldersCountRaw,
+      heliusHoldersRaw, heliusSupplyRaw,
       solMeta, solTransfers, solMarkets,
     ] = await Promise.all([
       withBudget(fetchDexCandles(pairAddress), remainingMs()),
@@ -370,7 +369,6 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       withBudget(fetchJson(`${GOPLUS_BASE}/solana/token_security?contract_addresses=${resolvedMint}`, {}, 4000), remainingMs()),
       HELIUS_API_KEY ? withBudget(heliusGetLargestAccounts(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
       HELIUS_API_KEY ? withBudget(heliusGetTokenSupply(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
-      HELIUS_API_KEY ? withBudget(heliusGetHoldersCount(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
       // (No Solscan holders-count call: the public endpoint it used answers
       // 404 for every token, so it only ever contributed `null`.)
       withBudget(fetchSolscan(`/token/meta?address=${resolvedMint}`), remainingMs()),
@@ -490,8 +488,6 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // fetch for honeypot detection — they index this themselves and
     // their number matches DexScreener / Solscan. That made the
     // previous "1 holder" lie disappear on real tokens.
-    const heliusHoldersCount: number | null = typeof heliusHoldersCountRaw === "number" && heliusHoldersCountRaw > 0
-      ? heliusHoldersCountRaw : null;
     const top20NonZero = rawHolderAccounts.filter(h => asNumber(h?.uiAmount) > 0).length;
     const goplusHolderCount: number | null = (() => {
       const raw = goplus?.holder_count;
@@ -499,13 +495,10 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       const n = typeof raw === "number" ? raw : parseInt(String(raw), 10);
       return Number.isFinite(n) && n > 0 ? n : null;
     })();
-    const holderCandidates = [
-      rugTotalHolders,
-      heliusHoldersCount,
-      goplusHolderCount,
-      top20NonZero > 0 ? top20NonZero : null,
-    ].filter((n): n is number => typeof n === "number" && n > 0);
-    const holders: number | null = holderCandidates.length > 0 ? Math.max(...holderCandidates) : null;
+    // Order, not maximum. GoPlus matches an independent explorer (GeckoTerminal) within 0.01 %; RugCheck counts 2-3x too
+    // many on large tokens (BONK: 2,089,028 vs 1,024,740) so it only serves tokens GoPlus does not know yet. Helius
+    // cannot count holders: getTokenAccounts returns the PAGE size (limit 1 -> 1, limit 1000 -> 1000), so it is not asked.
+    const holders: number | null = goplusHolderCount ?? rugTotalHolders ?? (top20NonZero > 0 ? top20NonZero : null);
 
     const priceUsd: number | null = (() => {
       const n = parseFloat(pair?.priceUsd ?? "");
@@ -584,7 +577,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     );
     const l4 = layerHelius(resolvedHolderAccounts, totalSupplyUi, maturityCtx, dexPairAddresses);
     // Holder count: null, as it effectively always was (the Solscan holders endpoint is dead).
-    const l5 = layerSolscan(null, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h);
+    const l5 = layerSolscan(null, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h, solMetaData !== null || solTransfersData !== null || solMarketsData !== null);
     const l6 = layerChart(candles, pair, tokenAgeMinutes, maturityCtx, dailyCandles.length >= 2 ? dailyCandles : undefined);
     const l7 = layerCrossValidation(rugData, resolvedHolderAccounts, goplus, solscanTokenAgeHours, dexTokenAgeHours, totalSupplyUi);
 

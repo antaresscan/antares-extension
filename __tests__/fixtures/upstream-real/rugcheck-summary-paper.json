@@ -1,0 +1,16 @@
+{
+  "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+  "tokenType": "",
+  "risks": [
+    {
+      "name": "Low Liquidity",
+      "value": "$226.45",
+      "description": "Low amount of liquidity in the token pool",
+      "score": 2773,
+      "level": "danger"
+    }
+  ],
+  "score": 2774,
+  "score_normalised": 33,
+  "lpLockedPct": 100
+}
