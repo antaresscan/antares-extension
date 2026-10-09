@@ -41,7 +41,7 @@ import { computeLpPctOfSupply, getLpRiskBucket } from "./_lib/lp-risk-matrix";
 import { selectBestPair } from "./_lib/dex-pair-select";
 import { computeFinalScore, classifySafeBlockedReasons } from "./_lib/scoring";
 import { evaluatePostLayerFlags, applySafeGateOverride, applyEstablishedBonus, determineVerdict } from "./_lib/pipeline";
-import { setCorsHeaders, getClientIp, getInstallId, checkRateLimit, validateCA, initRateLimiters } from "./_lib/middleware";
+import { setCorsHeaders, getClientIp, getInstallId, checkRateLimit, checkColdScanLimit, validateCA, initRateLimiters } from "./_lib/middleware";
 import { initQuota, checkDailyQuota, setQuotaHeaders, secondsUntilReset } from "./_lib/quota";
 import { initUserStorage, pushScanHistory, resolveTierAndBypass } from "./_lib/user";
 import { initCache, getCachedResult, setCachedResult, setShortCachedResult, acquireScanLock, releaseScanLock, waitForCachedResult } from "./_lib/cache";
@@ -234,6 +234,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Otherwise fall through and scan ourselves with whatever budget
       // remains — runAnalysis self-bounds via remainingMs().
     }
+  }
+
+  // Abuse guard, COLD scans only. We are about to do the expensive part (~20
+  // upstream calls plus Gemini). Cache hits and requests that were served by
+  // another scan's result returned above and are never counted, so a token
+  // everybody watches costs nobody anything. The per-install limiters cannot
+  // stop a script that rotates the client-chosen install id; this one is keyed
+  // by network. When refusing, release the lock we hold so other requests for
+  // this token are not blocked behind a scan that will never start.
+  const cold = await checkColdScanLimit(ip);
+  if (!cold.ok) {
+    if (holdsLock) void releaseScanLock(ca);
+    logger.metric("scan.cold_limited", { requestId, retryAfterSec: cold.retryAfterSec });
+    res.setHeader("Retry-After", String(cold.retryAfterSec));
+    return apiError(res, 429, "Too many new-token scans from your network. Retry shortly.");
   }
 
   // Anchored on the request's start: a request that spent time waiting on a
