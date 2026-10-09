@@ -54,7 +54,7 @@ function mockRes(): VercelResponse {
   } as unknown as VercelResponse;
 }
 
-const ORIGIN = "chrome-extension://abc";
+const ORIGIN = "chrome-extension://noemghbbbgcpnocdcflcaccnhnfehpfa";
 const INSTALL = "install-history-test-bbbb";
 
 beforeEach(() => {

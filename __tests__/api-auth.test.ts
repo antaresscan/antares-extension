@@ -550,7 +550,7 @@ describe("auth origin gate", () => {
     const req = mockReq({
       method: "GET",
       headers: {
-        origin: "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+        origin: "chrome-extension://noemghbbbgcpnocdcflcaccnhnfehpfa",
         cookie: `${SESSION_COOKIE_NAME}=${token}`,
       },
     });

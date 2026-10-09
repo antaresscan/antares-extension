@@ -62,7 +62,7 @@ beforeEach(() => {
 
 describe("GET /api/quota", () => {
   it("handles OPTIONS preflight with 204 No Content", async () => {
-    const req = mockReq({ origin: "chrome-extension://abc" }, "OPTIONS");
+    const req = mockReq({ origin: "chrome-extension://noemghbbbgcpnocdcflcaccnhnfehpfa" }, "OPTIONS");
     const res = mockRes();
     await handler(req, res);
     expect(res.status).toHaveBeenCalledWith(204);
@@ -70,7 +70,7 @@ describe("GET /api/quota", () => {
   });
 
   it("rejects POST with 405 Method Not Allowed", async () => {
-    const req = mockReq({ origin: "chrome-extension://abc" }, "POST");
+    const req = mockReq({ origin: "chrome-extension://noemghbbbgcpnocdcflcaccnhnfehpfa" }, "POST");
     const res = mockRes();
     await handler(req, res);
     expect(res.status).toHaveBeenCalledWith(405);
@@ -85,7 +85,7 @@ describe("GET /api/quota", () => {
 
   it("returns quota status JSON for valid GET with install_id", async () => {
     const req = mockReq({
-      origin: "chrome-extension://abc",
+      origin: "chrome-extension://noemghbbbgcpnocdcflcaccnhnfehpfa",
       "x-antares-install": VALID_INSTALL,
     });
     const res = mockRes();
@@ -107,7 +107,7 @@ describe("GET /api/quota", () => {
 
   it("sets quota response headers and disables caching", async () => {
     const req = mockReq({
-      origin: "chrome-extension://abc",
+      origin: "chrome-extension://noemghbbbgcpnocdcflcaccnhnfehpfa",
       "x-antares-install": VALID_INSTALL,
     });
     const res = mockRes();
@@ -124,7 +124,7 @@ describe("GET /api/quota", () => {
 
   it("falls back to IP when install header is missing", async () => {
     const req = mockReq({
-      origin: "chrome-extension://abc",
+      origin: "chrome-extension://noemghbbbgcpnocdcflcaccnhnfehpfa",
       "x-real-ip": "1.2.3.4",
     });
     const res = mockRes();
