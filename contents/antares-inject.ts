@@ -22,7 +22,7 @@ export const config: PlasmoCSConfig = {
 // the single Sentry.init() and calls captureException there.
 
 import { state } from "./modules/state"
-import { hydrateCacheFromLS } from "./modules/cache"
+import { purgeLegacyPageStorage, sweepScanCache } from "./modules/cache"
 import { createHost, hideBox } from "./modules/components"
 import { poll, setupNavListeners, cleanupNavListeners, getInitialDelay } from "./modules/address-detector"
 import { scan } from "./modules/scanner"
@@ -48,8 +48,13 @@ if (document.documentElement.hasAttribute(GUARD)) {
 } else {
   document.documentElement.setAttribute(GUARD, "1")
 
-  // Hydrate scan cache from localStorage
-  hydrateCacheFromLS()
+  // Scrub the cache entries older versions left in the HOST PAGE's
+  // localStorage (they embedded the session JWT and could be forged by any
+  // script on the site), then trim the extension-private cache. Entries are
+  // loaded lazily from chrome.storage.local by getCached() — nothing to
+  // hydrate eagerly.
+  purgeLegacyPageStorage()
+  void sweepScanCache()
 
   // ── BOOT-TIME ENABLE/DISABLE GATE ─────────────────────────────────
   // The icon-click toggle in background.ts persists the user's
@@ -123,11 +128,10 @@ if (document.documentElement.hasAttribute(GUARD)) {
 // manuallyDismissed because login/logout is an explicit user action
 // and they probably want to see the resulting tier change.
 //
-// We still call clearAllScanCache to keep localStorage bounded — without
-// it, every token a user ever scanned would linger in LS forever for
-// pages they don't revisit. Session-tagged entries auto-invalidate on
-// read, but they'd still occupy disk. The wipe is cheap (small payloads,
-// few entries) and runs only on auth state change.
+// We still call clearAllScanCache to keep the extension's storage bounded
+// — session-fingerprinted entries auto-invalidate on read, but they'd
+// still occupy disk. The wipe is cheap (small payloads, few entries) and
+// runs only on auth state change.
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local") return
 
@@ -144,7 +148,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
 // still RUNNING when the session changes. But Chrome aggressively
 // discards inactive tabs to reclaim memory — when that happens the
 // content script is torn down and the storage listener never fires.
-// On revisit, the script re-injects and hydrates from localStorage,
+// On revisit, the script re-injects and reads chrome.storage.local,
 // which still holds the pre-logout/login Pro/Free entry.
 //
 // Two backstops cover that gap:
