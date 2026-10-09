@@ -354,6 +354,8 @@ ANTARES_CANCEL_URL=...               # Optional, defaults to {WEBSITE}/account.h
 
 ```
 SOLSCAN_API_KEY=...                  # Solscan Pro (Layer 5 enrichment)
+GOPLUS_APP_KEY=...                   # GoPlus app key (with the secret below: authenticated, higher limits)
+GOPLUS_APP_SECRET=...                # GoPlus app secret (both are needed; anonymous tier otherwise)
 SENTRY_DSN=...                       # Error monitoring (free tier 5K events/mo)
 GEMINI_API_KEY=...                   # AI summary synthesis
 AI_MODEL=gemini-2.5-flash            # Override the Gemini model
