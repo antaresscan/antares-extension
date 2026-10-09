@@ -126,7 +126,16 @@ export function _resetAuthLogThrottleForTests(): void {
 // and backoff 500ms, maxRetries=1 caps worst-case latency per fetch at ~10.5s,
 // vs ~16.5s with the previous default of 2. Call sites that need stronger
 // retry behaviour can still opt in explicitly.
-export async function fetchJson<T = unknown>(url: string, init: RequestInit = {}, ms = 5000, maxRetries = 1): Promise<T | null> {
+// `onStatus` receives the HTTP status of every response (same contract as
+// fetchJsonPost), so a caller can tell "refused" (401/403) from "unknown
+// token" (404) even though the return value is null for both.
+export async function fetchJson<T = unknown>(
+  url: string,
+  init: RequestInit = {},
+  ms = 5000,
+  maxRetries = 1,
+  onStatus?: (status: number) => void,
+): Promise<T | null> {
   const host = hostnameOf(url);
   if (host && isCircuitOpen(host)) {
     // Breaker open — return null immediately, don't touch the network.
@@ -139,6 +148,7 @@ export async function fetchJson<T = unknown>(url: string, init: RequestInit = {}
       const r = await fetch(url, { ...init, signal: t.signal });
       t.clear();
       logAuthRejected(host, r.status);
+      onStatus?.(r.status);
       if (r.status === 429 || r.status === 503) {
         if (attempt < maxRetries) {
           await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));

@@ -24,7 +24,7 @@ import {
   heliusGetHoldersCount,
   heliusResolveAccountOwners,
   publicRpcGetLargestAccounts, publicRpcGetTokenSupply, publicRpcGetMintInfo,
-  solscanGetHoldersCount, fetchSolscan, fetchDexCandles, fetchDexCandlesDaily,
+  fetchSolscan, fetchDexCandles, fetchDexCandlesDaily,
   type CreatorReputation,
 } from "./_lib/fetchers";
 import { readHeliusKey } from "./_lib/helius";
@@ -41,7 +41,7 @@ import { computeLpPctOfSupply, getLpRiskBucket } from "./_lib/lp-risk-matrix";
 import { selectBestPair } from "./_lib/dex-pair-select";
 import { computeFinalScore, classifySafeBlockedReasons } from "./_lib/scoring";
 import { evaluatePostLayerFlags, applySafeGateOverride, applyEstablishedBonus, determineVerdict } from "./_lib/pipeline";
-import { setCorsHeaders, getClientIp, getInstallId, checkRateLimit, validateCA, initRateLimiters } from "./_lib/middleware";
+import { setCorsHeaders, getClientIp, getInstallId, checkRateLimit, checkColdScanLimit, validateCA, initRateLimiters } from "./_lib/middleware";
 import { initQuota, checkDailyQuota, setQuotaHeaders, secondsUntilReset } from "./_lib/quota";
 import { initUserStorage, pushScanHistory, resolveTierAndBypass } from "./_lib/user";
 import { initCache, getCachedResult, setCachedResult, setShortCachedResult, acquireScanLock, releaseScanLock, waitForCachedResult } from "./_lib/cache";
@@ -92,6 +92,18 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
 const GLOBAL_TIMEOUT_MS = Number(process.env.VERCEL_TIMEOUT) || 24000;
 // Time kept free after the AI summary for the cache writes and the response.
 const AI_RESERVE_MS = 1500;
+// Time kept free at the very end of the budget for scoring, the cache writes
+// and the response. The data-gathering deadline is GLOBAL_TIMEOUT_MS minus
+// this, so a slow scan ANSWERS with what it has instead of finishing in the
+// same instant the global timer cuts it (which used to give a 504 whenever
+// every upstream was merely slow: 20 of 20 scans in the simulation).
+const SCAN_RESERVE_MS = 2500;
+// A serial step (owner resolution, creator reputation, fallback RPCs, insider
+// graph) is only worth starting when at least this much time is left.
+const MIN_STEP_MS = 1500;
+// Below this much remaining time a request that waited on another scan's lock
+// cannot run a meaningful scan of its own: it asks the client to retry.
+const MIN_OWN_SCAN_MS = 8000;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const requestId = randomUUID();
@@ -195,7 +207,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!fresh) {
     holdsLock = await acquireScanLock(ca);
     if (!holdsLock) {
-      const coalesced = await waitForCachedResult<ScanResult>(ca, requestId);
+      // Wait for the lock holder until OUR scan deadline. The holder is bound
+      // by the same deadline, so its result is in the cache by then. The old
+      // fixed 18 s window ended before a slow holder did: every waiter then
+      // started its own full scan (1 scan became 200 in the simulation, 4 804
+      // upstream calls).
+      const waitMs = Math.max(0, GLOBAL_TIMEOUT_MS - SCAN_RESERVE_MS - (Date.now() - startTime));
+      const coalesced = await waitForCachedResult<ScanResult>(ca, requestId, { timeoutMs: waitMs });
       if (coalesced && coalesced.aiSummary) {
         logger.metric("scan.coalesced", {
           requestId,
@@ -206,16 +224,43 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
         return res.json(coalesced);
       }
-      // Lock holder didn't finish within the wait window (rare: slow scan
-      // or crash). Fall through and scan ourselves with whatever budget
-      // remains — runAnalysis self-bounds via remainingMs(), so this can't
-      // exceed the function's maxDuration.
+      // The holder didn't deliver (it crashed, or Redis lost the write). If
+      // too little time is left for a meaningful scan, don't launch a doomed
+      // one: ask the client to come back, the cache is usually warm by then.
+      if (GLOBAL_TIMEOUT_MS - (Date.now() - startTime) < MIN_OWN_SCAN_MS) {
+        res.setHeader("Retry-After", "2");
+        return apiError(res, 503, "Scan in progress. Retry shortly.");
+      }
+      // Otherwise fall through and scan ourselves with whatever budget
+      // remains — runAnalysis self-bounds via remainingMs().
     }
   }
 
-  const timeoutPromise = new Promise<never>((_, reject) =>
-    setTimeout(() => reject(new Error("Global timeout")), GLOBAL_TIMEOUT_MS)
-  );
+  // Abuse guard, COLD scans only. We are about to do the expensive part (~20
+  // upstream calls plus Gemini). Cache hits and requests that were served by
+  // another scan's result returned above and are never counted, so a token
+  // everybody watches costs nobody anything. The per-install limiters cannot
+  // stop a script that rotates the client-chosen install id; this one is keyed
+  // by network. When refusing, release the lock we hold so other requests for
+  // this token are not blocked behind a scan that will never start.
+  const cold = await checkColdScanLimit(ip);
+  if (!cold.ok) {
+    if (holdsLock) void releaseScanLock(ca);
+    logger.metric("scan.cold_limited", { requestId, retryAfterSec: cold.retryAfterSec });
+    res.setHeader("Retry-After", String(cold.retryAfterSec));
+    return apiError(res, 429, "Too many new-token scans from your network. Retry shortly.");
+  }
+
+  // Anchored on the request's start: a request that spent time waiting on a
+  // lock must not get a fresh 24 s on top (that could outlive Vercel's 25 s
+  // kill and return a bare platform error).
+  let globalTimer: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    globalTimer = setTimeout(
+      () => reject(new Error("Global timeout")),
+      Math.max(0, GLOBAL_TIMEOUT_MS - (Date.now() - startTime)),
+    );
+  });
 
   try {
     const result = await Promise.race([runAnalysis(req, res, requestId, ca, startTime, installId), timeoutPromise]);
@@ -227,6 +272,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     captureError(e, { endpoint: "scan", requestId, ca });
     return apiError(res, 500, "Unexpected error.");
   } finally {
+    clearTimeout(globalTimer);
     // Always release the lock — even on error/timeout — so the next scan
     // of this CA isn't blocked. TTL expiry is only the crash backstop.
     if (holdsLock) void releaseScanLock(ca);
@@ -240,8 +286,13 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
   // remaining until the scan deadline. Ensures one slow upstream can't make
   // the whole pipeline hit the global 9s timeout — scoring still runs with
   // whatever data came back in time.
-  const scanDeadline = startTime + (GLOBAL_TIMEOUT_MS - 500);
+  const scanDeadline = startTime + (GLOBAL_TIMEOUT_MS - SCAN_RESERVE_MS);
   const remainingMs = () => Math.max(200, scanDeadline - Date.now());
+  // For the SERIAL steps that follow the parallel phases. `withBudget(fn(), ms)`
+  // starts the call even when no time is left (it only stops WAITING for it);
+  // this starts a step only if it still has a chance to finish.
+  const stepBudget = <T>(start: () => Promise<T>): Promise<T | null> =>
+    scanDeadline - Date.now() < MIN_STEP_MS ? Promise.resolve(null) : withBudget(start(), remainingMs());
 
   try {
     const [dexRes, rugRes, rugReportRes] = await Promise.all([
@@ -312,7 +363,6 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const [
       candlesRaw, candlesDailyRaw, goplusRaw,
       heliusHoldersRaw, heliusSupplyRaw, heliusHoldersCountRaw,
-      solscanHoldersCount,
       solMeta, solTransfers, solMarkets,
     ] = await Promise.all([
       withBudget(fetchDexCandles(pairAddress), remainingMs()),
@@ -321,7 +371,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       HELIUS_API_KEY ? withBudget(heliusGetLargestAccounts(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
       HELIUS_API_KEY ? withBudget(heliusGetTokenSupply(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
       HELIUS_API_KEY ? withBudget(heliusGetHoldersCount(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
-      withBudget(solscanGetHoldersCount(resolvedMint), remainingMs()),
+      // (No Solscan holders-count call: the public endpoint it used answers
+      // 404 for every token, so it only ever contributed `null`.)
       withBudget(fetchSolscan(`/token/meta?address=${resolvedMint}`), remainingMs()),
       // page_size=50 (was 10): the Holder Activity tab classifies the
       // last hour of activity per top-6 holder. With only 10 token-wide
@@ -349,14 +400,14 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // for users running without a paid Helius tier.
     if (rawHolderAccounts.length === 0) {
       try {
-        const fallback = await withBudget(publicRpcGetLargestAccounts(resolvedMint), remainingMs());
+        const fallback = await stepBudget(() => publicRpcGetLargestAccounts(resolvedMint));
         const parsed = isHeliusLargestAccountsResponse(fallback) ? fallback : null;
         rawHolderAccounts = parsed?.result?.value ?? [];
       } catch { /* keep empty — section will gracefully degrade */ }
     }
     if (totalSupplyUi <= 0) {
       try {
-        const fallback = await withBudget(publicRpcGetTokenSupply(resolvedMint), remainingMs());
+        const fallback = await stepBudget(() => publicRpcGetTokenSupply(resolvedMint));
         const parsed = isHeliusSupplyResponse(fallback) ? fallback : null;
         totalSupplyUi = asNumber(parsed?.result?.value?.uiAmount);
       } catch { /* keep 0 — try next fallback */ }
@@ -367,14 +418,14 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // the dedicated getTokenSupply path returned 0.
     if (totalSupplyUi <= 0) {
       try {
-        const mintInfo = await withBudget(publicRpcGetMintInfo(resolvedMint), remainingMs());
+        const mintInfo = await stepBudget(() => publicRpcGetMintInfo(resolvedMint));
         if (mintInfo) totalSupplyUi = mintInfo.supplyUi;
       } catch { /* keep 0 — concentration calc will be null */ }
     }
 
     const solMarketsData = isSolscanMarketsResponse(solMarkets) ? solMarkets : null;
     const resolvedHolderAccounts: HeliusHolder[] = HELIUS_API_KEY && rawHolderAccounts.length > 0
-      ? await withBudget(heliusResolveAccountOwners(rawHolderAccounts, HELIUS_API_KEY), remainingMs()) ?? rawHolderAccounts.map(h => ({ ...h, owner: h.owner ?? h.address }))
+      ? await stepBudget(() => heliusResolveAccountOwners(rawHolderAccounts, HELIUS_API_KEY)) ?? rawHolderAccounts.map(h => ({ ...h, owner: h.owner ?? h.address }))
       : rawHolderAccounts.map(h => ({ ...h, owner: h.owner ?? h.address }));
     const solMarketPool: SolscanMarketPool | null =
       Array.isArray(solMarketsData?.data) && solMarketsData!.data!.length > 0
@@ -417,7 +468,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const tokenCreator = solMetaData?.data?.creator || null;
 
     const creatorReputation: CreatorReputation | null = tokenCreator && HELIUS_API_KEY
-      ? await withBudget(heliusGetCreatorReputation(tokenCreator, HELIUS_API_KEY), remainingMs())
+      ? await stepBudget(() => heliusGetCreatorReputation(tokenCreator, HELIUS_API_KEY))
       : null;
 
     const tokenDecimals = solMetaData?.data?.decimals ?? null;
@@ -449,7 +500,6 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       return Number.isFinite(n) && n > 0 ? n : null;
     })();
     const holderCandidates = [
-      solscanHoldersCount,
       rugTotalHolders,
       heliusHoldersCount,
       goplusHolderCount,
@@ -533,7 +583,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
         .filter((a: unknown): a is string => typeof a === "string" && a.length > 0)
     );
     const l4 = layerHelius(resolvedHolderAccounts, totalSupplyUi, maturityCtx, dexPairAddresses);
-    const l5 = layerSolscan(solscanHoldersCount, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h);
+    // Holder count: null, as it effectively always was (the Solscan holders endpoint is dead).
+    const l5 = layerSolscan(null, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h);
     const l6 = layerChart(candles, pair, tokenAgeMinutes, maturityCtx, dailyCandles.length >= 2 ? dailyCandles : undefined);
     const l7 = layerCrossValidation(rugData, resolvedHolderAccounts, goplus, solscanTokenAgeHours, dexTokenAgeHours, totalSupplyUi);
 
@@ -782,7 +833,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // gracefully and we still emit Dev + Insider cards. Subsequent
     // scans benefit from the graph cache (INSIDER_GRAPH_CACHE_TTL).
     const insiderGraphResult = (HELIUS_API_KEY && realHolderAccounts.length >= 3 && totalSupplyUi > 0)
-      ? await withBudget(
+      ? await stepBudget(() =>
           buildInsiderGraph(
             resolvedMint,
             realHolderAccounts.map(h => ({ address: h.owner, uiAmount: h.uiAmount })),
@@ -790,7 +841,6 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
             HELIUS_API_KEY,
             new Set(LP_PROGRAM_ADDRESSES),
           ),
-          remainingMs(),
         ).catch(() => null)
       : null;
     const criticalActors = composeCriticalActors({
@@ -900,13 +950,19 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // The verdict is passed so computeCacheTTL can apply asymmetric caching:
     // bad verdicts cache long (stale-RUG is safe), good verdicts on young
     // tokens cache short (stale-SAFE is dangerous).
-    if (result.aiSummary) {
+    //
+    // A result produced under deadline pressure (the data budget was used up),
+    // or with no source at all, is kept only briefly too: a verdict born from
+    // missing data must not stick for everyone for the full TTL. That is how a
+    // bad answer for a well-known token could survive for 10 minutes.
+    const degraded = sources_used.length === 0 || scanDeadline - Date.now() < MIN_STEP_MS;
+    if (result.aiSummary && !degraded) {
       setCachedResult(ca, result, tokenAgeMinutes, result.risk);
       if (resolvedMint !== ca) setCachedResult(resolvedMint, result, tokenAgeMinutes, result.risk);
     } else {
-      // No AI summary yet — short-TTL cache so a same-CA reload within
-      // 30s skips re-running the whole pipeline, but the cache expires
-      // fast enough to pick up the AI summary on the next scan tick.
+      // No AI summary yet, or a degraded result — short-TTL cache so a
+      // same-CA reload within 30s skips re-running the whole pipeline, but
+      // the cache expires fast enough to pick up a complete answer next time.
       setShortCachedResult(ca, result, 30);
       if (resolvedMint !== ca) setShortCachedResult(resolvedMint, result, 30);
     }
@@ -925,6 +981,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       latencyMs: Date.now() - startTime,
       sourcesUsed: sources_used.length,
       partial: sources_used.length < Object.keys(LAYER_WEIGHTS).length,
+      // true = ran out of time or had no source: the signal to alert on.
+      degraded,
       scoringVersion: SCORING_VERSION,
     });
 

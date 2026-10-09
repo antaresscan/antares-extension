@@ -6,7 +6,7 @@ import type {
     OHLCVCandle, GeckoTerminalOHLCVResponse,
     RugCheckReport, RugCheckRisk,
 } from "./types";
-import { PUBLIC_SOLANA_RPCS, SOLSCAN_PUBLIC_BASE, SOLSCAN_BASE, LP_PROGRAM_ADDRESSES } from "./constants";
+import { PUBLIC_SOLANA_RPCS, SOLSCAN_BASE, LP_PROGRAM_ADDRESSES } from "./constants";
 import { fetchJson, fetchJsonPost } from "./http";
 import { heliusRpc, heliusRestUrl } from "./helius";
 import { asNumber } from "./math";
@@ -286,19 +286,28 @@ export async function publicRpcGetMintInfo(mint: string): Promise<{
 }
 
 // ─── SOLSCAN HELPERS ───────────────────────────────────────────────────────
-export async function solscanGetHoldersCount(mint: string): Promise<number | null> {
-    const res = await fetchJson(
-        SOLSCAN_PUBLIC_BASE + "/token/holders?tokenAddress=" + mint + "&limit=1&offset=0",
-        { headers: { "User-Agent": "Antares/1.0" } }, 5000
-    ) as { total?: number } | null;
-    const total = res?.total;
-    return typeof total === "number" && total > 0 ? total : null;
+// Solscan Pro. When Solscan refuses our key (401/403), every Solscan call of
+// every scan fails the same way — three wasted requests per scan, each one
+// also charged against their rate limit. After a refusal we stop calling for
+// SOLSCAN_REJECT_BACKOFF_MS (per instance), then try again, so a corrected
+// key starts working within minutes without a redeploy. A 404 ("unknown
+// token") is a normal answer and never triggers the back-off.
+const SOLSCAN_REJECT_BACKOFF_MS = 10 * 60_000;
+let solscanRejectedUntil = 0;
+
+/** Test-only: forget a previous 401/403 so the next call reaches the network. */
+export function _resetSolscanBackoffForTests(): void {
+    solscanRejectedUntil = 0;
 }
 
 export async function fetchSolscan(endpoint: string) {
     const key = process.env.SOLSCAN_API_KEY || "";
     if (!key) return null;
-    return fetchJson(SOLSCAN_BASE + endpoint, { headers: { token: key } }, 5000);
+    if (Date.now() < solscanRejectedUntil) return null;
+    let status = 0;
+    const res = await fetchJson(SOLSCAN_BASE + endpoint, { headers: { token: key } }, 5000, 1, (s) => { status = s; });
+    if (status === 401 || status === 403) solscanRejectedUntil = Date.now() + SOLSCAN_REJECT_BACKOFF_MS;
+    return res;
 }
 
 // ─── GECKOTERMINAL CANDLES ─────────────────────────────────────────────────

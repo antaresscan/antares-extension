@@ -100,6 +100,19 @@ export interface CorsOptions {
 // ——— RATE LIMITERS ————————————————————————————————————————————————————————————
 let ratelimit: Ratelimit | null = null;
 let burstRatelimit: Ratelimit | null = null;
+let coldScanRatelimit: Ratelimit | null = null;
+
+/**
+ * Cold scans (cache miss: the scan really calls ~20 upstream APIs and Gemini)
+ * one network may start per minute. The per-install limiters above are keyed by
+ * (ip, install id) and the install id is chosen by the CLIENT, so a script that
+ * sends a new id with every request gets a fresh window each time. This
+ * limiter is keyed by the network alone and only counts requests that reach a
+ * real scan, so cache hits (a token everybody is watching) are never counted.
+ * A person opens a handful of new tokens a minute; 60 leaves a shared IP
+ * (office, mobile carrier) plenty of room.
+ */
+export const COLD_SCANS_PER_MINUTE = 60;
 
 // When true, Redis was configured but failed to initialize — fail closed
 let redisConfigured = false;
@@ -135,6 +148,53 @@ export function initRateLimiters(redis: Redis): void {
     analytics: false,
     prefix: "antares_burst",
   });
+  coldScanRatelimit = new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(COLD_SCANS_PER_MINUTE, "60 s"),
+    analytics: false,
+    prefix: "antares_cold",
+  });
+}
+
+/**
+ * Rate-limit bucket for a client address. IPv4 is used as is. A single IPv6
+ * customer owns a whole /64, so keying by the full address would give a script
+ * 2^64 free buckets: IPv6 collapses to its /64 prefix. IPv4-mapped IPv6
+ * (::ffff:1.2.3.4) is the IPv4 address. Anything unparseable is used as is.
+ */
+export function coldScanKey(ip: string): string {
+  const v = ip.trim().toLowerCase();
+  const mapped = v.match(/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/);
+  if (mapped) return mapped[1];
+  if (!v.includes(":")) return v;
+  const halves = v.split("::");
+  if (halves.length > 2) return v;
+  const head = halves[0] ? halves[0].split(":") : [];
+  const tail = halves.length === 2 && halves[1] ? halves[1].split(":") : [];
+  const zeros = halves.length === 2 ? 8 - head.length - tail.length : 0;
+  const groups = [...head, ...Array<string>(Math.max(0, zeros)).fill("0"), ...tail];
+  if (groups.length !== 8 || groups.some((g) => !/^[0-9a-f]{1,4}$/.test(g))) return v;
+  return `${groups.slice(0, 4).map((g) => g.replace(/^0+(?=.)/, "")).join(":")}::/64`;
+}
+
+/**
+ * Called right before a REAL (cold) scan starts. Fails OPEN: an abuse guard
+ * must never take the service down, so a Redis error, a missing limiter or an
+ * unidentifiable client lets the scan through.
+ */
+export async function checkColdScanLimit(ip: string): Promise<{ ok: boolean; retryAfterSec: number }> {
+  if (!coldScanRatelimit) return { ok: true, retryAfterSec: 0 };
+  const key = coldScanKey(ip);
+  if (key === "unknown") return { ok: true, retryAfterSec: 0 };
+  try {
+    const { success, reset } = await coldScanRatelimit.limit(key);
+    if (success) return { ok: true, retryAfterSec: 0 };
+    const waitMs = typeof reset === "number" ? reset - Date.now() : 5000;
+    return { ok: false, retryAfterSec: Math.min(30, Math.max(1, Math.ceil(waitMs / 1000))) };
+  } catch (e: unknown) {
+    logger.warn("middleware", "cold-scan limiter unavailable — failing open", { error: String(e) });
+    return { ok: true, retryAfterSec: 0 };
+  }
 }
 
 // Headers that client JS needs to read (rate limit + quota status). Without

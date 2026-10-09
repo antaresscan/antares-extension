@@ -1,6 +1,5 @@
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { SCORING_VERSION } from "../api/_lib/constants";
 
 // ---- Mock all external modules BEFORE importing handler ----
 
@@ -29,6 +28,7 @@ vi.mock("../api/_lib/middleware", async () => {
     ...actual,
     initRateLimiters: vi.fn(),
     checkRateLimit: vi.fn().mockResolvedValue(true),
+    checkColdScanLimit: vi.fn().mockResolvedValue({ ok: true, retryAfterSec: 0 }),
   };
 });
 
@@ -253,133 +253,101 @@ process.env.HELIUS_API_KEY = "mock-helius-key";
 
 const { default: handler } = await import("../api/scan");
 
+// The cache and middleware modules are mocked above; import them AFTER the mock variables exist.
+const { acquireScanLock, releaseScanLock, waitForCachedResult, getCachedResult } = await import("../api/_lib/cache");
+const { checkColdScanLimit } = await import("../api/_lib/middleware");
+
+const WSOL = "So11111111111111111111111111111111111111112";
+
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(acquireScanLock).mockResolvedValue(true);
+  vi.mocked(waitForCachedResult).mockResolvedValue(null);
+  vi.mocked(getCachedResult).mockReset();
+  vi.mocked(getCachedResult).mockResolvedValue(null);
+  vi.mocked(checkColdScanLimit).mockResolvedValue({ ok: true, retryAfterSec: 0 });
 });
 
-// ─── TESTS ───────────────────────────────────────────────────────────────────
+const jsonBody = (res: VercelResponse) => (res.json as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as Record<string, unknown> | undefined;
 
-describe("scan handler", () => {
-  it("returns 400 for missing ca parameter", async () => {
-    const req = createMockReq({});
-    const res = createMockRes();
-    await handler(req, res);
-    expect(res.status).toHaveBeenCalledWith(400);
-  });
-
-  it("returns 400 for invalid ca (special chars)", async () => {
-    const req = createMockReq({ ca: "DROP TABLE users;--" });
-    const res = createMockRes();
-    await handler(req, res);
-    expect(res.status).toHaveBeenCalledWith(400);
-  });
-
-  it("returns 204 for OPTIONS request", async () => {
-    const req = createMockReq({ ca: "So11111111111111111111111111111111111111112" }, "OPTIONS");
-    const res = createMockRes();
-    await handler(req, res);
-    expect(res.status).toHaveBeenCalledWith(204);
-  });
-
-  it("returns 405 for POST method", async () => {
-    const req = createMockReq({ ca: "So11111111111111111111111111111111111111112" }, "POST");
-    const res = createMockRes();
-    await handler(req, res);
-    expect(res.status).toHaveBeenCalledWith(405);
-  });
-
-  it("processes valid wSOL scan with full pipeline", async () => {
+describe("cold-scan limiter in the scan handler", () => {
+  it("counts a real (cold) scan against the network of the caller", async () => {
     setupGoodTokenMocks();
-    const req = createMockReq({ ca: "So11111111111111111111111111111111111111112" });
     const res = createMockRes();
-    await handler(req, res);
-    expect(res.json).toHaveBeenCalled();
-    const body = (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as Record<string, unknown>;
-    expect(body.score).toBeTypeOf("number");
-    expect(body.risk).toBeDefined();
-    // Assert against the imported constant so this test doesn't break every
-    // time SCORING_VERSION is bumped (which is the standard cache-invalidation
-    // step after any scoring or flag-label change — see api/_lib/constants.ts).
-    expect(body.scoring_version).toBe(SCORING_VERSION);
-    expect(body.resolvedMint).toBeDefined();
-    expect(body.flags).toBeDefined();
-    expect(Array.isArray(body.sources_used)).toBe(true);
-    const flags = body.flags as Array<{ label: string }>;
-    expect(flags.some(f => /brand imitation/i.test(f.label))).toBe(false);
+
+    await handler(createMockReq({ ca: WSOL }), res);
+
+    expect(checkColdScanLimit).toHaveBeenCalledTimes(1);
+    expect(checkColdScanLimit).toHaveBeenCalledWith("1.2.3.4");
+    expect(jsonBody(res)?.risk).toBeDefined();
   });
 
-  it("returns high score for clean official token", async () => {
+  it("refuses with 429 + Retry-After BEFORE any upstream call when the network is over its limit", async () => {
     setupGoodTokenMocks();
-    const req = createMockReq({ ca: "So11111111111111111111111111111111111111112" });
+    vi.mocked(checkColdScanLimit).mockResolvedValue({ ok: false, retryAfterSec: 9 });
     const res = createMockRes();
-    await handler(req, res);
-    const body = (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as Record<string, unknown>;
-    const score = body.score as number;
-    expect(score).toBeGreaterThan(550);
-    expect(body.risk).not.toBe("DANGER");
-    expect(body.risk).not.toBe("RUG");
+
+    await handler(createMockReq({ ca: WSOL }), res);
+
+    expect(res.status).toHaveBeenCalledWith(429);
+    expect(res.setHeader).toHaveBeenCalledWith("Retry-After", "9");
+    expect(mockFetch).not.toHaveBeenCalled(); // no DexScreener / RugCheck / GoPlus
+    expect(mockHeliusGetLargestAccounts).not.toHaveBeenCalled();
   });
 
-  it("includes layer snapshots in result", async () => {
+  it("releases the single-flight lock it holds when it refuses, so other requests are not stuck behind it", async () => {
     setupGoodTokenMocks();
-    const req = createMockReq({ ca: "So11111111111111111111111111111111111111112" });
-    const res = createMockRes();
-    await handler(req, res);
-    const body = (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as Record<string, unknown>;
-    const layers = body.layers as Record<string, { trust: number; available: boolean }>;
-    expect(layers.dexscreener).toBeDefined();
-    expect(layers.rugcheck).toBeDefined();
-    expect(layers.goplus).toBeDefined();
-    expect(layers.identity).toBeUndefined();
+    vi.mocked(acquireScanLock).mockResolvedValue(true);
+    vi.mocked(checkColdScanLimit).mockResolvedValue({ ok: false, retryAfterSec: 5 });
+
+    await handler(createMockReq({ ca: WSOL }), createMockRes());
+
+    expect(releaseScanLock).toHaveBeenCalledWith(WSOL);
   });
 
-  it("sets CORS and cache headers", async () => {
+  it("does NOT release a lock it never held", async () => {
     setupGoodTokenMocks();
-    const req = createMockReq({ ca: "So11111111111111111111111111111111111111112" });
-    const res = createMockRes();
-    await handler(req, res);
-    expect(res.setHeader).toHaveBeenCalledWith("Access-Control-Allow-Origin", "https://dexscreener.com");
-    expect(res.setHeader).toHaveBeenCalledWith("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
+    vi.mocked(acquireScanLock).mockResolvedValue(false); // someone else holds it
+    vi.mocked(waitForCachedResult).mockResolvedValue(null);
+    vi.mocked(checkColdScanLimit).mockResolvedValue({ ok: false, retryAfterSec: 5 });
+
+    await handler(createMockReq({ ca: WSOL }), createMockRes());
+
+    expect(releaseScanLock).not.toHaveBeenCalled();
   });
 
-  it("handles fetch failures gracefully", async () => {
-    mockFetch.mockRejectedValue(new Error("network error"));
-    mockHeliusGetLargestAccounts.mockResolvedValue(null);
-    mockHeliusGetTokenSupply.mockResolvedValue(null);
-    mockHeliusGetCreatorReputation.mockResolvedValue(null);
-    mockHeliusGetHoldersCount.mockResolvedValue(null);
-    mockHeliusGetProgramAccountHolderCount.mockResolvedValue(null);
-    mockFetchSolscan.mockResolvedValue(null);
-    mockFetchDexCandles.mockResolvedValue([]);
-    mockPublicRpcGetLargestAccounts.mockResolvedValue(null);
-    mockPublicRpcGetTokenSupply.mockResolvedValue(null);
-    mockPublicRpcGetMintInfo.mockResolvedValue(null);
-
-    const req = createMockReq({ ca: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263" });
-    const res = createMockRes();
-    await handler(req, res);
-    expect(res.json).toHaveBeenCalled();
-  });
-
-  it("uses short TTL cache when aiSummary is null", async () => {
+  it("never counts a cache hit: a token everybody watches costs nobody anything", async () => {
     setupGoodTokenMocks();
-    // Force generateAISummary to return null
-    vi.mock("../api/_lib/ai-summary", () => ({
-      generateAISummary: vi.fn().mockResolvedValue(null),
-    }));
-    const req = createMockReq({ ca: "So11111111111111111111111111111111111111112" });
+    vi.mocked(getCachedResult).mockResolvedValue({ risk: "SAFE", score: 950, aiSummary: "cached" });
+    vi.mocked(checkColdScanLimit).mockResolvedValue({ ok: false, retryAfterSec: 9 }); // would refuse if asked
     const res = createMockRes();
-    await handler(req, res);
-    expect(res.json).toHaveBeenCalled();
-    // setCachedResult should NOT have been called when aiSummary is null —
-    // scan.ts routes incomplete results through setShortCachedResult (30s
-    // TTL) so the next scan picks up the AI summary.
-    const { setCachedResult, setShortCachedResult } = await import("../api/_lib/cache");
-    expect(setCachedResult).not.toHaveBeenCalled();
-    expect(setShortCachedResult).toHaveBeenCalledWith(
-      "So11111111111111111111111111111111111111112",
-      expect.any(Object),
-      30,
-    );
+
+    await handler(createMockReq({ ca: WSOL }), res);
+
+    expect(checkColdScanLimit).not.toHaveBeenCalled();
+    expect(res.status).not.toHaveBeenCalledWith(429);
+    expect(jsonBody(res)?.risk).toBe("SAFE");
+  });
+
+  it("never counts a request served by the result of another scan (coalesced)", async () => {
+    setupGoodTokenMocks();
+    vi.mocked(acquireScanLock).mockResolvedValue(false);
+    vi.mocked(waitForCachedResult).mockResolvedValue({ risk: "SAFE", score: 950, aiSummary: "shared" } as { aiSummary?: unknown });
+    vi.mocked(checkColdScanLimit).mockResolvedValue({ ok: false, retryAfterSec: 9 });
+    const res = createMockRes();
+
+    await handler(createMockReq({ ca: WSOL }), res);
+
+    expect(checkColdScanLimit).not.toHaveBeenCalled();
+    expect(jsonBody(res)?.risk).toBe("SAFE");
+  });
+
+  it("counts a forced refresh (?fresh=1): it bypasses the cache and does a real scan", async () => {
+    setupGoodTokenMocks();
+    vi.mocked(getCachedResult).mockResolvedValue({ risk: "SAFE", score: 950, aiSummary: "cached" });
+
+    await handler(createMockReq({ ca: WSOL, fresh: "1" }), createMockRes());
+
+    expect(checkColdScanLimit).toHaveBeenCalledTimes(1);
   });
 });

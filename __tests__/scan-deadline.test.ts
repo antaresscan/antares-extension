@@ -1,6 +1,5 @@
-import { vi, describe, it, expect, beforeEach } from "vitest";
+import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { SCORING_VERSION } from "../api/_lib/constants";
 
 // ---- Mock all external modules BEFORE importing handler ----
 
@@ -252,134 +251,161 @@ process.env.UPSTASH_REDIS_REST_TOKEN = "mock-token";
 process.env.HELIUS_API_KEY = "mock-helius-key";
 
 const { default: handler } = await import("../api/scan");
+// The cache module is mocked above; import it AFTER the mock variables exist.
+const { acquireScanLock, waitForCachedResult, getCachedResult, setCachedResult, setShortCachedResult } = await import("../api/_lib/cache");
+
+// ─── Deadline behaviour ──────────────────────────────────────────────────────
+// With every upstream merely SLOW (not down) the scan used to reach the global
+// timer at the same instant it finished and answered 504; waiters on the
+// single-flight lock gave up after a fixed 18 s and each started its own full
+// scan. The scan now keeps a reserve at the end of its budget, only starts a
+// serial step that can still finish, and waiters wait until their own deadline.
+
+const GLOBAL_MS = 24000;
+const SCAN_RESERVE_MS = 2500;
+const WSOL = "So11111111111111111111111111111111111111112";
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-10-09T12:00:00Z"));
+  vi.mocked(acquireScanLock).mockResolvedValue(true);
+  vi.mocked(waitForCachedResult).mockResolvedValue(null);
+  vi.mocked(getCachedResult).mockReset();
+  vi.mocked(getCachedResult).mockResolvedValue(null);
 });
 
-// ─── TESTS ───────────────────────────────────────────────────────────────────
+afterEach(() => {
+  vi.useRealTimers();
+});
 
-describe("scan handler", () => {
-  it("returns 400 for missing ca parameter", async () => {
-    const req = createMockReq({});
-    const res = createMockRes();
-    await handler(req, res);
-    expect(res.status).toHaveBeenCalledWith(400);
-  });
+/** A promise that resolves with `value` after `ms` of (fake) time. */
+const after = <T,>(ms: number, value: T) => new Promise<T>((resolve) => setTimeout(() => resolve(value), ms));
 
-  it("returns 400 for invalid ca (special chars)", async () => {
-    const req = createMockReq({ ca: "DROP TABLE users;--" });
-    const res = createMockRes();
-    await handler(req, res);
-    expect(res.status).toHaveBeenCalledWith(400);
-  });
+async function run(req: VercelRequest, res: VercelResponse, advanceMs = GLOBAL_MS + 1000) {
+  const started = Date.now();
+  let doneAt = -1;
+  const p = handler(req, res).then(() => { doneAt = Date.now(); });
+  await vi.advanceTimersByTimeAsync(advanceMs);
+  await p;
+  return { elapsedMs: doneAt - started };
+}
 
-  it("returns 204 for OPTIONS request", async () => {
-    const req = createMockReq({ ca: "So11111111111111111111111111111111111111112" }, "OPTIONS");
-    const res = createMockRes();
-    await handler(req, res);
-    expect(res.status).toHaveBeenCalledWith(204);
-  });
+const jsonBody = (res: VercelResponse) => (res.json as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as Record<string, unknown> | undefined;
 
-  it("returns 405 for POST method", async () => {
-    const req = createMockReq({ ca: "So11111111111111111111111111111111111111112" }, "POST");
-    const res = createMockRes();
-    await handler(req, res);
-    expect(res.status).toHaveBeenCalledWith(405);
-  });
-
-  it("processes valid wSOL scan with full pipeline", async () => {
+describe("scan deadline", () => {
+  it("does not START serial steps when the parallel phase ate the whole budget, and still answers", async () => {
     setupGoodTokenMocks();
-    const req = createMockReq({ ca: "So11111111111111111111111111111111111111112" });
+    // Phase 2 answers just before the data deadline (24 s - 2.5 s reserve = 21.5 s):
+    // no holders and no supply, which would normally trigger the public-RPC fallbacks.
+    const late = GLOBAL_MS - SCAN_RESERVE_MS - 300;
+    mockHeliusGetLargestAccounts.mockImplementation(() => after(late, { result: { value: [] } }));
+    mockHeliusGetTokenSupply.mockImplementation(() => after(late, { result: { value: { uiAmount: 0 } } }));
     const res = createMockRes();
-    await handler(req, res);
-    expect(res.json).toHaveBeenCalled();
-    const body = (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as Record<string, unknown>;
-    expect(body.score).toBeTypeOf("number");
-    expect(body.risk).toBeDefined();
-    // Assert against the imported constant so this test doesn't break every
-    // time SCORING_VERSION is bumped (which is the standard cache-invalidation
-    // step after any scoring or flag-label change — see api/_lib/constants.ts).
-    expect(body.scoring_version).toBe(SCORING_VERSION);
-    expect(body.resolvedMint).toBeDefined();
-    expect(body.flags).toBeDefined();
-    expect(Array.isArray(body.sources_used)).toBe(true);
-    const flags = body.flags as Array<{ label: string }>;
-    expect(flags.some(f => /brand imitation/i.test(f.label))).toBe(false);
+
+    const { elapsedMs } = await run(createMockReq({ ca: WSOL }), res);
+
+    expect(mockPublicRpcGetLargestAccounts).not.toHaveBeenCalled();
+    expect(mockPublicRpcGetTokenSupply).not.toHaveBeenCalled();
+    expect(mockPublicRpcGetMintInfo).not.toHaveBeenCalled();
+    expect(mockHeliusGetCreatorReputation).not.toHaveBeenCalled();
+    expect(res.status).not.toHaveBeenCalledWith(504);
+    expect(jsonBody(res)?.risk).toBeDefined(); // a verdict, computed from what arrived
+    expect(elapsedMs).toBeLessThan(GLOBAL_MS);
   });
 
-  it("returns high score for clean official token", async () => {
+  it("witness: the same steps DO run when there is plenty of time", async () => {
     setupGoodTokenMocks();
-    const req = createMockReq({ ca: "So11111111111111111111111111111111111111112" });
     const res = createMockRes();
-    await handler(req, res);
-    const body = (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as Record<string, unknown>;
-    const score = body.score as number;
-    expect(score).toBeGreaterThan(550);
-    expect(body.risk).not.toBe("DANGER");
-    expect(body.risk).not.toBe("RUG");
-  });
 
-  it("includes layer snapshots in result", async () => {
+    await run(createMockReq({ ca: WSOL }), res);
+
+    expect(mockHeliusResolveAccountOwners).toHaveBeenCalled();
+    expect(mockHeliusGetCreatorReputation).toHaveBeenCalled();
+    expect(jsonBody(res)?.risk).toBeDefined();
+  });
+});
+
+describe("scan deadline — requests waiting on the single-flight lock", () => {
+  it("waits for the holder until ITS OWN deadline, not a fixed 18 s", async () => {
     setupGoodTokenMocks();
-    const req = createMockReq({ ca: "So11111111111111111111111111111111111111112" });
+    vi.mocked(acquireScanLock).mockResolvedValue(false);
     const res = createMockRes();
-    await handler(req, res);
-    const body = (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as Record<string, unknown>;
-    const layers = body.layers as Record<string, { trust: number; available: boolean }>;
-    expect(layers.dexscreener).toBeDefined();
-    expect(layers.rugcheck).toBeDefined();
-    expect(layers.goplus).toBeDefined();
-    expect(layers.identity).toBeUndefined();
+
+    await run(createMockReq({ ca: WSOL }), res);
+
+    const opts = vi.mocked(waitForCachedResult).mock.calls[0][2] as { timeoutMs: number };
+    expect(opts.timeoutMs).toBe(GLOBAL_MS - SCAN_RESERVE_MS); // nothing elapsed yet: 21 500 ms
   });
 
-  it("sets CORS and cache headers", async () => {
+  it("answers 503 + Retry-After instead of launching a doomed scan when the wait used up the budget", async () => {
     setupGoodTokenMocks();
-    const req = createMockReq({ ca: "So11111111111111111111111111111111111111112" });
+    vi.mocked(acquireScanLock).mockResolvedValue(false);
+    vi.mocked(waitForCachedResult).mockImplementation(async (_ca, _id, opts) => {
+      await vi.advanceTimersByTimeAsync((opts as { timeoutMs: number }).timeoutMs);
+      return null;
+    });
     const res = createMockRes();
-    await handler(req, res);
-    expect(res.setHeader).toHaveBeenCalledWith("Access-Control-Allow-Origin", "https://dexscreener.com");
-    expect(res.setHeader).toHaveBeenCalledWith("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
+
+    await run(createMockReq({ ca: WSOL }), res);
+
+    expect(res.status).toHaveBeenCalledWith(503);
+    expect(res.setHeader).toHaveBeenCalledWith("Retry-After", "2");
+    expect(mockFetch).not.toHaveBeenCalled(); // no upstream call: no second scan
   });
 
-  it("handles fetch failures gracefully", async () => {
-    mockFetch.mockRejectedValue(new Error("network error"));
-    mockHeliusGetLargestAccounts.mockResolvedValue(null);
-    mockHeliusGetTokenSupply.mockResolvedValue(null);
-    mockHeliusGetCreatorReputation.mockResolvedValue(null);
-    mockHeliusGetHoldersCount.mockResolvedValue(null);
-    mockHeliusGetProgramAccountHolderCount.mockResolvedValue(null);
-    mockFetchSolscan.mockResolvedValue(null);
-    mockFetchDexCandles.mockResolvedValue([]);
-    mockPublicRpcGetLargestAccounts.mockResolvedValue(null);
-    mockPublicRpcGetTokenSupply.mockResolvedValue(null);
-    mockPublicRpcGetMintInfo.mockResolvedValue(null);
-
-    const req = createMockReq({ ca: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263" });
-    const res = createMockRes();
-    await handler(req, res);
-    expect(res.json).toHaveBeenCalled();
-  });
-
-  it("uses short TTL cache when aiSummary is null", async () => {
+  it("witness: with plenty of time left (holder crashed early) it scans for itself", async () => {
     setupGoodTokenMocks();
-    // Force generateAISummary to return null
-    vi.mock("../api/_lib/ai-summary", () => ({
-      generateAISummary: vi.fn().mockResolvedValue(null),
-    }));
-    const req = createMockReq({ ca: "So11111111111111111111111111111111111111112" });
+    vi.mocked(acquireScanLock).mockResolvedValue(false);
+    vi.mocked(waitForCachedResult).mockResolvedValue(null); // returns at once
     const res = createMockRes();
-    await handler(req, res);
-    expect(res.json).toHaveBeenCalled();
-    // setCachedResult should NOT have been called when aiSummary is null —
-    // scan.ts routes incomplete results through setShortCachedResult (30s
-    // TTL) so the next scan picks up the AI summary.
-    const { setCachedResult, setShortCachedResult } = await import("../api/_lib/cache");
+
+    await run(createMockReq({ ca: WSOL }), res);
+
+    expect(res.status).not.toHaveBeenCalledWith(503);
+    expect(jsonBody(res)?.risk).toBeDefined();
+  });
+
+  it("arms the global timer from the request start, not from after the lock wait", async () => {
+    setupGoodTokenMocks();
+    vi.mocked(acquireScanLock).mockResolvedValue(false);
+    vi.mocked(waitForCachedResult).mockImplementation(async () => {
+      vi.setSystemTime(Date.now() + 5000); // 5 s spent waiting on the lock holder
+      return null;
+    });
+    // The cache read for the resolved mint never answers, so only the global
+    // timer can end this request.
+    vi.mocked(getCachedResult).mockResolvedValueOnce(null).mockImplementationOnce(() => new Promise(() => {}));
+    const res = createMockRes();
+
+    const { elapsedMs } = await run(createMockReq({ ca: "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU" }), res, 40_000);
+
+    expect(res.status).toHaveBeenCalledWith(504);
+    // 5 s of waiting + what is left of the 24 s = 24 s in total. A timer re-armed
+    // after the wait would fire at 29 s, past Vercel's 25 s kill.
+    expect(elapsedMs).toBe(GLOBAL_MS);
+  });
+});
+
+describe("scan deadline — what gets cached", () => {
+  it("a result built under deadline pressure is cached for 30 s only, never for the full TTL", async () => {
+    setupGoodTokenMocks();
+    const late = GLOBAL_MS - SCAN_RESERVE_MS - 300; // data arrives with ~0.3 s of budget left
+    mockHeliusGetLargestAccounts.mockImplementation(() => after(late, { result: { value: [] } }));
+    mockHeliusGetTokenSupply.mockImplementation(() => after(late, { result: { value: { uiAmount: 0 } } }));
+
+    await run(createMockReq({ ca: WSOL }), createMockRes());
+
+    expect(setShortCachedResult).toHaveBeenCalledWith(WSOL, expect.anything(), 30);
     expect(setCachedResult).not.toHaveBeenCalled();
-    expect(setShortCachedResult).toHaveBeenCalledWith(
-      "So11111111111111111111111111111111111111112",
-      expect.any(Object),
-      30,
-    );
+  });
+
+  it("witness: a normal scan is cached with the usual TTL", async () => {
+    setupGoodTokenMocks();
+
+    await run(createMockReq({ ca: WSOL }), createMockRes());
+
+    expect(setCachedResult).toHaveBeenCalled();
+    expect(setShortCachedResult).not.toHaveBeenCalled();
   });
 });
