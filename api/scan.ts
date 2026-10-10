@@ -518,7 +518,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const tokenName: string | null = sanitizeString(pair?.baseToken?.name) ?? null;
 
     // 7 layers
-    const l1 = layerDexScreener(pair, marketCap, tokenAgeMinutes);
+    const l1 = layerDexScreener(pair, marketCap, tokenAgeMinutes, holders);
     // Shared maturity context — rugcheck, goplus, and helius all need
     // the same view of "is this an established token" so soft signals
     // (unburned LP, top-1 concentration on a 100k-holder memecoin) get
