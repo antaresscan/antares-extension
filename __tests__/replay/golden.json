@@ -938,16 +938,14 @@
   },
   "USELESS": {
     "risk": "DANGER",
-    "score": 454,
+    "score": 893,
     "confidence": 90,
     "flags": [
       "bonus:Established token (30d+) ✓",
       "bonus:LP Burned 98% (GoPlus) ✓",
       "bonus:Well distributed supply ✓",
-      "critical:Mint authority active — supply can be inflated",
       "critical:No website / Twitter / Telegram — high rug risk",
-      "info:Mutable metadata",
-      "warning:Mint authority conflict: on-chain vs GoPlus"
+      "info:Mutable metadata"
     ],
     "sources_used": [
       "chart",
@@ -971,7 +969,7 @@
       },
       "goplus": {
         "available": true,
-        "trust": 0.25
+        "trust": 1
       },
       "helius": {
         "available": true,
@@ -986,7 +984,7 @@
         "trust": 1
       }
     },
-    "mintAuthority": true,
+    "mintAuthority": false,
     "freezeAuthority": false,
     "honeypot": false,
     "lpBurned": true,
@@ -995,9 +993,7 @@
     "top10HolderPct": 14.01,
     "topHolderPct": 3.28,
     "safeBlocked": true,
-    "safeBlockedReasons": [
-      "mint"
-    ]
+    "safeBlockedReasons": []
   },
   "JUP": {
     "risk": "DANGER",
