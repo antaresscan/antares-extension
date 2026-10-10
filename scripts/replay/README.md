@@ -3,10 +3,10 @@
 The real `/api/scan` engine, run offline on the **recorded upstream responses** of real tokens. It is part of `npm test`, so
 it runs in the `build` check of every pull request.
 
-## What it is, and why the old backtest could not do this
+## What it is, and why it replaced the old backtest
 
-`__tests__/backtest/accuracy.test.ts` re-reads verdicts that were stored in fixtures: it never runs the engine, so it can
-neither fail nor prove anything. The replay does the opposite:
+The old backtest (`accuracy.test.ts`, removed) re-read verdicts that were stored in fixtures: it never ran the engine, so it could
+neither fail nor prove anything. The replay does the opposite (it proves STABILITY, not correctness: see "What it does not prove"):
 
 - every outgoing HTTP request of a scan (DexScreener, RugCheck, GoPlus, Helius, GeckoTerminal) is answered from a recording
   of a **real** scan (`__tests__/replay/corpus/<SYMBOL>.json.gz`);
@@ -23,6 +23,13 @@ Each token is checked three ways (`__tests__/replay/replay.test.ts`):
 3. **The verdict is one a human accepts** for that token (`manifest.ts`, with a one-line reason built on facts that do not
    depend on the engine). A token the engine gets wrong is a `knownIssue` (audit item id): reported, not failing, and
    **failing the day it is fixed**, so the marker goes away with the fix.
+
+## What it does not prove
+
+The replay proves **stability**: the same recorded inputs give the same verdict after a change. It does not prove that the
+verdicts are **right**. The verdicts attached to the recorded tokens are human judgements built on facts about the token, not
+outcomes. Whether a token flagged RUG did rug, or one flagged SAFE kept its value, needs what became of it days later. That is
+not measured yet, and no accuracy figure is published until it is.
 
 ## Reading a failure
 

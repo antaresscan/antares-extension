@@ -33,7 +33,7 @@ demo page on the website (`/demo.html`).
   • Demonstrates the binary clarity of the output
 
 Sample tokens: see `docs/cws/screenshots-source-tokens.md` (TBD — pick
-stable ones from the corpus that won't disappear before review).
+well-known, stable ones that won't disappear before review).
 
 ### 3. Critical Flags panel expanded (1280 × 800)
 

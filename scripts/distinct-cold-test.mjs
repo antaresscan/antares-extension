@@ -47,12 +47,12 @@ const MAX_HARD_ERROR_RATE = Number(process.env.MAX_HARD_ERROR_RATE || 0.2);
 const BYPASS = process.env.BYPASS || "";
 const ENDPOINT = `${BASE.replace(/\/$/, "")}/api/scan`;
 
-// Real tokens, from the scoring corpus. Base58, 32-44 chars.
+// Real tokens, from the replay corpus (the mints of its manifest). Base58, 32-44 chars.
 const here = dirname(fileURLToPath(import.meta.url));
-const corpusDir = join(here, "..", "__tests__", "backtest");
+const corpusDir = join(here, "..", "__tests__", "replay");
 const MINT_RE = /\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/g;
 const pool = new Set();
-for (const f of ["corpus.ts", "corpus-discovered.ts"]) {
+for (const f of ["manifest.ts"]) {
   try { for (const m of readFileSync(join(corpusDir, f), "utf8").matchAll(MINT_RE)) pool.add(m[0]); } catch { /* file missing: use what we have */ }
 }
 const shuffled = [...pool].sort(() => Math.random() - 0.5);

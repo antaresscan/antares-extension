@@ -1,0 +1,64 @@
+# Nightly canary on PRODUCTION
+#
+# Replaces the old "corpus drift" check, which re-scanned ~500 tokens every night and compared the answer to an OLD answer of
+# the same engine: it could say that something moved, never whether the new answer was right, it opened an issue every night
+# that nobody read, and the workflow itself always ended green.
+#
+# This one asks a narrower question that has a real answer: does the production engine still read its upstreams and still tell
+# the truth about tokens whose facts do not move (BONK and WIF have renounced authorities, RENDER keeps both, holder counts
+# are checked against the chain, LP burn is weighed over the measurable liquidity)? It is the same engine-contract test that
+# runs on every pull request (e2e/api-engine-contract.spec.ts), pointed at production. A broken upstream (an outage, an
+# expired key, a changed response shape) fails it the same night, and the run turns RED: that is the whole signal.
+#
+# Cost: a handful of cold scans per night (BONK, WIF, RENDER and up to two small tokens), not hundreds. A rate limit (429)
+# skips the test instead of failing it, as in the pull-request run.
+#
+# Manually triggerable from the Actions tab (workflow_dispatch).
+name: Engine canary
+on:
+  schedule:
+    - cron: "0 3 * * *" # 03:00 UTC daily
+  workflow_dispatch:
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+concurrency:
+  group: engine-canary
+  cancel-in-progress: false
+jobs:
+  canary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: |
+          for i in 1 2 3; do
+            if npm install --no-audit --no-fund; then exit 0; fi
+            echo "npm install failed (attempt $i) — backing off ${i}0s"
+            sleep $((i * 10))
+          done
+          exit 1
+
+      # The `api` project talks HTTP only: no browser to install.
+      - name: Engine contract on production
+        run: npx playwright test --project=api e2e/api-engine-contract.spec.ts
+        env:
+          CI: true
+          E2E_BASE_URL: https://antares-extension.vercel.app
+          E2E_ORIGIN: https://antares-extension.vercel.app
+
+      - name: Upload report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
