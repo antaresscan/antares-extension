@@ -41,7 +41,7 @@ import {
 import { computeLpPctOfSupply, getLpRiskBucket } from "./_lib/lp-risk-matrix";
 import { selectBestPair } from "./_lib/dex-pair-select";
 import { computeFinalScore, classifySafeBlockedReasons } from "./_lib/scoring";
-import { evaluatePostLayerFlags, applySafeGateOverride, applyEstablishedBonus, determineVerdict } from "./_lib/pipeline";
+import { evaluatePostLayerFlags, applySafeGateOverride, applyEstablishedBonus, determineVerdict, dedupeFlags, countVerdictFlags } from "./_lib/pipeline";
 import { setCorsHeaders, getClientIp, getInstallId, checkRateLimit, checkColdScanLimit, validateCA, initRateLimiters } from "./_lib/middleware";
 import { initQuota, checkDailyQuota, setQuotaHeaders, secondsUntilReset } from "./_lib/quota";
 import { initUserStorage, pushScanHistory, resolveTierAndBypass } from "./_lib/user";
@@ -703,85 +703,22 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       .map(l => l.source);
 
     const _allFlagsForVerdict: ScanFlag[] = allLayers.flatMap(l => l.flags).concat(postLayerFlags);
-    // Count token-side warning/critical flags so determineVerdict can apply
-    // the "clean blue-chip" path when literally zero issues are visible.
-    // Match the same filter the overlay uses (components.ts:721) — bonus +
-    // info excluded — so the "No issues found" UX state lines up with the
-    // verdict logic. Was the root cause of BONK/WIF showing "No issues found
-    // / CAUTION" simultaneously after the LP matrix shipped.
-    // Pipeline-status flags excluded too so the clean-blue-chip SAFE
-    // path triggers consistently with what the user sees in the panel
-    // (which now also drops them). Otherwise a Helius blip would silently
-    // block SAFE without showing any reason in the UI.
-    const _PIPELINE_STATUS = /^(Helius|GoPlus|RugCheck|Solscan|DexScreener|Birdeye|Helius RPC) (unavailable|rate[- ]limited|timed out|degraded)\b|Holder data unreliable|broken upstream/i;
-    // Pump-only flags are informational market signals, not structural rug risks.
-    // They must remain visible to the user but must never count toward the
-    // 3-warnings → forced-DANGER threshold in determineVerdict.
-    const _PUMP_PRICE_ONLY = /Pumped \+[\d,]+% (in 24h|over \d+ days)|Large 24h pump|Extreme pump .* on newborn token|Vertical pump detected|Extreme (24h )?pump \+[\d,]+%( in 1h)? — high retrace risk/i;
-    const _tokenFlags = _allFlagsForVerdict.filter(
-      (f) =>
-        (f.severity === "warning" || f.severity === "critical") &&
-        !_PIPELINE_STATUS.test(f.label) &&
-        !_PUMP_PRICE_ONLY.test(f.label),
-    );
-    const _warningFlagsCount = _tokenFlags.length;
-    const _criticalFlagsCount = _tokenFlags.filter(f => f.severity === "critical").length;
-    // Pump-only flags are left out of the counts above (so a pump alone never reaches the 3-warnings floor) but they are
-    // visible: they must keep the token out of SAFE. Without this they were invisible to the "zero visible warnings -> SAFE" grants.
-    const _pumpPriceOnlyFlagsCount = _allFlagsForVerdict.filter(
-      (f) => (f.severity === "warning" || f.severity === "critical") && _PUMP_PRICE_ONLY.test(f.label),
-    ).length;
 
+    // One flag per distinct risk signal (the most severe kept), then the verdict is decided on THAT list: the one the user
+    // sees. The counts used to be taken on the raw list, before the deduplication (audit M4). The deduplication, the counts and
+    // what each kind of flag counts for are in pipeline.ts (dedupeFlags, countVerdictFlags), where they are tested.
+    const flags: ScanFlag[] = dedupeFlags(_allFlagsForVerdict);
+    const severityOrder: Record<Severity, number> = { critical:0, warning:1, info:2, bonus:3 };
+    flags.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
+
+    const _counts = countVerdictFlags(flags);
     const risk: Verdict = determineVerdict({
       score, forceRug, safeBlocked, safeBlockedReasons,
       sourcesUsedCount: sources_used.length,
-      warningFlagsCount: _warningFlagsCount,
-      criticalFlagsCount: _criticalFlagsCount,
-      pumpPriceOnlyFlagsCount: _pumpPriceOnlyFlagsCount,
+      warningFlagsCount: _counts.warning,
+      criticalFlagsCount: _counts.critical,
+      pumpPriceOnlyFlagsCount: _counts.pumpPriceOnly,
     });
-
-    // ── Flag deduplication ────────────────────────────────────────────────────
-    // Multiple layers can fire semantically identical flags for the same signal
-    // (e.g. layerDexScreener AND layerChart both flag "pump +553%"). We keep
-    // only one flag per distinct risk signal, preferring the most severe.
-    //
-    // Two passes:
-    //  1. Exact label → keep the occurrence with the highest severity.
-    //  2. Pump-percentage → if two flags both mention "pump" and share the same
-    //     rounded percentage (±0 tolerance), keep only the most severe.
-    //     Catches "Large 24h pump +553% on token <24h" vs
-    //     "Pumped +553% in 24h — exit liquidity risk on thin LP".
-    const _severityRank: Record<string, number> = { critical:0, warning:1, info:2, bonus:3 };
-    const _dedupe = (input: ScanFlag[]): ScanFlag[] => {
-      // Pass 1: exact label
-      const byLabel = new Map<string, ScanFlag>();
-      for (const f of input) {
-        const existing = byLabel.get(f.label);
-        if (!existing || _severityRank[f.severity] < _severityRank[existing.severity]) {
-          byLabel.set(f.label, f);
-        }
-      }
-      const pass1 = [...byLabel.values()];
-
-      // Pass 2: pump-percentage — extract the first integer % from pump flags
-      // and group by it, keeping the most severe representative.
-      const pumpPctMap = new Map<number, ScanFlag>();
-      const nonPump: ScanFlag[] = [];
-      for (const f of pass1) {
-        if (!/pump|pumped/i.test(f.label)) { nonPump.push(f); continue; }
-        const m = f.label.match(/\+(\d+)%/);
-        if (!m) { nonPump.push(f); continue; }
-        const pct = parseInt(m[1], 10);
-        const existing = pumpPctMap.get(pct);
-        if (!existing || _severityRank[f.severity] < _severityRank[existing.severity]) {
-          pumpPctMap.set(pct, f);
-        }
-      }
-      return [...nonPump, ...pumpPctMap.values()];
-    };
-    const flags: ScanFlag[] = _dedupe(_allFlagsForVerdict);
-    const severityOrder: Record<Severity, number> = { critical:0, warning:1, info:2, bonus:3 };
-    flags.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
 
     const confidence = Math.round(sources_used.reduce((sum, src) => sum + (LAYER_WEIGHTS[src] ?? 0), 0) * 100);
     const layersSnapshot: Record<string, LayerSnapshot> = Object.fromEntries(

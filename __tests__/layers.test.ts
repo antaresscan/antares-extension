@@ -1308,3 +1308,49 @@ describe("layerDexScreener — no registered links: the deepest pool of the toke
     expect(criticals(layerDexScreener(chosen(61_847), 5_000_000, 2 * DAY_MIN, 300, 1_300_296)).length).toBe(1);
   });
 });
+
+// ═══ Young-token single-wallet tiers (7.7.12) and audit M5 ═══════════════════════════════════════════════════════════
+//
+// A wallet holding 10-15 % of a token under 30 days old is documented as a SOFT tier: "CAUTION max". It was emitted as a
+// critical flag, and one critical flag is enough for DANGER (determineVerdict), so every young token with a 10-15 % wallet, a very
+// common case, was DANGER against the written intent. It is a warning now; above 15 % the tier stays the critical one it was.
+describe("layerHelius — young token, one wallet at 10-15 % (M5)", () => {
+  const SUPPLY = 100_000;
+  // the rest is spread thin so that the top-10 ladder (which has its own flags) is not what is under test
+  const book = (top1Pct: number): HeliusHolder[] => [
+    { address: "whale", owner: "whale", uiAmount: SUPPLY * (top1Pct / 100) },
+    ...Array.from({ length: 200 }, (_, i) => ({ address: `r${i}`, owner: `r${i}`, uiAmount: (SUPPLY * (1 - top1Pct / 100)) / 200 })),
+  ];
+  const young = (hours: number) => ({ holders: 900, liquidity: 80_000, tokenAgeHours: hours, mintAuthority: false, freezeAuthority: false, honeypot: false, lpBurned: true });
+  const flagOf = (r: ReturnType<typeof layerHelius>) => r.flags.find((f) => /single wallet holds/i.test(f.label));
+
+  it("12 % on a 48 h old token: a WARNING (elevated, young token) that caps the verdict, never a critical flag", () => {
+    const r = layerHelius(book(12), SUPPLY, young(48));
+    const f = flagOf(r);
+    expect(f?.label).toBe("Single wallet holds 12% — elevated concentration · young token");
+    expect(f?.severity).toBe("warning");
+    expect(r.flags.filter((x) => x.severity === "critical")).toEqual([]);
+    expect(r.safeBlocked).toBe(true);
+    expect(r.forceRug).toBe(false);
+  });
+
+  it("the label stays on the soft safe-block reason (concentration_light), not the hard one", () => {
+    const f = flagOf(layerHelius(book(12), SUPPLY, young(48)));
+    expect(/single wallet holds \d+% — elevated\b/i.test(f!.label)).toBe(true);
+    expect(/single wallet holds \d+% — (high|extreme) concentration/i.test(f!.label)).toBe(false);
+  });
+
+  it("witness: 16 % on a young token is still the critical, hard tier", () => {
+    const f = flagOf(layerHelius(book(16), SUPPLY, young(48)));
+    expect(f?.label).toBe("Single wallet holds 16% — high concentration · young token");
+    expect(f?.severity).toBe("critical");
+  });
+
+  it("witness: 8 % raises no single-wallet flag at all", () => {
+    expect(flagOf(layerHelius(book(8), SUPPLY, young(48)))).toBeUndefined();
+  });
+
+  it("witness: the same 12 % on a token of 45 days is not a young-token case", () => {
+    expect(flagOf(layerHelius(book(12), SUPPLY, young(45 * 24)))?.label ?? "").not.toMatch(/young token/);
+  });
+});

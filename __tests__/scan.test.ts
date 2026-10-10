@@ -1,4 +1,5 @@
 import { vi, describe, it, expect, beforeEach } from "vitest";
+import { readFileSync } from "node:fs";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { SCORING_VERSION } from "../api/_lib/constants";
 
@@ -591,5 +592,99 @@ describe("scan handler — a price pump alone", () => {
 
     expect(body.flags.some((f) => f.severity === "critical" && /extreme 24h pump/i.test(f.label))).toBe(true);
     expect(body.risk).toBe("DANGER");
+  });
+});
+
+// ─── A young token with one wallet at 12 % (audit M5) ────────────────────────────────────────────────────────────────
+// The written intent of the 10-15 % tier on a token under 30 days old is "CAUTION max"; it was emitted as a critical flag and so
+// came out DANGER. Everything else about the token is clean: the verdict must be CAUTION, and the flag a warning.
+describe("scan handler — young token, one wallet at 12 %", () => {
+  const MINT = "So11111111111111111111111111111111111111112";
+
+  function scanYoungWithTop1(top1Units: number) {
+    setupGoodTokenMocks();
+    const goodMocks = mockFetch.getMockImplementation() as (url: string, ...rest: unknown[]) => Promise<unknown>;
+    mockFetch.mockImplementation((url: string, ...rest: unknown[]) => {
+      if (url.includes("dexscreener")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            pairs: [{
+              pairAddress: "pair1",
+              baseToken: { address: MINT, symbol: "YNG", name: "Young" },
+              liquidity: { usd: 200_000 },
+              volume: { h24: 100_000, h1: 5_000 },
+              priceChange: { m5: 0.5, h1: 2, h6: 6, h24: 12 },
+              txns: { m5: { buys: 15, sells: 12 } },
+              priceUsd: "0.01",
+              marketCap: 1_000_000,
+              fdv: 1_000_000,
+              pairCreatedAt: Date.now() - 48 * 3600 * 1000,
+              info: { socials: [{ type: "twitter", url: "https://twitter.com/test" }], websites: [{ url: "https://test.com" }] },
+            }],
+          }),
+        });
+      }
+      return goodMocks(url, ...rest);
+    });
+    // The engine takes the OLDEST age among its sources: the good-token Solscan mock says 90 days, which would make the token
+    // established. Both sources must agree that it is 48 h old.
+    const solscanGood = mockFetchSolscan.getMockImplementation() as (endpoint: string) => Promise<unknown>;
+    mockFetchSolscan.mockImplementation((endpoint: string) =>
+      endpoint.includes("meta")
+        ? Promise.resolve({ data: { created_time: Math.floor(Date.now() / 1000) - 48 * 3600, icon: "https://img.test.com/icon.png", creator: "creator123", decimals: 9, supply: 100000 } })
+        : solscanGood(endpoint));
+    // supply of the good-token mocks: 100,000. One wallet at top1Units, then a long tail so the top-10 ladder stays quiet.
+    mockHeliusGetLargestAccounts.mockResolvedValue({
+      result: { value: [{ address: "whale", uiAmount: top1Units }, ...Array.from({ length: 19 }, (_, i) => ({ address: `h${i}`, uiAmount: 400 }))] },
+    });
+  }
+
+  async function run() {
+    const res = createMockRes();
+    await handler(createMockReq({ ca: MINT }), res);
+    return (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as { risk: string; flags: Array<{ label: string; severity: string }> };
+  }
+
+  it("12 % on a 48 h old token, all else clean: the flag is a warning and the verdict is CAUTION, not DANGER", async () => {
+    scanYoungWithTop1(12_000);
+
+    const body = await run();
+
+    const f = body.flags.find((x) => /single wallet holds 12%/i.test(x.label));
+    expect(f?.label).toMatch(/elevated concentration · young token/);
+    expect(f?.severity).toBe("warning");
+    expect(body.flags.filter((x) => x.severity === "critical")).toEqual([]);
+    expect(body.risk).toBe("CAUTION");
+  });
+
+  it("witness: the same token with a wallet at 20 % is DANGER", async () => {
+    scanYoungWithTop1(20_000);
+
+    const body = await run();
+
+    expect(body.flags.some((x) => x.severity === "critical" && /single wallet holds 20%/i.test(x.label))).toBe(true);
+    expect(body.risk).toBe("DANGER");
+  });
+});
+
+// ─── The verdict is decided on the deduplicated flags (audit M4) ────────────────────────────────────────────────────
+// runAnalysis cannot be driven into "the same warning from two layers" without faking the layers themselves, so this guard reads the
+// order in the source: the flags are deduplicated, THEN counted, THEN the verdict is decided on those counts.
+describe("scan.ts counts the flags after deduplicating them", () => {
+  const src = readFileSync(new URL("../api/scan.ts", import.meta.url), "utf8");
+
+  it("dedupeFlags runs before countVerdictFlags, which runs before determineVerdict", () => {
+    const dedupe = src.indexOf("dedupeFlags(_allFlagsForVerdict)");
+    const count = src.indexOf("countVerdictFlags(flags)");
+    const verdict = src.indexOf("determineVerdict({");
+    expect(dedupe).toBeGreaterThan(-1);
+    expect(count).toBeGreaterThan(dedupe);
+    expect(verdict).toBeGreaterThan(count);
+  });
+
+  it("the raw list is never what the counts are taken on", () => {
+    expect(src).not.toMatch(/countVerdictFlags\(_allFlagsForVerdict\)/);
+    expect(src).not.toMatch(/_allFlagsForVerdict\.filter\(/);
   });
 });

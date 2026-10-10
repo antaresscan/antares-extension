@@ -753,8 +753,9 @@ export function layerHelius(
       flags.push(makeFlag(`Single wallet holds ${yt1pct}% — high concentration · young token`, "critical", 0));
       penalties.push(0.20); safeBlocked = true;
     } else if (top1Pct > 0.10) {
-      // Soft → CAUTION max via "concentration_light" reason
-      flags.push(makeFlag(`Single wallet holds ${yt1pct}% — elevated concentration · young token`, "critical", 0));
+      // Soft → CAUTION max via "concentration_light" reason. It is a WARNING: one critical flag is enough for DANGER
+      // (determineVerdict), which this tier is documented NOT to reach (it was emitted as critical until audit M5).
+      flags.push(makeFlag(`Single wallet holds ${yt1pct}% — elevated concentration · young token`, "warning", 0));
       penalties.push(0.45); safeBlocked = true;
     }
   }
