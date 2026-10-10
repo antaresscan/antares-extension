@@ -7,6 +7,7 @@
 //   RENDER  classic mint, mint AND freeze authority still active   (the overlay used to show "Mint check, Freeze check")
 //   HNT     classic mint, mint authority active, listed as trusted by GoPlus
 //   PYUSD   Token-2022 with permanentDelegate, transferFeeConfig, transferHook... (extension names as the RPC returns them)
+//   USELESS classic mint whose mint authority was SET to the System Program address (nobody can sign as it: renounced for good)
 // The invariant: "not verified" is NEVER turned into "renounced" or "can sell".
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
@@ -18,6 +19,8 @@ const BONK = "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263";
 const RENDER = "rndrizKT3MK1iimdxRdWabcF7Zg7AR5T4nud4EkHBof";
 const HNT = "hntyVP6YFm1Hg25TN9WGLqM12b8TQmcknKrdu1oxWux";
 const PAPER = "GesEHJvkMwsaNKKVPowAhDD7P8XooDKtpswTQQ3Fpump";
+const USELESS = "HhJpBhRRn4g56VsyLuT8DL5Bv31HkXqsrahTTUCZeZg4";
+const rawMint = (info: Record<string, unknown>): unknown => ({ result: { value: { data: { program: "spl-token", parsed: { type: "mint", info: { decimals: 6, supply: "1", ...info } } } } } });
 
 const fx = (name: string): unknown => JSON.parse(readFileSync(new URL(`./fixtures/upstream-real/${name}`, import.meta.url), "utf8"));
 const chain = (name: string): MintState => parseMintState(fx(`mint-${name}.json`)) as MintState;
@@ -35,6 +38,19 @@ describe("parseMintState on real mint accounts", () => {
 
   it("HNT: mint authority active, freeze authority renounced", () => {
     expect(chain("hnt")).toMatchObject({ mintAuthority: true, freezeAuthority: false });
+  });
+
+  it("USELESS: a mint authority set to the System Program is renounced, not active (nobody can sign as it)", () => {
+    expect(chain("useless")).toMatchObject({ program: "spl-token", mintAuthority: false, freezeAuthority: false });
+  });
+
+  it("only the System Program counts as renounced: any other address is an active authority", () => {
+    const SYSTEM = "11111111111111111111111111111111";
+    // witnesses: the System Program with one character changed, a real wallet, and each authority alone at the System Program
+    expect(parseMintState(rawMint({ mintAuthority: "11111111111111111111111111111112", freezeAuthority: null }))).toMatchObject({ mintAuthority: true, freezeAuthority: false });
+    expect(parseMintState(rawMint({ mintAuthority: BONK, freezeAuthority: SYSTEM }))).toMatchObject({ mintAuthority: true, freezeAuthority: false });
+    expect(parseMintState(rawMint({ mintAuthority: SYSTEM, freezeAuthority: BONK }))).toMatchObject({ mintAuthority: false, freezeAuthority: true });
+    expect(parseMintState(rawMint({ mintAuthority: SYSTEM }))).toMatchObject({ mintAuthority: false, freezeAuthority: null }); // a missing field is still unknown
   });
 
   it("PAPER: Token-2022, authorities renounced, harmless extensions only", () => {
@@ -92,6 +108,11 @@ describe("deriveAuthorityFacts: the chain decides, GoPlus relays", () => {
   it("HNT: mint authority active but GoPlus lists the token as trusted", () => {
     const f = deriveAuthorityFacts(chain("hnt"), goplus("hnt", HNT));
     expect(f).toMatchObject({ mint: true, freeze: false, trusted: true, sellBlocked: false });
+  });
+
+  it("USELESS: the chain (System Program authority) and GoPlus (mintable 0) agree that nobody can mint: no conflict, nothing active", () => {
+    const f = deriveAuthorityFacts(chain("useless"), goplus("useless", USELESS));
+    expect(f).toMatchObject({ mint: false, freeze: false, sellBlocked: false, source: "onchain", compared: true, conflicts: [] });
   });
 
   it("PAPER (Token-2022, harmless extensions): no mechanism can block a sale", () => {

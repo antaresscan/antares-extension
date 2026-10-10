@@ -15,7 +15,7 @@ export interface MintState {
   program: "spl-token" | "spl-token-2022" | null;
   decimals: number | null;
   supplyRaw: string | null;
-  /** true = an authority exists (it can still mint). null = the field is missing from the response. */
+  /** true = an authority that can sign exists (it can still mint). false = renounced (null, or the System Program). null = the field is missing from the response. */
   mintAuthority: Tri;
   freezeAuthority: Tri;
   /** Token-2022 extension names (camelCase, as jsonParsed returns them). Empty for the classic program. */
@@ -42,6 +42,18 @@ interface ParsedMintResponse {
   };
 }
 
+/**
+ * The System Program address (32 zero bytes). It is a program, not a wallet: no key exists for it, so nobody can sign as it.
+ * A mint whose authority was set to it can never mint (or freeze) again, exactly like an authority set to null. USELESS did
+ * that: the chain says `mintAuthority: "1111...1"`, and GoPlus answers `mintable: 0` while still listing that address.
+ */
+export const SYSTEM_PROGRAM_ID = "11111111111111111111111111111111";
+
+/** Can someone still use this authority? An address that cannot sign (null, the System Program) means no. */
+function authorityExists(authority: string | null | undefined): boolean {
+  return authority != null && authority !== SYSTEM_PROGRAM_ID;
+}
+
 /** Parse a getAccountInfo(jsonParsed) response for a MINT account. Anything else (or no answer) -> null. */
 export function parseMintState(raw: unknown): MintState | null {
   const r = raw as ParsedMintResponse | null;
@@ -53,9 +65,9 @@ export function parseMintState(raw: unknown): MintState | null {
     program,
     decimals: typeof info.decimals === "number" ? info.decimals : null,
     supplyRaw: typeof info.supply === "string" ? info.supply : null,
-    // A missing field is NOT "renounced": only an explicit null means renounced.
-    mintAuthority: "mintAuthority" in info ? info.mintAuthority != null : null,
-    freezeAuthority: "freezeAuthority" in info ? info.freezeAuthority != null : null,
+    // A missing field is NOT "renounced": only an explicit null (or the System Program, see authorityExists) means renounced.
+    mintAuthority: "mintAuthority" in info ? authorityExists(info.mintAuthority) : null,
+    freezeAuthority: "freezeAuthority" in info ? authorityExists(info.freezeAuthority) : null,
     extensions: Array.isArray(info.extensions) ? info.extensions.map((e) => String(e?.extension ?? "")) : [],
   };
 }
