@@ -87,7 +87,26 @@ describe("layerDexScreener", () => {
   });
 
     // Fix(EXTREME_PUMP_24H): Extreme 24h pump detection
-  it("Fix(EXTREME_PUMP_24H): pc24 > 5000 sets forceRug and safeBlocked", () => {
+  // M6: a price pump ALONE is never critical, whatever the percentage (the rule #628 set for the 7d / 30d pumps). It takes a
+  // structural weakness next to it (thin liquidity < $15k, vol/liq > 10, one-sided trades) to make it an exit trap.
+  it("M6: pc24 > 5000 with a structural weakness (thin liquidity) is an exit trap: critical, forceRug, safeBlocked", () => {
+    const pair: DexScreenerPair = {
+      liquidity: { usd: 8000 },
+      volume: { h24: 40000 },
+      priceChange: { h24: 6000, h1: 10, h6: 50, m5: 2 },
+      txns: { m5: { buys: 10, sells: 8 } },
+      info: {
+        socials: [{ type: "twitter", url: "https://twitter.com/test" }],
+        websites: [{ url: "https://test.com" }],
+      },
+    };
+    const result = layerDexScreener(pair, 500000, 1440);
+    expect(result.forceRug).toBe(true);
+    expect(result.safeBlocked).toBe(true);
+    expect(result.flags.some(f => f.severity === "critical" && /extreme 24h pump.*exit liquidity trap/i.test(f.label))).toBe(true);
+  });
+
+  it("M6: pc24 > 5000 ALONE (healthy liquidity, balanced trades) is a warning that caps the verdict, never critical or forceRug", () => {
     const pair: DexScreenerPair = {
       liquidity: { usd: 50000 },
       volume: { h24: 100000 },
@@ -99,15 +118,20 @@ describe("layerDexScreener", () => {
       },
     };
     const result = layerDexScreener(pair, 500000, 1440);
-    expect(result.forceRug).toBe(true);
+    expect(result.forceRug).toBe(false);
     expect(result.safeBlocked).toBe(true);
-    expect(result.flags.some(f => /extreme 24h pump/i.test(f.label))).toBe(true);
+    expect(result.flags.filter(f => f.severity === "critical")).toEqual([]);
+    const flag = result.flags.find(f => /extreme 24h pump/i.test(f.label));
+    expect(flag?.severity).toBe("warning");
+    expect(flag?.label).toMatch(/high retrace risk/);
+    // the warning label must not match a HARD safe-block pattern (exit trap, exit liquidity, newborn): that would still force DANGER / RUG
+    expect(flag?.label).not.toMatch(/exit trap|exit liquidity|newborn/i);
   });
 
-  it("Fix(EXTREME_PUMP_24H): pc24 > 1000 sets safeBlocked (not forceRug)", () => {
+  it("M6: pc24 > 1000 with a structural weakness is critical and safeBlocked (not forceRug)", () => {
     const pair: DexScreenerPair = {
-      liquidity: { usd: 50000 },
-      volume: { h24: 100000 },
+      liquidity: { usd: 8000 },
+      volume: { h24: 40000 },
       priceChange: { h24: 2000, h1: 10, h6: 50, m5: 2 },
       txns: { m5: { buys: 10, sells: 8 } },
       info: {
@@ -118,7 +142,72 @@ describe("layerDexScreener", () => {
     const result = layerDexScreener(pair, 500000, 1440);
     expect(result.forceRug).toBe(false);
     expect(result.safeBlocked).toBe(true);
-    expect(result.flags.some(f => /extreme 24h pump/i.test(f.label))).toBe(true);
+    expect(result.flags.some(f => f.severity === "critical" && /extreme 24h pump/i.test(f.label))).toBe(true);
+  });
+
+  it("M6: pc24 > 1000 ALONE is a warning that caps the verdict (the TELEMONEY-class case: +1784 % in 24h on a liquid token)", () => {
+    const pair: DexScreenerPair = {
+      liquidity: { usd: 50000 },
+      volume: { h24: 100000 },
+      priceChange: { h24: 1784, h1: 10, h6: 50, m5: 2 },
+      txns: { m5: { buys: 10, sells: 8 } },
+      info: {
+        socials: [{ type: "twitter", url: "https://twitter.com/test" }],
+        websites: [{ url: "https://test.com" }],
+      },
+    };
+    const result = layerDexScreener(pair, 500000, 1440);
+    expect(result.forceRug).toBe(false);
+    expect(result.safeBlocked).toBe(true);
+    expect(result.flags.filter(f => f.severity === "critical")).toEqual([]);
+    expect(result.flags.some(f => f.severity === "warning" && /extreme 24h pump \+1784% — high retrace risk/i.test(f.label))).toBe(true);
+  });
+
+  it("M6: pc1 > 300 alone is a warning; with a structural weakness it is the exit trap it used to be", () => {
+    const healthy: DexScreenerPair = {
+      liquidity: { usd: 80000 }, volume: { h24: 90000 },
+      priceChange: { h1: 400, h6: 420, h24: 450, m5: 5 },
+      txns: { m5: { buys: 10, sells: 8 } },
+      info: { socials: [{ type: "twitter", url: "https://twitter.com/test" }], websites: [{ url: "https://test.com" }] },
+    };
+    const alone = layerDexScreener(healthy, 500000, 3 * 24 * 60);
+    expect(alone.forceRug).toBe(false);
+    expect(alone.safeBlocked).toBe(true);
+    expect(alone.flags.filter(f => f.severity === "critical")).toEqual([]);
+    expect(alone.flags.find(f => /extreme pump \+400% in 1h/i.test(f.label))?.label).toMatch(/high retrace risk/);
+
+    const thin = layerDexScreener({ ...healthy, liquidity: { usd: 9000 }, volume: { h24: 12000 } }, 500000, 3 * 24 * 60);
+    expect(thin.forceRug).toBe(true);
+    expect(thin.flags.some(f => f.severity === "critical" && /extreme pump \+400% in 1h \+ structural weakness/i.test(f.label))).toBe(true);
+  });
+
+  it("M6: pc1 > 200 on a token under 2h old: a warning alone, the exit trap with a structural weakness", () => {
+    const healthy: DexScreenerPair = {
+      liquidity: { usd: 80000 }, volume: { h24: 90000 },
+      priceChange: { h1: 250, h6: 260, h24: 260, m5: 5 },
+      txns: { m5: { buys: 10, sells: 8 } },
+      info: { socials: [{ type: "twitter", url: "https://twitter.com/test" }], websites: [{ url: "https://test.com" }] },
+    };
+    const alone = layerDexScreener(healthy, 500000, 90);
+    expect(alone.forceRug).toBe(false);
+    expect(alone.flags.filter(f => f.severity === "critical")).toEqual([]);
+    expect(alone.flags.some(f => f.severity === "warning" && /pump \+250% on newborn token \(<2h\)/i.test(f.label))).toBe(true);
+
+    const thin = layerDexScreener({ ...healthy, liquidity: { usd: 9000 }, volume: { h24: 12000 } }, 500000, 90);
+    expect(thin.forceRug).toBe(true);
+    expect(thin.flags.some(f => f.severity === "critical" && /newborn token \(<2h\) \+ structural weakness/i.test(f.label))).toBe(true);
+  });
+
+  it("M6 witness: pc1 = 250 on a token over 2h old, with no coordinated pattern, raises no pump flag at all", () => {
+    const pair: DexScreenerPair = {
+      liquidity: { usd: 80000 }, volume: { h24: 90000 },
+      priceChange: { h1: 250, h6: 260, h24: 260, m5: 5 },
+      txns: { m5: { buys: 10, sells: 8 } },
+      info: { socials: [{ type: "twitter", url: "https://twitter.com/test" }], websites: [{ url: "https://test.com" }] },
+    };
+    const result = layerDexScreener(pair, 500000, 3 * 24 * 60);
+    expect(result.flags.some(f => /pump/i.test(f.label))).toBe(false);
+    expect(result.safeBlocked).toBe(false);
   });
 
   it("Fix(EXTREME_PUMP_24H): pc24 > 500 on token <24h sets safeBlocked", () => {

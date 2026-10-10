@@ -655,3 +655,33 @@ describe("pump_imbalance as SOFT reason — safe gate unlock", () => {
     expect(result).toBe(true);
   });
 });
+// ─── determineVerdict: a visible price-only pump flag keeps a token out of SAFE (M6) ────────────────────────────────
+//
+// Pump-only flags are left out of warningFlagsCount (so a pump alone never reaches the 3-warnings -> DANGER floor). That also
+// hid them from the "zero visible warnings -> SAFE" grants: a token with a +1784 % flag, clean otherwise, came out SAFE.
+describe("determineVerdict — price-only pump flags", () => {
+  it("safeBlocked with a pump flag and nothing else: CAUTION, not the 'no visible issue' SAFE", () => {
+    const clean = { safeBlocked: true, safeBlockedReasons: [] as string[], score: 920, sourcesUsedCount: 6, warningFlagsCount: 0, criticalFlagsCount: 0 };
+    expect(determineVerdict(makeVerdictInput({ ...clean, pumpPriceOnlyFlagsCount: 1 }))).toBe("CAUTION");
+    // witness: the same input without the pump flag is the 'no visible issue' SAFE it always was
+    expect(determineVerdict(makeVerdictInput(clean))).toBe("SAFE");
+    expect(determineVerdict(makeVerdictInput({ ...clean, pumpPriceOnlyFlagsCount: 0 }))).toBe("SAFE");
+  });
+
+  it("not safeBlocked but a pump flag: no SAFE either, at the 900 and the 750 grants", () => {
+    const base = { safeBlocked: false, sourcesUsedCount: 6, warningFlagsCount: 0, criticalFlagsCount: 0, pumpPriceOnlyFlagsCount: 2 };
+    expect(determineVerdict(makeVerdictInput({ ...base, score: 950 }))).toBe("CAUTION");
+    expect(determineVerdict(makeVerdictInput({ ...base, score: 780 }))).toBe("CAUTION");
+    expect(determineVerdict(makeVerdictInput({ ...base, score: 780, pumpPriceOnlyFlagsCount: 0 }))).toBe("SAFE");
+  });
+
+  it("pump flags never count toward the 3-warnings DANGER floor, however many there are", () => {
+    expect(determineVerdict(makeVerdictInput({ score: 800, safeBlocked: true, safeBlockedReasons: [], warningFlagsCount: 2, pumpPriceOnlyFlagsCount: 5 }))).toBe("CAUTION");
+  });
+
+  it("a pump flag does not soften anything: a critical flag, forceRug and a low score still win", () => {
+    expect(determineVerdict(makeVerdictInput({ score: 950, pumpPriceOnlyFlagsCount: 1, criticalFlagsCount: 1 }))).toBe("DANGER");
+    expect(determineVerdict(makeVerdictInput({ score: 950, pumpPriceOnlyFlagsCount: 1, forceRug: true }))).toBe("RUG");
+    expect(determineVerdict(makeVerdictInput({ score: 300, pumpPriceOnlyFlagsCount: 1, safeBlocked: true, safeBlockedReasons: [] }))).toBe("DANGER");
+  });
+});

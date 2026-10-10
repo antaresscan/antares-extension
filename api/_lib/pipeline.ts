@@ -172,6 +172,8 @@ export function determineVerdict(input: VerdictInput): Verdict {
   // individual layer penalties are offset by clean scores from other layers.
   if ((input.criticalFlagsCount ?? 0) >= 1) return "DANGER";
   if ((input.warningFlagsCount ?? 0) >= 3) return "DANGER";
+  // A visible price-only pump flag keeps the token out of SAFE (CAUTION is the ceiling): see VerdictInput.pumpPriceOnlyFlagsCount.
+  const hasPumpFlag = (input.pumpPriceOnlyFlagsCount ?? 0) > 0;
 
   if (input.safeBlocked) {
     // HARD reasons: 'lp' and 'deceptive_name' added alongside existing hard reasons.
@@ -200,6 +202,7 @@ export function determineVerdict(input: VerdictInput): Verdict {
     const holdersUnverified = input.safeBlockedReasons?.includes("holders") ?? false;
     if (
       !holdersUnverified &&
+      !hasPumpFlag &&
       (input.warningFlagsCount ?? 0) === 0 &&
       input.score >= 750 &&
       (input.sourcesUsedCount ?? 0) >= 4
@@ -216,7 +219,7 @@ export function determineVerdict(input: VerdictInput): Verdict {
   // contradictory and destroys credibility: either we detected a problem
   // (→ CAUTION at minimum) or we didn't (→ SAFE). Never both.
   // Back-compat: warningFlagsCount undefined (old callers) → treated as 0 → SAFE allowed.
-  if (input.score >= 900 && input.sourcesUsedCount >= 5 && (input.warningFlagsCount ?? 0) === 0) return "SAFE";
+  if (input.score >= 900 && input.sourcesUsedCount >= 5 && (input.warningFlagsCount ?? 0) === 0 && !hasPumpFlag) return "SAFE";
 
   // "Clean blue-chip" path: when there are LITERALLY ZERO token-side
   // warning/critical flags AND the score is still reasonable (>= 750),
@@ -232,6 +235,7 @@ export function determineVerdict(input: VerdictInput): Verdict {
   // still gets CAUTION.
   if (
     input.warningFlagsCount === 0 &&
+    !hasPumpFlag &&
     input.score >= 750 &&
     input.sourcesUsedCount >= 4
   ) {

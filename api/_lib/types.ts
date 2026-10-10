@@ -317,6 +317,13 @@ export interface VerdictInput {
   warningFlagsCount?: number;
   /** Number of critical-severity token-side flags (pipeline-status flags excluded). */
   criticalFlagsCount?: number;
+  /**
+   * Number of price-only pump flags (they are visible to the user but excluded from `warningFlagsCount`, so that
+   * a pump alone never counts toward the 3-warnings -> DANGER floor). A visible pump flag is still an issue: it must
+   * keep the token out of SAFE (CAUTION is the ceiling), which the "zero visible warnings -> SAFE" grants below would
+   * otherwise let through because the pump flags are not in `warningFlagsCount`. Undefined / 0 = none.
+   */
+  pumpPriceOnlyFlagsCount?: number;
 }
 
 // ─── SCAN RESULT ────────────────────────────────────────────────────────────────────────────────

@@ -712,7 +712,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // Pump-only flags are informational market signals, not structural rug risks.
     // They must remain visible to the user but must never count toward the
     // 3-warnings → forced-DANGER threshold in determineVerdict.
-    const _PUMP_PRICE_ONLY = /Pumped \+[\d,]+% (in 24h|over \d+ days)|Large 24h pump|Extreme pump .* on newborn token|Vertical pump detected/i;
+    const _PUMP_PRICE_ONLY = /Pumped \+[\d,]+% (in 24h|over \d+ days)|Large 24h pump|Extreme pump .* on newborn token|Vertical pump detected|Extreme (24h )?pump \+[\d,]+%( in 1h)? — high retrace risk/i;
     const _tokenFlags = _allFlagsForVerdict.filter(
       (f) =>
         (f.severity === "warning" || f.severity === "critical") &&
@@ -721,12 +721,18 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     );
     const _warningFlagsCount = _tokenFlags.length;
     const _criticalFlagsCount = _tokenFlags.filter(f => f.severity === "critical").length;
+    // Pump-only flags are left out of the counts above (so a pump alone never reaches the 3-warnings floor) but they are
+    // visible: they must keep the token out of SAFE. Without this they were invisible to the "zero visible warnings -> SAFE" grants.
+    const _pumpPriceOnlyFlagsCount = _allFlagsForVerdict.filter(
+      (f) => (f.severity === "warning" || f.severity === "critical") && _PUMP_PRICE_ONLY.test(f.label),
+    ).length;
 
     const risk: Verdict = determineVerdict({
       score, forceRug, safeBlocked, safeBlockedReasons,
       sourcesUsedCount: sources_used.length,
       warningFlagsCount: _warningFlagsCount,
       criticalFlagsCount: _criticalFlagsCount,
+      pumpPriceOnlyFlagsCount: _pumpPriceOnlyFlagsCount,
     });
 
     // ── Flag deduplication ────────────────────────────────────────────────────

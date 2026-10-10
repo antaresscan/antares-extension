@@ -155,7 +155,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v41"; // 2026-10-07: unverified holders never reach SAFE (determineVerdict no longer applies the no-flags override when the "holders" safe-block reason is present); flushes cached SAFE entries.
+const ENGINE_VERSION_MANUAL = "v42"; // 2026-10-10: a price pump alone (1h > +300 %, newborn > +200 %, 24h > +1000 %) is a warning, not a critical flag with forceRug, unless a structural weakness comes with it; flushes cached verdicts of pumping tokens.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.
