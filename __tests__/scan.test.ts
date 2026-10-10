@@ -517,3 +517,79 @@ describe("scan handler — token without registered links", () => {
     expect(body.risk).toBe("DANGER");
   });
 });
+
+// ─── A price pump alone (M6) ─────────────────────────────────────────────────
+// A pump alone is never critical, whatever the percentage (rule #628): a liquid token with balanced trades that pumped
+// +1784 % in 24h (the TELEMONEY case) used to be forced to RUG by "Extreme 24h pump — exit liquidity trap". It now gets a
+// warning and the verdict is capped, while the same pump on thin liquidity is still the exit trap it always was.
+describe("scan handler — a price pump alone", () => {
+  const MINT = "So11111111111111111111111111111111111111112";
+
+  function scanWithPump(priceChange: Record<string, number>, liquidityUsd: number, volume24h: number) {
+    setupGoodTokenMocks();
+    const goodMocks = mockFetch.getMockImplementation() as (url: string, ...rest: unknown[]) => Promise<unknown>;
+    mockFetch.mockImplementation((url: string, ...rest: unknown[]) => {
+      if (url.includes("dexscreener")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            pairs: [{
+              pairAddress: "pair1",
+              baseToken: { address: MINT, symbol: "TELE", name: "Telemoney" },
+              liquidity: { usd: liquidityUsd },
+              volume: { h24: volume24h, h1: volume24h / 24 },
+              priceChange: { m5: 1.2, h6: 8, ...priceChange },
+              txns: { m5: { buys: 15, sells: 12 } },
+              priceUsd: "0.01",
+              marketCap: 5_000_000,
+              fdv: 5_000_000,
+              pairCreatedAt: Date.now() - 90 * 24 * 3600 * 1000,
+              info: {
+                socials: [{ type: "twitter", url: "https://twitter.com/test" }],
+                websites: [{ url: "https://test.com" }],
+              },
+            }],
+          }),
+        });
+      }
+      return goodMocks(url, ...rest);
+    });
+  }
+
+  async function run() {
+    const res = createMockRes();
+    await handler(createMockReq({ ca: MINT }), res);
+    return (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as {
+      risk: string; flags: Array<{ label: string; severity: string }>;
+    };
+  }
+
+  it("+1784 % in 24h on a liquid token with balanced trades: a warning, not an exit trap, and not RUG", async () => {
+    scanWithPump({ h24: 1784, h1: 6 }, 500_000, 200_000);
+
+    const body = await run();
+
+    expect(body.flags.some((f) => f.severity === "critical" && /pump/i.test(f.label))).toBe(false);
+    expect(body.flags.some((f) => f.severity === "warning" && /extreme 24h pump \+1784% — high retrace risk/i.test(f.label))).toBe(true);
+    expect(body.risk).toBe("CAUTION"); // the ceiling: a pump is a retrace risk, not a clean bill of health, and not an exit trap
+  });
+
+  it("+450 % in 1h on a liquid token with balanced trades: a warning, not an exit trap, and not RUG", async () => {
+    scanWithPump({ h1: 450, h24: 450 }, 500_000, 200_000);
+
+    const body = await run();
+
+    expect(body.flags.some((f) => f.severity === "critical" && /pump/i.test(f.label))).toBe(false);
+    expect(body.flags.some((f) => f.severity === "warning" && /extreme pump \+450% in 1h — high retrace risk/i.test(f.label))).toBe(true);
+    expect(body.risk).toBe("CAUTION");
+  });
+
+  it("witness: the same +1784 % on thin liquidity ($9k) is still the exit trap: a critical flag and DANGER", async () => {
+    scanWithPump({ h24: 1784, h1: 6 }, 9_000, 40_000);
+
+    const body = await run();
+
+    expect(body.flags.some((f) => f.severity === "critical" && /extreme 24h pump/i.test(f.label))).toBe(true);
+    expect(body.risk).toBe("DANGER");
+  });
+});

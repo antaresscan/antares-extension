@@ -158,11 +158,24 @@ export function layerDexScreener(
       penalties.push(0.40); safeBlocked = true;
     }
   } else if (pc1 > 300) {
-    flags.push(makeFlag(`Extreme pump +${Math.round(pc1)}% in 1h — bundler exit trap`, "critical", 0));
-    penalties.push(0.05); forceRug = true; safeBlocked = true;
+    if (hasStructuralWeakness) {
+      flags.push(makeFlag(`Extreme pump +${Math.round(pc1)}% in 1h + structural weakness — bundler exit trap`, "critical", 0));
+      penalties.push(0.05); forceRug = true; safeBlocked = true;
+    } else {
+      // A pump alone is NEVER critical, whatever the percentage (the rule #628 set for the weekly and monthly pumps): legit
+      // tokens do +1000 % in a day. The flag informs the trader and caps the verdict at CAUTION; it takes a structural
+      // weakness next to it (thin liquidity, wash volume, one-sided trades) to make it an exit trap.
+      flags.push(makeFlag(`Extreme pump +${Math.round(pc1)}% in 1h — high retrace risk`, "warning", 0));
+      penalties.push(0.55); safeBlocked = true;
+    }
   } else if (pc1 > 200 && ageMinutes < 120) {
-    flags.push(makeFlag(`Pump +${Math.round(pc1)}% on newborn token (<2h) — exit trap`, "critical", 0));
-    penalties.push(0.10); forceRug = true; safeBlocked = true;
+    if (hasStructuralWeakness) {
+      flags.push(makeFlag(`Pump +${Math.round(pc1)}% on newborn token (<2h) + structural weakness — exit trap`, "critical", 0));
+      penalties.push(0.10); forceRug = true; safeBlocked = true;
+    } else {
+      flags.push(makeFlag(`Pump +${Math.round(pc1)}% on newborn token (<2h)`, "warning", 0));
+      penalties.push(0.40); safeBlocked = true;
+    }
   } else if (pc1 > 200 && pc5 > 50) {
     flags.push(makeFlag("Coordinated pump pattern", "warning", 0));
     penalties.push(0.65);
@@ -204,12 +217,24 @@ export function layerDexScreener(
 
   // Fix(EXTREME_PUMP_24H): Tokens with +1000% to +5000% 24h are exit traps — TRAP, KERMIT, HOUSETOUR pattern
   // DeFade flags these as HIGH/CRITICAL risk; Antares was letting them pass as SAFE
+  // Since M6 the price alone no longer makes these critical (a pump alone is never critical, see the 1h tiers above): it takes a
+  // structural weakness next to it. Without one, they are warnings that cap the verdict at CAUTION.
   if (pc24 > 5000) {
-    flags.push(makeFlag(`Extreme 24h pump +${Math.round(pc24)}% — exit liquidity trap`, "critical", 0));
-    penalties.push(0.05); forceRug = true; safeBlocked = true;
+    if (hasStructuralWeakness) {
+      flags.push(makeFlag(`Extreme 24h pump +${Math.round(pc24)}% — exit liquidity trap`, "critical", 0));
+      penalties.push(0.05); forceRug = true; safeBlocked = true;
+    } else {
+      flags.push(makeFlag(`Extreme 24h pump +${Math.round(pc24)}% — high retrace risk`, "warning", 0));
+      penalties.push(0.55); safeBlocked = true;
+    }
   } else if (pc24 > 1000) {
-    flags.push(makeFlag(`Extreme 24h pump +${Math.round(pc24)}% — high risk exit trap`, "critical", 0));
-    penalties.push(0.15); safeBlocked = true;
+    if (hasStructuralWeakness) {
+      flags.push(makeFlag(`Extreme 24h pump +${Math.round(pc24)}% — high risk exit trap`, "critical", 0));
+      penalties.push(0.15); safeBlocked = true;
+    } else {
+      flags.push(makeFlag(`Extreme 24h pump +${Math.round(pc24)}% — high retrace risk`, "warning", 0));
+      penalties.push(0.55); safeBlocked = true;
+    }
   } else if (pc24 > 500 && ageMinutes < 1440) {
     flags.push(makeFlag(`Large 24h pump +${Math.round(pc24)}% on token <24h`, "warning", 0));
     penalties.push(0.55); safeBlocked = true;
