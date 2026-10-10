@@ -1,0 +1,1868 @@
+{
+  "BONK": {
+    "risk": "SAFE",
+    "score": 1000,
+    "confidence": 90,
+    "flags": [
+      "bonus:Established token (30d+) ✓",
+      "info:LP holds 0.06% of supply — negligible rug risk",
+      "info:Mutable metadata",
+      "info:Top 10 hold 38% — moderate · exchanges likely included"
+    ],
+    "sources_used": [
+      "chart",
+      "dexscreener",
+      "goplus",
+      "helius",
+      "rugcheck"
+    ],
+    "layers": {
+      "chart": {
+        "available": true,
+        "trust": 1
+      },
+      "crossvalidation": {
+        "available": true,
+        "trust": 1
+      },
+      "dexscreener": {
+        "available": true,
+        "trust": 1
+      },
+      "goplus": {
+        "available": true,
+        "trust": 1
+      },
+      "helius": {
+        "available": true,
+        "trust": 1
+      },
+      "rugcheck": {
+        "available": true,
+        "trust": 0.95
+      },
+      "solscan": {
+        "available": false,
+        "trust": 1
+      }
+    },
+    "mintAuthority": false,
+    "freezeAuthority": false,
+    "honeypot": false,
+    "lpBurned": false,
+    "lpLocked": false,
+    "holders": 1024809,
+    "top10HolderPct": 38.33,
+    "topHolderPct": 8.83,
+    "safeBlocked": false,
+    "safeBlockedReasons": []
+  },
+  "WIF": {
+    "risk": "SAFE",
+    "score": 1000,
+    "confidence": 90,
+    "flags": [
+      "bonus:Established token (30d+) ✓",
+      "bonus:LP Burned 100% (GoPlus) ✓",
+      "info:Top 10 hold 44% — moderate · exchanges likely included"
+    ],
+    "sources_used": [
+      "chart",
+      "dexscreener",
+      "goplus",
+      "helius",
+      "rugcheck"
+    ],
+    "layers": {
+      "chart": {
+        "available": true,
+        "trust": 1
+      },
+      "crossvalidation": {
+        "available": true,
+        "trust": 1
+      },
+      "dexscreener": {
+        "available": true,
+        "trust": 1
+      },
+      "goplus": {
+        "available": true,
+        "trust": 1
+      },
+      "helius": {
+        "available": true,
+        "trust": 1
+      },
+      "rugcheck": {
+        "available": true,
+        "trust": 1
+      },
+      "solscan": {
+        "available": false,
+        "trust": 1
+      }
+    },
+    "mintAuthority": false,
+    "freezeAuthority": false,
+    "honeypot": false,
+    "lpBurned": true,
+    "lpLocked": false,
+    "holders": 262978,
+    "top10HolderPct": 44.19,
+    "topHolderPct": 13.72,
+    "safeBlocked": false,
+    "safeBlockedReasons": []
+  },
+  "PENGU": {
+    "risk": "SAFE",
+    "score": 1000,
+    "confidence": 90,
+    "flags": [
+      "bonus:Established token (30d+) ✓",
+      "info:LP holds 0.31% of supply — negligible rug risk",
+      "info:Top 10 hold 43% — moderate · exchanges likely included",
+      "info:Volume tapering during consolidation (mature pair)"
+    ],
+    "sources_used": [
+      "chart",
+      "dexscreener",
+      "goplus",
+      "helius",
+      "rugcheck"
+    ],
+    "layers": {
+      "chart": {
+        "available": true,
+        "trust": 0.85
+      },
+      "crossvalidation": {
+        "available": true,
+        "trust": 1
+      },
+      "dexscreener": {
+        "available": true,
+        "trust": 1
+      },
+      "goplus": {
+        "available": true,
+        "trust": 0.99
+      },
+      "helius": {
+        "available": true,
+        "trust": 1
+      },
+      "rugcheck": {
+        "available": true,
+        "trust": 1
+      },
+      "solscan": {
+        "available": false,
+        "trust": 1
+      }
+    },
+    "mintAuthority": false,
+    "freezeAuthority": false,
+    "honeypot": false,
+    "lpBurned": false,
+    "lpLocked": false,
+    "holders": 563069,
+    "top10HolderPct": 43.43,
+    "topHolderPct": 9.61,
+    "safeBlocked": false,
+    "safeBlockedReasons": []
+  },
+  "POPCAT": {
+    "risk": "CAUTION",
+    "score": 1000,
+    "confidence": 90,
+    "flags": [
+      "bonus:Established token (30d+) ✓",
+      "bonus:LP Burned 99% (GoPlus) ✓",
+      "info:Top 10 hold 40% — moderate · exchanges likely included",
+      "warning:Buy/sell imbalance (coordinated pump)"
+    ],
+    "sources_used": [
+      "chart",
+      "dexscreener",
+      "goplus",
+      "helius",
+      "rugcheck"
+    ],
+    "layers": {
+      "chart": {
+        "available": true,
+        "trust": 1
+      },
+      "crossvalidation": {
+        "available": true,
+        "trust": 1
+      },
+      "dexscreener": {
+        "available": true,
+        "trust": 0.85
+      },
+      "goplus": {
+        "available": true,
+        "trust": 1
+      },
+      "helius": {
+        "available": true,
+        "trust": 1
+      },
+      "rugcheck": {
+        "available": true,
+        "trust": 1
+      },
+      "solscan": {
+        "available": false,
+        "trust": 1
+      }
+    },
+    "mintAuthority": false,
+    "freezeAuthority": false,
+    "honeypot": false,
+    "lpBurned": true,
+    "lpLocked": false,
+    "holders": 138254,
+    "top10HolderPct": 39.51,
+    "topHolderPct": 11.03,
+    "safeBlocked": false,
+    "safeBlockedReasons": []
+  },
+  "MEW": {
+    "risk": "DANGER",
+    "score": 525,
+    "confidence": 90,
+    "flags": [
+      "bonus:Established token (30d+) ✓",
+      "bonus:LP Burned 100% (GoPlus) ✓",
+      "critical:Top 10 hold 65% — high concentration"
+    ],
+    "sources_used": [
+      "chart",
+      "dexscreener",
+      "goplus",
+      "helius",
+      "rugcheck"
+    ],
+    "layers": {
+      "chart": {
+        "available": true,
+        "trust": 1
+      },
+      "crossvalidation": {
+        "available": true,
+        "trust": 1
+      },
+      "dexscreener": {
+        "available": true,
+        "trust": 1
+      },
+      "goplus": {
+        "available": true,
+        "trust": 1
+      },
+      "helius": {
+        "available": true,
+        "trust": 0.25
+      },
+      "rugcheck": {
+        "available": true,
+        "trust": 1
+      },
+      "solscan": {
+        "available": false,
+        "trust": 1
+      }
+    },
+    "mintAuthority": false,
+    "freezeAuthority": false,
+    "honeypot": false,
+    "lpBurned": true,
+    "lpLocked": false,
+    "holders": 156887,
+    "top10HolderPct": 65.19,
+    "topHolderPct": 36.78,
+    "safeBlocked": true,
+    "safeBlockedReasons": [
+      "concentration"
+    ]
+  },
+  "GOAT": {
+    "risk": "CAUTION",
+    "score": 900,
+    "confidence": 90,
+    "flags": [
+      "bonus:Established token (30d+) ✓",
+      "bonus:LP Burned 99% (GoPlus) ✓",
+      "warning:Top 10 hold 46% — elevated · exchanges may be included"
+    ],
+    "sources_used": [
+      "chart",
+      "dexscreener",
+      "goplus",
+      "helius",
+      "rugcheck"
+    ],
+    "layers": {
+      "chart": {
+        "available": true,
+        "trust": 1
+      },
+      "crossvalidation": {
+        "available": true,
+        "trust": 1
+      },
+      "dexscreener": {
+        "available": true,
+        "trust": 1
+      },
+      "goplus": {
+        "available": true,
+        "trust": 1
+      },
+      "helius": {
+        "available": true,
+        "trust": 0.5
+      },
+      "rugcheck": {
+        "available": true,
+        "trust": 1
+      },
+      "solscan": {
+        "available": false,
+        "trust": 1
+      }
+    },
+    "mintAuthority": false,
+    "freezeAuthority": false,
+    "honeypot": false,
+    "lpBurned": true,
+    "lpLocked": false,
+    "holders": 76954,
+    "top10HolderPct": 45.6,
+    "topHolderPct": 6.54,
+    "safeBlocked": false,
+    "safeBlockedReasons": [
+      "concentration_light"
+    ]
+  },
+  "PNUT": {
+    "risk": "DANGER",
+    "score": 525,
+    "confidence": 90,
+    "flags": [
+      "bonus:Established token (30d+) ✓",
+      "bonus:LP Burned 99% (GoPlus) ✓",
+      "critical:Top 10 hold 68% — high concentration"
+    ],
+    "sources_used": [
+      "chart",
+      "dexscreener",
+      "goplus",
+      "helius",
+      "rugcheck"
+    ],
+    "layers": {
+      "chart": {
+        "available": true,
+        "trust": 1
+      },
+      "crossvalidation": {
+        "available": true,
+        "trust": 1
+      },
+      "dexscreener": {
+        "available": true,
+        "trust": 1
+      },
+      "goplus": {
+        "available": true,
+        "trust": 1
+      },
+      "helius": {
+        "available": true,
+        "trust": 0.25
+      },
+      "rugcheck": {
+        "available": true,
+        "trust": 1
+      },
+      "solscan": {
+        "available": false,
+        "trust": 1
+      }
+    },
+    "mintAuthority": false,
+    "freezeAuthority": false,
+    "honeypot": false,
+    "lpBurned": true,
+    "lpLocked": false,
+    "holders": 83528,
+    "top10HolderPct": 68.1,
+    "topHolderPct": 30.52,
+    "safeBlocked": true,
+    "safeBlockedReasons": [
+      "concentration"
+    ]
+  },
+  "FARTCOIN": {
+    "risk": "SAFE",
+    "score": 1000,
+    "confidence": 90,
+    "flags": [
+      "bonus:Established token (30d+) ✓",
+      "bonus:LP Burned 99% (GoPlus) ✓",
+      "info:Top 10 hold 35% — moderate · exchanges likely included"
+    ],
+    "sources_used": [
+      "chart",
+      "dexscreener",
+      "goplus",
+      "helius",
+      "rugcheck"
+    ],
+    "layers": {
+      "chart": {
+        "available": true,
+        "trust": 1
+      },
+      "crossvalidation": {
+        "available": true,
+        "trust": 1
+      },
+      "dexscreener": {
+        "available": true,
+        "trust": 1
+      },
+      "goplus": {
+        "available": true,
+        "trust": 1
+      },
+      "helius": {
+        "available": true,
+        "trust": 1
+      },
+      "rugcheck": {
+        "available": true,
+        "trust": 1
+      },
+      "solscan": {
+        "available": false,
+        "trust": 1
+      }
+    },
+    "mintAuthority": false,
+    "freezeAuthority": false,
+    "honeypot": false,
+    "lpBurned": true,
+    "lpLocked": false,
+    "holders": 187958,
+    "top10HolderPct": 35.48,
+    "topHolderPct": 10.36,
+    "safeBlocked": false,
+    "safeBlockedReasons": []
+  },
+  "NEET": {
+    "risk": "SAFE",
+    "score": 998,
+    "confidence": 90,
+    "flags": [
+      "bonus:Established token (30d+) ✓",
+      "bonus:Well distributed supply ✓",
+      "info:LP holds 3.0% of supply"
+    ],
+    "sources_used": [
+      "chart",
+      "dexscreener",
+      "goplus",
+      "helius",
+      "rugcheck"
+    ],
+    "layers": {
+      "chart": {
+        "available": true,
+        "trust": 1
+      },
+      "crossvalidation": {
+        "available": true,
+        "trust": 1
+      },
+      "dexscreener": {
+        "available": true,
+        "trust": 1
+      },
+      "goplus": {
+        "available": true,
+        "trust": 0.99
+      },
+      "helius": {
+        "available": true,
+        "trust": 1
+      },
+      "rugcheck": {
+        "available": true,
+        "trust": 1
+      },
+      "solscan": {
+        "available": false,
+        "trust": 1
+      }
+    },
+    "mintAuthority": false,
+    "freezeAuthority": false,
+    "honeypot": false,
+    "lpBurned": false,
+    "lpLocked": false,
+    "holders": 29201,
+    "top10HolderPct": 19.23,
+    "topHolderPct": 5.84,
+    "safeBlocked": false,
+    "safeBlockedReasons": []
+  },
+  "TROLL": {
+    "risk": "SAFE",
+    "score": 1000,
+    "confidence": 90,
+    "flags": [
+      "bonus:Established token (30d+) ✓",
+      "info:LP holds 4.0% of supply",
+      "info:Top 10 hold 27% — moderate · exchanges likely included"
+    ],
+    "sources_used": [
+      "chart",
+      "dexscreener",
+      "goplus",
+      "helius",
+      "rugcheck"
+    ],
+    "layers": {
+      "chart": {
+        "available": true,
+        "trust": 1
+      },
+      "crossvalidation": {
+        "available": true,
+        "trust": 1
+      },
+      "dexscreener": {
+        "available": true,
+        "trust": 1
+      },
+      "goplus": {
+        "available": true,
+        "trust": 0.99
+      },
+      "helius": {
+        "available": true,
+        "trust": 1
+      },
+      "rugcheck": {
+        "available": true,
+        "trust": 1
+      },
+      "solscan": {
+        "available": false,
+        "trust": 1
+      }
+    },
+    "mintAuthority": false,
+    "freezeAuthority": false,
+    "honeypot": false,
+    "lpBurned": false,
+    "lpLocked": false,
+    "holders": 70397,
+    "top10HolderPct": 29.63,
+    "topHolderPct": 5.27,
+    "safeBlocked": false,
+    "safeBlockedReasons": []
+  },
+  "FWOG": {
+    "risk": "SAFE",
+    "score": 1000,
+    "confidence": 90,
+    "flags": [
+      "bonus:Established token (30d+) ✓",
+      "bonus:LP Burned 100% (GoPlus) ✓",
+      "info:Top 10 hold 34% — moderate · exchanges likely included"
+    ],
+    "sources_used": [
+      "chart",
+      "dexscreener",
+      "goplus",
+      "helius",
+      "rugcheck"
+    ],
+    "layers": {
+      "chart": {
+        "available": true,
+        "trust": 1
+      },
+      "crossvalidation": {
+        "available": true,
+        "trust": 1
+      },
+      "dexscreener": {
+        "available": true,
+        "trust": 1
+      },
+      "goplus": {
+        "available": true,
+        "trust": 1
+      },
+      "helius": {
+        "available": true,
+        "trust": 1
+      },
+      "rugcheck": {
+        "available": true,
+        "trust": 1
+      },
+      "solscan": {
+        "available": false,
+        "trust": 1
+      }
+    },
+    "mintAuthority": false,
+    "freezeAuthority": false,
+    "honeypot": false,
+    "lpBurned": true,
+    "lpLocked": false,
+    "holders": 68404,
+    "top10HolderPct": 33.53,
+    "topHolderPct": 5.4,
+    "safeBlocked": false,
+    "safeBlockedReasons": []
+  },
+  "ACT": {
+    "risk": "DANGER",
+    "score": 525,
+    "confidence": 90,
+    "flags": [
+      "bonus:Established token (30d+) ✓",
+      "bonus:LP Burned 100% (GoPlus) ✓",
+      "critical:Top 10 hold 76% — high concentration",
+      "warning:RugCheck: Single holder ownership",
+      "warning:RugCheck: Top 10 holders high ownership"
+    ],
+    "sources_used": [
+      "chart",
+      "dexscreener",
+      "goplus",
+      "helius",
+      "rugcheck"
+    ],
+    "layers": {
+      "chart": {
+        "available": true,
+        "trust": 1
+      },
+      "crossvalidation": {
+        "available": true,
+        "trust": 1
+      },
+      "dexscreener": {
+        "available": true,
+        "trust": 1
+      },
+      "goplus": {
+        "available": true,
+        "trust": 1
+      },
+      "helius": {
+        "available": true,
+        "trust": 0.25
+      },
+      "rugcheck": {
+        "available": true,
+        "trust": 0.752
+      },
+      "solscan": {
+        "available": false,
+        "trust": 1
+      }
+    },
+    "mintAuthority": false,
+    "freezeAuthority": false,
+    "honeypot": false,
+    "lpBurned": true,
+    "lpLocked": false,
+    "holders": 38398,
+    "top10HolderPct": 75.87,
+    "topHolderPct": 40.19,
+    "safeBlocked": true,
+    "safeBlockedReasons": [
+      "concentration"
+    ]
+  },
+  "GIGA": {
+    "risk": "SAFE",
+    "score": 1000,
+    "confidence": 90,
+    "flags": [
+      "bonus:Established token (30d+) ✓",
+      "bonus:LP Burned 100% (GoPlus) ✓",
+      "info:Top 10 hold 34% — moderate · exchanges likely included"
+    ],
+    "sources_used": [
+      "chart",
+      "dexscreener",
+      "goplus",
+      "helius",
+      "rugcheck"
+    ],
+    "layers": {
+      "chart": {
+        "available": true,
+        "trust": 1
+      },
+      "crossvalidation": {
+        "available": true,
+        "trust": 1
+      },
+      "dexscreener": {
+        "available": true,
+        "trust": 1
+      },
+      "goplus": {
+        "available": true,
+        "trust": 1
+      },
+      "helius": {
+        "available": true,
+        "trust": 1
+      },
+      "rugcheck": {
+        "available": true,
+        "trust": 1
+      },
+      "solscan": {
+        "available": false,
+        "trust": 1
+      }
+    },
+    "mintAuthority": false,
+    "freezeAuthority": false,
+    "honeypot": false,
+    "lpBurned": true,
+    "lpLocked": false,
+    "holders": 83392,
+    "top10HolderPct": 33.96,
+    "topHolderPct": 12.04,
+    "safeBlocked": false,
+    "safeBlockedReasons": []
+  },
+  "PIPPIN": {
+    "risk": "CAUTION",
+    "score": 900,
+    "confidence": 90,
+    "flags": [
+      "bonus:Established token (30d+) ✓",
+      "bonus:LP Burned 99% (GoPlus) ✓",
+      "warning:Top 10 hold 61% — elevated · exchanges may be included"
+    ],
+    "sources_used": [
+      "chart",
+      "dexscreener",
+      "goplus",
+      "helius",
+      "rugcheck"
+    ],
+    "layers": {
+      "chart": {
+        "available": true,
+        "trust": 1
+      },
+      "crossvalidation": {
+        "available": true,
+        "trust": 1
+      },
+      "dexscreener": {
+        "available": true,
+        "trust": 1
+      },
+      "goplus": {
+        "available": true,
+        "trust": 1
+      },
+      "helius": {
+        "available": true,
+        "trust": 0.5
+      },
+      "rugcheck": {
+        "available": true,
+        "trust": 1
+      },
+      "solscan": {
+        "available": false,
+        "trust": 1
+      }
+    },
+    "mintAuthority": false,
+    "freezeAuthority": false,
+    "honeypot": false,
+    "lpBurned": true,
+    "lpLocked": false,
+    "holders": 48770,
+    "top10HolderPct": 61.24,
+    "topHolderPct": 26.62,
+    "safeBlocked": false,
+    "safeBlockedReasons": [
+      "concentration_light"
+    ]
+  },
+  "TRUMP": {
+    "risk": "DANGER",
+    "score": 525,
+    "confidence": 90,
+    "flags": [
+      "bonus:Established token (30d+) ✓",
+      "critical:Top 10 hold 89% — extreme concentration",
+      "info:LP holds 0.31% of supply — negligible rug risk",
+      "warning:RugCheck: High ownership",
+      "warning:RugCheck: Single holder ownership",
+      "warning:RugCheck: Top 10 holders high ownership"
+    ],
+    "sources_used": [
+      "chart",
+      "dexscreener",
+      "goplus",
+      "helius",
+      "rugcheck"
+    ],
+    "layers": {
+      "chart": {
+        "available": true,
+        "trust": 1
+      },
+      "crossvalidation": {
+        "available": true,
+        "trust": 1
+      },
+      "dexscreener": {
+        "available": true,
+        "trust": 1
+      },
+      "goplus": {
+        "available": true,
+        "trust": 1
+      },
+      "helius": {
+        "available": true,
+        "trust": 0.1
+      },
+      "rugcheck": {
+        "available": true,
+        "trust": 0.681
+      },
+      "solscan": {
+        "available": false,
+        "trust": 1
+      }
+    },
+    "mintAuthority": false,
+    "freezeAuthority": false,
+    "honeypot": false,
+    "lpBurned": false,
+    "lpLocked": false,
+    "holders": 672737,
+    "top10HolderPct": 88.57,
+    "topHolderPct": 71.81,
+    "safeBlocked": true,
+    "safeBlockedReasons": [
+      "concentration"
+    ]
+  },
+  "HAWK": {
+    "risk": "DANGER",
+    "score": 525,
+    "confidence": 90,
+    "flags": [
+      "bonus:Established token (30d+) ✓",
+      "bonus:LP Burned 100% (GoPlus) ✓",
+      "critical:Single wallet holds 44% — high concentration",
+      "warning:RugCheck: Single holder ownership",
+      "warning:Top 10 hold 53% — elevated · exchanges may be included"
+    ],
+    "sources_used": [
+      "chart",
+      "dexscreener",
+      "goplus",
+      "helius",
+      "rugcheck"
+    ],
+    "layers": {
+      "chart": {
+        "available": true,
+        "trust": 1
+      },
+      "crossvalidation": {
+        "available": true,
+        "trust": 1
+      },
+      "dexscreener": {
+        "available": true,
+        "trust": 1
+      },
+      "goplus": {
+        "available": true,
+        "trust": 1
+      },
+      "helius": {
+        "available": true,
+        "trust": 0.154
+      },
+      "rugcheck": {
+        "available": true,
+        "trust": 0.85
+      },
+      "solscan": {
+        "available": false,
+        "trust": 1
+      }
+    },
+    "mintAuthority": false,
+    "freezeAuthority": false,
+    "honeypot": false,
+    "lpBurned": true,
+    "lpLocked": false,
+    "holders": 6987,
+    "top10HolderPct": 53.01,
+    "topHolderPct": 43.98,
+    "safeBlocked": true,
+    "safeBlockedReasons": [
+      "concentration",
+      "concentration_light"
+    ]
+  },
+  "USELESS": {
+    "risk": "DANGER",
+    "score": 454,
+    "confidence": 90,
+    "flags": [
+      "bonus:Established token (30d+) ✓",
+      "bonus:LP Burned 98% (GoPlus) ✓",
+      "bonus:Well distributed supply ✓",
+      "critical:Mint authority active — supply can be inflated",
+      "critical:No website / Twitter / Telegram — high rug risk",
+      "info:Mutable metadata",
+      "warning:Mint authority conflict: on-chain vs GoPlus"
+    ],
+    "sources_used": [
+      "chart",
+      "dexscreener",
+      "goplus",
+      "helius",
+      "rugcheck"
+    ],
+    "layers": {
+      "chart": {
+        "available": true,
+        "trust": 1
+      },
+      "crossvalidation": {
+        "available": true,
+        "trust": 1
+      },
+      "dexscreener": {
+        "available": true,
+        "trust": 0.6
+      },
+      "goplus": {
+        "available": true,
+        "trust": 0.25
+      },
+      "helius": {
+        "available": true,
+        "trust": 1
+      },
+      "rugcheck": {
+        "available": true,
+        "trust": 0.95
+      },
+      "solscan": {
+        "available": false,
+        "trust": 1
+      }
+    },
+    "mintAuthority": true,
+    "freezeAuthority": false,
+    "honeypot": false,
+    "lpBurned": true,
+    "lpLocked": false,
+    "holders": 45831,
+    "top10HolderPct": 14.01,
+    "topHolderPct": 3.28,
+    "safeBlocked": true,
+    "safeBlockedReasons": [
+      "mint"
+    ]
+  },
+  "JUP": {
+    "risk": "DANGER",
+    "score": 763,
+    "confidence": 90,
+    "flags": [
+      "bonus:Established token (30d+) ✓",
+      "critical:Top 10 hold 66% — high concentration",
+      "info:LP holds 0.04% of supply — negligible rug risk",
+      "info:Mutable metadata"
+    ],
+    "sources_used": [
+      "chart",
+      "dexscreener",
+      "goplus",
+      "helius",
+      "rugcheck"
+    ],
+    "layers": {
+      "chart": {
+        "available": true,
+        "trust": 1
+      },
+      "crossvalidation": {
+        "available": true,
+        "trust": 1
+      },
+      "dexscreener": {
+        "available": true,
+        "trust": 1
+      },
+      "goplus": {
+        "available": true,
+        "trust": 1
+      },
+      "helius": {
+        "available": true,
+        "trust": 0.25
+      },
+      "rugcheck": {
+        "available": true,
+        "trust": 0.95
+      },
+      "solscan": {
+        "available": false,
+        "trust": 1
+      }
+    },
+    "mintAuthority": false,
+    "freezeAuthority": false,
+    "honeypot": false,
+    "lpBurned": false,
+    "lpLocked": false,
+    "holders": 830328,
+    "top10HolderPct": 66.2,
+    "topHolderPct": 24.78,
+    "safeBlocked": false,
+    "safeBlockedReasons": [
+      "concentration"
+    ]
+  },
+  "RENDER": {
+    "risk": "DANGER",
+    "score": 435,
+    "confidence": 90,
+    "flags": [
+      "bonus:Established token (30d+) ✓",
+      "critical:Freeze authority active — wallets can be frozen",
+      "critical:LP not burned or locked — dev can rug liquidity (contract not clean)",
+      "critical:Mint authority active — supply can be inflated",
+      "critical:No website / Twitter / Telegram — high rug risk",
+      "info:Mutable metadata",
+      "warning:Top 10 hold 48% — elevated · exchanges may be included"
+    ],
+    "sources_used": [
+      "chart",
+      "dexscreener",
+      "goplus",
+      "helius",
+      "rugcheck"
+    ],
+    "layers": {
+      "chart": {
+        "available": true,
+        "trust": 1
+      },
+      "crossvalidation": {
+        "available": true,
+        "trust": 1
+      },
+      "dexscreener": {
+        "available": true,
+        "trust": 0.6
+      },
+      "goplus": {
+        "available": true,
+        "trust": 0.083
+      },
+      "helius": {
+        "available": true,
+        "trust": 0.5
+      },
+      "rugcheck": {
+        "available": true,
+        "trust": 0.95
+      },
+      "solscan": {
+        "available": false,
+        "trust": 1
+      }
+    },
+    "mintAuthority": true,
+    "freezeAuthority": true,
+    "honeypot": null,
+    "lpBurned": false,
+    "lpLocked": false,
+    "holders": 126454,
+    "top10HolderPct": 48.02,
+    "topHolderPct": 16.85,
+    "safeBlocked": true,
+    "safeBlockedReasons": [
+      "concentration_light",
+      "freeze",
+      "lp",
+      "mint"
+    ]
+  },
+  "HNT": {
+    "risk": "DANGER",
+    "score": 893,
+    "confidence": 90,
+    "flags": [
+      "bonus:Established token (30d+) ✓",
+      "critical:No website / Twitter / Telegram — high rug risk",
+      "info:LP holds 0.21% of supply — negligible rug risk",
+      "info:Mint authority active — supply can be inflated",
+      "info:Mutable metadata",
+      "info:Top 10 hold 26% — moderate · exchanges likely included"
+    ],
+    "sources_used": [
+      "chart",
+      "dexscreener",
+      "goplus",
+      "helius",
+      "rugcheck"
+    ],
+    "layers": {
+      "chart": {
+        "available": true,
+        "trust": 1
+      },
+      "crossvalidation": {
+        "available": true,
+        "trust": 1
+      },
+      "dexscreener": {
+        "available": true,
+        "trust": 0.6
+      },
+      "goplus": {
+        "available": true,
+        "trust": 0.95
+      },
+      "helius": {
+        "available": true,
+        "trust": 1
+      },
+      "rugcheck": {
+        "available": true,
+        "trust": 0.95
+      },
+      "solscan": {
+        "available": false,
+        "trust": 1
+      }
+    },
+    "mintAuthority": true,
+    "freezeAuthority": false,
+    "honeypot": false,
+    "lpBurned": false,
+    "lpLocked": false,
+    "holders": 537767,
+    "top10HolderPct": 25.97,
+    "topHolderPct": 4.18,
+    "safeBlocked": true,
+    "safeBlockedReasons": []
+  },
+  "WBTC": {
+    "risk": "DANGER",
+    "score": 525,
+    "confidence": 90,
+    "flags": [
+      "bonus:Established token (30d+) ✓",
+      "critical:No website / Twitter / Telegram — high rug risk",
+      "critical:Top 10 hold 69% — high concentration",
+      "info:LP holds 0.49% of supply — negligible rug risk",
+      "info:Mint authority active — supply can be inflated",
+      "info:Mutable metadata",
+      "warning:RugCheck: Single holder ownership"
+    ],
+    "sources_used": [
+      "chart",
+      "dexscreener",
+      "goplus",
+      "helius",
+      "rugcheck"
+    ],
+    "layers": {
+      "chart": {
+        "available": true,
+        "trust": 1
+      },
+      "crossvalidation": {
+        "available": true,
+        "trust": 1
+      },
+      "dexscreener": {
+        "available": true,
+        "trust": 0.6
+      },
+      "goplus": {
+        "available": true,
+        "trust": 0.95
+      },
+      "helius": {
+        "available": true,
+        "trust": 0.25
+      },
+      "rugcheck": {
+        "available": true,
+        "trust": 0.817
+      },
+      "solscan": {
+        "available": false,
+        "trust": 1
+      }
+    },
+    "mintAuthority": true,
+    "freezeAuthority": false,
+    "honeypot": false,
+    "lpBurned": false,
+    "lpLocked": false,
+    "holders": 127628,
+    "top10HolderPct": 69.49,
+    "topHolderPct": 60.31,
+    "safeBlocked": true,
+    "safeBlockedReasons": [
+      "concentration"
+    ]
+  },
+  "WSOL": {
+    "risk": "CAUTION",
+    "score": 850,
+    "confidence": 70,
+    "flags": [
+      "bonus:Established token (30d+) ✓",
+      "warning:Helius unavailable — holder concentration unverified",
+      "warning:LP-to-supply ratio could not be computed"
+    ],
+    "sources_used": [
+      "chart",
+      "dexscreener",
+      "goplus",
+      "rugcheck"
+    ],
+    "layers": {
+      "chart": {
+        "available": true,
+        "trust": 1
+      },
+      "crossvalidation": {
+        "available": true,
+        "trust": 1
+      },
+      "dexscreener": {
+        "available": true,
+        "trust": 1
+      },
+      "goplus": {
+        "available": true,
+        "trust": 0.85
+      },
+      "helius": {
+        "available": false,
+        "trust": 0.82
+      },
+      "rugcheck": {
+        "available": true,
+        "trust": 1
+      },
+      "solscan": {
+        "available": false,
+        "trust": 1
+      }
+    },
+    "mintAuthority": false,
+    "freezeAuthority": false,
+    "honeypot": false,
+    "lpBurned": false,
+    "lpLocked": false,
+    "holders": 8567812,
+    "top10HolderPct": null,
+    "topHolderPct": null,
+    "safeBlocked": true,
+    "safeBlockedReasons": [
+      "holders",
+      "lp_unverified"
+    ]
+  },
+  "JTO": {
+    "risk": "DANGER",
+    "score": 795,
+    "confidence": 90,
+    "flags": [
+      "bonus:Established token (30d+) ✓",
+      "critical:No website / Twitter / Telegram — high rug risk",
+      "info:LP holds 0.01% of supply — negligible rug risk",
+      "info:Mutable metadata",
+      "warning:Top 10 hold 49% — elevated · exchanges may be included"
+    ],
+    "sources_used": [
+      "chart",
+      "dexscreener",
+      "goplus",
+      "helius",
+      "rugcheck"
+    ],
+    "layers": {
+      "chart": {
+        "available": true,
+        "trust": 1
+      },
+      "crossvalidation": {
+        "available": true,
+        "trust": 1
+      },
+      "dexscreener": {
+        "available": true,
+        "trust": 0.6
+      },
+      "goplus": {
+        "available": true,
+        "trust": 1
+      },
+      "helius": {
+        "available": true,
+        "trust": 0.5
+      },
+      "rugcheck": {
+        "available": true,
+        "trust": 0.95
+      },
+      "solscan": {
+        "available": false,
+        "trust": 1
+      }
+    },
+    "mintAuthority": false,
+    "freezeAuthority": false,
+    "honeypot": false,
+    "lpBurned": false,
+    "lpLocked": false,
+    "holders": 89605,
+    "top10HolderPct": 48.67,
+    "topHolderPct": 21.27,
+    "safeBlocked": false,
+    "safeBlockedReasons": [
+      "concentration_light"
+    ]
+  },
+  "RAY": {
+    "risk": "DANGER",
+    "score": 525,
+    "confidence": 90,
+    "flags": [
+      "bonus:Established token (30d+) ✓",
+      "critical:Top 10 hold 77% — high concentration",
+      "info:LP holds 0.28% of supply — negligible rug risk",
+      "info:Mutable metadata",
+      "warning:Buy/sell imbalance (coordinated pump)",
+      "warning:RugCheck: Top 10 holders high ownership"
+    ],
+    "sources_used": [
+      "chart",
+      "dexscreener",
+      "goplus",
+      "helius",
+      "rugcheck"
+    ],
+    "layers": {
+      "chart": {
+        "available": true,
+        "trust": 1
+      },
+      "crossvalidation": {
+        "available": true,
+        "trust": 1
+      },
+      "dexscreener": {
+        "available": true,
+        "trust": 0.85
+      },
+      "goplus": {
+        "available": true,
+        "trust": 1
+      },
+      "helius": {
+        "available": true,
+        "trust": 0.25
+      },
+      "rugcheck": {
+        "available": true,
+        "trust": 0.817
+      },
+      "solscan": {
+        "available": false,
+        "trust": 1
+      }
+    },
+    "mintAuthority": false,
+    "freezeAuthority": false,
+    "honeypot": false,
+    "lpBurned": false,
+    "lpLocked": false,
+    "holders": 266088,
+    "top10HolderPct": 77.04,
+    "topHolderPct": 24.97,
+    "safeBlocked": true,
+    "safeBlockedReasons": [
+      "concentration"
+    ]
+  },
+  "PYUSD": {
+    "risk": "DANGER",
+    "score": 341,
+    "confidence": 90,
+    "flags": [
+      "bonus:Established token (30d+) ✓",
+      "critical:Balances can be changed by an authority",
+      "critical:Top 10 hold 83% — extreme concentration",
+      "info:Freeze authority active — wallets can be frozen",
+      "info:LP holds 1.2% of supply",
+      "info:Mint authority active — supply can be inflated",
+      "warning:Token accounts can be closed by an authority"
+    ],
+    "sources_used": [
+      "chart",
+      "dexscreener",
+      "goplus",
+      "helius",
+      "rugcheck"
+    ],
+    "layers": {
+      "chart": {
+        "available": true,
+        "trust": 1
+      },
+      "crossvalidation": {
+        "available": true,
+        "trust": 1
+      },
+      "dexscreener": {
+        "available": true,
+        "trust": 1
+      },
+      "goplus": {
+        "available": true,
+        "trust": 0.079
+      },
+      "helius": {
+        "available": true,
+        "trust": 0.1
+      },
+      "rugcheck": {
+        "available": true,
+        "trust": 1
+      },
+      "solscan": {
+        "available": false,
+        "trust": 1
+      }
+    },
+    "mintAuthority": true,
+    "freezeAuthority": true,
+    "honeypot": null,
+    "lpBurned": false,
+    "lpLocked": false,
+    "holders": 57649,
+    "top10HolderPct": 83.01,
+    "topHolderPct": 56.06,
+    "safeBlocked": true,
+    "safeBlockedReasons": [
+      "concentration",
+      "freeze",
+      "lp_unverified",
+      "mint"
+    ]
+  },
+  "BREAK": {
+    "risk": "DANGER",
+    "score": 500,
+    "confidence": 80,
+    "flags": [
+      "bonus:Well distributed supply ✓",
+      "critical:Brutal dump 24h (-80%)",
+      "critical:LP holds 55.1% of supply — high rug exposure",
+      "critical:Wash trading detected (vol/liq > 15) — bundler dump",
+      "warning:Low liquidity (<$5k)"
+    ],
+    "sources_used": [
+      "dexscreener",
+      "goplus",
+      "helius",
+      "rugcheck"
+    ],
+    "layers": {
+      "chart": {
+        "available": false,
+        "trust": 1
+      },
+      "crossvalidation": {
+        "available": true,
+        "trust": 1
+      },
+      "dexscreener": {
+        "available": true,
+        "trust": 0.078
+      },
+      "goplus": {
+        "available": true,
+        "trust": 1
+      },
+      "helius": {
+        "available": true,
+        "trust": 1
+      },
+      "rugcheck": {
+        "available": true,
+        "trust": 1
+      },
+      "solscan": {
+        "available": false,
+        "trust": 1
+      }
+    },
+    "mintAuthority": false,
+    "freezeAuthority": false,
+    "honeypot": false,
+    "lpBurned": false,
+    "lpLocked": false,
+    "holders": 50,
+    "top10HolderPct": 99.75,
+    "topHolderPct": 99.23,
+    "safeBlocked": true,
+    "safeBlockedReasons": [
+      "bundle",
+      "lp",
+      "wash_trading"
+    ]
+  },
+  "PAPER": {
+    "risk": "DANGER",
+    "score": 500,
+    "confidence": 80,
+    "flags": [
+      "bonus:Well distributed supply ✓",
+      "critical:Brutal dump 24h (-80%)",
+      "critical:LP holds 54.6% of supply — high rug exposure",
+      "warning:High vol/liquidity ratio (>5×)",
+      "warning:Low liquidity (<$5k)"
+    ],
+    "sources_used": [
+      "dexscreener",
+      "goplus",
+      "helius",
+      "rugcheck"
+    ],
+    "layers": {
+      "chart": {
+        "available": false,
+        "trust": 1
+      },
+      "crossvalidation": {
+        "available": true,
+        "trust": 1
+      },
+      "dexscreener": {
+        "available": true,
+        "trust": 0.216
+      },
+      "goplus": {
+        "available": true,
+        "trust": 1
+      },
+      "helius": {
+        "available": true,
+        "trust": 1
+      },
+      "rugcheck": {
+        "available": true,
+        "trust": 1
+      },
+      "solscan": {
+        "available": false,
+        "trust": 1
+      }
+    },
+    "mintAuthority": false,
+    "freezeAuthority": false,
+    "honeypot": false,
+    "lpBurned": false,
+    "lpLocked": false,
+    "holders": 28,
+    "top10HolderPct": 99.85,
+    "topHolderPct": 98.82,
+    "safeBlocked": true,
+    "safeBlockedReasons": [
+      "lp"
+    ]
+  },
+  "HqNtPF3w": {
+    "risk": "RUG",
+    "score": 100,
+    "confidence": 90,
+    "flags": [
+      "critical:Top 10 hold 99% — extreme concentration",
+      "critical:Very low liquidity (<$1k)",
+      "warning:LP-to-supply ratio could not be computed",
+      "warning:Rug staircase: volume collapsing while price held flat — controlled dump"
+    ],
+    "sources_used": [
+      "chart",
+      "dexscreener",
+      "goplus",
+      "helius",
+      "rugcheck"
+    ],
+    "layers": {
+      "chart": {
+        "available": true,
+        "trust": 0.55
+      },
+      "crossvalidation": {
+        "available": true,
+        "trust": 1
+      },
+      "dexscreener": {
+        "available": true,
+        "trust": 0.25
+      },
+      "goplus": {
+        "available": true,
+        "trust": 1
+      },
+      "helius": {
+        "available": true,
+        "trust": 0.1
+      },
+      "rugcheck": {
+        "available": true,
+        "trust": 1
+      },
+      "solscan": {
+        "available": false,
+        "trust": 1
+      }
+    },
+    "mintAuthority": false,
+    "freezeAuthority": false,
+    "honeypot": false,
+    "lpBurned": false,
+    "lpLocked": false,
+    "holders": 25,
+    "top10HolderPct": 98.98,
+    "topHolderPct": 79.22,
+    "safeBlocked": true,
+    "safeBlockedReasons": [
+      "concentration",
+      "lp_unverified",
+      "rug_pattern"
+    ]
+  },
+  "PEPE-dead": {
+    "risk": "RUG",
+    "score": 100,
+    "confidence": 80,
+    "flags": [
+      "critical:Pump reversal: +209% (24h) → -30% (6h)",
+      "critical:Rug pull history",
+      "critical:Top 10 hold 77% — extreme concentration",
+      "critical:Very low liquidity (<$1k)",
+      "critical:Wash trading detected (vol/liq > 15) — bundler dump",
+      "info:LP holds 4.6% of supply",
+      "warning:RugCheck: Top 10 holders high ownership"
+    ],
+    "sources_used": [
+      "dexscreener",
+      "goplus",
+      "helius",
+      "rugcheck"
+    ],
+    "layers": {
+      "chart": {
+        "available": false,
+        "trust": 1
+      },
+      "crossvalidation": {
+        "available": true,
+        "trust": 1
+      },
+      "dexscreener": {
+        "available": true,
+        "trust": 0.048
+      },
+      "goplus": {
+        "available": true,
+        "trust": 1
+      },
+      "helius": {
+        "available": true,
+        "trust": 0.1
+      },
+      "rugcheck": {
+        "available": true,
+        "trust": 0.133
+      },
+      "solscan": {
+        "available": false,
+        "trust": 1
+      }
+    },
+    "mintAuthority": false,
+    "freezeAuthority": false,
+    "honeypot": false,
+    "lpBurned": false,
+    "lpLocked": false,
+    "holders": 48,
+    "top10HolderPct": 79.88,
+    "topHolderPct": 20.13,
+    "safeBlocked": true,
+    "safeBlockedReasons": [
+      "bundle",
+      "concentration",
+      "wash_trading"
+    ]
+  },
+  "SNKRZ": {
+    "risk": "RUG",
+    "score": 100,
+    "confidence": 80,
+    "flags": [
+      "bonus:Established token (30d+) ✓",
+      "critical:Very low liquidity (<$1k)",
+      "critical:Volume with zero liquidity — abandoned pool",
+      "info:Top 10 hold 29% — moderate · exchanges likely included",
+      "warning:LP-to-supply ratio could not be computed"
+    ],
+    "sources_used": [
+      "dexscreener",
+      "goplus",
+      "helius",
+      "rugcheck"
+    ],
+    "layers": {
+      "chart": {
+        "available": false,
+        "trust": 1
+      },
+      "crossvalidation": {
+        "available": true,
+        "trust": 1
+      },
+      "dexscreener": {
+        "available": true,
+        "trust": 0.042
+      },
+      "goplus": {
+        "available": true,
+        "trust": 1
+      },
+      "helius": {
+        "available": true,
+        "trust": 1
+      },
+      "rugcheck": {
+        "available": true,
+        "trust": 1
+      },
+      "solscan": {
+        "available": false,
+        "trust": 1
+      }
+    },
+    "mintAuthority": false,
+    "freezeAuthority": false,
+    "honeypot": false,
+    "lpBurned": false,
+    "lpLocked": false,
+    "holders": 54,
+    "top10HolderPct": 29.43,
+    "topHolderPct": 3.41,
+    "safeBlocked": true,
+    "safeBlockedReasons": [
+      "lp_unverified"
+    ]
+  },
+  "CLIFF": {
+    "risk": "DANGER",
+    "score": 630,
+    "confidence": 90,
+    "flags": [
+      "bonus:Established token (30d+) ✓",
+      "critical:Very low liquidity (<$1k)",
+      "warning:LP-to-supply ratio could not be computed",
+      "warning:Top 10 hold 37% — elevated concentration · cluster risk"
+    ],
+    "sources_used": [
+      "chart",
+      "dexscreener",
+      "goplus",
+      "helius",
+      "rugcheck"
+    ],
+    "layers": {
+      "chart": {
+        "available": true,
+        "trust": 1
+      },
+      "crossvalidation": {
+        "available": true,
+        "trust": 1
+      },
+      "dexscreener": {
+        "available": true,
+        "trust": 0.25
+      },
+      "goplus": {
+        "available": true,
+        "trust": 1
+      },
+      "helius": {
+        "available": true,
+        "trust": 0.5
+      },
+      "rugcheck": {
+        "available": true,
+        "trust": 1
+      },
+      "solscan": {
+        "available": false,
+        "trust": 1
+      }
+    },
+    "mintAuthority": false,
+    "freezeAuthority": false,
+    "honeypot": false,
+    "lpBurned": false,
+    "lpLocked": false,
+    "holders": 29,
+    "top10HolderPct": 37.49,
+    "topHolderPct": 7.62,
+    "safeBlocked": true,
+    "safeBlockedReasons": [
+      "concentration_light",
+      "lp_unverified"
+    ]
+  }
+}

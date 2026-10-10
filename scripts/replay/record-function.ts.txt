@@ -1,0 +1,73 @@
+// THROWAWAY recorder: copy to api/replay-record.ts in a PREVIEW deployment, never commit it under api/ and never deploy it to
+// production. It runs the REAL /api/scan handler for one mint and returns every outgoing HTTP exchange of that scan
+// (gzipped, base64), so the scan can be replayed offline (see scripts/replay/README.md).
+//
+// Each recording starts from a clean engine state: the instance is warm and shared by every token captured, and the engine's
+// circuit breakers (5 failures in 30 s block a host for 30 s) or the Solscan pause (10 min after a 401) would otherwise leak
+// from one token into the next, so that later tokens never even ask the host that failed before. A request that FAILS
+// (timeout, abort) is recorded too, as a failure, so the replay fails it in the same way.
+//
+// Secrets never leave the function: credentials in URL query strings are redacted, headers are not recorded, the GoPlus token
+// exchange (its body carries the app key and its signature) and the Gemini calls (key in the URL, the prompt in the body) are
+// not recorded at all. Deploy it with Redis and Sentry blanked, so nothing is written to production's database.
+import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { gzipSync } from "node:zlib";
+import scan from "./scan";
+import { _resetCircuitBreakersForTests } from "./_lib/http";
+import { _resetSolscanBackoffForTests } from "./_lib/fetchers";
+import { _resetGoPlusAuthForTests } from "./_lib/goplus-auth";
+import { _resetHeliusAuthForTests } from "./_lib/helius";
+
+interface Exchange { method: string; url: string; body: string | null; status: number; contentType: string | null; text: string; error?: string; auth?: boolean }
+
+const redact = (url: string): string => url.replace(/([?&](?:api-key|apikey|key|token|access_token)=)[^&#]*/gi, "$1REDACTED");
+const NOT_RECORDED = [/generativelanguage\.googleapis\.com/i, /gopluslabs\.io\/api\/v1\/token(\?|$)/i, /upstash\.io/i, /sentry\.io/i];
+
+export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
+  const ca = String(req.query.ca ?? "");
+  _resetCircuitBreakersForTests();
+  _resetSolscanBackoffForTests();
+  _resetGoPlusAuthForTests();
+  _resetHeliusAuthForTests();
+
+  const exchanges: Exchange[] = [];
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const href = typeof input === "string" ? input : input instanceof URL ? input.href : (input as Request).url;
+    const recorded = !NOT_RECORDED.some((re) => re.test(href));
+    const auth = new Headers(init?.headers ?? (typeof input === "object" && "headers" in input ? (input as Request).headers : undefined)).has("authorization");
+    const base = { method: (init?.method ?? "GET").toUpperCase(), url: redact(href), body: init?.body == null ? null : String(init.body), ...(auth ? { auth: true } : {}) };
+    let response: Response;
+    try {
+      response = await realFetch(input, init);
+    } catch (e) {
+      if (recorded) exchanges.push({ ...base, status: 0, contentType: null, text: "", error: (e as Error).name || "Error" });
+      throw e;
+    }
+    if (recorded) {
+      const text = await response.clone().text();
+      exchanges.push({ ...base, status: response.status, contentType: response.headers.get("content-type"), text });
+    }
+    return response;
+  }) as typeof fetch;
+
+  const startedAt = Date.now();
+  let status = 200;
+  let result: unknown = null;
+  const fakeRes = {
+    setHeader: () => fakeRes,
+    status: (code: number) => { status = code; return fakeRes; },
+    json: (data: unknown) => { result = data; return fakeRes; },
+    end: () => fakeRes,
+  };
+  try {
+    await scan(
+      { method: "GET", query: { ca, fresh: "1" }, headers: { origin: "https://dexscreener.com", "x-forwarded-for": "203.0.113.7" }, socket: { remoteAddress: "203.0.113.7" } } as unknown as VercelRequest,
+      fakeRes as unknown as VercelResponse,
+    );
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+  res.setHeader("Cache-Control", "no-store");
+  res.json({ ca, startedAt, finishedAt: Date.now(), status, result, exchanges: gzipSync(Buffer.from(JSON.stringify(exchanges))).toString("base64"), exchangeCount: exchanges.length });
+}
