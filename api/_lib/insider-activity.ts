@@ -21,6 +21,7 @@ import { fetchJson } from "./http"
 import { runWithConcurrency } from "./concurrency"
 import { HELIUS_REST_BASE } from "./constants"
 import { heliusRpc } from "./helius"
+import { deploymentNamespace } from "./deployment"
 
 // Match insider-graph.ts — 5-in-flight cap keeps the combined burst
 // under Helius free tier's 10 req/s ceiling.
@@ -233,7 +234,7 @@ export async function buildInsiderActivity(
   // same token within ACTIVITY_CACHE_TTL. The price/holders may shift
   // slightly within 60s but the activity feed is dominated by tx data
   // which doesn't change second-to-second.
-  const cacheKey = `${ACTIVITY_CACHE_PREFIX}${mint}`
+  const cacheKey = `${deploymentNamespace()}${ACTIVITY_CACHE_PREFIX}${mint}`
   if (redis) {
     try {
       const cached = await redis.get<InsiderActivityResult>(cacheKey)
@@ -258,7 +259,7 @@ export async function buildInsiderActivity(
       if (redis) {
         try {
           const cached = await redis.get<HeliusSignatureV2[]>(
-            `${SIG_CACHE_PREFIX}${w}`,
+            `${deploymentNamespace()}${SIG_CACHE_PREFIX}${w}`,
           )
           if (Array.isArray(cached)) return cached
         } catch { /* fall through */ }
@@ -266,7 +267,7 @@ export async function buildInsiderActivity(
       const sigs = await getWalletSignaturesV2(w, apiKey)
       if (redis && sigs.length > 0) {
         try {
-          await redis.set(`${SIG_CACHE_PREFIX}${w}`, sigs, { ex: SIG_CACHE_TTL })
+          await redis.set(`${deploymentNamespace()}${SIG_CACHE_PREFIX}${w}`, sigs, { ex: SIG_CACHE_TTL })
         } catch { /* non-critical */ }
       }
       return sigs

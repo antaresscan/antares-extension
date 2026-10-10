@@ -50,6 +50,7 @@ import { initSentry, captureError } from "./_lib/sentry";
 import { generateAISummary } from "./_lib/ai-summary";
 
 import { initRugDb, recordRug } from "./_lib/rugdb";
+import { isPreviewDeployment } from "./_lib/deployment";
 import { logger } from "./_lib/logger";
 import { composeCriticalActors } from "./_lib/critical-actors";
 import { buildInsiderGraph, initGraphCache } from "./_lib/insider-graph";
@@ -956,7 +957,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       if (resolvedMint !== ca) setShortCachedResult(resolvedMint, result, 30);
     }
 
-    void recordRug({ mint: resolvedMint, symbol: sanitizeString(pair?.baseToken?.symbol) ?? null, score, risk, flags, creator: tokenCreator });
+    // A preview deployment must not write into production's rug database (see deployment.ts).
+    if (!isPreviewDeployment()) void recordRug({ mint: resolvedMint, symbol: sanitizeString(pair?.baseToken?.symbol) ?? null, score, risk, flags, creator: tokenCreator });
 
     // Emit a structured outcome event for every completed scan. Downstream
     // log aggregators can chart verdict distribution, layer availability,

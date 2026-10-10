@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import type { Redis } from "@upstash/redis";
+import { INSIDER_GRAPH_CACHE_PREFIX } from "../api/_lib/constants";
 import { buildInsiderGraph, initGraphCache } from "../api/_lib/insider-graph";
 
 vi.mock("../api/_lib/helpers", () => ({
@@ -419,5 +421,30 @@ describe("buildInsiderGraph — how the Helius key is sent", () => {
     expect(opts?.usable?.({ result: [{ signature: "s" }] })).toBe(true);
     expect(opts?.usable?.({})).toBe(false);
     expect(opts?.usable?.({ result: null })).toBe(false);
+  });
+});
+
+// A Vercel preview deployment shares the Upstash database with production: its graph is cached under its own
+// namespace (api/_lib/deployment.ts), and production keeps the key it always had.
+describe("buildInsiderGraph - Redis key on a preview deployment", () => {
+  afterEach(() => { vi.unstubAllEnvs(); initGraphCache(null as any); });
+
+  const writesOf = async () => {
+    mockFetchJson.mockResolvedValue({ result: [] });
+    const writes: string[] = [];
+    initGraphCache({ get: async () => null, set: async (k: string) => { writes.push(k); return "OK"; } } as unknown as Redis);
+    await buildInsiderGraph(MINT, holders, 100000, API_KEY, new Set<string>());
+    return writes;
+  };
+
+  it("a preview caches the graph under its deployment namespace", async () => {
+    vi.stubEnv("VERCEL_ENV", "preview");
+    vi.stubEnv("VERCEL_DEPLOYMENT_ID", "dpl_AAA");
+    expect(await writesOf()).toEqual([`pv:dpl_AAA:${INSIDER_GRAPH_CACHE_PREFIX}${MINT}`]);
+  });
+
+  it("production keeps the key it always had", async () => {
+    vi.stubEnv("VERCEL_ENV", "production");
+    expect(await writesOf()).toEqual([`${INSIDER_GRAPH_CACHE_PREFIX}${MINT}`]);
   });
 });

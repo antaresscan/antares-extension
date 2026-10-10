@@ -21,7 +21,8 @@
 // Redis stays null for most tests (the no-cache path is the hot path on
 // fresh tokens and the only one where every branch can be exercised).
 // One test exercises the cache-hit fast path explicitly.
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import type { Redis } from "@upstash/redis";
 import {
   buildInsiderActivity,
   initActivityCache,
@@ -648,5 +649,35 @@ describe("buildInsiderActivity — how the Helius key is sent", () => {
     expect(opts?.usable?.({ result: [] })).toBe(true);
     expect(opts?.usable?.({})).toBe(false);
     expect(opts?.usable?.({ result: undefined })).toBe(false);
+  });
+});
+
+// A Vercel preview deployment shares the Upstash database with production: it must write its signature lists and its
+// results under its own namespace (api/_lib/deployment.ts), and production keeps the keys it always had.
+describe("buildInsiderActivity - Redis keys on a preview deployment", () => {
+  afterEach(() => { vi.unstubAllEnvs(); });
+
+  const writesOf = async () => {
+    scriptHelius({ sigsByWallet: { [HOLDER_A]: [{ signature: "sigA", blockTime: sec(60_000) }] }, txs: [] });
+    const writes: string[] = [];
+    initActivityCache({ get: async () => null, set: async (k: string) => { writes.push(k); return "OK"; } } as unknown as Redis);
+    await buildInsiderActivity(MINT, [{ owner: HOLDER_A, uiAmount: 1000 }], 1_000_000, 0.5, "key");
+    return writes;
+  };
+
+  it("a preview writes the wallet signature list AND the result under its deployment namespace", async () => {
+    vi.stubEnv("VERCEL_ENV", "preview");
+    vi.stubEnv("VERCEL_DEPLOYMENT_ID", "dpl_AAA");
+    const writes = await writesOf();
+    expect(writes).toContain(`pv:dpl_AAA:iasig:${HOLDER_A}`);
+    expect(writes).toContain(`pv:dpl_AAA:iact:${MINT}`);
+    expect(writes.every((k) => k.startsWith("pv:dpl_AAA:"))).toBe(true);
+  });
+
+  it("production keeps the keys it always had", async () => {
+    vi.stubEnv("VERCEL_ENV", "production");
+    const writes = await writesOf();
+    expect(writes).toContain(`iasig:${HOLDER_A}`);
+    expect(writes).toContain(`iact:${MINT}`);
   });
 });

@@ -10,11 +10,14 @@ import { Redis } from "@upstash/redis";
 import { computeCacheTTL } from "./helpers";
 import { logger } from "./logger";
 import { ENGINE_VERSION } from "./constants";
+import { deploymentNamespace } from "./deployment";
 
 let scanCacheRedis: Redis | null = null;
 
-const cacheKey = (ca: string): string => `antares:${ENGINE_VERSION}:${ca}`;
-const lockKey  = (ca: string): string => `antares:lock:${ENGINE_VERSION}:${ca}`;
+// A preview deployment gets its own namespace (see deployment.ts): it must neither read production's cached scans nor
+// write into them. Production keys are unchanged.
+export const cacheKey = (ca: string): string => `antares:${deploymentNamespace()}${ENGINE_VERSION}:${ca}`;
+export const lockKey  = (ca: string): string => `antares:lock:${deploymentNamespace()}${ENGINE_VERSION}:${ca}`;
 
 export function initCache(redis: Redis): void {
   scanCacheRedis = redis;

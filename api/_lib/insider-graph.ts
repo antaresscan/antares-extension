@@ -3,6 +3,7 @@
 import { fetchJson } from "./helpers";
 import { heliusRpc } from "./helius";
 import { runWithConcurrency } from "./concurrency";
+import { deploymentNamespace } from "./deployment";
 import {
   HELIUS_REST_BASE,
   INSIDER_MAX_HOLDERS, INSIDER_MAX_SIGNATURES,
@@ -149,7 +150,7 @@ async function getWalletSignatures(
 // users on free tier (500 K cmd/month cap), the sig cache alone
 // consumed ~80 % of the monthly budget.
 //
-// The graph-level cache at `${GRAPH_CACHE_PREFIX}${mint}` (5 min TTL)
+// The graph-level cache at `${deploymentNamespace()}${GRAPH_CACHE_PREFIX}${mint}` (5 min TTL)
 // already absorbs the dominant repeat case (same token re-scanned within
 // 5 min — every cache HIT skips ALL sig fetches). The per-wallet
 // cross-token overlap optimisation the sig cache used to provide is
@@ -196,7 +197,7 @@ export async function buildInsiderGraph(
   // Check cache first
   if (redis) {
     try {
-      const cached = await redis.get<InsiderGraphResult>(`${GRAPH_CACHE_PREFIX}${mint}`);
+      const cached = await redis.get<InsiderGraphResult>(`${deploymentNamespace()}${GRAPH_CACHE_PREFIX}${mint}`);
       if (cached) return cached;
     } catch { /* continue */ }
   }
@@ -306,7 +307,7 @@ export async function buildInsiderGraph(
   // Cache result
   if (redis) {
     try {
-      await redis.set(`${GRAPH_CACHE_PREFIX}${mint}`, result, { ex: GRAPH_CACHE_TTL });
+      await redis.set(`${deploymentNamespace()}${GRAPH_CACHE_PREFIX}${mint}`, result, { ex: GRAPH_CACHE_TTL });
     } catch { /* non-critical */ }
   }
 
