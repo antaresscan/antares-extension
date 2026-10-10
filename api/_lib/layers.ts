@@ -68,6 +68,13 @@ export function isEstablished(
 /** Liquidity an established token must also have for the "no registered links" exemption. */
 export const ESTABLISHED_LINKS_MIN_LIQUIDITY_USD = 100_000;
 
+/**
+ * DexScreener `dexId` of launchpad pairs that are a bonding curve, not a pool, before migration: they carry no `liquidity`
+ * (observed live 2026-10-10: pump.fun 20 of 20, Meteora DBC 1 of 1). Once a token graduates it trades on a pool (PumpSwap, Raydium...)
+ * and the field is there.
+ */
+export const BONDING_CURVE_DEXES: ReadonlySet<string> = new Set(["pumpfun", "meteoradbc"]);
+
 // ═══ LAYER 1 — DexScreener ═════════════════════════════════════════════════════
 export function layerDexScreener(
   pair: DexScreenerPair | null,
@@ -103,11 +110,27 @@ export function layerDexScreener(
   const hasWebsite = Array.isArray(websites) && websites.length > 0;
   const ageMinutes = tokenAgeMinutes ?? Infinity;
 
-  if (liq < 1000) { flags.push(makeFlag("Very low liquidity (<$1k)", "critical", 0)); penalties.push(0.25); }
+  // A pair with no `liquidity` field. A launchpad pair still on its BONDING CURVE (pump.fun, Meteora DBC) never carries one: the
+  // curve is not a pool (measured live: 21 of 21 such pairs, ages 0 h to 1 h, tens of thousands of dollars of volume). Reading that as
+  // "$0" made every live pump.fun token "Very low liquidity" and, with $10k of volume, an "abandoned pool" forced to RUG (audit M8).
+  // So it is UNKNOWN while the curve is young. It is really none when the token is stuck on the curve: a day after its launch it
+  // has not migrated, or after 6 h nobody trades it (the dead tokens of the corpus: pump.fun 52 days and 553 days, Meteora DBC 15 h
+  // with no volume). An age that is unknown counts as stuck: the conservative reading.
+  const liqReported = pair.liquidity?.usd !== undefined && pair.liquidity?.usd !== null;
+  const onBondingCurve = !liqReported && BONDING_CURVE_DEXES.has(String(pair.dexId ?? "").toLowerCase());
+  const ageHours = ageMinutes / 60;
+  const stuckOnCurve = onBondingCurve && (ageHours >= 24 || (ageHours >= 6 && vol < 1000));
+  const liqUnknown = onBondingCurve && !stuckOnCurve;
+
+  if (liqUnknown) {
+    // A warning (not info): a visible warning keeps the token out of the "no visible issue -> SAFE" grant, and SAFE needs a measured pool.
+    flags.push(makeFlag("Liquidity not reported — token still on its bonding curve (not migrated yet)", "warning", 0));
+    penalties.push(0.90); safeBlocked = true;
+  } else if (liq < 1000) { flags.push(makeFlag("Very low liquidity (<$1k)", "critical", 0)); penalties.push(0.25); }
   else if (liq < 5000) { flags.push(makeFlag("Low liquidity (<$5k)", "warning", 0)); penalties.push(0.65); }
   else if (liq < 20000) { flags.push(makeFlag("Liquidity < $20k", "info", 0)); penalties.push(0.90); }
 
-  if (liq === 0 && vol > 10000) {
+  if (!liqUnknown && liq === 0 && vol > 10000) {
     flags.push(makeFlag("Volume with zero liquidity — abandoned pool", "critical", 0));
     penalties.push(0.10); forceRug = true; safeBlocked = true;
   } else if (liq > 0 && vol / liq > 15) {
@@ -140,7 +163,7 @@ export function layerDexScreener(
   const hasStructuralWeakness =
     (liq > 0 && vol / liq > 10) ||
     (txns5m > 30 && sells5m === 0) ||
-    liq < 15000;
+    (!liqUnknown && liq < 15000); // an unknown liquidity is not a thin one
   if (ageMinutes < 30 && pc1 > 150) {
     if (hasStructuralWeakness) {
       flags.push(makeFlag(`Pump +${Math.round(pc1)}% on <30min token + structural weakness — exit trap`, "critical", 0));

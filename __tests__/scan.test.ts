@@ -688,3 +688,79 @@ describe("scan.ts counts the flags after deduplicating them", () => {
     expect(src).not.toMatch(/_allFlagsForVerdict\.filter\(/);
   });
 });
+
+// ─── A live pump.fun token: its pair has no liquidity field (audit M8) ───────────────────────────────────────────────
+// A pair still on the pump.fun bonding curve never carries a liquidity figure. With $73k of volume it used to be an "abandoned
+// pool" forced to RUG. It must be judged on what is known: the missing liquidity is a warning that blocks SAFE, not a verdict.
+describe("scan handler — token on the pump.fun bonding curve", () => {
+  const MINT = "So11111111111111111111111111111111111111112";
+
+  function scanOnCurve(ageHours: number, volume24h: number, liquidity?: { usd: number }) {
+    setupGoodTokenMocks();
+    const goodMocks = mockFetch.getMockImplementation() as (url: string, ...rest: unknown[]) => Promise<unknown>;
+    mockFetch.mockImplementation((url: string, ...rest: unknown[]) => {
+      if (url.includes("dexscreener")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            pairs: [{
+              pairAddress: "pair1",
+              dexId: "pumpfun",
+              baseToken: { address: MINT, symbol: "CURVE", name: "Curve" },
+              ...(liquidity ? { liquidity } : {}),
+              volume: { h24: volume24h, h1: volume24h / 3 },
+              priceChange: { m5: 0.5, h1: 4, h6: 20, h24: 60 },
+              txns: { m5: { buys: 15, sells: 12 } },
+              priceUsd: "0.00005",
+              marketCap: 44_000,
+              fdv: 44_000,
+              pairCreatedAt: Date.now() - ageHours * 3600 * 1000,
+              info: { socials: [{ type: "twitter", url: "https://twitter.com/test" }], websites: [{ url: "https://test.com" }] },
+            }],
+          }),
+        });
+      }
+      return goodMocks(url, ...rest);
+    });
+    // the engine takes the OLDEST age among its sources: Solscan must agree on the age
+    const solscanGood = mockFetchSolscan.getMockImplementation() as (endpoint: string) => Promise<unknown>;
+    mockFetchSolscan.mockImplementation((endpoint: string) =>
+      endpoint.includes("meta")
+        ? Promise.resolve({ data: { created_time: Math.floor(Date.now() / 1000) - ageHours * 3600, icon: "https://img.test.com/icon.png", creator: "creator123", decimals: 9, supply: 100000 } })
+        : solscanGood(endpoint));
+  }
+
+  async function run() {
+    const res = createMockRes();
+    await handler(createMockReq({ ca: MINT }), res);
+    return (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as { risk: string; flags: Array<{ label: string; severity: string }> };
+  }
+
+  it("1 h old, $73k of volume, no liquidity field: not an abandoned pool, not RUG, and not SAFE", async () => {
+    scanOnCurve(1, 73_000);
+
+    const body = await run();
+
+    expect(body.flags.some((f) => /abandoned pool|Very low liquidity/i.test(f.label))).toBe(false);
+    expect(body.flags.some((f) => f.severity === "warning" && /bonding curve \(not migrated yet\)/i.test(f.label))).toBe(true);
+    expect(body.risk).toBe("CAUTION"); // a young curve token cannot be SAFE (no measured pool) and is not an exit trap
+  });
+
+  it("witness: the same pair 553 days later, never migrated, is the abandoned pool it always was: RUG", async () => {
+    scanOnCurve(553 * 24, 62_999);
+
+    const body = await run();
+
+    expect(body.flags.some((f) => f.severity === "critical" && /abandoned pool/i.test(f.label))).toBe(true);
+    expect(body.risk).toBe("RUG");
+  });
+
+  it("witness: a MEASURED zero liquidity with $73k of volume is an abandoned pool even on pump.fun", async () => {
+    scanOnCurve(1, 73_000, { usd: 0 });
+
+    const body = await run();
+
+    expect(body.flags.some((f) => f.severity === "critical" && /abandoned pool/i.test(f.label))).toBe(true);
+    expect(body.risk).toBe("RUG");
+  });
+});

@@ -155,7 +155,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v43"; // 2026-10-11: a wallet at 10-15 % of a token under 30 days old is a warning (CAUTION max) instead of a critical flag, and the verdict counts the deduplicated flags; flushes cached verdicts.
+const ENGINE_VERSION_MANUAL = "v44"; // 2026-10-11: a pair on a bonding curve (pump.fun, Meteora DBC) with no liquidity field has an UNKNOWN liquidity while young (warning, SAFE blocked) instead of $0 (critical, abandoned pool forced to RUG); stuck curve tokens unchanged; flushes cached verdicts.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.

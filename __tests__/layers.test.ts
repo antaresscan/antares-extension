@@ -1354,3 +1354,83 @@ describe("layerHelius — young token, one wallet at 10-15 % (M5)", () => {
     expect(flagOf(layerHelius(book(12), SUPPLY, young(45 * 24)))?.label ?? "").not.toMatch(/young token/);
   });
 });
+
+// ═══ A pair with no liquidity field: unknown on a young bonding curve, none when stuck (audit M8) ═══════════════════════
+//
+// Launchpad pairs still on their bonding curve (pump.fun, Meteora DBC) never carry a `liquidity` field: measured live on 2026-10-10,
+// 21 of 21 such pairs, ages 0-1 h, up to $99k of volume. Read as "$0", every live pump.fun token was "Very low liquidity" and, with
+// $10k of volume, an "abandoned pool" forced to RUG. It is UNKNOWN while the curve is young, and really none when the token is stuck
+// on the curve (the dead tokens of the replay corpus: pump.fun 52 days and 553 days, Meteora DBC 15 h with no volume).
+describe("layerDexScreener — no liquidity field (M8)", () => {
+  const HOUR = 60; // the layer takes the age in MINUTES
+  const noLiquidity = (dexId: string, volume24h: number, extra: Partial<DexScreenerPair> = {}): DexScreenerPair => ({
+    dexId,
+    volume: { h24: volume24h },
+    priceChange: { h1: 3, h6: 10, h24: 40, m5: 1 },
+    txns: { m5: { buys: 12, sells: 10 } },
+    info: { socials: [{ type: "twitter", url: "https://twitter.com/t" }], websites: [{ url: "https://t.com" }] },
+    ...extra,
+  });
+  const labels = (r: ReturnType<typeof layerDexScreener>, sev: string) => r.flags.filter((f) => f.severity === sev).map((f) => f.label);
+
+  it("a pump.fun token 1 h old with $73k of volume and no liquidity field: a warning, no critical flag, not RUG, SAFE blocked", () => {
+    const r = layerDexScreener(noLiquidity("pumpfun", 73_000), 44_000, 1 * HOUR);
+    expect(labels(r, "critical")).toEqual([]);
+    expect(labels(r, "warning")).toEqual(["Liquidity not reported — token still on its bonding curve (not migrated yet)"]);
+    expect(r.forceRug).toBe(false);
+    expect(r.safeBlocked).toBe(true);
+    expect(r.trust).toBeGreaterThan(0.8);
+  });
+
+  it("Meteora DBC works the same, and the dex id is read whatever its case", () => {
+    expect(labels(layerDexScreener(noLiquidity("meteoradbc", 73_000), 44_000, 1 * HOUR), "critical")).toEqual([]);
+    expect(labels(layerDexScreener(noLiquidity("PumpFun", 73_000), 44_000, 1 * HOUR), "critical")).toEqual([]);
+  });
+
+  it("the unknown liquidity is not a thin one: a +400 % hour on a young curve token is a retrace warning, not an exit trap", () => {
+    const pair = noLiquidity("pumpfun", 60_000, { priceChange: { h1: 400, h6: 410, h24: 420, m5: 5 } });
+    const r = layerDexScreener(pair, 30_000, 1 * HOUR);
+    expect(r.forceRug).toBe(false);
+    expect(labels(r, "critical")).toEqual([]);
+    expect(labels(r, "warning").some((l) => /extreme pump \+400% in 1h — high retrace risk/i.test(l))).toBe(true);
+  });
+
+  it("witness: stuck on the curve a day after the launch (52 days: CLIFF) it is NONE: critical, as before", () => {
+    const r = layerDexScreener(noLiquidity("pumpfun", 2_916), 10_000, 52 * 24 * HOUR);
+    expect(labels(r, "critical")).toContain("Very low liquidity (<$1k)");
+  });
+
+  it("witness: stuck with volume (553 days, $63k: SNKRZ) it is an abandoned pool forced to RUG, as before", () => {
+    const r = layerDexScreener(noLiquidity("pumpfun", 62_999), 9_000, 553 * 24 * HOUR);
+    expect(labels(r, "critical")).toContain("Volume with zero liquidity — abandoned pool");
+    expect(r.forceRug).toBe(true);
+  });
+
+  it("witness: stuck by inactivity (15 h, no volume: HqNtPF3w on Meteora DBC) it is NONE: critical", () => {
+    const r = layerDexScreener(noLiquidity("meteoradbc", 0), 0, 15 * HOUR);
+    expect(labels(r, "critical")).toContain("Very low liquidity (<$1k)");
+  });
+
+  it("an ACTIVE curve token of 7 h (volume above $1k) is still unknown, not stuck", () => {
+    expect(labels(layerDexScreener(noLiquidity("pumpfun", 5_000), 20_000, 7 * HOUR), "critical")).toEqual([]);
+  });
+
+  it("witness: an unknown age is read as stuck (the conservative reading)", () => {
+    expect(labels(layerDexScreener(noLiquidity("pumpfun", 73_000), 44_000, null), "critical")).toContain("Very low liquidity (<$1k)");
+  });
+
+  it("witness: a MEASURED zero is a measurement. liquidity.usd = 0 with $73k of volume is an abandoned pool, on any dex", () => {
+    const r = layerDexScreener(noLiquidity("pumpfun", 73_000, { liquidity: { usd: 0 } }), 44_000, 1 * HOUR);
+    expect(labels(r, "critical")).toContain("Volume with zero liquidity — abandoned pool");
+    expect(r.forceRug).toBe(true);
+  });
+
+  it("witness: a pair on a pool dex (PumpSwap) that lacks the field keeps the old reading: nothing says it is a curve", () => {
+    const r = layerDexScreener(noLiquidity("pumpswap", 73_000), 44_000, 1 * HOUR);
+    expect(labels(r, "critical")).toContain("Very low liquidity (<$1k)");
+  });
+
+  it("witness: a reported thin liquidity on pump.fun is judged as before", () => {
+    expect(labels(layerDexScreener(noLiquidity("pumpfun", 5_000, { liquidity: { usd: 500 } }), 9_000, 1 * HOUR), "critical")).toContain("Very low liquidity (<$1k)");
+  });
+});
