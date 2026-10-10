@@ -62,7 +62,6 @@ import { deriveEvent } from "./_lib/verdict-history";
 // because the current-scan entry still tags the verdict with a
 // human-readable event label.
 import { composeHolderActivity } from "./_lib/holder-activity";
-import { composeOutcomeStats } from "./_lib/outcome-stats";
 // Route through the centralised initSentry() — it sets sendDefaultPii=false
 // and wires beforeSend(scrubEvent) so `?ca=<contract>`, the client IP, and
 // any email/JWT/auth header attached to an event are stripped before leaving
@@ -800,20 +799,6 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       insiderGraph: insiderGraphResult,
     });
 
-    // ─── V5 Outcome Stats (TTR ring + Outcome Histogram) ──────────────
-    // Heuristic profile-match v1: pick fast-rug / high-risk / slow-death
-    // distribution from current verdict + age + concentration + vol/liq.
-    // The corpus-backed KNN matcher (J3-J5 backtest harness) replaces
-    // pickProfile in a follow-up; the response shape is stable.
-    const outcomeStats = composeOutcomeStats({
-      risk,
-      tokenAgeHours: solscanTokenAgeHours ?? dexTokenAgeHours ?? null,
-      top10HolderPct,
-      liquidity,
-      volume24h,
-      flags,
-    });
-
     const aiSummary = await generateAISummary({
       score, risk,
       flags: flags.map(f => ({ label: f.label, severity: f.severity, impact: f.impact })),
@@ -876,7 +861,6 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       criticalActors,
       verdictHistory: finalHistory,
       holderActivity,
-      outcomeStats,
       scoring_version: SCORING_VERSION,
       fetchedAt: Date.now(),
       requestId,
