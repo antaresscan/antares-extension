@@ -32,6 +32,7 @@ import {
   buildBuySellFlowTab,
   buildWashVolumeTab,
   buildSourceListRows,
+  usedSourceNames,
 } from "./views.js";
 import {
   setupCursorGlow,
@@ -578,7 +579,9 @@ function render(d, ca) {
 
   const mintAuth = d.mintAuthority ?? null;
   const freezeAuth = d.freezeAuthority ?? null;
-  const sellOk = d.honeypot === false || d.risk !== "RUG";
+  // Sell is tri-state like Mint and Freeze: true = a mechanism can block a sale, false = none exists, null = NOT verified (shown
+  // as "—", never as a tick). It used to be "honeypot === false OR the verdict is not RUG", i.e. a tick on every token that is not RUG.
+  const sellBlocked = d.honeypot ?? null;
 
   // Drop bonus + info + legacy "unavailable" warnings from every count
   // and listing on this page. info-severity flags (e.g. "Helius
@@ -738,7 +741,7 @@ function render(d, ca) {
       ? `<div class="sec-cell ${liq < 5000 ? "n" : liq > 50000 ? "y" : "w"}"><div class="lbl">Liq</div><div class="val">${escapeHtml(fmt(liq))}</div></div>`
       : `<div class="sec-cell neu"><div class="lbl">Liq</div><div class="val">—</div></div>`;
   const secStripHtml = `
-    <div class="sec-cell ${sellOk ? "y" : "n"}"><div class="lbl">Sell</div><div class="val">${sellOk ? "✓" : "✕"}</div></div>
+    ${siBool("Sell", sellBlocked, true)}
     ${siBool("Mint", mintAuth, true)}
     ${siBool("Freeze", freezeAuth, true)}
     ${lpCell}
@@ -887,12 +890,8 @@ function render(d, ca) {
   // ── Source breakdown rows
   const sourceListHtml = buildSourceListRows(d);
 
-  // ── Sources marquee (deduplicated)
-  const FIXED_SOURCES = ["DexScreener", "RugCheck", "Helius", "Solscan", "Chart Analysis"];
-  const apiSources = Array.isArray(d.sources_used) ? d.sources_used : [];
-  const allSources = [
-    ...new Map([...FIXED_SOURCES, ...apiSources].map((s) => [String(s).toLowerCase(), s])).values(),
-  ];
+  // ── Sources marquee: the sources that really fed THIS scan, nothing else (it used to tick a fixed list of five, Solscan included)
+  const allSources = usedSourceNames(d);
   const marqueeItem = (s) => `<div class="mi"><span class="ok">✓</span>${escapeHtml(s)}</div>`;
   const marqueeOnce = allSources.map(marqueeItem).join("");
   const marqueeHtml = marqueeOnce + marqueeOnce;
@@ -1011,9 +1010,9 @@ function render(d, ca) {
         : ""
     }
 
-    <div class="marquee-wrap">
+    ${allSources.length ? `<div class="marquee-wrap">
       <div class="marquee-inner">${marqueeHtml}</div>
-    </div>
+    </div>` : ""}
   `;
 
   // Wire up animations + reveal observer (one-shot init guarded inside)
