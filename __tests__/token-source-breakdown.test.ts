@@ -4,7 +4,8 @@
 // response. GoPlus was missing from it although the API returns the layer (and it carries the authorities, the LP burn
 // and the holder count of the verdict). Run on the shape a real scan returns (WIF, captured 2026-10-10).
 import { describe, it, expect } from "vitest";
-import { buildSourceListRows } from "../js/views.js";
+import { readFileSync } from "node:fs";
+import { buildSourceListRows, usedSourceNames } from "../js/views.js";
 
 // `layers` as the production API returns it: every layer has `available` and `trust`; `crossvalidation` is not a source.
 const REAL_LAYERS = {
@@ -54,5 +55,47 @@ describe("buildSourceListRows", () => {
   it("no layers at all: an empty list, not an error", () => {
     expect(buildSourceListRows({})).toBe("");
     expect(buildSourceListRows({ layers: {} })).toBe("");
+  });
+});
+
+// The sources marquee at the bottom of token.html used to tick a FIXED list of five sources (Solscan, a paid source the
+// API cannot use, among them) on every token, whatever the scan really used. It now shows the sources of THIS scan.
+describe("usedSourceNames", () => {
+  it("names the sources the engine counted, in its order, with the display labels", () => {
+    expect(usedSourceNames({ sources_used: ["dexscreener", "rugcheck", "goplus", "helius", "chart"] }))
+      .toEqual(["DexScreener", "RugCheck", "GoPlus", "Helius", "Chart Engine"]);
+  });
+
+  it("never invents a source: Solscan is absent when the engine did not use it", () => {
+    expect(usedSourceNames({ sources_used: ["dexscreener", "goplus"] })).toEqual(["DexScreener", "GoPlus"]);
+  });
+
+  it("a scan that used no source shows none", () => {
+    expect(usedSourceNames({ sources_used: [] })).toEqual([]);
+    expect(usedSourceNames({})).toEqual([]);
+    expect(usedSourceNames(null)).toEqual([]);
+    expect(usedSourceNames({ sources_used: "dexscreener" })).toEqual([]);
+  });
+
+  it("deduplicates, ignores the case, and keeps an unknown source under its own name", () => {
+    expect(usedSourceNames({ sources_used: ["DexScreener", "dexscreener", "newsource"] })).toEqual(["DexScreener", "newsource"]);
+  });
+});
+
+// token-app.js builds the page from strings and cannot be imported by a unit test; these two guards read its source so the two
+// lies cannot come back: a Sell tick on every token that is not RUG, and a fixed list of sources.
+describe("token.html does not show what it did not verify", () => {
+  const app = readFileSync(new URL("../js/token-app.js", import.meta.url), "utf8");
+
+  it("the Sell cell is tri-state like Mint and Freeze, read from the engine's own field", () => {
+    expect(app).toMatch(/siBool\("Sell", sellBlocked, true\)/);
+    expect(app).toMatch(/const sellBlocked = d\.honeypot \?\? null;/);
+    expect(app).not.toMatch(/d\.risk !== "RUG"/); // "not RUG" is not "can be sold"
+    expect(app).not.toMatch(/sellOk/);
+  });
+
+  it("the sources marquee is built from the sources of the scan, not from a fixed list", () => {
+    expect(app).not.toMatch(/FIXED_SOURCES/);
+    expect(app).toMatch(/usedSourceNames\(d\)/);
   });
 });

@@ -689,17 +689,29 @@ export function buildWashVolumeTab(d) {
 // the layer's trust score (>=0.75 OK, >=0.4 risk, otherwise flagged).
 // Rendered inside a foldable section at the bottom of the page.
 // ──────────────────────────────────────────────────────────────────────
+const SOURCE_LABELS = {
+  rugcheck: "RugCheck",
+  goplus: "GoPlus",
+  helius: "Helius",
+  solscan: "Solscan",
+  chart: "Chart Engine",
+  dexscreener: "DexScreener",
+};
+
+/**
+ * The sources that really fed THIS scan, named for display, in the engine's own order. `sources_used` is what the engine
+ * counted (a layer that did not answer, or read nothing, is not in it). The page used to show a fixed list of five sources,
+ * with Solscan among them, ticked on every token whatever happened.
+ */
+export function usedSourceNames(d) {
+  const used = Array.isArray(d && d.sources_used) ? d.sources_used : [];
+  return [...new Set(used.map((s) => String(s).toLowerCase()))].map((key) => SOURCE_LABELS[key] || String(key));
+}
+
 export function buildSourceListRows(d) {
   const layers = d.layers || {};
   const order = ["rugcheck", "goplus", "helius", "solscan", "chart", "dexscreener"];
-  const labels = {
-    rugcheck: "RugCheck",
-    goplus: "GoPlus",
-    helius: "Helius",
-    solscan: "Solscan",
-    chart: "Chart Engine",
-    dexscreener: "DexScreener",
-  };
+  const labels = SOURCE_LABELS;
   return order
     .map((key) => {
       const l = layers[key];
