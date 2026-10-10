@@ -16,7 +16,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { REPLAY_TOKENS, type Verdict } from "./manifest";
-import { loadRecording, recordedSymbols, replayScan, type ReplayOutcome } from "./harness";
+import { loadBulk, loadRecording, recordedMints, replayScan, type ReplayOutcome } from "./harness";
 import type { NormalizedScan } from "./normalize";
 
 const GOLDEN_FILE = fileURLToPath(new URL("./golden.json", import.meta.url));
@@ -25,8 +25,20 @@ const golden: Record<string, NormalizedScan> = existsSync(GOLDEN_FILE) ? (JSON.p
 const replayed: Record<string, NormalizedScan> = {};
 
 describe("the corpus is consistent", () => {
-  it("every token of the manifest has a recording, and every recording belongs to a token", () => {
-    expect(recordedSymbols()).toEqual(REPLAY_TOKENS.map((t) => t.symbol).sort());
+  // The bulk is captured over several nights (scripts/replay/README.md): a bulk token without a recording is PENDING, not an error.
+  // What is an error: a recording that belongs to no token (a stray file, a renamed mint), or a hand-vetted token without one.
+  it("every recording belongs to a token, and every hand-vetted token has one", () => {
+    const vetted = REPLAY_TOKENS.map((t) => t.mint);
+    const known = new Set([...vetted, ...loadBulk().map((t) => t.mint)]);
+    const recorded = recordedMints();
+    expect(recorded.filter((m) => !known.has(m)), "a recording belongs to no token of the manifest or of the bulk").toEqual([]);
+    expect(vetted.filter((m) => !recorded.includes(m)), "a hand-vetted token has no recording").toEqual([]);
+  });
+
+  it("no token is both hand-vetted and in the bulk", () => {
+    const vetted = new Set(REPLAY_TOKENS.map((t) => t.mint));
+    expect(loadBulk().filter((t) => vetted.has(t.mint)).map((t) => t.symbol)).toEqual([]);
+    expect(new Set(loadBulk().map((t) => t.mint)).size).toBe(loadBulk().length);
   });
 
   it("symbols and mints are unique", () => {
@@ -34,8 +46,8 @@ describe("the corpus is consistent", () => {
     expect(new Set(REPLAY_TOKENS.map((t) => t.mint)).size).toBe(REPLAY_TOKENS.length);
   });
 
-  it("every recording is of the mint the manifest names", () => {
-    for (const t of REPLAY_TOKENS) expect(loadRecording(t.symbol)?.mint, t.symbol).toBe(t.mint);
+  it("every recording is of the token the manifest names (file named by mint, same symbol)", () => {
+    for (const t of REPLAY_TOKENS) expect(loadRecording(t.mint)?.symbol, t.symbol).toBe(t.symbol);
   });
 
   it.skipIf(UPDATE)("the golden file holds exactly the tokens of the manifest", () => {
@@ -43,11 +55,11 @@ describe("the corpus is consistent", () => {
   });
 });
 
-describe.each(REPLAY_TOKENS.filter((t) => loadRecording(t.symbol) !== null))("replay $symbol", (token) => {
+describe.each(REPLAY_TOKENS.filter((t) => loadRecording(t.mint) !== null))("replay $symbol", (token) => {
   let outcome: ReplayOutcome;
 
   beforeAll(async () => {
-    outcome = await replayScan(loadRecording(token.symbol)!);
+    outcome = await replayScan(loadRecording(token.mint)!);
     replayed[token.symbol] = outcome.result;
   }, 60_000);
 
@@ -73,7 +85,7 @@ describe.each(REPLAY_TOKENS.filter((t) => loadRecording(t.symbol) !== null))("re
 
 describe("the replay is deterministic", () => {
   it("replaying the same recording twice gives the same result", async () => {
-    const rec = loadRecording("BONK");
+    const rec = loadRecording(REPLAY_TOKENS.find((t) => t.symbol === "BONK")!.mint);
     if (!rec) return;
     const a = await replayScan(rec);
     const b = await replayScan(rec);

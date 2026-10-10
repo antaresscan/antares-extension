@@ -12,7 +12,7 @@
 //
 // HORNY (a seed entry) is left out: its market is gone, there is nothing left to scan.
 //
-// Labels come from three places: the hand-vetted seed corpus (__tests__/backtest/corpus.ts, same token and same verdicts),
+// Labels come from three places: the hand-vetted seed corpus of the old backtest (removed; same token and same verdicts),
 // established tokens whose false DANGER verdicts the audit documented, and tokens whose liquidity was removed (an objective
 // criterion: DexScreener liquidity under 500 $ on a pair older than 6 hours).
 
@@ -35,7 +35,7 @@ export const REPLAY_TOKENS: ReplayToken[] = [
   { symbol: "PENGU", mint: "2zMMhcVQEXDtdE6vsFS7S7D5oUodfJHE8vd1gnBouauv", expected: ["SAFE"], why: "Pudgy Penguins: backed by an established NFT brand, multi-million market cap." },
   { symbol: "POPCAT", mint: "7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr", expected: ["SAFE", "CAUTION"], why: "Top-tier Solana memecoin, multi-month history, deep liquidity." },
   { symbol: "MEW", mint: "MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5", expected: ["SAFE", "CAUTION"], why: "Cat in a dogs world: established memecoin, millions in liquidity.", knownIssue: { id: "concentration", note: "One wallet holds 36.8 % and the top 10 hold 65.2 %; the engine reads that as critical high concentration and returns DANGER 525 on a 928-day-old token with $9.7M of liquidity and a burned LP." } },
-  // GOAT and PNUT: the addresses in __tests__/backtest/corpus.ts are WRONG (no market on DexScreener); these are the real mints.
+  // GOAT and PNUT: the addresses in the old backtest's seed corpus were WRONG (no market on DexScreener); these are the real mints.
   { symbol: "GOAT", mint: "CzLSujWBLFsSjncfkh59rUFqvafWcY5tzedWJSuypump", expected: ["SAFE", "CAUTION"], why: "Goatseus Maximus: AI-narrative memecoin, $1.6M of liquidity, about 2 years of trading." },
   { symbol: "PNUT", mint: "2qEHjDLDLbuBgRYvsxhc5D6uDWAivNFZGan56P1tpump", expected: ["SAFE", "CAUTION"], why: "Peanut the Squirrel: viral-launch memecoin, $3.4M of liquidity, about 2 years of trading.", knownIssue: { id: "concentration", note: "The top 10 hold 68.1 %; critical high concentration, DANGER 525, on a token about 2 years old with $3.4M of liquidity and a burned LP." } },
   { symbol: "FARTCOIN", mint: "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump", expected: ["CAUTION"], why: "Established memecoin, 1B+ market cap, but one wallet holds about 11 %: concentration is concentration.", knownIssue: { id: "concentration-top1", note: "One wallet holds 10.4 % (top 10: 35 %): the hand-vetted label caps an established token at CAUTION for that; the engine returns SAFE 1000." } },
