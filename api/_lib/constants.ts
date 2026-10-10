@@ -252,6 +252,13 @@ export const TOP10_GOOD_PCT               = 0.25;  // bonus threshold (establish
 export const HOLDERS_CRITICAL = 15;      // <15 = very few
 export const HOLDERS_LOW = 50;           // <50 = low
 export const HOLDERS_STRONG = 5000;      // >5000 = strong
+// Helius getTokenAccounts page size. A page that comes back with FEWER accounts than this holds every holder, so the
+// count is exact; a full page only proves "at least this many" (the cursor is sent either way, it is not a signal).
+export const HOLDER_PAGE_LIMIT = 1000;
+// Pages read for the holder count (page 1, then 2..N in parallel only when page 1 is full): exact up to N x 1000 holders.
+// Measured live: about 65 ms a page, 12 parallel pages all answered in 400 ms. Above the cap GoPlus is used, with the
+// pages read so far as a floor. Each call is a DAS request (10 credits per Helius' pricing page, plan limit 10 req/s).
+export const HOLDER_MAX_PAGES = 10;
 // Chart pattern thresholds
 export const DAMPENING_FACTOR = 0.3;     // applyDiminishingPenalties factor
 // Weekly / monthly pump thresholds.

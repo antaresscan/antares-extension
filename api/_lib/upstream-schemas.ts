@@ -161,9 +161,16 @@ export const HeliusSupplyResponseSchema = z.object({
   }).optional(),
 });
 
+// DAS getTokenAccounts, as captured live (2026-10-10, __tests__/fixtures/upstream-real/helius-token-accounts-*.json).
+// `total` is the size of the PAGE, not the number of holders; `cursor` is present on a page that is not full too.
 export const HeliusTokenAccountsResponseSchema = z.object({
   result: z.object({
     total: z.number().optional(),
-  }).optional(),
-  total: z.number().optional(),
+    limit: z.number().optional(),
+    cursor: z.string().optional(),
+    token_accounts: z.array(z.object({
+      owner: z.string().optional(),
+      amount: z.union([z.number(), z.string()]).optional(),
+    })),
+  }),
 });

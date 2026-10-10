@@ -196,10 +196,12 @@ export interface HeliusSupplyResponse {
 }
 
 export interface HeliusTokenAccountsResponse {
-  result?: {
+  result: {
     total?: number;
+    limit?: number;
+    cursor?: string;
+    token_accounts: Array<{ owner?: string; amount?: number | string }>;
   };
-  total?: number;
 }
 
 // ─── SOLSCAN ───────────────────────────────────────────────────────────────────────────────────

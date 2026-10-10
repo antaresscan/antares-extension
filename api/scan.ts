@@ -20,14 +20,14 @@ import {
   makeFlag,
 } from "./_lib/helpers";
 import {
-  heliusGetLargestAccounts, heliusGetMintAccount, heliusGetCreatorReputation,
+  heliusGetLargestAccounts, heliusGetMintAccount, heliusGetHolderPages, heliusGetCreatorReputation,
   heliusResolveAccountOwners,
   publicRpcGetLargestAccounts, publicRpcGetTokenSupply, publicRpcGetMintInfo, publicRpcGetMintAccount,
   fetchSolscan, fetchDexCandles, fetchDexCandlesDaily,
   type CreatorReputation,
 } from "./_lib/fetchers";
 import { readHeliusKey } from "./_lib/helius";
-import { parseMintState, mintSupplyUi, deriveAuthorityFacts, weightedBurnPct } from "./_lib/facts";
+import { parseMintState, mintSupplyUi, deriveAuthorityFacts, weightedBurnPct, parseChainHolders, pickHolderCount } from "./_lib/facts";
 import { fetchGoPlusSecurity } from "./_lib/goplus-auth";
 import {
   DEXSCREENER_BASE, RUGCHECK_BASE, LAYER_WEIGHTS, SCORING_VERSION,
@@ -363,7 +363,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
 
     const [
       candlesRaw, candlesDailyRaw, goplusRaw,
-      heliusHoldersRaw, heliusSupplyRaw,
+      heliusHoldersRaw, heliusSupplyRaw, heliusHolderPagesRaw,
       solMeta, solTransfers, solMarkets,
     ] = await Promise.all([
       withBudget(fetchDexCandles(pairAddress), remainingMs()),
@@ -371,6 +371,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       withBudget(fetchGoPlusSecurity(resolvedMint), remainingMs()),
       HELIUS_API_KEY ? withBudget(heliusGetLargestAccounts(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
       HELIUS_API_KEY ? withBudget(heliusGetMintAccount(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
+      HELIUS_API_KEY ? withBudget(heliusGetHolderPages(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
       // (No Solscan holders-count call: the public endpoint it used answers
       // 404 for every token, so it only ever contributed `null`.)
       withBudget(fetchSolscan(`/token/meta?address=${resolvedMint}`), remainingMs()),
@@ -487,28 +488,15 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const rugTotalHolders: number | null =
       typeof rugReport?.totalHolders === "number" && rugReport.totalHolders > 0
       ? rugReport.totalHolders : null;
-    // Holders count: query all available sources and take the MAX. Single-
-    // source failures often manifest as 0 / 1 / null (Solscan rate-limited
-    // or mid-indexing, RugCheck stale, etc.); the previous behaviour took
-    // the first non-null value, which meant a stale Solscan returning 1
-    // would override Helius reporting 50,000. Always-call Helius is fine
-    // because the fallback path was already paying that latency anyway.
-    // Holders count: take MAX across every free source we have. GoPlus
-    // exposes `holder_count` directly in the same payload we already
-    // fetch for honeypot detection — they index this themselves and
-    // their number matches DexScreener / Solscan. That made the
-    // previous "1 holder" lie disappear on real tokens.
-    const top20NonZero = rawHolderAccounts.filter(h => asNumber(h?.uiAmount) > 0).length;
-    const goplusHolderCount: number | null = (() => {
-      const raw = goplus?.holder_count;
-      if (raw == null) return null;
-      const n = typeof raw === "number" ? raw : parseInt(String(raw), 10);
-      return Number.isFinite(n) && n > 0 ? n : null;
-    })();
-    // Order, not maximum. GoPlus matches an independent explorer (GeckoTerminal) within 0.01 %; RugCheck counts 2-3x too
-    // many on large tokens (BONK: 2,089,028 vs 1,024,740) so it only serves tokens GoPlus does not know yet. Helius
-    // cannot count holders: getTokenAccounts returns the PAGE size (limit 1 -> 1, limit 1000 -> 1000), so it is not asked.
-    const holders: number | null = goplusHolderCount ?? rugTotalHolders ?? (top20NonZero > 0 ? top20NonZero : null);
+    // Holder count, by ORDER of reliability (see pickHolderCount): the chain through Helius when its pages reach the end
+    // of the list (exact and current: up to HOLDER_MAX_PAGES x 1000 holders, which covers where GoPlus and RugCheck fail
+    // or overcount), then GoPlus, then RugCheck (counts emptied accounts too), never below the chain floor. Never the
+    // size of the top-20 list.
+    const holders: number | null = pickHolderCount({
+      chain: parseChainHolders(heliusHolderPagesRaw),
+      goplus: goplus?.holder_count,
+      rugcheck: rugTotalHolders,
+    });
 
     const priceUsd: number | null = (() => {
       const n = parseFloat(pair?.priceUsd ?? "");

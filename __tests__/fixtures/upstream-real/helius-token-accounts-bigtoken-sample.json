@@ -1,0 +1,28 @@
+{
+ "jsonrpc": "2.0",
+ "result": {
+  "last_indexed_slot": 455052738,
+  "total": 1000,
+  "limit": 1000,
+  "cursor": "14nsX4XwNxA1t7go7ygaYDbcSiYCrtLC2fsNNULfSpvi",
+  "token_accounts": [
+   {
+    "address": "11tfxBRkW5kehF3vuLxAN94rerABhotwDsGaeG19oW",
+    "mint": "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm",
+    "owner": "A4tm8b3nKBhknCSk5FLbMcVEPYDbxxg9u7zcyxnAoEcu",
+    "amount": 1,
+    "delegated_amount": 0,
+    "frozen": false
+   },
+   {
+    "address": "115tLCiaiGHxXqUDSmSyMP6bgpK6jzknuMbMTuZd2zP",
+    "mint": "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm",
+    "owner": "9oxXJSKQai6otWBF5yVysmpb56mgvbFoxHpmgoiSDyhu",
+    "amount": 6623020,
+    "delegated_amount": 0,
+    "frozen": false
+   }
+  ]
+ },
+ "id": "d"
+}

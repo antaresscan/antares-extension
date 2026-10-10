@@ -99,6 +99,7 @@ vi.mock("../api/_lib/fetchers", () => ({
   heliusGetLargestAccounts: (...args: unknown[]) => mockHeliusGetLargestAccounts(...args),
   heliusGetTokenSupply: (...args: unknown[]) => mockHeliusGetTokenSupply(...args),
   heliusGetMintAccount: (...args: unknown[]) => mockHeliusGetMintAccount(...args),
+  heliusGetHolderPages: vi.fn().mockResolvedValue(null), // no chain holder count in these tests
   heliusGetCreatorReputation: (...args: unknown[]) => mockHeliusGetCreatorReputation(...args),
   heliusGetHoldersCount: (...args: unknown[]) => mockHeliusGetHoldersCount(...args),
   heliusGetProgramAccountHolderCount: (...args: unknown[]) => mockHeliusGetProgramAccountHolderCount(...args),

@@ -5,7 +5,8 @@ import type {
     OHLCVCandle, GeckoTerminalOHLCVResponse,
     RugCheckReport, RugCheckRisk,
 } from "./types";
-import { PUBLIC_SOLANA_RPCS, SOLSCAN_BASE, LP_PROGRAM_ADDRESSES } from "./constants";
+import { PUBLIC_SOLANA_RPCS, SOLSCAN_BASE, LP_PROGRAM_ADDRESSES, HOLDER_PAGE_LIMIT, HOLDER_MAX_PAGES } from "./constants";
+import { parseChainHolders } from "./facts";
 import { fetchJson, fetchJsonPost } from "./http";
 import { heliusRpc, heliusRestUrl } from "./helius";
 import { asNumber } from "./math";
@@ -127,6 +128,28 @@ export async function heliusGetTokenSupply(mint: string, key: string) {
     return heliusRpc(key, {
         jsonrpc: "2.0", id: "supply", method: "getTokenSupply", params: [mint],
     }, 6000, 1);
+}
+
+// One page (1-based) of the token accounts that hold the mint right now (DAS getTokenAccounts, zero balances left
+// out). The holder count is read from the pages by parseChainHolders (facts.ts). Measured live on the paid plan:
+// 28-80 ms a page for classic tokens (about 2 s a page for a heavy Token-2022 mint).
+export async function heliusGetTokenAccountsPage(mint: string, key: string, page = 1) {
+    return heliusRpc(key, {
+        jsonrpc: "2.0", id: "holder-count", method: "getTokenAccounts", params: { mint, limit: HOLDER_PAGE_LIMIT, page },
+    }, 4000, 1);
+}
+
+// The pages that hold every holder of the mint: page 1, and only when it is full pages 2..HOLDER_MAX_PAGES in
+// parallel (the `page` parameter accepts parallel requests: 12 at once, all 200, same count as the cursor walk).
+// A small token costs ONE call. Page 1 failing -> null; a later page failing stays null in the list, and
+// parseChainHolders then reports a floor instead of an exact count.
+export async function heliusGetHolderPages(mint: string, key: string): Promise<unknown[] | null> {
+    const first = await heliusGetTokenAccountsPage(mint, key, 1);
+    if (!first) return null;
+    const firstCount = parseChainHolders(first);
+    if (!firstCount || firstCount.complete) return [first];
+    const rest = await Promise.all(Array.from({ length: HOLDER_MAX_PAGES - 1 }, (_, i) => heliusGetTokenAccountsPage(mint, key, i + 2)));
+    return [first, ...rest];
 }
 
 // getAccountInfo on the mint: supply, decimals, mintAuthority, freezeAuthority and (Token-2022) extensions in ONE
