@@ -9,26 +9,51 @@
 // fail open), no Gemini (the summary falls back to the local one), no GoPlus credentials (the same anonymous URL is asked).
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { gunzipSync } from "node:zlib";
+import { brotliDecompressSync } from "node:zlib";
 import { vi } from "vitest";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { exchangeKey, redactUrl } from "./keys";
 import { normalizeScan, type NormalizedScan } from "./normalize";
+import { parseBulk, type BulkToken } from "./bulk";
 
 /** `x` is set when the request FAILED (timeout, abort) instead of being answered: the replay fails it the same way. */
 interface RecordedExchange { k: string; s: number; c: string | null; t: string; x?: string }
-export interface Recording { symbol: string; mint: string; capturedAt: number; exchanges: RecordedExchange[]; live: NormalizedScan }
+/** `degraded` names what was throttled (GeckoTerminal, the chart source) when the scan was recorded and could not be had again. */
+export interface Recording { symbol: string; mint: string; capturedAt: number; exchanges: RecordedExchange[]; live: NormalizedScan; degraded?: string[] }
 export interface ReplayOutcome { status: number; body: Record<string, unknown> | null; result: NormalizedScan; misses: string[] }
 
-const CORPUS_DIR = fileURLToPath(new URL("./corpus/", import.meta.url));
+const HERE = fileURLToPath(new URL("./", import.meta.url));
+const CORPUS_DIR = `${HERE}corpus/`;
 
-export function loadRecording(symbol: string): Recording | null {
-  const file = `${CORPUS_DIR}${symbol}.json.gz`;
-  return existsSync(file) ? (JSON.parse(gunzipSync(readFileSync(file)).toString("utf8")) as Recording) : null;
+/** One recording per token, named after its mint (symbols are not unique), compressed with brotli. */
+export function loadRecording(mint: string): Recording | null {
+  const file = `${CORPUS_DIR}${mint}.json.br`;
+  return existsSync(file) ? (JSON.parse(brotliDecompressSync(readFileSync(file)).toString("utf8")) as Recording) : null;
 }
 
-export function recordedSymbols(): string[] {
-  return existsSync(CORPUS_DIR) ? readdirSync(CORPUS_DIR).filter((f) => f.endsWith(".json.gz")).map((f) => f.replace(/\.json\.gz$/, "")).sort() : [];
+export function recordedMints(): string[] {
+  return existsSync(CORPUS_DIR) ? readdirSync(CORPUS_DIR).filter((f) => f.endsWith(".json.br")).map((f) => f.replace(/\.json\.br$/, "")).sort() : [];
+}
+
+export function loadBulk(): BulkToken[] {
+  return parseBulk(readFileSync(`${HERE}bulk.json`, "utf8"));
+}
+
+/**
+ * The scan builds the insider graph (Helius getSignaturesForAddress + enhanced transactions) AFTER the verdict is final: it only
+ * feeds the Critical Actors cards and the holder activity rows of the response (api/scan.ts, composeCriticalActors and
+ * composeHolderActivity), and weighs more than all the other calls of a recording together. So it is not recorded; when a scan
+ * asks for it, the replay answers "no activity" instead of counting a missing request. (A recording made before that decision may
+ * still hold these calls: a recorded answer always wins.)
+ */
+function insiderGraphAnswer(href: string, body: string | null): Response | null {
+  if (/api\.helius\.xyz\/v0\/transactions/.test(href)) return new Response("[]", { status: 200, headers: { "content-type": "application/json" } });
+  if (/helius-rpc\.com/.test(href) && body && /"method"\s*:\s*"getSignaturesForAddress"/.test(body)) {
+    let id: unknown = 1;
+    try { id = (JSON.parse(body) as { id?: unknown }).id ?? 1; } catch { /* keep 1 */ }
+    return new Response(JSON.stringify({ jsonrpc: "2.0", id, result: [] }), { status: 200, headers: { "content-type": "application/json" } });
+  }
+  return null;
 }
 
 const UNSET = ["GEMINI_API_KEY", "GOPLUS_APP_KEY", "GOPLUS_APP_SECRET", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN", "SENTRY_DSN", "VERCEL_ENV", "LOG_LEVEL"];
@@ -63,9 +88,12 @@ export async function replayScan(rec: Recording): Promise<ReplayOutcome> {
     if (/gopluslabs\.io\/api\/v1\/token(\?|$)/.test(href) && method.toUpperCase() === "POST") {
       return new Response(JSON.stringify({ code: 1, message: "OK", result: { access_token: "Bearer replay-token", expires_in: 7200 } }), { status: 200, headers: { "content-type": "application/json" } });
     }
-    const key = exchangeKey(method, href, init?.body == null ? null : String(init.body), authorized);
+    const body = init?.body == null ? null : String(init.body);
+    const key = exchangeKey(method, href, body, authorized);
     const list = byKey.get(key);
     if (!list) {
+      const graph = insiderGraphAnswer(href, body);
+      if (graph) return graph;
       misses.push(`${method.toUpperCase()} ${redactUrl(href)}`);
       if (process.env.REPLAY_DEBUG) console.log(`[replay] not recorded: ${method.toUpperCase()} ${redactUrl(href)} ${init?.body ? String(init.body).slice(0, 160) : ""}`);
       return new Response("replay: this request was not recorded", { status: 599 });

@@ -10,18 +10,40 @@
 // Secrets never leave the function: credentials in URL query strings are redacted, headers are not recorded, the GoPlus token
 // exchange (its body carries the app key and its signature) and the Gemini calls (key in the URL, the prompt in the body) are
 // not recorded at all. Deploy it with Redis and Sentry blanked, so nothing is written to production's database.
+//
+// The insider graph calls (Helius getSignaturesForAddress and enhanced transactions) run for real but are not recorded: they only
+// feed the Critical Actors cards and the holder activity of the response, never the verdict, and they would weigh more than all the
+// other calls together (see __tests__/replay/harness.ts, insiderGraphAnswer).
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { gzipSync } from "node:zlib";
 import scan from "./scan";
 import { _resetCircuitBreakersForTests } from "./_lib/http";
 import { _resetSolscanBackoffForTests } from "./_lib/fetchers";
 import { _resetGoPlusAuthForTests } from "./_lib/goplus-auth";
-import { _resetHeliusAuthForTests } from "./_lib/helius";
+import { _resetHeliusAuthForTests, heliusRpc } from "./_lib/helius";
+import { HOLDER_MAX_PAGES, HOLDER_PAGE_LIMIT } from "./_lib/constants";
 
 interface Exchange { method: string; url: string; body: string | null; status: number; contentType: string | null; text: string; error?: string; auth?: boolean }
 
+/**
+ * Helius answers the deep pages of a big token's holder list (getTokenAccounts, 10 pages asked in parallel with a 4 s timeout) too
+ * slowly the FIRST time: in a capture, about a third of the scans of tokens with thousands of holders lost pages 3 to 10, and the
+ * second try, a few seconds later, got them all. So the pages are asked once beforehand, with a long timeout and without being
+ * recorded, and the recorded scan then sees what a scan sees when Helius is warm: the complete data the corpus is meant to hold.
+ */
+async function warmHolderPages(mint: string): Promise<void> {
+  const key = process.env.HELIUS_API_KEY;
+  if (!key) return;
+  const page = (p: number) => heliusRpc<{ result?: { token_accounts?: unknown[] } }>(key, { jsonrpc: "2.0", id: "warm", method: "getTokenAccounts", params: { mint, limit: HOLDER_PAGE_LIMIT, page: p } }, 25_000, 0);
+  const first = await page(1);
+  if ((first?.result?.token_accounts?.length ?? 0) < HOLDER_PAGE_LIMIT) return;
+  await Promise.all(Array.from({ length: HOLDER_MAX_PAGES - 1 }, (_, i) => page(i + 2)));
+}
+
 const redact = (url: string): string => url.replace(/([?&](?:api-key|apikey|key|token|access_token)=)[^&#]*/gi, "$1REDACTED");
-const NOT_RECORDED = [/generativelanguage\.googleapis\.com/i, /gopluslabs\.io\/api\/v1\/token(\?|$)/i, /upstash\.io/i, /sentry\.io/i];
+const NOT_RECORDED = [/generativelanguage\.googleapis\.com/i, /gopluslabs\.io\/api\/v1\/token(\?|$)/i, /upstash\.io/i, /sentry\.io/i, /api\.helius\.xyz\/v0\/transactions/i];
+const isInsiderGraphCall = (href: string, body: string | null): boolean =>
+  /helius-rpc\.com/i.test(href) && body !== null && /"method"\s*:\s*"getSignaturesForAddress"/.test(body);
 
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   const ca = String(req.query.ca ?? "");
@@ -30,13 +52,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   _resetGoPlusAuthForTests();
   _resetHeliusAuthForTests();
 
+  if (req.query.warm !== "0") {
+    await warmHolderPages(ca).catch(() => undefined);
+    _resetCircuitBreakersForTests();
+    _resetHeliusAuthForTests();
+  }
+
   const exchanges: Exchange[] = [];
   const realFetch = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const href = typeof input === "string" ? input : input instanceof URL ? input.href : (input as Request).url;
-    const recorded = !NOT_RECORDED.some((re) => re.test(href));
+    const body = init?.body == null ? null : String(init.body);
+    const recorded = !NOT_RECORDED.some((re) => re.test(href)) && !isInsiderGraphCall(href, body);
     const auth = new Headers(init?.headers ?? (typeof input === "object" && "headers" in input ? (input as Request).headers : undefined)).has("authorization");
-    const base = { method: (init?.method ?? "GET").toUpperCase(), url: redact(href), body: init?.body == null ? null : String(init.body), ...(auth ? { auth: true } : {}) };
+    const base = { method: (init?.method ?? "GET").toUpperCase(), url: redact(href), body, ...(auth ? { auth: true } : {}) };
     let response: Response;
     try {
       response = await realFetch(input, init);

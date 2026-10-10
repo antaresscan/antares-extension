@@ -14,7 +14,9 @@
     "test:e2e": "playwright test",
     "smoke": "node scripts/smoke-bundle.mjs",
     "replay": "vitest run __tests__/replay",
-    "replay:update": "node scripts/replay/update.mjs",
+    "replay:full": "node scripts/replay/run.mjs full",
+    "replay:update": "node scripts/replay/run.mjs update",
+    "replay:verify": "node scripts/replay/run.mjs verify",
     "replay:capture": "tsx scripts/replay/capture.ts"
   },
   "dependencies": {
