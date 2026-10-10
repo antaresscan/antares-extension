@@ -17,14 +17,16 @@
 
 ## What it does
 
-- Detects mint/freeze authority, honeypots, blacklists and proxy contracts (GoPlus)
-- Checks LP burn/lock status, bundler activity, and holder concentration (RugCheck)
-- Analyses on-chain holder distribution + creator history (Helius)
-- Detects chart manipulation patterns: parabolic pumps, blow-off tops, wash trading (DexScreener OHLCV)
-- Verifies on-chain age, holder count, and trading patterns (Solscan)
-- Cross-validates data across sources to flag conflicts
-- Surfaces top-3 critical actors (creator + cluster) and top-10 holder live activity
+- Reads the **mint and freeze authorities from the chain itself** (Helius `getAccountInfo`); GoPlus is the cross-check, and relays them when the chain cannot be read. An authority that could not be verified is shown as *not verified*, never as passed
+- Says whether **the token itself can stop a holder from selling** (non-transferable, a freeze authority, risky Token-2022 extensions). A pool-level honeypot is not measured: no Solana source reports it, and the Sell cell shows "—" instead of a tick when a sale cannot be verified
+- Checks the **LP burn/lock** (GoPlus pool data weighted by each pool's TVL, RugCheck) and reads RugCheck's own risk list (creator history of rugs, permanent delegate, mutable metadata, copycat…)
+- Counts **holders** (exact from the chain up to 10,000, then GoPlus / RugCheck) and measures **concentration** (top 1 / top 10, with liquidity pools and foundation wallets left out) from Helius
+- Reads market behaviour from DexScreener and GeckoTerminal: liquidity, volume, price moves, parabolic pumps, dumps, wash volume
+- Cross-validates the sources and flags conflicts
+- Shows the creator and the top holders' recent activity (display only: it does not feed the verdict)
 - Displays a verdict — **SAFE / CAUTION / DANGER / RUG** — with a 1000-point composite score
+
+Not claimed: that a SAFE verdict means a token cannot rug, or that the verdicts have a measured accuracy (see [How the verdicts are checked](#how-the-verdicts-are-checked)).
 
 ---
 
@@ -59,52 +61,37 @@ Score starts at **1000** and is reduced by weighted penalties across **6 weighte
 
 | Layer | Source | Weight | What it checks |
 |---|---|---|---|
-| L1 | DexScreener | 0.20 | Liquidity, volume, price changes, social presence |
-| L2 | RugCheck | 0.20 | LP burn/lock, bundler activity, metadata, top holders |
-| L3 | GoPlus | 0.20 | Honeypot, mint/freeze authority, tax, proxy contracts |
-| L4 | Helius | 0.20 | On-chain holder distribution (top 1 / top 10), creator history |
-| L5 | Solscan | 0.10 | Holder count, token age, wash trading patterns |
+| L1 | DexScreener | 0.20 | Liquidity, volume, price changes, links the project registered, bonding-curve state |
+| L2 | RugCheck | 0.20 | RugCheck's risk list (creator history, permanent delegate, unlocked LP, mutable metadata…), LP locked % |
+| L3 | GoPlus | 0.20 | Mint/freeze authority (cross-check of the chain), balance-mutable / non-transferable / closable / transfer hook, LP burn per pool |
+| L4 | Helius | 0.20 | Holder distribution (top 1 / top 10), creator history; the chain is also where the authorities are read |
+| L5 | Solscan | 0.10 | Optional: needs a paid Solscan Pro key. Without one the layer reports nothing and is not counted as a source |
 | L6 | Chart | 0.10 | OHLCV pattern analysis (pump, dump, wash, stair-step) |
 | L8 | CrossValidation | — | Cross-source conflict detection (post-score multiplier) |
 
-Layers 1–6 contribute weighted trust scores to the geometric mean. Layer 8 (CrossValidation) produces flags and penalty multipliers but does not feed the geometric mean directly.
+A layer only counts as a source when it answered **and read something**. Layers 1–6 contribute weighted trust scores to the geometric mean. Layer 8 (CrossValidation) produces flags and penalty multipliers but does not feed the geometric mean directly.
 
-A token can only reach **SAFE** (score ≥ 850) if it passes all critical gates regardless of score.
+**SAFE** needs, together: no warning or critical flag on the token, at least 4 sources (5 for the plain 900+ rule), a score of 750 or more, and no hard safe-block reason (an active authority, an unlocked LP, a concentration…). A visible price-pump flag also keeps a token out of SAFE. A single critical flag makes it DANGER at best; three warnings do too.
 
 ### Cache versioning
 
-The scan-result Redis cache is keyed by `antares:${ENGINE_VERSION}:${ca}`, where `ENGINE_VERSION` combines a manual tag with an FNV-1a fingerprint of every scoring constant (`LAYER_WEIGHTS`, `XV_PENALTY_*`, `TRUST_FLOOR`, `ESTABLISHED_*`). **Any change to those constants flips the fingerprint, so all cached scores are silently bypassed and naturally TTL out.** No manual coordination needed when re-tuning the engine.
+The scan-result Redis cache is keyed by `antares:${ENGINE_VERSION}:${ca}`, where `ENGINE_VERSION` combines a manual tag with an FNV-1a fingerprint of the numeric scoring constants (`LAYER_WEIGHTS`, `XV_PENALTY_*`, `TRUST_FLOOR`, `ESTABLISHED_*`). A change to those constants flips the fingerprint by itself, so cached scores are bypassed and naturally TTL out (at most 30 minutes). **A change to the verdict *logic* (a threshold written inside `layers.ts`, a severity, the order of the pipeline) does not touch the fingerprint: bump `ENGINE_VERSION_MANUAL`.**
 
 See `api/_lib/constants.ts` for the canonical version + fingerprint logic.
 
 ---
 
-## Backtest accuracy
+## How the verdicts are checked
 
-The engine is tested live against **539 real Solana tokens** with captured
-`/api/scan` fixtures (18 hand-vetted SEEDs + 521 auto-discovered). A
-nightly drift check re-scans every one of them and opens an issue if
-the verdict moves. A wider 1,510-token tracked corpus (memecoin-heavy +
-verified mid-cap) feeds future fixture captures.
+**No accuracy figure is published, because none is measured yet.** The numbers that used to be here ("539 tokens, 100 % acceptable, 0 false negatives") came from a test that re-read verdicts stored in fixtures and never ran the engine, so it could not fail and proved nothing. It has been removed from this page.
 
-```
-Tested live       : 539 Solana tokens
-Acceptable rate   : 100% (539/539)
-  ├─ Exact match  : 20.2%  (109/539)
-  └─ Tolerated    : 79.8%  (430/539)
-Hard fail         : 0%     (0/539)
+What exists:
 
-False-positive on SAFE  : 0  (no blue-chip flagged DANGER/RUG)
-False-negative on RUG   : 0  (no confirmed rug returned SAFE)
+- **A regression replay** (`npm run replay`, part of `npm test`): the real `/api/scan` engine runs offline on the recorded upstream responses of real tokens, the clock set to the moment of the capture. A change to any schema, fetcher, layer or threshold that moves a verdict, a score or a flag is reported token by token. This proves the engine is **stable**, not that it is **right**. Method and limits: [`scripts/replay/README.md`](./scripts/replay/README.md).
+- **Tests on real upstream shapes**: the fixtures of `__tests__/fixtures/upstream-real/` are real RugCheck, GoPlus and Helius answers, not invented contracts.
+- **An end-to-end contract test** (`e2e/api-engine-contract.spec.ts`) that scans well-known tokens on the deployment of each pull request and checks the authorities read from the chain.
 
-Tracked corpus    : 1,510 tokens total — 971 (64%) are queued for
-                                         their first fixture capture
-                                         and treated as warnings, not
-                                         failures, until the capture
-                                         lands.
-```
-
-Full methodology, sources, and confusion matrix in [BACKTEST.md](./BACKTEST.md).
+What is **not** measured yet: how many rugs are flagged *before* they happen, and how many sound tokens are flagged by mistake. That needs outcomes (what became of each scanned token days later), not labels read off a chart; until it exists, treat a verdict as a risk reading built from public data, not as a guarantee.
 
 ---
 
@@ -150,7 +137,7 @@ api/
   graph.ts                   — GET /api/graph?ca=<mint>         Insider graph + activity feed
   history.ts                 — GET /api/history                 Pro-tier scan history
   quota.ts                   — GET /api/quota                   Per-install quota status
-  rugs.ts                    — GET /api/rugs                    Confirmed-rug fingerprint cache
+  rugs.ts                    — GET /api/rugs                    Wall of Shame: recent RUG verdicts backed by evidence
   health.ts                  — GET /api/health                  Liveness probe
 
   payment-intent.ts          — POST /api/payment-intent         Create NOWPayments invoice
@@ -189,7 +176,7 @@ api/
     critical-actors.ts       — Top-3 enriched actors (creator + cluster + insider)
     outcome-stats.ts         — Aggregated win/loss histogram
     verdict-history.ts       — Per-CA verdict-over-time
-    rugdb.ts                 — Confirmed-rug write-once index
+    rugdb.ts                 — Wall of Shame index (RUG verdict + a critical flag that is evidence, 90 days)
 
     account.ts               — Email/password account model (scrypt + JWT)
     session-cookie.ts        — Set/read session cookie + X-Antares-Session header
@@ -277,15 +264,15 @@ can forge trivially with `curl -H Referer:`).
 - Extension: [Plasmo](https://plasmo.com) + TypeScript (MV3)
 - Backend API: Vercel Serverless (Node 22, Hobby — capped at 12 functions)
 - Storage: Upstash Redis (sessions, intents, licenses, scan cache)
-- Rate limiting: Upstash Ratelimit (sliding window 30 req/60s + burst 5 req/10s)
+- Rate limiting: Upstash Ratelimit, keyed by network (IPv6 as its /64) and install id: 60 req/60s and a burst of 20 req/10s per install, 600 req/60s per network whatever the install id, and 60 cold scans/60s per network (`api/_lib/middleware.ts`)
 - Crypto checkout: NOWPayments hosted checkout (200+ cryptos, HMAC-SHA512 IPN)
 - Auth: scrypt password hashing + HMAC-SHA256 JWT sessions (30-day TTL)
-- Data sources: DexScreener · RugCheck · GoPlus · Helius · Solscan · GeckoTerminal
+- Data sources: DexScreener · RugCheck · GoPlus · Helius · GeckoTerminal, and Solscan Pro when a paid key is configured (optional)
 - Observability: Sentry (`@sentry/node` + `@sentry/browser`)
 - AI synthesis: Google Gemini 2.5 Flash (optional, scans work without it)
-- Tests: Vitest (1029 tests across 55 files) + Playwright e2e
-- Security: CORS host-whitelist, rate-limited mutations, CodeQL weekly scans,
-  Dependabot alerts, scrubbed secret logs
+- Tests: Vitest (unit tests, real upstream fixtures, regression replay) + Playwright e2e
+- Security: account endpoints answer only the first-party website and the allow-listed extension IDs (CORS), rate-limited endpoints, scrubbed secret logs,
+  TruffleHog secret scan in CI, Dependabot dependency updates
 
 ---
 
@@ -305,12 +292,11 @@ E2E tests:
 npm run test:e2e   # Playwright, requires CHROME_TEST_HOST=… for live runs
 ```
 
-Backtest corpus management:
+Regression replay (the real engine on recorded upstream responses, see `scripts/replay/README.md`):
 ```bash
-npm run corpus:capture   # rebuild from /api/scan against the live corpus
-npm run corpus:refresh   # re-scan + diff for drift detection
-npm run corpus:discover  # find new high-traffic tokens to add
-npm run test:corpus      # run corpus regression suite only
+npm run replay           # the recorded real scans (also part of npm test)
+npm run replay:update    # after an intended change: rewrite the reference file, then review its diff
+npm run replay:capture   # record real scans (needs the API keys held by the Vercel project, see the README of the replay)
 ```
 
 ---
@@ -353,7 +339,7 @@ ANTARES_CANCEL_URL=...               # Optional, defaults to {WEBSITE}/account.h
 ### Optional
 
 ```
-SOLSCAN_API_KEY=...                  # Solscan Pro (Layer 5 enrichment)
+SOLSCAN_API_KEY=...                  # Solscan Pro, OPTIONAL and paid (Layer 5); without it the layer reports nothing
 GOPLUS_APP_KEY=...                   # GoPlus app key (with the secret below: authenticated, higher limits)
 GOPLUS_APP_SECRET=...                # GoPlus app secret (both are needed; anonymous tier otherwise)
 SENTRY_DSN=...                       # Error monitoring (free tier 5K events/mo)

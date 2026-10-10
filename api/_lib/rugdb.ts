@@ -26,22 +26,39 @@ export function initRugDb(r: Redis): void {
 }
 
 /**
+ * What it takes to be listed publicly as a rug. The Wall of Shame is an ACCUSATION: it names a token, and its creator, to anyone who
+ * calls /api/rugs, for 90 days. It used to take a DANGER verdict, which fires on weak or miscalibrated signals (links not registered
+ * on DexScreener, a concentration, a duplicated flag, a liquidity that is not reported...): sound projects were listed next to real
+ * rugs (audit M19). Now both are required:
+ *   1. the verdict is RUG, and
+ *   2. a CRITICAL flag names something that HAPPENED or a trap that is closed: liquidity removed or abandoned, a honeypot or blocked
+ *      sells, a non-transferable token, a creator who rugged before, a slow rug, an exit trap.
+ * An authority an issuer keeps (mint, freeze, permanent delegate) is a capability, not an event: without this distinction a stablecoin
+ * or a tokenised stock that is RUG for its authorities would be listed with real rugs. A price drop alone is not evidence either.
+ */
+export const RUG_EVIDENCE = /abandoned pool|liquidity removed|honeypot detected|sells blocked|non-transferable|creator history of rugged|slow rug detected|exit (liquidity )?trap/i;
+
+export function isRugEvidence(flags: ScanFlag[]): boolean {
+  return flags.some((f) => f.severity === "critical" && RUG_EVIDENCE.test(f.label));
+}
+
+/**
  * Check if a token is already flagged as a rug in the database.
- * Returns the entry if found, null otherwise.
+ * Returns the entry if found, null otherwise. Entries recorded before the rule above with a DANGER verdict are not rugs by it
+ * and are not returned (they leave the database by themselves when their 90 days end).
  */
 export async function getRugEntry(mint: string): Promise<RugEntry | null> {
   if (!redis) return null;
   try {
     const entry = await redis.get<RugEntry>(`${RUG_PREFIX}${mint}`);
-    return entry ?? null;
+    return entry && entry.risk === "RUG" ? entry : null;
   } catch {
     return null;
   }
 }
 
 /**
- * Record a token as a rug/danger in the database.
- * Called when forceRug is true or risk is RUG/DANGER.
+ * Record a token as a rug in the database, when the verdict is RUG and a critical flag is evidence of a rug (see RUG_EVIDENCE).
  */
 export async function recordRug(data: {
   mint: string;
@@ -52,7 +69,7 @@ export async function recordRug(data: {
   creator: string | null;
 }): Promise<void> {
   if (!redis) return;
-  if (data.risk !== "RUG" && data.risk !== "DANGER") return;
+  if (data.risk !== "RUG" || !isRugEvidence(data.flags)) return;
 
   try {
     const existing = await redis.get<RugEntry>(`${RUG_PREFIX}${data.mint}`);
@@ -107,7 +124,8 @@ export async function getRecentRugs(limit = 50): Promise<RugEntry[]> {
 
     const keys = (mints as string[]).map(mint => `${RUG_PREFIX}${mint}`);
     const results = await redis.mget<RugEntry[]>(...keys);
-    return results.filter((r): r is RugEntry => r !== null);
+    // RUG only: entries recorded under the old rule with a DANGER verdict are not listed (see RUG_EVIDENCE).
+    return results.filter((r): r is RugEntry => r !== null && r.risk === "RUG");
   } catch {
     return [];
   }
