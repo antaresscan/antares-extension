@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   layerChart, layerDexScreener, layerGoPlus, layerRugCheck, layerHelius,
-  layerSolscan, layerCrossValidation,
+  layerSolscan, layerCrossValidation, isEstablished, ESTABLISHED_LINKS_MIN_LIQUIDITY_USD,
 } from "../api/_lib/layers";
 import type { DexScreenerPair, RugCheckSummary, GoPlusTokenResult, HeliusHolder } from "../api/_lib/types";
 import { deriveAuthorityFacts, type MintState } from "../api/_lib/facts";
@@ -1100,5 +1100,122 @@ describe("layerChart", () => {
       expect(sustainedFlag).toBeDefined();
       // Both should be present — independent signals.
     });
+  });
+});
+
+// ═══ "No website / Twitter / Telegram" and established tokens ═══════════════
+//
+// DexScreener only shows links a project REGISTERED with them (a paid
+// listing). USDC has none on any of its 30 pairs, and this single critical
+// flag turned its verdict into DANGER — the production e2e test for USDC
+// failed for hours because of it. For a token that has traded for months with
+// real liquidity, missing registered links says nothing about rug risk; young
+// or thin tokens keep the strict reading.
+describe("layerDexScreener — no registered links", () => {
+  const DAY_MIN = 24 * 60;
+  const noLinks = (liq: number): DexScreenerPair => ({
+    liquidity: { usd: liq },
+    volume: { h24: liq / 4 },
+    priceChange: { h1: 0.1, h6: 0.2, h24: 0.3, m5: 0 },
+    txns: { m5: { buys: 10, sells: 9 } },
+    info: { socials: [], websites: [] },
+  });
+  const labelsBySeverity = (r: ReturnType<typeof layerDexScreener>, sev: string) =>
+    r.flags.filter((f) => f.severity === sev).map((f) => f.label);
+
+  it("USDC-like (786 days old, $1.5M liquidity, no links): informational only, nothing blocked", () => {
+    const r = layerDexScreener(noLinks(1_544_566), 9_000_000_000, 786 * DAY_MIN, 9_301_194);
+    expect(labelsBySeverity(r, "critical")).toEqual([]);
+    expect(labelsBySeverity(r, "info")).toContain("No website / Twitter / Telegram registered on DexScreener");
+    expect(r.safeBlocked).toBe(false);
+    expect(r.trust).toBeGreaterThan(0.9);
+  });
+
+  it("witness: a YOUNG token with no links is still critical and blocks SAFE (unchanged)", () => {
+    const r = layerDexScreener(noLinks(1_544_566), 500_000, 2 * DAY_MIN, 300);
+    expect(labelsBySeverity(r, "critical")).toContain("No website / Twitter / Telegram — high rug risk");
+    expect(r.safeBlocked).toBe(true);
+    expect(r.trust).toBeLessThan(0.7);
+  });
+
+  it("witness: a 6-month-old token with only $20k of liquidity keeps the strict reading", () => {
+    const r = layerDexScreener(noLinks(20_000), 100_000, 400 * DAY_MIN, 100);
+    expect(labelsBySeverity(r, "critical")).toContain("No website / Twitter / Telegram — high rug risk");
+  });
+
+  it("witness: unknown token age is never treated as established", () => {
+    const r = layerDexScreener(noLinks(5_000_000), null, null, 9_000_000);
+    expect(labelsBySeverity(r, "critical")).toContain("No website / Twitter / Telegram — high rug risk");
+  });
+
+  it("a 40-day-old token needs 5 000 holders (or 180 days) to count as established", () => {
+    const strict = layerDexScreener(noLinks(500_000), 1_000_000, 40 * DAY_MIN, 800);
+    expect(labelsBySeverity(strict, "critical").length).toBe(1);
+    const established = layerDexScreener(noLinks(500_000), 1_000_000, 40 * DAY_MIN, 12_000);
+    expect(labelsBySeverity(established, "critical")).toEqual([]);
+  });
+
+  it("the liquidity floor is exactly ESTABLISHED_LINKS_MIN_LIQUIDITY_USD", () => {
+    const at = layerDexScreener(noLinks(ESTABLISHED_LINKS_MIN_LIQUIDITY_USD), 1_000_000, 400 * DAY_MIN, 10_000);
+    const below = layerDexScreener(noLinks(ESTABLISHED_LINKS_MIN_LIQUIDITY_USD - 1), 1_000_000, 400 * DAY_MIN, 10_000);
+    expect(labelsBySeverity(at, "critical")).toEqual([]);
+    expect(labelsBySeverity(below, "critical").length).toBe(1);
+  });
+
+  it("a token that DOES list a link never gets the flag, established or not", () => {
+    const pair = { ...noLinks(1_544_566), info: { socials: [{ type: "twitter", url: "https://x.com/usdc" }], websites: [] } };
+    for (const age of [2 * DAY_MIN, 786 * DAY_MIN]) {
+      const r = layerDexScreener(pair, 1_000_000, age, 9_000_000);
+      expect(r.flags.some((f) => /No website/.test(f.label))).toBe(false);
+    }
+  });
+});
+
+describe("isEstablished", () => {
+  it("needs 30 days, then either 5 000 holders or 180 days", () => {
+    expect(isEstablished(29 * 24, 100_000)).toBe(false);
+    expect(isEstablished(30 * 24, 4_999)).toBe(false);
+    expect(isEstablished(30 * 24, 5_000)).toBe(true);
+    expect(isEstablished(179 * 24, 10)).toBe(false);
+    expect(isEstablished(180 * 24, 10)).toBe(true);
+  });
+
+  it("treats unknown age as not established, and unknown holders as zero", () => {
+    expect(isEstablished(null, 1_000_000)).toBe(false);
+    expect(isEstablished(undefined, 1_000_000)).toBe(false);
+    expect(isEstablished(400 * 24, null)).toBe(true);
+    expect(isEstablished(60 * 24, null)).toBe(false);
+  });
+});
+
+describe("layerDexScreener — no registered links: the deepest pool of the token counts", () => {
+  const DAY_MIN = 24 * 60;
+  // selectBestPair prefers stable / SOL quoted pools, so the chosen pair can be much thinner than the token's deepest pool
+  // (JTO: a $62k Raydium pool chosen, a $1.3M Orca pool next to it).
+  const chosen = (liq: number): DexScreenerPair => ({
+    liquidity: { usd: liq },
+    volume: { h24: liq / 4 },
+    priceChange: { h1: 0.1, h6: 0.2, h24: 0.3, m5: 0 },
+    txns: { m5: { buys: 10, sells: 9 } },
+    info: { socials: [], websites: [] },
+  });
+  const criticals = (r: ReturnType<typeof layerDexScreener>) => r.flags.filter((f) => f.severity === "critical").map((f) => f.label);
+
+  it("JTO-like: a thin chosen pool ($62k) with a $1.3M pool elsewhere is an established, liquid token", () => {
+    const r = layerDexScreener(chosen(61_847), 536_000_000, 786 * DAY_MIN, 89_605, 1_300_296);
+    expect(criticals(r)).toEqual([]);
+    expect(r.safeBlocked).toBe(false);
+  });
+
+  it("witness: the deepest pool is also thin: strict reading", () => {
+    expect(criticals(layerDexScreener(chosen(61_847), 5_000_000, 786 * DAY_MIN, 89_605, 70_000)).length).toBe(1);
+  });
+
+  it("witness: deepest pool unknown (the default 0): the chosen pool decides, as before", () => {
+    expect(criticals(layerDexScreener(chosen(61_847), 5_000_000, 786 * DAY_MIN, 89_605)).length).toBe(1);
+  });
+
+  it("witness: a deep pool does not make a YOUNG token established", () => {
+    expect(criticals(layerDexScreener(chosen(61_847), 5_000_000, 2 * DAY_MIN, 300, 1_300_296)).length).toBe(1);
   });
 });

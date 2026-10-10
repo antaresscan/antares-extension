@@ -49,11 +49,33 @@ function applyDiminishingPenalties(trust: number, penalties: number[]): number {
   return trust;
 }
 
+/**
+ * "Established" token: traded for at least 30 days AND either has 5 000+
+ * verified holders or is at least 6 months old. The 180-day branch protects
+ * 6-month+ blue-chips from data-gap misclassification (holder sources down)
+ * while keeping shorter-lived tokens (typical rugs: 30-90 days) in the
+ * strict tier. Single definition, used by the holder-concentration tiers
+ * and by the "no registered links" check.
+ */
+export function isEstablished(
+  tokenAgeHours: number | null | undefined,
+  holders: number | null | undefined,
+): boolean {
+  const age = tokenAgeHours ?? 0;
+  return age >= 30 * 24 && ((holders ?? 0) >= 5_000 || age >= 180 * 24);
+}
+
+/** Liquidity an established token must also have for the "no registered links" exemption. */
+export const ESTABLISHED_LINKS_MIN_LIQUIDITY_USD = 100_000;
+
 // ═══ LAYER 1 — DexScreener ═════════════════════════════════════════════════════
 export function layerDexScreener(
   pair: DexScreenerPair | null,
   marketCap: number | null,
-  tokenAgeMinutes: number | null
+  tokenAgeMinutes: number | null,
+  holders: number | null = null,
+  /** Liquidity of the token's deepest pool, when the chosen pair is not it (0 = unknown). */
+  deepestPoolUsd = 0,
 ): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
@@ -152,7 +174,24 @@ export function layerDexScreener(
     flags.push(makeFlag(`Sharp 6h sell-off (${Math.round(pc6)}%)`, "warning", 0));
     penalties.push(0.55); safeBlocked = true;
   }
-  if (!hasWebsite && !hasTwitter && !hasTelegram) { flags.push(makeFlag("No website / Twitter / Telegram — high rug risk", "critical", 0)); penalties.push(0.60); safeBlocked = true; }
+  if (!hasWebsite && !hasTwitter && !hasTelegram) {
+    // DexScreener only shows links the project REGISTERED with them (a paid
+    // listing), so their absence mostly means "did not register", not "rug".
+    // For a token that has traded for months with real liquidity it says
+    // nothing about risk: USDC has none, and this single flag used to turn
+    // its verdict into DANGER. Young or thin tokens keep the strict reading.
+    const establishedByMarket =
+      tokenAgeMinutes !== null &&
+      isEstablished(tokenAgeMinutes / 60, holders) &&
+      Math.max(liq, deepestPoolUsd) >= ESTABLISHED_LINKS_MIN_LIQUIDITY_USD;
+    if (establishedByMarket) {
+      flags.push(makeFlag("No website / Twitter / Telegram registered on DexScreener", "info", 0));
+      penalties.push(0.95);
+    } else {
+      flags.push(makeFlag("No website / Twitter / Telegram — high rug risk", "critical", 0));
+      penalties.push(0.60); safeBlocked = true;
+    }
+  }
   if (txns5m < 5 && mc > 50000 && ageMinutes < 1440) { flags.push(makeFlag("Low 5m transactions vs market cap", "info", 0)); penalties.push(0.92); }
   if ((sells5m === 0 && buys5m > 0 && txns5m > 5) || (sells5m > 0 && buys5m > sells5m * 5)) { flags.push(makeFlag("Buy/sell imbalance (coordinated pump)", "warning", 0)); penalties.push(0.85); }
   if (pc24 < -80) {
@@ -578,12 +617,7 @@ export function layerHelius(
   // misclassification while keeping shorter-lived tokens (RIV 67d, typical
   // rugs 30-90d) in the strict fresh tier even when holder sources are down.
   const isEstablishedToken = !!(maturityContext &&
-    (maturityContext.tokenAgeHours ?? 0) >= 30 * 24 &&
-    (
-      (maturityContext.holders ?? 0) >= 5_000 ||
-      (maturityContext.tokenAgeHours ?? 0) >= 180 * 24
-    )
-  );
+    isEstablished(maturityContext.tokenAgeHours, maturityContext.holders));
   let top10ConcentrationBand: "none" | "moderate" | "soft" | "hard" = "none";
   const t10pct = Math.round(top10Pct * 100);
 
