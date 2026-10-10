@@ -421,7 +421,8 @@ describe("scan handler", () => {
 describe("scan handler — token without registered links", () => {
   const MINT = "So11111111111111111111111111111111111111112";
 
-  function scanWithNoLinks(ageDays: number, liquidityUsd: number) {
+  /** `otherPoolUsd`: a second pool of the same token, quoted in a non-stable token, so selectBestPair does not choose it. */
+  function scanWithNoLinks(ageDays: number, liquidityUsd: number, otherPoolUsd = 0) {
     setupGoodTokenMocks();
     const goodMocks = mockFetch.getMockImplementation() as (url: string, ...rest: unknown[]) => Promise<unknown>;
     mockFetch.mockImplementation((url: string, ...rest: unknown[]) => {
@@ -442,7 +443,20 @@ describe("scan handler — token without registered links", () => {
               fdv: 9_000_000_000,
               pairCreatedAt: Date.now() - ageDays * 24 * 3600 * 1000,
               info: { socials: [], websites: [] }, // nothing registered
-            }],
+            }, ...(otherPoolUsd > 0 ? [{
+              pairAddress: "pair2",
+              baseToken: { address: MINT, symbol: "USDC", name: "USD Coin" },
+              quoteToken: { address: "JitoSOLmint", symbol: "JitoSOL" }, // not a stable / SOL quote: never chosen
+              liquidity: { usd: otherPoolUsd },
+              volume: { h24: 1_000, h1: 50 },
+              priceChange: { m5: 0, h1: 0.1, h6: 0.2, h24: 0.3 },
+              txns: { m5: { buys: 15, sells: 12 } },
+              priceUsd: "1.0001",
+              marketCap: 9_000_000_000,
+              fdv: 9_000_000_000,
+              pairCreatedAt: Date.now() - ageDays * 24 * 3600 * 1000,
+              info: { socials: [], websites: [] },
+            }] : [])],
           }),
         });
       }
@@ -475,6 +489,23 @@ describe("scan handler — token without registered links", () => {
     const body = await run();
 
     expect(body.flags.some((f) => f.severity === "critical" && /No website/.test(f.label))).toBe(false);
+  });
+
+  it("the deepest pool counts: the chosen pool is thin ($62k, USDT-quoted) but another pool of the token holds $1.3M", async () => {
+    scanWithNoLinks(786, 61_847, 1_300_296);
+
+    const body = await run();
+
+    expect(body.flags.some((f) => f.severity === "critical" && /No website/.test(f.label))).toBe(false);
+    expect(body.flags.some((f) => f.severity === "info" && /registered on DexScreener/.test(f.label))).toBe(true);
+  });
+
+  it("witness: the same thin pool alone (no deep pool elsewhere) keeps the strict reading", async () => {
+    scanWithNoLinks(786, 61_847);
+
+    const body = await run();
+
+    expect(body.flags.some((f) => f.severity === "critical" && /No website/.test(f.label))).toBe(true);
   });
 
   it("witness: the same missing links on a 2-day-old token still raise the critical flag", async () => {

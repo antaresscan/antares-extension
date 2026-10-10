@@ -517,8 +517,13 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
 
     const tokenName: string | null = sanitizeString(pair?.baseToken?.name) ?? null;
 
+    // Deepest pool of THIS token (it is the base token of the pair). selectBestPair can settle on a thinner pool than the deepest
+    // one (JTO: a $62k Raydium pool next to a $1.3M Orca pool); the "no registered links" check asks whether the token has real
+    // liquidity somewhere, not whether the chosen pool is deep.
+    const deepestPoolUsd = Math.max(0, ...(dexData?.pairs ?? []).filter((p) => p.baseToken?.address === resolvedMint).map((p) => asNumber(p.liquidity?.usd)));
+
     // 7 layers
-    const l1 = layerDexScreener(pair, marketCap, tokenAgeMinutes, holders);
+    const l1 = layerDexScreener(pair, marketCap, tokenAgeMinutes, holders, deepestPoolUsd);
     // Shared maturity context — rugcheck, goplus, and helius all need
     // the same view of "is this an established token" so soft signals
     // (unburned LP, top-1 concentration on a 100k-holder memecoin) get

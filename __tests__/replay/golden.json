@@ -937,15 +937,15 @@
     ]
   },
   "USELESS": {
-    "risk": "DANGER",
-    "score": 893,
+    "risk": "SAFE",
+    "score": 1000,
     "confidence": 90,
     "flags": [
       "bonus:Established token (30d+) ✓",
       "bonus:LP Burned 98% (GoPlus) ✓",
       "bonus:Well distributed supply ✓",
-      "critical:No website / Twitter / Telegram — high rug risk",
-      "info:Mutable metadata"
+      "info:Mutable metadata",
+      "info:No website / Twitter / Telegram registered on DexScreener"
     ],
     "sources_used": [
       "chart",
@@ -965,7 +965,7 @@
       },
       "dexscreener": {
         "available": true,
-        "trust": 0.6
+        "trust": 0.95
       },
       "goplus": {
         "available": true,
@@ -992,7 +992,7 @@
     "holders": 45831,
     "top10HolderPct": 14.01,
     "topHolderPct": 3.28,
-    "safeBlocked": true,
+    "safeBlocked": false,
     "safeBlockedReasons": []
   },
   "JUP": {
@@ -1057,15 +1057,15 @@
   },
   "RENDER": {
     "risk": "DANGER",
-    "score": 435,
+    "score": 481,
     "confidence": 90,
     "flags": [
       "bonus:Established token (30d+) ✓",
       "critical:Freeze authority active — wallets can be frozen",
       "critical:LP not burned or locked — dev can rug liquidity (contract not clean)",
       "critical:Mint authority active — supply can be inflated",
-      "critical:No website / Twitter / Telegram — high rug risk",
       "info:Mutable metadata",
+      "info:No website / Twitter / Telegram registered on DexScreener",
       "warning:Top 10 hold 48% — elevated · exchanges may be included"
     ],
     "sources_used": [
@@ -1086,7 +1086,7 @@
       },
       "dexscreener": {
         "available": true,
-        "trust": 0.6
+        "trust": 0.95
       },
       "goplus": {
         "available": true,
@@ -1122,15 +1122,15 @@
     ]
   },
   "HNT": {
-    "risk": "DANGER",
-    "score": 893,
+    "risk": "SAFE",
+    "score": 1000,
     "confidence": 90,
     "flags": [
       "bonus:Established token (30d+) ✓",
-      "critical:No website / Twitter / Telegram — high rug risk",
       "info:LP holds 0.21% of supply — negligible rug risk",
       "info:Mint authority active — supply can be inflated",
       "info:Mutable metadata",
+      "info:No website / Twitter / Telegram registered on DexScreener",
       "info:Top 10 hold 26% — moderate · exchanges likely included"
     ],
     "sources_used": [
@@ -1151,7 +1151,7 @@
       },
       "dexscreener": {
         "available": true,
-        "trust": 0.6
+        "trust": 0.95
       },
       "goplus": {
         "available": true,
@@ -1178,7 +1178,7 @@
     "holders": 537767,
     "top10HolderPct": 25.97,
     "topHolderPct": 4.18,
-    "safeBlocked": true,
+    "safeBlocked": false,
     "safeBlockedReasons": []
   },
   "WBTC": {
@@ -1187,11 +1187,11 @@
     "confidence": 90,
     "flags": [
       "bonus:Established token (30d+) ✓",
-      "critical:No website / Twitter / Telegram — high rug risk",
       "critical:Top 10 hold 69% — high concentration",
       "info:LP holds 0.49% of supply — negligible rug risk",
       "info:Mint authority active — supply can be inflated",
       "info:Mutable metadata",
+      "info:No website / Twitter / Telegram registered on DexScreener",
       "warning:RugCheck: Single holder ownership"
     ],
     "sources_used": [
@@ -1212,7 +1212,7 @@
       },
       "dexscreener": {
         "available": true,
-        "trust": 0.6
+        "trust": 0.95
       },
       "goplus": {
         "available": true,
@@ -1304,14 +1304,14 @@
     ]
   },
   "JTO": {
-    "risk": "DANGER",
-    "score": 795,
+    "risk": "CAUTION",
+    "score": 880,
     "confidence": 90,
     "flags": [
       "bonus:Established token (30d+) ✓",
-      "critical:No website / Twitter / Telegram — high rug risk",
       "info:LP holds 0.01% of supply — negligible rug risk",
       "info:Mutable metadata",
+      "info:No website / Twitter / Telegram registered on DexScreener",
       "warning:Top 10 hold 49% — elevated · exchanges may be included"
     ],
     "sources_used": [
@@ -1332,7 +1332,7 @@
       },
       "dexscreener": {
         "available": true,
-        "trust": 0.6
+        "trust": 0.95
       },
       "goplus": {
         "available": true,

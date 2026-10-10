@@ -74,6 +74,8 @@ export function layerDexScreener(
   marketCap: number | null,
   tokenAgeMinutes: number | null,
   holders: number | null = null,
+  /** Liquidity of the token's deepest pool, when the chosen pair is not it (0 = unknown). */
+  deepestPoolUsd = 0,
 ): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
@@ -181,7 +183,7 @@ export function layerDexScreener(
     const establishedByMarket =
       tokenAgeMinutes !== null &&
       isEstablished(tokenAgeMinutes / 60, holders) &&
-      liq >= ESTABLISHED_LINKS_MIN_LIQUIDITY_USD;
+      Math.max(liq, deepestPoolUsd) >= ESTABLISHED_LINKS_MIN_LIQUIDITY_USD;
     if (establishedByMarket) {
       flags.push(makeFlag("No website / Twitter / Telegram registered on DexScreener", "info", 0));
       penalties.push(0.95);

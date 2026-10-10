@@ -1187,3 +1187,35 @@ describe("isEstablished", () => {
     expect(isEstablished(60 * 24, null)).toBe(false);
   });
 });
+
+describe("layerDexScreener — no registered links: the deepest pool of the token counts", () => {
+  const DAY_MIN = 24 * 60;
+  // selectBestPair prefers stable / SOL quoted pools, so the chosen pair can be much thinner than the token's deepest pool
+  // (JTO: a $62k Raydium pool chosen, a $1.3M Orca pool next to it).
+  const chosen = (liq: number): DexScreenerPair => ({
+    liquidity: { usd: liq },
+    volume: { h24: liq / 4 },
+    priceChange: { h1: 0.1, h6: 0.2, h24: 0.3, m5: 0 },
+    txns: { m5: { buys: 10, sells: 9 } },
+    info: { socials: [], websites: [] },
+  });
+  const criticals = (r: ReturnType<typeof layerDexScreener>) => r.flags.filter((f) => f.severity === "critical").map((f) => f.label);
+
+  it("JTO-like: a thin chosen pool ($62k) with a $1.3M pool elsewhere is an established, liquid token", () => {
+    const r = layerDexScreener(chosen(61_847), 536_000_000, 786 * DAY_MIN, 89_605, 1_300_296);
+    expect(criticals(r)).toEqual([]);
+    expect(r.safeBlocked).toBe(false);
+  });
+
+  it("witness: the deepest pool is also thin: strict reading", () => {
+    expect(criticals(layerDexScreener(chosen(61_847), 5_000_000, 786 * DAY_MIN, 89_605, 70_000)).length).toBe(1);
+  });
+
+  it("witness: deepest pool unknown (the default 0): the chosen pool decides, as before", () => {
+    expect(criticals(layerDexScreener(chosen(61_847), 5_000_000, 786 * DAY_MIN, 89_605)).length).toBe(1);
+  });
+
+  it("witness: a deep pool does not make a YOUNG token established", () => {
+    expect(criticals(layerDexScreener(chosen(61_847), 5_000_000, 2 * DAY_MIN, 300, 1_300_296)).length).toBe(1);
+  });
+});
