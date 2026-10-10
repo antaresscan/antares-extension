@@ -13,10 +13,6 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "smoke": "node scripts/smoke-bundle.mjs",
-    "corpus:capture": "tsx scripts/corpus-capture.ts",
-    "corpus:refresh": "tsx scripts/corpus-capture.ts --refresh",
-    "corpus:discover": "tsx scripts/corpus-discover.ts",
-    "test:corpus": "vitest run __tests__/backtest",
     "replay": "vitest run __tests__/replay",
     "replay:update": "node scripts/replay/update.mjs",
     "replay:capture": "tsx scripts/replay/capture.ts"
