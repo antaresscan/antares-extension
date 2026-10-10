@@ -130,6 +130,8 @@ const {
   heliusGetLargestAccounts,
   heliusGetTokenSupply,
   heliusGetMintAccount,
+  heliusGetTokenAccountsPage,
+  heliusGetHolderPages,
   heliusGetCreatorReputation,
   heliusGetProgramAccountHolderCount,
   fetchSolscan,
@@ -334,6 +336,80 @@ describe("fetchDexCandles", () => {
   });
 });
 
+
+// ─── Helius DAS getTokenAccounts: one page of the current holders ────────────
+describe("heliusGetTokenAccountsPage", () => {
+  it("asks getTokenAccounts for the mint with the full page size (the holder count is read from the page length)", async () => {
+    mockFetchJsonPost.mockResolvedValue({ result: { token_accounts: [] } });
+    await heliusGetTokenAccountsPage("MINT_PUBKEY_42", "key");
+    const body = (mockFetchJsonPost.mock.calls[0] as [string, Record<string, unknown>, ...unknown[]])[1];
+    expect(body.method).toBe("getTokenAccounts");
+    expect(body.params).toEqual({ mint: "MINT_PUBKEY_42", limit: 1000, page: 1 });
+  });
+
+  it("asks for the page number it is given", async () => {
+    mockFetchJsonPost.mockResolvedValue({ result: { token_accounts: [] } });
+    await heliusGetTokenAccountsPage("m", "key", 7);
+    expect((mockFetchJsonPost.mock.calls[0] as [string, { params: { page: number } }])[1].params.page).toBe(7);
+  });
+
+  it("returns the answer as Helius sent it", async () => {
+    const answer = { jsonrpc: "2.0", result: { total: 1, limit: 1000, token_accounts: [{ owner: "o", amount: 5 }] }, id: "holder-count" };
+    mockFetchJsonPost.mockResolvedValue(answer);
+    expect(await heliusGetTokenAccountsPage("mint", "k")).toEqual(answer);
+  });
+
+  it("returns null without a key", async () => {
+    expect(await heliusGetTokenAccountsPage("mint", "")).toBeNull();
+    expect(mockFetchJsonPost).not.toHaveBeenCalled();
+  });
+});
+
+describe("heliusGetHolderPages", () => {
+  const pageOf = (n: number) => ({ jsonrpc: "2.0", result: { total: n, limit: 1000, token_accounts: Array.from({ length: n }, (_, i) => ({ owner: `o${i}`, amount: 1 })) } });
+  const pagesRequested = () => (mockFetchJsonPost.mock.calls as Array<[string, { params: { page: number } }]>).map((c) => c[1].params.page);
+
+  it("a small token (page 1 not full) costs ONE call", async () => {
+    mockFetchJsonPost.mockResolvedValue(pageOf(53));
+    const pages = await heliusGetHolderPages("m", "k");
+    expect(pagesRequested()).toEqual([1]);
+    expect(pages).toHaveLength(1);
+  });
+
+  it("page 1 full: pages 2 to 10 are requested too, in page order", async () => {
+    mockFetchJsonPost.mockImplementation(async (_url: string, body: { params: { page: number } }) => (body.params.page <= 2 ? pageOf(1000) : pageOf(10)));
+    const pages = await heliusGetHolderPages("m", "k");
+    expect([...pagesRequested()].sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    expect(pagesRequested()[0]).toBe(1); // page 1 first, the others only once it proved to be full
+    expect(pages).toHaveLength(10);
+  });
+
+  it("page 1 failing: null, and no other page is requested", async () => {
+    mockFetchJsonPost.mockResolvedValue(null);
+    expect(await heliusGetHolderPages("m", "k")).toBeNull();
+    expect(pagesRequested().every((p) => p === 1)).toBe(true);
+  });
+
+  it("a later page failing stays null in the list (the count is then a floor, not exact)", async () => {
+    mockFetchJsonPost.mockImplementation(async (_url: string, body: { params: { page: number } }) => (body.params.page === 4 ? null : pageOf(1000)));
+    const pages = (await heliusGetHolderPages("m", "k")) as unknown[];
+    expect(pages).toHaveLength(10);
+    expect(pages[3]).toBeNull();
+    expect(pages[2]).not.toBeNull();
+  });
+
+  it("a malformed page 1 is returned as is, without requesting more", async () => {
+    mockFetchJsonPost.mockResolvedValue({ result: { token_accounts: "nope" } });
+    const pages = await heliusGetHolderPages("m", "k");
+    expect(pages).toHaveLength(1);
+    expect(pagesRequested().every((p) => p === 1)).toBe(true);
+  });
+
+  it("returns null without a key", async () => {
+    expect(await heliusGetHolderPages("m", "")).toBeNull();
+    expect(mockFetchJsonPost).not.toHaveBeenCalled();
+  });
+});
 
 // ─── Helius getProgramAccounts holder count (canonical method) ──────────────
 describe("heliusGetProgramAccountHolderCount", () => {

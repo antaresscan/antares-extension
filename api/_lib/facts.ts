@@ -6,6 +6,8 @@
 // Every fact is tri-state: true = present, false = verified absent, null = NOT verified. "Not verified" is never
 // turned into "OK": the overlay shows it as unknown and the AI summary does not narrate it.
 import type { GoPlusTokenResult } from "./types";
+import { HeliusTokenAccountsResponseSchema } from "./upstream-schemas";
+import { HOLDER_PAGE_LIMIT } from "./constants";
 
 export type Tri = boolean | null;
 
@@ -150,4 +152,61 @@ export function weightedBurnPct(dex: ReadonlyArray<{ burn_percent?: number | nul
     burned += (tvl * d.burn_percent) / 100;
   }
   return tvlSum > 0 ? (burned / tvlSum) * 100 : null;
+}
+
+export interface ChainHolders {
+  /** Wallets that hold a non-zero balance right now, among the accounts the page returned. */
+  count: number;
+  /** The page was not full, so it holds EVERY holder and `count` is exact. A full page only proves "at least `count`". */
+  complete: boolean;
+}
+
+/**
+ * Holder count from the pages of Helius getTokenAccounts, in page order (a single page object is accepted too). Zero
+ * balances are not returned; an owner with several token accounts counts once, across pages.
+ * Exactness is decided by the page SIZE: the cursor comes back on a page that is not full too (seen live: 53 accounts,
+ * cursor present), and `total` is the page size, not the number of holders. The count is exact once a page that is not
+ * full has been reached; if every page is full, or a page is missing (failed) before that, it is only a floor.
+ * Anything that is not a well-formed first page -> null (the count stays "not verified").
+ */
+export function parseChainHolders(raw: unknown): ChainHolders | null {
+  const pages = Array.isArray(raw) ? raw : [raw];
+  if (pages.length === 0) return null;
+  const owners = new Set<string>();
+  let anonymous = 0;
+  for (let i = 0; i < pages.length; i++) {
+    const parsed = HeliusTokenAccountsResponseSchema.safeParse(pages[i]);
+    if (!parsed.success) return i === 0 ? null : { count: owners.size + anonymous, complete: false }; // a missing page: a floor only
+    const accounts = parsed.data.result.token_accounts;
+    for (const a of accounts) {
+      if (!(Number(a.amount) > 0)) continue;
+      if (a.owner) owners.add(a.owner); else anonymous++;
+    }
+    if (accounts.length < HOLDER_PAGE_LIMIT) return { count: owners.size + anonymous, complete: true }; // the end of the list
+  }
+  return { count: owners.size + anonymous, complete: false }; // every page was full: at least this many
+}
+
+function positiveCount(v: unknown): number | null {
+  const n = typeof v === "number" ? v : typeof v === "string" ? parseInt(v, 10) : NaN;
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/**
+ * The holder count to show, from the source that can know it:
+ *  1. the chain, when the page is complete: exact and current, independent of any rate limit (BREAK 53 and PAPER 37
+ *     holders; RugCheck said 173 and 427 because it counts the accounts that were emptied too);
+ *  2. GoPlus holder_count: matches an independent explorer within 0.01 % on large tokens (the chain page is full there);
+ *  3. RugCheck totalHolders: an upper bound (it counts emptied accounts, 2-3x too many on large tokens), still the right
+ *     order of magnitude when GoPlus does not answer;
+ *  4. the chain pages when they are not complete: a floor, "at least N" (N = holders read so far).
+ * A GoPlus or RugCheck figure below the floor is impossible (the floor holders were counted on the chain), so the floor wins.
+ * Never the number of wallets in a top-20 list: that read "20 holders" on tokens with hundreds.
+ */
+export function pickHolderCount(src: { chain: ChainHolders | null; goplus: unknown; rugcheck: unknown }): number | null {
+  if (src.chain?.complete && src.chain.count > 0) return src.chain.count;
+  const floor = src.chain && src.chain.count > 0 ? src.chain.count : 0;
+  const reported = positiveCount(src.goplus) ?? positiveCount(src.rugcheck);
+  if (reported === null) return floor > 0 ? floor : null;
+  return Math.max(reported, floor);
 }

@@ -65,6 +65,7 @@ vi.mock("@sentry/node", () => ({
 const mockHeliusGetLargestAccounts = vi.fn();
 const mockHeliusGetTokenSupply = vi.fn();
 const mockHeliusGetMintAccount = vi.fn();
+const mockHeliusGetHolderPages = vi.fn();
 const mockHeliusGetCreatorReputation = vi.fn();
 const mockHeliusGetHoldersCount = vi.fn();
 const mockHeliusGetProgramAccountHolderCount = vi.fn();
@@ -105,6 +106,7 @@ vi.mock("../api/_lib/fetchers", () => ({
   heliusGetLargestAccounts: (...args: unknown[]) => mockHeliusGetLargestAccounts(...args),
   heliusGetTokenSupply: (...args: unknown[]) => mockHeliusGetTokenSupply(...args),
   heliusGetMintAccount: (...args: unknown[]) => mockHeliusGetMintAccount(...args),
+  heliusGetHolderPages: (...args: unknown[]) => mockHeliusGetHolderPages(...args),
   heliusGetCreatorReputation: (...args: unknown[]) => mockHeliusGetCreatorReputation(...args),
   heliusGetHoldersCount: (...args: unknown[]) => mockHeliusGetHoldersCount(...args),
   heliusGetProgramAccountHolderCount: (...args: unknown[]) => mockHeliusGetProgramAccountHolderCount(...args),
@@ -237,6 +239,7 @@ function setupGoodTokenMocks() {
     holders.map((h: Record<string, unknown>) => ({ ...h, owner: h.owner || h.address }))
   );
   mockHeliusGetMintAccount.mockResolvedValue(mintAccountResponse());
+  mockHeliusGetHolderPages.mockResolvedValue(null); // no chain holder count unless a test provides a page
   mockPublicRpcGetMintAccount.mockResolvedValue(null);
   mockHeliusGetCreatorReputation.mockResolvedValue(null);
   mockHeliusGetHoldersCount.mockResolvedValue(null);
@@ -294,14 +297,18 @@ beforeEach(() => {
 // ─── HOLDER COUNT + SOLSCAN AVAILABILITY ────────────────────────────────────────
 //
 // Verified live (BONK): GoPlus holder_count 1,024,740 = GeckoTerminal 1,024,731 (+-10); the RugCheck /report totalHolders
-// is 2,088,973 (it counts 2-3x too many on large tokens); Helius getTokenAccounts returns the PAGE size (limit 1 -> 1,
-// limit 1000 -> 1000). So: GoPlus first, RugCheck only as a fallback, never the maximum, and no Helius count call.
+// is 2,088,973 (it counts 2-3x too many on large tokens). Helius getTokenAccounts' `total` is the PAGE size, but a page
+// that is not full holds every holder: the chain count is exact for tokens under 1000 holders (BREAK 53, PAPER 37 while
+// RugCheck said 173 and 427, because it also counts emptied accounts) - and those are the tokens GoPlus and RugCheck fail
+// on. So: the exact chain page first, then GoPlus, then RugCheck, then the full-page floor; never the maximum, and never
+// the number of wallets in a top-20 list (that read "20 holders" on tokens with hundreds).
 const MINT = "So11111111111111111111111111111111111111112";
 // The real /report returns topHolders as an ARRAY of holders.
 const REAL_SHAPE_TOP_HOLDERS = [{ address: "a", amount: 1, decimals: 6, pct: 13.7, uiAmount: 1, owner: "o", insider: false }];
 
-function setupUpstream(opts: { goplusHolderCount?: string; rugTotalHolders?: number; solscan?: boolean }) {
+function setupUpstream(opts: { goplusHolderCount?: string; rugTotalHolders?: number; solscan?: boolean; heliusPages?: unknown[] | null }) {
   setupGoodTokenMocks();
+  if (opts.heliusPages !== undefined) mockHeliusGetHolderPages.mockResolvedValue(opts.heliusPages);
   const base = mockFetch.getMockImplementation()!;
   mockFetch.mockImplementation((url: string, init?: unknown) => {
     if (url.includes("gopluslabs")) {
@@ -332,28 +339,81 @@ async function scan() {
   };
 }
 
-describe("holder count: GoPlus first, RugCheck as a fallback, never the maximum", () => {
-  it("takes GoPlus even when RugCheck reports a larger (inflated) total", async () => {
-    setupUpstream({ goplusHolderCount: "1024740", rugTotalHolders: 2088973 });
+// A real getTokenAccounts answer (HqNtPF3w..., captured 2026-10-10): 53 holders in one page that is NOT full, cursor sent anyway.
+const REAL_SMALL_PAGE = JSON.parse(readFileSync(new URL("./fixtures/upstream-real/helius-token-accounts-small.json", import.meta.url), "utf8")) as unknown;
+// A FULL page (1000 accounts, same shape as the real one); `k` makes the owners of each page distinct.
+const fullPage = (k = 0) => ({ jsonrpc: "2.0", id: "holder-count", result: { total: 1000, limit: 1000, cursor: "next", token_accounts: Array.from({ length: 1000 }, (_, i) => ({ address: `a${k}-${i}`, owner: `o${k}-${i}`, amount: i + 1 })) } });
+// A page that is not full: the end of the list (`n` holders).
+const lastPage = (n: number, k = 0) => ({ jsonrpc: "2.0", id: "holder-count", result: { total: n, limit: 1000, cursor: "next", token_accounts: Array.from({ length: n }, (_, i) => ({ address: `a${k}-${i}`, owner: `o${k}-${i}`, amount: i + 1 })) } });
+
+describe("holder count: exact chain pages first, then GoPlus, RugCheck, the chain floor; never the top 20", () => {
+  it("a token under 1000 holders: the chain count (53) beats an inflated RugCheck total (it counts emptied accounts)", async () => {
+    setupUpstream({ heliusPages: [REAL_SMALL_PAGE], rugTotalHolders: 268 });
+    expect((await scan()).holders).toBe(53);
+  });
+
+  it("RugCheck and GoPlus both silent (the '20 holders' case): the chain count still answers", async () => {
+    setupUpstream({ heliusPages: [REAL_SMALL_PAGE] });
+    expect((await scan()).holders).toBe(53); // was 3 (the non-empty accounts of the mocked top-20 list) before
+  });
+
+  it("asks Helius for the holder pages of the scanned mint", async () => {
+    setupUpstream({ heliusPages: [REAL_SMALL_PAGE] });
+    await scan();
+    expect(mockHeliusGetHolderPages).toHaveBeenCalledTimes(1);
+    expect(mockHeliusGetHolderPages.mock.calls[0][0]).toBe(MINT);
+  });
+
+  it("a mid-size token (2,347 holders over 3 pages): exact, and GoPlus' overcount (+105 % seen live) and RugCheck's are ignored", async () => {
+    setupUpstream({ heliusPages: [fullPage(0), fullPage(1), lastPage(347, 2)], goplusHolderCount: "4800", rugTotalHolders: 8000 });
+    expect((await scan()).holders).toBe(2347);
+  });
+
+  it("every page up to the cap is full (a token above the cap): GoPlus answers, even when RugCheck reports a larger (inflated) total", async () => {
+    setupUpstream({ heliusPages: Array.from({ length: 10 }, (_, k) => fullPage(k)), goplusHolderCount: "1024740", rugTotalHolders: 2088973 });
     expect((await scan()).holders).toBe(1024740);
   });
 
-  it("falls back to RugCheck for a token GoPlus has no count for yet (a new token)", async () => {
-    setupUpstream({ rugTotalHolders: 478 });
+  it("above the cap and GoPlus silent (rate limited): RugCheck keeps the right order of magnitude", async () => {
+    setupUpstream({ heliusPages: Array.from({ length: 10 }, (_, k) => fullPage(k)), rugTotalHolders: 2088973 });
+    expect((await scan()).holders).toBe(2088973);
+  });
+
+  it("above the cap and nobody else: the floor (10,000 read so far), not the top-20 size", async () => {
+    setupUpstream({ heliusPages: Array.from({ length: 10 }, (_, k) => fullPage(k)) });
+    expect((await scan()).holders).toBe(10000);
+  });
+
+  it("a figure from GoPlus below what the chain already counted is impossible: the floor wins", async () => {
+    setupUpstream({ heliusPages: Array.from({ length: 10 }, (_, k) => fullPage(k)), goplusHolderCount: "6000" });
+    expect((await scan()).holders).toBe(10000);
+  });
+
+  it("a page missing in the middle (Helius rate limit): not exact, so GoPlus decides (never below the pages read)", async () => {
+    setupUpstream({ heliusPages: [fullPage(0), fullPage(1), null, lastPage(200, 3)], goplusHolderCount: "3300" });
+    expect((await scan()).holders).toBe(3300);
+  });
+
+  it("Helius unavailable: GoPlus, then RugCheck, as before", async () => {
+    setupUpstream({ heliusPages: null, goplusHolderCount: "777", rugTotalHolders: 478 });
+    expect((await scan()).holders).toBe(777);
+    setupUpstream({ heliusPages: null, rugTotalHolders: 478 });
     expect((await scan()).holders).toBe(478);
   });
 
-  it("falls back to the non-empty accounts among the top 20 when no upstream counts holders", async () => {
-    setupUpstream({});
-    expect((await scan()).holders).toBe(3); // the 3 non-empty accounts of the mocked largest-accounts response
+  it("an empty page (index not caught up with a brand-new token) is not a count of 0", async () => {
+    setupUpstream({ heliusPages: [{ jsonrpc: "2.0", id: "x", result: { total: 0, limit: 1000, token_accounts: [] } }], rugTotalHolders: 90 });
+    expect((await scan()).holders).toBe(90);
   });
 
-  it("does not ask Helius to count holders (its total is the page size) and never lets a 1 win", async () => {
-    setupUpstream({ rugTotalHolders: 478 });
-    mockHeliusGetHoldersCount.mockResolvedValue(1);
-    const body = await scan();
-    expect(mockHeliusGetHoldersCount).not.toHaveBeenCalled();
-    expect(body.holders).toBe(478);
+  it("nothing counts holders: null (not shown), never the number of wallets in the top-20 list", async () => {
+    setupUpstream({});
+    expect((await scan()).holders).toBeNull(); // the mocked largest-accounts response has 3 non-empty accounts
+  });
+
+  it("a malformed Helius answer is ignored", async () => {
+    setupUpstream({ heliusPages: [{ result: { token_accounts: "nope" } }], rugTotalHolders: 478 });
+    expect((await scan()).holders).toBe(478);
   });
 });
 
