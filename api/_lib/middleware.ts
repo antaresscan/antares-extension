@@ -101,6 +101,17 @@ export interface CorsOptions {
 let ratelimit: Ratelimit | null = null;
 let burstRatelimit: Ratelimit | null = null;
 let coldScanRatelimit: Ratelimit | null = null;
+let networkRatelimit: Ratelimit | null = null;
+
+/**
+ * Every request a network may make in a minute, whatever install id it sends. The per-install windows below give each install
+ * its own quota behind a shared address, but the install id is chosen by the CLIENT: a script that sends a new one with every
+ * request gets a fresh window each time and was never limited at all (cheap requests: cache hits, history, quota...). This
+ * ceiling is keyed by the network alone (IPv6 as its /64), so rotating the id is no way out of it. 600 a minute is 10 a second
+ * for one address: far above one person opening many tabs (the burst window allows 20 in 10 s), and a shared address (office,
+ * mobile carrier) has room for dozens of people.
+ */
+export const NETWORK_REQUESTS_PER_MINUTE = 600;
 
 /**
  * Cold scans (cache miss: the scan really calls ~20 upstream APIs and Gemini)
@@ -153,6 +164,12 @@ export function initRateLimiters(redis: Redis): void {
     limiter: Ratelimit.slidingWindow(COLD_SCANS_PER_MINUTE, "60 s"),
     analytics: false,
     prefix: "antares_cold",
+  });
+  networkRatelimit = new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(NETWORK_REQUESTS_PER_MINUTE, "60 s"),
+    analytics: false,
+    prefix: "antares_net",
   });
 }
 
@@ -354,27 +371,47 @@ export async function checkRateLimit(res: VercelResponse, ip: string, installId:
     return false;
   }
 
-  // When an install id is present we key by (ip, install) so each install
-  // gets its own window. Without one we fall back to IP-only.
-  const key = installId ? `${ip}:${installId}` : ip;
+  // The client's network: IPv4 as is, IPv6 as its /64 (a customer owns 2^64 addresses, so the full address is no bucket).
+  const net = coldScanKey(ip);
+  // When an install id is present we key by (network, install) so each install gets its own window behind a shared address.
+  // Without one we fall back to the network alone. The id is chosen by the CLIENT: it is a matter of fairness, never a way out of
+  // the network ceiling asked below.
+  const key = installId ? `${net}:${installId}` : net;
 
-  if (ratelimit) {
-    const { success, remaining } = await ratelimit.limit(key);
+  // The three windows are asked together: one round trip to Redis instead of two in a row. The network ceiling fails OPEN (a
+  // Redis error there must not take the service down, as for the cold-scan limiter); an address that cannot be identified has no
+  // bucket of its own, so it is not counted (every unidentifiable client would share one).
+  const [perInstall, burst, perNetwork] = await Promise.all([
+    ratelimit ? ratelimit.limit(key) : null,
+    burstRatelimit ? burstRatelimit.limit(key) : null,
+    networkRatelimit && net !== "unknown"
+      ? networkRatelimit.limit(net).catch((e: unknown) => {
+          logger.warn("middleware", "network limiter unavailable — failing open", { error: String(e) });
+          return null;
+        })
+      : null,
+  ]);
+
+  if (perInstall) {
     res.setHeader("X-RateLimit-Limit", "60");
-    res.setHeader("X-RateLimit-Remaining", String(remaining));
-    if (!success) {
+    res.setHeader("X-RateLimit-Remaining", String(perInstall.remaining));
+    if (!perInstall.success) {
       apiError(res, 429, "Too many requests. Please slow down.");
       return false;
     }
   }
 
-  if (burstRatelimit) {
-    const { success } = await burstRatelimit.limit(key);
-    if (!success) {
-      res.setHeader("Retry-After", "10");
-      apiError(res, 429, "Burst limit exceeded. Retry in 10 seconds.");
-      return false;
-    }
+  if (burst && !burst.success) {
+    res.setHeader("Retry-After", "10");
+    apiError(res, 429, "Burst limit exceeded. Retry in 10 seconds.");
+    return false;
+  }
+
+  if (perNetwork && !perNetwork.success) {
+    const waitMs = typeof perNetwork.reset === "number" ? perNetwork.reset - Date.now() : 10_000;
+    res.setHeader("Retry-After", String(Math.min(60, Math.max(1, Math.ceil(waitMs / 1000)))));
+    apiError(res, 429, "Too many requests from this network. Please slow down.");
+    return false;
   }
 
   return true;
