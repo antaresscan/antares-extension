@@ -174,7 +174,6 @@ api/
     insider-activity.ts      — Top-10 holder live activity feed (last 6h)
     holder-activity.ts       — Per-holder buy/sell flow
     critical-actors.ts       — Top-3 enriched actors (creator + cluster + insider)
-    outcome-stats.ts         — Aggregated win/loss histogram
     verdict-history.ts       — Per-CA verdict-over-time
     rugdb.ts                 — Wall of Shame index (RUG verdict + a critical flag that is evidence, 90 days)
 
