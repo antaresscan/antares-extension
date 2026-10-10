@@ -691,9 +691,10 @@ export function buildWashVolumeTab(d) {
 // ──────────────────────────────────────────────────────────────────────
 export function buildSourceListRows(d) {
   const layers = d.layers || {};
-  const order = ["rugcheck", "helius", "solscan", "chart", "dexscreener"];
+  const order = ["rugcheck", "goplus", "helius", "solscan", "chart", "dexscreener"];
   const labels = {
     rugcheck: "RugCheck",
+    goplus: "GoPlus",
     helius: "Helius",
     solscan: "Solscan",
     chart: "Chart Engine",
