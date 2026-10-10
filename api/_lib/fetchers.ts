@@ -376,10 +376,16 @@ export async function fetchDexCandlesDaily(
 ): Promise<OHLCVCandle[]> {
     const GT = "https://api.geckoterminal.com/api/v2";
     const headers = { "Accept": "application/json;version=20230302" };
+    // Set when GeckoTerminal refused with a rate limit (429/503) and the retry was refused too. Every further call of this
+    // scan (the pool list, then up to three more pools) would be refused for the same reason and would only prolong the
+    // throttling for everyone sharing the address (audit M11: up to six calls in a row, all 429): once refused, stop.
+    let throttled = false;
 
     async function poolCandles(poolAddr: string): Promise<OHLCVCandle[]> {
         const url = `${GT}/networks/solana/pools/${poolAddr}/ohlcv/hour?aggregate=4&limit=182`;
-        const raw = await fetchJson(url, { headers }, 8000) as GeckoTerminalOHLCVResponse | null;
+        let lastStatus = 0; // onStatus reports every response, the retry's included: only the final one tells
+        const raw = await fetchJson(url, { headers }, 8000, 1, (s) => { lastStatus = s; }) as GeckoTerminalOHLCVResponse | null;
+        if (lastStatus === 429 || lastStatus === 503) throttled = true;
         const ohlcv = raw?.data?.attributes?.ohlcv_list;
         if (!Array.isArray(ohlcv) || ohlcv.length < 5) return [];
         return ohlcv
@@ -390,6 +396,7 @@ export async function fetchDexCandlesDaily(
     // Step 1: try the DEXScreener pair address directly.
     const direct = await poolCandles(pairAddress).catch(() => []);
     if (direct.length >= 5) return direct;
+    if (throttled) return []; // refused: asking for the pool list would be refused too
 
     // Step 2: no usable data — ask GeckoTerminal for its own pool list.
     if (!mint) return [];
@@ -415,6 +422,7 @@ export async function fetchDexCandlesDaily(
             if (!addr) continue;
             const candles = await poolCandles(addr).catch(() => []);
             if (candles.length >= 5) return candles;
+            if (throttled) break; // the next pools would be refused as well
         }
     } catch { /* fallback failed silently */ }
 

@@ -17,7 +17,7 @@ import {
   isSolscanMarketsResponse, isSolscanMeta, isSolscanTransfersResponse,
   isRugCheckReport,
   sanitizeString, sanitizeUrl,
-  makeFlag,
+  makeFlag, isChartGapDegraded,
 } from "./_lib/helpers";
 import {
   heliusGetLargestAccounts, heliusGetMintAccount, heliusGetHolderPages, heliusGetCreatorReputation,
@@ -877,7 +877,10 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // or with no source at all, is kept only briefly too: a verdict born from
     // missing data must not stick for everyone for the full TTL. That is how a
     // bad answer for a well-known token could survive for 10 minutes.
-    const degraded = sources_used.length === 0 || scanDeadline - Date.now() < MIN_STEP_MS;
+    // The same goes for a SAFE or CAUTION born without the chart layer on a token old enough to have candles: usually a GeckoTerminal
+    // rate limit, after which the next try can give another verdict (audit M11). Bad verdicts keep their long TTL.
+    const degraded = sources_used.length === 0 || scanDeadline - Date.now() < MIN_STEP_MS
+      || isChartGapDegraded(result.risk, result.layers?.chart?.available, tokenAgeMinutes);
     if (result.aiSummary && !degraded) {
       setCachedResult(ca, result, tokenAgeMinutes, result.risk);
       if (resolvedMint !== ca) setCachedResult(resolvedMint, result, tokenAgeMinutes, result.risk);

@@ -115,6 +115,26 @@ export function computeCacheTTL(
   return 600;                                  // established
 }
 
+/** From this age a token has traded long enough for GeckoTerminal to hold candles for it (the 5-minute window needs ~15 min). */
+export const CHART_EXPECTED_AFTER_MINUTES = 30;
+
+/**
+ * A SAFE or CAUTION verdict born WITHOUT the chart layer, for a token old enough to have candles, is usually a GeckoTerminal rate
+ * limit (429) and not a property of the token: the next try reaches the chart and may give another verdict (audit M11: the same
+ * token flipped between SAFE and CAUTION depending on which instance answered). Such a result must not stick for the full TTL.
+ * A bad verdict is not concerned: a stale RUG or DANGER is safe, and the chart can only make it worse (see computeCacheTTL).
+ * `chartAvailable` is `undefined` when the response carries no chart layer at all: nothing is assumed then.
+ */
+export function isChartGapDegraded(
+  verdict: "SAFE" | "CAUTION" | "DANGER" | "RUG",
+  chartAvailable: boolean | undefined,
+  tokenAgeMinutes: number | null,
+): boolean {
+  if (verdict !== "SAFE" && verdict !== "CAUTION") return false;
+  if (chartAvailable !== false) return false;
+  return tokenAgeMinutes !== null && tokenAgeMinutes >= CHART_EXPECTED_AFTER_MINUTES;
+}
+
 export function apiError(res: VercelResponse, status: number, message: string, details?: Record<string, unknown>): void {
   res.status(status).json({ error: message, ...(details ? { details } : {}) });
 }
