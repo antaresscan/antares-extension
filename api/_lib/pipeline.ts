@@ -246,3 +246,57 @@ export function determineVerdict(input: VerdictInput): Verdict {
   if (input.score >= 350) return "DANGER";
   return "RUG";
 }
+
+// ─── Flags: deduplication and the counts the verdict reads ──────────────────────────────────────────────────────────
+//
+// The verdict must be decided on what the user SEES. Several layers can emit identical flags for the same signal, so the list is
+// deduplicated first and the counts are taken on the deduplicated list (audit M4: they used to be taken on the raw list, so two
+// real warnings plus a duplicate of one of them reached the "3 warnings -> DANGER" floor while the user saw two flags).
+
+/** Pipeline-status flags ("Helius unavailable"...) describe the health of a source, not the token: never counted as a token risk. */
+export const PIPELINE_STATUS_FLAG = /^(Helius|GoPlus|RugCheck|Solscan|DexScreener|Birdeye|Helius RPC) (unavailable|rate[- ]limited|timed out|degraded)\b|Holder data unreliable|broken upstream/i;
+
+/**
+ * Pump-only flags are informational market signals, not structural rug risks. They must remain visible to the user but must never
+ * count toward the 3-warnings -> forced-DANGER threshold in determineVerdict. (They still keep a token out of SAFE: see
+ * VerdictInput.pumpPriceOnlyFlagsCount.)
+ */
+export const PUMP_PRICE_ONLY_FLAG = /Pumped \+[\d,]+% (in 24h|over \d+ days)|Large 24h pump|Extreme pump .* on newborn token|Vertical pump detected|Extreme (24h )?pump \+[\d,]+%( in 1h)? — high retrace risk/i;
+
+const SEVERITY_RANK: Record<string, number> = { critical: 0, warning: 1, info: 2, bonus: 3 };
+
+/**
+ * One flag per distinct risk signal, the most severe occurrence kept. Two passes: the exact label, then the pump percentage
+ * ("Large 24h pump +553% on token <24h" and "Pumped +553% in 24h — exit liquidity risk on thin LP" are one signal).
+ */
+export function dedupeFlags(input: ScanFlag[]): ScanFlag[] {
+  // Pass 1: exact label
+  const byLabel = new Map<string, ScanFlag>();
+  for (const f of input) {
+    const existing = byLabel.get(f.label);
+    if (!existing || SEVERITY_RANK[f.severity] < SEVERITY_RANK[existing.severity]) byLabel.set(f.label, f);
+  }
+  // Pass 2: pump percentage — the first integer % of pump flags, one representative per percentage
+  const pumpPctMap = new Map<number, ScanFlag>();
+  const nonPump: ScanFlag[] = [];
+  for (const f of byLabel.values()) {
+    if (!/pump|pumped/i.test(f.label)) { nonPump.push(f); continue; }
+    const m = f.label.match(/\+(\d+)%/);
+    if (!m) { nonPump.push(f); continue; }
+    const pct = parseInt(m[1], 10);
+    const existing = pumpPctMap.get(pct);
+    if (!existing || SEVERITY_RANK[f.severity] < SEVERITY_RANK[existing.severity]) pumpPctMap.set(pct, f);
+  }
+  return [...nonPump, ...pumpPctMap.values()];
+}
+
+/** Warning / critical / pump-only counts of a (deduplicated) flag list, as determineVerdict reads them. */
+export function countVerdictFlags(flags: ScanFlag[]): { warning: number; critical: number; pumpPriceOnly: number } {
+  const risky = flags.filter((f) => f.severity === "warning" || f.severity === "critical");
+  const tokenSide = risky.filter((f) => !PIPELINE_STATUS_FLAG.test(f.label) && !PUMP_PRICE_ONLY_FLAG.test(f.label));
+  return {
+    warning: tokenSide.length,
+    critical: tokenSide.filter((f) => f.severity === "critical").length,
+    pumpPriceOnly: risky.filter((f) => PUMP_PRICE_ONLY_FLAG.test(f.label)).length,
+  };
+}

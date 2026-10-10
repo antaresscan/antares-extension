@@ -4,8 +4,11 @@ import {
   applySafeGateOverride,
   applyEstablishedBonus,
   determineVerdict,
+  dedupeFlags,
+  countVerdictFlags,
 } from "../api/_lib/pipeline";
 import type {
+  ScanFlag,
   PostLayerFlagsInput,
   SafeGateInput,
   EstablishedBonusInput,
@@ -683,5 +686,64 @@ describe("determineVerdict — price-only pump flags", () => {
     expect(determineVerdict(makeVerdictInput({ score: 950, pumpPriceOnlyFlagsCount: 1, criticalFlagsCount: 1 }))).toBe("DANGER");
     expect(determineVerdict(makeVerdictInput({ score: 950, pumpPriceOnlyFlagsCount: 1, forceRug: true }))).toBe("RUG");
     expect(determineVerdict(makeVerdictInput({ score: 300, pumpPriceOnlyFlagsCount: 1, safeBlocked: true, safeBlockedReasons: [] }))).toBe("DANGER");
+  });
+});
+
+// ─── Flags: the verdict is decided on the deduplicated list (audit M4) ──────────────────────────────────────────────
+const flag = (label: string, severity: ScanFlag["severity"]): ScanFlag => ({ label, severity, impact: 0 });
+
+describe("dedupeFlags", () => {
+  it("keeps one flag per label, the most severe occurrence", () => {
+    const out = dedupeFlags([flag("Mutable metadata", "info"), flag("Mutable metadata", "warning"), flag("Mutable metadata", "info")]);
+    expect(out).toEqual([flag("Mutable metadata", "warning")]);
+  });
+
+  it("merges the same pump seen by two layers (same rounded percentage), keeping the most severe", () => {
+    const out = dedupeFlags([
+      flag("Large 24h pump +553% on token <24h", "warning"),
+      flag("Pumped +553% in 24h — exit liquidity risk on thin LP", "critical"),
+      flag("Top 10 hold 40% — elevated", "warning"),
+    ]);
+    expect(out).toHaveLength(2);
+    expect(out.find((f) => /553/.test(f.label))?.severity).toBe("critical");
+  });
+
+  it("does not merge pumps of different sizes, nor flags without a percentage", () => {
+    expect(dedupeFlags([flag("Pumped +120% in 24h", "warning"), flag("Pumped +340% over 7 days", "warning")])).toHaveLength(2);
+    expect(dedupeFlags([flag("Coordinated pump pattern", "warning"), flag("Buy/sell imbalance (coordinated pump)", "warning")])).toHaveLength(2);
+  });
+});
+
+describe("countVerdictFlags", () => {
+  it("counts warnings and criticals only: info and bonus flags are not issues", () => {
+    expect(countVerdictFlags([flag("a", "warning"), flag("b", "critical"), flag("c", "info"), flag("d", "bonus")])).toEqual({ warning: 2, critical: 1, pumpPriceOnly: 0 });
+  });
+
+  it("pipeline-status flags describe a source, not the token: never counted", () => {
+    expect(countVerdictFlags([flag("Helius unavailable — holder concentration unverified", "warning"), flag("GoPlus rate-limited", "warning")]).warning).toBe(0);
+  });
+
+  it("price-only pump flags are counted apart: never toward the DANGER floor, but visible", () => {
+    const c = countVerdictFlags([flag("Pumped +340% over 7 days — high retrace risk at current prices", "warning"), flag("Extreme 24h pump +1784% — high retrace risk", "warning")]);
+    expect(c).toEqual({ warning: 0, critical: 0, pumpPriceOnly: 2 });
+  });
+});
+
+describe("the verdict counts what the user sees (M4)", () => {
+  // Two real warnings, one of them emitted by two layers. Raw: 3 warnings -> the DANGER floor. Deduplicated: 2 -> CAUTION.
+  const raw = [flag("Top 10 hold 40% — elevated", "warning"), flag("Mint authority conflict: on-chain vs GoPlus", "warning"), flag("Top 10 hold 40% — elevated", "warning")];
+  const verdictOf = (flags: ScanFlag[]) => {
+    const c = countVerdictFlags(flags);
+    return determineVerdict(makeVerdictInput({ score: 800, safeBlocked: false, sourcesUsedCount: 5, warningFlagsCount: c.warning, criticalFlagsCount: c.critical, pumpPriceOnlyFlagsCount: c.pumpPriceOnly }));
+  };
+
+  it("the raw list would have been DANGER, the deduplicated one is CAUTION", () => {
+    expect(verdictOf(raw)).toBe("DANGER");            // what the verdict used to be decided on
+    expect(verdictOf(dedupeFlags(raw))).toBe("CAUTION"); // what it is decided on now
+  });
+
+  it("witness: three DISTINCT warnings are still the DANGER floor", () => {
+    const three = [flag("w1", "warning"), flag("w2", "warning"), flag("w3", "warning")];
+    expect(verdictOf(dedupeFlags(three))).toBe("DANGER");
   });
 });

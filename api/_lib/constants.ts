@@ -155,7 +155,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v42"; // 2026-10-10: a price pump alone (1h > +300 %, newborn > +200 %, 24h > +1000 %) is a warning, not a critical flag with forceRug, unless a structural weakness comes with it; flushes cached verdicts of pumping tokens.
+const ENGINE_VERSION_MANUAL = "v43"; // 2026-10-11: a wallet at 10-15 % of a token under 30 days old is a warning (CAUTION max) instead of a critical flag, and the verdict counts the deduplicated flags; flushes cached verdicts.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.
