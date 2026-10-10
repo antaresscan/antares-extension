@@ -55,6 +55,13 @@ vi.mock("../api/_lib/cache", () => ({
   getCacheRedis: vi.fn().mockReturnValue({ setex: mockSetex }),
 }));
 
+// The rug database: the real module, except that writes are observable (a preview deployment must not make any).
+const mockRecordRug = vi.fn();
+vi.mock("../api/_lib/rugdb", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../api/_lib/rugdb")>();
+  return { ...actual, recordRug: (...args: unknown[]) => mockRecordRug(...args) };
+});
+
 // Mock @sentry/node
 vi.mock("@sentry/node", () => ({
   init: vi.fn(),
@@ -659,5 +666,28 @@ describe("lpBurned in the response comes from the burn of the measurable liquidi
     const b = await scanFull();
     expect(b.lpBurned).toBe(true);
     expect(b.flags.some((f) => /LP Burned/i.test(f.label))).toBe(true);
+  });
+});
+
+// A preview deployment (a pull request, the e2e tests) shares production's Upstash database: its scans must not write
+// into the rug database, which lists tokens for real users for 90 days (see api/_lib/deployment.ts).
+describe("the rug database is written by production, never by a preview deployment", () => {
+  afterEach(() => { vi.unstubAllEnvs(); });
+
+  it("a scan on production (or a local run) records the token", async () => {
+    mockRecordRug.mockClear();
+    vi.stubEnv("VERCEL_ENV", "production");
+    setupUpstream({ goplusHolderCount: "100" });
+    await scan();
+    expect(mockRecordRug).toHaveBeenCalledTimes(1);
+  });
+
+  it("a scan on a preview deployment records nothing", async () => {
+    mockRecordRug.mockClear();
+    vi.stubEnv("VERCEL_ENV", "preview");
+    setupUpstream({ goplusHolderCount: "100" });
+    const body = await scan();
+    expect(body.holders).toBe(100); // the scan itself ran normally
+    expect(mockRecordRug).not.toHaveBeenCalled();
   });
 });
