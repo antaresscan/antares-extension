@@ -38,6 +38,13 @@ test.describe('Error Handling & Edge Cases', () => {
   });
 
   test.describe('Token page edge cases', () => {
+    // playwright.config.ts sets a fixed `Origin` in extraHTTPHeaders for the
+    // API tests. A real page must not send it: since Playwright 1.64 it is
+    // forwarded to every sub-resource of the page (scripts, fonts, favicon)
+    // and Chromium refuses them with net::ERR_INVALID_ARGUMENT, so
+    // token-app.js never runs and the error message is never rendered.
+    test.use({ extraHTTPHeaders: { 'User-Agent': 'Antares-E2E/2.0' } });
+
     test('token page without hash shows error message', async ({ page }) => {
       await page.goto(`${BASE}/token.html`);
       // Use regex to match regardless of trailing punctuation (e.g. "No token address provided.")
