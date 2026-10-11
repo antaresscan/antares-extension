@@ -8,6 +8,54 @@ export function withTimeout(ms: number) {
   return { signal: controller.signal, clear: () => clearTimeout(t) };
 }
 
+// Largest upstream body we agree to read. A GoPlus answer of 2.8 MB has been
+// seen; nothing the verdict reads needs that much, and a body that size costs
+// a serverless function memory and CPU for nothing.
+export const MAX_BODY_BYTES = 2 * 1024 * 1024;
+
+/** The upstream answered with more than MAX_BODY_BYTES. Not retried: asking again returns the same body. */
+export class BodyTooLargeError extends Error {
+  constructor(readonly bytes: number) {
+    super(`upstream body larger than ${MAX_BODY_BYTES} bytes`);
+    this.name = "BodyTooLargeError";
+  }
+}
+
+/**
+ * Read a response body as text, never more than MAX_BODY_BYTES. Refuses on the
+ * declared content-length before reading anything, then counts the bytes as
+ * they arrive (a chunked answer declares nothing). The caller's timer must
+ * still be running while this reads: an upstream that sends its headers and
+ * then stalls is aborted like one that never answered.
+ */
+async function readBodyText(r: Response): Promise<string> {
+  const declared = Number(r.headers?.get("content-length"));
+  if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) {
+    void r.body?.cancel().catch(() => {});
+    throw new BodyTooLargeError(declared);
+  }
+  if (!r.body) {
+    const text = await r.text();
+    if (text.length > MAX_BODY_BYTES) throw new BodyTooLargeError(text.length);
+    return text;
+  }
+  const reader = r.body.getReader();
+  const decoder = new TextDecoder();
+  let text = "";
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > MAX_BODY_BYTES) {
+      void reader.cancel().catch(() => {});
+      throw new BodyTooLargeError(total);
+    }
+    text += decoder.decode(value, { stream: true });
+  }
+  return text + decoder.decode();
+}
+
 // ─── Per-host circuit breaker ────────────────────────────────────────────
 //
 // When Helius / Solscan / GoPlus / DexScreener has a partial outage, each
@@ -145,11 +193,14 @@ export async function fetchJson<T = unknown>(
     return null;
   }
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    // The caller may bring its own signal (to cancel the whole scan): honour
+    // it alongside our timer instead of overwriting it.
+    if (init.signal?.aborted) return null;
     const t = withTimeout(ms);
+    const signal = init.signal ? AbortSignal.any([init.signal, t.signal]) : t.signal;
     let sent = false; // true once the provider has answered: a later parse error is not a failed request
     try {
-      const r = await fetch(url, { ...init, signal: t.signal });
-      t.clear();
+      const r = await fetch(url, { ...init, signal });
       logAuthRejected(host, r.status);
       onStatus?.(r.status);
       sent = true; recordCall(url, r.status);
@@ -168,17 +219,26 @@ export async function fetchJson<T = unknown>(
         if (host && r.status >= 500) recordFailure(host);
         return null;
       }
+      // The timer is still running here: the body has the same deadline as
+      // the headers (it used to have none).
+      const text = await readBodyText(r);
       if (host) recordSuccess(host);
-      return (await r.json()) as T;
+      return JSON.parse(text) as T;
     } catch (e: unknown) {
-      t.clear();
       if (!sent) recordCall(url, 0);
+      if (e instanceof BodyTooLargeError) {
+        logger.warn("http", "upstream body too large", { host, bytes: e.bytes });
+        return null;
+      }
+      if (init.signal?.aborted) return null;
       if (attempt === maxRetries) {
         if (host) recordFailure(host);
         logger.warn("http", "fetchJson failed", { error: scrubSensitive(String(e)) });
         return null;
       }
       await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
+    } finally {
+      t.clear();
     }
   }
   return null;
@@ -209,7 +269,6 @@ export async function fetchJsonPost<T = unknown>(
         body: JSON.stringify(body),
         signal: t.signal,
       });
-      t.clear();
       onStatus?.(r.status);
       logAuthRejected(host, r.status);
       sent = true; recordCall(url, r.status, body);
@@ -224,17 +283,24 @@ export async function fetchJsonPost<T = unknown>(
         if (host && r.status >= 500) recordFailure(host);
         return null;
       }
+      // Same deadline and same size cap as fetchJson: the timer runs until the body is read.
+      const text = await readBodyText(r);
       if (host) recordSuccess(host);
-      return (await r.json()) as T;
+      return JSON.parse(text) as T;
     } catch (e: unknown) {
-      t.clear();
       if (!sent) recordCall(url, 0, body);
+      if (e instanceof BodyTooLargeError) {
+        logger.warn("http", "upstream body too large", { host, bytes: e.bytes });
+        return null;
+      }
       if (attempt === maxRetries) {
         if (host) recordFailure(host);
         logger.warn("http", "fetchJsonPost failed", { error: scrubSensitive(String(e)) });
         return null;
       }
       await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
+    } finally {
+      t.clear();
     }
   }
   return null;

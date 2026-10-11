@@ -1,4 +1,5 @@
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
+import { stubFetch } from "./fixtures/fetch-double";
 import { readFileSync } from "node:fs";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { _resetGoPlusAuthForTests } from "../api/_lib/goplus-auth";
@@ -129,7 +130,7 @@ vi.mock("../api/_lib/fetchers", () => ({
 
 // Mock global fetch for DexScreener, RugCheck, GoPlus
 const mockFetch = vi.fn();
-vi.stubGlobal("fetch", mockFetch);
+stubFetch(mockFetch);
 
 // ---- Helpers ----
 function createMockReq(query: Record<string, string> = {}, method = "GET"): VercelRequest {
