@@ -156,3 +156,23 @@ describe("deriveAuthorityFacts: the chain decides, GoPlus relays", () => {
     expect(f.compared).toBe(true);
   });
 });
+
+describe("trusted: GoPlus decides, the official list only stands in when GoPlus is silent (audit A-02)", () => {
+  const USDC = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+  const chain: MintState = { program: "spl-token", decimals: 6, supplyRaw: "1", mintAuthority: true, freezeAuthority: true, extensions: [] };
+
+  it("GoPlus silent (null or nothing readable) + official mint -> trusted", () => {
+    expect(deriveAuthorityFacts(chain, null, USDC).trusted).toBe(true);
+    expect(deriveAuthorityFacts(chain, {} as GoPlusTokenResult, USDC).trusted).toBe(true);
+  });
+
+  it("no mint given, or a mint that is not on the list -> not trusted", () => {
+    expect(deriveAuthorityFacts(chain, null).trusted).toBe(false);
+    expect(deriveAuthorityFacts(chain, null, "SomeOtherMint1111111111111111111111111111111").trusted).toBe(false);
+  });
+
+  it("GoPlus answered about the authorities -> its word wins, even on an official mint", () => {
+    expect(deriveAuthorityFacts(chain, { mintable: "1", freezable: "1" } as GoPlusTokenResult, USDC).trusted).toBe(false);
+    expect(deriveAuthorityFacts(chain, { trusted_token: 1 } as GoPlusTokenResult, "SomeOtherMint1111111111111111111111111111111").trusted).toBe(true);
+  });
+});

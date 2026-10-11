@@ -7,7 +7,7 @@
 // turned into "OK": the overlay shows it as unknown and the AI summary does not narrate it.
 import type { GoPlusTokenResult } from "./types";
 import { HeliusTokenAccountsResponseSchema } from "./upstream-schemas";
-import { HOLDER_PAGE_LIMIT } from "./constants";
+import { HOLDER_PAGE_LIMIT, OFFICIAL_MINTS } from "./constants";
 
 export type Tri = boolean | null;
 
@@ -105,7 +105,10 @@ export interface AuthorityFacts {
    * A liquidity pool that removes its liquidity is a different risk, covered by the liquidity signals.
    */
   sellBlocked: Tri;
-  /** GoPlus lists the token as trusted (major issuers): authorities there are expected, not alarming. */
+  /**
+   * Major issuers hold authorities by design (USDC, USDT...): they are expected, not alarming. GoPlus says so (trusted_token);
+   * when GoPlus said nothing about this token, our own list of official mints stands in, so an outage does not turn USDC critical.
+   */
   trusted: boolean;
   source: "onchain" | "goplus" | null;
   /** The chain AND GoPlus both answered for at least one authority, so the two could be compared. */
@@ -116,9 +119,12 @@ export interface AuthorityFacts {
   riskyExtensions: string[];
 }
 
-export function deriveAuthorityFacts(chain: MintState | null, goplus: GoPlusTokenResult | null): AuthorityFacts {
+export function deriveAuthorityFacts(chain: MintState | null, goplus: GoPlusTokenResult | null, mintAddress?: string): AuthorityFacts {
   const gpMint = gpStatus(goplus?.mintable);
   const gpFreeze = gpStatus(goplus?.freezable);
+  const gpTrusted = gpStatus(goplus?.trusted_token);
+  // GoPlus silent on this token (down, or no record): only then does the official list decide. When GoPlus answered, it decides.
+  const trusted = gpTrusted === true || (gpTrusted === null && gpMint === null && gpFreeze === null && mintAddress !== undefined && OFFICIAL_MINTS.has(mintAddress));
   const mint: Tri = chain?.mintAuthority ?? gpMint;
   const freeze: Tri = chain?.freezeAuthority ?? gpFreeze;
 
@@ -143,7 +149,7 @@ export function deriveAuthorityFacts(chain: MintState | null, goplus: GoPlusToke
     else if (gpFreeze === false && gpStatus(goplus.non_transferable) === false && hookEmpty && feeEmpty) sellBlocked = false;
   }
 
-  return { mint, freeze, sellBlocked, trusted: gpStatus(goplus?.trusted_token) === true, source, compared, conflicts, riskyExtensions };
+  return { mint, freeze, sellBlocked, trusted, source, compared, conflicts, riskyExtensions };
 }
 
 /**

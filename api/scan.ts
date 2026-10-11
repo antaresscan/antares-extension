@@ -409,7 +409,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       if (mintState && totalSupplyUi <= 0) totalSupplyUi = mintSupplyUi(mintState);
     }
     // Contract facts: the chain first, GoPlus second; never defaulted to "OK".
-    const authFacts = deriveAuthorityFacts(mintState, goplus);
+    const authFacts = deriveAuthorityFacts(mintState, goplus, resolvedMint);
 
     // Free public Solana RPC fallback for the two Helius RPC calls that
     // matter for holder concentration. Same JSON-RPC interface, same
