@@ -17,6 +17,7 @@ import {
   fmtTok,
   formatAgeMin,
 } from "./formatters.js";
+import { applyClusterCards } from "./views.js";
 
 // ──────────────────────────────────────────────────────────────────────
 // Cursor-tracking glow (hero background visual). Pure CSS update —
@@ -241,6 +242,9 @@ export async function loadInsiderActivity() {
       return;
     }
     const payload = await res.json();
+    // The Cluster cards of the top of the page: the scan no longer builds the insider graph, this response carries what it found.
+    // Never allowed to break the feed below: the cards then stay as the scan made them.
+    try { applyClusterCards(document.getElementById("whales-preview"), payload && payload.clusterActors); } catch { /* keep the scan's cards */ }
     // /api/graph returns the graph fields at top level + an `activity`
     // sub-object. Defensive: extract activity safely so a graph-only
     // response (or a graph endpoint returning a different shape) just
