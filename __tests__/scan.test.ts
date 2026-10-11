@@ -62,6 +62,7 @@ const mockHeliusGetLargestAccounts = vi.fn();
 const mockHeliusGetTokenSupply = vi.fn();
 const mockHeliusGetMintAccount = vi.fn();
 const mockHeliusGetCreatorReputation = vi.fn();
+const mockHeliusGetHolderPages = vi.fn().mockResolvedValue(null); // no chain holder count in these tests
 const mockHeliusGetHoldersCount = vi.fn();
 const mockHeliusGetProgramAccountHolderCount = vi.fn();
 const mockFetchSolscan = vi.fn();
@@ -101,7 +102,7 @@ vi.mock("../api/_lib/fetchers", () => ({
   heliusGetLargestAccounts: (...args: unknown[]) => mockHeliusGetLargestAccounts(...args),
   heliusGetTokenSupply: (...args: unknown[]) => mockHeliusGetTokenSupply(...args),
   heliusGetMintAccount: (...args: unknown[]) => mockHeliusGetMintAccount(...args),
-  heliusGetHolderPages: vi.fn().mockResolvedValue(null), // no chain holder count in these tests
+  heliusGetHolderPages: (...args: unknown[]) => mockHeliusGetHolderPages(...args),
   heliusGetCreatorReputation: (...args: unknown[]) => mockHeliusGetCreatorReputation(...args),
   heliusGetHoldersCount: (...args: unknown[]) => mockHeliusGetHoldersCount(...args),
   heliusGetProgramAccountHolderCount: (...args: unknown[]) => mockHeliusGetProgramAccountHolderCount(...args),
@@ -336,6 +337,21 @@ describe("scan handler", () => {
     expect(Array.isArray(body.sources_used)).toBe(true);
     const flags = body.flags as Array<{ label: string }>;
     expect(flags.some(f => /brand imitation/i.test(f.label))).toBe(false);
+  });
+
+  it("the Helius holder pages are given GoPlus's holder count, so the pages of a very large token can be skipped", async () => {
+    setupGoodTokenMocks();
+    const base = mockFetch.getMockImplementation()!;
+    mockFetch.mockImplementation((url: string, ...rest: unknown[]) =>
+      String(url).includes("gopluslabs")
+        ? Promise.resolve({ ok: true, json: () => Promise.resolve({ result: { So11111111111111111111111111111111111111112: { holder_count: "1234567" } } }) })
+        : base(url, ...rest));
+    const res = createMockRes();
+    await handler(createMockReq({ ca: "So11111111111111111111111111111111111111112" }), res);
+
+    expect(mockHeliusGetHolderPages).toHaveBeenCalledTimes(1);
+    const hint = mockHeliusGetHolderPages.mock.calls[0][2] as Promise<number | null>;
+    await expect(hint).resolves.toBe(1234567);
   });
 
   it("returns high score for clean official token", async () => {

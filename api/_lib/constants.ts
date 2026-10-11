@@ -259,6 +259,17 @@ export const HOLDER_PAGE_LIMIT = 1000;
 // Measured live: about 65 ms a page, 12 parallel pages all answered in 400 ms. Above the cap GoPlus is used, with the
 // pages read so far as a floor. Each call is a DAS request (10 credits per Helius' pricing page, plan limit 10 req/s).
 export const HOLDER_MAX_PAGES = 10;
+// Pages 2..N are asked in WAVES of growing size (2, 3, 4... pages), each wave only when the previous one did not already reach the end
+// of the list: pages after the end of the list (or after a failed page) can never change the count, and at 10 credits a page they were
+// 24 % of all the DAS calls of 365 real scans.
+// A token whose holders another source (GoPlus) already counts at this many or more is not changed by the pages either: with the pages
+// capped at HOLDER_PAGE_LIMIT x HOLDER_MAX_PAGES holders, the count shown is that source's (see pickHolderCount). Twice the cap, and not
+// just above it, because GoPlus is NOT exact: on the 167 recorded tokens where both are known it counts 1.03x the chain at the median,
+// 1.16x at the 95th percentile and up to 1.80x at the worst (BURNIE: chain 9,818, GoPlus 11,186, which a threshold at 1.1x would have
+// changed). Twice the cap leaves room above the worst case seen; the full replay of the 365 tokens must stay identical.
+export const HOLDER_COUNT_KNOWN_ABOVE = HOLDER_PAGE_LIMIT * HOLDER_MAX_PAGES * 2;
+// How long the holder pages wait for that other count once page 1 is full. It is asked in parallel (GoPlus answers in ~450 ms).
+export const HOLDER_COUNT_WAIT_MS = 800;
 // Chart pattern thresholds
 export const DAMPENING_FACTOR = 0.3;     // applyDiminishingPenalties factor
 // Weekly / monthly pump thresholds.

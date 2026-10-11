@@ -27,7 +27,7 @@ import {
   type CreatorReputation,
 } from "./_lib/fetchers";
 import { readHeliusKey } from "./_lib/helius";
-import { parseMintState, mintSupplyUi, deriveAuthorityFacts, weightedBurnPct, parseChainHolders, pickHolderCount } from "./_lib/facts";
+import { parseMintState, mintSupplyUi, deriveAuthorityFacts, weightedBurnPct, parseChainHolders, pickHolderCount, positiveCount } from "./_lib/facts";
 import { fetchGoPlusSecurity } from "./_lib/goplus-auth";
 import {
   DEXSCREENER_BASE, RUGCHECK_BASE, LAYER_WEIGHTS, SCORING_VERSION,
@@ -361,6 +361,14 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const tokenAgeMinutes: number | null = pair?.pairCreatedAt
       ? (Date.now() - pair.pairCreatedAt) / 60000 : null;
 
+    // GoPlus is started here, not inside the list below, because its holder count is also an INPUT of the holder pages: when it already
+    // says the token has far more holders than the pages can count, the Helius pages stop after the first one (they could not change
+    // the count shown, see heliusGetHolderPages). The answer itself is read from the same promise below.
+    const goplusPromise = withBudget(fetchGoPlusSecurity(resolvedMint), remainingMs());
+    const goplusHolderCount: Promise<number | null> = goplusPromise
+      .then((raw) => positiveCount(pickGoPlusResult(raw, resolvedMint)?.holder_count))
+      .catch(() => null);
+
     const [
       candlesRaw, candlesDailyRaw, goplusRaw,
       heliusHoldersRaw, heliusSupplyRaw, heliusHolderPagesRaw,
@@ -368,10 +376,10 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     ] = await Promise.all([
       withBudget(fetchDexCandles(pairAddress), remainingMs()),
       withBudget(fetchDexCandlesDaily(pairAddress, resolvedMint), remainingMs()),
-      withBudget(fetchGoPlusSecurity(resolvedMint), remainingMs()),
+      goplusPromise,
       HELIUS_API_KEY ? withBudget(heliusGetLargestAccounts(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
       HELIUS_API_KEY ? withBudget(heliusGetMintAccount(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
-      HELIUS_API_KEY ? withBudget(heliusGetHolderPages(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
+      HELIUS_API_KEY ? withBudget(heliusGetHolderPages(resolvedMint, HELIUS_API_KEY, goplusHolderCount), remainingMs()) : null,
       // (No Solscan holders-count call: the public endpoint it used answers
       // 404 for every token, so it only ever contributed `null`.)
       withBudget(fetchSolscan(`/token/meta?address=${resolvedMint}`), remainingMs()),
