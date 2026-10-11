@@ -37,8 +37,6 @@
     "@types/node": "20.19.43",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "@vercel/node": "^5.8.26",
-    "@types/react-dom": "^19.2.3",
     "@vercel/node": "^5.10.2",
     "@vitest/coverage-v8": "^4.1.11",
     "eslint": "^10.12.0",
