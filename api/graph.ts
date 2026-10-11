@@ -13,9 +13,19 @@
 // (already known from the scan response on the caller side); used to
 // compute USD values for each activity entry without an extra
 // upstream lookup.
+//
+// Access (audit A-03): Insider Watch is a Pro feature and this is the
+// most expensive endpoint we have (~120 Helius credits per mint nobody
+// asked for yet, ~430 with the activity feed), so it is not open to
+// anonymous or Free callers. In the order they are applied: the
+// per-IP limiter, a Pro session (402 otherwise), 10 requests a minute
+// per user, and a ceiling per UTC day for the whole service
+// (GRAPH_GLOBAL_PER_DAY, 500 by default). No Redis = 503, because
+// both guards live there. The answer depends on who asks, so it is
+// never cached by a shared cache (private, no-store).
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Redis } from "@upstash/redis";
-import { setCorsHeaders, validateCA, checkRateLimit, getClientIp, initRateLimiters } from "./_lib/middleware";
+import { setCorsHeaders, validateCA, checkRateLimit, getClientIp, getInstallId, initRateLimiters } from "./_lib/middleware";
 import { apiError, settled } from "./_lib/helpers";
 import { heliusGetLargestAccounts, heliusGetTokenSupply, heliusResolveAccountOwners } from "./_lib/fetchers";
 import { readHeliusKey } from "./_lib/helius";
@@ -26,6 +36,15 @@ import { buildInsiderActivity, initActivityCache } from "./_lib/insider-activity
 import type { HeliusHolder } from "./_lib/types";
 import { logger } from "./_lib/logger";
 import { initUsage, flushUsage } from "./_lib/usage";
+import { initUserStorage, resolveTierAndBypass } from "./_lib/user";
+import {
+  initGraphAccess,
+  graphAccessAvailable,
+  graphUserKeyOf,
+  checkGraphUserLimit,
+  takeGraphDailyBudget,
+  type GraphGuard,
+} from "./_lib/graph-access";
 
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
   const redis = new Redis({
@@ -36,11 +55,25 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
   initActivityCache(redis);
   initRateLimiters(redis);
   initUsage(redis);
+  initUserStorage(redis);
+  initGraphAccess(redis);
+}
+
+/** Answers a guard that said no: 429 + Retry-After when the caller must wait, 503 when the guard itself could not answer. */
+function refuse(res: VercelResponse, guard: Exclude<GraphGuard, { ok: true }>): void {
+  if (guard.reason === "limited") {
+    res.setHeader("Retry-After", String(guard.retryAfterSec));
+    return apiError(res, 429, "Too many Insider Watch requests. Please retry later.");
+  }
+  return apiError(res, 503, "Service temporarily unavailable. Please retry.");
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const corsOk = setCorsHeaders(req, res);
   if (req.method === "OPTIONS") return res.status(204).end();
+  // setCorsHeaders leaves a short shared-cache window that suits public scan data. The answers of this endpoint depend on who
+  // asks (402 for Free, 429 per user, Pro data): none of them may be served to someone else from a CDN cache.
+  res.setHeader("Cache-Control", "private, no-store");
   if (!corsOk) return apiError(res, 403, "Origin not allowed.");
   if (req.method !== "GET") return apiError(res, 405, "Method not allowed.");
 
@@ -59,6 +92,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const HELIUS_API_KEY = readHeliusKey();
   if (!HELIUS_API_KEY) return apiError(res, 503, "Helius API key not configured.");
+
+  // Both guards below live in Redis: without it this endpoint would run unguarded, so it does not run.
+  if (!graphAccessAvailable()) return apiError(res, 503, "Service temporarily unavailable. Please retry.");
+
+  // Pro only. The session (cookie or X-Antares-Session) is what proves the plan; the install id the client sends is only a
+  // fallback identity, as for /api/scan.
+  const identity = getInstallId(req) ?? ip;
+  let userKey: string;
+  try {
+    const { tier } = await resolveTierAndBypass(req, identity);
+    if (tier === "free") {
+      logger.metric("graph.refused", { reason: "pro_required" });
+      return apiError(res, 402, "Insider Watch is part of Antares Pro.", { code: "pro_required" });
+    }
+    userKey = await graphUserKeyOf(req, identity);
+  } catch (e) {
+    logger.warn("graph", "plan check failed — refusing", { error: String(e) });
+    return apiError(res, 503, "Service temporarily unavailable. Please retry.");
+  }
+
+  // The user's own window first (cheap, and a refusal must not eat the shared budget), then the day's budget for everybody.
+  const userGuard = await checkGraphUserLimit(userKey);
+  if (!userGuard.ok) {
+    logger.metric("graph.refused", { reason: `user_${userGuard.reason}` });
+    return refuse(res, userGuard);
+  }
+  const dayGuard = await takeGraphDailyBudget();
+  if (!dayGuard.ok) {
+    logger.metric("graph.refused", { reason: `day_${dayGuard.reason}` });
+    return refuse(res, dayGuard);
+  }
 
   try {
     // Fetch holders and supply in parallel
@@ -148,7 +212,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
+    res.setHeader("Cache-Control", "private, no-store");
     await flushUsage(); // upstream-usage counters of this request: one Redis command, at most 300 ms
     return res.json({ ...graph, activity, clusterActors });
   } catch (e) {
