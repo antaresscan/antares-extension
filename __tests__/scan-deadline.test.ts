@@ -429,6 +429,20 @@ describe("scan deadline — what gets cached", () => {
     expect(setCachedResult).not.toHaveBeenCalled();
   });
 
+  it("a SAFE or CAUTION built without the chart layer (a GeckoTerminal 429) is cached for 30 s only, not for the full TTL (audit M11)", async () => {
+    setupGoodTokenMocks();
+    mockFetchDexCandles.mockResolvedValue([]); // GeckoTerminal refused: no candles, so no chart layer, on a 90-day-old token
+    const res = createMockRes();
+
+    await run(createMockReq({ ca: WSOL }), res);
+
+    const body = jsonBody(res) as { risk: string; layers: Record<string, { available: boolean }> };
+    expect(body.layers.chart.available).toBe(false);
+    expect(["SAFE", "CAUTION"]).toContain(body.risk);
+    expect(setShortCachedResult).toHaveBeenCalledWith(WSOL, expect.anything(), 30);
+    expect(setCachedResult).not.toHaveBeenCalled();
+  });
+
   it("witness: a normal scan is cached with the usual TTL", async () => {
     setupGoodTokenMocks();
 

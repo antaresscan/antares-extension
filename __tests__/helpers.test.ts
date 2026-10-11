@@ -4,7 +4,7 @@ import {
   apiError, isCorsAllowed, isOriginInList, isValidDexScreenerResponse, isValidRugCheckSummary,
   isHeliusLargestAccountsResponse, isHeliusSupplyResponse,
   isSolscanMarketsResponse, isSolscanMeta, isSolscanTransfersResponse,
-  isRugCheckReport, withBudget, pickGoPlusResult,
+  isRugCheckReport, withBudget, pickGoPlusResult, isChartGapDegraded, CHART_EXPECTED_AFTER_MINUTES,
 } from "../api/_lib/helpers";
 import { CA_RE } from "../api/_lib/constants";
 
@@ -523,5 +523,35 @@ describe("upstream schema enforcement", () => {
       };
       expect(pickGoPlusResult(raw, "So11111111111111111111111111111111111111112")).toBeNull();
     });
+  });
+});
+
+// ─── isChartGapDegraded (audit M11) ──────────────────────────────────────────
+// GeckoTerminal rate-limits (429) are common; without the chart layer a token can be CAUTION on one try and SAFE on the next. A
+// result in that state must not be cached for the full TTL. Bad verdicts keep their long TTL (a stale RUG or DANGER is safe).
+describe("isChartGapDegraded", () => {
+  const OLD = 100_000; // minutes: an established token
+
+  it.each(["SAFE", "CAUTION"] as const)("%s without the chart layer, on a token old enough to have candles: degraded", (verdict) => {
+    expect(isChartGapDegraded(verdict, false, OLD)).toBe(true);
+    expect(isChartGapDegraded(verdict, false, CHART_EXPECTED_AFTER_MINUTES)).toBe(true);
+  });
+
+  it.each(["DANGER", "RUG"] as const)("%s keeps its long TTL even without the chart (stale-bad is safe)", (verdict) => {
+    expect(isChartGapDegraded(verdict, false, OLD)).toBe(false);
+  });
+
+  it("witness: with the chart layer the result is cached normally", () => {
+    expect(isChartGapDegraded("SAFE", true, OLD)).toBe(false);
+    expect(isChartGapDegraded("CAUTION", true, OLD)).toBe(false);
+  });
+
+  it("a response with no chart entry at all assumes nothing", () => {
+    expect(isChartGapDegraded("SAFE", undefined, OLD)).toBe(false);
+  });
+
+  it("a token too young to have candles, or of unknown age, is not a chart gap (its TTL is already short)", () => {
+    expect(isChartGapDegraded("SAFE", false, CHART_EXPECTED_AFTER_MINUTES - 1)).toBe(false);
+    expect(isChartGapDegraded("CAUTION", false, null)).toBe(false);
   });
 });
