@@ -155,7 +155,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v44"; // 2026-10-11: a pair on a bonding curve (pump.fun, Meteora DBC) with no liquidity field has an UNKNOWN liquidity while young (warning, SAFE blocked) instead of $0 (critical, abandoned pool forced to RUG); stuck curve tokens unchanged; flushes cached verdicts.
+const ENGINE_VERSION_MANUAL = "v45"; // 2026-10-11: with GoPlus down, an active mint / freeze authority (read on the chain) or a non-transferable token still raises its flag and blocks SAFE (it used to read clean); official mints (USDC...) stay information only then. Previous (v44): a pair on a bonding curve (pump.fun, Meteora DBC) with no liquidity field has an UNKNOWN liquidity while young (warning, SAFE blocked) instead of $0 (critical, abandoned pool forced to RUG); stuck curve tokens unchanged; flushes cached verdicts.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.

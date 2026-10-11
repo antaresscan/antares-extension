@@ -5,6 +5,9 @@ import {
 } from "../api/_lib/layers";
 import type { DexScreenerPair, RugCheckSummary, GoPlusTokenResult, HeliusHolder } from "../api/_lib/types";
 import { deriveAuthorityFacts, type MintState } from "../api/_lib/facts";
+import { judgeContractFacts } from "../api/_lib/layers";
+import { classifySafeBlockedReasons } from "../api/_lib/scoring";
+import { dedupeFlags, countVerdictFlags, determineVerdict } from "../api/_lib/pipeline";
 
 // Authorities are facts read from the chain (see facts.ts), then handed to the layers.
 const chainMint = (o: Partial<MintState> = {}): MintState => ({ program: "spl-token", decimals: 6, supplyRaw: "1000000", mintAuthority: false, freezeAuthority: false, extensions: [], ...o });
@@ -460,6 +463,80 @@ describe("layerGoPlus", () => {
     const renounced = deriveAuthorityFacts(chainMint(), null);
     expect(layerGoPlus({ holder_count: "10" } as GoPlusTokenResult, undefined, renounced).flags.some(f => /authority/i.test(f.label))).toBe(false);
     expect(layerGoPlus({ holder_count: "10" } as GoPlusTokenResult).flags.some(f => /authority/i.test(f.label))).toBe(false); // no facts at all
+  });
+
+  // Audit A-02: the early "GoPlus unavailable" return used to come BEFORE the authorities were judged, so a token with an active
+  // mint / freeze authority read as clean (and RugCheck does not count them) the moment GoPlus did not answer.
+  describe("GoPlus absent: the contract facts still count", () => {
+    const verdictOf = (l: ReturnType<typeof layerGoPlus>) => {
+      const flags = dedupeFlags(l.flags);
+      const counts = countVerdictFlags(flags);
+      return determineVerdict({
+        score: 950, forceRug: l.forceRug, safeBlocked: l.safeBlocked, safeBlockedReasons: classifySafeBlockedReasons([l]),
+        sourcesUsedCount: 5, warningFlagsCount: counts.warning, criticalFlagsCount: counts.critical, pumpPriceOnlyFlagsCount: counts.pumpPriceOnly,
+      });
+    };
+
+    it("active mint + freeze authorities on-chain, GoPlus null: critical flags, SAFE blocked, layer still unavailable, never SAFE", () => {
+      const facts = deriveAuthorityFacts(chainMint({ mintAuthority: true, freezeAuthority: true }), null);
+      const l = layerGoPlus(null, undefined, facts);
+      expect(l.available).toBe(false);
+      expect(l.safeBlocked).toBe(true);
+      expect(l.forceRug).toBe(false);
+      expect(l.flags.some(f => f.label === "GoPlus unavailable")).toBe(true);
+      expect(l.flags.some(f => f.severity === "critical" && /mint authority active/i.test(f.label))).toBe(true);
+      expect(l.flags.some(f => f.severity === "critical" && /freeze authority active/i.test(f.label))).toBe(true);
+      expect(verdictOf(l)).not.toBe("SAFE");
+    });
+
+    it("same for a GoPlus answer with nothing readable ({})", () => {
+      const facts = deriveAuthorityFacts(chainMint({ mintAuthority: true }), null);
+      const l = layerGoPlus({} as GoPlusTokenResult, undefined, facts);
+      expect(l.available).toBe(false);
+      expect(l.safeBlocked).toBe(true);
+      expect(verdictOf(l)).not.toBe("SAFE");
+    });
+
+    it("renounced authorities, GoPlus null: nothing new (only the unavailable notice)", () => {
+      const l = layerGoPlus(null, undefined, deriveAuthorityFacts(chainMint(), null));
+      expect(l.safeBlocked).toBe(false);
+      expect(l.flags.map(f => f.label)).toEqual(["GoPlus unavailable"]);
+    });
+
+    it("an official mint (USDC) keeps its authorities as information only when GoPlus did not answer", () => {
+      const USDC = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+      const facts = deriveAuthorityFacts(chainMint({ mintAuthority: true, freezeAuthority: true }), null, USDC);
+      const l = layerGoPlus(null, undefined, facts);
+      expect(l.safeBlocked).toBe(false);
+      expect(l.flags.some(f => f.severity === "critical")).toBe(false);
+      expect(l.flags.filter(f => /authority active/i.test(f.label)).every(f => f.severity === "info")).toBe(true);
+    });
+
+    it("the same mint address that is NOT official stays critical", () => {
+      const facts = deriveAuthorityFacts(chainMint({ mintAuthority: true }), null, "SomeOtherMint1111111111111111111111111111111");
+      expect(layerGoPlus(null, undefined, facts).safeBlocked).toBe(true);
+    });
+
+    it("a token that cannot be sold (on-chain nonTransferable), GoPlus null: critical flag, SAFE blocked", () => {
+      const facts = deriveAuthorityFacts(chainMint({ program: "spl-token-2022", extensions: ["nonTransferable"] }), null);
+      const l = layerGoPlus(null, undefined, facts);
+      expect(l.safeBlocked).toBe(true);
+      expect(l.flags.some(f => f.severity === "critical" && /cannot be sold/i.test(f.label))).toBe(true);
+      expect(verdictOf(l)).not.toBe("SAFE");
+    });
+
+    it("GoPlus answering and also reporting non_transferable does not double the flag", () => {
+      const facts = deriveAuthorityFacts(chainMint({ program: "spl-token-2022", extensions: ["nonTransferable"] }), null);
+      const l = layerGoPlus({ non_transferable: "1" } as GoPlusTokenResult, undefined, facts);
+      expect(l.flags.filter(f => /cannot be sold/i.test(f.label))).toHaveLength(1);
+    });
+  });
+
+  it("judgeContractFacts: no facts -> nothing; trusted -> information only", () => {
+    expect(judgeContractFacts(null)).toEqual({ flags: [], penalties: [], safeBlocked: false });
+    const trusted = judgeContractFacts(deriveAuthorityFacts(chainMint({ mintAuthority: true }), { trusted_token: 1 } as GoPlusTokenResult));
+    expect(trusted.safeBlocked).toBe(false);
+    expect(trusted.flags.map(f => f.severity)).toEqual(["info"]);
   });
 
   it("Fix(TAX_WARNING): sell_tax '10' (=10%) is at boundary — triggers warning (>0.02 && <=0.10)", () => {

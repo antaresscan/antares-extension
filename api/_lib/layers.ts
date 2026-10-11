@@ -435,6 +435,38 @@ const top10 = asNumber(rugData?.topHolders?.top10Percentage);
   return { source: "rugcheck", trust: Math.max(0, trust), available: true, flags, forceRug, safeBlocked };
 }
 
+// ═══ Contract facts (mint / freeze / sale) ═══════════════════════════════════════════════════════
+const NON_TRANSFERABLE_LABEL = "Non-transferable token — cannot be sold";
+
+export interface ContractVerdict { flags: ScanFlag[]; penalties: number[]; safeBlocked: boolean }
+
+/**
+ * What the contract facts (read from the chain first, see facts.ts) say about the token: an active mint / freeze authority
+ * and a token that cannot be sold. Independent of any upstream: GoPlus being down changes nothing here. A trusted token
+ * (a major issuer, which holds its authorities by design) shows them as information only.
+ */
+export function judgeContractFacts(facts: AuthorityFacts | null | undefined): ContractVerdict {
+  const flags: ScanFlag[] = [];
+  const penalties: number[] = [];
+  let safeBlocked = false;
+  if (!facts) return { flags, penalties, safeBlocked };
+  const sev = facts.trusted ? "info" : "critical";
+  const pen = facts.trusted ? 0.95 : 0.25;
+  if (facts.mint === true) {
+    flags.push(makeFlag("Mint authority active — supply can be inflated", sev, 0)); penalties.push(pen);
+    if (!facts.trusted) safeBlocked = true;
+  }
+  if (facts.freeze === true) {
+    flags.push(makeFlag("Freeze authority active — wallets can be frozen", sev, 0)); penalties.push(pen);
+    if (!facts.trusted) safeBlocked = true;
+  }
+  if (facts.sellBlocked === true) {
+    flags.push(makeFlag(NON_TRANSFERABLE_LABEL, "critical", 0)); penalties.push(0.05);
+    safeBlocked = true;
+  }
+  return { flags, penalties, safeBlocked };
+}
+
 // ═══ LAYER 3 — GoPlus ═════════════════════════════════════════════════════════
 export function layerGoPlus(
   goplus: GoPlusTokenResult | null,
@@ -451,12 +483,18 @@ export function layerGoPlus(
   let trust = 1.0;
   const penalties: number[] = [];
   let forceRug = false;
-  let safeBlocked = false;
+  // The contract facts come from the chain, not from GoPlus: judged BEFORE knowing whether GoPlus answered, so an active
+  // mint / freeze authority still blocks SAFE when GoPlus is down (it used to return early with no flag at all, and
+  // RugCheck does not count the authorities either).
+  const contract = judgeContractFacts(facts);
+  let safeBlocked = contract.safeBlocked;
+  flags.push(...contract.flags);
+  penalties.push(...contract.penalties);
   // "Available" means GoPlus told us something we can read, not merely that it answered.
   if (!goplus || !hasReadableField(goplus)) return {
-    source: "goplus", trust: 1.0, available: false,
-    flags: [makeFlag("GoPlus unavailable", "info", 0)],
-    forceRug: false, safeBlocked: false,
+    source: "goplus", trust: applyDiminishingPenalties(1.0, penalties), available: false,
+    flags: [makeFlag("GoPlus unavailable", "info", 0), ...flags],
+    forceRug: false, safeBlocked,
   };
   const gp = (field: keyof GoPlusTokenResult) => {
     const v = goplus[field];
@@ -478,23 +516,9 @@ export function layerGoPlus(
     trust = 0; forceRug = true; safeBlocked = true;
     return { source: "goplus", trust: 0, available: true, flags, forceRug, safeBlocked };
   }
-  if (facts) {
-    // Authorities come from the chain (GoPlus only as a relay): an active authority is a critical flag, unless GoPlus
-    // lists the token as trusted (major issuers hold authorities by design): then it is shown, not alarming.
-    const sev = facts.trusted ? "info" : "critical";
-    const pen = facts.trusted ? 0.95 : 0.25;
-    if (facts.mint === true) {
-      flags.push(makeFlag("Mint authority active — supply can be inflated", sev, 0)); penalties.push(pen);
-      if (!facts.trusted) safeBlocked = true;
-    }
-    if (facts.freeze === true) {
-      flags.push(makeFlag("Freeze authority active — wallets can be frozen", sev, 0)); penalties.push(pen);
-      if (!facts.trusted) safeBlocked = true;
-    }
-  }
   // Solana structural fields (real GoPlus contract, all absent / "0" on a clean token)
   if (gpStatus(goplus.balance_mutable_authority) === true) { flags.push(makeFlag("Balances can be changed by an authority", "critical", 0)); penalties.push(0.10); safeBlocked = true; }
-  if (gpStatus(goplus.non_transferable) === true) { flags.push(makeFlag("Non-transferable token — cannot be sold", "critical", 0)); penalties.push(0.05); safeBlocked = true; }
+  if (gpStatus(goplus.non_transferable) === true && !contract.flags.some((f) => f.label === NON_TRANSFERABLE_LABEL)) { flags.push(makeFlag(NON_TRANSFERABLE_LABEL, "critical", 0)); penalties.push(0.05); safeBlocked = true; }
   if (gpStatus(goplus.closable) === true) { flags.push(makeFlag("Token accounts can be closed by an authority", "warning", 0)); penalties.push(0.80); }
   if (Array.isArray(goplus.transfer_hook) && goplus.transfer_hook.length > 0) { flags.push(makeFlag("Transfer hook installed — a custom program runs on every transfer", "warning", 0)); penalties.push(0.75); }
   if (gp("is_blacklisted")) { flags.push(makeFlag("Blacklist capability", "critical", 0)); penalties.push(0.30); safeBlocked = true; }
