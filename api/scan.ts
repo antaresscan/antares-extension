@@ -44,6 +44,7 @@ import { computeFinalScore, classifySafeBlockedReasons } from "./_lib/scoring";
 import { evaluatePostLayerFlags, applySafeGateOverride, applyEstablishedBonus, determineVerdict, dedupeFlags, countVerdictFlags } from "./_lib/pipeline";
 import { setCorsHeaders, getClientIp, getInstallId, checkRateLimit, checkColdScanLimit, validateCA, initRateLimiters } from "./_lib/middleware";
 import { initQuota, checkDailyQuota, setQuotaHeaders, secondsUntilReset } from "./_lib/quota";
+import { enforceProGate } from "./_lib/pro-gate";
 import { initUserStorage, pushScanHistory, resolveTierAndBypass } from "./_lib/user";
 import { initCache, getCachedResult, setCachedResult, setShortCachedResult, acquireScanLock, releaseScanLock, waitForCachedResult } from "./_lib/cache";
 import { initSentry, captureError } from "./_lib/sentry";
@@ -159,6 +160,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     req,
     identityKey,
   );
+  // The Pro/Free line is drawn here, on the server: from now on every scan this response sends is the Free view when the caller
+  // is Free (verdict, score, the Sell/Mint/Freeze/LP line, public market data). See api/_lib/pro-gate.ts.
+  enforceProGate(res, effectiveTier);
   const quota = await checkDailyQuota(identityKey, effectiveTier, { bypassQuota });
   setQuotaHeaders(res, quota);
   if (!quota.allowed) {

@@ -194,7 +194,7 @@ js/
   token-bg.js                — Animated background canvas
 
 privacy.ts                   — GET /privacy — Privacy Policy page (CWS requirement)
-token.html                   — Static Full Analysis page served at /token.html?ca=<mint>
+token.html                   — Full Analysis page (Pro) served at /token.html?ca=<mint>; a Free visitor sees the Pro message
 
 background.ts                — Chrome extension service worker (MV3, keepalive via alarms)
 popup.tsx                    — Extension popup UI (recent scans, stealth toggle, account)
@@ -230,6 +230,15 @@ POST /api/auth/nowpayments-ipn          NOWPayments webhook (HMAC-SHA512 verifie
 ```bash
 curl "https://antares-extension.vercel.app/api/scan?ca=So11111111111111111111111111111111111111112"
 ```
+
+### Free and Pro are drawn on the server
+
+`/api/scan` answers a **Free** caller (no session, or a session without a paid licence) with the *Free view*: the verdict, the score,
+the Sell / Mint / Freeze / LP line, public market data, and `proLocked: true`. The analysis — layers and sources, the text of the
+flags, the AI summary, holders, critical actors, verdict history — is sent to **Pro** callers only. The list of Free fields is an
+allowlist in `api/_lib/pro-gate.ts`: a field added to the scan is Pro until it is listed there. The flags of a Free answer keep their
+severity and lose their text, so the overlay's "N flags — M critical" still reads the same. Verdicts and scores are computed from the
+full scan first; the gate cannot change them. `token.html` is the Full Analysis: for a Free visitor it shows the Pro message.
 
 CORS is restricted to a whitelist of the supported trading platforms +
 the marketing-site origin + `chrome-extension://*`. Same-origin requests

@@ -20,6 +20,16 @@ test.describe('Token Page (/token.html)', () => {
     expect(body).toBeTruthy();
   });
 
+  // The page is the Full Analysis, which is Pro: this browser has no Pro install, so /api/scan sends it the Free view and the page says so
+  // instead of drawing the analysis (api/_lib/pro-gate.ts). The Pro rendering is checked in token-page-deep.spec.ts.
+  test('a Free visitor sees the Pro message, not the analysis', async ({ page }) => {
+    await page.goto(`${BASE}/token.html?ca=${SOL_WRAPPED}`);
+    await expect(page.locator('#pro-gate h2')).toHaveText('Full Analysis is part of Antares Pro', { timeout: 30_000 });
+    await expect(page.locator('#pro-gate a.primary')).toHaveAttribute('href', /antaresscan\.com\/pricing/);
+    // Nothing of the analysis is on the page: no tabs, no Insider Watch feed.
+    await expect(page.locator('.tab-pane, .iw-feed-wrap')).toHaveCount(0);
+  });
+
   test('has proper meta tags', async ({ page }) => {
     await page.goto(`${BASE}/token.html?ca=${SOL_WRAPPED}`);
     const viewport = await page.locator('meta[name="viewport"]').getAttribute('content');

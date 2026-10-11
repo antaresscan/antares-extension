@@ -106,6 +106,8 @@ export async function replayScan(rec: Recording): Promise<ReplayOutcome> {
   }) as typeof fetch;
 
   for (const name of UNSET) vi.stubEnv(name, undefined);
+  // The golden file is the FULL scan, which only a Pro caller receives (api/_lib/pro-gate.ts): the replay asks as a Pro install.
+  vi.stubEnv("DEV_PRO_INSTALLS", "replay-pro-install");
   vi.stubEnv("HELIUS_API_KEY", "replay-key"); // the capture had keys: the same calls are made, and answered from the recording
   // Solscan: the engine pauses it for 10 minutes after a 401, so a recording made after the first 401 of its instance holds
   // no Solscan call at all. The replay gives a key only when the recording has such calls (and then answers them as recorded).
@@ -125,7 +127,7 @@ export async function replayScan(rec: Recording): Promise<ReplayOutcome> {
     const { default: handler } = await import("../../api/scan");
     const out = fakeRes();
     await handler(
-      { method: "GET", query: { ca: rec.mint, fresh: "1" }, headers: { origin: "https://dexscreener.com", "x-forwarded-for": "203.0.113.7" }, socket: { remoteAddress: "203.0.113.7" } } as unknown as VercelRequest,
+      { method: "GET", query: { ca: rec.mint, fresh: "1" }, headers: { origin: "https://dexscreener.com", "x-forwarded-for": "203.0.113.7", "x-antares-install": "replay-pro-install" }, socket: { remoteAddress: "203.0.113.7" } } as unknown as VercelRequest,
       out.res,
     );
     const { status, body } = out.get();

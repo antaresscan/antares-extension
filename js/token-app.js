@@ -29,6 +29,7 @@ import {
   buildExitLiquidityTab,
   buildCriticalActorsPreview,
   buildInsiderWatchTab,
+  buildProGate,
   buildBuySellFlowTab,
   buildWashVolumeTab,
   buildSourceListRows,
@@ -515,6 +516,14 @@ if (!ca) {
 // ──────────────────────────────────────────────────────────────────────
 function render(d, ca) {
   document.getElementById("loading").style.display = "none";
+
+  // The Free view of a scan (api/_lib/pro-gate.ts): the analysis is not in it. Say so, instead of drawing an empty page.
+  if (d && d.proLocked === true) {
+    const rcFree = { SAFE: "safe", CAUTION: "caution", DANGER: "danger", RUG: "rug" }[d.risk] || "danger";
+    document.body.className = `risk-${rcFree}`;
+    document.getElementById("content").innerHTML = buildProGate(d);
+    return;
+  }
 
   const RC = { SAFE: "safe", CAUTION: "caution", DANGER: "danger", RUG: "rug" };
   const LB = { SAFE: "SAFE", CAUTION: "CAUTION", DANGER: "DANGER", RUG: "RUG PULL" };
