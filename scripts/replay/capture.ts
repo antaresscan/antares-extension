@@ -9,6 +9,8 @@
 //   (no argument)   the hand-vetted tokens of the manifest        --bulk     every token of bulk.json
 //   SYMBOL|MINT     only these tokens (manifest or bulk)          --sample   with --bulk: only the tokens that run in every `npm test`
 //   --force         record again a token that already has a file  --pace N   milliseconds to wait between two tokens (default 8000)
+//   --until DATE    stop between two tokens once DATE has passed (e.g. 2026-10-11T07:00:00+02:00): a capture meant to run at night
+//                   ends before the day's traffic instead of being killed in the middle of a scan
 //
 // It can be stopped and started again at any time: a token that already has a file is skipped (unless --force). A scan is tried up
 // to 3 times while an upstream answered with a rate limit, a server error or a failure: the corpus must hold the data of a healthy
@@ -28,7 +30,10 @@ const args = process.argv.slice(2);
 const flag = (name: string): boolean => args.includes(name);
 const paceIdx = args.indexOf("--pace");
 const PACE_MS = paceIdx >= 0 ? Number(args[paceIdx + 1]) : 8_000;
-const only = args.filter((a, i) => !a.startsWith("--") && !(paceIdx >= 0 && i === paceIdx + 1));
+const untilIdx = args.indexOf("--until");
+const UNTIL = untilIdx >= 0 ? Date.parse(args[untilIdx + 1] ?? "") : Infinity;
+if (untilIdx >= 0 && !Number.isFinite(UNTIL)) { console.error("--until needs a date with its time zone, e.g. --until 2026-10-11T07:00:00+02:00"); process.exit(2); }
+const only = args.filter((a, i) => !a.startsWith("--") && !(paceIdx >= 0 && i === paceIdx + 1) && !(untilIdx >= 0 && i === untilIdx + 1));
 
 interface Exchange { method: string; url: string; body: string | null; status: number; contentType: string | null; text: string; error?: string; auth?: boolean }
 interface RecorderAnswer { ca: string; startedAt: number; status: number; result: Record<string, unknown> | null; exchanges: string }
@@ -54,7 +59,10 @@ const RUGCHECK_KEEP = ["risks", "topHolders", "totalHolders", "creator", "creato
 /**
  * Shrinks what the engine does not read. Holder pages of a large token are the bulk of a recording (10 pages of 1,000
  * wallets): the engine only asks how many DISTINCT wallets hold a non-zero balance, so a wallet becomes a short id (the
- * same wallet keeps the same id from page to page) and an amount becomes 1 ("not empty"). No wallet address is committed.
+ * same wallet keeps the same id from page to page) and an amount becomes 1 ("not empty"). That is the only place addresses are
+ * replaced: the other answers (RugCheck's top holders and creator, GoPlus's top 10 holders, DexScreener pairs) keep the PUBLIC
+ * on-chain addresses they contain. GoPlus's `token_account` of a holder is cut to its first account: the engine never reads it, and
+ * one whale with thousands of token accounts made a single recording weigh 2.8 MB.
  */
 function trim(e: Exchange, owners: Map<string, string>): Exchange {
   const idOf = (owner?: string): string | undefined => {
@@ -76,6 +84,16 @@ function trim(e: Exchange, owners: Map<string, string>): Exchange {
         const r = full.result;
         return { ...e, text: JSON.stringify({ ...full, result: { total: r.total, limit: r.limit, token_accounts: r.token_accounts!.map((a) => ({ owner: idOf(a.owner), amount: Number(a.amount) > 0 ? 1 : 0 })) } }) };
       }
+    }
+    if (/api\.gopluslabs\.io\/api\/v1\/solana\/token_security/.test(e.url)) {
+      const full = JSON.parse(e.text) as { result?: Record<string, { holders?: Array<{ token_account?: unknown }> } | null> };
+      let cut = false;
+      for (const token of Object.values(full.result ?? {})) {
+        for (const h of token?.holders ?? []) {
+          if (typeof h.token_account === "string" && h.token_account.includes(",")) { h.token_account = h.token_account.split(",")[0]; cut = true; }
+        }
+      }
+      if (cut) return { ...e, text: JSON.stringify(full) };
     }
   } catch { /* keep as recorded */ }
   return e;
@@ -130,6 +148,7 @@ void (async () => {
   let done = 0, kb = 0;
   const started = Date.now();
   for (const t of todo) {
+    if (Date.now() >= UNTIL) { console.log(`\n--until reached (${new Date(UNTIL).toISOString()}): stopping between two tokens, ${todo.length - done - left.length} token(s) still to record`); break; }
     const t0 = Date.now();
     let best: { answer: RecorderAnswer; exchanges: Exchange[]; gaps: string[] } | null = null;
     for (let attempt = 1; attempt <= 3; attempt++) {
