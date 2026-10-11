@@ -24,6 +24,7 @@ import { buildInsiderGraph, initGraphCache } from "./_lib/insider-graph";
 import { buildInsiderActivity, initActivityCache } from "./_lib/insider-activity";
 import type { HeliusHolder } from "./_lib/types";
 import { logger } from "./_lib/logger";
+import { initUsage, flushUsage } from "./_lib/usage";
 
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
   const redis = new Redis({
@@ -33,6 +34,7 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
   initGraphCache(redis);
   initActivityCache(redis);
   initRateLimiters(redis);
+  initUsage(redis);
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -128,6 +130,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
+    await flushUsage(); // upstream-usage counters of this request: one Redis command, at most 300 ms
     return res.json({ ...graph, activity });
   } catch (e) {
     logger.error("graph", "Graph analysis failed", { error: String(e) });

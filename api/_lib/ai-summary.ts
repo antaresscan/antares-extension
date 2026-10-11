@@ -1,4 +1,5 @@
 import { logger } from "./logger"
+import { recordCall } from "./usage"
 
 export type AISummaryInput = {
   score: number
@@ -344,6 +345,7 @@ async function callGemini(
 ): Promise<string | "__RETRY__" | null> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), timeoutMs)
+  let answered = false // true once Gemini has answered: a later error is not a failed request
 
   try {
     const response = await fetch(GEMINI_URL, {
@@ -374,6 +376,8 @@ async function callGemini(
       signal: controller.signal,
     })
     clearTimeout(timeout)
+    answered = true
+    recordCall(GEMINI_URL, response.status)
 
     if (response.status === 429) {
       logger.warn("ai-summary", "Gemini rate-limited", { status: 429 })
@@ -438,6 +442,7 @@ async function callGemini(
     return cleaned
   } catch (err: unknown) {
     clearTimeout(timeout)
+    if (!answered) recordCall(GEMINI_URL, 0)
     if (err instanceof Error && err.name === "AbortError") {
       logger.warn("ai-summary", "Gemini call timed out")
       return "__RETRY__"

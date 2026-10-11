@@ -54,6 +54,7 @@ import { isPreviewDeployment } from "./_lib/deployment";
 import { logger } from "./_lib/logger";
 import { composeCriticalActors } from "./_lib/critical-actors";
 import { buildInsiderGraph, initGraphCache } from "./_lib/insider-graph";
+import { initUsage, flushUsage } from "./_lib/usage";
 import { deriveEvent } from "./_lib/verdict-history";
 // initHistoryCache / pushVerdictHistory / getVerdictHistory are no
 // longer imported — the Verdict Timeline feature was decommissioned
@@ -81,6 +82,7 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
   initUserStorage(redis);
   initRugDb(redis);
   initGraphCache(redis);
+  initUsage(redis);
   // initHistoryCache deliberately not called — verdict-history is
   // decommissioned (see decom block lower in this file).
 }
@@ -923,6 +925,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       });
     }
 
+    // Write the upstream-usage counters of this cold scan (one Redis command, at most 300 ms, never an error for the user).
+    await flushUsage();
     return res.json(result);
   } catch (e) {
     logger.error("scan", "analysis error", { requestId, version: SCORING_VERSION, error: String(e) });

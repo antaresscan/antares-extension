@@ -1,5 +1,6 @@
 // api/http.ts — HTTP utility functions extracted from helpers.ts
 import { logger } from "./logger";
+import { recordCall, recordSkipped } from "./usage";
 
 export function withTimeout(ms: number) {
   const controller = new AbortController();
@@ -140,15 +141,18 @@ export async function fetchJson<T = unknown>(
   if (host && isCircuitOpen(host)) {
     // Breaker open — return null immediately, don't touch the network.
     // Caller's null-handling path runs as if the upstream had errored.
+    recordSkipped(url);
     return null;
   }
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const t = withTimeout(ms);
+    let sent = false; // true once the provider has answered: a later parse error is not a failed request
     try {
       const r = await fetch(url, { ...init, signal: t.signal });
       t.clear();
       logAuthRejected(host, r.status);
       onStatus?.(r.status);
+      sent = true; recordCall(url, r.status);
       if (r.status === 429 || r.status === 503) {
         if (attempt < maxRetries) {
           await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
@@ -168,6 +172,7 @@ export async function fetchJson<T = unknown>(
       return (await r.json()) as T;
     } catch (e: unknown) {
       t.clear();
+      if (!sent) recordCall(url, 0);
       if (attempt === maxRetries) {
         if (host) recordFailure(host);
         logger.warn("http", "fetchJson failed", { error: scrubSensitive(String(e)) });
@@ -193,9 +198,10 @@ export async function fetchJsonPost<T = unknown>(
   onStatus?: (status: number) => void,
 ): Promise<T | null> {
   const host = hostnameOf(url);
-  if (host && isCircuitOpen(host)) return null;
+  if (host && isCircuitOpen(host)) { recordSkipped(url); return null; }
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const t = withTimeout(ms);
+    let sent = false; // true once the provider has answered: a later parse error is not a failed request
     try {
       const r = await fetch(url, {
         method: "POST",
@@ -206,6 +212,7 @@ export async function fetchJsonPost<T = unknown>(
       t.clear();
       onStatus?.(r.status);
       logAuthRejected(host, r.status);
+      sent = true; recordCall(url, r.status, body);
       if (r.status === 429 || r.status === 503) {
         if (attempt < maxRetries) {
           await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
@@ -221,6 +228,7 @@ export async function fetchJsonPost<T = unknown>(
       return (await r.json()) as T;
     } catch (e: unknown) {
       t.clear();
+      if (!sent) recordCall(url, 0, body);
       if (attempt === maxRetries) {
         if (host) recordFailure(host);
         logger.warn("http", "fetchJsonPost failed", { error: scrubSensitive(String(e)) });

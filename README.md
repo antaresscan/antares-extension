@@ -255,6 +255,9 @@ can forge trivially with `curl -H Referer:`).
   API design until this mitigation.
 - Free-tier Sentry (5K events/month) covers the current production
   volume with 50× headroom at the default 10% trace sample rate.
+- **Upstream usage** (how many requests each API gets, how many are refused with a 429, the estimated Helius credits) is counted per
+  day in Redis and read with `CRON_SECRET=… npx tsx scripts/usage-report.ts 7 --plan-credits 10000000` (served by
+  `/api/health?usage=N`, owner only). What each call is for and where to cut: [docs/upstream-consumption.md](docs/upstream-consumption.md).
 
 ---
 
