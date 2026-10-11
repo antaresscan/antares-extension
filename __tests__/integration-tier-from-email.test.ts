@@ -21,7 +21,8 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@upstash/redis", () => {
   class MockRedis {
-    set = vi.fn(async (k: string, v: unknown) => {
+    set = vi.fn(async (k: string, v: unknown, opts?: { nx?: boolean }) => {
+      if (opts?.nx && mocks.store.has(k)) return null; // SET NX: the key is already taken
       mocks.store.set(k, v);
       return "OK";
     });
@@ -55,6 +56,17 @@ vi.mock("@upstash/redis", () => {
       const v = mocks.store.get(k);
       return v ? [...(v as Set<string>)] : [];
     });
+    // MULTI/EXEC: the queued commands run one after the other (issueLicense writes the license in one transaction).
+    multi = () => {
+      const queued: Array<() => Promise<unknown>> = [];
+      const tx = {
+        hset: (k: string, f: Record<string, string>) => { queued.push(() => this.hset(k, f)); return tx; },
+        sadd: (k: string, ...m: string[]) => { queued.push(() => this.sadd(k, ...m)); return tx; },
+        set: (k: string, v: unknown) => { queued.push(() => this.set(k, v)); return tx; },
+        exec: async () => { const out: unknown[] = []; for (const q of queued) out.push(await q()); return out; },
+      };
+      return tx;
+    };
   }
   return { Redis: MockRedis };
 });

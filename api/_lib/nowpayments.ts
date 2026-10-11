@@ -51,6 +51,8 @@ export interface NpPayment {
   price_amount: number | string
   price_currency: string
   pay_amount?: number | string
+  /** What the buyer really sent, in `pay_currency`. Compared with `pay_amount` (what was asked): see paidRatio(). */
+  actually_paid?: number | string
   pay_currency?: string
   order_id?: string
   invoice_id?: string | number
@@ -148,6 +150,9 @@ export async function createInvoice(
   })
 }
 
+/** `strict`: rethrow when NOWPayments cannot be asked (anything but a 404), instead of answering "nothing found". */
+export interface LookupOpts { strict?: boolean }
+
 /**
  * Look up a payment by its NOWPayments payment_id. Used by the polling
  * endpoint and the cron reconciler. Returns null on 404 (payment not
@@ -155,6 +160,7 @@ export async function createInvoice(
  */
 export async function getPayment(
   paymentId: string,
+  opts: LookupOpts = {},
 ): Promise<NpPayment | null> {
   try {
     return await npFetch<NpPayment>(`/payment/${encodeURIComponent(paymentId)}`)
@@ -163,6 +169,8 @@ export async function getPayment(
     const msg = err instanceof Error ? err.message : String(err)
     if (msg.includes("404")) return null
     logger.warn("nowpayments", "getPayment failed", { paymentId, error: msg })
+    // strict: "NOWPayments could not be asked" is NOT "there is no payment" (reconcileIntent expires on the second only).
+    if (opts.strict) throw err
     return null
   }
 }
@@ -176,6 +184,7 @@ export async function getPayment(
  */
 export async function listPaymentsForInvoice(
   invoiceId: string,
+  opts: LookupOpts = {},
 ): Promise<NpPayment[]> {
   try {
     const res = await npFetch<{ data?: NpPayment[] }>(
@@ -187,8 +196,50 @@ export async function listPaymentsForInvoice(
       invoiceId,
       error: String(err),
     })
+    if (opts.strict) throw err
     return []
   }
+}
+
+// ─── Payment choice and amount check ──────────────────────────────────────────
+
+/**
+ * An invoice gets one payment record per crypto-pick attempt: the furthest along wins, so a half-completed earlier
+ * attempt does not mask a successful retry. One copy, shared by the polling endpoint and the cron.
+ */
+const PAYMENT_PRIORITY: Record<string, number> = {
+  finished: 5,
+  confirmed: 4,
+  sending: 3,
+  confirming: 2,
+  partially_paid: 1,
+  waiting: 0,
+  failed: -1,
+  refunded: -1,
+  expired: -1,
+}
+
+export function pickMostProgressed(payments: NpPayment[]): NpPayment | null {
+  if (payments.length === 0) return null
+  return [...payments].sort(
+    (a, b) => (PAYMENT_PRIORITY[b.payment_status] ?? 0) - (PAYMENT_PRIORITY[a.payment_status] ?? 0),
+  )[0]
+}
+
+/** Below this share of the asked amount, a payment is an underpayment (1% of slack for rounding and fees). */
+export const MIN_PAID_RATIO = 0.99
+
+/**
+ * What share of the asked crypto amount the buyer really sent: actually_paid / pay_amount, both in the buyer's currency.
+ * undefined when either figure is missing or unusable (nothing to judge from; the caller does not refuse on that).
+ * It used to compare price_amount (the invoiced price, copied back by the provider) with the invoice: always equal.
+ */
+export function paidRatio(p: Pick<NpPayment, "actually_paid" | "pay_amount">): number | undefined {
+  if (p.actually_paid === undefined || p.actually_paid === null || p.pay_amount === undefined || p.pay_amount === null) return undefined
+  const paid = Number(p.actually_paid)
+  const asked = Number(p.pay_amount)
+  if (!Number.isFinite(paid) || !Number.isFinite(asked) || asked <= 0 || paid < 0) return undefined
+  return paid / asked
 }
 
 // ─── Status mapping ───────────────────────────────────────────────────────────

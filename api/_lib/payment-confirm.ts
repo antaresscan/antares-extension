@@ -16,6 +16,7 @@ import { logger } from "./logger"
 import { setUserTier } from "./user"
 import { issueLicense, INTENT_LICENSE_KEY } from "./license"
 import { ACCOUNT_INSTALL_KEY } from "./account"
+import { MIN_PAID_RATIO } from "./nowpayments"
 import {
   PRO_PASS_DAYS,
   YEARLY_DAYS,
@@ -27,28 +28,30 @@ export interface ConfirmIntentOpts {
   /** On-chain tx hash from the provider (payin_hash / payout_hash). */
   txSignature?: string
   /**
-   * USD amount the provider reports as paid. When given and < 99% of
-   * intent.amountUsd, the confirmation is rejected as underpaid. Pass
-   * `undefined` (or omit) when the caller has no reported amount on
-   * hand (e.g. polling endpoints with no payload to verify against).
+   * Share of the asked crypto amount the buyer really sent (nowpayments.ts paidRatio: actually_paid / pay_amount). When
+   * given and < MIN_PAID_RATIO the confirmation is rejected as underpaid. Omit when the provider gave no figures.
    */
-  reportedUsd?: number
+  paidRatio?: number
 }
 
 export type ConfirmOutcome =
   | { ok: true; intent: PaymentIntent; licenseKey: string | null }
-  | { ok: false; reason: "underpaid"; expectedUsd: number; reportedUsd: number }
+  | { ok: false; reason: "underpaid"; paidRatio: number }
 
 /**
  * Apply all the side effects that happen when a payment intent moves from
  * pending → confirmed:
- *   - Anti-underpay check (rejects when reportedUsd < intent.amountUsd * 0.99)
+ *   - Anti-underpay check (rejects when the buyer sent less than MIN_PAID_RATIO of the asked crypto amount)
  *   - Flips the install's user-tier (skipped for synthetic email-only ids)
  *   - Issues a license (idempotent on intent.reference) when email present
  *   - Marks the intent confirmed in Redis
  *
  * Idempotent on the same intent reference — safe to call multiple times
  * for the same payment without double-billing or duplicate licenses.
+ *
+ * Throws when the license cannot be issued: the intent then stays pending, so the IPN retry, the next poll or the cron
+ * run this again (everything before it is idempotent). Swallowing that error used to mark the intent confirmed with no
+ * license, and nothing ever came back to it.
  *
  * @returns On success, the updated intent and license key (when one was
  *          issued or already existed). On underpay, an error envelope so
@@ -59,27 +62,16 @@ export async function confirmIntent(
   intent: PaymentIntent,
   opts: ConfirmIntentOpts = {},
 ): Promise<ConfirmOutcome> {
-  const { txSignature, reportedUsd } = opts
+  const { txSignature, paidRatio } = opts
 
-  // Underpay defence — reject if the provider reports materially less
-  // than expected. 1% tolerance for fee/rounding noise.
-  if (
-    typeof reportedUsd === "number" &&
-    Number.isFinite(reportedUsd) &&
-    reportedUsd > 0 &&
-    reportedUsd < intent.amountUsd * 0.99
-  ) {
+  // Underpay defence: the buyer must have sent (about) what was asked. 1% of slack for fee/rounding noise.
+  if (typeof paidRatio === "number" && Number.isFinite(paidRatio) && paidRatio < MIN_PAID_RATIO) {
     logger.warn("payment-confirm", "underpaid — refusing to confirm", {
       reference: intent.reference,
       expectedUsd: intent.amountUsd,
-      reportedUsd,
+      paidRatio,
     })
-    return {
-      ok: false,
-      reason: "underpaid",
-      expectedUsd: intent.amountUsd,
-      reportedUsd,
-    }
+    return { ok: false, reason: "underpaid", paidRatio }
   }
 
   if (intent.status === "confirmed") {
@@ -174,10 +166,11 @@ export async function confirmIntent(
       })
       licenseKey = license.key
     } catch (err) {
-      logger.warn("payment-confirm", "license issuance failed", {
+      logger.error("payment-confirm", "license issuance failed — intent stays pending, will be retried", {
         reference: intent.reference,
         error: String(err),
       })
+      throw err
     }
   }
 
@@ -187,7 +180,7 @@ export async function confirmIntent(
     reference: intent.reference,
     tier: intent.tier,
     amountUsd: intent.amountUsd,
-    reportedUsd: reportedUsd ?? null,
+    paidRatio: paidRatio ?? null,
     installId: intent.installId,
     syntheticInstall: isSyntheticInstall,
     hasEmail: !!intent.email,

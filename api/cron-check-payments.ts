@@ -1,12 +1,14 @@
 // api/cron-check-payments.ts — Vercel cron: reconcile NOWPayments invoices.
 //
 // Runs on the schedule defined in vercel.json. For each pending intent in
-// the index:
-//   1. If past expiry → mark expired (cleans the index, polling sees
-//      "expired" on its next tick).
-//   2. Otherwise query NOWPayments for the underlying payment and, if the
-//      provider says confirmed/finished, run the shared confirmIntent
-//      helper (issues license + flips tier + marks confirmed).
+// the index it runs the reconciliation shared with the polling endpoint
+// (_lib/payment-reconcile.ts): ask NOWPayments for the underlying payment and,
+// if it is confirmed/finished, run confirmIntent (issues license + flips tier
+// + marks confirmed). An intent is expired only when the provider says its
+// payment is dead, or when its window is over and NO payment exists. It used
+// to expire on the clock first; with a daily run that meant the cron could
+// never confirm anything. An intent whose keys are gone is dropped from the
+// index (it used to stay there for good, scanned and counted as an error).
 //
 // This is the safety-net for missed IPN webhooks. NOWPayments retries
 // IPN delivery on failure but transient outages (Vercel deploy, Redis
@@ -32,19 +34,12 @@ import { initSentry, captureError } from "./_lib/sentry";
 
 initSentry();
 import {
-  bindNpPaymentId,
   getPaymentIntent,
   listPendingIntentReferences,
-  markIntentExpired,
-  type PaymentIntent,
+  removeFromPendingIndex,
 } from "./_lib/payments";
-import {
-  isConfigured as nowpaymentsConfigured,
-  listPaymentsForInvoice,
-  getPayment,
-  mapStatus,
-} from "./_lib/nowpayments";
-import { confirmIntent } from "./_lib/payment-confirm";
+import { isConfigured as nowpaymentsConfigured } from "./_lib/nowpayments";
+import { reconcileIntent } from "./_lib/payment-reconcile";
 
 function getRedis(): Redis | null {
   const url = process.env.UPSTASH_REDIS_REST_URL;
@@ -65,92 +60,11 @@ interface CronOutcome {
   scanned: number;
   confirmed: number;
   expired: number;
+  /** Still waiting: a payment in flight, or none yet inside the window. */
+  pending: number;
+  /** References whose intent no longer exists: removed from the pending index. */
+  dropped: number;
   errors: number;
-}
-
-/**
- * Pick the most-progressed payment for an intent. NOWPayments creates
- * one payment record per crypto-pick attempt, so an invoice can have
- * multiple payment records — we pick whichever is furthest along so a
- * half-completed earlier attempt doesn't mask a successful retry.
- */
-const PAYMENT_PRIORITY: Record<string, number> = {
-  finished: 5,
-  confirmed: 4,
-  sending: 3,
-  confirming: 2,
-  partially_paid: 1,
-  waiting: 0,
-  failed: -1,
-  refunded: -1,
-  expired: -1,
-};
-
-async function processIntent(
-  intent: PaymentIntent,
-  redis: Redis,
-): Promise<"confirmed" | "expired" | "still_pending" | "error"> {
-  if (Date.now() > intent.expiresAt) {
-    await markIntentExpired(redis, intent);
-    return "expired";
-  }
-
-  // Fast path when we already have the provider payment_id from a prior
-  // IPN or polling tick.
-  let canonical = null;
-  if (intent.npPaymentId) {
-    canonical = await getPayment(intent.npPaymentId);
-  }
-  if (!canonical && intent.npInvoiceId) {
-    const payments = await listPaymentsForInvoice(intent.npInvoiceId);
-    if (payments.length > 0) {
-      payments.sort(
-        (a, b) =>
-          (PAYMENT_PRIORITY[b.payment_status] ?? 0) -
-          (PAYMENT_PRIORITY[a.payment_status] ?? 0),
-      );
-      canonical = payments[0];
-    }
-  }
-  if (!canonical) return "still_pending";
-
-  let workingIntent = intent;
-  if (!workingIntent.npPaymentId && canonical.payment_id) {
-    try {
-      workingIntent = await bindNpPaymentId(
-        redis,
-        workingIntent,
-        String(canonical.payment_id),
-      );
-    } catch { /* non-critical */ }
-  }
-
-  const internalStatus = mapStatus(canonical.payment_status);
-  if (internalStatus === "confirmed") {
-    const txSignature =
-      canonical.payin_hash ?? canonical.payout_hash ?? undefined;
-    const reportedUsd = Number(canonical.price_amount ?? 0);
-    const outcome = await confirmIntent(redis, workingIntent, {
-      txSignature: typeof txSignature === "string" ? txSignature : undefined,
-      reportedUsd: Number.isFinite(reportedUsd) ? reportedUsd : undefined,
-    });
-    if (!outcome.ok) {
-      // Underpay surfaced by the cron — log + leave pending. Either
-      // the buyer tops up or the intent eventually expires.
-      logger.warn("cron-check-payments", "underpaid intent skipped", {
-        reference: workingIntent.reference,
-        expectedUsd: outcome.expectedUsd,
-        reportedUsd: outcome.reportedUsd,
-      });
-      return "still_pending";
-    }
-    return "confirmed";
-  }
-  if (internalStatus === "expired") {
-    await markIntentExpired(redis, workingIntent);
-    return "expired";
-  }
-  return "still_pending";
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -173,7 +87,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
   initUserStorage(redis);
 
-  const outcome: CronOutcome = { scanned: 0, confirmed: 0, expired: 0, errors: 0 };
+  const outcome: CronOutcome = { scanned: 0, confirmed: 0, expired: 0, pending: 0, dropped: 0, errors: 0 };
 
   try {
     const refs = await listPendingIntentReferences(redis);
@@ -185,14 +99,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     for (const ref of refs) {
       const intent = await getPaymentIntent(redis, ref);
       if (!intent) {
-        outcome.errors++;
+        // Its keys are gone (retention over): nothing left to reconcile, and the reference must not stay in the index.
+        try {
+          await removeFromPendingIndex(redis, ref);
+          outcome.dropped++;
+        } catch (err) {
+          outcome.errors++;
+          captureError(err, { endpoint: "cron-check-payments", phase: "dropReference", reference: ref });
+        }
         continue;
       }
       try {
-        const status = await processIntent(intent, redis);
-        if (status === "confirmed") outcome.confirmed++;
-        else if (status === "expired") outcome.expired++;
-        else if (status === "error") outcome.errors++;
+        const r = await reconcileIntent(redis, intent);
+        if (r.state === "confirmed") outcome.confirmed++;
+        else if (r.state === "expired") outcome.expired++;
+        else {
+          if (r.state === "underpaid") {
+            logger.warn("cron-check-payments", "underpaid intent skipped", {
+              reference: ref,
+              paidRatio: r.paidRatio,
+            });
+          }
+          outcome.pending++;
+        }
       } catch (err) {
         outcome.errors++;
         logger.warn("cron-check-payments", "intent processing failed", {

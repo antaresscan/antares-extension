@@ -27,6 +27,7 @@
 //   email:licenses:<email>  SET   → license keys owned by that email
 //   intent:license:<ref>    STRING → license key issued for this intent
 //                                    (idempotency guard for cron retries)
+//   intent:license-lock:<ref> STRING → 30 s mutex held while a license is being issued
 
 import { randomBytes } from "node:crypto";
 import { Redis } from "@upstash/redis";
@@ -81,6 +82,9 @@ export const EMAIL_LICENSES_KEY = (email: string) =>
   `email:licenses:${email.toLowerCase().trim()}`;
 export const INTENT_LICENSE_KEY = (reference: string) =>
   `intent:license:${reference}`;
+/** Short-lived mutex around "check, then issue" for one intent: see issueLicense. */
+export const INTENT_LICENSE_LOCK_KEY = (reference: string) =>
+  `intent:license-lock:${reference}`;
 
 // ─── Key generation ───────────────────────────────────────────────────────────
 
@@ -152,10 +156,37 @@ export interface IssueParams {
   now?: number;
 }
 
+/** How long the issuing mutex lives if its holder dies, and how long a loser waits for the winner's license. */
+const LOCK_TTL_SECONDS = 30;
+const WAIT_FOR_WINNER_MS = 5000;
+const POLL_MS = 100;
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/** The license already issued for this intent, if any. A pointer to a license that does not exist counts as none. */
+async function readIssuedLicense(redis: Redis, intentReference: string): Promise<License | null> {
+  const existingKey = await redis.get<string>(INTENT_LICENSE_KEY(intentReference));
+  if (!existingKey) return null;
+  const existing = await getLicense(redis, existingKey);
+  if (existing) return existing;
+  // Index points at a non-existent license — Redis got out of sync. The caller issues a fresh key.
+  logger.warn("license", "intent index points at missing license", {
+    intent: intentReference,
+    key: existingKey,
+  });
+  return null;
+}
+
 /**
  * Idempotently issue a license for a confirmed payment intent. Returns
  * the license. Safe to call repeatedly on the same intent reference —
  * subsequent calls return the originally-issued key.
+ *
+ * Safe to call CONCURRENTLY too: the status poll (every 2-3 s), the IPN webhook and the cron can all confirm the same
+ * payment at the same moment. A GET then SET let two of them both see "no license yet" and mint two keys for one payment.
+ * Now one caller takes a short mutex (SET NX), re-checks under it and writes; the others wait for its license and return
+ * it. The three writes (license hash, e-mail index, intent pointer) go in one MULTI, so a crash cannot leave a pointer
+ * without its license. If the winner dies, the mutex expires after LOCK_TTL_SECONDS and the next call takes over.
  */
 export async function issueLicense(
   redis: Redis,
@@ -168,20 +199,36 @@ export async function issueLicense(
   const now = params.now ?? Date.now();
   const tier = intentTierToLicenseTier(params.tier);
 
-  // Idempotency: if this intent already issued a license, return it.
-  const existingKey = await redis.get<string>(
-    INTENT_LICENSE_KEY(params.intentReference),
-  );
-  if (existingKey) {
-    const existing = await getLicense(redis, existingKey);
-    if (existing) return existing;
-    // Index points at a non-existent license — Redis got out of sync.
-    // Fall through and issue a fresh key.
-    logger.warn("license", "intent index points at missing license", {
-      intent: params.intentReference,
-      key: existingKey,
-    });
+  const lockKey = INTENT_LICENSE_LOCK_KEY(params.intentReference);
+  const giveUpAt = Date.now() + WAIT_FOR_WINNER_MS;
+  for (;;) {
+    const issued = await readIssuedLicense(redis, params.intentReference);
+    if (issued) return issued;
+
+    const locked = await redis.set(lockKey, "1", { nx: true, ex: LOCK_TTL_SECONDS });
+    if (locked) {
+      try {
+        // Re-check under the lock: a winner may have finished between our read and our SET.
+        const again = await readIssuedLicense(redis, params.intentReference);
+        if (again) return again;
+        return await writeLicense(redis, { email, tier, now, params });
+      } finally {
+        try { await redis.del(lockKey); } catch { /* it expires by itself */ }
+      }
+    }
+
+    if (Date.now() >= giveUpAt) {
+      throw new Error("issueLicense: another request is still issuing the license for this intent");
+    }
+    await sleep(POLL_MS);
   }
+}
+
+async function writeLicense(
+  redis: Redis,
+  a: { email: string; tier: LicenseTier; now: number; params: IssueParams },
+): Promise<License> {
+  const { email, tier, now, params } = a;
 
   // License-level expiry. The license carries its own clock so when
   // it's eventually redeemed the install gets the correct downgrade
@@ -226,9 +273,13 @@ export async function issueLicense(
     fields.expiresAt = String(license.expiresAt);
   }
 
-  await redis.hset(LICENSE_KEY(license.key), fields);
-  await redis.sadd(EMAIL_LICENSES_KEY(email), license.key);
-  await redis.set(INTENT_LICENSE_KEY(params.intentReference), license.key);
+  // One transaction: the license, its place in the e-mail index and the pointer from the intent appear together or not at all.
+  await redis
+    .multi()
+    .hset(LICENSE_KEY(license.key), fields)
+    .sadd(EMAIL_LICENSES_KEY(email), license.key)
+    .set(INTENT_LICENSE_KEY(params.intentReference), license.key)
+    .exec();
 
   logger.info("license", "issued", {
     key: license.key,

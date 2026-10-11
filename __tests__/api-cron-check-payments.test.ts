@@ -240,7 +240,9 @@ describe("GET /api/cron-check-payments", () => {
         payment_id: "pay-low",
         payment_status: "finished",
         invoice_id: "inv-1",
-        price_amount: 1, // way below 24.99
+        price_amount: 24.99, // the invoiced price, always echoed back: NOT what was paid
+        pay_amount: 100,
+        actually_paid: 10, // the buyer sent a tenth of what was asked
       },
     ]);
     const req = mockReq();
@@ -264,5 +266,51 @@ describe("GET /api/cron-check-payments", () => {
     expect(payload.outcome.confirmed).toBe(0);
     expect(payload.outcome.expired).toBe(0);
     expect(mocks.issueLicense).not.toHaveBeenCalled();
+  });
+
+  it("(A-04) confirms a payment that finished AFTER the window (the daily run could never do this when it expired on the clock first)", async () => {
+    seedPendingIntent({ expiresIn: -23 * 60 * 60 * 1000 }); // the 1 h window ended 23 h ago
+    mocks.listPaymentsForInvoice.mockResolvedValueOnce([
+      { payment_id: "pay-late", payment_status: "finished", invoice_id: "inv-1", price_amount: 24.99, pay_amount: 0.4, actually_paid: 0.4, payin_hash: "0xlate" },
+    ]);
+    const res = mockRes();
+    await handler(mockReq(), res);
+    const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock.calls[0][0] as { outcome: { confirmed: number; expired: number } };
+    expect(payload.outcome.confirmed).toBe(1);
+    expect(payload.outcome.expired).toBe(0);
+    expect(mocks.issueLicense).toHaveBeenCalledOnce();
+  });
+
+  it("(A-04) keeps an intent pending when its payment is still in flight past the window", async () => {
+    seedPendingIntent({ expiresIn: -2 * 60 * 60 * 1000 });
+    mocks.listPaymentsForInvoice.mockResolvedValueOnce([
+      { payment_id: "pay-slow", payment_status: "confirming", invoice_id: "inv-1", price_amount: 24.99 },
+    ]);
+    const res = mockRes();
+    await handler(mockReq(), res);
+    const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock.calls[0][0] as { outcome: { pending: number; expired: number } };
+    expect(payload.outcome.expired).toBe(0);
+    expect(payload.outcome.pending).toBe(1);
+    expect(mocks.pending.has(REFERENCE)).toBe(true);
+  });
+
+  it("(A-04) a reference whose intent is gone is removed from the pending index (it used to stay forever, counted as an error)", async () => {
+    mocks.pending.add("a".repeat(64)); // in the index, but no intent behind it
+    const res = mockRes();
+    await handler(mockReq(), res);
+    const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock.calls[0][0] as { outcome: { scanned: number; dropped: number; errors: number } };
+    expect(payload.outcome).toMatchObject({ scanned: 1, dropped: 1, errors: 0 });
+    expect(mocks.pending.size).toBe(0);
+  });
+
+  it("(A-04) NOWPayments unreachable: the intent is left pending and counted as an error, never expired", async () => {
+    seedPendingIntent({ expiresIn: -2 * 60 * 60 * 1000 });
+    mocks.listPaymentsForInvoice.mockRejectedValueOnce(new Error("NOWPayments /payment/ failed: 503"));
+    const res = mockRes();
+    await handler(mockReq(), res);
+    const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock.calls[0][0] as { outcome: { errors: number; expired: number } };
+    expect(payload.outcome.errors).toBe(1);
+    expect(payload.outcome.expired).toBe(0);
+    expect(mocks.pending.has(REFERENCE)).toBe(true);
   });
 });
