@@ -2,7 +2,7 @@
 // Layer 7 (Identity/Copycat) REMOVED — caused massive false positives
 
 import type {
-    LayerResult, ScanFlag,
+    LayerResult, ScanFlag, RugEvidence,
   DexScreenerPair, DexScreenerSocial,
   RugCheckSummary, RugCheckReport,
   GoPlusTokenResult,
@@ -87,6 +87,7 @@ export function layerDexScreener(
   const flags: ScanFlag[] = [];
   let trust = 1.0;
   const penalties: number[] = [];
+  const rugEvidence: RugEvidence[] = [];
   let forceRug = false, safeBlocked = false;
   if (!pair) return {
     source: "dexscreener", trust: 1.0, available: false,
@@ -133,6 +134,7 @@ export function layerDexScreener(
   if (!liqUnknown && liq === 0 && vol > 10000) {
     flags.push(makeFlag("Volume with zero liquidity — abandoned pool", "critical", 0));
     penalties.push(0.10); forceRug = true; safeBlocked = true;
+    rugEvidence.push("pool_abandoned");
   } else if (liq > 0 && vol / liq > 15) {
     // Threshold lowered 20→15: at ×15-20 the fake-volume signal is just as
     // damning as >20 but DexScreener's liquidity figure fluctuates ±20%
@@ -292,7 +294,7 @@ export function layerDexScreener(
   }
 
   trust = applyDiminishingPenalties(trust, penalties);
-  return { source: "dexscreener", trust: Math.max(0, trust), available: true, flags, forceRug, safeBlocked };
+  return { source: "dexscreener", trust: Math.max(0, trust), available: true, flags, forceRug, safeBlocked, ...(rugEvidence.length > 0 && { rugEvidence }) };
 }
 
 // ═══ LAYER 2 — RugCheck ═══════════════════════════════════════════════════════
@@ -471,12 +473,12 @@ export function layerGoPlus(
   if (gp("is_honeypot")) {
     flags.push(makeFlag("Honeypot detected — cannot sell", "critical", 0));
     trust = 0; forceRug = true; safeBlocked = true;
-    return { source: "goplus", trust: 0, available: true, flags, forceRug, safeBlocked };
+    return { source: "goplus", trust: 0, available: true, flags, forceRug, safeBlocked, rugEvidence: ["sells_blocked"] };
   }
   if (gp("cannot_sell_all")) {
     flags.push(makeFlag("Cannot sell all tokens", "critical", 0));
     trust = 0; forceRug = true; safeBlocked = true;
-    return { source: "goplus", trust: 0, available: true, flags, forceRug, safeBlocked };
+    return { source: "goplus", trust: 0, available: true, flags, forceRug, safeBlocked, rugEvidence: ["sells_blocked"] };
   }
   if (facts) {
     // Authorities come from the chain (GoPlus only as a relay): an active authority is a critical flag, unless GoPlus
