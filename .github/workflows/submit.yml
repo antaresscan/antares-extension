@@ -24,6 +24,11 @@ jobs:
       - name: Build the extension
         run: npx plasmo build
 
+      # Evaluate the packaged content script and Options page before they
+      # go to the Web Store: a bundle that crashes on load must never ship.
+      - name: Smoke-test the packaged bundles
+        run: npm run smoke
+
       - name: Package the extension into a zip artifact
         run: npx plasmo package
 
