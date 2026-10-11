@@ -73,7 +73,11 @@ jobs:
       # bundle throws on boot for ANY reason (Sentry init, schema
       # import, missing global, etc.) this step fails and the build
       # never publishes a broken artifact.
-      - name: Smoke-test packaged content-script bundle
+      # The same smoke also evaluates the Options page bundle and checks
+      # that it renders into #__plasmo (scripts/smoke-options.mjs): on
+      # 2026-10-09 a react / react-dom version mismatch made it crash on
+      # load and nothing in CI noticed.
+      - name: Smoke-test packaged bundles (content script + Options page)
         run: npm run smoke
 
       - name: Upload build artifact

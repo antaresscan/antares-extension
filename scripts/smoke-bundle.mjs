@@ -35,6 +35,7 @@
 import { Window } from 'happy-dom'
 import { readdirSync, readFileSync } from 'fs'
 import { join } from 'path'
+import { baseChromeShim, installDomGlobals } from './lib/smoke-env.mjs'
 
 const BUILD_DIR = 'build/chrome-mv3-prod'
 
@@ -62,60 +63,8 @@ const bundlePath = join(BUILD_DIR, bundleName)
 const win = new Window({ url: 'https://dexscreener.com/solana/abc' })
 const doc = win.document
 
-// happy-dom doesn't export every global Plasmo bundles expect. Map
-// the ones we know antares-inject's transitive imports touch at boot
-// time (verified by past bundle audits).
-// Some globals (navigator, crypto) are read-only getters in Node 22+
-// — use defineProperty to override them. The rest can take normal
-// assignment.
-function setGlobal(name, value) {
-  try {
-    globalThis[name] = value
-  } catch {
-    Object.defineProperty(globalThis, name, { value, configurable: true, writable: true })
-  }
-}
-setGlobal('window', win)
-setGlobal('document', doc)
-setGlobal('location', win.location)
-setGlobal('history', win.history)
-setGlobal('navigator', win.navigator)
-setGlobal('HTMLElement', win.HTMLElement)
-setGlobal('HTMLDivElement', win.HTMLDivElement)
-setGlobal('Element', win.Element)
-setGlobal('Node', win.Node)
-setGlobal('MutationObserver', win.MutationObserver)
-setGlobal('localStorage', win.localStorage)
-setGlobal('sessionStorage', win.sessionStorage)
-setGlobal('AbortController', win.AbortController)
-setGlobal('fetch', win.fetch)
-setGlobal('XMLHttpRequest', win.XMLHttpRequest)
-setGlobal('performance', win.performance)
-setGlobal('PerformanceObserver', win.PerformanceObserver ?? class { observe() {} disconnect() {} })
-setGlobal('addEventListener', win.addEventListener.bind(win))
-setGlobal('removeEventListener', win.removeEventListener.bind(win))
-// Node 20+ already ships globalThis.crypto via WebCrypto; skip
-// overriding to keep crypto.randomUUID etc. available to install-id.
-
-// Minimal `chrome.*` shim — just enough surface for antares-inject.ts
-// boot to traverse without ReferenceError. We don't simulate the
-// real APIs (storage doesn't persist, sendMessage doesn't dispatch),
-// only the shapes the boot path probes for capability detection.
-globalThis.chrome = {
-  runtime: {
-    id: 'abc',
-    onMessage: { addListener: () => {} },
-    sendMessage: () => Promise.resolve({}),
-    lastError: null,
-  },
-  storage: {
-    local: {
-      get: (_keys, cb) => cb && cb({}),
-      set: (_items, cb) => cb && cb(),
-    },
-    onChanged: { addListener: () => {} },
-  },
-}
+installDomGlobals(win)
+globalThis.chrome = baseChromeShim()
 
 const code = readFileSync(bundlePath, 'utf8')
 

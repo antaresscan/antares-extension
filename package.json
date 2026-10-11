@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "smoke": "node scripts/smoke-bundle.mjs",
+    "smoke": "node scripts/smoke-bundle.mjs && node scripts/smoke-options.mjs",
     "replay": "vitest run __tests__/replay",
     "replay:full": "node scripts/replay/run.mjs full",
     "replay:update": "node scripts/replay/run.mjs update",

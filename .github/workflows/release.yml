@@ -38,6 +38,11 @@ jobs:
       - name: Build extension
         run: npx plasmo build
 
+      # Same smoke as ci.yml / submit.yml: don't attach a zip whose content
+      # script or Options page crashes on load.
+      - name: Smoke-test the packaged bundles
+        run: npm run smoke
+
       - name: Package extension
         run: |
           cd build/chrome-mv3-prod
