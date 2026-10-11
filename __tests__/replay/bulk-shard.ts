@@ -70,6 +70,11 @@ export function defineBulkShard(shard: number): void {
         if (move) moved.push(move);
         expect(outcome.status).toBe(200);
         expect(outcome.misses, "the engine now makes a request that is not in the recording: refresh it (scripts/replay/README.md)").toEqual([]);
+        // What a RUG verdict means (ScanResult.rugKind): a kind on every RUG verdict, none on any other. It is not part of the golden
+        // lines (it never moves a verdict), so the real answers are checked here.
+        const kind = outcome.body?.rugKind ?? null;
+        if (outcome.result.risk === "RUG") expect(["confirmed", "risk"]).toContain(kind);
+        else expect(kind).toBeNull();
       }, 60_000);
     }
 

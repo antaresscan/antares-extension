@@ -44,9 +44,30 @@ export interface LayerResult {
   flags: ScanFlag[];
   forceRug: boolean;
   safeBlocked: boolean;
+  /** Facts this layer observed that show a rug HAPPENED to this token (see RugEvidence). Absent when there are none. */
+  rugEvidence?: RugEvidence[];
 }
 
 export type Verdict = "SAFE" | "CAUTION" | "DANGER" | "RUG";
+
+/**
+ * What a RUG verdict means. The verdict alone cannot say: on 579 real recorded tokens 153 were RUG, 151 of them through the single
+ * "top 10 hold > 80 %" rule, 100 of them still trading with more than $10k of liquidity, and one carried a proof of an event.
+ *   "confirmed"  something happened to THIS token (RugEvidence): its pool was drained while it still traded, or it cannot be sold
+ *   "risk"       the structure of the token (who holds it, how it is built) looks like a rug; nothing has happened yet
+ * Only a RUG verdict carries a kind; any other verdict has none (null).
+ */
+export type RugKind = "confirmed" | "risk";
+
+/**
+ * A fact, read from the data and not from any displayed text, that a rug happened to this token.
+ *
+ * A pool that holds little is NOT one: it does not say whether the liquidity was removed or never existed. Liquid-staking tokens and
+ * tokenised stocks have almost no DEX liquidity and are not rugs (measured on the replay corpus: BBSOL, BONKSOL, JNJX, CSCOX...).
+ */
+export type RugEvidence =
+  | "pool_abandoned"  // volume over $10k in 24 h and zero liquidity: the pool was drained while it still traded
+  | "sells_blocked";  // GoPlus: honeypot, or the holder cannot sell everything
 
 // ─── DEXSCREENER ─────────────────────────────────────────────────────────────────────────
 export interface DexScreenerSocial {
@@ -335,6 +356,11 @@ export interface LayerSnapshot {
 export interface ScanResult {
   score: number;
   risk: Verdict;
+  /**
+   * What a RUG verdict means (see RugKind): null unless `risk` is RUG. A scan cached before this field existed has none; read a
+   * missing value on a RUG verdict as "risk", the weaker claim.
+   */
+  rugKind?: RugKind | null;
   flags: ScanFlag[];
   pair: DexScreenerPair | null;
   resolvedMint: string;

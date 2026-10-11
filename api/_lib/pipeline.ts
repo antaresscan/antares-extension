@@ -1,7 +1,7 @@
 // api/pipeline.ts — Pure decision functions extracted from scan.ts handler
 
 import type {
-  ScanFlag, Verdict,
+  ScanFlag, Verdict, LayerResult, RugKind,
   PostLayerFlagsInput, PostLayerFlagsResult,
   SafeGateInput, EstablishedBonusInput, VerdictInput,
 } from "./types";
@@ -245,6 +245,18 @@ export function determineVerdict(input: VerdictInput): Verdict {
   if (input.score >= 600) return "CAUTION";
   if (input.score >= 350) return "DANGER";
   return "RUG";
+}
+
+/**
+ * What a RUG verdict means: "confirmed" when a layer observed a fact showing a rug happened to this token (LayerResult.rugEvidence),
+ * "risk" when the verdict comes from the token's structure alone. Any other verdict has no kind.
+ *
+ * It reads the evidence the layers recorded, never the flags' texts: rewording a flag cannot change it. It does not change the
+ * verdict: determineVerdict still decides RUG, this only says what kind of RUG it is.
+ */
+export function rugKindOf(risk: Verdict, layers: LayerResult[]): RugKind | null {
+  if (risk !== "RUG") return null;
+  return layers.some((l) => l.available && (l.rugEvidence?.length ?? 0) > 0) ? "confirmed" : "risk";
 }
 
 // ─── Flags: deduplication and the counts the verdict reads ──────────────────────────────────────────────────────────

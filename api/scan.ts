@@ -41,7 +41,7 @@ import {
 import { computeLpPctOfSupply, getLpRiskBucket } from "./_lib/lp-risk-matrix";
 import { selectBestPair } from "./_lib/dex-pair-select";
 import { computeFinalScore, classifySafeBlockedReasons } from "./_lib/scoring";
-import { evaluatePostLayerFlags, applySafeGateOverride, applyEstablishedBonus, determineVerdict, dedupeFlags, countVerdictFlags } from "./_lib/pipeline";
+import { evaluatePostLayerFlags, applySafeGateOverride, applyEstablishedBonus, determineVerdict, rugKindOf, dedupeFlags, countVerdictFlags } from "./_lib/pipeline";
 import { setCorsHeaders, getClientIp, getInstallId, checkRateLimit, checkColdScanLimit, validateCA, initRateLimiters } from "./_lib/middleware";
 import { initQuota, checkDailyQuota, setQuotaHeaders, secondsUntilReset } from "./_lib/quota";
 import { initUserStorage, pushScanHistory, resolveTierAndBypass } from "./_lib/user";
@@ -836,7 +836,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const finalHistory = [currentEntry];
 
     const result: ScanResult = {
-      score, risk, flags, pair, resolvedMint, confidence, sources_used,
+      score, risk, rugKind: rugKindOf(risk, allLayers), flags, pair, resolvedMint, confidence, sources_used,
       holders, marketCap, priceUsd, liquidity,
       volume24h, volume1h, priceChange5m, priceChange1h, priceChange24h,
       tokenSymbol: sanitizeString(pair?.baseToken?.symbol) ?? null,
