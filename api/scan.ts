@@ -53,7 +53,6 @@ import { initRugDb, recordRug } from "./_lib/rugdb";
 import { isPreviewDeployment } from "./_lib/deployment";
 import { logger } from "./_lib/logger";
 import { composeCriticalActors } from "./_lib/critical-actors";
-import { buildInsiderGraph, initGraphCache } from "./_lib/insider-graph";
 import { initUsage, flushUsage } from "./_lib/usage";
 import { deriveEvent } from "./_lib/verdict-history";
 // initHistoryCache / pushVerdictHistory / getVerdictHistory are no
@@ -81,7 +80,7 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
   initQuota(redis);
   initUserStorage(redis);
   initRugDb(redis);
-  initGraphCache(redis);
+  // initGraphCache deliberately not called: the scan no longer builds the insider graph (api/graph.ts does, on demand).
   initUsage(redis);
   // initHistoryCache deliberately not called — verdict-history is
   // decommissioned (see decom block lower in this file).
@@ -774,28 +773,16 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     })();
 
     // ─── V5 Critical Actors preview ───────────────────────────────────
-    // Compose the 3 hero cards (Dev / Insider / Cluster). The cluster
-    // detection requires `buildInsiderGraph` which makes Helius RPC
-    // calls — guarded by withBudget so a tight scan budget skips
-    // gracefully and we still emit Dev + Insider cards. Subsequent
-    // scans benefit from the graph cache (INSIDER_GRAPH_CACHE_TTL).
-    const insiderGraphResult = (HELIUS_API_KEY && realHolderAccounts.length >= 3 && totalSupplyUi > 0)
-      ? await stepBudget(() =>
-          buildInsiderGraph(
-            resolvedMint,
-            realHolderAccounts.map(h => ({ address: h.owner, uiAmount: h.uiAmount })),
-            totalSupplyUi,
-            HELIUS_API_KEY,
-            new Set(LP_PROGRAM_ADDRESSES),
-          ),
-        ).catch(() => null)
-      : null;
+    // Compose the hero cards (Dev / Insider). The Cluster card needs the insider graph, which is NOT built here any more:
+    // it cost ~120 Helius credits per cold scan (20 getSignaturesForAddress + one Enhanced Transactions request at 100) for a
+    // display-only feature that feeds no verdict. The graph is built on demand by api/graph.ts, when token.html opens the
+    // Insider Watch tab. composeCriticalActors and composeHolderActivity already handle `insiderGraph: null`.
     const criticalActors = composeCriticalActors({
       tokenCreator,
       creatorReputation,
       realHolderAccounts,
       totalSupplyUi,
-      insiderGraph: insiderGraphResult,
+      insiderGraph: null,
     });
 
     // ─── V5 Holder Activity ───────────────────────────────────────────
@@ -806,7 +793,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       tokenCreator,
       totalSupplyUi,
       recentTransfers,
-      insiderGraph: insiderGraphResult,
+      insiderGraph: null,
     });
 
     const aiSummary = await generateAISummary({

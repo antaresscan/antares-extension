@@ -116,6 +116,13 @@ vi.mock("../api/_lib/fetchers", () => ({
   publicRpcGetMintAccount: (...args: unknown[]) => mockPublicRpcGetMintAccount(...args),
 }));
 
+// The insider graph is faked so that a scan which still built it would be caught (it costs ~120 Helius credits).
+const mockBuildInsiderGraph = vi.fn().mockResolvedValue(null);
+vi.mock("../api/_lib/insider-graph", () => ({
+  buildInsiderGraph: (...args: unknown[]) => mockBuildInsiderGraph(...args),
+  initGraphCache: vi.fn(),
+}));
+
 // Mock global fetch for DexScreener, RugCheck, GoPlus
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
@@ -352,6 +359,19 @@ describe("scan handler", () => {
     expect(mockHeliusGetHolderPages).toHaveBeenCalledTimes(1);
     const hint = mockHeliusGetHolderPages.mock.calls[0][2] as Promise<number | null>;
     await expect(hint).resolves.toBe(1234567);
+  });
+
+  it("a cold scan does not build the insider graph: it feeds no verdict and costs ~120 Helius credits", async () => {
+    setupGoodTokenMocks();
+    const res = createMockRes();
+    await handler(createMockReq({ ca: "So11111111111111111111111111111111111111112" }), res);
+    const body = (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as Record<string, unknown>;
+    // The premise: this scan has what the graph used to need (holders and a supply), so it WOULD have been built.
+    expect(mockHeliusGetLargestAccounts).toHaveBeenCalled();
+    expect(mockBuildInsiderGraph).not.toHaveBeenCalled();
+    // The hero cards still exist: they come from the holders and the creator, not from the graph.
+    expect(Array.isArray(body.criticalActors)).toBe(true);
+    expect((body.criticalActors as unknown[]).every((a) => (a as { type: string }).type !== "cluster")).toBe(true);
   });
 
   it("returns high score for clean official token", async () => {
