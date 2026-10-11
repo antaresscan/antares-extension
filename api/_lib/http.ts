@@ -4,14 +4,30 @@ import { recordCall, recordSkipped } from "./usage";
 
 export function withTimeout(ms: number) {
   const controller = new AbortController();
-  const t = setTimeout(() => controller.abort(), ms);
-  return { signal: controller.signal, clear: () => clearTimeout(t) };
+  let t = setTimeout(() => controller.abort(), ms);
+  return {
+    signal: controller.signal,
+    clear: () => clearTimeout(t),
+    /** Replace the pending deadline by a new one, counted from now. */
+    restart: (nextMs: number) => {
+      clearTimeout(t);
+      t = setTimeout(() => controller.abort(), nextMs);
+    },
+  };
 }
 
-// Largest upstream body we agree to read. A GoPlus answer of 2.8 MB has been
-// seen; nothing the verdict reads needs that much, and a body that size costs
-// a serverless function memory and CPU for nothing.
-export const MAX_BODY_BYTES = 2 * 1024 * 1024;
+// Largest upstream body we agree to read. Real answers are big: the RugCheck
+// report of BONK is 2.6 MB and that of WIF 1.8 MB, a GoPlus answer of 2.8 MB
+// has been seen. 8 MB keeps all of them with room to grow and still stops a
+// runaway body from filling the memory of a serverless function.
+export const MAX_BODY_BYTES = 8 * 1024 * 1024;
+
+// How long the body may take to arrive once the headers are in. The `ms` of
+// fetchJson is the wait for the headers; the RugCheck report of BONK needs
+// several more seconds on top (measured: a 5 s limit over headers AND body
+// cost the scan its RugCheck layer). A scan is bounded at 24 s anyway, so
+// this only has to end a body that never ends.
+export const BODY_TIMEOUT_MS = 20_000;
 
 /** The upstream answered with more than MAX_BODY_BYTES. Not retried: asking again returns the same body. */
 export class BodyTooLargeError extends Error {
@@ -184,6 +200,7 @@ export async function fetchJson<T = unknown>(
   ms = 5000,
   maxRetries = 1,
   onStatus?: (status: number) => void,
+  bodyMs = BODY_TIMEOUT_MS,
 ): Promise<T | null> {
   const host = hostnameOf(url);
   if (host && isCircuitOpen(host)) {
@@ -199,6 +216,7 @@ export async function fetchJson<T = unknown>(
     const t = withTimeout(ms);
     const signal = init.signal ? AbortSignal.any([init.signal, t.signal]) : t.signal;
     let sent = false; // true once the provider has answered: a later parse error is not a failed request
+    let phase: "headers" | "body" = "headers";
     try {
       const r = await fetch(url, { ...init, signal });
       logAuthRejected(host, r.status);
@@ -219,8 +237,9 @@ export async function fetchJson<T = unknown>(
         if (host && r.status >= 500) recordFailure(host);
         return null;
       }
-      // The timer is still running here: the body has the same deadline as
-      // the headers (it used to have none).
+      // The headers are in: the body gets its own deadline (it used to have none).
+      phase = "body";
+      t.restart(bodyMs);
       const text = await readBodyText(r);
       if (host) recordSuccess(host);
       return JSON.parse(text) as T;
@@ -233,7 +252,7 @@ export async function fetchJson<T = unknown>(
       if (init.signal?.aborted) return null;
       if (attempt === maxRetries) {
         if (host) recordFailure(host);
-        logger.warn("http", "fetchJson failed", { error: scrubSensitive(String(e)) });
+        logger.warn("http", "fetchJson failed", { error: scrubSensitive(String(e)), phase });
         return null;
       }
       await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
@@ -256,12 +275,14 @@ export async function fetchJsonPost<T = unknown>(
   maxRetries = 1,
   extraHeaders: Record<string, string> = {},
   onStatus?: (status: number) => void,
+  bodyMs = BODY_TIMEOUT_MS,
 ): Promise<T | null> {
   const host = hostnameOf(url);
   if (host && isCircuitOpen(host)) { recordSkipped(url); return null; }
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const t = withTimeout(ms);
     let sent = false; // true once the provider has answered: a later parse error is not a failed request
+    let phase: "headers" | "body" = "headers";
     try {
       const r = await fetch(url, {
         method: "POST",
@@ -283,7 +304,9 @@ export async function fetchJsonPost<T = unknown>(
         if (host && r.status >= 500) recordFailure(host);
         return null;
       }
-      // Same deadline and same size cap as fetchJson: the timer runs until the body is read.
+      // Same body deadline and same size cap as fetchJson.
+      phase = "body";
+      t.restart(bodyMs);
       const text = await readBodyText(r);
       if (host) recordSuccess(host);
       return JSON.parse(text) as T;
@@ -295,7 +318,7 @@ export async function fetchJsonPost<T = unknown>(
       }
       if (attempt === maxRetries) {
         if (host) recordFailure(host);
-        logger.warn("http", "fetchJsonPost failed", { error: scrubSensitive(String(e)) });
+        logger.warn("http", "fetchJsonPost failed", { error: scrubSensitive(String(e)), phase });
         return null;
       }
       await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
