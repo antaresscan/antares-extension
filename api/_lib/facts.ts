@@ -199,7 +199,7 @@ export function parseChainHolders(raw: unknown): ChainHolders | null {
   return { count: owners.size + anonymous, complete: false }; // every page was full: at least this many
 }
 
-function positiveCount(v: unknown): number | null {
+export function positiveCount(v: unknown): number | null {
   const n = typeof v === "number" ? v : typeof v === "string" ? parseInt(v, 10) : NaN;
   return Number.isFinite(n) && n > 0 ? n : null;
 }
@@ -208,7 +208,8 @@ function positiveCount(v: unknown): number | null {
  * The holder count to show, from the source that can know it:
  *  1. the chain, when the page is complete: exact and current, independent of any rate limit (BREAK 53 and PAPER 37
  *     holders; RugCheck said 173 and 427 because it counts the accounts that were emptied too);
- *  2. GoPlus holder_count: matches an independent explorer within 0.01 % on large tokens (the chain page is full there);
+ *  2. GoPlus holder_count: close to an independent explorer on large tokens, but NOT exact: against the chain on 167 recorded tokens it
+ *     counts 1.03x at the median, 1.16x at the 95th percentile, up to 1.80x at the worst (the chain page is full above 10,000 holders);
  *  3. RugCheck totalHolders: an upper bound (it counts emptied accounts, 2-3x too many on large tokens), still the right
  *     order of magnitude when GoPlus does not answer;
  *  4. the chain pages when they are not complete: a floor, "at least N" (N = holders read so far).

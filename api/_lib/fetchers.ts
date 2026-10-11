@@ -5,7 +5,7 @@ import type {
     OHLCVCandle, GeckoTerminalOHLCVResponse,
     RugCheckReport, RugCheckRisk,
 } from "./types";
-import { PUBLIC_SOLANA_RPCS, SOLSCAN_BASE, LP_PROGRAM_ADDRESSES, HOLDER_PAGE_LIMIT, HOLDER_MAX_PAGES } from "./constants";
+import { PUBLIC_SOLANA_RPCS, SOLSCAN_BASE, LP_PROGRAM_ADDRESSES, HOLDER_PAGE_LIMIT, HOLDER_MAX_PAGES, HOLDER_COUNT_KNOWN_ABOVE, HOLDER_COUNT_WAIT_MS } from "./constants";
 import { parseChainHolders } from "./facts";
 import { fetchJson, fetchJsonPost } from "./http";
 import { heliusRpc, heliusRestUrl } from "./helius";
@@ -139,17 +139,47 @@ export async function heliusGetTokenAccountsPage(mint: string, key: string, page
     }, 4000, 1);
 }
 
-// The pages that hold every holder of the mint: page 1, and only when it is full pages 2..HOLDER_MAX_PAGES in
-// parallel (the `page` parameter accepts parallel requests: 12 at once, all 200, same count as the cursor walk).
-// A small token costs ONE call. Page 1 failing -> null; a later page failing stays null in the list, and
-// parseChainHolders then reports a floor instead of an exact count.
-export async function heliusGetHolderPages(mint: string, key: string): Promise<unknown[] | null> {
+/** Pages 2..maxPages as waves of growing size (2, 3, 4... pages): [[2,3],[4,5,6],[7,8,9,10]] for 10 pages. */
+export function holderPageWaves(maxPages: number): number[][] {
+    const waves: number[][] = [];
+    let next = 2;
+    for (let size = 2; next <= maxPages; size++) {
+        const wave: number[] = [];
+        for (let i = 0; i < size && next <= maxPages; i++) wave.push(next++);
+        waves.push(wave);
+    }
+    return waves;
+}
+const HOLDER_PAGE_WAVES = holderPageWaves(HOLDER_MAX_PAGES);
+
+// The pages that hold every holder of the mint. Page 1 alone for a token under 1,000 holders (ONE call). When page 1 is full:
+//  - if `knownCount` (another source's holder count, asked in parallel: GoPlus) says there are at least HOLDER_COUNT_KNOWN_ABOVE, stop:
+//    the pages are capped at HOLDER_MAX_PAGES x 1,000 holders, so they could only give a floor below that count, and pickHolderCount
+//    already takes the larger of the two;
+//  - otherwise read pages 2..N in WAVES (HOLDER_PAGE_WAVES), stopping as soon as a wave reaches the end of the list or a page fails.
+// parseChainHolders reads the pages in order and stops at the first short or unreadable one, so a page after it can never change the
+// result: asking for it was pure waste (784 of 3,299 DAS calls in 365 real scans), 10 credits each. The `page` parameter accepts
+// parallel requests; a wave stays small to stay under the plan's DAS rate (10 requests a second on Helius Developer).
+// Page 1 failing -> null; a later page failing stays null in the list, and parseChainHolders then reports a floor instead of an exact count.
+export async function heliusGetHolderPages(mint: string, key: string, knownCount?: Promise<number | null>): Promise<unknown[] | null> {
     const first = await heliusGetTokenAccountsPage(mint, key, 1);
     if (!first) return null;
     const firstCount = parseChainHolders(first);
     if (!firstCount || firstCount.complete) return [first];
-    const rest = await Promise.all(Array.from({ length: HOLDER_MAX_PAGES - 1 }, (_, i) => heliusGetTokenAccountsPage(mint, key, i + 2)));
-    return [first, ...rest];
+    if (knownCount) {
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const wait = new Promise<null>((resolve) => { timer = setTimeout(() => resolve(null), HOLDER_COUNT_WAIT_MS); });
+        const known = await Promise.race([knownCount.catch(() => null), wait]).finally(() => clearTimeout(timer));
+        if (typeof known === "number" && known >= HOLDER_COUNT_KNOWN_ABOVE) return [first];
+    }
+    const pages: unknown[] = [first];
+    for (const wave of HOLDER_PAGE_WAVES) {
+        const got = await Promise.all(wave.map((page) => heliusGetTokenAccountsPage(mint, key, page)));
+        pages.push(...got);
+        const count = parseChainHolders(pages);
+        if (!count || count.complete || got.some((g) => !g)) break; // the list ended, or a page failed: the pages after it are ignored
+    }
+    return pages;
 }
 
 // getAccountInfo on the mint: supply, decimals, mintAuthority, freezeAuthority and (Token-2022) extensions in ONE
