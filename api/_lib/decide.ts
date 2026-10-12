@@ -27,6 +27,7 @@ import { weightedBurnPct, type AuthorityFacts } from "./facts";
 import { HARD_BLOCK_REASONS, LAYER_WEIGHTS } from "./constants";
 import { asNumber } from "./math";
 import { makeFlag } from "./helpers";
+import { issuerKindOf, judgeIssuerAsset } from "./issuer-assets";
 
 /** Everything the decision needs, already collected. */
 export interface DecideInput {
@@ -295,8 +296,20 @@ export function decide(input: DecideInput): Decision {
     allLayers.map(l => [l.source, { trust: +l.trust.toFixed(3), available: l.available }])
   );
 
+  // A stablecoin or a tokenized stock / real-world asset is built as its issuer built it (authorities, supply held by the issuer, pause...):
+  // read as a meme coin it comes out RUG (measured: all 46 tokenized stocks of the corpus). Recognised by ADDRESS only, it is judged on its
+  // market (api/_lib/issuer-assets.ts); with no market reading, the general decision above stands.
+  const issuerKind = issuerKindOf(resolvedMint);
+  const issuer = issuerKind ? judgeIssuerAsset({
+    kind: issuerKind, layers: allLayers, flags, sourcesUsedCount: sources_used.length,
+    priceChange24hPct: typeof pair?.priceChange?.h24 === "number" ? pair.priceChange.h24 : null,
+    priceChange1hPct: typeof pair?.priceChange?.h1 === "number" ? pair.priceChange.h1 : null,
+  }) : null;
+  if (issuer) notes.push({ message: "issuer-backed token judged on its market", data: { kind: issuerKind, wasRisk: risk, wasScore: score, risk: issuer.risk, score: issuer.score } });
+
   return {
-    score, risk, rugKind: rugKindOf(risk, allLayers), flags, safeBlocked, safeBlockedReasons, confidence, sources_used, layersSnapshot,
-    lpBurned, lpLocked, lpBurnedPct: _gpBP, notes,
+    score: issuer?.score ?? score, risk: issuer?.risk ?? risk, rugKind: issuer ? issuer.rugKind : rugKindOf(risk, allLayers),
+    flags: issuer?.flags ?? flags, safeBlocked: issuer?.safeBlocked ?? safeBlocked, safeBlockedReasons: issuer?.safeBlockedReasons ?? safeBlockedReasons,
+    confidence, sources_used, layersSnapshot, lpBurned, lpLocked, lpBurnedPct: _gpBP, notes,
   };
 }
