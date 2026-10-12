@@ -1093,3 +1093,52 @@ describe("scan handler — a price crash on a blue chip", () => {
   });
 });
 
+// ─── Pools where the scanned token is only the quote (audit A-26) ──────────────────────────────────────────────────────────────────
+describe("scan handler — a pool where the scanned token is only the quote", () => {
+  const MINT = "So11111111111111111111111111111111111111112"; // the scanned token
+  const OTHER = "OtherTokenMint1111111111111111111111111111111";
+
+  function dexWith(pairs: unknown[]) {
+    setupGoodTokenMocks();
+    const goodMocks = mockFetch.getMockImplementation() as (url: string, ...rest: unknown[]) => Promise<unknown>;
+    mockFetch.mockImplementation((url: string, ...rest: unknown[]) => {
+      if (url.includes("dexscreener") && url.includes("/tokens/")) return Promise.resolve({ ok: true, json: () => Promise.resolve({ pairs }) });
+      return goodMocks(url, ...rest);
+    });
+  }
+  const info = { socials: [{ type: "twitter", url: "https://twitter.com/test" }], websites: [{ url: "https://test.com" }] };
+  const quoteOnly = {
+    pairAddress: "pairQuote", dexId: "raydium", baseToken: { address: OTHER, symbol: "OTHER", name: "Other" }, quoteToken: { address: MINT, symbol: "BLUE", name: "Blue" },
+    liquidity: { usd: 90_000_000 }, volume: { h24: 50_000_000 }, priceChange: { m5: 0, h1: 0, h6: 0, h24: 2 }, priceUsd: "150", marketCap: 80_000_000, fdv: 80_000_000,
+    pairCreatedAt: Date.now() - 400 * 24 * 3600 * 1000, info,
+  };
+  const asBase = {
+    pairAddress: "pairBase", dexId: "raydium", baseToken: { address: MINT, symbol: "BLUE", name: "Blue" }, quoteToken: { address: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", symbol: "USDC", name: "USDC" },
+    liquidity: { usd: 500_000 }, volume: { h24: 200_000 }, priceChange: { m5: 1, h1: 1, h6: 1, h24: 3 }, priceUsd: "1.5", marketCap: 12_000_000, fdv: 12_000_000,
+    pairCreatedAt: Date.now() - 400 * 24 * 3600 * 1000, info,
+  };
+
+  async function run() {
+    const res = createMockRes();
+    await handler(createMockReq({ ca: MINT }), res);
+    return (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as { resolvedMint: string; priceUsd: number | null; liquidity: number | null; tokenSymbol: string | null };
+  }
+
+  it("the deepest pool lists the scanned token as the quote and comes FIRST: the scan still reads the token's own pool", async () => {
+    dexWith([quoteOnly, asBase]);
+    const body = await run();
+    expect(body.resolvedMint).toBe(MINT);       // not OTHER, the base of the first pool
+    expect(body.tokenSymbol).toBe("BLUE");
+    expect(Number(body.priceUsd)).toBe(1.5);    // not 150, the price of the OTHER token
+    expect(body.liquidity).toBe(500_000);
+  });
+
+  it("the same when the pool where it is the base comes first (order does not matter)", async () => {
+    dexWith([asBase, quoteOnly]);
+    const body = await run();
+    expect(body.resolvedMint).toBe(MINT);
+    expect(Number(body.priceUsd)).toBe(1.5);
+    expect(body.liquidity).toBe(500_000);
+  });
+});
+
