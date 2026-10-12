@@ -7,6 +7,7 @@ import type { DexScreenerPair, RugCheckSummary, RugCheckReport, GoPlusTokenResul
 import { deriveAuthorityFacts, type MintState } from "../api/_lib/facts";
 import { judgeContractFacts } from "../api/_lib/layers";
 import { classifySafeBlockedReasons } from "../api/_lib/scoring";
+import { rugKindOf } from "../api/_lib/pipeline";
 import { dedupeFlags, countVerdictFlags, determineVerdict } from "../api/_lib/pipeline";
 
 // Authorities are facts read from the chain (see facts.ts), then handed to the layers.
@@ -1599,5 +1600,220 @@ describe("layerRugCheck: the bundle ladder", () => {
   it("no bundle in the report and none in the summary: nothing is raised", () => {
     const l = layerRugCheck(summary, { risks: [] } as unknown as RugCheckReport, "someMint123");
     expect(l.flags.some((f) => /bundle/i.test(f.label))).toBe(false);
+  });
+});
+
+// ═══ LAYER 6 — the collapse from the recent high ═════════════════════════════
+// Every dump rule of the engine reads the last 5 min / 1 h / 6 h / 24 h, and the 7 / 30-day reading only looked for pumps. GOIF, -97 % from its
+// high two days earlier and flat since, showed +39 % over 24 h on DexScreener itself, and was given CAUTION.
+
+// The 19 real 4-hour closes of GOIF's PumpSwap pool, as GeckoTerminal answered on 2026-10-12 ([timestamp in seconds, close]).
+const GOIF_4H_CLOSES: Array<[number, number]> = [
+  [1791561600, 0.23212474833034263],
+  [1791576000, 0.27060597070652204],
+  [1791590400, 0.2894120888431022],
+  [1791604800, 0.3077784144655658],
+  [1791619200, 0.3250905754395536],
+  [1791633600, 0.3451274498358612],
+  [1791648000, 0.004831903169778867],
+  [1791662400, 0.0053678780590696576],
+  [1791676800, 0.005741548691664225],
+  [1791691200, 0.006565403248599896],
+  [1791705600, 0.007000768198744142],
+  [1791720000, 0.007674521134815481],
+  [1791734400, 0.00810291285782083],
+  [1791748800, 0.008764710013536906],
+  [1791763200, 0.009587065555023429],
+  [1791777600, 0.01005820291600747],
+  [1791792000, 0.010474028932541107],
+  [1791806400, 0.010636051829632981],
+  [1791820800, 0.010854985469324223]
+];
+
+describe("layerChart: collapse from the recent high", () => {
+  const H4 = 4 * 3600;
+  const T0 = 1_760_000_000;
+  /** 4-hour candles, oldest first, from the given closes. */
+  const fourHour = (closes: number[], step = H4) => closes.map((c, i) => ({ ts: T0 + i * step, o: c, h: c * 1.01, l: c * 0.99, c, v: 100 }));
+  const recentFlat = Array.from({ length: 10 }, (_, i) => ({ ts: T0 + i * 300, o: 1, h: 1.01, l: 0.99, c: 1, v: 100 }));
+  const chart = (daily: ReturnType<typeof fourHour> | undefined, recent: typeof recentFlat = recentFlat) => layerChart(recent, null, 60 * 24 * 20, undefined, daily);
+  const collapseFlag = (l: ReturnType<typeof layerChart>) => l.flags.find((f) => /^Collapsed/.test(f.label));
+  const verdictOf = (l: ReturnType<typeof layerChart>) => {
+    const counts = countVerdictFlags(dedupeFlags(l.flags));
+    return determineVerdict({
+      score: 800, forceRug: l.forceRug, safeBlocked: l.safeBlocked, safeBlockedReasons: classifySafeBlockedReasons([l]),
+      sourcesUsedCount: 5, warningFlagsCount: counts.warning, criticalFlagsCount: counts.critical, pumpPriceOnlyFlagsCount: counts.pumpPriceOnly,
+    });
+  };
+  const GOIF = GOIF_4H_CLOSES.map(([ts, c]) => ({ ts, o: c, h: c, l: c, c, v: 100 }));
+
+  it("GOIF, with its real candles: -97 % from its high 2 days ago is a critical flag and a forced RUG", () => {
+    const l = chart(GOIF);
+    const f = collapseFlag(l)!;
+    expect(f.label).toBe("Collapsed -97% from its high 2 days ago");
+    expect(f.severity).toBe("critical");
+    expect(l.forceRug).toBe(true);
+    expect(l.safeBlocked).toBe(true);
+    expect(verdictOf(l)).toBe("RUG");
+    // it already collapsed: a fact, so the verdict reads RUG PULL, not RUG RISK
+    expect(l.rugEvidence).toEqual(["price_collapse"]);
+    expect(rugKindOf("RUG", [l])).toBe("confirmed");
+  });
+
+  it("the 24 h and 6 h figures that DexScreener shows for GOIF (+39 %, +5 %) do not hide it: it is read from the history", () => {
+    const pair = { liquidity: { usd: 285_000 }, volume: { h24: 282_000 }, priceChange: { m5: -0.07, h1: 0.14, h6: 5.01, h24: 39.52 } } as unknown as Parameters<typeof layerChart>[1];
+    const l = layerChart(recentFlat, pair, 60 * 24 * 3, undefined, GOIF);
+    expect(collapseFlag(l)).toBeDefined();
+    expect(l.forceRug).toBe(true);
+  });
+
+  it("the threshold is 75 %: -74 % is not flagged, -75 % is", () => {
+    const at = (pct: number) => collapseFlag(chart(fourHour([100, 100, 100, 100, 100, 100 - pct])));
+    expect(at(74)).toBeUndefined();
+    expect(at(75)).toBeDefined();
+    expect(at(90)).toBeDefined();
+    expect(at(99)).toBeDefined();
+  });
+
+  it("-80 % from a high 3 days ago is a forced RUG PULL", () => {
+    const l = chart(fourHour([100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 20, 20, 20]));
+    expect(l.forceRug).toBe(true);
+    expect(l.rugEvidence).toEqual(["price_collapse"]);
+    expect(collapseFlag(l)!.label).toMatch(/^Collapsed -80% from its high \d+ days? ago$|^Collapsed -80% from its high less than a day ago$/);
+  });
+
+  it("a high of the last 14 days: a forced RUG PULL. A high 15 to 90 days old: critical alone, DANGER, no evidence. Older than 90 days: not read", () => {
+    const peakAgo = (days: number) => {
+      const n = Math.round(days * 6) + 1; // 6 candles a day
+      return chart(fourHour([100, ...Array.from({ length: n - 1 }, () => 5)]));
+    };
+    const recent = peakAgo(10);
+    expect(collapseFlag(recent)!.label).toBe("Collapsed -95% from its high 10 days ago");
+    expect(recent.forceRug).toBe(true);
+    expect(recent.rugEvidence).toEqual(["price_collapse"]);
+    expect(verdictOf(recent)).toBe("RUG");
+
+    for (const days of [20, 60, 90]) {
+      const l = peakAgo(days);
+      expect(collapseFlag(l)!.label, `${days} days`).toBe(`Collapsed -95% from its high ${days} days ago`);
+      expect(l.forceRug, `${days} days`).toBe(false);
+      expect(l.rugEvidence, `${days} days`).toBeUndefined();
+      expect(l.safeBlocked, `${days} days`).toBe(true);
+      expect(verdictOf(l), `${days} days`).toBe("DANGER");
+      expect(l.trust, `${days} days`).toBeGreaterThan(recent.trust); // a lighter penalty than a collapse in progress
+    }
+
+    for (const days of [95, 150]) expect(collapseFlag(peakAgo(days)), `${days} days`).toBeUndefined(); // a blue chip can lose 75 % over a year
+  });
+
+  // The owner's question, age by age: from half a day to three months, a token that lost 75 % is flagged. Up to 14 days it is a forced RUG PULL; from 15
+  // to 90 days it is critical alone (DANGER, or RUG when the other flags force it); past 90 days the high is not read (a blue chip can lose 75 % in a year).
+  describe("every age of the high, from half a day to three months", () => {
+    // `days` back the price was 100, and it has been 5 since (-95 %), 6 candles a day
+    const highDaysAgo = (days: number) => {
+      const n = Math.max(2, Math.round(days * 6) + 1);
+      return chart(fourHour([100, ...Array.from({ length: n - 1 }, () => 5)]));
+    };
+    const age = (l: ReturnType<typeof layerChart>) => collapseFlag(l)?.label.replace(/^Collapsed -95% from its high /, "");
+
+    it("a high 12 hours back (a token with a few days of history): critical, a forced RUG PULL", () => {
+      // 3 days at 10, a spike to 100 twelve hours ago, then 5 (-95 %)
+      const l = chart(fourHour([10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 100, 5, 5, 5]));
+      expect(age(l)).toBe("less than a day ago");
+      expect(l.forceRug).toBe(true);
+      expect(verdictOf(l)).toBe("RUG");
+    });
+
+    it("under 24 hours of history (fewer than 6 candles) the rule stays silent: the 1 h / 6 h / 24 h rules already see the whole life", () => {
+      expect(collapseFlag(chart(fourHour([100, 5, 5, 5, 5])))).toBeUndefined();
+    });
+
+    it.each([
+      [1, "1 day ago"], [2, "2 days ago"], [3, "3 days ago"], [5, "5 days ago"], [7, "7 days ago"], [10, "10 days ago"], [14, "14 days ago"],
+    ])("a high %s days back: critical, a forced RUG PULL", (days, text) => {
+      const l = highDaysAgo(days);
+      expect(age(l)).toBe(text);
+      expect(l.forceRug).toBe(true);
+      expect(l.rugEvidence).toEqual(["price_collapse"]);
+      expect(l.safeBlocked).toBe(true);
+      expect(verdictOf(l)).toBe("RUG");
+    });
+
+    it.each([[15, "15 days ago"], [20, "20 days ago"], [30, "30 days ago"], [45, "45 days ago"], [60, "60 days ago"], [75, "75 days ago"], [90, "90 days ago"]])(
+      "a high %s days back: critical alone, the verdict follows the other flags (DANGER here, no other flag)", (days, text) => {
+        const l = highDaysAgo(days);
+        expect(age(l)).toBe(text);
+        expect(l.forceRug).toBe(false);
+        expect(l.rugEvidence).toBeUndefined();
+        expect(l.safeBlocked).toBe(true);
+        expect(verdictOf(l)).toBe("DANGER");
+      },
+    );
+
+    it.each([91, 100, 150, 365])("a high %s days back is past the three months: not read", (days) => {
+      expect(collapseFlag(highDaysAgo(days))).toBeUndefined();
+    });
+
+    it("and with another flag that forces RUG, a slow collapse reads RUG: the verdict follows the other flags", () => {
+      const slow = highDaysAgo(45);
+      const other = { ...slow, forceRug: true, flags: [...slow.flags, { label: "Top 10 hold 97% — extreme concentration", severity: "critical" as const, impact: 0 }] };
+      expect(verdictOf(other)).toBe("RUG");
+    });
+  });
+
+  it("the age of the high comes from the timestamps, not from counting candles (a thin token has gaps)", () => {
+    const sparse = fourHour([100, 5, 5, 5, 5, 5, 5], 2 * 24 * 3600); // 7 candles, 2 days apart: the high is 12 days old
+    expect(collapseFlag(chart(sparse))!.label).toBe("Collapsed -95% from its high 12 days ago");
+    expect(chart(sparse).forceRug).toBe(true);
+    const sparseOld = fourHour([100, 5, 5, 5, 5, 5, 5], 3 * 24 * 3600); // 18 days
+    expect(collapseFlag(chart(sparseOld))!.label).toBe("Collapsed -95% from its high 18 days ago");
+    expect(chart(sparseOld).forceRug).toBe(false);
+  });
+
+  it("the high that counts for a RUG PULL is the highest close of the LAST 14 DAYS: an old spike does not hide a fresh collapse", () => {
+    // 25 days of 4-hour candles: a spike to 100 on day 0, 40 from day 1 to 21, then 8 for the last 4 days (-80 % from the 40, -92 % from the spike)
+    const closes = Array.from({ length: 150 }, (_, i) => (i === 0 ? 100 : i < 126 ? 40 : 8));
+    const l = chart(fourHour(closes));
+    expect(l.forceRug).toBe(true);
+    expect(l.rugEvidence).toEqual(["price_collapse"]);
+    expect(collapseFlag(l)!.label).toMatch(/^Collapsed -80% from its high 1[34] days ago$/);
+  });
+
+  it("a collapse of 75 % or more only from an OLDER high (15 to 90 days) is critical alone: no forced RUG, no evidence", () => {
+    // spike to 100 on day 0, then 20 from day 1 on, for 25 days: the last 14 days are flat at 20
+    const closes = Array.from({ length: 150 }, (_, i) => (i === 0 ? 100 : 20));
+    const l = chart(fourHour(closes));
+    expect(collapseFlag(l)!.label).toMatch(/^Collapsed -80% from its high 2[45] days ago$/);
+    expect(l.forceRug).toBe(false);
+    expect(l.rugEvidence).toBeUndefined();
+  });
+
+  it("a slow decline that never reaches 75 % is left alone, however long it lasts (-70 % over 90 days)", () => {
+    const closes = Array.from({ length: 541 }, (_, i) => 100 - (70 * i) / 540);
+    expect(collapseFlag(chart(fourHour(closes)))).toBeUndefined();
+  });
+
+  it("ordinary moves are left alone: a -40 % pullback, a token at its high, no history, too little history", () => {
+    expect(collapseFlag(chart(fourHour([100, 90, 80, 70, 65, 60])))).toBeUndefined();
+    expect(collapseFlag(chart(fourHour([10, 20, 40, 80, 100, 100])))).toBeUndefined();
+    expect(collapseFlag(chart(undefined))).toBeUndefined();
+    expect(collapseFlag(chart(fourHour([100, 5, 5, 5, 5])))).toBeUndefined(); // 5 candles: under 24 h of history
+  });
+
+  it("a dead token (nothing traded in the last hours, so no 5-minute candles) is still flagged, and the layer is then available", () => {
+    const dead = layerChart([], null, null, undefined, GOIF);
+    expect(dead.available).toBe(true);
+    expect(collapseFlag(dead)).toBeDefined();
+    expect(dead.forceRug).toBe(true);
+    expect(dead.rugEvidence).toEqual(["price_collapse"]);
+    // without a collapse nothing changes: no recent candles = unavailable
+    expect(layerChart([], null, null, undefined, fourHour([100, 99, 98, 99, 100, 101])).available).toBe(false);
+    expect(layerChart([], null, null).available).toBe(false);
+  });
+
+  it("zero or broken prices do not break it", () => {
+    expect(() => chart(fourHour([100, 100, 100, 100, 100, 0]))).not.toThrow();
+    expect(collapseFlag(chart(fourHour([100, 100, 100, 100, 100, 0])))).toBeDefined(); // price at zero: -100 %
+    expect(collapseFlag(chart(fourHour([Number.NaN, Number.NaN, Number.NaN, 1, 1, 1])))).toBeUndefined();
   });
 });
