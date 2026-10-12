@@ -41,7 +41,6 @@ import {
 import { computeLpPctOfSupply, getLpRiskBucket } from "./_lib/lp-risk-matrix";
 import { selectBestPair } from "./_lib/dex-pair-select";
 import { computeFinalScore, classifySafeBlockedReasons } from "./_lib/scoring";
-import { checkReasonParity } from "./_lib/reason-parity";
 import { evaluatePostLayerFlags, applySafeGateOverride, applyEstablishedBonus, determineVerdict, rugKindOf, toPublicFlag, dedupeFlags, countVerdictFlags } from "./_lib/pipeline";
 import { setCorsHeaders, getClientIp, getInstallId, checkRateLimit, checkColdScanLimit, validateCA, initRateLimiters } from "./_lib/middleware";
 import { initQuota, checkDailyQuota, setQuotaHeaders, secondsUntilReset } from "./_lib/quota";
@@ -616,8 +615,6 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     if (postLayerResult.safeBlocked) safeBlocked = true;
 
     const safeBlockedReasons = classifySafeBlockedReasons(allLayers);
-    // The codes the layers put on their flags must give the same reasons as the text reader, which still decides (see reason-parity.ts).
-    checkReasonParity(allLayers, safeBlockedReasons, { requestId, ca: resolvedMint });
     const _gpBP = weightedBurnPct(goplus?.dex) ?? 0; const lpBurned = _gpBP >= 50 || rugData?.lpBurned === true;
     // Surface lpLocked from RugCheck instead of hard-wiring false. The
     // response was previously claiming "LP not locked" even when

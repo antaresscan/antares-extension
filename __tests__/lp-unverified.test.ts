@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { layerRugCheck } from "../api/_lib/layers";
-import { classifySafeBlockedReasons, HARD_BLOCK_PATTERNS } from "../api/_lib/scoring";
+import { classifySafeBlockedReasons } from "../api/_lib/scoring";
+import { HARD_BLOCK_PATTERNS } from "../api/_lib/upstream-text";
+import { flagsWithCodes } from "./fixtures/flag-codes";
 import { applySafeGateOverride, determineVerdict, applyEstablishedBonus } from "../api/_lib/pipeline";
 import { HARD_BLOCK_REASONS } from "../api/_lib/constants";
 import { computeLpPctOfSupply, getLpRiskBucket } from "../api/_lib/lp-risk-matrix";
@@ -250,7 +252,7 @@ describe("classifySafeBlockedReasons — matrix label recognition", () => {
       source: "rugcheck" as const,
       trust: 0.5,
       available: true,
-      flags: [{ label: "LP holds 45.0% of supply — high rug exposure", severity: "critical" as const, score: 0, impact: 0 }],
+      flags: flagsWithCodes("rugcheck", [{ label: "LP holds 45.0% of supply — high rug exposure", severity: "critical" as const, impact: 0 }]),
       forceRug: false,
       safeBlocked: true,
     };
@@ -263,7 +265,7 @@ describe("classifySafeBlockedReasons — matrix label recognition", () => {
       source: "rugcheck" as const,
       trust: 0.9,
       available: true,
-      flags: [{ label: "LP holds 8.3% of supply — moderate rug capacity", severity: "warning" as const, score: 0, impact: 0 }],
+      flags: flagsWithCodes("rugcheck", [{ label: "LP holds 8.3% of supply — moderate rug capacity", severity: "warning" as const, impact: 0 }]),
       forceRug: false,
       safeBlocked: true,
     };
