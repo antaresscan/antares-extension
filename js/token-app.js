@@ -499,13 +499,31 @@ if (!ca) {
     document.getElementById("loading").style.display = "flex";
     setLoadingStatus("");
     fetchWithRetry(`${API}?ca=${ca}`, { onRetry: onRetryStatus })
-      .then((d) => render(d, ca))
+      .then((d) => renderAnswer(d, ca))
       .catch(() => showError("Analysis failed after multiple attempts. Please try again later."));
   });
 
   fetchWithRetry(`${API}?ca=${ca}`, { onRetry: onRetryStatus })
-    .then((d) => render(d, ca))
+    .then((d) => renderAnswer(d, ca))
     .catch(() => showError("Analysis failed after multiple attempts. Please try again later."));
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// renderAnswer(d, ca) — what the page does with a REAL answer of /api/scan.
+//
+// A Free caller is sent the Free view (api/_lib/pro-gate.ts): the verdict, with no analysis in it, marked `proLocked`. There is nothing
+// to draw, so the page says that Full Analysis is part of Pro. Only the two calls to the API above come through here: the marketing demo
+// (?demo=1, the hardcoded DEMO_DATA) calls render() directly and never touches this.
+// ──────────────────────────────────────────────────────────────────────
+function renderAnswer(d, ca) {
+  if (d && d.proLocked === true) {
+    document.getElementById("loading").style.display = "none";
+    const rcFree = { SAFE: "safe", CAUTION: "caution", DANGER: "danger", RUG: "rug" }[d.risk] || "danger";
+    document.body.className = `risk-${rcFree}`;
+    document.getElementById("content").innerHTML = buildProGate(d);
+    return;
+  }
+  render(d, ca);
 }
 
 // ──────────────────────────────────────────────────────────────────────
@@ -516,14 +534,6 @@ if (!ca) {
 // ──────────────────────────────────────────────────────────────────────
 function render(d, ca) {
   document.getElementById("loading").style.display = "none";
-
-  // The Free view of a scan (api/_lib/pro-gate.ts): the analysis is not in it. Say so, instead of drawing an empty page.
-  if (d && d.proLocked === true) {
-    const rcFree = { SAFE: "safe", CAUTION: "caution", DANGER: "danger", RUG: "rug" }[d.risk] || "danger";
-    document.body.className = `risk-${rcFree}`;
-    document.getElementById("content").innerHTML = buildProGate(d);
-    return;
-  }
 
   const RC = { SAFE: "safe", CAUTION: "caution", DANGER: "danger", RUG: "rug" };
   const LB = { SAFE: "SAFE", CAUTION: "CAUTION", DANGER: "DANGER", RUG: "RUG PULL" };
