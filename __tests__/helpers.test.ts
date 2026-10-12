@@ -4,7 +4,7 @@ import {
   apiError, isCorsAllowed, isOriginInList, isValidDexScreenerResponse, isValidRugCheckSummary,
   isHeliusLargestAccountsResponse, isHeliusSupplyResponse,
   isSolscanMarketsResponse, isSolscanMeta, isSolscanTransfersResponse,
-  isRugCheckReport, withBudget, pickGoPlusResult, isChartGapDegraded, CHART_EXPECTED_AFTER_MINUTES,
+  isRugCheckReport, withBudget, pickGoPlusResult, isChartGapDegraded, isReportGapDegraded, CHART_EXPECTED_AFTER_MINUTES,
 } from "../api/_lib/helpers";
 import { CA_RE } from "../api/_lib/constants";
 
@@ -553,5 +553,28 @@ describe("isChartGapDegraded", () => {
   it("a token too young to have candles, or of unknown age, is not a chart gap (its TTL is already short)", () => {
     expect(isChartGapDegraded("SAFE", false, CHART_EXPECTED_AFTER_MINUTES - 1)).toBe(false);
     expect(isChartGapDegraded("CAUTION", false, null)).toBe(false);
+  });
+});
+
+// ─── isReportGapDegraded (audit A-07) ────────────────────────────────────────
+
+describe("isReportGapDegraded", () => {
+  it("a SAFE or CAUTION reached from a pair address, without the RugCheck report, is degraded", () => {
+    expect(isReportGapDegraded("SAFE", true, false)).toBe(true);
+    expect(isReportGapDegraded("CAUTION", true, false)).toBe(true);
+  });
+
+  it("a bad verdict is not (a stale RUG or DANGER is safe: the missing checks can only make it worse)", () => {
+    expect(isReportGapDegraded("DANGER", true, false)).toBe(false);
+    expect(isReportGapDegraded("RUG", true, false)).toBe(false);
+  });
+
+  it("with the report in hand it is not", () => {
+    expect(isReportGapDegraded("SAFE", true, true)).toBe(false);
+  });
+
+  it("a scan that started from the mint itself is not concerned", () => {
+    expect(isReportGapDegraded("SAFE", false, false)).toBe(false);
+    expect(isReportGapDegraded("CAUTION", false, false)).toBe(false);
   });
 });

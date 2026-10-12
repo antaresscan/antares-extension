@@ -17,7 +17,7 @@ import {
   isSolscanMarketsResponse, isSolscanMeta, isSolscanTransfersResponse,
   isRugCheckReport,
   sanitizeString, sanitizeUrl,
-  makeFlag, isChartGapDegraded,
+  makeFlag, isChartGapDegraded, isReportGapDegraded,
 } from "./_lib/helpers";
 import {
   heliusGetLargestAccounts, heliusGetMintAccount, heliusGetHolderPages, heliusGetCreatorReputation,
@@ -364,6 +364,13 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     }
 
     const pairAddress = pair?.pairAddress ?? ca;
+    // The full RugCheck report (bundle, snipers, rug history, creator sells) is about the TOKEN. Phase 1 asked for it under the address
+    // the page gave us, and when that was a PAIR address (DexScreener puts the pair in its URLs) RugCheck answers 400: the report stayed
+    // empty while every other source was read for the resolved mint, and those four checks were skipped without a word (audit A-07). Now
+    // that the mint is known, read it for the mint, in parallel with phase 2.
+    const rugReportPromise: Promise<unknown> = resolvedMint === ca
+      ? Promise.resolve(rugReportRes)
+      : withBudget(fetchJson(`${RUGCHECK_BASE}/tokens/${resolvedMint}/report`, {}, 5000), remainingMs());
     const tokenAgeMinutes: number | null = pair?.pairCreatedAt
       ? (Date.now() - pair.pairCreatedAt) / 60000 : null;
 
@@ -379,6 +386,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       candlesRaw, candlesDailyRaw, goplusRaw,
       heliusHoldersRaw, heliusSupplyRaw, heliusHolderPagesRaw,
       solMeta, solTransfers, solMarkets,
+      rugReportResolvedRaw,
     ] = await Promise.all([
       withBudget(fetchDexCandles(pairAddress), remainingMs()),
       withBudget(fetchDexCandlesDaily(pairAddress, resolvedMint), remainingMs()),
@@ -398,6 +406,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       // and stays well within Solscan's free-tier per-page cap.
       withBudget(fetchSolscan(`/token/transfer?address=${resolvedMint}&page=1&page_size=50`), remainingMs()),
       withBudget(fetchSolscan(`/token/markets?address=${resolvedMint}&page=1&page_size=1`), remainingMs()),
+      rugReportPromise,
     ]);
 
     const candles: OHLCVCandle[] = Array.isArray(candlesRaw) ? candlesRaw : [];
@@ -498,7 +507,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const tokenSupply   = solMetaData?.data?.supply   ?? null;
     const solTransfersData = isSolscanTransfersResponse(solTransfers) ? solTransfers : null;
     const recentTransfers: SolscanTransfer[] = solTransfersData?.data || [];
-    const rugReport = isRugCheckReport(rugReportRes) ? rugReportRes : null;
+    const rugReport = isRugCheckReport(rugReportResolvedRaw) ? rugReportResolvedRaw : null;
     const rugTotalHolders: number | null =
       typeof rugReport?.totalHolders === "number" && rugReport.totalHolders > 0
       ? rugReport.totalHolders : null;
@@ -884,7 +893,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // The same goes for a SAFE or CAUTION born without the chart layer on a token old enough to have candles: usually a GeckoTerminal
     // rate limit, after which the next try can give another verdict (audit M11). Bad verdicts keep their long TTL.
     const degraded = sources_used.length === 0 || scanDeadline - Date.now() < MIN_STEP_MS
-      || isChartGapDegraded(result.risk, result.layers?.chart?.available, tokenAgeMinutes);
+      || isChartGapDegraded(result.risk, result.layers?.chart?.available, tokenAgeMinutes)
+      || isReportGapDegraded(result.risk, resolvedMint !== ca, rugReport !== null);
     if (result.aiSummary && !degraded) {
       setCachedResult(ca, result, tokenAgeMinutes, result.risk);
       if (resolvedMint !== ca) setCachedResult(resolvedMint, result, tokenAgeMinutes, result.risk);
