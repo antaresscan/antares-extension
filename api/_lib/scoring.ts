@@ -1,6 +1,7 @@
 // api/scoring.ts — Final scoring, verdict & safe-block classification
 
 import type { LayerResult, SafeBlockedReason, ScanFlag } from "./types";
+import type { FlagCodes } from "./helpers";
 import { LAYER_WEIGHTS, TRUST_FLOOR, XV_PENALTY_LP_BURN, XV_PENALTY_MINT_AUTH, XV_PENALTY_AGE, XV_PENALTY_HOLDER_CONCENTRATION } from "./constants";
 
 export function computeFinalScore(layers: LayerResult[]): number {
@@ -138,6 +139,15 @@ export function legacyFallbackReasonsOfLabel(source: string, label: string): Saf
     if (/LP|liquidity/i.test(label)) add("lp");
   }
   return out;
+}
+
+/**
+ * The codes of a flag whose label is text an upstream invents (RugCheck's risk names): read once, here, when the layer creates the
+ * flag, and never again. This is the one place where the text of a flag still decides something: a name nobody here has seen cannot
+ * be known in advance.
+ */
+export function codesFromUpstreamText(source: string, label: string): FlagCodes {
+  return { reasons: legacyReasonsOfLabel(label), fallbackReasons: legacyFallbackReasonsOfLabel(source, label) };
 }
 
 /**

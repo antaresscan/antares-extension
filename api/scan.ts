@@ -41,7 +41,8 @@ import {
 import { computeLpPctOfSupply, getLpRiskBucket } from "./_lib/lp-risk-matrix";
 import { selectBestPair } from "./_lib/dex-pair-select";
 import { computeFinalScore, classifySafeBlockedReasons } from "./_lib/scoring";
-import { evaluatePostLayerFlags, applySafeGateOverride, applyEstablishedBonus, determineVerdict, rugKindOf, dedupeFlags, countVerdictFlags } from "./_lib/pipeline";
+import { checkReasonParity } from "./_lib/reason-parity";
+import { evaluatePostLayerFlags, applySafeGateOverride, applyEstablishedBonus, determineVerdict, rugKindOf, toPublicFlag, dedupeFlags, countVerdictFlags } from "./_lib/pipeline";
 import { setCorsHeaders, getClientIp, getInstallId, checkRateLimit, checkColdScanLimit, validateCA, initRateLimiters } from "./_lib/middleware";
 import { initQuota, checkDailyQuota, setQuotaHeaders, secondsUntilReset } from "./_lib/quota";
 import { enforceProGate } from "./_lib/pro-gate";
@@ -615,6 +616,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     if (postLayerResult.safeBlocked) safeBlocked = true;
 
     const safeBlockedReasons = classifySafeBlockedReasons(allLayers);
+    // The codes the layers put on their flags must give the same reasons as the text reader, which still decides (see reason-parity.ts).
+    checkReasonParity(allLayers, safeBlockedReasons, { requestId, ca: resolvedMint });
     const _gpBP = weightedBurnPct(goplus?.dex) ?? 0; const lpBurned = _gpBP >= 50 || rugData?.lpBurned === true;
     // Surface lpLocked from RugCheck instead of hard-wiring false. The
     // response was previously claiming "LP not locked" even when
@@ -840,7 +843,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const finalHistory = [currentEntry];
 
     const result: ScanResult = {
-      score, risk, rugKind: rugKindOf(risk, allLayers), flags, pair, resolvedMint, confidence, sources_used,
+      score, risk, rugKind: rugKindOf(risk, allLayers), flags: flags.map(toPublicFlag), pair, resolvedMint, confidence, sources_used,
       holders, marketCap, priceUsd, liquidity,
       volume24h, volume1h, priceChange5m, priceChange1h, priceChange24h,
       tokenSymbol: sanitizeString(pair?.baseToken?.symbol) ?? null,
