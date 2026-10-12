@@ -54,10 +54,6 @@ export const RISK_CLASS: Record<string, string> = {
   RUG:     "rug"
 }
 
-export const LABELS: Record<string, string> = {
-  SAFE: "SAFE", CAUTION: "CAUTION", DANGER: "DANGER", RUG: "RUG PULL"
-}
-
 // NON-global regex: callers must use new RegExp or matchAll to avoid lastIndex issues
 // Use makeSOLAddrRegex() for each independent match operation
 export const SOL_ADDR     = /\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/g
