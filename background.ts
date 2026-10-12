@@ -70,13 +70,10 @@ chrome.runtime.onInstalled.addListener(() => { void getInstallId() })
 void chrome.alarms.create(config.keepaliveAlarmName, { periodInMinutes: config.keepaliveIntervalMinutes })
 chrome.alarms.onAlarm.addListener((a) => { if (a.name === config.keepaliveAlarmName) void chrome.runtime.id })
 
-// ─── BADGE CONFIG ─────────────────────────────────────────────────────────────
-const BADGE_MAP: Record<string, { text: string; color: string }> = {
-  SAFE:    { text: "\u2713", color: "#00e5b0" },
-  CAUTION: { text: "!",     color: "#f5d000" },
-  DANGER:  { text: "\u2717", color: "#ff5f5f" },
-  RUG:     { text: "\u2717", color: "#ff2244" },
-}
+// ─── TOOLBAR BUTTON ───────────────────────────────────────────────────────────
+// The toolbar button is the on/off switch and nothing else: a coloured dot, green = ON, red = OFF (see the EXTENSION TOGGLE section
+// below). It does NOT show a verdict: a "✓" / "!" / "✗" next to the icon was brought back by audit A-13 and removed again at the
+// owner's request, because the button must stay that simple. The verdict lives in the overlay on the page.
 
 const RISK_ORDER: Record<string, number> = { SAFE: 0, CAUTION: 1, DANGER: 2, RUG: 3 }
 
@@ -87,15 +84,6 @@ function riskWorsened(prev: string, current: string): boolean {
   const p = RISK_ORDER[prev]
   const c = RISK_ORDER[current]
   return p !== undefined && c !== undefined && c > p
-}
-
-function updateBadge(risk: string, tabId?: number) {
-  const badge = BADGE_MAP[risk]
-  if (!badge) return
-  const target = tabId !== undefined ? { tabId } : {}
-  void chrome.action.setBadgeText({ text: badge.text, ...target })
-  void chrome.action.setBadgeBackgroundColor({ color: "#FFFFFF", ...target })
-  void chrome.action.setBadgeTextColor({ color: badge.color, ...target })
 }
 
 function checkRiskEscalation(ca: string, currentRisk: string, tokenSymbol: string) {
@@ -168,8 +156,9 @@ const handlers: Record<string, MessageHandler> = {
   /**
    * SCAN_RESULT — sent by the content script every time the overlay shows a
    * verdict (see contents/modules/scan-report.ts). The service worker no
-   * longer fetches scans itself: it only turns the verdict into the toolbar
-   * badge, the risk-escalation notification and the local scan history.
+   * longer fetches scans itself: it only turns the verdict into the
+   * risk-escalation notification and the local scan history. It never touches
+   * the toolbar button (the on/off dot, see TOOLBAR BUTTON above).
    *
    * Payload: { type: "SCAN_RESULT", ca, risk, score, symbol }
    */
@@ -182,13 +171,12 @@ const handlers: Record<string, MessageHandler> = {
     const ca = typeof msg.ca === "string" ? msg.ca.trim() : ""
     const risk = safeString(msg.risk)
     // hasOwnProperty, not `in`: "constructor" / "__proto__" must not pass as a risk.
-    if (!CA_RE.test(ca) || !risk || !Object.prototype.hasOwnProperty.call(BADGE_MAP, risk)) {
+    if (!CA_RE.test(ca) || !risk || !Object.prototype.hasOwnProperty.call(RISK_ORDER, risk)) {
       sendResponse({ ok: false, error: "Invalid scan result" })
       return
     }
     const symbol = (safeString(msg.symbol) ?? "").slice(0, MAX_SYMBOL_LENGTH)
 
-    updateBadge(risk, sender.tab?.id)
     checkRiskEscalation(ca, risk, symbol)
     saveToHistory(ca, risk, safeNumber(msg.score), symbol)
     sendResponse({ ok: true })
