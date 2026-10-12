@@ -1,5 +1,6 @@
 import type { ScanResponseFlag, ScanResponseData, QuotaStatus } from "../../shared/types"
-import { RISK_CLASS, LABELS, ANALYSIS_PAGE, SVG_MOVE, SVG_CLOSE, VERDICT_COLORS, PHOTON_REF, buildPhotonUrl, PRICING_URL } from "./constants"
+import { RISK_CLASS, ANALYSIS_PAGE, SVG_MOVE, SVG_CLOSE, VERDICT_COLORS, PHOTON_REF, buildPhotonUrl, PRICING_URL } from "./constants"
+import { verdictLabel } from "./verdict-label"
 import { state, scanCache } from "./state"
 import { SHADOW_CSS, injectFonts } from "./styles"
 import { initDrag } from "./drag"
@@ -691,7 +692,7 @@ export function buildResultNode(
   installId?: string | null,
 ): HTMLElement {
   const riskClass = RISK_CLASS[data.risk] || "danger"
-  const label = LABELS[data.risk] || data.risk
+  const label = verdictLabel(data.risk, data.rugKind)
   const mint = data.resolvedMint || ca
   const liq = data.liquidity ?? data.pair?.liquidity?.usd ?? null
 

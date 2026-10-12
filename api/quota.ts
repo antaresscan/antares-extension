@@ -3,7 +3,8 @@
 // GET /api/quota
 //   Headers in:  X-Antares-Install (recommended), Origin
 //   Headers out: X-Antares-Quota-{Tier,Used,Limit,Remaining,Reset}
-//   Body out:    { tier, used, limit, remaining, resetAt, unlimited }
+//   Body out:    { tier, used, limit, remaining, resetAt, unlimited, tierExpiresAt }
+//                tierExpiresAt: epoch ms when a pro / yearly tier lapses, null otherwise (free, lifetime, dev grants).
 //
 // The extension overlay uses this to display "47/50 today" without spending
 // one of the user's scans on a UI refresh. The endpoint is rate-limited the
@@ -51,7 +52,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // their paid tier without any data being mutated. Devs with the
     // dropdown set to Free get an unlimited Free view (bypassQuota=true)
     // so the overlay UI test never gets locked out.
-    const { tier: effectiveTier, bypassQuota } = await resolveTierAndBypass(
+    const { tier: effectiveTier, bypassQuota, tierExpiresAt } = await resolveTierAndBypass(
       req,
       identityKey,
     );
@@ -68,6 +69,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       remaining: quota.remaining,
       resetAt: quota.resetAt,
       unlimited: quota.limit === -1,
+      tierExpiresAt: tierExpiresAt ?? null,
     });
   } catch (err) {
     logger.warn("api/quota", "peek failed", { error: String(err) });
