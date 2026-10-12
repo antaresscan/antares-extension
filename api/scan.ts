@@ -207,7 +207,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // trigger a real scan. Fail-open throughout: any Redis hiccup → scan.
   let holdsLock = false;
   if (!fresh) {
-    holdsLock = await acquireScanLock(ca);
+    holdsLock = await acquireScanLock(ca, requestId);
     if (!holdsLock) {
       // Wait for the lock holder until OUR scan deadline. The holder is bound
       // by the same deadline, so its result is in the cache by then. The old
@@ -247,7 +247,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // this token are not blocked behind a scan that will never start.
   const cold = await checkColdScanLimit(ip);
   if (!cold.ok) {
-    if (holdsLock) void releaseScanLock(ca);
+    if (holdsLock) void releaseScanLock(ca, requestId);
     logger.metric("scan.cold_limited", { requestId, retryAfterSec: cold.retryAfterSec });
     res.setHeader("Retry-After", String(cold.retryAfterSec));
     return apiError(res, 429, "Too many new-token scans from your network. Retry shortly.");
@@ -277,7 +277,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     clearTimeout(globalTimer);
     // Always release the lock — even on error/timeout — so the next scan
     // of this CA isn't blocked. TTL expiry is only the crash backstop.
-    if (holdsLock) void releaseScanLock(ca);
+    if (holdsLock) void releaseScanLock(ca, requestId);
   }
 }
 
