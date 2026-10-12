@@ -89,7 +89,8 @@ export function setShortCachedResult(
 // behaviour (every request scans). We never block a scan on lock infra.
 
 /**
- * Try to acquire the single-flight lock for `ca`.
+ * Try to acquire the single-flight lock for `ca`. The lock's VALUE is `requestId`: that is how releaseScanLock knows
+ * whether the lock is still the caller's own.
  * @returns true  → THIS caller won the race; it must run the cold scan and
  *                  call releaseScanLock() when done.
  *          false → another request already holds the lock; this caller should
@@ -99,12 +100,12 @@ export function setShortCachedResult(
  * function maxDuration so a crashed lock holder can't wedge the lock for
  * longer than its own function could possibly live.
  */
-export async function acquireScanLock(ca: string, ttlSeconds = 28): Promise<boolean> {
+export async function acquireScanLock(ca: string, requestId: string, ttlSeconds = 28): Promise<boolean> {
   if (!scanCacheRedis) return true; // no Redis → no coalescing, always scan
   try {
     // Upstash SET ... NX EX — returns "OK" when set, null when the key
     // already exists (i.e. another request holds the lock).
-    const res = await scanCacheRedis.set(lockKey(ca), "1", { nx: true, ex: ttlSeconds });
+    const res = await scanCacheRedis.set(lockKey(ca), requestId, { nx: true, ex: ttlSeconds });
     return res === "OK";
   } catch (e: unknown) {
     logger.warn("cache", "scan lock acquire failed — failing open", { error: String(e) });
@@ -112,11 +113,20 @@ export async function acquireScanLock(ca: string, ttlSeconds = 28): Promise<bool
   }
 }
 
-/** Release the single-flight lock. Best-effort — TTL expiry is the backstop. */
-export async function releaseScanLock(ca: string): Promise<void> {
+// Delete the lock only if it still holds OUR request id (read and delete in one atomic step on the server).
+const RELEASE_LOCK_LUA = `if redis.call("GET", KEYS[1]) == ARGV[1] then return redis.call("DEL", KEYS[1]) end return 0`;
+
+/**
+ * Release the single-flight lock, but only if it is still ours. Best-effort — TTL expiry is the backstop.
+ *
+ * Why not a plain DEL: a scan that outlives the lock's TTL (a slow cold scan, a stalled upstream) finds its lock gone and
+ * possibly taken by ANOTHER request. A blind DEL would then delete that request's live lock, and every request arriving
+ * after it would win its own lock and run its own cold scan: the stampede the lock exists to prevent.
+ */
+export async function releaseScanLock(ca: string, requestId: string): Promise<void> {
   if (!scanCacheRedis) return;
   try {
-    await scanCacheRedis.del(lockKey(ca));
+    await scanCacheRedis.eval(RELEASE_LOCK_LUA, [lockKey(ca)], [requestId]);
   } catch {
     /* lock TTL will expire it; nothing to do */
   }
