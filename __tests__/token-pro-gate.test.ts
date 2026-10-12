@@ -39,10 +39,10 @@ describe("buildProGate", () => {
     }
   });
 
-  it("prints a RUG the way the rest of the page does: RUG RISK, or RUG CONFIRMED when the answer says an event happened", () => {
+  it("prints a RUG the way the rest of the page does: RUG RISK, or RUG PULL when the answer says an event happened", () => {
     expect(mount({ ...freeView, risk: "RUG" }).querySelector(".pg-verdict")?.textContent).toBe("RUG RISK");
     expect(mount({ ...freeView, risk: "RUG", rugKind: "risk" }).querySelector(".pg-verdict")?.textContent).toBe("RUG RISK");
-    expect(mount({ ...freeView, risk: "RUG", rugKind: "confirmed" }).querySelector(".pg-verdict")?.textContent).toBe("RUG CONFIRMED");
+    expect(mount({ ...freeView, risk: "RUG", rugKind: "confirmed" }).querySelector(".pg-verdict")?.textContent).toBe("RUG PULL");
   });
 
   it("keeps the word of the other verdicts, and prints nothing when there is no verdict", () => {

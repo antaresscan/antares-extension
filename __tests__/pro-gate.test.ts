@@ -102,7 +102,7 @@ describe("what a Free caller receives", () => {
     expect(view.resolvedMint).toBe(full.resolvedMint);
   });
 
-  it("the verdict word is the same for Free and Pro: rugKind (RUG CONFIRMED / RUG RISK) is in the Free view", () => {
+  it("the verdict word is the same for Free and Pro: rugKind (RUG PULL / RUG RISK) is in the Free view", () => {
     expect(view.rugKind).toBe("risk");
     expect(redactScanForFree({ ...full, rugKind: "confirmed" }).rugKind).toBe("confirmed");
   });
