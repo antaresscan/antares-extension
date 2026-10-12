@@ -13,6 +13,7 @@ import {
   LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS, OFFICIAL_MINTS,
   PUMP_7D_WARN_PCT, PUMP_7D_HIGH_PCT, PUMP_30D_WARN_PCT, PUMP_30D_HIGH_PCT,
   COLLAPSE_DROP_PCT, COLLAPSE_RECENT_DAYS, COLLAPSE_WINDOW_DAYS, COLLAPSE_MIN_CANDLES,
+  BLUECHIP_MIN_AGE_DAYS, BLUECHIP_MIN_LIQUIDITY_USD, BLUECHIP_MIN_MARKET_CAP_USD, BLUECHIP_CRASH_FLOOR_6H, BLUECHIP_CRASH_FLOOR_24H,
   LP_UNVERIFIED_MIN_LIQUIDITY,
 } from "./constants";
 import { getLpRiskBucket } from "./lp-risk-matrix";
@@ -67,6 +68,25 @@ export function isEstablished(
   return age >= 30 * 24 && ((holders ?? 0) >= 5_000 || age >= 180 * 24);
 }
 
+/**
+ * A blue chip, by the market alone (the owner's bar, 2026-10-12): traded for at least 2 months, at least $100k in the pool whose price is
+ * falling, at least $5M of market cap. The three numbers must be KNOWN: a missing one means no. Measured on the 364 recorded tokens: 110 pass
+ * (PYTH, JUPSOL, EURC, GRASS, W, ZBCN, PHY...); over 30 days of 4-hour candles none lost more than 36 % in 24 h, and none of the 11 tokens that
+ * lost 50 % or more in 24 h passes.
+ */
+export function isBlueChipByMarket(
+  tokenAgeMinutes: number | null | undefined,
+  liquidityUsd: number | null | undefined,
+  marketCapUsd: number | null | undefined,
+): boolean {
+  if (tokenAgeMinutes == null || !Number.isFinite(tokenAgeMinutes)) return false;
+  if (liquidityUsd == null || !Number.isFinite(liquidityUsd)) return false;
+  if (marketCapUsd == null || !Number.isFinite(marketCapUsd)) return false;
+  return tokenAgeMinutes >= BLUECHIP_MIN_AGE_DAYS * 24 * 60
+    && liquidityUsd >= BLUECHIP_MIN_LIQUIDITY_USD
+    && marketCapUsd >= BLUECHIP_MIN_MARKET_CAP_USD;
+}
+
 /** Liquidity an established token must also have for the "no registered links" exemption. */
 export const ESTABLISHED_LINKS_MIN_LIQUIDITY_USD = 100_000;
 
@@ -85,6 +105,8 @@ export function layerDexScreener(
   holders: number | null = null,
   /** Liquidity of the token's deepest pool, when the chosen pair is not it (0 = unknown). */
   deepestPoolUsd = 0,
+  /** isBlueChipByMarket for this token (decide.ts computes it once for both rules). */
+  blueChip = false,
 ): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
@@ -208,8 +230,16 @@ export function layerDexScreener(
     penalties.push(0.65);
   }
   if (pc6 < -50 && pc1 < -15) {
-    flags.push(makeFlag("Slow rug detected: -50% on 6h + -15% on 1h", "critical", 0, { tags: ["rug_evidence"] }));
-    penalties.push(0.15); forceRug = true; safeBlocked = true;
+    if (blueChip && pc6 >= BLUECHIP_CRASH_FLOOR_6H) {
+      // A blue chip (see isBlueChipByMarket) can crash like that on a bad day (a market-wide sell-off, a liquidation cascade) without being
+      // rugged: audit A-09 had a 2-year-old token with 200k holders and $20M of liquidity forced to RUG by two price figures. It stays a
+      // critical flag (DANGER at least), but nothing here proves a rug: no forced RUG, no rug evidence (so no Wall of Shame, no condemnation).
+      flags.push(makeFlag(`Sharp crash: ${Math.round(pc6)}% on 6h + ${Math.round(pc1)}% on 1h`, "critical", 0));
+      penalties.push(0.15); safeBlocked = true;
+    } else {
+      flags.push(makeFlag("Slow rug detected: -50% on 6h + -15% on 1h", "critical", 0, { tags: ["rug_evidence"] }));
+      penalties.push(0.15); forceRug = true; safeBlocked = true;
+    }
   } else if (pc6 < -30) {
     flags.push(makeFlag(`Sharp 6h sell-off (${Math.round(pc6)}%)`, "warning", 0));
     penalties.push(0.55); safeBlocked = true;
@@ -995,6 +1025,8 @@ export function layerChart(
   // Sorted ascending (oldest first). Fetched separately from GeckoTerminal
   // /ohlcv/day so short-term candles stay cheap (40 × 5-min).
   dailyCandles?: OHLCVCandle[],
+  /** isBlueChipByMarket for this token (decide.ts computes it once for both rules). */
+  blueChip = false,
 ): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
@@ -1158,8 +1190,14 @@ export function layerChart(
     penalties.push(0.60); safeBlocked = true;
   }
   if (pc24h < -60 && pc1h < -20) {
-    flags.push(makeFlag("Active dump: -60% 24h + -20% 1h (slow rug)", "critical", 0));
-    penalties.push(0.25); forceRug = true; safeBlocked = true;
+    if (blueChip && pc24h >= BLUECHIP_CRASH_FLOOR_24H) {
+      // Same reading as the 6 h rule in layerDexScreener: a violent move on a blue chip is critical (DANGER at least), not a forced RUG.
+      flags.push(makeFlag(`Sharp crash: ${Math.round(pc24h)}% on 24h + ${Math.round(pc1h)}% on 1h`, "critical", 0));
+      penalties.push(0.25); safeBlocked = true;
+    } else {
+      flags.push(makeFlag("Active dump: -60% 24h + -20% 1h (slow rug)", "critical", 0));
+      penalties.push(0.25); forceRug = true; safeBlocked = true;
+    }
   }
 
   // ── NEW v8 patterns — OHLCV rug fingerprints ───────────────────────────────

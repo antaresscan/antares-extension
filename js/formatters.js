@@ -148,6 +148,7 @@ export const FLAG_DESCRIPTIONS = {
   "Bundle activity detected": "Coordinated wallets bought together to fake demand — classic pump and dump setup.",
   "Bundle holds": "A coordinated group controls a large portion of supply and can dump at will.",
   "Small bundle detected": "A few linked wallets bought together at launch. The share is small, but they can still sell at the same moment.",
+  "Sharp crash": "The price fell hard over the last hours. This token has traded for months with deep liquidity, so it is a violent move to watch, not a rug pattern by itself.",
   "Sniper activity detected": "Bots bought massively at launch before anyone else could — supply is concentrated.",
   "Top 10 holders > 70%": "Ten wallets control over 70% of the supply. If they sell together, the price collapses.",
   "Top 10 holders > 50%": "Half the supply is in 10 wallets — high dump risk.",

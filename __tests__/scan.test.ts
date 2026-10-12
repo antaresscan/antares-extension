@@ -997,3 +997,99 @@ describe("scan handler — a condemned token stays a RUG", () => {
   });
 });
 
+// ─── A crash on a blue chip (audit A-09, the owner's bar: 2 months, $100k in the pool, $5M of market cap) ─────────────────────
+describe("scan handler — a price crash on a blue chip", () => {
+  const MINT = "So11111111111111111111111111111111111111112";
+  const DAY_MS = 24 * 3600 * 1000;
+
+  function scanCrash(o: { ageDays: number; liq: number; mcap: number; pc6: number; pc1: number; pc24: number }) {
+    setupGoodTokenMocks();
+    const goodMocks = mockFetch.getMockImplementation() as (url: string, ...rest: unknown[]) => Promise<unknown>;
+    mockFetch.mockImplementation((url: string, ...rest: unknown[]) => {
+      if (url.includes("dexscreener")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            pairs: [{
+              pairAddress: "pair1",
+              baseToken: { address: MINT, symbol: "BLUE", name: "Blue" },
+              liquidity: { usd: o.liq },
+              volume: { h24: 900_000, h1: 40_000 },
+              priceChange: { m5: -1, h1: o.pc1, h6: o.pc6, h24: o.pc24 },
+              txns: { m5: { buys: 15, sells: 15 } },
+              priceUsd: "1.5",
+              marketCap: o.mcap,
+              fdv: o.mcap,
+              pairCreatedAt: Date.now() - o.ageDays * DAY_MS,
+              info: { socials: [{ type: "twitter", url: "https://twitter.com/test" }], websites: [{ url: "https://test.com" }] },
+            }],
+          }),
+        });
+      }
+      return goodMocks(url, ...rest);
+    });
+  }
+
+  async function run() {
+    const res = createMockRes();
+    await handler(createMockReq({ ca: MINT }), res);
+    return (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as {
+      risk: string; rugKind: string | null; flags: Array<{ label: string; severity: string }>;
+    };
+  }
+
+  const bar = { ageDays: 90, liq: 500_000, mcap: 50_000_000 };
+  const sixHourCrash = { pc6: -63, pc1: -22, pc24: -40 };
+
+  it("the 6 h crash on a blue chip is a critical Sharp crash and DANGER, not a RUG", async () => {
+    scanCrash({ ...bar, ...sixHourCrash });
+    const body = await run();
+    expect(body.risk).toBe("DANGER");
+    expect(body.rugKind).toBeNull();
+    expect(body.flags.find((f) => /^Sharp crash/.test(f.label))?.severity).toBe("critical");
+    expect(body.flags.some((f) => /slow rug/i.test(f.label))).toBe(false);
+  });
+
+  it("the 24 h crash on a blue chip is a critical Sharp crash and DANGER, not a RUG", async () => {
+    scanCrash({ ...bar, pc6: -10, pc1: -25, pc24: -65 });
+    const body = await run();
+    expect(body.risk).toBe("DANGER");
+    expect(body.flags.find((f) => /^Sharp crash: -65% on 24h/.test(f.label))?.severity).toBe("critical");
+    expect(body.flags.some((f) => /active dump/i.test(f.label))).toBe(false);
+  });
+
+  it.each([
+    ["a pair of 30 days", { ageDays: 30 }],
+    ["a pool of $90k", { liq: 90_000 }],
+    ["a market cap of $4M", { mcap: 4_000_000 }],
+  ])("%s is not a blue chip: the 6 h crash stays a RUG, with the old label", async (_name, over) => {
+    scanCrash({ ...bar, ...over, ...sixHourCrash });
+    const body = await run();
+    expect(body.risk).toBe("RUG");
+    expect(body.flags.some((f) => /^Slow rug detected/.test(f.label))).toBe(true);
+  });
+
+  it.each([
+    ["a pair of 30 days", { ageDays: 30 }],
+    ["a pool of $90k", { liq: 90_000 }],
+    ["a market cap of $4M", { mcap: 4_000_000 }],
+  ])("%s is not a blue chip: the 24 h crash stays a RUG, with the old label", async (_name, over) => {
+    scanCrash({ ...bar, ...over, pc6: -10, pc1: -25, pc24: -65 });
+    const body = await run();
+    expect(body.risk).toBe("RUG");
+    expect(body.flags.some((f) => /^Active dump/.test(f.label))).toBe(true);
+  });
+
+  it("a real token with a thin DEX pool (W, ZBCN, PHY: $100k to $190k) is covered: the floor of the pool is $100k", async () => {
+    scanCrash({ ...bar, liq: 100_000, ...sixHourCrash });
+    expect((await run()).risk).toBe("DANGER");
+    scanCrash({ ...bar, liq: 150_000, mcap: 120_000_000, pc6: -10, pc1: -25, pc24: -65 });
+    expect((await run()).risk).toBe("DANGER");
+  });
+
+  it("a blue chip that lost more than 70 % in 6 h is no longer a market-wide sell-off: RUG", async () => {
+    scanCrash({ ...bar, pc6: -75, pc1: -22, pc24: -80 });
+    expect((await run()).risk).toBe("RUG");
+  });
+});
+

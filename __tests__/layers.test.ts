@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   layerChart, layerDexScreener, layerGoPlus, layerRugCheck, layerHelius,
-  layerSolscan, layerCrossValidation, isEstablished, ESTABLISHED_LINKS_MIN_LIQUIDITY_USD,
+  layerSolscan, layerCrossValidation, isEstablished, ESTABLISHED_LINKS_MIN_LIQUIDITY_USD, isBlueChipByMarket,
 } from "../api/_lib/layers";
 import type { DexScreenerPair, RugCheckSummary, RugCheckReport, GoPlusTokenResult, HeliusHolder } from "../api/_lib/types";
 import { deriveAuthorityFacts, type MintState } from "../api/_lib/facts";
@@ -1817,3 +1817,127 @@ describe("layerChart: collapse from the recent high", () => {
     expect(collapseFlag(chart(fourHour([Number.NaN, Number.NaN, Number.NaN, 1, 1, 1])))).toBeUndefined();
   });
 });
+
+// ─── A crash on a blue chip is critical, not a forced RUG (audit A-09, the owner's bar of 2026-10-12) ──────────────────────────────
+// A blue chip, by the market alone: 2 months, $100k in the pool, $5M of market cap. Two rules force RUG on a price crash alone (-50 % 6 h +
+// -15 % 1 h in layerDexScreener, -60 % 24 h + -20 % 1 h in layerChart): for such a token a market-wide sell-off is the likelier cause.
+describe("isBlueChipByMarket: age, pool liquidity and market cap, nothing else", () => {
+  const DAY = 24 * 60;
+  it("the bar itself passes: 60 days, $100k, $5M", () => {
+    expect(isBlueChipByMarket(60 * DAY, 100_000, 5_000_000)).toBe(true);
+  });
+  it("one step under any of the three fails", () => {
+    expect(isBlueChipByMarket(60 * DAY - 1, 100_000, 5_000_000)).toBe(false);
+    expect(isBlueChipByMarket(60 * DAY, 99_999, 5_000_000)).toBe(false);
+    expect(isBlueChipByMarket(60 * DAY, 100_000, 4_999_999)).toBe(false);
+  });
+  it("each of the three must be known: a missing one is a no", () => {
+    expect(isBlueChipByMarket(null, 1e7, 1e9)).toBe(false);
+    expect(isBlueChipByMarket(undefined, 1e7, 1e9)).toBe(false);
+    expect(isBlueChipByMarket(365 * DAY, null, 1e9)).toBe(false);
+    expect(isBlueChipByMarket(365 * DAY, 1e7, null)).toBe(false);
+    expect(isBlueChipByMarket(365 * DAY, 1e7, undefined)).toBe(false);
+    expect(isBlueChipByMarket(NaN, 1e7, 1e9)).toBe(false);
+    expect(isBlueChipByMarket(365 * DAY, NaN, 1e9)).toBe(false);
+  });
+});
+
+describe("a crash on a blue chip (the two rules that forced RUG on a price crash alone)", () => {
+  const DAY = 24 * 60;
+  const verdictOf = (l: ReturnType<typeof layerDexScreener> | ReturnType<typeof layerChart>) => {
+    const counts = countVerdictFlags(dedupeFlags(l.flags));
+    return determineVerdict({
+      score: 800, forceRug: l.forceRug, safeBlocked: l.safeBlocked, safeBlockedReasons: classifySafeBlockedReasons([l]),
+      sourcesUsedCount: 5, warningFlagsCount: counts.warning, criticalFlagsCount: counts.critical, pumpPriceOnlyFlagsCount: counts.pumpPriceOnly,
+    });
+  };
+
+  describe("6 h rule (layerDexScreener): -50 % on 6 h and -15 % on 1 h", () => {
+    const pairOf = (pc6: number, pc1 = -22): DexScreenerPair => ({
+      liquidity: { usd: 20_000_000 },
+      volume: { h24: 5_000_000 },
+      priceChange: { h6: pc6, h1: pc1, h24: -40, m5: -1 },
+      txns: { m5: { buys: 30, sells: 30 } },
+      info: { socials: [{ type: "twitter", url: "https://twitter.com/test" }], websites: [{ url: "https://test.com" }] },
+    });
+    const run = (blueChip: boolean, pc6 = -63, pc1 = -22) => layerDexScreener(pairOf(pc6, pc1), 500_000_000, 730 * DAY, 200_000, 0, blueChip);
+    const crash = (l: ReturnType<typeof layerDexScreener>) => l.flags.find((f) => /sharp crash|slow rug/i.test(f.label))!;
+
+    it("the audit's case (2 years, 200k holders, $20M): a critical Sharp crash, DANGER, no forced RUG, no rug evidence", () => {
+      const l = run(true);
+      const f = crash(l);
+      expect(f.label).toBe("Sharp crash: -63% on 6h + -22% on 1h");
+      expect(f.severity).toBe("critical");
+      expect(f.tags ?? []).not.toContain("rug_evidence");
+      expect(l.forceRug).toBe(false);
+      expect(l.safeBlocked).toBe(true);
+      expect(l.rugEvidence).toBeUndefined();
+      expect(verdictOf(l)).toBe("DANGER");
+    });
+
+    it("witness: the same moves on a token that is not a blue chip stay the forced RUG, label and tag as before", () => {
+      const l = run(false);
+      const f = crash(l);
+      expect(f.label).toBe("Slow rug detected: -50% on 6h + -15% on 1h");
+      expect(f.tags).toContain("rug_evidence");
+      expect(l.forceRug).toBe(true);
+      expect(verdictOf(l)).toBe("RUG");
+    });
+
+    it("the floor: -70 % on 6 h is still read as a blue chip's crash; further down it is a forced RUG whatever the token", () => {
+      expect(run(true, -70).forceRug).toBe(false);
+      expect(run(true, -70.5).forceRug).toBe(true);
+      expect(run(true, -90).forceRug).toBe(true);
+    });
+
+    it("the thresholds of the rule are unchanged: -50 % on 6 h and -15 % on 1 h is the edge, with or without the guard", () => {
+      for (const blue of [true, false]) {
+        const l = run(blue, -50, -22);
+        expect(l.flags.some((f) => /sharp crash|slow rug/i.test(f.label)), `blue ${blue}`).toBe(false);
+        const m = run(blue, -63, -15);
+        expect(m.flags.some((f) => /sharp crash|slow rug/i.test(f.label)), `blue ${blue}`).toBe(false);
+      }
+    });
+  });
+
+  describe("24 h rule (layerChart): -60 % on 24 h and -20 % on 1 h", () => {
+    const candles = () => Array.from({ length: 20 }, (_, i) => {
+      const base = 1 + i * 0.001;
+      return { ts: 1_760_000_000 + i * 300, o: base, h: base + 0.001, l: base - 0.001, c: base + 0.0005, v: 1000 };
+    });
+    const pairOf = (pc24: number, pc1 = -25) => ({
+      liquidity: { usd: 20_000_000 }, volume: { h24: 5_000_000, h1: 200_000 },
+      priceChange: { m5: 0.1, h1: pc1, h6: -10, h24: pc24 },
+    } as unknown as Parameters<typeof layerChart>[1]);
+    const ctx = { holders: 200_000, liquidity: 20_000_000, tokenAgeHours: 730 * 24, mintAuthority: false, freezeAuthority: false, honeypot: false, lpBurned: true };
+    const run = (blueChip: boolean, pc24 = -65, pc1 = -25) => layerChart(candles(), pairOf(pc24, pc1), 730 * DAY, ctx, undefined, blueChip);
+    const crash = (l: ReturnType<typeof layerChart>) => l.flags.find((f) => /sharp crash|active dump/i.test(f.label))!;
+
+    it("a blue chip: a critical Sharp crash, DANGER, no forced RUG", () => {
+      const l = run(true);
+      expect(crash(l).label).toBe("Sharp crash: -65% on 24h + -25% on 1h");
+      expect(crash(l).severity).toBe("critical");
+      expect(l.forceRug).toBe(false);
+      expect(l.safeBlocked).toBe(true);
+      expect(verdictOf(l)).toBe("DANGER");
+    });
+
+    it("witness: not a blue chip, the rule is unchanged: forced RUG with its old label", () => {
+      const l = run(false);
+      expect(crash(l).label).toBe("Active dump: -60% 24h + -20% 1h (slow rug)");
+      expect(l.forceRug).toBe(true);
+      expect(verdictOf(l)).toBe("RUG");
+    });
+
+    it("the floor: -75 % on 24 h is still a blue chip's crash; further down it is a forced RUG", () => {
+      expect(run(true, -75).forceRug).toBe(false);
+      expect(run(true, -75.5).forceRug).toBe(true);
+    });
+
+    it("the thresholds are unchanged: -60 % / -20 % is the edge", () => {
+      expect(run(true, -60, -25).flags.some((f) => /sharp crash|active dump/i.test(f.label))).toBe(false);
+      expect(run(true, -65, -20).flags.some((f) => /sharp crash|active dump/i.test(f.label))).toBe(false);
+    });
+  });
+});
+
