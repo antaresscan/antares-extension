@@ -72,8 +72,10 @@ of its liquidity or of its price), **crashed** (price down 50 to 90 %), **surviv
 excluded: they were already dead when recorded. The question it answers is the one the weak labels cannot: of the tokens the engine
 called SAFE, how many were rugged afterwards, and of the ones it called DANGER or RUG, how many survived.
 
-The 365 tokens recorded so far were all captured on 2026-10-10, so the first measure is due around 2026-10-17 (`--label 7d`) and the
-second around 2026-11-09 (`--label 30d`). Tokens recorded later have their own T0 (`baseline` is run again after a capture).
+The tokens recorded so far were captured on 2026-10-10 (365) and between 01:23 and 03:28 on 2026-10-11 (214 more, local time), so the
+first measure is due around 2026-10-18 (`--label 7d`) and the second around 2026-11-10 (`--label 30d`). `measure` compares each
+token with its own T0, so a day of difference between the two batches is simply part of the figure. Tokens recorded later have
+their own T0 (`baseline` is run again after a capture).
 
 ## Reading a failure
 
@@ -111,14 +113,20 @@ exchange. It never goes to production and never writes to production's database.
    - a scan is tried up to 3 times while an upstream throttled or failed (the corpus must hold what a healthy scan sees); a bulk
      token that is still unhealthy is **not written** and is listed at the end, run again later;
    - `--pace N` waits N ms between two tokens (default 8,000: GeckoTerminal allows about 30 calls a minute).
+   - `--until DATE` stops between two tokens once DATE has passed (e.g. `--until 2026-10-11T07:00:00+02:00`), so a capture meant for the
+     night ends before the day's traffic instead of being killed in the middle of a scan. It is checked only between two tokens: a
+     laptop that goes to sleep FREEZES the capture (the first night recorded 214 tokens in about 2 hours, then slept until 14:30), so
+     keep the machine awake for the length of the capture. About 100 tokens an hour is the real rhythm.
    On Windows with a long checkout path, point `ESBUILD_BINARY_PATH` at a copy of `esbuild.exe` in a short path.
 4. `npm run replay:verify` (every replay must equal the real scan it was recorded from), then `npm run replay:update` and review
    the golden diff, delete the preview (`vercel rm`), restore `vercel.json`.
 
 Secrets never reach the repository: credentials in URLs are redacted, headers are not recorded, and the GoPlus token exchange
 and the Gemini calls are not recorded at all. Holder pages of a large token are reduced to what the engine reads (how many
-distinct wallets hold a non-zero balance): a wallet becomes a short id and an amount becomes `1`, so no wallet address is
-committed either. A recording is about 25 KB (brotli).
+distinct wallets hold a non-zero balance): a wallet becomes a short id and an amount becomes `1`. **That is the only place addresses
+are replaced.** The other answers keep the public on-chain addresses they contain: RugCheck's top holders and creator, GoPlus's top
+10 holders (their `token_account` is cut to its first account, which the engine never reads), and the token and pool addresses of
+DexScreener. They are public blockchain data, not personal data, but they ARE in the repository. A recording is about 25 KB (brotli).
 
 ## Adding a token
 
