@@ -17,6 +17,7 @@ import type { LayerResult, ScanFlag, SafeBlockedReason, Verdict, VerdictInput } 
 import { computeFinalScore, classifySafeBlockedReasons } from "../api/_lib/scoring"
 import { applySafeGateOverride, determineVerdict } from "../api/_lib/pipeline"
 import { HARD_BLOCK_REASONS } from "../api/_lib/constants"
+import { flagsWithCodes } from "./fixtures/flag-codes"
 
 // ─── Minimal builders ────────────────────────────────────────────────
 // These keep each test focused on the signal it's validating instead
@@ -36,7 +37,8 @@ function layer(
     source,
     trust,
     available: opts.available ?? true,
-    flags,
+    // A flag written by hand has a label only: give it the codes the engine would read at the upstream door (see fixtures/flag-codes.ts).
+    flags: flagsWithCodes(source, flags),
     forceRug: opts.forceRug ?? false,
     safeBlocked: opts.safeBlocked ?? false,
   }

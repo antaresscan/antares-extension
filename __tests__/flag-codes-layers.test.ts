@@ -5,16 +5,14 @@ import {
   layerRugCheck, layerCrossValidation, judgeContractFacts,
 } from "../api/_lib/layers";
 import { getLpRiskBucket } from "../api/_lib/lp-risk-matrix";
-import {
-  legacyReasonsOfLabel, legacyFallbackReasonsOfLabel, codesFromUpstreamText, classifySafeBlockedReasons, classifyByCodes,
-} from "../api/_lib/scoring";
-import { checkReasonParity } from "../api/_lib/reason-parity";
+import { reasonsOfText, fallbackReasonsOfText, codesFromUpstreamText } from "../api/_lib/upstream-text";
 import { toPublicFlag } from "../api/_lib/pipeline";
 import type { AuthorityFacts } from "../api/_lib/facts";
-import type { LayerResult, RugCheckSummary, ScanFlag } from "../api/_lib/types";
+import type { RugCheckSummary, ScanFlag } from "../api/_lib/types";
 
-// Every layer puts on each flag the safe-gate reasons it stands for (ScanFlag.reasons / fallbackReasons). While the text reader still
-// decides, these tests prove the codes are exactly what the text reader derives from the labels, on the 140 places that create a flag.
+// Every layer puts on each flag the safe-gate reasons it stands for (ScanFlag.reasons / fallbackReasons), and the classifier reads those.
+// These tests hold the codes to the specification: the tables of upstream-text.ts, which say what each label stands for. They cover the
+// 140 places that create a flag, and they fail when a flag is added whose label matches a pattern but whose codes do not say so.
 
 // ─── 1. Every makeFlag of layers.ts, read from the source ─────────────────────────────────────────────────────────────────────
 // The recorded tokens only reach the flags their data triggers. This reads the source, so it covers the flags nobody has hit yet.
@@ -95,7 +93,7 @@ function codesOfArg(arg: string | undefined): { reasons: string[]; fallbackReaso
   return { reasons: pick("reasons"), fallbackReasons: pick("fallbackReasons") };
 }
 
-describe("every makeFlag of layers.ts carries the codes the text reader derives from its label", () => {
+describe("every makeFlag of layers.ts carries the codes the tables give for its label", () => {
   const sites = readSites(SOURCE);
   const known = sites.filter((s) => labelOf(s.args[0] ?? "") !== null);
 
@@ -105,11 +103,11 @@ describe("every makeFlag of layers.ts carries the codes the text reader derives 
     expect(sites.every((s) => s.source !== undefined)).toBe(true);
   });
 
-  it("each of them says exactly the reasons and fallback reasons of its label", () => {
+  it("each of them says exactly the reasons and fallback reasons the tables give for its label", () => {
     const wrong: string[] = [];
     for (const s of known) {
       const label = labelOf(s.args[0])!;
-      const want = { reasons: legacyReasonsOfLabel(label), fallbackReasons: legacyFallbackReasonsOfLabel(s.source!, label) };
+      const want = { reasons: reasonsOfText(label), fallbackReasons: fallbackReasonsOfText(s.source!, label) };
       const got = codesOfArg(s.args[3]);
       if (JSON.stringify(want) !== JSON.stringify(got)) wrong.push(`layers.ts:${s.line} ${JSON.stringify(label)} wants ${JSON.stringify(want)}, says ${JSON.stringify(got)}`);
     }
@@ -120,7 +118,7 @@ describe("every makeFlag of layers.ts carries the codes the text reader derives 
     const fake = 'makeFlag("Honeypot detected — cannot sell", "critical", 0, { reasons: ["mint"] })';
     const site = readSites(fake)[0];
     const label = labelOf(site.args[0])!;
-    expect(JSON.stringify(codesOfArg(site.args[3]))).not.toBe(JSON.stringify({ reasons: legacyReasonsOfLabel(label), fallbackReasons: [] }));
+    expect(JSON.stringify(codesOfArg(site.args[3]))).not.toBe(JSON.stringify({ reasons: reasonsOfText(label), fallbackReasons: [] }));
   });
 });
 
@@ -132,22 +130,22 @@ describe("the LP risk matrix says which reasons each of its labels stands for", 
     ["15-30%", 0.2, 24 * 30], ["30-60%", 0.45, 24 * 30], [">60%", 0.8, 24 * 3], ["unknown", null, 24 * 30],
   ];
 
-  it("flagReasons is what the text reader derives from flagLabel, for every bucket", () => {
+  it("flagReasons is what the tables give for flagLabel, for every bucket", () => {
     for (const [name, pct, age] of cases) {
       const b = getLpRiskBucket(pct, age);
       expect(b.pctBucket, name).toBe(name);
-      expect(b.flagReasons, `${name}: ${b.flagLabel}`).toEqual(legacyReasonsOfLabel(b.flagLabel));
+      expect(b.flagReasons, `${name}: ${b.flagLabel}`).toEqual(reasonsOfText(b.flagLabel));
     }
   });
 
-  it('the rugcheck fallback has always read every LP label as "lp": the layer says so, and the text reader agrees on all of them', () => {
+  it('the rugcheck fallback has always read every LP label as "lp": the layer says so, and the tables agree on all of them', () => {
     for (const [name, pct, age] of cases) {
       const b = getLpRiskBucket(pct, age);
-      expect(legacyFallbackReasonsOfLabel("rugcheck", b.flagLabel), name).toEqual(["lp"]);
+      expect(fallbackReasonsOfText("rugcheck", b.flagLabel), name).toEqual(["lp"]);
     }
   });
 
-  it("high and extreme exposure carry both reasons (as the text reader always gave), the others only lp_unverified", () => {
+  it("high and extreme exposure carry both reasons (as the tables give), the others only lp_unverified", () => {
     expect(getLpRiskBucket(0.45, 24 * 30).flagReasons).toEqual(["lp", "lp_unverified"]);
     expect(getLpRiskBucket(0.8, 24 * 3).flagReasons).toEqual(["lp", "lp_unverified"]);
     expect(getLpRiskBucket(0.03, 24 * 30).flagReasons).toEqual(["lp_unverified"]);
@@ -160,15 +158,15 @@ describe("the flags with a variable label", () => {
     const layer = layerCrossValidation(null, [], null, null, null, 0, facts);
     const conflicts = layer.flags.filter((f) => /authority conflict/i.test(f.label));
     expect(conflicts.map((f) => f.reasons)).toEqual([["mint"], ["freeze"]]);
-    for (const f of conflicts) expect(f.reasons).toEqual(legacyReasonsOfLabel(f.label));
+    for (const f of conflicts) expect(f.reasons).toEqual(reasonsOfText(f.label));
   });
 
-  it("a token whose NAME says 'Mint authority' does not add the reason mint (the text reader would)", () => {
+  it("a token whose NAME says 'Mint authority' does not add the reason mint (reading the text would)", () => {
     const layer = layerRugCheck({ lpBurned: true } as RugCheckSummary, null, "m", "JPMorgan Mint authority");
     const f = layer.flags.find((x) => /^Deceptive name/.test(x.label));
     expect(f, "the impersonation flag is raised").toBeDefined();
     expect(f!.reasons).toEqual(["deceptive_name"]);
-    expect(legacyReasonsOfLabel(f!.label)).toEqual(["mint", "deceptive_name"]); // what reading the text gives: the name leaks in
+    expect(reasonsOfText(f!.label)).toEqual(["mint", "deceptive_name"]); // what the tables give for that label: the name leaks in
   });
 
   it("RugCheck's own risk names are read once, when the flag is created, by codesFromUpstreamText", () => {
@@ -190,42 +188,15 @@ describe("the flags with a variable label", () => {
     expect(fromRisks.find((f) => /LP Unlocked/.test(f.label))!.fallbackReasons).toEqual(["lp"]);
   });
 
-  it("a non-transferable token: the flag stands for no reason, as for the text reader", () => {
+  it("a non-transferable token: the flag stands for no reason, as the tables say", () => {
     const v = judgeContractFacts({ mint: false, freeze: false, sellBlocked: true, trusted: false, source: "chain", compared: false, conflicts: [], riskyExtensions: [] } as unknown as AuthorityFacts);
     const f = v.flags.find((x) => /Non-transferable/.test(x.label))!;
     expect(f.reasons).toBeUndefined();
-    expect(legacyReasonsOfLabel(f.label)).toEqual([]);
+    expect(reasonsOfText(f.label)).toEqual([]);
   });
 });
 
-// ─── 3. The parity check, and the public shape of a flag ──────────────────────────────────────────────────────────────────────
-const layerWith = (flags: ScanFlag[], source = "goplus"): LayerResult => ({ source, trust: 1, available: true, flags, forceRug: false, safeBlocked: true });
-
-describe("checkReasonParity", () => {
-  const withCodes = layerWith([{ label: "Honeypot detected — cannot sell", severity: "critical", impact: 0, reasons: ["honeypot"] }]);
-  const withoutCodes = layerWith([{ label: "Honeypot detected — cannot sell", severity: "critical", impact: 0 }]);
-
-  it("is true when the codes say what the text says", () => {
-    expect(checkReasonParity([withCodes], classifySafeBlockedReasons([withCodes]))).toBe(true);
-  });
-
-  it("throws in strict mode (the tests) when they differ, and says both answers", () => {
-    expect(process.env.ANTARES_STRICT_PARITY).toBe("1");
-    expect(() => checkReasonParity([withoutCodes], classifySafeBlockedReasons([withoutCodes]))).toThrow(/codes say \[\].*text says \["honeypot"\]/);
-  });
-
-  it("outside strict mode it only reports false: the text answer is the one used", () => {
-    const was = process.env.ANTARES_STRICT_PARITY;
-    delete process.env.ANTARES_STRICT_PARITY;
-    try {
-      expect(checkReasonParity([withoutCodes], classifySafeBlockedReasons([withoutCodes]))).toBe(false);
-    } finally {
-      process.env.ANTARES_STRICT_PARITY = was;
-    }
-    expect(classifyByCodes([withoutCodes])).toEqual([]);
-  });
-});
-
+// ─── 3. The public shape of a flag ─────────────────────────────────────────────────────────────────────────────────────────────
 describe("toPublicFlag", () => {
   it("keeps the label, the severity and the impact, and drops the engine's own codes", () => {
     const f: ScanFlag = { label: "x", severity: "critical", impact: 3, reasons: ["lp"], fallbackReasons: ["holders"] };

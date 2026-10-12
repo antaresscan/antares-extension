@@ -29,8 +29,6 @@ export default defineConfig({
     globals: true,
     environment: "node",
     include: ["__tests__/**/*.test.ts"],
-    // In the tests, a difference between the two readers of the safe-gate reasons throws (api/_lib/reason-parity.ts).
-    env: { ANTARES_STRICT_PARITY: "1" },
     testTimeout: 15_000,
     hookTimeout: 10_000,
     restoreMocks: true,
