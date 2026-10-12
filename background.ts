@@ -11,6 +11,7 @@ import { CA_RE } from "./shared/constants"
 import { config } from "./shared/config"
 import { logger } from "./shared/logger"
 import { getInstallId } from "./shared/install-id"
+import { toggleExtensionEnabled } from "./shared/extension-toggle"
 import { scrubEvent, scrubBreadcrumb } from "./shared/sentry-scrub"
 
 // ─── SENTRY INITIALIZATION ───────────────────────────────────────────────────
@@ -368,14 +369,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 })
 
 // ─── EXTENSION TOGGLE ─────────────────────────────────────────────────────────
-let extensionEnabled = true
-chrome.storage.local.get(["extensionEnabled"], (r) => {
-  if (typeof r.extensionEnabled === "boolean") extensionEnabled = r.extensionEnabled
-})
-
+// The state is read from chrome.storage at click time (shared/extension-toggle.ts), not kept in a variable: the service
+// worker that handles the click was often started by it, before any startup read could have finished.
 chrome.action.onClicked.addListener(async (_tab) => {
-  extensionEnabled = !extensionEnabled
-  void chrome.storage.local.set({ extensionEnabled })
+  const extensionEnabled = await toggleExtensionEnabled(chrome.storage.local)
 
   void chrome.action.setBadgeText({ text: "\u25CF" })
   void chrome.action.setBadgeBackgroundColor({ color: "#FFFFFF" })
