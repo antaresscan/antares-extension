@@ -7,8 +7,13 @@
 // be limited without punishing the whole IP.
 //
 // The identifier is opaque (UUIDv4) and stored in chrome.storage.local —
-// no personal data, no derivable identity. It is generated on first call
-// and reused for the lifetime of the install.
+// no personal data, no derivable identity. It is generated once and reused
+// for the lifetime of the install.
+//
+// Who generates it: background.ts calls getInstallId() from chrome.runtime.onInstalled, so the id exists before
+// the first scan, the first content script or the first Options page ask for it. The lazy path below stays as the
+// fallback (an install that predates this, a cleared storage), and is written to be safe when several extension
+// contexts (service worker, content scripts in every tab, Options page) reach it at the same moment.
 
 const STORAGE_KEY = "antaresInstallId"
 
@@ -17,30 +22,50 @@ const STORAGE_KEY = "antaresInstallId"
 // `undefined` = not loaded yet, `null` = chrome.storage failed (we'll skip
 // the header), `string` = the resolved id.
 let cached: string | null | undefined = undefined
+// The resolution in progress, shared by every caller of THIS context until it settles. Without it, two calls that arrive
+// before `cached` is set (the first scan and the Options page, say) each read an empty storage, each generate their own
+// id and each write it: one overwrites the other, and the loser keeps using an id that is no longer the stored one.
+let inflight: Promise<string | null> | null = null
 
 // Matches what middleware INSTALL_ID_RE expects after #278: alphanumerics
 // plus dash/underscore, 8–128 chars. Defensive — guards against a corrupted
 // value being read back from storage.
 const INSTALL_ID_RE = /^[a-zA-Z0-9_-]{8,128}$/
 
-export async function getInstallId(): Promise<string | null> {
-  if (cached !== undefined) return cached
+export function getInstallId(): Promise<string | null> {
+  if (cached !== undefined) return Promise.resolve(cached)
+  if (!inflight) {
+    inflight = resolveInstallId()
+      .then((id) => {
+        cached = id
+        return id
+      })
+      .finally(() => {
+        inflight = null
+      })
+  }
+  return inflight
+}
 
+async function readStoredId(): Promise<string | null> {
+  const stored = await chrome.storage.local.get(STORAGE_KEY)
+  const existing = stored?.[STORAGE_KEY]
+  return typeof existing === "string" && INSTALL_ID_RE.test(existing) ? existing : null
+}
+
+async function resolveInstallId(): Promise<string | null> {
   try {
-    const stored = await chrome.storage.local.get(STORAGE_KEY)
-    const existing = stored?.[STORAGE_KEY]
-    if (typeof existing === "string" && INSTALL_ID_RE.test(existing)) {
-      cached = existing
-      return cached
-    }
+    const existing = await readStoredId()
+    if (existing) return existing
     const fresh = generateUuid()
     await chrome.storage.local.set({ [STORAGE_KEY]: fresh })
-    cached = fresh
-    return cached
+    // Another context may have written its own id between our read and our write (chrome.storage has no compare-and-set):
+    // read back and adopt what is REALLY stored, so every context settles on the same id. `?? fresh` only if the read-back
+    // finds nothing usable.
+    return (await readStoredId()) ?? fresh
   } catch {
     // chrome.storage unavailable (test env without mock, permission denied,
     // quota error). Caching `null` ensures we don't re-attempt every fetch.
-    cached = null
     return null
   }
 }
@@ -64,4 +89,5 @@ function generateUuid(): string {
 // Test-only helper. Production callers should never reach the cache.
 export function _resetInstallIdCacheForTests(): void {
   cached = undefined
+  inflight = null
 }
