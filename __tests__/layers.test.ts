@@ -1994,3 +1994,91 @@ describe("layerDexScreener: the 'no website / Twitter / Telegram' check reads re
   });
 });
 
+// ─── Token-2022 extensions judged next to mint / freeze (audit A-10) ────────────────────────────────────────────────────────
+describe("judgeContractFacts: Token-2022 extensions", () => {
+  type Facts = ReturnType<typeof deriveAuthorityFacts>;
+  const ext = (o: Partial<NonNullable<Facts["extensionFacts"]>> = {}, trusted = false): Facts => ({
+    ...deriveAuthorityFacts(null, null), mint: false, freeze: false, sellBlocked: null, trusted,
+    extensionFacts: { permanentDelegate: false, pausable: false, defaultFrozen: false, transferHook: false, feeBps: null, feeCanChange: false, ...o },
+  });
+  const labels = (f: Facts) => judgeContractFacts(f).flags.map((x) => `${x.severity}:${x.label}`);
+
+  it("no power over the holders: no flag, nothing blocked", () => {
+    expect(judgeContractFacts(ext())).toEqual({ flags: [], penalties: [], safeBlocked: false });
+    expect(judgeContractFacts({ ...ext(), extensionFacts: null })).toEqual({ flags: [], penalties: [], safeBlocked: false });
+  });
+
+  it.each([
+    ["permanentDelegate", "Permanent delegate — an address can move or burn any holder's tokens", 0.10],
+    ["pausable", "Pausable token — an authority can pause every transfer", 0.30],
+    ["defaultFrozen", "New accounts start frozen — nobody can sell until their account is thawed", 0.25],
+    ["transferHook", "Transfer hook — a program runs on every transfer and can refuse it", 0.25],
+  ] as const)("%s: a critical flag with the hard reason token_extension, SAFE blocked", (key, label, penalty) => {
+    const r = judgeContractFacts(ext({ [key]: true }));
+    expect(r.flags).toHaveLength(1);
+    expect(r.flags[0]).toMatchObject({ label, severity: "critical", reasons: ["token_extension"] });
+    expect(r.penalties).toEqual([penalty]);
+    expect(r.safeBlocked).toBe(true);
+  });
+
+  it("a trusted issuer (a stablecoin, a tokenised stock) holds them by design: information only, nothing blocked", () => {
+    const r = judgeContractFacts(ext({ permanentDelegate: true, pausable: true, defaultFrozen: true, transferHook: true, feeBps: 0, feeCanChange: true }, true));
+    expect(r.flags.map((f) => f.severity)).toEqual(["info", "info", "info", "info", "info"]);
+    expect(r.safeBlocked).toBe(false);
+    expect(r.penalties.every((p) => p === 0.95)).toBe(true);
+  });
+
+  it("the fee that applies now is graded like GoPlus tax: under 2 % information, 2 to 10 % a warning, over 10 % critical; never a hard block alone", () => {
+    const grade = (bps: number) => judgeContractFacts(ext({ feeBps: bps }));
+    expect(labels(ext({ feeBps: 0 }))).toEqual([]);
+    expect(grade(150).flags[0]).toMatchObject({ label: "Transfer fee 1.50% on every transfer", severity: "info" });
+    expect(grade(199).flags[0].severity).toBe("info");
+    expect(grade(200).flags[0]).toMatchObject({ label: "Transfer fee 2% on every transfer", severity: "warning" });
+    expect(grade(420).flags[0]).toMatchObject({ label: "Transfer fee 4.20% on every transfer", severity: "warning" });
+    expect(grade(1000).flags[0].severity).toBe("warning");
+    expect(grade(1001).flags[0].severity).toBe("critical");
+    for (const bps of [150, 420, 1001]) expect(grade(bps).safeBlocked, `${bps} bps`).toBe(false);
+    expect(grade(420).flags[0].reasons).toBeUndefined();
+  });
+
+  it("a fee an authority can change (even at 0 %) can be raised to 100 %: critical, hard, like a mint authority", () => {
+    const r = judgeContractFacts(ext({ feeBps: 0, feeCanChange: true }));
+    expect(r.flags).toHaveLength(1);
+    expect(r.flags[0]).toMatchObject({ label: "Transfer fee can be changed — an authority can raise it to 100%", severity: "critical", reasons: ["token_extension"] });
+    expect(r.safeBlocked).toBe(true);
+    expect(judgeContractFacts(ext({ feeBps: null, feeCanChange: true })).flags).toEqual([]); // no fee extension at all: nothing to change
+  });
+
+  it("GoPlus unavailable: the chain's extension flags are still raised and still block SAFE (the audit's proof case)", () => {
+    const facts = ext({ permanentDelegate: true, feeBps: 0, feeCanChange: true });
+    const l = layerGoPlus(null, undefined, facts);
+    expect(l.available).toBe(false);
+    expect(l.flags.map((f) => f.label)).toEqual(expect.arrayContaining([
+      "Permanent delegate — an address can move or burn any holder's tokens", "Transfer fee can be changed — an authority can raise it to 100%", "GoPlus unavailable",
+    ]));
+    expect(l.safeBlocked).toBe(true);
+    expect(classifySafeBlockedReasons([l])).toContain("token_extension");
+  });
+
+  it("GoPlus answers too: what the chain already said is not said twice (a trusted issuer keeps GoPlus own reading)", () => {
+    const gp = { balance_mutable_authority: { status: "1" }, transfer_pausable: "1", transfer_hook: [{ program_id: "x" }] } as unknown as GoPlusTokenResult;
+    const l = layerGoPlus(gp, undefined, ext({ permanentDelegate: true, pausable: true, transferHook: true }));
+    const said = l.flags.map((f) => f.label);
+    expect(said).toContain("Permanent delegate — an address can move or burn any holder's tokens");
+    expect(said).not.toContain("Balances can be changed by an authority");
+    expect(said).not.toContain("Transfer pausable");
+    expect(said.some((x) => /^Transfer hook installed/.test(x))).toBe(false);
+    // the chain said nothing, or the issuer is trusted: GoPlus flags stay as they were
+    expect(layerGoPlus(gp, undefined, ext()).flags.map((f) => f.label)).toEqual(expect.arrayContaining(["Balances can be changed by an authority", "Transfer pausable"]));
+    const trusted = layerGoPlus(gp, undefined, ext({ permanentDelegate: true, pausable: true, transferHook: true }, true));
+    expect(trusted.flags.map((f) => f.label)).toEqual(expect.arrayContaining(["Balances can be changed by an authority", "Transfer pausable"]));
+  });
+
+  it("token_extension is a hard reason: with a score under 400 the verdict is RUG, over it DANGER", () => {
+    const reasons = classifySafeBlockedReasons([layerGoPlus(null, undefined, ext({ pausable: true }))]);
+    const verdict = (score: number) => determineVerdict({ score, forceRug: false, safeBlocked: true, safeBlockedReasons: reasons, sourcesUsedCount: 5, warningFlagsCount: 0, criticalFlagsCount: 0, pumpPriceOnlyFlagsCount: 0 });
+    expect(verdict(900)).toBe("DANGER");
+    expect(verdict(300)).toBe("RUG");
+  });
+});
+

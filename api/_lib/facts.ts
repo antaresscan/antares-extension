@@ -20,6 +20,8 @@ export interface MintState {
   freezeAuthority: Tri;
   /** Token-2022 extension names (camelCase, as jsonParsed returns them). Empty for the classic program. */
   extensions: string[];
+  /** The state of each extension as jsonParsed returns it (authority, delegate, fee...). Absent when the response carried none. */
+  extensionStates?: Record<string, Record<string, unknown>>;
 }
 
 interface ParsedMintResponse {
@@ -34,7 +36,7 @@ interface ParsedMintResponse {
             supply?: string;
             mintAuthority?: string | null;
             freezeAuthority?: string | null;
-            extensions?: Array<{ extension?: string }>;
+            extensions?: Array<{ extension?: string; state?: Record<string, unknown> | null }>;
           };
         };
       };
@@ -69,6 +71,9 @@ export function parseMintState(raw: unknown): MintState | null {
     mintAuthority: "mintAuthority" in info ? authorityExists(info.mintAuthority) : null,
     freezeAuthority: "freezeAuthority" in info ? authorityExists(info.freezeAuthority) : null,
     extensions: Array.isArray(info.extensions) ? info.extensions.map((e) => String(e?.extension ?? "")) : [],
+    extensionStates: Array.isArray(info.extensions)
+      ? Object.fromEntries(info.extensions.filter((e) => e?.extension).map((e) => [String(e.extension), e.state && typeof e.state === "object" ? e.state : {}]))
+      : undefined,
   };
 }
 
@@ -94,6 +99,63 @@ const BENIGN_EXTENSIONS = new Set([
   "scaledUiAmountConfig", "confidentialTransferMint",
 ]);
 
+/**
+ * What the Token-2022 extensions of a mint let someone do to the holders (audit A-10). Read from the state of each extension on the chain.
+ * Only what is DEFINITELY there is true: an extension whose state we could not read counts as present-with-an-authority (the cautious
+ * reading), because a mint with a permanent delegate that we cannot read is not a mint without one.
+ */
+export interface ExtensionFacts {
+  /** An address can transfer or burn ANY holder's tokens (permanentDelegate with a delegate that can sign). */
+  permanentDelegate: boolean;
+  /** An authority can pause every transfer (pausableConfig). */
+  pausable: boolean;
+  /** New token accounts start frozen (defaultAccountState = frozen): nobody can sell until the freeze authority thaws their account. */
+  defaultFrozen: boolean;
+  /** A program runs on every transfer and can refuse it (transferHook with a program set). */
+  transferHook: boolean;
+  /** The transfer fee in basis points that applies now (the newer one when two are set); null = no fee extension or unreadable. */
+  feeBps: number | null;
+  /** An authority can change the transfer fee at any time (it can set it to 100 %). */
+  feeCanChange: boolean;
+}
+
+const hasAddress = (v: unknown): boolean => typeof v === "string" && v.length > 0 && v !== SYSTEM_PROGRAM_ID;
+
+/** The facts the extensions of a mint state. null when the mint is not a Token-2022 mint or no extension state was read. */
+export function deriveExtensionFacts(chain: MintState | null | undefined): ExtensionFacts | null {
+  if (!chain || chain.program !== "spl-token-2022" || chain.extensions.length === 0) return null;
+  const st = chain.extensionStates ?? {};
+  const has = (name: string) => chain.extensions.includes(name);
+  const state = (name: string): Record<string, unknown> | null => (has(name) ? (st[name] ?? {}) : null);
+
+  const pd = state("permanentDelegate");
+  // A state with no `delegate` key at all is an unreadable state: the cautious reading is "there is one".
+  const permanentDelegate = pd !== null && (!("delegate" in pd) || hasAddress(pd.delegate));
+
+  const pausable = has("pausableConfig");
+
+  const das = state("defaultAccountState");
+  const defaultFrozen = das !== null && String(das.accountState ?? "").toLowerCase() === "frozen";
+
+  const th = state("transferHook");
+  const transferHook = th !== null && (!("programId" in th) || hasAddress(th.programId));
+
+  const tf = state("transferFeeConfig");
+  let feeBps: number | null = null;
+  let feeCanChange = false;
+  if (tf !== null) {
+    const bps = (o: unknown): number | null => {
+      const n = Number((o as { transferFeeBasisPoints?: unknown } | null | undefined)?.transferFeeBasisPoints);
+      return Number.isFinite(n) ? n : null;
+    };
+    // Two fees can be set (the older one applies until its epoch passes): the one that can hit the holder is the higher of the two.
+    const a = bps(tf.newerTransferFee), b = bps(tf.olderTransferFee);
+    feeBps = a === null && b === null ? null : Math.max(a ?? 0, b ?? 0);
+    feeCanChange = !("transferFeeConfigAuthority" in tf) || hasAddress(tf.transferFeeConfigAuthority);
+  }
+  return { permanentDelegate, pausable, defaultFrozen, transferHook, feeBps, feeCanChange };
+}
+
 export interface AuthorityFacts {
   mint: Tri;
   freeze: Tri;
@@ -117,6 +179,8 @@ export interface AuthorityFacts {
   conflicts: Array<"mint" | "freeze">;
   /** Token-2022 extensions that make the outcome of a sale uncertain. */
   riskyExtensions: string[];
+  /** What the Token-2022 extensions let someone do to the holders; null for a classic mint (or nothing readable). */
+  extensionFacts?: ExtensionFacts | null;
 }
 
 export function deriveAuthorityFacts(chain: MintState | null, goplus: GoPlusTokenResult | null, mintAddress?: string): AuthorityFacts {
@@ -149,7 +213,7 @@ export function deriveAuthorityFacts(chain: MintState | null, goplus: GoPlusToke
     else if (gpFreeze === false && gpStatus(goplus.non_transferable) === false && hookEmpty && feeEmpty) sellBlocked = false;
   }
 
-  return { mint, freeze, sellBlocked, trusted, source, compared, conflicts, riskyExtensions };
+  return { mint, freeze, sellBlocked, trusted, source, compared, conflicts, riskyExtensions, extensionFacts: deriveExtensionFacts(chain) };
 }
 
 /**

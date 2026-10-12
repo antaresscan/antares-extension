@@ -30,6 +30,7 @@ export const HARD_BLOCK_PATTERNS: Array<[RegExp, SafeBlockedReason]> = [
   [/mint authority/i, "mint"],
   [/freeze authority/i, "freeze"],
   [/honeypot/i, "honeypot"],
+  [/permanent delegate —|pausable token —|new accounts start frozen|transfer hook — a program|transfer fee can be changed/i, "token_extension"],
   [/wash trading/i, "wash_trading"],
   [/bundle|bundler/i, "bundle"],
   [/sniper/i, "sniper"],

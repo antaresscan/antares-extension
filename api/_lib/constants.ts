@@ -200,7 +200,7 @@ export const MIN_SOURCES_FOR_CLEAN_SAFE = 3;
 // ── HARD BLOCK REASONS (single source of truth) ──────────────
 export const HARD_BLOCK_REASONS = new Set([
   "lp", "deceptive_name", "honeypot", "mint", "freeze",
-  "bundle", "rug_pattern", "wash_trading", "sniper", "pump", "chart", "low_holders",
+  "bundle", "rug_pattern", "wash_trading", "sniper", "pump", "chart", "low_holders", "token_extension",
   // High single-wallet concentration (>=15%) cannot be soft-unlocked
   // by the established-bonus. A wallet with that share can crash the
   // market irrespective of holder count or token age, so we never let

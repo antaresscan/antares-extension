@@ -1428,7 +1428,7 @@
   },
   "PYUSD": {
     "risk": "DANGER",
-    "score": 341,
+    "score": 338,
     "confidence": 90,
     "flags": [
       "bonus:Established token (30d+) ✓",
@@ -1437,6 +1437,8 @@
       "info:Freeze authority active — wallets can be frozen",
       "info:LP holds 1.2% of supply",
       "info:Mint authority active — supply can be inflated",
+      "info:Permanent delegate — an address can move or burn any holder's tokens",
+      "info:Transfer fee can be changed — an authority can raise it to 100%",
       "warning:Token accounts can be closed by an authority"
     ],
     "sources_used": [
@@ -1461,7 +1463,7 @@
       },
       "goplus": {
         "available": true,
-        "trust": 0.079
+        "trust": 0.076
       },
       "helius": {
         "available": true,
@@ -1489,7 +1491,8 @@
       "concentration",
       "freeze",
       "lp_unverified",
-      "mint"
+      "mint",
+      "token_extension"
     ]
   },
   "BREAK": {

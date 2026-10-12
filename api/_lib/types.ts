@@ -59,6 +59,7 @@ export type SafeBlockedReason =
   | "wash_trading"    // HARD
   | "pump"            // HARD
   | "bundle"          // HARD
+  | "token_extension" // HARD — a Token-2022 extension lets someone move, pause, freeze or tax holders' tokens (permanent delegate, pausable, default frozen, transfer hook, a fee that is or can be set)
   | "sniper"          // HARD
     | "chart"            // HARD
   | "low_holders"     // HARD — tokens with <50 holders

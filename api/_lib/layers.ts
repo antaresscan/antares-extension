@@ -526,6 +526,32 @@ export function judgeContractFacts(facts: AuthorityFacts | null | undefined): Co
     flags.push(makeFlag(NON_TRANSFERABLE_LABEL, "critical", 0, { tags: ["rug_evidence"] })); penalties.push(0.05);
     safeBlocked = true;
   }
+  // Token-2022 extensions (audit A-10): each is a power someone holds over the holders' tokens. Same reading as mint / freeze: critical and a
+  // hard block, information only for a trusted issuer (a stablecoin or a tokenised stock holds them by design).
+  const ext = facts.extensionFacts;
+  if (ext) {
+    // The penalties of the two that GoPlus already said (and that it still says when the chain is unreadable) are GoPlus's own, so that the
+    // chain saying them first never makes a verdict more lenient: "Balances can be changed by an authority" 0.10, "Transfer pausable" 0.30.
+    const extFlag = (label: string, penalty = 0.25) => {
+      flags.push(makeFlag(label, sev, 0, { reasons: ["token_extension"] })); penalties.push(facts.trusted ? pen : penalty);
+      if (!facts.trusted) safeBlocked = true;
+    };
+    if (ext.permanentDelegate) extFlag("Permanent delegate — an address can move or burn any holder's tokens", 0.10);
+    if (ext.pausable) extFlag("Pausable token — an authority can pause every transfer", 0.30);
+    if (ext.defaultFrozen) extFlag("New accounts start frozen — nobody can sell until their account is thawed");
+    if (ext.transferHook) extFlag("Transfer hook — a program runs on every transfer and can refuse it");
+    if (ext.feeBps !== null && ext.feeBps > 0) {
+      // A fee that applies NOW is a tax on every transfer, read like GoPlus's buy / sell tax (below): under 2 % ordinary (information), 2 to
+      // 10 % "suspicious" (a warning), over 10 % critical. It is not a hard block by itself: that is the fee an authority CAN change (next).
+      const pct = `${(ext.feeBps / 100).toFixed(ext.feeBps % 100 === 0 ? 0 : 2)}%`;
+      const feeSev = facts.trusted || ext.feeBps < 200 ? "info" : ext.feeBps > 1000 ? "critical" : "warning";
+      flags.push(makeFlag(`Transfer fee ${pct} on every transfer`, feeSev, 0));
+      penalties.push(feeSev === "info" ? 0.95 : feeSev === "critical" ? 0.35 : 0.80);
+    }
+    if (ext.feeBps !== null && ext.feeCanChange) {
+      extFlag("Transfer fee can be changed — an authority can raise it to 100%");
+    }
+  }
   return { flags, penalties, safeBlocked };
 }
 
@@ -578,13 +604,16 @@ export function layerGoPlus(
     trust = 0; forceRug = true; safeBlocked = true;
     return { source: "goplus", trust: 0, available: true, flags, forceRug, safeBlocked, rugEvidence: ["sells_blocked"] };
   }
+  // The chain already said these three (judgeContractFacts, audit A-10): GoPlus saying them again would show the same signal twice, in two
+  // wordings. Only for a token that is not trusted: for a trusted issuer the chain says them as information and GoPlus's reading stays.
+  const chainSays = (label: RegExp) => !facts?.trusted && contract.flags.some((f) => label.test(f.label));
   // Solana structural fields (real GoPlus contract, all absent / "0" on a clean token)
-  if (gpStatus(goplus.balance_mutable_authority) === true) { flags.push(makeFlag("Balances can be changed by an authority", "critical", 0)); penalties.push(0.10); safeBlocked = true; }
+  if (gpStatus(goplus.balance_mutable_authority) === true && !chainSays(/^Permanent delegate/)) { flags.push(makeFlag("Balances can be changed by an authority", "critical", 0)); penalties.push(0.10); safeBlocked = true; }
   if (gpStatus(goplus.non_transferable) === true && !contract.flags.some((f) => f.label === NON_TRANSFERABLE_LABEL)) { flags.push(makeFlag(NON_TRANSFERABLE_LABEL, "critical", 0, { tags: ["rug_evidence"] })); penalties.push(0.05); safeBlocked = true; }
   if (gpStatus(goplus.closable) === true) { flags.push(makeFlag("Token accounts can be closed by an authority", "warning", 0)); penalties.push(0.80); }
-  if (Array.isArray(goplus.transfer_hook) && goplus.transfer_hook.length > 0) { flags.push(makeFlag("Transfer hook installed — a custom program runs on every transfer", "warning", 0)); penalties.push(0.75); }
+  if (Array.isArray(goplus.transfer_hook) && goplus.transfer_hook.length > 0 && !chainSays(/^Transfer hook/)) { flags.push(makeFlag("Transfer hook installed — a custom program runs on every transfer", "warning", 0)); penalties.push(0.75); }
   if (gp("is_blacklisted")) { flags.push(makeFlag("Blacklist capability", "critical", 0)); penalties.push(0.30); safeBlocked = true; }
-  if (gp("transfer_pausable")) { flags.push(makeFlag("Transfer pausable", "critical", 0)); penalties.push(0.30); safeBlocked = true; }
+  if (gp("transfer_pausable") && !chainSays(/^Pausable token/)) { flags.push(makeFlag("Transfer pausable", "critical", 0)); penalties.push(0.30); safeBlocked = true; }
   if (gp("hidden_owner")) { flags.push(makeFlag("Hidden owner detected", "critical", 0)); penalties.push(0.30); safeBlocked = true; }
   if (gp("is_proxy")) { flags.push(makeFlag("Upgradeable/proxy contract", "critical", 0)); penalties.push(0.50); safeBlocked = true; }
   const sellTaxRaw = gpNum("sell_tax");
