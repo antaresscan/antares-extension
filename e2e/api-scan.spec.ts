@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { HAS_PRO, SKIP_NO_PRO } from './pro';
 
 const BASE = process.env.E2E_BASE_URL || 'https://antares-extension.vercel.app';
 
@@ -57,7 +58,9 @@ test.describe('API /api/scan \u2014 Comprehensive E2E', () => {
       expect(b).toHaveProperty('score');
       expect(b).toHaveProperty('risk');
       expect(b).toHaveProperty('flags');
-      expect(b).toHaveProperty('layers');
+      // The layers are the analysis: only a Pro caller receives them (the Free view is checked in api-pro-gate.spec.ts).
+      if (HAS_PRO) expect(b).toHaveProperty('layers');
+      else expect(b.proLocked).toBe(true);
       expect(b).toHaveProperty('scoring_version');
       expect(b).toHaveProperty('requestId');
       // Score is a number 0-1000
@@ -69,9 +72,11 @@ test.describe('API /api/scan \u2014 Comprehensive E2E', () => {
       // Flags is an array
       expect(Array.isArray(b.flags)).toBe(true);
       // Layers object has source-named keys
-      expect(typeof b.layers).toBe('object');
-      const layerKeys = Object.keys(b.layers);
-      expect(layerKeys.length).toBeGreaterThan(0);
+      if (HAS_PRO) {
+        expect(typeof b.layers).toBe('object');
+        const layerKeys = Object.keys(b.layers);
+        expect(layerKeys.length).toBeGreaterThan(0);
+      }
     });
 
     test('scans USDC (established token): live verdict probe, reported not gating', async ({ request }) => {
@@ -116,6 +121,7 @@ test.describe('API /api/scan \u2014 Comprehensive E2E', () => {
     });
 
     test('each layer has trust field', async ({ request }) => {
+      test.skip(!HAS_PRO, SKIP_NO_PRO);
       const r = await request.get(`${BASE}/api/scan?ca=${SOL_WRAPPED}`);
       test.skip(r.status() === 429, `Rate-limited (429) on shared CI — soft skip, not a product bug`);
       expect(r.ok(), `API returned ${r.status()} — production /api/scan must succeed (retries: 2)`).toBe(true);

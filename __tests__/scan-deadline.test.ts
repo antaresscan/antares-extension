@@ -123,7 +123,7 @@ function createMockReq(query: Record<string, string> = {}, method = "GET"): Verc
   return {
     method,
     query,
-    headers: { origin: "https://dexscreener.com", "x-forwarded-for": "1.2.3.4" },
+    headers: { origin: "https://dexscreener.com", "x-forwarded-for": "1.2.3.4", "x-antares-install": "test-pro-install-0001" },
     socket: { remoteAddress: "1.2.3.4" },
   } as unknown as VercelRequest;
 }
@@ -279,6 +279,8 @@ function setupGoodTokenMocks() {
 process.env.UPSTASH_REDIS_REST_URL = "https://mock.upstash.io";
 process.env.UPSTASH_REDIS_REST_TOKEN = "mock-token";
 process.env.HELIUS_API_KEY = "mock-helius-key";
+// These tests read the FULL scan, which only a Pro caller receives (api/_lib/pro-gate.ts): this install is a Pro one (the dev escape hatch).
+process.env.DEV_PRO_INSTALLS = "test-pro-install-0001";
 
 const { default: handler } = await import("../api/scan");
 // The cache module is mocked above; import it AFTER the mock variables exist.
