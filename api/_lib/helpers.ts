@@ -3,7 +3,7 @@
 
 import type { VercelResponse } from "@vercel/node";
 import type {
-  Severity, ScanFlag,
+  Severity, ScanFlag, SafeBlockedReason,
   GoPlusTokenResult, GoPlusResponse,
   DexScreenerResponse, RugCheckSummary, RugCheckReport, RugCheckRisk,
 } from "./types";
@@ -42,8 +42,14 @@ export function goPlusBool(val: unknown): boolean {
   return val === "1" || val === 1 || val === true;
 }
 
-export function makeFlag(label: string, severity: Severity, impact: number): ScanFlag {
-  return { label, severity, impact };
+/** The classification a flag carries, set by the layer that creates it (see ScanFlag.reasons). Empty lists are left out of the flag. */
+export interface FlagCodes { reasons?: SafeBlockedReason[]; fallbackReasons?: SafeBlockedReason[] }
+
+export function makeFlag(label: string, severity: Severity, impact: number, codes?: FlagCodes): ScanFlag {
+  const flag: ScanFlag = { label, severity, impact };
+  if (codes?.reasons?.length) flag.reasons = codes.reasons;
+  if (codes?.fallbackReasons?.length) flag.fallbackReasons = codes.fallbackReasons;
+  return flag;
 }
 
 export function getLpLockDurationDays(rugData: RugCheckSummary): number {
