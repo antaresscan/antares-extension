@@ -1005,7 +1005,7 @@ export function layerChart(
     // Nothing traded in the last hours (a dead token) leaves nothing to chart, but a collapse seen in the 30-day history is still said.
     if (collapse) {
       const c = collapseFlag(collapse);
-      return { source: "chart", trust: applyDiminishingPenalties(1.0, [c.penalty]), available: true, flags: [c.flag], forceRug: c.forceRug, safeBlocked: true };
+      return { source: "chart", trust: applyDiminishingPenalties(1.0, [c.penalty]), available: true, flags: [c.flag], forceRug: c.forceRug, safeBlocked: true, ...(c.evidence.length > 0 && { rugEvidence: c.evidence }) };
     }
     return {
       source: "chart", trust: 1.0, available: false,
@@ -1298,14 +1298,16 @@ export function layerChart(
   }
 
   // The collapse from the recent high (see collapseFromPeak): what the short-term rules above cannot see once the crash is a day old.
+  const rugEvidence: RugEvidence[] = [];
   if (collapse) {
     const c = collapseFlag(collapse);
     flags.push(c.flag); penalties.push(c.penalty); safeBlocked = true;
     if (c.forceRug) forceRug = true;
+    rugEvidence.push(...c.evidence);
   }
 
   trust = applyDiminishingPenalties(trust, penalties);
-  return { source: "chart", trust: Math.max(0, trust), available: true, flags, forceRug, safeBlocked };
+  return { source: "chart", trust: Math.max(0, trust), available: true, flags, forceRug, safeBlocked, ...(rugEvidence.length > 0 && { rugEvidence }) };
 }
 
 // ═══ Collapse from the recent high ════════════════════════════════════════════════════════════════
@@ -1333,8 +1335,11 @@ export function collapseFromPeak(daily: OHLCVCandle[] | undefined): Collapse | n
   return { dropPct, peakAgeDays };
 }
 
-/** The flag of a collapse: critical always; a forced RUG while the high is recent (a collapse in progress), critical alone for an old one. */
-function collapseFlag(c: Collapse): { flag: ScanFlag; penalty: number; forceRug: boolean } {
+/**
+ * The flag of a collapse: critical always. While the high is recent (a collapse in progress) it is a forced RUG AND a fact that the token
+ * has already collapsed (RugEvidence "price_collapse": the verdict reads "RUG PULL", not "RUG RISK"); an old collapse is critical alone.
+ */
+function collapseFlag(c: Collapse): { flag: ScanFlag; penalty: number; forceRug: boolean; evidence: RugEvidence[] } {
   const recent = c.peakAgeDays <= COLLAPSE_RECENT_DAYS;
   const n = Math.round(c.peakAgeDays);
   const age = c.peakAgeDays < 1 ? "less than a day" : `${n} day${n === 1 ? "" : "s"}`;
@@ -1342,6 +1347,7 @@ function collapseFlag(c: Collapse): { flag: ScanFlag; penalty: number; forceRug:
     flag: makeFlag(`Collapsed -${Math.round(c.dropPct)}% from its high ${age} ago`, "critical", 0),
     penalty: recent ? 0.10 : 0.30,
     forceRug: recent,
+    evidence: recent ? ["price_collapse"] : [],
   };
 }
 

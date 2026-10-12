@@ -356,7 +356,7 @@ describe("scan handler", () => {
     const scanBody = async () => {
       const res = createMockRes();
       await handler(createMockReq({ ca: WSOL }), res);
-      return (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as { risk: string; flags: Array<{ label: string; severity: string }>; layers: Record<string, { available: boolean }> };
+      return (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as { risk: string; rugKind: string | null; flags: Array<{ label: string; severity: string }>; layers: Record<string, { available: boolean }> };
     };
 
     it("the real GOIF candles (-97 % from a high 2.2 days old) make the scan a RUG, with the collapse flag, even though every 24 h figure is calm", async () => {
@@ -365,6 +365,7 @@ describe("scan handler", () => {
       vi.mocked(fetchDexCandlesDaily).mockResolvedValueOnce(GOIF_CANDLES);
       const body = await scanBody();
       expect(body.risk).toBe("RUG");
+      expect(body.rugKind).toBe("confirmed"); // it already collapsed: RUG PULL, not RUG RISK
       const flag = body.flags.find((f) => /^Collapsed/.test(f.label));
       expect(flag?.label).toBe("Collapsed -97% from its high 2 days ago");
       expect(flag?.severity).toBe("critical");
@@ -388,6 +389,7 @@ describe("scan handler", () => {
       vi.mocked(fetchDexCandlesDaily).mockResolvedValueOnce(bleed);
       const body = await scanBody();
       expect(body.risk).toBe("DANGER");
+      expect(body.rugKind).toBeNull(); // only a RUG verdict has a kind
       expect(body.flags.find((f) => /^Collapsed/.test(f.label))?.label).toBe("Collapsed -95% from its high 20 days ago");
     });
   });

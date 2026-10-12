@@ -7,6 +7,7 @@ import type { DexScreenerPair, RugCheckSummary, RugCheckReport, GoPlusTokenResul
 import { deriveAuthorityFacts, type MintState } from "../api/_lib/facts";
 import { judgeContractFacts } from "../api/_lib/layers";
 import { classifySafeBlockedReasons } from "../api/_lib/scoring";
+import { rugKindOf } from "../api/_lib/pipeline";
 import { dedupeFlags, countVerdictFlags, determineVerdict } from "../api/_lib/pipeline";
 
 // Authorities are facts read from the chain (see facts.ts), then handed to the layers.
@@ -1654,6 +1655,9 @@ describe("layerChart: collapse from the recent high", () => {
     expect(l.forceRug).toBe(true);
     expect(l.safeBlocked).toBe(true);
     expect(verdictOf(l)).toBe("RUG");
+    // it already collapsed: a fact, so the verdict reads RUG PULL, not RUG RISK
+    expect(l.rugEvidence).toEqual(["price_collapse"]);
+    expect(rugKindOf("RUG", [l])).toBe("confirmed");
   });
 
   it("the 24 h and 6 h figures that DexScreener shows for GOIF (+39 %, +5 %) do not hide it: it is read from the history", () => {
@@ -1682,6 +1686,7 @@ describe("layerChart: collapse from the recent high", () => {
     const old = peakAgo(20);
     expect(collapseFlag(old)!.label).toMatch(/^Collapsed -95% from its high 20 days ago$/);
     expect(old.forceRug).toBe(false);
+    expect(old.rugEvidence).toBeUndefined(); // an old bleed is not "it already collapsed in days": no evidence
     expect(old.safeBlocked).toBe(true);
     expect(verdictOf(old)).toBe("DANGER"); // a critical flag, no forced RUG
     expect(old.trust).toBeGreaterThan(fresh.trust); // and a lighter penalty
@@ -1706,6 +1711,7 @@ describe("layerChart: collapse from the recent high", () => {
     expect(dead.available).toBe(true);
     expect(collapseFlag(dead)).toBeDefined();
     expect(dead.forceRug).toBe(true);
+    expect(dead.rugEvidence).toEqual(["price_collapse"]);
     // without a collapse nothing changes: no recent candles = unavailable
     expect(layerChart([], null, null, undefined, fourHour([100, 99, 98, 99, 100, 101])).available).toBe(false);
     expect(layerChart([], null, null).available).toBe(false);
