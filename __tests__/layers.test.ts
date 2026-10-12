@@ -3,7 +3,7 @@ import {
   layerChart, layerDexScreener, layerGoPlus, layerRugCheck, layerHelius,
   layerSolscan, layerCrossValidation, isEstablished, ESTABLISHED_LINKS_MIN_LIQUIDITY_USD,
 } from "../api/_lib/layers";
-import type { DexScreenerPair, RugCheckSummary, GoPlusTokenResult, HeliusHolder } from "../api/_lib/types";
+import type { DexScreenerPair, RugCheckSummary, RugCheckReport, GoPlusTokenResult, HeliusHolder } from "../api/_lib/types";
 import { deriveAuthorityFacts, type MintState } from "../api/_lib/facts";
 import { judgeContractFacts } from "../api/_lib/layers";
 import { classifySafeBlockedReasons } from "../api/_lib/scoring";
@@ -1509,5 +1509,95 @@ describe("layerDexScreener — no liquidity field (M8)", () => {
 
   it("witness: a reported thin liquidity on pump.fun is judged as before", () => {
     expect(labels(layerDexScreener(noLiquidity("pumpfun", 5_000, { liquidity: { usd: 500 } }), 9_000, 1 * HOUR), "critical")).toContain("Very low liquidity (<$1k)");
+  });
+});
+
+// ═══ LAYER 2 — the bundle ladder (audit A-08) ═══════════════════════════════
+// The ladder used to run backwards at its low end: above 20 % of supply the verdict was forced to RUG, from 5 to 20 % it was only
+// critical, and at 5 % or less it was forced to RUG again with a heavier penalty. A small bundle was judged worse than a large one.
+
+describe("layerRugCheck: the bundle ladder", () => {
+  const summary = { lpBurned: true, risks: [] } as unknown as RugCheckSummary;
+  const reportWith = (pct: number): RugCheckReport =>
+    ({ risks: [{ name: "Bundle detected", description: `Bundle holds ${pct}% of supply`, score: 500 }] }) as unknown as RugCheckReport;
+  const bundleLayer = (pct: number) => layerRugCheck(summary, reportWith(pct), "someMint123");
+  const bundleFlag = (pct: number) => bundleLayer(pct).flags.find((f) => /bundle/i.test(f.label))!;
+
+  const verdictOf = (l: ReturnType<typeof layerRugCheck>) => {
+    const counts = countVerdictFlags(dedupeFlags(l.flags));
+    return determineVerdict({
+      score: 950, forceRug: l.forceRug, safeBlocked: l.safeBlocked, safeBlockedReasons: classifySafeBlockedReasons([l]),
+      sourcesUsedCount: 5, warningFlagsCount: counts.warning, criticalFlagsCount: counts.critical, pumpPriceOnlyFlagsCount: counts.pumpPriceOnly,
+    });
+  };
+
+  it("5 % of supply or less: a warning (\"Small bundle\") that blocks SAFE, never a forced RUG", () => {
+    for (const pct of [0.5, 1, 3, 5]) {
+      const l = bundleLayer(pct);
+      const f = bundleFlag(pct);
+      expect(f.severity, `${pct}%`).toBe("warning");
+      expect(f.label, `${pct}%`).toMatch(/^Small bundle detected/);
+      expect(l.safeBlocked, `${pct}%`).toBe(true);
+      expect(l.forceRug, `${pct}%`).toBe(false);
+    }
+  });
+
+  it("more than 5 % and up to 20 %: critical, blocks SAFE, not a forced RUG (unchanged)", () => {
+    for (const pct of [5.5, 10, 15, 20]) {
+      const l = bundleLayer(pct);
+      expect(bundleFlag(pct).severity, `${pct}%`).toBe("critical");
+      expect(l.safeBlocked, `${pct}%`).toBe(true);
+      expect(l.forceRug, `${pct}%`).toBe(false);
+    }
+  });
+
+  it("more than 20 %: critical and a forced RUG (unchanged)", () => {
+    for (const pct of [20.5, 30, 60]) {
+      const l = bundleLayer(pct);
+      expect(bundleFlag(pct).severity, `${pct}%`).toBe("critical");
+      expect(l.forceRug, `${pct}%`).toBe(true);
+    }
+  });
+
+  it("the more supply is bundled, the harsher it is: the verdict never gets milder as the share grows (3 % was RUG, 15 % was not)", () => {
+    const rank = { SAFE: 0, CAUTION: 1, DANGER: 2, RUG: 3 } as const;
+    const pcts = [0.5, 1, 3, 5, 5.5, 10, 15, 20, 20.5, 30, 60];
+    const ranks = pcts.map((p) => rank[verdictOf(bundleLayer(p))]);
+    for (let i = 1; i < ranks.length; i++) expect(ranks[i], `${pcts[i]}% after ${pcts[i - 1]}%`).toBeGreaterThanOrEqual(ranks[i - 1]);
+    expect(verdictOf(bundleLayer(3))).toBe("DANGER"); // blocked from SAFE by a hard reason, not RUG
+    expect(verdictOf(bundleLayer(15))).toBe("DANGER");
+    expect(verdictOf(bundleLayer(30))).toBe("RUG");
+  });
+
+  it("a small bundle is penalised less than a mid one, which is penalised less than a huge one", () => {
+    expect(bundleLayer(3).trust).toBeGreaterThan(bundleLayer(15).trust);
+    expect(bundleLayer(15).trust).toBeGreaterThan(bundleLayer(30).trust);
+  });
+
+  it("under 1 % the label says so instead of rounding to ~0 %", () => {
+    expect(bundleFlag(0.5).label).toBe("Small bundle detected (~<1% of supply)");
+    expect(bundleFlag(3).label).toBe("Small bundle detected (~3% of supply)");
+  });
+
+  it("only the summary names a bundle (the report that holds its size is missing): critical, blocks SAFE, but its size is unknown so it does not force RUG", () => {
+    const withRisk = { lpBurned: true, risks: [{ name: "Bundler activity", level: "danger" }] } as unknown as RugCheckSummary;
+    const l = layerRugCheck(withRisk, null, "someMint123");
+    const f = l.flags.find((x) => /bundler detected/i.test(x.label))!;
+    expect(f.severity).toBe("critical");
+    expect(l.safeBlocked).toBe(true);
+    expect(l.forceRug).toBe(false);
+    expect(verdictOf(l)).toBe("DANGER");
+  });
+
+  it("every bundle flag carries the safe-gate reason \"bundle\" (the verdict reads the code, not the label)", () => {
+    for (const pct of [0.5, 3, 15, 30]) {
+      expect(bundleFlag(pct).reasons, `${pct}%`).toEqual(["bundle"]);
+      expect(classifySafeBlockedReasons([bundleLayer(pct)]), `${pct}%`).toEqual(["bundle"]);
+    }
+  });
+
+  it("no bundle in the report and none in the summary: nothing is raised", () => {
+    const l = layerRugCheck(summary, { risks: [] } as unknown as RugCheckReport, "someMint123");
+    expect(l.flags.some((f) => /bundle/i.test(f.label))).toBe(false);
   });
 });

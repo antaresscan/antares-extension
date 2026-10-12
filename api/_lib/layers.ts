@@ -336,6 +336,9 @@ export function layerRugCheck(
     }
   }
 
+  // The bundle ladder (audit A-08). It used to run backwards at its low end: above 20 % of supply the verdict was forced to RUG, from
+  // 5 to 20 % it was only critical, and at 5 % or less (3 % for instance) it was forced to RUG AGAIN with a heavier penalty: a small
+  // bundle was judged worse than a large one. Now the more supply is bundled, the harsher it is, and only more than 20 % forces RUG.
   const bundleInReport = riskIncludes(rugReportData, /bundle/i);
   const bundledPct = bundleInReport ? extractBundlePct(rugReportData) : 0;
   if (bundleInReport && bundledPct > 0.20) {
@@ -345,12 +348,15 @@ export function layerRugCheck(
     flags.push(makeFlag(`Bundle detected (~${Math.round(bundledPct * 100)}% of supply)`, "critical", 0, { reasons: ["bundle"] }));
     penalties.push(0.20); safeBlocked = true;
   } else if (bundleInReport) {
-    flags.push(makeFlag("Bundle activity detected (RugCheck)", "critical", 0, { reasons: ["bundle"] }));
-    penalties.push(0.20); forceRug = true; safeBlocked = true;
+    // 5 % of supply or less, as the report's own description says: a warning that keeps the token out of SAFE, never a forced RUG.
+    flags.push(makeFlag(`Small bundle detected (~${bundledPct < 0.01 ? "<1" : Math.round(bundledPct * 100)}% of supply)`, "warning", 0, { reasons: ["bundle"] }));
+    penalties.push(0.40); safeBlocked = true;
   }
   if (!bundleInReport && riskIncludes(rugData, /bundler|bundle/i)) {
+    // Only the SUMMARY names a bundle (the full report, which holds its size, is missing): the size is unknown, so it is critical and keeps
+    // the token out of SAFE, but forcing RUG would judge a bundle of unknown size as the largest one.
     flags.push(makeFlag("Bundler detected (RugCheck summary)", "critical", 0, { reasons: ["bundle"] }));
-    penalties.push(0.15); forceRug = true; safeBlocked = true;
+    penalties.push(0.15); safeBlocked = true;
   }
             if (rugData.lpBurned === true) {
         flags.push(makeFlag("LP Burned ✓", "bonus", 0, { fallbackReasons: ["lp"], tags: ["lp"] })); trust = Math.min(1.0, trust * 1.10);
