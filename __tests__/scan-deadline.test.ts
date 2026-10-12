@@ -1,5 +1,4 @@
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
-import { stubFetch } from "./fixtures/fetch-double";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 // ---- Mock all external modules BEFORE importing handler ----
@@ -116,7 +115,7 @@ vi.mock("../api/_lib/fetchers", () => ({
 
 // Mock global fetch for DexScreener, RugCheck, GoPlus
 const mockFetch = vi.fn();
-stubFetch(mockFetch);
+vi.stubGlobal("fetch", mockFetch);
 
 // ---- Helpers ----
 function createMockReq(query: Record<string, string> = {}, method = "GET"): VercelRequest {
