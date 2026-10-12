@@ -30,9 +30,9 @@ import { decideTier, parseDevTier, type Tier, type TierDecision, type TierFacts 
 
 export const HISTORY_HARD_CAP = 1000;
 export const HISTORY_DAY_WINDOW = 30; // expose last 30 days on GET /api/history
-export const TIER_KEY = (id: string) => `user:${id}:tier`;
-export const TIER_EXPIRES_KEY = (id: string) => `user:${id}:tierExpires`;
-export const HISTORY_KEY = (id: string) => `user:${id}:history`;
+// Defined in keys.ts; still exported from here for the modules and tests that import them from this file.
+import { ACCOUNT_INSTALL_KEY, TIER_KEY, TIER_EXPIRES_KEY, HISTORY_KEY } from "./keys";
+export { TIER_KEY, TIER_EXPIRES_KEY, HISTORY_KEY };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -134,7 +134,7 @@ export async function isDevAllowlistedInstall(
   if (isDevProInstall(installId)) return true;
   if (!isAvailable() || !redis) return false;
   try {
-    const email = await redis.get<string>(`account:install:${installId}`);
+    const email = await redis.get<string>(ACCOUNT_INSTALL_KEY(installId));
     if (!email) return false;
     return isDevLifetimeEmail(email) || isDevProEmail(email);
   } catch (err) {
@@ -224,7 +224,7 @@ export async function resolveTierAndBypass(
     },
     boundEmail: async () => {
       try {
-        return (await (redis as Redis).get<string>(`account:install:${installId}`)) ?? null;
+        return (await (redis as Redis).get<string>(ACCOUNT_INSTALL_KEY(installId))) ?? null;
       } catch (err) {
         logger.warn("user", "binding read failed during tier resolve", { error: String(err) });
         return null;
