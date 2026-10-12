@@ -31,6 +31,8 @@ export interface Transfer {
 export interface ScanResponseData {
   score: number;
   risk: string;
+  /** What a RUG verdict means: "confirmed" (an event happened to the token) or "risk" (its structure only). Absent on an older cached scan. */
+  rugKind?: string | null;
   flags: ScanResponseFlag[];
   pair?: {
     baseToken?: { symbol?: string; name?: string; address?: string };

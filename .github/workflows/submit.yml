@@ -13,7 +13,7 @@ jobs:
           node-version: "22"
 
       - name: Install dependencies
-        run: npm install
+        uses: ./.github/actions/install-deps
 
       - name: Typecheck
         run: npx tsc --noEmit

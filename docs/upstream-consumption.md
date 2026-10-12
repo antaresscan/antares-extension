@@ -14,7 +14,7 @@ the inventory. The live numbers come from `/api/health?usage=N` (see "Measuring"
 | Helius | **13.1 on average**: `getTokenAccounts` 9.1, `getMultipleAccounts` 2, `getAccountInfo` 1, `getTokenLargestAccounts` 1 | credits: RPC 1, DAS 10, Enhanced Transactions 100 | yes: authorities, supply, holders, concentration |
 | GeckoTerminal | 2 (98 % of scans) | free, **30 a minute per address** | yes: chart layer |
 | Solscan Pro | 3, **all refused (401)** with the current plan | plan-dependent | no data comes back |
-| Gemini | 1 (not recorded) | free quota in requests a day | no: the AI summary is only displayed (the overlay button is **locked for the free tier**, `token.html` shows it to everyone) |
+| Gemini | 1 (not recorded) | free quota in requests a day | no: the AI summary is only displayed (the overlay button is **locked for the free tier**, and since the Pro/Free line moved to the server, `/api/scan` no longer sends the summary to a Free caller either: only Pro callers and `token.html` for a Pro account see it) |
 | **Insider graph** (Helius, not recorded) | 20 `getSignaturesForAddress` + 1 Enhanced Transactions | **about 120 credits** | **no: display only** |
 
 The corpus is biased towards large tokens (9 holder pages on average: most hit the 10-page cap). A new memecoin with a few hundred

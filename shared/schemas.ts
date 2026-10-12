@@ -45,6 +45,9 @@ export const ScanResponseFlagSchema = z.object({
 export const ScanResponseDataSchema = z.object({
   score: z.number(),
   risk: z.string(),
+  // What a RUG verdict means: "confirmed" (an event happened to the token) or "risk" (its structure only). A plain string, like `risk`:
+  // an unknown future value must not fail the whole parse. Absent on a scan cached before the field existed.
+  rugKind: z.string().nullable().optional(),
   flags: z.array(ScanResponseFlagSchema),
   pair: z.object({
     baseToken: z.object({
