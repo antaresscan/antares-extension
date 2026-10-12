@@ -618,3 +618,35 @@ describe("HARD_BLOCK_REASONS contract", () => {
     expect(HARD_BLOCK_REASONS.has("holders")).toBe(false)
   })
 })
+
+// ─── A clean token is SAFE: no flag to show means no reason to hold SAFE back ────────────────────────────────────────────────
+// The overlay prints "No issues found" for a token with no visible flag. A scan where a source was slow or down (3 answering sources
+// instead of 4) came back CAUTION with "No issues found" beside it, then flipped to SAFE on the next scan.
+describe("a token with nothing to show is SAFE", () => {
+  const clean = (over: Partial<VerdictInput> = {}): VerdictInput => ({ score: 900, forceRug: false, safeBlocked: false, sourcesUsedCount: 5, warningFlagsCount: 0, criticalFlagsCount: 0, ...over })
+
+  it("3 answering sources are enough, blocked by a soft reason or not", () => {
+    expect(determineVerdict(clean({ sourcesUsedCount: 3, score: 850 }))).toBe("SAFE")
+    expect(determineVerdict(clean({ sourcesUsedCount: 3, score: 850, safeBlocked: true, safeBlockedReasons: ["lp_unverified"] }))).toBe("SAFE")
+    expect(determineVerdict(clean({ sourcesUsedCount: 4, score: 780 }))).toBe("SAFE")
+  })
+
+  it("but not with fewer: 2 sources are too thin to say SAFE", () => {
+    expect(determineVerdict(clean({ sourcesUsedCount: 2, score: 900 }))).toBe("CAUTION")
+    expect(determineVerdict(clean({ sourcesUsedCount: 2, score: 900, safeBlocked: true, safeBlockedReasons: ["lp_unverified"] }))).toBe("CAUTION")
+  })
+
+  it("every other brake is untouched: a warning, a price-pump notice, unverified holders, a hard reason, a critical flag, a forced RUG", () => {
+    expect(determineVerdict(clean({ sourcesUsedCount: 3, warningFlagsCount: 1 }))).toBe("CAUTION")
+    expect(determineVerdict(clean({ sourcesUsedCount: 3, pumpPriceOnlyFlagsCount: 1 }))).toBe("CAUTION")
+    expect(determineVerdict(clean({ sourcesUsedCount: 3, safeBlocked: true, safeBlockedReasons: ["holders"] }))).toBe("CAUTION")
+    expect(determineVerdict(clean({ sourcesUsedCount: 3, safeBlocked: true, safeBlockedReasons: ["mint"] }))).toBe("DANGER")
+    expect(determineVerdict(clean({ sourcesUsedCount: 3, criticalFlagsCount: 1 }))).toBe("DANGER")
+    expect(determineVerdict(clean({ sourcesUsedCount: 3, forceRug: true }))).toBe("RUG")
+  })
+
+  it("the score floor stays: a mediocre score is not lifted to SAFE", () => {
+    expect(determineVerdict(clean({ sourcesUsedCount: 3, score: 700 }))).toBe("CAUTION")
+  })
+})
+

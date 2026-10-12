@@ -155,7 +155,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v47"; // 2026-10-12: the bundle ladder no longer runs backwards: 5 % of supply or less is a "Small bundle" warning that blocks SAFE (it was forced to RUG, harsher than a 15 % bundle), and a bundle named only by RugCheck's summary (size unknown) is critical without forcing RUG; more than 20 % still forces RUG. Previous (v46): a scan started from a PAIR address now reads the RugCheck report (bundle, snipers, rug history, creator sells) of the token it resolves to, and is cached 30 s only when that report is missing; flushes the verdicts cached from pair-address scans without those checks. Previous (v45): with GoPlus down, an active mint / freeze authority (read on the chain) or a non-transferable token still raises its flag and blocks SAFE (it used to read clean); official mints (USDC...) stay information only then. Previous (v44): a pair on a bonding curve (pump.fun, Meteora DBC) with no liquidity field has an UNKNOWN liquidity while young (warning, SAFE blocked) instead of $0 (critical, abandoned pool forced to RUG); stuck curve tokens unchanged; flushes cached verdicts.
+const ENGINE_VERSION_MANUAL = "v49"; // 2026-10-12: a token with no flag to show is SAFE with 3 answering sources instead of 4 (a slow or down source used to give CAUTION next to "No issues found", then SAFE on the next scan); the overlay says "Limited data" for a CAUTION with nothing to count. Previous (v47): the bundle ladder no longer runs backwards: 5 % of supply or less is a "Small bundle" warning that blocks SAFE (it was forced to RUG, harsher than a 15 % bundle), and a bundle named only by RugCheck's summary (size unknown) is critical without forcing RUG; more than 20 % still forces RUG. Previous (v46): a scan started from a PAIR address now reads the RugCheck report (bundle, snipers, rug history, creator sells) of the token it resolves to, and is cached 30 s only when that report is missing; flushes the verdicts cached from pair-address scans without those checks. Previous (v45): with GoPlus down, an active mint / freeze authority (read on the chain) or a non-transferable token still raises its flag and blocks SAFE (it used to read clean); official mints (USDC...) stay information only then. Previous (v44): a pair on a bonding curve (pump.fun, Meteora DBC) with no liquidity field has an UNKNOWN liquidity while young (warning, SAFE blocked) instead of $0 (critical, abandoned pool forced to RUG); stuck curve tokens unchanged; flushes cached verdicts.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.
@@ -189,6 +189,13 @@ function fingerprint(): string {
 }
 
 export const ENGINE_VERSION = `${ENGINE_VERSION_MANUAL}-${fingerprint()}`;
+
+// ── CLEAN TOKEN = SAFE ───────────────────────────────────────────────────────────────────────────
+// A token with no visible warning or critical flag, no hard block reason, verified holders and no price-pump notice is SAFE (the
+// "no-flags override" of determineVerdict): the overlay prints "No issues found" for it, so the verdict must say SAFE. It used to need 4
+// answering sources, and a scan where a source was slow or down (typically GoPlus or RugCheck) came back CAUTION with "No issues found"
+// next to it, then flipped to SAFE on the next scan. 3 sources: DexScreener plus two of Helius / GoPlus / RugCheck / the chart.
+export const MIN_SOURCES_FOR_CLEAN_SAFE = 3;
 
 // ── HARD BLOCK REASONS (single source of truth) ──────────────
 export const HARD_BLOCK_REASONS = new Set([

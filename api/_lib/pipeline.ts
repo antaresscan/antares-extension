@@ -6,7 +6,7 @@ import type {
   SafeGateInput, EstablishedBonusInput, VerdictInput,
 } from "./types";
 import { makeFlag } from "./helpers";
-import { HARD_BLOCK_REASONS, SOFT_REASONS } from "./constants";
+import { HARD_BLOCK_REASONS, SOFT_REASONS, MIN_SOURCES_FOR_CLEAN_SAFE } from "./constants";
 import { isKnownDaoTreasury } from "./known-treasuries";
 
 export function evaluatePostLayerFlags(input: PostLayerFlagsInput): PostLayerFlagsResult {
@@ -205,7 +205,7 @@ export function determineVerdict(input: VerdictInput): Verdict {
       !hasPumpFlag &&
       (input.warningFlagsCount ?? 0) === 0 &&
       input.score >= 750 &&
-      (input.sourcesUsedCount ?? 0) >= 4
+      (input.sourcesUsedCount ?? 0) >= MIN_SOURCES_FOR_CLEAN_SAFE
     ) return "SAFE";
 
     // Soft reasons (age/holders) only: tightened from 550 to 700 for CAUTION
@@ -228,7 +228,7 @@ export function determineVerdict(input: VerdictInput): Verdict {
   // infrastructure-side score drag (Helius unavailable, Holder data
   // unreliable, etc.) prevented the score from reaching 900.
   //
-  // Gated by sourcesUsedCount >= 4 so a token with thin upstream
+  // Gated by sourcesUsedCount >= MIN_SOURCES_FOR_CLEAN_SAFE (3) so a token with thin upstream
   // coverage can't sneak in via "no warnings because no data".
   // The score floor (750) is intentionally above the CAUTION floor
   // (600) so a token that's borderline-clean but actually mediocre
@@ -237,7 +237,7 @@ export function determineVerdict(input: VerdictInput): Verdict {
     input.warningFlagsCount === 0 &&
     !hasPumpFlag &&
     input.score >= 750 &&
-    input.sourcesUsedCount >= 4
+    input.sourcesUsedCount >= MIN_SOURCES_FOR_CLEAN_SAFE
   ) {
     return "SAFE";
   }
