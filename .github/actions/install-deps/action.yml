@@ -1,0 +1,32 @@
+name: Install dependencies
+description: >
+  `npm ci` with the same npm that writes package-lock.json, retried when the
+  npm registry hiccups. Single place for what every workflow used to repeat.
+
+runs:
+  using: composite
+  steps:
+    - name: npm ci
+      shell: bash
+      run: |
+        # Why npm 11 and not the npm 10 that ships with Node 22: the lockfile
+        # is written by npm 11 (locally and by Dependabot). npm 10's strict
+        # `npm ci` rejects such a lockfile ("Missing: react@18.3.1 from lock
+        # file": @plasmohq/consolidate lists react 18 as an OPTIONAL peer and
+        # npm 10 wants to place it, npm 11 does not). npm 11 also accepts a
+        # lockfile written by npm 10, so this is safe in both directions.
+        # Keep this version in line with the npm used to regenerate the lock.
+        retry() {
+          for i in 1 2 3; do
+            if "$@"; then return 0; fi
+            echo "'$*' failed (attempt $i) — backing off ${i}0s"
+            sleep $((i * 10))
+          done
+          return 1
+        }
+        # GitHub-hosted runners occasionally ECONNRESET against the npm
+        # registry on first connect: three attempts with linear backoff cover
+        # the transient case without papering over a real outage.
+        retry npm install --global npm@11.8.0 --no-audit --no-fund
+        npm --version
+        retry npm ci --no-audit --no-fund

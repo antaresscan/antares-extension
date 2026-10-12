@@ -39,13 +39,7 @@ jobs:
           cache: "npm"
 
       - name: Install dependencies
-        run: |
-          for i in 1 2 3; do
-            if npm install --no-audit --no-fund; then exit 0; fi
-            echo "npm install failed (attempt $i) — backing off ${i}0s"
-            sleep $((i * 10))
-          done
-          exit 1
+        uses: ./.github/actions/install-deps
 
       # The `api` project talks HTTP only: no browser to install.
       - name: Engine contract on production
