@@ -259,6 +259,11 @@ export function rugKindOf(risk: Verdict, layers: LayerResult[]): RugKind | null 
   return layers.some((l) => l.available && (l.rugEvidence?.length ?? 0) > 0) ? "confirmed" : "risk";
 }
 
+/** A flag as the clients receive it: the label, the severity and the impact. The codes the layers put on it (ScanFlag.reasons) are the engine's own. */
+export function toPublicFlag(f: ScanFlag): ScanFlag {
+  return { label: f.label, severity: f.severity, impact: f.impact };
+}
+
 // ─── Flags: deduplication and the counts the verdict reads ──────────────────────────────────────────────────────────
 //
 // The verdict must be decided on what the user SEES. Several layers can emit identical flags for the same signal, so the list is
