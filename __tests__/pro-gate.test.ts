@@ -13,14 +13,15 @@ import { describe, it, expect, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { VercelResponse } from "@vercel/node";
-import { FREE_SCAN_FIELDS, PRO_FLAG_PLACEHOLDER, enforceProGate, isScanBody, redactScanForFree } from "../api/_lib/pro-gate";
+import { FREE_SCAN_FIELDS, PRO_FLAG_PLACEHOLDER, PRO_SCAN_FIELDS, enforceProGate, isScanBody, redactScanForFree } from "../api/_lib/pro-gate";
 import { PIPELINE_STATUS_PATTERN, countsInOverlaySummary } from "../shared/flag-summary";
 import { isHoldersUnverifiedFlag } from "../shared/holders-unverified";
 import golden from "./replay/golden.json";
 
 const full = {
   score: 410,
-  risk: "DANGER",
+  risk: "RUG",
+  rugKind: "risk",
   flags: [
     { label: "Top 10 holders > 70%", severity: "critical", impact: -200 },
     { label: "Mint authority active", severity: "warning", impact: -80 },
@@ -91,7 +92,7 @@ describe("what a Free caller receives", () => {
   const view = redactScanForFree(full);
 
   it("the verdict, the score, the Sell/Mint/Freeze/LP line and the public market data", () => {
-    expect(view.risk).toBe("DANGER");
+    expect(view.risk).toBe("RUG");
     expect(view.score).toBe(410);
     expect([view.honeypot, view.mintAuthority, view.freezeAuthority, view.lpBurned, view.lpLocked]).toEqual([false, true, false, false, false]);
     expect(view.liquidity).toBe(42000);
@@ -99,6 +100,11 @@ describe("what a Free caller receives", () => {
     expect(view.tokenSymbol).toBe("TKN");
     expect(view.candles).toEqual(full.candles);
     expect(view.resolvedMint).toBe(full.resolvedMint);
+  });
+
+  it("the verdict word is the same for Free and Pro: rugKind (RUG CONFIRMED / RUG RISK) is in the Free view", () => {
+    expect(view.rugKind).toBe("risk");
+    expect(redactScanForFree({ ...full, rugKind: "confirmed" }).rugKind).toBe("confirmed");
   });
 
   it("says it is the Free view, so token.html can show the Pro message instead of an empty page", () => {
@@ -140,6 +146,36 @@ describe("what a Free caller receives", () => {
 
   it("is idempotent", () => {
     expect(redactScanForFree(view as never)).toEqual(view);
+  });
+});
+
+describe("every field of a scan is on one side of the line, on purpose", () => {
+  // The fields of ScanResult, read from its declaration: a field someone adds to the scan fails here until it is put in FREE_SCAN_FIELDS or
+  // PRO_SCAN_FIELDS. The gate is an allowlist, so an unlisted field would silently be Pro, and a part of the verdict could vanish for Free callers.
+  const declared = (() => {
+    // Without a backslash escape in sight: the carriage returns a Windows checkout may add are removed by their character code.
+    const src = readFileSync(fileURLToPath(new URL("../api/_lib/types.ts", import.meta.url)), "utf8").split(String.fromCharCode(13)).join("");
+    const block = src.slice(src.indexOf("export interface ScanResult {"));
+    const body = block.slice(0, block.indexOf("\n}\n"));
+    return Array.from(body.matchAll(/^\s+([A-Za-z0-9_]+)\??:/gm)).map((m) => m[1]);
+  })();
+
+  it("finds the declaration (the guard is not blind)", () => {
+    expect(declared.length).toBeGreaterThan(40);
+    expect(declared).toContain("risk");
+    expect(declared).toContain("aiSummary");
+  });
+
+  it("every field of ScanResult is Free, Pro, or the flags", () => {
+    const known = new Set<string>([...FREE_SCAN_FIELDS, ...PRO_SCAN_FIELDS, "flags"]);
+    expect(declared.filter((k) => !known.has(k)), "a field of ScanResult is neither in FREE_SCAN_FIELDS nor in PRO_SCAN_FIELDS (api/_lib/pro-gate.ts): decide which side of the line it is on").toEqual([]);
+  });
+
+  it("no field is on both sides, and no listed field is unknown to ScanResult", () => {
+    const free = new Set<string>(FREE_SCAN_FIELDS);
+    expect(PRO_SCAN_FIELDS.filter((k) => free.has(k))).toEqual([]);
+    const all = new Set(declared);
+    expect([...FREE_SCAN_FIELDS, ...PRO_SCAN_FIELDS].filter((k) => !all.has(k)), "a listed field is not in ScanResult any more: remove it").toEqual([]);
   });
 });
 
