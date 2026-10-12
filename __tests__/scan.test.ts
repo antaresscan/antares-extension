@@ -85,7 +85,7 @@ const mockPublicRpcGetMintAccount = vi.fn();
 
 // getAccountInfo(jsonParsed) on a mint, in the real shape (supply + authorities, as the Helius call now returns).
 // Defaults: a classic mint, 100,000 supply, both authorities renounced.
-function mintAccountResponse(o: { supply?: number; decimals?: number; mintAuthority?: string | null; freezeAuthority?: string | null; program?: string; extensions?: string[] } = {}) {
+function mintAccountResponse(o: { supply?: number; decimals?: number; mintAuthority?: string | null; freezeAuthority?: string | null; program?: string; extensions?: Array<string | { extension: string; state?: Record<string, unknown> }> } = {}) {
   const decimals = o.decimals ?? 0;
   return {
     result: {
@@ -99,7 +99,7 @@ function mintAccountResponse(o: { supply?: number; decimals?: number; mintAuthor
               supply: String((o.supply ?? 100000) * 10 ** decimals),
               mintAuthority: o.mintAuthority ?? null,
               freezeAuthority: o.freezeAuthority ?? null,
-              ...(o.extensions ? { extensions: o.extensions.map((extension) => ({ extension })) } : {}),
+              ...(o.extensions ? { extensions: o.extensions.map((e) => (typeof e === "string" ? { extension: e } : e)) } : {}),
             },
           },
         },
@@ -1090,6 +1090,87 @@ describe("scan handler — a price crash on a blue chip", () => {
   it("a blue chip that lost more than 70 % in 6 h is no longer a market-wide sell-off: RUG", async () => {
     scanCrash({ ...bar, pc6: -75, pc1: -22, pc24: -80 });
     expect((await run()).risk).toBe("RUG");
+  });
+});
+
+// ─── Token-2022 extensions through the whole scan (audit A-10) ─────────────────────────────────────────────────────────────────
+describe("scan handler — Token-2022 extensions", () => {
+  // Not So1111...: wrapped SOL is on the list of official mints, whose authorities and extensions are information only.
+  const MINT = "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU";
+  const ADDR = "2apBGMsS6ti9RyF5TwQTDswXBWskiJP2LD4cUEDqYJjk";
+  const fee = (bps: number, authority: string | null) => ({ extension: "transferFeeConfig", state: {
+    newerTransferFee: { epoch: 1, maximumFee: 0, transferFeeBasisPoints: bps }, olderTransferFee: { epoch: 1, maximumFee: 0, transferFeeBasisPoints: bps }, transferFeeConfigAuthority: authority } });
+  const metadata = [{ extension: "metadataPointer", state: { authority: null, metadataAddress: ADDR } }, { extension: "tokenMetadata", state: { name: "Blue", symbol: "BLUE" } }];
+
+  function token2022(extensions: Array<{ extension: string; state?: Record<string, unknown> }>, goplusDown = false) {
+    setupGoodTokenMocks();
+    mockHeliusGetMintAccount.mockResolvedValue(mintAccountResponse({ program: "spl-token-2022", extensions }));
+    const goodMocks = mockFetch.getMockImplementation() as (url: string, ...rest: unknown[]) => Promise<unknown>;
+    mockFetch.mockImplementation(async (url: string, ...rest: unknown[]) => {
+      const answer = (await goodMocks(url, ...rest)) as { ok: boolean; json: () => Promise<unknown> };
+      if (url.includes("gopluslabs")) {
+        if (goplusDown) return { ok: false, json: () => Promise.resolve(null) };
+        const j = (await answer.json()) as { result: Record<string, unknown> };
+        return { ok: true, json: () => Promise.resolve({ result: { [MINT]: Object.values(j.result)[0] } }) };
+      }
+      if (url.includes("dexscreener")) {
+        const j = (await answer.json()) as { pairs: Array<{ baseToken: { address: string } }> };
+        return { ok: true, json: () => Promise.resolve({ pairs: j.pairs.map((p) => ({ ...p, baseToken: { ...p.baseToken, address: MINT } })) }) };
+      }
+      return answer;
+    });
+  }
+  async function run() {
+    const res = createMockRes();
+    await handler(createMockReq({ ca: MINT }), res);
+    return (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as { risk: string; flags: Array<{ label: string; severity: string }> };
+  }
+  const labels = (b: { flags: Array<{ label: string }> }) => b.flags.map((f) => f.label);
+
+  it("witness: a Token-2022 token with only metadata is read as before (nothing about the extensions, not blocked by them)", async () => {
+    token2022(metadata);
+    const body = await run();
+    expect(labels(body).some((l) => /delegate|pausable|frozen|hook|transfer fee/i.test(l))).toBe(false);
+    expect(body.risk).toBe("SAFE");
+  });
+
+  it("a permanent delegate and a fee an authority can change: critical flags, not SAFE", async () => {
+    token2022([...metadata, { extension: "permanentDelegate", state: { delegate: ADDR } }, fee(0, ADDR)]);
+    const body = await run();
+    expect(labels(body)).toEqual(expect.arrayContaining(["Permanent delegate — an address can move or burn any holder's tokens", "Transfer fee can be changed — an authority can raise it to 100%"]));
+    expect(body.flags.find((f) => /^Permanent delegate/.test(f.label))?.severity).toBe("critical");
+    expect(body.risk).not.toBe("SAFE");
+    expect(["DANGER", "RUG"]).toContain(body.risk);
+  });
+
+  it("the audit's proof case: GoPlus not answering does not hide them (permanent delegate + fee authority, still not SAFE)", async () => {
+    token2022([...metadata, { extension: "permanentDelegate", state: { delegate: ADDR } }, fee(0, ADDR)], true);
+    const body = await run();
+    expect(labels(body)).toEqual(expect.arrayContaining(["Permanent delegate — an address can move or burn any holder's tokens"]));
+    expect(body.risk).not.toBe("SAFE");
+  });
+
+  it("a 4 % transfer fee with its authority renounced ($CWIF, BURN): a warning, CAUTION, no longer SAFE", async () => {
+    token2022([...metadata, fee(400, null)]);
+    const body = await run();
+    expect(body.flags.find((f) => /^Transfer fee 4% on every transfer/.test(f.label))?.severity).toBe("warning");
+    expect(body.risk).toBe("CAUTION");
+  });
+
+  it("a fee extension at 0 % with no authority is harmless: nothing is said", async () => {
+    token2022([...metadata, fee(0, null)]);
+    const body = await run();
+    expect(labels(body).some((l) => /transfer fee/i.test(l))).toBe(false);
+    expect(body.risk).toBe("SAFE");
+  });
+
+  it("a hook extension with no program set (as PYUSD and the tokenised stocks have it) says nothing; with a program set it is critical", async () => {
+    token2022([...metadata, { extension: "transferHook", state: { authority: ADDR, programId: null } }]);
+    expect(labels(await run()).some((l) => /^Transfer hook/.test(l))).toBe(false);
+    token2022([...metadata, { extension: "transferHook", state: { authority: null, programId: "Hook111111111111111111111111111111111111111" } }]);
+    const body = await run();
+    expect(body.flags.find((f) => /^Transfer hook/.test(f.label))?.severity).toBe("critical");
+    expect(body.risk).not.toBe("SAFE");
   });
 });
 
