@@ -32,6 +32,7 @@
 //   antares:lock:<namespace><engineVersion>:<mint>   cache.ts      the single-flight lock of a cold scan
 //   ig:, igsig:, iasig:, iact:                       insider-*.ts  the insider graph and its activity
 //   rug:<mint>, rug:index                            rugdb.ts      the rug database
+//   condemned:<mint>                                 condemned.ts  a token that rugged (a RUG confirmed by a fact), kept for good, no expiry. To clear a mistake: delete it
 //   usage:<day>                                      usage.ts      how much each upstream was used
 //   quota:<key>:<day>                                quota.ts      the daily counter (kept for analytics; no tier is limited)
 //   vh:<mint>                                        constants.ts  the verdict history (decommissioned)

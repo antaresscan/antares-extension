@@ -44,6 +44,7 @@ import { initSentry, captureError } from "./_lib/sentry";
 import { generateAISummary } from "./_lib/ai-summary";
 
 import { initRugDb, recordRug } from "./_lib/rugdb";
+import { initCondemned, getCondemned, condemn, condemnedEntryOf, shouldCondemn, applyCondemnation } from "./_lib/condemned";
 import { isPreviewDeployment } from "./_lib/deployment";
 import { logger } from "./_lib/logger";
 import { composeCriticalActors } from "./_lib/critical-actors";
@@ -74,6 +75,7 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
   initQuota(redis);
   initUserStorage(redis);
   initRugDb(redis);
+  initCondemned(redis);
   // initGraphCache deliberately not called: the scan no longer builds the insider graph (api/graph.ts does, on demand).
   initUsage(redis);
   // initHistoryCache deliberately not called — verdict-history is
@@ -531,13 +533,17 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
 
     const tokenName: string | null = sanitizeString(pair?.baseToken?.name) ?? null;
 
+    // A token that has already rugged stays a RUG (api/_lib/condemned.ts): read its record before the decision, so the AI summary and
+    // everything after it speak of the verdict the user will see. A slow or failed read is "not condemned": it never delays or changes a scan.
+    const condemnedEntry = await withBudget(getCondemned(resolvedMint), 800);
+
     // From what the upstreams said to the verdict: a pure function (api/_lib/decide.ts), nothing is read or written there.
-    const decision = decide({
+    const decision = applyCondemnation(decide({
       pair, dexData, resolvedMint, marketCap, tokenAgeMinutes, holders, rugData, rugReport, tokenName, goplus, authFacts, totalSupplyUi,
       solscanTokenAgeHours, dexTokenAgeHours, resolvedHolderAccounts, solscanTrades24h, solscanTraders24h,
       solscanAnswered: solMetaData !== null || solTransfersData !== null || solMarketsData !== null,
       candles, dailyCandles, recentTransfers, creatorReputation,
-    });
+    }), condemnedEntry);
     for (const note of decision.notes) logger.info("scan", note.message, { requestId, ca: resolvedMint, ...note.data });
     const { score, risk, rugKind, flags, safeBlocked, safeBlockedReasons, confidence, sources_used, layersSnapshot, lpBurned, lpLocked } = decision;
 
@@ -700,6 +706,11 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
 
     // A preview deployment must not write into production's rug database (see deployment.ts).
     if (!isPreviewDeployment()) void recordRug({ mint: resolvedMint, symbol: sanitizeString(pair?.baseToken?.symbol) ?? null, score, risk, flags, creator: tokenCreator });
+
+    // A RUG confirmed by a fact, on complete data, condemns the token for good (the first record is kept; a record that exists is not rewritten).
+    if (!condemnedEntry && shouldCondemn({ risk, rugKind, degraded, preview: isPreviewDeployment() })) {
+      void condemn(condemnedEntryOf(decision, resolvedMint, sanitizeString(pair?.baseToken?.symbol) ?? null));
+    }
 
     // Emit a structured outcome event for every completed scan. Downstream
     // log aggregators can chart verdict distribution, layer availability,

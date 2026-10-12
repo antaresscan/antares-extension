@@ -51,6 +51,16 @@ vi.mock("../api/_lib/cache", () => ({
   getCacheRedis: vi.fn().mockReturnValue({ setex: mockSetex }),
 }));
 
+// The record of condemned tokens lives in Redis: the store is faked here (the rules that decide are the real ones, tested in condemned.test.ts).
+const mockGetCondemned = vi.fn();
+const mockCondemn = vi.fn();
+vi.mock("../api/_lib/condemned", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../api/_lib/condemned")>()),
+  initCondemned: vi.fn(),
+  getCondemned: (...args: unknown[]) => mockGetCondemned(...args),
+  condemn: (...args: unknown[]) => mockCondemn(...args),
+}));
+
 // Mock @sentry/node
 vi.mock("@sentry/node", () => ({
   init: vi.fn(),
@@ -295,6 +305,8 @@ const { default: handler } = await import("../api/scan");
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockGetCondemned.mockResolvedValue(null);
+  mockCondemn.mockResolvedValue(undefined);
 });
 
 // ─── TESTS ───────────────────────────────────────────────────────────────────
@@ -847,3 +859,89 @@ describe("scan handler — the Pro/Free line is drawn on the server", () => {
     expect(free.score).toBe(pro.score);
   });
 });
+
+// ─── A token that has rugged stays a RUG (the owner's rule, 2026-10-12) ───────────────────────────────────────────────────────
+describe("scan handler — a condemned token stays a RUG", () => {
+  const MINT = "So11111111111111111111111111111111111111112";
+  const CONDEMNED_AT = Date.UTC(2026, 5, 3); // flagged on 2026-06-03, months before the scan
+
+  function drainedPool() {
+    setupGoodTokenMocks();
+    const goodMocks = mockFetch.getMockImplementation() as (url: string, ...rest: unknown[]) => Promise<unknown>;
+    mockFetch.mockImplementation((url: string, ...rest: unknown[]) => {
+      if (url.includes("dexscreener")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            pairs: [{
+              pairAddress: "pair1",
+              baseToken: { address: MINT, symbol: "GONE", name: "Gone" },
+              liquidity: { usd: 0 }, volume: { h24: 73_000, h1: 3_000 },
+              priceChange: { m5: 0, h1: 0, h6: 0, h24: 0 }, txns: { m5: { buys: 2, sells: 2 } },
+              priceUsd: "0.0001", marketCap: 40_000, fdv: 40_000,
+              pairCreatedAt: Date.now() - 90 * 24 * 3600 * 1000,
+              info: { socials: [{ type: "twitter", url: "https://twitter.com/test" }], websites: [{ url: "https://test.com" }] },
+            }],
+          }),
+        });
+      }
+      return goodMocks(url, ...rest);
+    });
+  }
+
+  async function run() {
+    const res = createMockRes();
+    await handler(createMockReq({ ca: MINT }), res);
+    return (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as {
+      risk: string; rugKind: string | null; score: number; flags: Array<{ label: string; severity: string }>;
+    };
+  }
+
+  it("witness: the data of a token that rugged months ago is clean now, and a token that is not condemned reads as the data says (not RUG)", async () => {
+    setupGoodTokenMocks();
+    const body = await run();
+    expect(body.risk).not.toBe("RUG");
+    expect(mockGetCondemned).toHaveBeenCalledWith(MINT);
+    expect(mockCondemn).not.toHaveBeenCalled(); // a clean scan condemns nobody
+  });
+
+  it("the same clean data on a condemned token: still a RUG PULL, with the date and the reason, and a score of a RUG", async () => {
+    setupGoodTokenMocks();
+    mockGetCondemned.mockResolvedValue({ mint: MINT, symbol: "SOL", condemnedAt: CONDEMNED_AT, evidence: ["Volume with zero liquidity — abandoned pool"] });
+
+    const body = await run();
+
+    expect(body.risk).toBe("RUG");
+    expect(body.rugKind).toBe("confirmed");
+    expect(body.score).toBeLessThanOrEqual(100);
+    const flag = body.flags.find((f) => /^Flagged as a rug on 2026-06-03/.test(f.label));
+    expect(flag?.severity).toBe("critical");
+    expect(flag?.label).toContain("abandoned pool");
+    expect(mockCondemn).not.toHaveBeenCalled(); // the first record is kept, not rewritten
+  });
+
+  it("a drained pool on complete data condemns the token, with the critical flags that said it", async () => {
+    drainedPool();
+
+    const body = await run();
+
+    expect(body.risk).toBe("RUG");
+    expect(body.rugKind).toBe("confirmed");
+    expect(mockCondemn).toHaveBeenCalledTimes(1);
+    const entry = mockCondemn.mock.calls[0][0] as { mint: string; symbol: string | null; evidence: string[]; condemnedAt: number };
+    expect(entry.mint).toBe(MINT);
+    expect(entry.evidence).toContain("Volume with zero liquidity — abandoned pool");
+    expect(entry.condemnedAt).toBeGreaterThan(Date.now() - 60_000);
+  });
+
+  it("a record that cannot be read (Redis slow or down) is 'not condemned': the scan goes on from the data and still answers", async () => {
+    setupGoodTokenMocks();
+    mockGetCondemned.mockRejectedValue(new Error("redis down"));
+    const res = createMockRes();
+    await handler(createMockReq({ ca: MINT }), res);
+    // withBudget turns a rejection into null: the verdict is the data's
+    const body = (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as { risk: string };
+    expect(body.risk).not.toBe("RUG");
+  });
+});
+
