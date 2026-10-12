@@ -141,6 +141,21 @@ export function isChartGapDegraded(
   return tokenAgeMinutes !== null && tokenAgeMinutes >= CHART_EXPECTED_AFTER_MINUTES;
 }
 
+/**
+ * A SAFE or CAUTION verdict reached from a PAIR address (the scan resolved the mint itself) WITHOUT the full RugCheck report is missing
+ * four checks: bundle, snipers, rug history, creator sells (audit A-07). It is also written under the MINT's cache key, where it would
+ * answer every later scan of that token for the full TTL. Such a result is kept only briefly, so the next try can read the report.
+ * A bad verdict is not concerned (a stale RUG or DANGER is safe, and the missing checks can only make it worse), and neither is a scan
+ * that started from the mint itself.
+ */
+export function isReportGapDegraded(
+  verdict: "SAFE" | "CAUTION" | "DANGER" | "RUG",
+  resolvedFromPair: boolean,
+  reportAvailable: boolean,
+): boolean {
+  return resolvedFromPair && !reportAvailable && (verdict === "SAFE" || verdict === "CAUTION");
+}
+
 export function apiError(res: VercelResponse, status: number, message: string, details?: Record<string, unknown>): void {
   res.status(status).json({ error: message, ...(details ? { details } : {}) });
 }

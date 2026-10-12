@@ -454,3 +454,75 @@ describe("scan deadline — what gets cached", () => {
     expect(setShortCachedResult).not.toHaveBeenCalled();
   });
 });
+
+// ─── A scan started from a PAIR address (audit A-07) ─────────────────────────
+// DexScreener puts the address of the PAIR in its URLs. The scan resolves the token's mint from it, but used to keep the RugCheck report it
+// had asked for under the pair address (RugCheck answers 400 for a pair): bundle, snipers, rug history and creator sells were skipped, and the
+// incomplete result was cached under the MINT for the full TTL.
+
+const PAIR = "8sLbNZoA1cfnvMJLPfp98ZLAnFSYCFApfJKMbiXNLwxj";
+const MINT = "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263";
+const RUG_REPORT_OF_MINT = "https://api.rugcheck.xyz/v1/tokens/" + MINT + "/report";
+
+/** The good-token mocks, but the page's address is a pair: DexScreener resolves it to MINT, RugCheck refuses to know a pair. */
+function setupPairScenario({ mintReportAvailable }: { mintReportAvailable: boolean }) {
+  setupGoodTokenMocks();
+  const base = mockFetch.getMockImplementation()! as (url: string, ...rest: unknown[]) => Promise<{ ok: boolean; json: () => Promise<unknown> }>;
+  mockFetch.mockImplementation(async (url: string, ...rest: unknown[]) => {
+    const u = String(url);
+    if (u.includes("rugcheck") && u.includes("/tokens/" + PAIR + "/")) return { ok: false, status: 400, json: () => Promise.resolve({ error: "invalid mint" }) };
+    if (u === RUG_REPORT_OF_MINT && !mintReportAvailable) return { ok: false, status: 404, json: () => Promise.resolve(null) };
+    const res = await base(url, ...rest);
+    if (u.includes("dexscreener")) {
+      const body = (await res.json()) as { pairs: Array<{ pairAddress: string; baseToken: { address: string } }> };
+      for (const p of body.pairs) { p.pairAddress = PAIR; p.baseToken.address = MINT; }
+      return { ok: true, json: () => Promise.resolve(body) };
+    }
+    if (u.includes("gopluslabs")) {
+      const body = (await res.json()) as { result: Record<string, unknown> };
+      return { ok: true, json: () => Promise.resolve({ result: { [MINT]: Object.values(body.result)[0] } }) };
+    }
+    return res;
+  });
+}
+
+describe("scan started from a pair address", () => {
+  it("reads the RugCheck report of the RESOLVED mint, not only the one of the address it was given", async () => {
+    setupPairScenario({ mintReportAvailable: true });
+    const res = createMockRes();
+    await run(createMockReq({ ca: PAIR }), res);
+
+    const urls = mockFetch.mock.calls.map((c) => String(c[0]));
+    expect(urls).toContain(RUG_REPORT_OF_MINT);
+    expect(jsonBody(res)?.resolvedMint).toBe(MINT);
+  });
+
+  it("a scan that starts from the mint itself still asks for the report once (nothing extra)", async () => {
+    setupPairScenario({ mintReportAvailable: true });
+    await run(createMockReq({ ca: MINT }), createMockRes());
+
+    const reportCalls = mockFetch.mock.calls.map((c) => String(c[0])).filter((u) => u === RUG_REPORT_OF_MINT);
+    expect(reportCalls).toHaveLength(1);
+  });
+
+  it("the report in hand, the result is cached the normal way, under the pair and under the mint", async () => {
+    setupPairScenario({ mintReportAvailable: true });
+    await run(createMockReq({ ca: PAIR }), createMockRes());
+
+    const longKeys = vi.mocked(setCachedResult).mock.calls.map((c) => c[0]);
+    expect(longKeys).toEqual(expect.arrayContaining([PAIR, MINT]));
+  });
+
+  it("without the report, a SAFE / CAUTION result is kept 30 s only under BOTH keys: the mint's cache is not polluted for the full TTL", async () => {
+    setupPairScenario({ mintReportAvailable: false });
+    const res = createMockRes();
+    await run(createMockReq({ ca: PAIR }), res);
+
+    const body = jsonBody(res);
+    expect(["SAFE", "CAUTION"]).toContain(body?.risk); // the premise: the verdict is one a missing report could flatter
+    expect(setCachedResult).not.toHaveBeenCalled();
+    const shortCalls = vi.mocked(setShortCachedResult).mock.calls;
+    expect(shortCalls.map((c) => c[0])).toEqual(expect.arrayContaining([PAIR, MINT]));
+    expect(shortCalls.every((c) => c[2] === 30)).toBe(true);
+  });
+});

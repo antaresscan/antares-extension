@@ -20,7 +20,40 @@ import { isValid } from "../scanner"
  *
  * We do NOT use the generic scoreAddresses() fallback on listing pages
  * (trending, new pairs) — only on /solana/* token detail pages.
+ *
+ * WHAT THE URL HOLDS (audit A-07): the address in /solana/{address} is the PAIR's, not the token's. When it happens to be valid
+ * base58 (about one page in two) it used to be sent as the token, and RugCheck answers 400 for a pair: bundle, snipers, rug history
+ * and creator sells were skipped. The page lists, in this order, the pair (solscan.io/account/{pair}), the base token
+ * (solscan.io/token/{mint}) and the quote token (checked on live pages: SOL/USDC, Bonk/SOL). So the token is read from the page
+ * first, but only after the link of THIS URL's pair: while a single-page navigation has not re-rendered yet, the page still shows the
+ * previous token's links, and those must never be taken for the new page's.
  */
+
+const BASE58_ADDRESS = "[1-9A-HJ-NP-Za-km-z]{32,44}"
+
+/**
+ * The base token's mint, from the Solscan links of the page, when the page is the one of the pair named by `urlAddress`
+ * (compared case-insensitively: DexScreener lowercases the URL). "" when the page is not ready, or shows another pair.
+ */
+export function mintOfPairFromLinks(doc: Document | null, urlAddress: string): string {
+  if (!doc || !urlAddress) return ""
+  const wanted = urlAddress.toLowerCase()
+  const accountRe = new RegExp(`solscan\\.io/account/(${BASE58_ADDRESS})`)
+  const tokenRe = new RegExp(`solscan\\.io/token/(${BASE58_ADDRESS})`)
+  let onThisPair = false
+  for (const a of doc.querySelectorAll("a[href]")) {
+    const href = a.getAttribute("href") || ""
+    const account = href.match(accountRe)
+    if (account) {
+      onThisPair = account[1].toLowerCase() === wanted
+      continue
+    }
+    if (!onThisPair) continue
+    const token = href.match(tokenRe)
+    if (token && isValid(token[1])) return token[1] // the first token link after the pair is the base token
+  }
+  return ""
+}
 export const DexScreenerAdapter: SiteAdapter = {
   name: "DexScreener",
   hostnames: ["dexscreener.com"],
@@ -32,11 +65,16 @@ export const DexScreenerAdapter: SiteAdapter = {
       return ""
     }
 
-    // 1. Try URL extraction first (works if address is valid base58)
+    // 1. The token itself, read from the page next to the pair of this URL (see the note above): the URL holds the pair's address.
+    const fromPage = mintOfPairFromLinks(doc, url.pathname.split("/")[2] ?? "")
+    if (fromPage) return fromPage
+
+    // 2. The page is not ready (or is not a pair page): the URL (works if the address is valid base58). The API resolves a pair
+    //    address to its token itself, with every check.
     const fromUrl = extractCAFromPathname(url)
     if (fromUrl) return fromUrl
 
-    // 2. URL extraction failed (lowercased address).
+    // 3. URL extraction failed (lowercased address).
     //    Extract token mint from Solscan token links in the DOM.
     //    These links use the real mixed-case base58 address.
     const re = makeSOLAddrRegex()
@@ -53,7 +91,7 @@ export const DexScreenerAdapter: SiteAdapter = {
       }
     }
 
-    // 3. If still nothing, this might be a listing page or DOM not ready yet
+    // 4. If still nothing, this might be a listing page or DOM not ready yet
     return ""
   },
 
