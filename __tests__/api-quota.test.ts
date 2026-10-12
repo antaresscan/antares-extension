@@ -132,4 +132,15 @@ describe("GET /api/quota", () => {
     // Should not 401 — anonymous traffic is allowed for /api/quota (read-only)
     expect(res.json).toHaveBeenCalledOnce();
   });
+
+  it("always carries tierExpiresAt (null when there is no time-limited tier), for the Options page", async () => {
+    const req = mockReq({
+      origin: "chrome-extension://noemghbbbgcpnocdcflcaccnhnfehpfa",
+      "x-antares-install": VALID_INSTALL,
+    });
+    const res = mockRes();
+    await handler(req, res);
+    const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock.calls[0][0] as Record<string, unknown>;
+    expect(payload).toHaveProperty("tierExpiresAt", null);
+  });
 });

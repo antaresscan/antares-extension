@@ -43,6 +43,7 @@ async function loadBackground(): Promise<Fake> {
     runtime: {
       id: OWN_ID,
       lastError: undefined,
+      onInstalled: { addListener: vi.fn() },
       onMessage: {
         addListener: (l: Listener) => {
           listener = l;

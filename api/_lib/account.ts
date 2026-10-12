@@ -39,9 +39,9 @@ export interface SessionPayload {
 
 // ─── Redis keys ───────────────────────────────────────────────────────────────
 
-export const ACCOUNT_KEY = (emailLc: string) => `account:${emailLc}`;
-export const ACCOUNT_INSTALL_KEY = (installId: string) =>
-  `account:install:${installId}`;
+// The keys are defined once, in keys.ts; they are still exported from here for the modules that import them from this file.
+import { ACCOUNT_KEY, ACCOUNT_INSTALL_KEY } from "./keys";
+export { ACCOUNT_KEY, ACCOUNT_INSTALL_KEY };
 
 // ─── Password hashing (scrypt) ────────────────────────────────────────────────
 
@@ -494,8 +494,8 @@ export function isDevProEmail(email: string): boolean {
  * licence with the SAME expiry (idempotent). To get a fresh 30-day
  * window after the first one expires, the dev would need to redeem
  * the licence in the extension (which extends the install's tier
- * window) or the operator can manually `redis.del('intent-license:
- * dev-grant-pro:<email>')` to allow a re-issue.
+ * window) or the operator can manually delete the key
+ * `intent:license:dev-grant-pro:<email>` (INTENT_LICENSE_KEY, see keys.ts) to allow a re-issue.
  */
 export async function ensureDevProLicense(
   redis: Redis,

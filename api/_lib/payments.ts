@@ -29,12 +29,9 @@ export const INTENT_TTL_SECONDS = 60 * 60
  */
 export const INTENT_RETENTION_SECONDS = 7 * 24 * 60 * 60
 
-export const INTENT_KEY = (reference: string) => `payment-intent:${reference}`
-export const INTENT_INDEX_KEY = "payment-intents:pending"
-export const INTENT_BY_NP_PAYMENT_KEY = (paymentId: string) =>
-  `payment-intent-by-np:${paymentId}`
-export const INTENT_BY_NP_INVOICE_KEY = (invoiceId: string) =>
-  `payment-intent-by-inv:${invoiceId}`
+// Defined in keys.ts; still exported from here for the modules and tests that import them from this file.
+import { INTENT_KEY, INTENT_INDEX_KEY, INTENT_BY_NP_PAYMENT_KEY, INTENT_BY_NP_INVOICE_KEY } from "./keys"
+export { INTENT_KEY, INTENT_INDEX_KEY, INTENT_BY_NP_PAYMENT_KEY, INTENT_BY_NP_INVOICE_KEY }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

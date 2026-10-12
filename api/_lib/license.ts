@@ -35,11 +35,10 @@ import { setUserTier, type Tier as UserTier } from "./user";
 import { PRO_PASS_DAYS, type Tier as IntentTier } from "./payments";
 import { logger } from "./logger";
 
-// Inlined here (instead of imported from ./account) to avoid the
-// circular dep account.ts → license.ts → account.ts. Must stay in
-// sync with the canonical definition in api/_lib/account.ts.
-const ACCOUNT_INSTALL_KEY = (installId: string) =>
-  `account:install:${installId}`;
+// The keys live in keys.ts, which imports nothing: no copy to keep in sync, and no circular dependency with account.ts.
+import {
+  ACCOUNT_INSTALL_KEY, LICENSE_KEY, EMAIL_LICENSES_KEY, INTENT_LICENSE_KEY, INTENT_LICENSE_LOCK_KEY,
+} from "./keys";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -77,14 +76,8 @@ export interface License {
 
 // ─── Redis key helpers ────────────────────────────────────────────────────────
 
-export const LICENSE_KEY = (key: string) => `license:${key}`;
-export const EMAIL_LICENSES_KEY = (email: string) =>
-  `email:licenses:${email.toLowerCase().trim()}`;
-export const INTENT_LICENSE_KEY = (reference: string) =>
-  `intent:license:${reference}`;
-/** Short-lived mutex around "check, then issue" for one intent: see issueLicense. */
-export const INTENT_LICENSE_LOCK_KEY = (reference: string) =>
-  `intent:license-lock:${reference}`;
+// Defined in keys.ts; still exported from here for the modules and tests that import them from this file.
+export { LICENSE_KEY, EMAIL_LICENSES_KEY, INTENT_LICENSE_KEY, INTENT_LICENSE_LOCK_KEY };
 
 // ─── Key generation ───────────────────────────────────────────────────────────
 

@@ -298,4 +298,68 @@ describe("Integration: overlay tier follows the user's SIGNED-IN EMAIL", () => {
     // Founder is dev-allowlisted → bypassQuota fires
     expect(result.bypassQuota).toBe(true);
   });
+
+  // Audit A-20: the Options page reads tierExpiresAt from /api/quota, which never sent it.
+  describe("tierExpiresAt (what /api/quota hands to the Options page)", () => {
+    const DAY = 24 * 60 * 60 * 1000;
+
+    it("an active Pro pass lapses 30 days after it was issued", async () => {
+      await seedEmailWithLicense("alice@example.com", "pro");
+      const result = await resolveTierAndBypass(reqWithCookie(signSession("alice@example.com")), VALID_INSTALL);
+      expect(result.tier).toBe("pro");
+      expect(result.tierExpiresAt).toBeGreaterThan(Date.now() + 30 * DAY - 60_000);
+      expect(result.tierExpiresAt).toBeLessThan(Date.now() + 30 * DAY + 60_000);
+    });
+
+    it("an active Yearly lapses 365 days after it was issued", async () => {
+      await seedEmailWithLicense("alice@example.com", "yearly");
+      const result = await resolveTierAndBypass(reqWithCookie(signSession("alice@example.com")), VALID_INSTALL);
+      expect(result.tier).toBe("yearly");
+      expect(result.tierExpiresAt).toBeGreaterThan(Date.now() + 365 * DAY - 60_000);
+      expect(result.tierExpiresAt).toBeLessThan(Date.now() + 365 * DAY + 60_000);
+    });
+
+    it("Lifetime has no expiry", async () => {
+      await seedEmailWithLicense("alice@example.com", "lifetime");
+      const result = await resolveTierAndBypass(reqWithCookie(signSession("alice@example.com")), VALID_INSTALL);
+      expect(result.tier).toBe("lifetime");
+      expect(result.tierExpiresAt).toBeNull();
+    });
+
+    it("with two active Pro passes the tier lasts until the later one ends", async () => {
+      const redis = new Redis({ url: "x", token: "y" });
+      mocks.store.set("account:alice@example.com", { email: "alice@example.com", status: "active", emailVerified: "0", createdAt: String(Date.now()) });
+      const older = await issueLicense(redis, { email: "alice@example.com", tier: "monthly", intentReference: "ref-older", amountUsd: 0, now: Date.now() - 10 * DAY });
+      const newer = await issueLicense(redis, { email: "alice@example.com", tier: "monthly", intentReference: "ref-newer", amountUsd: 0, now: Date.now() });
+      expect(older.expiresAt).toBeLessThan(newer.expiresAt!);
+      const result = await resolveTierAndBypass(reqWithCookie(signSession("alice@example.com")), VALID_INSTALL);
+      expect(result.tierExpiresAt).toBe(newer.expiresAt);
+    });
+
+    it("an expired Pro pass is Free, with no expiry", async () => {
+      const redis = new Redis({ url: "x", token: "y" });
+      mocks.store.set("account:alice@example.com", { email: "alice@example.com", status: "active", emailVerified: "0", createdAt: String(Date.now()) });
+      await issueLicense(redis, { email: "alice@example.com", tier: "monthly", intentReference: "ref-old", amountUsd: 0, now: Date.now() - 40 * DAY });
+      const result = await resolveTierAndBypass(reqWithCookie(signSession("alice@example.com")), VALID_INSTALL);
+      expect(result.tier).toBe("free");
+      expect(result.tierExpiresAt ?? null).toBeNull();
+    });
+
+    it("signed in, no license, install bound to the same email: the install's stored expiry is used", async () => {
+      const endsAt = Date.now() + 12 * DAY;
+      mocks.store.set("account:alice@example.com", { email: "alice@example.com", status: "active", emailVerified: "0", createdAt: String(Date.now()) });
+      mocks.store.set(`account:install:${VALID_INSTALL}`, "alice@example.com");
+      mocks.store.set(`user:${VALID_INSTALL}:tier`, "pro");
+      mocks.store.set(`user:${VALID_INSTALL}:tierExpires`, endsAt);
+      const result = await resolveTierAndBypass(reqWithCookie(signSession("alice@example.com")), VALID_INSTALL);
+      expect(result.tier).toBe("pro");
+      expect(result.tierExpiresAt).toBe(endsAt);
+    });
+
+    it("signed out: Free, no expiry", async () => {
+      const result = await resolveTierAndBypass(reqWithCookie(null), VALID_INSTALL);
+      expect(result.tier).toBe("free");
+      expect(result.tierExpiresAt ?? null).toBeNull();
+    });
+  });
 });

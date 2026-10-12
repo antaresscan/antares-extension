@@ -21,6 +21,11 @@ class MockRedis {
     return "OK";
   }
   async del(key: string) { this.store.delete(key); return 1; }
+  // Stand-in for the compare-and-delete script of releaseScanLock: KEYS[1] = lock key, ARGV[1] = owner.
+  async eval(_script: string, keys: string[], args: string[]) {
+    if (this.store.get(keys[0]) === args[0]) { this.store.delete(keys[0]); return 1; }
+    return 0;
+  }
   async get<T>(key: string): Promise<T | null> { return (this.store.get(key) as T) ?? null; }
   async setex(key: string, _ttl: number, value: unknown) { this.store.set(key, value); return "OK"; }
 }
@@ -33,29 +38,54 @@ beforeEach(() => {
 
 describe("single-flight scan lock", () => {
   it("first acquire wins, second is blocked (NX)", async () => {
-    expect(await acquireScanLock("CA_AAA")).toBe(true);
-    expect(await acquireScanLock("CA_AAA")).toBe(false); // already held
+    expect(await acquireScanLock("CA_AAA", "req-1")).toBe(true);
+    expect(await acquireScanLock("CA_AAA", "req-2")).toBe(false); // already held
   });
 
   it("different CAs get independent locks", async () => {
-    expect(await acquireScanLock("CA_BBB")).toBe(true);
-    expect(await acquireScanLock("CA_CCC")).toBe(true);
+    expect(await acquireScanLock("CA_BBB", "req-1")).toBe(true);
+    expect(await acquireScanLock("CA_CCC", "req-1")).toBe(true);
   });
 
   it("release frees the lock so it can be re-acquired", async () => {
-    expect(await acquireScanLock("CA_DDD")).toBe(true);
-    expect(await acquireScanLock("CA_DDD")).toBe(false);
-    await releaseScanLock("CA_DDD");
-    expect(await acquireScanLock("CA_DDD")).toBe(true); // free again
+    expect(await acquireScanLock("CA_DDD", "req-1")).toBe(true);
+    expect(await acquireScanLock("CA_DDD", "req-2")).toBe(false);
+    await releaseScanLock("CA_DDD", "req-1");
+    expect(await acquireScanLock("CA_DDD", "req-2")).toBe(true); // free again
+  });
+
+  // Audit A-17: a scan that outlives the lock's TTL used to DEL a lock that had meanwhile passed to another request.
+  it("the lock stores the request id of its holder", async () => {
+    await acquireScanLock("CA_OWN", "req-holder");
+    const key = [...mock.store.keys()].find((k) => k.includes("lock") && k.includes("CA_OWN"))!;
+    expect(mock.store.get(key)).toBe("req-holder");
+  });
+
+  it("a release by someone who does not hold the lock any more leaves the new holder's lock alone", async () => {
+    expect(await acquireScanLock("CA_STALE", "req-slow")).toBe(true);
+    // req-slow outlives the TTL: the lock expires and req-next takes it.
+    const key = [...mock.store.keys()].find((k) => k.includes("lock") && k.includes("CA_STALE"))!;
+    mock.store.delete(key);
+    expect(await acquireScanLock("CA_STALE", "req-next")).toBe(true);
+    // req-slow finally finishes and releases: it must NOT free req-next's lock.
+    await releaseScanLock("CA_STALE", "req-slow");
+    expect(await acquireScanLock("CA_STALE", "req-third")).toBe(false); // still held by req-next
+    // req-next releases its own lock normally.
+    await releaseScanLock("CA_STALE", "req-next");
+    expect(await acquireScanLock("CA_STALE", "req-third")).toBe(true);
+  });
+
+  it("releasing a lock nobody holds is a no-op", async () => {
+    await expect(releaseScanLock("CA_NOBODY", "req-1")).resolves.toBeUndefined();
   });
 
   it("fails OPEN: Redis error on acquire → returns true (scan proceeds)", async () => {
     mock.failNext = true;
-    expect(await acquireScanLock("CA_EEE")).toBe(true);
+    expect(await acquireScanLock("CA_EEE", "req-1")).toBe(true);
   });
 
   it("passes EX ttl on the lock key", async () => {
-    await acquireScanLock("CA_FFF", 28);
+    await acquireScanLock("CA_FFF", "req-1", 28);
     // The lock key exists in the store after acquire.
     const anyKey = [...mock.store.keys()].find((k) => k.includes("lock") && k.includes("CA_FFF"));
     expect(anyKey).toBeTruthy();
@@ -92,7 +122,7 @@ describe("waitForCachedResult (coalescing waiter)", () => {
 describe("fail-open with no Redis", () => {
   it("acquireScanLock returns true and waitForCachedResult returns null when Redis is absent", async () => {
     initCache(null as unknown as Redis); // simulate unconfigured cache
-    expect(await acquireScanLock("CA_NONE")).toBe(true);
+    expect(await acquireScanLock("CA_NONE", "req-1")).toBe(true);
     expect(await waitForCachedResult("CA_NONE", "req", { timeoutMs: 200, intervalMs: 50 })).toBeNull();
   });
 });

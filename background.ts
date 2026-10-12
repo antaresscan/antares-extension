@@ -10,6 +10,8 @@ import type { HistoryEntry } from "./shared/types"
 import { CA_RE } from "./shared/constants"
 import { config } from "./shared/config"
 import { logger } from "./shared/logger"
+import { getInstallId } from "./shared/install-id"
+import { toggleExtensionEnabled } from "./shared/extension-toggle"
 import { scrubEvent, scrubBreadcrumb } from "./shared/sentry-scrub"
 
 // ─── SENTRY INITIALIZATION ───────────────────────────────────────────────────
@@ -58,6 +60,11 @@ const ALLOWED_OPEN_TAB_HOSTS = new Set([
   "www.antaresscan.com",
   "antares-website.vercel.app"
 ])
+
+// ─── INSTALL ID ───────────────────────────────────────────────────────────────
+// Create the install id as soon as the extension is installed or updated, so it exists before any content script or the
+// Options page asks for it (shared/install-id.ts is safe when they race, this makes the race rare in the first place).
+chrome.runtime.onInstalled.addListener(() => { void getInstallId() })
 
 // ─── KEEPALIVE ────────────────────────────────────────────────────────────────
 void chrome.alarms.create(config.keepaliveAlarmName, { periodInMinutes: config.keepaliveIntervalMinutes })
@@ -302,14 +309,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 })
 
 // ─── EXTENSION TOGGLE ─────────────────────────────────────────────────────────
-let extensionEnabled = true
-chrome.storage.local.get(["extensionEnabled"], (r) => {
-  if (typeof r.extensionEnabled === "boolean") extensionEnabled = r.extensionEnabled
-})
-
+// The state is read from chrome.storage at click time (shared/extension-toggle.ts), not kept in a variable: the service
+// worker that handles the click was often started by it, before any startup read could have finished.
 chrome.action.onClicked.addListener(async (_tab) => {
-  extensionEnabled = !extensionEnabled
-  void chrome.storage.local.set({ extensionEnabled })
+  const extensionEnabled = await toggleExtensionEnabled(chrome.storage.local)
 
   void chrome.action.setBadgeText({ text: "\u25CF" })
   void chrome.action.setBadgeBackgroundColor({ color: "#FFFFFF" })
