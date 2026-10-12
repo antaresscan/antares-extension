@@ -210,7 +210,7 @@ All endpoints are documented in code with examples. The most-used ones:
 
 ```
 GET  /api/scan?ca=<mint>                Main scan, returns score / risk / flags / layers
-GET  /api/graph?ca=<mint>&activity=1    Top-holder graph + 6h activity feed
+GET  /api/graph?ca=<mint>&activity=1    Top-holder graph + 6h activity feed (Pro only, 10/min per user)
 GET  /api/history                       Pro-tier scan history (auth required)
 
 POST /api/payment-intent                Create a NOWPayments invoice

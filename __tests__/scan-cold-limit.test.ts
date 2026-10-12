@@ -333,7 +333,7 @@ describe("cold-scan limiter in the scan handler", () => {
 
     await handler(createMockReq({ ca: WSOL }), createMockRes());
 
-    expect(releaseScanLock).toHaveBeenCalledWith(WSOL);
+    expect(releaseScanLock).toHaveBeenCalledWith(WSOL, expect.any(String));
   });
 
   it("does NOT release a lock it never held", async () => {
