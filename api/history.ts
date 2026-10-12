@@ -26,6 +26,7 @@ import {
   HISTORY_DAY_WINDOW,
 } from "./_lib/user";
 import { apiError } from "./_lib/helpers";
+import { isPaidTier } from "./_lib/entitlements";
 import { logger } from "./_lib/logger";
 
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
@@ -72,7 +73,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Dev-tier override flows through the same path for dev-allowlisted
     // emails — see api/_lib/user.ts:getEffectiveTierFromRequest.
     const tier = await getEffectiveTierFromRequest(req, installId);
-    const isPaid = tier === "pro" || tier === "yearly" || tier === "lifetime";
+    const isPaid = isPaidTier(tier);
 
     const maxLimit = isPaid ? PRO_HISTORY_LIMIT : FREE_HISTORY_LIMIT;
     const limit = clampInt(req.query.limit, 1, maxLimit, maxLimit);

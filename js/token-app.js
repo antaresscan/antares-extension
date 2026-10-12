@@ -23,12 +23,14 @@ import {
   escapeHtml,
   getFlagDescription,
 } from "./formatters.js";
+import { verdictLabel } from "./verdict-label.js";
 import {
   buildSparkline,
   buildSniperMapTab,
   buildExitLiquidityTab,
   buildCriticalActorsPreview,
   buildInsiderWatchTab,
+  buildProGate,
   buildBuySellFlowTab,
   buildWashVolumeTab,
   buildSourceListRows,
@@ -498,13 +500,31 @@ if (!ca) {
     document.getElementById("loading").style.display = "flex";
     setLoadingStatus("");
     fetchWithRetry(`${API}?ca=${ca}`, { onRetry: onRetryStatus })
-      .then((d) => render(d, ca))
+      .then((d) => renderAnswer(d, ca))
       .catch(() => showError("Analysis failed after multiple attempts. Please try again later."));
   });
 
   fetchWithRetry(`${API}?ca=${ca}`, { onRetry: onRetryStatus })
-    .then((d) => render(d, ca))
+    .then((d) => renderAnswer(d, ca))
     .catch(() => showError("Analysis failed after multiple attempts. Please try again later."));
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// renderAnswer(d, ca) — what the page does with a REAL answer of /api/scan.
+//
+// A Free caller is sent the Free view (api/_lib/pro-gate.ts): the verdict, with no analysis in it, marked `proLocked`. There is nothing
+// to draw, so the page says that Full Analysis is part of Pro. Only the two calls to the API above come through here: the marketing demo
+// (?demo=1, the hardcoded DEMO_DATA) calls render() directly and never touches this.
+// ──────────────────────────────────────────────────────────────────────
+function renderAnswer(d, ca) {
+  if (d && d.proLocked === true) {
+    document.getElementById("loading").style.display = "none";
+    const rcFree = { SAFE: "safe", CAUTION: "caution", DANGER: "danger", RUG: "rug" }[d.risk] || "danger";
+    document.body.className = `risk-${rcFree}`;
+    document.getElementById("content").innerHTML = buildProGate(d);
+    return;
+  }
+  render(d, ca);
 }
 
 // ──────────────────────────────────────────────────────────────────────
@@ -517,9 +537,8 @@ function render(d, ca) {
   document.getElementById("loading").style.display = "none";
 
   const RC = { SAFE: "safe", CAUTION: "caution", DANGER: "danger", RUG: "rug" };
-  const LB = { SAFE: "SAFE", CAUTION: "CAUTION", DANGER: "DANGER", RUG: "RUG PULL" };
   const rc = RC[d.risk] || "danger";
-  const lb = LB[d.risk] || d.risk;
+  const lb = verdictLabel(d.risk, d.rugKind);
   document.body.className = `risk-${rc}`;
 
   const score = d.score || 0;

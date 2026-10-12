@@ -276,7 +276,7 @@ describe("GET /api/payment-status (NOWPayments)", () => {
     });
     const res = mockRes();
     await handler(req, res);
-    expect(mocks.getPayment).toHaveBeenCalledWith("pay-fast");
+    expect(mocks.getPayment).toHaveBeenCalledWith("pay-fast", { strict: true });
     expect(mocks.listPaymentsForInvoice).not.toHaveBeenCalled();
     const payload = (res.json as unknown as { mock: { calls: unknown[][] } })
       .mock.calls[0][0] as { status: string };
@@ -291,7 +291,9 @@ describe("GET /api/payment-status (NOWPayments)", () => {
         payment_status: "finished",
         invoice_id: "inv-1",
         order_id: REFERENCE,
-        price_amount: 1, // way below 24.99 — should reject
+        price_amount: 24.99, // the invoiced price, always echoed back: NOT what was paid
+        pay_amount: 100,
+        actually_paid: 10, // the buyer sent a tenth of what was asked — should reject
       },
     ]);
     const req = mockReq({
@@ -369,5 +371,51 @@ describe("GET /api/payment-status (NOWPayments)", () => {
       mock: { calls: [string, string][] };
     }).mock.calls.filter(([k]) => k === "Cache-Control");
     expect(cacheControl.some(([, v]) => v.includes("no-store"))).toBe(true);
+  });
+
+  it("(A-04) a payment that finished after the window still confirms (the poll no longer expires on the clock first)", async () => {
+    seedPendingIntent({ expiresIn: -2 * 60 * 60 * 1000 });
+    mocks.listPaymentsForInvoice.mockResolvedValueOnce([
+      { payment_id: "pay-late", payment_status: "finished", invoice_id: "inv-1", order_id: REFERENCE, price_amount: 24.99, pay_amount: 0.4, actually_paid: 0.4 },
+    ]);
+    const res = mockRes();
+    await handler(mockReq({ headers: { origin: ORIGIN }, query: { reference: REFERENCE } }), res);
+    const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock.calls[0][0] as { status: string; licenseKey: string | null };
+    expect(payload.status).toBe("confirmed");
+    expect(payload.licenseKey).toBe("ANT-AAAA-BBBB-CCCC-DDDD");
+  });
+
+  it("(A-04) past the window with a payment still in flight: reported pending, not expired", async () => {
+    seedPendingIntent({ expiresIn: -2 * 60 * 60 * 1000 });
+    mocks.listPaymentsForInvoice.mockResolvedValueOnce([
+      { payment_id: "pay-slow", payment_status: "confirming", invoice_id: "inv-1", price_amount: 24.99 },
+    ]);
+    const res = mockRes();
+    await handler(mockReq({ headers: { origin: ORIGIN }, query: { reference: REFERENCE } }), res);
+    const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock.calls[0][0] as { status: string };
+    expect(payload.status).toBe("pending");
+  });
+
+  it("(A-04) NOWPayments unreachable past the window: reported pending (the next poll retries), not expired", async () => {
+    seedPendingIntent({ expiresIn: -2 * 60 * 60 * 1000 });
+    mocks.listPaymentsForInvoice.mockRejectedValueOnce(new Error("NOWPayments /payment/ failed: 503"));
+    const res = mockRes();
+    await handler(mockReq({ headers: { origin: ORIGIN }, query: { reference: REFERENCE } }), res);
+    const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock.calls[0][0] as { status: string };
+    expect(payload.status).toBe("pending");
+  });
+
+  it("(A-04) a license that fails to issue leaves the intent pending (no 500, no fake 'confirmed')", async () => {
+    seedPendingIntent();
+    mocks.issueLicense.mockRejectedValueOnce(new Error("redis hiccup"));
+    mocks.listPaymentsForInvoice.mockResolvedValueOnce([
+      { payment_id: "pay-1", payment_status: "finished", invoice_id: "inv-1", order_id: REFERENCE, price_amount: 24.99 },
+    ]);
+    const res = mockRes();
+    await handler(mockReq({ headers: { origin: ORIGIN }, query: { reference: REFERENCE } }), res);
+    const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock.calls[0][0] as { status: string; licenseKey: string | null };
+    expect(payload.status).toBe("pending");
+    expect(payload.licenseKey).toBeNull();
+    expect((mocks.store.get(`payment-intent:${REFERENCE}`) as { status: string }).status).toBe("pending");
   });
 });

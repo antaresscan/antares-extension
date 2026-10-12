@@ -18,6 +18,7 @@ import {
   computeExitLiquidity,
   parsePctFromFlags,
 } from "./compute.js";
+import { verdictLabel } from "./verdict-label.js";
 
 // ──────────────────────────────────────────────────────────────────────
 // Sparkline: builds an inline SVG polyline from candle close prices.
@@ -309,33 +310,56 @@ export function buildExitLiquidityTab(liq) {
 
 // ──────────────────────────────────────────────────────────────────────
 // CRITICAL ACTORS preview — up to 3 cards (Dev / Insider / Cluster)
-// Rendered ONLY from the backend's `criticalActors` (composeCriticalActors:
-// creatorReputation + filtered top holders + insider-graph clusters).
+// Rendered ONLY from the backend's `criticalActors` (composeCriticalActors: the scan makes the Dev and Holder cards;
+// the Cluster cards come from /api/graph and replace them, see applyClusterCards).
 // When that array is missing or empty we say so — we never invent
 // wallets. The old "v5 mock" fallback printed fabricated addresses,
 // "4 / 5 prior rugs", "HenryRug" / "BunnyRug" references and made-up
 // cluster percentages on REAL token pages whenever Helius data was
 // missing (seen live on HAWK next to a SAFE verdict, 2026-10-05).
 // ──────────────────────────────────────────────────────────────────────
+/** One Critical Actors card. Shared by the first render and by applyClusterCards, so a swapped card looks exactly like the others. */
+export function renderCriticalActorCard(a) {
+    const cls = a.type === "dev" ? "dev" : a.type === "cluster" ? "coord" : "bot";
+    const pctDisp = typeof a.pct === "number" && a.pct > 0 ? a.pct.toFixed(1) + "%" : "—";
+    return `
+    <div class="wp-card ${cls}">
+      <div class="wp-head"><span class="wp-tag">${escapeHtml(a.tag || "")}</span><span class="wp-pct">${escapeHtml(pctDisp)}</span></div>
+      <div class="wp-addr">${escapeHtml(a.addr || "")}</div>
+      <div class="wp-rep">
+        <div class="wp-rep-lbl">${escapeHtml(a.repLbl || "")}</div>
+        <div class="wp-rep-bar"><div class="wp-rep-fill ${a.repWarn ? "warn" : ""}" style="width:${Math.max(0, Math.min(100, a.repWidth || 0))}%"></div></div>
+      </div>
+      <div class="wp-desc">${escapeHtmlAllowBold(a.desc)}</div>
+    </div>
+  `;
+}
+
+/**
+ * The scan no longer builds the insider graph (it cost ~120 Helius credits per cold scan, for a display-only feature), so its cards say
+ * "Holder #n". /api/graph, which this page already calls for the Insider Watch tab, finds the clusters and returns the cards the scan
+ * cannot make (`clusterActors`). Each one replaces the card of the SAME wallet (same short address); a card with no match, a Dev card, or one that
+ * is already a cluster card, is left alone. Returns how many cards were replaced.
+ */
+export function applyClusterCards(root, actors) {
+  if (!root || typeof root.querySelectorAll !== "function" || !Array.isArray(actors)) return 0;
+  let replaced = 0;
+  for (const a of actors) {
+    if (!a || a.type !== "cluster" || !a.addr) continue;
+    const card = Array.from(root.querySelectorAll(".wp-card")).find((el) => {
+      const addr = el.querySelector(".wp-addr");
+      return !!addr && addr.textContent === a.addr && !el.classList.contains("coord") && !el.classList.contains("dev");
+    });
+    if (!card) continue;
+    card.outerHTML = renderCriticalActorCard(a);
+    replaced++;
+  }
+  return replaced;
+}
+
 export function buildCriticalActorsPreview(d) {
   if (Array.isArray(d.criticalActors) && d.criticalActors.length > 0) {
-    return d.criticalActors
-      .map((a) => {
-        const cls = a.type === "dev" ? "dev" : a.type === "cluster" ? "coord" : "bot";
-        const pctDisp = typeof a.pct === "number" && a.pct > 0 ? a.pct.toFixed(1) + "%" : "—";
-        return `
-        <div class="wp-card ${cls}">
-          <div class="wp-head"><span class="wp-tag">${escapeHtml(a.tag || "")}</span><span class="wp-pct">${escapeHtml(pctDisp)}</span></div>
-          <div class="wp-addr">${escapeHtml(a.addr || "")}</div>
-          <div class="wp-rep">
-            <div class="wp-rep-lbl">${escapeHtml(a.repLbl || "")}</div>
-            <div class="wp-rep-bar"><div class="wp-rep-fill ${a.repWarn ? "warn" : ""}" style="width:${Math.max(0, Math.min(100, a.repWidth || 0))}%"></div></div>
-          </div>
-          <div class="wp-desc">${escapeHtmlAllowBold(a.desc)}</div>
-        </div>
-      `;
-      })
-      .join("");
+    return d.criticalActors.map(renderCriticalActorCard).join("");
   }
   // No backend actors. composeCriticalActors builds its cards from the
   // Helius top-holder list, so an empty array almost always means that
@@ -748,4 +772,33 @@ export function buildSourceListRows(d) {
     })
     .filter(Boolean)
     .join("");
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// PRO GATE — what a Free visitor sees instead of the Full Analysis.
+//
+// /api/scan sends a Free caller only the Free view (verdict, score, the Sell/Mint/Freeze/LP line, market data) and marks it
+// `proLocked: true` (api/_lib/pro-gate.ts). The analysis itself is not in the answer, so there is nothing to hide here: the page
+// says what it is, shows the verdict a Free user already sees in the overlay, and points to the plans and to the sign-in.
+// ──────────────────────────────────────────────────────────────────────
+export const PRO_GATE_PRICING_URL = "https://antaresscan.com/pricing";
+export const PRO_GATE_SIGNIN_URL = "https://antaresscan.com/auth";
+
+export function buildProGate(d) {
+  const verdict = d && d.risk ? verdictLabel(d.risk, d.rugKind) : "";
+  const sym = (d && (d.tokenSymbol || (d.pair && d.pair.baseToken && d.pair.baseToken.symbol))) || "";
+  const name = (d && (d.tokenName || (d.pair && d.pair.baseToken && d.pair.baseToken.name))) || "";
+  const tokenLine = [name, sym ? "$" + sym : ""].filter(Boolean).join(" · ");
+  return `
+    <section class="pro-gate" id="pro-gate" data-verdict="${escapeHtml(verdict)}">
+      <div class="pg-eye">Token Analysis</div>
+      ${verdict ? `<div class="pg-verdict">${escapeHtml(verdict)}</div>` : ""}
+      ${tokenLine ? `<div class="pg-token">${escapeHtml(tokenLine)}</div>` : ""}
+      <h2>Full Analysis is part of Antares Pro</h2>
+      <p>The sources, the flags behind the verdict, the AI summary, the holders and the Insider Watch are reserved for Pro accounts. The verdict above is what the free overlay shows.</p>
+      <div class="pg-actions">
+        <a class="pg-btn primary" href="${PRO_GATE_PRICING_URL}" target="_blank" rel="noopener noreferrer">Unlock with Pro</a>
+        <a class="pg-btn" href="${PRO_GATE_SIGNIN_URL}" target="_blank" rel="noopener noreferrer">Already Pro? Sign in</a>
+      </div>
+    </section>`;
 }

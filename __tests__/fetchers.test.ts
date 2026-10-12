@@ -376,11 +376,18 @@ describe("heliusGetHolderPages", () => {
     expect(pages).toHaveLength(1);
   });
 
-  it("page 1 full: pages 2 to 10 are requested too, in page order", async () => {
+  it("page 1 full: the next pages are requested in waves, and not beyond the end of the list", async () => {
     mockFetchJsonPost.mockImplementation(async (_url: string, body: { params: { page: number } }) => (body.params.page <= 2 ? pageOf(1000) : pageOf(10)));
     const pages = await heliusGetHolderPages("m", "k");
-    expect([...pagesRequested()].sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    expect([...pagesRequested()].sort((a, b) => a - b)).toEqual([1, 2, 3]); // the first wave (2, 3) holds the short page 3: the list ends there
     expect(pagesRequested()[0]).toBe(1); // page 1 first, the others only once it proved to be full
+    expect(pages).toHaveLength(3);
+  });
+
+  it("every page full: pages 2 to 10 are all requested, in page order", async () => {
+    mockFetchJsonPost.mockImplementation(async () => pageOf(1000));
+    const pages = await heliusGetHolderPages("m", "k");
+    expect(pagesRequested()).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
     expect(pages).toHaveLength(10);
   });
 
@@ -390,10 +397,10 @@ describe("heliusGetHolderPages", () => {
     expect(pagesRequested().every((p) => p === 1)).toBe(true);
   });
 
-  it("a later page failing stays null in the list (the count is then a floor, not exact)", async () => {
+  it("a later page failing stays null in the list (the count is then a floor, not exact) and no later wave is requested", async () => {
     mockFetchJsonPost.mockImplementation(async (_url: string, body: { params: { page: number } }) => (body.params.page === 4 ? null : pageOf(1000)));
     const pages = (await heliusGetHolderPages("m", "k")) as unknown[];
-    expect(pages).toHaveLength(10);
+    expect(pages).toHaveLength(6); // page 1, the wave (2, 3), the wave (4, 5, 6) that holds the failure; pages 7 to 10 are ignored by the count, so not asked
     expect(pages[3]).toBeNull();
     expect(pages[2]).not.toBeNull();
   });

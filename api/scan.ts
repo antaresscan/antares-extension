@@ -2,12 +2,11 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { randomUUID } from "node:crypto";
 import { Redis } from "@upstash/redis";
 import type {
-  ScanFlag, Verdict, Severity,
   DexScreenerPair,
   HeliusHolder,
   SolscanTransfer, SolscanMarketPool,
   OHLCVCandle,
-  ScanResult, LayerSnapshot,
+  ScanResult,
 } from "./_lib/types";
 import {
   fetchJson, asNumber, pickGoPlusResult,
@@ -17,7 +16,7 @@ import {
   isSolscanMarketsResponse, isSolscanMeta, isSolscanTransfersResponse,
   isRugCheckReport,
   sanitizeString, sanitizeUrl,
-  makeFlag,
+  isChartGapDegraded, isReportGapDegraded,
 } from "./_lib/helpers";
 import {
   heliusGetLargestAccounts, heliusGetMintAccount, heliusGetHolderPages, heliusGetCreatorReputation,
@@ -27,33 +26,29 @@ import {
   type CreatorReputation,
 } from "./_lib/fetchers";
 import { readHeliusKey } from "./_lib/helius";
-import { parseMintState, mintSupplyUi, deriveAuthorityFacts, weightedBurnPct, parseChainHolders, pickHolderCount } from "./_lib/facts";
+import { parseMintState, mintSupplyUi, deriveAuthorityFacts, parseChainHolders, pickHolderCount, positiveCount } from "./_lib/facts";
 import { fetchGoPlusSecurity } from "./_lib/goplus-auth";
 import {
   DEXSCREENER_BASE, RUGCHECK_BASE, LAYER_WEIGHTS, SCORING_VERSION,
   LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS,
-  HARD_BLOCK_REASONS,
 } from "./_lib/constants";
-import {
-  layerDexScreener, layerRugCheck, layerGoPlus, layerHelius,
-  layerSolscan, layerChart, layerCrossValidation,
-} from "./_lib/layers";
-import { computeLpPctOfSupply, getLpRiskBucket } from "./_lib/lp-risk-matrix";
 import { selectBestPair } from "./_lib/dex-pair-select";
-import { computeFinalScore, classifySafeBlockedReasons } from "./_lib/scoring";
-import { evaluatePostLayerFlags, applySafeGateOverride, applyEstablishedBonus, determineVerdict, dedupeFlags, countVerdictFlags } from "./_lib/pipeline";
+import { decide } from "./_lib/decide";
+import { toPublicFlag } from "./_lib/pipeline";
 import { setCorsHeaders, getClientIp, getInstallId, checkRateLimit, checkColdScanLimit, validateCA, initRateLimiters } from "./_lib/middleware";
 import { initQuota, checkDailyQuota, setQuotaHeaders, secondsUntilReset } from "./_lib/quota";
+import { enforceProGate } from "./_lib/pro-gate";
 import { initUserStorage, pushScanHistory, resolveTierAndBypass } from "./_lib/user";
 import { initCache, getCachedResult, setCachedResult, setShortCachedResult, acquireScanLock, releaseScanLock, waitForCachedResult } from "./_lib/cache";
 import { initSentry, captureError } from "./_lib/sentry";
 import { generateAISummary } from "./_lib/ai-summary";
 
 import { initRugDb, recordRug } from "./_lib/rugdb";
+import { initCondemned, getCondemned, condemn, condemnedEntryOf, shouldCondemn, applyCondemnation } from "./_lib/condemned";
 import { isPreviewDeployment } from "./_lib/deployment";
 import { logger } from "./_lib/logger";
 import { composeCriticalActors } from "./_lib/critical-actors";
-import { buildInsiderGraph, initGraphCache } from "./_lib/insider-graph";
+import { initUsage, flushUsage } from "./_lib/usage";
 import { deriveEvent } from "./_lib/verdict-history";
 // initHistoryCache / pushVerdictHistory / getVerdictHistory are no
 // longer imported — the Verdict Timeline feature was decommissioned
@@ -80,7 +75,9 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
   initQuota(redis);
   initUserStorage(redis);
   initRugDb(redis);
-  initGraphCache(redis);
+  initCondemned(redis);
+  // initGraphCache deliberately not called: the scan no longer builds the insider graph (api/graph.ts does, on demand).
+  initUsage(redis);
   // initHistoryCache deliberately not called — verdict-history is
   // decommissioned (see decom block lower in this file).
 }
@@ -158,6 +155,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     req,
     identityKey,
   );
+  // The Pro/Free line is drawn here, on the server: from now on every scan this response sends is the Free view when the caller
+  // is Free (verdict, score, the Sell/Mint/Freeze/LP line, public market data). See api/_lib/pro-gate.ts.
+  enforceProGate(res, effectiveTier);
   const quota = await checkDailyQuota(identityKey, effectiveTier, { bypassQuota });
   setQuotaHeaders(res, quota);
   if (!quota.allowed) {
@@ -206,7 +206,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // trigger a real scan. Fail-open throughout: any Redis hiccup → scan.
   let holdsLock = false;
   if (!fresh) {
-    holdsLock = await acquireScanLock(ca);
+    holdsLock = await acquireScanLock(ca, requestId);
     if (!holdsLock) {
       // Wait for the lock holder until OUR scan deadline. The holder is bound
       // by the same deadline, so its result is in the cache by then. The old
@@ -246,7 +246,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // this token are not blocked behind a scan that will never start.
   const cold = await checkColdScanLimit(ip);
   if (!cold.ok) {
-    if (holdsLock) void releaseScanLock(ca);
+    if (holdsLock) void releaseScanLock(ca, requestId);
     logger.metric("scan.cold_limited", { requestId, retryAfterSec: cold.retryAfterSec });
     res.setHeader("Retry-After", String(cold.retryAfterSec));
     return apiError(res, 429, "Too many new-token scans from your network. Retry shortly.");
@@ -276,7 +276,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     clearTimeout(globalTimer);
     // Always release the lock — even on error/timeout — so the next scan
     // of this CA isn't blocked. TTL expiry is only the crash backstop.
-    if (holdsLock) void releaseScanLock(ca);
+    if (holdsLock) void releaseScanLock(ca, requestId);
   }
 }
 
@@ -304,7 +304,9 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
 
     let dexData = isValidDexScreenerResponse(dexRes) ? dexRes : null;
     let rugData = isValidRugCheckSummary(rugRes) ? rugRes : null;
-    let pair: DexScreenerPair | null = dexData?.pairs?.[0] ?? null;
+    // The first pool where the scanned token is the BASE (audit A-26): /tokens/<mint> also lists the pools where it is only the quote, and
+    // the base token of THOSE is another token (scanning USDC could resolve the scan to the SOL of a SOL/USDC pool).
+    let pair: DexScreenerPair | null = dexData?.pairs?.find((p) => p?.baseToken?.address === ca) ?? dexData?.pairs?.[0] ?? null;
     let resolvedMint = ca;
 
     const rugMissing =
@@ -326,7 +328,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
         ]);
         const dexRetryTyped = isValidDexScreenerResponse(dexRetry) ? dexRetry : null;
         const rugRetryTyped = isValidRugCheckSummary(rugRetry) ? rugRetry : null;
-        if (dexRetryTyped?.pairs?.[0]) { dexData = dexRetryTyped; pair = dexRetryTyped.pairs[0]; }
+        if (dexRetryTyped?.pairs?.[0]) { dexData = dexRetryTyped; pair = dexRetryTyped.pairs.find((p) => p?.baseToken?.address === resolvedMint) ?? dexRetryTyped.pairs[0]; }
         if (rugRetryTyped) rugData = rugRetryTyped;
       } else if (!baseMint) {
         logger.warn("scan", "mint resolution failed", { requestId, ca });
@@ -354,24 +356,40 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       }
     }
     if (dexData?.pairs && dexData.pairs.length > 1) {
-      pair = selectBestPair(dexData.pairs) ?? pair;
+      pair = selectBestPair(dexData.pairs, resolvedMint) ?? pair;
     }
 
     const pairAddress = pair?.pairAddress ?? ca;
+    // The full RugCheck report (bundle, snipers, rug history, creator sells) is about the TOKEN. Phase 1 asked for it under the address
+    // the page gave us, and when that was a PAIR address (DexScreener puts the pair in its URLs) RugCheck answers 400: the report stayed
+    // empty while every other source was read for the resolved mint, and those four checks were skipped without a word (audit A-07). Now
+    // that the mint is known, read it for the mint, in parallel with phase 2.
+    const rugReportPromise: Promise<unknown> = resolvedMint === ca
+      ? Promise.resolve(rugReportRes)
+      : withBudget(fetchJson(`${RUGCHECK_BASE}/tokens/${resolvedMint}/report`, {}, 5000), remainingMs());
     const tokenAgeMinutes: number | null = pair?.pairCreatedAt
       ? (Date.now() - pair.pairCreatedAt) / 60000 : null;
+
+    // GoPlus is started here, not inside the list below, because its holder count is also an INPUT of the holder pages: when it already
+    // says the token has far more holders than the pages can count, the Helius pages stop after the first one (they could not change
+    // the count shown, see heliusGetHolderPages). The answer itself is read from the same promise below.
+    const goplusPromise = withBudget(fetchGoPlusSecurity(resolvedMint), remainingMs());
+    const goplusHolderCount: Promise<number | null> = goplusPromise
+      .then((raw) => positiveCount(pickGoPlusResult(raw, resolvedMint)?.holder_count))
+      .catch(() => null);
 
     const [
       candlesRaw, candlesDailyRaw, goplusRaw,
       heliusHoldersRaw, heliusSupplyRaw, heliusHolderPagesRaw,
       solMeta, solTransfers, solMarkets,
+      rugReportResolvedRaw,
     ] = await Promise.all([
       withBudget(fetchDexCandles(pairAddress), remainingMs()),
       withBudget(fetchDexCandlesDaily(pairAddress, resolvedMint), remainingMs()),
-      withBudget(fetchGoPlusSecurity(resolvedMint), remainingMs()),
+      goplusPromise,
       HELIUS_API_KEY ? withBudget(heliusGetLargestAccounts(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
       HELIUS_API_KEY ? withBudget(heliusGetMintAccount(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
-      HELIUS_API_KEY ? withBudget(heliusGetHolderPages(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
+      HELIUS_API_KEY ? withBudget(heliusGetHolderPages(resolvedMint, HELIUS_API_KEY, goplusHolderCount), remainingMs()) : null,
       // (No Solscan holders-count call: the public endpoint it used answers
       // 404 for every token, so it only ever contributed `null`.)
       withBudget(fetchSolscan(`/token/meta?address=${resolvedMint}`), remainingMs()),
@@ -384,6 +402,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       // and stays well within Solscan's free-tier per-page cap.
       withBudget(fetchSolscan(`/token/transfer?address=${resolvedMint}&page=1&page_size=50`), remainingMs()),
       withBudget(fetchSolscan(`/token/markets?address=${resolvedMint}&page=1&page_size=1`), remainingMs()),
+      rugReportPromise,
     ]);
 
     const candles: OHLCVCandle[] = Array.isArray(candlesRaw) ? candlesRaw : [];
@@ -400,7 +419,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       if (mintState && totalSupplyUi <= 0) totalSupplyUi = mintSupplyUi(mintState);
     }
     // Contract facts: the chain first, GoPlus second; never defaulted to "OK".
-    const authFacts = deriveAuthorityFacts(mintState, goplus);
+    const authFacts = deriveAuthorityFacts(mintState, goplus, resolvedMint);
 
     // Free public Solana RPC fallback for the two Helius RPC calls that
     // matter for holder concentration. Same JSON-RPC interface, same
@@ -484,7 +503,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const tokenSupply   = solMetaData?.data?.supply   ?? null;
     const solTransfersData = isSolscanTransfersResponse(solTransfers) ? solTransfers : null;
     const recentTransfers: SolscanTransfer[] = solTransfersData?.data || [];
-    const rugReport = isRugCheckReport(rugReportRes) ? rugReportRes : null;
+    const rugReport = isRugCheckReport(rugReportResolvedRaw) ? rugReportResolvedRaw : null;
     const rugTotalHolders: number | null =
       typeof rugReport?.totalHolders === "number" && rugReport.totalHolders > 0
       ? rugReport.totalHolders : null;
@@ -516,213 +535,19 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
 
     const tokenName: string | null = sanitizeString(pair?.baseToken?.name) ?? null;
 
-    // Deepest pool of THIS token (it is the base token of the pair). selectBestPair can settle on a thinner pool than the deepest
-    // one (JTO: a $62k Raydium pool next to a $1.3M Orca pool); the "no registered links" check asks whether the token has real
-    // liquidity somewhere, not whether the chosen pool is deep.
-    const deepestPoolUsd = Math.max(0, ...(dexData?.pairs ?? []).filter((p) => p.baseToken?.address === resolvedMint).map((p) => asNumber(p.liquidity?.usd)));
+    // A token that has already rugged stays a RUG (api/_lib/condemned.ts): read its record before the decision, so the AI summary and
+    // everything after it speak of the verdict the user will see. A slow or failed read is "not condemned": it never delays or changes a scan.
+    const condemnedEntry = await withBudget(getCondemned(resolvedMint), 800);
 
-    // 7 layers
-    const l1 = layerDexScreener(pair, marketCap, tokenAgeMinutes, holders, deepestPoolUsd);
-    // Shared maturity context — rugcheck, goplus, and helius all need
-    // the same view of "is this an established token" so soft signals
-    // (unburned LP, top-1 concentration on a 100k-holder memecoin) get
-    // the established-context treatment consistently. Building once.
-    //
-    // We use the unified `holders` value (max of all sources) so the
-    // helius dampening sees the same holder count the response reports.
-    // Earlier version restricted to solscan+rugcheck only, which made
-    // the maturity dampening miss every token where Helius/GoPlus
-    // were the only sources reporting holders (most blue-chips).
-    //
-    // _earlyLpBurned ORs rugcheck and goplus signals so MEW/FARTCOIN
-    // (LP burn confirmed by GoPlus only) get the established-context
-    // treatment in helius, not just in rugcheck/goplus.
-    const _gpEarlyBurnPct = weightedBurnPct(goplus?.dex) ?? 0;
-    const _earlyLpBurned = rugData?.lpBurned === true ? true
-      : _gpEarlyBurnPct >= 50 ? true
-      : rugData?.lpBurned === false ? false
-      : null;
-    // Compute the share of total supply that sits in the LP. Feeds the
-    // 2-axis LP risk matrix (api/_lib/lp-risk-matrix.ts) so the verdict
-    // reflects actual rug-pull capacity, not just "is LP locked?". See
-    // computeLpPctOfSupply for the back-compute math (DexScreener
-    // doesn't expose liquidity.base directly in our schema, so we derive
-    // it from liquidity.usd × priceUsd × totalSupply, accurate to ~5%
-    // on classic AMM pools).
-    const _lpPctOfSupply = computeLpPctOfSupply(
-      asNumber(pair?.liquidity?.usd),
-      asNumber(pair?.priceUsd),
-      totalSupplyUi,
-    );
-    const maturityCtx = {
-      holders: holders,
-      liquidity: asNumber(pair?.liquidity?.usd),
-      tokenAgeHours: solscanTokenAgeHours,
-      mintAuthority: authFacts.mint === true && !authFacts.trusted,
-      freezeAuthority: authFacts.freeze === true && !authFacts.trusted,
-      honeypot: authFacts.sellBlocked === true,
-      lpBurned: _earlyLpBurned,
-      lpPctOfSupply: _lpPctOfSupply,
-    };
-    const l2 = layerRugCheck(rugData, rugReport, resolvedMint, tokenName, maturityCtx);
-    const l3 = layerGoPlus(goplus, maturityCtx, authFacts);
-    // Collect all DEXScreener pair addresses for this token.
-    // For AMMs that use per-pool PDAs as vault authority (PumpSwap, Meteora DBC…)
-    // the pair address IS the decoded authority of the LP vault token account.
-    // Passing it here lets layerHelius exclude the LP vault without any extra
-    // RPC calls — the data is already in memory from the DEXScreener fetch.
-    const dexPairAddresses = new Set<string>(
-      (dexData?.pairs ?? [])
-        .map((p: DexScreenerPair) => p.pairAddress)
-        .filter((a: unknown): a is string => typeof a === "string" && a.length > 0)
-    );
-    const l4 = layerHelius(resolvedHolderAccounts, totalSupplyUi, maturityCtx, dexPairAddresses);
-    // Holder count: null, as it effectively always was (the Solscan holders endpoint is dead).
-    const l5 = layerSolscan(null, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h, solMetaData !== null || solTransfersData !== null || solMarketsData !== null);
-    const l6 = layerChart(candles, pair, tokenAgeMinutes, maturityCtx, dailyCandles.length >= 2 ? dailyCandles : undefined);
-    const l7 = layerCrossValidation(rugData, resolvedHolderAccounts, goplus, solscanTokenAgeHours, dexTokenAgeHours, totalSupplyUi, authFacts);
-
-    const allLayers = [l1, l2, l3, l4, l5, l6, l7];
-    let score       = computeFinalScore(allLayers);
-    let forceRug    = allLayers.some(l => l.forceRug);
-    let safeBlocked = allLayers.some(l => l.safeBlocked);
-
-    const buys5m  = asNumber(pair?.txns?.m5?.buys);
-    const sells5m = asNumber(pair?.txns?.m5?.sells);
-    const liqUsd  = asNumber(pair?.liquidity?.usd);
-    const ageMin  = tokenAgeMinutes ?? 0;
-    const volLiqRatio = liqUsd > 0 ? asNumber(pair?.volume?.h24) / liqUsd : 0;
-
-    const postLayerResult = evaluatePostLayerFlags({
-      buys5m, sells5m, liqUsd, ageMin,
-      recentTransfers, creatorReputation, volLiqRatio,
-    });
-    const postLayerFlags = postLayerResult.flags;
-    if (postLayerResult.forceRug) forceRug = true;
-    if (postLayerResult.safeBlocked) safeBlocked = true;
-
-    const safeBlockedReasons = classifySafeBlockedReasons(allLayers);
-    const _gpBP = weightedBurnPct(goplus?.dex) ?? 0; const lpBurned = _gpBP >= 50 || rugData?.lpBurned === true;
-    // Surface lpLocked from RugCheck instead of hard-wiring false. The
-    // response was previously claiming "LP not locked" even when
-    // RugCheck reported a real lock — which read like a contradiction
-    // when the verdict surfaced LP-locked bonuses elsewhere.
-    const lpLocked = rugData?.lpLocked === true;
-    const goPlusClean = l3.available && l3.trust >= 0.95 && !l3.forceRug;
-    const tokenAgeHours = solscanTokenAgeHours ?? dexTokenAgeHours ?? null;
-
-    // ─── LP fail-closed safety net ────────────────────────────────────
-    // When neither RugCheck nor GoPlus can confirm LP is burned or
-    // locked AND no layer has emitted an LP-related flag, force the
-    // safe gate closed. Without this, brand-new tokens (low holders,
-    // RugCheck has no record yet, GoPlus rate-limited) slip through
-    // with SAFE verdicts despite the front-end correctly showing
-    // "LP LOCK ✗" — exactly the user-reported HORNY/MAGA case.
-    //
-    // Maturity gate is intentionally LENIENT here (OR'd, not AND'd
-    // like in the layer-level checks) because this branch only runs
-    // when we have NO source-level LP signal. Failing CAUTION on a
-    // mature-looking token whose API metadata happens to be missing
-    // (e.g. age unknown when Solscan is degraded) is far worse for
-    // the user than failing DANGER on a clean-but-tiny token. We
-    // reserve hard 'lp' for tokens that score "young AND small AND
-    // unknown-age" on every available signal.
-    if (!lpBurned && !lpLocked) {
-      const anyLpFlag = allLayers.some(l =>
-        l.flags.some(f => /\bLP\b|liquidity (?:not|is)|dev can rug|unverified LP|holds .+% of supply|rug (?:capacity|exposure|risk|impact)/i.test(f.label))
-      );
-      if (!anyLpFlag) {
-        // Fail-closed safety net: when neither RugCheck nor GoPlus emitted
-        // an LP flag (typically because both upstreams returned null lpBurned
-        // and lpLocked — blue chips often hit this because RugCheck is
-        // patchy on long-established mints), we still need to surface SOME
-        // LP signal so the user sees the unverified status.
-        //
-        // SCORING_VERSION 7.6.0+: this path now ALSO uses the 2-axis LP
-        // risk matrix (api/_lib/lp-risk-matrix.ts) — same logic as the
-        // layer-level paths — so blue chips with tiny LP % land in the
-        // info bucket (no safeBlock) instead of being capped at CAUTION
-        // by the old `looksMature` binary. This was the root cause of
-        // BONK / WIF still showing CAUTION after the layer-level matrix
-        // shipped: the safety net was running with the legacy code path
-        // because the layer never emitted an LP flag in the first place.
-        const bucket = getLpRiskBucket(_lpPctOfSupply, tokenAgeHours);
-        postLayerFlags.push(makeFlag(bucket.flagLabel, bucket.severity, 0));
-        if (bucket.safeBlock) {
-          safeBlocked = true;
-          // Critical buckets classify as hard 'lp'; soft buckets as 'lp_unverified'
-          // (back-compat with classifySafeBlockedReasons regex order).
-          const reason = bucket.severity === "critical" ? "lp" : "lp_unverified";
-          if (!safeBlockedReasons.includes(reason)) safeBlockedReasons.push(reason);
-        }
-        if (bucket.forceRug) {
-          forceRug = true;
-        }
-      }
-    }
-    const sourcesAvailableCount = allLayers
-      .filter(l => l.available && l.source !== "crossvalidation")
-      .length;
-
-    const newSafeBlocked = applySafeGateOverride({
-      safeBlocked, safeBlockedReasons, forceRug,
-      holders, lpBurned, goPlusClean,
-      tokenAgeHours, sourcesAvailableCount,
-      mint: resolvedMint,
-    });
-    if (newSafeBlocked !== safeBlocked) {
-      logger.info("scan", "safe gate override", { requestId, ca: resolvedMint, reasons: safeBlockedReasons });
-    }
-    safeBlocked = newSafeBlocked;
-
-    // Reason-aware score clipping. Splitting hard from soft reasons
-    // here is what lets a mature token with only `lp_unverified` /
-    // `holders` reasons land on CAUTION (≥700) instead of being
-    // forced to DANGER (<700) by a blanket cap at 500.
-    //   forceRug          → 100 (RUG)
-    //   hard reason       → 500 (DANGER)
-    //   soft reason only  → 850 (high CAUTION ceiling, lets the
-    //                       layer geometric mean express how good
-    //                       the rest of the profile actually is)
-    if (forceRug) {
-      score = Math.min(score, 100);
-    } else if (safeBlocked) {
-      const hasHardReasonForClip = safeBlockedReasons.some(r => HARD_BLOCK_REASONS.has(r));
-      score = Math.min(score, hasHardReasonForClip ? 500 : 850);
-    }
-
-    const newScore = applyEstablishedBonus({ score, tokenAgeHours, holders, lpBurned, goPlusClean });
-    if (newScore !== score) {
-      logger.info("scan", "established bonus applied", { requestId, ca: resolvedMint, score: newScore });
-    }
-    score = newScore;
-
-    const sources_used: string[] = allLayers
-      .filter(l => l.available && l.source !== "crossvalidation")
-      .map(l => l.source);
-
-    const _allFlagsForVerdict: ScanFlag[] = allLayers.flatMap(l => l.flags).concat(postLayerFlags);
-
-    // One flag per distinct risk signal (the most severe kept), then the verdict is decided on THAT list: the one the user
-    // sees. The counts used to be taken on the raw list, before the deduplication (audit M4). The deduplication, the counts and
-    // what each kind of flag counts for are in pipeline.ts (dedupeFlags, countVerdictFlags), where they are tested.
-    const flags: ScanFlag[] = dedupeFlags(_allFlagsForVerdict);
-    const severityOrder: Record<Severity, number> = { critical:0, warning:1, info:2, bonus:3 };
-    flags.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
-
-    const _counts = countVerdictFlags(flags);
-    const risk: Verdict = determineVerdict({
-      score, forceRug, safeBlocked, safeBlockedReasons,
-      sourcesUsedCount: sources_used.length,
-      warningFlagsCount: _counts.warning,
-      criticalFlagsCount: _counts.critical,
-      pumpPriceOnlyFlagsCount: _counts.pumpPriceOnly,
-    });
-
-    const confidence = Math.round(sources_used.reduce((sum, src) => sum + (LAYER_WEIGHTS[src] ?? 0), 0) * 100);
-    const layersSnapshot: Record<string, LayerSnapshot> = Object.fromEntries(
-      allLayers.map(l => [l.source, { trust: +l.trust.toFixed(3), available: l.available }])
-    );
+    // From what the upstreams said to the verdict: a pure function (api/_lib/decide.ts), nothing is read or written there.
+    const decision = applyCondemnation(decide({
+      pair, dexData, resolvedMint, marketCap, tokenAgeMinutes, holders, rugData, rugReport, tokenName, goplus, authFacts, totalSupplyUi,
+      solscanTokenAgeHours, dexTokenAgeHours, resolvedHolderAccounts, solscanTrades24h, solscanTraders24h,
+      solscanAnswered: solMetaData !== null || solTransfersData !== null || solMarketsData !== null,
+      candles, dailyCandles, recentTransfers, creatorReputation,
+    }), condemnedEntry);
+    for (const note of decision.notes) logger.info("scan", note.message, { requestId, ca: resolvedMint, ...note.data });
+    const { score, risk, rugKind, flags, safeBlocked, safeBlockedReasons, confidence, sources_used, layersSnapshot, lpBurned, lpLocked } = decision;
 
     // Compute holder concentration: top1 + top10 percentages of total supply.
     // CRITICAL: filter out LP program accounts and foundation wallets first
@@ -764,28 +589,16 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     })();
 
     // ─── V5 Critical Actors preview ───────────────────────────────────
-    // Compose the 3 hero cards (Dev / Insider / Cluster). The cluster
-    // detection requires `buildInsiderGraph` which makes Helius RPC
-    // calls — guarded by withBudget so a tight scan budget skips
-    // gracefully and we still emit Dev + Insider cards. Subsequent
-    // scans benefit from the graph cache (INSIDER_GRAPH_CACHE_TTL).
-    const insiderGraphResult = (HELIUS_API_KEY && realHolderAccounts.length >= 3 && totalSupplyUi > 0)
-      ? await stepBudget(() =>
-          buildInsiderGraph(
-            resolvedMint,
-            realHolderAccounts.map(h => ({ address: h.owner, uiAmount: h.uiAmount })),
-            totalSupplyUi,
-            HELIUS_API_KEY,
-            new Set(LP_PROGRAM_ADDRESSES),
-          ),
-        ).catch(() => null)
-      : null;
+    // Compose the hero cards (Dev / Insider). The Cluster card needs the insider graph, which is NOT built here any more:
+    // it cost ~120 Helius credits per cold scan (20 getSignaturesForAddress + one Enhanced Transactions request at 100) for a
+    // display-only feature that feeds no verdict. The graph is built on demand by api/graph.ts, when token.html opens the
+    // Insider Watch tab. composeCriticalActors and composeHolderActivity already handle `insiderGraph: null`.
     const criticalActors = composeCriticalActors({
       tokenCreator,
       creatorReputation,
       realHolderAccounts,
       totalSupplyUi,
-      insiderGraph: insiderGraphResult,
+      insiderGraph: null,
     });
 
     // ─── V5 Holder Activity ───────────────────────────────────────────
@@ -796,7 +609,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       tokenCreator,
       totalSupplyUi,
       recentTransfers,
-      insiderGraph: insiderGraphResult,
+      insiderGraph: null,
     });
 
     const aiSummary = await generateAISummary({
@@ -839,7 +652,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const finalHistory = [currentEntry];
 
     const result: ScanResult = {
-      score, risk, flags, pair, resolvedMint, confidence, sources_used,
+      score, risk, rugKind, flags: flags.map(toPublicFlag), pair, resolvedMint, confidence, sources_used,
       holders, marketCap, priceUsd, liquidity,
       volume24h, volume1h, priceChange5m, priceChange1h, priceChange24h,
       tokenSymbol: sanitizeString(pair?.baseToken?.symbol) ?? null,
@@ -854,7 +667,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       freezeAuthority: authFacts.freeze,
       lpBurned,
       lpLocked,
-      lpLockedPct: _gpBP > 0 ? Math.round(_gpBP * 100) / 100 : null,
+      lpLockedPct: decision.lpBurnedPct > 0 ? Math.round(decision.lpBurnedPct * 100) / 100 : null,
       candles: candles.slice(-20).map(c => ({ close: c.c })),
       topHolderPct,
       top10HolderPct,
@@ -877,7 +690,11 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // or with no source at all, is kept only briefly too: a verdict born from
     // missing data must not stick for everyone for the full TTL. That is how a
     // bad answer for a well-known token could survive for 10 minutes.
-    const degraded = sources_used.length === 0 || scanDeadline - Date.now() < MIN_STEP_MS;
+    // The same goes for a SAFE or CAUTION born without the chart layer on a token old enough to have candles: usually a GeckoTerminal
+    // rate limit, after which the next try can give another verdict (audit M11). Bad verdicts keep their long TTL.
+    const degraded = sources_used.length === 0 || scanDeadline - Date.now() < MIN_STEP_MS
+      || isChartGapDegraded(result.risk, result.layers?.chart?.available, tokenAgeMinutes)
+      || isReportGapDegraded(result.risk, resolvedMint !== ca, rugReport !== null);
     if (result.aiSummary && !degraded) {
       setCachedResult(ca, result, tokenAgeMinutes, result.risk);
       if (resolvedMint !== ca) setCachedResult(resolvedMint, result, tokenAgeMinutes, result.risk);
@@ -891,6 +708,11 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
 
     // A preview deployment must not write into production's rug database (see deployment.ts).
     if (!isPreviewDeployment()) void recordRug({ mint: resolvedMint, symbol: sanitizeString(pair?.baseToken?.symbol) ?? null, score, risk, flags, creator: tokenCreator });
+
+    // A RUG confirmed by a fact, on complete data, condemns the token for good (the first record is kept; a record that exists is not rewritten).
+    if (!condemnedEntry && shouldCondemn({ risk, rugKind, degraded, preview: isPreviewDeployment() })) {
+      void condemn(condemnedEntryOf(decision, resolvedMint, sanitizeString(pair?.baseToken?.symbol) ?? null));
+    }
 
     // Emit a structured outcome event for every completed scan. Downstream
     // log aggregators can chart verdict distribution, layer availability,
@@ -920,6 +742,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       });
     }
 
+    // Write the upstream-usage counters of this cold scan (one Redis command, at most 300 ms, never an error for the user).
+    await flushUsage();
     return res.json(result);
   } catch (e) {
     logger.error("scan", "analysis error", { requestId, version: SCORING_VERSION, error: String(e) });

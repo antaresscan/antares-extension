@@ -1,5 +1,6 @@
 import type { ScanResponseFlag, ScanResponseData, QuotaStatus } from "../../shared/types"
-import { RISK_CLASS, LABELS, ANALYSIS_PAGE, SVG_MOVE, SVG_CLOSE, VERDICT_COLORS, PHOTON_REF, buildPhotonUrl, PRICING_URL } from "./constants"
+import { RISK_CLASS, ANALYSIS_PAGE, SVG_MOVE, SVG_CLOSE, VERDICT_COLORS, PHOTON_REF, buildPhotonUrl, PRICING_URL } from "./constants"
+import { verdictLabel } from "./verdict-label"
 import { state, scanCache } from "./state"
 import { SHADOW_CSS, injectFonts } from "./styles"
 import { initDrag } from "./drag"
@@ -691,7 +692,7 @@ export function buildResultNode(
   installId?: string | null,
 ): HTMLElement {
   const riskClass = RISK_CLASS[data.risk] || "danger"
-  const label = LABELS[data.risk] || data.risk
+  const label = verdictLabel(data.risk, data.rugKind)
   const mint = data.resolvedMint || ca
   const liq = data.liquidity ?? data.pair?.liquidity?.usd ?? null
 
@@ -761,8 +762,10 @@ export function buildResultNode(
   // means zero warning/critical flags; this just makes that guarantee
   // impossible to violate on the display side too.
   let summary = ""
+  // "No issues found" is for SAFE only: a verdict that is not SAFE without a flag to count (a source did not answer, so SAFE was not
+  // granted) says so, instead of reading "No issues found" next to CAUTION.
   if (data.risk === "SAFE") summary = "No issues found"
-  else if (flagCount === 0) summary = "No issues found"
+  else if (flagCount === 0) summary = data.risk === "CAUTION" ? "Limited data" : "Risk detected"
   else if (critCount > 0) summary = `${flagCount} flag${flagCount > 1 ? "s" : ""} \u2014 ${critCount} critical`
   else summary = `${flagCount} flag${flagCount > 1 ? "s" : ""} detected`
 

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { HAS_PRO, SKIP_NO_PRO, injectProHeaders } from './pro';
 
 const BASE = process.env.E2E_BASE_URL || 'https://antares-extension.vercel.app';
 // POPCAT instead of WSOL — see api-scan.spec.ts for rationale (WSOL
@@ -9,6 +10,10 @@ const INVALID_CA = 'notavalidaddress';
 const RANDOM_CA = '11111111111111111111111111111111';
 
 test.describe('Token Page — Deep Functional Tests', () => {
+  // The page draws the full analysis, which only a Pro caller is sent; a Free visitor sees the Pro message (token-page-pro-gate below).
+  test.skip(!HAS_PRO, SKIP_NO_PRO);
+  test.beforeEach(async ({ page }) => { await injectProHeaders(page); });
+
   test.describe('Loading State', () => {
     test('shows loading indicator before data arrives', async ({ page }) => {
       await page.goto(`${BASE}/token.html?ca=${SOL_WRAPPED}`);

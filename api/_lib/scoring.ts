@@ -29,80 +29,24 @@ export function computeFinalScore(layers: LayerResult[]): number {
   const xv = layers.find(l => l.source === "crossvalidation");
   if (xv?.available && xv.flags.length > 0) {
     for (const f of xv.flags) {
-      if (/LP burn conflict/i.test(f.label)) product *= XV_PENALTY_LP_BURN;
-      else if (/Mint authority conflict/i.test(f.label)) product *= XV_PENALTY_MINT_AUTH;
-      else if (/age conflict/i.test(f.label)) product *= XV_PENALTY_AGE;
-      else if (/holder concentration/i.test(f.label)) product *= XV_PENALTY_HOLDER_CONCENTRATION;
+      const tags = f.tags ?? [];
+      if (tags.includes("xv_lp_burn")) product *= XV_PENALTY_LP_BURN;
+      else if (tags.includes("xv_mint_authority")) product *= XV_PENALTY_MINT_AUTH;
+      else if (tags.includes("xv_age")) product *= XV_PENALTY_AGE;
+      else if (tags.includes("xv_holder_concentration")) product *= XV_PENALTY_HOLDER_CONCENTRATION;
     }
   }
 
   return Math.round(Math.max(0, Math.min(1, product)) * 1000);
 }
 
-// HARD_BLOCK_PATTERNS: flags that classify as hard safeBlocked reasons.
-// CRITICAL: 'lp' is a HARD reason — LP not burned/locked can NEVER be soft-unlocked.
-// Without this, LP-flagged tokens had safeBlockedReasons=[] which caused
-// the safe gate to fall through and allow SAFE verdicts on rug-able tokens.
-export const HARD_BLOCK_PATTERNS: Array<[RegExp, SafeBlockedReason]> = [
-  // ── LP RISK MATRIX (SCORING_VERSION 7.6.0+) ───────────────────────────────
-  // The 2-axis matrix (api/_lib/lp-risk-matrix.ts) produces 6 distinct flag
-  // labels keyed off bucket severity. Critical buckets (LP 30 %+ of supply,
-  // or any %  with `forceRug=true`) classify as hard "lp"; info/warning
-  // buckets classify as soft "lp_unverified" (eligible for safe-gate unlock
-  // via established-token signals). Order matters — the critical regex must
-  // win before the general "LP holds" matcher.
-  [/(high|extreme) rug exposure|dev can rug/i, "lp"],
-  [/LP holds [\d.]+% of supply|LP-to-supply ratio could not be computed/i, "lp_unverified"],
-  // Legacy labels (pre-7.6.0). Kept for cached/stored scans that pre-date
-  // the matrix refactor. Safe to remove after the cache fully cycles.
-  [/unverified LP|LP not burned but token is mature/i, "lp_unverified"],
-  [/LP not burned|LP not locked/i, "lp"],
-  [/mint authority/i, "mint"],
-  [/freeze authority/i, "freeze"],
-  [/honeypot/i, "honeypot"],
-  [/wash trading/i, "wash_trading"],
-  [/bundle|bundler/i, "bundle"],
-  [/sniper/i, "sniper"],
-  // rug_pattern matches actual chart/behaviour patterns, NOT every flag
-  // that happens to contain the word "rug". Previous regex /rug|dump|.../
-  // false-positive-classified the LP flag "LP not burned or locked — dev
-  // can rug liquidity" as both "lp" AND "rug_pattern", which double-
-  // counted hard reasons and made it impossible to soft-unlock even
-  // mature tokens whose only real issue was unverified LP.
-  // New regex requires specific pattern names rather than the bare word.
-  [/rug staircase|rug pattern|coordinated dump|dump and run|exit trap|exit liquidity/i, "rug_pattern"],
-  // pump pattern: same caveat. Bare /pump/ matched legitimate flags like
-  // "Pump.fun launch" which is informational, not a hard exit-trap signal.
-  [/(?:extreme |coordinated )?pump pattern|parabolic|pump.fun.*exit trap|pump.*newborn/i, "pump"],
-  [/chart|blow-off|stair-step|volume exhaustion|liquidity mirage/i, "chart"],
-  [/buy\/sell imbalance/i, "pump_imbalance"],
-  [/deceptive name/i, "deceptive_name"],                         // FIX: deceptive names are hard
-    [/very few holders|few holders|<15|<50/i, "low_holders"], // FIX: very low holders is a HARD reason
-  // Top-10 distribution concentration (7.7.5+, 2-tier system).
-  // Two tiers: fresh tokens (stricter) vs established tokens (looser).
-  //
-  // "elevated" labels (soft → max CAUTION, never SAFE):
-  //   Fresh:       "Top 10 hold X% — elevated concentration · cluster risk"
-  //   Established: "Top 10 hold X% — elevated · exchanges may be included"
-  //   → Both caught by /elevated\b/ word-boundary match.
-  //
-  // "high / extreme" labels (hard → DANGER/RUG, no exceptions):
-  //   Fresh:       "Top 10 hold X% — high concentration · control risk"
-  //   Established: "Top 10 hold X% — high concentration"
-  //   Both:        "Top 10 hold X% — extreme concentration"
-  //   → Caught by /(high|extreme) concentration/.
-  [/top 10 hold \d+% — elevated\b/i, "concentration_light"],
-  [/top 10 hold \d+% — (high|extreme) concentration/i, "concentration"],
-  // Single-wallet safety net (7.7.11): a single wallet >40% routes to the
-  // hard "concentration" reason → DANGER/RUG. Catches the HAWK-class case
-  // (one giant wallet + moderate top-10) the top-10 ladder alone misses.
-  // Young-token elevated tier (7.7.12, 10-15%): soft → CAUTION max.
-  // Must come BEFORE the hard "concentration" pattern so "elevated" labels
-  // don't accidentally match the (high|extreme) regex below.
-  [/single wallet holds \d+% — elevated\b/i, "concentration_light"],
-  [/single wallet holds \d+% — (high|extreme) concentration/i, "concentration"],
-];
-
+/**
+ * The safe-gate reasons of the layers, read from the codes the layers put on their flags (ScanFlag.reasons, ScanFlag.fallbackReasons).
+ * One pass over the flags, no regex: rewording a label cannot change it.
+ *
+ * Only a layer that is safeBlocked counts. In such a layer, the reasons of its flags count; if none of its flags has any, its fallback
+ * reasons count instead (what the per-source fallback has always done). "lp" is dropped once "lp_unverified" is in.
+ */
 export function classifySafeBlockedReasons(layers: LayerResult[]): SafeBlockedReason[] {
   const reasons: SafeBlockedReason[] = [];
   const seen: Record<string, boolean> = {};
@@ -112,34 +56,13 @@ export function classifySafeBlockedReasons(layers: LayerResult[]): SafeBlockedRe
     if (!layer.safeBlocked) continue;
     let matched = false;
     for (const flag of layer.flags) {
-      for (const entry of HARD_BLOCK_PATTERNS) {
-        if (entry[0].test(flag.label)) { add(entry[1]); matched = true; }
-      }
+      const own = flag.reasons ?? [];
+      if (own.length > 0) matched = true;
+      for (const r of own) add(r);
     }
     if (!matched) {
-      if (layer.source === "dexscreener") {
-        // Per-source fallback heuristics. The patterns here mirror the
-        // tightened HARD_BLOCK_PATTERNS regexes — bare /pump/ and /rug/
-        // were matching legitimate flags like "Pump.fun launch" and
-        // "...dev can rug liquidity" (which already classify as `lp`).
-        // Tighten to the same specific pattern names.
-        for (const f of layer.flags) {
-          if (/(?:extreme |coordinated )?pump pattern|parabolic|pump.fun.*exit trap|pump.*newborn/i.test(f.label)) add("pump");
-          if (/rug staircase|rug pattern|coordinated dump|dump and run|exit trap|exit liquidity/i.test(f.label)) add("rug_pattern");
-          if (/wash/i.test(f.label)) add("wash_trading");
-        }
-      }
-      if (layer.source === "solscan" || layer.source === "helius") {
-        for (const f of layer.flags) {
-          if (/holder/i.test(f.label) || /wallet.*holds/i.test(f.label) || /top.*hold/i.test(f.label)) add("holders");
-          if (/newborn|fresh|age|<\d+h|<\d+min/i.test(f.label)) add("age");
-        }
-      }
-      // FIX: rugcheck layer with safeBlocked but unmatched flag — treat as lp if LP-related
-      if (layer.source === "rugcheck") {
-        for (const f of layer.flags) {
-          if (/LP|liquidity/i.test(f.label)) add("lp");
-        }
+      for (const flag of layer.flags) {
+        for (const r of flag.fallbackReasons ?? []) add(r);
       }
     }
   }

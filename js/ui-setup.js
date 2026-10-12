@@ -17,6 +17,7 @@ import {
   fmtTok,
   formatAgeMin,
 } from "./formatters.js";
+import { applyClusterCards } from "./views.js";
 
 // ──────────────────────────────────────────────────────────────────────
 // Cursor-tracking glow (hero background visual). Pure CSS update —
@@ -235,12 +236,22 @@ export async function loadInsiderActivity() {
     // top-holders + Helius data and Vercel Hobby caps us at 12
     // functions total.
     const url = `${API_BASE}/graph?ca=${encodeURIComponent(ca)}&activity=1${priceQ}`;
-    const res = await fetch(url);
+    // Insider Watch is a Pro feature: the server reads the plan from the session cookie, so it has to travel with the request even
+    // when this page is not served from the API's own origin.
+    const res = await fetch(url, { credentials: "include" });
+    if (res.status === 402) {
+      // Not signed in, or not on a paid plan: an honest "Pro" message, not the "re-scan" one that would send the reader in circles.
+      renderEmpty("Live activity of the top 10 holders is part of Antares Pro. Sign in with a Pro account to see it.", "");
+      return;
+    }
     if (!res.ok) {
       renderEmpty("Live activity unavailable on this scan — re-scan in a moment.", "warn");
       return;
     }
     const payload = await res.json();
+    // The Cluster cards of the top of the page: the scan no longer builds the insider graph, this response carries what it found.
+    // Never allowed to break the feed below: the cards then stay as the scan made them.
+    try { applyClusterCards(document.getElementById("whales-preview"), payload && payload.clusterActors); } catch { /* keep the scan's cards */ }
     // /api/graph returns the graph fields at top level + an `activity`
     // sub-object. Defensive: extract activity safely so a graph-only
     // response (or a graph endpoint returning a different shape) just

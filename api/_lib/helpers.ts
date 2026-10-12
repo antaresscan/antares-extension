@@ -3,7 +3,7 @@
 
 import type { VercelResponse } from "@vercel/node";
 import type {
-  Severity, ScanFlag,
+  Severity, ScanFlag, SafeBlockedReason, FlagTag,
   GoPlusTokenResult, GoPlusResponse,
   DexScreenerResponse, RugCheckSummary, RugCheckReport, RugCheckRisk,
 } from "./types";
@@ -42,8 +42,16 @@ export function goPlusBool(val: unknown): boolean {
   return val === "1" || val === 1 || val === true;
 }
 
-export function makeFlag(label: string, severity: Severity, impact: number): ScanFlag {
-  return { label, severity, impact };
+/** The classification a flag carries, set by the layer that creates it (see ScanFlag.reasons). Empty lists are left out of the flag. */
+export interface FlagCodes { reasons?: SafeBlockedReason[]; fallbackReasons?: SafeBlockedReason[]; tags?: FlagTag[]; pumpPct?: number }
+
+export function makeFlag(label: string, severity: Severity, impact: number, codes?: FlagCodes): ScanFlag {
+  const flag: ScanFlag = { label, severity, impact };
+  if (codes?.reasons?.length) flag.reasons = codes.reasons;
+  if (codes?.fallbackReasons?.length) flag.fallbackReasons = codes.fallbackReasons;
+  if (codes?.tags?.length) flag.tags = codes.tags;
+  if (typeof codes?.pumpPct === "number") flag.pumpPct = codes.pumpPct;
+  return flag;
 }
 
 export function getLpLockDurationDays(rugData: RugCheckSummary): number {
@@ -113,6 +121,41 @@ export function computeCacheTTL(
   if (tokenAgeMinutes < 1440) return 120;     // < 1 day
   if (tokenAgeMinutes < 10080) return 300;    // < 1 week
   return 600;                                  // established
+}
+
+/** From this age a token has traded long enough for GeckoTerminal to hold candles for it (the 5-minute window needs ~15 min). */
+export const CHART_EXPECTED_AFTER_MINUTES = 30;
+
+/**
+ * A SAFE or CAUTION verdict born WITHOUT the chart layer, for a token old enough to have candles, is usually a GeckoTerminal rate
+ * limit (429) and not a property of the token: the next try reaches the chart and may give another verdict (audit M11: the same
+ * token flipped between SAFE and CAUTION depending on which instance answered). Such a result must not stick for the full TTL.
+ * A bad verdict is not concerned: a stale RUG or DANGER is safe, and the chart can only make it worse (see computeCacheTTL).
+ * `chartAvailable` is `undefined` when the response carries no chart layer at all: nothing is assumed then.
+ */
+export function isChartGapDegraded(
+  verdict: "SAFE" | "CAUTION" | "DANGER" | "RUG",
+  chartAvailable: boolean | undefined,
+  tokenAgeMinutes: number | null,
+): boolean {
+  if (verdict !== "SAFE" && verdict !== "CAUTION") return false;
+  if (chartAvailable !== false) return false;
+  return tokenAgeMinutes !== null && tokenAgeMinutes >= CHART_EXPECTED_AFTER_MINUTES;
+}
+
+/**
+ * A SAFE or CAUTION verdict reached from a PAIR address (the scan resolved the mint itself) WITHOUT the full RugCheck report is missing
+ * four checks: bundle, snipers, rug history, creator sells (audit A-07). It is also written under the MINT's cache key, where it would
+ * answer every later scan of that token for the full TTL. Such a result is kept only briefly, so the next try can read the report.
+ * A bad verdict is not concerned (a stale RUG or DANGER is safe, and the missing checks can only make it worse), and neither is a scan
+ * that started from the mint itself.
+ */
+export function isReportGapDegraded(
+  verdict: "SAFE" | "CAUTION" | "DANGER" | "RUG",
+  resolvedFromPair: boolean,
+  reportAvailable: boolean,
+): boolean {
+  return resolvedFromPair && !reportAvailable && (verdict === "SAFE" || verdict === "CAUTION");
 }
 
 export function apiError(res: VercelResponse, status: number, message: string, details?: Record<string, unknown>): void {

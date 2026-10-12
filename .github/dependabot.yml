@@ -5,6 +5,17 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    # react and react-dom MUST move together: react-dom throws "Minified
+    # React error #527" at load when its version differs from react's
+    # (Dependabot #782 bumped react alone and broke the Options page).
+    # One grouped PR keeps the four in lockstep.
+    groups:
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]

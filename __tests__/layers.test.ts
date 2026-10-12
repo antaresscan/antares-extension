@@ -1,10 +1,14 @@
 import { describe, it, expect } from "vitest";
 import {
   layerChart, layerDexScreener, layerGoPlus, layerRugCheck, layerHelius,
-  layerSolscan, layerCrossValidation, isEstablished, ESTABLISHED_LINKS_MIN_LIQUIDITY_USD,
+  layerSolscan, layerCrossValidation, isEstablished, ESTABLISHED_LINKS_MIN_LIQUIDITY_USD, isBlueChipByMarket, isTwitterSocial,
 } from "../api/_lib/layers";
-import type { DexScreenerPair, RugCheckSummary, GoPlusTokenResult, HeliusHolder } from "../api/_lib/types";
+import type { DexScreenerPair, RugCheckSummary, RugCheckReport, GoPlusTokenResult, HeliusHolder } from "../api/_lib/types";
 import { deriveAuthorityFacts, type MintState } from "../api/_lib/facts";
+import { judgeContractFacts } from "../api/_lib/layers";
+import { classifySafeBlockedReasons } from "../api/_lib/scoring";
+import { rugKindOf } from "../api/_lib/pipeline";
+import { dedupeFlags, countVerdictFlags, determineVerdict } from "../api/_lib/pipeline";
 
 // Authorities are facts read from the chain (see facts.ts), then handed to the layers.
 const chainMint = (o: Partial<MintState> = {}): MintState => ({ program: "spl-token", decimals: 6, supplyRaw: "1000000", mintAuthority: false, freezeAuthority: false, extensions: [], ...o });
@@ -460,6 +464,80 @@ describe("layerGoPlus", () => {
     const renounced = deriveAuthorityFacts(chainMint(), null);
     expect(layerGoPlus({ holder_count: "10" } as GoPlusTokenResult, undefined, renounced).flags.some(f => /authority/i.test(f.label))).toBe(false);
     expect(layerGoPlus({ holder_count: "10" } as GoPlusTokenResult).flags.some(f => /authority/i.test(f.label))).toBe(false); // no facts at all
+  });
+
+  // Audit A-02: the early "GoPlus unavailable" return used to come BEFORE the authorities were judged, so a token with an active
+  // mint / freeze authority read as clean (and RugCheck does not count them) the moment GoPlus did not answer.
+  describe("GoPlus absent: the contract facts still count", () => {
+    const verdictOf = (l: ReturnType<typeof layerGoPlus>) => {
+      const flags = dedupeFlags(l.flags);
+      const counts = countVerdictFlags(flags);
+      return determineVerdict({
+        score: 950, forceRug: l.forceRug, safeBlocked: l.safeBlocked, safeBlockedReasons: classifySafeBlockedReasons([l]),
+        sourcesUsedCount: 5, warningFlagsCount: counts.warning, criticalFlagsCount: counts.critical, pumpPriceOnlyFlagsCount: counts.pumpPriceOnly,
+      });
+    };
+
+    it("active mint + freeze authorities on-chain, GoPlus null: critical flags, SAFE blocked, layer still unavailable, never SAFE", () => {
+      const facts = deriveAuthorityFacts(chainMint({ mintAuthority: true, freezeAuthority: true }), null);
+      const l = layerGoPlus(null, undefined, facts);
+      expect(l.available).toBe(false);
+      expect(l.safeBlocked).toBe(true);
+      expect(l.forceRug).toBe(false);
+      expect(l.flags.some(f => f.label === "GoPlus unavailable")).toBe(true);
+      expect(l.flags.some(f => f.severity === "critical" && /mint authority active/i.test(f.label))).toBe(true);
+      expect(l.flags.some(f => f.severity === "critical" && /freeze authority active/i.test(f.label))).toBe(true);
+      expect(verdictOf(l)).not.toBe("SAFE");
+    });
+
+    it("same for a GoPlus answer with nothing readable ({})", () => {
+      const facts = deriveAuthorityFacts(chainMint({ mintAuthority: true }), null);
+      const l = layerGoPlus({} as GoPlusTokenResult, undefined, facts);
+      expect(l.available).toBe(false);
+      expect(l.safeBlocked).toBe(true);
+      expect(verdictOf(l)).not.toBe("SAFE");
+    });
+
+    it("renounced authorities, GoPlus null: nothing new (only the unavailable notice)", () => {
+      const l = layerGoPlus(null, undefined, deriveAuthorityFacts(chainMint(), null));
+      expect(l.safeBlocked).toBe(false);
+      expect(l.flags.map(f => f.label)).toEqual(["GoPlus unavailable"]);
+    });
+
+    it("an official mint (USDC) keeps its authorities as information only when GoPlus did not answer", () => {
+      const USDC = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+      const facts = deriveAuthorityFacts(chainMint({ mintAuthority: true, freezeAuthority: true }), null, USDC);
+      const l = layerGoPlus(null, undefined, facts);
+      expect(l.safeBlocked).toBe(false);
+      expect(l.flags.some(f => f.severity === "critical")).toBe(false);
+      expect(l.flags.filter(f => /authority active/i.test(f.label)).every(f => f.severity === "info")).toBe(true);
+    });
+
+    it("the same mint address that is NOT official stays critical", () => {
+      const facts = deriveAuthorityFacts(chainMint({ mintAuthority: true }), null, "SomeOtherMint1111111111111111111111111111111");
+      expect(layerGoPlus(null, undefined, facts).safeBlocked).toBe(true);
+    });
+
+    it("a token that cannot be sold (on-chain nonTransferable), GoPlus null: critical flag, SAFE blocked", () => {
+      const facts = deriveAuthorityFacts(chainMint({ program: "spl-token-2022", extensions: ["nonTransferable"] }), null);
+      const l = layerGoPlus(null, undefined, facts);
+      expect(l.safeBlocked).toBe(true);
+      expect(l.flags.some(f => f.severity === "critical" && /cannot be sold/i.test(f.label))).toBe(true);
+      expect(verdictOf(l)).not.toBe("SAFE");
+    });
+
+    it("GoPlus answering and also reporting non_transferable does not double the flag", () => {
+      const facts = deriveAuthorityFacts(chainMint({ program: "spl-token-2022", extensions: ["nonTransferable"] }), null);
+      const l = layerGoPlus({ non_transferable: "1" } as GoPlusTokenResult, undefined, facts);
+      expect(l.flags.filter(f => /cannot be sold/i.test(f.label))).toHaveLength(1);
+    });
+  });
+
+  it("judgeContractFacts: no facts -> nothing; trusted -> information only", () => {
+    expect(judgeContractFacts(null)).toEqual({ flags: [], penalties: [], safeBlocked: false });
+    const trusted = judgeContractFacts(deriveAuthorityFacts(chainMint({ mintAuthority: true }), { trusted_token: 1 } as GoPlusTokenResult));
+    expect(trusted.safeBlocked).toBe(false);
+    expect(trusted.flags.map(f => f.severity)).toEqual(["info"]);
   });
 
   it("Fix(TAX_WARNING): sell_tax '10' (=10%) is at boundary — triggers warning (>0.02 && <=0.10)", () => {
@@ -1434,3 +1512,573 @@ describe("layerDexScreener — no liquidity field (M8)", () => {
     expect(labels(layerDexScreener(noLiquidity("pumpfun", 5_000, { liquidity: { usd: 500 } }), 9_000, 1 * HOUR), "critical")).toContain("Very low liquidity (<$1k)");
   });
 });
+
+// ═══ LAYER 2 — the bundle ladder (audit A-08) ═══════════════════════════════
+// The ladder used to run backwards at its low end: above 20 % of supply the verdict was forced to RUG, from 5 to 20 % it was only
+// critical, and at 5 % or less it was forced to RUG again with a heavier penalty. A small bundle was judged worse than a large one.
+
+describe("layerRugCheck: the bundle ladder", () => {
+  const summary = { lpBurned: true, risks: [] } as unknown as RugCheckSummary;
+  const reportWith = (pct: number): RugCheckReport =>
+    ({ risks: [{ name: "Bundle detected", description: `Bundle holds ${pct}% of supply`, score: 500 }] }) as unknown as RugCheckReport;
+  const bundleLayer = (pct: number) => layerRugCheck(summary, reportWith(pct), "someMint123");
+  const bundleFlag = (pct: number) => bundleLayer(pct).flags.find((f) => /bundle/i.test(f.label))!;
+
+  const verdictOf = (l: ReturnType<typeof layerRugCheck>) => {
+    const counts = countVerdictFlags(dedupeFlags(l.flags));
+    return determineVerdict({
+      score: 950, forceRug: l.forceRug, safeBlocked: l.safeBlocked, safeBlockedReasons: classifySafeBlockedReasons([l]),
+      sourcesUsedCount: 5, warningFlagsCount: counts.warning, criticalFlagsCount: counts.critical, pumpPriceOnlyFlagsCount: counts.pumpPriceOnly,
+    });
+  };
+
+  it("5 % of supply or less: a warning (\"Small bundle\") that blocks SAFE, never a forced RUG", () => {
+    for (const pct of [0.5, 1, 3, 5]) {
+      const l = bundleLayer(pct);
+      const f = bundleFlag(pct);
+      expect(f.severity, `${pct}%`).toBe("warning");
+      expect(f.label, `${pct}%`).toMatch(/^Small bundle detected/);
+      expect(l.safeBlocked, `${pct}%`).toBe(true);
+      expect(l.forceRug, `${pct}%`).toBe(false);
+    }
+  });
+
+  it("more than 5 % and up to 20 %: critical, blocks SAFE, not a forced RUG (unchanged)", () => {
+    for (const pct of [5.5, 10, 15, 20]) {
+      const l = bundleLayer(pct);
+      expect(bundleFlag(pct).severity, `${pct}%`).toBe("critical");
+      expect(l.safeBlocked, `${pct}%`).toBe(true);
+      expect(l.forceRug, `${pct}%`).toBe(false);
+    }
+  });
+
+  it("more than 20 %: critical and a forced RUG (unchanged)", () => {
+    for (const pct of [20.5, 30, 60]) {
+      const l = bundleLayer(pct);
+      expect(bundleFlag(pct).severity, `${pct}%`).toBe("critical");
+      expect(l.forceRug, `${pct}%`).toBe(true);
+    }
+  });
+
+  it("the more supply is bundled, the harsher it is: the verdict never gets milder as the share grows (3 % was RUG, 15 % was not)", () => {
+    const rank = { SAFE: 0, CAUTION: 1, DANGER: 2, RUG: 3 } as const;
+    const pcts = [0.5, 1, 3, 5, 5.5, 10, 15, 20, 20.5, 30, 60];
+    const ranks = pcts.map((p) => rank[verdictOf(bundleLayer(p))]);
+    for (let i = 1; i < ranks.length; i++) expect(ranks[i], `${pcts[i]}% after ${pcts[i - 1]}%`).toBeGreaterThanOrEqual(ranks[i - 1]);
+    expect(verdictOf(bundleLayer(3))).toBe("DANGER"); // blocked from SAFE by a hard reason, not RUG
+    expect(verdictOf(bundleLayer(15))).toBe("DANGER");
+    expect(verdictOf(bundleLayer(30))).toBe("RUG");
+  });
+
+  it("a small bundle is penalised less than a mid one, which is penalised less than a huge one", () => {
+    expect(bundleLayer(3).trust).toBeGreaterThan(bundleLayer(15).trust);
+    expect(bundleLayer(15).trust).toBeGreaterThan(bundleLayer(30).trust);
+  });
+
+  it("under 1 % the label says so instead of rounding to ~0 %", () => {
+    expect(bundleFlag(0.5).label).toBe("Small bundle detected (~<1% of supply)");
+    expect(bundleFlag(3).label).toBe("Small bundle detected (~3% of supply)");
+  });
+
+  it("only the summary names a bundle (the report that holds its size is missing): critical, blocks SAFE, but its size is unknown so it does not force RUG", () => {
+    const withRisk = { lpBurned: true, risks: [{ name: "Bundler activity", level: "danger" }] } as unknown as RugCheckSummary;
+    const l = layerRugCheck(withRisk, null, "someMint123");
+    const f = l.flags.find((x) => /bundler detected/i.test(x.label))!;
+    expect(f.severity).toBe("critical");
+    expect(l.safeBlocked).toBe(true);
+    expect(l.forceRug).toBe(false);
+    expect(verdictOf(l)).toBe("DANGER");
+  });
+
+  it("every bundle flag carries the safe-gate reason \"bundle\" (the verdict reads the code, not the label)", () => {
+    for (const pct of [0.5, 3, 15, 30]) {
+      expect(bundleFlag(pct).reasons, `${pct}%`).toEqual(["bundle"]);
+      expect(classifySafeBlockedReasons([bundleLayer(pct)]), `${pct}%`).toEqual(["bundle"]);
+    }
+  });
+
+  it("no bundle in the report and none in the summary: nothing is raised", () => {
+    const l = layerRugCheck(summary, { risks: [] } as unknown as RugCheckReport, "someMint123");
+    expect(l.flags.some((f) => /bundle/i.test(f.label))).toBe(false);
+  });
+});
+
+// ═══ LAYER 6 — the collapse from the recent high ═════════════════════════════
+// Every dump rule of the engine reads the last 5 min / 1 h / 6 h / 24 h, and the 7 / 30-day reading only looked for pumps. GOIF, -97 % from its
+// high two days earlier and flat since, showed +39 % over 24 h on DexScreener itself, and was given CAUTION.
+
+// The 19 real 4-hour closes of GOIF's PumpSwap pool, as GeckoTerminal answered on 2026-10-12 ([timestamp in seconds, close]).
+const GOIF_4H_CLOSES: Array<[number, number]> = [
+  [1791561600, 0.23212474833034263],
+  [1791576000, 0.27060597070652204],
+  [1791590400, 0.2894120888431022],
+  [1791604800, 0.3077784144655658],
+  [1791619200, 0.3250905754395536],
+  [1791633600, 0.3451274498358612],
+  [1791648000, 0.004831903169778867],
+  [1791662400, 0.0053678780590696576],
+  [1791676800, 0.005741548691664225],
+  [1791691200, 0.006565403248599896],
+  [1791705600, 0.007000768198744142],
+  [1791720000, 0.007674521134815481],
+  [1791734400, 0.00810291285782083],
+  [1791748800, 0.008764710013536906],
+  [1791763200, 0.009587065555023429],
+  [1791777600, 0.01005820291600747],
+  [1791792000, 0.010474028932541107],
+  [1791806400, 0.010636051829632981],
+  [1791820800, 0.010854985469324223]
+];
+
+describe("layerChart: collapse from the recent high", () => {
+  const H4 = 4 * 3600;
+  const T0 = 1_760_000_000;
+  /** 4-hour candles, oldest first, from the given closes. */
+  const fourHour = (closes: number[], step = H4) => closes.map((c, i) => ({ ts: T0 + i * step, o: c, h: c * 1.01, l: c * 0.99, c, v: 100 }));
+  const recentFlat = Array.from({ length: 10 }, (_, i) => ({ ts: T0 + i * 300, o: 1, h: 1.01, l: 0.99, c: 1, v: 100 }));
+  const chart = (daily: ReturnType<typeof fourHour> | undefined, recent: typeof recentFlat = recentFlat) => layerChart(recent, null, 60 * 24 * 20, undefined, daily);
+  const collapseFlag = (l: ReturnType<typeof layerChart>) => l.flags.find((f) => /^Collapsed/.test(f.label));
+  const verdictOf = (l: ReturnType<typeof layerChart>) => {
+    const counts = countVerdictFlags(dedupeFlags(l.flags));
+    return determineVerdict({
+      score: 800, forceRug: l.forceRug, safeBlocked: l.safeBlocked, safeBlockedReasons: classifySafeBlockedReasons([l]),
+      sourcesUsedCount: 5, warningFlagsCount: counts.warning, criticalFlagsCount: counts.critical, pumpPriceOnlyFlagsCount: counts.pumpPriceOnly,
+    });
+  };
+  const GOIF = GOIF_4H_CLOSES.map(([ts, c]) => ({ ts, o: c, h: c, l: c, c, v: 100 }));
+
+  it("GOIF, with its real candles: -97 % from its high 2 days ago is a critical flag and a forced RUG", () => {
+    const l = chart(GOIF);
+    const f = collapseFlag(l)!;
+    expect(f.label).toBe("Collapsed -97% from its high 2 days ago");
+    expect(f.severity).toBe("critical");
+    expect(l.forceRug).toBe(true);
+    expect(l.safeBlocked).toBe(true);
+    expect(verdictOf(l)).toBe("RUG");
+    // it already collapsed: a fact, so the verdict reads RUG PULL, not RUG RISK
+    expect(l.rugEvidence).toEqual(["price_collapse"]);
+    expect(rugKindOf("RUG", [l])).toBe("confirmed");
+  });
+
+  it("the 24 h and 6 h figures that DexScreener shows for GOIF (+39 %, +5 %) do not hide it: it is read from the history", () => {
+    const pair = { liquidity: { usd: 285_000 }, volume: { h24: 282_000 }, priceChange: { m5: -0.07, h1: 0.14, h6: 5.01, h24: 39.52 } } as unknown as Parameters<typeof layerChart>[1];
+    const l = layerChart(recentFlat, pair, 60 * 24 * 3, undefined, GOIF);
+    expect(collapseFlag(l)).toBeDefined();
+    expect(l.forceRug).toBe(true);
+  });
+
+  it("the threshold is 75 %: -74 % is not flagged, -75 % is", () => {
+    const at = (pct: number) => collapseFlag(chart(fourHour([100, 100, 100, 100, 100, 100 - pct])));
+    expect(at(74)).toBeUndefined();
+    expect(at(75)).toBeDefined();
+    expect(at(90)).toBeDefined();
+    expect(at(99)).toBeDefined();
+  });
+
+  it("-80 % from a high 3 days ago is a forced RUG PULL", () => {
+    const l = chart(fourHour([100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 20, 20, 20]));
+    expect(l.forceRug).toBe(true);
+    expect(l.rugEvidence).toEqual(["price_collapse"]);
+    expect(collapseFlag(l)!.label).toMatch(/^Collapsed -80% from its high \d+ days? ago$|^Collapsed -80% from its high less than a day ago$/);
+  });
+
+  it("a high of the last 14 days: a forced RUG PULL. A high 15 to 90 days old: critical alone, DANGER, no evidence. Older than 90 days: not read", () => {
+    const peakAgo = (days: number) => {
+      const n = Math.round(days * 6) + 1; // 6 candles a day
+      return chart(fourHour([100, ...Array.from({ length: n - 1 }, () => 5)]));
+    };
+    const recent = peakAgo(10);
+    expect(collapseFlag(recent)!.label).toBe("Collapsed -95% from its high 10 days ago");
+    expect(recent.forceRug).toBe(true);
+    expect(recent.rugEvidence).toEqual(["price_collapse"]);
+    expect(verdictOf(recent)).toBe("RUG");
+
+    for (const days of [20, 60, 90]) {
+      const l = peakAgo(days);
+      expect(collapseFlag(l)!.label, `${days} days`).toBe(`Collapsed -95% from its high ${days} days ago`);
+      expect(l.forceRug, `${days} days`).toBe(false);
+      expect(l.rugEvidence, `${days} days`).toBeUndefined();
+      expect(l.safeBlocked, `${days} days`).toBe(true);
+      expect(verdictOf(l), `${days} days`).toBe("DANGER");
+      expect(l.trust, `${days} days`).toBeGreaterThan(recent.trust); // a lighter penalty than a collapse in progress
+    }
+
+    for (const days of [95, 150]) expect(collapseFlag(peakAgo(days)), `${days} days`).toBeUndefined(); // a blue chip can lose 75 % over a year
+  });
+
+  // The owner's question, age by age: from half a day to three months, a token that lost 75 % is flagged. Up to 14 days it is a forced RUG PULL; from 15
+  // to 90 days it is critical alone (DANGER, or RUG when the other flags force it); past 90 days the high is not read (a blue chip can lose 75 % in a year).
+  describe("every age of the high, from half a day to three months", () => {
+    // `days` back the price was 100, and it has been 5 since (-95 %), 6 candles a day
+    const highDaysAgo = (days: number) => {
+      const n = Math.max(2, Math.round(days * 6) + 1);
+      return chart(fourHour([100, ...Array.from({ length: n - 1 }, () => 5)]));
+    };
+    const age = (l: ReturnType<typeof layerChart>) => collapseFlag(l)?.label.replace(/^Collapsed -95% from its high /, "");
+
+    it("a high 12 hours back (a token with a few days of history): critical, a forced RUG PULL", () => {
+      // 3 days at 10, a spike to 100 twelve hours ago, then 5 (-95 %)
+      const l = chart(fourHour([10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 100, 5, 5, 5]));
+      expect(age(l)).toBe("less than a day ago");
+      expect(l.forceRug).toBe(true);
+      expect(verdictOf(l)).toBe("RUG");
+    });
+
+    it("under 24 hours of history (fewer than 6 candles) the rule stays silent: the 1 h / 6 h / 24 h rules already see the whole life", () => {
+      expect(collapseFlag(chart(fourHour([100, 5, 5, 5, 5])))).toBeUndefined();
+    });
+
+    it.each([
+      [1, "1 day ago"], [2, "2 days ago"], [3, "3 days ago"], [5, "5 days ago"], [7, "7 days ago"], [10, "10 days ago"], [14, "14 days ago"],
+    ])("a high %s days back: critical, a forced RUG PULL", (days, text) => {
+      const l = highDaysAgo(days);
+      expect(age(l)).toBe(text);
+      expect(l.forceRug).toBe(true);
+      expect(l.rugEvidence).toEqual(["price_collapse"]);
+      expect(l.safeBlocked).toBe(true);
+      expect(verdictOf(l)).toBe("RUG");
+    });
+
+    it.each([[15, "15 days ago"], [20, "20 days ago"], [30, "30 days ago"], [45, "45 days ago"], [60, "60 days ago"], [75, "75 days ago"], [90, "90 days ago"]])(
+      "a high %s days back: critical alone, the verdict follows the other flags (DANGER here, no other flag)", (days, text) => {
+        const l = highDaysAgo(days);
+        expect(age(l)).toBe(text);
+        expect(l.forceRug).toBe(false);
+        expect(l.rugEvidence).toBeUndefined();
+        expect(l.safeBlocked).toBe(true);
+        expect(verdictOf(l)).toBe("DANGER");
+      },
+    );
+
+    it.each([91, 100, 150, 365])("a high %s days back is past the three months: not read", (days) => {
+      expect(collapseFlag(highDaysAgo(days))).toBeUndefined();
+    });
+
+    it("and with another flag that forces RUG, a slow collapse reads RUG: the verdict follows the other flags", () => {
+      const slow = highDaysAgo(45);
+      const other = { ...slow, forceRug: true, flags: [...slow.flags, { label: "Top 10 hold 97% — extreme concentration", severity: "critical" as const, impact: 0 }] };
+      expect(verdictOf(other)).toBe("RUG");
+    });
+  });
+
+  it("the age of the high comes from the timestamps, not from counting candles (a thin token has gaps)", () => {
+    const sparse = fourHour([100, 5, 5, 5, 5, 5, 5], 2 * 24 * 3600); // 7 candles, 2 days apart: the high is 12 days old
+    expect(collapseFlag(chart(sparse))!.label).toBe("Collapsed -95% from its high 12 days ago");
+    expect(chart(sparse).forceRug).toBe(true);
+    const sparseOld = fourHour([100, 5, 5, 5, 5, 5, 5], 3 * 24 * 3600); // 18 days
+    expect(collapseFlag(chart(sparseOld))!.label).toBe("Collapsed -95% from its high 18 days ago");
+    expect(chart(sparseOld).forceRug).toBe(false);
+  });
+
+  it("the high that counts for a RUG PULL is the highest close of the LAST 14 DAYS: an old spike does not hide a fresh collapse", () => {
+    // 25 days of 4-hour candles: a spike to 100 on day 0, 40 from day 1 to 21, then 8 for the last 4 days (-80 % from the 40, -92 % from the spike)
+    const closes = Array.from({ length: 150 }, (_, i) => (i === 0 ? 100 : i < 126 ? 40 : 8));
+    const l = chart(fourHour(closes));
+    expect(l.forceRug).toBe(true);
+    expect(l.rugEvidence).toEqual(["price_collapse"]);
+    expect(collapseFlag(l)!.label).toMatch(/^Collapsed -80% from its high 1[34] days ago$/);
+  });
+
+  it("a collapse of 75 % or more only from an OLDER high (15 to 90 days) is critical alone: no forced RUG, no evidence", () => {
+    // spike to 100 on day 0, then 20 from day 1 on, for 25 days: the last 14 days are flat at 20
+    const closes = Array.from({ length: 150 }, (_, i) => (i === 0 ? 100 : 20));
+    const l = chart(fourHour(closes));
+    expect(collapseFlag(l)!.label).toMatch(/^Collapsed -80% from its high 2[45] days ago$/);
+    expect(l.forceRug).toBe(false);
+    expect(l.rugEvidence).toBeUndefined();
+  });
+
+  it("a slow decline that never reaches 75 % is left alone, however long it lasts (-70 % over 90 days)", () => {
+    const closes = Array.from({ length: 541 }, (_, i) => 100 - (70 * i) / 540);
+    expect(collapseFlag(chart(fourHour(closes)))).toBeUndefined();
+  });
+
+  it("ordinary moves are left alone: a -40 % pullback, a token at its high, no history, too little history", () => {
+    expect(collapseFlag(chart(fourHour([100, 90, 80, 70, 65, 60])))).toBeUndefined();
+    expect(collapseFlag(chart(fourHour([10, 20, 40, 80, 100, 100])))).toBeUndefined();
+    expect(collapseFlag(chart(undefined))).toBeUndefined();
+    expect(collapseFlag(chart(fourHour([100, 5, 5, 5, 5])))).toBeUndefined(); // 5 candles: under 24 h of history
+  });
+
+  it("a dead token (nothing traded in the last hours, so no 5-minute candles) is still flagged, and the layer is then available", () => {
+    const dead = layerChart([], null, null, undefined, GOIF);
+    expect(dead.available).toBe(true);
+    expect(collapseFlag(dead)).toBeDefined();
+    expect(dead.forceRug).toBe(true);
+    expect(dead.rugEvidence).toEqual(["price_collapse"]);
+    // without a collapse nothing changes: no recent candles = unavailable
+    expect(layerChart([], null, null, undefined, fourHour([100, 99, 98, 99, 100, 101])).available).toBe(false);
+    expect(layerChart([], null, null).available).toBe(false);
+  });
+
+  it("zero or broken prices do not break it", () => {
+    expect(() => chart(fourHour([100, 100, 100, 100, 100, 0]))).not.toThrow();
+    expect(collapseFlag(chart(fourHour([100, 100, 100, 100, 100, 0])))).toBeDefined(); // price at zero: -100 %
+    expect(collapseFlag(chart(fourHour([Number.NaN, Number.NaN, Number.NaN, 1, 1, 1])))).toBeUndefined();
+  });
+});
+
+// ─── A crash on a blue chip is critical, not a forced RUG (audit A-09, the owner's bar of 2026-10-12) ──────────────────────────────
+// A blue chip, by the market alone: 2 months, $100k in the pool, $5M of market cap. Two rules force RUG on a price crash alone (-50 % 6 h +
+// -15 % 1 h in layerDexScreener, -60 % 24 h + -20 % 1 h in layerChart): for such a token a market-wide sell-off is the likelier cause.
+describe("isBlueChipByMarket: age, pool liquidity and market cap, nothing else", () => {
+  const DAY = 24 * 60;
+  it("the bar itself passes: 60 days, $100k, $5M", () => {
+    expect(isBlueChipByMarket(60 * DAY, 100_000, 5_000_000)).toBe(true);
+  });
+  it("one step under any of the three fails", () => {
+    expect(isBlueChipByMarket(60 * DAY - 1, 100_000, 5_000_000)).toBe(false);
+    expect(isBlueChipByMarket(60 * DAY, 99_999, 5_000_000)).toBe(false);
+    expect(isBlueChipByMarket(60 * DAY, 100_000, 4_999_999)).toBe(false);
+  });
+  it("each of the three must be known: a missing one is a no", () => {
+    expect(isBlueChipByMarket(null, 1e7, 1e9)).toBe(false);
+    expect(isBlueChipByMarket(undefined, 1e7, 1e9)).toBe(false);
+    expect(isBlueChipByMarket(365 * DAY, null, 1e9)).toBe(false);
+    expect(isBlueChipByMarket(365 * DAY, 1e7, null)).toBe(false);
+    expect(isBlueChipByMarket(365 * DAY, 1e7, undefined)).toBe(false);
+    expect(isBlueChipByMarket(NaN, 1e7, 1e9)).toBe(false);
+    expect(isBlueChipByMarket(365 * DAY, NaN, 1e9)).toBe(false);
+  });
+});
+
+describe("a crash on a blue chip (the two rules that forced RUG on a price crash alone)", () => {
+  const DAY = 24 * 60;
+  const verdictOf = (l: ReturnType<typeof layerDexScreener> | ReturnType<typeof layerChart>) => {
+    const counts = countVerdictFlags(dedupeFlags(l.flags));
+    return determineVerdict({
+      score: 800, forceRug: l.forceRug, safeBlocked: l.safeBlocked, safeBlockedReasons: classifySafeBlockedReasons([l]),
+      sourcesUsedCount: 5, warningFlagsCount: counts.warning, criticalFlagsCount: counts.critical, pumpPriceOnlyFlagsCount: counts.pumpPriceOnly,
+    });
+  };
+
+  describe("6 h rule (layerDexScreener): -50 % on 6 h and -15 % on 1 h", () => {
+    const pairOf = (pc6: number, pc1 = -22): DexScreenerPair => ({
+      liquidity: { usd: 20_000_000 },
+      volume: { h24: 5_000_000 },
+      priceChange: { h6: pc6, h1: pc1, h24: -40, m5: -1 },
+      txns: { m5: { buys: 30, sells: 30 } },
+      info: { socials: [{ type: "twitter", url: "https://twitter.com/test" }], websites: [{ url: "https://test.com" }] },
+    });
+    const run = (blueChip: boolean, pc6 = -63, pc1 = -22) => layerDexScreener(pairOf(pc6, pc1), 500_000_000, 730 * DAY, 200_000, 0, blueChip);
+    const crash = (l: ReturnType<typeof layerDexScreener>) => l.flags.find((f) => /sharp crash|slow rug/i.test(f.label))!;
+
+    it("the audit's case (2 years, 200k holders, $20M): a critical Sharp crash, DANGER, no forced RUG, no rug evidence", () => {
+      const l = run(true);
+      const f = crash(l);
+      expect(f.label).toBe("Sharp crash: -63% on 6h + -22% on 1h");
+      expect(f.severity).toBe("critical");
+      expect(f.tags ?? []).not.toContain("rug_evidence");
+      expect(l.forceRug).toBe(false);
+      expect(l.safeBlocked).toBe(true);
+      expect(l.rugEvidence).toBeUndefined();
+      expect(verdictOf(l)).toBe("DANGER");
+    });
+
+    it("witness: the same moves on a token that is not a blue chip stay the forced RUG, label and tag as before", () => {
+      const l = run(false);
+      const f = crash(l);
+      expect(f.label).toBe("Slow rug detected: -50% on 6h + -15% on 1h");
+      expect(f.tags).toContain("rug_evidence");
+      expect(l.forceRug).toBe(true);
+      expect(verdictOf(l)).toBe("RUG");
+    });
+
+    it("the floor: -70 % on 6 h is still read as a blue chip's crash; further down it is a forced RUG whatever the token", () => {
+      expect(run(true, -70).forceRug).toBe(false);
+      expect(run(true, -70.5).forceRug).toBe(true);
+      expect(run(true, -90).forceRug).toBe(true);
+    });
+
+    it("the thresholds of the rule are unchanged: -50 % on 6 h and -15 % on 1 h is the edge, with or without the guard", () => {
+      for (const blue of [true, false]) {
+        const l = run(blue, -50, -22);
+        expect(l.flags.some((f) => /sharp crash|slow rug/i.test(f.label)), `blue ${blue}`).toBe(false);
+        const m = run(blue, -63, -15);
+        expect(m.flags.some((f) => /sharp crash|slow rug/i.test(f.label)), `blue ${blue}`).toBe(false);
+      }
+    });
+  });
+
+  describe("24 h rule (layerChart): -60 % on 24 h and -20 % on 1 h", () => {
+    const candles = () => Array.from({ length: 20 }, (_, i) => {
+      const base = 1 + i * 0.001;
+      return { ts: 1_760_000_000 + i * 300, o: base, h: base + 0.001, l: base - 0.001, c: base + 0.0005, v: 1000 };
+    });
+    const pairOf = (pc24: number, pc1 = -25) => ({
+      liquidity: { usd: 20_000_000 }, volume: { h24: 5_000_000, h1: 200_000 },
+      priceChange: { m5: 0.1, h1: pc1, h6: -10, h24: pc24 },
+    } as unknown as Parameters<typeof layerChart>[1]);
+    const ctx = { holders: 200_000, liquidity: 20_000_000, tokenAgeHours: 730 * 24, mintAuthority: false, freezeAuthority: false, honeypot: false, lpBurned: true };
+    const run = (blueChip: boolean, pc24 = -65, pc1 = -25) => layerChart(candles(), pairOf(pc24, pc1), 730 * DAY, ctx, undefined, blueChip);
+    const crash = (l: ReturnType<typeof layerChart>) => l.flags.find((f) => /sharp crash|active dump/i.test(f.label))!;
+
+    it("a blue chip: a critical Sharp crash, DANGER, no forced RUG", () => {
+      const l = run(true);
+      expect(crash(l).label).toBe("Sharp crash: -65% on 24h + -25% on 1h");
+      expect(crash(l).severity).toBe("critical");
+      expect(l.forceRug).toBe(false);
+      expect(l.safeBlocked).toBe(true);
+      expect(verdictOf(l)).toBe("DANGER");
+    });
+
+    it("witness: not a blue chip, the rule is unchanged: forced RUG with its old label", () => {
+      const l = run(false);
+      expect(crash(l).label).toBe("Active dump: -60% 24h + -20% 1h (slow rug)");
+      expect(l.forceRug).toBe(true);
+      expect(verdictOf(l)).toBe("RUG");
+    });
+
+    it("the floor: -75 % on 24 h is still a blue chip's crash; further down it is a forced RUG", () => {
+      expect(run(true, -75).forceRug).toBe(false);
+      expect(run(true, -75.5).forceRug).toBe(true);
+    });
+
+    it("the thresholds are unchanged: -60 % / -20 % is the edge", () => {
+      expect(run(true, -60, -25).flags.some((f) => /sharp crash|active dump/i.test(f.label))).toBe(false);
+      expect(run(true, -65, -20).flags.some((f) => /sharp crash|active dump/i.test(f.label))).toBe(false);
+    });
+  });
+});
+
+// ─── Is that link a Twitter / X account? (audit A-25) ──────────────────────────────────────────────────────────────────────────
+// It was /twitter|x/i on the type, or on the URL when there was no type: the letter "x" anywhere counted.
+describe("isTwitterSocial: the type is twitter or x, or the link is on twitter.com / x.com", () => {
+  it.each([
+    [{ type: "twitter", url: "https://twitter.com/foo" }], [{ type: "twitter" }], [{ type: "x" }], [{ type: "X" }], [{ type: " Twitter " }],
+    [{ url: "https://twitter.com/foo" }], [{ url: "https://x.com/foo" }], [{ url: "https://www.x.com/foo" }], [{ url: "https://mobile.twitter.com/foo" }],
+    [{ url: "https://X.COM/Foo" }], [{ url: "x.com/foo" }], [{ type: "website", url: "https://x.com/foo" }],
+  ])("%j is a Twitter account", (s) => {
+    expect(isTwitterSocial(s)).toBe(true);
+  });
+
+  it.each([
+    [{ url: "https://t.me/xrp_fans" }], [{ url: "https://discord.gg/xyzxyz" }], [{ type: "telegram", url: "https://t.me/xyz" }],
+    [{ type: "discord", url: "https://discord.gg/x" }], [{ url: "https://example.com/x" }], [{ url: "https://example.com/twitter.com" }],
+    [{ url: "https://notx.com/foo" }], [{ url: "https://nottwitter.com/foo" }], [{ url: "https://x.com.evil.example/foo" }],
+    [{ url: "https://twitter.com.evil.example/" }], [{ type: "tiktok", url: "https://tiktok.com/@xx" }], [{ type: "xyz" }], [{}], [{ type: "", url: "" }],
+  ])("%j is NOT a Twitter account (the letter x alone, a look-alike host or a path does not count)", (s) => {
+    expect(isTwitterSocial(s)).toBe(false);
+  });
+
+  it("bad input is not a Twitter account and does not throw", () => {
+    expect(isTwitterSocial(null)).toBe(false);
+    expect(isTwitterSocial(undefined)).toBe(false);
+    expect(isTwitterSocial({ type: 7 as unknown as string, url: { a: 1 } as unknown as string })).toBe(false);
+    expect(isTwitterSocial({ url: "http://[bad" })).toBe(false);
+  });
+});
+
+describe("layerDexScreener: the 'no website / Twitter / Telegram' check reads real Twitter links only", () => {
+  const pairWith = (socials: Array<{ type?: string; url?: string }>, websites: Array<{ url: string }> = []): DexScreenerPair => ({
+    liquidity: { usd: 30_000 }, volume: { h24: 20_000 }, priceChange: { h24: 5, h6: 2, h1: 1, m5: 0 }, txns: { m5: { buys: 10, sells: 8 } },
+    info: { socials, websites },
+  });
+  const run = (p: DexScreenerPair) => layerDexScreener(p, 400_000, 3 * 24 * 60, 800);
+  const noLinks = (l: ReturnType<typeof layerDexScreener>) => l.flags.find((f) => /^No website \/ Twitter \/ Telegram/.test(f.label));
+
+  it("a Discord link with an x in it is not a Twitter account: a young token with only that link gets the critical flag", () => {
+    const l = run(pairWith([{ url: "https://discord.gg/xyzxyz" }]));
+    expect(noLinks(l)?.severity).toBe("critical");
+    expect(l.safeBlocked).toBe(true);
+  });
+
+  it("witness: the same token with a real Twitter link (typed or by its URL) does not get it", () => {
+    expect(noLinks(run(pairWith([{ type: "twitter", url: "https://twitter.com/foo" }])))).toBeUndefined();
+    expect(noLinks(run(pairWith([{ url: "https://x.com/foo" }])))).toBeUndefined();
+  });
+
+  it("witness: a Telegram link or a website is still enough, as before", () => {
+    expect(noLinks(run(pairWith([{ type: "telegram", url: "https://t.me/foo" }])))).toBeUndefined();
+    expect(noLinks(run(pairWith([], [{ url: "https://foo.com" }])))).toBeUndefined();
+  });
+});
+
+// ─── Token-2022 extensions judged next to mint / freeze (audit A-10) ────────────────────────────────────────────────────────
+describe("judgeContractFacts: Token-2022 extensions", () => {
+  type Facts = ReturnType<typeof deriveAuthorityFacts>;
+  const ext = (o: Partial<NonNullable<Facts["extensionFacts"]>> = {}, trusted = false): Facts => ({
+    ...deriveAuthorityFacts(null, null), mint: false, freeze: false, sellBlocked: null, trusted,
+    extensionFacts: { permanentDelegate: false, pausable: false, defaultFrozen: false, transferHook: false, feeBps: null, feeCanChange: false, ...o },
+  });
+  const labels = (f: Facts) => judgeContractFacts(f).flags.map((x) => `${x.severity}:${x.label}`);
+
+  it("no power over the holders: no flag, nothing blocked", () => {
+    expect(judgeContractFacts(ext())).toEqual({ flags: [], penalties: [], safeBlocked: false });
+    expect(judgeContractFacts({ ...ext(), extensionFacts: null })).toEqual({ flags: [], penalties: [], safeBlocked: false });
+  });
+
+  it.each([
+    ["permanentDelegate", "Permanent delegate — an address can move or burn any holder's tokens", 0.10],
+    ["pausable", "Pausable token — an authority can pause every transfer", 0.30],
+    ["defaultFrozen", "New accounts start frozen — nobody can sell until their account is thawed", 0.25],
+    ["transferHook", "Transfer hook — a program runs on every transfer and can refuse it", 0.25],
+  ] as const)("%s: a critical flag with the hard reason token_extension, SAFE blocked", (key, label, penalty) => {
+    const r = judgeContractFacts(ext({ [key]: true }));
+    expect(r.flags).toHaveLength(1);
+    expect(r.flags[0]).toMatchObject({ label, severity: "critical", reasons: ["token_extension"] });
+    expect(r.penalties).toEqual([penalty]);
+    expect(r.safeBlocked).toBe(true);
+  });
+
+  it("a trusted issuer (a stablecoin, a tokenised stock) holds them by design: information only, nothing blocked", () => {
+    const r = judgeContractFacts(ext({ permanentDelegate: true, pausable: true, defaultFrozen: true, transferHook: true, feeBps: 0, feeCanChange: true }, true));
+    expect(r.flags.map((f) => f.severity)).toEqual(["info", "info", "info", "info", "info"]);
+    expect(r.safeBlocked).toBe(false);
+    expect(r.penalties.every((p) => p === 0.95)).toBe(true);
+  });
+
+  it("the fee that applies now is graded like GoPlus tax: under 2 % information, 2 to 10 % a warning, over 10 % critical; never a hard block alone", () => {
+    const grade = (bps: number) => judgeContractFacts(ext({ feeBps: bps }));
+    expect(labels(ext({ feeBps: 0 }))).toEqual([]);
+    expect(grade(150).flags[0]).toMatchObject({ label: "Transfer fee 1.50% on every transfer", severity: "info" });
+    expect(grade(199).flags[0].severity).toBe("info");
+    expect(grade(200).flags[0]).toMatchObject({ label: "Transfer fee 2% on every transfer", severity: "warning" });
+    expect(grade(420).flags[0]).toMatchObject({ label: "Transfer fee 4.20% on every transfer", severity: "warning" });
+    expect(grade(1000).flags[0].severity).toBe("warning");
+    expect(grade(1001).flags[0].severity).toBe("critical");
+    for (const bps of [150, 420, 1001]) expect(grade(bps).safeBlocked, `${bps} bps`).toBe(false);
+    expect(grade(420).flags[0].reasons).toBeUndefined();
+  });
+
+  it("a fee an authority can change (even at 0 %) can be raised to 100 %: critical, hard, like a mint authority", () => {
+    const r = judgeContractFacts(ext({ feeBps: 0, feeCanChange: true }));
+    expect(r.flags).toHaveLength(1);
+    expect(r.flags[0]).toMatchObject({ label: "Transfer fee can be changed — an authority can raise it to 100%", severity: "critical", reasons: ["token_extension"] });
+    expect(r.safeBlocked).toBe(true);
+    expect(judgeContractFacts(ext({ feeBps: null, feeCanChange: true })).flags).toEqual([]); // no fee extension at all: nothing to change
+  });
+
+  it("GoPlus unavailable: the chain's extension flags are still raised and still block SAFE (the audit's proof case)", () => {
+    const facts = ext({ permanentDelegate: true, feeBps: 0, feeCanChange: true });
+    const l = layerGoPlus(null, undefined, facts);
+    expect(l.available).toBe(false);
+    expect(l.flags.map((f) => f.label)).toEqual(expect.arrayContaining([
+      "Permanent delegate — an address can move or burn any holder's tokens", "Transfer fee can be changed — an authority can raise it to 100%", "GoPlus unavailable",
+    ]));
+    expect(l.safeBlocked).toBe(true);
+    expect(classifySafeBlockedReasons([l])).toContain("token_extension");
+  });
+
+  it("GoPlus answers too: what the chain already said is not said twice (a trusted issuer keeps GoPlus own reading)", () => {
+    const gp = { balance_mutable_authority: { status: "1" }, transfer_pausable: "1", transfer_hook: [{ program_id: "x" }] } as unknown as GoPlusTokenResult;
+    const l = layerGoPlus(gp, undefined, ext({ permanentDelegate: true, pausable: true, transferHook: true }));
+    const said = l.flags.map((f) => f.label);
+    expect(said).toContain("Permanent delegate — an address can move or burn any holder's tokens");
+    expect(said).not.toContain("Balances can be changed by an authority");
+    expect(said).not.toContain("Transfer pausable");
+    expect(said.some((x) => /^Transfer hook installed/.test(x))).toBe(false);
+    // the chain said nothing, or the issuer is trusted: GoPlus flags stay as they were
+    expect(layerGoPlus(gp, undefined, ext()).flags.map((f) => f.label)).toEqual(expect.arrayContaining(["Balances can be changed by an authority", "Transfer pausable"]));
+    const trusted = layerGoPlus(gp, undefined, ext({ permanentDelegate: true, pausable: true, transferHook: true }, true));
+    expect(trusted.flags.map((f) => f.label)).toEqual(expect.arrayContaining(["Balances can be changed by an authority", "Transfer pausable"]));
+  });
+
+  it("token_extension is a hard reason: with a score under 400 the verdict is RUG, over it DANGER", () => {
+    const reasons = classifySafeBlockedReasons([layerGoPlus(null, undefined, ext({ pausable: true }))]);
+    const verdict = (score: number) => determineVerdict({ score, forceRug: false, safeBlocked: true, safeBlockedReasons: reasons, sourcesUsedCount: 5, warningFlagsCount: 0, criticalFlagsCount: 0, pumpPriceOnlyFlagsCount: 0 });
+    expect(verdict(900)).toBe("DANGER");
+    expect(verdict(300)).toBe("RUG");
+  });
+});
+

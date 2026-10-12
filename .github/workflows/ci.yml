@@ -23,23 +23,7 @@ jobs:
           cache: "npm"
 
       - name: Install dependencies
-        # `npm install` rather than `npm ci` because the current
-        # lockfile has a pre-existing drift (Plasmo peer-deps resolve
-        # differently between npm 10 and npm 11) that the strict
-        # `npm ci` refuses to install. Wrapped in a retry loop because
-        # GitHub-hosted runners occasionally ECONNRESET against the npm
-        # registry on first connect — three attempts with linear
-        # backoff covers the transient case without papering over a
-        # real outage.
-        # TODO: switch back to `npm ci` once the lockfile is regenerated
-        # under the same npm version that runs in CI.
-        run: |
-          for i in 1 2 3; do
-            if npm install --no-audit --no-fund; then exit 0; fi
-            echo "npm install failed (attempt $i) — backing off ${i}0s"
-            sleep $((i * 10))
-          done
-          exit 1
+        uses: ./.github/actions/install-deps
 
       - name: Typecheck
         run: npx tsc --noEmit
@@ -73,7 +57,11 @@ jobs:
       # bundle throws on boot for ANY reason (Sentry init, schema
       # import, missing global, etc.) this step fails and the build
       # never publishes a broken artifact.
-      - name: Smoke-test packaged content-script bundle
+      # The same smoke also evaluates the Options page bundle and checks
+      # that it renders into #__plasmo (scripts/smoke-options.mjs): on
+      # 2026-10-09 a react / react-dom version mismatch made it crash on
+      # load and nothing in CI noticed.
+      - name: Smoke-test packaged bundles (content script + Options page)
         run: npm run smoke
 
       - name: Upload build artifact
@@ -128,14 +116,7 @@ jobs:
 
       - name: Install dependencies
         if: steps.decide.outputs.needed == 'true'
-        # See the build job for npm install vs npm ci.
-        run: |
-          for i in 1 2 3; do
-            if npm install --no-audit --no-fund; then exit 0; fi
-            echo "npm install failed (attempt $i) — backing off ${i}0s"
-            sleep $((i * 10))
-          done
-          exit 1
+        uses: ./.github/actions/install-deps
 
       - name: Replay every recorded token
         if: steps.decide.outputs.needed == 'true'
@@ -202,14 +183,7 @@ jobs:
 
       - name: Install dependencies
         if: steps.decide.outputs.needed == 'true'
-        # See build job above for npm install vs npm ci rationale.
-        run: |
-          for i in 1 2 3; do
-            if npm install --no-audit --no-fund; then exit 0; fi
-            echo "npm install failed (attempt $i) — backing off ${i}0s"
-            sleep $((i * 10))
-          done
-          exit 1
+        uses: ./.github/actions/install-deps
 
       - name: Install Playwright browsers
         if: steps.decide.outputs.needed == 'true'

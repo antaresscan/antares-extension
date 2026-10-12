@@ -5,7 +5,7 @@ import type {
     OHLCVCandle, GeckoTerminalOHLCVResponse,
     RugCheckReport, RugCheckRisk,
 } from "./types";
-import { PUBLIC_SOLANA_RPCS, SOLSCAN_BASE, LP_PROGRAM_ADDRESSES, HOLDER_PAGE_LIMIT, HOLDER_MAX_PAGES } from "./constants";
+import { PUBLIC_SOLANA_RPCS, SOLSCAN_BASE, LP_PROGRAM_ADDRESSES, HOLDER_PAGE_LIMIT, HOLDER_MAX_PAGES, HOLDER_COUNT_KNOWN_ABOVE, HOLDER_COUNT_WAIT_MS } from "./constants";
 import { parseChainHolders } from "./facts";
 import { fetchJson, fetchJsonPost } from "./http";
 import { heliusRpc, heliusRestUrl } from "./helius";
@@ -139,17 +139,47 @@ export async function heliusGetTokenAccountsPage(mint: string, key: string, page
     }, 4000, 1);
 }
 
-// The pages that hold every holder of the mint: page 1, and only when it is full pages 2..HOLDER_MAX_PAGES in
-// parallel (the `page` parameter accepts parallel requests: 12 at once, all 200, same count as the cursor walk).
-// A small token costs ONE call. Page 1 failing -> null; a later page failing stays null in the list, and
-// parseChainHolders then reports a floor instead of an exact count.
-export async function heliusGetHolderPages(mint: string, key: string): Promise<unknown[] | null> {
+/** Pages 2..maxPages as waves of growing size (2, 3, 4... pages): [[2,3],[4,5,6],[7,8,9,10]] for 10 pages. */
+export function holderPageWaves(maxPages: number): number[][] {
+    const waves: number[][] = [];
+    let next = 2;
+    for (let size = 2; next <= maxPages; size++) {
+        const wave: number[] = [];
+        for (let i = 0; i < size && next <= maxPages; i++) wave.push(next++);
+        waves.push(wave);
+    }
+    return waves;
+}
+const HOLDER_PAGE_WAVES = holderPageWaves(HOLDER_MAX_PAGES);
+
+// The pages that hold every holder of the mint. Page 1 alone for a token under 1,000 holders (ONE call). When page 1 is full:
+//  - if `knownCount` (another source's holder count, asked in parallel: GoPlus) says there are at least HOLDER_COUNT_KNOWN_ABOVE, stop:
+//    the pages are capped at HOLDER_MAX_PAGES x 1,000 holders, so they could only give a floor below that count, and pickHolderCount
+//    already takes the larger of the two;
+//  - otherwise read pages 2..N in WAVES (HOLDER_PAGE_WAVES), stopping as soon as a wave reaches the end of the list or a page fails.
+// parseChainHolders reads the pages in order and stops at the first short or unreadable one, so a page after it can never change the
+// result: asking for it was pure waste (784 of 3,299 DAS calls in 365 real scans), 10 credits each. The `page` parameter accepts
+// parallel requests; a wave stays small to stay under the plan's DAS rate (10 requests a second on Helius Developer).
+// Page 1 failing -> null; a later page failing stays null in the list, and parseChainHolders then reports a floor instead of an exact count.
+export async function heliusGetHolderPages(mint: string, key: string, knownCount?: Promise<number | null>): Promise<unknown[] | null> {
     const first = await heliusGetTokenAccountsPage(mint, key, 1);
     if (!first) return null;
     const firstCount = parseChainHolders(first);
     if (!firstCount || firstCount.complete) return [first];
-    const rest = await Promise.all(Array.from({ length: HOLDER_MAX_PAGES - 1 }, (_, i) => heliusGetTokenAccountsPage(mint, key, i + 2)));
-    return [first, ...rest];
+    if (knownCount) {
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const wait = new Promise<null>((resolve) => { timer = setTimeout(() => resolve(null), HOLDER_COUNT_WAIT_MS); });
+        const known = await Promise.race([knownCount.catch(() => null), wait]).finally(() => clearTimeout(timer));
+        if (typeof known === "number" && known >= HOLDER_COUNT_KNOWN_ABOVE) return [first];
+    }
+    const pages: unknown[] = [first];
+    for (const wave of HOLDER_PAGE_WAVES) {
+        const got = await Promise.all(wave.map((page) => heliusGetTokenAccountsPage(mint, key, page)));
+        pages.push(...got);
+        const count = parseChainHolders(pages);
+        if (!count || count.complete || got.some((g) => !g)) break; // the list ended, or a page failed: the pages after it are ignored
+    }
+    return pages;
 }
 
 // getAccountInfo on the mint: supply, decimals, mintAuthority, freezeAuthority and (Token-2022) extensions in ONE
@@ -376,10 +406,19 @@ export async function fetchDexCandlesDaily(
 ): Promise<OHLCVCandle[]> {
     const GT = "https://api.geckoterminal.com/api/v2";
     const headers = { "Accept": "application/json;version=20230302" };
+    // Set when GeckoTerminal refused with a rate limit (429/503) and the retry was refused too. Every further call of this
+    // scan (the pool list, then up to three more pools) would be refused for the same reason and would only prolong the
+    // throttling for everyone sharing the address (audit M11: up to six calls in a row, all 429): once refused, stop.
+    let throttled = false;
 
     async function poolCandles(poolAddr: string): Promise<OHLCVCandle[]> {
-        const url = `${GT}/networks/solana/pools/${poolAddr}/ohlcv/hour?aggregate=4&limit=182`;
-        const raw = await fetchJson(url, { headers }, 8000) as GeckoTerminalOHLCVResponse | null;
+        // 540 4-hour candles: about 90 days (a thin token has gaps, so more), which is what the collapse rule reads (COLLAPSE_WINDOW_DAYS). It
+        // used to ask for 182 (30 days). The pump reading below indexes from the END (7 and 30 days back), so more history changes nothing
+        // there. Same single request, a larger answer.
+        const url = `${GT}/networks/solana/pools/${poolAddr}/ohlcv/hour?aggregate=4&limit=540`;
+        let lastStatus = 0; // onStatus reports every response, the retry's included: only the final one tells
+        const raw = await fetchJson(url, { headers }, 8000, 1, (s) => { lastStatus = s; }) as GeckoTerminalOHLCVResponse | null;
+        if (lastStatus === 429 || lastStatus === 503) throttled = true;
         const ohlcv = raw?.data?.attributes?.ohlcv_list;
         if (!Array.isArray(ohlcv) || ohlcv.length < 5) return [];
         return ohlcv
@@ -390,6 +429,7 @@ export async function fetchDexCandlesDaily(
     // Step 1: try the DEXScreener pair address directly.
     const direct = await poolCandles(pairAddress).catch(() => []);
     if (direct.length >= 5) return direct;
+    if (throttled) return []; // refused: asking for the pool list would be refused too
 
     // Step 2: no usable data — ask GeckoTerminal for its own pool list.
     if (!mint) return [];
@@ -415,6 +455,7 @@ export async function fetchDexCandlesDaily(
             if (!addr) continue;
             const candles = await poolCandles(addr).catch(() => []);
             if (candles.length >= 5) return candles;
+            if (throttled) break; // the next pools would be refused as well
         }
     } catch { /* fallback failed silently */ }
 

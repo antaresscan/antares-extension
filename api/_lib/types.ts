@@ -8,7 +8,40 @@ export interface ScanFlag {
   label: string;
   severity: Severity;
   impact: number;
+  /**
+   * The safe-gate reasons this flag stands for (see SafeBlockedReason), put on the flag by the layer that creates it. Absent when the
+   * flag stands for none. classifySafeBlockedReasons (scoring.ts) reads this instead of the flag's text, so rewording a label cannot move a verdict.
+   */
+  reasons?: SafeBlockedReason[];
+  /**
+   * Reasons that count only when NO flag of the same layer carries `reasons`: what a layer's per-source fallback has always read
+   * ("a holders or age signal when nothing harder was found"). Kept separate so that behaviour is reproduced exactly.
+   */
+  fallbackReasons?: SafeBlockedReason[];
+  /**
+   * What kind of signal the flag is, for the places that used to read its text (see FlagTag). Absent when it is none of them.
+   */
+  tags?: FlagTag[];
+  /**
+   * The pump percentage a pump flag talks about (the 553 of "Pumped +553% in 24h"): two flags with the same one are one signal, and
+   * dedupeFlags keeps the most severe. Absent on a flag that is not about a pump percentage.
+   */
+  pumpPct?: number;
 }
+
+/**
+ * What a flag is, said by the layer that creates it, so that nothing has to read its label to know:
+ *   source_status          the health of a source ("Helius unavailable"), not a risk of the token: never counted as one
+ *   pump_price_only        a pump seen only in the price: informational, never counted toward the "3 warnings -> DANGER" floor
+ *   lp                     speaks of the liquidity pool: tells the LP safety net that a layer already said something about the LP
+ *   rug_evidence           something that happened to the token or a closed trap: what lets a token into the rug database
+ *   concentration          a holder-concentration flag (the holders layer drops them when its holder data is broken)
+ *   xv_lp_burn, xv_mint_authority, xv_age, xv_holder_concentration
+ *                          the four disagreements between two sources that each cost the score a penalty
+ */
+export type FlagTag =
+  | "source_status" | "pump_price_only" | "lp" | "rug_evidence" | "concentration"
+  | "xv_lp_burn" | "xv_mint_authority" | "xv_age" | "xv_holder_concentration";
 
 // IMPORTANT: 'lp' and 'deceptive_name' are HARD reasons — they can never
 // be soft-unlocked by applySafeGateOverride. A token with LP not burned
@@ -26,6 +59,7 @@ export type SafeBlockedReason =
   | "wash_trading"    // HARD
   | "pump"            // HARD
   | "bundle"          // HARD
+  | "token_extension" // HARD — a Token-2022 extension lets someone move, pause, freeze or tax holders' tokens (permanent delegate, pausable, default frozen, transfer hook, a fee that is or can be set)
   | "sniper"          // HARD
     | "chart"            // HARD
   | "low_holders"     // HARD — tokens with <50 holders
@@ -44,9 +78,34 @@ export interface LayerResult {
   flags: ScanFlag[];
   forceRug: boolean;
   safeBlocked: boolean;
+  /** Facts this layer observed that show a rug HAPPENED to this token (see RugEvidence). Absent when there are none. */
+  rugEvidence?: RugEvidence[];
 }
 
 export type Verdict = "SAFE" | "CAUTION" | "DANGER" | "RUG";
+
+/**
+ * What a RUG verdict means. The verdict alone cannot say: on 579 real recorded tokens 153 were RUG, 151 of them through the single
+ * "top 10 hold > 80 %" rule, 100 of them still trading with more than $10k of liquidity, and one carried a proof of an event.
+ *   "confirmed"  something happened to THIS token (RugEvidence): its pool was drained while it still traded, it cannot be sold, or it
+ *                already lost 75 % or more of its value from a high of the last 14 days
+ *   "risk"       the structure of the token (who holds it, how it is built) looks like a rug; nothing has happened yet
+ * Only a RUG verdict carries a kind; any other verdict has none (null).
+ */
+export type RugKind = "confirmed" | "risk";
+
+/**
+ * A fact, read from the data and not from any displayed text, that a rug happened to this token.
+ *
+ * A pool that holds little is NOT one: it does not say whether the liquidity was removed or never existed. Liquid-staking tokens and
+ * tokenised stocks have almost no DEX liquidity and are not rugs (measured on the replay corpus: BBSOL, BONKSOL, JNJX, CSCOX...).
+ * A short or small price drop is not one either. A COLLAPSE is (the owner's rule, 2026-10-12: a token that has already lost 75 % or
+ * more of its value from a high of the last 14 days has rugged, whatever its age and whatever its last 24 hours look like).
+ */
+export type RugEvidence =
+  | "pool_abandoned"  // volume over $10k in 24 h and zero liquidity: the pool was drained while it still traded
+  | "sells_blocked"   // GoPlus: honeypot, or the holder cannot sell everything
+  | "price_collapse"; // down 75 % or more from the highest close of the last 14 days (4-hour candles): it already collapsed
 
 // ─── DEXSCREENER ─────────────────────────────────────────────────────────────────────────
 export interface DexScreenerSocial {
@@ -335,6 +394,11 @@ export interface LayerSnapshot {
 export interface ScanResult {
   score: number;
   risk: Verdict;
+  /**
+   * What a RUG verdict means (see RugKind): null unless `risk` is RUG. A scan cached before this field existed has none; read a
+   * missing value on a RUG verdict as "risk", the weaker claim.
+   */
+  rugKind?: RugKind | null;
   flags: ScanFlag[];
   pair: DexScreenerPair | null;
   resolvedMint: string;

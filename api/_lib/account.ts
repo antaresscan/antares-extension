@@ -18,6 +18,7 @@
 import { randomBytes, scryptSync, timingSafeEqual, createHmac } from "node:crypto";
 import { Redis } from "@upstash/redis";
 import { logger } from "./logger";
+import { emailRef } from "./log-ref";
 import { issueLicense, normalizeEmail, type License } from "./license";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -39,9 +40,9 @@ export interface SessionPayload {
 
 // ─── Redis keys ───────────────────────────────────────────────────────────────
 
-export const ACCOUNT_KEY = (emailLc: string) => `account:${emailLc}`;
-export const ACCOUNT_INSTALL_KEY = (installId: string) =>
-  `account:install:${installId}`;
+// The keys are defined once, in keys.ts; they are still exported from here for the modules that import them from this file.
+import { ACCOUNT_KEY, ACCOUNT_INSTALL_KEY } from "./keys";
+export { ACCOUNT_KEY, ACCOUNT_INSTALL_KEY };
 
 // ─── Password hashing (scrypt) ────────────────────────────────────────────────
 
@@ -288,7 +289,7 @@ export async function createAccount(
     emailVerified: account.emailVerified ? "1" : "0",
   });
 
-  logger.info("account", "created", { email });
+  logger.info("account", "created", { emailRef: emailRef(email) });
   return { ok: true, account };
 }
 
@@ -434,7 +435,7 @@ export async function ensureDevLifetimeLicense(
       amountUsd: 0,
     });
     logger.info("auth", "dev-yearly ensured", {
-      email: norm,
+      emailRef: emailRef(norm),
       key: license.key,
       reference: intentReference,
     });
@@ -444,7 +445,7 @@ export async function ensureDevLifetimeLicense(
     // log in and pay normally. Logging is enough for the operator
     // to notice and fix.
     logger.error("auth", "dev-yearly issuance failed", {
-      email: norm,
+      emailRef: emailRef(norm),
       error: String(err),
     });
     return null;
@@ -494,8 +495,8 @@ export function isDevProEmail(email: string): boolean {
  * licence with the SAME expiry (idempotent). To get a fresh 30-day
  * window after the first one expires, the dev would need to redeem
  * the licence in the extension (which extends the install's tier
- * window) or the operator can manually `redis.del('intent-license:
- * dev-grant-pro:<email>')` to allow a re-issue.
+ * window) or the operator can manually delete the key
+ * `intent:license:dev-grant-pro:<email>` (INTENT_LICENSE_KEY, see keys.ts) to allow a re-issue.
  */
 export async function ensureDevProLicense(
   redis: Redis,
@@ -515,14 +516,14 @@ export async function ensureDevProLicense(
       amountUsd: 0,
     });
     logger.info("auth", "dev-pro ensured", {
-      email: norm,
+      emailRef: emailRef(norm),
       key: license.key,
       reference: intentReference,
     });
     return license;
   } catch (err) {
     logger.error("auth", "dev-pro issuance failed", {
-      email: norm,
+      emailRef: emailRef(norm),
       error: String(err),
     });
     return null;

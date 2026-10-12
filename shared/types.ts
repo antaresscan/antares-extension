@@ -31,6 +31,8 @@ export interface Transfer {
 export interface ScanResponseData {
   score: number;
   risk: string;
+  /** What a RUG verdict means: "confirmed" (an event happened to the token) or "risk" (its structure only). Absent on an older cached scan. */
+  rugKind?: string | null;
   flags: ScanResponseFlag[];
   pair?: {
     baseToken?: { symbol?: string; name?: string; address?: string };
@@ -93,6 +95,21 @@ export interface HistoryEntry {
   risk: string;
   score: number;
   ts: number;
+}
+
+/**
+ * Sent by the content script to the service worker each time the overlay
+ * shows a verdict, so the worker can set the toolbar badge, raise a
+ * risk-escalation notification and record the scan in the local history.
+ * Plain data only: the worker never re-fetches the scan (the content script
+ * already did, with the session headers).
+ */
+export interface ScanResultMessage {
+  type: "SCAN_RESULT";
+  ca: string;
+  risk: string;
+  score: number;
+  symbol: string;
 }
 
   // Insider Graph types

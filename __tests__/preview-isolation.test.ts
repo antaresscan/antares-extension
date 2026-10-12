@@ -24,6 +24,8 @@ function fakeRedis() {
     setex: async (k: string, _ttl: number, v: unknown) => { writes.push(k); store.set(k, v); return "OK"; },
     set: async (k: string, v: unknown, opts?: { nx?: boolean }) => { if (opts?.nx && store.has(k)) return null; writes.push(k); store.set(k, v); return "OK"; },
     del: async (k: string) => { store.delete(k); return 1; },
+    // Stand-in for the compare-and-delete script of releaseScanLock: KEYS[1] = lock key, ARGV[1] = owner.
+    eval: async (_script: string, keys: string[], args: string[]) => { if (store.get(keys[0]) === args[0]) { store.delete(keys[0]); return 1; } return 0; },
   } as unknown as Redis;
   return { redis, store, reads, writes };
 }
@@ -128,14 +130,14 @@ describe("a preview and production never see each other's scans", () => {
     const f = fakeRedis();
     initCache(f.redis);
     asProduction();
-    expect(await acquireScanLock(CA)).toBe(true);   // production holds the lock
+    expect(await acquireScanLock(CA, "r-prod")).toBe(true);   // production holds the lock
     asPreview("dpl_AAA");
-    expect(await acquireScanLock(CA)).toBe(true);   // the preview is not blocked by it...
-    expect(await acquireScanLock(CA)).toBe(false);  // ...and has its own lock
-    await releaseScanLock(CA);
-    expect(await acquireScanLock(CA)).toBe(true);
+    expect(await acquireScanLock(CA, "r-pv1")).toBe(true);   // the preview is not blocked by it...
+    expect(await acquireScanLock(CA, "r-pv2")).toBe(false);  // ...and has its own lock
+    await releaseScanLock(CA, "r-pv1");
+    expect(await acquireScanLock(CA, "r-pv3")).toBe(true);
     asProduction();
-    expect(await acquireScanLock(CA)).toBe(false);  // production's lock was untouched by the preview's release
+    expect(await acquireScanLock(CA, "r-prod2")).toBe(false);  // production's lock was untouched by the preview's release
   });
 });
 

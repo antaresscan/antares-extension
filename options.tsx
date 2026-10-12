@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { getInstallId } from "./shared/install-id";
+import { isSessionRejected } from "./shared/session-probe";
 
 const API_BASE = "https://antares-extension.vercel.app";
 const WEBSITE_BASE = "https://antares-website.vercel.app";
@@ -66,11 +67,19 @@ function Options() {
       const meRes = await fetch(`${API_BASE}/api/auth/me`, {
         headers: { "X-Antares-Session": token },
       });
-      if (meRes.status === 401 || !meRes.ok) {
+      if (isSessionRejected(meRes.status)) {
         // Stale or invalid token — drop it so future scans go out as
         // anonymous (Free) instead of with a token the server rejects.
         chrome.storage.local.remove(SESSION_TOKEN_KEY);
         setAccount({ kind: "signed_out" });
+        return;
+      }
+      if (!meRes.ok) {
+        // The API is having a moment (5xx, 429...): that says nothing about the token. Keep it, say so, let the user retry.
+        setAccount({
+          kind: "error",
+          message: "Antares is temporarily unavailable. Reload to retry.",
+        });
         return;
       }
       const me = (await meRes.json()) as {

@@ -11,7 +11,7 @@
 // The invariant: "not verified" is NEVER turned into "renounced" or "can sell".
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { parseMintState, mintSupplyUi, gpStatus, deriveAuthorityFacts, type MintState } from "../api/_lib/facts";
+import { parseMintState, mintSupplyUi, gpStatus, deriveAuthorityFacts, deriveExtensionFacts, SYSTEM_PROGRAM_ID, type MintState } from "../api/_lib/facts";
 import { pickGoPlusResult } from "../api/_lib/helpers";
 import type { GoPlusTokenResult } from "../api/_lib/types";
 
@@ -146,7 +146,7 @@ describe("deriveAuthorityFacts: the chain decides, GoPlus relays", () => {
   });
 
   it("nothing readable: every fact stays null, never false", () => {
-    expect(deriveAuthorityFacts(null, null)).toEqual({ mint: null, freeze: null, sellBlocked: null, trusted: false, source: null, compared: false, conflicts: [], riskyExtensions: [] });
+    expect(deriveAuthorityFacts(null, null)).toEqual({ mint: null, freeze: null, sellBlocked: null, trusted: false, source: null, compared: false, conflicts: [], riskyExtensions: [], extensionFacts: null });
   });
 
   it("the chain and GoPlus disagree: the chain wins and the conflict is reported", () => {
@@ -156,3 +156,100 @@ describe("deriveAuthorityFacts: the chain decides, GoPlus relays", () => {
     expect(f.compared).toBe(true);
   });
 });
+
+describe("trusted: GoPlus decides, the official list only stands in when GoPlus is silent (audit A-02)", () => {
+  const USDC = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+  const chain: MintState = { program: "spl-token", decimals: 6, supplyRaw: "1", mintAuthority: true, freezeAuthority: true, extensions: [] };
+
+  it("GoPlus silent (null or nothing readable) + official mint -> trusted", () => {
+    expect(deriveAuthorityFacts(chain, null, USDC).trusted).toBe(true);
+    expect(deriveAuthorityFacts(chain, {} as GoPlusTokenResult, USDC).trusted).toBe(true);
+  });
+
+  it("no mint given, or a mint that is not on the list -> not trusted", () => {
+    expect(deriveAuthorityFacts(chain, null).trusted).toBe(false);
+    expect(deriveAuthorityFacts(chain, null, "SomeOtherMint1111111111111111111111111111111").trusted).toBe(false);
+  });
+
+  it("GoPlus answered about the authorities -> its word wins, even on an official mint", () => {
+    expect(deriveAuthorityFacts(chain, { mintable: "1", freezable: "1" } as GoPlusTokenResult, USDC).trusted).toBe(false);
+    expect(deriveAuthorityFacts(chain, { trusted_token: 1 } as GoPlusTokenResult, "SomeOtherMint1111111111111111111111111111111").trusted).toBe(true);
+  });
+});
+
+// ─── What the Token-2022 extensions let someone do to the holders (audit A-10) ──────────────────────────────────────────────────
+// riskyExtensions was computed and read nowhere: a mint with a permanent delegate and a fee authority raised no flag.
+describe("deriveExtensionFacts: read from the state of each extension", () => {
+  const ADDR = "2apBGMsS6ti9RyF5TwQTDswXBWskiJP2LD4cUEDqYJjk";
+  const t22 = (exts: Array<{ extension: string; state?: Record<string, unknown> }>): MintState => ({
+    program: "spl-token-2022", decimals: 6, supplyRaw: "1", mintAuthority: false, freezeAuthority: false,
+    extensions: exts.map((e) => e.extension), extensionStates: Object.fromEntries(exts.map((e) => [e.extension, e.state ?? {}])),
+  });
+  const NONE = { permanentDelegate: false, pausable: false, defaultFrozen: false, transferHook: false, feeBps: null, feeCanChange: false };
+
+  it("parseMintState keeps the state of every extension next to its name", () => {
+    const m = parseMintState(rawMint({ extensions: [{ extension: "permanentDelegate", state: { delegate: ADDR } }, { extension: "pausableConfig", state: { authority: ADDR, paused: false } }] }));
+    expect(m?.extensionStates).toEqual({ permanentDelegate: { delegate: ADDR }, pausableConfig: { authority: ADDR, paused: false } });
+    expect(parseMintState(rawMint({}))?.extensionStates).toBeUndefined();
+  });
+
+  it("a classic mint, and a Token-2022 mint with no extension, have none to read: null", () => {
+    expect(deriveExtensionFacts(null)).toBeNull();
+    expect(deriveExtensionFacts(chain("bonk"))).toBeNull();
+    expect(deriveExtensionFacts(state({ program: "spl-token-2022", extensions: [] }))).toBeNull();
+  });
+
+  it("PAPER (only metadata) has no power over its holders", () => {
+    expect(deriveExtensionFacts(chain("paper"))).toEqual(NONE);
+  });
+
+  it("PYUSD, as the chain returns it: a permanent delegate, a fee extension at 0 %, a hook extension with no program set", () => {
+    const f = deriveExtensionFacts(chain("pyusd"));
+    expect(f?.permanentDelegate).toBe(true);
+    expect(f?.feeBps).toBe(0);
+    expect(f?.transferHook).toBe(false); // programId is null: nothing runs on a transfer
+    expect(f?.pausable).toBe(false);
+    expect(f?.defaultFrozen).toBe(false);
+  });
+
+  it("a permanent delegate that cannot sign (the System Program, or none) is not one", () => {
+    expect(deriveExtensionFacts(t22([{ extension: "permanentDelegate", state: { delegate: ADDR } }]))?.permanentDelegate).toBe(true);
+    expect(deriveExtensionFacts(t22([{ extension: "permanentDelegate", state: { delegate: SYSTEM_PROGRAM_ID } }]))?.permanentDelegate).toBe(false);
+    expect(deriveExtensionFacts(t22([{ extension: "permanentDelegate", state: { delegate: null } }]))?.permanentDelegate).toBe(false);
+  });
+
+  it("an extension whose state could not be read counts as present: the cautious reading", () => {
+    const f = deriveExtensionFacts({ ...t22([]), extensions: ["permanentDelegate", "transferHook", "transferFeeConfig"], extensionStates: undefined });
+    expect(f).toEqual({ permanentDelegate: true, pausable: false, defaultFrozen: false, transferHook: true, feeBps: null, feeCanChange: true });
+  });
+
+  it("pausable: the extension being there is enough", () => {
+    expect(deriveExtensionFacts(t22([{ extension: "pausableConfig", state: { authority: ADDR, paused: false } }]))?.pausable).toBe(true);
+  });
+
+  it("default account state: only frozen is a risk", () => {
+    expect(deriveExtensionFacts(t22([{ extension: "defaultAccountState", state: { accountState: "frozen" } }]))?.defaultFrozen).toBe(true);
+    expect(deriveExtensionFacts(t22([{ extension: "defaultAccountState", state: { accountState: "initialized" } }]))?.defaultFrozen).toBe(false);
+  });
+
+  it("transfer hook: a program must be set", () => {
+    expect(deriveExtensionFacts(t22([{ extension: "transferHook", state: { authority: ADDR, programId: null } }]))?.transferHook).toBe(false);
+    expect(deriveExtensionFacts(t22([{ extension: "transferHook", state: { authority: null, programId: "Hook111111111111111111111111111111111111111" } }]))?.transferHook).toBe(true);
+  });
+
+  it("transfer fee: the higher of the two fees that can apply, and whether an authority can change it", () => {
+    const fee = (newer: number, older: number, authority: string | null) => t22([{ extension: "transferFeeConfig", state: {
+      newerTransferFee: { epoch: 1, maximumFee: 0, transferFeeBasisPoints: newer }, olderTransferFee: { epoch: 1, maximumFee: 0, transferFeeBasisPoints: older }, transferFeeConfigAuthority: authority } }]);
+    expect(deriveExtensionFacts(fee(0, 0, null))).toMatchObject({ feeBps: 0, feeCanChange: false });
+    expect(deriveExtensionFacts(fee(420, 420, null))).toMatchObject({ feeBps: 420, feeCanChange: false });
+    expect(deriveExtensionFacts(fee(0, 500, ADDR))).toMatchObject({ feeBps: 500, feeCanChange: true });
+    expect(deriveExtensionFacts(fee(0, 0, SYSTEM_PROGRAM_ID))).toMatchObject({ feeCanChange: false });
+  });
+
+  it("deriveAuthorityFacts carries them, and riskyExtensions is unchanged", () => {
+    const f = deriveAuthorityFacts(chain("pyusd"), null);
+    expect(f.extensionFacts?.permanentDelegate).toBe(true);
+    expect(f.riskyExtensions).toEqual(expect.arrayContaining(["permanentDelegate", "transferFeeConfig", "transferHook"]));
+  });
+});
+

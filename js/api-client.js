@@ -40,7 +40,9 @@ export async function fetchWithRetry(url, opts = {}) {
     attempt = 1,
   } = opts;
   try {
-    const r = await fetch(url);
+    // Full Analysis is Pro: the server reads the plan from the session cookie, which has to travel with the request even when the page
+    // is not served from the API's own origin (an embedded page, a copy on another host).
+    const r = await fetch(url, { credentials: "include" });
     if (!r.ok) throw new Error("HTTP " + r.status);
     return await r.json();
   } catch (e) {

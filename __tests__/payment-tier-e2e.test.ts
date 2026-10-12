@@ -38,7 +38,8 @@ const sets = new Map<string, Set<string>>();
 
 vi.mock("@upstash/redis", () => {
   class MockRedis {
-    set = vi.fn(async (k: string, v: unknown) => {
+    set = vi.fn(async (k: string, v: unknown, opts?: { nx?: boolean }) => {
+      if (opts?.nx && store.has(k)) return null; // SET NX: the key is already taken
       store.set(k, v);
       return "OK";
     });
@@ -62,6 +63,16 @@ vi.mock("@upstash/redis", () => {
       return added;
     });
     smembers = vi.fn(async (k: string) => Array.from(sets.get(k) ?? []));
+    multi = () => {
+      const queued: Array<() => Promise<unknown>> = [];
+      const tx = {
+        hset: (k: string, f: Record<string, string>) => { queued.push(() => this.hset(k, f)); return tx; },
+        sadd: (k: string, ...m: string[]) => { queued.push(() => this.sadd(k, ...m)); return tx; },
+        set: (k: string, v: unknown) => { queued.push(() => this.set(k, v)); return tx; },
+        exec: async () => { const out: unknown[] = []; for (const q of queued) out.push(await q()); return out; },
+      };
+      return tx;
+    };
     srem = vi.fn(async (k: string, ...members: string[]) => {
       const s = sets.get(k);
       if (!s) return 0;

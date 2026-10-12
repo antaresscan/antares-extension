@@ -35,8 +35,15 @@ const STABLE_QUOTE_SYMBOLS = new Set([
  */
 export function selectBestPair(
   pairs: DexScreenerPair[] | null | undefined,
+  mint?: string,
 ): DexScreenerPair | null {
   if (!pairs || pairs.length === 0) return null;
+  // DexScreener answers /tokens/<mint> with every pool the token is in, as the BASE or as the QUOTE. The price, the price changes, the
+  // liquidity and the age of a pool are the BASE token's: for a pool where the scanned token is only the quote, every field is about
+  // another token (USDC: 6 pools of 30 had it as the quote, audit A-26). Only pools where it is the base can say anything about it.
+  const asBase = mint ? pairs.filter((p) => p?.baseToken?.address === mint) : [];
+  // A token that is the base of no pool at all (it exists only as somebody's quote) keeps the old reading: there is nothing better to read.
+  if (asBase.length > 0) pairs = asBase;
   if (pairs.length === 1) return pairs[0] ?? null;
 
   const stablePairs = pairs.filter((p) => {
