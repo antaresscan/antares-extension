@@ -6,6 +6,10 @@ import { SCORING_VERSION } from "../api/_lib/constants";
 
 // ---- Mock all external modules BEFORE importing handler ----
 
+// keepAlive() hands the post-answer writes to waitUntil(); outside Vercel the real one does nothing, so spy on it.
+const { mockWaitUntil } = vi.hoisted(() => ({ mockWaitUntil: vi.fn() }));
+vi.mock("@vercel/functions", () => ({ waitUntil: mockWaitUntil }));
+
 // Mock @upstash/redis
 vi.mock("@upstash/redis", () => {
   class MockRedis {
@@ -427,6 +431,17 @@ describe("scan handler", () => {
     const res = createMockRes();
     await handler(req, res);
     expect(res.json).toHaveBeenCalled();
+  });
+
+  it("hands its cache write to waitUntil, so the function is not frozen before it lands", async () => {
+    setupGoodTokenMocks();
+    const req = createMockReq({ ca: "So11111111111111111111111111111111111111112" });
+    const res = createMockRes();
+    await handler(req, res);
+    expect(res.json).toHaveBeenCalled();
+    // the cache write (and the rug database write) were registered, each as a promise that settles on its own
+    expect(mockWaitUntil).toHaveBeenCalled();
+    for (const [work] of mockWaitUntil.mock.calls) expect(work).toBeInstanceOf(Promise);
   });
 
   it("uses short TTL cache when aiSummary is null", async () => {

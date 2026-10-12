@@ -38,17 +38,23 @@ export async function getCachedResult<T = unknown>(ca: string, requestId: string
   }
 }
 
+// The two writers below RETURN their promise (which never rejects: a failed write is logged). The caller does not wait for it to
+// answer the user, but hands it to keepAlive() (background.ts): a write that Vercel freezes mid-flight is a cache entry lost, and a
+// lost entry is one more cold scan for the next visitor of the token.
 export function setCachedResult(
   ca: string,
   result: object,
   tokenAgeMinutes: number | null,
   verdict?: "SAFE" | "CAUTION" | "DANGER" | "RUG",
-): void {
-  if (!scanCacheRedis) return;
+): Promise<void> {
+  if (!scanCacheRedis) return Promise.resolve();
   const ttl = computeCacheTTL(tokenAgeMinutes, verdict);
-  scanCacheRedis.setex(cacheKey(ca), ttl, result).catch((e: unknown) => {
-        logger.warn("cache", "Redis cache write failed", { error: String(e) });
-  });
+  return scanCacheRedis.setex(cacheKey(ca), ttl, result).then(
+    () => undefined,
+    (e: unknown) => {
+      logger.warn("cache", "Redis cache write failed", { error: String(e) });
+    },
+  );
 }
 
 /**
@@ -64,11 +70,14 @@ export function setShortCachedResult(
   ca: string,
   result: object,
   ttlSeconds: number,
-): void {
-  if (!scanCacheRedis) return;
-  scanCacheRedis.setex(cacheKey(ca), ttlSeconds, result).catch((e: unknown) => {
-    logger.warn("cache", "Redis short-cache write failed", { error: String(e) });
-  });
+): Promise<void> {
+  if (!scanCacheRedis) return Promise.resolve();
+  return scanCacheRedis.setex(cacheKey(ca), ttlSeconds, result).then(
+    () => undefined,
+    (e: unknown) => {
+      logger.warn("cache", "Redis short-cache write failed", { error: String(e) });
+    },
+  );
 }
 
 // ─── SINGLE-FLIGHT SCAN LOCK (cache-stampede protection) ─────────────────

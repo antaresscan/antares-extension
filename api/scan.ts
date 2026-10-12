@@ -46,6 +46,7 @@ import { setCorsHeaders, getClientIp, getInstallId, checkRateLimit, checkColdSca
 import { initQuota, checkDailyQuota, setQuotaHeaders, secondsUntilReset } from "./_lib/quota";
 import { initUserStorage, pushScanHistory, resolveTierAndBypass } from "./_lib/user";
 import { initCache, getCachedResult, setCachedResult, setShortCachedResult, acquireScanLock, releaseScanLock, waitForCachedResult } from "./_lib/cache";
+import { keepAlive } from "./_lib/background";
 import { initSentry, captureError } from "./_lib/sentry";
 import { generateAISummary } from "./_lib/ai-summary";
 
@@ -878,19 +879,21 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // rate limit, after which the next try can give another verdict (audit M11). Bad verdicts keep their long TTL.
     const degraded = sources_used.length === 0 || scanDeadline - Date.now() < MIN_STEP_MS
       || isChartGapDegraded(result.risk, result.layers?.chart?.available, tokenAgeMinutes);
+    // These writes (the cache, the rug database, the scan history) are handed to keepAlive: the answer does not wait for them, but
+    // Vercel does not freeze the function until they have finished (a frozen write is a cache entry lost = one more cold scan).
     if (result.aiSummary && !degraded) {
-      setCachedResult(ca, result, tokenAgeMinutes, result.risk);
-      if (resolvedMint !== ca) setCachedResult(resolvedMint, result, tokenAgeMinutes, result.risk);
+      keepAlive(setCachedResult(ca, result, tokenAgeMinutes, result.risk), "cache write");
+      if (resolvedMint !== ca) keepAlive(setCachedResult(resolvedMint, result, tokenAgeMinutes, result.risk), "cache write");
     } else {
       // No AI summary yet, or a degraded result — short-TTL cache so a
       // same-CA reload within 30s skips re-running the whole pipeline, but
       // the cache expires fast enough to pick up a complete answer next time.
-      setShortCachedResult(ca, result, 30);
-      if (resolvedMint !== ca) setShortCachedResult(resolvedMint, result, 30);
+      keepAlive(setShortCachedResult(ca, result, 30), "short cache write");
+      if (resolvedMint !== ca) keepAlive(setShortCachedResult(resolvedMint, result, 30), "short cache write");
     }
 
     // A preview deployment must not write into production's rug database (see deployment.ts).
-    if (!isPreviewDeployment()) void recordRug({ mint: resolvedMint, symbol: sanitizeString(pair?.baseToken?.symbol) ?? null, score, risk, flags, creator: tokenCreator });
+    if (!isPreviewDeployment()) keepAlive(recordRug({ mint: resolvedMint, symbol: sanitizeString(pair?.baseToken?.symbol) ?? null, score, risk, flags, creator: tokenCreator }), "rug database write");
 
     // Emit a structured outcome event for every completed scan. Downstream
     // log aggregators can chart verdict distribution, layer availability,
@@ -910,14 +913,14 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     });
 
     if (installId) {
-      void pushScanHistory(installId, {
+      keepAlive(pushScanHistory(installId, {
         ca: result.resolvedMint ?? ca,
         score: result.score,
         verdict: result.risk,
         scannedAt: Date.now(),
         symbol: result.tokenSymbol ?? undefined,
         name: result.tokenName ?? undefined,
-      });
+      }), "scan history write");
     }
 
     // Write the upstream-usage counters of this cold scan (one Redis command, at most 300 ms, never an error for the user).
