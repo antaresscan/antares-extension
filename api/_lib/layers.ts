@@ -17,6 +17,7 @@ import {
 import { getLpRiskBucket } from "./lp-risk-matrix";
 import { asNumber, _mean, _std, _pct } from "./math";
 import { makeFlag, getLpLockDurationDays, riskIncludes } from "./helpers";
+import { codesFromUpstreamText } from "./scoring";
 import { extractBundlePct } from "./fetchers";
 import { gpStatus, weightedBurnPct, type AuthorityFacts } from "./facts";
 
@@ -152,10 +153,10 @@ export function layerDexScreener(
     // on-chain wallet-concentration (evaluatePostLayerFlags, ≤3 unique
     // wallets in 10+ transfers) is a strictly stronger signal and keeps
     // its forceRug.
-    flags.push(makeFlag("Wash trading detected (vol/liq > 15) — bundler dump", "critical", 0));
+    flags.push(makeFlag("Wash trading detected (vol/liq > 15) — bundler dump", "critical", 0, { reasons: ["wash_trading", "bundle"], fallbackReasons: ["wash_trading"] }));
     penalties.push(0.20); safeBlocked = true;
   } else if (liq > 0 && vol / liq > 10) {
-    flags.push(makeFlag("High vol/liquidity ratio (>10×) — probable wash volume", "critical", 0));
+    flags.push(makeFlag("High vol/liquidity ratio (>10×) — probable wash volume", "critical", 0, { fallbackReasons: ["wash_trading"] }));
     penalties.push(0.35); safeBlocked = true;
   } else if (liq > 0 && vol / liq > 5) {
     flags.push(makeFlag("High vol/liquidity ratio (>5×)", "warning", 0));
@@ -168,23 +169,23 @@ export function layerDexScreener(
     (!liqUnknown && liq < 15000); // an unknown liquidity is not a thin one
   if (ageMinutes < 30 && pc1 > 150) {
     if (hasStructuralWeakness) {
-      flags.push(makeFlag(`Pump +${Math.round(pc1)}% on <30min token + structural weakness — exit trap`, "critical", 0));
+      flags.push(makeFlag(`Pump +${Math.round(pc1)}% on <30min token + structural weakness — exit trap`, "critical", 0, { reasons: ["rug_pattern"], fallbackReasons: ["rug_pattern"] }));
       penalties.push(0.05); forceRug = true; safeBlocked = true;
     } else {
-      flags.push(makeFlag(`Extreme pump +${Math.round(pc1)}% on newborn token (<30min)`, "warning", 0));
+      flags.push(makeFlag(`Extreme pump +${Math.round(pc1)}% on newborn token (<30min)`, "warning", 0, { reasons: ["pump"], fallbackReasons: ["pump"] }));
       penalties.push(0.30); safeBlocked = true;
     }
   } else if (ageMinutes < 60 && pc1 > 120) {
     if (hasStructuralWeakness) {
-      flags.push(makeFlag(`Pump +${Math.round(pc1)}% on <1h token + structural weakness — exit trap`, "critical", 0));
+      flags.push(makeFlag(`Pump +${Math.round(pc1)}% on <1h token + structural weakness — exit trap`, "critical", 0, { reasons: ["rug_pattern"], fallbackReasons: ["rug_pattern"] }));
       penalties.push(0.05); forceRug = true; safeBlocked = true;
     } else {
-      flags.push(makeFlag(`Pump +${Math.round(pc1)}% on newborn token (<1h)`, "warning", 0));
+      flags.push(makeFlag(`Pump +${Math.round(pc1)}% on newborn token (<1h)`, "warning", 0, { reasons: ["pump"], fallbackReasons: ["pump"] }));
       penalties.push(0.40); safeBlocked = true;
     }
   } else if (pc1 > 300) {
     if (hasStructuralWeakness) {
-      flags.push(makeFlag(`Extreme pump +${Math.round(pc1)}% in 1h + structural weakness — bundler exit trap`, "critical", 0));
+      flags.push(makeFlag(`Extreme pump +${Math.round(pc1)}% in 1h + structural weakness — bundler exit trap`, "critical", 0, { reasons: ["bundle", "rug_pattern"], fallbackReasons: ["rug_pattern"] }));
       penalties.push(0.05); forceRug = true; safeBlocked = true;
     } else {
       // A pump alone is NEVER critical, whatever the percentage (the rule #628 set for the weekly and monthly pumps): legit
@@ -195,14 +196,14 @@ export function layerDexScreener(
     }
   } else if (pc1 > 200 && ageMinutes < 120) {
     if (hasStructuralWeakness) {
-      flags.push(makeFlag(`Pump +${Math.round(pc1)}% on newborn token (<2h) + structural weakness — exit trap`, "critical", 0));
+      flags.push(makeFlag(`Pump +${Math.round(pc1)}% on newborn token (<2h) + structural weakness — exit trap`, "critical", 0, { reasons: ["rug_pattern", "pump"], fallbackReasons: ["pump", "rug_pattern"] }));
       penalties.push(0.10); forceRug = true; safeBlocked = true;
     } else {
-      flags.push(makeFlag(`Pump +${Math.round(pc1)}% on newborn token (<2h)`, "warning", 0));
+      flags.push(makeFlag(`Pump +${Math.round(pc1)}% on newborn token (<2h)`, "warning", 0, { reasons: ["pump"], fallbackReasons: ["pump"] }));
       penalties.push(0.40); safeBlocked = true;
     }
   } else if (pc1 > 200 && pc5 > 50) {
-    flags.push(makeFlag("Coordinated pump pattern", "warning", 0));
+    flags.push(makeFlag("Coordinated pump pattern", "warning", 0, { reasons: ["pump"], fallbackReasons: ["pump"] }));
     penalties.push(0.65);
   }
   if (pc6 < -50 && pc1 < -15) {
@@ -231,7 +232,7 @@ export function layerDexScreener(
     }
   }
   if (txns5m < 5 && mc > 50000 && ageMinutes < 1440) { flags.push(makeFlag("Low 5m transactions vs market cap", "info", 0)); penalties.push(0.92); }
-  if ((sells5m === 0 && buys5m > 0 && txns5m > 5) || (sells5m > 0 && buys5m > sells5m * 5)) { flags.push(makeFlag("Buy/sell imbalance (coordinated pump)", "warning", 0)); penalties.push(0.85); }
+  if ((sells5m === 0 && buys5m > 0 && txns5m > 5) || (sells5m > 0 && buys5m > sells5m * 5)) { flags.push(makeFlag("Buy/sell imbalance (coordinated pump)", "warning", 0, { reasons: ["pump_imbalance"] })); penalties.push(0.85); }
   if (pc24 < -80) {
     flags.push(makeFlag("Brutal dump 24h (-80%)", "critical", 0));
     penalties.push(0.35); safeBlocked = true;
@@ -246,7 +247,7 @@ export function layerDexScreener(
   // structural weakness next to it. Without one, they are warnings that cap the verdict at CAUTION.
   if (pc24 > 5000) {
     if (hasStructuralWeakness) {
-      flags.push(makeFlag(`Extreme 24h pump +${Math.round(pc24)}% — exit liquidity trap`, "critical", 0));
+      flags.push(makeFlag(`Extreme 24h pump +${Math.round(pc24)}% — exit liquidity trap`, "critical", 0, { reasons: ["rug_pattern"], fallbackReasons: ["rug_pattern"] }));
       penalties.push(0.05); forceRug = true; safeBlocked = true;
     } else {
       flags.push(makeFlag(`Extreme 24h pump +${Math.round(pc24)}% — high retrace risk`, "warning", 0));
@@ -254,7 +255,7 @@ export function layerDexScreener(
     }
   } else if (pc24 > 1000) {
     if (hasStructuralWeakness) {
-      flags.push(makeFlag(`Extreme 24h pump +${Math.round(pc24)}% — high risk exit trap`, "critical", 0));
+      flags.push(makeFlag(`Extreme 24h pump +${Math.round(pc24)}% — high risk exit trap`, "critical", 0, { reasons: ["rug_pattern"], fallbackReasons: ["rug_pattern"] }));
       penalties.push(0.15); safeBlocked = true;
     } else {
       flags.push(makeFlag(`Extreme 24h pump +${Math.round(pc24)}% — high retrace risk`, "warning", 0));
@@ -329,7 +330,8 @@ export function layerRugCheck(
   if (tokenName) {
     const isDeceptive = DECEPTIVE_NAME_PATTERNS.some(p => p.test(tokenName));
     if (isDeceptive) {
-      flags.push(makeFlag(`Deceptive name — impersonates real institution: "${tokenName}"`, "critical", 0));
+      // The reason does not depend on the name: a token called "Mint authority" must not add the reason "mint".
+      flags.push(makeFlag(`Deceptive name — impersonates real institution: "${tokenName}"`, "critical", 0, { reasons: ["deceptive_name"] }));
       penalties.push(0.20); safeBlocked = true;
     }
   }
@@ -337,25 +339,25 @@ export function layerRugCheck(
   const bundleInReport = riskIncludes(rugReportData, /bundle/i);
   const bundledPct = bundleInReport ? extractBundlePct(rugReportData) : 0;
   if (bundleInReport && bundledPct > 0.20) {
-    flags.push(makeFlag(`Bundle holds ~${Math.round(bundledPct * 100)}% of supply — coordinated buy/dump`, "critical", 0));
+    flags.push(makeFlag(`Bundle holds ~${Math.round(bundledPct * 100)}% of supply — coordinated buy/dump`, "critical", 0, { reasons: ["bundle"] }));
     penalties.push(0.05); forceRug = true; safeBlocked = true;
   } else if (bundleInReport && bundledPct > 0.05) {
-    flags.push(makeFlag(`Bundle detected (~${Math.round(bundledPct * 100)}% of supply)`, "critical", 0));
+    flags.push(makeFlag(`Bundle detected (~${Math.round(bundledPct * 100)}% of supply)`, "critical", 0, { reasons: ["bundle"] }));
     penalties.push(0.20); safeBlocked = true;
   } else if (bundleInReport) {
-    flags.push(makeFlag("Bundle activity detected (RugCheck)", "critical", 0));
+    flags.push(makeFlag("Bundle activity detected (RugCheck)", "critical", 0, { reasons: ["bundle"] }));
     penalties.push(0.20); forceRug = true; safeBlocked = true;
   }
   if (!bundleInReport && riskIncludes(rugData, /bundler|bundle/i)) {
-    flags.push(makeFlag("Bundler detected (RugCheck summary)", "critical", 0));
+    flags.push(makeFlag("Bundler detected (RugCheck summary)", "critical", 0, { reasons: ["bundle"] }));
     penalties.push(0.15); forceRug = true; safeBlocked = true;
   }
             if (rugData.lpBurned === true) {
-        flags.push(makeFlag("LP Burned ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.10);
+        flags.push(makeFlag("LP Burned ✓", "bonus", 0, { fallbackReasons: ["lp"] })); trust = Math.min(1.0, trust * 1.10);
     } else if (rugData.lpLocked === true) {
         const days = getLpLockDurationDays(rugData);
-        if (days > 180) { flags.push(makeFlag("LP Locked > 180 days ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.05); }
-        else if (days > 0 && days < 30) { flags.push(makeFlag("LP lock duration < 30 days", "warning", 0)); penalties.push(0.75); }
+        if (days > 180) { flags.push(makeFlag("LP Locked > 180 days ✓", "bonus", 0, { fallbackReasons: ["lp"] })); trust = Math.min(1.0, trust * 1.05); }
+        else if (days > 0 && days < 30) { flags.push(makeFlag("LP lock duration < 30 days", "warning", 0, { fallbackReasons: ["lp"] })); penalties.push(0.75); }
     } else {
         const lpDataPresent =
             rugData.lpBurned === false ||
@@ -395,11 +397,12 @@ export function layerRugCheck(
                 // Contract has mint/freeze/honeypot → ignore the matrix's
                 // age relaxations and treat LP as hard rug vector. The
                 // contract-attack vector dominates regardless of LP %.
-                flags.push(makeFlag("LP not burned or locked — dev can rug liquidity (contract not clean)", "critical", 0));
+                flags.push(makeFlag("LP not burned or locked — dev can rug liquidity (contract not clean)", "critical", 0, { reasons: ["lp"], fallbackReasons: ["lp"] }));
                 penalties.push(0.65);
                 safeBlocked = true;
             } else {
-                flags.push(makeFlag(bucket.flagLabel, bucket.severity, 0));
+                // Every LP bucket label speaks of "LP": the rugcheck fallback has always read it as the reason "lp".
+                flags.push(makeFlag(bucket.flagLabel, bucket.severity, 0, { reasons: bucket.flagReasons, fallbackReasons: ["lp"] }));
                 penalties.push(bucket.penalty);
                 if (bucket.safeBlock) safeBlocked = true;
                 if (bucket.forceRug) forceRug = true;
@@ -415,7 +418,7 @@ const top10 = asNumber(rugData?.topHolders?.top10Percentage);
   // RugCheck's top-10 threshold is kept as a cross-check signal only.
   if (top10 > 70) { flags.push(makeFlag("Top 10 holders > 70% (RugCheck)", "critical", 0)); penalties.push(0.45); }
   else if (top10 > 50) { flags.push(makeFlag("Top 10 holders > 50% (RugCheck)", "warning", 0)); penalties.push(0.70); }
-  if (riskIncludes(rugReportData, /sniper/i)) { flags.push(makeFlag("Sniper activity detected", "critical", 0)); penalties.push(0.15); safeBlocked = true; }
+  if (riskIncludes(rugReportData, /sniper/i)) { flags.push(makeFlag("Sniper activity detected", "critical", 0, { reasons: ["sniper"] })); penalties.push(0.15); safeBlocked = true; }
   if (riskIncludes(rugReportData, /rug/i)) { flags.push(makeFlag("Rug pull history", "critical", 0)); penalties.push(0.15); forceRug = true; }
   if (riskIncludes(rugReportData, /creator.*sell|dev.*sell/i)) { flags.push(makeFlag("Dev wallet sold tokens", "warning", 0)); penalties.push(0.65); }
   for (const r of Array.isArray(rugData.risks) ? rugData.risks : []) {
@@ -423,16 +426,19 @@ const top10 = asNumber(rugData?.topHolders?.top10Percentage);
     if (!name || RC_HANDLED_ELSEWHERE.test(name)) continue;
     const rule = RC_RULES.find(([re]) => re.test(name))?.[1];
     if (rule) {
-      flags.push(makeFlag(r.value ? `${name} ${r.value.startsWith("(") ? r.value : `(${r.value})`}` : name, rule.sev, 0));
+      // The name is RugCheck's own text: the one place where the codes are still read from a text, once, at the door.
+      const label = r.value ? `${name} ${r.value.startsWith("(") ? r.value : `(${r.value})`}` : name;
+      flags.push(makeFlag(label, rule.sev, 0, codesFromUpstreamText("rugcheck", label)));
       penalties.push(rule.pen);
       if (rule.block) safeBlocked = true;
     } else if (r?.level === "danger") {
-      flags.push(makeFlag(`RugCheck: ${name}`, "warning", 0)); // an unknown risk is not automatically critical
+      const label = `RugCheck: ${name}`;
+      flags.push(makeFlag(label, "warning", 0, codesFromUpstreamText("rugcheck", label))); // an unknown risk is not automatically critical
       penalties.push(0.85);
     }
   }
-  if (rugData.mintAuthorityEnabled) { flags.push(makeFlag("Mint Authority enabled (RugCheck)", "critical", 0)); penalties.push(0.25); }
-  if (rugData.freezeAuthorityEnabled) { flags.push(makeFlag("Freeze Authority enabled (RugCheck)", "critical", 0)); penalties.push(0.25); }
+  if (rugData.mintAuthorityEnabled) { flags.push(makeFlag("Mint Authority enabled (RugCheck)", "critical", 0, { reasons: ["mint"] })); penalties.push(0.25); }
+  if (rugData.freezeAuthorityEnabled) { flags.push(makeFlag("Freeze Authority enabled (RugCheck)", "critical", 0, { reasons: ["freeze"] })); penalties.push(0.25); }
   trust = applyDiminishingPenalties(trust, penalties);
   return { source: "rugcheck", trust: Math.max(0, trust), available: true, flags, forceRug, safeBlocked };
 }
@@ -455,11 +461,11 @@ export function judgeContractFacts(facts: AuthorityFacts | null | undefined): Co
   const sev = facts.trusted ? "info" : "critical";
   const pen = facts.trusted ? 0.95 : 0.25;
   if (facts.mint === true) {
-    flags.push(makeFlag("Mint authority active — supply can be inflated", sev, 0)); penalties.push(pen);
+    flags.push(makeFlag("Mint authority active — supply can be inflated", sev, 0, { reasons: ["mint"] })); penalties.push(pen);
     if (!facts.trusted) safeBlocked = true;
   }
   if (facts.freeze === true) {
-    flags.push(makeFlag("Freeze authority active — wallets can be frozen", sev, 0)); penalties.push(pen);
+    flags.push(makeFlag("Freeze authority active — wallets can be frozen", sev, 0, { reasons: ["freeze"] })); penalties.push(pen);
     if (!facts.trusted) safeBlocked = true;
   }
   if (facts.sellBlocked === true) {
@@ -509,7 +515,7 @@ export function layerGoPlus(
   };
   const gpNum = (field: keyof GoPlusTokenResult) => asNumber(goplus[field]);
   if (gp("is_honeypot")) {
-    flags.push(makeFlag("Honeypot detected — cannot sell", "critical", 0));
+    flags.push(makeFlag("Honeypot detected — cannot sell", "critical", 0, { reasons: ["honeypot"] }));
     trust = 0; forceRug = true; safeBlocked = true;
     return { source: "goplus", trust: 0, available: true, flags, forceRug, safeBlocked, rugEvidence: ["sells_blocked"] };
   }
@@ -579,11 +585,11 @@ export function layerGoPlus(
             // of which upstream resolved the LP-burned signal first.
             const bucket = getLpRiskBucket(ctx?.lpPctOfSupply ?? null, ctx?.tokenAgeHours ?? null);
             if (!contractClean) {
-                flags.push(makeFlag("LP not burned or locked — dev can rug liquidity (contract not clean)", "critical", 0));
+                flags.push(makeFlag("LP not burned or locked — dev can rug liquidity (contract not clean)", "critical", 0, { reasons: ["lp"] }));
                 penalties.push(0.65);
                 safeBlocked = true;
             } else {
-                flags.push(makeFlag(bucket.flagLabel, bucket.severity, 0));
+                flags.push(makeFlag(bucket.flagLabel, bucket.severity, 0, { reasons: bucket.flagReasons }));
                 penalties.push(bucket.penalty);
                 if (bucket.safeBlock) safeBlocked = true;
                 if (bucket.forceRug) forceRug = true;
@@ -646,6 +652,7 @@ export function layerHelius(
         makeFlag(
           "Helius unavailable — holder concentration unverified",
           "warning", 0,
+          { fallbackReasons: ["holders"] },
         ),
       ],
       forceRug: false, safeBlocked: true,
@@ -698,13 +705,13 @@ export function layerHelius(
   if (isEstablishedToken) {
     // Established tier — looser thresholds, contextual labels
     if (top10Pct >= 0.80) {
-      flags.push(makeFlag(`Top 10 hold ${t10pct}% — extreme concentration`, "critical", 0));
+      flags.push(makeFlag(`Top 10 hold ${t10pct}% — extreme concentration`, "critical", 0, { reasons: ["concentration"], fallbackReasons: ["holders"] }));
       penalties.push(0.10); safeBlocked = true; top10ConcentrationBand = "hard";
     } else if (top10Pct >= 0.65) {
-      flags.push(makeFlag(`Top 10 hold ${t10pct}% — high concentration`, "critical", 0));
+      flags.push(makeFlag(`Top 10 hold ${t10pct}% — high concentration`, "critical", 0, { reasons: ["concentration"], fallbackReasons: ["holders"] }));
       penalties.push(0.25); safeBlocked = true; top10ConcentrationBand = "hard";
     } else if (top10Pct >= 0.45) {
-      flags.push(makeFlag(`Top 10 hold ${t10pct}% — elevated · exchanges may be included`, "warning", 0));
+      flags.push(makeFlag(`Top 10 hold ${t10pct}% — elevated · exchanges may be included`, "warning", 0, { reasons: ["concentration_light"], fallbackReasons: ["holders"] }));
       penalties.push(0.50); safeBlocked = true; top10ConcentrationBand = "soft";
     } else if (top10Pct >= 0.25) {
       // Kept as INFO + no safeBlocked for established tokens: on a 2-year-old
@@ -712,7 +719,7 @@ export function layerHelius(
       // WARNING would block SAFE for FARTCOIN/WIF/MEW unfairly.
       // The overlay whitelists concentration info flags so they stay visible
       // even on DANGER/RUG verdicts (critical-flags.ts filter).
-      flags.push(makeFlag(`Top 10 hold ${t10pct}% — moderate · exchanges likely included`, "info", 0));
+      flags.push(makeFlag(`Top 10 hold ${t10pct}% — moderate · exchanges likely included`, "info", 0, { fallbackReasons: ["holders"] }));
       top10ConcentrationBand = "moderate";
     } else {
       flags.push(makeFlag("Well distributed supply ✓", "bonus", 0));
@@ -721,17 +728,17 @@ export function layerHelius(
   } else {
     // Fresh / unknown tier — strict thresholds
     if (top10Pct >= 0.75) {
-      flags.push(makeFlag(`Top 10 hold ${t10pct}% — extreme concentration`, "critical", 0));
+      flags.push(makeFlag(`Top 10 hold ${t10pct}% — extreme concentration`, "critical", 0, { reasons: ["concentration"], fallbackReasons: ["holders"] }));
       penalties.push(0.10); safeBlocked = true; top10ConcentrationBand = "hard";
     } else if (top10Pct >= 0.55) {
-      flags.push(makeFlag(`Top 10 hold ${t10pct}% — high concentration · control risk`, "critical", 0));
+      flags.push(makeFlag(`Top 10 hold ${t10pct}% — high concentration · control risk`, "critical", 0, { reasons: ["concentration"], fallbackReasons: ["holders"] }));
       penalties.push(0.25); safeBlocked = true; top10ConcentrationBand = "hard";
     } else if (top10Pct >= 0.35) {
-      flags.push(makeFlag(`Top 10 hold ${t10pct}% — elevated concentration · cluster risk`, "warning", 0));
+      flags.push(makeFlag(`Top 10 hold ${t10pct}% — elevated concentration · cluster risk`, "warning", 0, { reasons: ["concentration_light"], fallbackReasons: ["holders"] }));
       penalties.push(0.50); safeBlocked = true; top10ConcentrationBand = "soft";
     } else if (top10Pct >= 0.20) {
       // Promoted info→warning so it stays visible even on DANGER/RUG verdicts.
-      flags.push(makeFlag(`Top 10 hold ${t10pct}% — moderate concentration`, "warning", 0));
+      flags.push(makeFlag(`Top 10 hold ${t10pct}% — moderate concentration`, "warning", 0, { fallbackReasons: ["holders"] }));
       safeBlocked = true; top10ConcentrationBand = "moderate";
     } else {
       flags.push(makeFlag("Well distributed supply ✓", "bonus", 0));
@@ -767,11 +774,11 @@ export function layerHelius(
     const isBlueChipHolders = (maturityContext?.holders ?? 0) >= 50_000;
     const t1pct = Math.round(top1Pct * 100);
     if (top1Pct > 0.55) {
-      flags.push(makeFlag(`Single wallet holds ${t1pct}% — extreme concentration`, "critical", 0));
+      flags.push(makeFlag(`Single wallet holds ${t1pct}% — extreme concentration`, "critical", 0, { reasons: ["concentration"], fallbackReasons: ["holders"] }));
       penalties.push(0.10); safeBlocked = true;
       if (!isBlueChipHolders) forceRug = true;
     } else if (top1Pct > 0.40) {
-      flags.push(makeFlag(`Single wallet holds ${t1pct}% — high concentration`, "critical", 0));
+      flags.push(makeFlag(`Single wallet holds ${t1pct}% — high concentration`, "critical", 0, { reasons: ["concentration"], fallbackReasons: ["holders"] }));
       penalties.push(0.25); safeBlocked = true;
     }
   }
@@ -799,12 +806,12 @@ export function layerHelius(
     const yt1pct = Math.round(top1Pct * 100);
     if (top1Pct > 0.15) {
       // Hard → DANGER via "concentration" reason (HARD_BLOCK_PATTERNS regex match)
-      flags.push(makeFlag(`Single wallet holds ${yt1pct}% — high concentration · young token`, "critical", 0));
+      flags.push(makeFlag(`Single wallet holds ${yt1pct}% — high concentration · young token`, "critical", 0, { reasons: ["concentration"], fallbackReasons: ["holders"] }));
       penalties.push(0.20); safeBlocked = true;
     } else if (top1Pct > 0.10) {
       // Soft → CAUTION max via "concentration_light" reason. It is a WARNING: one critical flag is enough for DANGER
       // (determineVerdict), which this tier is documented NOT to reach (it was emitted as critical until audit M5).
-      flags.push(makeFlag(`Single wallet holds ${yt1pct}% — elevated concentration · young token`, "warning", 0));
+      flags.push(makeFlag(`Single wallet holds ${yt1pct}% — elevated concentration · young token`, "warning", 0, { reasons: ["concentration_light"], fallbackReasons: ["holders"] }));
       penalties.push(0.45); safeBlocked = true;
     }
   }
@@ -900,7 +907,7 @@ export function layerHelius(
       for (let i = flags.length - 1; i >= 0; i--) {
         if (concentrationLabel.test(flags[i].label)) flags.splice(i, 1);
       }
-      flags.push(makeFlag("Holder data unreliable (broken upstream view) — mature pair, deep liquidity", "info", 0));
+      flags.push(makeFlag("Holder data unreliable (broken upstream view) — mature pair, deep liquidity", "info", 0, { fallbackReasons: ["holders"] }));
       trust = Math.max(trust, 0.40);
       safeBlocked = false; // We can't trust the broken concentration signal.
       forceRug = false;    // Same — broken concentration data must not slam the verdict to RUG.
@@ -932,30 +939,30 @@ export function layerSolscan(
     forceRug: false, safeBlocked: false,
   };
   if (holderCount !== null) {
-    if (holderCount < 15) { flags.push(makeFlag("Very few holders (<15)", "critical", 0)); penalties.push(0.20); safeBlocked = true; }
-    else if (holderCount < 50) { flags.push(makeFlag("Low holders (<50)", "warning", 0)); penalties.push(0.35); safeBlocked = true; }
-    else if (holderCount > 5000) { flags.push(makeFlag("Strong holder base (5K+) ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.05); }
+    if (holderCount < 15) { flags.push(makeFlag("Very few holders (<15)", "critical", 0, { reasons: ["low_holders"], fallbackReasons: ["holders"] })); penalties.push(0.20); safeBlocked = true; }
+    else if (holderCount < 50) { flags.push(makeFlag("Low holders (<50)", "warning", 0, { reasons: ["low_holders"], fallbackReasons: ["holders"] })); penalties.push(0.35); safeBlocked = true; }
+    else if (holderCount > 5000) { flags.push(makeFlag("Strong holder base (5K+) ✓", "bonus", 0, { fallbackReasons: ["holders"] })); trust = Math.min(1.0, trust * 1.05); }
   }
   if (tokenAgeHours !== null) {
-    if (tokenAgeHours < 0.5) { flags.push(makeFlag("Newborn token on-chain (<30min)", "critical", 0)); penalties.push(0.10); safeBlocked = true; }
-    else if (tokenAgeHours < 1) { flags.push(makeFlag("Newborn token on-chain (<1h)", "critical", 0)); penalties.push(0.20); safeBlocked = true; }
-    else if (tokenAgeHours < 6) { flags.push(makeFlag("Fresh token on-chain (<6h)", "warning", 0)); penalties.push(0.65); }
+    if (tokenAgeHours < 0.5) { flags.push(makeFlag("Newborn token on-chain (<30min)", "critical", 0, { fallbackReasons: ["age"] })); penalties.push(0.10); safeBlocked = true; }
+    else if (tokenAgeHours < 1) { flags.push(makeFlag("Newborn token on-chain (<1h)", "critical", 0, { fallbackReasons: ["age"] })); penalties.push(0.20); safeBlocked = true; }
+    else if (tokenAgeHours < 6) { flags.push(makeFlag("Fresh token on-chain (<6h)", "warning", 0, { fallbackReasons: ["age"] })); penalties.push(0.65); }
     else if (tokenAgeHours > 720) { flags.push(makeFlag("Established token (30d+) ✓", "bonus", 0)); trust = Math.min(1.0, trust * 1.05); }
   }
   let washTradingDetected = false;
   if (trades24h !== null && traders24h !== null && traders24h === 0 && trades24h > 0) {
-    flags.push(makeFlag("Wash trading: trades with zero identified traders", "critical", 0));
+    flags.push(makeFlag("Wash trading: trades with zero identified traders", "critical", 0, { reasons: ["wash_trading"] }));
     penalties.push(0.40); safeBlocked = true;
     washTradingDetected = true;
   }
   if (trades24h !== null && traders24h !== null && traders24h > 0) {
     const tradesPerTrader = trades24h / traders24h;
     if (tradesPerTrader > 50 && traders24h < 20) {
-      flags.push(makeFlag("Wash trading suspected (trades/traders ratio)", "critical", 0));
+      flags.push(makeFlag("Wash trading suspected (trades/traders ratio)", "critical", 0, { reasons: ["wash_trading"] }));
       penalties.push(0.50); safeBlocked = true;
       washTradingDetected = true;
     } else if (traders24h > 500 && tradesPerTrader < 0.1) {
-      flags.push(makeFlag("Bot-farmed holders: many accounts, near-zero activity", "warning", 0));
+      flags.push(makeFlag("Bot-farmed holders: many accounts, near-zero activity", "warning", 0, { fallbackReasons: ["holders"] }));
       penalties.push(0.70); safeBlocked = true;
     }
   }
@@ -1015,7 +1022,7 @@ export function layerChart(
 
   // ── Existing patterns ──────────────────────────────────────────────────────
   if (greenRatio >= 0.82 && runUpPct >= 100 && pullbackRange <= 10) {
-    flags.push(makeFlag("Crashcoin pattern: near-perfect parabolic chart", "critical", 0));
+    flags.push(makeFlag("Crashcoin pattern: near-perfect parabolic chart", "critical", 0, { reasons: ["pump", "chart"] }));
     penalties.push(0.35); safeBlocked = true;
   }
   if (pc5m > 35 && pc1h > 120) {
@@ -1073,7 +1080,7 @@ export function layerChart(
       // pointing at this risk; heavier penalties as the LP gets
       // thinner relative to the pump magnitude.
       if (pc24h >= 300) {
-        flags.push(makeFlag(`Pumped +${pumpPct}% in 24h — exit liquidity risk on thin LP`, "warning", 0));
+        flags.push(makeFlag(`Pumped +${pumpPct}% in 24h — exit liquidity risk on thin LP`, "warning", 0, { reasons: ["rug_pattern"] }));
         penalties.push(0.45); safeBlocked = true;
       } else if (pc24h >= 200) {
         flags.push(makeFlag(`Pumped +${pumpPct}% in 24h — entering at local top (thin LP)`, "warning", 0));
@@ -1085,11 +1092,11 @@ export function layerChart(
     }
   }
   if (v24Liq > 12 || v1hLiq > 4) {
-    flags.push(makeFlag("Liquidity mirage: volume >> liquidity (wash)", "warning", 0));
+    flags.push(makeFlag("Liquidity mirage: volume >> liquidity (wash)", "warning", 0, { reasons: ["chart"] }));
     penalties.push(0.60); safeBlocked = true;
   }
   if (recent.length >= 10 && risingCount >= Math.floor(recent.length * 0.8) && returnStd < 3.5) {
-    flags.push(makeFlag("Over-controlled chart: artificial stair-step", "warning", 0));
+    flags.push(makeFlag("Over-controlled chart: artificial stair-step", "warning", 0, { reasons: ["chart"] }));
     penalties.push(0.65); safeBlocked = true;
   }
   if (drawdownFromPeak < -55) {
@@ -1116,7 +1123,7 @@ export function layerChart(
     if (looksMature) {
       flags.push(makeFlag("Drawdown >55% from local peak (mature pair, normal volatility)", "info", 0));
     } else {
-      flags.push(makeFlag("Blow-off top: price collapsed >55% from peak", "critical", 0));
+      flags.push(makeFlag("Blow-off top: price collapsed >55% from peak", "critical", 0, { reasons: ["chart"] }));
       penalties.push(0.20); safeBlocked = true;
     }
   }
@@ -1124,7 +1131,7 @@ export function layerChart(
     const recentVol = volumes.slice(-5);
     const olderVol = volumes.slice(-10, -5);
     if (olderVol.length && _mean(recentVol) < _mean(olderVol) * 0.45 && last >= peak * 0.88) {
-      flags.push(makeFlag("Early volume exhaustion near highs", "warning", 0));
+      flags.push(makeFlag("Early volume exhaustion near highs", "warning", 0, { reasons: ["chart"] }));
       penalties.push(0.65); safeBlocked = true;
     }
     if (olderVol.length && _mean(olderVol) === 0 && _mean(recentVol) > 0) {
@@ -1133,7 +1140,7 @@ export function layerChart(
     }
   }
   if (_pct(first, last) > 300 && greenRatio > 0.78) {
-    flags.push(makeFlag("Parabolic launch: high risk exit liquidity setup", "warning", 0));
+    flags.push(makeFlag("Parabolic launch: high risk exit liquidity setup", "warning", 0, { reasons: ["rug_pattern", "pump"] }));
     penalties.push(0.60); safeBlocked = true;
   }
   if (pc24h < -60 && pc1h < -20) {
@@ -1153,7 +1160,7 @@ export function layerChart(
         flags.push(makeFlag(`Post-ATH dump ${Math.round(dumpFromATH * 100)}% — rug exit in progress`, "critical", 0));
         penalties.push(0.10); forceRug = true; safeBlocked = true;
       } else if (dumpFromATH < -0.35) {
-        flags.push(makeFlag(`Post-ATH dump ${Math.round(dumpFromATH * 100)}% — exit liquidity pattern`, "warning", 0));
+        flags.push(makeFlag(`Post-ATH dump ${Math.round(dumpFromATH * 100)}% — exit liquidity pattern`, "warning", 0, { reasons: ["rug_pattern"] }));
         penalties.push(0.40); safeBlocked = true;
       }
     }
@@ -1204,7 +1211,7 @@ export function layerChart(
         flags.push(makeFlag("Volume tapering during consolidation (mature pair)", "info", 0));
         penalties.push(0.85);
       } else {
-        flags.push(makeFlag("Rug staircase: volume collapsing while price held flat — controlled dump", "warning", 0));
+        flags.push(makeFlag("Rug staircase: volume collapsing while price held flat — controlled dump", "warning", 0, { reasons: ["rug_pattern"] }));
         penalties.push(0.55); safeBlocked = true;
       }
     }
@@ -1296,7 +1303,7 @@ export function layerCrossValidation(
   // Chain vs GoPlus on mint / freeze: two independent sources. A disagreement is surfaced, never silently resolved.
   const compared = !!facts?.compared;
   for (const c of facts?.conflicts ?? []) {
-    flags.push(makeFlag(`${c === "mint" ? "Mint" : "Freeze"} authority conflict: on-chain vs GoPlus`, "warning", 0));
+    flags.push(makeFlag(`${c === "mint" ? "Mint" : "Freeze"} authority conflict: on-chain vs GoPlus`, "warning", 0, { reasons: [c === "mint" ? "mint" : "freeze"] }));
     safeBlocked = true;
   }
   if (rugData?.lpBurned === true) {
