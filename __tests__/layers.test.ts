@@ -1682,47 +1682,17 @@ describe("layerChart: collapse from the recent high", () => {
     expect(collapseFlag(l)!.label).toMatch(/^Collapsed -80% from its high \d+ days? ago$|^Collapsed -80% from its high less than a day ago$/);
   });
 
-  it("the high that counts for a RUG is the highest close of the LAST 14 DAYS: an old spike does not hide a fresh collapse", () => {
-    // 25 days of 4-hour candles: a spike to 100 on day 0, 40 from day 1 to 21, then 8 for the last 4 days (-80 % from the 40, -92 % from the spike)
+  it("the high is the highest close of the whole history: an old spike counts, even when the price has been lower since", () => {
+    // 25 days of 4-hour candles: a spike to 100 on day 0, 40 from day 1 to 21, then 8 for the last 4 days (-92 % from the spike)
     const closes = Array.from({ length: 150 }, (_, i) => (i === 0 ? 100 : i < 126 ? 40 : 8));
     const l = chart(fourHour(closes));
+    expect(collapseFlag(l)!.label).toMatch(/^Collapsed -92% from its high 2[45] days ago$/);
     expect(l.forceRug).toBe(true);
-    expect(l.rugEvidence).toEqual(["price_collapse"]);
-    expect(collapseFlag(l)!.label).toMatch(/^Collapsed -80% from its high 1[34] days ago$/);
   });
 
-  it("a collapse of 75 % or more only from an OLDER high is critical alone: no forced RUG, no evidence", () => {
-    // spike to 100 on day 0, then 20 from day 1 on, for 25 days: the last 14 days are flat at 20
-    const closes = Array.from({ length: 150 }, (_, i) => (i === 0 ? 100 : 20));
-    const l = chart(fourHour(closes));
-    expect(collapseFlag(l)!.label).toMatch(/^Collapsed -80% from its high 2[45] days ago$/);
-    expect(l.forceRug).toBe(false);
-    expect(l.rugEvidence).toBeUndefined();
-  });
-
-  it("a high that is recent (14 days or less) forces RUG; an older one is critical alone, a slow bleed is not forced", () => {
-    const peakAgo = (days: number) => {
-      const n = Math.round(days * 6) + 1; // 6 candles a day
-      const closes = [100, ...Array.from({ length: n - 1 }, () => 5)];
-      return chart(fourHour(closes));
-    };
-    const fresh = peakAgo(10);
-    expect(collapseFlag(fresh)).toBeDefined();
-    expect(fresh.forceRug).toBe(true);
-    const old = peakAgo(20);
-    expect(collapseFlag(old)!.label).toMatch(/^Collapsed -95% from its high 20 days ago$/);
-    expect(old.forceRug).toBe(false);
-    expect(old.rugEvidence).toBeUndefined(); // an old bleed is not "it already collapsed in days": no evidence
-    expect(old.safeBlocked).toBe(true);
-    expect(verdictOf(old)).toBe("DANGER"); // a critical flag, no forced RUG
-    expect(old.trust).toBeGreaterThan(fresh.trust); // and a lighter penalty
-  });
-
-  it("the age of the high comes from the timestamps, not from counting candles (a thin token has gaps)", () => {
-    const sparse = fourHour([100, 5, 5, 5, 5, 5, 5], 2 * 24 * 3600); // 7 candles, 2 days apart: the high is 12 days old
-    expect(collapseFlag(chart(sparse))!.label).toBe("Collapsed -95% from its high 12 days ago");
-    const sparseOld = fourHour([100, 5, 5, 5, 5, 5, 5], 3 * 24 * 3600); // 18 days
-    expect(chart(sparseOld).forceRug).toBe(false);
+  it("a slow decline that never reaches 75 % is left alone, however long it lasts (-70 % over 150 days)", () => {
+    const closes = Array.from({ length: 901 }, (_, i) => 100 - (70 * i) / 900);
+    expect(collapseFlag(chart(fourHour(closes)))).toBeUndefined();
   });
 
   it("ordinary moves are left alone: a -40 % pullback, a token at its high, no history, too little history", () => {

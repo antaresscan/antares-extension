@@ -381,16 +381,18 @@ describe("scan handler", () => {
       expect(body.flags.some((f) => /^Collapsed/.test(f.label))).toBe(false);
     });
 
-    it("an OLD collapse (the high is 20 days back) is DANGER, not a forced RUG", async () => {
-      setupGoodTokenMocks();
-      const { fetchDexCandlesDaily } = await import("../api/_lib/fetchers");
+    it("the age of the high does not matter: a collapse from a high 20 days back, or 150 days back, is a RUG PULL too", async () => {
       const T0 = 1_760_000_000;
-      const bleed = Array.from({ length: 121 }, (_, i) => { const c = i === 0 ? 100 : 5; return { ts: T0 + i * 4 * 3600, o: c, h: c, l: c, c, v: 100 }; }); // 6 candles a day: 20 days
-      vi.mocked(fetchDexCandlesDaily).mockResolvedValueOnce(bleed);
-      const body = await scanBody();
-      expect(body.risk).toBe("DANGER");
-      expect(body.rugKind).toBeNull(); // only a RUG verdict has a kind
-      expect(body.flags.find((f) => /^Collapsed/.test(f.label))?.label).toBe("Collapsed -95% from its high 20 days ago");
+      for (const days of [20, 150]) {
+        setupGoodTokenMocks();
+        const { fetchDexCandlesDaily } = await import("../api/_lib/fetchers");
+        const bleed = Array.from({ length: days * 6 + 1 }, (_, i) => { const c = i === 0 ? 100 : 5; return { ts: T0 + i * 4 * 3600, o: c, h: c, l: c, c, v: 100 }; }); // 6 candles a day
+        vi.mocked(fetchDexCandlesDaily).mockResolvedValueOnce(bleed);
+        const body = await scanBody();
+        expect(body.risk, `${days} days`).toBe("RUG");
+        expect(body.rugKind, `${days} days`).toBe("confirmed");
+        expect(body.flags.find((f) => /^Collapsed/.test(f.label))?.label, `${days} days`).toBe(`Collapsed -95% from its high ${days} days ago`);
+      }
     });
   });
 

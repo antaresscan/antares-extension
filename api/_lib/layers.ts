@@ -12,7 +12,7 @@ import type {
 import {
   LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS, OFFICIAL_MINTS,
   PUMP_7D_WARN_PCT, PUMP_7D_HIGH_PCT, PUMP_30D_WARN_PCT, PUMP_30D_HIGH_PCT,
-  COLLAPSE_DROP_PCT, COLLAPSE_RECENT_DAYS, COLLAPSE_MIN_CANDLES,
+  COLLAPSE_DROP_PCT, COLLAPSE_MIN_CANDLES,
   LP_UNVERIFIED_MIN_LIQUIDITY,
 } from "./constants";
 import { getLpRiskBucket } from "./lp-risk-matrix";
@@ -1311,54 +1311,45 @@ export function layerChart(
 }
 
 // ═══ Collapse from the recent high ════════════════════════════════════════════════════════════════
-export interface Collapse { dropPct: number; peakAgeDays: number; /** the high is within the last COLLAPSE_RECENT_DAYS: a collapse in progress */ recent: boolean }
+export interface Collapse { dropPct: number; peakAgeDays: number }
 
 /**
- * How far the price stands below its recent high, when that is COLLAPSE_DROP_PCT (75 %) or more; null otherwise (or without enough history).
- * The high is the highest close of the 4-hour candles of the last COLLAPSE_RECENT_DAYS (14) days: that is a collapse in progress
- * (`recent`). If the price is not that far below it, the highest close of the whole history we have (~30 days) is tried: a collapse from
- * an older high (`recent: false`, a slow bleed). The 5 min / 1 h / 6 h / 24 h rules read the last day only and the 7 / 30-day reading only
- * looked for pumps, so a token that crashed 98 % two days ago and sat flat since had no flag at all.
- * Ages are measured between the high's candle and the last candle, from the timestamps (a thin token has gaps), in days.
+ * How far the price stands below the highest close of the history we read (the 4-hour candles: about 166 days, the most GeckoTerminal
+ * gives in one request), when that is COLLAPSE_DROP_PCT (75 %) or more; null otherwise (or without enough history). The owner's rule: a
+ * token that has lost 75 % has rugged, whatever its age and however long ago. The 5 min / 1 h / 6 h / 24 h rules read the last day only
+ * and the 7 / 30-day reading only looked for pumps, so a token that crashed 98 % two days ago and sat flat since had no flag at all.
+ * The age of the high is measured between its candle and the last candle, from the timestamps (a thin token has gaps), in days.
  */
 export function collapseFromPeak(daily: OHLCVCandle[] | undefined): Collapse | null {
   if (!daily || daily.length < COLLAPSE_MIN_CANDLES) return null;
   const n = daily.length;
   const last = daily[n - 1].c;
   if (!Number.isFinite(last) || last < 0) return null;
-  const useTs = daily[0].ts > 1e9 && daily[n - 1].ts > 1e9; // seconds, else 4 h candles counted
-  const ageDays = (i: number) => (useTs ? (daily[n - 1].ts - daily[i].ts) / 86400 : ((n - 1 - i) * 4) / 24);
-  /** The highest close among the candles at most `maxAgeDays` old, with its index (-1 when none is usable). */
-  const highest = (maxAgeDays: number): { peak: number; idx: number } => {
-    let peak = 0, idx = -1;
-    for (let i = 0; i < n; i++) {
-      const c = daily[i].c;
-      if (ageDays(i) <= maxAgeDays && Number.isFinite(c) && c > peak) { peak = c; idx = i; }
-    }
-    return { peak, idx };
-  };
-  for (const [maxAge, recent] of [[COLLAPSE_RECENT_DAYS, true], [Infinity, false]] as const) {
-    const { peak, idx } = highest(maxAge);
-    if (idx < 0 || !(peak > 0)) continue;
-    const dropPct = (1 - last / peak) * 100;
-    if (dropPct >= COLLAPSE_DROP_PCT) return { dropPct, peakAgeDays: ageDays(idx), recent };
+  let peak = 0, peakIdx = -1;
+  for (let i = 0; i < n; i++) {
+    const c = daily[i].c;
+    if (Number.isFinite(c) && c > peak) { peak = c; peakIdx = i; }
   }
-  return null;
+  if (peakIdx < 0 || !(peak > 0)) return null;
+  const dropPct = (1 - last / peak) * 100;
+  if (dropPct < COLLAPSE_DROP_PCT) return null;
+  const t0 = daily[peakIdx].ts, t1 = daily[n - 1].ts;
+  const peakAgeDays = t0 > 1e9 && t1 > 1e9 ? (t1 - t0) / 86400 : ((n - 1 - peakIdx) * 4) / 24; // seconds, else 4 h candles counted
+  return { dropPct, peakAgeDays };
 }
 
 /**
- * The flag of a collapse: critical always. From a high of the last 14 days (a collapse in progress) it is a forced RUG AND a fact that the
- * token has already collapsed (RugEvidence "price_collapse": the verdict reads "RUG PULL", not "RUG RISK"); from an older high it is
- * critical alone.
+ * The flag of a collapse: critical, a forced RUG, and a fact that the token has already collapsed (RugEvidence "price_collapse": the
+ * verdict reads "RUG PULL", not "RUG RISK").
  */
 function collapseFlag(c: Collapse): { flag: ScanFlag; penalty: number; forceRug: boolean; evidence: RugEvidence[] } {
   const n = Math.round(c.peakAgeDays);
   const age = c.peakAgeDays < 1 ? "less than a day" : `${n} day${n === 1 ? "" : "s"}`;
   return {
     flag: makeFlag(`Collapsed -${Math.round(c.dropPct)}% from its high ${age} ago`, "critical", 0),
-    penalty: c.recent ? 0.10 : 0.30,
-    forceRug: c.recent,
-    evidence: c.recent ? ["price_collapse"] : [],
+    penalty: 0.10,
+    forceRug: true,
+    evidence: ["price_collapse"],
   };
 }
 

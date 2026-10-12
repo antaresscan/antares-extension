@@ -87,7 +87,7 @@ export type Verdict = "SAFE" | "CAUTION" | "DANGER" | "RUG";
  * What a RUG verdict means. The verdict alone cannot say: on 579 real recorded tokens 153 were RUG, 151 of them through the single
  * "top 10 hold > 80 %" rule, 100 of them still trading with more than $10k of liquidity, and one carried a proof of an event.
  *   "confirmed"  something happened to THIS token (RugEvidence): its pool was drained while it still traded, it cannot be sold, or it
- *                already lost 75 % or more of its value from a high of the last 14 days
+ *                already lost 75 % or more of its value from its high of the last months
  *   "risk"       the structure of the token (who holds it, how it is built) looks like a rug; nothing has happened yet
  * Only a RUG verdict carries a kind; any other verdict has none (null).
  */
@@ -99,12 +99,12 @@ export type RugKind = "confirmed" | "risk";
  * A pool that holds little is NOT one: it does not say whether the liquidity was removed or never existed. Liquid-staking tokens and
  * tokenised stocks have almost no DEX liquidity and are not rugs (measured on the replay corpus: BBSOL, BONKSOL, JNJX, CSCOX...).
  * A short or small price drop is not one either. A COLLAPSE is (the owner's rule, 2026-10-12: a token that has already lost 75 % or
- * more of its value from a high of the last 14 days has rugged, whatever its last 24 hours look like).
+ * more of its value from its high of the last months has rugged, whatever its age and whatever its last 24 hours look like).
  */
 export type RugEvidence =
   | "pool_abandoned"  // volume over $10k in 24 h and zero liquidity: the pool was drained while it still traded
   | "sells_blocked"   // GoPlus: honeypot, or the holder cannot sell everything
-  | "price_collapse"; // down 75 % or more from the highest close of the last 14 days (the 4-hour candles): it already collapsed
+  | "price_collapse"; // down 75 % or more from the highest close of the history read (4-hour candles, about 166 days): it already collapsed
 
 // ─── DEXSCREENER ─────────────────────────────────────────────────────────────────────────
 export interface DexScreenerSocial {
