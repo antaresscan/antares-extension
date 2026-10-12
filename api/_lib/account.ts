@@ -18,6 +18,7 @@
 import { randomBytes, scryptSync, timingSafeEqual, createHmac } from "node:crypto";
 import { Redis } from "@upstash/redis";
 import { logger } from "./logger";
+import { emailRef } from "./log-ref";
 import { issueLicense, normalizeEmail, type License } from "./license";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -288,7 +289,7 @@ export async function createAccount(
     emailVerified: account.emailVerified ? "1" : "0",
   });
 
-  logger.info("account", "created", { email });
+  logger.info("account", "created", { emailRef: emailRef(email) });
   return { ok: true, account };
 }
 
@@ -434,7 +435,7 @@ export async function ensureDevLifetimeLicense(
       amountUsd: 0,
     });
     logger.info("auth", "dev-yearly ensured", {
-      email: norm,
+      emailRef: emailRef(norm),
       key: license.key,
       reference: intentReference,
     });
@@ -444,7 +445,7 @@ export async function ensureDevLifetimeLicense(
     // log in and pay normally. Logging is enough for the operator
     // to notice and fix.
     logger.error("auth", "dev-yearly issuance failed", {
-      email: norm,
+      emailRef: emailRef(norm),
       error: String(err),
     });
     return null;
@@ -515,14 +516,14 @@ export async function ensureDevProLicense(
       amountUsd: 0,
     });
     logger.info("auth", "dev-pro ensured", {
-      email: norm,
+      emailRef: emailRef(norm),
       key: license.key,
       reference: intentReference,
     });
     return license;
   } catch (err) {
     logger.error("auth", "dev-pro issuance failed", {
-      email: norm,
+      emailRef: emailRef(norm),
       error: String(err),
     });
     return null;

@@ -34,6 +34,7 @@ import { Redis } from "@upstash/redis";
 import { setUserTier, type Tier as UserTier } from "./user";
 import { PRO_PASS_DAYS, type Tier as IntentTier } from "./payments";
 import { logger } from "./logger";
+import { emailRef } from "./log-ref";
 
 // Inlined here (instead of imported from ./account) to avoid the
 // circular dep account.ts → license.ts → account.ts. Must stay in
@@ -283,7 +284,7 @@ async function writeLicense(
 
   logger.info("license", "issued", {
     key: license.key,
-    email,
+    emailRef: emailRef(email),
     tier,
     intent: params.intentReference,
   });
@@ -482,7 +483,7 @@ async function applyTier(
     // happens at scale.
     logger.warn("license", "applyTier binding-write failed", {
       installId,
-      email: license.email,
+      emailRef: emailRef(license.email),
       error: String(err),
     });
   }

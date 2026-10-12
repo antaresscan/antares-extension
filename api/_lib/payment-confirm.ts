@@ -13,6 +13,7 @@
 
 import type { Redis } from "@upstash/redis"
 import { logger } from "./logger"
+import { emailRef } from "./log-ref"
 import { setUserTier } from "./user"
 import { issueLicense, INTENT_LICENSE_KEY } from "./license"
 import { ACCOUNT_INSTALL_KEY } from "./account"
@@ -131,14 +132,14 @@ export async function confirmIntent(
           logger.info("payment-confirm", "install auto-bound via payment", {
             reference: intent.reference,
             installId: intent.installId,
-            email: intent.email,
+            emailRef: emailRef(intent.email),
           })
         } else if (existingBinding !== intent.email) {
           logger.warn("payment-confirm", "install bound to different email — leaving as-is", {
             reference: intent.reference,
             installId: intent.installId,
-            payerEmail: intent.email,
-            boundEmail: existingBinding,
+            payerRef: emailRef(intent.email),
+            boundRef: emailRef(existingBinding),
           })
         }
         // existingBinding === intent.email → no-op, idempotent
