@@ -128,3 +128,52 @@ describe("selectBestPair", () => {
     expect(picked?.pairAddress).toBe("real");
   });
 });
+
+// ─── A pool where the scanned token is only the QUOTE says nothing about it (audit A-26) ─────────────────────────────────────────
+// DexScreener answers /tokens/<mint> with every pool the token is in, as the base OR as the quote. Price, price changes, liquidity and age
+// of a pool are the BASE token's: USDC had 6 pools of 30 where it is the quote.
+describe("selectBestPair with the scanned mint", () => {
+  const USDC = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+  const SOL = "So11111111111111111111111111111111111111112";
+  const pool = (base: string, baseSymbol: string, quote: string, quoteSymbol: string, liq: number, pairAddress: string): DexScreenerPair => ({
+    pairAddress,
+    baseToken: { address: base, symbol: baseSymbol, name: baseSymbol },
+    quoteToken: { address: quote, symbol: quoteSymbol, name: quoteSymbol },
+    liquidity: { usd: liq },
+  });
+
+  it("USDC: the deepest pool is SOL/USDC (USDC is the quote); the answer is a pool where USDC is the base", () => {
+    const solUsdc = pool(SOL, "SOL", USDC, "USDC", 90_000_000, "solusdc");
+    const usdcUsdt = pool(USDC, "USDC", "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB", "USDT", 5_000_000, "usdcusdt");
+    const usdcSol = pool(USDC, "USDC", SOL, "SOL", 2_000_000, "usdcsol");
+    expect(selectBestPair([solUsdc, usdcUsdt, usdcSol], USDC)).toBe(usdcUsdt);
+  });
+
+  it("witness: without the mint the selector keeps its old reading (the SOL/USDC pool, whose fields are SOL's)", () => {
+    const solUsdc = pool(SOL, "SOL", USDC, "USDC", 90_000_000, "solusdc");
+    const usdcUsdt = pool(USDC, "USDC", "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB", "USDT", 5_000_000, "usdcusdt");
+    expect(selectBestPair([solUsdc, usdcUsdt])).toBe(solUsdc);
+  });
+
+  it("the Fartcoin rule still holds inside the pools where the token is the base: the USD-quoted pool beats the memecoin-quoted one", () => {
+    const FART = "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump";
+    const fartUsdc = pool(FART, "FARTCOIN", USDC, "USDC", 645_000, "fartusdc");
+    const fartPump = pool(FART, "FARTCOIN", "pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn", "PUMP", 42_000_000, "fartpump");
+    const solFart = pool(SOL, "SOL", FART, "FARTCOIN", 80_000_000, "solfart"); // FARTCOIN is only the quote here
+    expect(selectBestPair([solFart, fartPump, fartUsdc], FART)).toBe(fartUsdc);
+  });
+
+  it("a token that is the base of a single pool gets that pool, even when the quote is exotic and another pool is deeper", () => {
+    const X = "XxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXx";
+    const xPump = pool(X, "X", "pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn", "PUMP", 12_000, "xpump");
+    const solUsdc = pool(SOL, "SOL", X, "X", 90_000_000, "solx");
+    expect(selectBestPair([solUsdc, xPump], X)).toBe(xPump);
+  });
+
+  it("a token that is the base of no pool keeps the old reading: there is nothing better to read", () => {
+    const solUsdc = pool(SOL, "SOL", USDC, "USDC", 90_000_000, "solusdc");
+    const btcUsdc = pool("9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E", "BTC", USDC, "USDC", 10_000_000, "btcusdc");
+    expect(selectBestPair([btcUsdc, solUsdc], USDC)).toBe(solUsdc);
+  });
+});
+

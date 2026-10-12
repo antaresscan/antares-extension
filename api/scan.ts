@@ -304,7 +304,9 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
 
     let dexData = isValidDexScreenerResponse(dexRes) ? dexRes : null;
     let rugData = isValidRugCheckSummary(rugRes) ? rugRes : null;
-    let pair: DexScreenerPair | null = dexData?.pairs?.[0] ?? null;
+    // The first pool where the scanned token is the BASE (audit A-26): /tokens/<mint> also lists the pools where it is only the quote, and
+    // the base token of THOSE is another token (scanning USDC could resolve the scan to the SOL of a SOL/USDC pool).
+    let pair: DexScreenerPair | null = dexData?.pairs?.find((p) => p?.baseToken?.address === ca) ?? dexData?.pairs?.[0] ?? null;
     let resolvedMint = ca;
 
     const rugMissing =
@@ -326,7 +328,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
         ]);
         const dexRetryTyped = isValidDexScreenerResponse(dexRetry) ? dexRetry : null;
         const rugRetryTyped = isValidRugCheckSummary(rugRetry) ? rugRetry : null;
-        if (dexRetryTyped?.pairs?.[0]) { dexData = dexRetryTyped; pair = dexRetryTyped.pairs[0]; }
+        if (dexRetryTyped?.pairs?.[0]) { dexData = dexRetryTyped; pair = dexRetryTyped.pairs.find((p) => p?.baseToken?.address === resolvedMint) ?? dexRetryTyped.pairs[0]; }
         if (rugRetryTyped) rugData = rugRetryTyped;
       } else if (!baseMint) {
         logger.warn("scan", "mint resolution failed", { requestId, ca });
@@ -354,7 +356,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       }
     }
     if (dexData?.pairs && dexData.pairs.length > 1) {
-      pair = selectBestPair(dexData.pairs) ?? pair;
+      pair = selectBestPair(dexData.pairs, resolvedMint) ?? pair;
     }
 
     const pairAddress = pair?.pairAddress ?? ca;
