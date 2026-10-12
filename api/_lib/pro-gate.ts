@@ -12,7 +12,7 @@
 // accident. Verdicts and scores are computed from the full scan before this runs; nothing here can change them.
 import type { VercelResponse } from "@vercel/node";
 import { countsInOverlaySummary } from "../../shared/flag-summary";
-import type { Tier } from "./user";
+import { isPaidTier, type Tier } from "./entitlements";
 
 /** The fields of a scan a Free caller receives, as they are. */
 export const FREE_SCAN_FIELDS = [
@@ -91,7 +91,7 @@ export function redactScanForFree(scan: ScanLike): Record<string, unknown> {
  * through untouched.
  */
 export function enforceProGate(res: VercelResponse, tier: Tier): void {
-  if (tier !== "free") return;
+  if (isPaidTier(tier)) return;
   const send = res.json.bind(res);
   res.json = ((body: unknown) => send(isScanBody(body) ? redactScanForFree(body) : body)) as VercelResponse["json"];
 }

@@ -24,6 +24,7 @@ import { logger } from "./logger";
 import { getAccountFromRequest } from "./session-cookie";
 import { isDevLifetimeEmail, isDevProEmail } from "./account";
 import { getLicensesByEmail } from "./license";
+import { decideTier, parseDevTier, type Tier, type TierDecision, type TierFacts } from "./entitlements";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -39,7 +40,7 @@ export const HISTORY_KEY = (id: string) => `user:${id}:history`;
 // "lifetime" in the type for grandfathered customers who paid before
 // the rename — their stored tier is still honoured forever and the UI
 // displays them as Lifetime. New checkout flows mint "yearly" only.
-export type Tier = "free" | "pro" | "yearly" | "lifetime";
+export type { Tier };
 
 export interface ScanHistoryEntry {
   ca: string;
@@ -188,135 +189,81 @@ export async function resolveTierAndBypass(
   req: { headers: { cookie?: string | string[]; "x-antares-dev-tier"?: string | string[] } },
   installId: string,
 ): Promise<{ tier: Tier; bypassQuota: boolean }> {
-  const devTierHeaderRaw = req.headers["x-antares-dev-tier"] ?? null;
-
-  // Env-var dev escape: bypass session, bypass quota.
-  if (isDevProInstall(installId)) {
-    let tier: Tier = "yearly";
-    if (devTierHeaderRaw) {
-      const raw = Array.isArray(devTierHeaderRaw) ? devTierHeaderRaw[0] : devTierHeaderRaw;
-      const v = String(raw ?? "").trim().toLowerCase();
-      if (v === "free" || v === "pro" || v === "yearly" || v === "lifetime") tier = v as Tier;
-    } else {
-      tier = await getUserTier(installId);
-    }
-    return { tier, bypassQuota: true };
-  }
-
-  if (!isAvailable() || !redis) {
-    logger.metric("tier-resolve.no-redis", { installId, tier: "free" });
-    return { tier: "free", bypassQuota: false };
-  }
-
-  // Helper to find which auth path was taken (header vs cookie vs none)
   const cookieRaw = (req as { headers: { cookie?: string | string[] } }).headers.cookie;
-  const headerRaw = (req as { headers: { "x-antares-session"?: string | string[] } })
-    .headers["x-antares-session"];
+  const headerRaw = (req as { headers: { "x-antares-session"?: string | string[] } }).headers["x-antares-session"];
   const authSource = headerRaw
     ? "header"
     : (typeof cookieRaw === "string" && cookieRaw.includes("antares_session="))
       ? "cookie"
       : "none";
 
-  // Single session read. The cookie or X-Antares-Session header is the
-  // ONLY thing that proves who the user is — sign out clears it,
-  // signing in restores it.
-  let sessionEmail: string | null = null;
-  try {
-    const account = await getAccountFromRequest(
-      req as unknown as Parameters<typeof getAccountFromRequest>[0],
-      redis,
-    );
-    sessionEmail = account?.email ?? null;
-  } catch (err) {
-    logger.metric("tier-resolve.session-error", {
-      installId,
-      authSource,
-      errorMessage: err instanceof Error ? err.message : String(err),
-      errorName: err instanceof Error ? err.name : "unknown",
-    });
-    return { tier: "free", bypassQuota: false };
-  }
-  if (!sessionEmail) {
-    logger.metric("tier-resolve.no-session", { installId, authSource, tier: "free" });
-    return { tier: "free", bypassQuota: false };
-  }
+  // The facts the decision reads (see entitlements.ts for the table). Each is read only when a row of the table needs it.
+  const facts: TierFacts = {
+    devInstall: isDevProInstall(installId),
+    devTier: parseDevTier(req.headers["x-antares-dev-tier"]),
+    storageAvailable: isAvailable() && redis !== null,
+    session: async () => {
+      try {
+        const account = await getAccountFromRequest(req as unknown as Parameters<typeof getAccountFromRequest>[0], redis as Redis);
+        return account?.email ? { kind: "email", email: account.email } : { kind: "none" };
+      } catch (err) {
+        return {
+          kind: "error",
+          name: err instanceof Error ? err.name : "unknown",
+          message: err instanceof Error ? err.message : String(err),
+        };
+      }
+    },
+    boundEmail: async () => {
+      try {
+        return (await (redis as Redis).get<string>(`account:install:${installId}`)) ?? null;
+      } catch (err) {
+        logger.warn("user", "binding read failed during tier resolve", { error: String(err) });
+        return null;
+      }
+    },
+    isDevEmail: (email) => isDevLifetimeEmail(email) || isDevProEmail(email),
+    licenseTier: resolveTierFromEmail,
+    installTier: () => getUserTier(installId),
+  };
 
-  // Read install→email binding (if any). We consult it AFTER the
-  // session-email license lookup below — a session with its own paid
-  // license is never a hijack attempt, regardless of how the install
-  // was previously bound. The anti-hijack only applies when the session
-  // has no license of its own and is trying to ride the install's
-  // legacy tier.
-  let boundEmail: string | null = null;
-  try {
-    boundEmail = await redis.get<string>(`account:install:${installId}`);
-  } catch (err) {
-    logger.warn("user", "binding read failed during tier resolve", { error: String(err) });
-  }
+  const decision = await decideTier(facts);
+  logTierDecision(decision, installId, authSource);
+  return { tier: decision.tier, bypassQuota: decision.bypassQuota };
+}
 
-  // Dev check.
-  const isDev = isDevLifetimeEmail(sessionEmail) || isDevProEmail(sessionEmail);
-
-  // Dev users can flip tier via header — applies on top of whatever
-  // tier resolution would otherwise produce.
-  if (isDev && devTierHeaderRaw) {
-    const raw = Array.isArray(devTierHeaderRaw) ? devTierHeaderRaw[0] : devTierHeaderRaw;
-    const v = String(raw ?? "").trim().toLowerCase();
-    if (v === "free" || v === "pro" || v === "yearly" || v === "lifetime") {
-      logger.metric("tier-resolve.dev-header", {
-        installId, authSource, sessionEmail, tier: v,
+/** One metric per decision, with the names and fields the dashboards have always read. A dev install logs nothing. */
+function logTierDecision(d: TierDecision, installId: string, authSource: string): void {
+  switch (d.reason) {
+    case "dev-install":
+      return;
+    case "no-storage":
+      logger.metric("tier-resolve.no-redis", { installId, tier: "free" });
+      return;
+    case "session-error":
+      logger.metric("tier-resolve.session-error", { installId, authSource, errorMessage: d.error?.message, errorName: d.error?.name });
+      return;
+    case "no-session":
+      logger.metric("tier-resolve.no-session", { installId, authSource, tier: "free" });
+      return;
+    case "dev-header":
+      logger.metric("tier-resolve.dev-header", { installId, authSource, sessionEmail: d.sessionEmail, tier: d.tier });
+      return;
+    case "license":
+      logger.metric("tier-resolve.from-email", {
+        installId, authSource, sessionEmail: d.sessionEmail, tier: d.tier, isDev: d.isDev, boundEmail: d.boundEmail ?? null,
       });
-      return { tier: v as Tier, bypassQuota: true };
-    }
+      return;
+    case "install-bound-elsewhere":
+      logger.metric("tier-resolve.hijack-block", { installId, authSource, sessionEmail: d.sessionEmail, boundEmail: d.boundEmail, tier: "free" });
+      return;
+    case "install-stored":
+      logger.metric("tier-resolve.from-install-fallback", { installId, authSource, sessionEmail: d.sessionEmail, tier: d.tier, isDev: d.isDev });
+      return;
+    case "no-license-no-binding":
+      logger.metric("tier-resolve.no-license-no-binding", { installId, authSource, sessionEmail: d.sessionEmail, tier: "free", isDev: d.isDev });
+      return;
   }
-
-  // PRIMARY: resolve tier from the session email's licences. A signed-
-  // in user with their own paid license should always see that tier,
-  // even when the install was previously bound to a different email
-  // (e.g. the user logged out of account A and signed in to their own
-  // account B — both are legitimate, neither is a hijack). The earlier
-  // version did the install-binding anti-hijack check BEFORE this
-  // lookup, which permanently broke account switching for anyone who
-  // had signed in on a given browser before.
-  const emailTier = await resolveTierFromEmail(sessionEmail);
-  if (emailTier !== "free") {
-    logger.metric("tier-resolve.from-email", {
-      installId, authSource, sessionEmail, tier: emailTier, isDev,
-      // log the binding state so we still see hijack attempts in
-      // metrics — they just no longer get a Free penalty when the
-      // session has its own paid license.
-      boundEmail: boundEmail ?? null,
-    });
-    return { tier: emailTier, bypassQuota: isDev };
-  }
-
-  // From here: session has NO license of its own. Anti-hijack now
-  // applies — a session without licenses trying to use an install bound
-  // to a different email is exactly the case the binding exists for.
-  if (boundEmail && boundEmail !== sessionEmail) {
-    logger.metric("tier-resolve.hijack-block", {
-      installId, authSource, sessionEmail, boundEmail, tier: "free",
-    });
-    return { tier: "free", bypassQuota: false };
-  }
-
-  // FALLBACK: when the email has no licences but the install IS bound
-  // to the same email, honour the install's stored tier.
-  if (boundEmail === sessionEmail) {
-    const legacyTier = await getUserTier(installId);
-    logger.metric("tier-resolve.from-install-fallback", {
-      installId, authSource, sessionEmail, tier: legacyTier, isDev,
-    });
-    return { tier: legacyTier, bypassQuota: isDev };
-  }
-
-  // No licence on email + no install binding → user is signed in but
-  // hasn't paid for anything. Free.
-  logger.metric("tier-resolve.no-license-no-binding", {
-    installId, authSource, sessionEmail, tier: "free", isDev,
-  });
-  return { tier: "free", bypassQuota: isDev };
 }
 
 /**
