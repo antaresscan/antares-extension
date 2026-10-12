@@ -20,7 +20,7 @@ import {
 } from "./layers";
 import { computeFinalScore, classifySafeBlockedReasons } from "./scoring";
 import {
-  evaluatePostLayerFlags, applySafeGateOverride, applyEstablishedBonus, determineVerdict, rugKindOf, dedupeFlags, countVerdictFlags,
+  evaluatePostLayerFlags, applySafeGateOverride, applyEstablishedBonus, determineVerdict, rugKindOf, hasRugEvidence, dedupeFlags, countVerdictFlags,
 } from "./pipeline";
 import { computeLpPctOfSupply, getLpRiskBucket } from "./lp-risk-matrix";
 import { weightedBurnPct, type AuthorityFacts } from "./facts";
@@ -286,6 +286,7 @@ export function decide(input: DecideInput): Decision {
     warningFlagsCount: _counts.warning,
     criticalFlagsCount: _counts.critical,
     pumpPriceOnlyFlagsCount: _counts.pumpPriceOnly,
+    rugConfirmed: hasRugEvidence(allLayers),
   });
 
   const confidence = Math.round(sources_used.reduce((sum, src) => sum + (LAYER_WEIGHTS[src] ?? 0), 0) * 100);

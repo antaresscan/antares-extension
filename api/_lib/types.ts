@@ -378,6 +378,12 @@ export interface VerdictInput {
    * otherwise let through because the pump flags are not in `warningFlagsCount`. Undefined / 0 = none.
    */
   pumpPriceOnlyFlagsCount?: number;
+  /**
+   * Something happened to this token (a layer recorded rug evidence: see LayerResult.rugEvidence). RUG is only ever given when it did:
+   * a structure that looks like a rug (who holds it, how it is built) is DANGER, however extreme. Undefined means "confirmed", the
+   * old behaviour, so a caller that does not know keeps getting RUG.
+   */
+  rugConfirmed?: boolean;
 }
 
 // ─── SCAN RESULT ────────────────────────────────────────────────────────────────────────────────

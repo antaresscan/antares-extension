@@ -165,7 +165,9 @@ export function applyEstablishedBonus(input: EstablishedBonusInput): number {
 }
 
 export function determineVerdict(input: VerdictInput): Verdict {
-  if (input.forceRug) return "RUG";
+  // RUG is an event, not a suspicion: without a confirmed one the worst this can say is DANGER (see VerdictInput.rugConfirmed).
+  const RUG: Verdict = input.rugConfirmed === false ? "DANGER" : "RUG";
+  if (input.forceRug) return RUG;
   if (!input.sourcesUsedCount || input.sourcesUsedCount <= 0) return "DANGER";
   // Flag-count hard floors: 1+ critical OR 3+ total token-side flags → minimum DANGER.
   // Prevents tokens with many accumulated risk signals from staying at CAUTION when
@@ -179,7 +181,7 @@ export function determineVerdict(input: VerdictInput): Verdict {
     // HARD reasons: 'lp' and 'deceptive_name' added alongside existing hard reasons.
     // A token where LP is not burned can rug at any time — must return DANGER or RUG.
     const hasHardReason = input.safeBlockedReasons?.some(r => HARD_BLOCK_REASONS.has(r));
-    if (hasHardReason) return input.score >= 400 ? "DANGER" : "RUG";
+    if (hasHardReason) return input.score >= 400 ? "DANGER" : RUG;
 
     // "No flags → SAFE" override for soft safeBlocked reasons (e.g. Helius
     // unavailable, partial data). The same rule exists below for the non-
@@ -244,7 +246,12 @@ export function determineVerdict(input: VerdictInput): Verdict {
 
   if (input.score >= 600) return "CAUTION";
   if (input.score >= 350) return "DANGER";
-  return "RUG";
+  return RUG;
+}
+
+/** A layer observed a fact showing a rug HAPPENED to this token (LayerResult.rugEvidence). */
+export function hasRugEvidence(layers: LayerResult[]): boolean {
+  return layers.some((l) => l.available && (l.rugEvidence?.length ?? 0) > 0);
 }
 
 /**
@@ -256,7 +263,7 @@ export function determineVerdict(input: VerdictInput): Verdict {
  */
 export function rugKindOf(risk: Verdict, layers: LayerResult[]): RugKind | null {
   if (risk !== "RUG") return null;
-  return layers.some((l) => l.available && (l.rugEvidence?.length ?? 0) > 0) ? "confirmed" : "risk";
+  return hasRugEvidence(layers) ? "confirmed" : "risk";
 }
 
 /** A flag as the clients receive it: the label, the severity and the impact. The codes the layers put on it (ScanFlag.reasons) are the engine's own. */

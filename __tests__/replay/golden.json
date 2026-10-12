@@ -1615,7 +1615,7 @@
     ]
   },
   "HqNtPF3w": {
-    "risk": "RUG",
+    "risk": "DANGER",
     "score": 100,
     "confidence": 90,
     "flags": [
@@ -1677,7 +1677,7 @@
     ]
   },
   "PEPE-dead": {
-    "risk": "RUG",
+    "risk": "DANGER",
     "score": 100,
     "confidence": 80,
     "flags": [

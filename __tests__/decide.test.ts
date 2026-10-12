@@ -69,11 +69,12 @@ describe("decide", () => {
     expect(d.flags.some((f) => /honeypot/i.test(f.label))).toBe(true);
   });
 
-  it("ten wallets holding 90 % of a small token is a RUG too, but only a RISK: nothing has happened", () => {
+  it("ten wallets holding 90 % of a small token is DANGER, not RUG: the structure is extreme but nothing has happened", () => {
     const holders: HeliusHolder[] = [{ address: "w1", owner: "w1", uiAmount: 900_000 } as HeliusHolder];
     const d = decide(input({ resolvedHolderAccounts: holders, holders: 900, totalSupplyUi: 1_000_000 }));
-    expect(d.risk).toBe("RUG");
-    expect(d.rugKind).toBe("risk");
+    expect(d.risk).toBe("DANGER");
+    expect(d.rugKind).toBeNull();
+    expect(d.score).toBeLessThanOrEqual(100); // the score still says how bad the structure is
     expect(d.safeBlockedReasons).toContain("concentration");
   });
 
