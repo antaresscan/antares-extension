@@ -29,6 +29,7 @@ import {
 } from "./_lib/middleware";
 import { apiError } from "./_lib/helpers";
 import { logger } from "./_lib/logger";
+import { emailRef } from "./_lib/log-ref";
 import { initSentry, captureError } from "./_lib/sentry";
 
 initSentry();
@@ -156,7 +157,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const licenses = prefetched ?? (await getLicensesByEmail(redis, email));
     logger.metric("account-licenses.read", {
-      email,
+      emailRef: emailRef(email),
       count: licenses.length,
       via: authedEmail ? "session" : "license_key",
     });

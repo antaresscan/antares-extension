@@ -10,6 +10,7 @@
 //   user:{id}:history     LIST     LPUSH JSON entries, LTRIM 0 999
 import { Redis } from "@upstash/redis";
 import { logger } from "./logger";
+import { emailRef } from "./log-ref";
 // Static imports for the auth + tier helpers we use inside resolveTierAndBypass.
 // Previously these were `await import("./session-cookie")` and `await
 // import("./account")`. The dynamic-import path was added to dodge the
@@ -265,21 +266,21 @@ function logTierDecision(d: TierDecision, installId: string, authSource: string)
       logger.metric("tier-resolve.no-session", { installId, authSource, tier: "free" });
       return;
     case "dev-header":
-      logger.metric("tier-resolve.dev-header", { installId, authSource, sessionEmail: d.sessionEmail, tier: d.tier });
+      logger.metric("tier-resolve.dev-header", { installId, authSource, sessionRef: emailRef(d.sessionEmail), tier: d.tier });
       return;
     case "license":
       logger.metric("tier-resolve.from-email", {
-        installId, authSource, sessionEmail: d.sessionEmail, tier: d.tier, isDev: d.isDev, boundEmail: d.boundEmail ?? null,
+        installId, authSource, sessionRef: emailRef(d.sessionEmail), tier: d.tier, isDev: d.isDev, boundRef: emailRef(d.boundEmail),
       });
       return;
     case "install-bound-elsewhere":
-      logger.metric("tier-resolve.hijack-block", { installId, authSource, sessionEmail: d.sessionEmail, boundEmail: d.boundEmail, tier: "free" });
+      logger.metric("tier-resolve.hijack-block", { installId, authSource, sessionRef: emailRef(d.sessionEmail), boundRef: emailRef(d.boundEmail), tier: "free" });
       return;
     case "install-stored":
-      logger.metric("tier-resolve.from-install-fallback", { installId, authSource, sessionEmail: d.sessionEmail, tier: d.tier, isDev: d.isDev });
+      logger.metric("tier-resolve.from-install-fallback", { installId, authSource, sessionRef: emailRef(d.sessionEmail), tier: d.tier, isDev: d.isDev });
       return;
     case "no-license-no-binding":
-      logger.metric("tier-resolve.no-license-no-binding", { installId, authSource, sessionEmail: d.sessionEmail, tier: "free", isDev: d.isDev });
+      logger.metric("tier-resolve.no-license-no-binding", { installId, authSource, sessionRef: emailRef(d.sessionEmail), tier: "free", isDev: d.isDev });
       return;
   }
 }
@@ -328,7 +329,7 @@ async function resolveTierFromEmail(email: string): Promise<{ tier: Tier; expire
     if (band.pro.active) return { tier: "pro", expiresAt: band.pro.open ? null : band.pro.until };
     return free;
   } catch (err) {
-    logger.warn("user", "email tier resolve failed", { error: String(err), email });
+    logger.warn("user", "email tier resolve failed", { error: String(err), emailRef: emailRef(email) });
     return free;
   }
 }

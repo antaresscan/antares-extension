@@ -1,5 +1,6 @@
 // api/_lib/logger.ts — Structured logger for Antares API
 // Replaces console.warn/console.error with silenceable, structured logging
+import { redactEmails } from "./log-ref";
 
 type LogLevel = "info" | "warn" | "error";
 
@@ -12,23 +13,25 @@ function shouldLog(level: LogLevel): boolean {
   return LEVELS[level] >= LEVELS[LOG_LEVEL];
 }
 
+// Whatever is logged, an e-mail address in it is replaced by "[email]" before the line is written. The call sites already log a reference
+// (emailRef) and never the address; this is for the address nobody thought of (an error message that quotes one, a field added later).
 function formatMessage(level: LogLevel, module: string, message: string, data?: Record<string, unknown>): string {
-  return JSON.stringify({
+  return redactEmails(JSON.stringify({
     level,
     module,
     message,
     ...(data ? { data } : {}),
     ts: new Date().toISOString(),
-  });
+  }));
 }
 
 function formatMetric(event: string, data: Record<string, unknown>): string {
-  return JSON.stringify({
+  return redactEmails(JSON.stringify({
     level: "metric",
     event,
     ...data,
     ts: new Date().toISOString(),
-  });
+  }));
 }
 
 export const logger = {

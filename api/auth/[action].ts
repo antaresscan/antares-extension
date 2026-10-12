@@ -22,6 +22,7 @@ import {
 } from "../_lib/middleware";
 import { apiError } from "../_lib/helpers";
 import { logger } from "../_lib/logger";
+import { emailRef } from "../_lib/log-ref";
 import {
   createAccount,
   authenticate,
@@ -106,7 +107,7 @@ async function handleSignup(req: VercelRequest, res: VercelResponse) {
     // testing without touching env vars. Failures don't block signup.
     await ensureDevLifetimeLicense(redis, outcome.account.email);
     await ensureDevProLicense(redis, outcome.account.email);
-    logger.metric("auth.signup", { email: outcome.account.email });
+    logger.metric("auth.signup", { emailRef: emailRef(outcome.account.email) });
     return res.status(200).json({ ok: true, email: outcome.account.email });
   } catch (err) {
     logger.error("auth/signup", "creation failed", { error: String(err) });
@@ -148,7 +149,7 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
     // mints once per email-and-tier regardless of how many logins.
     await ensureDevLifetimeLicense(redis, outcome.account.email);
     await ensureDevProLicense(redis, outcome.account.email);
-    logger.metric("auth.login", { email: outcome.account.email });
+    logger.metric("auth.login", { emailRef: emailRef(outcome.account.email) });
     return res.status(200).json({ ok: true, email: outcome.account.email });
   } catch (err) {
     logger.error("auth/login", "auth failed", { error: String(err) });
@@ -233,13 +234,13 @@ async function handleSyncToken(req: VercelRequest, res: VercelResponse) {
           await redis.set(ACCOUNT_INSTALL_KEY(installId), account.email);
           logger.info("auth/sync-token", "install auto-bound", {
             installId,
-            email: account.email,
+            emailRef: emailRef(account.email),
           });
         } else if (existing !== account.email) {
           logger.warn("auth/sync-token", "install bound to different email", {
             installId,
-            sessionEmail: account.email,
-            boundEmail: existing,
+            sessionRef: emailRef(account.email),
+            boundRef: emailRef(existing),
           });
         }
         // existing === account.email → no-op, idempotent
