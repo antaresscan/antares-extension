@@ -16,7 +16,7 @@ import { isPaidTier, type Tier } from "./entitlements";
 
 /** The fields of a scan a Free caller receives, as they are. */
 export const FREE_SCAN_FIELDS = [
-  // The verdict and what the overlay prints around it. `rugKind` is part of the verdict word ("RUG CONFIRMED" or "RUG RISK"): the word is
+  // The verdict and what the overlay prints around it. `rugKind` is part of the verdict word ("RUG PULL" or "RUG RISK"): the word is
   // the same for Free and Pro, only the explanation is Pro.
   "risk",
   "rugKind",
