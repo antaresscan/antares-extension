@@ -412,7 +412,10 @@ export async function fetchDexCandlesDaily(
     let throttled = false;
 
     async function poolCandles(poolAddr: string): Promise<OHLCVCandle[]> {
-        const url = `${GT}/networks/solana/pools/${poolAddr}/ohlcv/hour?aggregate=4&limit=182`;
+        // 540 4-hour candles: about 90 days (a thin token has gaps, so more), which is what the collapse rule reads (COLLAPSE_WINDOW_DAYS). It
+        // used to ask for 182 (30 days). The pump reading below indexes from the END (7 and 30 days back), so more history changes nothing
+        // there. Same single request, a larger answer.
+        const url = `${GT}/networks/solana/pools/${poolAddr}/ohlcv/hour?aggregate=4&limit=540`;
         let lastStatus = 0; // onStatus reports every response, the retry's included: only the final one tells
         const raw = await fetchJson(url, { headers }, 8000, 1, (s) => { lastStatus = s; }) as GeckoTerminalOHLCVResponse | null;
         if (lastStatus === 429 || lastStatus === 503) throttled = true;

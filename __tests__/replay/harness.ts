@@ -12,7 +12,7 @@ import { fileURLToPath } from "node:url";
 import { brotliDecompressSync } from "node:zlib";
 import { vi } from "vitest";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { exchangeKey, redactUrl } from "./keys";
+import { canonicalKey, exchangeKey, redactUrl } from "./keys";
 import { normalizeScan, type NormalizedScan } from "./normalize";
 import { parseBulk, type BulkToken } from "./bulk";
 
@@ -73,7 +73,7 @@ function fakeRes() {
 /** Replays the scan of one recording through the real handler. */
 export async function replayScan(rec: Recording): Promise<ReplayOutcome> {
   const byKey = new Map<string, RecordedExchange[]>();
-  for (const e of rec.exchanges) byKey.set(e.k, [...(byKey.get(e.k) ?? []), e]);
+  for (const e of rec.exchanges) { const k = canonicalKey(e.k); byKey.set(k, [...(byKey.get(k) ?? []), e]); }
   const used = new Map<string, number>();
   const misses: string[] = [];
 

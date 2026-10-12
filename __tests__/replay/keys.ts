@@ -15,5 +15,14 @@ export function redactUrl(url: string): string {
  * with a token, then without): the replay has no credentials and only makes the anonymous call, which must get the anonymous answer.
  */
 export function exchangeKey(method: string, url: string, body: string | null | undefined, authorized = false): string {
-  return `${method.toUpperCase()} ${redactUrl(url)} ${body ?? ""}${authorized ? " #auth" : ""}`;
+  return canonicalKey(`${method.toUpperCase()} ${redactUrl(url)} ${body ?? ""}${authorized ? " #auth" : ""}`);
+}
+
+/**
+ * The 4-hour candle request of GeckoTerminal asks for as many candles as the engine wants (182, then 1000 for the collapse rule): that
+ * number is not what identifies the exchange, so it is replaced by `*`. A recording made with an older number still answers the request
+ * of today (it holds the candles it was given: about 30 days), and the replay needs no new capture to follow a change of that number.
+ */
+export function canonicalKey(key: string): string {
+  return key.replace(/(\/ohlcv\/hour\?aggregate=4&limit=)\d+/, "$1*");
 }

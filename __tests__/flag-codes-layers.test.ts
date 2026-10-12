@@ -22,7 +22,7 @@ const BT = String.fromCharCode(96);
 const SOURCE = readFileSync(fileURLToPath(new URL("../api/_lib/layers.ts", import.meta.url)), "utf8").replace(/\r\n/g, "\n");
 const SOURCE_OF: Record<string, string> = {
   layerDexScreener: "dexscreener", layerRugCheck: "rugcheck", judgeContractFacts: "goplus", layerGoPlus: "goplus",
-  layerHelius: "helius", layerSolscan: "solscan", layerChart: "chart", layerCrossValidation: "crossvalidation",
+  layerHelius: "helius", layerSolscan: "solscan", layerChart: "chart", collapseFromPeak: "chart", layerCrossValidation: "crossvalidation",
 };
 
 interface Site { line: number; args: string[]; source: string | undefined }
@@ -112,8 +112,8 @@ describe("every makeFlag of layers.ts carries the codes the tables give for its 
   const sites = readSites(SOURCE);
   const known = sites.filter((s) => labelOf(s.args[0] ?? "") !== null);
 
-  it("finds the 140 places that create a flag, and most of them have a label that can be checked", () => {
-    expect(sites.length).toBe(140);
+  it("finds the 141 places that create a flag, and most of them have a label that can be checked", () => {
+    expect(sites.length).toBe(141);
     expect(known.length).toBeGreaterThan(125);
     expect(sites.every((s) => s.source !== undefined)).toBe(true);
   });
