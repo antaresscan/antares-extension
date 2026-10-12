@@ -18,7 +18,13 @@ const mocks = vi.hoisted(() => ({
   store: new Map<string, unknown>(),
   setUserTier: vi.fn().mockResolvedValue(undefined),
   issueLicense: vi.fn(),
+  captureError: vi.fn(),
 }));
+
+vi.mock("../api/_lib/sentry", async () => {
+  const actual = await vi.importActual<typeof import("../api/_lib/sentry")>("../api/_lib/sentry");
+  return { ...actual, captureError: mocks.captureError };
+});
 
 vi.mock("@upstash/redis", () => {
   class MockRedis {
@@ -348,8 +354,10 @@ describe("POST /api/auth/nowpayments-ipn", () => {
       payment_status: "finished",
       order_id: REFERENCE,
       invoice_id: "inv-123",
-      // Reports ~$5 paid against a $24.99 invoice — should reject.
-      price_amount: 5,
+      // price_amount is the invoiced price, always echoed back: it says nothing about what was paid.
+      price_amount: 24.99,
+      pay_amount: 0.5,
+      actually_paid: 0.1, // the buyer sent a fifth of what was asked — should reject
     };
     const req = mockIpnReq({
       headers: { "x-nowpayments-sig": signPayload(body) },
@@ -374,7 +382,9 @@ describe("POST /api/auth/nowpayments-ipn", () => {
       payment_status: "finished",
       order_id: REFERENCE,
       invoice_id: "inv-123",
-      price_amount: 99.5, // 0.5% under — within tolerance
+      price_amount: 100,
+      pay_amount: 2,
+      actually_paid: 1.99, // 0.5% under — within tolerance
     };
     const req = mockIpnReq({
       headers: { "x-nowpayments-sig": signPayload(body) },
@@ -460,5 +470,65 @@ describe("POST /api/auth/nowpayments-ipn", () => {
     await dispatcher(req, res);
     expect(res.status).toHaveBeenLastCalledWith(200);
     expect(mocks.issueLicense).toHaveBeenCalledTimes(1);
+  });
+
+  it("(A-04) a CONFIRMED payment whose intent is gone is reported to Sentry (nothing else will ever retry it), still answered 200", async () => {
+    const body = {
+      payment_id: "pay-orphan",
+      payment_status: "finished",
+      order_id: REFERENCE,
+      invoice_id: "inv-gone",
+      price_amount: 24.99,
+    };
+    const req = mockIpnReq({ headers: { "x-nowpayments-sig": signPayload(body) }, body });
+    const res = mockRes();
+    await dispatcher(req, res);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(mocks.captureError).toHaveBeenCalledOnce();
+    expect(mocks.captureError.mock.calls[0][1]).toMatchObject({ phase: "confirmedWithoutIntent", npPaymentId: "pay-orphan" });
+  });
+
+  it("(A-04) an unconfirmed payment (waiting) with no intent is NOT reported: only money received is an alert", async () => {
+    const body = { payment_id: "pay-w", payment_status: "waiting", order_id: REFERENCE, invoice_id: "inv-gone", price_amount: 24.99 };
+    const req = mockIpnReq({ headers: { "x-nowpayments-sig": signPayload(body) }, body });
+    await dispatcher(req, mockRes());
+    expect(mocks.captureError).not.toHaveBeenCalled();
+  });
+
+  it("(A-04) when the license cannot be issued the IPN answers 500 (NOWPayments retries) and the intent stays pending", async () => {
+    seedPendingIntent();
+    mocks.issueLicense.mockRejectedValueOnce(new Error("redis hiccup"));
+    const body = {
+      payment_id: "pay-1",
+      payment_status: "finished",
+      order_id: REFERENCE,
+      invoice_id: "inv-123",
+      price_amount: 24.99,
+    };
+    const req = mockIpnReq({ headers: { "x-nowpayments-sig": signPayload(body) }, body });
+    const res = mockRes();
+    await dispatcher(req, res);
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect((mocks.store.get(`payment-intent:${REFERENCE}`) as { status: string }).status).toBe("pending");
+
+    // The retry succeeds and confirms.
+    const retry = mockRes();
+    await dispatcher(mockIpnReq({ headers: { "x-nowpayments-sig": signPayload(body) }, body }), retry);
+    expect(retry.status).toHaveBeenCalledWith(200);
+    expect((mocks.store.get(`payment-intent:${REFERENCE}`) as { status: string }).status).toBe("confirmed");
+  });
+
+  it("(A-16) price_amount alone proves nothing: a full invoiced price with a tenth of the asked crypto sent is refused", async () => {
+    seedPendingIntent({ amountUsd: 24.99 });
+    const body = {
+      payment_id: "pay-1", payment_status: "finished", order_id: REFERENCE, invoice_id: "inv-123",
+      price_amount: 24.99, pay_amount: 100, actually_paid: 10,
+    };
+    const res = mockRes();
+    await dispatcher(mockIpnReq({ headers: { "x-nowpayments-sig": signPayload(body) }, body }), res);
+    const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock.calls[0][0] as { status: string; paidRatio: number };
+    expect(payload.status).toBe("amount_mismatch");
+    expect(payload.paidRatio).toBeCloseTo(0.1);
+    expect(mocks.issueLicense).not.toHaveBeenCalled();
   });
 });

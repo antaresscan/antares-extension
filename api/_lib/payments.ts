@@ -22,6 +22,12 @@ export const YEARLY_DAYS = 365
  *  we surface "expired" earlier client-side so the modal doesn't sit on a
  *  stale invoice URL forever. */
 export const INTENT_TTL_SECONDS = 60 * 60
+/**
+ * How long every key of an intent lives in Redis. NOT the checkout window: a payment can land long after it (the invoice
+ * lives ~24h on NOWPayments, the crypto confirms later, and the cron runs once a day). With a 1h key, a late IPN found
+ * "intent not found" and got a 200, and NOWPayments stopped retrying: paid, no license.
+ */
+export const INTENT_RETENTION_SECONDS = 7 * 24 * 60 * 60
 
 export const INTENT_KEY = (reference: string) => `payment-intent:${reference}`
 export const INTENT_INDEX_KEY = "payment-intents:pending"
@@ -124,14 +130,14 @@ export async function saveNewIntent(
   intent: PaymentIntent,
 ): Promise<void> {
   await redis.set(INTENT_KEY(intent.reference), intent, {
-    ex: INTENT_TTL_SECONDS + 60 * 60,
+    ex: INTENT_RETENTION_SECONDS,
   })
   await redis.sadd(INTENT_INDEX_KEY, intent.reference)
   if (intent.npInvoiceId) {
     await redis.set(
       INTENT_BY_NP_INVOICE_KEY(intent.npInvoiceId),
       intent.reference,
-      { ex: INTENT_TTL_SECONDS + 60 * 60 },
+      { ex: INTENT_RETENTION_SECONDS },
     )
   }
 }
@@ -188,10 +194,10 @@ export async function bindNpPaymentId(
 ): Promise<PaymentIntent> {
   const updated: PaymentIntent = { ...intent, npPaymentId }
   await redis.set(INTENT_KEY(intent.reference), updated, {
-    ex: INTENT_TTL_SECONDS + 60 * 60,
+    ex: INTENT_RETENTION_SECONDS,
   })
   await redis.set(INTENT_BY_NP_PAYMENT_KEY(npPaymentId), intent.reference, {
-    ex: INTENT_TTL_SECONDS + 60 * 60,
+    ex: INTENT_RETENTION_SECONDS,
   })
   return updated
 }
@@ -219,9 +225,9 @@ export async function markIntentConfirmed(
     confirmedAt: Date.now(),
     ...(txSignature ? { txSignature } : {}),
   }
-  // Keep confirmed intents 24h for audit / status polling after the fact.
+  // Kept as long as any other key of the intent: audit, status polling after the fact, and IPN retries stay idempotent.
   await redis.set(INTENT_KEY(intent.reference), updated, {
-    ex: INTENT_TTL_SECONDS + 24 * 60 * 60,
+    ex: INTENT_RETENTION_SECONDS,
   })
   await redis.srem(INTENT_INDEX_KEY, intent.reference)
   return updated
@@ -232,7 +238,14 @@ export async function markIntentExpired(
   intent: PaymentIntent,
 ): Promise<PaymentIntent> {
   const updated: PaymentIntent = { ...intent, status: "expired" }
-  await redis.set(INTENT_KEY(intent.reference), updated, { ex: 60 * 60 })
+  // Kept for the whole retention too: "expired" only means no payment was seen in the window. If one lands later, its IPN
+  // must still find the intent and confirm it (confirmIntent accepts any intent that is not already confirmed).
+  await redis.set(INTENT_KEY(intent.reference), updated, { ex: INTENT_RETENTION_SECONDS })
   await redis.srem(INTENT_INDEX_KEY, intent.reference)
   return updated
+}
+
+/** Drop a reference from the pending index (its intent is gone: nothing left to reconcile, nothing to keep scanning). */
+export async function removeFromPendingIndex(redis: Redis, reference: string): Promise<void> {
+  await redis.srem(INTENT_INDEX_KEY, reference)
 }

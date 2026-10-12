@@ -38,6 +38,7 @@ import {
 import {
   verifyIpnSignature,
   mapStatus,
+  paidRatio,
   type NpPayment,
 } from "../_lib/nowpayments";
 import {
@@ -377,6 +378,18 @@ async function handleNowpaymentsIpn(req: VercelRequest, res: VercelResponse) {
       npPaymentId,
       npInvoiceId,
     });
+    // A CONFIRMED payment with no intent is money received and nothing to give back for it: nothing else will ever
+    // retry it (the 200 below stops NOWPayments from doing so), so it has to reach a human.
+    if (mapStatus(payment.payment_status) === "confirmed") {
+      captureError(new Error("NOWPayments confirmed a payment whose intent no longer exists"), {
+        endpoint: "auth/nowpayments-ipn",
+        phase: "confirmedWithoutIntent",
+        orderId,
+        npPaymentId,
+        npInvoiceId,
+        paymentStatus: payment.payment_status,
+      });
+    }
     // 200 anyway so NOWPayments doesn't keep retrying — the intent
     // either doesn't exist or has been GC'd. Logging captures it.
     return res.status(200).json({ ok: true, ignored: true });
@@ -394,14 +407,15 @@ async function handleNowpaymentsIpn(req: VercelRequest, res: VercelResponse) {
 
   if (internalStatus === "confirmed") {
     // The IPN body is HMAC-signed so we trust *what NOWPayments saw*,
-    // but pass the reported amount to confirmIntent so it can guard
-    // against the partially-paid → finished corner case (anti-underpay).
-    const reportedUsd = Number(payment.price_amount ?? 0);
+    // but pass how much of the asked crypto amount was really sent
+    // (actually_paid / pay_amount) so confirmIntent can guard against the
+    // partially-paid → finished corner case (anti-underpay).
+    const ratio = paidRatio(payment);
     const txSignature =
       payment.payin_hash ?? payment.payout_hash ?? undefined;
     const outcome = await confirmIntent(redis, intent, {
       txSignature: typeof txSignature === "string" ? txSignature : undefined,
-      reportedUsd: Number.isFinite(reportedUsd) ? reportedUsd : undefined,
+      paidRatio: ratio,
     });
     if (!outcome.ok) {
       // 200 anyway so NOWPayments stops retrying. Polling client can
@@ -410,15 +424,14 @@ async function handleNowpaymentsIpn(req: VercelRequest, res: VercelResponse) {
         ok: false,
         status: "amount_mismatch",
         reason: outcome.reason,
-        expectedUsd: outcome.expectedUsd,
-        reportedUsd: outcome.reportedUsd,
+        paidRatio: outcome.paidRatio,
       });
     }
     logger.metric("auth/nowpayments-ipn.confirmed", {
       reference: outcome.intent.reference,
       tier: outcome.intent.tier,
       amountUsd: outcome.intent.amountUsd,
-      reportedUsd,
+      paidRatio: ratio ?? null,
       hasEmail: !!outcome.intent.email,
       licenseIssued: outcome.licenseKey !== null,
     });
