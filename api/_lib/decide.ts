@@ -16,7 +16,7 @@ import type {
 } from "./types";
 import type { CreatorReputation } from "./fetchers";
 import {
-  layerDexScreener, layerRugCheck, layerGoPlus, layerHelius, layerSolscan, layerChart, layerCrossValidation,
+  layerDexScreener, layerRugCheck, layerGoPlus, layerHelius, layerSolscan, layerChart, layerCrossValidation, isBlueChipByMarket,
 } from "./layers";
 import { computeFinalScore, classifySafeBlockedReasons } from "./scoring";
 import {
@@ -91,7 +91,9 @@ export function decide(input: DecideInput): Decision {
   const deepestPoolUsd = Math.max(0, ...(dexData?.pairs ?? []).filter((p) => p.baseToken?.address === resolvedMint).map((p) => asNumber(p.liquidity?.usd)));
 
   // 7 layers
-  const l1 = layerDexScreener(pair, marketCap, tokenAgeMinutes, holders, deepestPoolUsd);
+  // A blue chip by the market alone (age, the pool's liquidity, market cap): its crashes are critical, not a forced RUG (isBlueChipByMarket).
+  const blueChip = isBlueChipByMarket(tokenAgeMinutes, pair ? asNumber(pair.liquidity?.usd) : null, marketCap);
+  const l1 = layerDexScreener(pair, marketCap, tokenAgeMinutes, holders, deepestPoolUsd, blueChip);
   // Shared maturity context — rugcheck, goplus, and helius all need
   // the same view of "is this an established token" so soft signals
   // (unburned LP, top-1 concentration on a 100k-holder memecoin) get
@@ -148,7 +150,7 @@ export function decide(input: DecideInput): Decision {
   const l4 = layerHelius(resolvedHolderAccounts, totalSupplyUi, maturityCtx, dexPairAddresses);
   // Holder count: null, as it effectively always was (the Solscan holders endpoint is dead).
   const l5 = layerSolscan(null, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h, solscanAnswered);
-  const l6 = layerChart(candles, pair, tokenAgeMinutes, maturityCtx, dailyCandles.length >= 2 ? dailyCandles : undefined);
+  const l6 = layerChart(candles, pair, tokenAgeMinutes, maturityCtx, dailyCandles.length >= 2 ? dailyCandles : undefined, blueChip);
   const l7 = layerCrossValidation(rugData, resolvedHolderAccounts, goplus, solscanTokenAgeHours, dexTokenAgeHours, totalSupplyUi, authFacts);
 
   const allLayers = [l1, l2, l3, l4, l5, l6, l7];
