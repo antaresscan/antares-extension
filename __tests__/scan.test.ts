@@ -708,10 +708,10 @@ describe("scan handler — young token, one wallet at 12 %", () => {
 });
 
 // ─── The verdict is decided on the deduplicated flags (audit M4) ────────────────────────────────────────────────────
-// runAnalysis cannot be driven into "the same warning from two layers" without faking the layers themselves, so this guard reads the
-// order in the source: the flags are deduplicated, THEN counted, THEN the verdict is decided on those counts.
-describe("scan.ts counts the flags after deduplicating them", () => {
-  const src = readFileSync(new URL("../api/scan.ts", import.meta.url), "utf8");
+// The same warning from two layers cannot be produced without faking the layers themselves, so this guard reads the order in the source: the flags are deduplicated, THEN counted, THEN the verdict is decided on those counts.
+describe("the decision counts the flags after deduplicating them", () => {
+  // The decision lives in api/_lib/decide.ts (a pure function), no longer in the handler.
+  const src = readFileSync(new URL("../api/_lib/decide.ts", import.meta.url), "utf8");
 
   it("dedupeFlags runs before countVerdictFlags, which runs before determineVerdict", () => {
     const dedupe = src.indexOf("dedupeFlags(_allFlagsForVerdict)");
