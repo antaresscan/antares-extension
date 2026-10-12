@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   layerChart, layerDexScreener, layerGoPlus, layerRugCheck, layerHelius,
-  layerSolscan, layerCrossValidation, isEstablished, ESTABLISHED_LINKS_MIN_LIQUIDITY_USD, isBlueChipByMarket,
+  layerSolscan, layerCrossValidation, isEstablished, ESTABLISHED_LINKS_MIN_LIQUIDITY_USD, isBlueChipByMarket, isTwitterSocial,
 } from "../api/_lib/layers";
 import type { DexScreenerPair, RugCheckSummary, RugCheckReport, GoPlusTokenResult, HeliusHolder } from "../api/_lib/types";
 import { deriveAuthorityFacts, type MintState } from "../api/_lib/facts";
@@ -1938,6 +1938,59 @@ describe("a crash on a blue chip (the two rules that forced RUG on a price crash
       expect(run(true, -60, -25).flags.some((f) => /sharp crash|active dump/i.test(f.label))).toBe(false);
       expect(run(true, -65, -20).flags.some((f) => /sharp crash|active dump/i.test(f.label))).toBe(false);
     });
+  });
+});
+
+// ─── Is that link a Twitter / X account? (audit A-25) ──────────────────────────────────────────────────────────────────────────
+// It was /twitter|x/i on the type, or on the URL when there was no type: the letter "x" anywhere counted.
+describe("isTwitterSocial: the type is twitter or x, or the link is on twitter.com / x.com", () => {
+  it.each([
+    [{ type: "twitter", url: "https://twitter.com/foo" }], [{ type: "twitter" }], [{ type: "x" }], [{ type: "X" }], [{ type: " Twitter " }],
+    [{ url: "https://twitter.com/foo" }], [{ url: "https://x.com/foo" }], [{ url: "https://www.x.com/foo" }], [{ url: "https://mobile.twitter.com/foo" }],
+    [{ url: "https://X.COM/Foo" }], [{ url: "x.com/foo" }], [{ type: "website", url: "https://x.com/foo" }],
+  ])("%j is a Twitter account", (s) => {
+    expect(isTwitterSocial(s)).toBe(true);
+  });
+
+  it.each([
+    [{ url: "https://t.me/xrp_fans" }], [{ url: "https://discord.gg/xyzxyz" }], [{ type: "telegram", url: "https://t.me/xyz" }],
+    [{ type: "discord", url: "https://discord.gg/x" }], [{ url: "https://example.com/x" }], [{ url: "https://example.com/twitter.com" }],
+    [{ url: "https://notx.com/foo" }], [{ url: "https://nottwitter.com/foo" }], [{ url: "https://x.com.evil.example/foo" }],
+    [{ url: "https://twitter.com.evil.example/" }], [{ type: "tiktok", url: "https://tiktok.com/@xx" }], [{ type: "xyz" }], [{}], [{ type: "", url: "" }],
+  ])("%j is NOT a Twitter account (the letter x alone, a look-alike host or a path does not count)", (s) => {
+    expect(isTwitterSocial(s)).toBe(false);
+  });
+
+  it("bad input is not a Twitter account and does not throw", () => {
+    expect(isTwitterSocial(null)).toBe(false);
+    expect(isTwitterSocial(undefined)).toBe(false);
+    expect(isTwitterSocial({ type: 7 as unknown as string, url: { a: 1 } as unknown as string })).toBe(false);
+    expect(isTwitterSocial({ url: "http://[bad" })).toBe(false);
+  });
+});
+
+describe("layerDexScreener: the 'no website / Twitter / Telegram' check reads real Twitter links only", () => {
+  const pairWith = (socials: Array<{ type?: string; url?: string }>, websites: Array<{ url: string }> = []): DexScreenerPair => ({
+    liquidity: { usd: 30_000 }, volume: { h24: 20_000 }, priceChange: { h24: 5, h6: 2, h1: 1, m5: 0 }, txns: { m5: { buys: 10, sells: 8 } },
+    info: { socials, websites },
+  });
+  const run = (p: DexScreenerPair) => layerDexScreener(p, 400_000, 3 * 24 * 60, 800);
+  const noLinks = (l: ReturnType<typeof layerDexScreener>) => l.flags.find((f) => /^No website \/ Twitter \/ Telegram/.test(f.label));
+
+  it("a Discord link with an x in it is not a Twitter account: a young token with only that link gets the critical flag", () => {
+    const l = run(pairWith([{ url: "https://discord.gg/xyzxyz" }]));
+    expect(noLinks(l)?.severity).toBe("critical");
+    expect(l.safeBlocked).toBe(true);
+  });
+
+  it("witness: the same token with a real Twitter link (typed or by its URL) does not get it", () => {
+    expect(noLinks(run(pairWith([{ type: "twitter", url: "https://twitter.com/foo" }])))).toBeUndefined();
+    expect(noLinks(run(pairWith([{ url: "https://x.com/foo" }])))).toBeUndefined();
+  });
+
+  it("witness: a Telegram link or a website is still enough, as before", () => {
+    expect(noLinks(run(pairWith([{ type: "telegram", url: "https://t.me/foo" }])))).toBeUndefined();
+    expect(noLinks(run(pairWith([], [{ url: "https://foo.com" }])))).toBeUndefined();
   });
 });
 
