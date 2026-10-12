@@ -6,7 +6,7 @@ import {
 import type { DexScreenerPair, RugCheckSummary, RugCheckReport, GoPlusTokenResult, HeliusHolder } from "../api/_lib/types";
 import { deriveAuthorityFacts, type MintState } from "../api/_lib/facts";
 import { judgeContractFacts } from "../api/_lib/layers";
-import { classifySafeBlockedReasons, legacyReasonsOfLabel } from "../api/_lib/scoring";
+import { classifySafeBlockedReasons } from "../api/_lib/scoring";
 import { dedupeFlags, countVerdictFlags, determineVerdict } from "../api/_lib/pipeline";
 
 // Authorities are facts read from the chain (see facts.ts), then handed to the layers.
@@ -1589,11 +1589,10 @@ describe("layerRugCheck: the bundle ladder", () => {
     expect(verdictOf(l)).toBe("DANGER");
   });
 
-  it("every bundle flag carries the safe-gate reason its label gives (the codes and the text reader agree)", () => {
+  it("every bundle flag carries the safe-gate reason \"bundle\" (the verdict reads the code, not the label)", () => {
     for (const pct of [0.5, 3, 15, 30]) {
-      const f = bundleFlag(pct);
-      expect(f.reasons, `${pct}%`).toEqual(legacyReasonsOfLabel(f.label));
-      expect(f.reasons, `${pct}%`).toEqual(["bundle"]);
+      expect(bundleFlag(pct).reasons, `${pct}%`).toEqual(["bundle"]);
+      expect(classifySafeBlockedReasons([bundleLayer(pct)]), `${pct}%`).toEqual(["bundle"]);
     }
   });
 
