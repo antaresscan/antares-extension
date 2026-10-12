@@ -18,7 +18,30 @@ export interface ScanFlag {
    * ("a holders or age signal when nothing harder was found"). Kept separate so that behaviour is reproduced exactly.
    */
   fallbackReasons?: SafeBlockedReason[];
+  /**
+   * What kind of signal the flag is, for the places that used to read its text (see FlagTag). Absent when it is none of them.
+   */
+  tags?: FlagTag[];
+  /**
+   * The pump percentage a pump flag talks about (the 553 of "Pumped +553% in 24h"): two flags with the same one are one signal, and
+   * dedupeFlags keeps the most severe. Absent on a flag that is not about a pump percentage.
+   */
+  pumpPct?: number;
 }
+
+/**
+ * What a flag is, said by the layer that creates it, so that nothing has to read its label to know:
+ *   source_status          the health of a source ("Helius unavailable"), not a risk of the token: never counted as one
+ *   pump_price_only        a pump seen only in the price: informational, never counted toward the "3 warnings -> DANGER" floor
+ *   lp                     speaks of the liquidity pool: tells the LP safety net that a layer already said something about the LP
+ *   rug_evidence           something that happened to the token or a closed trap: what lets a token into the rug database
+ *   concentration          a holder-concentration flag (the holders layer drops them when its holder data is broken)
+ *   xv_lp_burn, xv_mint_authority, xv_age, xv_holder_concentration
+ *                          the four disagreements between two sources that each cost the score a penalty
+ */
+export type FlagTag =
+  | "source_status" | "pump_price_only" | "lp" | "rug_evidence" | "concentration"
+  | "xv_lp_burn" | "xv_mint_authority" | "xv_age" | "xv_holder_concentration";
 
 // IMPORTANT: 'lp' and 'deceptive_name' are HARD reasons — they can never
 // be soft-unlocked by applySafeGateOverride. A token with LP not burned

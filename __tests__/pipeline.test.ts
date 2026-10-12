@@ -15,6 +15,7 @@ import type {
   VerdictInput,
   SolscanTransfer,
 } from "../api/_lib/types";
+import { flagFromText } from "./fixtures/flag-codes";
 
 // ─── FACTORY HELPERS ──────────────────────────────────────────────────────────
 
@@ -690,7 +691,8 @@ describe("determineVerdict — price-only pump flags", () => {
 });
 
 // ─── Flags: the verdict is decided on the deduplicated list (audit M4) ──────────────────────────────────────────────
-const flag = (label: string, severity: ScanFlag["severity"]): ScanFlag => ({ label, severity, impact: 0 });
+// A flag built by hand has a label only: give it what the layer that creates it would have put on it (see fixtures/flag-codes.ts).
+const flag = (label: string, severity: ScanFlag["severity"]): ScanFlag => flagFromText(label, severity);
 
 describe("dedupeFlags", () => {
   it("keeps one flag per label, the most severe occurrence", () => {

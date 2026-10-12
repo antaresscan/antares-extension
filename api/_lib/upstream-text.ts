@@ -4,8 +4,9 @@
 // label any more, so rewording one cannot move a verdict. The exception is the text an upstream invents: RugCheck's risk names cannot
 // be known in advance, so the layer reads each one ONCE, when it creates the flag (codesFromUpstreamText), with the tables below.
 // The tables are also the specification the tests hold the codes of the layers to (a flag whose label matches a pattern must say so).
+// The same goes for the tags (what kind of signal a flag is) and the pump percentage, further down.
 
-import type { SafeBlockedReason } from "./types";
+import type { SafeBlockedReason, FlagTag } from "./types";
 import type { FlagCodes } from "./helpers";
 
 // HARD_BLOCK_PATTERNS: flags that classify as hard safeBlocked reasons.
@@ -83,7 +84,7 @@ export function reasonsOfText(label: string): SafeBlockedReason[] {
 
 /**
  * What the per-source fallback reads in the TEXT of a flag, in the order it has always read it. It applies to a layer only when no
- * flag of that layer matched HARD_BLOCK_PATTERNS. Legacy: see classifySafeBlockedReasons.
+ * flag of that layer matched HARD_BLOCK_PATTERNS.
  */
 export function fallbackReasonsOfText(source: string, label: string): SafeBlockedReason[] {
   const out: SafeBlockedReason[] = [];
@@ -115,5 +116,35 @@ export function fallbackReasonsOfText(source: string, label: string): SafeBlocke
  * be known in advance.
  */
 export function codesFromUpstreamText(source: string, label: string): FlagCodes {
-  return { reasons: reasonsOfText(label), fallbackReasons: fallbackReasonsOfText(source, label) };
+  return { reasons: reasonsOfText(label), fallbackReasons: fallbackReasonsOfText(source, label), tags: tagsOfText(label) };
+}
+
+// ─── What else the text of a flag used to say ─────────────────────────────────────────────────────────────────────────────────
+// Besides the safe-gate reasons, five places read a flag's label to know what kind of flag it was. The layers now say it with FlagTag;
+// these tables are what the flags of the layers are held to by the tests, and what the door above applies to an upstream's own text.
+
+/** The liquidity pool is the subject of the flag (the LP safety net of scan.ts looked for one in every layer). */
+export const LP_TEXT = /\bLP\b|liquidity (?:not|is)|dev can rug|unverified LP|holds .+% of supply|rug (?:capacity|exposure|risk|impact)/i;
+
+/** Pipeline-status flags ("Helius unavailable"...) describe the health of a source, not the token: never counted as a token risk. */
+export const SOURCE_STATUS_TEXT = /^(Helius|GoPlus|RugCheck|Solscan|DexScreener|Birdeye|Helius RPC) (unavailable|rate[- ]limited|timed out|degraded)\b|Holder data unreliable|broken upstream/i;
+
+/**
+ * Pump-only flags are informational market signals, not structural rug risks. They must remain visible to the user but must never
+ * count toward the 3-warnings -> forced-DANGER threshold in determineVerdict. (They still keep a token out of SAFE: see
+ * VerdictInput.pumpPriceOnlyFlagsCount.)
+ */
+export const PUMP_PRICE_ONLY_TEXT = /Pumped \+[\d,]+% (in 24h|over \d+ days)|Large 24h pump|Extreme pump .* on newborn token|Vertical pump detected|Extreme (24h )?pump \+[\d,]+%( in 1h)? — high retrace risk/i;
+
+/** Something that happened to the token, or a closed trap: what the rug database asks for (with a critical flag) besides a RUG verdict. */
+export const RUG_EVIDENCE_TEXT = /abandoned pool|liquidity removed|honeypot detected|sells blocked|non-transferable|creator history of rugged|slow rug detected|exit (liquidity )?trap/i;
+
+/** The tags the TEXT of a label gives it among the four an upstream's own text can have. */
+export function tagsOfText(label: string): FlagTag[] {
+  const out: FlagTag[] = [];
+  if (LP_TEXT.test(label)) out.push("lp");
+  if (SOURCE_STATUS_TEXT.test(label)) out.push("source_status");
+  if (PUMP_PRICE_ONLY_TEXT.test(label)) out.push("pump_price_only");
+  if (RUG_EVIDENCE_TEXT.test(label)) out.push("rug_evidence");
+  return out;
 }

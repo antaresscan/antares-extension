@@ -36,10 +36,8 @@ export function initRugDb(r: Redis): void {
  * An authority an issuer keeps (mint, freeze, permanent delegate) is a capability, not an event: without this distinction a stablecoin
  * or a tokenised stock that is RUG for its authorities would be listed with real rugs. A price drop alone is not evidence either.
  */
-export const RUG_EVIDENCE = /abandoned pool|liquidity removed|honeypot detected|sells blocked|non-transferable|creator history of rugged|slow rug detected|exit (liquidity )?trap/i;
-
 export function isRugEvidence(flags: ScanFlag[]): boolean {
-  return flags.some((f) => f.severity === "critical" && RUG_EVIDENCE.test(f.label));
+  return flags.some((f) => f.severity === "critical" && f.tags?.includes("rug_evidence") === true);
 }
 
 /**
@@ -58,7 +56,7 @@ export async function getRugEntry(mint: string): Promise<RugEntry | null> {
 }
 
 /**
- * Record a token as a rug in the database, when the verdict is RUG and a critical flag is evidence of a rug (see RUG_EVIDENCE).
+ * Record a token as a rug in the database, when the verdict is RUG and a critical flag is evidence of a rug (the tag rug_evidence, see FlagTag).
  */
 export async function recordRug(data: {
   mint: string;
@@ -124,7 +122,7 @@ export async function getRecentRugs(limit = 50): Promise<RugEntry[]> {
 
     const keys = (mints as string[]).map(mint => `${RUG_PREFIX}${mint}`);
     const results = await redis.mget<RugEntry[]>(...keys);
-    // RUG only: entries recorded under the old rule with a DANGER verdict are not listed (see RUG_EVIDENCE).
+    // RUG only: entries recorded under the old rule with a DANGER verdict are not listed (the tag rug_evidence, see FlagTag).
     return results.filter((r): r is RugEntry => r !== null && r.risk === "RUG");
   } catch {
     return [];

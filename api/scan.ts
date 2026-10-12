@@ -642,7 +642,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // unknown-age" on every available signal.
     if (!lpBurned && !lpLocked) {
       const anyLpFlag = allLayers.some(l =>
-        l.flags.some(f => /\bLP\b|liquidity (?:not|is)|dev can rug|unverified LP|holds .+% of supply|rug (?:capacity|exposure|risk|impact)/i.test(f.label))
+        l.flags.some(f => f.tags?.includes("lp"))
       );
       if (!anyLpFlag) {
         // Fail-closed safety net: when neither RugCheck nor GoPlus emitted

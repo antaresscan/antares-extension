@@ -35,7 +35,7 @@ export function evaluatePostLayerFlags(input: PostLayerFlagsInput): PostLayerFla
     ageInHoneypotWindow &&
     totalTxns5m > 5
   ) {
-    flags.push(makeFlag("Sells blocked (social honeypot)", "critical", 0));
+    flags.push(makeFlag("Sells blocked (social honeypot)", "critical", 0, { tags: ["rug_evidence"] }));
     forceRug = true;
     safeBlocked = true;
   }
@@ -270,16 +270,6 @@ export function toPublicFlag(f: ScanFlag): ScanFlag {
 // deduplicated first and the counts are taken on the deduplicated list (audit M4: they used to be taken on the raw list, so two
 // real warnings plus a duplicate of one of them reached the "3 warnings -> DANGER" floor while the user saw two flags).
 
-/** Pipeline-status flags ("Helius unavailable"...) describe the health of a source, not the token: never counted as a token risk. */
-export const PIPELINE_STATUS_FLAG = /^(Helius|GoPlus|RugCheck|Solscan|DexScreener|Birdeye|Helius RPC) (unavailable|rate[- ]limited|timed out|degraded)\b|Holder data unreliable|broken upstream/i;
-
-/**
- * Pump-only flags are informational market signals, not structural rug risks. They must remain visible to the user but must never
- * count toward the 3-warnings -> forced-DANGER threshold in determineVerdict. (They still keep a token out of SAFE: see
- * VerdictInput.pumpPriceOnlyFlagsCount.)
- */
-export const PUMP_PRICE_ONLY_FLAG = /Pumped \+[\d,]+% (in 24h|over \d+ days)|Large 24h pump|Extreme pump .* on newborn token|Vertical pump detected|Extreme (24h )?pump \+[\d,]+%( in 1h)? — high retrace risk/i;
-
 const SEVERITY_RANK: Record<string, number> = { critical: 0, warning: 1, info: 2, bonus: 3 };
 
 /**
@@ -293,14 +283,12 @@ export function dedupeFlags(input: ScanFlag[]): ScanFlag[] {
     const existing = byLabel.get(f.label);
     if (!existing || SEVERITY_RANK[f.severity] < SEVERITY_RANK[existing.severity]) byLabel.set(f.label, f);
   }
-  // Pass 2: pump percentage — the first integer % of pump flags, one representative per percentage
+  // Pass 2: pump percentage (ScanFlag.pumpPct, put on the flag by the layer) — one representative per percentage
   const pumpPctMap = new Map<number, ScanFlag>();
   const nonPump: ScanFlag[] = [];
   for (const f of byLabel.values()) {
-    if (!/pump|pumped/i.test(f.label)) { nonPump.push(f); continue; }
-    const m = f.label.match(/\+(\d+)%/);
-    if (!m) { nonPump.push(f); continue; }
-    const pct = parseInt(m[1], 10);
+    if (f.pumpPct === undefined) { nonPump.push(f); continue; } // not a flag about a pump percentage
+    const pct = f.pumpPct;
     const existing = pumpPctMap.get(pct);
     if (!existing || SEVERITY_RANK[f.severity] < SEVERITY_RANK[existing.severity]) pumpPctMap.set(pct, f);
   }
@@ -310,10 +298,12 @@ export function dedupeFlags(input: ScanFlag[]): ScanFlag[] {
 /** Warning / critical / pump-only counts of a (deduplicated) flag list, as determineVerdict reads them. */
 export function countVerdictFlags(flags: ScanFlag[]): { warning: number; critical: number; pumpPriceOnly: number } {
   const risky = flags.filter((f) => f.severity === "warning" || f.severity === "critical");
-  const tokenSide = risky.filter((f) => !PIPELINE_STATUS_FLAG.test(f.label) && !PUMP_PRICE_ONLY_FLAG.test(f.label));
+  const isStatus = (f: ScanFlag) => f.tags?.includes("source_status") === true;
+  const isPumpPriceOnly = (f: ScanFlag) => f.tags?.includes("pump_price_only") === true;
+  const tokenSide = risky.filter((f) => !isStatus(f) && !isPumpPriceOnly(f));
   return {
     warning: tokenSide.length,
     critical: tokenSide.filter((f) => f.severity === "critical").length,
-    pumpPriceOnly: risky.filter((f) => PUMP_PRICE_ONLY_FLAG.test(f.label)).length,
+    pumpPriceOnly: risky.filter(isPumpPriceOnly).length,
   };
 }
