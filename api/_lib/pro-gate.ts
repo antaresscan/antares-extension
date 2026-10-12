@@ -16,8 +16,10 @@ import type { Tier } from "./user";
 
 /** The fields of a scan a Free caller receives, as they are. */
 export const FREE_SCAN_FIELDS = [
-  // The verdict and what the overlay prints around it.
+  // The verdict and what the overlay prints around it. `rugKind` is part of the verdict word ("RUG CONFIRMED" or "RUG RISK"): the word is
+  // the same for Free and Pro, only the explanation is Pro.
   "risk",
+  "rugKind",
   "score",
   "resolvedMint",
   "tokenName",
@@ -47,6 +49,35 @@ export const FREE_SCAN_FIELDS = [
   "scoring_version",
   "fetchedAt",
   "requestId",
+] as const;
+
+/**
+ * The fields of a scan that are Pro, listed on purpose (`flags` is neither: it is kept as placeholders, see redactScanForFree). Every field
+ * of ScanResult is in exactly one of FREE_SCAN_FIELDS, PRO_SCAN_FIELDS or `flags`: __tests__/pro-gate.test.ts fails when a field is added to
+ * ScanResult without anyone deciding which side of the line it is on. Not listing it would make it Pro by accident (the gate is an
+ * allowlist), and a verdict word that went missing for Free callers would never be noticed.
+ */
+export const PRO_SCAN_FIELDS = [
+  "confidence",
+  "sources_used",
+  "holders",
+  "safeBlocked",
+  "safeBlockedReasons",
+  "tokenCreator",
+  "tokenDecimals",
+  "tokenSupply",
+  "recentTransfers",
+  "solscanTokenAgeHours",
+  "solscanVolume24h",
+  "solscanTrades24h",
+  "solscanTraders24h",
+  "layers",
+  "aiSummary",
+  "topHolderPct",
+  "top10HolderPct",
+  "criticalActors",
+  "verdictHistory",
+  "holderActivity",
 ] as const;
 
 /** What the placeholder flags say. The overlay counts them; it never prints them (the panel that does is Pro). */
