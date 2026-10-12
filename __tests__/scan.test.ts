@@ -348,6 +348,50 @@ describe("scan handler", () => {
     expect(flags.some(f => /brand imitation/i.test(f.label))).toBe(false);
   });
 
+  // The collapse rule, through the WHOLE engine (audit: GOIF, -97 % from its high two days earlier, was CAUTION). Everything else about the token
+  // is clean (a 90-day-old pair, burned LP, 5 000 holders, a +12 % day), so only the 30-day history can say it collapsed.
+  describe("a token that collapsed more than a day ago", () => {
+    const GOIF_CANDLES = JSON.parse(readFileSync(new URL("./fixtures/goif-4h-candles.json", import.meta.url), "utf8")) as Array<{ ts: number; o: number; h: number; l: number; c: number; v: number }>;
+    const WSOL = "So11111111111111111111111111111111111111112";
+    const scanBody = async () => {
+      const res = createMockRes();
+      await handler(createMockReq({ ca: WSOL }), res);
+      return (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as { risk: string; flags: Array<{ label: string; severity: string }>; layers: Record<string, { available: boolean }> };
+    };
+
+    it("the real GOIF candles (-97 % from a high 2.2 days old) make the scan a RUG, with the collapse flag, even though every 24 h figure is calm", async () => {
+      setupGoodTokenMocks();
+      const { fetchDexCandlesDaily } = await import("../api/_lib/fetchers");
+      vi.mocked(fetchDexCandlesDaily).mockResolvedValueOnce(GOIF_CANDLES);
+      const body = await scanBody();
+      expect(body.risk).toBe("RUG");
+      const flag = body.flags.find((f) => /^Collapsed/.test(f.label));
+      expect(flag?.label).toBe("Collapsed -97% from its high 2 days ago");
+      expect(flag?.severity).toBe("critical");
+    });
+
+    it("control: the same clean token with an ordinary 30-day history is not a RUG and carries no collapse flag", async () => {
+      setupGoodTokenMocks();
+      const { fetchDexCandlesDaily } = await import("../api/_lib/fetchers");
+      const calm = GOIF_CANDLES.map((c, i) => ({ ...c, c: 100 - i * 0.5, o: 100 - i * 0.5, h: 101 - i * 0.5, l: 99 - i * 0.5 })); // drifts 9 % down over the history
+      vi.mocked(fetchDexCandlesDaily).mockResolvedValueOnce(calm);
+      const body = await scanBody();
+      expect(body.risk).not.toBe("RUG");
+      expect(body.flags.some((f) => /^Collapsed/.test(f.label))).toBe(false);
+    });
+
+    it("an OLD collapse (the high is 20 days back) is DANGER, not a forced RUG", async () => {
+      setupGoodTokenMocks();
+      const { fetchDexCandlesDaily } = await import("../api/_lib/fetchers");
+      const T0 = 1_760_000_000;
+      const bleed = Array.from({ length: 121 }, (_, i) => { const c = i === 0 ? 100 : 5; return { ts: T0 + i * 4 * 3600, o: c, h: c, l: c, c, v: 100 }; }); // 6 candles a day: 20 days
+      vi.mocked(fetchDexCandlesDaily).mockResolvedValueOnce(bleed);
+      const body = await scanBody();
+      expect(body.risk).toBe("DANGER");
+      expect(body.flags.find((f) => /^Collapsed/.test(f.label))?.label).toBe("Collapsed -95% from its high 20 days ago");
+    });
+  });
+
   it("the Helius holder pages are given GoPlus's holder count, so the pages of a very large token can be skipped", async () => {
     setupGoodTokenMocks();
     const base = mockFetch.getMockImplementation()!;
