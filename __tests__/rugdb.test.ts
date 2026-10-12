@@ -2,6 +2,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { initRugDb, getRugEntry, recordRug, getRecentRugs, isRugEvidence } from "../api/_lib/rugdb";
 import type { RugEntry } from "../api/_lib/rugdb";
+import type { ScanFlag } from "../api/_lib/types";
+import { flagFromText } from "./fixtures/flag-codes";
 
 const mockGet = vi.fn();
 const mockSet = vi.fn();
@@ -81,8 +83,8 @@ describe("rugdb", () => {
         score: 30,
         risk: "RUG",
         flags: [
-          { label: "Honeypot detected — cannot sell", severity: "critical", impact: -20 },
-          { label: "Info flag", severity: "info", impact: 0 },
+          flagFromText("Honeypot detected — cannot sell", "critical", -20),
+          flagFromText("Info flag", "info", 0),
         ],
         creator: "creator1",
       });
@@ -112,7 +114,7 @@ describe("rugdb", () => {
         symbol: "BAD",
         score: 100,
         risk: "DANGER",
-        flags: [{ label: "Honeypot detected — cannot sell", severity: "critical", impact: -10 }],
+        flags: [flagFromText("Honeypot detected — cannot sell", "critical", -10)],
         creator: null,
       });
 
@@ -132,7 +134,7 @@ describe("rugdb", () => {
         symbol: "SCAM2",
         score: 20,
         risk: "RUG",
-        flags: [{ label: "Volume with zero liquidity — abandoned pool", severity: "critical", impact: -20 }],
+        flags: [flagFromText("Volume with zero liquidity — abandoned pool", "critical", -20)],
         creator: null,
       });
 
@@ -154,7 +156,7 @@ describe("rugdb", () => {
         symbol: null,
         score: 10,
         risk: "RUG",
-        flags: [{ label: "Slow rug detected: -50% on 6h + -15% on 1h", severity: "critical", impact: 0 }],
+        flags: [flagFromText("Slow rug detected: -50% on 6h + -15% on 1h", "critical", 0)],
         creator: null,
       });
 
@@ -170,7 +172,7 @@ describe("rugdb", () => {
         symbol: null,
         score: 0,
         risk: "RUG",
-        flags: [{ label: "Honeypot detected — cannot sell", severity: "critical", impact: 0 }],
+        flags: [flagFromText("Honeypot detected — cannot sell", "critical", 0)],
         creator: null,
       })).resolves.toBeUndefined();
     });
@@ -237,7 +239,7 @@ describe("rugdb", () => {
 // sound projects were listed next to real rugs. Now: a RUG verdict AND a critical flag that is EVIDENCE of a rug (something that
 // happened, or a closed trap), never a capability such as an authority an issuer keeps.
 describe("what gets a token listed as a rug", () => {
-  const crit = (label: string) => ({ label, severity: "critical" as const, impact: 0 });
+  const crit = (label: string) => flagFromText(label, "critical", 0);
 
   describe("isRugEvidence", () => {
     it.each([
@@ -268,8 +270,8 @@ describe("what gets a token listed as a rug", () => {
     });
 
     it("only a CRITICAL flag counts: the same label as a warning or info does not", () => {
-      expect(isRugEvidence([{ label: "Slow rug detected: -50% on 6h + -15% on 1h", severity: "warning", impact: 0 }])).toBe(false);
-      expect(isRugEvidence([{ label: "Honeypot detected — cannot sell", severity: "info", impact: 0 }])).toBe(false);
+      expect(isRugEvidence([flagFromText("Slow rug detected: -50% on 6h + -15% on 1h", "warning", 0)])).toBe(false);
+      expect(isRugEvidence([flagFromText("Honeypot detected — cannot sell", "info", 0)])).toBe(false);
       expect(isRugEvidence([])).toBe(false);
     });
 
@@ -279,7 +281,7 @@ describe("what gets a token listed as a rug", () => {
   });
 
   describe("recordRug", () => {
-    const record = (risk: "RUG" | "DANGER", flags: Array<{ label: string; severity: "critical" | "warning" | "info"; impact: number }>) =>
+    const record = (risk: "RUG" | "DANGER", flags: ScanFlag[]) =>
       recordRug({ mint: "m1", symbol: "TKN", score: 100, risk, flags, creator: "c1" });
 
     it("a RUG whose critical flags are only authorities (a stablecoin, a tokenised stock) is NOT listed", async () => {

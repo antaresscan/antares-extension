@@ -29,10 +29,11 @@ export function computeFinalScore(layers: LayerResult[]): number {
   const xv = layers.find(l => l.source === "crossvalidation");
   if (xv?.available && xv.flags.length > 0) {
     for (const f of xv.flags) {
-      if (/LP burn conflict/i.test(f.label)) product *= XV_PENALTY_LP_BURN;
-      else if (/Mint authority conflict/i.test(f.label)) product *= XV_PENALTY_MINT_AUTH;
-      else if (/age conflict/i.test(f.label)) product *= XV_PENALTY_AGE;
-      else if (/holder concentration/i.test(f.label)) product *= XV_PENALTY_HOLDER_CONCENTRATION;
+      const tags = f.tags ?? [];
+      if (tags.includes("xv_lp_burn")) product *= XV_PENALTY_LP_BURN;
+      else if (tags.includes("xv_mint_authority")) product *= XV_PENALTY_MINT_AUTH;
+      else if (tags.includes("xv_age")) product *= XV_PENALTY_AGE;
+      else if (tags.includes("xv_holder_concentration")) product *= XV_PENALTY_HOLDER_CONCENTRATION;
     }
   }
 
