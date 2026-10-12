@@ -8,6 +8,16 @@ export interface ScanFlag {
   label: string;
   severity: Severity;
   impact: number;
+  /**
+   * The safe-gate reasons this flag stands for (see SafeBlockedReason), put on the flag by the layer that creates it. Absent when the
+   * flag stands for none. classifyByCodes (scoring.ts) reads this instead of the flag's text, so rewording a label cannot move a verdict.
+   */
+  reasons?: SafeBlockedReason[];
+  /**
+   * Reasons that count only when NO flag of the same layer carries `reasons`: what a layer's per-source fallback has always read
+   * ("a holders or age signal when nothing harder was found"). Kept separate so that behaviour is reproduced exactly.
+   */
+  fallbackReasons?: SafeBlockedReason[];
 }
 
 // IMPORTANT: 'lp' and 'deceptive_name' are HARD reasons — they can never
