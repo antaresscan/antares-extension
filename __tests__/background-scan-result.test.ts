@@ -1,5 +1,5 @@
 // __tests__/background-scan-result.test.ts — the service worker turns a SCAN_RESULT message
-// into the toolbar badge, the risk-escalation notification and the local scan history.
+// into the risk-escalation notification and the local scan history. It never touches the toolbar button.
 //
 // Runs the REAL background.ts against an in-memory fake of the chrome.* APIs it uses.
 // Why: since 2026-04-05 nothing sent the old `SCAN` message any more, so the badge, the
@@ -110,20 +110,18 @@ describe("background SCAN_RESULT", () => {
     vi.unstubAllGlobals();
   });
 
-  describe("toolbar badge", () => {
-    it("shows the verdict on the tab that sent it", () => {
-      expect(send(fake, scanResult({ risk: "SAFE" })).response).toEqual({ ok: true });
-      expect(fake.setBadgeText).toHaveBeenCalledWith({ text: "✓", tabId: 7 });
-      expect(fake.setBadgeTextColor).toHaveBeenCalledWith({ color: "#00e5b0", tabId: 7 });
+  // The toolbar button is the on/off dot (green = ON, red = OFF) and nothing else. Audit A-13 had brought back a verdict badge ("✓" / "!"
+  // / "✗" next to the icon); it was removed again at the owner's request.
+  describe("toolbar button", () => {
+    it.each(["SAFE", "CAUTION", "DANGER", "RUG"])("a %s verdict is accepted but never written on the toolbar button", (risk) => {
+      expect(send(fake, scanResult({ risk })).response).toEqual({ ok: true });
+      expect(fake.setBadgeText).not.toHaveBeenCalled();
+      expect(fake.setBadgeTextColor).not.toHaveBeenCalled();
     });
 
-    it.each([
-      ["CAUTION", "!"],
-      ["DANGER", "✗"],
-      ["RUG", "✗"],
-    ])("%s gets its own badge", (risk, text) => {
-      send(fake, scanResult({ risk }));
-      expect(fake.setBadgeText).toHaveBeenCalledWith({ text, tabId: 7 });
+    it("an invalid verdict is still refused, and touches nothing either", () => {
+      expect(send(fake, scanResult({ risk: "constructor" })).response).toEqual({ ok: false, error: "Invalid scan result" });
+      expect(fake.setBadgeText).not.toHaveBeenCalled();
     });
   });
 
