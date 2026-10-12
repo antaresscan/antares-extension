@@ -2,6 +2,7 @@ import { vi, describe, it, expect, beforeEach } from "vitest";
 import { readFileSync } from "node:fs";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { SCORING_VERSION } from "../api/_lib/constants";
+import { STABLE_MINTS } from "../api/_lib/issuer-assets.data";
 
 // ---- Mock all external modules BEFORE importing handler ----
 
@@ -1220,6 +1221,96 @@ describe("scan handler — a pool where the scanned token is only the quote", ()
     expect(body.resolvedMint).toBe(MINT);
     expect(Number(body.priceUsd)).toBe(1.5);
     expect(body.liquidity).toBe(500_000);
+  });
+});
+
+// ─── Stablecoins and tokenized stocks through the whole scan (the owner's rule of 2026-10-13: both SAFE when the market is healthy) ──────────────────────────────────
+describe("scan handler — issuer-backed tokens are judged on their market", () => {
+  const STOCK = "XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp"; // Apple xStock
+  const STABLE = STABLE_MINTS.find((m) => m !== "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" && m !== "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB") as string;
+  const COPY = "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU"; // same structure, not in the registry
+  const ADDR = "2apBGMsS6ti9RyF5TwQTDswXBWskiJP2LD4cUEDqYJjk";
+
+  // The structure of an issuer: both authorities active, a permanent delegate, a pause.
+  const issuerMint = () => mintAccountResponse({
+    program: "spl-token-2022", mintAuthority: ADDR, freezeAuthority: ADDR,
+    extensions: [{ extension: "permanentDelegate", state: { delegate: ADDR } }, { extension: "pausableConfig", state: { authority: ADDR, paused: false } },
+      { extension: "metadataPointer", state: { authority: null, metadataAddress: ADDR } }],
+  });
+
+  function scanAs(mint: string, over: { liq?: number; vol?: number; pegged?: boolean } = {}) {
+    setupGoodTokenMocks();
+    mockHeliusGetMintAccount.mockResolvedValue(issuerMint());
+    const goodMocks = mockFetch.getMockImplementation() as (url: string, ...rest: unknown[]) => Promise<unknown>;
+    mockFetch.mockImplementation(async (url: string, ...rest: unknown[]) => {
+      const answer = (await goodMocks(url, ...rest)) as { ok: boolean; json: () => Promise<unknown> };
+      if (url.includes("gopluslabs")) {
+        const j = (await answer.json()) as { result: Record<string, unknown> };
+        return { ok: true, json: () => Promise.resolve({ result: { [mint]: Object.values(j.result)[0] } }) };
+      }
+      if (url.includes("dexscreener")) {
+        const j = (await answer.json()) as { pairs: Array<Record<string, unknown> & { baseToken: { address: string }; liquidity: { usd: number }; volume: { h24: number } }> };
+        return { ok: true, json: () => Promise.resolve({ pairs: j.pairs.map((p) => ({
+          ...p, baseToken: { ...p.baseToken, address: mint },
+          liquidity: { usd: over.liq ?? p.liquidity.usd }, volume: { ...p.volume, h24: over.vol ?? p.volume.h24 },
+          ...(over.pegged ? { priceChange: { m5: 0, h1: 0.05, h6: 0.1, h24: 0.2 }, priceUsd: "1.0001" } : {}),
+        })) }) };
+      }
+      return answer;
+    });
+  }
+  async function run(mint: string) {
+    const res = createMockRes();
+    await handler(createMockReq({ ca: mint }), res);
+    return (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as { risk: string; rugKind: string | null; flags: Array<{ label: string; severity: string }> };
+  }
+  const flagOf = (b: { flags: Array<{ label: string; severity: string }> }, re: RegExp) => b.flags.find((f) => re.test(f.label));
+
+  it("witness: the same structure on a token that is not in the registry is read as any token's: authorities are critical, not SAFE", async () => {
+    scanAs(COPY);
+    const body = await run(COPY);
+    expect(["DANGER", "RUG"]).toContain(body.risk);
+    expect(flagOf(body, /^Freeze authority active/)?.severity).toBe("critical");
+    expect(flagOf(body, /^Mint authority active/)?.severity).toBe("critical");
+  });
+
+  it("a registry stablecoin with that structure and a healthy market is SAFE; its authorities are still shown, as information", async () => {
+    scanAs(STABLE, { pegged: true });
+    const body = await run(STABLE);
+    expect(body.risk).toBe("SAFE");
+    expect(flagOf(body, /^Stablecoin — the issuer holds/)?.severity).toBe("info");
+    expect(flagOf(body, /^Freeze authority active/)?.severity).toBe("info");
+    expect(flagOf(body, /^Mint authority active/)?.severity).toBe("info");
+    expect(body.flags.some((f) => f.severity === "critical" || f.severity === "warning")).toBe(false);
+  });
+
+  it("a registry tokenized stock with that structure and a healthy market is SAFE, as a stablecoin is: its issuer's powers are information", async () => {
+    scanAs(STOCK, { pegged: true });
+    const body = await run(STOCK);
+    expect(body.risk).toBe("SAFE");
+    expect(body.rugKind).toBeNull();
+    expect(flagOf(body, /^Tokenized asset — the issuer can freeze/)?.severity).toBe("info");
+    expect(flagOf(body, /^Freeze authority active/)?.severity).toBe("info");
+    expect(flagOf(body, /^Permanent delegate/)?.severity).toBe("info");
+    expect(body.flags.some((f) => f.severity === "critical")).toBe(false);
+  });
+
+  it("a stablecoin that moved 12 % in a day has lost its peg: critical, DANGER", async () => {
+    scanAs(STABLE); // the fixture's pair moved +12 % in 24 h
+    const body = await run(STABLE);
+    expect(body.risk).toBe("DANGER");
+    expect(flagOf(body, /^Stablecoin price moved 12%/)?.severity).toBe("critical");
+  });
+
+  it("a real market problem still shows: the stock with a drained pool is a confirmed RUG, with $500 of liquidity DANGER", async () => {
+    scanAs(STOCK, { liq: 0, vol: 90_000 });
+    const drained = await run(STOCK);
+    expect(drained.risk).toBe("RUG");
+    expect(drained.rugKind).toBe("confirmed");
+    scanAs(STOCK, { liq: 500 });
+    const thin = await run(STOCK);
+    expect(thin.risk).toBe("DANGER");
+    expect(flagOf(thin, /^Very low liquidity/)?.severity).toBe("critical");
   });
 });
 

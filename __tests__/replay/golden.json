@@ -1427,19 +1427,20 @@
     ]
   },
   "PYUSD": {
-    "risk": "DANGER",
-    "score": 338,
+    "risk": "SAFE",
+    "score": 950,
     "confidence": 90,
     "flags": [
       "bonus:Established token (30d+) ✓",
-      "critical:Balances can be changed by an authority",
-      "critical:Top 10 hold 83% — extreme concentration",
+      "info:Balances can be changed by an authority",
       "info:Freeze authority active — wallets can be frozen",
       "info:LP holds 1.2% of supply",
       "info:Mint authority active — supply can be inflated",
       "info:Permanent delegate — an address can move or burn any holder's tokens",
-      "info:Transfer fee can be changed — an authority can raise it to 100%",
-      "warning:Token accounts can be closed by an authority"
+      "info:Stablecoin — the issuer holds the mint and freeze authorities and most of the supply by design: they are not read as rug signals",
+      "info:Token accounts can be closed by an authority",
+      "info:Top 10 hold 83% — extreme concentration",
+      "info:Transfer fee can be changed — an authority can raise it to 100%"
     ],
     "sources_used": [
       "chart",
@@ -1486,14 +1487,8 @@
     "holders": 57649,
     "top10HolderPct": 83.01,
     "topHolderPct": 56.06,
-    "safeBlocked": true,
-    "safeBlockedReasons": [
-      "concentration",
-      "freeze",
-      "lp_unverified",
-      "mint",
-      "token_extension"
-    ]
+    "safeBlocked": false,
+    "safeBlockedReasons": []
   },
   "BREAK": {
     "risk": "DANGER",
