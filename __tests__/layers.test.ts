@@ -1667,11 +1667,37 @@ describe("layerChart: collapse from the recent high", () => {
     expect(l.forceRug).toBe(true);
   });
 
-  it("the threshold is 90 %: -89 % is not flagged, -90 % is", () => {
+  it("the threshold is 75 %: -74 % is not flagged, -75 % is", () => {
     const at = (pct: number) => collapseFlag(chart(fourHour([100, 100, 100, 100, 100, 100 - pct])));
-    expect(at(89)).toBeUndefined();
+    expect(at(74)).toBeUndefined();
+    expect(at(75)).toBeDefined();
     expect(at(90)).toBeDefined();
     expect(at(99)).toBeDefined();
+  });
+
+  it("-80 % from a high 3 days ago is a forced RUG PULL", () => {
+    const l = chart(fourHour([100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 20, 20, 20]));
+    expect(l.forceRug).toBe(true);
+    expect(l.rugEvidence).toEqual(["price_collapse"]);
+    expect(collapseFlag(l)!.label).toMatch(/^Collapsed -80% from its high \d+ days? ago$|^Collapsed -80% from its high less than a day ago$/);
+  });
+
+  it("the high that counts for a RUG is the highest close of the LAST 14 DAYS: an old spike does not hide a fresh collapse", () => {
+    // 25 days of 4-hour candles: a spike to 100 on day 0, 40 from day 1 to 21, then 8 for the last 4 days (-80 % from the 40, -92 % from the spike)
+    const closes = Array.from({ length: 150 }, (_, i) => (i === 0 ? 100 : i < 126 ? 40 : 8));
+    const l = chart(fourHour(closes));
+    expect(l.forceRug).toBe(true);
+    expect(l.rugEvidence).toEqual(["price_collapse"]);
+    expect(collapseFlag(l)!.label).toMatch(/^Collapsed -80% from its high 1[34] days ago$/);
+  });
+
+  it("a collapse of 75 % or more only from an OLDER high is critical alone: no forced RUG, no evidence", () => {
+    // spike to 100 on day 0, then 20 from day 1 on, for 25 days: the last 14 days are flat at 20
+    const closes = Array.from({ length: 150 }, (_, i) => (i === 0 ? 100 : 20));
+    const l = chart(fourHour(closes));
+    expect(collapseFlag(l)!.label).toMatch(/^Collapsed -80% from its high 2[45] days ago$/);
+    expect(l.forceRug).toBe(false);
+    expect(l.rugEvidence).toBeUndefined();
   });
 
   it("a high that is recent (14 days or less) forces RUG; an older one is critical alone, a slow bleed is not forced", () => {
