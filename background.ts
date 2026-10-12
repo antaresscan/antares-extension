@@ -43,26 +43,6 @@ function safeNumber(val: unknown): number {
   return typeof val === "number" && Number.isFinite(val) ? val : 0
 }
 
-function safeRecord(val: unknown): Record<string, unknown> | undefined {
-  return typeof val === "object" && val !== null && !Array.isArray(val)
-    ? val as Record<string, unknown>
-    : undefined
-}
-
-function extractSymbol(data: Record<string, unknown>): string {
-  const sym = safeString(data.tokenSymbol)
-  if (sym) return sym
-  const pair = safeRecord(data.pair)
-  if (pair) {
-    const baseToken = safeRecord(pair.baseToken)
-    if (baseToken) {
-      const s = safeString(baseToken.symbol)
-      if (s) return s
-    }
-  }
-  return ""
-}
-
 // Hosts the OPEN_TAB handler is allowed to open. Anything else — even an
 // HTTPS URL — is rejected and the caller falls back to window.open(), which
 // still has the page's CSP + popup-blocker + user-gesture gates in front of
@@ -99,6 +79,9 @@ const BADGE_MAP: Record<string, { text: string; color: string }> = {
 }
 
 const RISK_ORDER: Record<string, number> = { SAFE: 0, CAUTION: 1, DANGER: 2, RUG: 3 }
+
+// A symbol only labels the notification / history row; cap what we accept.
+const MAX_SYMBOL_LENGTH = 24
 
 function riskWorsened(prev: string, current: string): boolean {
   const p = RISK_ORDER[prev]
@@ -148,12 +131,12 @@ function checkRiskEscalation(ca: string, currentRisk: string, tokenSymbol: strin
 }
 
 // ─── HISTORY ─────────────────────────────────────────────────────────────────
-function saveToHistory(ca: string, data: Record<string, unknown>) {
+function saveToHistory(ca: string, risk: string, score: number, symbol: string) {
   const entry: HistoryEntry = {
     ca,
-    symbol: extractSymbol(data) || ca.slice(0, 8),
-    risk: safeString(data.risk) || "UNKNOWN",
-    score: safeNumber(data.score),
+    symbol: symbol || ca.slice(0, 8),
+    risk,
+    score,
     ts: Date.now(),
   }
   try {
@@ -182,76 +165,33 @@ type MessageHandler = (
 ) => void
 
 const handlers: Record<string, MessageHandler> = {
-  SCAN: (msg, sender, sendResponse) => {
-    const ca = typeof msg.ca === "string" ? msg.ca.trim() : ""
-
+  /**
+   * SCAN_RESULT — sent by the content script every time the overlay shows a
+   * verdict (see contents/modules/scan-report.ts). The service worker no
+   * longer fetches scans itself: it only turns the verdict into the toolbar
+   * badge, the risk-escalation notification and the local scan history.
+   *
+   * Payload: { type: "SCAN_RESULT", ca, risk, score, symbol }
+   */
+  SCAN_RESULT: (msg, sender, sendResponse) => {
     if (sender.id !== chrome.runtime.id) {
       sendResponse({ ok: false, error: "Unauthorized sender" })
       return
     }
 
-    if (!CA_RE.test(ca)) {
-      sendResponse({ ok: false, error: "Invalid contract address" })
+    const ca = typeof msg.ca === "string" ? msg.ca.trim() : ""
+    const risk = safeString(msg.risk)
+    // hasOwnProperty, not `in`: "constructor" / "__proto__" must not pass as a risk.
+    if (!CA_RE.test(ca) || !risk || !Object.prototype.hasOwnProperty.call(BADGE_MAP, risk)) {
+      sendResponse({ ok: false, error: "Invalid scan result" })
       return
     }
+    const symbol = (safeString(msg.symbol) ?? "").slice(0, MAX_SYMBOL_LENGTH)
 
-    const ctrl = new AbortController()
-    const timer = setTimeout(() => ctrl.abort(), config.fetchTimeoutMs)
-
-    void Promise.all([
-      getInstallId(),
-      new Promise<{ antares_dev_tier?: string; antares_session_token?: string }>((resolve) =>
-        chrome.storage.local.get(
-          ["antares_dev_tier", "antares_session_token"],
-          (v) => resolve(v as { antares_dev_tier?: string; antares_session_token?: string }),
-        ),
-      ),
-    ])
-      .then(([installId, store]) => {
-        const headers: Record<string, string> = installId ? { "X-Antares-Install": installId } : {}
-        const devTier = store.antares_dev_tier
-        if (
-          devTier === "free" ||
-          devTier === "pro" ||
-          devTier === "yearly" ||
-          devTier === "lifetime"
-        ) {
-          headers["X-Antares-Dev-Tier"] = devTier
-        }
-        // Session token from the website bridge (see contents/antares-
-        // website-bridge.ts). The website pushes the JWT after login/link
-        // and the extension echoes it on every scan so the server knows
-        // who the user is — independent of cookies. This is the reliable
-        // path: chrome-extension:// → API cookies are increasingly blocked
-        // by Chrome's third-party cookie phase-out, so we don't depend on
-        // them. The cookie still flows via credentials:"include" as a
-        // fallback for browsers that allow it.
-        const sessionToken = store.antares_session_token
-        if (typeof sessionToken === "string" && sessionToken.length > 0) {
-          headers["X-Antares-Session"] = sessionToken
-        }
-        return fetch(`${config.apiBase}/api/scan?ca=${ca}`, {
-          signal: ctrl.signal,
-          headers,
-          credentials: "include",
-        })
-      })
-      .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() })
-      .then((data: Record<string, unknown>) => {
-        clearTimeout(timer)
-        const risk = safeString(data.risk)
-        if (risk) {
-          updateBadge(risk, sender.tab?.id)
-          checkRiskEscalation(ca, risk, extractSymbol(data))
-        }
-        saveToHistory(ca, data)
-        sendResponse({ ok: true, data })
-      })
-      .catch((e: Error) => {
-        clearTimeout(timer)
-        sentryCapture(e)
-        sendResponse({ ok: false, error: e.message })
-      })
+    updateBadge(risk, sender.tab?.id)
+    checkRiskEscalation(ca, risk, symbol)
+    saveToHistory(ca, risk, safeNumber(msg.score), symbol)
+    sendResponse({ ok: true })
   },
 
   GET_HISTORY: (_msg, sender, sendResponse) => {
