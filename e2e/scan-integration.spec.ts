@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { HAS_PRO } from './pro';
 
 const BASE = process.env.E2E_BASE_URL || 'https://antares-extension.vercel.app';
 // POPCAT instead of WSOL — WSOL has too much trading data and times out
@@ -25,7 +26,7 @@ test.describe('Scan Integration \u2014 Full Flow E2E', () => {
     expect(result.score).toBeLessThanOrEqual(1000);
     expect(['SAFE', 'CAUTION', 'DANGER', 'RUG']).toContain(result.risk);
     expect(Array.isArray(result.flags)).toBe(true);
-    expect(result.layers).toBeDefined();
+    if (HAS_PRO) expect(result.layers).toBeDefined(); // the analysis is Pro: see api-pro-gate.spec.ts for the Free view
     expect(result.scoring_version).toBeDefined();
   });
 

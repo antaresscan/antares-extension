@@ -88,3 +88,39 @@ describe("the feed comes first", () => {
     expect(text).not.toMatch(/unavailable/i);
   });
 });
+
+describe("Insider Watch is a Pro feature (audit A-03)", () => {
+  const answersStatus = (status: number) =>
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: status >= 200 && status < 300, status, json: async () => ({}) })));
+
+  it("sends the session cookie with the request, even when the page is not served from the API's own origin", async () => {
+    answers({ activity: feed });
+    await loadInsiderActivity();
+    const init = (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0][1] as RequestInit;
+    expect(init.credentials).toBe("include");
+  });
+
+  it("a 402 says the feed is part of Pro, not the 'unavailable, re-scan' message that would send the reader in circles", async () => {
+    answersStatus(402);
+    await loadInsiderActivity();
+    const text = document.getElementById("ant-insider-feed")?.textContent ?? "";
+    expect(text).toMatch(/Antares Pro/);
+    expect(text).not.toMatch(/unavailable|re-scan/i);
+    expect(document.getElementById("ant-insider-meta")?.textContent).toBe(""); // the "loading…" label is gone
+  });
+
+  it("and leaves the cards of the scan alone", async () => {
+    answersStatus(402);
+    await loadInsiderActivity();
+    expect(tags()).toEqual(["Holder #1", "Holder #2", "Holder #3"]);
+  });
+
+  it("any other failure (429, 503...) keeps the 'unavailable' message", async () => {
+    for (const status of [429, 500, 503]) {
+      mountPage();
+      answersStatus(status);
+      await loadInsiderActivity();
+      expect(document.getElementById("ant-insider-feed")?.textContent).toMatch(/unavailable/i);
+    }
+  });
+});

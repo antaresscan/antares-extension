@@ -18,6 +18,7 @@ import {
   computeExitLiquidity,
   parsePctFromFlags,
 } from "./compute.js";
+import { verdictLabel } from "./verdict-label.js";
 
 // ──────────────────────────────────────────────────────────────────────
 // Sparkline: builds an inline SVG polyline from candle close prices.
@@ -771,4 +772,33 @@ export function buildSourceListRows(d) {
     })
     .filter(Boolean)
     .join("");
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// PRO GATE — what a Free visitor sees instead of the Full Analysis.
+//
+// /api/scan sends a Free caller only the Free view (verdict, score, the Sell/Mint/Freeze/LP line, market data) and marks it
+// `proLocked: true` (api/_lib/pro-gate.ts). The analysis itself is not in the answer, so there is nothing to hide here: the page
+// says what it is, shows the verdict a Free user already sees in the overlay, and points to the plans and to the sign-in.
+// ──────────────────────────────────────────────────────────────────────
+export const PRO_GATE_PRICING_URL = "https://antaresscan.com/pricing";
+export const PRO_GATE_SIGNIN_URL = "https://antaresscan.com/auth";
+
+export function buildProGate(d) {
+  const verdict = d && d.risk ? verdictLabel(d.risk, d.rugKind) : "";
+  const sym = (d && (d.tokenSymbol || (d.pair && d.pair.baseToken && d.pair.baseToken.symbol))) || "";
+  const name = (d && (d.tokenName || (d.pair && d.pair.baseToken && d.pair.baseToken.name))) || "";
+  const tokenLine = [name, sym ? "$" + sym : ""].filter(Boolean).join(" · ");
+  return `
+    <section class="pro-gate" id="pro-gate" data-verdict="${escapeHtml(verdict)}">
+      <div class="pg-eye">Token Analysis</div>
+      ${verdict ? `<div class="pg-verdict">${escapeHtml(verdict)}</div>` : ""}
+      ${tokenLine ? `<div class="pg-token">${escapeHtml(tokenLine)}</div>` : ""}
+      <h2>Full Analysis is part of Antares Pro</h2>
+      <p>The sources, the flags behind the verdict, the AI summary, the holders and the Insider Watch are reserved for Pro accounts. The verdict above is what the free overlay shows.</p>
+      <div class="pg-actions">
+        <a class="pg-btn primary" href="${PRO_GATE_PRICING_URL}" target="_blank" rel="noopener noreferrer">Unlock with Pro</a>
+        <a class="pg-btn" href="${PRO_GATE_SIGNIN_URL}" target="_blank" rel="noopener noreferrer">Already Pro? Sign in</a>
+      </div>
+    </section>`;
 }

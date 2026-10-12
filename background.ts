@@ -81,6 +81,11 @@ const ALLOWED_OPEN_TAB_HOSTS = new Set([
   "antares-website.vercel.app"
 ])
 
+// ─── INSTALL ID ───────────────────────────────────────────────────────────────
+// Create the install id as soon as the extension is installed or updated, so it exists before any content script or the
+// Options page asks for it (shared/install-id.ts is safe when they race, this makes the race rare in the first place).
+chrome.runtime.onInstalled.addListener(() => { void getInstallId() })
+
 // ─── KEEPALIVE ────────────────────────────────────────────────────────────────
 void chrome.alarms.create(config.keepaliveAlarmName, { periodInMinutes: config.keepaliveIntervalMinutes })
 chrome.alarms.onAlarm.addListener((a) => { if (a.name === config.keepaliveAlarmName) void chrome.runtime.id })

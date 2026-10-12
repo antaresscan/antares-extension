@@ -6,13 +6,19 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 // when its Insider Watch tab opens. This endpoint therefore has to be right on its own:
 //  - the graph must be built from OWNER wallets, not from token accounts (a token account never appears in a parsed transfer, so the
 //    graph found no cluster at all: audit M9);
-//  - it returns the Cluster cards of the top of the page (`clusterActors`), for the same wallets the scan showed.
+//  - it returns the Cluster cards of the top of the page (`clusterActors`), for the same wallets the scan showed;
+//  - it is a Pro feature, guarded per user and per day, and never cached by a shared cache (audit A-03).
 
 const mockLargest = vi.fn();
 const mockSupply = vi.fn();
 const mockOwners = vi.fn();
 const mockBuildGraph = vi.fn();
 const mockBuildActivity = vi.fn();
+const mockTier = vi.fn();
+const mockAvailable = vi.fn();
+const mockUserLimit = vi.fn();
+const mockDayBudget = vi.fn();
+const mockUserKeyOf = vi.fn();
 
 vi.mock("../api/_lib/middleware", async () => {
   const actual = await vi.importActual<typeof import("../api/_lib/middleware")>("../api/_lib/middleware");
@@ -24,6 +30,14 @@ vi.mock("../api/_lib/fetchers", () => ({
   heliusResolveAccountOwners: (...a: unknown[]) => mockOwners(...a),
 }));
 vi.mock("../api/_lib/insider-graph", () => ({ buildInsiderGraph: (...a: unknown[]) => mockBuildGraph(...a), initGraphCache: vi.fn() }));
+vi.mock("../api/_lib/user", () => ({ initUserStorage: vi.fn(), resolveTierAndBypass: (...a: unknown[]) => mockTier(...a) }));
+vi.mock("../api/_lib/graph-access", () => ({
+  initGraphAccess: vi.fn(),
+  graphAccessAvailable: () => mockAvailable(),
+  graphUserKeyOf: (...a: unknown[]) => mockUserKeyOf(...a),
+  checkGraphUserLimit: (...a: unknown[]) => mockUserLimit(...a),
+  takeGraphDailyBudget: (...a: unknown[]) => mockDayBudget(...a),
+}));
 vi.mock("../api/_lib/insider-activity", () => ({ buildInsiderActivity: (...a: unknown[]) => mockBuildActivity(...a), initActivityCache: vi.fn() }));
 
 process.env.HELIUS_API_KEY = "0123abcd-0123-4abc-8def-0123456789ab";
@@ -33,8 +47,8 @@ const MINT = "So11111111111111111111111111111111111111112";
 const LP_PROGRAM = "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"; // a known LP program: must never count as a holder
 const SUPPLY = 100_000;
 
-function req(query: Record<string, string> = { ca: MINT }): VercelRequest {
-  return { method: "GET", query, headers: { origin: "https://dexscreener.com", "x-forwarded-for": "1.2.3.4" }, socket: { remoteAddress: "1.2.3.4" } } as unknown as VercelRequest;
+function req(query: Record<string, string> = { ca: MINT }, headers: Record<string, string> = {}): VercelRequest {
+  return { method: "GET", query, headers: { origin: "https://dexscreener.com", "x-forwarded-for": "1.2.3.4", ...headers }, socket: { remoteAddress: "1.2.3.4" } } as unknown as VercelRequest;
 }
 function mkRes() {
   const r = { code: 200, body: null as unknown, headers: {} as Record<string, string> } as {
@@ -46,7 +60,7 @@ function mkRes() {
   r.end = () => r;
   return r;
 }
-const run = async (query?: Record<string, string>) => { const res = mkRes(); await handler(req(query), res as unknown as VercelResponse); return res; };
+const run = async (query?: Record<string, string>, headers?: Record<string, string>) => { const res = mkRes(); await handler(req(query, headers), res as unknown as VercelResponse); return res; };
 
 /** The token accounts getTokenLargestAccounts returns, and the owner wallets they belong to. */
 const accounts = Array.from({ length: 6 }, (_, i) => ({ address: `tokenAcct${i + 1}`, uiAmount: 5000 - i * 100 }));
@@ -62,6 +76,12 @@ beforeEach(() => {
   mockOwners.mockImplementation(async (holders: Array<{ address: string }>) => holders.map((h) => ({ ...h, owner: ownerOf(h.address) })));
   mockBuildGraph.mockResolvedValue(emptyGraph);
   mockBuildActivity.mockResolvedValue({ activity: [], wallets: [] });
+  // A signed-in Pro user, well inside every limit: the default of every test below that is not about access.
+  mockAvailable.mockReturnValue(true);
+  mockTier.mockResolvedValue({ tier: "pro", bypassQuota: false });
+  mockUserKeyOf.mockResolvedValue("u:abc");
+  mockUserLimit.mockResolvedValue({ ok: true });
+  mockDayBudget.mockResolvedValue({ ok: true });
 });
 
 describe("the graph is built from owner wallets", () => {
@@ -150,12 +170,106 @@ describe("unchanged behaviour", () => {
     expect(mockBuildGraph).not.toHaveBeenCalled();
   });
 
-  it("is cached by the CDN for 5 minutes", async () => {
-    expect((await run()).headers["Cache-Control"]).toMatch(/s-maxage=300/);
+  it("is never cached by a shared cache: the answer depends on who asks", async () => {
+    expect((await run()).headers["Cache-Control"]).toBe("private, no-store");
   });
 
   it("500 when the graph cannot be built", async () => {
     mockBuildGraph.mockRejectedValue(new Error("boom"));
     expect((await run()).code).toBe(500);
+  });
+});
+
+describe("access: Pro only, per user, per day (audit A-03)", () => {
+  /** Nothing the Helius plan pays for may have started. */
+  const nothingSpent = () => {
+    expect(mockLargest).not.toHaveBeenCalled();
+    expect(mockSupply).not.toHaveBeenCalled();
+    expect(mockOwners).not.toHaveBeenCalled();
+    expect(mockBuildGraph).not.toHaveBeenCalled();
+    expect(mockBuildActivity).not.toHaveBeenCalled();
+  };
+
+  it("402 for a Free caller, before any upstream call and before any budget is taken", async () => {
+    mockTier.mockResolvedValue({ tier: "free", bypassQuota: false });
+    const res = await run({ ca: MINT, activity: "1" });
+    expect(res.code).toBe(402);
+    expect((res.body as { details: { code: string } }).details.code).toBe("pro_required");
+    expect(mockUserLimit).not.toHaveBeenCalled();
+    expect(mockDayBudget).not.toHaveBeenCalled();
+    nothingSpent();
+  });
+
+  it.each(["pro", "yearly", "lifetime"] as const)("a %s caller is answered", async (tier) => {
+    mockTier.mockResolvedValue({ tier, bypassQuota: false });
+    expect((await run()).code).toBe(200);
+  });
+
+  it("the plan is asked with the install id the caller sent, else with the network address (as /api/scan does)", async () => {
+    await run({ ca: MINT }, { "x-antares-install": "install-0123456789" });
+    expect(mockTier.mock.calls[0][1]).toBe("install-0123456789");
+    mockTier.mockClear();
+    await run();
+    expect(mockTier.mock.calls[0][1]).toBe("1.2.3.4");
+  });
+
+  it("503 when Redis is not there: both guards live in it, so the endpoint does not run unguarded", async () => {
+    mockAvailable.mockReturnValue(false);
+    const res = await run({ ca: MINT, activity: "1" });
+    expect(res.code).toBe(503);
+    expect(mockTier).not.toHaveBeenCalled();
+    nothingSpent();
+  });
+
+  it("an invalid address is still a 400, whatever the state of Redis", async () => {
+    mockAvailable.mockReturnValue(false);
+    expect((await run({ ca: "not-an-address!" })).code).toBe(400);
+  });
+
+  it("429 + Retry-After when the user is over their own window, and the day's budget is left alone", async () => {
+    mockUserLimit.mockResolvedValue({ ok: false, reason: "limited", retryAfterSec: 17 });
+    const res = await run({ ca: MINT, activity: "1" });
+    expect(res.code).toBe(429);
+    expect(res.headers["Retry-After"]).toBe("17");
+    expect(mockDayBudget).not.toHaveBeenCalled();
+    nothingSpent();
+  });
+
+  it("429 + Retry-After when the whole service is over its day", async () => {
+    mockDayBudget.mockResolvedValue({ ok: false, reason: "limited", retryAfterSec: 3600 });
+    const res = await run();
+    expect(res.code).toBe(429);
+    expect(res.headers["Retry-After"]).toBe("3600");
+    nothingSpent();
+  });
+
+  it("503, never a free pass, when a guard cannot answer", async () => {
+    mockUserLimit.mockResolvedValue({ ok: false, reason: "unavailable" });
+    expect((await run()).code).toBe(503);
+    mockUserLimit.mockResolvedValue({ ok: true });
+    mockDayBudget.mockResolvedValue({ ok: false, reason: "unavailable" });
+    expect((await run()).code).toBe(503);
+    nothingSpent();
+  });
+
+  it("503 when the plan cannot be checked", async () => {
+    mockTier.mockRejectedValue(new Error("redis down"));
+    const res = await run();
+    expect(res.code).toBe(503);
+    nothingSpent();
+  });
+
+  it("the user window is keyed by what graphUserKeyOf says (the session), not by the address", async () => {
+    mockUserKeyOf.mockResolvedValue("u:the-session");
+    await run();
+    expect(mockUserLimit).toHaveBeenCalledWith("u:the-session");
+  });
+
+  it("every answer, refusals included, is private and uncached", async () => {
+    mockTier.mockResolvedValue({ tier: "free", bypassQuota: false });
+    expect((await run()).headers["Cache-Control"]).toBe("private, no-store");
+    mockTier.mockResolvedValue({ tier: "pro", bypassQuota: false });
+    mockDayBudget.mockResolvedValue({ ok: false, reason: "limited", retryAfterSec: 5 });
+    expect((await run()).headers["Cache-Control"]).toBe("private, no-store");
   });
 });

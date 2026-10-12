@@ -24,6 +24,7 @@ import { logger } from "./logger";
 import { getAccountFromRequest } from "./session-cookie";
 import { isDevLifetimeEmail, isDevProEmail } from "./account";
 import { getLicensesByEmail } from "./license";
+import { decideTier, parseDevTier, type Tier, type TierDecision, type TierFacts } from "./entitlements";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -39,7 +40,7 @@ export const HISTORY_KEY = (id: string) => `user:${id}:history`;
 // "lifetime" in the type for grandfathered customers who paid before
 // the rename — their stored tier is still honoured forever and the UI
 // displays them as Lifetime. New checkout flows mint "yearly" only.
-export type Tier = "free" | "pro" | "yearly" | "lifetime";
+export type { Tier };
 
 export interface ScanHistoryEntry {
   ca: string;
@@ -169,6 +170,13 @@ export async function getEffectiveTier(
   return getUserTier(installId);
 }
 
+export interface TierResolution {
+  tier: Tier;
+  bypassQuota: boolean;
+  /** Epoch ms when a time-limited tier (pro, yearly) lapses; null for free, lifetime and dev grants. /api/quota hands it to the Options page ("expires on ..."). */
+  tierExpiresAt: number | null;
+}
+
 /**
  * Combined tier + dev-bypass resolution. One session lookup, two answers.
  *
@@ -187,175 +195,154 @@ export async function getEffectiveTier(
 export async function resolveTierAndBypass(
   req: { headers: { cookie?: string | string[]; "x-antares-dev-tier"?: string | string[] } },
   installId: string,
-): Promise<{ tier: Tier; bypassQuota: boolean }> {
-  const devTierHeaderRaw = req.headers["x-antares-dev-tier"] ?? null;
-
-  // Env-var dev escape: bypass session, bypass quota.
-  if (isDevProInstall(installId)) {
-    let tier: Tier = "yearly";
-    if (devTierHeaderRaw) {
-      const raw = Array.isArray(devTierHeaderRaw) ? devTierHeaderRaw[0] : devTierHeaderRaw;
-      const v = String(raw ?? "").trim().toLowerCase();
-      if (v === "free" || v === "pro" || v === "yearly" || v === "lifetime") tier = v as Tier;
-    } else {
-      tier = await getUserTier(installId);
-    }
-    return { tier, bypassQuota: true };
-  }
-
-  if (!isAvailable() || !redis) {
-    logger.metric("tier-resolve.no-redis", { installId, tier: "free" });
-    return { tier: "free", bypassQuota: false };
-  }
-
-  // Helper to find which auth path was taken (header vs cookie vs none)
+): Promise<TierResolution> {
   const cookieRaw = (req as { headers: { cookie?: string | string[] } }).headers.cookie;
-  const headerRaw = (req as { headers: { "x-antares-session"?: string | string[] } })
-    .headers["x-antares-session"];
+  const headerRaw = (req as { headers: { "x-antares-session"?: string | string[] } }).headers["x-antares-session"];
   const authSource = headerRaw
     ? "header"
     : (typeof cookieRaw === "string" && cookieRaw.includes("antares_session="))
       ? "cookie"
       : "none";
 
-  // Single session read. The cookie or X-Antares-Session header is the
-  // ONLY thing that proves who the user is — sign out clears it,
-  // signing in restores it.
-  let sessionEmail: string | null = null;
-  try {
-    const account = await getAccountFromRequest(
-      req as unknown as Parameters<typeof getAccountFromRequest>[0],
-      redis,
-    );
-    sessionEmail = account?.email ?? null;
-  } catch (err) {
-    logger.metric("tier-resolve.session-error", {
-      installId,
-      authSource,
-      errorMessage: err instanceof Error ? err.message : String(err),
-      errorName: err instanceof Error ? err.name : "unknown",
-    });
-    return { tier: "free", bypassQuota: false };
-  }
-  if (!sessionEmail) {
-    logger.metric("tier-resolve.no-session", { installId, authSource, tier: "free" });
-    return { tier: "free", bypassQuota: false };
-  }
+  // The facts the decision reads (see entitlements.ts for the table). Each is read only when a row of the table needs it.
+  let licenseExpiresAt: number | null = null;
+  const facts: TierFacts = {
+    devInstall: isDevProInstall(installId),
+    devTier: parseDevTier(req.headers["x-antares-dev-tier"]),
+    storageAvailable: isAvailable() && redis !== null,
+    session: async () => {
+      try {
+        const account = await getAccountFromRequest(req as unknown as Parameters<typeof getAccountFromRequest>[0], redis as Redis);
+        return account?.email ? { kind: "email", email: account.email } : { kind: "none" };
+      } catch (err) {
+        return {
+          kind: "error",
+          name: err instanceof Error ? err.name : "unknown",
+          message: err instanceof Error ? err.message : String(err),
+        };
+      }
+    },
+    boundEmail: async () => {
+      try {
+        return (await (redis as Redis).get<string>(`account:install:${installId}`)) ?? null;
+      } catch (err) {
+        logger.warn("user", "binding read failed during tier resolve", { error: String(err) });
+        return null;
+      }
+    },
+    isDevEmail: (email) => isDevLifetimeEmail(email) || isDevProEmail(email),
+    licenseTier: async (email) => {
+      const r = await resolveTierFromEmail(email);
+      licenseExpiresAt = r.expiresAt; // the table only needs the tier; the expiry rides along for /api/quota
+      return r.tier;
+    },
+    installTier: () => getUserTier(installId),
+  };
 
-  // Read install→email binding (if any). We consult it AFTER the
-  // session-email license lookup below — a session with its own paid
-  // license is never a hijack attempt, regardless of how the install
-  // was previously bound. The anti-hijack only applies when the session
-  // has no license of its own and is trying to ride the install's
-  // legacy tier.
-  let boundEmail: string | null = null;
-  try {
-    boundEmail = await redis.get<string>(`account:install:${installId}`);
-  } catch (err) {
-    logger.warn("user", "binding read failed during tier resolve", { error: String(err) });
-  }
+  const decision = await decideTier(facts);
+  logTierDecision(decision, installId, authSource);
 
-  // Dev check.
-  const isDev = isDevLifetimeEmail(sessionEmail) || isDevProEmail(sessionEmail);
+  // When the paid tier lapses, for the Options page: the winning licence's end (row "license"), or the install's stored end (row
+  // "install-stored"). Free, Lifetime and dev grants have none.
+  let tierExpiresAt: number | null = null;
+  if (decision.reason === "license") tierExpiresAt = licenseExpiresAt;
+  else if (decision.reason === "install-stored" && (decision.tier === "pro" || decision.tier === "yearly")) tierExpiresAt = await readTierExpiry(installId);
+  return { tier: decision.tier, bypassQuota: decision.bypassQuota, tierExpiresAt };
+}
 
-  // Dev users can flip tier via header — applies on top of whatever
-  // tier resolution would otherwise produce.
-  if (isDev && devTierHeaderRaw) {
-    const raw = Array.isArray(devTierHeaderRaw) ? devTierHeaderRaw[0] : devTierHeaderRaw;
-    const v = String(raw ?? "").trim().toLowerCase();
-    if (v === "free" || v === "pro" || v === "yearly" || v === "lifetime") {
-      logger.metric("tier-resolve.dev-header", {
-        installId, authSource, sessionEmail, tier: v,
+/** One metric per decision, with the names and fields the dashboards have always read. A dev install logs nothing. */
+function logTierDecision(d: TierDecision, installId: string, authSource: string): void {
+  switch (d.reason) {
+    case "dev-install":
+      return;
+    case "no-storage":
+      logger.metric("tier-resolve.no-redis", { installId, tier: "free" });
+      return;
+    case "session-error":
+      logger.metric("tier-resolve.session-error", { installId, authSource, errorMessage: d.error?.message, errorName: d.error?.name });
+      return;
+    case "no-session":
+      logger.metric("tier-resolve.no-session", { installId, authSource, tier: "free" });
+      return;
+    case "dev-header":
+      logger.metric("tier-resolve.dev-header", { installId, authSource, sessionEmail: d.sessionEmail, tier: d.tier });
+      return;
+    case "license":
+      logger.metric("tier-resolve.from-email", {
+        installId, authSource, sessionEmail: d.sessionEmail, tier: d.tier, isDev: d.isDev, boundEmail: d.boundEmail ?? null,
       });
-      return { tier: v as Tier, bypassQuota: true };
-    }
+      return;
+    case "install-bound-elsewhere":
+      logger.metric("tier-resolve.hijack-block", { installId, authSource, sessionEmail: d.sessionEmail, boundEmail: d.boundEmail, tier: "free" });
+      return;
+    case "install-stored":
+      logger.metric("tier-resolve.from-install-fallback", { installId, authSource, sessionEmail: d.sessionEmail, tier: d.tier, isDev: d.isDev });
+      return;
+    case "no-license-no-binding":
+      logger.metric("tier-resolve.no-license-no-binding", { installId, authSource, sessionEmail: d.sessionEmail, tier: "free", isDev: d.isDev });
+      return;
   }
-
-  // PRIMARY: resolve tier from the session email's licences. A signed-
-  // in user with their own paid license should always see that tier,
-  // even when the install was previously bound to a different email
-  // (e.g. the user logged out of account A and signed in to their own
-  // account B — both are legitimate, neither is a hijack). The earlier
-  // version did the install-binding anti-hijack check BEFORE this
-  // lookup, which permanently broke account switching for anyone who
-  // had signed in on a given browser before.
-  const emailTier = await resolveTierFromEmail(sessionEmail);
-  if (emailTier !== "free") {
-    logger.metric("tier-resolve.from-email", {
-      installId, authSource, sessionEmail, tier: emailTier, isDev,
-      // log the binding state so we still see hijack attempts in
-      // metrics — they just no longer get a Free penalty when the
-      // session has its own paid license.
-      boundEmail: boundEmail ?? null,
-    });
-    return { tier: emailTier, bypassQuota: isDev };
-  }
-
-  // From here: session has NO license of its own. Anti-hijack now
-  // applies — a session without licenses trying to use an install bound
-  // to a different email is exactly the case the binding exists for.
-  if (boundEmail && boundEmail !== sessionEmail) {
-    logger.metric("tier-resolve.hijack-block", {
-      installId, authSource, sessionEmail, boundEmail, tier: "free",
-    });
-    return { tier: "free", bypassQuota: false };
-  }
-
-  // FALLBACK: when the email has no licences but the install IS bound
-  // to the same email, honour the install's stored tier.
-  if (boundEmail === sessionEmail) {
-    const legacyTier = await getUserTier(installId);
-    logger.metric("tier-resolve.from-install-fallback", {
-      installId, authSource, sessionEmail, tier: legacyTier, isDev,
-    });
-    return { tier: legacyTier, bypassQuota: isDev };
-  }
-
-  // No licence on email + no install binding → user is signed in but
-  // hasn't paid for anything. Free.
-  logger.metric("tier-resolve.no-license-no-binding", {
-    installId, authSource, sessionEmail, tier: "free", isDev,
-  });
-  return { tier: "free", bypassQuota: isDev };
 }
 
 /**
- * Pick the best active tier across all licenses owned by `email`.
+ * Pick the best active tier across all licenses owned by `email`, and when it lapses.
  * Priority: lifetime (no expiry) > yearly (active) > pro (active) > free.
  *
  * Active means either no expiresAt set OR expiresAt is in the future.
  * Lifetime licences never have an expiry; pro/yearly licences expire
  * after their respective windows.
+ * `expiresAt` is the latest expiry among the active licenses of the winning tier (null when one of them has none, and for
+ * lifetime and free): with two paid passes, the tier lasts until the later one ends.
  *
  * Same logic as /account.html resolveTier() — they walk licences and
  * pick the highest active band. Keep both copies in sync.
  */
-async function resolveTierFromEmail(email: string): Promise<Tier> {
-  if (!isAvailable() || !redis) return "free";
+async function resolveTierFromEmail(email: string): Promise<{ tier: Tier; expiresAt: number | null }> {
+  const free = { tier: "free" as Tier, expiresAt: null };
+  if (!isAvailable() || !redis) return free;
   try {
     const licenses = await getLicensesByEmail(redis, email);
-    if (licenses.length === 0) return "free";
+    if (licenses.length === 0) return free;
 
     const now = Date.now();
     let hasLifetime = false;
-    let activeYearly = false;
-    let activePro = false;
+    // Per band: is a license active, does one of them never expire, and the latest end among the others.
+    const band = {
+      yearly: { active: false, open: false, until: 0 },
+      pro: { active: false, open: false, until: 0 },
+    };
     for (const l of licenses) {
       if (l.tier === "lifetime") {
         hasLifetime = true;
-      } else if (l.tier === "yearly") {
-        if (!l.expiresAt || l.expiresAt > now) activeYearly = true;
-      } else if (l.tier === "pro") {
-        if (!l.expiresAt || l.expiresAt > now) activePro = true;
+      } else if (l.tier === "yearly" || l.tier === "pro") {
+        if (!l.expiresAt || l.expiresAt > now) {
+          const b = band[l.tier];
+          b.active = true;
+          if (!l.expiresAt) b.open = true;
+          else b.until = Math.max(b.until, l.expiresAt);
+        }
       }
     }
-    if (hasLifetime) return "lifetime";
-    if (activeYearly) return "yearly";
-    if (activePro) return "pro";
-    return "free";
+    if (hasLifetime) return { tier: "lifetime", expiresAt: null };
+    if (band.yearly.active) return { tier: "yearly", expiresAt: band.yearly.open ? null : band.yearly.until };
+    if (band.pro.active) return { tier: "pro", expiresAt: band.pro.open ? null : band.pro.until };
+    return free;
   } catch (err) {
     logger.warn("user", "email tier resolve failed", { error: String(err), email });
-    return "free";
+    return free;
+  }
+}
+
+/** When the install's stored tier lapses (epoch ms), or null if it has no expiry or Redis cannot say. */
+async function readTierExpiry(installId: string): Promise<number | null> {
+  if (!isAvailable() || !redis) return null;
+  try {
+    const raw = await redis.get<number | string>(TIER_EXPIRES_KEY(installId));
+    if (raw == null) return null;
+    const n = typeof raw === "number" ? raw : parseInt(String(raw), 10);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  } catch {
+    return null;
   }
 }
 

@@ -49,11 +49,12 @@ describe("getInstallId", () => {
     const { mock } = installChromeStorageMock()
 
     const first = await getInstallId()
+    const readsAfterFirst = mock.storage.local.get.mock.calls.length
     const second = await getInstallId()
 
     expect(second).toBe(first)
-    // get/set called only on first call thanks to the module-level cache
-    expect(mock.storage.local.get).toHaveBeenCalledTimes(1)
+    // chrome.storage is only touched by the first call (a read, the write, a read-back); the second is served from the cache
+    expect(mock.storage.local.get).toHaveBeenCalledTimes(readsAfterFirst)
     expect(mock.storage.local.set).toHaveBeenCalledTimes(1)
   })
 
@@ -124,5 +125,43 @@ describe("getInstallId", () => {
     // No installChromeStorageMock — `chrome` is undefined.
     const id = await getInstallId()
     expect(id).toBeNull()
+  })
+
+  // Audit A-21: first launch, several callers at once.
+  it("callers that arrive together share ONE resolution: one id generated, one write", async () => {
+    const { store, mock } = installChromeStorageMock()
+
+    const ids = await Promise.all([getInstallId(), getInstallId(), getInstallId(), getInstallId()])
+
+    expect(new Set(ids).size).toBe(1)
+    expect(ids[0]).toBe(store.antaresInstallId)
+    expect(mock.storage.local.set).toHaveBeenCalledTimes(1)
+  })
+
+  it("adopts the id that is really stored when another context wrote its own in the meantime", async () => {
+    const store: Record<string, unknown> = {}
+    const set = vi.fn((kv: Record<string, unknown>) => {
+      // another context's write lands right after ours and wins
+      Object.assign(store, kv, { antaresInstallId: "id-from-the-other-context" })
+      return Promise.resolve()
+    });
+    (globalThis as unknown as { chrome: unknown }).chrome = {
+      storage: { local: { get: vi.fn((key: string) => Promise.resolve({ [key]: store[key] })), set } },
+    }
+
+    const id = await getInstallId()
+
+    expect(id).toBe("id-from-the-other-context")
+    expect(await getInstallId()).toBe("id-from-the-other-context")
+  })
+
+  it("a failure is not left in flight: the next call after a reset resolves normally", async () => {
+    const failing = vi.fn(() => Promise.reject(new Error("storage unavailable")));
+    (globalThis as unknown as { chrome: unknown }).chrome = { storage: { local: { get: failing, set: vi.fn() } } }
+    expect(await getInstallId()).toBeNull()
+
+    _resetInstallIdCacheForTests()
+    installChromeStorageMock()
+    expect(await getInstallId()).toMatch(/^[a-zA-Z0-9_-]{8,128}$/)
   })
 })
