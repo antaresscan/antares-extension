@@ -1,5 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 import path from "path";
+import { PRO_HEADERS } from "./e2e/pro";
 
 const BASE_URL =
   process.env.E2E_BASE_URL || "https://antares-extension.vercel.app";
@@ -9,6 +10,10 @@ const BASE_URL =
 const ORIGIN = process.env.E2E_ORIGIN || "https://antares-extension.vercel.app";
 const EXTENSION_PATH = path.resolve(__dirname, "build/chrome-mv3-prod");
 const IS_CI = !!process.env.CI;
+const API_HEADERS = { "User-Agent": "Antares-E2E/2.0", "Origin": ORIGIN };
+// The specs that read the full analysis ask as a Pro install (e2e/pro.ts). Only the request-based projects send it: a browser project
+// would send it to every third party its pages load; its specs add it to the API calls of the page under test (injectProHeaders).
+const API_PRO_HEADERS = { ...API_HEADERS, ...PRO_HEADERS };
 
 export default defineConfig({
   testDir: "./e2e",
@@ -23,7 +28,7 @@ export default defineConfig({
     : [["html", { open: "on-failure" }], ["list"]],
   use: {
     baseURL: BASE_URL,
-        extraHTTPHeaders: { "User-Agent": "Antares-E2E/2.0", "Origin": ORIGIN },
+        extraHTTPHeaders: API_HEADERS,
     screenshot: "only-on-failure",
     video: IS_CI ? "retain-on-failure" : "off",
     trace: IS_CI ? "retain-on-failure" : "off",
@@ -33,6 +38,7 @@ export default defineConfig({
     {
       name: "api",
       testMatch: /api[-.].*\.spec\.ts/,
+      use: { extraHTTPHeaders: API_PRO_HEADERS },
     },
     /* -- Web pages (Desktop Chrome) -- */
     {
@@ -75,6 +81,7 @@ export default defineConfig({
       name: "integration",
       testMatch:
         /(?:scan-integration|regression|error-handling|security-headers)\.spec\.ts/,
+      use: { extraHTTPHeaders: API_PRO_HEADERS },
     },
   ],
 });

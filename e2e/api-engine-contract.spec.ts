@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import type { APIRequestContext } from '@playwright/test';
+import { HAS_PRO, SKIP_NO_PRO } from './pro';
 
 // ENGINE CONTRACT — what the scan engine guarantees once its upstreams are wired the right way.
 //
@@ -94,6 +95,7 @@ async function recentSolanaMints(): Promise<string[]> {
 }
 
 test('engine contract: every upstream is read, authorities come from the chain, holders and LP burn are right', async ({ request }) => {
+  test.skip(!HAS_PRO, SKIP_NO_PRO);
   test.setTimeout(420_000);
 
   // One at a time: GoPlus rate limits a burst, and a skipped upstream is exactly what this test must not hide.

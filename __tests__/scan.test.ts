@@ -1,4 +1,5 @@
 import { vi, describe, it, expect, beforeEach } from "vitest";
+import { stubFetch } from "./fixtures/fetch-double";
 import { readFileSync } from "node:fs";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { SCORING_VERSION } from "../api/_lib/constants";
@@ -125,14 +126,14 @@ vi.mock("../api/_lib/insider-graph", () => ({
 
 // Mock global fetch for DexScreener, RugCheck, GoPlus
 const mockFetch = vi.fn();
-vi.stubGlobal("fetch", mockFetch);
+stubFetch(mockFetch);
 
 // ---- Helpers ----
 function createMockReq(query: Record<string, string> = {}, method = "GET"): VercelRequest {
   return {
     method,
     query,
-    headers: { origin: "https://dexscreener.com", "x-forwarded-for": "1.2.3.4" },
+    headers: { origin: "https://dexscreener.com", "x-forwarded-for": "1.2.3.4", "x-antares-install": "test-pro-install-0001" },
     socket: { remoteAddress: "1.2.3.4" },
   } as unknown as VercelRequest;
 }
@@ -288,6 +289,8 @@ function setupGoodTokenMocks() {
 process.env.UPSTASH_REDIS_REST_URL = "https://mock.upstash.io";
 process.env.UPSTASH_REDIS_REST_TOKEN = "mock-token";
 process.env.HELIUS_API_KEY = "mock-helius-key";
+// These tests read the FULL scan, which only a Pro caller receives (api/_lib/pro-gate.ts): this install is a Pro one (the dev escape hatch).
+process.env.DEV_PRO_INSTALLS = "test-pro-install-0001";
 
 const { default: handler } = await import("../api/scan");
 
@@ -798,5 +801,50 @@ describe("scan handler — token on the pump.fun bonding curve", () => {
 
     expect(body.flags.some((f) => f.severity === "critical" && /abandoned pool/i.test(f.label))).toBe(true);
     expect(body.risk).toBe("RUG");
+  });
+});
+
+// ─── The Pro/Free line is drawn on the server (api/_lib/pro-gate.ts) ─────────────────────────────────────────────────
+// Every other test of this file asks as a Pro install (see the header of createMockReq): they read the FULL scan. These two ask the
+// same scan as a Free caller (no install, no session) and as a Pro one, and compare.
+describe("scan handler — the Pro/Free line is drawn on the server", () => {
+  const MINT = "So11111111111111111111111111111111111111112";
+  const ask = async (asPro: boolean) => {
+    setupGoodTokenMocks();
+    const base = createMockReq({ ca: MINT });
+    const req = asPro ? base : ({ ...base, headers: { origin: "https://dexscreener.com", "x-forwarded-for": "1.2.3.4" } } as unknown as VercelRequest);
+    const res = createMockRes();
+    await handler(req, res);
+    return (res as unknown as { getBody: () => Record<string, unknown> }).getBody();
+  };
+
+  it("a Free caller gets the verdict, the score and the Sell/Mint/Freeze/LP line, and none of the analysis", async () => {
+    const body = await ask(false);
+    expect(body.proLocked).toBe(true);
+    expect(body.risk).toBeDefined();
+    expect(body.score).toBeTypeOf("number");
+    expect(body).toHaveProperty("mintAuthority");
+    expect(body).toHaveProperty("freezeAuthority");
+    expect(body).toHaveProperty("honeypot");
+    for (const pro of ["layers", "sources_used", "aiSummary", "criticalActors", "verdictHistory", "holderActivity", "holders", "confidence", "tokenCreator"]) {
+      expect(body, pro).not.toHaveProperty(pro);
+    }
+    // Whatever flags are left carry no text.
+    for (const f of body.flags as Array<{ label: string }>) expect(f.label).toBe("Part of Antares Pro");
+  });
+
+  it("a Pro caller gets the full scan", async () => {
+    const body = await ask(true);
+    expect(body.proLocked).toBeUndefined();
+    expect(body.layers).toBeDefined();
+    expect(Array.isArray(body.sources_used)).toBe(true);
+    expect((body.flags as Array<{ label: string }>).some((f) => f.label !== "Part of Antares Pro")).toBe(true);
+  });
+
+  it("Free and Pro get the same verdict and the same score: the gate shows less, it never decides differently", async () => {
+    const free = await ask(false);
+    const pro = await ask(true);
+    expect(free.risk).toBe(pro.risk);
+    expect(free.score).toBe(pro.score);
   });
 });

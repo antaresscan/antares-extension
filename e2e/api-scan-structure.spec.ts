@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import type { APIRequestContext, APIResponse } from '@playwright/test';
+import { HAS_PRO, SKIP_NO_PRO } from './pro';
 
 const BASE = process.env.E2E_BASE_URL || 'https://antares-extension.vercel.app';
 // POPCAT — stable established meme with manageable holder count, returns
@@ -70,17 +71,20 @@ test.describe('/api/scan Response Structure Validation', () => {
   });
 
   test('has layers object', async () => {
+    test.skip(!HAS_PRO, SKIP_NO_PRO);
     expect(scanData).not.toBeNull();
     expect(typeof scanData!.layers).toBe('object');
     expect(scanData!.layers).not.toBeNull();
   });
 
   test('has sources_used array', async () => {
+    test.skip(!HAS_PRO, SKIP_NO_PRO);
     expect(scanData).not.toBeNull();
     expect(Array.isArray(scanData!.sources_used)).toBeTruthy();
   });
 
   test('sources_used contains expected providers', async () => {
+    test.skip(!HAS_PRO, SKIP_NO_PRO);
     expect(scanData).not.toBeNull();
     const sources = scanData!.sources_used as string[];
     expect(sources, 'Missing source: dexscreener').toContain('dexscreener');
@@ -118,6 +122,7 @@ test.describe('/api/scan Response Structure Validation', () => {
   });
 
   test('has confidence field', async () => {
+    test.skip(!HAS_PRO, SKIP_NO_PRO);
     expect(scanData).not.toBeNull();
     expect(scanData!.confidence !== undefined || scanData!.conf !== undefined).toBeTruthy();
   });
