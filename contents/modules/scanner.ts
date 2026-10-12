@@ -7,6 +7,7 @@ import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimation
 import { scanRateLimiter } from "../../shared/rate-limit"
 import { logger } from "../../shared/logger"
 import { getInstallId } from "../../shared/install-id"
+import { fetchWithDeadline } from "../../shared/fetch-deadline"
 // NOTE 2026-05-20: the Zod runtime validation of /api/scan responses
 // was the root cause of the overlay-not-mounting incident (bisect
 // confirmed: TEST-B with Zod = KO, TEST-C with Sentry hooks but no
@@ -175,7 +176,7 @@ async function fetchWithRetry(
   for (let attempt = 0; attempt <= retries; attempt++) {
     if (signal.aborted) throw new DOMException("Aborted", "AbortError")
     try {
-      const res = await fetch(url, { signal, headers })
+      const res = await fetchWithDeadline(url, { headers }, signal)
       if (!res.ok) {
         const status = res.status
         // Quota exhaustion vs rate-limit burst: both surface as 429,
