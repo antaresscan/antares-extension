@@ -1238,7 +1238,7 @@ describe("scan handler — issuer-backed tokens are judged on their market", () 
       { extension: "metadataPointer", state: { authority: null, metadataAddress: ADDR } }],
   });
 
-  function scanAs(mint: string, over: { liq?: number; vol?: number; pegged?: boolean } = {}) {
+  function scanAs(mint: string, over: { liq?: number; vol?: number; pegged?: boolean; pairs?: unknown[]; priceUsd?: string } = {}) {
     setupGoodTokenMocks();
     mockHeliusGetMintAccount.mockResolvedValue(issuerMint());
     const goodMocks = mockFetch.getMockImplementation() as (url: string, ...rest: unknown[]) => Promise<unknown>;
@@ -1249,11 +1249,13 @@ describe("scan handler — issuer-backed tokens are judged on their market", () 
         return { ok: true, json: () => Promise.resolve({ result: { [mint]: Object.values(j.result)[0] } }) };
       }
       if (url.includes("dexscreener")) {
+        if (over.pairs) return { ok: true, json: () => Promise.resolve({ pairs: over.pairs }) };
         const j = (await answer.json()) as { pairs: Array<Record<string, unknown> & { baseToken: { address: string }; liquidity: { usd: number }; volume: { h24: number } }> };
         return { ok: true, json: () => Promise.resolve({ pairs: j.pairs.map((p) => ({
           ...p, baseToken: { ...p.baseToken, address: mint },
           liquidity: { usd: over.liq ?? p.liquidity.usd }, volume: { ...p.volume, h24: over.vol ?? p.volume.h24 },
           ...(over.pegged ? { priceChange: { m5: 0, h1: 0.05, h6: 0.1, h24: 0.2 }, priceUsd: "1.0001" } : {}),
+          ...(over.priceUsd ? { priceUsd: over.priceUsd } : {}),
         })) }) };
       }
       return answer;
@@ -1296,10 +1298,17 @@ describe("scan handler — issuer-backed tokens are judged on their market", () 
   });
 
   it("a stablecoin that moved 12 % in a day has lost its peg: critical, DANGER", async () => {
-    scanAs(STABLE); // the fixture's pair moved +12 % in 24 h
+    scanAs(STABLE, { priceUsd: "1.0002" }); // the fixture's pair moved +12 % in 24 h
     const body = await run(STABLE);
     expect(body.risk).toBe("DANGER");
     expect(flagOf(body, /^Stablecoin price moved 12%/)?.severity).toBe("critical");
+  });
+
+  it("a stablecoin that has sat at $0.93 (no move in 24 h) is off its peg: a warning, CAUTION", async () => {
+    scanAs(STABLE, { pegged: true, priceUsd: "0.9300" });
+    const body = await run(STABLE);
+    expect(body.risk).toBe("CAUTION");
+    expect(flagOf(body, /^Stablecoin trades at \$0\.9300, 7% from its \$1 peg/)?.severity).toBe("warning");
   });
 
   it("a real market problem still shows: the stock with a drained pool is a confirmed RUG, with $500 of liquidity DANGER", async () => {
@@ -1311,6 +1320,79 @@ describe("scan handler — issuer-backed tokens are judged on their market", () 
     const thin = await run(STOCK);
     expect(thin.risk).toBe("DANGER");
     expect(flagOf(thin, /^Very low liquidity/)?.severity).toBe("critical");
+  });
+});
+
+// ─── Liquid staking tokens through the whole scan: SAFE with their peg to SOL read ─────────────────────────────────────────────
+describe("scan handler — a liquid staking token is judged on its market and its peg to SOL", () => {
+  const JITOSOL = "J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn";
+  const COPY = "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU";
+  const WSOL = "So11111111111111111111111111111111111111112";
+  const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+  const ADDR = "2apBGMsS6ti9RyF5TwQTDswXBWskiJP2LD4cUEDqYJjk";
+  const day = 24 * 3600 * 1000;
+
+  // The stake pool is the mint authority (and holds most of the supply): critical for a meme coin, by design for an LST.
+  const poolMint = () => mintAccountResponse({ program: "spl-token", mintAuthority: ADDR, freezeAuthority: null });
+  const poolOf = (mint: string, quote: { address: string; symbol: string }, liq: number, native: string) => ({
+    pairAddress: `pool-${quote.symbol}-${liq}`, dexId: "raydium", baseToken: { address: mint, symbol: "JITOSOL", name: "Jito Staked SOL" }, quoteToken: { ...quote, name: quote.symbol },
+    liquidity: { usd: liq }, volume: { h24: 900_000, h1: 40_000 }, priceChange: { m5: 0, h1: 0.1, h6: 0.2, h24: 0.4 }, txns: { m5: { buys: 15, sells: 12 } },
+    priceUsd: "232.5", priceNative: native, marketCap: 60_000_000, fdv: 60_000_000, pairCreatedAt: Date.now() - 400 * day,
+    info: { socials: [{ type: "twitter", url: "https://twitter.com/test" }], websites: [{ url: "https://test.com" }] },
+  });
+
+  function scanLst(mint: string, pairs: unknown[]) {
+    setupGoodTokenMocks();
+    mockHeliusGetMintAccount.mockResolvedValue(poolMint());
+    const goodMocks = mockFetch.getMockImplementation() as (url: string, ...rest: unknown[]) => Promise<unknown>;
+    mockFetch.mockImplementation(async (url: string, ...rest: unknown[]) => {
+      const answer = (await goodMocks(url, ...rest)) as { ok: boolean; json: () => Promise<unknown> };
+      if (url.includes("gopluslabs")) {
+        const j = (await answer.json()) as { result: Record<string, unknown> };
+        return { ok: true, json: () => Promise.resolve({ result: { [mint]: Object.values(j.result)[0] } }) };
+      }
+      if (url.includes("dexscreener")) return { ok: true, json: () => Promise.resolve({ pairs }) };
+      return answer;
+    });
+  }
+  async function run(mint: string) {
+    const res = createMockRes();
+    await handler(createMockReq({ ca: mint }), res);
+    return (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as { risk: string; flags: Array<{ label: string; severity: string }> };
+  }
+  const flagOf = (b: { flags: Array<{ label: string; severity: string }> }, re: RegExp) => b.flags.find((f) => re.test(f.label));
+  const solPool = (mint: string, ratio: string) => poolOf(mint, { address: WSOL, symbol: "SOL" }, 600_000, ratio);
+  const usdcPool = (mint: string) => poolOf(mint, { address: USDC_MINT, symbol: "USDC" }, 5_000_000, "232.5");
+
+  it("a registry LST with a SOL-quoted pool at 1.27 SOL is SAFE; the stake pool's authority is information", async () => {
+    scanLst(JITOSOL, [usdcPool(JITOSOL), solPool(JITOSOL, "1.2700")]);
+    const body = await run(JITOSOL);
+    expect(body.risk).toBe("SAFE");
+    expect(flagOf(body, /^Liquid staking token — the stake pool holds/)?.severity).toBe("info");
+    expect(flagOf(body, /^Mint authority active/)?.severity).toBe("info");
+    expect(body.flags.some((f) => f.severity === "critical" || f.severity === "warning")).toBe(false);
+  });
+
+  it("the same LST at 0.85 SOL has lost its peg: critical, DANGER", async () => {
+    scanLst(JITOSOL, [usdcPool(JITOSOL), solPool(JITOSOL, "0.8500")]);
+    const body = await run(JITOSOL);
+    expect(body.risk).toBe("DANGER");
+    expect(flagOf(body, /^Liquid staking token trades at 0\.8500 SOL/)?.severity).toBe("critical");
+  });
+
+  it("an LST quoted only in USDC: its peg to SOL is not verified, CAUTION with a warning that says so (not RUG for its structure)", async () => {
+    scanLst(JITOSOL, [usdcPool(JITOSOL)]);
+    const body = await run(JITOSOL);
+    expect(body.risk).toBe("CAUTION");
+    expect(flagOf(body, /^Liquid staking token — its price in SOL could not be read/)?.severity).toBe("warning");
+    expect(flagOf(body, /^Mint authority active/)?.severity).toBe("info");
+  });
+
+  it("witness: the same pools and structure on a token that is not in the registry are read as any token's (authority critical, not SAFE)", async () => {
+    scanLst(COPY, [usdcPool(COPY), solPool(COPY, "1.2700")]);
+    const body = await run(COPY);
+    expect(["DANGER", "RUG"]).toContain(body.risk);
+    expect(flagOf(body, /^Mint authority active/)?.severity).toBe("critical");
   });
 });
 

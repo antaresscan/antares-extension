@@ -133,6 +133,8 @@ export interface DexScreenerPair {
     m5?: { buys?: number; sells?: number };
   };
   priceUsd?: string;
+  /** The base token's price in units of the QUOTE token (for a pool quoted in SOL: its price in SOL). */
+  priceNative?: string;
   marketCap?: number;
   fdv?: number;
   pairCreatedAt?: number;
