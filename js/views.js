@@ -18,6 +18,7 @@ import {
   computeExitLiquidity,
   parsePctFromFlags,
 } from "./compute.js";
+import { verdictLabel } from "./verdict-label.js";
 
 // ──────────────────────────────────────────────────────────────────────
 // Sparkline: builds an inline SVG polyline from candle close prices.
@@ -784,8 +785,7 @@ export const PRO_GATE_PRICING_URL = "https://antaresscan.com/pricing";
 export const PRO_GATE_SIGNIN_URL = "https://antaresscan.com/auth";
 
 export function buildProGate(d) {
-  const LB = { SAFE: "SAFE", CAUTION: "CAUTION", DANGER: "DANGER", RUG: "RUG PULL" };
-  const verdict = LB[d && d.risk] || (d && d.risk) || "";
+  const verdict = d && d.risk ? verdictLabel(d.risk, d.rugKind) : "";
   const sym = (d && (d.tokenSymbol || (d.pair && d.pair.baseToken && d.pair.baseToken.symbol))) || "";
   const name = (d && (d.tokenName || (d.pair && d.pair.baseToken && d.pair.baseToken.name))) || "";
   const tokenLine = [name, sym ? "$" + sym : ""].filter(Boolean).join(" · ");

@@ -39,8 +39,15 @@ describe("buildProGate", () => {
     }
   });
 
-  it("prints RUG as RUG PULL, like the rest of the page", () => {
-    expect(mount({ ...freeView, risk: "RUG" }).querySelector(".pg-verdict")?.textContent).toBe("RUG PULL");
+  it("prints a RUG the way the rest of the page does: RUG RISK, or RUG CONFIRMED when the answer says an event happened", () => {
+    expect(mount({ ...freeView, risk: "RUG" }).querySelector(".pg-verdict")?.textContent).toBe("RUG RISK");
+    expect(mount({ ...freeView, risk: "RUG", rugKind: "risk" }).querySelector(".pg-verdict")?.textContent).toBe("RUG RISK");
+    expect(mount({ ...freeView, risk: "RUG", rugKind: "confirmed" }).querySelector(".pg-verdict")?.textContent).toBe("RUG CONFIRMED");
+  });
+
+  it("keeps the word of the other verdicts, and prints nothing when there is no verdict", () => {
+    expect(mount({ ...freeView, risk: "DANGER", rugKind: "confirmed" }).querySelector(".pg-verdict")?.textContent).toBe("DANGER");
+    expect(mount({ ...freeView, risk: "" }).querySelector(".pg-verdict")).toBeNull();
   });
 
   it("holds none of the analysis: no flag text, no score, no sources", () => {
