@@ -82,22 +82,46 @@ describe("overlay summary — holders unverified", () => {
     expect(html).toContain("1 critical")
   })
 
-  it("control: other pipeline-status flags stay hidden (info severity)", () => {
+  it("control: other pipeline-status flags stay hidden (info severity), and a SAFE verdict reads 'No issues found'", () => {
     const html = buildResult(
-      makeScanData({ flags: [{ label: "GoPlus unavailable", severity: "info", impact: 0 }] as ScanResponseData["flags"] }),
+      makeScanData({ risk: "SAFE", flags: [{ label: "GoPlus unavailable", severity: "info", impact: 0 }] as ScanResponseData["flags"] }),
       MINT,
     )
 
     expect(html).toContain("No issues found")
   })
 
-  it("control: other pipeline-status flags stay hidden even at warning severity", () => {
+  it("control: other pipeline-status flags stay hidden even at warning severity (SAFE reads 'No issues found')", () => {
     const html = buildResult(
-      makeScanData({ flags: [{ label: "Helius RPC timed out", severity: "warning", impact: 0 }] as ScanResponseData["flags"] }),
+      makeScanData({ risk: "SAFE", flags: [{ label: "Helius RPC timed out", severity: "warning", impact: 0 }] as ScanResponseData["flags"] }),
       MINT,
     )
 
     expect(html).toContain("No issues found")
+  })
+
+  // "No issues found" is for SAFE only. A CAUTION with no flag to count (a source did not answer, so SAFE was not granted) read "No
+  // issues found" next to CAUTION: a contradiction, then it flipped to SAFE on the next scan.
+  it("a CAUTION with no flag to count never reads 'No issues found': it says the data is limited", () => {
+    const html = buildResult(
+      makeScanData({ risk: "CAUTION", flags: [{ label: "GoPlus unavailable", severity: "info", impact: 0 }] as ScanResponseData["flags"] }),
+      MINT,
+    )
+
+    expect(html).not.toContain("No issues found")
+    expect(html).toContain("Limited data")
+  })
+
+  it("a DANGER or a RUG with no flag to count does not read 'No issues found' either", () => {
+    for (const risk of ["DANGER", "RUG"] as const) {
+      const html = buildResult(makeScanData({ risk, flags: [] }), MINT)
+      expect(html, risk).not.toContain("No issues found")
+      expect(html, risk).toContain("Risk detected")
+    }
+  })
+
+  it("a SAFE with nothing to count still reads 'No issues found'", () => {
+    expect(buildResult(makeScanData({ risk: "SAFE", flags: [] }), MINT)).toContain("No issues found")
   })
 })
 

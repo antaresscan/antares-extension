@@ -762,8 +762,10 @@ export function buildResultNode(
   // means zero warning/critical flags; this just makes that guarantee
   // impossible to violate on the display side too.
   let summary = ""
+  // "No issues found" is for SAFE only: a verdict that is not SAFE without a flag to count (a source did not answer, so SAFE was not
+  // granted) says so, instead of reading "No issues found" next to CAUTION.
   if (data.risk === "SAFE") summary = "No issues found"
-  else if (flagCount === 0) summary = "No issues found"
+  else if (flagCount === 0) summary = data.risk === "CAUTION" ? "Limited data" : "Risk detected"
   else if (critCount > 0) summary = `${flagCount} flag${flagCount > 1 ? "s" : ""} \u2014 ${critCount} critical`
   else summary = `${flagCount} flag${flagCount > 1 ? "s" : ""} detected`
 
