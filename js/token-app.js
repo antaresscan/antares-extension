@@ -23,6 +23,7 @@ import {
   escapeHtml,
   getFlagDescription,
 } from "./formatters.js";
+import { verdictLabel } from "./verdict-label.js";
 import {
   buildSparkline,
   buildSniperMapTab,
@@ -536,9 +537,8 @@ function render(d, ca) {
   document.getElementById("loading").style.display = "none";
 
   const RC = { SAFE: "safe", CAUTION: "caution", DANGER: "danger", RUG: "rug" };
-  const LB = { SAFE: "SAFE", CAUTION: "CAUTION", DANGER: "DANGER", RUG: "RUG PULL" };
   const rc = RC[d.risk] || "danger";
-  const lb = LB[d.risk] || d.risk;
+  const lb = verdictLabel(d.risk, d.rugKind);
   document.body.className = `risk-${rc}`;
 
   const score = d.score || 0;
