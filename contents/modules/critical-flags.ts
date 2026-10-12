@@ -30,6 +30,7 @@ const FLAG_DESCRIPTIONS: Record<string, string> = {
   "Honeypot detected — cannot sell": "You cannot sell this token. Any funds spent are gone.",
   "Bundle activity detected": "Coordinated wallets bought together to fake demand — classic pump and dump setup.",
   "Bundle holds": "A coordinated group controls a large portion of supply and can dump at will.",
+  "Small bundle detected": "A few linked wallets bought together at launch. The share is small, but they can still sell at the same moment.",
   "Sniper activity detected": "Bots bought massively at launch before anyone else could — supply is concentrated.",
   "Top 10 holders > 70%": "Ten wallets control over 70% of the supply. If they sell together, the price collapses.",
   "Top 10 holders > 50%": "Half the supply is in 10 wallets — high dump risk.",
