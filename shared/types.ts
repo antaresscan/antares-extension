@@ -97,6 +97,21 @@ export interface HistoryEntry {
   ts: number;
 }
 
+/**
+ * Sent by the content script to the service worker each time the overlay
+ * shows a verdict, so the worker can set the toolbar badge, raise a
+ * risk-escalation notification and record the scan in the local history.
+ * Plain data only: the worker never re-fetches the scan (the content script
+ * already did, with the session headers).
+ */
+export interface ScanResultMessage {
+  type: "SCAN_RESULT";
+  ca: string;
+  risk: string;
+  score: number;
+  symbol: string;
+}
+
   // Insider Graph types
 export interface InsiderGraphNode {
   address: string;
