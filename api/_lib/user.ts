@@ -170,6 +170,13 @@ export async function getEffectiveTier(
   return getUserTier(installId);
 }
 
+export interface TierResolution {
+  tier: Tier;
+  bypassQuota: boolean;
+  /** Epoch ms when a time-limited tier (pro, yearly) lapses; null for free, lifetime and dev grants. /api/quota hands it to the Options page ("expires on ..."). */
+  tierExpiresAt: number | null;
+}
+
 /**
  * Combined tier + dev-bypass resolution. One session lookup, two answers.
  *
@@ -188,7 +195,7 @@ export async function getEffectiveTier(
 export async function resolveTierAndBypass(
   req: { headers: { cookie?: string | string[]; "x-antares-dev-tier"?: string | string[] } },
   installId: string,
-): Promise<{ tier: Tier; bypassQuota: boolean }> {
+): Promise<TierResolution> {
   const cookieRaw = (req as { headers: { cookie?: string | string[] } }).headers.cookie;
   const headerRaw = (req as { headers: { "x-antares-session"?: string | string[] } }).headers["x-antares-session"];
   const authSource = headerRaw
@@ -198,6 +205,7 @@ export async function resolveTierAndBypass(
       : "none";
 
   // The facts the decision reads (see entitlements.ts for the table). Each is read only when a row of the table needs it.
+  let licenseExpiresAt: number | null = null;
   const facts: TierFacts = {
     devInstall: isDevProInstall(installId),
     devTier: parseDevTier(req.headers["x-antares-dev-tier"]),
@@ -223,13 +231,23 @@ export async function resolveTierAndBypass(
       }
     },
     isDevEmail: (email) => isDevLifetimeEmail(email) || isDevProEmail(email),
-    licenseTier: resolveTierFromEmail,
+    licenseTier: async (email) => {
+      const r = await resolveTierFromEmail(email);
+      licenseExpiresAt = r.expiresAt; // the table only needs the tier; the expiry rides along for /api/quota
+      return r.tier;
+    },
     installTier: () => getUserTier(installId),
   };
 
   const decision = await decideTier(facts);
   logTierDecision(decision, installId, authSource);
-  return { tier: decision.tier, bypassQuota: decision.bypassQuota };
+
+  // When the paid tier lapses, for the Options page: the winning licence's end (row "license"), or the install's stored end (row
+  // "install-stored"). Free, Lifetime and dev grants have none.
+  let tierExpiresAt: number | null = null;
+  if (decision.reason === "license") tierExpiresAt = licenseExpiresAt;
+  else if (decision.reason === "install-stored" && (decision.tier === "pro" || decision.tier === "yearly")) tierExpiresAt = await readTierExpiry(installId);
+  return { tier: decision.tier, bypassQuota: decision.bypassQuota, tierExpiresAt };
 }
 
 /** One metric per decision, with the names and fields the dashboards have always read. A dev install logs nothing. */
@@ -267,42 +285,64 @@ function logTierDecision(d: TierDecision, installId: string, authSource: string)
 }
 
 /**
- * Pick the best active tier across all licenses owned by `email`.
+ * Pick the best active tier across all licenses owned by `email`, and when it lapses.
  * Priority: lifetime (no expiry) > yearly (active) > pro (active) > free.
  *
  * Active means either no expiresAt set OR expiresAt is in the future.
  * Lifetime licences never have an expiry; pro/yearly licences expire
  * after their respective windows.
+ * `expiresAt` is the latest expiry among the active licenses of the winning tier (null when one of them has none, and for
+ * lifetime and free): with two paid passes, the tier lasts until the later one ends.
  *
  * Same logic as /account.html resolveTier() — they walk licences and
  * pick the highest active band. Keep both copies in sync.
  */
-async function resolveTierFromEmail(email: string): Promise<Tier> {
-  if (!isAvailable() || !redis) return "free";
+async function resolveTierFromEmail(email: string): Promise<{ tier: Tier; expiresAt: number | null }> {
+  const free = { tier: "free" as Tier, expiresAt: null };
+  if (!isAvailable() || !redis) return free;
   try {
     const licenses = await getLicensesByEmail(redis, email);
-    if (licenses.length === 0) return "free";
+    if (licenses.length === 0) return free;
 
     const now = Date.now();
     let hasLifetime = false;
-    let activeYearly = false;
-    let activePro = false;
+    // Per band: is a license active, does one of them never expire, and the latest end among the others.
+    const band = {
+      yearly: { active: false, open: false, until: 0 },
+      pro: { active: false, open: false, until: 0 },
+    };
     for (const l of licenses) {
       if (l.tier === "lifetime") {
         hasLifetime = true;
-      } else if (l.tier === "yearly") {
-        if (!l.expiresAt || l.expiresAt > now) activeYearly = true;
-      } else if (l.tier === "pro") {
-        if (!l.expiresAt || l.expiresAt > now) activePro = true;
+      } else if (l.tier === "yearly" || l.tier === "pro") {
+        if (!l.expiresAt || l.expiresAt > now) {
+          const b = band[l.tier];
+          b.active = true;
+          if (!l.expiresAt) b.open = true;
+          else b.until = Math.max(b.until, l.expiresAt);
+        }
       }
     }
-    if (hasLifetime) return "lifetime";
-    if (activeYearly) return "yearly";
-    if (activePro) return "pro";
-    return "free";
+    if (hasLifetime) return { tier: "lifetime", expiresAt: null };
+    if (band.yearly.active) return { tier: "yearly", expiresAt: band.yearly.open ? null : band.yearly.until };
+    if (band.pro.active) return { tier: "pro", expiresAt: band.pro.open ? null : band.pro.until };
+    return free;
   } catch (err) {
     logger.warn("user", "email tier resolve failed", { error: String(err), email });
-    return "free";
+    return free;
+  }
+}
+
+/** When the install's stored tier lapses (epoch ms), or null if it has no expiry or Redis cannot say. */
+async function readTierExpiry(installId: string): Promise<number | null> {
+  if (!isAvailable() || !redis) return null;
+  try {
+    const raw = await redis.get<number | string>(TIER_EXPIRES_KEY(installId));
+    if (raw == null) return null;
+    const n = typeof raw === "number" ? raw : parseInt(String(raw), 10);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  } catch {
+    return null;
   }
 }
 
