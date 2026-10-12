@@ -6,12 +6,13 @@ const VERDICT_LABELS: Record<string, string> = { SAFE: "SAFE", CAUTION: "CAUTION
 
 /**
  * RUG is two different things, told apart by the API's `rugKind`:
- *   "RUG CONFIRMED"  something happened to the token (its pool was drained while it still traded, or it cannot be sold);
+ *   "RUG PULL"       something happened to the token (its pool was drained while it still traded, or it cannot be sold);
  *   "RUG RISK"       only the token's structure looks like a rug (who holds it, how it is built); nothing has happened yet.
- * A scan cached before the field existed has no kind: it reads as the weaker claim, "RUG RISK". The overlay never prints "RUG PULL"
- * any more: it claimed an event that the engine did not check. Any other verdict keeps its own word.
+ * A scan cached before the field existed has no kind: it reads as the weaker claim, "RUG RISK". "RUG PULL" says an event happened, so it is
+ * printed only when the engine observed one (it used to be printed for every RUG). "RUG CONFIRMED" was tried and is too wide for the overlay
+ * (its title is 46 px Bebas Neue in a 262 px box). Any other verdict keeps its own word.
  */
 export function verdictLabel(risk: string, rugKind?: string | null): string {
-  if (risk === "RUG") return rugKind === "confirmed" ? "RUG CONFIRMED" : "RUG RISK"
+  if (risk === "RUG") return rugKind === "confirmed" ? "RUG PULL" : "RUG RISK"
   return VERDICT_LABELS[risk] || risk
 }

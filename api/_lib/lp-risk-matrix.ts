@@ -56,6 +56,8 @@ const AGE_THRESHOLDS_HOURS = {
   // anything ≥ MATURE is the BLUE_CHIP age bucket
 } as const
 
+import type { SafeBlockedReason } from "./types"
+
 export type LpPctBucket = "<1%" | "1-5%" | "5-10%" | "10-15%" | "15-30%" | "30-60%" | ">60%" | "unknown"
 export type LpAgeBucket = "<14d" | "14-90d" | "90d-1y" | ">=1y" | "unknown"
 export type LpSeverity  = "info" | "warning" | "critical"
@@ -86,6 +88,8 @@ export interface LpRiskBucket {
   forceRug: boolean
   /** The flag label shown in the Critical Flags panel (short, ≤ 70 chars). */
   flagLabel: string
+  /** The safe-gate reasons the label stands for: always "lp_unverified", and "lp" too when the exposure is high or extreme. */
+  flagReasons: SafeBlockedReason[]
   /** Hover tooltip (full sentence). */
   flagTooltip: string
   /** Sentence inserted into the AI summary paragraph. */
@@ -141,7 +145,7 @@ function fmtPct(pct: number | null): string {
 //   safeBlock=true   → caps at CAUTION (verdict picked by score)
 //   forceRug=true    → overrides everything, returns RUG
 
-type Cell = Omit<LpRiskBucket, "pctBucket" | "ageBucket" | "flagLabel" | "flagTooltip" | "summaryLine"> & {
+type Cell = Omit<LpRiskBucket, "pctBucket" | "ageBucket" | "flagLabel" | "flagReasons" | "flagTooltip" | "summaryLine"> & {
   estimatedImpact: string
 }
 
@@ -222,7 +226,7 @@ function buildMessages(
   ageHours: number | null,
   lpPctOfSupply: number | null,
   estimatedImpact: string,
-): { flagLabel: string; flagTooltip: string; summaryLine: string } {
+): { flagLabel: string; flagReasons: SafeBlockedReason[]; flagTooltip: string; summaryLine: string } {
   const xPct = fmtPct(lpPctOfSupply)
   const age = humanizeAge(ageHours)
 
@@ -230,42 +234,49 @@ function buildMessages(
     case "<1%":
       return {
         flagLabel: `LP holds ${xPct}% of supply — negligible rug risk`,
+        flagReasons: ["lp_unverified"],
         flagTooltip: `Only ${xPct}% of the total supply sits in the liquidity pool. A pull would impact price by less than 5%, absorbed by orderbook arbitrage within minutes. Typical for CEX-dominated tokens.`,
         summaryLine: `The on-chain LP holds only ${xPct}% of the total supply, so a rug-pull would have negligible price impact — most depth is on centralized exchanges.`,
       }
     case "1-5%":
       return {
         flagLabel: `LP holds ${xPct}% of supply`,
+        flagReasons: ["lp_unverified"],
         flagTooltip: `${xPct}% of the supply sits in the liquidity pool. A pull would cause an estimated ${estimatedImpact} drop. Not a rug-zero risk at this share.`,
         summaryLine: `LP isn't formally locked but represents only ${xPct}% of supply — a drain would cause a limited ${estimatedImpact} impact.`,
       }
     case "5-10%":
       return {
         flagLabel: `LP holds ${xPct}% of supply`,
+        flagReasons: ["lp_unverified"],
         flagTooltip: `${xPct}% of supply in the pool. A pull would cause an estimated ${estimatedImpact} drop — significant but the token survives. Price impact stays below the rug-zero threshold.`,
         summaryLine: `LP holds ${xPct}% of supply with no formal lock. A full drain would cause a ${estimatedImpact} drop, but the token's liquidity profile is not rug-zero at this share.`,
       }
     case "10-15%":
       return {
         flagLabel: `LP holds ${xPct}% of supply`,
+        flagReasons: ["lp_unverified"],
         flagTooltip: `${xPct}% of supply in the pool. A pull would impact price by ${estimatedImpact}. The token's ${age} of operation is the main counter-signal.`,
         summaryLine: `LP holds ${xPct}% of supply with no formal lock. A dev pull would cause a ${estimatedImpact} drop — notable but survivable at this share, reduced by ${age} of clean operation.`,
       }
     case "15-30%":
       return {
         flagLabel: `LP holds ${xPct}% of supply — significant rug capacity`,
+        flagReasons: ["lp_unverified"],
         flagTooltip: `${xPct}% of supply in the pool. A pull would drop price by ${estimatedImpact}. The token's ${age} age and clean contract are the main reasons to consider this acceptable.`,
         summaryLine: `LP exposure is significant at ${xPct}% of supply. A pull would crash the price by ${estimatedImpact} — the dev's ${age} of clean operation is the only thing arguing against this being a live risk.`,
       }
     case "30-60%":
       return {
         flagLabel: `LP holds ${xPct}% of supply — high rug exposure`,
+        flagReasons: ["lp", "lp_unverified"],
         flagTooltip: `${xPct}% of supply in the pool. A pull would crash price by ${estimatedImpact}. Unusual profile for a non-fresh token; treat with caution even if other signals are clean.`,
         summaryLine: `Major LP exposure: ${xPct}% of supply, no lock. A pull would crash the price by ${estimatedImpact} — this is a high-risk profile regardless of the token's ${age} age.`,
       }
     case ">60%":
       return {
         flagLabel: `LP holds ${xPct}% of supply — extreme rug exposure`,
+        flagReasons: ["lp", "lp_unverified"],
         flagTooltip: `Dev controls ${xPct}% of supply via the LP. A pull would effectively zero the token (${estimatedImpact}). This is the standard fresh-launch / pre-graduation profile.`,
         summaryLine: `Catastrophic LP exposure: the dev controls ${xPct}% of supply via the unlocked LP. A pull would zero the token instantly (${estimatedImpact}). This is the textbook rug-pull setup — exit any open position immediately.`,
       }
@@ -273,6 +284,7 @@ function buildMessages(
     default:
       return {
         flagLabel: `LP-to-supply ratio could not be computed`,
+        flagReasons: ["lp_unverified"],
         flagTooltip: `Missing token supply or pool composition data. Falling back to the age + liquidity heuristic for LP-unverified scoring.`,
         summaryLine: `LP-to-supply ratio could not be computed, so the LP-unverified flag is scored from age and dollar liquidity instead.`,
       }

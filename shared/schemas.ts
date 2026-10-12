@@ -2,9 +2,12 @@ import { z } from "zod"
 import { CA_RE } from "./constants"
 
 // ─── Message Schemas ────────────────────────────────────────────────────────
-export const ScanMessageSchema = z.object({
-  type: z.literal("SCAN"),
+export const ScanResultMessageSchema = z.object({
+  type: z.literal("SCAN_RESULT"),
   ca: z.string().regex(CA_RE, "Invalid Solana contract address"),
+  risk: z.enum(["SAFE", "CAUTION", "DANGER", "RUG"]),
+  score: z.number(),
+  symbol: z.string(),
 })
 
 export const GetHistoryMessageSchema = z.object({
@@ -12,11 +15,11 @@ export const GetHistoryMessageSchema = z.object({
 })
 
 export const MessageSchema = z.discriminatedUnion("type", [
-  ScanMessageSchema,
+  ScanResultMessageSchema,
   GetHistoryMessageSchema,
 ])
 
-export type ScanMessage = z.infer<typeof ScanMessageSchema>
+export type ScanResultMessage = z.infer<typeof ScanResultMessageSchema>
 export type GetHistoryMessage = z.infer<typeof GetHistoryMessageSchema>
 export type Message = z.infer<typeof MessageSchema>
 

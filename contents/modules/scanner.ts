@@ -7,6 +7,7 @@ import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimation
 import { scanRateLimiter } from "../../shared/rate-limit"
 import { logger } from "../../shared/logger"
 import { getInstallId } from "../../shared/install-id"
+import { reportScanResult } from "./scan-report"
 // NOTE 2026-05-20: the Zod runtime validation of /api/scan responses
 // was the root cause of the overlay-not-mounting incident (bisect
 // confirmed: TEST-B with Zod = KO, TEST-C with Sentry hooks but no
@@ -303,6 +304,8 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
     }
     attachClose(cached.aiSummary ?? null, cached.flags ?? null, cached.risk ?? null)
     attachAnalysisBtn(ca)
+    // Badge / alert / history follow what the overlay shows, cached or not.
+    reportScanResult(ca, cached)
     chrome.storage.local.get(["autoRescan"], (prefs) => {
       if (prefs.autoRescan !== false) scheduleRescanIfPriceCrash(cached, ca)
     })
@@ -419,6 +422,8 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
     }
     attachClose(data.aiSummary ?? null, data.flags ?? null, data.risk ?? null)
     attachAnalysisBtn(ca)
+    // Badge / alert / history follow what the overlay shows, cached or not.
+    reportScanResult(ca, data)
     chrome.storage.local.get(["autoRescan"], (prefs) => {
       if (prefs.autoRescan !== false) scheduleRescanIfPriceCrash(data, ca)
     })

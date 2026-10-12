@@ -1,6 +1,7 @@
 // api/scoring.ts — Final scoring, verdict & safe-block classification
 
-import type { LayerResult, SafeBlockedReason } from "./types";
+import type { LayerResult, SafeBlockedReason, ScanFlag } from "./types";
+import type { FlagCodes } from "./helpers";
 import { LAYER_WEIGHTS, TRUST_FLOOR, XV_PENALTY_LP_BURN, XV_PENALTY_MINT_AUTH, XV_PENALTY_AGE, XV_PENALTY_HOLDER_CONCENTRATION } from "./constants";
 
 export function computeFinalScore(layers: LayerResult[]): number {
@@ -103,7 +104,62 @@ export const HARD_BLOCK_PATTERNS: Array<[RegExp, SafeBlockedReason]> = [
   [/single wallet holds \d+% — (high|extreme) concentration/i, "concentration"],
 ];
 
-export function classifySafeBlockedReasons(layers: LayerResult[]): SafeBlockedReason[] {
+/** What the TEXT of a flag makes of it, by HARD_BLOCK_PATTERNS, in table order, without repeats. Legacy: see classifySafeBlockedReasons. */
+export function legacyReasonsOfLabel(label: string): SafeBlockedReason[] {
+  const out: SafeBlockedReason[] = [];
+  for (const entry of HARD_BLOCK_PATTERNS) {
+    if (entry[0].test(label) && !out.includes(entry[1])) out.push(entry[1]);
+  }
+  return out;
+}
+
+/**
+ * What the per-source fallback reads in the TEXT of a flag, in the order it has always read it. It applies to a layer only when no
+ * flag of that layer matched HARD_BLOCK_PATTERNS. Legacy: see classifySafeBlockedReasons.
+ */
+export function legacyFallbackReasonsOfLabel(source: string, label: string): SafeBlockedReason[] {
+  const out: SafeBlockedReason[] = [];
+  const add = (r: SafeBlockedReason) => { if (!out.includes(r)) out.push(r); };
+  if (source === "dexscreener") {
+    // Per-source fallback heuristics. The patterns here mirror the
+    // tightened HARD_BLOCK_PATTERNS regexes — bare /pump/ and /rug/
+    // were matching legitimate flags like "Pump.fun launch" and
+    // "...dev can rug liquidity" (which already classify as `lp`).
+    // Tighten to the same specific pattern names.
+    if (/(?:extreme |coordinated )?pump pattern|parabolic|pump.fun.*exit trap|pump.*newborn/i.test(label)) add("pump");
+    if (/rug staircase|rug pattern|coordinated dump|dump and run|exit trap|exit liquidity/i.test(label)) add("rug_pattern");
+    if (/wash/i.test(label)) add("wash_trading");
+  }
+  if (source === "solscan" || source === "helius") {
+    if (/holder/i.test(label) || /wallet.*holds/i.test(label) || /top.*hold/i.test(label)) add("holders");
+    if (/newborn|fresh|age|<\d+h|<\d+min/i.test(label)) add("age");
+  }
+  // FIX: rugcheck layer with safeBlocked but unmatched flag — treat as lp if LP-related
+  if (source === "rugcheck") {
+    if (/LP|liquidity/i.test(label)) add("lp");
+  }
+  return out;
+}
+
+/**
+ * The codes of a flag whose label is text an upstream invents (RugCheck's risk names): read once, here, when the layer creates the
+ * flag, and never again. This is the one place where the text of a flag still decides something: a name nobody here has seen cannot
+ * be known in advance.
+ */
+export function codesFromUpstreamText(source: string, label: string): FlagCodes {
+  return { reasons: legacyReasonsOfLabel(label), fallbackReasons: legacyFallbackReasonsOfLabel(source, label) };
+}
+
+/**
+ * The one rule that turns the flags of the layers into safe-gate reasons, whatever the way a flag says which reasons it stands for.
+ * Only a layer that is safeBlocked counts. In such a layer, the reasons of its flags count; if none of its flags has any, its
+ * fallback reasons count instead.
+ */
+function classifyWith(
+  layers: LayerResult[],
+  reasonsOf: (flag: ScanFlag, source: string) => SafeBlockedReason[],
+  fallbackOf: (flag: ScanFlag, source: string) => SafeBlockedReason[],
+): SafeBlockedReason[] {
   const reasons: SafeBlockedReason[] = [];
   const seen: Record<string, boolean> = {};
   function add(r: SafeBlockedReason) { if (r === "lp" && seen["lp_unverified"]) return; if (!seen[r]) { seen[r] = true; reasons.push(r); } }
@@ -112,37 +168,32 @@ export function classifySafeBlockedReasons(layers: LayerResult[]): SafeBlockedRe
     if (!layer.safeBlocked) continue;
     let matched = false;
     for (const flag of layer.flags) {
-      for (const entry of HARD_BLOCK_PATTERNS) {
-        if (entry[0].test(flag.label)) { add(entry[1]); matched = true; }
-      }
+      const own = reasonsOf(flag, layer.source);
+      if (own.length > 0) matched = true;
+      for (const r of own) add(r);
     }
     if (!matched) {
-      if (layer.source === "dexscreener") {
-        // Per-source fallback heuristics. The patterns here mirror the
-        // tightened HARD_BLOCK_PATTERNS regexes — bare /pump/ and /rug/
-        // were matching legitimate flags like "Pump.fun launch" and
-        // "...dev can rug liquidity" (which already classify as `lp`).
-        // Tighten to the same specific pattern names.
-        for (const f of layer.flags) {
-          if (/(?:extreme |coordinated )?pump pattern|parabolic|pump.fun.*exit trap|pump.*newborn/i.test(f.label)) add("pump");
-          if (/rug staircase|rug pattern|coordinated dump|dump and run|exit trap|exit liquidity/i.test(f.label)) add("rug_pattern");
-          if (/wash/i.test(f.label)) add("wash_trading");
-        }
-      }
-      if (layer.source === "solscan" || layer.source === "helius") {
-        for (const f of layer.flags) {
-          if (/holder/i.test(f.label) || /wallet.*holds/i.test(f.label) || /top.*hold/i.test(f.label)) add("holders");
-          if (/newborn|fresh|age|<\d+h|<\d+min/i.test(f.label)) add("age");
-        }
-      }
-      // FIX: rugcheck layer with safeBlocked but unmatched flag — treat as lp if LP-related
-      if (layer.source === "rugcheck") {
-        for (const f of layer.flags) {
-          if (/LP|liquidity/i.test(f.label)) add("lp");
-        }
+      for (const flag of layer.flags) {
+        for (const r of fallbackOf(flag, layer.source)) add(r);
       }
     }
   }
 
   return reasons;
+}
+
+/**
+ * The safe-gate reasons of the layers, read from the TEXT of every flag (about 25 regexes per flag). This is what decides today.
+ * It is kept until the codes the layers put on their flags (classifyByCodes) are proven to give the same answer, then removed.
+ */
+export function classifySafeBlockedReasons(layers: LayerResult[]): SafeBlockedReason[] {
+  return classifyWith(layers, (f) => legacyReasonsOfLabel(f.label), (f, source) => legacyFallbackReasonsOfLabel(source, f.label));
+}
+
+/**
+ * The safe-gate reasons of the layers, read from the codes the layers put on their flags (ScanFlag.reasons, ScanFlag.fallbackReasons).
+ * One pass over the flags, no regex: rewording a label cannot change it.
+ */
+export function classifyByCodes(layers: LayerResult[]): SafeBlockedReason[] {
+  return classifyWith(layers, (f) => f.reasons ?? [], (f) => f.fallbackReasons ?? []);
 }
