@@ -17,7 +17,7 @@ import {
 import { getLpRiskBucket } from "./lp-risk-matrix";
 import { asNumber, _mean, _std, _pct } from "./math";
 import { makeFlag, getLpLockDurationDays, riskIncludes } from "./helpers";
-import { codesFromUpstreamText } from "./scoring";
+import { codesFromUpstreamText } from "./upstream-text";
 import { extractBundlePct } from "./fetchers";
 import { gpStatus, weightedBurnPct, type AuthorityFacts } from "./facts";
 

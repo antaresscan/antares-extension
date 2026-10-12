@@ -10,7 +10,7 @@ export interface ScanFlag {
   impact: number;
   /**
    * The safe-gate reasons this flag stands for (see SafeBlockedReason), put on the flag by the layer that creates it. Absent when the
-   * flag stands for none. classifyByCodes (scoring.ts) reads this instead of the flag's text, so rewording a label cannot move a verdict.
+   * flag stands for none. classifySafeBlockedReasons (scoring.ts) reads this instead of the flag's text, so rewording a label cannot move a verdict.
    */
   reasons?: SafeBlockedReason[];
   /**

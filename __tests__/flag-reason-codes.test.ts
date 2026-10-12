@@ -1,17 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { makeFlag } from "../api/_lib/helpers";
-import {
-  HARD_BLOCK_PATTERNS,
-  classifySafeBlockedReasons,
-  classifyByCodes,
-  legacyReasonsOfLabel,
-  legacyFallbackReasonsOfLabel,
-} from "../api/_lib/scoring";
+import { classifySafeBlockedReasons } from "../api/_lib/scoring";
+import { HARD_BLOCK_PATTERNS, reasonsOfText, fallbackReasonsOfText } from "../api/_lib/upstream-text";
 import type { LayerResult, SafeBlockedReason, ScanFlag, Severity } from "../api/_lib/types";
 
-// A flag says which safe-gate reasons it stands for (ScanFlag.reasons), instead of the classifier reading its text with about 25
-// regexes. This file proves the reader of the codes (classifyByCodes) and the restructured text reader (classifySafeBlockedReasons)
-// both give exactly what the ORIGINAL classifier gave, copied below word for word.
+// A flag says which safe-gate reasons it stands for (ScanFlag.reasons), and the classifier reads that instead of the flag's text (it used
+// about 25 regexes per flag). This file proves the classifier gives exactly what the ORIGINAL one gave, copied below word for word, when
+// the flags carry the codes the original's regexes would have derived from their labels.
 
 // ─── The original classifier, verbatim (before the codes existed) ─────────────────────────────────────────────────────────────
 function originalClassify(layers: LayerResult[]): SafeBlockedReason[] {
@@ -57,7 +52,7 @@ const layerOf = (source: string, safeBlocked: boolean, flags: ScanFlag[]): Layer
 
 /** The same flag, with the codes the legacy text reader would have derived from its label: what a layer will say once migrated. */
 function withCodes(source: string, label: string, severity: Severity = "critical"): ScanFlag {
-  return makeFlag(label, severity, 0, { reasons: legacyReasonsOfLabel(label), fallbackReasons: legacyFallbackReasonsOfLabel(source, label) });
+  return makeFlag(label, severity, 0, { reasons: reasonsOfText(label), fallbackReasons: fallbackReasonsOfText(source, label) });
 }
 
 const stripCodes = (flags: ScanFlag[]): ScanFlag[] => flags.map(({ label, severity, impact }) => ({ label, severity, impact }));
@@ -80,41 +75,42 @@ describe("makeFlag carries codes only when it has some", () => {
 });
 
 // ─── classifyByCodes: the rule ────────────────────────────────────────────────────────────────────────────────────────────────
-describe("classifyByCodes", () => {
+describe("classifySafeBlockedReasons", () => {
   it("reads the reasons of the flags of a safeBlocked layer, in order, without repeats", () => {
     const layers = [
       layerOf("goplus", true, [makeFlag("a", "critical", 0, { reasons: ["honeypot"] }), makeFlag("b", "critical", 0, { reasons: ["mint", "honeypot"] })]),
       layerOf("chart", true, [makeFlag("c", "warning", 0, { reasons: ["chart"] })]),
     ];
-    expect(classifyByCodes(layers)).toEqual(["honeypot", "mint", "chart"]);
+    expect(classifySafeBlockedReasons(layers)).toEqual(["honeypot", "mint", "chart"]);
   });
 
   it("ignores a layer that is not safeBlocked, whatever its flags carry", () => {
-    expect(classifyByCodes([layerOf("goplus", false, [makeFlag("a", "critical", 0, { reasons: ["honeypot"] })])])).toEqual([]);
+    expect(classifySafeBlockedReasons([layerOf("goplus", false, [makeFlag("a", "critical", 0, { reasons: ["honeypot"] })])])).toEqual([]);
   });
 
   it("uses the fallback reasons of a layer only when none of its flags has a reason", () => {
     const soft = makeFlag("Helius unavailable — holder concentration unverified", "warning", 0, { fallbackReasons: ["holders"] });
-    expect(classifyByCodes([layerOf("helius", true, [soft])])).toEqual(["holders"]);
+    expect(classifySafeBlockedReasons([layerOf("helius", true, [soft])])).toEqual(["holders"]);
     const hard = makeFlag("Top 10 hold 90% — extreme concentration", "critical", 0, { reasons: ["concentration"], fallbackReasons: ["holders"] });
-    expect(classifyByCodes([layerOf("helius", true, [soft, hard])])).toEqual(["concentration"]);
+    expect(classifySafeBlockedReasons([layerOf("helius", true, [soft, hard])])).toEqual(["concentration"]);
   });
 
   it("a flag that stands for no reason adds nothing", () => {
-    expect(classifyByCodes([layerOf("goplus", true, [makeFlag("LP Burned ✓", "bonus", 0)])])).toEqual([]);
+    expect(classifySafeBlockedReasons([layerOf("goplus", true, [makeFlag("LP Burned ✓", "bonus", 0)])])).toEqual([]);
   });
 
   it('keeps the old rule: "lp" is dropped once "lp_unverified" is in, but "lp_unverified" after "lp" stays', () => {
     const unverifiedFirst = [layerOf("rugcheck", true, [makeFlag("a", "warning", 0, { reasons: ["lp_unverified"] }), makeFlag("b", "critical", 0, { reasons: ["lp"] })])];
-    expect(classifyByCodes(unverifiedFirst)).toEqual(["lp_unverified"]);
+    expect(classifySafeBlockedReasons(unverifiedFirst)).toEqual(["lp_unverified"]);
     const hardFirst = [layerOf("rugcheck", true, [makeFlag("b", "critical", 0, { reasons: ["lp"] }), makeFlag("a", "warning", 0, { reasons: ["lp_unverified"] })])];
-    expect(classifyByCodes(hardFirst)).toEqual(["lp", "lp_unverified"]);
+    expect(classifySafeBlockedReasons(hardFirst)).toEqual(["lp", "lp_unverified"]);
   });
 
   it("witness: the text of a flag does not matter, only its codes", () => {
-    const f = makeFlag("Honeypot detected — cannot sell", "critical", 0); // text says honeypot, no code says so
-    expect(classifyByCodes([layerOf("goplus", true, [f])])).toEqual([]);
-    expect(classifySafeBlockedReasons([layerOf("goplus", true, [f])])).toEqual(["honeypot"]);
+    const text = makeFlag("Honeypot detected — cannot sell", "critical", 0); // text says honeypot, no code says so
+    expect(classifySafeBlockedReasons([layerOf("goplus", true, [text])])).toEqual([]);
+    const coded = makeFlag("Anything at all", "critical", 0, { reasons: ["honeypot"] }); // no text says honeypot, a code does
+    expect(classifySafeBlockedReasons([layerOf("goplus", true, [coded])])).toEqual(["honeypot"]);
   });
 });
 
@@ -182,7 +178,7 @@ function rng(seed: number) {
   };
 }
 
-describe("the three classifiers agree on every combination of real labels", () => {
+describe("the classifier agrees with the original on every combination of real labels", () => {
   const random = rng(20261011);
   const pick = <T,>(xs: T[]): T => xs[Math.floor(random() * xs.length)];
   const cases: LayerResult[][] = [];
@@ -202,17 +198,10 @@ describe("the three classifiers agree on every combination of real labels", () =
     cases.push(layers);
   }
 
-  it("the restructured text reader gives what the original gave (4000 random sets of layers)", () => {
+  it("gives what the original gave, in the same order (4000 random sets of layers)", () => {
     for (const layers of cases) {
       const plain = layers.map((l) => ({ ...l, flags: stripCodes(l.flags) }));
-      expect(classifySafeBlockedReasons(plain)).toEqual(originalClassify(plain));
-    }
-  });
-
-  it("the reader of the codes gives what the original gave, in the same order (4000 random sets of layers)", () => {
-    for (const layers of cases) {
-      const plain = layers.map((l) => ({ ...l, flags: stripCodes(l.flags) }));
-      expect(classifyByCodes(layers)).toEqual(originalClassify(plain));
+      expect(classifySafeBlockedReasons(layers)).toEqual(originalClassify(plain));
     }
   });
 

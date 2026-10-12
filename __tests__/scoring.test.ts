@@ -2,9 +2,11 @@ import { describe, it, expect } from "vitest";
 import { computeFinalScore, classifySafeBlockedReasons } from "../api/_lib/scoring";
 import { LAYER_WEIGHTS, TRUST_FLOOR, XV_PENALTY_LP_BURN, XV_PENALTY_MINT_AUTH, XV_PENALTY_HOLDER_CONCENTRATION, HARD_BLOCK_REASONS, SOFT_REASONS } from "../api/_lib/constants";
 import type { LayerResult } from "../api/_lib/types";
+import { flagsWithCodes } from "./fixtures/flag-codes";
 
 function makeLayer(source: string, trust: number, available: boolean, flags: LayerResult["flags"] = [], forceRug = false, safeBlocked = false): LayerResult {
-  return { source, trust, available, flags, forceRug, safeBlocked };
+  // A flag written by hand has a label only: give it the codes the engine would read at the upstream door (see fixtures/flag-codes.ts).
+  return { source, trust, available, flags: flagsWithCodes(source, flags), forceRug, safeBlocked };
 }
 
 describe("computeFinalScore", () => {
