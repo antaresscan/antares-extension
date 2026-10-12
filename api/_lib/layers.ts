@@ -69,6 +69,23 @@ export function isEstablished(
 }
 
 /**
+ * Is this DexScreener social entry a Twitter / X account? (audit A-25)
+ * It used to be `/twitter|x/i` on the type, or on the URL when there was no type: the letter "x" anywhere counted, so a Discord or
+ * Telegram invite with an x in it (discord.gg/xyz, t.me/xrp_fans) made a token with NO Twitter look like it had one, and the
+ * "No website / Twitter / Telegram" check never fired. Now: the type is exactly "twitter" or "x", or the URL is on twitter.com / x.com
+ * (or one of their subdomains: www, mobile). The host is read from the URL; a path or a look-alike host (notx.com, x.com.evil.example) does not count.
+ */
+export function isTwitterSocial(s: DexScreenerSocial | null | undefined): boolean {
+  const type = typeof s?.type === "string" ? s.type.trim().toLowerCase() : "";
+  if (type === "twitter" || type === "x") return true;
+  const url = typeof s?.url === "string" ? s.url.trim() : "";
+  if (!url) return false;
+  let host: string;
+  try { host = new URL(/^[a-z][a-z0-9+.-]*:/i.test(url) ? url : `https://${url}`).hostname.toLowerCase(); } catch { return false; }
+  return ["twitter.com", "x.com"].some((d) => host === d || host.endsWith(`.${d}`));
+}
+
+/**
  * A blue chip, by the market alone (the owner's bar, 2026-10-12): traded for at least 2 months, at least $100k in the pool whose price is
  * falling, at least $5M of market cap. The three numbers must be KNOWN: a missing one means no. Measured on the 364 recorded tokens: 110 pass
  * (PYTH, JUPSOL, EURC, GRASS, W, ZBCN, PHY...); over 30 days of 4-hour candles none lost more than 36 % in 24 h, and none of the 11 tokens that
@@ -130,7 +147,7 @@ export function layerDexScreener(
   const mc = marketCap ?? 0;
   const socials = pair.info?.socials || [];
   const websites = pair.info?.websites || [];
-  const hasTwitter = Array.isArray(socials) && socials.some((s: DexScreenerSocial) => /twitter|x/i.test(String(s?.type || s?.url || "")));
+  const hasTwitter = Array.isArray(socials) && socials.some(isTwitterSocial);
   const hasTelegram = Array.isArray(socials) && socials.some((s: DexScreenerSocial) => /telegram/i.test(String(s?.type || s?.url || "")));
   const hasWebsite = Array.isArray(websites) && websites.length > 0;
   const ageMinutes = tokenAgeMinutes ?? Infinity;
