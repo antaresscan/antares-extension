@@ -98,15 +98,15 @@ describe("fetchDexCandlesDaily: stop asking once GeckoTerminal has refused", () 
   });
 });
 
-// The collapse rule reads the whole history GeckoTerminal gives in ONE request: 1000 4-hour candles (about 166 days), not 182 (30 days).
-describe("fetchDexCandlesDaily: months of history in a single request", () => {
-  it("asks for 1000 4-hour candles, once, and returns what it was given sorted oldest first", async () => {
+// The collapse rule reads 90 days in ONE request: 540 4-hour candles, not 182 (30 days).
+describe("fetchDexCandlesDaily: 90 days of history in a single request", () => {
+  it("asks for 540 4-hour candles, once, and returns what it was given sorted oldest first", async () => {
     answer([[/\/pools\/PoolAddressFromDexScreener.*ohlcv/, { status: [200], body: ohlcv(300) }]]);
 
     const candles = await fetchDexCandlesDaily(POOL, MINT);
 
     expect(urls()).toHaveLength(1);
-    expect(urls()[0]).toMatch(/ohlcv\/hour\?aggregate=4&limit=1000$/);
+    expect(urls()[0]).toMatch(/ohlcv\/hour\?aggregate=4&limit=540$/);
     expect(candles).toHaveLength(300);
     expect(candles[0].ts).toBeLessThan(candles[299].ts);
   });

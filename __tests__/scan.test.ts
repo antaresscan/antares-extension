@@ -381,18 +381,22 @@ describe("scan handler", () => {
       expect(body.flags.some((f) => /^Collapsed/.test(f.label))).toBe(false);
     });
 
-    it("the age of the high does not matter: a collapse from a high 20 days back, or 150 days back, is a RUG PULL too", async () => {
+    it("a collapse from a high 20 days back is DANGER, not a forced RUG; from a high 150 days back it is not read at all", async () => {
       const T0 = 1_760_000_000;
-      for (const days of [20, 150]) {
-        setupGoodTokenMocks();
-        const { fetchDexCandlesDaily } = await import("../api/_lib/fetchers");
-        const bleed = Array.from({ length: days * 6 + 1 }, (_, i) => { const c = i === 0 ? 100 : 5; return { ts: T0 + i * 4 * 3600, o: c, h: c, l: c, c, v: 100 }; }); // 6 candles a day
-        vi.mocked(fetchDexCandlesDaily).mockResolvedValueOnce(bleed);
-        const body = await scanBody();
-        expect(body.risk, `${days} days`).toBe("RUG");
-        expect(body.rugKind, `${days} days`).toBe("confirmed");
-        expect(body.flags.find((f) => /^Collapsed/.test(f.label))?.label, `${days} days`).toBe(`Collapsed -95% from its high ${days} days ago`);
-      }
+      const bleedFrom = (days: number) => Array.from({ length: days * 6 + 1 }, (_, i) => { const c = i === 0 ? 100 : 5; return { ts: T0 + i * 4 * 3600, o: c, h: c, l: c, c, v: 100 }; }); // 6 candles a day
+      setupGoodTokenMocks();
+      const { fetchDexCandlesDaily } = await import("../api/_lib/fetchers");
+      vi.mocked(fetchDexCandlesDaily).mockResolvedValueOnce(bleedFrom(20));
+      const slow = await scanBody();
+      expect(slow.risk).toBe("DANGER");
+      expect(slow.rugKind).toBeNull(); // only a RUG verdict has a kind
+      expect(slow.flags.find((f) => /^Collapsed/.test(f.label))?.label).toBe("Collapsed -95% from its high 20 days ago");
+
+      setupGoodTokenMocks();
+      vi.mocked(fetchDexCandlesDaily).mockResolvedValueOnce(bleedFrom(150));
+      const old = await scanBody();
+      expect(old.risk).not.toBe("RUG");
+      expect(old.flags.some((f) => /^Collapsed/.test(f.label))).toBe(false);
     });
   });
 
