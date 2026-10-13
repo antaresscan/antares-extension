@@ -161,15 +161,42 @@ describe("a scan waits 15 s at most", () => {
   })
 })
 
-describe("the loading screen warns when a scan takes longer than expected", () => {
-  it("from the first second the loading screen carries the message at its foot (it fades in after 3 s, as the old \"Still loading\" did)", async () => {
+describe("the loading screen warns only when a scan is past its limit", () => {
+  it("within its normal time the loading screen says \"Still loading\" (it fades in after 3 s); past the 15 s limit it says \"This scan might take longer, stay patient\", at once", async () => {
     fetchMock.mockImplementation(hangs)
     void scan(CA)
     await advance(500)
-    const hint = q(".skel-slow-hint")
-    expect(hint?.textContent).toBe("This scan might take longer, stay patient")
-    expect(text()).not.toContain("Still loading")
+    let hint = q(".skel-slow-hint")
+    expect(hint?.textContent).toBe("Still loading…")
     expect(hint?.classList.contains("now")).toBe(false) // the normal 3 s delay: a fast scan never shows it
+    await advance(14_000) // 14.5 s: still within the limit
+    hint = q(".skel-slow-hint")
+    expect(hint?.textContent).toBe("Still loading…")
+    expect(text()).not.toContain("might take longer")
+    await advance(1_000) // 15.5 s: the limit is passed
+    hint = q(".skel-slow-hint")
+    expect(hint?.textContent).toBe("This scan might take longer, stay patient")
+    expect(hint?.classList.contains("now")).toBe(true)
+  })
+
+  it("a scan that is merely slow (12 s) never sees the warning", async () => {
+    fetchMock.mockImplementation(() => new Promise((res) => setTimeout(() => res(answer(data())), 12_000)))
+    void scan(CA)
+    await advance(11_000)
+    expect(q(".skel-slow-hint")?.textContent).toBe("Still loading…")
+    expect(text()).not.toContain("might take longer")
+    await advance(1_100)
+    expect(text()).toContain("TKN")
+    expect(text()).not.toContain("might take longer")
+  })
+
+  it("a request that fails early (the server answers 500 four times, 10.5 s) is past its limit too: the warning appears when it has failed", async () => {
+    fetchMock.mockImplementation(() => httpError(500))
+    void scan(CA)
+    await advance(5_000)
+    expect(q(".skel-slow-hint")?.textContent).toBe("Still loading…")
+    await advance(6_000)
+    expect(q(".skel-slow-hint")?.textContent).toBe("This scan might take longer, stay patient")
   })
 
   it("when an old verdict leaves and the loading screen comes back, the message is there at once", async () => {

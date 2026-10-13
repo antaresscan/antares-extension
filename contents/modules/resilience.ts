@@ -15,7 +15,10 @@
 /** The longest a scan waits for the scanner, retries included. A cold scan of even a very large token now takes 5 to 8 s. */
 export const SCAN_BUDGET_MS = 15_000
 
-/** What the loading screen says, at its foot, once a scan takes longer than expected (and it is what stays on screen while the overlay retries). */
+/** What the loading screen says at its foot while a scan is within its normal time (it fades in after 3 s). */
+export const LOADING_HINT = "Still loading…"
+
+/** What it says instead once the scan is past its limit (SCAN_BUDGET_MS, or the request failed): it stays on screen while the overlay retries. */
 export const SLOW_SCAN_HINT = "This scan might take longer, stay patient"
 
 /** Waits between two background attempts after a failure; the last one repeats. The first is short: a server that was only slow has usually cached the answer by then. */

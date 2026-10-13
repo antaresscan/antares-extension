@@ -2,7 +2,7 @@ import type { ScanResponseData, QuotaStatus } from "../../shared/types"
 import { API, IGNORE } from "./constants"
 import { state } from "./state"
 import { getCached, getStale, cacheScan, expireCached } from "./cache"
-import { SCAN_BUDGET_MS, STALE_TICK_MS, sleep, recoveryDelayMs, scannedAgoText } from "./resilience"
+import { SCAN_BUDGET_MS, STALE_TICK_MS, SLOW_SCAN_HINT, sleep, recoveryDelayMs, scannedAgoText } from "./resilience"
 import { readSessionToken } from "./session-token"
 import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimations, applyFinalAnimationValues, buildResultNode, buildSkeletonNode, buildQuotaExhaustedNode, hideBox, appendScannedAgo, updateScannedAgo } from "./components"
 import { scanRateLimiter } from "../../shared/rate-limit"
@@ -279,8 +279,13 @@ function showWaitingView(el: HTMLDivElement) {
     showBox()
     attachClose(null)
   }
-  // The foot of the loading screen says why it stays (this scan takes longer than expected), at once, not after the usual 3 s.
-  el.querySelector(".skel-slow-hint")?.classList.add("now")
+  // The scan is past its limit: the foot of the loading screen says why it stays, at once, not after the usual 3 s. (Within its normal time
+  // the loading screen says "Still loading…".)
+  const hint = el.querySelector(".skel-slow-hint")
+  if (hint) {
+    hint.textContent = SLOW_SCAN_HINT
+    hint.classList.add("now")
+  }
   state.failureView = "waiting"
 }
 
