@@ -70,6 +70,8 @@ const noErrorScreen = () => {
 /** The loading screen, kept while the scanner cannot be reached. */
 const waiting = () => {
   expect(q(".skel")).not.toBeNull()
+  expect(q(".skel-slow-hint")?.textContent).toBe("This scan might take longer, stay patient") // it says why it stays
+  expect(q(".skel-slow-hint")?.classList.contains("now")).toBe(true) // and says it at once
   expect(q(".vb")).toBeNull()
   expect(state.failureView).toBe("waiting")
   noErrorScreen()
@@ -156,6 +158,28 @@ describe("a scan waits 15 s at most", () => {
     await advance(0)
     expect(outcome).toBe("AbortError") // at once, not after the 1.5 s
     expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe("the loading screen warns when a scan takes longer than expected", () => {
+  it("from the first second the loading screen carries the message at its foot (it fades in after 3 s, as the old \"Still loading\" did)", async () => {
+    fetchMock.mockImplementation(hangs)
+    void scan(CA)
+    await advance(500)
+    const hint = q(".skel-slow-hint")
+    expect(hint?.textContent).toBe("This scan might take longer, stay patient")
+    expect(text()).not.toContain("Still loading")
+    expect(hint?.classList.contains("now")).toBe(false) // the normal 3 s delay: a fast scan never shows it
+  })
+
+  it("when an old verdict leaves and the loading screen comes back, the message is there at once", async () => {
+    await seedThenAskAgain(data({ staleLeftSec: 600 }), 6 * MIN)
+    fetchMock.mockImplementation(() => httpError(500))
+    void scan(CA)
+    await advance(11_000)
+    expect(q(".scanned-ago")).not.toBeNull()
+    await advance(5 * MIN) // past the 10 min window
+    waiting() // includes: the message, with the class that shows it at once
   })
 })
 

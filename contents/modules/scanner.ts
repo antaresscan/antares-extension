@@ -279,6 +279,8 @@ function showWaitingView(el: HTMLDivElement) {
     showBox()
     attachClose(null)
   }
+  // The foot of the loading screen says why it stays (this scan takes longer than expected), at once, not after the usual 3 s.
+  el.querySelector(".skel-slow-hint")?.classList.add("now")
   state.failureView = "waiting"
 }
 

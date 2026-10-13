@@ -8,6 +8,7 @@ import { encodeHashPayload } from "../../shared/hash-payload"
 import { toggleAiSummary } from "./ai-summary"
 import { toggleCriticalFlags } from "./critical-flags"
 import { isHoldersUnverifiedFlag } from "../../shared/holders-unverified"
+import { SLOW_SCAN_HINT } from "./resilience"
 
 // DOM-API element builder. Used by buildResult instead of string template
 // literals so every text interpolation goes through textContent (which the
@@ -601,9 +602,11 @@ export function buildQuotaExhaustedNode(
 //
 // The .skel-slow-hint child carries a CSS animation with `animation-delay: 3s`
 // — invisible for the first 3 seconds (typical fast-network responses), then
-// fades to "Still loading…" so the user knows the extension isn't stuck on
-// slow connections. Once the skeleton is replaced by buildResultNode the
-// element disappears and the animation is gone — no JS timer to manage.
+// fades in with SLOW_SCAN_HINT ("This scan might take longer, stay patient") so
+// the user knows the extension isn't stuck, and why the loading screen stays
+// when the scanner is slow or cannot be reached. Once the skeleton is replaced
+// by buildResultNode the element disappears and the animation is gone — no JS
+// timer to manage.
 export function buildSkeletonNode(): DocumentFragment {
   const frag = document.createDocumentFragment()
   frag.appendChild(el("div", {
@@ -617,7 +620,7 @@ export function buildSkeletonNode(): DocumentFragment {
     el("div", { class: "skel-line" }),
     el("div", { class: "skel-line" }),
     el("div", { class: "skel-line" }),
-    el("div", { class: "skel-slow-hint" }, "Still loading…"),
+    el("div", { class: "skel-slow-hint" }, SLOW_SCAN_HINT),
   ))
   return frag
 }

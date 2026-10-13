@@ -603,6 +603,8 @@ export const SHADOW_CSS = `
   opacity: 0;
   animation: skel-slow-fadein .4s ease 3s forwards;
 }
+/* The loading screen that comes back while the overlay retries (an old verdict has just left): the message is there at once. */
+.skel-slow-hint.now { animation-delay: 0s; }
 
 /* A verdict shown from memory because the scanner cannot be reached: when it was scanned, centred at the foot of the card,
    in the same voice as the other small labels (.si span, .brand). */
