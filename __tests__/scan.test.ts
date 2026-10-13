@@ -1612,3 +1612,64 @@ describe("scan handler — Solscan is read for the age of the token only", () =>
   });
 });
 
+// ─── The first three months of an LP that is not burned or locked, through the whole scan ─────────────────────────────────────────
+describe("scan handler — an LP that is not burned or locked, by the age of the token", () => {
+  const MINT = "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU";
+  const DAY = 24 * 3600 * 1000;
+
+  function scanAged(ageDays: number) {
+    setupGoodTokenMocks();
+    const good = mockFetch.getMockImplementation() as (url: string, ...rest: unknown[]) => Promise<unknown>;
+    mockFetch.mockImplementation(async (url: string, ...rest: unknown[]) => {
+      const answer = (await good(url, ...rest)) as { ok: boolean; json: () => Promise<unknown> };
+      if (url.includes("gopluslabs")) {
+        const j = (await answer.json()) as { result: Record<string, unknown> };
+        return { ok: true, json: () => Promise.resolve({ result: { [MINT]: Object.values(j.result)[0] } }) };
+      }
+      if (url.includes("dexscreener")) {
+        const j = (await answer.json()) as { pairs: Array<Record<string, unknown> & { baseToken: { address: string } }> };
+        return { ok: true, json: () => Promise.resolve({ pairs: j.pairs.map((p) => ({ ...p, baseToken: { ...p.baseToken, address: MINT }, pairCreatedAt: Date.now() - ageDays * DAY })) }) };
+      }
+      // RugCheck says the LP is neither burned nor locked (the good-token mock says it is burned)
+      if (url.includes("rugcheck") && url.includes("summary")) {
+        return { ok: true, json: () => Promise.resolve({ lpBurned: false, lpLocked: false, metaMutable: false, topHolders: { top10Percentage: 25, top1Percentage: 5 }, risks: [] }) };
+      }
+      return answer;
+    });
+    // The engine takes the OLDEST age among its sources (Solscan's mint time, DexScreener's pool): the good-token Solscan mock says 90 days,
+    // which would make every token here old. Solscan must agree on the age, as it does in production now that its plan is back.
+    const solscanGood = mockFetchSolscan.getMockImplementation() as (endpoint: string) => Promise<unknown>;
+    mockFetchSolscan.mockImplementation((endpoint: string) =>
+      endpoint.includes("meta")
+        ? Promise.resolve({ data: { created_time: Math.floor((Date.now() - ageDays * DAY) / 1000), icon: "https://img.test.com/icon.png", creator: "creator123", decimals: 9, supply: 100000 } })
+        : solscanGood(endpoint));
+  }
+  async function run() {
+    const res = createMockRes();
+    await handler(createMockReq({ ca: MINT }), res);
+    return (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as { risk: string; flags: Array<{ label: string; severity: string }> };
+  }
+  const lpFlag = (b: { flags: Array<{ label: string; severity: string }> }) => b.flags.find((f) => /^LP /.test(f.label));
+
+  it("10 days old: the LP flag is critical and the verdict is DANGER", async () => {
+    scanAged(10);
+    const body = await run();
+    expect(lpFlag(body)).toMatchObject({ severity: "critical", label: "LP not burned or locked — token under 30 days old, dev can rug liquidity" });
+    expect(body.risk).toBe("DANGER");
+  });
+
+  it("45 days old: no 'under 30 days' flag any more, a warning at most, the verdict is not DANGER because of the LP", async () => {
+    scanAged(45);
+    const body = await run();
+    expect(body.flags.some((f) => /under 30 days old/.test(f.label))).toBe(false);
+    expect(lpFlag(body)?.severity).not.toBe("critical");
+    expect(body.risk).not.toBe("SAFE");
+  });
+
+  it("120 days old: nothing about the first month, and the LP is not a critical", async () => {
+    scanAged(120);
+    const body = await run();
+    expect(body.flags.some((f) => /under 30 days old/.test(f.label))).toBe(false);
+    expect(lpFlag(body)?.severity).not.toBe("critical");
+  });
+});

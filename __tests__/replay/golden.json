@@ -1616,9 +1616,9 @@
     "score": 100,
     "confidence": 90,
     "flags": [
+      "critical:LP not burned or locked — token under 30 days old, dev can rug liquidity",
       "critical:Top 10 hold 99% — extreme concentration",
       "critical:Very low liquidity (<$1k)",
-      "warning:LP-to-supply ratio could not be computed",
       "warning:Rug staircase: volume collapsing while price held flat — controlled dump"
     ],
     "sources_used": [
@@ -1669,7 +1669,7 @@
     "safeBlocked": true,
     "safeBlockedReasons": [
       "concentration",
-      "lp_unverified",
+      "lp",
       "rug_pattern"
     ]
   },
@@ -1678,12 +1678,12 @@
     "score": 100,
     "confidence": 80,
     "flags": [
+      "critical:LP not burned or locked — token under 30 days old, dev can rug liquidity",
       "critical:Pump reversal: +209% (24h) → -30% (6h)",
       "critical:Rug pull history",
       "critical:Top 10 hold 77% — extreme concentration",
       "critical:Very low liquidity (<$1k)",
       "critical:Wash trading detected (vol/liq > 15) — bundler dump",
-      "info:LP holds 4.6% of supply",
       "warning:RugCheck: Top 10 holders high ownership"
     ],
     "sources_used": [
@@ -1734,6 +1734,7 @@
     "safeBlockedReasons": [
       "bundle",
       "concentration",
+      "lp",
       "wash_trading"
     ]
   },

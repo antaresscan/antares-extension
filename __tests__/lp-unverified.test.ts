@@ -93,8 +93,8 @@ describe("getLpRiskBucket — matrix cells", () => {
   });
 
   // ── TINY LP (<1%) — should always pass freely ─────────────────
-  it("LP <1% × any age → info, no safeBlock, near-zero penalty", () => {
-    for (const ageHours of [1, 14 * 24 + 1, 100 * 24, 400 * 24]) {
+  it("LP <1% × 90 days or more → info, no safeBlock, near-zero penalty (under 90 days the first-three-months rule applies, see below)", () => {
+    for (const ageHours of [100 * 24, 400 * 24]) {
       const b = getLpRiskBucket(0.005, ageHours);
       expect(b.pctBucket).toBe("<1%");
       expect(b.severity).toBe("info");
@@ -107,14 +107,15 @@ describe("getLpRiskBucket — matrix cells", () => {
   });
 
   // ── LOW LP (1-5%) — LP < 10% NEVER safeBlocks (7.7.7 rule) ────
-  it("LP 3% × fresh (<14d) → info + safeBlock=false (LP<10% = info any age, 7.7.9)", () => {
-    // 7.7.9: LP 1-5% is info on ALL ages including fresh <14d.
-    // A 3% LP drain causes <15% price impact — not worth CAUTION on its own.
+  it("LP 3% × fresh (<14d) → CRITICAL + safeBlock whatever the share (first month, founder rule 2026-10-13; it was info in 7.7.9)", () => {
+    // 80 % of the young tokens of the replay corpus whose LP is not burned or locked collapsed, and a young token has one market: the pool.
     const b = getLpRiskBucket(0.03, 10 * 24);
     expect(b.pctBucket).toBe("1-5%");
     expect(b.ageBucket).toBe("<14d");
-    expect(b.severity).toBe("info");
-    expect(b.safeBlock).toBe(false);
+    expect(b.severity).toBe("critical");
+    expect(b.safeBlock).toBe(true);
+    expect(b.forceRug).toBe(false);
+    expect(b.flagLabel).toMatch(/^LP not burned or locked — token under 30 days old/);
   });
 
   it("LP 3% × 1y+ → info + no safeBlock + label shows pct only (no risk suffix)", () => {
@@ -368,3 +369,132 @@ describe("applyEstablishedBonus — back-compat", () => {
     expect(score).toBe(800);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// The first three months (founder rule 2026-10-13)
+//   under 30 days → CRITICAL whatever the LP share (DANGER, never CAUTION)
+//   30-90 days    → at least a WARNING that blocks SAFE (CAUTION at best)
+//   90 days +     → the matrix, unchanged (LP < 10 % of supply = information)
+// ─────────────────────────────────────────────────────────────────────────────
+describe("getLpRiskBucket — the first three months", () => {
+  const DAY = 24;
+
+  it("under 30 days, every LP share is critical + safeBlock + the hard reason 'lp', with the first-month wording, and never forces RUG by itself", () => {
+    // 15-30 % on a token under 14 days is critical in the matrix already: it keeps its own wording (next test), so it is not in this loop.
+    const cases: Array<[number, number]> = [];
+    for (const pct of [0.004, 0.03, 0.07, 0.12]) for (const ageHours of [1, 5 * DAY, 20 * DAY, 30 * DAY - 1]) cases.push([pct, ageHours]);
+    cases.push([0.2, 20 * DAY], [0.2, 30 * DAY - 1]); // 15-30 % between 14 and 30 days was a warning
+    for (const [pct, ageHours] of cases) {
+      {
+        const b = getLpRiskBucket(pct, ageHours);
+        const where = `${pct * 100}% × ${ageHours}h`;
+        expect(b.severity, where).toBe("critical");
+        expect(b.safeBlock, where).toBe(true);
+        expect(b.forceRug, where).toBe(false);
+        expect(b.flagReasons, where).toEqual(["lp"]);
+        expect(b.flagLabel, where).toMatch(/^LP not burned or locked — token under 30 days old, dev can rug liquidity$/);
+        expect(b.penalty, where).toBeLessThanOrEqual(0.75);
+      }
+    }
+  });
+
+  it("an LP share that is not known is critical too, and the wording does not invent a share", () => {
+    const b = getLpRiskBucket(null, 5 * DAY);
+    expect(b.pctBucket).toBe("unknown");
+    expect(b.severity).toBe("critical");
+    expect(b.safeBlock).toBe(true);
+    expect(b.flagTooltip).not.toMatch(/of the supply is in the pool/);
+    expect(getLpRiskBucket(0.039, 5 * DAY).flagTooltip).toMatch(/3\.9% of the supply is in the pool/);
+  });
+
+  it("a cell that is already critical keeps its own wording and its forced RUG (extreme exposure on a fresh launch)", () => {
+    const high = getLpRiskBucket(0.45, 10 * DAY);
+    expect(high.severity).toBe("critical");
+    expect(high.flagLabel).toMatch(/high rug exposure/i);
+    const extreme = getLpRiskBucket(0.95, 2 * DAY);
+    expect(extreme.forceRug).toBe(true);
+    expect(extreme.flagLabel).toMatch(/extreme rug exposure/i);
+  });
+
+  it("the edges: 29.9 days is critical, 30 days is a warning, 89.9 days is a warning, 90 days is the matrix again", () => {
+    expect(getLpRiskBucket(0.03, 30 * DAY - 1).severity).toBe("critical");
+    const month = getLpRiskBucket(0.03, 30 * DAY);
+    expect(month.severity).toBe("warning");
+    expect(month.safeBlock).toBe(true);
+    const almost = getLpRiskBucket(0.03, 90 * DAY - 1);
+    expect(almost.severity).toBe("warning");
+    expect(almost.safeBlock).toBe(true);
+    const three = getLpRiskBucket(0.03, 90 * DAY);
+    expect(three.severity).toBe("info");
+    expect(three.safeBlock).toBe(false);
+  });
+
+  it("from 30 to 90 days an unlocked LP is at least a warning that blocks SAFE, for every share the matrix called information", () => {
+    for (const pct of [0.004, 0.03, 0.07, 0.12]) {
+      const b = getLpRiskBucket(pct, 45 * DAY);
+      expect(b.severity, `${pct * 100}%`).toBe("warning");
+      expect(b.safeBlock, `${pct * 100}%`).toBe(true);
+      expect(b.forceRug).toBe(false);
+      expect(b.penalty).toBeLessThanOrEqual(0.92);
+    }
+  });
+
+  it("from 30 to 90 days a cell that was already a warning or critical is untouched", () => {
+    expect(getLpRiskBucket(0.2, 45 * DAY)).toMatchObject({ severity: "warning", safeBlock: true });
+    expect(getLpRiskBucket(0.45, 45 * DAY)).toMatchObject({ severity: "critical", safeBlock: true });
+  });
+
+  it("90 days and more: the matrix, unchanged (the blue chips are there: LP < 10 % is information and SAFE is possible)", () => {
+    for (const ageHours of [100 * DAY, 180 * DAY, 400 * DAY]) {
+      expect(getLpRiskBucket(0.005, ageHours)).toMatchObject({ severity: "info", safeBlock: false });
+      expect(getLpRiskBucket(0.03, ageHours)).toMatchObject({ severity: "info", safeBlock: false });
+      expect(getLpRiskBucket(0.09, ageHours)).toMatchObject({ severity: "info", safeBlock: false });
+    }
+    expect(getLpRiskBucket(0.25, 180 * DAY)).toMatchObject({ severity: "warning", safeBlock: false });
+  });
+
+  it("an age that is not known is not 'young': the conservative warning of the unknown bucket, as before", () => {
+    expect(getLpRiskBucket(0.03, null)).toMatchObject({ ageBucket: "unknown", severity: "warning", safeBlock: true });
+  });
+
+  it("the first-month wording is read as the hard reason 'lp' by the tables, whatever the share", () => {
+    const b = getLpRiskBucket(0.03, 5 * DAY);
+    expect(classifySafeBlockedReasons([{ source: "rugcheck", trust: 1, available: true, safeBlocked: true, forceRug: false, flags: [{ label: b.flagLabel, severity: "critical", impact: 0, reasons: b.flagReasons }] }])).toEqual(["lp"]);
+    expect(HARD_BLOCK_REASONS.has("lp")).toBe(true);
+  });
+});
+
+describe("layerRugCheck — the first three months reach the layer", () => {
+  it("a 10-day-old token with an unlocked LP of 3 % (clean contract): critical flag, SAFE blocked", () => {
+    const result = layerRugCheck(rugDataUnverified, null, "RARI", "RARI", ctx({ ageHours: 10 * 24, lpPctOfSupply: 0.03, ...cleanContract }));
+    expect(result.safeBlocked).toBe(true);
+    const lp = result.flags.find((f) => /^LP not burned or locked — token under 30 days old/.test(f.label));
+    expect(lp?.severity).toBe("critical");
+  });
+
+  it("the same token at 45 days: a warning that blocks SAFE; at 120 days: information that does not", () => {
+    const month = layerRugCheck(rugDataUnverified, null, "T", "T", ctx({ ageHours: 45 * 24, lpPctOfSupply: 0.03, ...cleanContract }));
+    expect(month.safeBlocked).toBe(true);
+    expect(month.flags.find((f) => /^LP holds 3\.0% of supply/.test(f.label))?.severity).toBe("warning");
+    const later = layerRugCheck(rugDataUnverified, null, "T", "T", ctx({ ageHours: 120 * 24, lpPctOfSupply: 0.03, ...cleanContract }));
+    expect(later.safeBlocked).toBe(false);
+    expect(later.flags.find((f) => /^LP holds 3\.0% of supply/.test(f.label))?.severity).toBe("info");
+  });
+
+  it("a verdict from it: a young token, perfect otherwise, is DANGER (never CAUTION); at 45 days CAUTION; at 120 days SAFE is possible", () => {
+    const verdictAt = (ageHours: number) => {
+      const r = layerRugCheck(rugDataUnverified, null, "T", "T", ctx({ ageHours, lpPctOfSupply: 0.03, ...cleanContract }));
+      const risky = r.flags.filter((f) => f.severity === "critical" || f.severity === "warning");
+      return determineVerdict({
+        score: 950, forceRug: r.forceRug, safeBlocked: r.safeBlocked, safeBlockedReasons: r.safeBlocked ? ["lp"] : [], sourcesUsedCount: 5,
+        warningFlagsCount: risky.length, criticalFlagsCount: risky.filter((f) => f.severity === "critical").length, pumpPriceOnlyFlagsCount: 0,
+      });
+    };
+    expect(verdictAt(10 * 24)).toBe("DANGER");
+    expect(verdictAt(29 * 24)).toBe("DANGER");
+    expect(["CAUTION", "DANGER"]).toContain(verdictAt(45 * 24)); // a warning: never SAFE
+    expect(verdictAt(45 * 24)).not.toBe("SAFE");
+    expect(verdictAt(120 * 24)).toBe("SAFE");
+  });
+});
+
