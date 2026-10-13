@@ -511,8 +511,8 @@ describe("judgeIssuerAsset: the market cannot be read (DexScreener did not answe
   const KINDS = ["stable", "tokenized", "lst", "wrapped", "yield", "vault"] as const;
   const silent = [layer("dexscreener", [flag("warning", "Not indexed on DexScreener")], { available: false }), layer("chart"), layer("rugcheck"), layer("goplus")];
 
-  it("every kind is CAUTION, even with all the by-design flags the general decision reads as critical", () => {
-    for (const kind of KINDS) {
+  it("every kind but the stablecoin is CAUTION, even with all the by-design flags the general decision reads as critical", () => {
+    for (const kind of KINDS.filter((k) => k !== "stable")) {
       const r = judgeIssuerAsset(input({ kind, layers: silent, flags: [...BY_DESIGN, flag("warning", "Not indexed on DexScreener")], priceUsd: null, poolLiquidityUsd: null, priceChange24hPct: null, priceChange1hPct: null, priceInSol: null }));
       expect(r.risk, kind).toBe("CAUTION");
       expect(r.rugKind, kind).toBeNull();
@@ -521,6 +521,25 @@ describe("judgeIssuerAsset: the market cannot be read (DexScreener did not answe
       expect(r.flags.filter((f) => f.severity === "critical"), kind).toEqual([]);
       expect(r.flags.filter((f) => f.severity === "warning").map((f) => f.label), kind).toEqual([expect.stringMatching(/^Market unreadable/)]);
     }
+  });
+
+  it("a STABLECOIN stays SAFE (the owner's rule): the by-design flags are information, the peg could not be checked and the verdict says so in one information line", () => {
+    const r = judgeIssuerAsset(input({ kind: "stable", layers: silent, flags: [...BY_DESIGN, flag("warning", "Not indexed on DexScreener")], priceUsd: null, poolLiquidityUsd: null, priceChange24hPct: null, priceChange1hPct: null }));
+    expect(r.risk).toBe("SAFE");
+    expect(r.rugKind).toBeNull();
+    expect(r.safeBlocked).toBe(false);
+    expect(r.score).toBe(950);
+    expect(r.flags.filter((f) => f.severity === "critical" || f.severity === "warning")).toEqual([]);
+    expect(r.flags.find((f) => /^Market unreadable/.test(f.label))?.severity).toBe("info");
+  });
+
+  it("a stablecoin is SAFE only on enough sources, and never when another source shows a fact", () => {
+    // 2 sources: not a clean bill of health, for a stablecoin as for any other
+    expect(judgeIssuerAsset(input({ kind: "stable", layers: silent, flags: [], sourcesUsedCount: 2 })).risk).toBe("CAUTION");
+    const drained = [layer("dexscreener", [], { available: false }), layer("chart", [flag("critical", "Collapsed -97% from its high 2 days ago", ["rug_evidence"])], { rugEvidence: ["pool_abandoned" as RugEvidence] })];
+    const r = judgeIssuerAsset(input({ kind: "stable", layers: drained, flags: [flag("critical", "Collapsed -97% from its high 2 days ago", ["rug_evidence"])] }));
+    expect(r.risk).toBe("RUG");
+    expect(r.rugKind).toBe("confirmed");
   });
 
   it("an LST does not get a second warning about its peg: one reason is given, not two", () => {

@@ -595,7 +595,7 @@ describe("scan deadline — RugCheck for the RESOLVED mint (a scan started from 
 // ─── DexScreener has no pool for the token (an outage answers "no pairs" too: 2026-10-07, about an hour) ──────────────────────────────
 // The answer cannot be told from a token that really has no pool. A verdict born from a market nobody read must not stick for 30 minutes
 // (INTCX, an issuer-backed stock: SAFE, then RUG for the 30 minutes DexScreener was silent, then SAFE again), and an issuer-backed token is
-// CAUTION in that case, not RUG.
+// not RUG in that case: a stablecoin stays SAFE, any other issuer-backed token is CAUTION.
 
 describe("scan — DexScreener lists no pool for the token", () => {
   const USDC = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"; // in the issuer registry (stable)
@@ -616,15 +616,14 @@ describe("scan — DexScreener lists no pool for the token", () => {
     expect(setCachedResult).not.toHaveBeenCalled();
   });
 
-  it("an issuer-backed token (a stablecoin of the registry) is CAUTION with the warning that says why, not RUG", async () => {
+  it("a stablecoin of the registry stays SAFE while DexScreener is silent (one information line says the peg could not be checked), cached 30 s only", async () => {
     dexSilent();
     const res = createMockRes();
     await run(createMockReq({ ca: USDC }), res);
     const body = jsonBody(res) as { risk: string; rugKind: string | null; flags: Array<{ label: string; severity: string }> };
-    expect(body.risk).toBe("CAUTION");
+    expect(body.risk).toBe("SAFE");
     expect(body.rugKind ?? null).toBeNull();
-    expect(body.flags.find((f) => /^Market unreadable/.test(f.label))?.severity).toBe("warning");
-    expect(body.flags.filter((f) => f.severity === "critical")).toEqual([]);
+    expect(body.flags.filter((f) => f.severity === "critical" || f.severity === "warning")).toEqual([]);
     expect(setShortCachedResult).toHaveBeenCalledWith(USDC, expect.anything(), 30);
     expect(setCachedResult).not.toHaveBeenCalled();
   });
