@@ -29,7 +29,7 @@ import { readHeliusKey } from "./_lib/helius";
 import { parseMintState, mintSupplyUi, deriveAuthorityFacts, parseChainHolders, pickHolderCount, positiveCount } from "./_lib/facts";
 import { fetchGoPlusSecurityCached } from "./_lib/goplus-cache";
 import {
-  DEXSCREENER_BASE, RUGCHECK_BASE, LAYER_WEIGHTS, SCORING_VERSION,
+  DEXSCREENER_BASE, RUGCHECK_BASE, RUGCHECK_WAIT_MS, LAYER_WEIGHTS, SCORING_VERSION,
   LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS, SOLSCAN_AGE_AND_HOLDERS_ONLY,
 } from "./_lib/constants";
 import { selectBestPair } from "./_lib/dex-pair-select";
@@ -289,6 +289,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
   // whatever data came back in time.
   const scanDeadline = startTime + (GLOBAL_TIMEOUT_MS - SCAN_RESERVE_MS);
   const remainingMs = () => Math.max(200, scanDeadline - Date.now());
+  // RugCheck is waited for at most RUGCHECK_WAIT_MS (constants.ts): for the very largest tokens it answers late or never.
+  const rugcheckWaitMs = () => Math.min(remainingMs(), RUGCHECK_WAIT_MS);
   // For the SERIAL steps that follow the parallel phases. `withBudget(fn(), ms)`
   // starts the call even when no time is left (it only stops WAITING for it);
   // this starts a step only if it still has a chance to finish.
@@ -298,8 +300,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
   try {
     const [dexRes, rugRes, rugReportRes] = await Promise.all([
       withBudget(fetchJson(`${DEXSCREENER_BASE}/tokens/${ca}`, {}, 5000), remainingMs()),
-      withBudget(fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report/summary`, {}, 5000), remainingMs()),
-      withBudget(fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report`, {}, 5000), remainingMs()),
+      withBudget(fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report/summary`, {}, 5000), rugcheckWaitMs()),
+      withBudget(fetchJson(`${RUGCHECK_BASE}/tokens/${ca}/report`, {}, 5000), rugcheckWaitMs()),
     ]);
 
     let dexData = isValidDexScreenerResponse(dexRes) ? dexRes : null;
@@ -324,7 +326,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
         resolvedMint = baseMint;
         const [dexRetry, rugRetry] = await Promise.all([
           withBudget(fetchJson(`${DEXSCREENER_BASE}/tokens/${resolvedMint}`, {}, 5000), remainingMs()),
-          withBudget(fetchJson(`${RUGCHECK_BASE}/tokens/${resolvedMint}/report/summary`, {}, 5000), remainingMs()),
+          withBudget(fetchJson(`${RUGCHECK_BASE}/tokens/${resolvedMint}/report/summary`, {}, 5000), rugcheckWaitMs()),
         ]);
         const dexRetryTyped = isValidDexScreenerResponse(dexRetry) ? dexRetry : null;
         const rugRetryTyped = isValidRugCheckSummary(rugRetry) ? rugRetry : null;
@@ -366,7 +368,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // that the mint is known, read it for the mint, in parallel with phase 2.
     const rugReportPromise: Promise<unknown> = resolvedMint === ca
       ? Promise.resolve(rugReportRes)
-      : withBudget(fetchJson(`${RUGCHECK_BASE}/tokens/${resolvedMint}/report`, {}, 5000), remainingMs());
+      : withBudget(fetchJson(`${RUGCHECK_BASE}/tokens/${resolvedMint}/report`, {}, 5000), rugcheckWaitMs());
     const tokenAgeMinutes: number | null = pair?.pairCreatedAt
       ? (Date.now() - pair.pairCreatedAt) / 60000 : null;
 

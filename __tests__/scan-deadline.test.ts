@@ -528,3 +528,67 @@ describe("scan started from a pair address", () => {
     expect(shortCalls.every((c) => c[2] === 30)).toBe(true);
   });
 });
+
+// ─── RugCheck is waited for at most RUGCHECK_WAIT_MS ─────────────────────────────────────────────────────────────────────────────
+// Measured live (2026-10-14): for the very largest tokens RugCheck's report answers an error after 6 to 14 s and its summary does not answer within
+// 30 s. The scan waited for each call up to its own 5 s timeout and a retry, then asked again for the resolved mint: BONK took 23 s of its 24 s.
+describe("scan deadline — a slow RugCheck is not waited for beyond RUGCHECK_WAIT_MS", () => {
+  const RUGCHECK_WAIT_MS = 4000;
+  const slowRugcheck = (ms: number) => {
+    setupGoodTokenMocks();
+    const good = mockFetch.getMockImplementation()! as (url: string, ...rest: unknown[]) => Promise<{ ok: boolean; json: () => Promise<unknown> }>;
+    mockFetch.mockImplementation((url: string, ...rest: unknown[]) => (url.includes("rugcheck") ? after(ms, undefined).then(() => good(url, ...rest)) : good(url, ...rest)));
+  };
+
+  it("RugCheck never answers: the scan answers about RUGCHECK_WAIT_MS after the start, with a verdict, instead of 10 s or more", async () => {
+    slowRugcheck(60_000);
+    const res = createMockRes();
+    const { elapsedMs } = await run(createMockReq({ ca: WSOL }), res, 40_000);
+    expect(jsonBody(res)?.risk).toBeDefined();
+    expect(elapsedMs).toBeGreaterThanOrEqual(RUGCHECK_WAIT_MS);
+    expect(elapsedMs).toBeLessThan(RUGCHECK_WAIT_MS + 3000);
+    expect(jsonBody(res)?.sources_used as string[]).not.toContain("rugcheck");
+  });
+
+  it("RugCheck answers within the budget (3 s): its answer is used, as before", async () => {
+    slowRugcheck(3000);
+    const res = createMockRes();
+    await run(createMockReq({ ca: WSOL }), res, 40_000);
+    expect(jsonBody(res)?.sources_used as string[]).toContain("rugcheck");
+  });
+
+  it("RugCheck answers after the budget (5 s): the scan did not wait for it", async () => {
+    slowRugcheck(5000);
+    const res = createMockRes();
+    const { elapsedMs } = await run(createMockReq({ ca: WSOL }), res, 40_000);
+    expect(elapsedMs).toBeLessThan(RUGCHECK_WAIT_MS + 3000);
+    expect(jsonBody(res)?.sources_used as string[]).not.toContain("rugcheck");
+  });
+
+  it("the other sources are not slowed down: a fast RugCheck leaves the scan as fast as before", async () => {
+    setupGoodTokenMocks();
+    const res = createMockRes();
+    const { elapsedMs } = await run(createMockReq({ ca: WSOL }), res, 40_000);
+    expect(elapsedMs).toBeLessThan(RUGCHECK_WAIT_MS);
+    expect(jsonBody(res)?.sources_used as string[]).toContain("rugcheck");
+  });
+});
+
+describe("scan deadline — RugCheck for the RESOLVED mint (a scan started from a pair address) is capped too", () => {
+  it("the pair address answers fast, the mint it resolves to has a RugCheck that never answers: the scan does not wait for it", async () => {
+    const PAIR = "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU"; // a pair address: DexScreener says its base token is WSOL
+    setupGoodTokenMocks();
+    const good = mockFetch.getMockImplementation()! as (url: string, ...rest: unknown[]) => Promise<{ ok: boolean; json: () => Promise<unknown> }>;
+    mockFetch.mockImplementation((url: string, ...rest: unknown[]) => {
+      if (url.includes("rugcheck") && url.includes(PAIR)) return Promise.resolve({ ok: false, status: 400, json: () => Promise.resolve(null) });
+      if (url.includes("rugcheck") && url.includes(WSOL)) return after(60_000, undefined).then(() => good(url, ...rest));
+      return good(url, ...rest);
+    });
+    const res = createMockRes();
+    const { elapsedMs } = await run(createMockReq({ ca: PAIR }), res, 40_000);
+    expect(jsonBody(res)?.risk).toBeDefined();
+    // two rounds of RugCheck (the pair address, then the mint it resolves to), each capped at RUGCHECK_WAIT_MS: about 8 s; uncapped it is two 10.5 s rounds
+    expect(elapsedMs).toBeLessThan(4000 + 4000 + 3000);
+  });
+});
+
