@@ -27,7 +27,7 @@ import { weightedBurnPct, type AuthorityFacts } from "./facts";
 import { HARD_BLOCK_REASONS, LAYER_WEIGHTS } from "./constants";
 import { asNumber } from "./math";
 import { makeFlag } from "./helpers";
-import { issuerKindOf, judgeIssuerAsset } from "./issuer-assets";
+import { issuerKindOf, judgeIssuerAsset, lstPriceInSol } from "./issuer-assets";
 
 /** Everything the decision needs, already collected. */
 export interface DecideInput {
@@ -301,9 +301,12 @@ export function decide(input: DecideInput): Decision {
   // market (api/_lib/issuer-assets.ts); with no market reading, the general decision above stands.
   const issuerKind = issuerKindOf(resolvedMint);
   const issuer = issuerKind ? judgeIssuerAsset({
-    kind: issuerKind, layers: allLayers, flags, sourcesUsedCount: sources_used.length,
+    kind: issuerKind, mint: resolvedMint, layers: allLayers, flags, sourcesUsedCount: sources_used.length,
     priceChange24hPct: typeof pair?.priceChange?.h24 === "number" ? pair.priceChange.h24 : null,
     priceChange1hPct: typeof pair?.priceChange?.h1 === "number" ? pair.priceChange.h1 : null,
+    priceUsd: pair?.priceUsd !== undefined && Number.isFinite(Number(pair.priceUsd)) ? Number(pair.priceUsd) : null,
+    poolLiquidityUsd: typeof pair?.liquidity?.usd === "number" ? pair.liquidity.usd : null,
+    priceInSol: issuerKind === "lst" ? lstPriceInSol(dexData?.pairs, resolvedMint) : null,
   }) : null;
   if (issuer) notes.push({ message: "issuer-backed token judged on its market", data: { kind: issuerKind, wasRisk: risk, wasScore: score, risk: issuer.risk, score: issuer.score } });
 
