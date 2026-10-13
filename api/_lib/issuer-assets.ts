@@ -1,5 +1,5 @@
 // api/_lib/issuer-assets.ts — Tokens whose structure is an issuer's, by design: stablecoins, tokenized stocks / real-world assets, liquid staking tokens,
-// wrapped major assets.
+// wrapped major assets, yield-bearing dollar tokens, Jupiter's vault shares.
 //
 // An issuer-backed token is NOT built like a meme coin, and every rule that reads structure reads it wrong:
 //   - the issuer holds the mint and the freeze authority (it issues and redeems; it must be able to freeze a sanctioned wallet);
@@ -8,6 +8,11 @@
 //   - a wrapped major (wrapped BTC, ETH: Coinbase's cbBTC, Portal's WBTC and ETH...) has the bridge or the custodian as mint (and freeze)
 //     authority, and the vault of the backing asset as its biggest holder (one wallet at 50 % is the vault);
 //   - the issuer / its market makers hold 70-98 % of the supply (top-10 concentration);
+//   - a yield-bearing dollar token (USDY, syrupUSDC, ONyc...) is a stablecoin whose price RISES above $1 with the yield it accrues
+//     (USDY $1.15, ONyc $1.15, eHYUSD $1.50): the issuer is the mint authority and holds the supply;
+//   - a vault share (JLP, the share of Jupiter's perpetuals pool; Jupiter Lend's receipts jlUSDC, jlWSOL...) is minted on deposit and burned
+//     on withdrawal by the protocol, which holds the mint authority and the supply; holders redeem with the protocol, so the DEX pool is not
+//     their way out (jlUSDC is worth $497M and its pools hold $47: "very low liquidity" says nothing about it);
 //   - the liquidity pool is not what backs the token (redemption is), so "LP not burned" says nothing.
 // Measured on the 365 recorded tokens: the 46 tokenized stocks were ALL called RUG (37) or DANGER (9), and so were most stablecoins and
 // liquid-staking tokens (the owner's example: "RUG RISK on an Apple stock"). For these tokens the verdict is judged on the MARKET only:
@@ -21,16 +26,18 @@
 // SAFE too), so an issuer-backed token whose market is healthy is SAFE; what its issuer can do (freeze, pause, reissue) stays visible as an
 // information line. What differs is what "the peg" means: $1 for a stablecoin, 1 SOL for an LST, nothing we can read for a stock.
 import type { DexScreenerPair, LayerResult, RugKind, SafeBlockedReason, ScanFlag, Verdict } from "./types";
-import { LST_MINTS, STABLE_MINTS, TOKENIZED_MINTS, WRAPPED_MINTS } from "./issuer-assets.data";
+import { LST_MINTS, STABLE_MINTS, TOKENIZED_MINTS, VAULT_MINTS, WRAPPED_MINTS, YIELD_MINTS } from "./issuer-assets.data";
 import { makeFlag } from "./helpers";
 import { countVerdictFlags, determineVerdict, rugKindOf } from "./pipeline";
 
-export type IssuerKind = "stable" | "tokenized" | "lst" | "wrapped";
+export type IssuerKind = "stable" | "tokenized" | "lst" | "wrapped" | "yield" | "vault";
 
 const STABLE = new Set<string>(STABLE_MINTS);
 const TOKENIZED = new Set<string>(TOKENIZED_MINTS);
 const LST = new Set<string>(LST_MINTS);
 const WRAPPED = new Set<string>(WRAPPED_MINTS);
+const YIELD = new Set<string>(YIELD_MINTS);
+const VAULT = new Set<string>(VAULT_MINTS);
 
 /** Stablecoins of the registry that are not pegged to the dollar: EURC follows the euro (about $1.1), so its distance to $1 says nothing. */
 export const NON_USD_STABLE = new Set<string>(["HzwqbKZw8HxMN6bF2yFZNrht3c2iXXzpKcFu7uBEDKtr"]);
@@ -42,6 +49,8 @@ export function issuerKindOf(mint: string | null | undefined): IssuerKind | null
   if (TOKENIZED.has(mint)) return "tokenized";
   if (LST.has(mint)) return "lst";
   if (WRAPPED.has(mint)) return "wrapped";
+  if (YIELD.has(mint)) return "yield";
+  if (VAULT.has(mint)) return "vault";
   return null;
 }
 
@@ -66,6 +75,9 @@ const MIN_POOL_LIQUIDITY_FOR_PEG_USD = 25_000;
 /** A liquid staking token is worth about 1 SOL and more, rising with the rewards it accrues: under 0.97 SOL a warning, under 0.90 critical. */
 export const LST_PEG_WARN = 0.97;
 export const LST_PEG_CRITICAL = 0.90;
+
+/** The flags about how thin the pool is. A vault share is redeemed with the protocol, not sold in a pool: they stay on screen as information. */
+const POOL_DEPTH: RegExp[] = [/^Very low liquidity/i, /^Low liquidity/i, /^Liquidity < /i];
 
 const SEVERITY_ORDER: Record<string, number> = { critical: 0, warning: 1, info: 2, bonus: 3 };
 
@@ -130,24 +142,34 @@ export function judgeIssuerAsset(input: IssuerInput): IssuerJudgement | null {
   const kept: ScanFlag[] = [];
   const shown: ScanFlag[] = [];
   for (const f of input.flags) {
-    const marketHealth = (f.severity === "critical" || f.severity === "warning") && MARKET_HEALTH.some((re) => re.test(f.label));
+    const marketHealth = (f.severity === "critical" || f.severity === "warning") && MARKET_HEALTH.some((re) => re.test(f.label))
+      && !(kind === "vault" && POOL_DEPTH.some((re) => re.test(f.label)));
     if (marketHealth) kept.push(f);
     else shown.push(f.severity === "critical" || f.severity === "warning" ? { ...f, severity: "info" } : f);
   }
 
   // The peg: the one structural-looking risk that is a market fact. One flag, the worse reading.
-  if (kind === "stable") {
+  // A yield-bearing dollar token is read like a stablecoin with one difference: it starts at $1 and rises with the yield it accrues, so only
+  // a price UNDER $1 is a loss; $1.06 or $1.50 is the yield, not a depeg. A vault share has no reference price (JLP follows a basket of SOL,
+  // ETH, BTC and stablecoins, jlWSOL follows SOL), and its pool depth says nothing: its market (collapse, dump, blocked sells) is what is read.
+  if (kind === "stable" || kind === "yield") {
     const moves = [input.priceChange24hPct, input.priceChange1hPct].filter((v): v is number => v !== null && Number.isFinite(v));
     const moved = moves.length ? Math.max(...moves.map(Math.abs)) : 0;
     const readsPrice = input.priceUsd !== null && Number.isFinite(input.priceUsd) && input.priceUsd > 0
       && (input.poolLiquidityUsd ?? 0) >= MIN_POOL_LIQUIDITY_FOR_PEG_USD && !NON_USD_STABLE.has(input.mint);
     // rounded to 6 decimals of a percent: (1 - 0.9) * 100 is 9.999999999999998, and a stablecoin at $0.90 is 10 % off
-    const off = readsPrice ? Math.round(Math.abs((input.priceUsd as number) - 1) * 1e8) / 1e6 : 0;
+    const gap = readsPrice ? ((input.priceUsd as number) - 1) : 0;
+    const off = Math.round((kind === "yield" ? Math.max(0, -gap) : Math.abs(gap)) * 1e8) / 1e6;
+    const who = kind === "yield" ? "Yield-bearing token" : "Stablecoin";
     if (off >= DEPEG_WARN_PCT && off >= moved) {
-      kept.push(makeFlag(`Stablecoin trades at $${(input.priceUsd as number).toFixed(4)}, ${off >= 10 ? Math.round(off) : Math.round(off * 10) / 10}% from its $1 peg`, off >= DEPEG_CRITICAL_PCT ? "critical" : "warning", 0));
+      kept.push(makeFlag(
+        kind === "yield"
+          ? `${who} trades at $${(input.priceUsd as number).toFixed(4)}, ${off >= 10 ? Math.round(off) : Math.round(off * 10) / 10}% under $1 — it may have lost value`
+          : `${who} trades at $${(input.priceUsd as number).toFixed(4)}, ${off >= 10 ? Math.round(off) : Math.round(off * 10) / 10}% from its $1 peg`,
+        off >= DEPEG_CRITICAL_PCT ? "critical" : "warning", 0));
     } else if (moved >= DEPEG_WARN_PCT) {
       const pct = moved >= 10 ? Math.round(moved) : Math.round(moved * 10) / 10;
-      kept.push(makeFlag(`Stablecoin price moved ${pct}% — it may have lost its peg`, moved >= DEPEG_CRITICAL_PCT ? "critical" : "warning", 0));
+      kept.push(makeFlag(`${who} price moved ${pct}% — it may have lost ${kind === "yield" ? "value" : "its peg"}`, moved >= DEPEG_CRITICAL_PCT ? "critical" : "warning", 0));
     }
   } else if (kind === "lst") {
     const r = input.priceInSol;
@@ -164,7 +186,11 @@ export function judgeIssuerAsset(input: IssuerInput): IssuerJudgement | null {
       ? makeFlag("Liquid staking token — the stake pool holds the mint authority and most of the supply by design: they are not read as rug signals", "info", 0)
       : kind === "wrapped"
         ? makeFlag("Wrapped asset — the bridge or the custodian holds the mint authority and most of the supply by design: they are not read as rug signals", "info", 0)
-        : makeFlag("Tokenized asset — the issuer can freeze, pause or reissue tokens by design: its authorities, the supply it holds and its pause are not read as rug signals", "info", 0);
+        : kind === "yield"
+          ? makeFlag("Yield-bearing token — the issuer holds the mint authority and most of the supply by design, and the price rises with the yield: they are not read as rug signals", "info", 0)
+          : kind === "vault"
+            ? makeFlag("Vault token — the protocol mints a share on deposit and burns it on withdrawal, so it holds the mint authority and most of the supply by design, and holders redeem with the protocol, not in a pool: none of this is read as a rug signal", "info", 0)
+            : makeFlag("Tokenized asset — the issuer can freeze, pause or reissue tokens by design: its authorities, the supply it holds and its pause are not read as rug signals", "info", 0);
 
   const flags = [issuerFlag, ...kept, ...shown].sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9));
   const counts = countVerdictFlags(flags);
