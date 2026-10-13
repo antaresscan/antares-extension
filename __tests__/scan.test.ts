@@ -1,4 +1,4 @@
-import { vi, describe, it, expect, beforeEach } from "vitest";
+import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import { readFileSync } from "node:fs";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { SCORING_VERSION } from "../api/_lib/constants";
@@ -1673,3 +1673,79 @@ describe("scan handler — an LP that is not burned or locked, by the age of the
     expect(lpFlag(body)?.severity).not.toBe("critical");
   });
 });
+
+// ─── GoPlus' answer is reused for an established token (the free tier is about 30 calls a minute) ──────────────────────────────────
+describe("scan handler — GoPlus' answer is kept for an established token, not for a young one", () => {
+  const MINT = "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU";
+  const goplusCalls = () => mockFetch.mock.calls.filter((c) => String(c[0]).includes("gopluslabs") && String(c[0]).includes("token_security")).length;
+
+  // A tiny Redis with what the GoPlus cache and the rest of the scan use.
+  function fakeRedis() {
+    const store = new Map<string, unknown>();
+    return { get: vi.fn(async (k: string) => store.get(k) ?? null), set: vi.fn((k: string, v: unknown) => { store.set(k, v); return Promise.resolve("OK"); }), setex: vi.fn() };
+  }
+
+  function scanSetup(pairAgeMs: number) {
+    setupGoodTokenMocks();
+    const good = mockFetch.getMockImplementation() as (url: string, ...rest: unknown[]) => Promise<unknown>;
+    mockFetch.mockImplementation(async (url: string, ...rest: unknown[]) => {
+      const answer = (await good(url, ...rest)) as { ok: boolean; json: () => Promise<unknown> };
+      if (url.includes("gopluslabs")) {
+        const j = (await answer.json()) as { result: Record<string, unknown> };
+        return { ok: true, json: () => Promise.resolve({ code: 1, result: { [MINT]: Object.values(j.result)[0] } }) };
+      }
+      if (url.includes("dexscreener")) {
+        const j = (await answer.json()) as { pairs: Array<Record<string, unknown> & { baseToken: { address: string } }> };
+        return { ok: true, json: () => Promise.resolve({ pairs: j.pairs.map((p) => ({ ...p, baseToken: { ...p.baseToken, address: MINT }, pairCreatedAt: Date.now() - pairAgeMs })) }) };
+      }
+      return answer;
+    });
+    mockFetchSolscan.mockResolvedValue(null); // the age is the pool's
+    mockFetch.mockClear();
+  }
+  async function run() {
+    const res = createMockRes();
+    await handler(createMockReq({ ca: MINT }), res);
+    return (res.json as ReturnType<typeof vi.fn>).mock.calls.at(-1)?.[0] as { risk: string };
+  }
+  // The cache module is mocked at the top of this file: give it a Redis for the test, and put the default one back after.
+  async function useRedis(redis: unknown) {
+    const { getCacheRedis } = await import("../api/_lib/cache");
+    (getCacheRedis as unknown as ReturnType<typeof vi.fn>).mockReturnValue(redis);
+  }
+  afterEach(async () => { await useRedis({ setex: mockSetex }); });
+
+  it("a token of 90 days: GoPlus is asked by the first scan and not by the second", async () => {
+    await useRedis(fakeRedis());
+    scanSetup(90 * 24 * 3600 * 1000);
+    await run();
+    expect(goplusCalls()).toBe(1);
+    await run();
+    expect(goplusCalls()).toBe(1);
+  });
+
+  it("a token of 10 minutes: GoPlus is asked by every scan", async () => {
+    await useRedis(fakeRedis());
+    scanSetup(10 * 60 * 1000);
+    await run();
+    await run();
+    expect(goplusCalls()).toBe(2);
+  });
+
+  it("without Redis, every scan asks GoPlus, as before", async () => {
+    await useRedis(null);
+    scanSetup(90 * 24 * 3600 * 1000);
+    await run();
+    await run();
+    expect(goplusCalls()).toBe(2);
+  });
+
+  it("the verdict is the same with the answer from the cache as with the answer from GoPlus", async () => {
+    await useRedis(fakeRedis());
+    scanSetup(90 * 24 * 3600 * 1000);
+    const first = await run();
+    const second = await run();
+    expect(second.risk).toBe(first.risk);
+  });
+});
+
