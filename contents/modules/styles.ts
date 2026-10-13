@@ -596,7 +596,7 @@ export const SHADOW_CSS = `
 .skel-slow-hint {
   margin-top: 12px;
   font: 400 8.5px/1.4 'IBM Plex Mono', monospace;
-  color: #555;
+  color: #777;
   letter-spacing: .08em;
   text-align: center;
   text-transform: uppercase;
