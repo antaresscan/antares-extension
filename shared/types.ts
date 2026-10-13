@@ -76,6 +76,12 @@ export interface ScanResponseData {
   layers?: Record<string, { trust: number; available: boolean }>;
   scoring_version?: string;
   fetchedAt?: number;
+  /** The answer was born from data that was not there. */
+  degraded?: boolean;
+  /** Seconds the answer may be reused without asking again (server-decided). */
+  freshForSec?: number;
+  /** Seconds the answer may still be shown, marked as old, if the scanner cannot be reached (server-decided). */
+  staleLeftSec?: number;
     recentTransfers?: Transfer[];
     aiSummary?: string | null;
     topHolderPct?: number | null;

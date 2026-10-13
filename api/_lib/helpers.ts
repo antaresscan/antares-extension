@@ -3,7 +3,7 @@
 
 import type { VercelResponse } from "@vercel/node";
 import type {
-  Severity, ScanFlag, SafeBlockedReason, FlagTag,
+  Severity, ScanFlag, SafeBlockedReason, FlagTag, Verdict, RugKind,
   GoPlusTokenResult, GoPlusResponse,
   DexScreenerResponse, RugCheckSummary, RugCheckReport, RugCheckRisk,
 } from "./types";
@@ -121,6 +121,75 @@ export function computeCacheTTL(
   if (tokenAgeMinutes < 1440) return 120;     // < 1 day
   if (tokenAgeMinutes < 10080) return 300;    // < 1 week
   return 600;                                  // established
+}
+
+// ─── What the overlay may do with an answer it holds ───────────────────────────────────────────────────────────────
+//
+// Two questions, answered by the server (so they can be tuned without a new version of the extension):
+//   - freshForSec: for how long may the overlay show this answer without asking again? 5 minutes, as it always did, but 30 s for a degraded
+//     answer: it was born from data that was not there (a DexScreener outage, an upstream out of time), and the server itself keeps it 30 s.
+//   - staleLeftSec: if the scanner cannot be reached later (an outage, no network), for how much longer may the overlay STILL show this answer,
+//     marked as old, instead of an error screen? The same asymmetry as computeCacheTTL, pushed further: a stale bad verdict is safe (the worst
+//     case is a token not bought), a stale good one is not (a token can rug in the window, and the user acts on the old SAFE).
+//     - RUG confirmed by a fact: 24 h (a rug does not un-rug, and the server condemns it for life).  RUG as a risk: 2 h.  DANGER: 1 h.
+//     - SAFE or CAUTION: by the age of the token, because a young token flips in minutes and an established one is stable:
+//       under 1 h or unknown: never; under 1 day: 3 min; under 1 week: 10 min; under 30 days: 20 min; older: 45 min.
+//       And never when the token was moving fast (1 h change of 25 % or more either way): the old word is the one that misleads.
+//     - A degraded answer is never shown stale as SAFE or CAUTION, and a bad one at most 10 min (it may be a false alarm born from missing data).
+//   The window counts from the moment the verdict was MADE (fetchedAt), not from when the overlay received it.
+
+export const OVERLAY_FRESH_SEC = 300;
+export const OVERLAY_FRESH_DEGRADED_SEC = 30;
+/** A SAFE or CAUTION on a token that moved this much (percent, either way) in the last hour is not shown stale. */
+export const STALE_MAX_MOVE_1H_PCT = 25;
+
+export interface ServeWindowSource {
+  risk: Verdict;
+  rugKind?: RugKind | null;
+  degraded?: boolean;
+  pairCreatedAt: number | null;
+  solscanTokenAgeHours: number | null;
+  priceChange1h: number | null;
+  fetchedAt: number;
+}
+
+/** The age of the token in minutes, at the time of the scan: the younger of what DexScreener (its pool) and Solscan (its creation) say. */
+function tokenAgeMinutesAtScan(r: ServeWindowSource): number | null {
+  const ages: number[] = [];
+  if (typeof r.pairCreatedAt === "number" && Number.isFinite(r.pairCreatedAt) && Number.isFinite(r.fetchedAt)) ages.push((r.fetchedAt - r.pairCreatedAt) / 60000);
+  if (typeof r.solscanTokenAgeHours === "number" && Number.isFinite(r.solscanTokenAgeHours)) ages.push(r.solscanTokenAgeHours * 60);
+  return ages.length ? Math.max(0, Math.min(...ages)) : null;
+}
+
+/** How long, in seconds from the moment the verdict was made, this answer may be shown stale. */
+export function staleWindowSec(r: ServeWindowSource): number {
+  if (r.risk === "RUG" || r.risk === "DANGER") {
+    const base = r.risk === "DANGER" ? 3600 : r.rugKind === "confirmed" ? 24 * 3600 : 2 * 3600;
+    return r.degraded ? Math.min(base, 600) : base;
+  }
+  if (r.degraded) return 0;
+  const move = r.priceChange1h;
+  if (typeof move === "number" && Number.isFinite(move) && Math.abs(move) >= STALE_MAX_MOVE_1H_PCT) return 0;
+  const age = tokenAgeMinutesAtScan(r);
+  if (age === null || age < 60) return 0;
+  if (age < 1440) return 180;
+  if (age < 10080) return 600;
+  if (age < 43200) return 1200;
+  return 2700;
+}
+
+/** The two windows to send with an answer, at the moment it is sent. */
+export function serveWindows(r: ServeWindowSource, nowMs: number = Date.now()): { freshForSec: number; staleLeftSec: number } {
+  const ageSec = Number.isFinite(r.fetchedAt) ? Math.max(0, (nowMs - r.fetchedAt) / 1000) : Infinity;
+  return {
+    freshForSec: r.degraded ? OVERLAY_FRESH_DEGRADED_SEC : OVERLAY_FRESH_SEC,
+    staleLeftSec: Math.max(0, Math.floor(staleWindowSec(r) - ageSec)),
+  };
+}
+
+/** The answer as it is sent: the scan, plus its two windows. A copy: what is stored (Redis, memory) is never modified. */
+export function withServeWindows<T extends ServeWindowSource>(r: T, nowMs: number = Date.now()): T & { freshForSec: number; staleLeftSec: number } {
+  return { ...r, ...serveWindows(r, nowMs) };
 }
 
 /** From this age a token has traded long enough for GeckoTerminal to hold candles for it (the 5-minute window needs ~15 min). */
