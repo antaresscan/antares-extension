@@ -48,6 +48,9 @@ export const FREE_SCAN_FIELDS = [
   // Plumbing, no analysis in it.
   "scoring_version",
   "fetchedAt",
+  "degraded",
+  "freshForSec",
+  "staleLeftSec",
   "requestId",
 ] as const;
 

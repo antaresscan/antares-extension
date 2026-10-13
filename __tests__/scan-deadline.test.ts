@@ -639,3 +639,52 @@ describe("scan — DexScreener lists no pool for the token", () => {
   });
 });
 
+// ─── The answer says how long the overlay may keep it (freshForSec) and still show it if the scanner is unreachable (staleLeftSec) ─────
+
+describe("scan — the answer carries its windows", () => {
+  const USDC = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+
+  it("a normal scan: reusable 5 min, not degraded", async () => {
+    setupGoodTokenMocks();
+    const res = createMockRes();
+    await run(createMockReq({ ca: WSOL }), res);
+    const body = jsonBody(res) as { freshForSec: number; staleLeftSec: number; degraded?: boolean };
+    expect(body.freshForSec).toBe(300);
+    expect(Number.isInteger(body.staleLeftSec) && body.staleLeftSec >= 0).toBe(true);
+    expect(body.degraded).toBe(false);
+  });
+
+  it("a scan with no DexScreener pool is marked degraded, reusable 30 s, and the marked answer is the one that is cached", async () => {
+    setupGoodTokenMocks();
+    const good = mockFetch.getMockImplementation()! as (url: string, ...rest: unknown[]) => Promise<{ ok: boolean; json: () => Promise<unknown> }>;
+    mockFetch.mockImplementation((url: string, ...rest: unknown[]) => (url.includes("dexscreener")
+      ? Promise.resolve({ ok: true, json: () => Promise.resolve({ pairs: null }) })
+      : good(url, ...rest)));
+    const res = createMockRes();
+    await run(createMockReq({ ca: USDC }), res);
+    const body = jsonBody(res) as { freshForSec: number; staleLeftSec: number; degraded?: boolean; risk: string };
+    expect(body.degraded).toBe(true);
+    expect(body.freshForSec).toBe(30);
+    expect(body.risk).toBe("CAUTION");
+    expect(body.staleLeftSec).toBe(0); // a degraded CAUTION is never shown stale
+    const stored = vi.mocked(setShortCachedResult).mock.calls[0]?.[1] as { degraded?: boolean; freshForSec?: number; staleLeftSec?: number };
+    expect(stored.degraded).toBe(true);
+    expect("freshForSec" in stored).toBe(false); // the windows are computed when the answer is SENT, never stored
+    expect("staleLeftSec" in stored).toBe(false);
+  });
+
+  it("an answer served from the server cache counts its window from when the verdict was made", async () => {
+    setupGoodTokenMocks();
+    const made = Date.now() - 120_000;
+    vi.mocked(getCachedResult).mockResolvedValueOnce({
+      score: 120, risk: "DANGER", rugKind: null, flags: [], aiSummary: "x", fetchedAt: made, pair: null, resolvedMint: WSOL,
+      pairCreatedAt: null, solscanTokenAgeHours: null, priceChange1h: 0,
+    } as never);
+    const res = createMockRes();
+    await run(createMockReq({ ca: WSOL }), res);
+    const body = jsonBody(res) as { freshForSec: number; staleLeftSec: number };
+    expect(body.freshForSec).toBe(300);
+    expect(body.staleLeftSec).toBe(3600 - 120); // a DANGER, held 2 minutes
+  });
+});
+

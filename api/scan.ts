@@ -16,7 +16,7 @@ import {
   isSolscanMarketsResponse, isSolscanMeta, isSolscanTransfersResponse,
   isRugCheckReport,
   sanitizeString, sanitizeUrl,
-  isChartGapDegraded, isReportGapDegraded,
+  isChartGapDegraded, isReportGapDegraded, withServeWindows,
 } from "./_lib/helpers";
 import {
   heliusGetLargestAccounts, heliusGetMintAccount, heliusGetHolderPages, heliusGetCreatorReputation,
@@ -191,7 +191,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // user refreshing the same page within the cache TTL would
     // otherwise stamp identical history entries every reload and
     // burn 1–2 Redis commands per refresh for zero new information.
-    return res.json(cached);
+    return res.json(withServeWindows(cached));
   }
 
   // ─── Single-flight coalescing (cache-stampede protection) ────────────
@@ -223,7 +223,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           score: coalesced.score,
           latencyMs: Date.now() - startTime,
         });
-        return res.json(coalesced);
+        return res.json(withServeWindows(coalesced));
       }
       // The holder didn't deliver (it crashed, or Redis lost the write). If
       // too little time is left for a meaningful scan, don't launch a doomed
@@ -354,7 +354,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
         // History push intentionally skipped on cache-hit (see the
         // comment on the CA-cache branch above for the rationale —
         // duplicate entries on refresh, no new signal, costs Redis).
-        return res.json(cachedByMint);
+        return res.json(withServeWindows(cachedByMint));
       }
     }
     if (dexData?.pairs && dexData.pairs.length > 1) {
@@ -710,6 +710,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const degraded = sources_used.length === 0 || scanDeadline - Date.now() < MIN_STEP_MS || pair === null
       || isChartGapDegraded(result.risk, result.layers?.chart?.available, tokenAgeMinutes)
       || isReportGapDegraded(result.risk, resolvedMint !== ca, rugReport !== null);
+    result.degraded = degraded;
     if (result.aiSummary && !degraded) {
       setCachedResult(ca, result, tokenAgeMinutes, result.risk);
       if (resolvedMint !== ca) setCachedResult(resolvedMint, result, tokenAgeMinutes, result.risk);
@@ -759,7 +760,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
 
     // Write the upstream-usage counters of this cold scan (one Redis command, at most 300 ms, never an error for the user).
     await flushUsage();
-    return res.json(result);
+    return res.json(withServeWindows(result));
   } catch (e) {
     logger.error("scan", "analysis error", { requestId, version: SCORING_VERSION, error: String(e) });
     captureError(e, { endpoint: "scan", requestId, ca });
