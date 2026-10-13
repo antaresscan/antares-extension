@@ -247,6 +247,25 @@ describe("when the scanner cannot be reached: the last known verdict, marked as 
   })
 })
 
+describe("the rescan after a price crash", () => {
+  it("does not lose the old verdict when the scanner is down: a token that crashed keeps its RUG on screen", async () => {
+    fetchMock.mockImplementation(() => answer(data({ risk: "RUG", rugKind: "confirmed", score: 40, priceChange1h: -71, staleLeftSec: 86_400 })))
+    await scan(CA)
+    expect(state.boxEl?.className).toContain("rug")
+    fetchMock.mockImplementation(() => httpError(503))
+    await advance(20_000) // the rescan 5 s after a crash starts, fails: the live card stays
+    expect(callsFor(CA)).toBeGreaterThan(1) // the rescan did ask the scanner again (the entry is not served as fresh any more)
+    expect(state.failureView).toBeNull()
+    await advance(30 * MIN)
+    state.lastCA = "" // the page asks again
+    void scan(CA)
+    await advance(12_000)
+    expect(q(".stale-banner")?.textContent).toContain("Last check 30 min ago")
+    expect(state.boxEl?.className).toContain("rug")
+    expect(state.failureView).toBe("stale")
+  })
+})
+
 describe("the overlay tries again by itself", () => {
   it("the error screen: when the scanner is back, the verdict replaces it with no click", async () => {
     fetchMock.mockImplementation(() => httpError(500))

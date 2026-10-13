@@ -1,7 +1,7 @@
 import type { ScanResponseData, QuotaStatus } from "../../shared/types"
 import { API, IGNORE } from "./constants"
 import { state } from "./state"
-import { getCached, getStale, cacheScan, evictCached } from "./cache"
+import { getCached, getStale, cacheScan, expireCached } from "./cache"
 import { SCAN_BUDGET_MS, STALE_TICK_MS, sleep, recoveryDelayMs, staleBannerText } from "./resilience"
 import { readSessionToken } from "./session-token"
 import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimations, applyFinalAnimationValues, buildResultNode, buildSkeletonNode, buildQuotaExhaustedNode, buildErrorNode, insertStaleBanner, updateStaleBanner } from "./components"
@@ -143,8 +143,9 @@ export function scheduleRescanIfPriceCrash(data: ScanResponseData, ca: string) {
       return
     }
     state.rescanCount++
-    // Evict from memory AND the extension-private storage mirror.
-    void evictCached(ca)
+    // Stop serving it as fresh, in memory AND in the extension-private storage mirror, but keep it for as long as it may be shown stale:
+    // if this rescan fails because the scanner is down, the old verdict of a token that crashed must not be lost with it.
+    void expireCached(ca)
     state.lastCA = ""
     state.manuallyDismissed = false
     // silent: keep the overlay on screen, no skeleton flash, no score

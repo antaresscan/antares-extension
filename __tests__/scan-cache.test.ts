@@ -18,6 +18,7 @@ import {
   cacheScan,
   getCached,
   getStale,
+  expireCached,
   evictCached,
   clearAllScanCache,
   sweepScanCache,
@@ -414,3 +415,38 @@ describe("sweepScanCache — keeps what may still be shown stale", () => {
     expect(cacheKeys(chromeStore)).toHaveLength(0)
   })
 })
+
+describe("expireCached — stops serving an entry as fresh but keeps what may still be shown stale", () => {
+  const withWindows = (d: ScanResponseData, freshForSec: number, staleLeftSec: number) => ({ ...d, freshForSec, staleLeftSec }) as unknown as ScanResponseData
+
+  it("the rescan after a price crash must not lose the old verdict: no longer fresh, still shown stale", async () => {
+    await cacheScan(CA1, withWindows(RUG, 300, 86_400), null)
+    expect(await getCached(CA1)).not.toBeNull() // witness: fresh
+    await expireCached(CA1)
+    expect(await getCached(CA1)).toBeNull() // asked again
+    expect((await getStale(CA1))?.data).toMatchObject({ risk: "RUG" }) // ... but the old verdict is still there if the asking fails
+  })
+
+  it("the expiry is written to the extension storage too (a reload of the page does not bring it back to life)", async () => {
+    await cacheScan(CA1, withWindows(RUG, 300, 86_400), null)
+    await vi.waitFor(() => expect(cacheKeys(chromeStore)).toHaveLength(1))
+    await expireCached(CA1)
+    await vi.waitFor(() => expect((chromeStore.get(SCAN_CACHE_PREFIX + CA1) as { freshUntil: number }).freshUntil).toBe(NOW - 1))
+    scanCache.clear()
+    expect(await getCached(CA1)).toBeNull()
+    expect(await getStale(CA1)).not.toBeNull()
+  })
+
+  it("an entry from a server that sends no stale window is evicted, exactly as before", async () => {
+    await cacheScan(CA1, SAFE, null)
+    await vi.waitFor(() => expect(cacheKeys(chromeStore)).toHaveLength(1))
+    await expireCached(CA1)
+    expect(scanCache.has(CA1)).toBe(false)
+    expect(cacheKeys(chromeStore)).toHaveLength(0)
+  })
+
+  it("nothing there, nothing to do", async () => {
+    await expect(expireCached(CA1)).resolves.toBeUndefined()
+  })
+})
+

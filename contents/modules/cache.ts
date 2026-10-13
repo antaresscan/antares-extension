@@ -250,6 +250,27 @@ export async function getStale(ca: string): Promise<{ data: ScanResponseData; ma
 }
 
 /**
+ * Make an entry stop being served as FRESH, but keep it for as long as it may still be shown stale (getStale). For a refresh that may fail,
+ * such as the rescan after a price crash: evicting the entry first would lose the old verdict exactly when the scanner is down, and a token
+ * that crashed is the one whose old (bad) verdict is the most useful. An entry with no stale window left is evicted, as before.
+ */
+export async function expireCached(ca: string): Promise<void> {
+  const entry = scanCache.get(ca) ?? (await loadEntry(ca))
+  if (!entry) return
+  const now = Date.now()
+  const freshUntil = entry.freshUntil ?? entry.ts + CACHE_TTL
+  // Nothing to keep when there is no stale window beyond the fresh one (an older server, or a verdict the server did not allow stale).
+  if (entry.staleUntil === undefined || entry.staleUntil <= Math.max(freshUntil, now)) {
+    await evictCached(ca)
+    return
+  }
+  // One millisecond before now, so that a read in the same millisecond (the rescan starts right after) does not find it fresh.
+  const expired: ScanCacheEntry = { ...entry, freshUntil: Math.min(freshUntil, now - 1) }
+  scanCache.set(ca, expired)
+  void persistEntry(ca, expired)
+}
+
+/**
  * Evict a single CA from both the in-memory Map and the extension-storage
  * mirror, so the overlay re-fetches instead of serving a stale verdict.
  */
