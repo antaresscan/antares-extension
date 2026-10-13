@@ -26,14 +26,25 @@
 // pulls in the 15-30 % range knock 50-80 %, and pulls under 10 % are
 // almost always absorbed by the market within hours.
 //
-// SafeBlock rule (founder rule 2026-05-30):
-//   LP < 10%  → NEVER safeBlock regardless of age. Price impact is
-//               minimal even on a full drain (< ~20%). The flag is
-//               still shown (warning on fresh tokens, info on established)
-//               so the user sees the LP% — but the verdict is never capped.
-//   LP 10-15% → safeBlock only on fresh pairs (< 14 days). After 2 weeks
-//               the 10-15% drain risk is outweighed by time-based trust.
+// SafeBlock rule (founder rule 2026-05-30), for a token of 90 days or more:
+//   LP < 10%  → NEVER safeBlock. A drain moves the price by little and an
+//               established token has other markets and a track record.
+//               The flag is shown as information (the LP%), the verdict is
+//               never capped.
+//   LP 10-15% → information after 2 weeks (time-based trust).
 //   LP ≥ 15%  → safeBlock according to age (existing calibration).
+//
+// THE FIRST THREE MONTHS (founder rule 2026-10-13). In the replay corpus 80 %
+// of the young tokens whose LP is not burned or locked collapsed (297 of 371;
+// 87 % when the LP holds 10 % of the supply or more, 48 % under 10 %), and a
+// young token has ONE market: the pool. So for a token whose age is known:
+//   under 30 days → CRITICAL whatever the LP share (DANGER, never CAUTION:
+//                   CAUTION is a good grade, it has to be earned);
+//   30-90 days    → at least a WARNING that blocks SAFE (CAUTION at best);
+//   90 days +     → the matrix above, unchanged.
+// Blue chips are older than that (isBlueChipByMarket asks for 2 months), so
+// they stay on the matrix: nobody drains the pool of a token that has traded
+// for months or years.
 
 // ── BUCKET THRESHOLDS ────────────────────────────────────────
 // Keep these aligned with the rationale comments above. If you tweak
@@ -55,6 +66,9 @@ const AGE_THRESHOLDS_HOURS = {
   MATURE: 365 * 24,  // 90-365 days
   // anything ≥ MATURE is the BLUE_CHIP age bucket
 } as const
+
+/** Under this age an LP that is not burned or locked is critical, whatever its share of supply (founder rule 2026-10-13). */
+const FIRST_MONTH_HOURS = 30 * 24
 
 import type { SafeBlockedReason } from "./types"
 
@@ -312,6 +326,28 @@ export function getLpRiskBucket(
   const pctBucket = classifyPct(lpPctOfSupply)
   const ageBucket = classifyAge(tokenAgeHours)
 
+  // First month: critical whatever the share of supply. A cell that is already critical keeps its own wording (it says how exposed the
+  // pool is); every other cell gets the first-month wording. The penalty is never lighter than the one of a critical 15-30 % cell.
+  if (ageBucket !== "unknown" && (tokenAgeHours as number) < FIRST_MONTH_HOURS) {
+    const cell = pctBucket === "unknown" ? null : MATRIX[pctBucket][ageBucket]
+    if (!cell || cell.severity !== "critical") {
+      const xPct = fmtPct(lpPctOfSupply)
+      const share = pctBucket === "unknown" ? "" : ` ${xPct}% of the supply is in the pool.`
+      return {
+        pctBucket,
+        ageBucket,
+        severity: "critical",
+        penalty: Math.min(cell?.penalty ?? 0.75, 0.75),
+        safeBlock: true,
+        forceRug: false,
+        flagLabel: "LP not burned or locked — token under 30 days old, dev can rug liquidity",
+        flagReasons: ["lp"],
+        flagTooltip: `The liquidity pool of a token under 30 days old is not burned or locked.${share} Most young tokens in this situation collapse, and the pool is their only market: if its owner pulls it, nobody can sell.`,
+        summaryLine: `The token is under 30 days old and its liquidity pool is not burned or locked.${share} Most young tokens in this situation collapse, so the verdict stays at DANGER until the token has a month behind it.`,
+      }
+    }
+  }
+
   // Unknown bucket → conservative fallback (similar to old "looksMature" path)
   if (pctBucket === "unknown" || ageBucket === "unknown") {
     const msgs = buildMessages("unknown", tokenAgeHours, lpPctOfSupply, "")
@@ -328,6 +364,11 @@ export function getLpRiskBucket(
 
   const cell = MATRIX[pctBucket][ageBucket]
   const msgs = buildMessages(pctBucket, tokenAgeHours, lpPctOfSupply, cell.estimatedImpact)
+  // From 30 to 90 days an unlocked LP is at least a warning that blocks SAFE (CAUTION at best): the token has a month, not yet a track record.
+  const underThreeMonths = (tokenAgeHours as number) < AGE_THRESHOLDS_HOURS.YOUNG
+  if (underThreeMonths && cell.severity === "info") {
+    return { pctBucket, ageBucket, severity: "warning", penalty: Math.min(cell.penalty, 0.92), safeBlock: true, forceRug: false, ...msgs }
+  }
   return {
     pctBucket,
     ageBucket,
