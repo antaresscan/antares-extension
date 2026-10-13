@@ -19,7 +19,7 @@ export const SCAN_BUDGET_MS = 15_000
 export const LOADING_HINT = "Still loading…"
 
 /** What it says instead once the scan is past its limit (SCAN_BUDGET_MS, or the request failed): it stays on screen while the overlay retries. */
-export const SLOW_SCAN_HINT = "This scan might take longer, stay patient"
+export const SLOW_SCAN_HINT = "Taking longer than usual, still on it"
 
 /** Waits between two background attempts after a failure; the last one repeats. The first is short: a server that was only slow has usually cached the answer by then. */
 export const RECOVERY_DELAYS_MS = [3_000, 8_000, 15_000, 30_000, 60_000] as const

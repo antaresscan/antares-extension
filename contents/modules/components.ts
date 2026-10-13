@@ -605,7 +605,7 @@ export function buildQuotaExhaustedNode(
 // fades in with LOADING_HINT ("Still loading…") so the user knows the
 // extension isn't stuck on slow connections. Past the scan's limit (the request
 // failed, or SCAN_BUDGET_MS is over) scanner.ts swaps the text for SLOW_SCAN_HINT
-// ("This scan might take longer, stay patient"), which then stays while the
+// ("Taking longer than usual, still on it"), which then stays while the
 // overlay retries. Once the skeleton is replaced by buildResultNode the element
 // disappears and the animation is gone — no JS timer to manage.
 export function buildSkeletonNode(): DocumentFragment {

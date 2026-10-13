@@ -70,7 +70,7 @@ const noErrorScreen = () => {
 /** The loading screen, kept while the scanner cannot be reached. */
 const waiting = () => {
   expect(q(".skel")).not.toBeNull()
-  expect(q(".skel-slow-hint")?.textContent).toBe("This scan might take longer, stay patient") // it says why it stays
+  expect(q(".skel-slow-hint")?.textContent).toBe("Taking longer than usual, still on it") // it says why it stays
   expect(q(".skel-slow-hint")?.classList.contains("now")).toBe(true) // and says it at once
   expect(q(".vb")).toBeNull()
   expect(state.failureView).toBe("waiting")
@@ -162,7 +162,7 @@ describe("a scan waits 15 s at most", () => {
 })
 
 describe("the loading screen warns only when a scan is past its limit", () => {
-  it("within its normal time the loading screen says \"Still loading\" (it fades in after 3 s); past the 15 s limit it says \"This scan might take longer, stay patient\", at once", async () => {
+  it("within its normal time the loading screen says \"Still loading\" (it fades in after 3 s); past the 15 s limit it says \"Taking longer than usual, still on it\", at once", async () => {
     fetchMock.mockImplementation(hangs)
     void scan(CA)
     await advance(500)
@@ -172,10 +172,10 @@ describe("the loading screen warns only when a scan is past its limit", () => {
     await advance(14_000) // 14.5 s: still within the limit
     hint = q(".skel-slow-hint")
     expect(hint?.textContent).toBe("Still loading…")
-    expect(text()).not.toContain("might take longer")
+    expect(text()).not.toContain("Taking longer than usual")
     await advance(1_000) // 15.5 s: the limit is passed
     hint = q(".skel-slow-hint")
-    expect(hint?.textContent).toBe("This scan might take longer, stay patient")
+    expect(hint?.textContent).toBe("Taking longer than usual, still on it")
     expect(hint?.classList.contains("now")).toBe(true)
   })
 
@@ -184,10 +184,10 @@ describe("the loading screen warns only when a scan is past its limit", () => {
     void scan(CA)
     await advance(11_000)
     expect(q(".skel-slow-hint")?.textContent).toBe("Still loading…")
-    expect(text()).not.toContain("might take longer")
+    expect(text()).not.toContain("Taking longer than usual")
     await advance(1_100)
     expect(text()).toContain("TKN")
-    expect(text()).not.toContain("might take longer")
+    expect(text()).not.toContain("Taking longer than usual")
   })
 
   it("a request that fails early (the server answers 500 four times, 10.5 s) is past its limit too: the warning appears when it has failed", async () => {
@@ -196,7 +196,7 @@ describe("the loading screen warns only when a scan is past its limit", () => {
     await advance(5_000)
     expect(q(".skel-slow-hint")?.textContent).toBe("Still loading…")
     await advance(6_000)
-    expect(q(".skel-slow-hint")?.textContent).toBe("This scan might take longer, stay patient")
+    expect(q(".skel-slow-hint")?.textContent).toBe("Taking longer than usual, still on it")
   })
 
   it("when an old verdict leaves and the loading screen comes back, the message is there at once", async () => {
