@@ -1182,17 +1182,18 @@
     "safeBlockedReasons": []
   },
   "WBTC": {
-    "risk": "DANGER",
-    "score": 525,
+    "risk": "SAFE",
+    "score": 950,
     "confidence": 90,
     "flags": [
       "bonus:Established token (30d+) ✓",
-      "critical:Top 10 hold 69% — high concentration",
       "info:LP holds 0.49% of supply — negligible rug risk",
       "info:Mint authority active — supply can be inflated",
       "info:Mutable metadata",
       "info:No website / Twitter / Telegram registered on DexScreener",
-      "warning:RugCheck: Single holder ownership"
+      "info:RugCheck: Single holder ownership",
+      "info:Top 10 hold 69% — high concentration",
+      "info:Wrapped asset — the bridge or the custodian holds the mint authority and most of the supply by design: they are not read as rug signals"
     ],
     "sources_used": [
       "chart",
@@ -1239,10 +1240,8 @@
     "holders": 127628,
     "top10HolderPct": 69.49,
     "topHolderPct": 60.31,
-    "safeBlocked": true,
-    "safeBlockedReasons": [
-      "concentration"
-    ]
+    "safeBlocked": false,
+    "safeBlockedReasons": []
   },
   "WSOL": {
     "risk": "CAUTION",

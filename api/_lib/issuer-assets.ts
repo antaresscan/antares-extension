@@ -1,9 +1,12 @@
-// api/_lib/issuer-assets.ts — Tokens whose structure is an issuer's, by design: stablecoins, tokenized stocks / real-world assets, liquid staking tokens.
+// api/_lib/issuer-assets.ts — Tokens whose structure is an issuer's, by design: stablecoins, tokenized stocks / real-world assets, liquid staking tokens,
+// wrapped major assets.
 //
 // An issuer-backed token is NOT built like a meme coin, and every rule that reads structure reads it wrong:
 //   - the issuer holds the mint and the freeze authority (it issues and redeems; it must be able to freeze a sanctioned wallet);
 //   - tokenized stocks add a pause, a permanent delegate, accounts that start frozen (regulated securities);
 //   - a liquid staking token (JitoSOL, mSOL...) has its stake pool as mint authority and as the holder of most of the supply;
+//   - a wrapped major (wrapped BTC, ETH: Coinbase's cbBTC, Portal's WBTC and ETH...) has the bridge or the custodian as mint (and freeze)
+//     authority, and the vault of the backing asset as its biggest holder (one wallet at 50 % is the vault);
 //   - the issuer / its market makers hold 70-98 % of the supply (top-10 concentration);
 //   - the liquidity pool is not what backs the token (redemption is), so "LP not burned" says nothing.
 // Measured on the 365 recorded tokens: the 46 tokenized stocks were ALL called RUG (37) or DANGER (9), and so were most stablecoins and
@@ -18,15 +21,16 @@
 // SAFE too), so an issuer-backed token whose market is healthy is SAFE; what its issuer can do (freeze, pause, reissue) stays visible as an
 // information line. What differs is what "the peg" means: $1 for a stablecoin, 1 SOL for an LST, nothing we can read for a stock.
 import type { DexScreenerPair, LayerResult, RugKind, SafeBlockedReason, ScanFlag, Verdict } from "./types";
-import { LST_MINTS, STABLE_MINTS, TOKENIZED_MINTS } from "./issuer-assets.data";
+import { LST_MINTS, STABLE_MINTS, TOKENIZED_MINTS, WRAPPED_MINTS } from "./issuer-assets.data";
 import { makeFlag } from "./helpers";
 import { countVerdictFlags, determineVerdict, rugKindOf } from "./pipeline";
 
-export type IssuerKind = "stable" | "tokenized" | "lst";
+export type IssuerKind = "stable" | "tokenized" | "lst" | "wrapped";
 
 const STABLE = new Set<string>(STABLE_MINTS);
 const TOKENIZED = new Set<string>(TOKENIZED_MINTS);
 const LST = new Set<string>(LST_MINTS);
+const WRAPPED = new Set<string>(WRAPPED_MINTS);
 
 /** Stablecoins of the registry that are not pegged to the dollar: EURC follows the euro (about $1.1), so its distance to $1 says nothing. */
 export const NON_USD_STABLE = new Set<string>(["HzwqbKZw8HxMN6bF2yFZNrht3c2iXXzpKcFu7uBEDKtr"]);
@@ -37,6 +41,7 @@ export function issuerKindOf(mint: string | null | undefined): IssuerKind | null
   if (STABLE.has(mint)) return "stable";
   if (TOKENIZED.has(mint)) return "tokenized";
   if (LST.has(mint)) return "lst";
+  if (WRAPPED.has(mint)) return "wrapped";
   return null;
 }
 
@@ -157,7 +162,9 @@ export function judgeIssuerAsset(input: IssuerInput): IssuerJudgement | null {
     ? makeFlag("Stablecoin — the issuer holds the mint and freeze authorities and most of the supply by design: they are not read as rug signals", "info", 0)
     : kind === "lst"
       ? makeFlag("Liquid staking token — the stake pool holds the mint authority and most of the supply by design: they are not read as rug signals", "info", 0)
-      : makeFlag("Tokenized asset — the issuer can freeze, pause or reissue tokens by design: its authorities, the supply it holds and its pause are not read as rug signals", "info", 0);
+      : kind === "wrapped"
+        ? makeFlag("Wrapped asset — the bridge or the custodian holds the mint authority and most of the supply by design: they are not read as rug signals", "info", 0)
+        : makeFlag("Tokenized asset — the issuer can freeze, pause or reissue tokens by design: its authorities, the supply it holds and its pause are not read as rug signals", "info", 0);
 
   const flags = [issuerFlag, ...kept, ...shown].sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9));
   const counts = countVerdictFlags(flags);

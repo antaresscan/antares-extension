@@ -1396,3 +1396,53 @@ describe("scan handler — a liquid staking token is judged on its market and it
   });
 });
 
+// ─── Wrapped major assets through the whole scan ──────────────────────────────────────────────────────────────────────────────────
+describe("scan handler — a wrapped major is judged on its market, a token CALLED BTC is not", () => {
+  const CBBTC = "cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij";
+  const FAKE_BTC = "BTCqQb9ZHEJ5yTrnARGsCjqpGDo1JhKohsEn637GUT1g"; // a look-alike of the corpus: same name, same structure, not the asset
+  const ADDR = "2apBGMsS6ti9RyF5TwQTDswXBWskiJP2LD4cUEDqYJjk";
+
+  function scanBtc(mint: string) {
+    setupGoodTokenMocks();
+    // the bridge: both authorities active
+    mockHeliusGetMintAccount.mockResolvedValue(mintAccountResponse({ mintAuthority: ADDR, freezeAuthority: ADDR }));
+    const goodMocks = mockFetch.getMockImplementation() as (url: string, ...rest: unknown[]) => Promise<unknown>;
+    mockFetch.mockImplementation(async (url: string, ...rest: unknown[]) => {
+      const answer = (await goodMocks(url, ...rest)) as { ok: boolean; json: () => Promise<unknown> };
+      if (url.includes("gopluslabs")) {
+        const j = (await answer.json()) as { result: Record<string, unknown> };
+        return { ok: true, json: () => Promise.resolve({ result: { [mint]: Object.values(j.result)[0] } }) };
+      }
+      if (url.includes("dexscreener")) {
+        const j = (await answer.json()) as { pairs: Array<Record<string, unknown> & { baseToken: { address: string } }> };
+        return { ok: true, json: () => Promise.resolve({ pairs: j.pairs.map((p) => ({ ...p, baseToken: { ...p.baseToken, address: mint, symbol: "BTC", name: "Wrapped BTC" } })) }) };
+      }
+      return answer;
+    });
+  }
+  async function run(mint: string) {
+    const res = createMockRes();
+    await handler(createMockReq({ ca: mint }), res);
+    return (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as { risk: string; flags: Array<{ label: string; severity: string }> };
+  }
+  const flagOf = (b: { flags: Array<{ label: string; severity: string }> }, re: RegExp) => b.flags.find((f) => re.test(f.label));
+
+  it("cbBTC with the bridge's authorities and a healthy market is SAFE; its authorities are information", async () => {
+    scanBtc(CBBTC);
+    const body = await run(CBBTC);
+    expect(body.risk).toBe("SAFE");
+    expect(flagOf(body, /^Wrapped asset — the bridge or the custodian/)?.severity).toBe("info");
+    expect(flagOf(body, /^Mint authority active/)?.severity).toBe("info");
+    expect(flagOf(body, /^Freeze authority active/)?.severity).toBe("info");
+    expect(body.flags.some((f) => f.severity === "critical" || f.severity === "warning")).toBe(false);
+  });
+
+  it("witness: a token CALLED Wrapped BTC with the same structure and market, not at the address of a wrapped asset, is read as any token's: authorities critical, not SAFE", async () => {
+    scanBtc(FAKE_BTC);
+    const body = await run(FAKE_BTC);
+    expect(["DANGER", "RUG"]).toContain(body.risk);
+    expect(flagOf(body, /^Mint authority active/)?.severity).toBe("critical");
+    expect(flagOf(body, /^Wrapped asset/)).toBeUndefined();
+  });
+});
+
