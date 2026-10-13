@@ -93,6 +93,16 @@ export function staleAgeLabel(ageMs: number): string {
   return `${Math.floor(h / 24)} d ago`
 }
 
+/**
+ * How old the verdict is when the SERVER itself served the verdict of the last time a data source could be read (`scannedAgoSec`, sent only
+ * in that case: an issuer-backed token while DexScreener is down), in seconds; null for an ordinary answer or a value that is not a
+ * non-negative number. The overlay says "Scanned 6 min ago" and keeps asking until the market is readable again.
+ */
+export function scannedAgoOf(data: object): number | null {
+  const v = (data as { scannedAgoSec?: unknown }).scannedAgoSec
+  return typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : null
+}
+
 /** The line at the foot of a verdict shown from memory. */
 export function scannedAgoText(ageMs: number): string {
   return `Scanned ${staleAgeLabel(ageMs)}`

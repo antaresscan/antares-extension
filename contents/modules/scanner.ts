@@ -1,8 +1,8 @@
 import type { ScanResponseData, QuotaStatus } from "../../shared/types"
-import { API, IGNORE } from "./constants"
+import { API, IGNORE, RISK_CLASS } from "./constants"
 import { state } from "./state"
 import { getCached, getStale, cacheScan, expireCached } from "./cache"
-import { SCAN_BUDGET_MS, STALE_TICK_MS, SLOW_SCAN_HINT, sleep, recoveryDelayMs, scannedAgoText } from "./resilience"
+import { SCAN_BUDGET_MS, STALE_TICK_MS, SLOW_SCAN_HINT, sleep, recoveryDelayMs, scannedAgoText, scannedAgoOf } from "./resilience"
 import { readSessionToken } from "./session-token"
 import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimations, applyFinalAnimationValues, buildResultNode, buildSkeletonNode, buildQuotaExhaustedNode, hideBox, appendScannedAgo, updateScannedAgo } from "./components"
 import { scanRateLimiter } from "../../shared/rate-limit"
@@ -254,7 +254,7 @@ function scheduleRecovery(ca: string) {
     if (state.lastCA !== ca || state.manuallyDismissed || !state.failureView) { clearRecovery(); return }
     // A hidden tab does not need the answer now (visibilitychange asks again as soon as it is visible).
     if (typeof document !== "undefined" && document.hidden) { scheduleRecovery(ca); return }
-    void scan(ca, { silent: true })
+    void scan(ca, { silent: true, refresh: true })
   }, delay)
 }
 
@@ -268,6 +268,20 @@ function armStaleTick(ca: string, madeAt: number, staleUntil: number) {
     updateScannedAgo(getBox(), scannedAgoText(Date.now() - madeAt))
     armStaleTick(ca, madeAt, staleUntil)
   }, Math.max(0, Math.min(STALE_TICK_MS, staleUntil - Date.now())))
+}
+
+/**
+ * The SERVER served the verdict of the last time a data source could be read (an issuer-backed token while DexScreener is down: `scannedAgoSec`).
+ * The card is an old verdict, so the same line says how old it is, the age keeps being refreshed, and the overlay keeps asking, like for an old
+ * verdict it could not refresh itself, until the data source answers again and the fresh verdict replaces it.
+ */
+function showServedFromMemory(ca: string, el: HTMLDivElement, ageSec: number) {
+  const madeAt = Date.now() - ageSec * 1000
+  if (el.querySelector(".scanned-ago")) updateScannedAgo(el, scannedAgoText(Date.now() - madeAt))
+  else appendScannedAgo(el, scannedAgoText(Date.now() - madeAt))
+  state.failureView = "stale"
+  armStaleTick(ca, madeAt, Infinity)
+  scheduleRecovery(ca)
 }
 
 /** The loading screen, kept while the scanner cannot be reached: it is already on screen when the first scan fails, and comes back when an old verdict is taken off. */
@@ -340,6 +354,8 @@ async function showFailure(ca: string, installId: string | null, el: HTMLDivElem
  */
 export interface ScanOptions {
   silent?: boolean
+  /** Ask the server even when the overlay's own memory holds a fresh answer (a background attempt of the recovery: the answer it holds is the one it is trying to replace). */
+  refresh?: boolean
 }
 
 export async function scan(ca: string, opts: ScanOptions = {}) {
@@ -357,7 +373,7 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
   // scanned under a different session — a Pro entry can never survive
   // a logout, even if the chrome.storage.onChanged listener missed
   // (e.g. tab was discarded by Chrome and re-injected from LS).
-  const cached = await getCached(ca)
+  const cached = opts.refresh ? null : await getCached(ca)
   if (ca === state.lastCA && cached && el.style.display !== "none") return
   if (state.manuallyDismissed && ca === state.lastCA) return
 
@@ -398,9 +414,13 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
 
   // ── Cached path ──────────────────────────────────────────────────────────────
   if (cached) {
-    // A fresh answer is in hand: whatever the overlay was showing because the scanner could not be reached is over.
-    clearRecovery()
-    state.failureView = null
+    // A fresh answer is in hand: whatever the overlay was showing because the scanner could not be reached is over. (Unless the answer is itself
+    // a verdict the server served from memory, see showServedFromMemory.)
+    const cachedMemoryAge = scannedAgoOf(cached)
+    if (cachedMemoryAge === null) {
+      clearRecovery()
+      state.failureView = null
+    }
     // replaceChildren swaps the subtree atomically — never round-trips
     // markup through the parser, so a malformed cached payload cannot
     // re-introduce HTML interpretation. buildResultNode constructs the
@@ -422,6 +442,7 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
     attachAnalysisBtn(ca)
     // Badge / alert / history follow what the overlay shows, cached or not.
     reportScanResult(ca, cached)
+    if (cachedMemoryAge !== null) showServedFromMemory(ca, el, cachedMemoryAge)
     chrome.storage.local.get(["autoRescan"], (prefs) => {
       if (prefs.autoRescan !== false) scheduleRescanIfPriceCrash(cached, ca)
     })
@@ -519,9 +540,17 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
       }
       if (cancelled()) return
     }
-    // The scanner answered: whatever the overlay was showing because it could not (the old verdict, the error) is over.
-    clearRecovery()
-    state.failureView = null
+    // The scanner answered: whatever the overlay was showing because it could not (the old verdict, the loading screen) is over. Unless the
+    // answer is itself a verdict the server served from memory because a data source is down (showServedFromMemory): then the overlay keeps asking.
+    const memoryAge = scannedAgoOf(data)
+    if (memoryAge === null) {
+      clearRecovery()
+      state.failureView = null
+    } else if (state.failureView === "stale" && el.querySelector(".scanned-ago") && state.boxEl?.classList.contains(RISK_CLASS[data.risk] ?? "")) {
+      // The same old verdict again (the data source is still down): only its age changes, nothing is redrawn (no flash every minute).
+      showServedFromMemory(ca, el, memoryAge)
+      return
+    }
     el.replaceChildren(buildResultNode(data, ca, installId))
     showBox()
     if (skipFlashUI) {
@@ -548,6 +577,7 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
     }
     attachClose(data.aiSummary ?? null, data.flags ?? null, data.risk ?? null)
     attachAnalysisBtn(ca)
+    if (memoryAge !== null) showServedFromMemory(ca, el, memoryAge)
     // Badge / alert / history follow what the overlay shows, cached or not.
     reportScanResult(ca, data)
     chrome.storage.local.get(["autoRescan"], (prefs) => {

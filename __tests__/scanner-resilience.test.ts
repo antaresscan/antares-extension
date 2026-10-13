@@ -339,6 +339,120 @@ describe("when the scanner cannot be reached: the last known verdict, with when 
   })
 })
 
+describe("a verdict the server served from memory (a data source is down): the same line, and the overlay keeps asking", () => {
+  const memory = (ageSec: number, over: Record<string, unknown> = {}) => data({ scannedAgoSec: ageSec, servedFromMemory: true, degraded: true, freshForSec: 30, staleLeftSec: 0, ...over })
+
+  it("the verdict stays SAFE, with \"Scanned 6 min ago\" as the last thing in the card, like an old verdict", async () => {
+    fetchMock.mockImplementation(() => answer(memory(360)))
+    await scan(CA)
+    expect(state.boxEl?.className).toContain("safe")
+    const line = q(".scanned-ago")
+    expect(line?.textContent).toBe("Scanned 6 min ago")
+    expect((line?.parentElement as HTMLElement).lastElementChild).toBe(line)
+    expect(state.failureView).toBe("stale")
+    expect(state.recoveryTimer).not.toBeNull() // it keeps asking until the data source is back
+    noErrorScreen()
+  })
+
+  it("the age keeps up with the clock (the server counts it from when the market was read), without rebuilding the card", async () => {
+    const t0 = Date.now()
+    fetchMock.mockImplementation(() => answer(memory(360 + Math.round((Date.now() - t0) / 1000)))) // the real server: the memory is one reading, its age grows
+    await scan(CA)
+    const card = q(".vb")
+    await advance(2 * MIN + 30_000) // 8 min 30 s: the line was last touched at most 20 s ago
+    expect(q(".scanned-ago")?.textContent).toBe("Scanned 8 min ago")
+    expect(q(".vb")).toBe(card)
+  })
+
+  it("and between two answers of the server its age is refreshed every 20 s by the overlay itself", async () => {
+    fetchMock.mockImplementation(() => answer(memory(360)))
+    await scan(CA)
+    await advance(25_000)
+    const first = q(".scanned-ago")?.textContent
+    expect(first).toBe("Scanned 6 min ago")
+    // a long silence of the server: only the overlay's own tick moves the age (the next attempt is a minute away at this point of the calendar)
+    fetchMock.mockImplementation(() => new Promise(() => {}))
+    await advance(5 * MIN)
+    expect(q(".scanned-ago")?.textContent).toMatch(/^Scanned (10|11) min ago$/)
+  })
+
+  it("when the data source is back, the fresh verdict replaces it: the line goes, the retries stop", async () => {
+    let n = 0
+    fetchMock.mockImplementation(() => (++n === 1 ? answer(memory(360)) : answer(data())))
+    await scan(CA)
+    expect(q(".scanned-ago")).not.toBeNull()
+    await advance(10_000) // the first background attempt (3 s) got an ordinary answer
+    expect(q(".scanned-ago")).toBeNull()
+    expect(state.failureView).toBeNull()
+    expect(state.recoveryTimer).toBeNull()
+    const calls = fetchMock.mock.calls.length
+    await advance(5 * MIN)
+    expect(fetchMock.mock.calls.length).toBe(calls)
+  })
+
+  it("while the data source stays down it keeps asking on the calendar (3 s, 8 s...), the line staying", async () => {
+    fetchMock.mockImplementation(() => answer(memory(360)))
+    await scan(CA)
+    await advance(20 * MIN)
+    expect(callsFor(CA)).toBeGreaterThan(10) // the calendar: 3, 8, 15, 30 s, then every minute
+    expect(q(".scanned-ago")).not.toBeNull()
+    expect(state.failureView).toBe("stale")
+  })
+
+  it("the same old verdict again (the data source is still down): only the age changes, the card is not redrawn and does not flash", async () => {
+    fetchMock.mockImplementation(() => answer(memory(360)))
+    await scan(CA)
+    const card = q(".vb")
+    await advance(10_000) // a background attempt (3 s, then 8 s later) got the same answer
+    expect(callsFor(CA)).toBeGreaterThan(1)
+    expect(q(".vb")).toBe(card) // the same node: nothing redrawn
+    expect(q(".topbar.flash")).toBeNull()
+    expect(q(".scanned-ago")?.textContent).toMatch(/^Scanned 6 min ago$/)
+    expect(state.boxEl?.classList.contains("refreshing")).toBe(false)
+  })
+
+  it("a DIFFERENT verdict from memory (a worse one) is drawn: the card follows the server", async () => {
+    let n = 0
+    fetchMock.mockImplementation(() => answer(++n === 1 ? memory(360) : memory(900, { risk: "RUG", rugKind: "confirmed", score: 40 })))
+    await scan(CA)
+    expect(state.boxEl?.className).toContain("safe")
+    await advance(10_000)
+    expect(state.boxEl?.className).toContain("rug")
+    expect(q(".scanned-ago")?.textContent).toMatch(/^Scanned 1[5-6] min ago$/)
+  })
+
+  it("from the overlay's own memory (the answer is cached 30 s): the same line, not a plain verdict", async () => {
+    fetchMock.mockImplementation(() => answer(memory(360)))
+    await scan(CA)
+    const before = callsFor(CA)
+    state.lastCA = "" // the page asks again within the 30 s
+    await scan(CA)
+    expect(callsFor(CA)).toBe(before) // served from the overlay's memory
+    expect(q(".scanned-ago")?.textContent).toBe("Scanned 6 min ago")
+    expect(state.failureView).toBe("stale")
+  })
+
+  it("an ordinary answer shows no line, and a value that is not a number is ignored", async () => {
+    for (const bad of ["6 min", -3, null]) {
+      state.lastCA = ""
+      scanCache.clear()
+      fetchMock.mockImplementation(() => answer(data({ scannedAgoSec: bad })))
+      await scan(CA)
+      expect(q(".scanned-ago"), String(bad)).toBeNull()
+      expect(state.failureView).toBeNull()
+    }
+  })
+
+  it("closing the box stops the retries", async () => {
+    fetchMock.mockImplementation(() => answer(memory(360)))
+    await scan(CA)
+    state.manuallyDismissed = true
+    const before = callsFor(CA)
+    await advance(10 * MIN)
+    expect(callsFor(CA)).toBe(before)
+  })
+})
+
 describe("the rescan after a price crash", () => {
   it("does not lose the old verdict when the scanner is down: a token that crashed keeps its RUG on screen", async () => {
     fetchMock.mockImplementation(() => answer(data({ risk: "RUG", rugKind: "confirmed", score: 40, priceChange1h: -71, staleLeftSec: 86_400 })))

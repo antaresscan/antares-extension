@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest"
 import {
   SCAN_BUDGET_MS, RECOVERY_DELAYS_MS, RECOVERY_GIVE_UP_MS,
-  sleep, recoveryDelayMs, windowsOf, madeAtOf, staleAgeLabel, scannedAgoText,
+  sleep, recoveryDelayMs, windowsOf, madeAtOf, staleAgeLabel, scannedAgoText, scannedAgoOf,
 } from "../contents/modules/resilience"
 
 // What the overlay does when the scanner is slow or cannot be reached (contents/modules/resilience.ts): pure rules, wired by scanner.ts.
@@ -155,3 +155,16 @@ describe("the label under the header of a verdict shown from memory", () => {
     expect(scannedAgoText(10_000)).toBe("Scanned less than a minute ago")
   })
 })
+
+describe("scannedAgoOf: the age of a verdict the SERVER served from memory", () => {
+  it("the seconds the server sent, for a verdict served from memory (a data source is down)", () => {
+    expect(scannedAgoOf({ scannedAgoSec: 360 })).toBe(360)
+    expect(scannedAgoOf({ scannedAgoSec: 0 })).toBe(0)
+  })
+
+  it("null for an ordinary answer, and for a value that is not a non-negative number", () => {
+    expect(scannedAgoOf({})).toBeNull()
+    for (const bad of ["360", -1, NaN, Infinity, null, undefined, {}, []]) expect(scannedAgoOf({ scannedAgoSec: bad }), String(bad)).toBeNull()
+  })
+})
+
