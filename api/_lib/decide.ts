@@ -24,7 +24,7 @@ import {
 } from "./pipeline";
 import { computeLpPctOfSupply, getLpRiskBucket } from "./lp-risk-matrix";
 import { weightedBurnPct, type AuthorityFacts } from "./facts";
-import { HARD_BLOCK_REASONS, LAYER_WEIGHTS } from "./constants";
+import { HARD_BLOCK_REASONS, LAYER_WEIGHTS, SOLSCAN_AGE_ONLY } from "./constants";
 import { asNumber } from "./math";
 import { makeFlag } from "./helpers";
 import { issuerKindOf, judgeIssuerAsset, lstPriceInSol } from "./issuer-assets";
@@ -152,7 +152,9 @@ export function decide(input: DecideInput): Decision {
   // Holder count: null, as it effectively always was (the Solscan holders endpoint is dead).
   const l5 = layerSolscan(null, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h, solscanAnswered);
   const l6 = layerChart(candles, pair, tokenAgeMinutes, maturityCtx, dailyCandles.length >= 2 ? dailyCandles : undefined, blueChip);
-  const l7 = layerCrossValidation(rugData, resolvedHolderAccounts, goplus, solscanTokenAgeHours, dexTokenAgeHours, totalSupplyUi, authFacts);
+  // Solscan's age is the token's mint time, DexScreener's is a pool's: two different events, they differ for most tokens. Not a cross-check
+  // while only the age is read from Solscan (SOLSCAN_AGE_ONLY): the -10 % trust of an "age conflict" would hit them all.
+  const l7 = layerCrossValidation(rugData, resolvedHolderAccounts, goplus, SOLSCAN_AGE_ONLY ? null : solscanTokenAgeHours, dexTokenAgeHours, totalSupplyUi, authFacts);
 
   const allLayers = [l1, l2, l3, l4, l5, l6, l7];
   let score       = computeFinalScore(allLayers);

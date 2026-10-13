@@ -427,11 +427,13 @@ describe("holder count: exact chain pages first, then GoPlus, RugCheck, the chai
 });
 
 describe("Solscan is only an available source when Solscan answered", () => {
-  it("is available when its endpoints return data", async () => {
+  it("is NOT a source even when Solscan answers: only the age is read from it (SOLSCAN_AGE_ONLY)", async () => {
+    // The plan is back (2026-10-13) but only the token's age is taken from `token/meta`: counting Solscan as a source would add one to the
+    // sources a SAFE needs, and no replay or scan has run the rest of its layer for months.
     setupUpstream({ goplusHolderCount: "100" });
     const body = await scan();
-    expect(body.layers.solscan.available).toBe(true);
-    expect(body.sources_used).toContain("solscan");
+    expect(body.layers.solscan.available).toBe(false);
+    expect(body.sources_used).not.toContain("solscan");
   });
 
   it("is NOT available when every Solscan call returned nothing (the age then comes from DexScreener)", async () => {
