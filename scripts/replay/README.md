@@ -30,6 +30,8 @@ that the two worst errors cannot creep back unnoticed:
 - `falseAlarmOnSafe`: a token that looked overwhelmingly safe (weak label SAFE) that the engine calls **DANGER or RUG**, a false
   alarm on a big name.
 
+A **SAFE weak label needs an address that Jupiter's verified list knows**: a look-alike scam (a "BTC", an "ETH", a "JUP", a "Bonk" with a fake market cap) reads like a big name on DexScreener's numbers alone, and its DANGER is the right call. The 20 such tokens of the corpus are labelled DANGER, not SAFE (they had inflated `falseAlarmOnSafe` from 23 to 43).
+
 The labels are noisy, so the counts are not zero. What is checked is their direction: a count that rises fails, and a count that
 falls fails too until `bulk-baseline.json` is lowered in the same pull request (an improvement is locked in the day it lands).
 
