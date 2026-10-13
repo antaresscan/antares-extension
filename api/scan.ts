@@ -30,7 +30,7 @@ import { parseMintState, mintSupplyUi, deriveAuthorityFacts, parseChainHolders, 
 import { fetchGoPlusSecurity } from "./_lib/goplus-auth";
 import {
   DEXSCREENER_BASE, RUGCHECK_BASE, LAYER_WEIGHTS, SCORING_VERSION,
-  LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS,
+  LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS, SOLSCAN_AGE_ONLY,
 } from "./_lib/constants";
 import { selectBestPair } from "./_lib/dex-pair-select";
 import { decide } from "./_lib/decide";
@@ -400,8 +400,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       // tracked wallets — even on liquid tokens. 50 covers ~6-12 hours
       // of typical-volume tokens, plenty for a 1h-window classifier,
       // and stays well within Solscan's free-tier per-page cap.
-      withBudget(fetchSolscan(`/token/transfer?address=${resolvedMint}&page=1&page_size=50`), remainingMs()),
-      withBudget(fetchSolscan(`/token/markets?address=${resolvedMint}&page=1&page_size=1`), remainingMs()),
+      SOLSCAN_AGE_ONLY ? null : withBudget(fetchSolscan(`/token/transfer?address=${resolvedMint}&page=1&page_size=50`), remainingMs()),
+      SOLSCAN_AGE_ONLY ? null : withBudget(fetchSolscan(`/token/markets?address=${resolvedMint}&page=1&page_size=1`), remainingMs()),
       rugReportPromise,
     ]);
 
@@ -459,8 +459,11 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       Array.isArray(solMarketsData?.data) && solMarketsData!.data!.length > 0
       ? [...solMarketsData!.data!].sort((a: SolscanMarketPool, b: SolscanMarketPool) => asNumber(b.liquidity) - asNumber(a.liquidity))[0]
       : null;
-    const solMetaData = isSolscanMeta(solMeta) ? solMeta : null;
-    const solscanCreatedTime: number | null = solMetaData?.data?.created_time ?? null;
+    const solMetaAnswer = isSolscanMeta(solMeta) ? solMeta : null;
+    const solscanCreatedTime: number | null = solMetaAnswer?.data?.created_time ?? null;
+    // SOLSCAN_AGE_ONLY (constants.ts): nothing but the age is taken from the answer. The logo, the creator (and the Helius call that reads
+    // his history), the decimals, the supply and "Solscan answered" stay what they were while Solscan refused the key.
+    const solMetaData = SOLSCAN_AGE_ONLY ? null : solMetaAnswer;
     // Token age: take the MAX of Solscan token-mint time and DexScreener
     // pair-creation time. The two measure different events (mint vs pair
     // listing) and either source can fail or return stale data; the older

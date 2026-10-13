@@ -1527,3 +1527,88 @@ describe("scan handler — a yield-bearing token and a Jupiter vault share are j
   });
 });
 
+// ─── Solscan: the age of the token and nothing else (SOLSCAN_AGE_ONLY) ────────────────────────────────────────────────────────────
+describe("scan handler — Solscan is read for the age of the token only", () => {
+  const MINT = "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU";
+  const DAY = 24 * 3600 * 1000;
+
+  /** `solscan`: how old Solscan says the token is, or null when it answers nothing at all (as when it refused the key). */
+  function scanWith(o: { poolAgeDays: number; solscan: { ageDays: number } | null }) {
+    setupGoodTokenMocks();
+    const good = mockFetch.getMockImplementation() as (url: string, ...rest: unknown[]) => Promise<unknown>;
+    mockFetch.mockImplementation(async (url: string, ...rest: unknown[]) => {
+      const answer = (await good(url, ...rest)) as { ok: boolean; json: () => Promise<unknown> };
+      if (url.includes("gopluslabs")) {
+        const j = (await answer.json()) as { result: Record<string, unknown> };
+        return { ok: true, json: () => Promise.resolve({ result: { [MINT]: Object.values(j.result)[0] } }) };
+      }
+      if (url.includes("dexscreener")) {
+        const j = (await answer.json()) as { pairs: Array<Record<string, unknown> & { baseToken: { address: string } }> };
+        return { ok: true, json: () => Promise.resolve({ pairs: j.pairs.map((p) => ({ ...p, baseToken: { ...p.baseToken, address: MINT }, pairCreatedAt: Date.now() - o.poolAgeDays * DAY })) }) };
+      }
+      return answer;
+    });
+    mockFetchSolscan.mockImplementation((endpoint: string) => {
+      if (o.solscan === null) return Promise.resolve(null);
+      if (endpoint.includes("/token/meta")) {
+        return Promise.resolve({ data: { created_time: Math.floor((Date.now() - o.solscan.ageDays * DAY) / 1000), icon: "https://img.test.com/icon.png", creator: "creator123", decimals: 9, supply: 100000 } });
+      }
+      // What Solscan would say if it were read: trades with no trader at all (a critical wash-trading flag), a pile of transfers.
+      if (endpoint.includes("/token/markets")) return Promise.resolve({ data: [{ liquidity: 400000, volume: 900000, trade: 900, trader: 0 }] });
+      return Promise.resolve({ data: [{ trans_id: "t1", from_address: "a", to_address: "b", amount: 1, block_time: Math.floor(Date.now() / 1000) }] });
+    });
+    mockFetchSolscan.mockClear();
+  }
+  async function run() {
+    const res = createMockRes();
+    await handler(createMockReq({ ca: MINT }), res);
+    return (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as { risk: string; score: number; flags: Array<{ label: string; severity: string }>; sources_used?: string[] };
+  }
+  const has = (b: { flags: Array<{ label: string }> }, re: RegExp) => b.flags.some((f) => re.test(f.label));
+
+  it("one call: token/meta. The transfers and the markets are not asked for", async () => {
+    scanWith({ poolAgeDays: 5, solscan: { ageDays: 300 } });
+    await run();
+    const endpoints = mockFetchSolscan.mock.calls.map((c) => String(c[0]));
+    expect(endpoints).toHaveLength(1);
+    expect(endpoints[0]).toMatch(/^\/token\/meta\?address=/);
+  });
+
+  it("the age is Solscan's when it is older than the pool's: a token whose pool is 5 days old and whose mint is 300 days old is established", async () => {
+    scanWith({ poolAgeDays: 5, solscan: { ageDays: 300 } });
+    const withSolscan = await run();
+    expect(has(withSolscan, /^Established token \(30d\+\)/)).toBe(true);
+    scanWith({ poolAgeDays: 5, solscan: null });
+    const without = await run();
+    expect(has(without, /^Established token \(30d\+\)/)).toBe(false);
+  });
+
+  it("nothing else of what Solscan says reaches the verdict: no wash-trading flag, no age conflict, no source, no creator lookup", async () => {
+    scanWith({ poolAgeDays: 5, solscan: { ageDays: 300 } });
+    const body = await run();
+    expect(has(body, /wash trading/i)).toBe(false);
+    expect(has(body, /age conflict/i)).toBe(false);
+    expect(body.sources_used ?? []).not.toContain("solscan");
+    expect(mockHeliusGetCreatorReputation).not.toHaveBeenCalled();
+  });
+
+  it("when the ages agree, the answer is the same with Solscan as without it (the rest of what it says changes nothing)", async () => {
+    scanWith({ poolAgeDays: 5, solscan: { ageDays: 5 } });
+    const withSolscan = await run();
+    scanWith({ poolAgeDays: 5, solscan: null });
+    const without = await run();
+    expect(withSolscan.risk).toBe(without.risk);
+    expect(withSolscan.score).toBe(without.score);
+    expect(withSolscan.flags.map((f) => `${f.severity}:${f.label}`).sort()).toEqual(without.flags.map((f) => `${f.severity}:${f.label}`).sort());
+  });
+
+  it("a mint time that is far from the pool's (the token was minted weeks before its pool) is no 'age conflict' and costs no trust", async () => {
+    scanWith({ poolAgeDays: 20, solscan: { ageDays: 25 } }); // 5 days apart: over the 72 h of the old cross-check
+    const apart = await run();
+    scanWith({ poolAgeDays: 20, solscan: { ageDays: 20 } });
+    const together = await run();
+    expect(has(apart, /age conflict/i)).toBe(false);
+    expect(apart.score).toBe(together.score);
+  });
+});
+
