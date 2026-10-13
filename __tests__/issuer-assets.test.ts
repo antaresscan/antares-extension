@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { issuerKindOf, judgeIssuerAsset, lstPriceInSol, NON_USD_STABLE, LST_PEG_WARN, LST_PEG_CRITICAL, type IssuerInput } from "../api/_lib/issuer-assets";
-import { LST_MINTS, STABLE_MINTS, TOKENIZED_MINTS, WRAPPED_MINTS } from "../api/_lib/issuer-assets.data";
+import { LST_MINTS, STABLE_MINTS, TOKENIZED_MINTS, VAULT_MINTS, WRAPPED_MINTS, YIELD_MINTS } from "../api/_lib/issuer-assets.data";
 import type { DexScreenerPair, LayerResult, RugEvidence, ScanFlag } from "../api/_lib/types";
 
 // Stablecoins and tokenized stocks are built as their issuer built them. Read as meme coins they came out RUG (all 46 tokenized stocks of the
@@ -24,6 +24,12 @@ const WBTC_PORTAL = "3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh"; // Wrapped B
 const FAKE_BTC = "BTCqQb9ZHEJ5yTrnARGsCjqpGDo1JhKohsEn637GUT1g";
 const FAKE_ETH = "4AiwJSwZcdN1D8kqHsbxNQpDWwRdxZur6S61GvZEVoTo";
 const FAKE_DOGE = "DogePMoL8zXQtYbvAYNFTFST9pewYi6uHWpZvFUtnBBz";
+const USDY = "A1KLoBrKBde8Ty9qtNQUtq3C2ortoC3u7twggz7sEto6"; // Ondo US Dollar Yield, price $1.15
+const SYRUP_USDC = "AvZZF1YaZDziPY2RCK4oJrRVrbN3mTD9NL24hPeaZeUj";
+const JLP = "27G8MtK7VtTcCHkpASjSDdkWWYfoqT6ggEuKidVJidD4"; // Jupiter Perps liquidity pool share
+const JL_USDC = "9BEcn9aPEmhSPbPQeFGjidRiEKki46fVQDyPpSQXPA2D"; // Jupiter Lend USDC receipt
+const JL_WSOL = "2uQsyo1fXXQkDtcpXnLofWy88PxcvnfH2L8FPSE62FVU";
+const JL_EURC = "GcV9tEj62VncGithz4o4N9x6HWXARxuRgEAYk9zahNA8";
 
 describe("the registry: by mint address, from Jupiter's verified list", () => {
   const BASE58 = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
@@ -41,6 +47,12 @@ describe("the registry: by mint address, from Jupiter's verified list", () => {
     expect(WRAPPED_MINTS.length).toBeGreaterThanOrEqual(5);
     expect(WRAPPED_MINTS.filter((m) => STABLE_MINTS.includes(m) || TOKENIZED_MINTS.includes(m) || LST_MINTS.includes(m))).toEqual([]);
     expect(WRAPPED_MINTS).not.toContain(SOL);
+    for (const list of [YIELD_MINTS, VAULT_MINTS]) {
+      expect(list.every((m) => BASE58.test(m)) && new Set(list).size === list.length).toBe(true);
+      expect(list.length).toBeGreaterThanOrEqual(5);
+      expect(list.filter((m) => STABLE_MINTS.includes(m) || TOKENIZED_MINTS.includes(m) || LST_MINTS.includes(m) || WRAPPED_MINTS.includes(m))).toEqual([]);
+    }
+    expect(YIELD_MINTS.filter((m) => VAULT_MINTS.includes(m))).toEqual([]);
     expect(LST_MINTS).not.toContain(SOL); // wrapped SOL is what LSTs are priced in, not one of them
     for (const m of NON_USD_STABLE) expect(STABLE_MINTS).toContain(m);
     expect(STABLE_MINTS.length).toBeGreaterThanOrEqual(10);
@@ -54,6 +66,12 @@ describe("the registry: by mint address, from Jupiter's verified list", () => {
     expect(issuerKindOf(AAPLX)).toBe("tokenized");
     expect(issuerKindOf(JITOSOL)).toBe("lst");
     expect(issuerKindOf(CBBTC)).toBe("wrapped");
+    expect(issuerKindOf(USDY)).toBe("yield");
+    expect(issuerKindOf(SYRUP_USDC)).toBe("yield");
+    expect(issuerKindOf(JLP)).toBe("vault");
+    expect(issuerKindOf(JL_USDC)).toBe("vault"); // also tagged yield-bearing by Jupiter: the vault wins
+    expect(issuerKindOf(JL_WSOL)).toBe("vault");
+    expect(issuerKindOf(JL_EURC)).toBe("vault"); // priced in euros: no dollar floor could apply to it
     expect(issuerKindOf(ETH_PORTAL)).toBe("wrapped");
     expect(issuerKindOf(WBTC_PORTAL)).toBe("wrapped");
     expect(issuerKindOf(MSOL)).toBe("lst");
@@ -61,6 +79,8 @@ describe("the registry: by mint address, from Jupiter's verified list", () => {
 
   it("knows nothing else: SOL, BONK, JUP, a random address, null", () => {
     for (const m of [SOL, BONK, JUP, "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU", "", null, undefined]) expect(issuerKindOf(m)).toBeNull();
+    // Jupiter's governance token is a token like any other: it is not one of the vault shares
+    expect(issuerKindOf("JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN")).toBeNull();
   });
 
   it("is read by ADDRESS: tokens CALLED BTC, ETH or DOGE are not the real assets (the corpus holds 11 fake BTC, 13 fake ETH, 6 fake DOGE: all DANGER, rightly)", () => {
@@ -68,6 +88,8 @@ describe("the registry: by mint address, from Jupiter's verified list", () => {
   });
 
   it("is read by ADDRESS: a look-alike of a registry mint (one character off) is not in it", () => {
+    expect(issuerKindOf(USDY.slice(0, -1) + "7")).toBeNull();
+    expect(issuerKindOf(JLP.slice(0, -1) + "5")).toBeNull();
     expect(issuerKindOf(AAPLX.slice(0, -1) + "K")).toBeNull();
     expect(issuerKindOf(USDC.toLowerCase())).toBeNull();
   });
@@ -94,8 +116,8 @@ const BY_DESIGN: ScanFlag[] = [
 const input = (over: Partial<IssuerInput> = {}): IssuerInput => {
   const kind = over.kind ?? "tokenized";
   return {
-    kind, mint: kind === "stable" ? USDT : kind === "lst" ? JITOSOL : kind === "wrapped" ? CBBTC : AAPLX, layers: [layer("dexscreener"), layer("chart")], flags: BY_DESIGN, sourcesUsedCount: 5,
-    priceChange24hPct: 1.2, priceChange1hPct: 0.1, priceUsd: kind === "stable" ? 1.0004 : 341.28, poolLiquidityUsd: 329_000, priceInSol: kind === "lst" ? 1.27 : null, ...over,
+    kind, mint: kind === "stable" ? USDT : kind === "lst" ? JITOSOL : kind === "wrapped" ? CBBTC : kind === "yield" ? USDY : kind === "vault" ? JLP : AAPLX, layers: [layer("dexscreener"), layer("chart")], flags: BY_DESIGN, sourcesUsedCount: 5,
+    priceChange24hPct: 1.2, priceChange1hPct: 0.1, priceUsd: kind === "stable" ? 1.0004 : kind === "yield" ? 1.1516 : 341.28, poolLiquidityUsd: 329_000, priceInSol: kind === "lst" ? 1.27 : null, ...over,
   };
 };
 const sevOf = (r: NonNullable<ReturnType<typeof judgeIssuerAsset>>, label: RegExp) => r.flags.find((f) => label.test(f.label))?.severity;
@@ -366,6 +388,115 @@ describe("wrapped majors: SAFE when the market is healthy, judged on the market 
 
   it("no market reading: no judgement, the general decision stands", () => {
     expect(judgeIssuerAsset(input({ kind: "wrapped", layers: [layer("dexscreener", [], { available: false })] }))).toBeNull();
+  });
+});
+
+// ─── Yield-bearing dollar tokens (USDY, syrupUSDC, ONyc...) ───────────────────────────────────────────────────────────────────
+describe("yield-bearing dollar tokens: SAFE when the market is healthy; a price ABOVE $1 is the yield, only a loss counts", () => {
+  const yielding = (over: Partial<IssuerInput> = {}) => judgeIssuerAsset(input({ kind: "yield", ...over }))!;
+
+  it("a healthy one with the issuer's structure is SAFE; the structure is information with its own words", () => {
+    const r = yielding();
+    expect(r.risk).toBe("SAFE");
+    expect(r.score).toBe(950);
+    expect(r.flags[0]).toMatchObject({ severity: "info" });
+    expect(r.flags[0].label).toMatch(/^Yield-bearing token — the issuer holds the mint authority/);
+    expect(r.flags.filter((f) => f.severity === "critical" || f.severity === "warning")).toEqual([]);
+    for (const f of BY_DESIGN) expect(r.flags.some((x) => x.label === f.label && x.severity === "info")).toBe(true);
+  });
+
+  it("its price above $1 is the yield: USDY at $1.15, eHYUSD at $1.50, nothing flagged (the same $1.15 is a 15 % depeg for a stablecoin)", () => {
+    expect(yielding({ priceUsd: 1.1516 }).risk).toBe("SAFE");
+    expect(yielding({ priceUsd: 1.4977 }).risk).toBe("SAFE");
+    expect(judgeIssuerAsset(input({ kind: "stable", mint: USDT, priceUsd: 1.1516 }))!.risk).toBe("DANGER");
+  });
+
+  it("a price UNDER $1 is a loss: 0.95 is a warning, 0.89 critical (no move in 24 h needed), the edges at 3 % and 10 %", () => {
+    const warn = yielding({ priceUsd: 0.95, priceChange24hPct: 0, priceChange1hPct: 0 });
+    expect(warn.risk).toBe("CAUTION");
+    expect(warn.flags.find((f) => f.severity === "warning")?.label).toBe("Yield-bearing token trades at $0.9500, 5% under $1 — it may have lost value");
+    const crit = yielding({ priceUsd: 0.89, priceChange24hPct: 0, priceChange1hPct: 0 });
+    expect(crit.risk).toBe("DANGER");
+    expect(crit.flags.find((f) => f.severity === "critical")?.label).toBe("Yield-bearing token trades at $0.8900, 11% under $1 — it may have lost value");
+    expect(yielding({ priceUsd: 0.9701 }).risk).toBe("SAFE");
+    expect(yielding({ priceUsd: 0.97 }).risk).toBe("CAUTION");
+    expect(yielding({ priceUsd: 0.9 }).flags.find((f) => f.severity === "critical")?.label).toBe("Yield-bearing token trades at $0.9000, 10% under $1 — it may have lost value");
+  });
+
+  it("a price that jumps or falls by 3 % / 10 % in a day or an hour is read too, once", () => {
+    const fall = yielding({ priceChange24hPct: -5 });
+    expect(fall.risk).toBe("CAUTION");
+    expect(fall.flags.find((f) => f.severity === "warning")?.label).toBe("Yield-bearing token price moved 5% — it may have lost value");
+    expect(yielding({ priceChange24hPct: -12 }).risk).toBe("DANGER");
+    expect(yielding({ priceChange1hPct: 4 }).risk).toBe("CAUTION");
+    expect(yielding({ priceChange24hPct: 2.9 }).risk).toBe("SAFE");
+    const both = yielding({ priceUsd: 0.9, priceChange24hPct: -5 });
+    expect(both.flags.filter((f) => /^Yield-bearing token (trades|price)/.test(f.label) && f.severity !== "info")).toHaveLength(1);
+  });
+
+  it("the price of a thin pool says nothing: unknown liquidity or under $25k is not read", () => {
+    expect(yielding({ priceUsd: 0.9, poolLiquidityUsd: 24_999 }).risk).toBe("SAFE");
+    expect(yielding({ priceUsd: 0.9, poolLiquidityUsd: null }).risk).toBe("SAFE");
+    expect(yielding({ priceUsd: null }).risk).toBe("SAFE");
+  });
+
+  it("the market still counts, thin pool included (a yield-bearing token is sold in a pool: sUSDe has $2k, eHYUSD $2k)", () => {
+    expect(yielding({ flags: [...BY_DESIGN, flag("warning", "Low liquidity (<$5k)")] }).risk).toBe("CAUTION");
+    expect(yielding({ flags: [...BY_DESIGN, flag("critical", "Very low liquidity (<$1k)")] }).risk).toBe("DANGER");
+    expect(yielding({ flags: [...BY_DESIGN, flag("critical", "Collapsed -80% from its high 3 days ago")] }).risk).toBe("DANGER");
+    const drained = [layer("dexscreener", [], { rugEvidence: ["pool_abandoned" as RugEvidence] }), layer("chart")];
+    expect(yielding({ layers: drained, flags: [...BY_DESIGN, flag("critical", "Volume with zero liquidity — abandoned pool", ["rug_evidence"])] }).risk).toBe("RUG");
+  });
+
+  it("not enough sources is not a clean bill of health, and no market reading is no judgement", () => {
+    expect(yielding({ flags: [], sourcesUsedCount: 2 }).risk).toBe("CAUTION");
+    expect(judgeIssuerAsset(input({ kind: "yield", layers: [layer("dexscreener", [], { available: false })] }))).toBeNull();
+  });
+});
+
+// ─── Jupiter's vault shares (JLP, jlUSDC, jlWSOL...) ─────────────────────────────────────────────────────────────────────────
+describe("Jupiter's vault shares: SAFE when the market is healthy; a thin DEX pool is information (they are redeemed with the protocol)", () => {
+  const vault = (over: Partial<IssuerInput> = {}) => judgeIssuerAsset(input({ kind: "vault", ...over }))!;
+
+  it("a healthy one with the protocol's structure is SAFE; the structure is information with its own words", () => {
+    const r = vault();
+    expect(r.risk).toBe("SAFE");
+    expect(r.score).toBe(950);
+    expect(r.flags[0]).toMatchObject({ severity: "info" });
+    expect(r.flags[0].label).toMatch(/^Vault token — the protocol mints a share on deposit and burns it on withdrawal/);
+    expect(r.flags.filter((f) => f.severity === "critical" || f.severity === "warning")).toEqual([]);
+  });
+
+  it("jlUSDC is worth $497M and its pools hold $47: 'very low liquidity' stays on screen as information, it does not decide the verdict", () => {
+    for (const label of ["Very low liquidity (<$1k)", "Low liquidity (<$5k)", "Liquidity < $20k"]) {
+      const r = vault({ flags: [...BY_DESIGN, flag("critical", label)], poolLiquidityUsd: 47 });
+      expect(r.risk).toBe("SAFE");
+      expect(r.flags.find((f) => f.label === label)?.severity).toBe("info");
+    }
+  });
+
+  it("witness: the same thin pool on a yield-bearing token (sold in a pool, not redeemed with a protocol) still decides the verdict", () => {
+    expect(judgeIssuerAsset(input({ kind: "yield", flags: [...BY_DESIGN, flag("critical", "Very low liquidity (<$1k)")], poolLiquidityUsd: 47 }))!.risk).toBe("DANGER");
+    expect(judgeIssuerAsset(input({ kind: "tokenized", flags: [...BY_DESIGN, flag("critical", "Very low liquidity (<$1k)")], poolLiquidityUsd: 47 }))!.risk).toBe("DANGER");
+  });
+
+  it("the rest of the market still counts: a collapse, a dump, blocked sells, a drained pool", () => {
+    expect(vault({ flags: [...BY_DESIGN, flag("critical", "Collapsed -80% from its high 3 days ago")] }).risk).toBe("DANGER");
+    expect(vault({ flags: [...BY_DESIGN, flag("critical", "Significant 24h dump (-45%)")] }).risk).toBe("DANGER");
+    expect(vault({ flags: [...BY_DESIGN, flag("critical", "Honeypot detected — sells blocked")] }).risk).toBe("DANGER");
+    const drained = [layer("dexscreener", [], { rugEvidence: ["pool_abandoned" as RugEvidence] }), layer("chart")];
+    expect(vault({ layers: drained, flags: [...BY_DESIGN, flag("critical", "Volume with zero liquidity — abandoned pool", ["rug_evidence"])] }).risk).toBe("RUG");
+  });
+
+  it("no reference price is read: JLP follows a basket and jlWSOL follows SOL, a +12 % day or a price of $4.63 or $113 is not a flag", () => {
+    expect(vault({ flags: [], priceChange24hPct: 12, priceChange1hPct: 5, priceUsd: 4.6277 }).risk).toBe("SAFE");
+    expect(vault({ mint: JL_WSOL, flags: [], priceChange24hPct: -9, priceUsd: 113.5 }).risk).toBe("SAFE");
+    expect(vault({ mint: JL_USDC, flags: [], priceUsd: 0.5 }).risk).toBe("SAFE");
+  });
+
+  it("not enough sources is not a clean bill of health, and no market reading is no judgement", () => {
+    expect(vault({ flags: [], sourcesUsedCount: 2 }).risk).toBe("CAUTION");
+    expect(judgeIssuerAsset(input({ kind: "vault", layers: [layer("dexscreener", [], { available: false })] }))).toBeNull();
   });
 });
 

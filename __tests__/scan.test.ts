@@ -1446,3 +1446,84 @@ describe("scan handler — a wrapped major is judged on its market, a token CALL
   });
 });
 
+// ─── Yield-bearing dollar tokens and Jupiter's vault shares through the whole scan ────────────────────────────────────────────────
+describe("scan handler — a yield-bearing token and a Jupiter vault share are judged on their market, a look-alike is not", () => {
+  const USDY = "A1KLoBrKBde8Ty9qtNQUtq3C2ortoC3u7twggz7sEto6"; // Ondo US Dollar Yield
+  const JL_USDC = "9BEcn9aPEmhSPbPQeFGjidRiEKki46fVQDyPpSQXPA2D"; // Jupiter Lend USDC receipt
+  const COPY = "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU"; // same name and structure, not in the registry
+  const ADDR = "2apBGMsS6ti9RyF5TwQTDswXBWskiJP2LD4cUEDqYJjk";
+
+  function scanWith(mint: string, over: { liq: number; vol: number; price: string }) {
+    setupGoodTokenMocks();
+    // the issuer / the protocol: both authorities active
+    mockHeliusGetMintAccount.mockResolvedValue(mintAccountResponse({ mintAuthority: ADDR, freezeAuthority: ADDR }));
+    const goodMocks = mockFetch.getMockImplementation() as (url: string, ...rest: unknown[]) => Promise<unknown>;
+    mockFetch.mockImplementation(async (url: string, ...rest: unknown[]) => {
+      const answer = (await goodMocks(url, ...rest)) as { ok: boolean; json: () => Promise<unknown> };
+      if (url.includes("gopluslabs")) {
+        const j = (await answer.json()) as { result: Record<string, unknown> };
+        return { ok: true, json: () => Promise.resolve({ result: { [mint]: Object.values(j.result)[0] } }) };
+      }
+      if (url.includes("dexscreener")) {
+        const j = (await answer.json()) as { pairs: Array<Record<string, unknown> & { baseToken: { address: string }; volume: Record<string, number> }> };
+        return { ok: true, json: () => Promise.resolve({ pairs: j.pairs.map((p) => ({
+          ...p, baseToken: { ...p.baseToken, address: mint },
+          liquidity: { usd: over.liq }, volume: { ...p.volume, h24: over.vol },
+          priceChange: { m5: 0, h1: 0.05, h6: 0.1, h24: 0.2 }, priceUsd: over.price,
+        })) }) };
+      }
+      return answer;
+    });
+  }
+  async function run(mint: string) {
+    const res = createMockRes();
+    await handler(createMockReq({ ca: mint }), res);
+    return (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as { risk: string; flags: Array<{ label: string; severity: string }> };
+  }
+  const flagOf = (b: { flags: Array<{ label: string; severity: string }> }, re: RegExp) => b.flags.find((f) => re.test(f.label));
+  const noRedFlags = (b: { flags: Array<{ severity: string }> }) => !b.flags.some((f) => f.severity === "critical" || f.severity === "warning");
+
+  it("USDY at $1.15 with the issuer's authorities and a deep pool is SAFE; its authorities are information", async () => {
+    scanWith(USDY, { liq: 1_700_000, vol: 400_000, price: "1.1516" });
+    const body = await run(USDY);
+    expect(body.risk).toBe("SAFE");
+    expect(flagOf(body, /^Yield-bearing token — the issuer holds/)?.severity).toBe("info");
+    expect(flagOf(body, /^Mint authority active/)?.severity).toBe("info");
+    expect(flagOf(body, /^Freeze authority active/)?.severity).toBe("info");
+    expect(noRedFlags(body)).toBe(true);
+  });
+
+  it("the same USDY under $1 (0.93) has lost value: not SAFE, and the flag says it", async () => {
+    scanWith(USDY, { liq: 1_700_000, vol: 400_000, price: "0.93" });
+    const body = await run(USDY);
+    expect(body.risk).toBe("CAUTION");
+    expect(flagOf(body, /^Yield-bearing token trades at \$0\.9300, 7% under \$1/)?.severity).toBe("warning");
+  });
+
+  it("a yield-bearing token with a $47 pool is DANGER (it is sold in a pool)", async () => {
+    scanWith(USDY, { liq: 47, vol: 3, price: "1.1516" });
+    const body = await run(USDY);
+    expect(["DANGER", "RUG"]).toContain(body.risk);
+    expect(flagOf(body, /^Very low liquidity/)?.severity).toBe("critical");
+  });
+
+  it("jlUSDC, a Jupiter Lend receipt, with pools that hold $47 and authorities held by the protocol, is SAFE: the thin pool is information", async () => {
+    scanWith(JL_USDC, { liq: 47, vol: 3, price: "1.064" });
+    const body = await run(JL_USDC);
+    expect(body.risk).toBe("SAFE");
+    expect(flagOf(body, /^Vault token — the protocol mints a share/)?.severity).toBe("info");
+    expect(flagOf(body, /^Very low liquidity/)?.severity).toBe("info");
+    expect(flagOf(body, /^Mint authority active/)?.severity).toBe("info");
+    expect(noRedFlags(body)).toBe(true);
+  });
+
+  it("witness: a token with the same name, structure and $47 pool, not at a registry address, is read as any token's: DANGER or RUG", async () => {
+    scanWith(COPY, { liq: 47, vol: 3, price: "1.064" });
+    const body = await run(COPY);
+    expect(["DANGER", "RUG"]).toContain(body.risk);
+    expect(flagOf(body, /^Very low liquidity/)?.severity).toBe("critical");
+    expect(flagOf(body, /^Mint authority active/)?.severity).toBe("critical");
+    expect(flagOf(body, /^Vault token|^Yield-bearing token/)).toBeUndefined();
+  });
+});
+
