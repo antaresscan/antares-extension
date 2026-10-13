@@ -181,7 +181,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v61"; // 2026-10-14: an issuer-backed token (registry) whose market cannot be read (DexScreener silent or no pool) is CAUTION with a "Market unreadable" warning instead of the general decision (a RUG for its by-design authorities); a scan with no DexScreener pool is cached 30 s only and never condemns. Flushes the outage verdicts cached for 30 minutes.
+const ENGINE_VERSION_MANUAL = "v62"; // 2026-10-14: an issuer-backed token of the registry (stablecoin, tokenized stock, LST, wrapped, yield, vault) whose market cannot be read (DexScreener silent or no pool) keeps its verdict (SAFE on enough sources, one information line), and the verdict of the last time its market WAS read is served again with its age (scannedAgoSec). Flushes the CAUTION cached for these tokens during an outage.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.

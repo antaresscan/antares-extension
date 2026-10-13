@@ -14,7 +14,7 @@ function decision(over: Partial<Decision> = {}): Decision {
   return {
     score: 950, risk: "SAFE", rugKind: null, flags: [], safeBlocked: false, safeBlockedReasons: [], confidence: 95,
     sources_used: ["dexscreener", "rugcheck", "goplus", "helius", "solscan", "chart"], layersSnapshot: {},
-    lpBurned: true, lpLocked: false, lpBurnedPct: 100, notes: [], ...over,
+    lpBurned: true, lpLocked: false, lpBurnedPct: 100, notes: [], issuerBacked: null, ...over,
   };
 }
 

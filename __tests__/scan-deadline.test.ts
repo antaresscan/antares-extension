@@ -41,6 +41,9 @@ vi.mock("../api/_lib/cache", () => ({
   getCachedResult: vi.fn().mockResolvedValue(null),
   setCachedResult: vi.fn(),
   setShortCachedResult: vi.fn(),
+  // The memory of the last time an issuer-backed token's market was read: none by default.
+  getLastGoodResult: vi.fn().mockResolvedValue(null),
+  setLastGoodResult: vi.fn(),
   // Single-flight lock: acquire always wins (fail-open), waiter no-ops, in
   // unit tests so the handler proceeds straight to runAnalysis as before.
   acquireScanLock: vi.fn().mockResolvedValue(true),
@@ -283,7 +286,7 @@ process.env.DEV_PRO_INSTALLS = "test-pro-install-0001";
 
 const { default: handler } = await import("../api/scan");
 // The cache module is mocked above; import it AFTER the mock variables exist.
-const { acquireScanLock, waitForCachedResult, getCachedResult, setCachedResult, setShortCachedResult } = await import("../api/_lib/cache");
+const { acquireScanLock, waitForCachedResult, getCachedResult, setCachedResult, setShortCachedResult, getLastGoodResult, setLastGoodResult } = await import("../api/_lib/cache");
 
 // ─── Deadline behaviour ──────────────────────────────────────────────────────
 // With every upstream merely SLOW (not down) the scan used to reach the global
@@ -304,6 +307,8 @@ beforeEach(() => {
   vi.mocked(waitForCachedResult).mockResolvedValue(null);
   vi.mocked(getCachedResult).mockReset();
   vi.mocked(getCachedResult).mockResolvedValue(null);
+  vi.mocked(getLastGoodResult).mockReset();
+  vi.mocked(getLastGoodResult).mockResolvedValue(null);
 });
 
 afterEach(() => {
@@ -595,7 +600,7 @@ describe("scan deadline — RugCheck for the RESOLVED mint (a scan started from 
 // ─── DexScreener has no pool for the token (an outage answers "no pairs" too: 2026-10-07, about an hour) ──────────────────────────────
 // The answer cannot be told from a token that really has no pool. A verdict born from a market nobody read must not stick for 30 minutes
 // (INTCX, an issuer-backed stock: SAFE, then RUG for the 30 minutes DexScreener was silent, then SAFE again), and an issuer-backed token is
-// CAUTION in that case, not RUG.
+// not RUG in that case: a stablecoin stays SAFE, any other issuer-backed token is CAUTION.
 
 describe("scan — DexScreener lists no pool for the token", () => {
   const USDC = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"; // in the issuer registry (stable)
@@ -616,17 +621,57 @@ describe("scan — DexScreener lists no pool for the token", () => {
     expect(setCachedResult).not.toHaveBeenCalled();
   });
 
-  it("an issuer-backed token (a stablecoin of the registry) is CAUTION with the warning that says why, not RUG", async () => {
+  it("a stablecoin of the registry stays SAFE while DexScreener is silent (one information line says the peg could not be checked), cached 30 s only", async () => {
     dexSilent();
     const res = createMockRes();
     await run(createMockReq({ ca: USDC }), res);
     const body = jsonBody(res) as { risk: string; rugKind: string | null; flags: Array<{ label: string; severity: string }> };
-    expect(body.risk).toBe("CAUTION");
+    expect(body.risk).toBe("SAFE");
     expect(body.rugKind ?? null).toBeNull();
-    expect(body.flags.find((f) => /^Market unreadable/.test(f.label))?.severity).toBe("warning");
-    expect(body.flags.filter((f) => f.severity === "critical")).toEqual([]);
+    expect(body.flags.filter((f) => f.severity === "critical" || f.severity === "warning")).toEqual([]);
     expect(setShortCachedResult).toHaveBeenCalledWith(USDC, expect.anything(), 30);
     expect(setCachedResult).not.toHaveBeenCalled();
+  });
+
+  it("a token of the registry with NO memory: SAFE by its issuer, nothing says it comes from memory", async () => {
+    dexSilent();
+    const res = createMockRes();
+    await run(createMockReq({ ca: USDC }), res);
+    const body = jsonBody(res) as { risk: string; servedFromMemory?: boolean; scannedAgoSec?: number };
+    expect(body.risk).toBe("SAFE");
+    expect(body.servedFromMemory).toBeUndefined();
+    expect(body.scannedAgoSec).toBeUndefined();
+    expect(getLastGoodResult).toHaveBeenCalledWith(USDC);
+  });
+
+  it("a token of the registry WITH a memory (its last good verdict, 6 min old): that verdict is served again, with its age, and kept 30 s only", async () => {
+    dexSilent();
+    const made = Date.now() - 6 * 60_000;
+    vi.mocked(getLastGoodResult).mockResolvedValueOnce({
+      score: 950, risk: "SAFE", rugKind: null, flags: [], pair: null, resolvedMint: USDC, confidence: 90, sources_used: ["dexscreener", "rugcheck", "goplus", "helius"],
+      tokenSymbol: "USDC", tokenName: "USD Coin", priceUsd: 1.0001, liquidity: 52_000_000, pairCreatedAt: Date.now() - 900 * 86_400_000, solscanTokenAgeHours: 900 * 24,
+      priceChange1h: 0, fetchedAt: made, aiSummary: "old summary", requestId: "old",
+    } as never);
+    const res = createMockRes();
+    await run(createMockReq({ ca: USDC }), res);
+    const body = jsonBody(res) as { risk: string; priceUsd: number; servedFromMemory?: boolean; scannedAgoSec?: number; degraded?: boolean; freshForSec: number; fetchedAt: number };
+    expect(body.risk).toBe("SAFE");
+    expect(body.priceUsd).toBe(1.0001); // the old reading, not nothing
+    expect(body.servedFromMemory).toBe(true);
+    expect(body.scannedAgoSec).toBe(360);
+    expect(body.fetchedAt).toBe(made); // the moment the market was read, not now
+    expect(body.degraded).toBe(true);
+    expect(body.freshForSec).toBe(30);
+    expect(setShortCachedResult).toHaveBeenCalledWith(USDC, expect.objectContaining({ servedFromMemory: true }), 30);
+    expect(setCachedResult).not.toHaveBeenCalled();
+  });
+
+  it("a token that is NOT of the registry never reads the memory (its verdict is the general decision, as before)", async () => {
+    dexSilent();
+    const res = createMockRes();
+    await run(createMockReq({ ca: WSOL }), res);
+    expect(getLastGoodResult).not.toHaveBeenCalled();
+    expect((jsonBody(res) as { servedFromMemory?: boolean }).servedFromMemory).toBeUndefined();
   });
 
   it("witness: with a readable market the same token is not told its market is unreadable, and is cached with the usual TTL", async () => {
@@ -665,8 +710,8 @@ describe("scan — the answer carries its windows", () => {
     const body = jsonBody(res) as { freshForSec: number; staleLeftSec: number; degraded?: boolean; risk: string };
     expect(body.degraded).toBe(true);
     expect(body.freshForSec).toBe(30);
-    expect(body.risk).toBe("CAUTION");
-    expect(body.staleLeftSec).toBe(0); // a degraded CAUTION is never shown stale
+    expect(body.risk).toBe("SAFE");
+    expect(body.staleLeftSec).toBe(0); // a degraded SAFE is never shown stale by the overlay
     const stored = vi.mocked(setShortCachedResult).mock.calls[0]?.[1] as { degraded?: boolean; freshForSec?: number; staleLeftSec?: number };
     expect(stored.degraded).toBe(true);
     expect("freshForSec" in stored).toBe(false); // the windows are computed when the answer is SENT, never stored
@@ -685,6 +730,55 @@ describe("scan — the answer carries its windows", () => {
     const body = jsonBody(res) as { freshForSec: number; staleLeftSec: number };
     expect(body.freshForSec).toBe(300);
     expect(body.staleLeftSec).toBe(3600 - 120); // a DANGER, held 2 minutes
+  });
+});
+
+// ─── The memory is written when the market WAS read ───────────────────────────────────────────────────────────────────────────────────
+
+describe("scan — the memory of the last good verdict of an issuer-backed token", () => {
+  const USDC = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"; // in the issuer registry (stable)
+  /** The good-token mocks, but the pool DexScreener lists is the one of USDC: the scan resolves to a token of the registry. */
+  const usdcReadable = () => {
+    setupGoodTokenMocks();
+    const good = mockFetch.getMockImplementation()! as (url: string, ...rest: unknown[]) => Promise<{ ok: boolean; json: () => Promise<unknown> }>;
+    mockFetch.mockImplementation(async (url: string, ...rest: unknown[]) => {
+      const res = await good(url, ...rest);
+      if (String(url).includes("dexscreener")) {
+        const body = (await res.json()) as { pairs: Array<{ baseToken: { address: string } }> };
+        for (const p of body.pairs) p.baseToken.address = USDC;
+        return { ok: true, json: () => Promise.resolve(body) };
+      }
+      return res;
+    });
+  };
+
+  it("a scan that read the market of a token of the registry writes it down (the verdict, as sent to the overlay: no windows, no age)", async () => {
+    usdcReadable();
+    const res = createMockRes();
+    await run(createMockReq({ ca: USDC }), res);
+    expect(vi.mocked(setLastGoodResult)).toHaveBeenCalledTimes(1);
+    const [mint, stored] = vi.mocked(setLastGoodResult).mock.calls[0] as [string, Record<string, unknown>];
+    expect(mint).toBe(USDC);
+    expect(stored.risk).toBeDefined();
+    expect("freshForSec" in stored).toBe(false);
+    expect("scannedAgoSec" in stored).toBe(false);
+    expect(stored.servedFromMemory).toBeUndefined();
+  });
+
+  it("a token that is not of the registry writes nothing", async () => {
+    setupGoodTokenMocks();
+    await run(createMockReq({ ca: WSOL }), createMockRes());
+    expect(setLastGoodResult).not.toHaveBeenCalled();
+  });
+
+  it("a scan that could NOT read the market writes nothing (a verdict born from no market is never the memory)", async () => {
+    setupGoodTokenMocks();
+    const good = mockFetch.getMockImplementation()! as (url: string, ...rest: unknown[]) => Promise<{ ok: boolean; json: () => Promise<unknown> }>;
+    mockFetch.mockImplementation((url: string, ...rest: unknown[]) => (url.includes("dexscreener")
+      ? Promise.resolve({ ok: true, json: () => Promise.resolve({ pairs: null }) })
+      : good(url, ...rest)));
+    await run(createMockReq({ ca: USDC }), createMockRes());
+    expect(setLastGoodResult).not.toHaveBeenCalled();
   });
 });
 
