@@ -353,7 +353,7 @@ describe("scan deadline", () => {
 
     expect(mockHeliusResolveAccountOwners).toHaveBeenCalled();
     // The creator's history is looked up with the creator Solscan's `token/meta` names, and only the age is read from it now
-    // (SOLSCAN_AGE_ONLY): the step does not run at all, with or without time.
+    // (SOLSCAN_AGE_AND_HOLDERS_ONLY): the step does not run at all, with or without time.
     expect(mockHeliusGetCreatorReputation).not.toHaveBeenCalled();
     expect(jsonBody(res)?.risk).toBeDefined();
   });

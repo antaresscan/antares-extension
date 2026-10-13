@@ -1527,7 +1527,7 @@ describe("scan handler — a yield-bearing token and a Jupiter vault share are j
   });
 });
 
-// ─── Solscan: the age of the token and nothing else (SOLSCAN_AGE_ONLY) ────────────────────────────────────────────────────────────
+// ─── Solscan: the age of the token and nothing else (SOLSCAN_AGE_AND_HOLDERS_ONLY) ────────────────────────────────────────────────────────────
 describe("scan handler — Solscan is read for the age of the token only", () => {
   const MINT = "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU";
   const DAY = 24 * 3600 * 1000;

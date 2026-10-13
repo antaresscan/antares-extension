@@ -192,3 +192,56 @@ describe("another source already counts far more holders than the pages can", ()
     expect(pages).toHaveLength(1);
   });
 });
+
+describe("Solscan already counts the holders: the pages after page 1 are not asked (the age call gives the count)", () => {
+  const allFull = Array.from({ length: HOLDER_MAX_PAGES }, () => FULL);
+
+  it("page 1 full + a Solscan count: ONE page, whatever the count (4,200 holders, no need for 5 pages)", async () => {
+    const asked = serve(token(4, 200));
+    const pages = await heliusGetHolderPages("mint", "key", undefined, Promise.resolve(4_200));
+    expect(asked).toEqual([1]);
+    expect(pages).toHaveLength(1);
+  });
+
+  it("the same token without Solscan reads its pages, as before (the witness: the saving comes from Solscan)", async () => {
+    const asked = serve(token(4, 200));
+    await heliusGetHolderPages("mint", "key");
+    expect(asked.length).toBeGreaterThan(1);
+  });
+
+  it("it ranks before GoPlus: with both, the pages stop at page 1 for a count GoPlus alone would not have stopped", async () => {
+    const asked = serve(allFull);
+    await heliusGetHolderPages("mint", "key", Promise.resolve(8_000) /* GoPlus: under the threshold, the pages would be read */, Promise.resolve(8_000));
+    expect(asked).toEqual([1]);
+  });
+
+  it("a Solscan count that is null, 0, negative or failing changes nothing: the pages are read", async () => {
+    for (const solscan of [Promise.resolve(null), Promise.resolve(0), Promise.resolve(-5), Promise.reject(new Error("solscan down"))]) {
+      mockHeliusRpc.mockReset();
+      const asked = serve(allFull);
+      await heliusGetHolderPages("mint", "key", undefined, solscan as Promise<number | null>);
+      expect(asked).toHaveLength(10);
+    }
+  });
+
+  it("Solscan too slow is waited for HOLDER_COUNT_WAIT_MS at most, then the pages are read", async () => {
+    vi.useFakeTimers();
+    const asked = serve(allFull);
+    let settled = false;
+    const p = heliusGetHolderPages("mint", "key", undefined, new Promise<number>(() => {})).then((r) => { settled = true; return r; });
+    await vi.advanceTimersByTimeAsync(HOLDER_COUNT_WAIT_MS - 1);
+    expect(settled).toBe(false);
+    expect(asked).toEqual([1]);
+    await vi.advanceTimersByTimeAsync(2);
+    await p;
+    expect(asked).toHaveLength(10);
+  });
+
+  it("a token under 1,000 holders is still counted EXACTLY by the chain page, whatever Solscan says (one call either way)", async () => {
+    const asked = serve([541]);
+    const pages = await heliusGetHolderPages("mint", "key", undefined, Promise.resolve(600));
+    expect(asked).toEqual([1]);
+    expect(parseChainHolders(pages)).toMatchObject({ count: 541, complete: true });
+  });
+});
+

@@ -278,18 +278,20 @@ export function positiveCount(v: unknown): number | null {
  * The holder count to show, from the source that can know it:
  *  1. the chain, when the page is complete: exact and current, independent of any rate limit (BREAK 53 and PAPER 37
  *     holders; RugCheck said 173 and 427 because it counts the accounts that were emptied too);
- *  2. GoPlus holder_count: close to an independent explorer on large tokens, but NOT exact: against the chain on 167 recorded tokens it
+ *  2. Solscan `holder` (token/meta): as exact as the chain (a median difference of 0.0 % on 40 real tokens, 34 of 40 within 15 %: the rest are
+ *     young tokens whose count moved between the capture and the probe), and it has no 10,000 cap;
+ *  3. GoPlus holder_count: close to an independent explorer on large tokens, but NOT exact: against the chain on 167 recorded tokens it
  *     counts 1.03x at the median, 1.16x at the 95th percentile, up to 1.80x at the worst (the chain page is full above 10,000 holders);
- *  3. RugCheck totalHolders: an upper bound (it counts emptied accounts, 2-3x too many on large tokens), still the right
+ *  4. RugCheck totalHolders: an upper bound (it counts emptied accounts, 2-3x too many on large tokens), still the right
  *     order of magnitude when GoPlus does not answer;
- *  4. the chain pages when they are not complete: a floor, "at least N" (N = holders read so far).
- * A GoPlus or RugCheck figure below the floor is impossible (the floor holders were counted on the chain), so the floor wins.
+ *  5. the chain pages when they are not complete: a floor, "at least N" (N = holders read so far).
+ * A Solscan, GoPlus or RugCheck figure below the floor is impossible (the floor holders were counted on the chain), so the floor wins.
  * Never the number of wallets in a top-20 list: that read "20 holders" on tokens with hundreds.
  */
-export function pickHolderCount(src: { chain: ChainHolders | null; goplus: unknown; rugcheck: unknown }): number | null {
+export function pickHolderCount(src: { chain: ChainHolders | null; solscan?: unknown; goplus: unknown; rugcheck: unknown }): number | null {
   if (src.chain?.complete && src.chain.count > 0) return src.chain.count;
   const floor = src.chain && src.chain.count > 0 ? src.chain.count : 0;
-  const reported = positiveCount(src.goplus) ?? positiveCount(src.rugcheck);
+  const reported = positiveCount(src.solscan) ?? positiveCount(src.goplus) ?? positiveCount(src.rugcheck);
   if (reported === null) return floor > 0 ? floor : null;
   return Math.max(reported, floor);
 }

@@ -161,11 +161,19 @@ const HOLDER_PAGE_WAVES = holderPageWaves(HOLDER_MAX_PAGES);
 // result: asking for it was pure waste (784 of 3,299 DAS calls in 365 real scans), 10 credits each. The `page` parameter accepts
 // parallel requests; a wave stays small to stay under the plan's DAS rate (10 requests a second on Helius Developer).
 // Page 1 failing -> null; a later page failing stays null in the list, and parseChainHolders then reports a floor instead of an exact count.
-export async function heliusGetHolderPages(mint: string, key: string, knownCount?: Promise<number | null>): Promise<unknown[] | null> {
+// `solscanCount`: Solscan's holder count, asked in parallel (it comes with the age, in token/meta). Once page 1 is full the pages could only give a
+// floor of it, and it is as exact as the chain: the pages after page 1 are not asked at all (up to 9 calls of 10 credits).
+export async function heliusGetHolderPages(mint: string, key: string, knownCount?: Promise<number | null>, solscanCount?: Promise<number | null>): Promise<unknown[] | null> {
     const first = await heliusGetTokenAccountsPage(mint, key, 1);
     if (!first) return null;
     const firstCount = parseChainHolders(first);
     if (!firstCount || firstCount.complete) return [first];
+    if (solscanCount) {
+        let solscanTimer: ReturnType<typeof setTimeout> | undefined;
+        const solscanWait = new Promise<null>((resolve) => { solscanTimer = setTimeout(() => resolve(null), HOLDER_COUNT_WAIT_MS); });
+        const solscan = await Promise.race([solscanCount.catch(() => null), solscanWait]).finally(() => clearTimeout(solscanTimer));
+        if (typeof solscan === "number" && solscan > 0) return [first];
+    }
     if (knownCount) {
         let timer: ReturnType<typeof setTimeout> | undefined;
         const wait = new Promise<null>((resolve) => { timer = setTimeout(() => resolve(null), HOLDER_COUNT_WAIT_MS); });
