@@ -113,6 +113,7 @@ exchange. It never goes to production and never writes to production's database.
    - a scan is tried up to 3 times while an upstream throttled or failed (the corpus must hold what a healthy scan sees); a bulk
      token that is still unhealthy is **not written** and is listed at the end, run again later;
    - `--pace N` waits N ms between two tokens (default 8,000: GeckoTerminal allows about 30 calls a minute).
+   - `--list FILE` records only the mints of FILE (one per line, in that order, all of them in `bulk.json`): a batch chosen by quota rather than the whole bulk.
    - `--until DATE` stops between two tokens once DATE has passed (e.g. `--until 2026-10-11T07:00:00+02:00`), so a capture meant for the
      night ends before the day's traffic instead of being killed in the middle of a scan. It is checked only between two tokens: a
      laptop that goes to sleep FREEZES the capture (the first night recorded 214 tokens in about 2 hours, then slept until 14:30), so
