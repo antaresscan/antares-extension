@@ -27,7 +27,7 @@ import { weightedBurnPct, type AuthorityFacts } from "./facts";
 import { HARD_BLOCK_REASONS, LAYER_WEIGHTS, SOLSCAN_AGE_AND_HOLDERS_ONLY } from "./constants";
 import { asNumber } from "./math";
 import { makeFlag } from "./helpers";
-import { issuerKindOf, judgeIssuerAsset, lstPriceInSol } from "./issuer-assets";
+import { issuerKindOf, judgeIssuerAsset, lstPriceInSol, type IssuerKind } from "./issuer-assets";
 
 /** Everything the decision needs, already collected. */
 export interface DecideInput {
@@ -76,6 +76,8 @@ export interface Decision {
   /** The share of the LP that is burned, according to GoPlus, in percent (0 when unknown). */
   lpBurnedPct: number;
   notes: DecisionNote[];
+  /** Set for a token of the issuer registry: its kind, and whether DexScreener gave a market reading (when not, scan.ts may serve the last good verdict). */
+  issuerBacked: { kind: IssuerKind; marketRead: boolean } | null;
 }
 
 export function decide(input: DecideInput): Decision {
@@ -300,7 +302,7 @@ export function decide(input: DecideInput): Decision {
 
   // A stablecoin or a tokenized stock / real-world asset is built as its issuer built it (authorities, supply held by the issuer, pause...):
   // read as a meme coin it comes out RUG (measured: all 46 tokenized stocks of the corpus). Recognised by ADDRESS only, it is judged on its
-  // market (api/_lib/issuer-assets.ts); with no market reading a stablecoin stays SAFE and any other issuer-backed token is CAUTION ("Market unreadable"), never RUG.
+  // market (api/_lib/issuer-assets.ts); with no market reading it keeps its verdict (SAFE on enough sources), never RUG.
   const issuerKind = issuerKindOf(resolvedMint);
   const issuer = issuerKind ? judgeIssuerAsset({
     kind: issuerKind, mint: resolvedMint, layers: allLayers, flags, sourcesUsedCount: sources_used.length,
@@ -316,5 +318,6 @@ export function decide(input: DecideInput): Decision {
     score: issuer?.score ?? score, risk: issuer?.risk ?? risk, rugKind: issuer ? issuer.rugKind : rugKindOf(risk, allLayers),
     flags: issuer?.flags ?? flags, safeBlocked: issuer?.safeBlocked ?? safeBlocked, safeBlockedReasons: issuer?.safeBlockedReasons ?? safeBlockedReasons,
     confidence, sources_used, layersSnapshot, lpBurned, lpLocked, lpBurnedPct: _gpBP, notes,
+    issuerBacked: issuerKind ? { kind: issuerKind, marketRead: allLayers.some((l) => l.available && l.source === "dexscreener") } : null,
   };
 }

@@ -49,6 +49,8 @@ export const FREE_SCAN_FIELDS = [
   "scoring_version",
   "fetchedAt",
   "degraded",
+  "servedFromMemory",
+  "scannedAgoSec",
   "freshForSec",
   "staleLeftSec",
   "requestId",

@@ -19,6 +19,10 @@ let scanCacheRedis: Redis | null = null;
 export const cacheKey = (ca: string): string => `antares:${deploymentNamespace()}${ENGINE_VERSION}:${ca}`;
 export const lockKey  = (ca: string): string => `antares:lock:${deploymentNamespace()}${ENGINE_VERSION}:${ca}`;
 
+/** The verdict of the last time an issuer-backed token's MARKET was read (see last-good.ts): its own key, longer than the scan cache, never read except when DexScreener cannot be. */
+export const lastGoodKey = (mint: string): string => `antares:lastgood:${deploymentNamespace()}${ENGINE_VERSION}:${mint}`;
+export const LAST_GOOD_TTL_SEC = 6 * 3600;
+
 export function initCache(redis: Redis): void {
   scanCacheRedis = redis;
 }
@@ -49,6 +53,23 @@ export function setCachedResult(
   scanCacheRedis.setex(cacheKey(ca), ttl, result).catch((e: unknown) => {
         logger.warn("cache", "Redis cache write failed", { error: String(e) });
   });
+}
+
+export function setLastGoodResult(mint: string, result: object): void {
+  if (!scanCacheRedis) return;
+  scanCacheRedis.setex(lastGoodKey(mint), LAST_GOOD_TTL_SEC, result).catch((e: unknown) => {
+    logger.warn("cache", "Redis last-good write failed", { error: String(e) });
+  });
+}
+
+export async function getLastGoodResult<T = unknown>(mint: string): Promise<T | null> {
+  if (!scanCacheRedis) return null;
+  try {
+    return (await scanCacheRedis.get<T>(lastGoodKey(mint))) ?? null;
+  } catch (e: unknown) {
+    logger.warn("cache", "Redis last-good read failed", { error: String(e) });
+    return null;
+  }
 }
 
 /**

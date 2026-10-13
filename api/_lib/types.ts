@@ -440,6 +440,10 @@ export interface ScanResult {
   freshForSec?: number;
   /** Seconds this answer may still be shown, marked as old, if the scanner cannot be reached. Set when the answer is SENT, never stored. */
   staleLeftSec?: number;
+  /** true when this is the verdict of the last time the token's market WAS read, served again because DexScreener cannot be read now (issuer-backed tokens only). */
+  servedFromMemory?: boolean;
+  /** Seconds since that verdict was made, set when the answer is SENT and only when servedFromMemory: the overlay shows "Scanned 6 min ago". */
+  scannedAgoSec?: number;
   // Tri-state: true = present / blocked, false = verified absent, null = NOT verified (never shown as OK).
   honeypot?: boolean | null;
   mintAuthority?: boolean | null;

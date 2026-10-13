@@ -151,6 +151,8 @@ export interface ServeWindowSource {
   solscanTokenAgeHours: number | null;
   priceChange1h: number | null;
   fetchedAt: number;
+  /** The verdict of the last time the market was read, served again: the answer says how old it is (scannedAgoSec). */
+  servedFromMemory?: boolean;
 }
 
 /** The age of the token in minutes, at the time of the scan: the younger of what DexScreener (its pool) and Solscan (its creation) say. */
@@ -188,8 +190,10 @@ export function serveWindows(r: ServeWindowSource, nowMs: number = Date.now()): 
 }
 
 /** The answer as it is sent: the scan, plus its two windows. A copy: what is stored (Redis, memory) is never modified. */
-export function withServeWindows<T extends ServeWindowSource>(r: T, nowMs: number = Date.now()): T & { freshForSec: number; staleLeftSec: number } {
-  return { ...r, ...serveWindows(r, nowMs) };
+export function withServeWindows<T extends ServeWindowSource>(r: T, nowMs: number = Date.now()): T & { freshForSec: number; staleLeftSec: number; scannedAgoSec?: number } {
+  const out: T & { freshForSec: number; staleLeftSec: number; scannedAgoSec?: number } = { ...r, ...serveWindows(r, nowMs) };
+  if (r.servedFromMemory === true && Number.isFinite(r.fetchedAt)) out.scannedAgoSec = Math.max(0, Math.floor((nowMs - r.fetchedAt) / 1000));
+  return out;
 }
 
 /** From this age a token has traded long enough for GeckoTerminal to hold candles for it (the 5-minute window needs ~15 min). */

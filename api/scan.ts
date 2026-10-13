@@ -39,7 +39,8 @@ import { setCorsHeaders, getClientIp, getInstallId, checkRateLimit, checkColdSca
 import { initQuota, checkDailyQuota, setQuotaHeaders, secondsUntilReset } from "./_lib/quota";
 import { enforceProGate } from "./_lib/pro-gate";
 import { initUserStorage, pushScanHistory, resolveTierAndBypass } from "./_lib/user";
-import { initCache, getCachedResult, setCachedResult, setShortCachedResult, acquireScanLock, releaseScanLock, waitForCachedResult } from "./_lib/cache";
+import { initCache, getCachedResult, setCachedResult, setShortCachedResult, setLastGoodResult, getLastGoodResult, acquireScanLock, releaseScanLock, waitForCachedResult } from "./_lib/cache";
+import { serveLastGood } from "./_lib/last-good";
 import { initSentry, captureError } from "./_lib/sentry";
 import { generateAISummary } from "./_lib/ai-summary";
 
@@ -663,7 +664,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     };
     const finalHistory = [currentEntry];
 
-    const result: ScanResult = {
+    let result: ScanResult = {
       score, risk, rugKind, flags: flags.map(toPublicFlag), pair, resolvedMint, confidence, sources_used,
       holders, marketCap, priceUsd, liquidity,
       volume24h, volume1h, priceChange5m, priceChange1h, priceChange24h,
@@ -711,6 +712,17 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       || isChartGapDegraded(result.risk, result.layers?.chart?.available, tokenAgeMinutes)
       || isReportGapDegraded(result.risk, resolvedMint !== ca, rugReport !== null);
     result.degraded = degraded;
+    // An issuer-backed token (stablecoin, tokenized stock, LST...): the verdict of the last time its market WAS read is kept; when DexScreener
+    // cannot be read, that verdict is served again with its age ("Scanned 6 min ago") instead of a verdict born from no market, unless this
+    // scan itself found something worse (a fact from another source). See api/_lib/last-good.ts.
+    if (decision.issuerBacked) {
+      if (decision.issuerBacked.marketRead) {
+        if (!degraded) setLastGoodResult(resolvedMint, result);
+      } else {
+        const memory = serveLastGood(await getLastGoodResult<ScanResult>(resolvedMint), result);
+        if (memory) result = memory;
+      }
+    }
     if (result.aiSummary && !degraded) {
       setCachedResult(ca, result, tokenAgeMinutes, result.risk);
       if (resolvedMint !== ca) setCachedResult(resolvedMint, result, tokenAgeMinutes, result.risk);

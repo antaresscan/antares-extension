@@ -181,7 +181,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v62"; // 2026-10-14: a STABLECOIN of the issuer registry whose market cannot be read (DexScreener silent or no pool) stays SAFE (one information line: its peg could not be checked); any other issuer-backed token stays CAUTION. Flushes the CAUTION cached for stablecoins during an outage.
+const ENGINE_VERSION_MANUAL = "v62"; // 2026-10-14: an issuer-backed token of the registry (stablecoin, tokenized stock, LST, wrapped, yield, vault) whose market cannot be read (DexScreener silent or no pool) keeps its verdict (SAFE on enough sources, one information line), and the verdict of the last time its market WAS read is served again with its age (scannedAgoSec). Flushes the CAUTION cached for these tokens during an outage.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.

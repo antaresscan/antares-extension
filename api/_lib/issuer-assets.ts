@@ -133,11 +133,11 @@ export interface IssuerInput {
  * The verdict of an issuer-backed token, from its market only. Pure.
  * With NO market reading (DexScreener did not answer, or lists no pool) the general decision (which would read the token's issuer
  * authorities and the supply it holds as rug signals) is the wrong judge: an outage of DexScreener made a registry token flicker to RUG for
- * the 30 minutes the verdict stayed cached. So:
- *   - a STABLECOIN of the registry (recognised by ADDRESS, from Jupiter's verified list) stays SAFE, with an information line that its peg
- *     could not be checked right now: the owner's rule (2026-10-14), a stablecoin does not turn into a warning because a price feed is down.
- *     (It is still SAFE only on enough sources, and the answer is still kept 30 s only: the scan marks it degraded.)
- *   - any other issuer-backed token is CAUTION: nothing says it is healthy, nothing says it is a rug either.
+ * the 30 minutes the verdict stayed cached. So EVERY issuer-backed kind (stablecoin, tokenized stock, LST, wrapped, yield, vault share,
+ * recognised by ADDRESS from Jupiter's verified list) keeps its verdict, with an information line that its market could not be read right now:
+ * the owner's rule (2026-10-14), a token of a known issuer does not turn into a warning because a price feed is down. (It is still SAFE only
+ * on enough sources, and the answer is kept 30 s only: the scan marks it degraded. scan.ts goes further and serves the verdict of the last
+ * time the market WAS read, with its age, when it has one: api/_lib/last-good.ts.)
  * Facts from the other sources (a drained pool, a collapse on the chart) still apply to every kind: RUG.
  * An LST whose price in SOL cannot be read (no SOL-quoted pool with real liquidity) is judged on its market too, but its peg is NOT verified:
  * a warning says so, so it is CAUTION at best, never SAFE.
@@ -160,8 +160,7 @@ export function judgeIssuerAsset(input: IssuerInput): IssuerJudgement {
   // a price UNDER $1 is a loss; $1.06 or $1.50 is the yield, not a depeg. A vault share has no reference price (JLP follows a basket of SOL,
   // ETH, BTC and stablecoins, jlWSOL follows SOL), and its pool depth says nothing: its market (collapse, dump, blocked sells) is what is read.
   if (!marketRead) {
-    if (kind === "stable") shown.push(makeFlag("Market unreadable right now — the peg of this stablecoin could not be checked, its issuer is known", "info", 0));
-    else kept.push(makeFlag("Market unreadable — no price or liquidity could be read for this token right now, so its health is not verified. Try again in a few minutes", "warning", 0));
+    shown.push(makeFlag("Market unreadable right now — no price or liquidity could be read for this token, its issuer is known", "info", 0));
   } else if (kind === "stable" || kind === "yield") {
     const moves = [input.priceChange24hPct, input.priceChange1hPct].filter((v): v is number => v !== null && Number.isFinite(v));
     const moved = moves.length ? Math.max(...moves.map(Math.abs)) : 0;
