@@ -26,6 +26,16 @@ export const PUBLIC_SOLANA_RPCS = [
 ] as const;
 export const SOLSCAN_BASE = "https://pro-api.solscan.io/v2.0";
 /**
+ * The longest the scan WAITS for one RugCheck answer (its summary, its full report), in milliseconds.
+ *
+ * RugCheck answers in well under a second for almost every token (1,117 of the 1,121 recorded scans), but for the very largest tokens it does not:
+ * measured live on 2026-10-14, BONK's report answered an error after 5.6 s and WIF's after 14.4 s, and both summaries did not answer within 30 s.
+ * The scan used to wait for each call up to its own 5 s timeout AND a retry (10.5 s), then ask again for the resolved mint: BONK took 23 s of the 24 s
+ * the scan has, WIF and JitoSOL 17 s, for a source that never came. Past this budget the scan goes on without RugCheck, as it does when RugCheck is
+ * down: the call is not cancelled (a quick 429 retried after 500 ms still counts), it is no longer waited for.
+ */
+export const RUGCHECK_WAIT_MS = 4000;
+/**
  * Solscan is read for TWO things: the real age of the token (`token/meta`, created_time) and its holder count (the same call, `holder`). One call per scan.
  *
  * The age: the older of Solscan's mint time and the chosen pool's age (#881). The holder count: as exact as the chain (on 40 real tokens, a median
