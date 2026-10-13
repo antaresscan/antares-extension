@@ -1,0 +1,58 @@
+# Weekly watch on the registry of issuer-backed tokens
+#
+# api/_lib/issuer-assets.data.ts lists, BY ADDRESS, the stablecoins, tokenized stocks, liquid staking tokens, wrapped majors, yield-bearing
+# dollar tokens and Jupiter vault shares that the engine judges on their market instead of reading their structure as a rug. It is built
+# once from Jupiter's verified list and committed: the scan never calls Jupiter. A token that Jupiter lists AFTER the build is not in it,
+# so it is judged like a meme coin (a possible false alarm on an honest token, never a false SAFE).
+#
+# Every Monday this reads the list again (scripts/issuer-assets/watch.mjs) and compares it with the committed registry:
+#   - they differ  -> ONE issue is opened, or the open one is updated (never one per week), with what was added and removed;
+#   - they match   -> an open issue is closed.
+# It changes no code and opens no pull request: refreshing the registry moves verdicts, so it stays a pull request that shows them and
+# waits for a decision (the steps are in the issue). A pull request opened here by GITHUB_TOKEN would not run the required checks anyway.
+#
+# A list that looks broken (too short, a hand-checked address gone) or a data file in an unknown shape makes the run RED: that is the signal
+# then, not an issue. Manually triggerable from the Actions tab (workflow_dispatch).
+name: Issuer registry watch
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Monday 06:00 UTC
+  workflow_dispatch:
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+concurrency:
+  group: issuer-registry-watch
+  cancel-in-progress: false
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # The scripts use Node's own modules only (fetch, fs, path): the Node that comes with the runner is enough, nothing is installed.
+      - name: Compare the registry with Jupiter's verified list
+        run: node scripts/issuer-assets/watch.mjs --report "$RUNNER_TEMP/report.md"
+
+      - name: Open, update or close the issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TITLE: "Issuer registry out of date: Jupiter's verified list has changed"
+        run: |
+          OPEN=$(gh issue list --state open --limit 100 --json number,title --jq '[.[] | select(.title == env.TITLE) | .number][0] // empty')
+          if [ -s "$RUNNER_TEMP/report.md" ]; then
+            if [ -n "$OPEN" ]; then
+              gh issue edit "$OPEN" --body-file "$RUNNER_TEMP/report.md"
+              echo "Updated issue #$OPEN"
+            else
+              gh issue create --title "$TITLE" --body-file "$RUNNER_TEMP/report.md"
+            fi
+          elif [ -n "$OPEN" ]; then
+            gh issue close "$OPEN" --comment "The registry matches Jupiter's verified list again."
+          else
+            echo "Nothing to report."
+          fi
