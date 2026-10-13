@@ -30,7 +30,7 @@ import { parseMintState, mintSupplyUi, deriveAuthorityFacts, parseChainHolders, 
 import { fetchGoPlusSecurity } from "./_lib/goplus-auth";
 import {
   DEXSCREENER_BASE, RUGCHECK_BASE, LAYER_WEIGHTS, SCORING_VERSION,
-  LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS, SOLSCAN_AGE_ONLY,
+  LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS, SOLSCAN_AGE_AND_HOLDERS_ONLY,
 } from "./_lib/constants";
 import { selectBestPair } from "./_lib/dex-pair-select";
 import { decide } from "./_lib/decide";
@@ -377,6 +377,12 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const goplusHolderCount: Promise<number | null> = goplusPromise
       .then((raw) => positiveCount(pickGoPlusResult(raw, resolvedMint)?.holder_count))
       .catch(() => null);
+    // Solscan's token/meta is started here too: it gives the age AND the holder count, and the count decides whether the Helius pages after
+    // page 1 are needed at all (heliusGetHolderPages). The answer itself is read from the same promise below.
+    const solMetaPromise = withBudget(fetchSolscan(`/token/meta?address=${resolvedMint}`), remainingMs());
+    const solscanHolderCount: Promise<number | null> = solMetaPromise
+      .then((raw) => (isSolscanMeta(raw) ? positiveCount(raw.data?.holder) : null))
+      .catch(() => null);
 
     const [
       candlesRaw, candlesDailyRaw, goplusRaw,
@@ -389,10 +395,10 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       goplusPromise,
       HELIUS_API_KEY ? withBudget(heliusGetLargestAccounts(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
       HELIUS_API_KEY ? withBudget(heliusGetMintAccount(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
-      HELIUS_API_KEY ? withBudget(heliusGetHolderPages(resolvedMint, HELIUS_API_KEY, goplusHolderCount), remainingMs()) : null,
+      HELIUS_API_KEY ? withBudget(heliusGetHolderPages(resolvedMint, HELIUS_API_KEY, goplusHolderCount, solscanHolderCount), remainingMs()) : null,
       // (No Solscan holders-count call: the public endpoint it used answers
       // 404 for every token, so it only ever contributed `null`.)
-      withBudget(fetchSolscan(`/token/meta?address=${resolvedMint}`), remainingMs()),
+      solMetaPromise,
       // page_size=50 (was 10): the Holder Activity tab classifies the
       // last hour of activity per top-6 holder. With only 10 token-wide
       // transfers we frequently saw all holders rendered Static because
@@ -400,8 +406,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       // tracked wallets — even on liquid tokens. 50 covers ~6-12 hours
       // of typical-volume tokens, plenty for a 1h-window classifier,
       // and stays well within Solscan's free-tier per-page cap.
-      SOLSCAN_AGE_ONLY ? null : withBudget(fetchSolscan(`/token/transfer?address=${resolvedMint}&page=1&page_size=50`), remainingMs()),
-      SOLSCAN_AGE_ONLY ? null : withBudget(fetchSolscan(`/token/markets?address=${resolvedMint}&page=1&page_size=1`), remainingMs()),
+      SOLSCAN_AGE_AND_HOLDERS_ONLY ? null : withBudget(fetchSolscan(`/token/transfer?address=${resolvedMint}&page=1&page_size=50`), remainingMs()),
+      SOLSCAN_AGE_AND_HOLDERS_ONLY ? null : withBudget(fetchSolscan(`/token/markets?address=${resolvedMint}&page=1&page_size=1`), remainingMs()),
       rugReportPromise,
     ]);
 
@@ -461,9 +467,9 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       : null;
     const solMetaAnswer = isSolscanMeta(solMeta) ? solMeta : null;
     const solscanCreatedTime: number | null = solMetaAnswer?.data?.created_time ?? null;
-    // SOLSCAN_AGE_ONLY (constants.ts): nothing but the age is taken from the answer. The logo, the creator (and the Helius call that reads
+    // SOLSCAN_AGE_AND_HOLDERS_ONLY (constants.ts): nothing but the age is taken from the answer. The logo, the creator (and the Helius call that reads
     // his history), the decimals, the supply and "Solscan answered" stay what they were while Solscan refused the key.
-    const solMetaData = SOLSCAN_AGE_ONLY ? null : solMetaAnswer;
+    const solMetaData = SOLSCAN_AGE_AND_HOLDERS_ONLY ? null : solMetaAnswer;
     // Token age: take the MAX of Solscan token-mint time and DexScreener
     // pair-creation time. The two measure different events (mint vs pair
     // listing) and either source can fail or return stale data; the older
@@ -512,10 +518,11 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       ? rugReport.totalHolders : null;
     // Holder count, by ORDER of reliability (see pickHolderCount): the chain through Helius when its pages reach the end
     // of the list (exact and current: up to HOLDER_MAX_PAGES x 1000 holders, which covers where GoPlus and RugCheck fail
-    // or overcount), then GoPlus, then RugCheck (counts emptied accounts too), never below the chain floor. Never the
-    // size of the top-20 list.
+    // or overcount), then Solscan (as exact, no cap; it also stops the pages after page 1), then GoPlus, then RugCheck
+    // (counts emptied accounts too), never below the chain floor. Never the size of the top-20 list.
     const holders: number | null = pickHolderCount({
       chain: parseChainHolders(heliusHolderPagesRaw),
+      solscan: solMetaAnswer?.data?.holder,
       goplus: goplus?.holder_count,
       rugcheck: rugTotalHolders,
     });

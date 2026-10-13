@@ -355,6 +355,66 @@ const fullPage = (k = 0) => ({ jsonrpc: "2.0", id: "holder-count", result: { tot
 // A page that is not full: the end of the list (`n` holders).
 const lastPage = (n: number, k = 0) => ({ jsonrpc: "2.0", id: "holder-count", result: { total: n, limit: 1000, cursor: "next", token_accounts: Array.from({ length: n }, (_, i) => ({ address: `a${k}-${i}`, owner: `o${k}-${i}`, amount: i + 1 })) } });
 
+/** Solscan's token/meta, with the holder count (the age is the one of the good-token mock unless given). */
+function solscanSays(holder: number | null, extra: Record<string, unknown> = {}) {
+  mockFetchSolscan.mockImplementation((endpoint: string) => (endpoint.includes("/token/meta")
+    ? Promise.resolve({ data: { created_time: Math.floor(Date.now() / 1000) - 90 * 86400, icon: "https://img.test.com/icon.png", creator: "creator123", decimals: 9, supply: 100000, ...(holder === null ? {} : { holder }), ...extra } })
+    : Promise.resolve(null)));
+}
+
+describe("holder count: Solscan's, between the exact chain page and GoPlus", () => {
+  it("a token above 1,000 holders: Solscan's count is shown (page 1 full), GoPlus' overcount and RugCheck's are ignored", async () => {
+    setupUpstream({ heliusPages: [fullPage(0)], goplusHolderCount: "4800", rugTotalHolders: 8000 });
+    solscanSays(2347);
+    expect((await scan()).holders).toBe(2347);
+  });
+
+  it("the Helius pages are asked with Solscan's count (a promise of it) so that they stop after page 1", async () => {
+    setupUpstream({ heliusPages: [fullPage(0)] });
+    solscanSays(2347);
+    await scan();
+    const hint = mockHeliusGetHolderPages.mock.calls[0][3] as Promise<number | null>;
+    expect(await hint).toBe(2347);
+  });
+
+  it("a token under 1,000 holders keeps the EXACT chain count (53), not Solscan's", async () => {
+    setupUpstream({ heliusPages: [REAL_SMALL_PAGE] });
+    solscanSays(60);
+    expect((await scan()).holders).toBe(53);
+  });
+
+  it("Solscan below what the chain already counted is impossible: the chain floor wins", async () => {
+    setupUpstream({ heliusPages: Array.from({ length: 10 }, (_, k) => fullPage(k)) });
+    solscanSays(6000);
+    expect((await scan()).holders).toBe(10000);
+  });
+
+  it("Solscan answering without a holder count, or not at all: GoPlus, then RugCheck, as before", async () => {
+    setupUpstream({ heliusPages: [fullPage(0), fullPage(1), lastPage(347, 2)], goplusHolderCount: "4800" });
+    solscanSays(null);
+    expect((await scan()).holders).toBe(2347); // the exact chain count
+    setupUpstream({ heliusPages: null, goplusHolderCount: "777", rugTotalHolders: 478 });
+    solscanSays(null);
+    expect((await scan()).holders).toBe(777);
+    setupUpstream({ heliusPages: null, goplusHolderCount: "777", rugTotalHolders: 478, solscan: false });
+    expect((await scan()).holders).toBe(777);
+    expect((await mockHeliusGetHolderPages.mock.calls.at(-1)?.[3] as Promise<number | null>)).toBeNull();
+  });
+
+  it("Helius unavailable: Solscan's count answers on its own (it was GoPlus, then RugCheck)", async () => {
+    setupUpstream({ heliusPages: null, goplusHolderCount: "777", rugTotalHolders: 478 });
+    solscanSays(640);
+    expect((await scan()).holders).toBe(640);
+  });
+
+  it("only the holder count and the age are taken from Solscan (the creator, the logo, the supply stay out): the flag still holds", async () => {
+    setupUpstream({ heliusPages: [fullPage(0)] });
+    solscanSays(2347);
+    await scan();
+    expect(mockHeliusGetCreatorReputation).not.toHaveBeenCalled();
+  });
+});
+
 describe("holder count: exact chain pages first, then GoPlus, RugCheck, the chain floor; never the top 20", () => {
   it("a token under 1000 holders: the chain count (53) beats an inflated RugCheck total (it counts emptied accounts)", async () => {
     setupUpstream({ heliusPages: [REAL_SMALL_PAGE], rugTotalHolders: 268 });
@@ -427,7 +487,7 @@ describe("holder count: exact chain pages first, then GoPlus, RugCheck, the chai
 });
 
 describe("Solscan is only an available source when Solscan answered", () => {
-  it("is NOT a source even when Solscan answers: only the age is read from it (SOLSCAN_AGE_ONLY)", async () => {
+  it("is NOT a source even when Solscan answers: only the age is read from it (SOLSCAN_AGE_AND_HOLDERS_ONLY)", async () => {
     // The plan is back (2026-10-13) but only the token's age is taken from `token/meta`: counting Solscan as a source would add one to the
     // sources a SAFE needs, and no replay or scan has run the rest of its layer for months.
     setupUpstream({ goplusHolderCount: "100" });

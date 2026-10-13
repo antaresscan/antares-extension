@@ -278,6 +278,8 @@ export interface SolscanTransfer {
 export interface SolscanMeta {
   data?: {
     created_time?: number;
+    /** Holder count (the accounts that hold a balance): as exact as the chain. */
+    holder?: number;
     icon?: string;
     creator?: string;
     decimals?: number;

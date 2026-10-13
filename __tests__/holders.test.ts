@@ -119,7 +119,22 @@ describe("pickHolderCount: order of the sources", () => {
   it("1. an exact chain count wins over GoPlus and RugCheck (BREAK: 53 vs RugCheck 173)", () => {
     expect(pickHolderCount({ chain: exact, goplus: "70", rugcheck: 173 })).toBe(53);
   });
-  it("2. a floor only: GoPlus (matches an independent explorer within 0.01 %)", () => {
+  it("2. a floor only: Solscan, as exact as the chain, before GoPlus (which overcounts) and RugCheck (2-3x too many)", () => {
+    expect(pickHolderCount({ chain: floor, solscan: 4_200, goplus: "5000", rugcheck: 11_000 })).toBe(4_200);
+    expect(pickHolderCount({ chain: floor, solscan: 1_024_731, goplus: "1024740", rugcheck: 2088973 })).toBe(1_024_731);
+    expect(pickHolderCount({ chain: null, solscan: 777, goplus: undefined, rugcheck: 2000 })).toBe(777);
+  });
+  it("an exact chain count (a token under 1,000 holders) is never replaced by Solscan's", () => {
+    expect(pickHolderCount({ chain: exact, solscan: 60, goplus: "70", rugcheck: 173 })).toBe(53);
+  });
+  it("a Solscan figure BELOW the floor is impossible (those holders were counted on the chain): the floor wins; a larger one wins", () => {
+    expect(pickHolderCount({ chain: { count: 10000, complete: false }, solscan: 6000, goplus: undefined, rugcheck: null })).toBe(10000);
+    expect(pickHolderCount({ chain: { count: 10000, complete: false }, solscan: 107_196, goplus: "96629", rugcheck: null })).toBe(107_196);
+  });
+  it("a Solscan figure that is 0, junk, negative or missing is 'no answer': GoPlus decides", () => {
+    for (const solscan of [0, "abc", -3, null, undefined]) expect(pickHolderCount({ chain: floor, solscan, goplus: "5000", rugcheck: null })).toBe(5000);
+  });
+  it("2b. then GoPlus (matches an independent explorer within 0.01 %)", () => {
     expect(pickHolderCount({ chain: floor, goplus: "1024740", rugcheck: 2088973 })).toBe(1024740);
     expect(pickHolderCount({ chain: floor, goplus: 1024740, rugcheck: null })).toBe(1024740);
   });
