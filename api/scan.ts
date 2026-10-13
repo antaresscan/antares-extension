@@ -704,7 +704,10 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // bad answer for a well-known token could survive for 10 minutes.
     // The same goes for a SAFE or CAUTION born without the chart layer on a token old enough to have candles: usually a GeckoTerminal
     // rate limit, after which the next try can give another verdict (audit M11). Bad verdicts keep their long TTL.
-    const degraded = sources_used.length === 0 || scanDeadline - Date.now() < MIN_STEP_MS
+    // And for a scan with no DexScreener pool at all: DexScreener answers "no pairs" during an outage too (about an hour, 2026-10-07), the
+    // answer cannot be told from a token that really has no pool, and a verdict born from a market nobody read (a RUG for a token the market
+    // would have cleared) must not stick for 30 minutes.
+    const degraded = sources_used.length === 0 || scanDeadline - Date.now() < MIN_STEP_MS || pair === null
       || isChartGapDegraded(result.risk, result.layers?.chart?.available, tokenAgeMinutes)
       || isReportGapDegraded(result.risk, resolvedMint !== ca, rugReport !== null);
     if (result.aiSummary && !degraded) {

@@ -300,7 +300,7 @@ export function decide(input: DecideInput): Decision {
 
   // A stablecoin or a tokenized stock / real-world asset is built as its issuer built it (authorities, supply held by the issuer, pause...):
   // read as a meme coin it comes out RUG (measured: all 46 tokenized stocks of the corpus). Recognised by ADDRESS only, it is judged on its
-  // market (api/_lib/issuer-assets.ts); with no market reading, the general decision above stands.
+  // market (api/_lib/issuer-assets.ts); with no market reading it is CAUTION ("Market unreadable"), never SAFE and never RUG.
   const issuerKind = issuerKindOf(resolvedMint);
   const issuer = issuerKind ? judgeIssuerAsset({
     kind: issuerKind, mint: resolvedMint, layers: allLayers, flags, sourcesUsedCount: sources_used.length,

@@ -592,3 +592,50 @@ describe("scan deadline — RugCheck for the RESOLVED mint (a scan started from 
   });
 });
 
+// ─── DexScreener has no pool for the token (an outage answers "no pairs" too: 2026-10-07, about an hour) ──────────────────────────────
+// The answer cannot be told from a token that really has no pool. A verdict born from a market nobody read must not stick for 30 minutes
+// (INTCX, an issuer-backed stock: SAFE, then RUG for the 30 minutes DexScreener was silent, then SAFE again), and an issuer-backed token is
+// CAUTION in that case, not RUG.
+
+describe("scan — DexScreener lists no pool for the token", () => {
+  const USDC = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"; // in the issuer registry (stable)
+  const dexSilent = () => {
+    setupGoodTokenMocks();
+    const good = mockFetch.getMockImplementation()! as (url: string, ...rest: unknown[]) => Promise<{ ok: boolean; json: () => Promise<unknown> }>;
+    mockFetch.mockImplementation((url: string, ...rest: unknown[]) => (url.includes("dexscreener")
+      ? Promise.resolve({ ok: true, json: () => Promise.resolve({ pairs: null }) })
+      : good(url, ...rest)));
+  };
+
+  it("the verdict is cached for 30 s only, never for the full TTL", async () => {
+    dexSilent();
+    const res = createMockRes();
+    await run(createMockReq({ ca: WSOL }), res);
+    expect(jsonBody(res)?.risk).toBeDefined();
+    expect(setShortCachedResult).toHaveBeenCalledWith(WSOL, expect.anything(), 30);
+    expect(setCachedResult).not.toHaveBeenCalled();
+  });
+
+  it("an issuer-backed token (a stablecoin of the registry) is CAUTION with the warning that says why, not RUG", async () => {
+    dexSilent();
+    const res = createMockRes();
+    await run(createMockReq({ ca: USDC }), res);
+    const body = jsonBody(res) as { risk: string; rugKind: string | null; flags: Array<{ label: string; severity: string }> };
+    expect(body.risk).toBe("CAUTION");
+    expect(body.rugKind ?? null).toBeNull();
+    expect(body.flags.find((f) => /^Market unreadable/.test(f.label))?.severity).toBe("warning");
+    expect(body.flags.filter((f) => f.severity === "critical")).toEqual([]);
+    expect(setShortCachedResult).toHaveBeenCalledWith(USDC, expect.anything(), 30);
+    expect(setCachedResult).not.toHaveBeenCalled();
+  });
+
+  it("witness: with a readable market the same token is not told its market is unreadable, and is cached with the usual TTL", async () => {
+    setupGoodTokenMocks();
+    const res = createMockRes();
+    await run(createMockReq({ ca: WSOL }), res);
+    expect((jsonBody(res) as { flags: Array<{ label: string }> }).flags.some((f) => /^Market unreadable/.test(f.label))).toBe(false);
+    expect(setCachedResult).toHaveBeenCalled();
+    expect(setShortCachedResult).not.toHaveBeenCalled();
+  });
+});
+
