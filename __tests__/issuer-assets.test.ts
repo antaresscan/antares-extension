@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { issuerKindOf, judgeIssuerAsset, lstPriceInSol, NON_USD_STABLE, LST_PEG_WARN, LST_PEG_CRITICAL, type IssuerInput } from "../api/_lib/issuer-assets";
-import { LST_MINTS, STABLE_MINTS, TOKENIZED_MINTS } from "../api/_lib/issuer-assets.data";
+import { LST_MINTS, STABLE_MINTS, TOKENIZED_MINTS, WRAPPED_MINTS } from "../api/_lib/issuer-assets.data";
 import type { DexScreenerPair, LayerResult, RugEvidence, ScanFlag } from "../api/_lib/types";
 
 // Stablecoins and tokenized stocks are built as their issuer built them. Read as meme coins they came out RUG (all 46 tokenized stocks of the
@@ -17,6 +17,13 @@ const JUP = "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN";
 const JITOSOL = "J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn";
 const MSOL = "mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So";
 const EURC = "HzwqbKZw8HxMN6bF2yFZNrht3c2iXXzpKcFu7uBEDKtr";
+const CBBTC = "cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij"; // Coinbase Wrapped BTC
+const ETH_PORTAL = "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs"; // Ether (Portal)
+const WBTC_PORTAL = "3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh"; // Wrapped BTC (Portal)
+// Look-alikes found in the replay corpus: tokens CALLED BTC, ETH, DOGE... with a fake market cap. None is the real asset.
+const FAKE_BTC = "BTCqQb9ZHEJ5yTrnARGsCjqpGDo1JhKohsEn637GUT1g";
+const FAKE_ETH = "4AiwJSwZcdN1D8kqHsbxNQpDWwRdxZur6S61GvZEVoTo";
+const FAKE_DOGE = "DogePMoL8zXQtYbvAYNFTFST9pewYi6uHWpZvFUtnBBz";
 
 describe("the registry: by mint address, from Jupiter's verified list", () => {
   const BASE58 = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
@@ -30,6 +37,10 @@ describe("the registry: by mint address, from Jupiter's verified list", () => {
     expect(STABLE_MINTS.filter((m) => TOKENIZED_MINTS.includes(m))).toEqual([]);
     expect(LST_MINTS.filter((m) => STABLE_MINTS.includes(m) || TOKENIZED_MINTS.includes(m))).toEqual([]);
     expect(LST_MINTS.length).toBeGreaterThanOrEqual(50);
+    expect(WRAPPED_MINTS.every((m) => BASE58.test(m)) && new Set(WRAPPED_MINTS).size === WRAPPED_MINTS.length).toBe(true);
+    expect(WRAPPED_MINTS.length).toBeGreaterThanOrEqual(5);
+    expect(WRAPPED_MINTS.filter((m) => STABLE_MINTS.includes(m) || TOKENIZED_MINTS.includes(m) || LST_MINTS.includes(m))).toEqual([]);
+    expect(WRAPPED_MINTS).not.toContain(SOL);
     expect(LST_MINTS).not.toContain(SOL); // wrapped SOL is what LSTs are priced in, not one of them
     for (const m of NON_USD_STABLE) expect(STABLE_MINTS).toContain(m);
     expect(STABLE_MINTS.length).toBeGreaterThanOrEqual(10);
@@ -42,11 +53,18 @@ describe("the registry: by mint address, from Jupiter's verified list", () => {
     expect(issuerKindOf(PYUSD)).toBe("stable");
     expect(issuerKindOf(AAPLX)).toBe("tokenized");
     expect(issuerKindOf(JITOSOL)).toBe("lst");
+    expect(issuerKindOf(CBBTC)).toBe("wrapped");
+    expect(issuerKindOf(ETH_PORTAL)).toBe("wrapped");
+    expect(issuerKindOf(WBTC_PORTAL)).toBe("wrapped");
     expect(issuerKindOf(MSOL)).toBe("lst");
   });
 
   it("knows nothing else: SOL, BONK, JUP, a random address, null", () => {
     for (const m of [SOL, BONK, JUP, "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU", "", null, undefined]) expect(issuerKindOf(m)).toBeNull();
+  });
+
+  it("is read by ADDRESS: tokens CALLED BTC, ETH or DOGE are not the real assets (the corpus holds 11 fake BTC, 13 fake ETH, 6 fake DOGE: all DANGER, rightly)", () => {
+    for (const fake of [FAKE_BTC, FAKE_ETH, FAKE_DOGE]) expect(issuerKindOf(fake)).toBeNull();
   });
 
   it("is read by ADDRESS: a look-alike of a registry mint (one character off) is not in it", () => {
@@ -76,7 +94,7 @@ const BY_DESIGN: ScanFlag[] = [
 const input = (over: Partial<IssuerInput> = {}): IssuerInput => {
   const kind = over.kind ?? "tokenized";
   return {
-    kind, mint: kind === "stable" ? USDT : kind === "lst" ? JITOSOL : AAPLX, layers: [layer("dexscreener"), layer("chart")], flags: BY_DESIGN, sourcesUsedCount: 5,
+    kind, mint: kind === "stable" ? USDT : kind === "lst" ? JITOSOL : kind === "wrapped" ? CBBTC : AAPLX, layers: [layer("dexscreener"), layer("chart")], flags: BY_DESIGN, sourcesUsedCount: 5,
     priceChange24hPct: 1.2, priceChange1hPct: 0.1, priceUsd: kind === "stable" ? 1.0004 : 341.28, poolLiquidityUsd: 329_000, priceInSol: kind === "lst" ? 1.27 : null, ...over,
   };
 };
@@ -304,6 +322,50 @@ describe("a stablecoin's distance to $1 (a sustained depeg that no price MOVE sh
     expect(stable({ priceUsd: 0.95, poolLiquidityUsd: null }).risk).toBe("SAFE");
     expect(stable({ priceUsd: 0.95, poolLiquidityUsd: 25_000 }).risk).toBe("CAUTION");
     expect(stable({ priceUsd: null }).risk).toBe("SAFE");
+  });
+});
+
+// ─── Wrapped major assets (wrapped BTC and ETH) ───────────────────────────────────────────────────────────────────────────────
+describe("wrapped majors: SAFE when the market is healthy, judged on the market like the other issuer-backed tokens", () => {
+  const wrapped = (over: Partial<IssuerInput> = {}) => judgeIssuerAsset(input({ kind: "wrapped", ...over }))!;
+  // What the general engine says about cbBTC / WETH: the bridge's authorities, the vault as the biggest holder, an unburned LP.
+  const WRAPPED_STRUCTURE: ScanFlag[] = [
+    flag("critical", "Freeze authority active — wallets can be frozen"),
+    flag("critical", "Mint authority active — supply can be inflated"),
+    flag("critical", "LP not burned or locked — dev can rug liquidity (contract not clean)"),
+    flag("critical", "Single wallet holds 50% — high concentration"),
+    flag("critical", "Top 10 hold 74% — high concentration"),
+    flag("warning", "RugCheck: High ownership"),
+  ];
+
+  it("a healthy wrapped BTC / ETH is SAFE; the bridge's structure is information, with its own words", () => {
+    const r = wrapped({ flags: WRAPPED_STRUCTURE });
+    expect(r.risk).toBe("SAFE");
+    expect(r.score).toBe(950);
+    expect(r.flags[0]).toMatchObject({ severity: "info" });
+    expect(r.flags[0].label).toMatch(/^Wrapped asset — the bridge or the custodian holds the mint authority/);
+    expect(r.flags.filter((f) => f.severity === "critical" || f.severity === "warning")).toEqual([]);
+    for (const f of WRAPPED_STRUCTURE) expect(r.flags.some((x) => x.label === f.label && x.severity === "info")).toBe(true);
+  });
+
+  it("the market still counts: a thin pool, a collapse, a drained pool, blocked sales", () => {
+    expect(wrapped({ flags: [...WRAPPED_STRUCTURE, flag("critical", "Very low liquidity (<$1k)")] }).risk).toBe("DANGER");
+    expect(wrapped({ flags: [...WRAPPED_STRUCTURE, flag("warning", "Low liquidity (<$5k)")] }).risk).toBe("CAUTION");
+    expect(wrapped({ flags: [...WRAPPED_STRUCTURE, flag("critical", "Collapsed -80% from its high 3 days ago")] }).risk).toBe("DANGER");
+    const drained = [layer("dexscreener", [], { rugEvidence: ["pool_abandoned" as RugEvidence] }), layer("chart")];
+    expect(wrapped({ layers: drained, flags: [...WRAPPED_STRUCTURE, flag("critical", "Volume with zero liquidity — abandoned pool", ["rug_evidence"])] }).risk).toBe("RUG");
+  });
+
+  it("no peg is read for it (no reference price of BTC or ETH): a +12 % day is a market move, not a flag", () => {
+    expect(wrapped({ flags: [], priceChange24hPct: 12, priceChange1hPct: 5, priceUsd: 112_000 }).risk).toBe("SAFE");
+  });
+
+  it("not enough sources is not a clean bill of health: on 2 sources CAUTION", () => {
+    expect(wrapped({ flags: [], sourcesUsedCount: 2 }).risk).toBe("CAUTION");
+  });
+
+  it("no market reading: no judgement, the general decision stands", () => {
+    expect(judgeIssuerAsset(input({ kind: "wrapped", layers: [layer("dexscreener", [], { available: false })] }))).toBeNull();
   });
 });
 
