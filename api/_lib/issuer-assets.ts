@@ -130,14 +130,17 @@ export interface IssuerInput {
 }
 
 /**
- * The verdict of an issuer-backed token, from its market only. Pure. Returns null when there is no market reading to judge (DexScreener
- * unavailable): the general decision stands then, it is the more cautious one.
+ * The verdict of an issuer-backed token, from its market only. Pure.
+ * With NO market reading (DexScreener did not answer, or lists no pool) the token is CAUTION at best, never SAFE and never RUG: nothing
+ * says it is healthy, but nothing says it is a rug either, and the general decision (which would read its issuer authorities and the supply
+ * it holds as rug signals) is the wrong one for it: an outage of DexScreener made a registry token flicker to RUG for the 30 minutes the
+ * verdict stayed cached. Facts from the other sources (a drained pool, a collapse on the chart) still apply.
  * An LST whose price in SOL cannot be read (no SOL-quoted pool with real liquidity) is judged on its market too, but its peg is NOT verified:
  * a warning says so, so it is CAUTION at best, never SAFE.
  */
-export function judgeIssuerAsset(input: IssuerInput): IssuerJudgement | null {
+export function judgeIssuerAsset(input: IssuerInput): IssuerJudgement {
   const { kind, layers } = input;
-  if (!layers.some((l) => l.available && l.source === "dexscreener")) return null;
+  const marketRead = layers.some((l) => l.available && l.source === "dexscreener");
 
   const kept: ScanFlag[] = [];
   const shown: ScanFlag[] = [];
@@ -152,7 +155,9 @@ export function judgeIssuerAsset(input: IssuerInput): IssuerJudgement | null {
   // A yield-bearing dollar token is read like a stablecoin with one difference: it starts at $1 and rises with the yield it accrues, so only
   // a price UNDER $1 is a loss; $1.06 or $1.50 is the yield, not a depeg. A vault share has no reference price (JLP follows a basket of SOL,
   // ETH, BTC and stablecoins, jlWSOL follows SOL), and its pool depth says nothing: its market (collapse, dump, blocked sells) is what is read.
-  if (kind === "stable" || kind === "yield") {
+  if (!marketRead) {
+    kept.push(makeFlag("Market unreadable — no price or liquidity could be read for this token right now, so its health is not verified. Try again in a few minutes", "warning", 0));
+  } else if (kind === "stable" || kind === "yield") {
     const moves = [input.priceChange24hPct, input.priceChange1hPct].filter((v): v is number => v !== null && Number.isFinite(v));
     const moved = moves.length ? Math.max(...moves.map(Math.abs)) : 0;
     const readsPrice = input.priceUsd !== null && Number.isFinite(input.priceUsd) && input.priceUsd > 0

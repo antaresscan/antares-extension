@@ -207,9 +207,13 @@ describe("judgeIssuerAsset: the verdict of an issuer-backed token, from its mark
     expect(judgeIssuerAsset(input({ kind: "tokenized", flags: [], priceChange24hPct: 8, priceChange1hPct: 3 }))!.flags.some((f) => /peg/.test(f.label))).toBe(false);
   });
 
-  it("no market reading (DexScreener unavailable): no judgement, the general decision stands", () => {
-    expect(judgeIssuerAsset(input({ layers: [layer("dexscreener", [], { available: false }), layer("chart")] }))).toBeNull();
-    expect(judgeIssuerAsset(input({ layers: [layer("chart")] }))).toBeNull();
+  it("no market reading (DexScreener unavailable): CAUTION with a warning that says so, never SAFE and never RUG", () => {
+    for (const layers of [[layer("dexscreener", [], { available: false }), layer("chart")], [layer("chart")]]) {
+      const r = judgeIssuerAsset(input({ layers }));
+      expect(r.risk).toBe("CAUTION");
+      expect(r.rugKind).toBeNull();
+      expect(sevOf(r, /^Market unreadable/)).toBe("warning");
+    }
   });
 
   it("not enough sources is not a clean bill of health: on 2 sources it is CAUTION, not SAFE (stablecoin or stock)", () => {
@@ -386,8 +390,8 @@ describe("wrapped majors: SAFE when the market is healthy, judged on the market 
     expect(wrapped({ flags: [], sourcesUsedCount: 2 }).risk).toBe("CAUTION");
   });
 
-  it("no market reading: no judgement, the general decision stands", () => {
-    expect(judgeIssuerAsset(input({ kind: "wrapped", layers: [layer("dexscreener", [], { available: false })] }))).toBeNull();
+  it("no market reading: CAUTION, not the general decision", () => {
+    expect(judgeIssuerAsset(input({ kind: "wrapped", layers: [layer("dexscreener", [], { available: false })] })).risk).toBe("CAUTION");
   });
 });
 
@@ -448,9 +452,9 @@ describe("yield-bearing dollar tokens: SAFE when the market is healthy; a price 
     expect(yielding({ layers: drained, flags: [...BY_DESIGN, flag("critical", "Volume with zero liquidity — abandoned pool", ["rug_evidence"])] }).risk).toBe("RUG");
   });
 
-  it("not enough sources is not a clean bill of health, and no market reading is no judgement", () => {
+  it("not enough sources is not a clean bill of health, and no market reading is CAUTION", () => {
     expect(yielding({ flags: [], sourcesUsedCount: 2 }).risk).toBe("CAUTION");
-    expect(judgeIssuerAsset(input({ kind: "yield", layers: [layer("dexscreener", [], { available: false })] }))).toBeNull();
+    expect(judgeIssuerAsset(input({ kind: "yield", layers: [layer("dexscreener", [], { available: false })] })).risk).toBe("CAUTION");
   });
 });
 
@@ -494,9 +498,46 @@ describe("Jupiter's vault shares: SAFE when the market is healthy; a thin DEX po
     expect(vault({ mint: JL_USDC, flags: [], priceUsd: 0.5 }).risk).toBe("SAFE");
   });
 
-  it("not enough sources is not a clean bill of health, and no market reading is no judgement", () => {
+  it("not enough sources is not a clean bill of health, and no market reading is CAUTION", () => {
     expect(vault({ flags: [], sourcesUsedCount: 2 }).risk).toBe("CAUTION");
-    expect(judgeIssuerAsset(input({ kind: "vault", layers: [layer("dexscreener", [], { available: false })] }))).toBeNull();
+    expect(judgeIssuerAsset(input({ kind: "vault", layers: [layer("dexscreener", [], { available: false })] })).risk).toBe("CAUTION");
+  });
+});
+
+// DexScreener down or silent (it answered "no pairs" for about an hour on 2026-10-07; INTCX flickered SAFE -> RUG -> SAFE on the next ask):
+// the market of an issuer-backed token cannot be read. The general decision (its authorities and the supply the issuer holds read as rug
+// signals) is the wrong judge: it said RUG and the verdict stayed cached for 30 minutes.
+describe("judgeIssuerAsset: the market cannot be read (DexScreener did not answer)", () => {
+  const KINDS = ["stable", "tokenized", "lst", "wrapped", "yield", "vault"] as const;
+  const silent = [layer("dexscreener", [flag("warning", "Not indexed on DexScreener")], { available: false }), layer("chart"), layer("rugcheck"), layer("goplus")];
+
+  it("every kind is CAUTION, even with all the by-design flags the general decision reads as critical", () => {
+    for (const kind of KINDS) {
+      const r = judgeIssuerAsset(input({ kind, layers: silent, flags: [...BY_DESIGN, flag("warning", "Not indexed on DexScreener")], priceUsd: null, poolLiquidityUsd: null, priceChange24hPct: null, priceChange1hPct: null, priceInSol: null }));
+      expect(r.risk, kind).toBe("CAUTION");
+      expect(r.rugKind, kind).toBeNull();
+      expect(r.safeBlocked, kind).toBe(true);
+      expect(r.score, kind).toBe(808); // round(950 * 0.85): one warning, nothing else counted
+      expect(r.flags.filter((f) => f.severity === "critical"), kind).toEqual([]);
+      expect(r.flags.filter((f) => f.severity === "warning").map((f) => f.label), kind).toEqual([expect.stringMatching(/^Market unreadable/)]);
+    }
+  });
+
+  it("an LST does not get a second warning about its peg: one reason is given, not two", () => {
+    const r = judgeIssuerAsset(input({ kind: "lst", layers: silent, flags: [], priceInSol: null }));
+    expect(r.flags.filter((f) => f.severity === "warning")).toHaveLength(1);
+    expect(r.flags.some((f) => /peg to SOL is not verified/.test(f.label))).toBe(false);
+  });
+
+  it("a fact from another source still counts: a collapse on the chart (a drained pool) is RUG, an unreadable market does not hide it", () => {
+    const drained = [layer("dexscreener", [], { available: false }), layer("chart", [flag("critical", "Collapsed -97% from its high 2 days ago", ["rug_evidence"])], { rugEvidence: ["pool_abandoned" as RugEvidence] })];
+    const r = judgeIssuerAsset(input({ kind: "tokenized", layers: drained, flags: [flag("critical", "Collapsed -97% from its high 2 days ago", ["rug_evidence"])] }));
+    expect(r.risk).toBe("RUG");
+    expect(r.rugKind).toBe("confirmed");
+  });
+
+  it("a readable market is not told it is unreadable (the flag appears only when DexScreener did not answer)", () => {
+    for (const kind of KINDS) expect(judgeIssuerAsset(input({ kind })).flags.some((f) => /^Market unreadable/.test(f.label)), kind).toBe(false);
   });
 });
 
