@@ -595,9 +595,10 @@ export const SHADOW_CSS = `
 }
 .skel-slow-hint {
   margin-top: 12px;
-  font: 400 8.5px/1.4 'IBM Plex Mono', monospace;
+  /* the card's own voice (Bebas Neue, like .si span and .scanned-ago), not the mono of the old hint */
+  font: 400 10px/1.4 'Bebas Neue', sans-serif;
   color: #777;
-  letter-spacing: .08em;
+  letter-spacing: .14em;
   text-align: center;
   text-transform: uppercase;
   opacity: 0;
