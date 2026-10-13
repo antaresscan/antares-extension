@@ -434,6 +434,12 @@ export interface ScanResult {
   layers: Record<string, LayerSnapshot>;
   scoring_version: string;
   fetchedAt: number;
+  /** true when the answer was born from data that was not there (no source, out of time, no DexScreener pool, a chart or report gap): kept 30 s only, never condemns. */
+  degraded?: boolean;
+  /** Seconds the overlay may reuse this answer without asking again. Set when the answer is SENT (serveWindows), never stored. */
+  freshForSec?: number;
+  /** Seconds this answer may still be shown, marked as old, if the scanner cannot be reached. Set when the answer is SENT, never stored. */
+  staleLeftSec?: number;
   // Tri-state: true = present / blocked, false = verified absent, null = NOT verified (never shown as OK).
   honeypot?: boolean | null;
   mintAuthority?: boolean | null;
