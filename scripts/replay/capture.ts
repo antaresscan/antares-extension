@@ -9,6 +9,7 @@
 //   (no argument)   the hand-vetted tokens of the manifest        --bulk     every token of bulk.json
 //   SYMBOL|MINT     only these tokens (manifest or bulk)          --sample   with --bulk: only the tokens that run in every `npm test`
 //   --force         record again a token that already has a file  --pace N   milliseconds to wait between two tokens (default 8000)
+//   --list FILE     only the mints of FILE (one per line, in that order: a batch chosen by quota); they must be in bulk.json
 //   --until DATE    stop between two tokens once DATE has passed (e.g. 2026-10-11T07:00:00+02:00): a capture meant to run at night
 //                   ends before the day's traffic instead of being killed in the middle of a scan
 //
@@ -33,7 +34,9 @@ const PACE_MS = paceIdx >= 0 ? Number(args[paceIdx + 1]) : 8_000;
 const untilIdx = args.indexOf("--until");
 const UNTIL = untilIdx >= 0 ? Date.parse(args[untilIdx + 1] ?? "") : Infinity;
 if (untilIdx >= 0 && !Number.isFinite(UNTIL)) { console.error("--until needs a date with its time zone, e.g. --until 2026-10-11T07:00:00+02:00"); process.exit(2); }
-const only = args.filter((a, i) => !a.startsWith("--") && !(paceIdx >= 0 && i === paceIdx + 1) && !(untilIdx >= 0 && i === untilIdx + 1));
+const listIdx = args.indexOf("--list");
+const LIST_FILE = listIdx >= 0 ? args[listIdx + 1] : null;
+const only = args.filter((a, i) => !a.startsWith("--") && !(paceIdx >= 0 && i === paceIdx + 1) && !(untilIdx >= 0 && i === untilIdx + 1) && !(listIdx >= 0 && i === listIdx + 1));
 
 interface Exchange { method: string; url: string; body: string | null; status: number; contentType: string | null; text: string; error?: string; auth?: boolean }
 interface RecorderAnswer { ca: string; startedAt: number; status: number; result: Record<string, unknown> | null; exchanges: string }
@@ -136,9 +139,15 @@ void (async () => {
   mkdirSync(OUT, { recursive: true });
   const curated: Target[] = REPLAY_TOKENS.map((t) => ({ symbol: t.symbol, mint: t.mint, dead: t.dead === true, curated: true }));
   const bulk: Target[] = parseBulk(readFileSync(path.resolve("__tests__/replay/bulk.json"), "utf8")).map((t) => ({ symbol: t.symbol, mint: t.mint, dead: false, curated: false }));
-  const pool = [...curated, ...(flag("--bulk") || only.length > 0 ? bulk : [])];
+  const pool = [...curated, ...(flag("--bulk") || only.length > 0 || LIST_FILE ? bulk : [])];
   let targets: Target[];
-  if (only.length > 0) targets = pool.filter((t) => only.includes(t.symbol) || only.includes(t.mint));
+  if (LIST_FILE) {
+    const wanted = readFileSync(path.resolve(LIST_FILE), "utf8").split("\n").map((l) => l.trim()).filter(Boolean);
+    const byMint = new Map(pool.map((t) => [t.mint, t] as const));
+    const missing = wanted.filter((m) => !byMint.has(m));
+    if (missing.length) { console.error(`${missing.length} mint(s) of ${LIST_FILE} are not in bulk.json (first: ${missing[0]})`); process.exit(2); }
+    targets = wanted.map((m) => byMint.get(m)!);
+  } else if (only.length > 0) targets = pool.filter((t) => only.includes(t.symbol) || only.includes(t.mint));
   else if (flag("--bulk")) targets = [...curated, ...bulk.filter((t) => !flag("--sample") || inSample(t.mint))];
   else targets = curated;
   const todo = targets.filter((t) => flag("--force") || !existsSync(path.join(OUT, `${t.mint}.json.br`)));
