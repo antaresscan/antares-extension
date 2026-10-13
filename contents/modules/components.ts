@@ -108,9 +108,32 @@ export function resetState() {
   state.currentScanController?.abort()
   state.currentScanController = null
   if (state.rescanTimer) { clearTimeout(state.rescanTimer); state.rescanTimer = null }
+  if (state.recoveryTimer) { clearTimeout(state.recoveryTimer); state.recoveryTimer = null }
+  if (state.staleExpiryTimer) { clearTimeout(state.staleExpiryTimer); state.staleExpiryTimer = null }
+  state.recoveryCa = ""
+  state.recoveryAttempt = 0
+  state.recoveryStartedAt = 0
+  state.failureView = null
   state.rescanCount = 0
   state.rescanCountCA = ""
   hideBox()
+}
+
+/**
+ * The line that says the verdict on screen is from memory: when it was made, and that the overlay is trying again. Inserted right under
+ * the header of a result card (before the verdict block). It is plain text: nothing from the server goes in it.
+ */
+export function insertStaleBanner(root: HTMLElement, text: string): void {
+  const banner = el("div", { class: "stale-banner", role: "status" }, text)
+  const vb = root.querySelector(".vb")
+  if (vb?.parentNode) vb.parentNode.insertBefore(banner, vb)
+  else root.appendChild(banner)
+}
+
+/** Refresh the age in the line above without rebuilding the card (a panel the user has open stays open). */
+export function updateStaleBanner(root: ParentNode, text: string): void {
+  const banner = root.querySelector(".stale-banner")
+  if (banner) banner.textContent = text
 }
 
 export function attachClose(

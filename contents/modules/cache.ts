@@ -3,6 +3,7 @@ import { LS_PREFIX, CACHE_TTL, SCAN_CACHE_PREFIX, SCAN_CACHE_MAX_ENTRIES } from 
 import { scanCache } from "./state"
 import { readSessionToken } from "./session-token"
 import { logger } from "../../shared/logger"
+import { windowsOf, madeAtOf } from "./resilience"
 
 // ─── Where scan results are cached, and why ─────────────────────────────────
 //
@@ -133,7 +134,10 @@ async function loadEntry(ca: string): Promise<ScanCacheEntry | null> {
   const key = SCAN_CACHE_PREFIX + ca
   const raw = (await storageGet(key))[key] as Partial<ScanCacheEntry> | undefined
   if (!raw || !raw.data || typeof raw.ts !== "number") return null
-  return { data: raw.data, ts: raw.ts, session: typeof raw.session === "string" ? raw.session : null }
+  const entry: ScanCacheEntry = { data: raw.data, ts: raw.ts, session: typeof raw.session === "string" ? raw.session : null }
+  if (typeof raw.freshUntil === "number") entry.freshUntil = raw.freshUntil
+  if (typeof raw.staleUntil === "number") entry.staleUntil = raw.staleUntil
+  return entry
 }
 
 async function persistEntry(ca: string, entry: ScanCacheEntry): Promise<void> {
@@ -150,6 +154,7 @@ async function persistEntry(ca: string, entry: ScanCacheEntry): Promise<void> {
  * Drop expired entries and cap the cache at SCAN_CACHE_MAX_ENTRIES
  * (oldest first). Only keys under SCAN_CACHE_PREFIX are touched — never
  * the session token, the scan history or any other extension state.
+ * An entry is expired when its LAST window is over: the one in which it may still be shown stale (getStale), not only the fresh one.
  */
 export async function sweepScanCache(now: number = Date.now()): Promise<void> {
   const all = await storageGet(null)
@@ -157,8 +162,14 @@ export async function sweepScanCache(now: number = Date.now()): Promise<void> {
   const drop: string[] = []
   for (const [key, value] of Object.entries(all)) {
     if (!key.startsWith(SCAN_CACHE_PREFIX)) continue
-    const ts = (value as { ts?: unknown } | null)?.ts
-    if (typeof ts !== "number" || now - ts > CACHE_TTL) drop.push(key)
+    const v = value as { ts?: unknown; freshUntil?: unknown; staleUntil?: unknown } | null
+    const ts = v?.ts
+    const until = Math.max(
+      typeof ts === "number" ? ts + CACHE_TTL : 0,
+      typeof v?.freshUntil === "number" ? v.freshUntil : 0,
+      typeof v?.staleUntil === "number" ? v.staleUntil : 0,
+    )
+    if (typeof ts !== "number" || now > until) drop.push(key)
     else live.push([key, ts])
   }
   if (live.length > SCAN_CACHE_MAX_ENTRIES) {
@@ -173,15 +184,18 @@ export async function sweepScanCache(now: number = Date.now()): Promise<void> {
  * background (the overlay never waits on a disk write).
  */
 export async function cacheScan(ca: string, data: ScanResponseData, sessionToken: string | null): Promise<void> {
-  const entry: ScanCacheEntry = { data, ts: Date.now(), session: await sessionFingerprint(sessionToken) }
+  const ts = Date.now()
+  const entry: ScanCacheEntry = { data, ts, session: await sessionFingerprint(sessionToken), ...windowsOf(data, ts, CACHE_TTL) }
   scanCache.set(ca, entry)
   void persistEntry(ca, entry)
 }
 
 /**
  * Return the cached scan for `ca` only when:
- *   1. The entry exists (in memory, else in extension storage) and isn't
- *      past CACHE_TTL.
+ *   1. The entry exists (in memory, else in extension storage) and is still
+ *      fresh: the server said how long (`freshForSec`, 30 s for a degraded
+ *      answer), never more than CACHE_TTL; an older server says nothing: CACHE_TTL.
+ *      An entry that is no longer fresh but may still be shown stale is kept (getStale).
  *   2. Its session fingerprint matches the CURRENT session.
  *
  * Rule (2) is the load-bearing one. Without it, a Pro user's cached
@@ -194,8 +208,10 @@ export async function cacheScan(ca: string, data: ScanResponseData, sessionToken
 export async function getCached(ca: string): Promise<ScanResponseData | null> {
   const entry = scanCache.get(ca) ?? (await loadEntry(ca))
   if (!entry) return null
-  if (Date.now() - entry.ts > CACHE_TTL) {
-    await evictCached(ca)
+  const now = Date.now()
+  const freshUntil = entry.freshUntil ?? entry.ts + CACHE_TTL
+  if (now > freshUntil) {
+    if (now > Math.max(freshUntil, entry.staleUntil ?? 0)) await evictCached(ca)
     return null
   }
   const currentSession = await sessionFingerprint(await readSessionToken())
@@ -208,6 +224,29 @@ export async function getCached(ca: string): Promise<ScanResponseData | null> {
   }
   scanCache.set(ca, entry)
   return entry.data
+}
+
+/**
+ * The last known scan for `ca`, to show — marked as old — when the scanner cannot be reached, if the server allowed it (`staleLeftSec`): a
+ * stale bad verdict is safe, a stale SAFE is not, so the window is the server's and depends on the verdict and on the token. Same session
+ * rule as getCached (a Pro verdict never survives a logout). null when there is none, or its window is over (it is dropped then).
+ * `madeAt` is when the verdict was made; `staleUntil` is when it stops being allowed.
+ */
+export async function getStale(ca: string): Promise<{ data: ScanResponseData; madeAt: number; staleUntil: number } | null> {
+  const entry = scanCache.get(ca) ?? (await loadEntry(ca))
+  if (!entry) return null
+  const staleUntil = Math.max(entry.freshUntil ?? entry.ts + CACHE_TTL, entry.staleUntil ?? 0)
+  if (Date.now() > staleUntil) {
+    await evictCached(ca)
+    return null
+  }
+  const currentSession = await sessionFingerprint(await readSessionToken())
+  if (entry.session !== currentSession) {
+    await evictCached(ca)
+    return null
+  }
+  scanCache.set(ca, entry)
+  return { data: entry.data, madeAt: madeAtOf(entry.data, entry.ts), staleUntil }
 }
 
 /**

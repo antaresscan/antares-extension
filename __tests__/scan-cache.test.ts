@@ -17,6 +17,7 @@ import { CACHE_TTL, LS_PREFIX, SCAN_CACHE_PREFIX, SCAN_CACHE_MAX_ENTRIES } from 
 import {
   cacheScan,
   getCached,
+  getStale,
   evictCached,
   clearAllScanCache,
   sweepScanCache,
@@ -309,5 +310,107 @@ describe("cacheScan — storage failures", () => {
     await flush()
 
     expect(await getCached(CA1)).toEqual(SAFE) // memory tier unaffected
+  })
+})
+
+// ─── The windows the SERVER decides: fresh (reuse without asking), stale (show, marked as old, when the scanner cannot be reached) ──────
+
+describe("getCached / getStale — fresh and stale windows decided by the server", () => {
+  const withWindows = (d: ScanResponseData, freshForSec: number, staleLeftSec: number, extra: Record<string, unknown> = {}) =>
+    ({ ...d, freshForSec, staleLeftSec, ...extra }) as unknown as ScanResponseData
+  const at = (ms: number) => vi.spyOn(Date, "now").mockReturnValue(NOW + ms)
+
+  it("a degraded answer (30 s) is served for 30 s, not for 5 minutes", async () => {
+    await cacheScan(CA1, withWindows(SAFE, 30, 0), null)
+    at(29_000)
+    expect(await getCached(CA1)).not.toBeNull()
+    at(31_000)
+    expect(await getCached(CA1)).toBeNull()
+  })
+
+  it("an answer from a server that says nothing is served for 5 minutes and never stale (the old behaviour, exactly)", async () => {
+    await cacheScan(CA1, SAFE, null)
+    at(CACHE_TTL - 1)
+    expect(await getCached(CA1)).toEqual(SAFE)
+    at(CACHE_TTL + 1)
+    expect(await getCached(CA1)).toBeNull()
+    expect(await getStale(CA1)).toBeNull()
+  })
+
+  it("past its fresh window an answer is not served as fresh, but may still be shown stale until its stale window is over", async () => {
+    await cacheScan(CA1, withWindows(SAFE, 300, 1200), null)
+    await vi.waitFor(() => expect(cacheKeys(chromeStore)).toHaveLength(1))
+
+    at(6 * 60_000)
+    expect(await getCached(CA1)).toBeNull() // not fresh any more
+    expect(cacheKeys(chromeStore)).toHaveLength(1) // ... but kept: it may still be shown stale
+    const stale = await getStale(CA1)
+    expect(stale?.data).toMatchObject({ risk: "SAFE" })
+    expect(stale?.staleUntil).toBe(NOW + 1_200_000)
+
+    at(1_200_000 - 1)
+    expect(await getStale(CA1)).not.toBeNull()
+    at(1_200_000 + 1)
+    expect(await getStale(CA1)).toBeNull()
+    expect(cacheKeys(chromeStore)).toHaveLength(0) // dropped for good
+  })
+
+  it("a verdict the server did not allow stale (staleLeftSec 0) is never shown stale", async () => {
+    await cacheScan(CA1, withWindows(SAFE, 300, 0), null)
+    at(CACHE_TTL + 1_000)
+    expect(await getStale(CA1)).toBeNull()
+  })
+
+  it("a confirmed RUG (24 h) is still there 23 hours later, from the extension storage after a reload of the page", async () => {
+    await cacheScan(CA1, withWindows(RUG, 300, 86_400), null)
+    await vi.waitFor(() => expect(cacheKeys(chromeStore)).toHaveLength(1))
+    scanCache.clear() // the page was reloaded: only the extension storage remains
+    at(23 * 3_600_000)
+    const stale = await getStale(CA1)
+    expect(stale?.data).toMatchObject({ risk: "RUG" })
+    at(24 * 3_600_000 + 1_000)
+    expect(await getStale(CA1)).toBeNull()
+  })
+
+  it("the session rule holds for a stale verdict too: a Pro verdict never survives a logout, nor another account", async () => {
+    setSession(TOKEN_A)
+    await cacheScan(CA1, withWindows(SAFE, 300, 1200), TOKEN_A)
+    at(6 * 60_000)
+    expect(await getStale(CA1)).not.toBeNull() // witness: same session
+
+    setSession(TOKEN_B)
+    expect(await getStale(CA1)).toBeNull()
+    expect(cacheKeys(chromeStore)).toHaveLength(0)
+
+    setSession(TOKEN_A)
+    await cacheScan(CA2, withWindows(SAFE, 300, 1200), TOKEN_A)
+    setSession(null)
+    expect(await getStale(CA2)).toBeNull()
+  })
+
+  it("madeAt is when the verdict was made: the server's date when its cache held the answer a while", async () => {
+    await cacheScan(CA1, withWindows(SAFE, 300, 1200, { fetchedAt: NOW - 90_000 }), null)
+    at(6 * 60_000)
+    expect((await getStale(CA1))?.madeAt).toBe(NOW - 90_000)
+    await cacheScan(CA2, withWindows(SAFE, 300, 1200), null)
+    expect((await getStale(CA2))?.madeAt).toBe(NOW + 6 * 60_000) // no date from the server: the moment it was received (the clock is at +6 min here)
+  })
+
+  it("nothing there, nothing to show", async () => {
+    expect(await getStale(CA1)).toBeNull()
+  })
+})
+
+describe("sweepScanCache — keeps what may still be shown stale", () => {
+  it("an entry past the 5 minutes but inside its stale window survives the sweep; once the window is over it is dropped", async () => {
+    await cacheScan(CA1, { ...SAFE, freshForSec: 300, staleLeftSec: 1800 } as unknown as ScanResponseData, null)
+    await cacheScan(CA2, SAFE, null) // an older server: gone after 5 minutes
+    await vi.waitFor(() => expect(cacheKeys(chromeStore)).toHaveLength(2))
+
+    await sweepScanCache(NOW + 20 * 60_000)
+    expect(cacheKeys(chromeStore)).toEqual([SCAN_CACHE_PREFIX + CA1])
+
+    await sweepScanCache(NOW + 31 * 60_000)
+    expect(cacheKeys(chromeStore)).toHaveLength(0)
   })
 })

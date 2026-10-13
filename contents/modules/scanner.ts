@@ -1,9 +1,10 @@
 import type { ScanResponseData, QuotaStatus } from "../../shared/types"
 import { API, IGNORE } from "./constants"
 import { state } from "./state"
-import { getCached, cacheScan, evictCached } from "./cache"
+import { getCached, getStale, cacheScan, evictCached } from "./cache"
+import { SCAN_BUDGET_MS, STALE_TICK_MS, sleep, recoveryDelayMs, staleBannerText } from "./resilience"
 import { readSessionToken } from "./session-token"
-import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimations, applyFinalAnimationValues, buildResultNode, buildSkeletonNode, buildQuotaExhaustedNode, buildErrorNode } from "./components"
+import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimations, applyFinalAnimationValues, buildResultNode, buildSkeletonNode, buildQuotaExhaustedNode, buildErrorNode, insertStaleBanner, updateStaleBanner } from "./components"
 import { scanRateLimiter } from "../../shared/rate-limit"
 import { logger } from "../../shared/logger"
 import { getInstallId } from "../../shared/install-id"
@@ -166,7 +167,7 @@ function isRetryable(e: unknown): boolean {
   return true
 }
 
-async function fetchWithRetry(
+export async function fetchWithRetry(
   url: string,
   signal: AbortSignal,
   headers: Record<string, string> = {},
@@ -193,7 +194,7 @@ async function fetchWithRetry(
         }
         if ((status === 429 || status >= 500) && attempt < retries) {
           const delay = BASE_RETRY_DELAY * Math.pow(2, attempt)
-          await new Promise(r => setTimeout(r, delay))
+          await sleep(delay, signal)
           continue
         }
         throw new Error("" + status)
@@ -206,10 +207,102 @@ async function fetchWithRetry(
       if (e instanceof QuotaExhaustedError) throw e
       if (!isRetryable(e) || attempt >= retries) throw e
       const delay = BASE_RETRY_DELAY * Math.pow(2, attempt)
-      await new Promise(r => setTimeout(r, delay))
+      await sleep(delay, signal)
     }
   }
   throw lastError
+}
+
+// ─── When the scanner cannot be reached ────────────────────────────────────────
+//
+// The overlay shows the last known verdict, marked as old, if the server allowed it for that verdict (cache.ts getStale, the rule is in
+// api/_lib/helpers.ts); otherwise the "Connection failed" screen. Either way it tries again by itself (resilience.ts RECOVERY_DELAYS_MS)
+// and swaps the answer in as soon as the scanner is back; the user never has to click, and a verdict that is too old to be shown is not.
+
+function clearRecovery() {
+  if (state.recoveryTimer) { clearTimeout(state.recoveryTimer); state.recoveryTimer = null }
+  if (state.staleExpiryTimer) { clearTimeout(state.staleExpiryTimer); state.staleExpiryTimer = null }
+  state.recoveryCa = ""
+  state.recoveryAttempt = 0
+  state.recoveryStartedAt = 0
+}
+
+function scheduleRecovery(ca: string) {
+  if (state.recoveryCa !== ca) {
+    if (state.recoveryTimer) clearTimeout(state.recoveryTimer)
+    state.recoveryCa = ca
+    state.recoveryAttempt = 0
+    state.recoveryStartedAt = Date.now()
+  }
+  if (state.recoveryTimer) { clearTimeout(state.recoveryTimer); state.recoveryTimer = null }
+  const delay = recoveryDelayMs(state.recoveryAttempt, Date.now() - state.recoveryStartedAt)
+  if (delay === null) return // given up: what is on screen stays (the error screen keeps its Retry button)
+  state.recoveryAttempt++
+  state.recoveryTimer = setTimeout(() => {
+    state.recoveryTimer = null
+    // The user moved on, closed the box, or the scanner already answered: nothing to recover.
+    if (state.lastCA !== ca || state.manuallyDismissed || !state.failureView) { clearRecovery(); return }
+    // A hidden tab does not need the answer now (visibilitychange asks again as soon as it is visible).
+    if (typeof document !== "undefined" && document.hidden) { scheduleRecovery(ca); return }
+    void scan(ca, { silent: true })
+  }, delay)
+}
+
+/** While the old verdict is on screen: keep its age honest, and take it off at the moment the server's window for it is over. */
+function armStaleTick(ca: string, madeAt: number, staleUntil: number) {
+  if (state.staleExpiryTimer) clearTimeout(state.staleExpiryTimer)
+  state.staleExpiryTimer = setTimeout(() => {
+    state.staleExpiryTimer = null
+    if (state.lastCA !== ca || state.failureView !== "stale") return
+    if (Date.now() >= staleUntil) { showErrorView(ca, getBox()); return }
+    updateStaleBanner(getBox(), staleBannerText(Date.now() - madeAt))
+    armStaleTick(ca, madeAt, staleUntil)
+  }, Math.max(0, Math.min(STALE_TICK_MS, staleUntil - Date.now())))
+}
+
+function showErrorView(ca: string, el: HTMLDivElement) {
+  if (state.staleExpiryTimer) { clearTimeout(state.staleExpiryTimer); state.staleExpiryTimer = null }
+  // The Retry button starts a new cycle from the top: reset the per-scan state so scan() does not short-circuit on lastCA.
+  el.replaceChildren(buildErrorNode(() => {
+    clearRecovery()
+    state.failureView = null
+    state.lastCA = ""
+    state.manuallyDismissed = false
+    void scan(ca)
+  }))
+  showBox()
+  attachClose(null)
+  state.failureView = "error"
+}
+
+async function showFailure(ca: string, installId: string | null, el: HTMLDivElement): Promise<void> {
+  if (state.failureView === "error") { scheduleRecovery(ca); return }
+
+  const stale = await getStale(ca)
+  if (state.lastCA !== ca) return // the user moved on while the cache was read
+
+  if (!stale) {
+    showErrorView(ca, el)
+    scheduleRecovery(ca)
+    return
+  }
+
+  const banner = staleBannerText(Date.now() - stale.madeAt)
+  if (state.failureView === "stale") {
+    // Already showing it: only the age changes (rebuilding the card would close a panel the user is reading).
+    updateStaleBanner(el, banner)
+  } else {
+    el.replaceChildren(buildResultNode(stale.data, ca, installId))
+    insertStaleBanner(el, banner)
+    showBox()
+    applyFinalAnimationValues(el)
+    attachClose(stale.data.aiSummary ?? null, stale.data.flags ?? null, stale.data.risk ?? null)
+    attachAnalysisBtn(ca)
+    state.failureView = "stale"
+  }
+  // The moment the server allows it no longer, the old verdict goes: an error screen, not a stale SAFE kept on screen.
+  armStaleTick(ca, stale.madeAt, stale.staleUntil)
+  scheduleRecovery(ca)
 }
 
 /**
@@ -265,6 +358,9 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
 
   state.manuallyDismissed = false
   state.lastCA = ca
+  // A scan the user (or a navigation) started begins a new cycle; a background attempt of the recovery (silent) continues the current one.
+  if (!opts.silent || state.recoveryCa !== ca) clearRecovery()
+  if (!opts.silent) state.failureView = null
 
   // Snapshot whether the overlay was already showing rendered content at
   // the START of this call. Silent mode only suppresses the skeleton +
@@ -285,6 +381,9 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
 
   // ── Cached path ──────────────────────────────────────────────────────────────
   if (cached) {
+    // A fresh answer is in hand: whatever the overlay was showing because the scanner could not be reached is over.
+    clearRecovery()
+    state.failureView = null
     // replaceChildren swaps the subtree atomically — never round-trips
     // markup through the parser, so a malformed cached payload cannot
     // re-introduce HTML interpretation. buildResultNode constructs the
@@ -315,6 +414,11 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
   // ── Loading skeleton ─────────────────────────────────────────────────────────
   const controller = new AbortController()
   state.currentScanController = controller
+  // The scan waits at most SCAN_BUDGET_MS. The same controller ends the request, the reading of the body and the waits between attempts; a
+  // scan that the user or a navigation cancelled is told apart from one that ran out of time (the first is silent, the second is a failure).
+  let timedOut = false
+  const budgetTimer = setTimeout(() => { timedOut = true; controller.abort() }, SCAN_BUDGET_MS)
+  const cancelled = () => controller.signal.aborted && !timedOut
 
   if (!skipFlashUI) {
     // Normal first-load / nav path: show the skeleton while we fetch.
@@ -354,10 +458,10 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
     const sessionToken = await readSessionToken()
     if (sessionToken) headers["X-Antares-Session"] = sessionToken
     const res = await fetchWithRetry(`${API}?ca=${ca}`, controller.signal, headers)
-    if (controller.signal.aborted) return
+    if (cancelled()) return
     const quota = extractQuotaFromHeaders(res.headers)
     const raw = await res.json()
-    if (controller.signal.aborted) return
+    if (cancelled()) return
     // RUNTIME VALIDATION REMOVED (2026-05-20, incident PR #510).
     //
     // The Zod safeParse used to live here as defence against /api/scan
@@ -394,8 +498,11 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
       if (elapsed < MIN_SHIMMER_MS) {
         await new Promise<void>((r) => setTimeout(r, MIN_SHIMMER_MS - elapsed))
       }
-      if (controller.signal.aborted) return
+      if (cancelled()) return
     }
+    // The scanner answered: whatever the overlay was showing because it could not (the old verdict, the error) is over.
+    clearRecovery()
+    state.failureView = null
     el.replaceChildren(buildResultNode(data, ca, installId))
     showBox()
     if (skipFlashUI) {
@@ -428,7 +535,7 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
       if (prefs.autoRescan !== false) scheduleRescanIfPriceCrash(data, ca)
     })
   } catch (e: unknown) {
-    if (controller.signal.aborted) return
+    if (cancelled()) return
     // Quota exhausted: render a clear "you've hit the cap" overlay
     // with an upgrade CTA — never silently hide the box, that just
     // makes the extension look broken on the 26th scan of the day.
@@ -446,7 +553,7 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
       }
       return
     }
-    logger.warn("scanner", "scan failed after retries", e)
+    logger.warn("scanner", timedOut ? "scan timed out" : "scan failed after retries", e)
     chrome.runtime.sendMessage({ type: "LOG_ERROR", message: (e as Error).message, stack: (e as Error).stack }).catch(() => {})
     // Don't tear down a visible overlay on a silent-fetch failure —
     // a transient network blip during a session-change refresh shouldn't
@@ -455,22 +562,22 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
     //
     // For non-silent failures (initial load / nav) we used to hide the
     // box outright (`display: none`), which made the extension look
-    // broken — overlay just vanished after ~10s of retries. Now we
-    // render a clear error state with a one-click retry button so the
-    // user knows what happened and can recover without page reload.
-    if (state.lastCA === ca && !skipFlashUI) {
-      // Reset the per-scan state so the retry button can re-enter
-      // scan() cleanly (otherwise alreadyHandled() / dedup checks
-      // would short-circuit because lastCA still points at this CA).
-      el.replaceChildren(buildErrorNode(() => {
-        state.lastCA = ""
-        state.manuallyDismissed = false
-        void scan(ca)
-      }))
-      showBox()
-      attachClose(null)
+    // broken. Then: an error screen with a Retry button. Now showFailure: the last known verdict when the server allows showing it
+    // (marked as old), else that error screen; and the overlay tries again by itself. A background attempt of that recovery (silent, with
+    // a failure view already on screen) is handled there too, so the screen does not flip back to a loading state or lose a panel the
+    // user has open.
+    if (state.lastCA === ca && (!skipFlashUI || state.failureView)) {
+      try {
+        await showFailure(ca, installId, el)
+      } catch (err: unknown) {
+        // Whatever goes wrong while drawing the old verdict, the overlay still answers: the error screen, and it keeps trying.
+        logger.warn("scanner", "could not show the last known verdict", err)
+        showErrorView(ca, el)
+        scheduleRecovery(ca)
+      }
     }
   } finally {
+    clearTimeout(budgetTimer)
     if (state.currentScanController === controller) {
       state.currentScanController = null
     }

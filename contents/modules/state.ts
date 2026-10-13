@@ -13,7 +13,15 @@ import type { ScanResponseData } from "../../shared/types"
  */
 export const scanCache = new Map<
   string,
-  { data: ScanResponseData; ts: number; session: string | null }
+  {
+    data: ScanResponseData
+    ts: number
+    session: string | null
+    /** Until when the answer may be shown without asking again (device clock). Absent on an entry written by an older version: ts + CACHE_TTL. */
+    freshUntil?: number
+    /** Until when it may still be shown, marked as old, if the scanner cannot be reached (device clock). Absent: freshUntil. */
+    staleUntil?: number
+  }
 >()
 
 export const state = {
@@ -25,6 +33,14 @@ export const state = {
   lastCA: "",
   manuallyDismissed: false,
   currentScanController: null as AbortController | null,
+  // Why the overlay is not showing a fresh verdict: "stale" = the last known verdict, marked as old; "error" = the "Connection failed" screen.
+  // null = a fresh verdict, or a scan in progress. While it is set the overlay tries again by itself (scanner.ts scheduleRecovery).
+  failureView: null as "stale" | "error" | null,
+  recoveryTimer: null as ReturnType<typeof setTimeout> | null,
+  recoveryCa: "",
+  recoveryAttempt: 0,
+  recoveryStartedAt: 0,
+  staleExpiryTimer: null as ReturnType<typeof setTimeout> | null,
   isInjecting: false,
   rescanTimer: null as ReturnType<typeof setTimeout> | null,
   // Budget for the post-price-crash auto-rescan (scheduleRescanIfPriceCrash).

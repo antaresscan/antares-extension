@@ -657,6 +657,18 @@ export const SHADOW_CSS = `
   transform: translateY(0);
 }
 
+/* A verdict shown from memory because the scanner cannot be reached: when it was made, and that the overlay is retrying. */
+.stale-banner {
+  margin: 0 14px 6px;
+  padding: 6px 8px;
+  font: 400 9px/1.4 'IBM Plex Mono', monospace;
+  letter-spacing: .04em;
+  color: #c9b84a;
+  background: rgba(245,208,0,.06);
+  border: 1px solid rgba(245,208,0,.28);
+  border-radius: 2px;
+}
+
 .sparkline { padding: 4px 14px 0; }
 .sparkline svg { display: block; }
 
