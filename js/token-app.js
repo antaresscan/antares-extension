@@ -763,15 +763,16 @@ function render(d, ca) {
       </div>`
       : "";
 
+  // The website / CMC / CoinGecko / Twitter / Telegram chips. In demo mode they are purely decorative: the demo tokens are fictional
+  // snapshots, so every one of these links led to a dead page. Same chip, same look (the CSS of .soc applies to the span too), but
+  // no href, no target, nothing to click or to focus (the same choice as the three explorer links of the header, .nav-inert).
+  const socChip = (label, url) =>
+    isDemo
+      ? `<span class="soc soc-inert" aria-hidden="true">${escapeHtml(label)}</span>`
+      : `<a class="soc" href="${safeUrl(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a>`;
   const socialsHtml = [
-    ...websites.map(
-      (w) =>
-        `<a class="soc" href="${safeUrl(w.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(w.label || "Website")}</a>`,
-    ),
-    ...socials.map(
-      (s) =>
-        `<a class="soc" href="${safeUrl(s.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(s.type || "Social")}</a>`,
-    ),
+    ...websites.map((w) => socChip(w.label || "Website", w.url)),
+    ...socials.map((s) => socChip(s.type || "Social", s.url)),
   ].join("");
 
   // Market Cap card — sparkline still uses price candles (live signal),

@@ -119,6 +119,8 @@ nav .actions .nav-inert.warn{color:#996060}
 .age-badge{font-size:15px;color:#666;background:#0e0e10;border:1px solid var(--border);border-radius:2px;padding:4px 10px;letter-spacing:.08em}
 .soc{font-size:14px;color:#888;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;border:1px solid #1e1e22;border-radius:2px;padding:4px 10px;transition:all .2s;font-family:'Bebas Neue',sans-serif}
 .soc:hover{color:var(--risk);border-color:var(--risk-border);background:var(--risk-soft)}
+/* Demo mode: the same chip, but a <span> that nothing can click (see socChip in js/token-app.js): no hover state either. */
+.soc.soc-inert{pointer-events:none;user-select:none;cursor:default}
 
 /* Logo wrap : fallback letters under the <img>; if image fails, onerror
    removes it and the fallback shows through. CSP allows https: in img-src. */
