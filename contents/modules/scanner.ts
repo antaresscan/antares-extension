@@ -2,9 +2,9 @@ import type { ScanResponseData, QuotaStatus } from "../../shared/types"
 import { API, IGNORE } from "./constants"
 import { state } from "./state"
 import { getCached, getStale, cacheScan, expireCached } from "./cache"
-import { SCAN_BUDGET_MS, STALE_TICK_MS, sleep, recoveryDelayMs, staleBannerText } from "./resilience"
+import { SCAN_BUDGET_MS, STALE_TICK_MS, sleep, recoveryDelayMs, scannedAgoText } from "./resilience"
 import { readSessionToken } from "./session-token"
-import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimations, applyFinalAnimationValues, buildResultNode, buildSkeletonNode, buildQuotaExhaustedNode, buildErrorNode, insertStaleBanner, updateStaleBanner } from "./components"
+import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimations, applyFinalAnimationValues, buildResultNode, buildSkeletonNode, buildQuotaExhaustedNode, hideBox, appendScannedAgo, updateScannedAgo } from "./components"
 import { scanRateLimiter } from "../../shared/rate-limit"
 import { logger } from "../../shared/logger"
 import { getInstallId } from "../../shared/install-id"
@@ -157,11 +157,19 @@ export function scheduleRescanIfPriceCrash(data: ScanResponseData, ca: string) {
 const MAX_RETRIES = 3
 const BASE_RETRY_DELAY = 1500
 
+/** The server refused the request itself (a 4xx that is not "too many requests" or "timeout"): trying again cannot change the answer. */
+function isClientRefusal(e: unknown): boolean {
+  if (!(e instanceof Error) || !/^\d{3}$/.test(e.message)) return false
+  const status = parseInt(e.message, 10)
+  return status >= 400 && status < 500 && status !== 408 && status !== 429
+}
+
 function isRetryable(e: unknown): boolean {
   if (e instanceof Error) {
     const status = parseInt(e.message, 10)
     if (status === 429) return true
     if (status >= 500) return true
+    if (isClientRefusal(e)) return false
     if (e.name === "AbortError") return false
     if (e.message === "Failed to fetch") return true
   }
@@ -216,9 +224,10 @@ export async function fetchWithRetry(
 
 // ─── When the scanner cannot be reached ────────────────────────────────────────
 //
-// The overlay shows the last known verdict, marked as old, if the server allowed it for that verdict (cache.ts getStale, the rule is in
-// api/_lib/helpers.ts); otherwise the "Connection failed" screen. Either way it tries again by itself (resilience.ts RECOVERY_DELAYS_MS)
-// and swaps the answer in as soon as the scanner is back; the user never has to click, and a verdict that is too old to be shown is not.
+// The overlay shows the last known verdict, with when it was scanned, if the server allowed it for that verdict (cache.ts getStale, the rule
+// is in api/_lib/helpers.ts); otherwise the loading screen stays. There is never an error screen. Either way it tries again by itself
+// (resilience.ts RECOVERY_DELAYS_MS) and swaps the answer in as soon as the scanner is back; the user never has to click, and a verdict that
+// is too old to be shown is not.
 
 function clearRecovery() {
   if (state.recoveryTimer) { clearTimeout(state.recoveryTimer); state.recoveryTimer = null }
@@ -237,7 +246,7 @@ function scheduleRecovery(ca: string) {
   }
   if (state.recoveryTimer) { clearTimeout(state.recoveryTimer); state.recoveryTimer = null }
   const delay = recoveryDelayMs(state.recoveryAttempt, Date.now() - state.recoveryStartedAt)
-  if (delay === null) return // given up: what is on screen stays (the error screen keeps its Retry button)
+  if (delay === null) return // given up: what is on screen stays
   state.recoveryAttempt++
   state.recoveryTimer = setTimeout(() => {
     state.recoveryTimer = null
@@ -255,53 +264,50 @@ function armStaleTick(ca: string, madeAt: number, staleUntil: number) {
   state.staleExpiryTimer = setTimeout(() => {
     state.staleExpiryTimer = null
     if (state.lastCA !== ca || state.failureView !== "stale") return
-    if (Date.now() >= staleUntil) { showErrorView(ca, getBox()); return }
-    updateStaleBanner(getBox(), staleBannerText(Date.now() - madeAt))
+    if (Date.now() >= staleUntil) { showWaitingView(getBox()); return }
+    updateScannedAgo(getBox(), scannedAgoText(Date.now() - madeAt))
     armStaleTick(ca, madeAt, staleUntil)
   }, Math.max(0, Math.min(STALE_TICK_MS, staleUntil - Date.now())))
 }
 
-function showErrorView(ca: string, el: HTMLDivElement) {
+/** The loading screen, kept while the scanner cannot be reached: it is already on screen when the first scan fails, and comes back when an old verdict is taken off. */
+function showWaitingView(el: HTMLDivElement) {
   if (state.staleExpiryTimer) { clearTimeout(state.staleExpiryTimer); state.staleExpiryTimer = null }
-  // The Retry button starts a new cycle from the top: reset the per-scan state so scan() does not short-circuit on lastCA.
-  el.replaceChildren(buildErrorNode(() => {
-    clearRecovery()
-    state.failureView = null
-    state.lastCA = ""
-    state.manuallyDismissed = false
-    void scan(ca)
-  }))
-  showBox()
-  attachClose(null)
-  state.failureView = "error"
+  if (!el.querySelector(".skel")) {
+    if (state.boxEl) state.boxEl.className = "box"
+    el.replaceChildren(buildSkeletonNode())
+    showBox()
+    attachClose(null)
+  }
+  state.failureView = "waiting"
 }
 
 async function showFailure(ca: string, installId: string | null, el: HTMLDivElement): Promise<void> {
-  if (state.failureView === "error") { scheduleRecovery(ca); return }
+  if (state.failureView === "waiting") { scheduleRecovery(ca); return }
 
   const stale = await getStale(ca)
   if (state.lastCA !== ca) return // the user moved on while the cache was read
 
   if (!stale) {
-    showErrorView(ca, el)
+    showWaitingView(el)
     scheduleRecovery(ca)
     return
   }
 
-  const banner = staleBannerText(Date.now() - stale.madeAt)
+  const scannedAgo = scannedAgoText(Date.now() - stale.madeAt)
   if (state.failureView === "stale") {
     // Already showing it: only the age changes (rebuilding the card would close a panel the user is reading).
-    updateStaleBanner(el, banner)
+    updateScannedAgo(el, scannedAgo)
   } else {
     el.replaceChildren(buildResultNode(stale.data, ca, installId))
-    insertStaleBanner(el, banner)
+    appendScannedAgo(el, scannedAgo)
     showBox()
     applyFinalAnimationValues(el)
     attachClose(stale.data.aiSummary ?? null, stale.data.flags ?? null, stale.data.risk ?? null)
     attachAnalysisBtn(ca)
     state.failureView = "stale"
   }
-  // The moment the server allows it no longer, the old verdict goes: an error screen, not a stale SAFE kept on screen.
+  // The moment the server allows it no longer, the old verdict goes: the loading screen, not a stale SAFE kept on screen.
   armStaleTick(ca, stale.madeAt, stale.staleUntil)
   scheduleRecovery(ca)
 }
@@ -371,7 +377,10 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
   const wasOverlayVisible =
     el.style.display !== "none" &&
     (state.boxEl?.style.display ?? "") !== "none"
-  const skipFlashUI = !!opts.silent && wasOverlayVisible
+  // The overlay was waiting for the scanner (the loading screen is on screen): an attempt of the recovery keeps that screen, and the verdict
+  // comes in with the normal entrance, as for a first scan.
+  const wasWaiting = state.failureView === "waiting"
+  const skipFlashUI = !!opts.silent && wasOverlayVisible && !wasWaiting
 
   // Resolve install_id once up-front so every render path (cached,
   // loading skeleton, result, quota-exhausted) can bake it into
@@ -427,10 +436,12 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
     // verdict result, so we don't want a leftover verdict colour bleeding
     // through. buildResultNode will set the correct verdict class when
     // the fetch returns.
-    if (state.boxEl) state.boxEl.className = "box"
-    el.replaceChildren(buildSkeletonNode())
-    showBox()
-    attachClose(null)
+    if (!wasWaiting) {
+      if (state.boxEl) state.boxEl.className = "box"
+      el.replaceChildren(buildSkeletonNode())
+      showBox()
+      attachClose(null)
+    }
   } else {
     // Silent rescan with overlay already showing: KEEP the existing
     // verdict class (e.g. "box caution") so the topbar's coloured
@@ -564,16 +575,24 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
     // For non-silent failures (initial load / nav) we used to hide the
     // box outright (`display: none`), which made the extension look
     // broken. Then: an error screen with a Retry button. Now showFailure: the last known verdict when the server allows showing it
-    // (marked as old), else that error screen; and the overlay tries again by itself. A background attempt of that recovery (silent, with
+    // (with when it was scanned), else the loading screen, which stays; and the overlay tries again by itself. A background attempt of that recovery (silent, with
     // a failure view already on screen) is handled there too, so the screen does not flip back to a loading state or lose a panel the
     // user has open.
+    // The server refused the request itself (an invalid address, say): nothing can be scanned here and retrying cannot help, so the overlay
+    // goes away quietly, as it does for a page with no token.
+    if (isClientRefusal(e)) {
+      clearRecovery()
+      state.failureView = null
+      if (state.lastCA === ca) hideBox()
+      return
+    }
     if (state.lastCA === ca && (!skipFlashUI || state.failureView)) {
       try {
         await showFailure(ca, installId, el)
       } catch (err: unknown) {
-        // Whatever goes wrong while drawing the old verdict, the overlay still answers: the error screen, and it keeps trying.
+        // Whatever goes wrong while drawing the old verdict, the overlay still answers: the loading screen, and it keeps trying.
         logger.warn("scanner", "could not show the last known verdict", err)
-        showErrorView(ca, el)
+        showWaitingView(el)
         scheduleRecovery(ca)
       }
     }

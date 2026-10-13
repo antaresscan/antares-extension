@@ -33,9 +33,10 @@ export const state = {
   lastCA: "",
   manuallyDismissed: false,
   currentScanController: null as AbortController | null,
-  // Why the overlay is not showing a fresh verdict: "stale" = the last known verdict, marked as old; "error" = the "Connection failed" screen.
-  // null = a fresh verdict, or a scan in progress. While it is set the overlay tries again by itself (scanner.ts scheduleRecovery).
-  failureView: null as "stale" | "error" | null,
+  // Why the overlay is not showing a fresh verdict: "stale" = the last known verdict, with when it was scanned; "waiting" = the loading screen,
+  // kept while the scanner cannot be reached (there is never an error screen). null = a fresh verdict, or a scan in progress.
+  // While it is set the overlay tries again by itself (scanner.ts scheduleRecovery).
+  failureView: null as "stale" | "waiting" | null,
   recoveryTimer: null as ReturnType<typeof setTimeout> | null,
   recoveryCa: "",
   recoveryAttempt: 0,

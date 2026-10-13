@@ -4,8 +4,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import type { ScanResponseData } from "../shared/types"
 
 // The overlay when the scanner is slow or cannot be reached (contents/modules/scanner.ts + resilience.ts + cache.ts), end to end with a
-// simulated clock: how long a scan waits, what is on screen when it fails (the last known verdict, marked as old, when the server allowed it;
-// else the error screen), that it tries again by itself, and that it stops when it should.
+// simulated clock: how long a scan waits, what is on screen when it fails (the last known verdict, with when it was scanned, when the server
+// allowed it; else the loading screen, which stays: there is never an error screen), that it tries again by itself, and that it stops when it should.
 
 vi.mock("../shared/install-id", () => ({ getInstallId: () => Promise.resolve("install-test-aaaaaaaaaaaa") }))
 vi.mock("../contents/modules/scan-report", () => ({ reportScanResult: vi.fn() }))
@@ -21,6 +21,7 @@ const { state, scanCache } = await import("../contents/modules/state")
 const CA = "So1anaTokenAddressForTests11111111111111111"
 const CA2 = "So1anaTokenAddressForTests22222222222222222"
 const MIN = 60_000
+const HOUR_MS = 60 * MIN
 
 const data = (over: Record<string, unknown> = {}): ScanResponseData => ({
   score: 900, risk: "SAFE", flags: [], pair: null, resolvedMint: CA, confidence: 90, sources_used: ["dexscreener", "helius"],
@@ -59,6 +60,20 @@ const text = () => state.shadow?.textContent ?? ""
 const q = (sel: string) => state.shadow?.querySelector(sel) ?? null
 const callsFor = (ca: string) => fetchMock.mock.calls.filter((c) => String(c[0]).includes(`ca=${ca}`)).length
 const advance = (ms: number) => vi.advanceTimersByTimeAsync(ms)
+/** There is never an error screen: neither its words nor its button, wherever the overlay is. */
+const noErrorScreen = () => {
+  expect(text()).not.toContain("Connection failed")
+  expect(text()).not.toContain("Retry")
+  expect(q(".err-vb")).toBeNull()
+  expect(q(".err-retry")).toBeNull()
+}
+/** The loading screen, kept while the scanner cannot be reached. */
+const waiting = () => {
+  expect(q(".skel")).not.toBeNull()
+  expect(q(".vb")).toBeNull()
+  expect(state.failureView).toBe("waiting")
+  noErrorScreen()
+}
 
 beforeEach(() => {
   vi.useFakeTimers({ now: 1_800_000_000_000 })
@@ -84,31 +99,30 @@ afterEach(() => {
 async function seedThenAskAgain(seed: ScanResponseData, afterMs: number) {
   fetchMock.mockImplementation(() => answer(seed))
   await scan(CA)
-  expect(q(".stale-banner")).toBeNull()
+  expect(q(".scanned-ago")).toBeNull()
   expect(text()).toContain("TKN")
   await advance(afterMs)
   state.lastCA = "" // the page asks again (a navigation back to this token)
 }
 
 describe("a scan waits 15 s at most", () => {
-  it("a scanner that never answers: the loading screen ends at 15 s with the error screen — it used to be able to last almost two minutes", async () => {
+  it("a scanner that never answers: at 15 s the overlay stops waiting for THAT request, but keeps its loading screen: no error, ever", async () => {
     fetchMock.mockImplementation(hangs)
     void scan(CA)
     await advance(14_800)
-    expect(text()).not.toContain("Connection failed")
+    expect(q(".skel")).not.toBeNull()
+    expect(state.failureView).toBeNull() // still the first attempt
     await advance(400)
-    expect(text()).toContain("Connection failed")
-    expect(q(".err-retry")).not.toBeNull()
-    expect(state.failureView).toBe("error")
+    waiting()
     expect(callsFor(CA)).toBe(1) // one long attempt, not four
   })
 
-  it("a scanner that answers 500 each time: it tries again 3 times (10.5 s of waiting) and then shows the error", async () => {
+  it("a scanner that answers 500 each time: it tries again 3 times (10.5 s of waiting), then keeps the loading screen", async () => {
     fetchMock.mockImplementation(() => httpError(500))
     void scan(CA)
     await advance(10_600)
     expect(callsFor(CA)).toBe(4)
-    expect(text()).toContain("Connection failed")
+    waiting()
   })
 
   it("a scanner that answers in 12 s is waited for (a slow scan is not a failure)", async () => {
@@ -116,7 +130,7 @@ describe("a scan waits 15 s at most", () => {
     void scan(CA)
     await advance(12_100)
     expect(text()).toContain("TKN")
-    expect(text()).not.toContain("Connection failed")
+    noErrorScreen()
     expect(state.failureView).toBeNull()
   })
 
@@ -126,7 +140,7 @@ describe("a scan waits 15 s at most", () => {
     await advance(1000)
     void scan(CA2) // another token: the first scan is aborted
     await advance(20_000)
-    expect(text()).not.toContain("Connection failed")
+    noErrorScreen()
     expect(state.failureView).toBeNull()
     expect(text()).toContain("TKN")
   })
@@ -145,42 +159,70 @@ describe("a scan waits 15 s at most", () => {
   })
 })
 
-describe("when the scanner cannot be reached: the last known verdict, marked as old, if the server allowed it", () => {
-  it("shows it with its age and the fact that the overlay is retrying — not the error screen", async () => {
+describe("a request the server refuses (an invalid address): nothing to scan, nothing to retry", () => {
+  it.each([400, 404, 422])("a %i: one request, no retry, no recovery, and the overlay goes away quietly (no loading screen forever)", async (status) => {
+    fetchMock.mockImplementation(() => httpError(status))
+    void scan(CA)
+    await advance(300)
+    expect(callsFor(CA)).toBe(1) // not four
+    await advance(10 * MIN)
+    expect(callsFor(CA)).toBe(1) // and no background attempt later
+    expect(state.recoveryTimer).toBeNull()
+    expect(state.failureView).toBeNull()
+    expect(state.boxEl?.style.display).toBe("none")
+    noErrorScreen()
+  })
+
+  it("but a 429 (too many requests) and a 5xx are retried: they can change", async () => {
+    let n = 0
+    fetchMock.mockImplementation(() => (++n <= 2 ? httpError(n === 1 ? 429 : 502) : answer(data())))
+    void scan(CA)
+    await advance(6000)
+    expect(callsFor(CA)).toBe(3)
+    expect(text()).toContain("TKN")
+    noErrorScreen()
+  })
+})
+
+describe("when the scanner cannot be reached: the last known verdict, with when it was scanned, if the server allowed it", () => {
+  it("shows it with a small line at the foot of the card, centred, in the card's own font: \"Scanned 6 min ago\"", async () => {
     await seedThenAskAgain(data(), 6 * MIN)
     fetchMock.mockImplementation(() => Promise.reject(new TypeError("Failed to fetch")))
     void scan(CA)
     await advance(11_000)
-    expect(q(".stale-banner")?.textContent).toBe("Last check 6 min ago — scanner unreachable, retrying")
+    const line = q(".scanned-ago")
+    expect(line?.textContent).toBe("Scanned 6 min ago")
     expect(text()).toContain("TKN")
-    expect(q(".err-retry")).toBeNull()
+    // the foot of the card: the last thing in it, after the buttons
+    const card = line?.parentElement as HTMLElement
+    expect(card.lastElementChild).toBe(line)
+    expect(card.querySelector(".vb")).not.toBeNull()
     expect(state.failureView).toBe("stale")
+    noErrorScreen()
   })
 
-  it("not when the server did not allow it for that verdict (a SAFE of a young token: staleLeftSec 0): the error screen", async () => {
+  it("not when the server did not allow it for that verdict (a SAFE of a young token: staleLeftSec 0): the loading screen stays", async () => {
     await seedThenAskAgain(data({ staleLeftSec: 0 }), 6 * MIN)
     fetchMock.mockImplementation(() => httpError(500))
     void scan(CA)
     await advance(11_000)
-    expect(q(".stale-banner")).toBeNull()
-    expect(text()).toContain("Connection failed")
-    expect(state.failureView).toBe("error")
+    expect(q(".scanned-ago")).toBeNull()
+    waiting()
   })
 
-  it("if the old verdict cannot be drawn (damaged in the extension storage), the overlay still answers: the error screen, and it keeps trying", async () => {
+  it("if the old verdict cannot be drawn (damaged in the extension storage), the overlay still answers: the loading screen, and it keeps trying", async () => {
     const { cacheScan } = await import("../contents/modules/cache")
     await cacheScan(CA, data({ flags: "damaged" }), null)
     await advance(6 * MIN)
     fetchMock.mockImplementation(() => httpError(500))
     void scan(CA)
     await advance(11_000)
-    expect(q(".stale-banner")).toBeNull()
-    expect(text()).toContain("Connection failed")
-    expect(state.failureView).toBe("error")
+    expect(q(".scanned-ago")).toBeNull()
+    waiting()
     expect(state.recoveryTimer).not.toBeNull()
   })
 
-  it("not from a server that says nothing (an older one): 5 minutes, then the error screen, exactly as before", async () => {
+  it("not from a server that says nothing (an older one): 5 minutes, then the loading screen, exactly as before (minus the error)", async () => {
     const old = data() as unknown as Record<string, unknown>
     delete old.freshForSec
     delete old.staleLeftSec
@@ -188,20 +230,20 @@ describe("when the scanner cannot be reached: the last known verdict, marked as 
     fetchMock.mockImplementation(() => httpError(500))
     void scan(CA)
     await advance(11_000)
-    expect(q(".stale-banner")).toBeNull()
-    expect(text()).toContain("Connection failed")
+    expect(q(".scanned-ago")).toBeNull()
+    waiting()
   })
 
-  it("a verdict beyond its window is not shown: the error screen", async () => {
+  it("a verdict beyond its window is not shown: the loading screen", async () => {
     await seedThenAskAgain(data({ staleLeftSec: 400 }), 7 * MIN) // 420 s since the verdict, window 400 s
     fetchMock.mockImplementation(() => httpError(500))
     void scan(CA)
     await advance(11_000)
-    expect(q(".stale-banner")).toBeNull()
-    expect(text()).toContain("Connection failed")
+    expect(q(".scanned-ago")).toBeNull()
+    waiting()
   })
 
-  it("the old verdict goes the moment its window is over: an error screen, not a stale SAFE kept on screen", async () => {
+  it("the old verdict goes the moment its window is over: back to the loading screen, never a stale SAFE kept on screen", async () => {
     await seedThenAskAgain(data({ staleLeftSec: 600 }), 6 * MIN)
     fetchMock.mockImplementation(() => httpError(500))
     void scan(CA)
@@ -210,9 +252,9 @@ describe("when the scanner cannot be reached: the last known verdict, marked as 
     await advance(3 * MIN)
     expect(state.failureView).toBe("stale") // 9 min 11 s
     await advance(2 * MIN)
-    expect(q(".stale-banner")).toBeNull() // past 10 min
-    expect(text()).toContain("Connection failed")
-    expect(state.failureView).toBe("error")
+    expect(q(".scanned-ago")).toBeNull() // past 10 min
+    waiting()
+    expect(state.boxEl?.className).toBe("box") // not tinted with the verdict that left
   })
 
   it("even when no attempt runs (the tab is hidden), the old verdict leaves at the end of its window", async () => {
@@ -226,23 +268,22 @@ describe("when the scanner cannot be reached: the last known verdict, marked as 
       const before = callsFor(CA)
       await advance(5 * MIN) // 11 min since the verdict, window 10 min
       expect(callsFor(CA)).toBe(before) // nothing asked while the tab is hidden
-      expect(q(".stale-banner")).toBeNull()
-      expect(text()).toContain("Connection failed")
-      expect(state.failureView).toBe("error")
+      expect(q(".scanned-ago")).toBeNull()
+      waiting()
     } finally {
       delete (document as unknown as Record<string, unknown>).hidden
     }
   })
 
-  it("the age in the line is refreshed at each failed attempt, without rebuilding the card (a panel the user has open stays open)", async () => {
+  it("the age in the line is refreshed every 20 s, without rebuilding the card (a panel the user has open stays open)", async () => {
     await seedThenAskAgain(data(), 6 * MIN)
     fetchMock.mockImplementation(() => httpError(500))
     void scan(CA)
     await advance(11_000)
     const card = q(".vb")
-    expect(q(".stale-banner")?.textContent).toContain("6 min ago")
+    expect(q(".scanned-ago")?.textContent).toContain("6 min ago")
     await advance(2 * MIN)
-    expect(q(".stale-banner")?.textContent).toMatch(/8 min ago/)
+    expect(q(".scanned-ago")?.textContent).toMatch(/8 min ago/)
     expect(q(".vb")).toBe(card) // the same node
   })
 })
@@ -260,35 +301,51 @@ describe("the rescan after a price crash", () => {
     state.lastCA = "" // the page asks again
     void scan(CA)
     await advance(12_000)
-    expect(q(".stale-banner")?.textContent).toContain("Last check 30 min ago")
+    expect(q(".scanned-ago")?.textContent).toContain("Scanned 30 min ago")
     expect(state.boxEl?.className).toContain("rug")
     expect(state.failureView).toBe("stale")
   })
 })
 
 describe("the overlay tries again by itself", () => {
-  it("the error screen: when the scanner is back, the verdict replaces it with no click", async () => {
+  it("the loading screen: when the scanner is back, the verdict replaces it with no click, with the normal entrance (not a refresh flash)", async () => {
     fetchMock.mockImplementation(() => httpError(500))
     void scan(CA)
     await advance(11_000)
-    expect(state.failureView).toBe("error")
+    waiting()
     fetchMock.mockImplementation(() => answer(data()))
     await advance(3_100) // the first background attempt is 3 s after the failure
-    expect(text()).not.toContain("Connection failed")
+    noErrorScreen()
+    expect(q(".skel")).toBeNull()
     expect(text()).toContain("TKN")
     expect(state.failureView).toBeNull()
     expect(state.recoveryTimer).toBeNull()
+    expect(state.boxEl?.classList.contains("refreshing")).toBe(false)
+    expect(q(".topbar.flash")).toBeNull()
   })
 
-  it("a stale verdict: replaced by the fresh one, the banner gone, and no more attempts", async () => {
+  it("while it waits, the loading screen is the same one all along (not rebuilt when the first attempt fails, nor at each later attempt: no flicker)", async () => {
+    fetchMock.mockImplementation(() => httpError(500))
+    void scan(CA)
+    await advance(5_000)
+    const skel = q(".skel") // the one the first scan put on screen
+    expect(skel).not.toBeNull()
+    await advance(6_000) // the first attempt has failed by now
+    expect(q(".skel")).toBe(skel)
+    await advance(2 * MIN) // several background attempts
+    expect(q(".skel")).toBe(skel)
+    waiting()
+  })
+
+  it("a stale verdict: replaced by the fresh one, the line gone, and no more attempts", async () => {
     await seedThenAskAgain(data(), 6 * MIN)
     fetchMock.mockImplementation(() => httpError(500))
     void scan(CA)
     await advance(11_000)
-    expect(q(".stale-banner")).not.toBeNull()
+    expect(q(".scanned-ago")).not.toBeNull()
     fetchMock.mockImplementation(() => answer(data({ risk: "DANGER", score: 300 })))
     await advance(30_000)
-    expect(q(".stale-banner")).toBeNull()
+    expect(q(".scanned-ago")).toBeNull()
     expect(state.boxEl?.className).toContain("danger")
     expect(state.failureView).toBeNull()
     const calls = fetchMock.mock.calls.length
@@ -307,13 +364,13 @@ describe("the overlay tries again by itself", () => {
     expect(callsFor(CA)).toBeGreaterThan(4)
   })
 
-  it("it keeps the Retry button on the error screen: a click starts again from the top", async () => {
+  it("there is no Retry button to press: a long outage and the answer comes back by itself", async () => {
     fetchMock.mockImplementation(() => httpError(500))
     void scan(CA)
-    await advance(11_000)
+    await advance(2 * HOUR_MS)
+    waiting()
     fetchMock.mockImplementation(() => answer(data()))
-    ;(q(".err-retry") as HTMLButtonElement).click()
-    await advance(1000)
+    await advance(70_000) // at most a minute between two attempts
     expect(text()).toContain("TKN")
     expect(state.failureView).toBeNull()
   })
@@ -353,24 +410,21 @@ describe("the overlay tries again by itself", () => {
     expect(state.recoveryTimer).toBeNull()
   })
 
-  it("it gives up after an hour (the error screen and its Retry button stay)", async () => {
+  it("it keeps trying for hours (every minute): the loading screen stays and nothing else appears", async () => {
     fetchMock.mockImplementation(() => httpError(500))
     void scan(CA)
-    await advance(61 * MIN)
-    const before = callsFor(CA)
-    await advance(10 * MIN)
-    expect(callsFor(CA)).toBe(before)
-    expect(text()).toContain("Connection failed")
-    expect(q(".err-retry")).not.toBeNull()
+    await advance(3 * HOUR_MS)
+    expect(callsFor(CA)).toBeGreaterThan(150)
+    waiting()
   })
 })
 
 describe("a fresh answer from the scanner is still what it was", () => {
-  it("a normal scan shows the verdict, no banner, no failure", async () => {
+  it("a normal scan shows the verdict, no line, no failure", async () => {
     fetchMock.mockImplementation(() => answer(data()))
     await scan(CA)
     expect(text()).toContain("TKN")
-    expect(q(".stale-banner")).toBeNull()
+    expect(q(".scanned-ago")).toBeNull()
     expect(state.failureView).toBeNull()
     expect(state.recoveryTimer).toBeNull()
   })
@@ -394,3 +448,4 @@ describe("a fresh answer from the scanner is still what it was", () => {
     expect(callsFor(CA)).toBe(1)
   })
 })
+

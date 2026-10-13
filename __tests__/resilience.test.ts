@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest"
 import {
   SCAN_BUDGET_MS, RECOVERY_DELAYS_MS, RECOVERY_GIVE_UP_MS,
-  sleep, recoveryDelayMs, windowsOf, madeAtOf, staleAgeLabel, staleBannerText,
+  sleep, recoveryDelayMs, windowsOf, madeAtOf, staleAgeLabel, scannedAgoText,
 } from "../contents/modules/resilience"
 
 // What the overlay does when the scanner is slow or cannot be reached (contents/modules/resilience.ts): pure rules, wired by scanner.ts.
@@ -21,8 +21,8 @@ describe("the budget and the retry calendar", () => {
     expect([0, 1, 2, 3, 4, 5, 6, 40].map((n) => recoveryDelayMs(n, 0))).toEqual([3_000, 8_000, 15_000, 30_000, 60_000, 60_000, 60_000, 60_000])
   })
 
-  it("it stops after an hour since the first failure, and not before", () => {
-    expect(RECOVERY_GIVE_UP_MS).toBe(60 * 60_000)
+  it("it stops after a day since the first failure, and not before", () => {
+    expect(RECOVERY_GIVE_UP_MS).toBe(24 * 60 * 60_000)
     expect(recoveryDelayMs(7, RECOVERY_GIVE_UP_MS - 1)).toBe(60_000)
     expect(recoveryDelayMs(7, RECOVERY_GIVE_UP_MS)).toBeNull()
     expect(recoveryDelayMs(7, RECOVERY_GIVE_UP_MS * 3)).toBeNull()
@@ -149,7 +149,9 @@ describe("the label under the header of a verdict shown from memory", () => {
     expect(staleAgeLabel(-5000)).toBe("less than a minute ago")
   })
 
-  it("says when it was, and that the overlay is trying again", () => {
-    expect(staleBannerText(5 * 60_000)).toBe("Last check 5 min ago — scanner unreachable, retrying")
+  it("says when it was scanned, nothing more", () => {
+    expect(scannedAgoText(5 * 60_000)).toBe("Scanned 5 min ago")
+    expect(scannedAgoText(130 * 60_000)).toBe("Scanned 2 h 10 min ago")
+    expect(scannedAgoText(10_000)).toBe("Scanned less than a minute ago")
   })
 })

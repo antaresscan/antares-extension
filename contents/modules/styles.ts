@@ -464,7 +464,6 @@ export const SHADOW_CSS = `
   outline: 1px solid rgba(0,229,176,.5);
   outline-offset: 2px;
 }
-.err-retry:focus-visible,
 .qx-cta:focus-visible {
   outline: 1px solid rgba(0,229,176,.6);
   outline-offset: 2px;
@@ -605,68 +604,18 @@ export const SHADOW_CSS = `
   animation: skel-slow-fadein .4s ease 3s forwards;
 }
 
-/* Error state — rendered when fetchWithRetry exhausts its 3 retries
-   (~10.5s) on a non-silent scan. Replaces the silent display-none
-   behavior; user gets a clear "what happened" + a one-click retry. */
-.err-vb {
-  padding: 18px 14px 8px;
+/* A verdict shown from memory because the scanner cannot be reached: when it was scanned, centred at the foot of the card,
+   in the same voice as the other small labels (.si span, .brand). */
+.scanned-ago {
+  padding: 8px 14px 12px;
   text-align: center;
-}
-.err-vb .err-icon {
-  font-size: 24px;
-  color: #f5d000;
-  line-height: 1;
-  margin-bottom: 8px;
-  text-shadow: 0 0 20px rgba(245,208,0,.2);
-}
-.err-vb h2 {
-  font-family: 'Bebas Neue', 'Arial Black', sans-serif;
-  font-size: 22px; line-height: 1.05; font-weight: 400;
-  letter-spacing: .04em;
-  color: #eaeaea;
-  margin-bottom: 4px;
-}
-.err-vb .err-sub {
-  font: 400 9.5px/1.5 'IBM Plex Mono', monospace;
-  color: #777;
-  letter-spacing: .04em;
-}
-.err-retry {
-  display: block;
-  margin: 10px 14px 14px;
-  padding: 11px;
-  width: calc(100% - 28px);
-  background: transparent;
-  color: #00e5b0;
-  font: 700 10px/1 'IBM Plex Mono', monospace;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 10px;
+  font-weight: 400;
   letter-spacing: .14em;
   text-transform: uppercase;
-  text-align: center;
-  border: 1px solid rgba(0,229,176,.5);
-  border-radius: 2px;
-  cursor: pointer;
-  transition: background .2s, border-color .2s, color .2s, transform .15s;
-}
-.err-retry:hover {
-  background: rgba(0,229,176,.08);
-  border-color: #00e5b0;
-  color: #4ff5cc;
-  transform: translateY(-1px);
-}
-.err-retry:active {
-  transform: translateY(0);
-}
-
-/* A verdict shown from memory because the scanner cannot be reached: when it was made, and that the overlay is retrying. */
-.stale-banner {
-  margin: 0 14px 6px;
-  padding: 6px 8px;
-  font: 400 9px/1.4 'IBM Plex Mono', monospace;
-  letter-spacing: .04em;
-  color: #c9b84a;
-  background: rgba(245,208,0,.06);
-  border: 1px solid rgba(245,208,0,.28);
-  border-radius: 2px;
+  color: #777;
+  cursor: help;
 }
 
 .sparkline { padding: 4px 14px 0; }

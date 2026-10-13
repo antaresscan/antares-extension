@@ -8,8 +8,9 @@
 //      the SERVER (`freshForSec`, `staleLeftSec`, see api/_lib/helpers.ts serveWindows): a stale bad verdict is safe, a stale SAFE is not, so
 //      the window depends on the verdict and on the age and agitation of the token. A server that sends neither (an older one) gets the old
 //      behaviour exactly: 5 minutes, and no stale display.
-//   3. When the scan failed, the overlay does not wait for a click: it tries again by itself, quickly at first, then every minute, and swaps
-//      the answer in as soon as the scanner is back.
+//   3. When the scan failed, the overlay does not wait for a click and never shows an error: the loading screen stays (or the last known
+//      verdict, with when it was scanned), it tries again by itself, quickly at first, then every minute, and swaps the answer in as soon as
+//      the scanner is back.
 
 /** The longest a scan waits for the scanner, retries included. A cold scan of even a very large token now takes 5 to 8 s. */
 export const SCAN_BUDGET_MS = 15_000
@@ -20,8 +21,8 @@ export const RECOVERY_DELAYS_MS = [3_000, 8_000, 15_000, 30_000, 60_000] as cons
 /** While a verdict is shown from memory, the age in its line is refreshed this often (and the verdict leaves the moment its window is over). */
 export const STALE_TICK_MS = 20_000
 
-/** After this long since the first failure the overlay stops trying by itself (the Retry button is still there on the error screen). */
-export const RECOVERY_GIVE_UP_MS = 60 * 60_000
+/** After this long since the first failure the overlay stops trying by itself (a tab left open for a day on a dead scanner). */
+export const RECOVERY_GIVE_UP_MS = 24 * 60 * 60_000
 
 /** The longest an answer is ever kept, whatever the server says: a confirmed RUG may be shown for 24 h. */
 const MAX_WINDOW_SEC = 24 * 3600
@@ -86,7 +87,7 @@ export function staleAgeLabel(ageMs: number): string {
   return `${Math.floor(h / 24)} d ago`
 }
 
-/** The line under the header of a verdict shown from memory. */
-export function staleBannerText(ageMs: number): string {
-  return `Last check ${staleAgeLabel(ageMs)} — scanner unreachable, retrying`
+/** The line at the foot of a verdict shown from memory. */
+export function scannedAgoText(ageMs: number): string {
+  return `Scanned ${staleAgeLabel(ageMs)}`
 }
