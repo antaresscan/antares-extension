@@ -8,6 +8,7 @@ import { encodeHashPayload } from "../../shared/hash-payload"
 import { toggleAiSummary } from "./ai-summary"
 import { toggleCriticalFlags } from "./critical-flags"
 import { isHoldersUnverifiedFlag } from "../../shared/holders-unverified"
+import { LOADING_HINT } from "./resilience"
 
 // DOM-API element builder. Used by buildResult instead of string template
 // literals so every text interpolation goes through textContent (which the
@@ -108,9 +109,31 @@ export function resetState() {
   state.currentScanController?.abort()
   state.currentScanController = null
   if (state.rescanTimer) { clearTimeout(state.rescanTimer); state.rescanTimer = null }
+  if (state.recoveryTimer) { clearTimeout(state.recoveryTimer); state.recoveryTimer = null }
+  if (state.staleExpiryTimer) { clearTimeout(state.staleExpiryTimer); state.staleExpiryTimer = null }
+  state.recoveryCa = ""
+  state.recoveryAttempt = 0
+  state.recoveryStartedAt = 0
+  state.failureView = null
   state.rescanCount = 0
   state.rescanCountCA = ""
   hideBox()
+}
+
+/**
+ * The line that says the verdict on screen is from memory: "Scanned 6 min ago", centred at the foot of the card, in the voice of the card's
+ * other small labels. It is plain text: nothing from the server goes in it.
+ */
+export function appendScannedAgo(root: ParentNode, text: string): void {
+  const line = el("div", { class: "scanned-ago", role: "status", title: "The scanner cannot be reached right now. Trying again." }, text)
+  const card = root.querySelector(".vb")?.parentNode ?? root
+  card.appendChild(line)
+}
+
+/** Refresh the age in the line without rebuilding the card (a panel the user has open stays open). */
+export function updateScannedAgo(root: ParentNode, text: string): void {
+  const line = root.querySelector(".scanned-ago")
+  if (line) line.textContent = text
 }
 
 export function attachClose(
@@ -579,9 +602,12 @@ export function buildQuotaExhaustedNode(
 //
 // The .skel-slow-hint child carries a CSS animation with `animation-delay: 3s`
 // — invisible for the first 3 seconds (typical fast-network responses), then
-// fades to "Still loading…" so the user knows the extension isn't stuck on
-// slow connections. Once the skeleton is replaced by buildResultNode the
-// element disappears and the animation is gone — no JS timer to manage.
+// fades in with LOADING_HINT ("Still loading…") so the user knows the
+// extension isn't stuck on slow connections. Past the scan's limit (the request
+// failed, or SCAN_BUDGET_MS is over) scanner.ts swaps the text for SLOW_SCAN_HINT
+// ("Taking longer than usual, still on it"), which then stays while the
+// overlay retries. Once the skeleton is replaced by buildResultNode the element
+// disappears and the animation is gone — no JS timer to manage.
 export function buildSkeletonNode(): DocumentFragment {
   const frag = document.createDocumentFragment()
   frag.appendChild(el("div", {
@@ -595,50 +621,9 @@ export function buildSkeletonNode(): DocumentFragment {
     el("div", { class: "skel-line" }),
     el("div", { class: "skel-line" }),
     el("div", { class: "skel-line" }),
-    el("div", { class: "skel-slow-hint" }, "Still loading…"),
+    el("div", { class: "skel-slow-hint" }, LOADING_HINT),
   ))
   return frag
-}
-
-/**
- * Error state — rendered when a scan fails after `fetchWithRetry`'s 3 retries
- * (~10.5s total). Replaces the previous silent `display: none` behavior that
- * just made the overlay vanish without explanation. The user now sees:
- *
- *   - A neutral "Connection failed" headline (no all-caps panic)
- *   - A short subtitle explaining what was attempted
- *   - A primary "Retry scan" button that calls `onRetry()` synchronously
- *
- * The header (with brand + close button) is preserved so the user can dismiss
- * the box manually if they don't care to retry.
- *
- * Click reliability: the retry button is a real <button>, not an <a>, so we
- * wire its handler directly. No async indirection, no popup-blocker risk.
- */
-export function buildErrorNode(onRetry: () => void): HTMLElement {
-  if (state.boxEl) state.boxEl.className = "box caution"
-
-  const retryBtn = el("button", {
-    class: "err-retry",
-    type: "button",
-  }, "Retry scan")
-
-  retryBtn.addEventListener("click", (e) => {
-    e.stopPropagation()
-    e.preventDefault()
-    onRetry()
-  })
-
-  return el("div", undefined,
-    el("div", { class: "topbar" }),
-    buildHeaderNode(undefined),
-    el("div", { class: "err-vb" },
-      el("div", { class: "err-icon" }, "⚠"),
-      el("h2", undefined, "Connection failed"),
-      el("div", { class: "err-sub" }, "Couldn't reach the scanner."),
-    ),
-    retryBtn,
-  )
 }
 
 function buildSiBool(siLabel: string, val: unknown, invert = false): HTMLElement {
