@@ -27,7 +27,7 @@ import {
 } from "./_lib/fetchers";
 import { readHeliusKey } from "./_lib/helius";
 import { parseMintState, mintSupplyUi, deriveAuthorityFacts, parseChainHolders, pickHolderCount, positiveCount } from "./_lib/facts";
-import { fetchGoPlusSecurity } from "./_lib/goplus-auth";
+import { fetchGoPlusSecurityCached } from "./_lib/goplus-cache";
 import {
   DEXSCREENER_BASE, RUGCHECK_BASE, LAYER_WEIGHTS, SCORING_VERSION,
   LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS, SOLSCAN_AGE_AND_HOLDERS_ONLY,
@@ -373,7 +373,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // GoPlus is started here, not inside the list below, because its holder count is also an INPUT of the holder pages: when it already
     // says the token has far more holders than the pages can count, the Helius pages stop after the first one (they could not change
     // the count shown, see heliusGetHolderPages). The answer itself is read from the same promise below.
-    const goplusPromise = withBudget(fetchGoPlusSecurity(resolvedMint), remainingMs());
+    const goplusPromise = withBudget(fetchGoPlusSecurityCached(resolvedMint, tokenAgeMinutes, { fresh }), remainingMs());
     const goplusHolderCount: Promise<number | null> = goplusPromise
       .then((raw) => positiveCount(pickGoPlusResult(raw, resolvedMint)?.holder_count))
       .catch(() => null);
