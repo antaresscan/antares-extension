@@ -557,11 +557,17 @@ describe("scan — a source did not answer", () => {
     expect(mockRecordScanOutcome.mock.calls[0][0]).toEqual(["helius", "goplus"]);
   });
 
-  it("the chart silent on an old token counts as 'chart'", async () => {
+  it("the chart silent on an old token, or a source with nothing for this token, is no outage: the scan is counted (a cold scan) with no cause", async () => {
     setupGoodTokenMocks();
     mockFetchDexCandles.mockResolvedValue([]);
     await run(createMockReq({ ca: WSOL }), createMockRes());
-    expect(mockRecordScanOutcome.mock.calls[0][0]).toEqual(["chart"]);
+    expect(mockRecordScanOutcome).toHaveBeenLastCalledWith([]);
+    mockRecordScanOutcome.mockClear();
+    setupGoodTokenMocks();
+    mockHeliusGetLargestAccounts.mockResolvedValue(null); // Helius has nothing for this token, and has not failed
+    mockHeliusGetMintAccount.mockResolvedValue(null);
+    await run(createMockReq({ ca: WSOL }), createMockRes());
+    expect(mockRecordScanOutcome).toHaveBeenLastCalledWith([]);
   });
 
   it("a Free caller's scan is counted exactly like a Pro one", async () => {
