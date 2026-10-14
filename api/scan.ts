@@ -16,7 +16,7 @@ import {
   isSolscanMarketsResponse, isSolscanMeta, isSolscanTransfersResponse,
   isRugCheckReport,
   sanitizeString, sanitizeUrl,
-  isChartGapDegraded, isReportGapDegraded, isLayerGap, isScanIncomplete, limitedDataEnabled, withServeWindows,
+  isChartGapDegraded, isReportGapDegraded, gapSources, limitedDataEnabled, withServeWindows,
 } from "./_lib/helpers";
 import {
   heliusGetLargestAccounts, heliusGetMintAccount, heliusGetHolderPages, heliusGetCreatorReputation,
@@ -50,6 +50,7 @@ import { isPreviewDeployment } from "./_lib/deployment";
 import { logger } from "./_lib/logger";
 import { composeCriticalActors } from "./_lib/critical-actors";
 import { initUsage, flushUsage } from "./_lib/usage";
+import { downSources } from "./_lib/outage";
 import { deriveEvent } from "./_lib/verdict-history";
 // initHistoryCache / pushVerdictHistory / getVerdictHistory are no
 // longer imported — the Verdict Timeline feature was decommissioned
@@ -708,20 +709,23 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // And for a scan with no DexScreener pool at all: DexScreener answers "no pairs" during an outage too (about an hour, 2026-10-07), the
     // answer cannot be told from a token that really has no pool, and a verdict born from a market nobody read (a RUG for a token the market
     // would have cleared) must not stick for 30 minutes.
-    // And for a scan made while Helius, RugCheck or GoPlus did not answer (they are missing for under 1 % of tokens, whatever the verdict: an outage).
+    // And for a scan made while Helius, RugCheck or GoPlus is DOWN (outage.ts): see sourceGap below.
     const deadlineSpent = scanDeadline - Date.now() < MIN_STEP_MS;
     const chartGap = isChartGapDegraded(result.risk, result.layers?.chart?.available, tokenAgeMinutes);
     const reportGap = isReportGapDegraded(result.risk, resolvedMint !== ca, rugReport !== null);
-    const layerGap = isLayerGap(result.layers);
-    const degraded = sources_used.length === 0 || deadlineSpent || pair === null || chartGap || reportGap || layerGap;
-    result.degraded = degraded;
     // 2026-10-14: replayed on the 1 121 tokens of the corpus with ONE source silent, the verdict a scan reaches without it is not the token's: without Helius
-    // 172 SAFE read CAUTION and 132 RUG read DANGER, without RugCheck 4 DANGER read SAFE, without GoPlus 21 SAFE read CAUTION. So a scan made while a source
-    // did not answer carries NO verdict for the user: `sourceGap` makes the overlay show "Limited data", count down and ask again (the answer is kept 30 s).
-    // The badge, the alerts and the history ignore it, and so does the rug database (below). "No pool" is not in this list (it cannot be told from a token that
-    // has none), and an issuer's asset whose market cannot be read keeps its own answer (the last verdict, with its age: api/_lib/last-good.ts).
+    // 172 SAFE read CAUTION and 132 RUG read DANGER, without RugCheck 4 DANGER read SAFE, without GoPlus 21 SAFE read CAUTION, and a token that flips from one
+    // verdict to another is not credible. So a scan made while a source is DOWN carries NO verdict for the user: `sourceGap` makes the overlay show "Limited data",
+    // count down and ask again (the answer is kept 30 s). It is a LAST RESORT: DOWN means the source has failed several calls within the last minute (outage.ts), not
+    // that it has nothing for THIS token (Helius cannot list the holders of BONK or JUP, RugCheck does not know a brand-new token): those scans keep their verdict
+    // and their flags, as before. The badge, the alerts and the history ignore a Limited data scan, and so does the rug database (below). "No pool" is not in this
+    // rule (it cannot be told from a token that has none), and an issuer's asset whose market cannot be read keeps its own answer (the last verdict, with its age:
+    // api/_lib/last-good.ts).
+    const gapSourcesNow = gapSources(result.layers, downSources());
+    const degraded = sources_used.length === 0 || deadlineSpent || pair === null || chartGap || reportGap || gapSourcesNow.length > 0;
+    result.degraded = degraded;
     // LIMITED_DATA=off (helpers.ts limitedDataEnabled) is the emergency switch: no scan is marked, the engine's verdict is shown as before.
-    result.sourceGap = limitedDataEnabled() && isScanIncomplete({ layers: result.layers, sourcesUsed: sources_used.length, deadlineSpent, chartGap, reportGap });
+    result.sourceGap = limitedDataEnabled() && gapSourcesNow.length > 0;
     // An issuer-backed token (stablecoin, tokenized stock, LST...): the verdict of the last time its market WAS read is kept; when DexScreener
     // cannot be read, that verdict is served again with its age ("Scanned 6 min ago") instead of a verdict born from no market, unless this
     // scan itself found something worse (a fact from another source). See api/_lib/last-good.ts.

@@ -312,6 +312,10 @@ process.env.DEV_PRO_INSTALLS = "test-pro-install-0001";
 
 const { default: handler } = await import("../api/scan");
 const { _resetCircuitBreakersForTests } = await import("../api/_lib/http");
+const { noteSourceFailure, OUTAGE_THRESHOLD } = await import("../api/_lib/outage");
+/** A source is DOWN (outage.ts): enough failed calls within the minute. The mocks below make a source silent; this makes the silence an outage. */
+const OUTAGE_HOST = { helius: "mainnet.helius-rpc.com", rugcheck: "api.rugcheck.xyz", goplus: "api.gopluslabs.io" } as const;
+const declareOutage = (source: keyof typeof OUTAGE_HOST) => { for (let i = 0; i < OUTAGE_THRESHOLD[source]; i++) noteSourceFailure(OUTAGE_HOST[source]); };
 // The cache module is mocked above; import it AFTER the mock variables exist.
 const { acquireScanLock, waitForCachedResult, getCachedResult, setCachedResult, setShortCachedResult, getLastGoodResult, setLastGoodResult } = await import("../api/_lib/cache");
 
@@ -371,68 +375,69 @@ const { isScanIncomplete, isChartGapDegraded, isReportGapDegraded } = await impo
 const { sourceGapOf } = await import("../contents/modules/resilience");
 const { buildScanResultMessage } = await import("../contents/modules/scan-report");
 
-describe("isScanIncomplete: every silent source x every verdict", () => {
+describe("isScanIncomplete: a source that is DOWN x every verdict (a last resort)", () => {
   const VERDICTS = ["SAFE", "CAUTION", "DANGER", "RUG"] as const;
   const SOURCES = ["dexscreener", "rugcheck", "goplus", "helius", "solscan", "chart"];
   const layersWith = (missing: string[]) => Object.fromEntries(SOURCES.map((n) => [n, { available: !missing.includes(n) }]));
-  const base = { sourcesUsed: 4, deadlineSpent: false, chartGap: false, reportGap: false };
-  const OLD = 100_000; // minutes: an established token
+  const DOWN_ALL = { helius: true, rugcheck: true, goplus: true };
 
-  describe.each(VERDICTS)("a scan that reached %s", (verdict) => {
+  // The rule does not look at the verdict: it is the same for the four, which is what the title says (a token flipping from one verdict to another is not credible).
+  describe.each(VERDICTS)("a scan that reached %s", () => {
     it.each([
       ["Helius", ["helius"]],
       ["RugCheck", ["rugcheck"]],
       ["GoPlus", ["goplus"]],
       ["Helius + GoPlus", ["helius", "goplus"]],
       ["Helius + RugCheck + GoPlus", ["helius", "rugcheck", "goplus"]],
-    ])("%s silent: marked, whatever the verdict (no verdict is shown for it)", (_name, missing) => {
-      expect(isScanIncomplete({ ...base, layers: layersWith(missing) })).toBe(true);
+    ])("%s silent AND down: marked, whatever the verdict (no verdict is shown for it)", (_name, missing) => {
+      expect(isScanIncomplete({ layers: layersWith(missing), down: DOWN_ALL })).toBe(true);
     });
 
-    it("every source answered: complete", () => {
-      expect(isScanIncomplete({ ...base, layers: layersWith([]) })).toBe(false);
+    it.each([
+      ["Helius", ["helius"]],
+      ["RugCheck", ["rugcheck"]],
+      ["GoPlus", ["goplus"]],
+      ["all three", ["helius", "rugcheck", "goplus"]],
+    ])("%s silent but NOT down (it answered with nothing for this token: BONK, a brand-new token): not marked, the scan keeps its verdict and its flags", (_name, missing) => {
+      expect(isScanIncomplete({ layers: layersWith(missing), down: {} })).toBe(false);
     });
 
-    it("DexScreener silent alone (no pool cannot be told from a token that has none) and Solscan silent (its layer is never available): not marked", () => {
-      expect(isScanIncomplete({ ...base, layers: layersWith(["dexscreener"]) })).toBe(false);
-      expect(isScanIncomplete({ ...base, layers: layersWith(["solscan"]) })).toBe(false);
+    it("every source answered: complete, even while a source is down elsewhere", () => {
+      expect(isScanIncomplete({ layers: layersWith([]), down: {} })).toBe(false);
+      expect(isScanIncomplete({ layers: layersWith([]), down: DOWN_ALL })).toBe(false);
     });
 
-    it("the chart of an old token: marked for a SAFE or CAUTION only (a dead token has no candles, for a bad verdict it says nothing)", () => {
-      const chartGap = isChartGapDegraded(verdict, false, OLD);
-      expect(chartGap).toBe(verdict === "SAFE" || verdict === "CAUTION");
-      expect(isScanIncomplete({ ...base, layers: layersWith(["chart"]), chartGap })).toBe(verdict === "SAFE" || verdict === "CAUTION");
-    });
-
-    it("the RugCheck report of a pair address: marked for a SAFE or CAUTION only", () => {
-      const reportGap = isReportGapDegraded(verdict, true, false);
-      expect(reportGap).toBe(verdict === "SAFE" || verdict === "CAUTION");
-      expect(isScanIncomplete({ ...base, layers: layersWith([]), reportGap })).toBe(verdict === "SAFE" || verdict === "CAUTION");
-    });
-
-    it("the scan ran out of time, or has no source at all: marked", () => {
-      expect(isScanIncomplete({ ...base, layers: layersWith([]), deadlineSpent: true })).toBe(true);
-      expect(isScanIncomplete({ ...base, layers: layersWith([]), sourcesUsed: 0 })).toBe(true);
+    it("DexScreener, Solscan or the chart silent: never marked, down or not (not in the rule)", () => {
+      for (const missing of [["dexscreener"], ["solscan"], ["chart"]]) expect(isScanIncomplete({ layers: layersWith(missing), down: DOWN_ALL })).toBe(false);
     });
   });
 
   it("a response with no layers assumes nothing", () => {
-    expect(isScanIncomplete({ ...base, layers: undefined })).toBe(false);
+    expect(isScanIncomplete({ layers: undefined, down: DOWN_ALL })).toBe(false);
+  });
+
+  it("the chart of an old token and the RugCheck report of a pair address keep their own caching rule (degraded), and are not outages: they do not make a scan Limited data", () => {
+    // isChartGapDegraded / isReportGapDegraded are unchanged (they only shorten the cache); they are no input of the rule any more.
+    expect(isChartGapDegraded("SAFE", false, 100_000)).toBe(true);
+    expect(isReportGapDegraded("SAFE", true, false)).toBe(true);
+    expect(isScanIncomplete({ layers: layersWith(["chart"]), down: {} })).toBe(false);
   });
 });
 
 describe("scan — a source did not answer", () => {
   const silences: Array<[string, () => void]> = [
-    ["Helius", () => { mockHeliusGetLargestAccounts.mockResolvedValue(null); mockHeliusGetMintAccount.mockResolvedValue(null); }],
+    ["Helius", () => { mockHeliusGetLargestAccounts.mockResolvedValue(null); mockHeliusGetMintAccount.mockResolvedValue(null); declareOutage("helius"); }],
     ["RugCheck", () => {
       const good = mockFetch.getMockImplementation()!;
       mockFetch.mockImplementation((url: string, ...rest: unknown[]) =>
         String(url).includes("rugcheck") ? Promise.resolve({ ok: false, status: 503, json: () => Promise.resolve(null) }) : good(url, ...rest));
+      declareOutage("rugcheck");
     }],
     ["GoPlus", () => {
       const good = mockFetch.getMockImplementation()!;
       mockFetch.mockImplementation((url: string, ...rest: unknown[]) =>
         String(url).includes("gopluslabs") ? Promise.resolve({ ok: false, status: 503, json: () => Promise.resolve(null) }) : good(url, ...rest));
+      declareOutage("goplus");
     }],
   ];
 
@@ -548,13 +553,118 @@ describe("scan — a source did not answer", () => {
     expect(b?.degraded).toBe(a?.degraded);
   });
 
-  it("the chart silent on an old token that read SAFE or CAUTION: marked", async () => {
+  it("the chart silent on an old token that read SAFE or CAUTION: NOT marked (not an outage: a rate limit, a dead token), but still cached only 30 s as before", async () => {
     setupGoodTokenMocks();
     mockFetchDexCandles.mockResolvedValue([]);
     const res = createMockRes();
     await run(createMockReq({ ca: WSOL }), res);
     expect(["SAFE", "CAUTION"]).toContain(jsonBody(res)?.risk);
-    expect(jsonBody(res)?.sourceGap).toBe(true);
+    expect(jsonBody(res)?.sourceGap).toBe(false);
+    expect(jsonBody(res)?.degraded).toBe(true);
+    expect(vi.mocked(setShortCachedResult)).toHaveBeenCalled();
+  });
+
+  // ─── LAST RESORT: a source without data for THIS token is not an outage ──────────────────────────────────────────────────────────────────
+  // 2026-10-14, on the previews: BONK and JUP answered "Limited data" every time, scanned alone, because Helius does not give the holders of a token with millions of
+  // them. Nothing was down. "Limited data" is for a source that does not ANSWER (several failed calls within the minute); a source that answered with nothing for this
+  // token keeps the scan as it was before: its verdict, its flag ("Holder concentration unverified" for Pro), cached for the usual time, recorded as usual.
+  describe("a source that answered with nothing for this token is not an outage", () => {
+    const answeredNothing: Array<[string, () => void]> = [
+      ["Helius (no holder list, as for BONK)", () => { mockHeliusGetLargestAccounts.mockResolvedValue(null); mockHeliusGetMintAccount.mockResolvedValue(null); }],
+      ["RugCheck (404: it does not know the token)", () => {
+        const good = mockFetch.getMockImplementation()!;
+        mockFetch.mockImplementation((url: string, ...rest: unknown[]) =>
+          String(url).includes("rugcheck") ? Promise.resolve({ ok: false, status: 404, json: () => Promise.resolve(null) }) : good(url, ...rest));
+      }],
+      ["GoPlus (404: no entry for the token)", () => {
+        const good = mockFetch.getMockImplementation()!;
+        mockFetch.mockImplementation((url: string, ...rest: unknown[]) =>
+          String(url).includes("gopluslabs") ? Promise.resolve({ ok: false, status: 404, json: () => Promise.resolve(null) }) : good(url, ...rest));
+      }],
+    ];
+
+    for (const [name, silence] of answeredNothing) {
+      it(name + " | Pro: not marked, the engine's verdict as before, cached for the usual time, recorded and in the history", async () => {
+        setupGoodTokenMocks();
+        silence();
+        const res = createMockRes();
+        await run(createMockReq({ ca: WSOL }), res);
+        const body = jsonBody(res);
+        expect(body?.sourceGap).toBe(false);
+        expect(sourceGapOf(body as never)).toBe(false); // the overlay shows the verdict, not the Limited data card
+        expect(body?.freshForSec).not.toBe(30);
+        expect(vi.mocked(setCachedResult)).toHaveBeenCalled();
+        expect(mockRecordRug).toHaveBeenCalledTimes(1);
+        expect(mockPushHistory).toHaveBeenCalledTimes(1);
+      });
+
+      it(name + " | Free: not marked either", async () => {
+        setupGoodTokenMocks();
+        silence();
+        const res = createMockRes();
+        await run(freeReq(), res);
+        const body = (res as unknown as { getBody: () => Record<string, unknown> }).getBody();
+        expect(body?.sourceGap).toBe(false);
+        expect(sourceGapOf(body as never)).toBe(false);
+      });
+    }
+
+    it("Helius without a holder list: Pro still reads the flag that says so, and Free reads the same verdict word as Pro (the scan is as before)", async () => {
+      setupGoodTokenMocks();
+      answeredNothing[0][1]();
+      const pro = createMockRes();
+      await run(createMockReq({ ca: WSOL }), pro);
+      expect((jsonBody(pro)?.flags as Array<{ label: string }>).some((f) => /holder concentration unverified/i.test(f.label))).toBe(true);
+      setupGoodTokenMocks();
+      answeredNothing[0][1]();
+      const free = createMockRes();
+      await run(freeReq(), free);
+      const freeBody = (free as unknown as { getBody: () => { risk: string } }).getBody();
+      expect(freeBody.risk).toBe(jsonBody(pro)?.risk);
+    });
+  });
+
+  describe("a real outage: several failed calls within the minute", () => {
+    const fail503 = (host: string) => {
+      const good = mockFetch.getMockImplementation()!;
+      mockFetch.mockImplementation((url: string, ...rest: unknown[]) =>
+        String(url).includes(host) ? Promise.resolve({ ok: false, status: 503, json: () => Promise.resolve(null) }) : good(url, ...rest));
+    };
+
+    it("RugCheck failing for real (no seeding): its calls of this scan are the outage, so the scan is Limited data", async () => {
+      setupGoodTokenMocks();
+      fail503("rugcheck");
+      const res = createMockRes();
+      await run(createMockReq({ ca: WSOL }), res);
+      expect(jsonBody(res)?.sourceGap).toBe(true);
+    });
+
+    it("GoPlus failing for real (no seeding): a lookup makes two calls, the authenticated one and the public one, both failing is the outage, so the scan is Limited data", async () => {
+      setupGoodTokenMocks();
+      fail503("gopluslabs");
+      const res = createMockRes();
+      await run(createMockReq({ ca: WSOL }), res);
+      expect(jsonBody(res)?.sourceGap).toBe(true);
+    });
+
+    it("the outage ends: a minute later the same silent source, now with nothing for the token (no new failure), is not an outage any more", async () => {
+      declareOutage("helius");
+      await vi.advanceTimersByTimeAsync(61_000);
+      setupGoodTokenMocks();
+      mockHeliusGetLargestAccounts.mockResolvedValue(null);
+      mockHeliusGetMintAccount.mockResolvedValue(null);
+      const res = createMockRes();
+      await run(createMockReq({ ca: WSOL }), res);
+      expect(jsonBody(res)?.sourceGap).toBe(false);
+    });
+
+    it("an outage of a source that DID answer in this scan changes nothing (Helius down, but this token's holders came back)", async () => {
+      declareOutage("helius");
+      setupGoodTokenMocks();
+      const res = createMockRes();
+      await run(createMockReq({ ca: WSOL }), res);
+      expect(jsonBody(res)?.sourceGap).toBe(false);
+    });
   });
 
   it("a scan with a silent source is never the memory of an issuer's asset (a verdict born from it is not the token's)", async () => {
@@ -577,8 +687,9 @@ describe("a silent source: Limited data, whatever the verdict, Free or Pro", () 
     const good = mockFetch.getMockImplementation()!;
     mockFetch.mockImplementation((url: string, ...rest: unknown[]) =>
       String(url).includes(host) ? Promise.resolve({ ok: false, status: 503, json: () => Promise.resolve(null) }) : good(url, ...rest));
+    declareOutage(host === "gopluslabs" ? "goplus" : "rugcheck"); // a silent source is DOWN: several failed calls within the minute (outage.ts)
   };
-  const heliusDown = () => { mockHeliusGetLargestAccounts.mockResolvedValue(null); mockHeliusGetMintAccount.mockResolvedValue(null); };
+  const heliusDown = () => { mockHeliusGetLargestAccounts.mockResolvedValue(null); mockHeliusGetMintAccount.mockResolvedValue(null); declareOutage("helius"); };
   const SILENCES: Array<[string, () => void]> = [
     ["Helius", () => heliusDown()],
     ["RugCheck", () => down("rugcheck")],
