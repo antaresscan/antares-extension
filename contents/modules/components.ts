@@ -155,7 +155,7 @@ export function updateScannedAgo(root: ParentNode, text: string): void {
 }
 
 /**
- * The line that says a data source did not answer and counts down to the next try: "Source unavailable, rescanning in 24s". Same place and
+ * The line that says a data source did not answer and counts down to the next try: "Rescanning in 24s". Same place and
  * same voice as "Scanned 6 min ago" (the two never share a card). Plain text: nothing from the server goes in it.
  */
 export function appendSourceGap(root: ParentNode, text: string): void {

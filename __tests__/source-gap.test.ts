@@ -6,7 +6,7 @@ import type { ScanResponseData } from "../shared/types"
 // A scan made while a data source did not answer has NO verdict for the user (contents/modules/scanner.ts + components.ts + resilience.ts). The server
 // marks it `sourceGap` (Free callers included: the flags that say which source are Pro, the fact that one is missing is not). The overlay shows the
 // Limited data card in the design of the others (same layout, same type, the four verdict colours mixed), with a line at its foot that counts down
-// ("Source unavailable, rescanning in 24s") to the try it makes by itself; when every source answers the real verdict takes its place.
+// ("Rescanning in 24s") to the try it makes by itself; when every source answers the real verdict takes its place.
 //
 // Written after 2026-10-13/14: a SAFE token read CAUTION, a DANGER read SAFE, a RUG read DANGER while a source was silent, and the Free overlay said
 // nothing about why. Replayed on 1 121 tokens with one source silent, the verdict a scan reaches without it is not the token's.
@@ -90,13 +90,15 @@ describe("sourceGapRetryAt: the countdown is the time the server's own copy has 
 
 describe("sourceGapText", () => {
   it("counts down, whole seconds, rounded up (never says 0s while it still waits)", () => {
-    expect(sourceGapText(24_000)).toBe("Source unavailable, rescanning in 24s")
-    expect(sourceGapText(23_001)).toBe("Source unavailable, rescanning in 24s")
-    expect(sourceGapText(400)).toBe("Source unavailable, rescanning in 1s")
+    expect(sourceGapText(24_000)).toBe("Rescanning in 24s")
+    expect(sourceGapText(23_001)).toBe("Rescanning in 24s")
+    expect(sourceGapText(400)).toBe("Rescanning in 1s")
+    // only the countdown: the card already says Limited data, the line does not repeat why
+    for (const ms of [24_000, 400, 0, -5_000]) expect(sourceGapText(ms)).not.toMatch(/unavailable|source/i)
   })
   it("says \"rescanning…\" while the try is under way, and the bare label once the overlay has stopped trying", () => {
-    expect(sourceGapText(0)).toBe("Source unavailable, rescanning…")
-    expect(sourceGapText(-5_000)).toBe("Source unavailable, rescanning…")
+    expect(sourceGapText(0)).toBe("Rescanning…")
+    expect(sourceGapText(-5_000)).toBe("Rescanning…")
     expect(sourceGapText(null)).toBe(SOURCE_GAP_LABEL)
   })
   it("fits where \"Taking longer than usual, still on it\" already fits", () => {
@@ -189,7 +191,7 @@ describe("the Limited data card replaces the verdict, whatever the verdict the s
         expect(q("#ant-ai-summary-btn")).not.toBeNull()
         expect(qa(".locked")).toHaveLength(tier === "free" ? 3 : 0) // Free: the three buttons carry the PRO ghost, as on every card
         // the line and its countdown
-        expect(line()).toBe("Source unavailable, rescanning in 31s")
+        expect(line()).toBe("Rescanning in 31s")
         expect(q(".scanned-ago")).toBeNull()
         expect(state.failureView).toBeNull() // it is an answer, not a failure
       })
@@ -276,9 +278,9 @@ describe("the line and its countdown", () => {
     fetchMock.mockImplementation(() => answer(gapped()))
     await scan(CA)
     await advance(1_000)
-    expect(line()).toBe("Source unavailable, rescanning in 30s")
+    expect(line()).toBe("Rescanning in 30s")
     await advance(9_000)
-    expect(line()).toBe("Source unavailable, rescanning in 21s")
+    expect(line()).toBe("Rescanning in 21s")
   })
 
   it("coming back to the token while the 30 s are not over: no request, the line shows what is left", async () => {
@@ -288,7 +290,7 @@ describe("the line and its countdown", () => {
     state.lastCA = ""
     await scan(CA)
     expect(callsFor(CA)).toBe(1)
-    expect(line()).toBe("Source unavailable, rescanning in 21s")
+    expect(line()).toBe("Rescanning in 21s")
     expect(state.boxEl?.classList.contains("limited")).toBe(true)
   })
 
@@ -297,7 +299,7 @@ describe("the line and its countdown", () => {
     await scan(CA)
     fetchMock.mockImplementation(() => answer(data({ risk: "SAFE", score: 996, fetchedAt: Date.now() })))
     await advance(31_000)
-    expect(line()).toBe("Source unavailable, rescanning…") // the try is under way: the card and its line stay until the answer lands
+    expect(line()).toBe("Rescanning…") // the try is under way: the card and its line stay until the answer lands
     await advance(1_000)
     expect(callsFor(CA)).toBe(2) // a real request, at the moment announced
     expect(line()).toBeNull()
@@ -318,7 +320,7 @@ describe("the line and its countdown", () => {
     await advance(32_000)
     expect(callsFor(CA)).toBe(2)
     expect(q(".vb")).toBe(card) // the very same node
-    expect(line()).toMatch(/^Source unavailable, rescanning in \d+s$/)
+    expect(line()).toMatch(/^Rescanning in \d+s$/)
   })
 
   it("the first two tries follow the server's copy (about 31 s apart); from the third on they are a minute apart", async () => {
@@ -343,7 +345,7 @@ describe("the line and its countdown", () => {
     expect(text()).not.toContain("Connection failed")
     expect(q(".err-retry")).toBeNull()
     expect(state.failureView).toBeNull()
-    expect(line()).toMatch(/^Source unavailable, rescanning in \d+s$/)
+    expect(line()).toMatch(/^Rescanning in \d+s$/)
     fetchMock.mockImplementation(() => answer(data({ risk: "SAFE", score: 996, fetchedAt: Date.now() })))
     await advance(61_000)
     expect(line()).toBeNull()

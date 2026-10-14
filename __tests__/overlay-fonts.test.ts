@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest"
 import { SHADOW_CSS } from "../contents/modules/styles"
 
-// The small messages the overlay adds under its card (the loading hint, "Scanned 6 min ago", "Source unavailable, rescanning in 24s") speak in the card's own voice: Bebas Neue, like
+// The small messages the overlay adds under its card (the loading hint, "Scanned 6 min ago", "Rescanning in 24s") speak in the card's own voice: Bebas Neue, like
 // the labels of the pills and the wordmark, not the IBM Plex Mono of the old "Still loading" hint.
 
 const rule = (selector: string): string => {

@@ -634,7 +634,7 @@ export const SHADOW_CSS = `
   color: #777;
   cursor: help;
 }
-/* The same line for a verdict whose data source did not answer: "Source unavailable, rescanning in 24s". Same voice, same place as "Scanned 6 min ago"
+/* The same line for a verdict whose data source did not answer: "Rescanning in 24s". Same voice, same place as "Scanned 6 min ago"
    (the two never share a card): kept as a rule of its own so that each can change without the other. */
 .source-gap {
   padding: 8px 14px 12px;
