@@ -17,10 +17,13 @@ const MAX_SYMBOL_LENGTH = 24
 
 /**
  * The SCAN_RESULT message for a scan payload, or null when the payload has no
- * verdict the worker could show (unknown risk label, missing risk).
+ * verdict the worker could show (unknown risk label, missing risk, or a scan with a silent source: it has none).
  */
 export function buildScanResultMessage(ca: string, data: ScanResponseData): ScanResultMessage | null {
   if (typeof data.risk !== "string" || !RISKS.has(data.risk)) return null
+  // A scan made while a data source did not answer has no verdict for the user (the overlay shows "Limited data"): nothing to put on the badge, in a
+  // notification or in the history. (An older server sends no mark: nothing changes for it.)
+  if ((data as { sourceGap?: unknown }).sourceGap === true && (data as { scannedAgoSec?: unknown }).scannedAgoSec === undefined) return null
   const rawSymbol = data.tokenSymbol || data.pair?.baseToken?.symbol || ""
   return {
     type: "SCAN_RESULT",

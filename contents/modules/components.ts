@@ -1,14 +1,14 @@
 import type { ScanResponseFlag, ScanResponseData, QuotaStatus } from "../../shared/types"
 import { RISK_CLASS, ANALYSIS_PAGE, SVG_MOVE, SVG_CLOSE, VERDICT_COLORS, PHOTON_REF, buildPhotonUrl, PRICING_URL } from "./constants"
 import { verdictLabel } from "./verdict-label"
-import { state, scanCache } from "./state"
+import { state, scanCache, resetSourceGap } from "./state"
 import { SHADOW_CSS, injectFonts } from "./styles"
 import { initDrag } from "./drag"
 import { encodeHashPayload } from "../../shared/hash-payload"
 import { toggleAiSummary } from "./ai-summary"
 import { toggleCriticalFlags } from "./critical-flags"
 import { isHoldersUnverifiedFlag } from "../../shared/holders-unverified"
-import { LOADING_HINT } from "./resilience"
+import { LOADING_HINT, SOURCE_GAP_TITLE, LIMITED_DATA_LABEL, LIMITED_DATA_SUMMARY, sourceGapOf } from "./resilience"
 
 // DOM-API element builder. Used by buildResult instead of string template
 // literals so every text interpolation goes through textContent (which the
@@ -114,6 +114,7 @@ export function resetState() {
   state.recoveryCa = ""
   state.recoveryAttempt = 0
   state.recoveryStartedAt = 0
+  resetSourceGap()
   state.failureView = null
   state.rescanCount = 0
   state.rescanCountCA = ""
@@ -134,6 +135,24 @@ export function appendScannedAgo(root: ParentNode, text: string): void {
 export function updateScannedAgo(root: ParentNode, text: string): void {
   const line = root.querySelector(".scanned-ago")
   if (line) line.textContent = text
+}
+
+/**
+ * The line that says a data source did not answer and counts down to the next try: "Source unavailable, rescanning in 24s". Same place and
+ * same voice as "Scanned 6 min ago" (the two never share a card). Plain text: nothing from the server goes in it.
+ */
+export function appendSourceGap(root: ParentNode, text: string): void {
+  const line = el("div", { class: "source-gap", role: "status", title: SOURCE_GAP_TITLE }, text)
+  const card = root.querySelector(".vb")?.parentNode ?? root
+  card.appendChild(line)
+}
+
+/** Change the words of the line without rebuilding the card (a panel the user has open stays open). Returns false when there is no line. */
+export function updateSourceGap(root: ParentNode, text: string): boolean {
+  const line = root.querySelector(".source-gap")
+  if (!line) return false
+  line.textContent = text
+  return true
 }
 
 export function attachClose(
@@ -676,8 +695,10 @@ export function buildResultNode(
   ca: string,
   installId?: string | null,
 ): HTMLElement {
-  const riskClass = RISK_CLASS[data.risk] || "danger"
-  const label = verdictLabel(data.risk, data.rugKind)
+  // A source did not answer: no verdict, the Limited data card (same layout and type as the others, the four verdict colours mixed).
+  const limited = sourceGapOf(data)
+  const riskClass = limited ? "limited" : RISK_CLASS[data.risk] || "danger"
+  const label = limited ? LIMITED_DATA_LABEL : verdictLabel(data.risk, data.rugKind)
   const mint = data.resolvedMint || ca
   const liq = data.liquidity ?? data.pair?.liquidity?.usd ?? null
 
@@ -697,7 +718,7 @@ export function buildResultNode(
   const dotsCount = Math.round((displayScore / 1000) * 4)
   const dotsNode = el("div", { class: "dots" },
     ...Array.from({ length: 4 }, (_, i) =>
-      el("div", { class: `dt ${i < dotsCount ? "on" : "off"}` }),
+      el("div", { class: limited ? `dt lim lim-${i}` : `dt ${i < dotsCount ? "on" : "off"}` }),
     ),
   )
 
@@ -749,20 +770,25 @@ export function buildResultNode(
   let summary = ""
   // "No issues found" is for SAFE only: a verdict that is not SAFE without a flag to count (a source did not answer, so SAFE was not
   // granted) says so, instead of reading "No issues found" next to CAUTION.
+  // A SAFE held or reached while a source is silent says so: "No issues found" would claim a check that could not be made.
   if (data.risk === "SAFE") summary = "No issues found"
   else if (flagCount === 0) summary = data.risk === "CAUTION" ? "Limited data" : "Risk detected"
   else if (critCount > 0) summary = `${flagCount} flag${flagCount > 1 ? "s" : ""} \u2014 ${critCount} critical`
   else summary = `${flagCount} flag${flagCount > 1 ? "s" : ""} detected`
 
+  if (limited) summary = LIMITED_DATA_SUMMARY
+
   const liqDisplay = liq !== null ? formatMcap(liq) : "\u2014"
   const liqClass: string | undefined =
     liq !== null && liq < 5000 ? "n" : liq !== null && liq > 50000 ? "y" : undefined
 
+  // The checks come from sources, some of which did not answer: none is shown as passed or failed ("\u2014"), the liquidity is public market data.
+  const facts = limited ? { ...data, honeypot: null, mintAuthority: null, freezeAuthority: null, lpBurned: null, lpLocked: null } : data
   const ssNode = el("div", { class: "ss" },
-    buildSiBool("Sell", data.honeypot, true),
-    buildSiBool("Mint", data.mintAuthority, true),
-    buildSiBool("Freeze", data.freezeAuthority, true),
-    buildSiLp(data),
+    buildSiBool("Sell", facts.honeypot, true),
+    buildSiBool("Mint", facts.mintAuthority, true),
+    buildSiBool("Freeze", facts.freezeAuthority, true),
+    buildSiLp(facts),
     el("div", { class: "si" },
       el("span", undefined, "Liq"),
       el("b", { class: liqClass }, liqDisplay),
@@ -884,14 +910,14 @@ export function buildResultNode(
     ),
     el("div", { class: "sr" },
       el("span", { class: "n" },
-        el("b", { class: "ant-score", "data-target": String(displayScore) }, "0"),
+        limited ? el("b", undefined, "\u2014") : el("b", { class: "ant-score", "data-target": String(displayScore) }, "0"),
         " / 1000",
       ),
       dotsNode,
     ),
-    el("div", { class: "sbar" },
-      el("div", { class: "sbar-fill", "data-w": String(barW) }),
-    ),
+    limited
+      ? el("div", { class: "sbar lim" }, el("i"), el("i"), el("i"), el("i"))
+      : el("div", { class: "sbar" }, el("div", { class: "sbar-fill", "data-w": String(barW) })),
     el("div", { class: "sum" }, summary),
     el("div", { class: "sep" }),
     ssNode,
@@ -906,7 +932,7 @@ export function buildResultNode(
       el("div", { class: "ai-panel", id: "ant-ai-summary" }),
     ),
     foNode,
-    buildAffiliateRow(mint, data.risk, data._quota),
+    buildAffiliateRow(mint, limited ? "LIMITED" : data.risk, data._quota),
   )
 
   return root

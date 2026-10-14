@@ -748,6 +748,11 @@ describe("scan — the memory of the last good verdict of an issuer-backed token
         for (const p of body.pairs) p.baseToken.address = USDC;
         return { ok: true, json: () => Promise.resolve(body) };
       }
+      // GoPlus answers for this token too (its answer is keyed by the mint): a scan with a silent source is not the memory (holdLastVerdict).
+      if (String(url).includes("gopluslabs")) {
+        const body = (await res.json()) as { result: Record<string, unknown> };
+        return { ok: true, json: () => Promise.resolve({ result: { [USDC]: Object.values(body.result)[0] } }) };
+      }
       return res;
     });
   };

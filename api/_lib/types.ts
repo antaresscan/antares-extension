@@ -444,6 +444,8 @@ export interface ScanResult {
   servedFromMemory?: boolean;
   /** Seconds since that verdict was made, set when the answer is SENT and only when servedFromMemory: the overlay shows "Scanned 6 min ago". */
   scannedAgoSec?: number;
+  /** true when a SAFE or CAUTION was reached while a data source that almost always answers did not (Helius, RugCheck, GoPlus, the chart of an old token, the whole scan out of time). The overlay says so and counts down to the next try; Free callers get it too. */
+  sourceGap?: boolean;
   // Tri-state: true = present / blocked, false = verified absent, null = NOT verified (never shown as OK).
   honeypot?: boolean | null;
   mintAuthority?: boolean | null;

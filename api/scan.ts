@@ -16,7 +16,7 @@ import {
   isSolscanMarketsResponse, isSolscanMeta, isSolscanTransfersResponse,
   isRugCheckReport,
   sanitizeString, sanitizeUrl,
-  isChartGapDegraded, isReportGapDegraded, withServeWindows,
+  isChartGapDegraded, isReportGapDegraded, isLayerGap, isScanIncomplete, withServeWindows,
 } from "./_lib/helpers";
 import {
   heliusGetLargestAccounts, heliusGetMintAccount, heliusGetHolderPages, heliusGetCreatorReputation,
@@ -708,10 +708,19 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // And for a scan with no DexScreener pool at all: DexScreener answers "no pairs" during an outage too (about an hour, 2026-10-07), the
     // answer cannot be told from a token that really has no pool, and a verdict born from a market nobody read (a RUG for a token the market
     // would have cleared) must not stick for 30 minutes.
-    const degraded = sources_used.length === 0 || scanDeadline - Date.now() < MIN_STEP_MS || pair === null
-      || isChartGapDegraded(result.risk, result.layers?.chart?.available, tokenAgeMinutes)
-      || isReportGapDegraded(result.risk, resolvedMint !== ca, rugReport !== null);
+    // And for a scan made while Helius, RugCheck or GoPlus did not answer (they are missing for under 1 % of tokens, whatever the verdict: an outage).
+    const deadlineSpent = scanDeadline - Date.now() < MIN_STEP_MS;
+    const chartGap = isChartGapDegraded(result.risk, result.layers?.chart?.available, tokenAgeMinutes);
+    const reportGap = isReportGapDegraded(result.risk, resolvedMint !== ca, rugReport !== null);
+    const layerGap = isLayerGap(result.layers);
+    const degraded = sources_used.length === 0 || deadlineSpent || pair === null || chartGap || reportGap || layerGap;
     result.degraded = degraded;
+    // 2026-10-14: replayed on the 1 121 tokens of the corpus with ONE source silent, the verdict a scan reaches without it is not the token's: without Helius
+    // 172 SAFE read CAUTION and 132 RUG read DANGER, without RugCheck 4 DANGER read SAFE, without GoPlus 21 SAFE read CAUTION. So a scan made while a source
+    // did not answer carries NO verdict for the user: `sourceGap` makes the overlay show "Limited data", count down and ask again (the answer is kept 30 s).
+    // The badge, the alerts and the history ignore it, and so does the rug database (below). "No pool" is not in this list (it cannot be told from a token that
+    // has none), and an issuer's asset whose market cannot be read keeps its own answer (the last verdict, with its age: api/_lib/last-good.ts).
+    result.sourceGap = isScanIncomplete({ layers: result.layers, sourcesUsed: sources_used.length, deadlineSpent, chartGap, reportGap });
     // An issuer-backed token (stablecoin, tokenized stock, LST...): the verdict of the last time its market WAS read is kept; when DexScreener
     // cannot be read, that verdict is served again with its age ("Scanned 6 min ago") instead of a verdict born from no market, unless this
     // scan itself found something worse (a fact from another source). See api/_lib/last-good.ts.
@@ -735,7 +744,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     }
 
     // A preview deployment must not write into production's rug database (see deployment.ts).
-    if (!isPreviewDeployment()) void recordRug({ mint: resolvedMint, symbol: sanitizeString(pair?.baseToken?.symbol) ?? null, score, risk, flags, creator: tokenCreator });
+    if (!isPreviewDeployment() && !result.sourceGap) void recordRug({ mint: resolvedMint, symbol: sanitizeString(pair?.baseToken?.symbol) ?? null, score, risk, flags, creator: tokenCreator });
 
     // A RUG confirmed by a fact, on complete data, condemns the token for good (the first record is kept; a record that exists is not rewritten).
     if (!condemnedEntry && shouldCondemn({ risk, rugKind, degraded, preview: isPreviewDeployment() })) {
@@ -756,10 +765,12 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       partial: sources_used.length < Object.keys(LAYER_WEIGHTS).length,
       // true = ran out of time or had no source: the signal to alert on.
       degraded,
+      // true = a source was silent: no verdict is shown for this scan ("Limited data"), see sourceGap above.
+      limited: result.sourceGap === true,
       scoringVersion: SCORING_VERSION,
     });
 
-    if (installId) {
+    if (installId && !result.sourceGap) {
       void pushScanHistory(installId, {
         ca: result.resolvedMint ?? ca,
         score: result.score,

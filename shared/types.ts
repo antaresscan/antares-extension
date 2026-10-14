@@ -82,6 +82,8 @@ export interface ScanResponseData {
   freshForSec?: number;
   /** Seconds the answer may still be shown, marked as old, if the scanner cannot be reached (server-decided). */
   staleLeftSec?: number;
+  /** A data source that almost always answers did not, for a SAFE or CAUTION: the overlay says so and counts down to the next try (server-decided, Free included). */
+  sourceGap?: boolean;
     recentTransfers?: Transfer[];
     aiSummary?: string | null;
     topHolderPct?: number | null;

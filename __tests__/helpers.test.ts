@@ -4,7 +4,7 @@ import {
   apiError, isCorsAllowed, isOriginInList, isValidDexScreenerResponse, isValidRugCheckSummary,
   isHeliusLargestAccountsResponse, isHeliusSupplyResponse,
   isSolscanMarketsResponse, isSolscanMeta, isSolscanTransfersResponse,
-  isRugCheckReport, withBudget, pickGoPlusResult, isChartGapDegraded, isReportGapDegraded, CHART_EXPECTED_AFTER_MINUTES,
+  isRugCheckReport, withBudget, pickGoPlusResult, isChartGapDegraded, isReportGapDegraded, isLayerGap, GAP_LAYERS, CHART_EXPECTED_AFTER_MINUTES,
 } from "../api/_lib/helpers";
 import { CA_RE } from "../api/_lib/constants";
 
@@ -576,5 +576,35 @@ describe("isReportGapDegraded", () => {
   it("a scan that started from the mint itself is not concerned", () => {
     expect(isReportGapDegraded("SAFE", false, false)).toBe(false);
     expect(isReportGapDegraded("CAUTION", false, false)).toBe(false);
+  });
+});
+
+// ─── isLayerGap (2026-10-13/14: a scan made while Helius, RugCheck or GoPlus did not answer has no verdict for the user) ──────────────────────────────
+// Helius, RugCheck and GoPlus are missing for under 1 % of the 1 121 tokens of the replay corpus: when one does not answer it is an outage, not a
+// property of the token (isScanIncomplete in scan-source-gap.test.ts decides what the scan does with it, for every verdict).
+describe("isLayerGap", () => {
+  const up = { available: true };
+  const down = { available: false };
+
+  it.each(["helius", "rugcheck", "goplus"])("%s did not answer: a gap", (layer) => {
+    expect(isLayerGap({ dexscreener: up, rugcheck: up, goplus: up, helius: up, [layer]: down })).toBe(true);
+  });
+
+  it("the sources of GAP_LAYERS are exactly Helius, RugCheck and GoPlus", () => {
+    expect([...GAP_LAYERS].sort()).toEqual(["goplus", "helius", "rugcheck"]);
+  });
+
+  it("witness: every source answered", () => {
+    expect(isLayerGap({ dexscreener: up, rugcheck: up, goplus: up, helius: up })).toBe(false);
+  });
+
+  it("Solscan (inactive by design, never available), the chart (its own age rule) and DexScreener (\"no pool\" cannot be told from an outage) are not gaps", () => {
+    expect(isLayerGap({ solscan: down, chart: down, dexscreener: down, helius: up, rugcheck: up, goplus: up })).toBe(false);
+  });
+
+  it("an answer with no layers, or a layer with no `available`, assumes nothing", () => {
+    expect(isLayerGap(undefined)).toBe(false);
+    expect(isLayerGap({})).toBe(false);
+    expect(isLayerGap({ helius: {} })).toBe(false);
   });
 });

@@ -100,6 +100,7 @@ export const ScanResponseDataSchema = z.object({
   degraded: z.boolean().optional(),
   freshForSec: z.number().optional(),
   staleLeftSec: z.number().optional(),
+  sourceGap: z.boolean().optional(),
       recentTransfers: z.array(z.object({ from_address: z.string().optional(), to_address: z.string().optional(), from: z.string().optional(), to: z.string().optional(), amount: z.number().optional(), timestamp: z.number().optional(), type: z.string().optional() })).optional(),
     aiSummary: z.string().nullable().optional(),
     topHolderPct: z.number().nullable().optional(),
