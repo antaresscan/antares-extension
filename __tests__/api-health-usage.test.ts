@@ -4,11 +4,15 @@
 // reserved to the owner: `Authorization: Bearer <CRON_SECRET>`. Without a CRON_SECRET the view is OFF, never open. It lives in
 // /api/health because the project already has the 12 serverless functions Vercel Hobby allows.
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { readFileSync } from "node:fs";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 const mockReadUsage = vi.fn();
+const mockCaptureError = vi.fn();
+vi.mock("../api/_lib/sentry", () => ({ initSentry: vi.fn(), captureError: (...a: unknown[]) => mockCaptureError(...a) }));
 vi.mock("../api/_lib/usage", async (importOriginal) => ({ ...(await importOriginal<typeof import("../api/_lib/usage")>()), readUsage: (...a: unknown[]) => mockReadUsage(...a) }));
-vi.mock("../api/_lib/logger", () => ({ logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() } }));
+const mockLoggerError = vi.fn();
+vi.mock("../api/_lib/logger", () => ({ logger: { info: vi.fn(), warn: vi.fn(), error: (...a: unknown[]) => mockLoggerError(...a) } }));
 
 import handler from "../api/health";
 
@@ -28,7 +32,7 @@ async function call(query: Record<string, string>, authorization?: string) {
 }
 
 const saved = process.env.CRON_SECRET;
-beforeEach(() => { mockReadUsage.mockReset(); mockReadUsage.mockResolvedValue(REPORT); process.env.CRON_SECRET = SECRET; });
+beforeEach(() => { mockCaptureError.mockReset(); mockLoggerError.mockReset(); mockReadUsage.mockReset(); mockReadUsage.mockResolvedValue(REPORT); process.env.CRON_SECRET = SECRET; });
 afterEach(() => { if (saved === undefined) delete process.env.CRON_SECRET; else process.env.CRON_SECRET = saved; });
 
 describe("/api/health?usage=N", () => {
@@ -72,5 +76,111 @@ describe("/api/health?usage=N", () => {
     expect(r.status).toBe(200);
     expect(r.body).toMatchObject({ status: "ok" });
     expect(mockReadUsage).not.toHaveBeenCalled();
+  });
+});
+
+// ─── /api/health?watch=limited: the daily check of yesterday's share of "Limited data" answers (vercel.json cron) ─────────────────────────────
+describe("/api/health?watch=limited", () => {
+  const share = (total: number, limited: number, causes: Record<string, number> = {}) => ({ total, limited, share: total ? limited / total : 0, causes });
+  const twoDays = (yesterday: ReturnType<typeof share>, today = share(10, 0)) => ({
+    days: [{ date: "2026-10-13", providers: {}, scans: yesterday }, { date: "2026-10-14", providers: {}, scans: today }], totals: {}, scans: yesterday, basis: {},
+  });
+
+  it("above 3 % of 50 scans or more: answers alert:true, writes an error line and a Sentry event that name the sources", async () => {
+    mockReadUsage.mockResolvedValue(twoDays(share(200, 20, { helius: 18, goplus: 3 })));
+    const r = await call({ watch: "limited" }, `Bearer ${SECRET}`);
+    expect(r.status).toBe(200);
+    expect(r.body).toMatchObject({ date: "2026-10-13", alert: true });
+    expect((r.body as { message: string }).message).toContain("helius 18, goplus 3");
+    expect(mockReadUsage).toHaveBeenCalledWith(2);
+    expect(mockLoggerError).toHaveBeenCalledTimes(1);
+    expect(mockCaptureError).toHaveBeenCalledTimes(1);
+    expect(String((mockCaptureError.mock.calls[0][0] as Error).message)).toContain("Limited data");
+  });
+
+  it("at or below 3 %: no alert, nothing written", async () => {
+    mockReadUsage.mockResolvedValue(twoDays(share(1000, 30, { helius: 30 })));
+    const r = await call({ watch: "limited" }, `Bearer ${SECRET}`);
+    expect(r.body).toMatchObject({ alert: false });
+    expect(mockLoggerError).not.toHaveBeenCalled();
+    expect(mockCaptureError).not.toHaveBeenCalled();
+  });
+
+  it("too few scans to judge: no alert even when every one was Limited data", async () => {
+    mockReadUsage.mockResolvedValue(twoDays(share(10, 10, { helius: 10 })));
+    const r = await call({ watch: "limited" }, `Bearer ${SECRET}`);
+    expect(r.body).toMatchObject({ alert: false });
+    expect(mockCaptureError).not.toHaveBeenCalled();
+  });
+
+  it("judges YESTERDAY (a full day), and only reports today", async () => {
+    mockReadUsage.mockResolvedValue(twoDays(share(100, 0), share(60, 30, { helius: 30 })));
+    const r = await call({ watch: "limited" }, `Bearer ${SECRET}`);
+    expect(r.body).toMatchObject({ alert: false, today: { date: "2026-10-14", alert: true, scans: { total: 60, limited: 30 } } });
+    expect(mockCaptureError).not.toHaveBeenCalled(); // today is only reported: the daily cron owns the Sentry event, for a full day
+  });
+
+  it("is reserved to the owner, like the usage view", async () => {
+    for (const header of [undefined, `Bearer ${SECRET}x`, "", SECRET]) {
+      const r = await call({ watch: "limited" }, header);
+      expect(r.status).toBe(401);
+    }
+    delete process.env.CRON_SECRET;
+    expect((await call({ watch: "limited" }, "Bearer ")).status).toBe(401);
+    expect(mockReadUsage).not.toHaveBeenCalled();
+  });
+
+  it("the public health check is still public and does not read the usage", async () => {
+    const r = await call({ watch: "something-else" });
+    expect(r.status).toBe(200);
+    expect(r.body).toMatchObject({ status: "ok" });
+    expect(mockReadUsage).not.toHaveBeenCalled();
+  });
+
+  it("vercel.json asks Vercel to call it once a day", () => {
+    const cfg = JSON.parse(readFileSync("vercel.json", "utf8")) as { crons: Array<{ path: string; schedule: string }> };
+    const cron = cfg.crons.find((c) => c.path === "/api/health?watch=limited");
+    expect(cron?.schedule).toMatch(/^\d+ \d+ \* \* \*$/); // daily: the Hobby plan allows nothing more frequent
+  });
+});
+
+// ─── The hourly watch (GitHub Action): the day so far, in the same answer ───────────────────────────────────────────────────────────────────
+describe("/api/health?watch=limited also judges TODAY so far (for the hourly GitHub Action)", () => {
+  const share = (total: number, limited: number, causes: Record<string, number> = {}) => ({ total, limited, share: total ? limited / total : 0, causes });
+  const days = (yesterday: ReturnType<typeof share>, today: ReturnType<typeof share>) => ({
+    days: [{ date: "2026-10-13", providers: {}, scans: yesterday }, { date: "2026-10-14", providers: {}, scans: today }], totals: {}, scans: yesterday, basis: {},
+  });
+
+  it("today above the threshold: reported with its causes, but no Sentry event and no error line (the daily cron owns those, for yesterday)", async () => {
+    mockReadUsage.mockResolvedValue(days(share(200, 1), share(120, 30, { helius: 28, goplus: 2 })));
+    const r = await call({ watch: "limited" }, `Bearer ${SECRET}`);
+    const body = r.body as { alert: boolean; today: { date: string; alert: boolean; message: string } };
+    expect(body.alert).toBe(false); // yesterday is fine
+    expect(body.today).toMatchObject({ date: "2026-10-14", alert: true });
+    expect(body.today.message).toContain("helius 28, goplus 2");
+    expect(mockCaptureError).not.toHaveBeenCalled();
+    expect(mockLoggerError).not.toHaveBeenCalled();
+  });
+
+  it("today below the threshold, or with too few scans so far: no alert", async () => {
+    mockReadUsage.mockResolvedValue(days(share(200, 1), share(120, 3)));
+    expect(((await call({ watch: "limited" }, `Bearer ${SECRET}`)).body as { today: { alert: boolean } }).today.alert).toBe(false);
+    mockReadUsage.mockResolvedValue(days(share(200, 1), share(8, 8)));
+    expect(((await call({ watch: "limited" }, `Bearer ${SECRET}`)).body as { today: { alert: boolean } }).today.alert).toBe(false);
+  });
+
+  it("without a second day in the report, today is null (nothing breaks)", async () => {
+    mockReadUsage.mockResolvedValue({ days: [{ date: "2026-10-13", providers: {}, scans: share(100, 0) }], totals: {}, scans: share(100, 0), basis: {} });
+    expect((await call({ watch: "limited" }, `Bearer ${SECRET}`)).body).toMatchObject({ alert: false, today: null });
+  });
+
+  it("the workflow exists, runs every hour, needs the CRON_SECRET repository secret, asks the same endpoint and says so when the secret is missing", () => {
+    const yml = readFileSync(".github/workflows/limited-data-watch.yml", "utf8");
+    expect(yml).toMatch(/cron: "\d+ \* \* \* \*"/); // every hour
+    expect(yml).toContain("secrets.CRON_SECRET");
+    expect(yml).toContain("/api/health?watch=limited");
+    expect(yml).toContain("::notice::CRON_SECRET is not set"); // a notice, not a failure
+    expect(yml).toContain("issues: write");
+    expect(yml).not.toMatch(/contents: write/);
   });
 });

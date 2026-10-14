@@ -4,7 +4,8 @@ import { CREDIT_BASIS, type ProviderUsage, type UsageReport } from "../api/_lib/
 
 const u = (p: Partial<ProviderUsage>): ProviderUsage => ({ calls: 0, ok: 0, refused: 0, denied: 0, failed: 0, skipped: 0, credits: 0, ...p });
 
-function report(days: Array<{ date: string; helius?: Partial<ProviderUsage>; gecko?: Partial<ProviderUsage>; solscan?: Partial<ProviderUsage> }>): UsageReport {
+type Share = UsageReport["scans"];
+function report(days: Array<{ date: string; helius?: Partial<ProviderUsage>; gecko?: Partial<ProviderUsage>; solscan?: Partial<ProviderUsage>; scans?: Share }>, scans?: Share): UsageReport {
   const totals: UsageReport["totals"] = {};
   const add = (p: "helius" | "geckoterminal" | "solscan", v: Partial<ProviderUsage>) => {
     const t = (totals[p] ??= u({}));
@@ -16,9 +17,10 @@ function report(days: Array<{ date: string; helius?: Partial<ProviderUsage>; gec
       if (d.helius) { providers.helius = u(d.helius); add("helius", d.helius); }
       if (d.gecko) { providers.geckoterminal = u(d.gecko); add("geckoterminal", d.gecko); }
       if (d.solscan) { providers.solscan = u(d.solscan); add("solscan", d.solscan); }
-      return { date: d.date, providers };
+      return { date: d.date, providers, scans: d.scans ?? { total: 0, limited: 0, share: 0, causes: {} } };
     }),
     totals,
+    scans: scans ?? { total: 0, limited: 0, share: 0, causes: {} },
     basis: CREDIT_BASIS,
   };
 }
@@ -66,5 +68,29 @@ describe("formatReport", () => {
     const text = formatReport(report([{ date: "2026-10-11", helius: { calls: 1, ok: 1, credits: 10 } }]));
     expect(text).toContain("Ce que vaut une « unité »");
     expect(text).toContain("Helius credits");
+  });
+});
+
+describe("formatReport: the share of scans answered Limited data", () => {
+  const share = (total: number, limited: number, causes: Record<string, number> = {}): Share => ({ total, limited, share: total ? limited / total : 0, causes });
+
+  it("says how many cold scans, how many were Limited data, and which sources", () => {
+    const text = formatReport(report([{ date: "2026-10-11", helius: { calls: 1, ok: 1 }, scans: share(200, 2, { helius: 2 }) }], share(200, 2, { helius: 2 })));
+    expect(text).toContain("Scans à froid : 200, dont 2 répondus « Limited data » (1.0 %) : helius 2.");
+    expect(text).not.toContain("À regarder");
+  });
+
+  it("warns for the day above 3 % of at least 50 scans, and names the sources, biggest first", () => {
+    const bad = share(100, 12, { goplus: 2, helius: 11 });
+    const text = formatReport(report([{ date: "2026-10-10", scans: share(100, 1, { helius: 1 }) }, { date: "2026-10-11", scans: bad }], share(200, 13, { helius: 12, goplus: 2 })));
+    expect(text).toContain("À regarder");
+    expect(text).toContain("2026-10-11 : 12.0 % of 100 cold scans answered Limited data");
+    expect(text).toContain("helius 11, goplus 2");
+    expect(text).not.toContain("2026-10-10 : 1.0 %");
+  });
+
+  it("does not warn on too few scans, and prints nothing when no scan was counted", () => {
+    expect(formatReport(report([{ date: "2026-10-11", scans: share(10, 5, { helius: 5 }) }], share(10, 5, { helius: 5 })))).not.toContain("À regarder");
+    expect(formatReport(report([{ date: "2026-10-11" }]))).not.toContain("Scans à froid");
   });
 });

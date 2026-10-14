@@ -2,7 +2,11 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { timingSafeEqual } from "node:crypto";
 import { Redis } from "@upstash/redis";
 import { describeHeliusKey, getHeliusDiagnostics, probeHelius } from "./_lib/helius";
-import { initUsage, readUsage } from "./_lib/usage";
+import { initUsage, readUsage, limitedShareAlert } from "./_lib/usage";
+import { logger } from "./_lib/logger";
+import { initSentry, captureError } from "./_lib/sentry";
+
+initSentry();
 
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
   initUsage(new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN }));
@@ -29,6 +33,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if ((req.query ?? {}).usage !== undefined) {
     if (!isAuthorizedForUsage(req)) return res.status(401).json({ error: "unauthorized" });
     return res.json(await readUsage(Number((req.query ?? {}).usage)));
+  }
+
+  // `?watch=limited`: the check of the share of cold scans answered "Limited data" (a source was silent: api/_lib/helpers.ts scanGapCauses), owner only.
+  //   - YESTERDAY (a full day), called once a day by the vercel.json cron (which sends the CRON_SECRET): above 3 % of at least 50 scans it writes an error line (Vercel logs)
+  //     and a Sentry event that names the sources;
+  //   - TODAY SO FAR, in the same answer, for the hourly GitHub Action (.github/workflows/limited-data-watch.yml): judged the same way, but only reported (that Action opens
+  //     or closes an issue; no second Sentry event for the same day).
+  if ((req.query ?? {}).watch === "limited") {
+    if (!isAuthorizedForUsage(req)) return res.status(401).json({ error: "unauthorized" });
+    const report = await readUsage(2);
+    const yesterday = report.days[0];
+    const verdict = limitedShareAlert(yesterday.scans);
+    if (verdict.alert) {
+      logger.error("monitor", "Limited data share above the threshold", { date: yesterday.date, ...yesterday.scans });
+      captureError(new Error(`Limited data: ${verdict.message}`), { endpoint: "health", watch: "limited", date: yesterday.date });
+    }
+    const todayDay = report.days[1];
+    const todayVerdict = todayDay ? limitedShareAlert(todayDay.scans) : null;
+    return res.json({
+      date: yesterday.date,
+      alert: verdict.alert,
+      message: verdict.message,
+      scans: yesterday.scans,
+      today: todayDay && todayVerdict ? { date: todayDay.date, alert: todayVerdict.alert, message: todayVerdict.message, scans: todayDay.scans } : null,
+    });
   }
 
   // `?probe=1` makes one cheap Helius call from THIS function (at most once a

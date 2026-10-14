@@ -4,8 +4,8 @@ import type { Redis } from "@upstash/redis";
 vi.mock("../api/_lib/logger", () => ({ logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn(), metric: vi.fn() } }));
 
 import {
-  classify, heliusCredits, outcomeOf, recordCall, recordSkipped, pendingUsage, flushUsage, initUsage, readUsage,
-  _resetUsageForTests, CREDIT_BASIS, PROVIDERS,
+  classify, heliusCredits, outcomeOf, recordCall, recordSkipped, recordScanOutcome, limitedShareAlert, pendingUsage, flushUsage, initUsage, readUsage,
+  _resetUsageForTests, CREDIT_BASIS, PROVIDERS, LIMITED_ALERT_MIN_SCANS, LIMITED_ALERT_MAX_SHARE,
 } from "../api/_lib/usage";
 import { fetchJson, fetchJsonPost, _resetCircuitBreakersForTests } from "../api/_lib/http";
 
@@ -275,5 +275,85 @@ describe("fetchJson / fetchJsonPost count what they send", () => {
 
     expect(fetchMock).not.toHaveBeenCalled();
     expect(pendingUsage()).toEqual({ "dexscreener:skipped": 2 });
+  });
+});
+
+// ─── How many cold scans were answered "Limited data" (a source was silent), and which source ──────────────────────────────────────────────
+
+describe("counting the scans and their causes", () => {
+  it("a complete scan counts once in total; an incomplete one counts in total, in limited, and once per cause", () => {
+    recordScanOutcome([]);
+    recordScanOutcome(["helius"]);
+    recordScanOutcome(["helius", "goplus"]);
+    expect(pendingUsage()).toEqual({ "scans:total": 3, "scans:limited": 2, "scans:cause.helius": 2, "scans:cause.goplus": 1 });
+  });
+
+  it("goes out in the same single eval as the upstream counters", async () => {
+    const evalMock = vi.fn(async () => 1);
+    initUsage({ eval: evalMock } as unknown as Redis);
+    recordCall("https://api.rugcheck.xyz/x", 200);
+    recordScanOutcome(["rugcheck"]);
+    await flushUsage();
+    expect(evalMock).toHaveBeenCalledTimes(1);
+    const args = (evalMock.mock.calls[0] as unknown as [string, string[], string[]])[2];
+    expect(args).toEqual(expect.arrayContaining(["scans:total", "1", "scans:limited", "1", "scans:cause.rugcheck", "1"]));
+  });
+
+  it("never throws (counting must not break a scan)", () => {
+    expect(() => recordScanOutcome(undefined as unknown as string[])).not.toThrow();
+  });
+});
+
+describe("reading the share of Limited data scans", () => {
+  const NOW = new Date("2026-10-11T12:00:00Z");
+  const withRows = (rows: Record<string, Record<string, number | string>>) => initUsage({ hgetall: vi.fn(async (key: string) => rows[key] ?? null) } as unknown as Redis);
+
+  it("per day and in total, with the causes", async () => {
+    withRows({
+      "usage:2026-10-10": { "scans:total": 100, "scans:limited": 4, "scans:cause.helius": 3, "scans:cause.goplus": 1, "helius:calls": 5 },
+      "usage:2026-10-11": { "scans:total": "50", "scans:limited": "1", "scans:cause.chart": "1" },
+    });
+    const r = await readUsage(2, NOW);
+    expect(r.days[0].scans).toEqual({ total: 100, limited: 4, share: 0.04, causes: { helius: 3, goplus: 1 } });
+    expect(r.days[1].scans).toEqual({ total: 50, limited: 1, share: 0.02, causes: { chart: 1 } });
+    expect(r.scans).toEqual({ total: 150, limited: 5, share: 5 / 150, causes: { helius: 3, goplus: 1, chart: 1 } });
+    // the upstream counters are untouched by the new fields
+    expect(r.totals).toEqual({ helius: { calls: 5, ok: 0, refused: 0, denied: 0, failed: 0, skipped: 0, credits: 0 } });
+  });
+
+  it("a day with no scan has share 0, not NaN; without Redis the report is empty", async () => {
+    withRows({});
+    expect((await readUsage(1, NOW)).days[0].scans).toEqual({ total: 0, limited: 0, share: 0, causes: {} });
+    _resetUsageForTests();
+    expect((await readUsage(1, NOW)).scans).toEqual({ total: 0, limited: 0, share: 0, causes: {} });
+  });
+});
+
+describe("limitedShareAlert: when is the share worth a warning", () => {
+  const day = (total: number, limited: number, causes: Record<string, number> = {}) => ({ total, limited, share: total ? limited / total : 0, causes });
+
+  it("the thresholds are 3 % of at least 50 cold scans", () => {
+    expect(LIMITED_ALERT_MAX_SHARE).toBe(0.03);
+    expect(LIMITED_ALERT_MIN_SCANS).toBe(50);
+  });
+
+  it.each([
+    [1000, 30, false], // exactly 3 %: not above
+    [1000, 31, true],
+    [100, 3, false],
+    [100, 4, true],
+    [50, 2, true], // the smallest day that can be judged
+    [49, 49, false], // too few scans
+    [0, 0, false],
+    [500, 0, false],
+  ])("%i cold scans, %i Limited data: alert %s", (total, limited, alert) => {
+    expect(limitedShareAlert(day(total, limited)).alert).toBe(alert);
+  });
+
+  it("the message gives the share and the causes, biggest first", () => {
+    const v = limitedShareAlert(day(200, 20, { goplus: 4, helius: 17 }));
+    expect(v.alert).toBe(true);
+    expect(v.message).toContain("10.0 % of 200 cold scans answered Limited data");
+    expect(v.message).toContain("helius 17, goplus 4");
   });
 });

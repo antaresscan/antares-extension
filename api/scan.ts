@@ -49,7 +49,7 @@ import { initCondemned, getCondemned, condemn, condemnedEntryOf, shouldCondemn, 
 import { isPreviewDeployment } from "./_lib/deployment";
 import { logger } from "./_lib/logger";
 import { composeCriticalActors } from "./_lib/critical-actors";
-import { initUsage, flushUsage } from "./_lib/usage";
+import { initUsage, flushUsage, recordScanOutcome } from "./_lib/usage";
 import { downSources } from "./_lib/outage";
 import { deriveEvent } from "./_lib/verdict-history";
 // initHistoryCache / pushVerdictHistory / getVerdictHistory are no
@@ -759,6 +759,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // Emit a structured outcome event for every completed scan. Downstream
     // log aggregators can chart verdict distribution, layer availability,
     // and latency distribution without needing to re-derive them from logs.
+    // What the user got: a served-from-memory verdict (an issuer's asset whose market is silent) is not a Limited data answer, whatever the sources did.
+    const limitedCauses: string[] = result.sourceGap === true ? gapSourcesNow : [];
     logger.metric("scan.outcome", {
       requestId,
       mint: resolvedMint,
@@ -772,8 +774,11 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       degraded,
       // true = a source was silent: no verdict is shown for this scan ("Limited data"), see sourceGap above.
       limited: result.sourceGap === true,
+      // Which source(s) were down: the share of Limited data scans and its causes are counted per day (usage.ts) and watched (api/health.ts?watch=limited).
+      ...(limitedCauses.length > 0 ? { limitedCauses } : {}),
       scoringVersion: SCORING_VERSION,
     });
+    recordScanOutcome(limitedCauses);
 
     if (installId && !result.sourceGap) {
       void pushScanHistory(installId, {

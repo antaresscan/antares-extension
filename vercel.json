@@ -11,6 +11,10 @@
     {
       "path": "/api/cron-check-payments",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/health?watch=limited",
+      "schedule": "0 6 * * *"
     }
   ],
   "redirects": [
