@@ -16,7 +16,7 @@ import {
   isSolscanMarketsResponse, isSolscanMeta, isSolscanTransfersResponse,
   isRugCheckReport,
   sanitizeString, sanitizeUrl,
-  isChartGapDegraded, isReportGapDegraded, isLayerGap, isScanIncomplete, withServeWindows,
+  isChartGapDegraded, isReportGapDegraded, isLayerGap, isScanIncomplete, limitedDataEnabled, withServeWindows,
 } from "./_lib/helpers";
 import {
   heliusGetLargestAccounts, heliusGetMintAccount, heliusGetHolderPages, heliusGetCreatorReputation,
@@ -720,7 +720,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // did not answer carries NO verdict for the user: `sourceGap` makes the overlay show "Limited data", count down and ask again (the answer is kept 30 s).
     // The badge, the alerts and the history ignore it, and so does the rug database (below). "No pool" is not in this list (it cannot be told from a token that
     // has none), and an issuer's asset whose market cannot be read keeps its own answer (the last verdict, with its age: api/_lib/last-good.ts).
-    result.sourceGap = isScanIncomplete({ layers: result.layers, sourcesUsed: sources_used.length, deadlineSpent, chartGap, reportGap });
+    // LIMITED_DATA=off (helpers.ts limitedDataEnabled) is the emergency switch: no scan is marked, the engine's verdict is shown as before.
+    result.sourceGap = limitedDataEnabled() && isScanIncomplete({ layers: result.layers, sourcesUsed: sources_used.length, deadlineSpent, chartGap, reportGap });
     // An issuer-backed token (stablecoin, tokenized stock, LST...): the verdict of the last time its market WAS read is kept; when DexScreener
     // cannot be read, that verdict is served again with its age ("Scanned 6 min ago") instead of a verdict born from no market, unless this
     // scan itself found something worse (a fact from another source). See api/_lib/last-good.ts.

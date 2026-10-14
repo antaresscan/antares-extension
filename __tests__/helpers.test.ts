@@ -4,7 +4,7 @@ import {
   apiError, isCorsAllowed, isOriginInList, isValidDexScreenerResponse, isValidRugCheckSummary,
   isHeliusLargestAccountsResponse, isHeliusSupplyResponse,
   isSolscanMarketsResponse, isSolscanMeta, isSolscanTransfersResponse,
-  isRugCheckReport, withBudget, pickGoPlusResult, isChartGapDegraded, isReportGapDegraded, isLayerGap, GAP_LAYERS, CHART_EXPECTED_AFTER_MINUTES,
+  isRugCheckReport, withBudget, pickGoPlusResult, isChartGapDegraded, isReportGapDegraded, isLayerGap, GAP_LAYERS, limitedDataEnabled, CHART_EXPECTED_AFTER_MINUTES,
 } from "../api/_lib/helpers";
 import { CA_RE } from "../api/_lib/constants";
 
@@ -606,5 +606,23 @@ describe("isLayerGap", () => {
     expect(isLayerGap(undefined)).toBe(false);
     expect(isLayerGap({})).toBe(false);
     expect(isLayerGap({ helius: {} })).toBe(false);
+  });
+});
+
+// The emergency switch: LIMITED_DATA=off in the deployment's environment (then a redeploy) and nothing is marked any more.
+describe("limitedDataEnabled", () => {
+  it("is on by default, whatever else is in the environment", () => {
+    expect(limitedDataEnabled({})).toBe(true);
+    expect(limitedDataEnabled({ LIMITED_DATA: undefined })).toBe(true);
+    expect(limitedDataEnabled({ LIMITED_DATA: "" })).toBe(true);
+    expect(limitedDataEnabled({ LIMITED_DATA: "on" })).toBe(true);
+    expect(limitedDataEnabled({ LIMITED_DATA: "1" })).toBe(true);
+    expect(limitedDataEnabled({ OTHER: "off" })).toBe(true);
+  });
+  it.each(["off", "OFF", " off ", "0", "false", "False", "no"])("%j turns it off", (v) => {
+    expect(limitedDataEnabled({ LIMITED_DATA: v })).toBe(false);
+  });
+  it("a value it does not know leaves it on (only the words above turn it off, a typo must not disable the safety net)", () => {
+    for (const v of ["of", "disable", "disabled", "n", "offf"]) expect(limitedDataEnabled({ LIMITED_DATA: v })).toBe(true);
   });
 });

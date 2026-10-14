@@ -240,6 +240,15 @@ export function isReportGapDegraded(
 export const GAP_LAYERS = ["helius", "rugcheck", "goplus"] as const;
 
 /**
+ * The emergency switch of "Limited data". `LIMITED_DATA=off` (also "0", "false", "no") in the deployment's environment, then a redeploy (about a minute, no code
+ * revert), and no scan is marked `sourceGap` any more: the overlay and the site show the engine's verdict again, as before. Everything else stays (a scan with a
+ * silent source is still `degraded`, so it is cached 30 s only). For the day a source misbehaves for a whole class of tokens and "Limited data" shows where it should not.
+ */
+export function limitedDataEnabled(env: Record<string, string | undefined> = process.env): boolean {
+  return !["off", "0", "false", "no"].includes(String(env.LIMITED_DATA ?? "").trim().toLowerCase());
+}
+
+/**
  * One of GAP_LAYERS did not answer, whatever the verdict. A missing source does not only close the door to SAFE: replayed on the 1 121 tokens
  * of the corpus with one source silent, Helius alone turned 172 SAFE into CAUTION, but also 132 RUG into DANGER and 22 RUG into CAUTION (the
  * concentration flags are gone), RugCheck turned 4 DANGER into SAFE. A verdict reached that way is not the token's: see holdLastVerdict.

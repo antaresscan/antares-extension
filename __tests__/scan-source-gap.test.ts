@@ -480,6 +480,48 @@ describe("scan — a source did not answer", () => {
     });
   }
 
+  describe("the emergency switch (LIMITED_DATA=off)", () => {
+    const saved = process.env.LIMITED_DATA;
+    afterEach(() => { if (saved === undefined) delete process.env.LIMITED_DATA; else process.env.LIMITED_DATA = saved; });
+
+    for (const [name, silence] of silences) {
+      it(name + " silent with the switch off: not marked, the engine's verdict as before, still degraded (cached 30 s), recorded and in the history as before", async () => {
+        process.env.LIMITED_DATA = "off";
+        setupGoodTokenMocks();
+        silence();
+        const res = createMockRes();
+        await run(createMockReq({ ca: WSOL }), res);
+        const body = jsonBody(res);
+        expect(body?.sourceGap).toBe(false);
+        expect(body?.degraded).toBe(true);
+        expect(body?.freshForSec).toBe(30);
+        expect(vi.mocked(setShortCachedResult)).toHaveBeenCalled();
+        expect(mockRecordRug).toHaveBeenCalledTimes(1);
+        expect(mockPushHistory).toHaveBeenCalledTimes(1);
+      });
+    }
+
+    it("a Free caller gets no mark either, and the extension would show the verdict, not the Limited data card", async () => {
+      process.env.LIMITED_DATA = "off";
+      setupGoodTokenMocks();
+      silences[0][1]();
+      const res = createMockRes();
+      await run(freeReq(), res);
+      const body = (res as unknown as { getBody: () => Record<string, unknown> }).getBody();
+      expect(body?.sourceGap).toBe(false);
+      expect(sourceGapOf(body as never)).toBe(false);
+    });
+
+    it("witness: switched back on (or never off), the same silent source is marked again", async () => {
+      process.env.LIMITED_DATA = "on";
+      setupGoodTokenMocks();
+      silences[0][1]();
+      const res = createMockRes();
+      await run(createMockReq({ ca: WSOL }), res);
+      expect(jsonBody(res)?.sourceGap).toBe(true);
+    });
+  });
+
   it("DexScreener silent: not marked (no pool cannot be told from a token that has none), as before", async () => {
     setupGoodTokenMocks();
     const good = mockFetch.getMockImplementation()!;
