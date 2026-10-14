@@ -130,6 +130,12 @@ export const LIMITED_DATA_LABEL = "LIMITED DATA"
  */
 export const LIMITED_DATA_SUMMARY = "We would rather wait than mislead you"
 
+/**
+ * Shown when the pointer rests on the three footer buttons of the Limited data card. They do nothing while no verdict is known: Full Analysis would open the token page,
+ * which reads the scan again and could show a verdict (2026-10-14: "SAFE" there while the card said Limited data), and the panels explain a verdict that is not shown.
+ */
+export const LIMITED_BUTTONS_TITLE = "Available when the data sources answer"
+
 /** What the line says when the overlay has stopped trying. */
 export const SOURCE_GAP_LABEL = "Source unavailable"
 
