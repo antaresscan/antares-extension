@@ -136,7 +136,7 @@ export const LIMITED_DATA_SUMMARY = "We would rather wait than mislead you"
  */
 export const LIMITED_BUTTONS_TITLE = "Available when the data sources answer"
 
-/** What the line says when the overlay has stopped trying. */
+/** What the line says when the overlay has stopped trying (the only time the line names the source problem). */
 export const SOURCE_GAP_LABEL = "Source unavailable"
 
 /** Shown when the pointer rests on the line. Plain text: nothing from the server goes in it. */
@@ -176,9 +176,12 @@ export function sourceGapRetryAt(data: object, receivedAt: number, attempt: numb
   return Math.max(serverCopyOver, earliest)
 }
 
-/** The line: the countdown to the next try, "rescanning…" while it is under way, or the bare label once the overlay has given up (`msLeft` null). */
+/**
+ * The line: "Rescanning in 24s" (the countdown to the next try), "Rescanning…" while it is under way. Only that: the card already says Limited data, and the line does not
+ * repeat why. Once the overlay has given up (`msLeft` null) it is not rescanning any more, and says "Source unavailable" instead of promising a try that will not come.
+ */
 export function sourceGapText(msLeft: number | null): string {
   if (msLeft === null) return SOURCE_GAP_LABEL
-  if (msLeft <= 0) return `${SOURCE_GAP_LABEL}, rescanning…`
-  return `${SOURCE_GAP_LABEL}, rescanning in ${Math.ceil(msLeft / 1000)}s`
+  if (msLeft <= 0) return "Rescanning…"
+  return `Rescanning in ${Math.ceil(msLeft / 1000)}s`
 }
