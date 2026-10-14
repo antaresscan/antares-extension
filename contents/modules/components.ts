@@ -8,7 +8,7 @@ import { encodeHashPayload } from "../../shared/hash-payload"
 import { toggleAiSummary } from "./ai-summary"
 import { toggleCriticalFlags } from "./critical-flags"
 import { isHoldersUnverifiedFlag } from "../../shared/holders-unverified"
-import { LOADING_HINT, SOURCE_GAP_TITLE, LIMITED_DATA_LABEL, LIMITED_DATA_SUMMARY, sourceGapOf } from "./resilience"
+import { LOADING_HINT, SOURCE_GAP_TITLE, LIMITED_DATA_LABEL, LIMITED_DATA_SUMMARY, LIMITED_BUTTONS_TITLE, sourceGapOf } from "./resilience"
 
 // DOM-API element builder. Used by buildResult instead of string template
 // literals so every text interpolation goes through textContent (which the
@@ -36,6 +36,23 @@ function el<K extends keyof HTMLElementTagNameMap>(
   }
   return node
 }
+
+/**
+ * Makes a footer button do nothing: while the card is Limited data no verdict is known, so Critical Flags, Full Analysis and AI Summary have nothing true to open.
+ * Not a link (no href, no target: nothing to follow, nothing to focus), a real <button> is disabled, aria-disabled says so, and attachClose / attachAnalysisBtn
+ * skip it so that no click handler is ever bound. The CSS dims it and ignores the pointer (the tooltip is on the footer).
+ */
+function makeInert<T extends HTMLElement>(btn: T): T {
+  btn.setAttribute("aria-disabled", "true")
+  btn.setAttribute("tabindex", "-1")
+  btn.classList.add("disabled")
+  for (const attr of ["href", "target", "rel", "title"]) btn.removeAttribute(attr)
+  if (btn instanceof HTMLButtonElement) btn.disabled = true
+  return btn
+}
+
+/** True for a footer button made inert by makeInert. */
+const isInert = (btn: Element | null): boolean => btn?.getAttribute("aria-disabled") === "true"
 
 // Inserts an SVG icon string into a parent element. The only callers pass
 // the static SVG_MOVE / SVG_CLOSE constants from constants.ts, never user
@@ -176,7 +193,7 @@ export function attachClose(
   // an upgrade-redirect listener attached at build time. We skip the
   // clone+rebind here so we don't wipe that listener.
   const aiBtn = state.shadow?.querySelector("#ant-ai-summary-btn")
-  if (aiBtn && !aiBtn.classList.contains("locked")) {
+  if (aiBtn && !aiBtn.classList.contains("locked") && !isInert(aiBtn)) {
     const fresh = aiBtn.cloneNode(true) as HTMLElement
     aiBtn.parentNode?.replaceChild(fresh, aiBtn)
     fresh.addEventListener("click", (e) => {
@@ -190,7 +207,7 @@ export function attachClose(
   // now visible in-overlay so users no longer need to spawn a tab to see
   // why the verdict was assigned. Same `.locked` skip as above for free.
   const cfBtn = state.shadow?.querySelector("#ant-critical-flags-btn")
-  if (cfBtn && !cfBtn.classList.contains("locked")) {
+  if (cfBtn && !cfBtn.classList.contains("locked") && !isInert(cfBtn)) {
     const fresh = cfBtn.cloneNode(true) as HTMLElement
     cfBtn.parentNode?.replaceChild(fresh, cfBtn)
     fresh.addEventListener("click", (e) => {
@@ -212,6 +229,8 @@ export function attachAnalysisBtn(mint: string) {
   // Free-tier note: the locked variant carries `.locked` and already has
   // an upgrade-redirect listener attached at build time. Skip rebind.
   if (btn.classList.contains("locked")) return
+  // Limited data: the button is inert, nothing opens the token page (see makeInert).
+  if (isInert(btn)) return
 
   // Clone to remove any previous listener
   const fresh = btn.cloneNode(true) as HTMLElement
@@ -845,6 +864,7 @@ export function buildResultNode(
       id: "ant-critical-flags-btn",
     }, "Critical Flags")
   }
+  if (limited) makeInert(cfBtn)
   foNode.appendChild(cfBtn)
 
   // Full Analysis \u2014 always <a>. For Pro, attachAnalysisBtn binds a
@@ -870,6 +890,7 @@ export function buildResultNode(
         id: "ant-full-analysis",
         "data-ca": encodeURIComponent(mint),
       }, "Full Analysis")
+  if (limited) makeInert(faBtn)
   foNode.appendChild(faBtn)
 
   // AI Summary \u2014 same shape as cf-btn above.
@@ -892,7 +913,10 @@ export function buildResultNode(
       id: "ant-ai-summary-btn",
     }, "AI Summary")
   }
+  if (limited) makeInert(aiBtn)
   foNode.appendChild(aiBtn)
+  // The tooltip sits on the footer: the inert buttons ignore the pointer, so it is the footer that is hovered.
+  if (limited) foNode.setAttribute("title", LIMITED_BUTTONS_TITLE)
 
   const tkNode = tokenSymbol
     ? el("div", { class: "tk" },

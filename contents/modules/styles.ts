@@ -583,6 +583,9 @@ export const SHADOW_CSS = `
 }
 .fo .locked:hover .pro-ghost { color: rgba(245,208,0,.28); }
 
+/* Limited data: the three footer buttons do nothing (no verdict is known). Dimmed, no pointer, no hover effect; the footer carries the tooltip. */
+.fo [aria-disabled="true"] { opacity: .35; cursor: not-allowed; pointer-events: none; }
+
 @keyframes ant-pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
 .scanning { display:flex; align-items:center; gap:8px; color:#777; font-size:12px; padding:12px 14px; font-family:'IBM Plex Mono',monospace; }
 .dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:#444; animation:ant-pulse 1.2s infinite; }
