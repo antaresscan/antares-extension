@@ -688,6 +688,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       lpBurned,
       lpLocked,
       lpLockedPct: decision.lpBurnedPct > 0 ? Math.round(decision.lpBurnedPct * 100) / 100 : null,
+      issuerKind: decision.issuerBacked?.kind ?? null,
       candles: candles.slice(-20).map(c => ({ close: c.c })),
       topHolderPct,
       top10HolderPct,
@@ -742,7 +743,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
         if (!degraded) setLastGoodResult(resolvedMint, result);
       } else {
         const memory = serveLastGood(await getLastGoodResult<ScanResult>(resolvedMint), result);
-        if (memory) result = memory;
+        if (memory) result = { ...memory, issuerKind: decision.issuerBacked.kind }; // an older memory may not carry it
       }
     }
     if (result.aiSummary && !degraded) {

@@ -53,6 +53,8 @@ export const FREE_SCAN_FIELDS = [
   "scannedAgoSec",
   // That a source did not answer (the overlay shows no verdict for such a scan), not which one: the Free overlay must be able to tell.
   "sourceGap",
+  // What kind of issuer's asset this is (a stablecoin, a tokenized stock...), or null: the Free overlay draws the Mint / Freeze / LP Lock cells of such a token as a dash. A label from a public registry.
+  "issuerKind",
   "freshForSec",
   "staleLeftSec",
   "requestId",

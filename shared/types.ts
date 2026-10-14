@@ -84,6 +84,8 @@ export interface ScanResponseData {
   staleLeftSec?: number;
   /** A data source that almost always answers did not, for a SAFE or CAUTION: the overlay says so and counts down to the next try (server-decided, Free included). */
   sourceGap?: boolean;
+  /** The kind of issuer's asset (stable, tokenized, lst...), null for any other token: its Mint / Freeze / LP Lock cells are a dash, not crosses. */
+  issuerKind?: string | null;
     recentTransfers?: Transfer[];
     aiSummary?: string | null;
     topHolderPct?: number | null;

@@ -1,5 +1,6 @@
 // ─── ANTARES TYPE DEFINITIONS ─────────────────────────────────────────────────────────────
 // Centralised types for all API layers, scoring engine, and scan results.
+import type { IssuerKind } from "./issuer-assets";
 
 // ─── SEVERITY & FLAGS ─────────────────────────────────────────────────────────────────
 export type Severity = "critical" | "warning" | "info" | "bonus";
@@ -446,6 +447,12 @@ export interface ScanResult {
   scannedAgoSec?: number;
   /** true when a SAFE or CAUTION was reached while a data source that almost always answers did not (Helius, RugCheck, GoPlus, the chart of an old token, the whole scan out of time). The overlay says so and counts down to the next try; Free callers get it too. */
   sourceGap?: boolean;
+  /**
+   * The kind of issuer-backed token this is (stablecoin, tokenized stock, liquid staking token...: api/_lib/issuer-assets.ts), null for any other token. The overlay shows the
+   * Mint / Freeze / LP Lock cells of such a token as a dash, not as red crosses: the issuer holds those authorities by design, and a cross under a SAFE verdict reads as a contradiction.
+   * Public (the registry is public), sent to Free callers too.
+   */
+  issuerKind?: IssuerKind | null;
   // Tri-state: true = present / blocked, false = verified absent, null = NOT verified (never shown as OK).
   honeypot?: boolean | null;
   mintAuthority?: boolean | null;
