@@ -1196,3 +1196,66 @@ describe("RugCheck's memory: a token scanned before survives a RugCheck outage",
     expect(sets.filter((s) => s.key.startsWith("antares:rugcheck:"))).toHaveLength(0); // and an answer that is not an analysis is not kept
   });
 });
+
+// ─── The answer says which kind of issuer's asset the token is (the overlay draws its Mint / Freeze / LP Lock as dashes, not crosses) ────────────────────
+// `issuerKind` comes from the registry by mint ADDRESS (api/_lib/issuer-assets.ts), null for any other token, and Free callers get it too.
+describe("issuerKind: the answer names the issuer's asset", () => {
+  const USDC = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+  const marketOf = (mint: string, symbol: string) => {
+    const good = mockFetch.getMockImplementation()!;
+    mockFetch.mockImplementation((url: string, ...rest: unknown[]) =>
+      String(url).includes("dexscreener")
+        ? Promise.resolve({ ok: true, json: () => Promise.resolve({ pairs: [{
+            pairAddress: "pairUsdc", baseToken: { address: mint, symbol, name: symbol }, quoteToken: { address: "So11111111111111111111111111111111111111112", symbol: "SOL" },
+            liquidity: { usd: 5_000_000 }, volume: { h24: 900_000, h1: 40_000 }, priceChange: { m5: 0, h1: 0, h6: 0, h24: 0 }, txns: { m5: { buys: 10, sells: 10 } },
+            priceUsd: "1.0001", marketCap: 40_000_000_000, fdv: 40_000_000_000, pairCreatedAt: Date.now() - 900 * 24 * 3600 * 1000,
+            info: { socials: [{ type: "twitter", url: "https://twitter.com/test" }], websites: [{ url: "https://test.com" }], imageUrl: "https://img.test.com/icon.png" },
+          }] }) })
+        : good(url, ...rest));
+  };
+  const freeReqFor = (ca: string): VercelRequest => {
+    const req = createMockReq({ ca });
+    (req as unknown as { headers: Record<string, string> }).headers["x-antares-install"] = "free-install-source-gap-0001";
+    return req;
+  };
+  const bodyFor = async (ca: string, tier: "pro" | "free") => {
+    const res = createMockRes();
+    await run(tier === "free" ? freeReqFor(ca) : createMockReq({ ca }), res);
+    return (tier === "free" ? (res as unknown as { getBody: () => Record<string, unknown> }).getBody() : jsonBody(res)) as Record<string, unknown>;
+  };
+
+  for (const tier of ["pro", "free"] as const) {
+    it(tier + " | an ordinary token: issuerKind is null", async () => {
+      setupGoodTokenMocks();
+      const body = await bodyFor(WSOL, tier);
+      expect(body.issuerKind).toBeNull();
+    });
+  }
+
+  for (const tier of ["pro", "free"] as const) {
+    it(tier + " | a stablecoin of the registry, its market read: issuerKind is \"stable\"", async () => {
+      setupGoodTokenMocks();
+      marketOf(USDC, "USDC");
+      const res = createMockRes();
+      await run(tier === "free" ? freeReqFor(USDC) : createMockReq({ ca: USDC }), res);
+      const body = (tier === "free" ? (res as unknown as { getBody: () => Record<string, unknown> }).getBody() : jsonBody(res)) as Record<string, unknown>;
+      expect(body.issuerKind).toBe("stable");
+    });
+  }
+
+  it("a verdict served again from the memory of the last time the market was read (DexScreener silent) names the asset too, even if that memory is older than the field", async () => {
+    setupGoodTokenMocks();
+    const good = mockFetch.getMockImplementation()!;
+    mockFetch.mockImplementation((url: string, ...rest: unknown[]) =>
+      String(url).includes("dexscreener") ? Promise.resolve({ ok: true, json: () => Promise.resolve({ pairs: null }) }) : good(url, ...rest));
+    vi.mocked(getLastGoodResult).mockResolvedValueOnce({
+      score: 850, risk: "CAUTION", rugKind: null, flags: [], pair: null, resolvedMint: USDC, confidence: 90, sources_used: ["dexscreener", "rugcheck", "goplus", "helius"],
+      tokenSymbol: "USDC", tokenName: "USD Coin", priceUsd: 1.0001, liquidity: 52_000_000, fetchedAt: Date.now() - 6 * 60_000, requestId: "old",
+    } as never); // no issuerKind in it: it was stored before the field existed
+    const res = createMockRes();
+    await run(createMockReq({ ca: USDC }), res);
+    const body = jsonBody(res);
+    expect(body?.servedFromMemory).toBe(true);
+    expect(body?.issuerKind).toBe("stable");
+  });
+});

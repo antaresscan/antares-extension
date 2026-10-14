@@ -664,11 +664,14 @@ export function buildSkeletonNode(): DocumentFragment {
   return frag
 }
 
+// The little dash of a check that is neither passed nor failed (Sell on Solana, a source that did not answer, an issuer's authority): the same under every label.
+const dashNode = (): HTMLElement => el("b", { style: "color:#333" }, "\u2014")
+
 function buildSiBool(siLabel: string, val: unknown, invert = false): HTMLElement {
   if (val == null) {
     return el("div", { class: "si" },
       el("span", undefined, siLabel),
-      el("b", { style: "color:#333" }, "\u2014"),
+      dashNode(),
     )
   }
   const yes = invert ? !val : !!val
@@ -696,7 +699,7 @@ function buildSiLp(data: ScanResponseData): HTMLElement {
   if (data.lpBurned == null && data.lpLocked == null) {
     return el("div", { class: "si" },
       el("span", undefined, "LP Lock"),
-      el("b", { style: "color:#555" }, "\u2014"),
+      dashNode(),
     )
   }
   return el("div", { class: "si" },
@@ -802,7 +805,12 @@ export function buildResultNode(
     liq !== null && liq < 5000 ? "n" : liq !== null && liq > 50000 ? "y" : undefined
 
   // The checks come from sources, some of which did not answer: none is shown as passed or failed ("\u2014"), the liquidity is public market data.
-  const facts = limited ? { ...data, honeypot: null, mintAuthority: null, freezeAuthority: null, lpBurned: null, lpLocked: null } : data
+  // An issuer's asset (a stablecoin, a tokenized stock, a liquid staking token...) holds its mint and freeze authorities by design and its liquidity is not what backs it: next to a SAFE verdict,
+  // red crosses under Mint, Freeze and LP Lock read as a contradiction, so those three are a dash too (the server says which tokens: issuerKind).
+  const issuerAsset = typeof data.issuerKind === "string" && data.issuerKind !== ""
+  const facts = limited
+    ? { ...data, honeypot: null, mintAuthority: null, freezeAuthority: null, lpBurned: null, lpLocked: null }
+    : issuerAsset ? { ...data, mintAuthority: null, freezeAuthority: null, lpBurned: null, lpLocked: null } : data
   const ssNode = el("div", { class: "ss" },
     buildSiBool("Sell", facts.honeypot, true),
     buildSiBool("Mint", facts.mintAuthority, true),
