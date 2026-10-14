@@ -107,3 +107,72 @@ export function scannedAgoOf(data: object): number | null {
 export function scannedAgoText(ageMs: number): string {
   return `Scanned ${staleAgeLabel(ageMs)}`
 }
+
+// ─── A verdict reached while a data source did not answer ──────────────────────────────────────────────────────────────
+//
+// The server marks a scan made while Helius, RugCheck or GoPlus (or the chart of an old token, or the whole scan out of time) did not answer
+// `sourceGap`, Free callers included: the flags that say which source are Pro, the fact that one is missing is not. Such a scan has NO verdict for
+// the user (replayed on the corpus with one source silent, a SAFE reads CAUTION, a DANGER reads SAFE, a RUG reads DANGER): the overlay shows the
+// Limited data card, in the design of the others and in the four colours of the verdicts mixed; one line at its foot says what is going on and
+// counts down to the next try, which the overlay makes by itself. When every source answers again the real verdict takes its place.
+//
+// The countdown is not a guess and not random. The server keeps such an answer 30 s (`freshForSec`, counted from `fetchedAt`), and asking
+// again before that only gets the same answer back: so the first tries are made when the server's own copy is over, and the number on
+// screen is the time left to it. Later tries are a minute apart (a source that is down for long is not hammered by every open tab), and
+// after SOURCE_GAP_GIVE_UP_MS the line stays but stops counting.
+
+/** The word of the card while a source is silent (it takes the place of the verdict, in the same type). */
+export const LIMITED_DATA_LABEL = "LIMITED DATA"
+
+/**
+ * What the card says under it. It says why nothing is shown in the voice of a product that refuses to guess (the line at the foot says the cause and counts
+ * down): a user in a hurry reads "the tool is broken" in "no verdict", and "the tool is protecting my decision" here. Chosen by the product owner, 2026-10-14.
+ */
+export const LIMITED_DATA_SUMMARY = "We would rather wait than mislead you"
+
+/** What the line says when the overlay has stopped trying. */
+export const SOURCE_GAP_LABEL = "Source unavailable"
+
+/** Shown when the pointer rests on the line. Plain text: nothing from the server goes in it. */
+export const SOURCE_GAP_TITLE = "A data source did not answer, so this verdict may change. The scan refreshes by itself."
+
+/** After the server's copy is over, a short margin so that the try finds the copy gone and not the very last millisecond of it. */
+export const SOURCE_GAP_MARGIN_MS = 1_000
+
+/** The first tries (the server's copy is the clock); from this one on they are SOURCE_GAP_REPEAT_MS apart. */
+export const SOURCE_GAP_QUICK_TRIES = 2
+
+/** The wait between two tries once the quick ones are used. */
+export const SOURCE_GAP_REPEAT_MS = 60_000
+
+/** After this long since the first gap seen the overlay stops trying by itself (the line stays, without a countdown). */
+export const SOURCE_GAP_GIVE_UP_MS = 15 * 60_000
+
+/** How long an answer with a gap is kept when the server does not say (an older server): what it does today for a degraded answer. */
+const SOURCE_GAP_DEFAULT_FRESH_MS = 30_000
+
+/**
+ * True when the server says a data source did not answer for this scan: the overlay shows no verdict (the Limited data card). Not for a verdict
+ * served from memory (its own line, "Scanned 6 min ago", already says it), and read as unknown: an older server sends nothing.
+ */
+export function sourceGapOf(data: object): boolean {
+  return (data as { sourceGap?: unknown }).sourceGap === true && scannedAgoOf(data) === null
+}
+
+/**
+ * The moment (device clock) of the next try for an answer received at `receivedAt`, `attempt` tries having been made already. The first
+ * ones wait for the end of the server's copy of the answer, never less than a second from `now`; the following ones a minute.
+ */
+export function sourceGapRetryAt(data: object, receivedAt: number, attempt: number, now: number): number {
+  const fresh = secToMs((data as { freshForSec?: unknown }).freshForSec, 3600) ?? SOURCE_GAP_DEFAULT_FRESH_MS
+  const serverCopyOver = madeAtOf(data as { fetchedAt?: unknown }, receivedAt) + fresh + SOURCE_GAP_MARGIN_MS
+  const earliest = now + (attempt >= SOURCE_GAP_QUICK_TRIES ? SOURCE_GAP_REPEAT_MS : 1_000)
+  return Math.max(serverCopyOver, earliest)
+}
+
+/** The line: the countdown to the next try, "rescanning…" while it is under way, or the bare label once the overlay has given up (`msLeft` null). */
+export function sourceGapText(msLeft: number | null): string {
+  if (msLeft === null) return SOURCE_GAP_LABEL
+  if (msLeft <= 0) return `${SOURCE_GAP_LABEL}, rescanning…`
+  return `${SOURCE_GAP_LABEL}, rescanning in ${Math.ceil(msLeft / 1000)}s`
+}

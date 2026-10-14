@@ -51,6 +51,8 @@ export const FREE_SCAN_FIELDS = [
   "degraded",
   "servedFromMemory",
   "scannedAgoSec",
+  // That a source did not answer (the overlay shows no verdict for such a scan), not which one: the Free overlay must be able to tell.
+  "sourceGap",
   "freshForSec",
   "staleLeftSec",
   "requestId",

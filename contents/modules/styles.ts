@@ -146,17 +146,20 @@ export const SHADOW_CSS = `
 .box.caution{ background: linear-gradient(160deg,rgba(255,255,255,.09) 0%,rgba(255,255,255,.035) 30%,rgba(255,255,255,0) 52%), linear-gradient(180deg,#0e0d0a 0%,#0a0a09 100%); }
 .box.danger { background: linear-gradient(160deg,rgba(255,255,255,.09) 0%,rgba(255,255,255,.035) 30%,rgba(255,255,255,0) 52%), linear-gradient(180deg,#0e0a0a 0%,#0a0909 100%); }
 .box.rug    { background: linear-gradient(160deg,rgba(255,255,255,.09) 0%,rgba(255,255,255,.035) 30%,rgba(255,255,255,0) 52%), linear-gradient(180deg,#100809 0%,#0a0808 100%); }
+.box.limited { background: linear-gradient(160deg,rgba(255,255,255,.09) 0%,rgba(255,255,255,.035) 30%,rgba(255,255,255,0) 52%), linear-gradient(180deg,#0d0e0d 0%,#090a0a 100%); }
 
 .box.safe::before   { background: #00e5b0; }
 .box.caution::before{ background: #f5d000; }
 .box.danger::before { background: #ff5f5f; }
 .box.rug::before    { background: #ff2244; }
+.box.limited::before { background: linear-gradient(90deg,#00e5b0 0%,#00e5b0 14%,#f5d000 38%,#f5d000 42%,#ff5f5f 62%,#ff5f5f 66%,#ff2244 88%,#ff2244 100%); }
 
 .topbar { height: 2px; }
 .box.safe    .topbar { background: linear-gradient(90deg,transparent,#00e5b0,transparent); }
 .box.caution .topbar { background: linear-gradient(90deg,transparent,#f5d000,transparent); }
 .box.danger  .topbar { background: linear-gradient(90deg,transparent,#ff5f5f,transparent); }
 .box.rug     .topbar { background: linear-gradient(90deg,transparent,#ff2244,transparent); }
+.box.limited .topbar { background: linear-gradient(90deg,#00e5b0 0%,#00e5b0 14%,#f5d000 38%,#f5d000 42%,#ff5f5f 62%,#ff5f5f 66%,#ff2244 88%,#ff2244 100%); background: linear-gradient(in oklab 90deg,#00e5b0 0%,#00e5b0 14%,#f5d000 38%,#f5d000 42%,#ff5f5f 62%,#ff5f5f 66%,#ff2244 88%,#ff2244 100%); }
 
 /* Refresh shimmer: animated gradient slides left-to-right across the
    2px topbar during a silent rescan (login/logout sync, tab focus).
@@ -371,6 +374,9 @@ export const SHADOW_CSS = `
 .box.caution .vb h1 { color: #f5d000; text-shadow: 0 0 30px rgba(245,208,0,.12); }
 .box.danger  .vb h1 { color: #ff5f5f; text-shadow: 0 0 30px rgba(255,95,95,.15); }
 .box.rug     .vb h1 { color: #ff2244; text-shadow: 0 0 40px rgba(255,34,68,.2); }
+/* Limited data: the word is in the four verdict colours, mixed in a gradient. Each colour holds a short plateau (the exact colour is there to see) and fades into the next;
+   the fade is computed in oklab (the second declaration, ignored where it is not understood) so that green into yellow does not go muddy. */
+.box.limited .vb h1 { display: inline-block; color: transparent; background: linear-gradient(90deg,#00e5b0 0%,#00e5b0 14%,#f5d000 38%,#f5d000 42%,#ff5f5f 62%,#ff5f5f 66%,#ff2244 88%,#ff2244 100%); background: linear-gradient(in oklab 90deg,#00e5b0 0%,#00e5b0 14%,#f5d000 38%,#f5d000 42%,#ff5f5f 62%,#ff5f5f 66%,#ff2244 88%,#ff2244 100%); -webkit-background-clip: text; background-clip: text; }
 
 /* FIX: .sr margin-top augmenté pour éviter que le score colle au verdict */
 .sr { display: flex; align-items: center; gap: 8px; padding: 0 14px; margin-top: 10px; }
@@ -380,9 +386,13 @@ export const SHADOW_CSS = `
 .dt { width: 5px; height: 5px; border-radius: 50%; }
 .dt.on  { background: #00e5b0; }
 .dt.off { background: #222226; }
+.dt.lim-0 { background: #00e5b0; } .dt.lim-1 { background: #f5d000; } .dt.lim-2 { background: #ff5f5f; } .dt.lim-3 { background: #ff2244; }
 
 .sbar { margin: 6px 14px 0; height: 2px; background: #181818; border-radius: 1px; overflow: hidden; }
 .sbar-fill { height: 100%; border-radius: 1px; width: 0%; transition: width 1.1s cubic-bezier(.22,1,.36,1); }
+.sbar.lim { display: flex; background: none; }
+.sbar.lim i { flex: 1; display: block; opacity: .85; }
+.sbar.lim i:nth-child(1) { background: #00e5b0; } .sbar.lim i:nth-child(2) { background: #f5d000; } .sbar.lim i:nth-child(3) { background: #ff5f5f; } .sbar.lim i:nth-child(4) { background: #ff2244; }
 .box.safe    .sbar-fill { background: linear-gradient(90deg,#00e5b055,#00e5b0); }
 .box.caution .sbar-fill { background: linear-gradient(90deg,#f5d00044,#f5d000); }
 .box.danger  .sbar-fill { background: linear-gradient(90deg,#ff5f5f44,#ff5f5f); }
@@ -393,6 +403,7 @@ export const SHADOW_CSS = `
 .box.caution .sum { color: #c4a838; }
 .box.danger  .sum { color: #d47878; }
 .box.rug     .sum { color: #ff5566; }
+.box.limited .sum { color: #9a9a9a; }
 .ai-sum { padding: 6px 14px 2px; font-size: 9px; color: #8a8aad; line-height: 1.45; letter-spacing: .02em; font-family: 'IBM Plex Mono', monospace; }
 .ai-label { font-weight: 700; color: #a78bfa; margin-right: 4px; font-size: 8px; text-transform: uppercase; letter-spacing: .06em; }
 
@@ -610,6 +621,19 @@ export const SHADOW_CSS = `
 /* A verdict shown from memory because the scanner cannot be reached: when it was scanned, centred at the foot of the card,
    in the same voice as the other small labels (.si span, .brand). */
 .scanned-ago {
+  padding: 8px 14px 12px;
+  text-align: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: #777;
+  cursor: help;
+}
+/* The same line for a verdict whose data source did not answer: "Source unavailable, rescanning in 24s". Same voice, same place as "Scanned 6 min ago"
+   (the two never share a card): kept as a rule of its own so that each can change without the other. */
+.source-gap {
   padding: 8px 14px 12px;
   text-align: center;
   font-family: 'Bebas Neue', sans-serif;

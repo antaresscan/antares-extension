@@ -42,6 +42,15 @@ export const state = {
   recoveryAttempt: 0,
   recoveryStartedAt: 0,
   staleExpiryTimer: null as ReturnType<typeof setTimeout> | null,
+  // A verdict reached while a data source did not answer (`sourceGap`): the card is complete and stays, its foot line counts down to the next
+  // try (resilience.ts sourceGapRetryAt). Separate from the recovery above: this one keeps its count of tries across the answers it gets back.
+  gapCa: "",
+  gapAttempt: 0,
+  gapStartedAt: 0,
+  gapRetryAt: 0,
+  gapScore: -1,
+  gapRetryTimer: null as ReturnType<typeof setTimeout> | null,
+  gapTickTimer: null as ReturnType<typeof setTimeout> | null,
   isInjecting: false,
   rescanTimer: null as ReturnType<typeof setTimeout> | null,
   // Budget for the post-price-crash auto-rescan (scheduleRescanIfPriceCrash).
@@ -68,4 +77,15 @@ export const state = {
   navDebounce: null as ReturnType<typeof setTimeout> | null,
   lastNavPath: "",
   lastUrl: "",
+}
+
+/** Stop the countdown of a verdict reached with a data source down, and forget its count of tries (the token changed, the box was closed, or the gap is over). */
+export function resetSourceGap() {
+  if (state.gapRetryTimer) { clearTimeout(state.gapRetryTimer); state.gapRetryTimer = null }
+  if (state.gapTickTimer) { clearTimeout(state.gapTickTimer); state.gapTickTimer = null }
+  state.gapCa = ""
+  state.gapAttempt = 0
+  state.gapStartedAt = 0
+  state.gapRetryAt = 0
+  state.gapScore = -1
 }

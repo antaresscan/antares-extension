@@ -1,10 +1,10 @@
 import type { ScanResponseData, QuotaStatus } from "../../shared/types"
 import { API, IGNORE, RISK_CLASS } from "./constants"
-import { state } from "./state"
+import { state, resetSourceGap } from "./state"
 import { getCached, getStale, cacheScan, expireCached } from "./cache"
-import { SCAN_BUDGET_MS, STALE_TICK_MS, SLOW_SCAN_HINT, sleep, recoveryDelayMs, scannedAgoText, scannedAgoOf } from "./resilience"
+import { SCAN_BUDGET_MS, STALE_TICK_MS, SLOW_SCAN_HINT, SOURCE_GAP_GIVE_UP_MS, SOURCE_GAP_REPEAT_MS, sleep, recoveryDelayMs, scannedAgoText, scannedAgoOf, sourceGapOf, sourceGapRetryAt, sourceGapText } from "./resilience"
 import { readSessionToken } from "./session-token"
-import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimations, applyFinalAnimationValues, buildResultNode, buildSkeletonNode, buildQuotaExhaustedNode, hideBox, appendScannedAgo, updateScannedAgo } from "./components"
+import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimations, applyFinalAnimationValues, buildResultNode, buildSkeletonNode, buildQuotaExhaustedNode, hideBox, appendScannedAgo, updateScannedAgo, appendSourceGap, updateSourceGap } from "./components"
 import { scanRateLimiter } from "../../shared/rate-limit"
 import { logger } from "../../shared/logger"
 import { getInstallId } from "../../shared/install-id"
@@ -229,6 +229,19 @@ export async function fetchWithRetry(
 // (resilience.ts RECOVERY_DELAYS_MS) and swaps the answer in as soon as the scanner is back; the user never has to click, and a verdict that
 // is too old to be shown is not.
 
+/** The class of the card an answer draws: the verdict's, or "limited" when a source did not answer (no verdict is shown then). */
+function cardClassOf(data: ScanResponseData): string {
+  return sourceGapOf(data) ? "limited" : (RISK_CLASS[data.risk] ?? "")
+}
+
+/**
+ * What the panels (AI summary, Critical Flags) are given. A scan with a silent source has no verdict, so no summary of one (the AI text talks about
+ * the verdict it reached) and no verdict for the flags panel; the flags themselves, which name the silent source for a Pro caller, stay.
+ */
+function panelArgs(data: ScanResponseData): [string | null, ScanResponseData["flags"] | null, string | null] {
+  return sourceGapOf(data) ? [null, data.flags ?? null, null] : [data.aiSummary ?? null, data.flags ?? null, data.risk ?? null]
+}
+
 function clearRecovery() {
   if (state.recoveryTimer) { clearTimeout(state.recoveryTimer); state.recoveryTimer = null }
   if (state.staleExpiryTimer) { clearTimeout(state.staleExpiryTimer); state.staleExpiryTimer = null }
@@ -284,6 +297,60 @@ function showServedFromMemory(ca: string, el: HTMLDivElement, ageSec: number) {
   scheduleRecovery(ca)
 }
 
+// ─── When a data source did not answer ─────────────────────────────────────────────────────────────────────────
+//
+// The server marks a SAFE or CAUTION reached while Helius, RugCheck, GoPlus or the chart did not answer (`sourceGap`, sent to Free callers too).
+// The card is complete and stays on screen; its foot line says so and counts down to the next try (resilience.ts sourceGapRetryAt), which
+// the overlay makes by itself and swaps in when the source is back, with no click. A try that cannot reach the scanner is tried again later.
+
+/** The words of the line right now: the time left to the next try, "rescanning…" while it is under way, the bare label when the overlay has given up. */
+function sourceGapNow(): string {
+  if (Date.now() - state.gapStartedAt >= SOURCE_GAP_GIVE_UP_MS) return sourceGapText(null)
+  return sourceGapText(state.gapRetryAt - Date.now())
+}
+
+/** Keep the number in the line true, second by second, until the try is made. */
+function armSourceGapTick(ca: string) {
+  if (state.gapTickTimer) clearTimeout(state.gapTickTimer)
+  state.gapTickTimer = setTimeout(() => {
+    state.gapTickTimer = null
+    if (state.gapCa !== ca || state.lastCA !== ca) return
+    if (!updateSourceGap(getBox(), sourceGapNow())) return
+    if (state.gapRetryAt - Date.now() > 0) armSourceGapTick(ca)
+  }, 1000)
+}
+
+/** Put the line on the card (or change its words) and plan the next try for `retryAt`. */
+function armSourceGap(ca: string, el: HTMLDivElement, retryAt: number) {
+  if (state.gapRetryTimer) { clearTimeout(state.gapRetryTimer); state.gapRetryTimer = null }
+  if (state.gapTickTimer) { clearTimeout(state.gapTickTimer); state.gapTickTimer = null }
+  state.gapRetryAt = retryAt
+  const gaveUp = Date.now() - state.gapStartedAt >= SOURCE_GAP_GIVE_UP_MS
+  if (!updateSourceGap(el, sourceGapNow())) appendSourceGap(el, sourceGapNow())
+  if (gaveUp) return // the line stays, bare; a new scan (navigation, reload) starts over
+  armSourceGapTick(ca)
+  state.gapRetryTimer = setTimeout(() => {
+    state.gapRetryTimer = null
+    // The user moved on or closed the box: nothing to retry.
+    if (state.gapCa !== ca || state.lastCA !== ca || state.manuallyDismissed) { resetSourceGap(); return }
+    // A hidden tab does not need the answer now (visibilitychange asks again as soon as it is visible): look again in a moment.
+    if (typeof document !== "undefined" && document.hidden) { armSourceGap(ca, getBox(), Date.now() + 10_000); return }
+    state.gapAttempt++
+    void scan(ca, { silent: true, refresh: true })
+  }, Math.max(0, retryAt - Date.now()))
+}
+
+/** A fresh SAFE or CAUTION with `sourceGap`: the line and the countdown. A first gap for this token starts the count of tries. */
+function showSourceGap(ca: string, el: HTMLDivElement, data: ScanResponseData, receivedAt: number) {
+  if (state.gapCa !== ca) {
+    resetSourceGap()
+    state.gapCa = ca
+    state.gapStartedAt = Date.now()
+  }
+  state.gapScore = data.score
+  armSourceGap(ca, el, sourceGapRetryAt(data, receivedAt, state.gapAttempt, Date.now()))
+}
+
 /** The loading screen, kept while the scanner cannot be reached: it is already on screen when the first scan fails, and comes back when an old verdict is taken off. */
 function showWaitingView(el: HTMLDivElement) {
   if (state.staleExpiryTimer) { clearTimeout(state.staleExpiryTimer); state.staleExpiryTimer = null }
@@ -324,7 +391,7 @@ async function showFailure(ca: string, installId: string | null, el: HTMLDivElem
     appendScannedAgo(el, scannedAgo)
     showBox()
     applyFinalAnimationValues(el)
-    attachClose(stale.data.aiSummary ?? null, stale.data.flags ?? null, stale.data.risk ?? null)
+    attachClose(...panelArgs(stale.data))
     attachAnalysisBtn(ca)
     state.failureView = "stale"
   }
@@ -390,6 +457,7 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
   state.lastCA = ca
   // A scan the user (or a navigation) started begins a new cycle; a background attempt of the recovery (silent) continues the current one.
   if (!opts.silent || state.recoveryCa !== ca) clearRecovery()
+  if (!opts.silent || state.gapCa !== ca) resetSourceGap()
   if (!opts.silent) state.failureView = null
 
   // Snapshot whether the overlay was already showing rendered content at
@@ -438,11 +506,13 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
     } else {
       triggerResultAnimations(el)
     }
-    attachClose(cached.aiSummary ?? null, cached.flags ?? null, cached.risk ?? null)
+    attachClose(...panelArgs(cached))
     attachAnalysisBtn(ca)
     // Badge / alert / history follow what the overlay shows, cached or not.
     reportScanResult(ca, cached)
     if (cachedMemoryAge !== null) showServedFromMemory(ca, el, cachedMemoryAge)
+    else if (sourceGapOf(cached)) showSourceGap(ca, el, cached, Date.now())
+    else resetSourceGap()
     chrome.storage.local.get(["autoRescan"], (prefs) => {
       if (prefs.autoRescan !== false) scheduleRescanIfPriceCrash(cached, ca)
     })
@@ -546,9 +616,16 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
     if (memoryAge === null) {
       clearRecovery()
       state.failureView = null
-    } else if (state.failureView === "stale" && el.querySelector(".scanned-ago") && state.boxEl?.classList.contains(RISK_CLASS[data.risk] ?? "")) {
+    } else if (state.failureView === "stale" && el.querySelector(".scanned-ago") && state.boxEl?.classList.contains(cardClassOf(data))) {
       // The same old verdict again (the data source is still down): only its age changes, nothing is redrawn (no flash every minute).
       showServedFromMemory(ca, el, memoryAge)
+      return
+    }
+    const gap = sourceGapOf(data)
+    if (!gap) resetSourceGap()
+    // The Limited data card again (the source is still down): only the line changes, nothing is redrawn (no flash, a panel the user has open stays open).
+    if (gap && state.gapCa === ca && el.querySelector(".source-gap") && state.boxEl?.classList.contains("limited")) {
+      showSourceGap(ca, el, data, Date.now())
       return
     }
     el.replaceChildren(buildResultNode(data, ca, installId))
@@ -575,9 +652,10 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
     } else {
       triggerResultAnimations(el)
     }
-    attachClose(data.aiSummary ?? null, data.flags ?? null, data.risk ?? null)
+    attachClose(...panelArgs(data))
     attachAnalysisBtn(ca)
     if (memoryAge !== null) showServedFromMemory(ca, el, memoryAge)
+    else if (gap) showSourceGap(ca, el, data, Date.now())
     // Badge / alert / history follow what the overlay shows, cached or not.
     reportScanResult(ca, data)
     chrome.storage.local.get(["autoRescan"], (prefs) => {
@@ -621,6 +699,11 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
       clearRecovery()
       state.failureView = null
       if (state.lastCA === ca) hideBox()
+      return
+    }
+    // A try of the source-gap countdown that could not reach the scanner: the card and its line stay, the next try is a minute away.
+    if (state.gapCa === ca && state.lastCA === ca && el.querySelector(".source-gap")) {
+      armSourceGap(ca, el, Date.now() + SOURCE_GAP_REPEAT_MS)
       return
     }
     if (state.lastCA === ca && (!skipFlashUI || state.failureView)) {

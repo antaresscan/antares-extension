@@ -61,6 +61,30 @@ describe("buildScanResultMessage", () => {
   });
 });
 
+// A scan made while a data source did not answer has no verdict for the user (the overlay shows "Limited data"): the badge, the risk-escalation
+// notification and the history must hear nothing of it, whatever verdict it reached (a false RUG would raise a false alert).
+describe("a scan with a silent source (sourceGap) is not reported", () => {
+  it.each(["SAFE", "CAUTION", "DANGER", "RUG"])("%s with the mark: nothing is sent to the worker", (risk) => {
+    expect(buildScanResultMessage(CA, scan({ risk, sourceGap: true } as Partial<ScanResponseData>))).toBeNull();
+  });
+
+  it("nothing is posted either", () => {
+    const sendMessage = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("chrome", { runtime: { sendMessage } });
+    reportScanResult(CA, scan({ risk: "RUG", sourceGap: true } as Partial<ScanResponseData>));
+    expect(sendMessage).not.toHaveBeenCalled();
+  });
+
+  it("witness: the same scan without the mark is reported, and so is one the server marked false", () => {
+    expect(buildScanResultMessage(CA, scan({ risk: "RUG" }))?.risk).toBe("RUG");
+    expect(buildScanResultMessage(CA, scan({ risk: "RUG", sourceGap: false } as Partial<ScanResponseData>))?.risk).toBe("RUG");
+  });
+
+  it("a verdict served from memory (it has its own line and a real, old verdict) is still reported", () => {
+    expect(buildScanResultMessage(CA, scan({ risk: "SAFE", sourceGap: true, scannedAgoSec: 360 } as Partial<ScanResponseData>))?.risk).toBe("SAFE");
+  });
+});
+
 describe("reportScanResult", () => {
   it("posts SCAN_RESULT to the service worker", () => {
     const sendMessage = vi.fn(() => Promise.resolve());

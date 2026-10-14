@@ -15,11 +15,12 @@ const RANK: Record<Verdict, number> = { SAFE: 0, CAUTION: 1, DANGER: 2, RUG: 3 }
  * The answer to give instead of `current` (this scan, made with no market), or null when `current` stands: no memory, a memory that is not
  * usable, or a scan that found something worse than the memory (it wins). The memory keeps its own `fetchedAt` (when its market was read),
  * which is what the age sent to the overlay is counted from; the answer is marked degraded (kept 30 s only) and servedFromMemory.
+ * It is not a `sourceGap`: the line "Scanned 6 min ago" already says what is going on, and the two must never both be on the card.
  */
 export function serveLastGood(good: ScanResult | null, current: ScanResult): ScanResult | null {
   if (!good || typeof good !== "object") return null;
   if (!(good.risk in RANK) || typeof good.fetchedAt !== "number" || !Number.isFinite(good.fetchedAt)) return null;
   if (good.servedFromMemory === true) return null;
   if (RANK[current.risk] > RANK[good.risk]) return null;
-  return { ...good, requestId: current.requestId, degraded: true, servedFromMemory: true };
+  return { ...good, requestId: current.requestId, degraded: true, servedFromMemory: true, sourceGap: false };
 }

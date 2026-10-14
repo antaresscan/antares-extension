@@ -61,6 +61,12 @@ export function heliusCredits(pathname: string, rpcMethod: string | null): numbe
   return 1;
 }
 
+/** The provider a hostname belongs to ("other" when it is none of ours). */
+export function providerOfHost(host: string): Provider {
+  if (PUBLIC_RPC_HOSTS.has(host)) return "publicrpc";
+  return HOST_PROVIDERS.find(([re]) => re.test(host))?.[1] ?? "other";
+}
+
 export function classify(url: string, body?: unknown): { provider: Provider; credits: number } {
   let host = "";
   let pathname = "";

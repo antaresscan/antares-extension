@@ -4,7 +4,7 @@ import {
   apiError, isCorsAllowed, isOriginInList, isValidDexScreenerResponse, isValidRugCheckSummary,
   isHeliusLargestAccountsResponse, isHeliusSupplyResponse,
   isSolscanMarketsResponse, isSolscanMeta, isSolscanTransfersResponse,
-  isRugCheckReport, withBudget, pickGoPlusResult, isChartGapDegraded, isReportGapDegraded, CHART_EXPECTED_AFTER_MINUTES,
+  isRugCheckReport, withBudget, pickGoPlusResult, isChartGapDegraded, isReportGapDegraded, gapSources, GAP_LAYERS, limitedDataEnabled, CHART_EXPECTED_AFTER_MINUTES,
 } from "../api/_lib/helpers";
 import { CA_RE } from "../api/_lib/constants";
 
@@ -576,5 +576,65 @@ describe("isReportGapDegraded", () => {
   it("a scan that started from the mint itself is not concerned", () => {
     expect(isReportGapDegraded("SAFE", false, false)).toBe(false);
     expect(isReportGapDegraded("CAUTION", false, false)).toBe(false);
+  });
+});
+
+// ─── gapSources (2026-10-14: "Limited data" is a LAST RESORT, for a source that is DOWN, not for a source without data for this token) ──────────────────
+// Helius, RugCheck and GoPlus are missing for under 1 % of the 1 121 tokens of the replay corpus. A scan is "Limited data" only when one of them is silent in
+// THIS scan AND down (outage.ts: several failed calls within the last minute): a source that answered with nothing for this token (Helius cannot list the
+// holders of BONK or JUP) is not down. isScanIncomplete in scan-source-gap.test.ts checks it for every verdict.
+describe("gapSources", () => {
+  const up = { available: true };
+  const off = { available: false };
+  const ALL_UP = { dexscreener: up, rugcheck: up, goplus: up, helius: up };
+
+  it.each(["helius", "rugcheck", "goplus"] as const)("%s silent in this scan and DOWN: a gap, and it is named", (layer) => {
+    expect(gapSources({ ...ALL_UP, [layer]: off }, { [layer]: true })).toEqual([layer]);
+  });
+
+  it.each(["helius", "rugcheck", "goplus"] as const)("%s silent in this scan but NOT down (it answered with nothing for this token): not a gap", (layer) => {
+    expect(gapSources({ ...ALL_UP, [layer]: off }, {})).toEqual([]);
+    expect(gapSources({ ...ALL_UP, [layer]: off }, { [layer]: false })).toEqual([]);
+  });
+
+  it("a source that is down but ANSWERED in this scan: not a gap (the outage ended, or it never touched this scan)", () => {
+    expect(gapSources(ALL_UP, { helius: true, rugcheck: true, goplus: true })).toEqual([]);
+  });
+
+  it("only the source that is both silent and down counts; the causes come back in GAP_LAYERS order", () => {
+    expect(gapSources({ ...ALL_UP, helius: off, goplus: off, rugcheck: off }, { helius: true, goplus: true })).toEqual(["helius", "goplus"]);
+    expect(gapSources({ ...ALL_UP, helius: off }, { goplus: true })).toEqual([]);
+  });
+
+  it("the sources of GAP_LAYERS are exactly Helius, RugCheck and GoPlus", () => {
+    expect([...GAP_LAYERS].sort()).toEqual(["goplus", "helius", "rugcheck"]);
+  });
+
+  it("Solscan (inactive by design, never available), the chart (its own age rule) and DexScreener (\"no pool\" cannot be told from an outage) are never a gap, down or not", () => {
+    expect(gapSources({ solscan: off, chart: off, dexscreener: off, helius: up, rugcheck: up, goplus: up }, { helius: true, rugcheck: true, goplus: true })).toEqual([]);
+  });
+
+  it("an answer with no layers, or a layer with no `available`, assumes nothing", () => {
+    expect(gapSources(undefined, { helius: true })).toEqual([]);
+    expect(gapSources({}, { helius: true })).toEqual([]);
+    expect(gapSources({ helius: {} }, { helius: true })).toEqual([]);
+  });
+});
+
+// The emergency switch: LIMITED_DATA=off in the deployment's environment (then a redeploy) and nothing is marked any more.
+describe("limitedDataEnabled", () => {
+  it("is on by default, whatever else is in the environment", () => {
+    expect(limitedDataEnabled({})).toBe(true);
+    expect(limitedDataEnabled({ LIMITED_DATA: undefined })).toBe(true);
+    expect(limitedDataEnabled({ LIMITED_DATA: "" })).toBe(true);
+    expect(limitedDataEnabled({ LIMITED_DATA: "on" })).toBe(true);
+    expect(limitedDataEnabled({ LIMITED_DATA: "1" })).toBe(true);
+    expect(limitedDataEnabled({ OTHER: "off" })).toBe(true);
+  });
+  it.each(["off", "OFF", " off ", "0", "false", "False", "no"])("%j turns it off", (v) => {
+    expect(limitedDataEnabled({ LIMITED_DATA: v })).toBe(false);
+  });
+  it("a value it does not know leaves it on (only the words above turn it off, a typo must not disable the safety net)", () => {
+    for (const v of ["of", "disable", "disabled", "n", "offf"]) expect(limitedDataEnabled({ LIMITED_DATA: v })).toBe(true);
   });
 });

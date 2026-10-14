@@ -1,6 +1,7 @@
 // api/http.ts — HTTP utility functions extracted from helpers.ts
 import { logger } from "./logger";
 import { recordCall, recordSkipped } from "./usage";
+import { noteSourceFailure, _resetOutageForTests } from "./outage";
 
 export function withTimeout(ms: number) {
   const controller = new AbortController();
@@ -55,6 +56,7 @@ export function isCircuitOpen(host: string, now: number = Date.now()): boolean {
 }
 
 function recordFailure(host: string, now: number = Date.now()): void {
+  noteSourceFailure(host, now); // the outage ledger (outage.ts): "Limited data" only when a source has failed several times within the minute
   const s = breakers.get(host);
   if (!s || now - s.firstFailureAt > BREAKER_WINDOW_MS) {
     breakers.set(host, { failures: 1, firstFailureAt: now, openUntil: 0 });
@@ -82,6 +84,7 @@ function recordSuccess(host: string): void {
 /** Test-only helper to reset all breaker state between tests. */
 export function _resetCircuitBreakersForTests(): void {
   breakers.clear();
+  _resetOutageForTests(); // the outage ledger is reset with the breakers: both are module memory, and a test that failed a host must not leave it "down" for the next
 }
 
 // Scrub sensitive query params (api-key, key, token, secret, password, auth)
@@ -142,6 +145,7 @@ export async function fetchJson<T = unknown>(
     // Breaker open — return null immediately, don't touch the network.
     // Caller's null-handling path runs as if the upstream had errored.
     recordSkipped(url);
+    noteSourceFailure(host);
     return null;
   }
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -198,7 +202,7 @@ export async function fetchJsonPost<T = unknown>(
   onStatus?: (status: number) => void,
 ): Promise<T | null> {
   const host = hostnameOf(url);
-  if (host && isCircuitOpen(host)) { recordSkipped(url); return null; }
+  if (host && isCircuitOpen(host)) { recordSkipped(url); noteSourceFailure(host); return null; }
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const t = withTimeout(ms);
     let sent = false; // true once the provider has answered: a later parse error is not a failed request

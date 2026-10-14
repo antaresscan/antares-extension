@@ -231,6 +231,54 @@ export function isReportGapDegraded(
   return resolvedFromPair && !reportAvailable && (verdict === "SAFE" || verdict === "CAUTION");
 }
 
+/**
+ * The sources that decide the verdict and whose OUTAGE makes a scan "Limited data" (see gapSources). Measured on the 1 121 tokens of the replay corpus: Helius is
+ * missing for 4, RugCheck for 4, GoPlus for 1 (DexScreener for 7, but "no pool" cannot be told from an outage, so it is not in this list).
+ * Solscan is left out on purpose (it only gives the token's age and holder count, its layer is never available), and so is the chart,
+ * which has its own rule by the age of the token (isChartGapDegraded).
+ */
+export const GAP_LAYERS = ["helius", "rugcheck", "goplus"] as const;
+
+/**
+ * The emergency switch of "Limited data". `LIMITED_DATA=off` (also "0", "false", "no") in the deployment's environment, then a redeploy (about a minute, no code
+ * revert), and no scan is marked `sourceGap` any more: the overlay and the site show the engine's verdict again, as before. Everything else stays (a scan with a
+ * silent source is still `degraded`, so it is cached 30 s only). For the day a source misbehaves for a whole class of tokens and "Limited data" shows where it should not.
+ */
+export function limitedDataEnabled(env: Record<string, string | undefined> = process.env): boolean {
+  return !["off", "0", "false", "no"].includes(String(env.LIMITED_DATA ?? "").trim().toLowerCase());
+}
+
+/** One of the three sources that decide the verdict: the ones whose outage can turn a scan into "Limited data". */
+export type GapSource = (typeof GAP_LAYERS)[number];
+
+/**
+ * The sources that made this scan unreliable: Helius, RugCheck or GoPlus whose layer is unavailable in this scan AND that are DOWN (outage.ts: several
+ * failed calls within the last minute), whatever the verdict reached. Replayed on the 1 121 tokens of the corpus with one source silent, a SAFE read CAUTION,
+ * a DANGER read SAFE, a RUG read DANGER (Helius alone: 172 SAFE into CAUTION, 132 RUG into DANGER, 22 RUG into CAUTION; RugCheck: 4 DANGER into SAFE), and a
+ * token flipping from one verdict to another is not credible.
+ *
+ * It is a last resort. A source that has nothing for THIS token (it answered, with nothing: Helius cannot list the holders of BONK or JUP, RugCheck does not
+ * know a brand-new token) is not down: the scan keeps its verdict and its flags, as before. The same for a single failed call, the chart of an old token
+ * (isChartGapDegraded), a scan that ran out of time, DexScreener ("no pool" cannot be told from a token that has none) and Solscan (its layer is never
+ * available, it only gives the token's age and holder count): none of them makes a scan "Limited data".
+ */
+export function gapSources(
+  layers: Partial<Record<string, { available?: boolean } | undefined>> | undefined,
+  down: Partial<Record<GapSource, boolean>>,
+): GapSource[] {
+  if (!layers) return [];
+  return GAP_LAYERS.filter((name) => layers[name]?.available === false && down[name] === true);
+}
+
+/** Was this scan made while a source was DOWN (see gapSources)? Then it carries no verdict for the user: the overlay shows "Limited data", counts down and asks again;
+ *  the badge, the alerts, the history and the rug database ignore it. */
+export function isScanIncomplete(input: {
+  layers: Partial<Record<string, { available?: boolean } | undefined>> | undefined;
+  down: Partial<Record<GapSource, boolean>>;
+}): boolean {
+  return gapSources(input.layers, input.down).length > 0;
+}
+
 export function apiError(res: VercelResponse, status: number, message: string, details?: Record<string, unknown>): void {
   res.status(status).json({ error: message, ...(details ? { details } : {}) });
 }
