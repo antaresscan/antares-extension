@@ -1,9 +1,9 @@
 import type { ScanResponseData } from "../../shared/types"
-import { LS_PREFIX, CACHE_TTL, SCAN_CACHE_PREFIX, SCAN_CACHE_MAX_ENTRIES } from "./constants"
-import { scanCache } from "./state"
+import { LS_PREFIX, CACHE_TTL, SCAN_CACHE_PREFIX, SCAN_CACHE_MAX_ENTRIES, LAST_BAD_PREFIX, LAST_BAD_MAX_AGE_MS, LAST_BAD_MAX_ENTRIES } from "./constants"
+import { scanCache, lastBadCache } from "./state"
 import { readSessionToken } from "./session-token"
 import { logger } from "../../shared/logger"
-import { windowsOf, madeAtOf } from "./resilience"
+import { windowsOf, madeAtOf, sourceGapOf, scannedAgoOf } from "./resilience"
 
 // ─── Where scan results are cached, and why ─────────────────────────────────
 //
@@ -294,4 +294,76 @@ export async function clearAllScanCache(): Promise<void> {
   const all = await storageGet(null)
   const keys = Object.keys(all).filter((key) => key.startsWith(SCAN_CACHE_PREFIX))
   if (keys.length > 0) await storageRemove(keys)
+}
+
+// ─── The last bad verdict of a full scan ────────────────────────────────────────────────────────────────────────────
+//
+// A scan made while a data source is silent has no verdict for the user (the Limited data card). For a token this device already scanned in full and
+// that came out DANGER or RUG, that silence must not make it look unknown: the card says so, in small grey text ("Last full scan: RUG, 12 min ago").
+// Only the verdict word and the time are kept (not the payload, and not for SAFE / CAUTION: a stale good word is the one that misleads).
+// Written by every FULL scan, cleared by a full scan that says SAFE or CAUTION: the latest full verdict is the one that counts.
+
+type LastBad = { risk: "DANGER" | "RUG"; at: number }
+const BAD_RISKS = new Set(["DANGER", "RUG"])
+const GOOD_RISKS = new Set(["SAFE", "CAUTION"])
+let lastBadWrites = 0
+
+/** Remember (or forget) the verdict of a scan that has just come back. Answers that are not a full scan (Limited data, served from memory) are ignored. */
+export function noteFullScan(ca: string, data: ScanResponseData, receivedAt: number = Date.now()): void {
+  if (sourceGapOf(data) || scannedAgoOf(data) !== null) return
+  const key = LAST_BAD_PREFIX + ca
+  if (BAD_RISKS.has(data.risk)) {
+    const entry: LastBad = { risk: data.risk as LastBad["risk"], at: madeAtOf(data, receivedAt) }
+    lastBadCache.set(ca, entry)
+    void storageSet({ [key]: entry }).then(() => {
+      if (++lastBadWrites >= SWEEP_EVERY_WRITES) {
+        lastBadWrites = 0
+        return sweepLastBad()
+      }
+    })
+  } else if (GOOD_RISKS.has(data.risk)) {
+    lastBadCache.delete(ca)
+    void storageRemove([key])
+  }
+}
+
+/** The last DANGER / RUG a full scan gave for `ca` on this device, or null (none, a SAFE / CAUTION came after it, or it is older than a week). */
+export async function getLastBad(ca: string, now: number = Date.now()): Promise<LastBad | null> {
+  let entry: LastBad | null = lastBadCache.get(ca) ?? null
+  if (!entry) {
+    const key = LAST_BAD_PREFIX + ca
+    const raw = (await storageGet(key))[key] as { risk?: unknown; at?: unknown } | undefined
+    if (raw && BAD_RISKS.has(String(raw.risk)) && typeof raw.at === "number" && Number.isFinite(raw.at)) {
+      entry = { risk: raw.risk as LastBad["risk"], at: raw.at }
+      lastBadCache.set(ca, entry)
+    }
+  }
+  if (!entry) return null
+  if (now - entry.at > LAST_BAD_MAX_AGE_MS) {
+    lastBadCache.delete(ca)
+    await storageRemove([LAST_BAD_PREFIX + ca])
+    return null
+  }
+  return entry
+}
+
+/** Drop the entries older than a week and keep at most LAST_BAD_MAX_ENTRIES (oldest first). Only keys under LAST_BAD_PREFIX are touched. */
+export async function sweepLastBad(now: number = Date.now()): Promise<void> {
+  const all = await storageGet(null)
+  const live: Array<[string, number]> = []
+  const drop: string[] = []
+  for (const [key, value] of Object.entries(all)) {
+    if (!key.startsWith(LAST_BAD_PREFIX)) continue
+    const at = (value as { at?: unknown } | null)?.at
+    if (typeof at !== "number" || now - at > LAST_BAD_MAX_AGE_MS) drop.push(key)
+    else live.push([key, at])
+  }
+  if (live.length > LAST_BAD_MAX_ENTRIES) {
+    live.sort((a, b) => a[1] - b[1])
+    for (const [key] of live.slice(0, live.length - LAST_BAD_MAX_ENTRIES)) drop.push(key)
+  }
+  if (drop.length > 0) {
+    for (const key of drop) lastBadCache.delete(key.slice(LAST_BAD_PREFIX.length))
+    await storageRemove(drop)
+  }
 }

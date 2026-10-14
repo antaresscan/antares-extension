@@ -130,6 +130,11 @@ export const LIMITED_DATA_LABEL = "LIMITED DATA"
  */
 export const LIMITED_DATA_SUMMARY = "We would rather wait than mislead you"
 
+/** The line under the Limited data card for a token whose last FULL scan said DANGER or RUG, on this device: "Last full scan: RUG, 12 min ago". */
+export function lastFullScanText(risk: "DANGER" | "RUG", ageMs: number): string {
+  return `Last full scan: ${risk}, ${staleAgeLabel(ageMs)}`
+}
+
 /** What the line says when the overlay has stopped trying. */
 export const SOURCE_GAP_LABEL = "Source unavailable"
 

@@ -645,6 +645,23 @@ export const SHADOW_CSS = `
   cursor: help;
 }
 
+/* The last DANGER / RUG a full scan gave for a token whose data source went silent: "Last full scan: RUG, 12 min ago". Same voice as the line below it;
+   only the verdict word takes its colour, so that a known bad token is not missed in small grey text. */
+.last-full {
+  padding: 8px 14px 0;
+  text-align: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: #777;
+  cursor: help;
+}
+.last-full + .source-gap { padding-top: 2px; }
+.last-full .lf-danger { color: #ff5f5f; }
+.last-full .lf-rug { color: #ff2244; }
+
 .sparkline { padding: 4px 14px 0; }
 .sparkline svg { display: block; }
 

@@ -1,10 +1,10 @@
 import type { ScanResponseData, QuotaStatus } from "../../shared/types"
 import { API, IGNORE, RISK_CLASS } from "./constants"
 import { state, resetSourceGap } from "./state"
-import { getCached, getStale, cacheScan, expireCached } from "./cache"
+import { getCached, getStale, cacheScan, expireCached, noteFullScan, getLastBad } from "./cache"
 import { SCAN_BUDGET_MS, STALE_TICK_MS, SLOW_SCAN_HINT, SOURCE_GAP_GIVE_UP_MS, SOURCE_GAP_REPEAT_MS, sleep, recoveryDelayMs, scannedAgoText, scannedAgoOf, sourceGapOf, sourceGapRetryAt, sourceGapText } from "./resilience"
 import { readSessionToken } from "./session-token"
-import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimations, applyFinalAnimationValues, buildResultNode, buildSkeletonNode, buildQuotaExhaustedNode, hideBox, appendScannedAgo, updateScannedAgo, appendSourceGap, updateSourceGap } from "./components"
+import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimations, applyFinalAnimationValues, buildResultNode, buildSkeletonNode, buildQuotaExhaustedNode, hideBox, appendScannedAgo, updateScannedAgo, appendSourceGap, updateSourceGap, setLastFullScan } from "./components"
 import { scanRateLimiter } from "../../shared/rate-limit"
 import { logger } from "../../shared/logger"
 import { getInstallId } from "../../shared/install-id"
@@ -349,6 +349,20 @@ function showSourceGap(ca: string, el: HTMLDivElement, data: ScanResponseData, r
   }
   state.gapScore = data.score
   armSourceGap(ca, el, sourceGapRetryAt(data, receivedAt, state.gapAttempt, Date.now()))
+  void showLastFullScan(ca)
+}
+
+/**
+ * Under the Limited data card of a token whose last full scan on this device said DANGER or RUG: that verdict and how long ago, in small grey text.
+ * A source going silent must not make a known bad token look unknown. Nothing is shown for a token never scanned in full here, or whose last full
+ * scan was SAFE or CAUTION. Every try of the countdown comes back here (showSourceGap), which keeps the age in the line true to the minute.
+ */
+async function showLastFullScan(ca: string) {
+  const last = await getLastBad(ca)
+  if (!last) return
+  // The user moved on, or the real verdict has taken the card's place, while the storage was read.
+  if (state.gapCa !== ca || state.lastCA !== ca || !state.boxEl?.classList.contains("limited")) return
+  setLastFullScan(state.boxEl, last.risk, Date.now() - last.at)
 }
 
 /** The loading screen, kept while the scanner cannot be reached: it is already on screen when the first scan fails, and comes back when an old verdict is taken off. */
@@ -599,6 +613,7 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
     // persistent mirror lives in chrome.storage.local — NOT the host page's
     // localStorage, which any script on the site can read and forge.
     await cacheScan(ca, data, sessionToken ?? null)
+    noteFullScan(ca, data)
     // Hold the shimmer for the minimum visible duration before swapping
     // in the result. Only matters on silent rescans (where the shimmer
     // is the loading affordance) — non-silent paths show a skeleton

@@ -51,7 +51,7 @@ describe("the Limited data card styles every part that takes a verdict colour", 
 });
 
 describe("the overlay's small messages use the card's font", () => {
-  it.each([".skel-slow-hint", ".scanned-ago", ".source-gap"])("%s is Bebas Neue, uppercase, centred, in the grey of the other small labels", (selector) => {
+  it.each([".skel-slow-hint", ".scanned-ago", ".source-gap", ".last-full"])("%s is Bebas Neue, uppercase, centred, in the grey of the other small labels", (selector) => {
     const css = rule(selector)
     expect(css).toContain("'Bebas Neue'")
     expect(css).not.toContain("IBM Plex Mono")
@@ -66,5 +66,7 @@ describe("the overlay's small messages use the card's font", () => {
     expect(spacing(rule(".skel-slow-hint"))).toBe(spacing(rule(".scanned-ago")))
     expect(size(rule(".source-gap"))).toBe(size(rule(".scanned-ago")))
     expect(spacing(rule(".source-gap"))).toBe(spacing(rule(".scanned-ago")))
+    expect(size(rule(".last-full"))).toBe(size(rule(".scanned-ago")))
+    expect(spacing(rule(".last-full"))).toBe(spacing(rule(".scanned-ago")))
   })
 })

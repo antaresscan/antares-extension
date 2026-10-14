@@ -20,6 +20,14 @@ export const SCAN_CACHE_PREFIX = "antares_cache:scan:"
 /** Upper bound on persisted scans (a scan payload is ~15-40 KB). */
 export const SCAN_CACHE_MAX_ENTRIES = 60
 export const CACHE_TTL    = 5 * 60 * 1000
+/**
+ * The last DANGER / RUG verdict a FULL scan gave for a token (the word and the time, no payload), in chrome.storage.local. The Limited data card
+ * shows it ("Last full scan: RUG, 12 min ago") so that a source going silent does not make a known bad token look unknown. Not under
+ * SCAN_CACHE_PREFIX: the scan cache is swept and wiped on every login change, and a rug stays a rug.
+ */
+export const LAST_BAD_PREFIX = "antares_cache:lastbad:"
+export const LAST_BAD_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
+export const LAST_BAD_MAX_ENTRIES = 200
 export const POS_KEY       = "antares_popup_pos"
 
 /**

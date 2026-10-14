@@ -8,7 +8,7 @@ import { encodeHashPayload } from "../../shared/hash-payload"
 import { toggleAiSummary } from "./ai-summary"
 import { toggleCriticalFlags } from "./critical-flags"
 import { isHoldersUnverifiedFlag } from "../../shared/holders-unverified"
-import { LOADING_HINT, SOURCE_GAP_TITLE, LIMITED_DATA_LABEL, LIMITED_DATA_SUMMARY, sourceGapOf } from "./resilience"
+import { LOADING_HINT, SOURCE_GAP_TITLE, LIMITED_DATA_LABEL, LIMITED_DATA_SUMMARY, sourceGapOf, lastFullScanText } from "./resilience"
 
 // DOM-API element builder. Used by buildResult instead of string template
 // literals so every text interpolation goes through textContent (which the
@@ -145,6 +145,32 @@ export function appendSourceGap(root: ParentNode, text: string): void {
   const line = el("div", { class: "source-gap", role: "status", title: SOURCE_GAP_TITLE }, text)
   const card = root.querySelector(".vb")?.parentNode ?? root
   card.appendChild(line)
+}
+
+/**
+ * The line under the Limited data card for a token whose last FULL scan, on this device, said DANGER or RUG: "Last full scan: RUG, 12 min ago".
+ * Created once, then only its words change (the age). Sits above the "Source unavailable" line. The verdict word takes its own colour; the text
+ * comes from constants and a validated verdict word, never from the server.
+ */
+export function setLastFullScan(root: ParentNode, risk: "DANGER" | "RUG", ageMs: number): void {
+  const text = lastFullScanText(risk, ageMs)
+  const word = risk
+  const at = text.indexOf(word)
+  const head = text.slice(0, at)
+  const rest = text.slice(at + word.length)
+  const existing = root.querySelector(".last-full")
+  if (existing) {
+    const w = existing.querySelector(".lf-word")
+    if (w) { w.textContent = word; w.setAttribute("class", "lf-word lf-" + risk.toLowerCase()) }
+    const tail = existing.querySelector(".lf-tail")
+    if (tail) tail.textContent = rest
+    return
+  }
+  const line = el("div", { class: "last-full", role: "status", title: "The last time this token was scanned in full on this device, before a data source went silent." },
+    head, el("span", { class: "lf-word lf-" + risk.toLowerCase() }, word), el("span", { class: "lf-tail" }, rest))
+  const gap = root.querySelector(".source-gap")
+  if (gap?.parentNode) gap.parentNode.insertBefore(line, gap)
+  else (root.querySelector(".vb")?.parentNode ?? root).appendChild(line)
 }
 
 /** Change the words of the line without rebuilding the card (a panel the user has open stays open). Returns false when there is no line. */

@@ -24,6 +24,9 @@ export const scanCache = new Map<
   }
 >()
 
+/** The last DANGER / RUG verdict a full scan gave for a token, in memory (cache.ts keeps the copy in extension storage). */
+export const lastBadCache = new Map<string, { risk: "DANGER" | "RUG"; at: number }>()
+
 export const state = {
     enabled: true,
   host: null as HTMLElement | null,
