@@ -35,8 +35,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.json(await readUsage(Number((req.query ?? {}).usage)));
   }
 
-  // `?watch=limited`: the daily check (vercel.json cron, which sends the CRON_SECRET) of YESTERDAY's share of cold scans answered "Limited data" (a source was
-  // silent: api/_lib/helpers.ts scanGapCauses). Above 3 % of at least 50 scans it writes an error line (Vercel logs) and a Sentry event that names the sources.
+  // `?watch=limited`: the check of the share of cold scans answered "Limited data" (a source was silent: api/_lib/helpers.ts scanGapCauses), owner only.
+  //   - YESTERDAY (a full day), called once a day by the vercel.json cron (which sends the CRON_SECRET): above 3 % of at least 50 scans it writes an error line (Vercel logs)
+  //     and a Sentry event that names the sources;
+  //   - TODAY SO FAR, in the same answer, for the hourly GitHub Action (.github/workflows/limited-data-watch.yml): judged the same way, but only reported (that Action opens
+  //     or closes an issue; no second Sentry event for the same day).
   if ((req.query ?? {}).watch === "limited") {
     if (!isAuthorizedForUsage(req)) return res.status(401).json({ error: "unauthorized" });
     const report = await readUsage(2);
@@ -46,7 +49,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       logger.error("monitor", "Limited data share above the threshold", { date: yesterday.date, ...yesterday.scans });
       captureError(new Error(`Limited data: ${verdict.message}`), { endpoint: "health", watch: "limited", date: yesterday.date });
     }
-    return res.json({ date: yesterday.date, alert: verdict.alert, message: verdict.message, scans: yesterday.scans, today: report.days[1]?.scans ?? null });
+    const todayDay = report.days[1];
+    const todayVerdict = todayDay ? limitedShareAlert(todayDay.scans) : null;
+    return res.json({
+      date: yesterday.date,
+      alert: verdict.alert,
+      message: verdict.message,
+      scans: yesterday.scans,
+      today: todayDay && todayVerdict ? { date: todayDay.date, alert: todayVerdict.alert, message: todayVerdict.message, scans: todayDay.scans } : null,
+    });
   }
 
   // `?probe=1` makes one cheap Helius call from THIS function (at most once a

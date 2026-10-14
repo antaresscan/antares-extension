@@ -1,0 +1,77 @@
+# Hourly watch on the share of scans answered "Limited data"
+#
+# The server counts, per UTC day, the cold scans and how many of them were answered "Limited data" because a data source (Helius, RugCheck, GoPlus, the chart...) did
+# not answer, and which source (api/_lib/usage.ts). Vercel's own daily cron (vercel.json) judges YESTERDAY and writes an error line and a Sentry event. This workflow
+# asks every hour for the day SO FAR (/api/health?watch=limited, owner only) and, when it is above 3 % of at least 50 cold scans, opens ONE issue (or updates the open
+# one) that names the sources; when the share is back to normal it closes it. It changes no code and sends nothing to anyone but this repository's issues.
+#
+# It needs ONE repository secret: CRON_SECRET, the same value as the CRON_SECRET of the Vercel project (the owner's key to the usage view). Without it the run does
+# nothing and says so (a notice, not a failure). Manually triggerable from the Actions tab (workflow_dispatch).
+name: Limited data watch
+on:
+  schedule:
+    - cron: "17 * * * *" # every hour, at :17
+  workflow_dispatch:
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+concurrency:
+  group: limited-data-watch
+  cancel-in-progress: false
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Ask the API for today's share of Limited data scans
+        id: ask
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::notice::CRON_SECRET is not set as a repository secret: nothing is watched (add it under Settings > Secrets and variables > Actions)."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          CODE=$(curl -sS -m 60 -o "$RUNNER_TEMP/watch.json" -w "%{http_code}" -H "Authorization: Bearer $CRON_SECRET" "https://antares-extension.vercel.app/api/health?watch=limited") || CODE=000
+          if [ "$CODE" != "200" ]; then
+            echo "::error::The watch answered HTTP $CODE (401: the secret differs from Vercel's CRON_SECRET; 000: the API could not be reached)."
+            exit 1
+          fi
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - name: Open, update or close the issue
+        if: steps.ask.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TITLE: "Limited data: more than 3 % of today's scans have no verdict"
+        run: |
+          ALERT=$(jq -r '.today.alert // false' "$RUNNER_TEMP/watch.json")
+          MSG=$(jq -r '.today.message // "no data"' "$RUNNER_TEMP/watch.json")
+          DAY=$(jq -r '.today.date // "today"' "$RUNNER_TEMP/watch.json")
+          OPEN=$(gh issue list --state open --limit 100 --json number,title --jq '[.[] | select(.title == env.TITLE) | .number][0] // empty')
+          if [ "$ALERT" = "true" ]; then
+            {
+              echo "A data source is silent for a share of the scans: they are answered **Limited data** (no verdict) instead of a verdict."
+              echo
+              echo "- $DAY (UTC), so far: $MSG"
+              echo
+              echo "The sources are named in the line above, biggest first (helius, rugcheck, goplus, chart, report, deadline, nosource)."
+              echo "More: \`CRON_SECRET=... npx tsx scripts/usage-report.ts 7\`. To switch Limited data off without a revert: set \`LIMITED_DATA=off\` in the Vercel environment and redeploy."
+              echo
+              echo "_Updated automatically every hour; this issue closes itself when the share is back to normal._"
+            } > "$RUNNER_TEMP/issue.md"
+            if [ -n "$OPEN" ]; then
+              gh issue edit "$OPEN" --body-file "$RUNNER_TEMP/issue.md"
+              echo "Updated issue #$OPEN"
+            else
+              gh issue create --title "$TITLE" --body-file "$RUNNER_TEMP/issue.md"
+            fi
+          elif [ -n "$OPEN" ]; then
+            gh issue close "$OPEN" --comment "Back to normal: $MSG"
+          else
+            echo "Nothing to report: $MSG"
+          fi
