@@ -253,9 +253,13 @@ export type GapSource = (typeof GAP_LAYERS)[number];
 
 /**
  * The sources that made this scan unreliable: Helius, RugCheck or GoPlus whose layer is unavailable in this scan AND that are DOWN (outage.ts: several
- * failed calls within the last minute), whatever the verdict reached. Replayed on the 1 121 tokens of the corpus with one source silent, a SAFE read CAUTION,
- * a DANGER read SAFE, a RUG read DANGER (Helius alone: 172 SAFE into CAUTION, 132 RUG into DANGER, 22 RUG into CAUTION; RugCheck: 4 DANGER into SAFE), and a
- * token flipping from one verdict to another is not credible.
+ * failed calls within the last minute), whatever the verdict reached, and only when it matters enough to hide the verdict:
+ *   - HELIUS alone is enough. Replayed on the 1 121 tokens of the corpus with one source silent, Helius is the one that moves the verdict (387 verdicts change:
+ *     172 SAFE into CAUTION, 132 RUG into DANGER, 61 DANGER into CAUTION, 22 RUG into CAUTION), and it is almost never down;
+ *   - RUGCHECK or GOPLUS need a SECOND source down at the same time. Alone, RugCheck moves 13 verdicts out of 1 121 (4 DANGER into SAFE, 2 CAUTION into SAFE, 7 RUG into
+ *     DANGER) and GoPlus 63, and RugCheck answers nothing for the established tokens for hours at a time (2026-10-14: 27 of the 27 "Limited data" of the day, 5 tokens
+ *     out of 8 open at once). Their scan keeps its verdict and its flag ("RugCheck unavailable"), as before.
+ * A token flipping from one verdict to another is not credible; but a card with no verdict on half the tokens is not either.
  *
  * It is a last resort. A source that has nothing for THIS token (it answered, with nothing: Helius cannot list the holders of BONK or JUP, RugCheck does not
  * know a brand-new token) is not down: the scan keeps its verdict and its flags, as before. The same for a single failed call, the chart of an old token
@@ -267,7 +271,8 @@ export function gapSources(
   down: Partial<Record<GapSource, boolean>>,
 ): GapSource[] {
   if (!layers) return [];
-  return GAP_LAYERS.filter((name) => layers[name]?.available === false && down[name] === true);
+  const silentAndDown = GAP_LAYERS.filter((name) => layers[name]?.available === false && down[name] === true);
+  return silentAndDown.includes("helius") || silentAndDown.length >= 2 ? silentAndDown : [];
 }
 
 /** Was this scan made while a source was DOWN (see gapSources)? Then it carries no verdict for the user: the overlay shows "Limited data", counts down and asks again;

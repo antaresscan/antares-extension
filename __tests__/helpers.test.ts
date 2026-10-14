@@ -580,16 +580,33 @@ describe("isReportGapDegraded", () => {
 });
 
 // ─── gapSources (2026-10-14: "Limited data" is a LAST RESORT, for a source that is DOWN, not for a source without data for this token) ──────────────────
-// Helius, RugCheck and GoPlus are missing for under 1 % of the 1 121 tokens of the replay corpus. A scan is "Limited data" only when one of them is silent in
-// THIS scan AND down (outage.ts: several failed calls within the last minute): a source that answered with nothing for this token (Helius cannot list the
-// holders of BONK or JUP) is not down. isScanIncomplete in scan-source-gap.test.ts checks it for every verdict.
+// Helius, RugCheck and GoPlus are missing for under 1 % of the 1 121 tokens of the replay corpus. A scan is "Limited data" only when HELIUS is silent in THIS scan AND
+// down (outage.ts: several failed calls within the last minute), or when TWO of the three are silent and down at once. RugCheck alone (13 verdicts out of 1 121 move
+// without it, and it answers nothing for the established tokens for hours: 2026-10-14) or GoPlus alone (63) is not enough: the scan keeps its verdict and its flag.
+// A source that answered with nothing for this token (Helius cannot list the holders of BONK or JUP) is not down. isScanIncomplete in scan-source-gap.test.ts checks
+// it for every verdict.
 describe("gapSources", () => {
   const up = { available: true };
   const off = { available: false };
   const ALL_UP = { dexscreener: up, rugcheck: up, goplus: up, helius: up };
 
-  it.each(["helius", "rugcheck", "goplus"] as const)("%s silent in this scan and DOWN: a gap, and it is named", (layer) => {
-    expect(gapSources({ ...ALL_UP, [layer]: off }, { [layer]: true })).toEqual([layer]);
+  it("Helius silent in this scan and DOWN, alone: a gap, and it is named", () => {
+    expect(gapSources({ ...ALL_UP, helius: off }, { helius: true })).toEqual(["helius"]);
+  });
+
+  it.each(["rugcheck", "goplus"] as const)("%s silent in this scan and DOWN, but ALONE: not a gap (the scan keeps its verdict and its flag)", (layer) => {
+    expect(gapSources({ ...ALL_UP, [layer]: off }, { [layer]: true })).toEqual([]);
+    expect(gapSources({ ...ALL_UP, [layer]: off }, { helius: false, rugcheck: true, goplus: true })).toEqual([]); // the other one is down but ANSWERED in this scan
+  });
+
+  it("RugCheck and GoPlus silent and down TOGETHER: a gap, both are named", () => {
+    expect(gapSources({ ...ALL_UP, rugcheck: off, goplus: off }, { rugcheck: true, goplus: true })).toEqual(["rugcheck", "goplus"]);
+  });
+
+  it("two sources silent but only one of them down: not a gap unless that one is Helius", () => {
+    expect(gapSources({ ...ALL_UP, rugcheck: off, goplus: off }, { rugcheck: true })).toEqual([]);
+    expect(gapSources({ ...ALL_UP, rugcheck: off, goplus: off }, { goplus: true })).toEqual([]);
+    expect(gapSources({ ...ALL_UP, helius: off, rugcheck: off }, { helius: true })).toEqual(["helius"]);
   });
 
   it.each(["helius", "rugcheck", "goplus"] as const)("%s silent in this scan but NOT down (it answered with nothing for this token): not a gap", (layer) => {
@@ -604,6 +621,7 @@ describe("gapSources", () => {
   it("only the source that is both silent and down counts; the causes come back in GAP_LAYERS order", () => {
     expect(gapSources({ ...ALL_UP, helius: off, goplus: off, rugcheck: off }, { helius: true, goplus: true })).toEqual(["helius", "goplus"]);
     expect(gapSources({ ...ALL_UP, helius: off }, { goplus: true })).toEqual([]);
+    expect(gapSources({ ...ALL_UP, helius: off, goplus: off, rugcheck: off }, { helius: true, rugcheck: true, goplus: true })).toEqual(["helius", "rugcheck", "goplus"]);
   });
 
   it("the sources of GAP_LAYERS are exactly Helius, RugCheck and GoPlus", () => {
