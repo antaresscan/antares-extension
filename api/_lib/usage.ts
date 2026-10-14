@@ -109,6 +109,20 @@ export function recordSkipped(url: string): void {
   try { bump(classify(url).provider, "skipped"); } catch { /* see above */ }
 }
 
+// ── how many cold scans were answered "Limited data" (a source was silent), and why ───────────────────────────────────────────────
+// Same hash, same single write. The counters are `scans:total`, `scans:limited` and `scans:cause.<cause>` (a scan with two silent sources counts for both).
+// A cache hit is not counted: the figure is the share of COLD scans, which is where a silent source shows.
+/** Count one cold scan, and the causes that made it incomplete (api/_lib/helpers.ts scanGapCauses). Never throws. */
+export function recordScanOutcome(causes: readonly string[]): void {
+  try {
+    const k = (name: string): string => `scans:${name}`;
+    pending.set(k("total"), (pending.get(k("total")) ?? 0) + 1);
+    if (causes.length === 0) return;
+    pending.set(k("limited"), (pending.get(k("limited")) ?? 0) + 1);
+    for (const c of causes) pending.set(k(`cause.${c}`), (pending.get(k(`cause.${c}`)) ?? 0) + 1);
+  } catch { /* counting must never break a scan */ }
+}
+
 /** What has been counted and not yet written (tests, and a quick look from a debugger). */
 export function pendingUsage(): Record<string, number> { return Object.fromEntries(pending); }
 
@@ -144,12 +158,40 @@ export async function flushUsage(maxWaitMs = 300): Promise<void> {
   try { await Promise.race([write, timeout]); } finally { clearTimeout(timer); }
 }
 
+/** Cold scans of a day, how many of them were answered "Limited data", and for which source(s). */
+export interface ScanShare {
+  total: number;
+  limited: number;
+  /** limited / total, 0 when there was no scan. */
+  share: number;
+  causes: Record<string, number>;
+}
+
 export interface UsageReport {
   /** UTC dates, oldest first. */
-  days: Array<{ date: string; providers: Partial<Record<Provider, ProviderUsage>> }>;
+  days: Array<{ date: string; providers: Partial<Record<Provider, ProviderUsage>>; scans: ScanShare }>;
   totals: Partial<Record<Provider, ProviderUsage>>;
+  scans: ScanShare;
   basis: Record<Provider, string>;
 }
+
+/** Below this many cold scans in a day a share means nothing (3 scans out of 40 is not an outage). */
+export const LIMITED_ALERT_MIN_SCANS = 50;
+/** More than this share of cold scans answered "Limited data" in a day is an outage of a source, not the < 1 % of tokens whose source never answers. */
+export const LIMITED_ALERT_MAX_SHARE = 0.03;
+
+/** Is the share of "Limited data" answers of this day worth a warning? Returns the words to log when it is. */
+export function limitedShareAlert(day: ScanShare, minScans = LIMITED_ALERT_MIN_SCANS, maxShare = LIMITED_ALERT_MAX_SHARE): { alert: boolean; message: string } {
+  if (day.total < minScans) return { alert: false, message: `${day.total} cold scans: too few to judge (needs ${minScans})` };
+  const share = day.limited / day.total;
+  const pct = (share * 100).toFixed(1);
+  if (share <= maxShare) return { alert: false, message: `${pct} % of ${day.total} cold scans answered Limited data (alert above ${(maxShare * 100).toFixed(0)} %)` };
+  const causes = Object.entries(day.causes).sort((a, b) => b[1] - a[1]).map(([c, n]) => `${c} ${n}`).join(", ");
+  return { alert: true, message: `${pct} % of ${day.total} cold scans answered Limited data (alert above ${(maxShare * 100).toFixed(0)} %): ${causes || "no cause counted"}` };
+}
+
+const emptyShare = (): ScanShare => ({ total: 0, limited: 0, share: 0, causes: {} });
+const withShare = (s: ScanShare): ScanShare => ({ ...s, share: s.total > 0 ? s.limited / s.total : 0 });
 
 const empty = (): ProviderUsage => ({ calls: 0, ok: 0, refused: 0, denied: 0, failed: 0, skipped: 0, credits: 0 });
 
@@ -160,16 +202,29 @@ export async function readUsage(days: number, now: Date = new Date()): Promise<U
   for (let i = n - 1; i >= 0; i--) dates.push(new Date(now.getTime() - i * 86400_000).toISOString().slice(0, 10));
   const rows = redis ? await Promise.all(dates.map((d) => redis!.hgetall<Record<string, number | string>>(`usage:${d}`).catch(() => null))) : dates.map(() => null);
   const totals: Partial<Record<Provider, ProviderUsage>> = {};
+  const allScans = emptyShare();
   const out: UsageReport["days"] = dates.map((date, i) => {
     const providers: Partial<Record<Provider, ProviderUsage>> = {};
+    const scans = emptyShare();
     for (const [field, raw] of Object.entries(rows[i] ?? {})) {
+      const v = Number(raw) || 0;
+      if (field.startsWith("scans:")) {
+        const name = field.slice("scans:".length);
+        if (name === "total") { scans.total += v; allScans.total += v; }
+        else if (name === "limited") { scans.limited += v; allScans.limited += v; }
+        else if (name.startsWith("cause.")) {
+          const cause = name.slice("cause.".length);
+          scans.causes[cause] = (scans.causes[cause] ?? 0) + v;
+          allScans.causes[cause] = (allScans.causes[cause] ?? 0) + v;
+        }
+        continue;
+      }
       const [p, f] = field.split(":") as [Provider, Field];
       if (!PROVIDERS.includes(p) || !FIELDS.includes(f)) continue;
-      const v = Number(raw) || 0;
       (providers[p] ??= empty())[f] += v;
       (totals[p] ??= empty())[f] += v;
     }
-    return { date, providers };
+    return { date, providers, scans: withShare(scans) };
   });
-  return { days: out, totals, basis: CREDIT_BASIS };
+  return { days: out, totals, scans: withShare(allScans), basis: CREDIT_BASIS };
 }

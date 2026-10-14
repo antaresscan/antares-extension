@@ -79,6 +79,13 @@ vi.mock("../api/_lib/user", async (importOriginal) => {
   return { ...actual, pushScanHistory: (...args: unknown[]) => mockPushHistory(...args) };
 });
 
+// What the handler counts for the share of Limited data scans (api/_lib/usage.ts recordScanOutcome): the causes, or none.
+const mockRecordScanOutcome = vi.fn();
+vi.mock("../api/_lib/usage", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../api/_lib/usage")>();
+  return { ...actual, recordScanOutcome: (...args: unknown[]) => mockRecordScanOutcome(...args) };
+});
+
 // Mock @sentry/node
 vi.mock("@sentry/node", () => ({
   init: vi.fn(),
@@ -528,6 +535,42 @@ describe("scan — a source did not answer", () => {
     });
   });
 
+  it("the handler counts every cold scan, with the causes when it was answered Limited data", async () => {
+    // complete
+    setupGoodTokenMocks();
+    await run(createMockReq({ ca: WSOL }), createMockRes());
+    expect(mockRecordScanOutcome).toHaveBeenLastCalledWith([]);
+    // one source at a time, then two
+    for (const [name, silence] of silences) {
+      mockRecordScanOutcome.mockClear();
+      setupGoodTokenMocks();
+      silence();
+      await run(createMockReq({ ca: WSOL }), createMockRes());
+      expect(mockRecordScanOutcome, name).toHaveBeenCalledTimes(1);
+      expect(mockRecordScanOutcome.mock.calls[0][0], name).toEqual([name.toLowerCase()]);
+    }
+    mockRecordScanOutcome.mockClear();
+    setupGoodTokenMocks();
+    silences[0][1](); // Helius
+    silences[2][1](); // GoPlus
+    await run(createMockReq({ ca: WSOL }), createMockRes());
+    expect(mockRecordScanOutcome.mock.calls[0][0]).toEqual(["helius", "goplus"]);
+  });
+
+  it("the chart silent on an old token counts as 'chart'", async () => {
+    setupGoodTokenMocks();
+    mockFetchDexCandles.mockResolvedValue([]);
+    await run(createMockReq({ ca: WSOL }), createMockRes());
+    expect(mockRecordScanOutcome.mock.calls[0][0]).toEqual(["chart"]);
+  });
+
+  it("a Free caller's scan is counted exactly like a Pro one", async () => {
+    setupGoodTokenMocks();
+    silences[0][1]();
+    await run(freeReq(), createMockRes());
+    expect(mockRecordScanOutcome.mock.calls[0][0]).toEqual(["helius"]);
+  });
+
   it("DexScreener silent: not marked (no pool cannot be told from a token that has none), as before", async () => {
     setupGoodTokenMocks();
     const good = mockFetch.getMockImplementation()!;
@@ -674,6 +717,27 @@ describe("scan — a source did not answer", () => {
     mockHeliusGetMintAccount.mockResolvedValue(null);
     await run(createMockReq({ ca: WSOL }), createMockRes());
     expect(vi.mocked(setLastGoodResult)).not.toHaveBeenCalled();
+  });
+
+  it("a verdict served again from memory (an issuer's asset, DexScreener silent) is not a Limited data answer, whatever else was silent: it is not counted as one", async () => {
+    const USDC = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"; // in the issuer registry (stable)
+    setupGoodTokenMocks();
+    const good = mockFetch.getMockImplementation()!;
+    mockFetch.mockImplementation((url: string, ...rest: unknown[]) =>
+      String(url).includes("dexscreener") ? Promise.resolve({ ok: true, json: () => Promise.resolve({ pairs: null }) }) : good(url, ...rest));
+    mockHeliusGetLargestAccounts.mockResolvedValue(null);
+    mockHeliusGetMintAccount.mockResolvedValue(null);
+    vi.mocked(getLastGoodResult).mockResolvedValueOnce({
+      score: 850, risk: "CAUTION", rugKind: null, flags: [], pair: null, resolvedMint: USDC, confidence: 90, sources_used: ["dexscreener", "rugcheck", "goplus", "helius"],
+      tokenSymbol: "USDC", tokenName: "USD Coin", priceUsd: 1.0001, liquidity: 52_000_000, fetchedAt: Date.now() - 6 * 60_000, requestId: "old",
+    } as never);
+    const res = createMockRes();
+    await run(createMockReq({ ca: USDC }), res);
+    const body = jsonBody(res);
+    expect(body?.servedFromMemory).toBe(true);
+    expect(body?.sourceGap).toBe(false); // the overlay shows "Scanned 6 min ago", not the Limited data card
+    expect(mockRecordScanOutcome).toHaveBeenCalledTimes(1);
+    expect(mockRecordScanOutcome.mock.calls[0][0]).toEqual([]);
   });
 });
 

@@ -5,7 +5,7 @@
 // It reads /api/health?usage=<days> (api/health.ts), which is reserved to the owner (CRON_SECRET, the same secret as the cron job).
 // --plan-credits is the monthly Helius allowance of your plan (Developer: 10 million): the report then says what share of it the
 // current rhythm would use in a month.
-import type { UsageReport, ProviderUsage, Provider } from "../api/_lib/usage";
+import { limitedShareAlert, type UsageReport, type ProviderUsage, type Provider } from "../api/_lib/usage";
 
 const ORDER: Provider[] = ["helius", "goplus", "rugcheck", "dexscreener", "geckoterminal", "solscan", "gemini", "publicrpc", "other"];
 const pad = (v: string | number, n: number, left = false): string => (left ? String(v).padStart(n) : String(v).padEnd(n));
@@ -44,6 +44,16 @@ export function formatReport(report: UsageReport, opts: FormatOptions = {}): str
       const share = (month / opts.planCredits) * 100;
       out.push(`  = ${share.toFixed(0)} % d'un forfait de ${num(opts.planCredits)} crédits par mois.${share >= 80 ? " ⚠ proche du plafond." : ""}`);
       if (share >= 80) warnings.push(`helius : le rythme actuel consommerait ${share.toFixed(0)} % du forfait mensuel.`);
+    }
+  }
+
+  const scans = report.scans;
+  if (scans && scans.total > 0) {
+    const causes = Object.entries(scans.causes).sort((a, b) => b[1] - a[1]).map(([c, n]) => `${c} ${num(n)}`).join(", ");
+    out.push("", `Scans à froid : ${num(scans.total)}, dont ${num(scans.limited)} répondus « Limited data » (${(scans.share * 100).toFixed(1)} %)${causes ? ` : ${causes}` : ""}.`);
+    for (const d of report.days) {
+      const v = d.scans ? limitedShareAlert(d.scans) : null;
+      if (v?.alert) warnings.push(`${d.date} : ${v.message}`);
     }
   }
 
