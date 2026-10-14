@@ -1,4 +1,5 @@
-import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
+import { vi, describe, it, expect, beforeEach, afterEach, afterAll } from "vitest";
+import { writeFileSync } from "node:fs";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 // ---- Mock all external modules BEFORE importing handler ----
@@ -749,4 +750,165 @@ describe("a silent source: Limited data, whatever the verdict, Free or Pro", () 
       });
     }
   }
+});
+
+// ─── WHEN DOES "LIMITED DATA" ACTIVATE? Every verdict x every missing source x how it is missing x Free and Pro ──────────────────────────────────────────────
+// "Limited data" is a last resort. It must show for a real outage and for nothing else, so that a token is never seen switching from one verdict to another, and never
+// shows because a source has nothing for one token. This is the whole table, through the real handler (the real engine decides which layer is silent; the verdict it
+// reached is forced so that every verdict is covered). Set LIMITED_MATRIX_REPORT=<file> to also write the table as markdown (the file is read in the morning, not the tests).
+//
+//   how it is missing (the state of the outage ledger, api/_lib/outage.ts, when the scan ends):
+//     nothing  the source answered with nothing for this token (a 200 with no data, a 404): no failed call. The scan keeps its verdict and its flags.
+//     blip     one failed call fewer than the threshold within the minute: a blip.
+//     outage   the threshold of failed calls within the minute (Helius 3, RugCheck 2, GoPlus 2): the source is DOWN.
+//     ended    the same failures, but more than a minute ago: the outage is over.
+//   which source: Helius, RugCheck and GoPlus can make a scan Limited data (and only in the "outage" state); Solscan, DexScreener and the chart never do.
+
+describe("WHEN Limited data activates: verdict x missing source x how it is missing x tier", () => {
+  const VERDICTS = ["SAFE", "CAUTION", "DANGER", "RUG"] as const;
+  const TIERS = ["pro", "free"] as const;
+  const SOURCES = ["helius", "rugcheck", "goplus", "solscan", "dexscreener", "chart"] as const;
+  const MODES = ["nothing", "blip", "outage", "ended"] as const;
+  type Source = (typeof SOURCES)[number];
+  type Mode = (typeof MODES)[number];
+  const DECIDES: ReadonlySet<Source> = new Set(["helius", "rugcheck", "goplus"]);
+
+  /** The host whose failures the outage ledger would keep for this source (Solscan, DexScreener and the chart are not tracked: the ledger ignores them). */
+  const HOST: Record<Source, string> = {
+    helius: "mainnet.helius-rpc.com", rugcheck: "api.rugcheck.xyz", goplus: "api.gopluslabs.io",
+    solscan: "pro-api.solscan.io", dexscreener: "api.dexscreener.com", chart: "api.geckoterminal.com",
+  };
+  const threshold = (src: Source): number => (DECIDES.has(src) ? OUTAGE_THRESHOLD[src as "helius" | "rugcheck" | "goplus"] : 3);
+
+  /** Make the source silent in THIS scan: its layer is unavailable (the source answered with nothing, or did not answer). */
+  const silenceLayer = (src: Source): void => {
+    const good = (): ((url: string, ...rest: unknown[]) => Promise<unknown>) => mockFetch.getMockImplementation()! as never;
+    const answerNothing = (host: string) => {
+      const base = good();
+      mockFetch.mockImplementation((url: string, ...rest: unknown[]) => (String(url).includes(host) ? Promise.resolve({ ok: false, status: 404, json: () => Promise.resolve(null) }) : base(url, ...rest)));
+    };
+    if (src === "helius") { mockHeliusGetLargestAccounts.mockResolvedValue(null); mockHeliusGetMintAccount.mockResolvedValue(null); }
+    else if (src === "rugcheck") answerNothing("rugcheck");
+    else if (src === "goplus") answerNothing("gopluslabs");
+    else if (src === "solscan") mockFetchSolscan.mockResolvedValue(null);
+    else if (src === "dexscreener") {
+      const base = good();
+      mockFetch.mockImplementation((url: string, ...rest: unknown[]) => (String(url).includes("dexscreener") ? Promise.resolve({ ok: true, json: () => Promise.resolve({ pairs: null }) }) : base(url, ...rest)));
+    } else if (src === "chart") mockFetchDexCandles.mockResolvedValue([]);
+  };
+
+  /** Put the outage ledger in the state of `mode` for `src` (fake clock: the minute is the test's). */
+  const seedLedger = async (src: Source, mode: Mode): Promise<void> => {
+    const k = threshold(src);
+    const n = mode === "nothing" ? 0 : mode === "blip" ? k - 1 : k;
+    for (let i = 0; i < n; i++) noteSourceFailure(HOST[src]);
+    if (mode === "ended") await vi.advanceTimersByTimeAsync(61_000);
+  };
+
+  /** The rule, as the product owner stated it: Limited data only for a real outage of one of the three sources. */
+  const expectLimited = (src: Source, mode: Mode): boolean => DECIDES.has(src) && mode === "outage";
+
+  const rows: Array<{ tier: string; verdict: string; src: Source; mode: Mode; limited: boolean; degraded: boolean | undefined; badge: string | null }> = [];
+
+  for (const verdict of VERDICTS) {
+    for (const src of SOURCES) {
+      for (const mode of MODES) {
+        for (const tier of TIERS) {
+          const limited = expectLimited(src, mode);
+          it(`${verdict} | ${src} missing, ${mode} | ${tier}: ${limited ? "LIMITED DATA" : "the verdict, as before"}`, async () => {
+            forced.verdict = verdict;
+            setupGoodTokenMocks();
+            silenceLayer(src);
+            await seedLedger(src, mode);
+            const res = createMockRes();
+            await run(tier === "free" ? freeReq() : createMockReq({ ca: WSOL }), res);
+            const body = (tier === "free" ? (res as unknown as { getBody: () => Record<string, unknown> }).getBody() : jsonBody(res)) as Record<string, unknown>;
+            expect(body.proLocked === true).toBe(tier === "free");
+            rows.push({ tier, verdict, src, mode, limited: body.sourceGap === true, degraded: body.degraded as boolean | undefined, badge: buildScanResultMessage(WSOL, body as never)?.risk ?? null });
+
+            // THE question: does the overlay show the Limited data card?
+            expect(body.sourceGap, "sourceGap").toBe(limited);
+            expect(sourceGapOf(body), "what the overlay reads").toBe(limited);
+            if (limited) {
+              // a real outage: no verdict anywhere, the answer kept 30 s only
+              expect(body.degraded).toBe(true);
+              expect(body.freshForSec).toBe(30);
+              expect(buildScanResultMessage(WSOL, body as never)).toBeNull();
+              expect(mockRecordRug).not.toHaveBeenCalled();
+              expect(mockPushHistory).not.toHaveBeenCalled();
+              expect(vi.mocked(setCachedResult)).not.toHaveBeenCalled();
+            } else {
+              // anything else: the scan is what it was before this feature: the verdict (the same word for Free and Pro), the badge, the history, the rug database
+              expect(body.risk).toBe(verdict);
+              expect(buildScanResultMessage(WSOL, body as never)?.risk).toBe(verdict);
+              expect(mockRecordRug).toHaveBeenCalledTimes(1);
+              expect(mockPushHistory).toHaveBeenCalledTimes(1);
+              // its caching rule is the old one: short only for what was already short (no pool, the chart of an old SAFE or CAUTION), the usual time otherwise
+              const shortAnyway = src === "dexscreener" || (src === "chart" && (verdict === "SAFE" || verdict === "CAUTION"));
+              expect(body.degraded === true).toBe(shortAnyway);
+              expect(body.freshForSec === 30).toBe(shortAnyway);
+            }
+          });
+        }
+      }
+    }
+  }
+
+  // Combinations: several sources silent at once. Only the ones that are DOWN make it Limited data; the others do not add anything.
+  const COMBOS: Array<{ name: string; silent: Source[]; down: Source[]; limited: boolean }> = [
+    { name: "Helius and RugCheck silent, only Helius down", silent: ["helius", "rugcheck"], down: ["helius"], limited: true },
+    { name: "Helius and RugCheck silent, only RugCheck down", silent: ["helius", "rugcheck"], down: ["rugcheck"], limited: true },
+    { name: "Helius and RugCheck silent, neither down (both have nothing for this token)", silent: ["helius", "rugcheck"], down: [], limited: false },
+    { name: "all three silent, none down", silent: ["helius", "rugcheck", "goplus"], down: [], limited: false },
+    { name: "all three silent, all down", silent: ["helius", "rugcheck", "goplus"], down: ["helius", "rugcheck", "goplus"], limited: true },
+    { name: "Helius down but it answered, RugCheck silent with nothing", silent: ["rugcheck"], down: ["helius"], limited: false },
+    { name: "Solscan, DexScreener and the chart all silent, the three sources answered", silent: ["solscan", "dexscreener", "chart"], down: [], limited: false },
+    { name: "Solscan silent and Helius down and silent", silent: ["solscan", "helius"], down: ["helius"], limited: true },
+  ];
+  for (const verdict of VERDICTS) {
+    for (const combo of COMBOS) {
+      for (const tier of TIERS) {
+        it(`${verdict} | ${combo.name} | ${tier}: ${combo.limited ? "LIMITED DATA" : "the verdict, as before"}`, async () => {
+          forced.verdict = verdict;
+          setupGoodTokenMocks();
+          for (const src of combo.silent) silenceLayer(src);
+          for (const src of combo.down) for (let i = 0; i < threshold(src); i++) noteSourceFailure(HOST[src]);
+          const res = createMockRes();
+          await run(tier === "free" ? freeReq() : createMockReq({ ca: WSOL }), res);
+          const body = (tier === "free" ? (res as unknown as { getBody: () => Record<string, unknown> }).getBody() : jsonBody(res)) as Record<string, unknown>;
+          expect(body.sourceGap).toBe(combo.limited);
+          expect(sourceGapOf(body)).toBe(combo.limited);
+        });
+      }
+    }
+  }
+
+  afterAll(() => {
+    const out = process.env.LIMITED_MATRIX_REPORT;
+    if (!out || rows.length === 0) return;
+    const lines: string[] = [
+      "# When does \"Limited data\" activate?",
+      "",
+      `Generated by __tests__/scan-source-gap.test.ts (${rows.length} scans through the real handler). **LIMITED** = the overlay shows the Limited data card, no verdict. **verdict** = the scan is what it was before.`,
+      "",
+      "A source is *down* when it has failed several calls within the last minute (Helius 3, RugCheck 2, GoPlus 2). *nothing* = it answered with nothing for this token, *blip* = one failed call fewer than the threshold, *outage* = down, *ended* = down more than a minute ago.",
+      "",
+    ];
+    for (const verdict of VERDICTS) {
+      for (const tier of TIERS) {
+        lines.push(`## The engine reached ${verdict} (${tier})`, "", "| source missing | nothing | blip | outage | ended |", "|---|---|---|---|---|");
+        for (const src of SOURCES) {
+          const cells = MODES.map((m) => {
+            const r = rows.find((x) => x.verdict === verdict && x.tier === tier && x.src === src && x.mode === m);
+            return r ? (r.limited ? "**LIMITED**" : "verdict") : "?";
+          });
+          lines.push(`| ${src} | ${cells.join(" | ")} |`);
+        }
+        lines.push("");
+      }
+    }
+    const limitedCount = rows.filter((r) => r.limited).length;
+    lines.push("## Summary", "", `- ${rows.length} scans, ${limitedCount} Limited data, ${rows.length - limitedCount} with their verdict.`, "- Limited data happens only in the **outage** column of Helius, RugCheck and GoPlus.", "- Solscan, DexScreener and the chart never make a scan Limited data.", "- Free and Pro always agree.", "");
+    writeFileSync(out, lines.join("\n"));
+  });
 });
