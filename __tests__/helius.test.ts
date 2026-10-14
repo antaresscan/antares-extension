@@ -6,7 +6,7 @@
 // a silent null. heliusRpc starts with the documented `?api-key=` form, falls
 // back to the Bearer header ONLY when Helius refuses the key, remembers the
 // winner, and logs the refusal without ever writing the key.
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 const mockFetchJsonPost = vi.fn();
 vi.mock("../api/_lib/http", async () => {
@@ -28,6 +28,9 @@ import {
   heliusRestUrl,
   getHeliusRpcAuthMode,
   getHeliusDiagnostics,
+  getHeliusQueue,
+  HELIUS_MAX_CONCURRENT,
+  HELIUS_QUEUE_MAX_WAIT_MS,
   normalizeHeliusKey,
   describeHeliusKey,
   _resetHeliusAuthForTests,
@@ -407,5 +410,120 @@ describe("getHeliusDiagnostics — the last call, as statuses only", () => {
     await heliusRpc(KEY, BODY);
 
     expect(JSON.stringify(getHeliusDiagnostics())).not.toContain(KEY);
+  });
+});
+
+// ─── At most HELIUS_MAX_CONCURRENT calls in flight per instance ──────────────────────────────────────────────────────────────────────────
+// A scan fires 3 to 10 Helius calls at once; when many scans arrive together Helius answered late or not at all and the scans had no holder data
+// (2026-10-13: 6 scans in 40 s). The calls over the cap wait their turn for at most HELIUS_QUEUE_MAX_WAIT_MS, then give up like any failed call.
+describe("heliusRpc — the cap on calls in flight", () => {
+  type Held = { release: (json: unknown) => void };
+  const held: Held[] = [];
+
+  /** Every upstream call stays pending until the test releases it, so the number in flight can be counted. */
+  function holdCalls() {
+    held.length = 0;
+    mockFetchJsonPost.mockImplementation(
+      (...args: unknown[]) =>
+        new Promise((resolve) => {
+          const onStatus = args[5] as ((s: number) => void) | undefined;
+          held.push({ release: (json) => { onStatus?.(200); resolve(json); } });
+        }),
+    );
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    holdCalls();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("starts the first HELIUS_MAX_CONCURRENT calls at once and makes the others wait", async () => {
+    const calls = Array.from({ length: HELIUS_MAX_CONCURRENT + 4 }, () => heliusRpc(KEY, BODY));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(mockFetchJsonPost).toHaveBeenCalledTimes(HELIUS_MAX_CONCURRENT);
+    expect(getHeliusQueue()).toEqual({ inFlight: HELIUS_MAX_CONCURRENT, waiting: 4 });
+    for (const h of held.splice(0)) h.release({ result: 1 });
+    await vi.advanceTimersByTimeAsync(0);
+    // the 4 that waited have taken the freed places
+    expect(mockFetchJsonPost).toHaveBeenCalledTimes(HELIUS_MAX_CONCURRENT + 4);
+    for (const h of held.splice(0)) h.release({ result: 1 });
+    expect(await Promise.all(calls)).toEqual(Array(HELIUS_MAX_CONCURRENT + 4).fill({ result: 1 }));
+    expect(getHeliusQueue()).toEqual({ inFlight: 0, waiting: 0 });
+  });
+
+  it("a finished call gives its place to the first one waiting, in order of arrival", async () => {
+    const order: number[] = [];
+    mockFetchJsonPost.mockReset();
+    mockFetchJsonPost.mockImplementation(
+      (...args: unknown[]) =>
+        new Promise((resolve) => {
+          order.push((args[1] as { id: number }).id);
+          held.push({ release: (json) => resolve(json) });
+        }),
+    );
+    const calls = Array.from({ length: HELIUS_MAX_CONCURRENT + 2 }, (_, i) => heliusRpc(KEY, { ...BODY, id: i }));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(order).toEqual(Array.from({ length: HELIUS_MAX_CONCURRENT }, (_, i) => i));
+    held[0].release({ result: 1 });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(order[HELIUS_MAX_CONCURRENT]).toBe(HELIUS_MAX_CONCURRENT);
+    held[1].release({ result: 1 });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(order[HELIUS_MAX_CONCURRENT + 1]).toBe(HELIUS_MAX_CONCURRENT + 1);
+    for (const h of held.splice(0)) h.release({ result: 1 });
+    await Promise.all(calls);
+  });
+
+  it("a call that waited longer than HELIUS_QUEUE_MAX_WAIT_MS gives up: null, no request, and it says so in the logs", async () => {
+    const calls = Array.from({ length: HELIUS_MAX_CONCURRENT }, () => heliusRpc(KEY, BODY));
+    await vi.advanceTimersByTimeAsync(0);
+    const late = heliusRpc(KEY, BODY);
+    await vi.advanceTimersByTimeAsync(HELIUS_QUEUE_MAX_WAIT_MS - 1);
+    expect(getHeliusQueue().waiting).toBe(1);
+    await vi.advanceTimersByTimeAsync(2);
+    expect(await late).toBeNull();
+    expect(mockFetchJsonPost).toHaveBeenCalledTimes(HELIUS_MAX_CONCURRENT); // the late one never reached Helius
+    expect(getHeliusQueue().waiting).toBe(0);
+    const line = warn.mock.calls.find((c) => c[1] === "upstream trouble");
+    expect(line?.[2]).toMatchObject({ kind: "queue" });
+    for (const h of held.splice(0)) h.release({ result: 1 });
+    await Promise.all(calls);
+  });
+
+  it("a call that gave up does not take a place later (the queue does not leak)", async () => {
+    const calls = Array.from({ length: HELIUS_MAX_CONCURRENT }, () => heliusRpc(KEY, BODY));
+    await vi.advanceTimersByTimeAsync(0);
+    const late = heliusRpc(KEY, BODY);
+    await vi.advanceTimersByTimeAsync(HELIUS_QUEUE_MAX_WAIT_MS + 1);
+    expect(await late).toBeNull();
+    held[0].release({ result: 1 }); // a place frees up: nobody is waiting for it any more
+    await vi.advanceTimersByTimeAsync(0);
+    expect(getHeliusQueue()).toEqual({ inFlight: HELIUS_MAX_CONCURRENT - 1, waiting: 0 });
+    for (const h of held.splice(0)) h.release({ result: 1 });
+    await Promise.all(calls);
+    expect(getHeliusQueue()).toEqual({ inFlight: 0, waiting: 0 });
+  });
+
+  it("the place is given back when the upstream call fails", async () => {
+    mockFetchJsonPost.mockReset();
+    mockFetchJsonPost.mockRejectedValue(new Error("boom"));
+    await expect(heliusRpc(KEY, BODY)).rejects.toThrow("boom");
+    expect(getHeliusQueue()).toEqual({ inFlight: 0, waiting: 0 });
+  });
+
+  it("the Bearer second try goes through the same cap (it is a call to Helius too)", async () => {
+    mockFetchJsonPost.mockReset();
+    const inFlightSeen: number[] = [];
+    mockFetchJsonPost.mockImplementation(async (...args: unknown[]) => {
+      inFlightSeen.push(getHeliusQueue().inFlight);
+      (args[5] as ((s: number) => void) | undefined)?.(inFlightSeen.length === 1 ? 401 : 200);
+      return inFlightSeen.length === 1 ? null : { result: 1 };
+    });
+    expect(await heliusRpc(KEY, BODY)).toEqual({ result: 1 });
+    expect(inFlightSeen).toEqual([1, 1]); // one place at a time, taken and given back between the two forms
+    expect(getHeliusQueue()).toEqual({ inFlight: 0, waiting: 0 });
   });
 });

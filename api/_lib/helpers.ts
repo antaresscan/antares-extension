@@ -83,6 +83,34 @@ export function withBudget<T>(p: Promise<T>, ms: number): Promise<T | null> {
 }
 
 /**
+ * Runs `run`; when it answers null FAST (an upstream that refuses at once: a rate limit, a shut breaker, a burst of scans that Helius could not
+ * follow), waits `delayMs` and asks once more, provided `timeLeftMs()` still leaves `minLeftMs` for the second try. A SLOW null (a timeout) is not
+ * asked again: it already spent the time the second try would need. At most two calls, never more.
+ */
+export async function retryOnFastNull<T>(
+  run: () => Promise<T | null>,
+  opts: {
+    fastMs: number;
+    delayMs: number;
+    minLeftMs: number;
+    timeLeftMs: () => number;
+    now?: () => number;
+    sleep?: (ms: number) => Promise<void>;
+  },
+): Promise<T | null> {
+  const now = opts.now ?? Date.now;
+  const sleep = opts.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+  const t0 = now();
+  let first: T | null = null;
+  try { first = await run(); } catch { first = null; }
+  if (first !== null) return first;
+  if (now() - t0 > opts.fastMs) return null;
+  if (opts.timeLeftMs() < opts.delayMs + opts.minLeftMs) return null;
+  await sleep(opts.delayMs);
+  try { return await run(); } catch { return null; }
+}
+
+/**
  * Cache TTL is asymmetric by verdict — that's deliberate, not a bug:
  *
  * Bad verdicts (RUG / DANGER) get a LONG TTL. The reasoning is one-sided:

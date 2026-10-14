@@ -332,6 +332,13 @@ export const COLLAPSE_MIN_CANDLES = 6;  // 6 x 4 h = 24 h of history: before tha
 // HTTP timeouts (ms)
 export const API_TIMEOUT_DEFAULT = 5000;
 export const API_TIMEOUT_HELIUS = 6000;
+// A Helius call that answers nothing in less than HELIUS_FAST_FAIL_MS refused at once (rate limit, shut breaker, a burst of scans): the scan asks
+// again once, after HELIUS_RETRY_DELAY_MS plus up to HELIUS_RETRY_JITTER_MS (so the scans of a burst do not come back at the same instant), when at
+// least HELIUS_RETRY_MIN_LEFT_MS of the scan's time is left for the second try. A slow null (a timeout) is not asked again.
+export const HELIUS_FAST_FAIL_MS = 1500;
+export const HELIUS_RETRY_DELAY_MS = 600;
+export const HELIUS_RETRY_JITTER_MS = 500;
+export const HELIUS_RETRY_MIN_LEFT_MS = 3500;
 
 // ── SCORING VERSION (single source of truth) ─────────────────
 // 7.4.0 — bumped 2026-05-20 to invalidate the Redis cache after the

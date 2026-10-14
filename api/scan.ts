@@ -16,7 +16,7 @@ import {
   isSolscanMarketsResponse, isSolscanMeta, isSolscanTransfersResponse,
   isRugCheckReport,
   sanitizeString, sanitizeUrl,
-  isChartGapDegraded, isReportGapDegraded, isLayerGap, isScanIncomplete, limitedDataEnabled, withServeWindows,
+  isChartGapDegraded, isReportGapDegraded, isLayerGap, isScanIncomplete, limitedDataEnabled, withServeWindows, retryOnFastNull,
 } from "./_lib/helpers";
 import {
   heliusGetLargestAccounts, heliusGetMintAccount, heliusGetHolderPages, heliusGetCreatorReputation,
@@ -31,6 +31,7 @@ import { fetchGoPlusSecurityCached } from "./_lib/goplus-cache";
 import {
   DEXSCREENER_BASE, RUGCHECK_BASE, RUGCHECK_WAIT_MS, LAYER_WEIGHTS, SCORING_VERSION,
   LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS, SOLSCAN_AGE_AND_HOLDERS_ONLY,
+  HELIUS_FAST_FAIL_MS, HELIUS_RETRY_DELAY_MS, HELIUS_RETRY_JITTER_MS, HELIUS_RETRY_MIN_LEFT_MS,
 } from "./_lib/constants";
 import { selectBestPair } from "./_lib/dex-pair-select";
 import { decide } from "./_lib/decide";
@@ -297,6 +298,16 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
   // this starts a step only if it still has a chance to finish.
   const stepBudget = <T>(start: () => Promise<T>): Promise<T | null> =>
     scanDeadline - Date.now() < MIN_STEP_MS ? Promise.resolve(null) : withBudget(start(), remainingMs());
+  // The two Helius reads that give the holder distribution and the authorities (the holder-count pages are not asked twice: 10 credits a page, and
+  // the count has other sources). When one answers nothing AT ONCE (rate limit, shut breaker, a burst of scans) it is asked once more, a moment
+  // later and not at the same instant as the other scans' second tries (constants.ts).
+  const heliusAskTwice = <T>(run: () => Promise<T | null>): Promise<T | null> =>
+    retryOnFastNull(run, {
+      fastMs: HELIUS_FAST_FAIL_MS,
+      delayMs: HELIUS_RETRY_DELAY_MS + Math.random() * HELIUS_RETRY_JITTER_MS,
+      minLeftMs: HELIUS_RETRY_MIN_LEFT_MS,
+      timeLeftMs: () => scanDeadline - Date.now(),
+    });
 
   try {
     const [dexRes, rugRes, rugReportRes] = await Promise.all([
@@ -396,8 +407,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       withBudget(fetchDexCandles(pairAddress), remainingMs()),
       withBudget(fetchDexCandlesDaily(pairAddress, resolvedMint), remainingMs()),
       goplusPromise,
-      HELIUS_API_KEY ? withBudget(heliusGetLargestAccounts(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
-      HELIUS_API_KEY ? withBudget(heliusGetMintAccount(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
+      HELIUS_API_KEY ? withBudget(heliusAskTwice(() => heliusGetLargestAccounts(resolvedMint, HELIUS_API_KEY)), remainingMs()) : null,
+      HELIUS_API_KEY ? withBudget(heliusAskTwice(() => heliusGetMintAccount(resolvedMint, HELIUS_API_KEY)), remainingMs()) : null,
       HELIUS_API_KEY ? withBudget(heliusGetHolderPages(resolvedMint, HELIUS_API_KEY, goplusHolderCount, solscanHolderCount), remainingMs()) : null,
       // (No Solscan holders-count call: the public endpoint it used answers
       // 404 for every token, so it only ever contributed `null`.)

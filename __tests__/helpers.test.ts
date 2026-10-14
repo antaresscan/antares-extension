@@ -4,7 +4,7 @@ import {
   apiError, isCorsAllowed, isOriginInList, isValidDexScreenerResponse, isValidRugCheckSummary,
   isHeliusLargestAccountsResponse, isHeliusSupplyResponse,
   isSolscanMarketsResponse, isSolscanMeta, isSolscanTransfersResponse,
-  isRugCheckReport, withBudget, pickGoPlusResult, isChartGapDegraded, isReportGapDegraded, isLayerGap, GAP_LAYERS, limitedDataEnabled, CHART_EXPECTED_AFTER_MINUTES,
+  isRugCheckReport, withBudget, retryOnFastNull, pickGoPlusResult, isChartGapDegraded, isReportGapDegraded, isLayerGap, GAP_LAYERS, limitedDataEnabled, CHART_EXPECTED_AFTER_MINUTES,
 } from "../api/_lib/helpers";
 import { CA_RE } from "../api/_lib/constants";
 
@@ -624,5 +624,83 @@ describe("limitedDataEnabled", () => {
   });
   it("a value it does not know leaves it on (only the words above turn it off, a typo must not disable the safety net)", () => {
     for (const v of ["of", "disable", "disabled", "n", "offf"]) expect(limitedDataEnabled({ LIMITED_DATA: v })).toBe(true);
+  });
+});
+
+// A Helius call that answers nothing AT ONCE (a rate limit, a shut breaker, a burst of scans) is asked once more; a slow null is not.
+describe("retryOnFastNull", () => {
+  const OPTS = { fastMs: 1500, delayMs: 600, minLeftMs: 3500 };
+  /** A clock the test moves by hand, and a sleep that moves it. */
+  function clock(start = 1_000) {
+    let t = start;
+    return { now: () => t, advance: (ms: number) => { t += ms; }, sleep: async (ms: number) => { t += ms; } };
+  }
+
+  it("an answer on the first call is the answer: one call, no wait", async () => {
+    const c = clock();
+    const run = vi.fn(async () => "ok");
+    const sleep = vi.fn(c.sleep);
+    expect(await retryOnFastNull(run, { ...OPTS, timeLeftMs: () => 9000, now: c.now, sleep })).toBe("ok");
+    expect(run).toHaveBeenCalledTimes(1);
+    expect(sleep).not.toHaveBeenCalled();
+  });
+
+  it("a null that came back at once is asked again after the delay, and the second answer is used", async () => {
+    const c = clock();
+    const run = vi.fn<() => Promise<string | null>>().mockResolvedValueOnce(null).mockResolvedValueOnce("late but there");
+    const sleep = vi.fn(c.sleep);
+    expect(await retryOnFastNull(run, { ...OPTS, timeLeftMs: () => 9000, now: c.now, sleep })).toBe("late but there");
+    expect(run).toHaveBeenCalledTimes(2);
+    expect(sleep).toHaveBeenCalledWith(600);
+  });
+
+  it("two nulls in a row: null, and never a third call", async () => {
+    const c = clock();
+    const run = vi.fn(async () => null);
+    expect(await retryOnFastNull(run, { ...OPTS, timeLeftMs: () => 9000, now: c.now, sleep: c.sleep })).toBeNull();
+    expect(run).toHaveBeenCalledTimes(2);
+  });
+
+  it("a SLOW null (a timeout) is not asked again: it already spent the time", async () => {
+    const c = clock();
+    const run = vi.fn(async () => { c.advance(OPTS.fastMs + 1); return null; });
+    expect(await retryOnFastNull(run, { ...OPTS, timeLeftMs: () => 9000, now: c.now, sleep: c.sleep })).toBeNull();
+    expect(run).toHaveBeenCalledTimes(1);
+  });
+
+  it("a null at exactly fastMs is still fast", async () => {
+    const c = clock();
+    let calls = 0;
+    const run = vi.fn(async (): Promise<string | null> => { calls++; c.advance(OPTS.fastMs); return calls === 1 ? null : "ok"; });
+    expect(await retryOnFastNull(run, { ...OPTS, timeLeftMs: () => 9000, now: c.now, sleep: c.sleep })).toBe("ok");
+    expect(run).toHaveBeenCalledTimes(2);
+  });
+
+  it("no second call when the scan has not the time left for it", async () => {
+    const c = clock();
+    const run = vi.fn(async () => null);
+    // the delay plus the minimum a second try needs: 600 + 3500
+    expect(await retryOnFastNull(run, { ...OPTS, timeLeftMs: () => 4099, now: c.now, sleep: c.sleep })).toBeNull();
+    expect(run).toHaveBeenCalledTimes(1);
+    expect(await retryOnFastNull(run, { ...OPTS, timeLeftMs: () => 4100, now: c.now, sleep: c.sleep })).toBeNull();
+    expect(run).toHaveBeenCalledTimes(3);
+  });
+
+  it("a call that throws counts as a null: it does not escape, and the second try still happens", async () => {
+    const c = clock();
+    const run = vi.fn<() => Promise<string | null>>().mockRejectedValueOnce(new Error("boom")).mockResolvedValueOnce("ok");
+    expect(await retryOnFastNull(run, { ...OPTS, timeLeftMs: () => 9000, now: c.now, sleep: c.sleep })).toBe("ok");
+    const run2 = vi.fn(async () => { throw new Error("boom"); });
+    await expect(retryOnFastNull(run2, { ...OPTS, timeLeftMs: () => 9000, now: c.now, sleep: c.sleep })).resolves.toBeNull();
+    expect(run2).toHaveBeenCalledTimes(2);
+  });
+
+  it("an empty but real answer (0, an empty string, false) is an answer, not a failure", async () => {
+    const c = clock();
+    for (const v of [0, "", false]) {
+      const run = vi.fn(async () => v);
+      expect(await retryOnFastNull(run, { ...OPTS, timeLeftMs: () => 9000, now: c.now, sleep: c.sleep })).toBe(v);
+      expect(run).toHaveBeenCalledTimes(1);
+    }
   });
 });

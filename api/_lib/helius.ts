@@ -24,7 +24,7 @@
 // accepted `?api-key=` (see heliusRestUrl).
 
 import { HELIUS_BASE, HELIUS_REST_BASE } from "./constants";
-import { fetchJsonPost } from "./http";
+import { fetchJsonPost, noteTrouble } from "./http";
 import { logger } from "./logger";
 
 export type HeliusAuthMode = "bearer" | "query";
@@ -128,6 +128,8 @@ export function getHeliusDiagnostics(): {
 
 /** Test hook: restore the default mode, the log throttle and the last outcome. */
 export function _resetHeliusAuthForTests(): void {
+  inFlight = 0;
+  waiters.length = 0;
   rpcAuthMode = "query";
   lastRejectedLogAt = 0;
   lastUnusableLogAt = 0;
@@ -150,6 +152,42 @@ interface Attempt<T> {
   status: number;
 }
 
+// At most HELIUS_MAX_CONCURRENT calls in flight per instance (this module lives as long as a warm instance). When many scans arrive together each one
+// fires 3 to 10 Helius calls at once and Helius answers late or not at all (2026-10-13: 6 scans in 40 s, none had Helius). The others wait their turn,
+// at most HELIUS_QUEUE_MAX_WAIT_MS, then give up (the scan goes on without that call, as it does for any failed call).
+export const HELIUS_MAX_CONCURRENT = 8;
+export const HELIUS_QUEUE_MAX_WAIT_MS = 3_000;
+const HELIUS_HOST = (() => { try { return new URL(HELIUS_BASE).hostname; } catch { return "mainnet.helius-rpc.com"; } })();
+let inFlight = 0;
+const waiters: Array<() => void> = [];
+
+async function takeSlot(): Promise<boolean> {
+  if (inFlight < HELIUS_MAX_CONCURRENT) { inFlight++; return true; }
+  return new Promise<boolean>((resolve) => {
+    let settled = false;
+    const grant = () => { if (settled) return; settled = true; clearTimeout(timer); inFlight++; resolve(true); };
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      const i = waiters.indexOf(grant);
+      if (i >= 0) waiters.splice(i, 1);
+      resolve(false);
+    }, HELIUS_QUEUE_MAX_WAIT_MS);
+    waiters.push(grant);
+  });
+}
+
+function giveSlot(): void {
+  inFlight--;
+  const next = waiters.shift();
+  if (next) next();
+}
+
+/** Calls in flight and calls waiting for a turn, for tests and diagnostics. */
+export function getHeliusQueue(): { inFlight: number; waiting: number } {
+  return { inFlight, waiting: waiters.length };
+}
+
 async function attempt<T>(
   key: string,
   body: object,
@@ -158,17 +196,25 @@ async function attempt<T>(
   mode: HeliusAuthMode,
 ): Promise<Attempt<T>> {
   let status = 0;
-  const res = await fetchJsonPost<T>(
-    mode === "query" ? `${HELIUS_BASE}/?api-key=${encodeURIComponent(key)}` : HELIUS_BASE,
-    body,
-    ms,
-    maxRetries,
-    mode === "bearer" ? { Authorization: "Bearer " + key } : {},
-    (s) => {
-      status = s;
-    },
-  );
-  return { res, status };
+  if (!(await takeSlot())) {
+    noteTrouble(HELIUS_HOST, "queue");
+    return { res: null, status: 0 };
+  }
+  try {
+    const res = await fetchJsonPost<T>(
+      mode === "query" ? `${HELIUS_BASE}/?api-key=${encodeURIComponent(key)}` : HELIUS_BASE,
+      body,
+      ms,
+      maxRetries,
+      mode === "bearer" ? { Authorization: "Bearer " + key } : {},
+      (s) => {
+        status = s;
+      },
+    );
+    return { res, status };
+  } finally {
+    giveSlot();
+  }
 }
 
 /**

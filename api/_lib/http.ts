@@ -31,9 +31,19 @@ type BreakerState = {
   firstFailureAt: number;  // ms timestamp of the failure that started the window
   openUntil: number;       // ms timestamp; 0 = closed; > now = open
 };
-const BREAKER_THRESHOLD = 5;
-const BREAKER_WINDOW_MS = 30_000;
-const BREAKER_COOLDOWN_MS = 30_000;
+interface BreakerConfig { threshold: number; windowMs: number; cooldownMs: number }
+const DEFAULT_BREAKER: BreakerConfig = { threshold: 5, windowMs: 30_000, cooldownMs: 30_000 };
+/**
+ * Helius is the one source nobody can do without: it gives the holder distribution, and a scan made without it has no verdict for the user (the
+ * overlay shows "Limited data"). With the default breaker, a handful of slow answers when many scans arrive together (each fires 3 to 10 Helius calls
+ * at once) opened it for 30 s, and every scan of the instance got nothing from Helius for 30 s (2026-10-13: 6 scans in 40 s, none had Helius; the same
+ * tokens scanned one by one all did). So it tolerates more failures before it opens, and stays open much shorter.
+ */
+const HOST_BREAKERS: Record<string, BreakerConfig> = {
+  "mainnet.helius-rpc.com": { threshold: 12, windowMs: 20_000, cooldownMs: 6_000 },
+  "api.helius.xyz": { threshold: 12, windowMs: 20_000, cooldownMs: 6_000 },
+};
+const breakerConfigOf = (host: string): BreakerConfig => HOST_BREAKERS[host] ?? DEFAULT_BREAKER;
 const breakers = new Map<string, BreakerState>();
 
 function hostnameOf(url: string): string | null {
@@ -55,21 +65,49 @@ export function isCircuitOpen(host: string, now: number = Date.now()): boolean {
 }
 
 function recordFailure(host: string, now: number = Date.now()): void {
+  const cfg = breakerConfigOf(host);
   const s = breakers.get(host);
-  if (!s || now - s.firstFailureAt > BREAKER_WINDOW_MS) {
+  if (!s || now - s.firstFailureAt > cfg.windowMs) {
     breakers.set(host, { failures: 1, firstFailureAt: now, openUntil: 0 });
     return;
   }
   s.failures += 1;
-  if (s.failures >= BREAKER_THRESHOLD && s.openUntil === 0) {
-    s.openUntil = now + BREAKER_COOLDOWN_MS;
+  if (s.failures >= cfg.threshold && s.openUntil === 0) {
+    s.openUntil = now + cfg.cooldownMs;
     logger.warn("http", "circuit breaker opened", {
       host,
       failures: s.failures,
-      cooldownMs: BREAKER_COOLDOWN_MS,
+      cooldownMs: cfg.cooldownMs,
     });
   }
 }
+
+// ─── What the upstream did, in the logs ──────────────────────────────────────────────────────────────────────────────────────────────────
+// A 429, a timeout or an open breaker used to be a silent null (only the final network error of a call was logged), so "Helius did not answer" could
+// not be told from "Helius answered late" or "Helius was shut out by our own breaker". One line per host and kind, at most once every 10 s, with the
+// number of such events since the last line.
+export type UpstreamTrouble = "timeout" | "rate-limited" | "server-error" | "network" | "breaker-open" | "queue";
+const troubleAt = new Map<string, { at: number; count: number }>();
+const TROUBLE_LOG_INTERVAL_MS = 10_000;
+export function noteTrouble(host: string | null, kind: UpstreamTrouble, now: number = Date.now()): void {
+  if (!host) return;
+  const k = `${host}:${kind}`;
+  const t = troubleAt.get(k) ?? { at: Number.NEGATIVE_INFINITY, count: 0 };
+  t.count += 1;
+  if (now - t.at >= TROUBLE_LOG_INTERVAL_MS) {
+    logger.warn("http", "upstream trouble", { host, kind, count: t.count, sinceLastLogMs: Number.isFinite(t.at) ? now - t.at : null });
+    t.at = now;
+    t.count = 0;
+  }
+  troubleAt.set(k, t);
+}
+
+/** Test-only helper to reset the trouble log throttle between tests. */
+export function _resetTroubleLogForTests(): void {
+  troubleAt.clear();
+}
+
+const troubleOf = (e: unknown): UpstreamTrouble => ((e as { name?: unknown } | null)?.name === "AbortError" ? "timeout" : "network");
 
 function recordSuccess(host: string): void {
   // Any success resets the breaker. This covers both "closed and healthy"
@@ -142,6 +180,7 @@ export async function fetchJson<T = unknown>(
     // Breaker open — return null immediately, don't touch the network.
     // Caller's null-handling path runs as if the upstream had errored.
     recordSkipped(url);
+    noteTrouble(host, "breaker-open");
     return null;
   }
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -158,14 +197,14 @@ export async function fetchJson<T = unknown>(
           await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
           continue;
         }
-        if (host) recordFailure(host);
+        if (host) { recordFailure(host); noteTrouble(host, r.status === 429 ? "rate-limited" : "server-error"); }
       }
       if (!r.ok) {
         // 5xx + the 429/503 case that fell through retries above both
         // count as failures for the breaker. 4xx (other than 429) are
         // request errors, not upstream-health signals — don't trip on
         // those.
-        if (host && r.status >= 500) recordFailure(host);
+        if (host && r.status >= 500) { recordFailure(host); if (r.status !== 503) noteTrouble(host, "server-error"); }
         return null;
       }
       if (host) recordSuccess(host);
@@ -174,7 +213,7 @@ export async function fetchJson<T = unknown>(
       t.clear();
       if (!sent) recordCall(url, 0);
       if (attempt === maxRetries) {
-        if (host) recordFailure(host);
+        if (host) { recordFailure(host); noteTrouble(host, troubleOf(e)); }
         logger.warn("http", "fetchJson failed", { error: scrubSensitive(String(e)) });
         return null;
       }
@@ -198,7 +237,7 @@ export async function fetchJsonPost<T = unknown>(
   onStatus?: (status: number) => void,
 ): Promise<T | null> {
   const host = hostnameOf(url);
-  if (host && isCircuitOpen(host)) { recordSkipped(url); return null; }
+  if (host && isCircuitOpen(host)) { recordSkipped(url); noteTrouble(host, "breaker-open"); return null; }
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const t = withTimeout(ms);
     let sent = false; // true once the provider has answered: a later parse error is not a failed request
@@ -218,10 +257,10 @@ export async function fetchJsonPost<T = unknown>(
           await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
           continue;
         }
-        if (host) recordFailure(host);
+        if (host) { recordFailure(host); noteTrouble(host, r.status === 429 ? "rate-limited" : "server-error"); }
       }
       if (!r.ok) {
-        if (host && r.status >= 500) recordFailure(host);
+        if (host && r.status >= 500) { recordFailure(host); if (r.status !== 503) noteTrouble(host, "server-error"); }
         return null;
       }
       if (host) recordSuccess(host);
@@ -230,7 +269,7 @@ export async function fetchJsonPost<T = unknown>(
       t.clear();
       if (!sent) recordCall(url, 0, body);
       if (attempt === maxRetries) {
-        if (host) recordFailure(host);
+        if (host) { recordFailure(host); noteTrouble(host, troubleOf(e)); }
         logger.warn("http", "fetchJsonPost failed", { error: scrubSensitive(String(e)) });
         return null;
       }
