@@ -51,6 +51,7 @@ import { logger } from "./_lib/logger";
 import { composeCriticalActors } from "./_lib/critical-actors";
 import { initUsage, flushUsage, recordScanOutcome } from "./_lib/usage";
 import { downSources } from "./_lib/outage";
+import { reconcileRugCheck } from "./_lib/rugcheck-memory";
 import { deriveEvent } from "./_lib/verdict-history";
 // initHistoryCache / pushVerdictHistory / getVerdictHistory are no
 // longer imported — the Verdict Timeline feature was decommissioned
@@ -516,7 +517,12 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const tokenSupply   = solMetaData?.data?.supply   ?? null;
     const solTransfersData = isSolscanTransfersResponse(solTransfers) ? solTransfers : null;
     const recentTransfers: SolscanTransfer[] = solTransfersData?.data || [];
-    const rugReport = isRugCheckReport(rugReportResolvedRaw) ? rugReportResolvedRaw : null;
+    // RugCheck is the source that fails the most. What it did not give back is read from its last good answer for this token (api/_lib/rugcheck-memory.ts: young
+    // enough for the token's age, one Redis command, skipped when no time is left); what it gave back is kept for the next time.
+    const rugcheckLive = { summary: rugData, report: isRugCheckReport(rugReportResolvedRaw) ? rugReportResolvedRaw : null };
+    const rugcheckMemory = (await stepBudget(() => reconcileRugCheck(resolvedMint, rugcheckLive, tokenAgeMinutes))) ?? { ...rugcheckLive, fromMemory: false };
+    rugData = rugcheckMemory.summary;
+    const rugReport = rugcheckMemory.report;
     const rugTotalHolders: number | null =
       typeof rugReport?.totalHolders === "number" && rugReport.totalHolders > 0
       ? rugReport.totalHolders : null;
@@ -776,6 +782,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       limited: result.sourceGap === true,
       // Which source(s) were down: the share of Limited data scans and its causes are counted per day (usage.ts) and watched (api/health.ts?watch=limited).
       ...(limitedCauses.length > 0 ? { limitedCauses } : {}),
+      // RugCheck did not answer and its last good answer for this token was read instead (api/_lib/rugcheck-memory.ts).
+      ...(rugcheckMemory.fromMemory ? { rugcheckMemory: true } : {}),
       scoringVersion: SCORING_VERSION,
     });
     recordScanOutcome(limitedCauses);

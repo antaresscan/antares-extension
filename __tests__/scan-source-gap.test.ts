@@ -325,7 +325,7 @@ const { noteSourceFailure, OUTAGE_THRESHOLD } = await import("../api/_lib/outage
 const OUTAGE_HOST = { helius: "mainnet.helius-rpc.com", rugcheck: "api.rugcheck.xyz", goplus: "api.gopluslabs.io" } as const;
 const declareOutage = (source: keyof typeof OUTAGE_HOST) => { for (let i = 0; i < OUTAGE_THRESHOLD[source]; i++) noteSourceFailure(OUTAGE_HOST[source]); };
 // The cache module is mocked above; import it AFTER the mock variables exist.
-const { acquireScanLock, waitForCachedResult, getCachedResult, setCachedResult, setShortCachedResult, getLastGoodResult, setLastGoodResult } = await import("../api/_lib/cache");
+const { acquireScanLock, waitForCachedResult, getCachedResult, setCachedResult, setShortCachedResult, getLastGoodResult, setLastGoodResult, getCacheRedis } = await import("../api/_lib/cache");
 
 // ─── Deadline behaviour ──────────────────────────────────────────────────────
 // With every upstream merely SLOW (not down) the scan used to reach the global
@@ -980,5 +980,102 @@ describe("WHEN Limited data activates: verdict x missing source x how it is miss
     const limitedCount = rows.filter((r) => r.limited).length;
     lines.push("## Summary", "", `- ${rows.length} scans, ${limitedCount} Limited data, ${rows.length - limitedCount} with their verdict.`, "- Limited data happens only in the **outage** column of Helius, RugCheck and GoPlus.", "- Solscan, DexScreener and the chart never make a scan Limited data.", "- Free and Pro always agree.", "");
     writeFileSync(out, lines.join("\n"));
+  });
+});
+
+// ─── RugCheck's memory, through the real handler ─────────────────────────────────────────────────────────────────────────────────────────────────────────
+// RugCheck is the source that fails the most. A token scanned before keeps its last good RugCheck answer for a while (api/_lib/rugcheck-memory.ts), read only for what RugCheck
+// does not give back: during an outage the scan of such a token has its RugCheck layer, so it is not "Limited data"; a token never scanned before is, as it was.
+describe("RugCheck's memory: a token scanned before survives a RugCheck outage", () => {
+  const kept = new Map<string, unknown>();
+  const sets: Array<{ key: string; opts: unknown }> = [];
+  const fakeRedis = (over: { get?: () => Promise<unknown> } = {}) => ({
+    get: over.get ?? (async (k: string) => kept.get(k) ?? null),
+    set: async (k: string, v: unknown, opts: unknown) => { sets.push({ key: k, opts }); kept.set(k, v); return "OK"; },
+    setex: mockSetex,
+  });
+  const rugcheckDown = () => {
+    const good = mockFetch.getMockImplementation()!;
+    mockFetch.mockImplementation((url: string, ...rest: unknown[]) =>
+      String(url).includes("rugcheck") ? Promise.resolve({ ok: false, status: 503, json: () => Promise.resolve(null) }) : good(url, ...rest));
+    declareOutage("rugcheck");
+  };
+  const flagLabels = (b: Record<string, unknown> | undefined) => ((b?.flags ?? []) as Array<{ label: string }>).map((f) => f.label).filter((l) => !/RugCheck unavailable/i.test(l)).sort();
+  const layerUp = (b: Record<string, unknown> | undefined) => (b?.layers as Record<string, { available: boolean }> | undefined)?.rugcheck?.available;
+
+  beforeEach(() => { kept.clear(); sets.length = 0; vi.mocked(getCacheRedis).mockReturnValue(fakeRedis() as never); });
+  afterEach(() => { vi.mocked(getCacheRedis).mockReturnValue({ setex: mockSetex } as never); });
+
+  async function scanOnce(prepare: () => void = () => {}, tier: "pro" | "free" = "pro") {
+    setupGoodTokenMocks();
+    prepare();
+    const res = createMockRes();
+    await run(tier === "free" ? freeReq() : createMockReq({ ca: WSOL }), res);
+    return tier === "free" ? ((res as unknown as { getBody: () => Record<string, unknown> }).getBody()) : jsonBody(res);
+  }
+
+  it("a scan that got RugCheck's answer keeps it, one entry, 6 hours", async () => {
+    await scanOnce();
+    const entries = sets.filter((s) => s.key.startsWith("antares:rugcheck:"));
+    expect(entries).toHaveLength(1);
+    expect(entries[0].opts).toEqual({ ex: 6 * 3600 });
+  });
+
+  it("then RugCheck goes down: the same token's scan has its RugCheck layer, is NOT Limited data, and reads the same verdict and the same flags", async () => {
+    const before = await scanOnce();
+    expect(layerUp(before)).toBe(true);
+    const during = await scanOnce(rugcheckDown);
+    expect(during?.sourceGap).toBe(false);
+    expect(layerUp(during)).toBe(true);
+    expect(during?.risk).toBe(before?.risk);
+    expect(during?.score).toBe(before?.score);
+    expect(flagLabels(during)).toEqual(flagLabels(before));
+    expect(during?.degraded).toBe(false); // cached for the usual time, recorded as usual
+  });
+
+  it("Free is told the same (not Limited data)", async () => {
+    await scanOnce();
+    const during = await scanOnce(rugcheckDown, "free");
+    expect(during?.sourceGap).toBe(false);
+  });
+
+  it("a token never scanned before, during the same outage: Limited data, as it was", async () => {
+    const during = await scanOnce(rugcheckDown);
+    expect(during?.sourceGap).toBe(true);
+  });
+
+  it("a memory older than 6 hours is not read: Limited data", async () => {
+    await scanOnce();
+    vi.setSystemTime(Date.now() + 7 * 3600_000);
+    const during = await scanOnce(rugcheckDown);
+    expect(during?.sourceGap).toBe(true);
+  });
+
+  it("a Redis that fails on the read: the scan goes on without the memory (Limited data during the outage), it does not fail", async () => {
+    await scanOnce();
+    vi.mocked(getCacheRedis).mockReturnValue(fakeRedis({ get: async () => { throw new Error("redis down"); } }) as never);
+    const during = await scanOnce(rugcheckDown);
+    expect(during?.sourceGap).toBe(true);
+  });
+
+  it("no Redis at all: the scan is what it was (no memory, nothing breaks)", async () => {
+    vi.mocked(getCacheRedis).mockReturnValue(null as never);
+    const body = await scanOnce();
+    expect(body?.sourceGap).toBe(false);
+    expect(sets).toHaveLength(0);
+  });
+
+  it("RugCheck answering \"not found\" for the token is an answer: the memory is not read for it", async () => {
+    await scanOnce();
+    sets.length = 0;
+    const body = await scanOnce(() => {
+      const good = mockFetch.getMockImplementation()!;
+      mockFetch.mockImplementation((url: string, ...rest: unknown[]) =>
+        String(url).includes("rugcheck") && String(url).includes("summary")
+          ? Promise.resolve({ ok: true, json: () => Promise.resolve({ error: "not found" }) })
+          : good(url, ...rest));
+    });
+    expect(body?.sourceGap).toBe(false); // not an outage: RugCheck answered
+    expect(sets.filter((s) => s.key.startsWith("antares:rugcheck:"))).toHaveLength(0); // and an answer that is not an analysis is not kept
   });
 });
