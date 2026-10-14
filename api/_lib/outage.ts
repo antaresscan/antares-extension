@@ -15,7 +15,7 @@
 // and GoPlus (the authenticated lookup, then the public one). One failed call among them, with the others answering, is a blip and does not count as an outage.
 import { providerOfHost } from "./usage";
 
-/** The sources whose outage turns a scan into "Limited data": the three that decide the verdict and that are missing for under 1 % of tokens. */
+/** The sources whose outage can turn a scan into "Limited data": the three that decide the verdict (Helius alone is enough; RugCheck and GoPlus only together, or with Helius: helpers.ts gapSources). */
 export const OUTAGE_SOURCES = ["helius", "rugcheck", "goplus"] as const;
 export type OutageSource = (typeof OUTAGE_SOURCES)[number];
 

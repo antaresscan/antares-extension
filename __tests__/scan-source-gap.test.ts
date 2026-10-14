@@ -371,6 +371,9 @@ const jsonBody = (res: VercelResponse) => (res.json as ReturnType<typeof vi.fn>)
 // without Helius 172 SAFE read CAUTION and 132 RUG read DANGER, without RugCheck 4 DANGER read SAFE, without GoPlus 21 SAFE read CAUTION. So such a scan is
 // MARKED (`sourceGap`): the overlay shows "Limited data" instead of a verdict, counts down and asks again; the badge, the alerts, the history and the rug
 // database ignore it. The mark is sent to Free callers too (the flags that say which source are Pro).
+// 2026-10-14 evening: it is marked only when HELIUS is down (the source that moves the verdict: 387 of the 1 121), or when TWO of the three sources are down at the
+// same time. RugCheck alone (13 verdicts move, and it answered nothing for the established tokens for hours: 5 tokens out of 8 open were "Limited data") or GoPlus
+// alone (63) keeps the scan as it was before the feature: its verdict, its flag ("RugCheck unavailable" for Pro), cached for the usual time, recorded as usual.
 
 const freeReq = (): VercelRequest => {
   const req = createMockReq({ ca: WSOL });
@@ -393,12 +396,19 @@ describe("isScanIncomplete: a source that is DOWN x every verdict (a last resort
   describe.each(VERDICTS)("a scan that reached %s", () => {
     it.each([
       ["Helius", ["helius"]],
-      ["RugCheck", ["rugcheck"]],
-      ["GoPlus", ["goplus"]],
       ["Helius + GoPlus", ["helius", "goplus"]],
+      ["Helius + RugCheck", ["helius", "rugcheck"]],
+      ["RugCheck + GoPlus (two sources at once)", ["rugcheck", "goplus"]],
       ["Helius + RugCheck + GoPlus", ["helius", "rugcheck", "goplus"]],
     ])("%s silent AND down: marked, whatever the verdict (no verdict is shown for it)", (_name, missing) => {
       expect(isScanIncomplete({ layers: layersWith(missing), down: DOWN_ALL })).toBe(true);
+    });
+
+    it.each([
+      ["RugCheck", ["rugcheck"]],
+      ["GoPlus", ["goplus"]],
+    ])("%s silent AND down, but ALONE (the other two answered): not marked, the scan keeps its verdict and its flag", (_name, missing) => {
+      expect(isScanIncomplete({ layers: layersWith(missing), down: DOWN_ALL })).toBe(false);
     });
 
     it.each([
@@ -461,7 +471,13 @@ describe("scan — a source did not answer", () => {
     expect(mockPushHistory).toHaveBeenCalledTimes(1);
   });
 
-  for (const [name, silence] of silences) {
+  // The scans that ARE Limited data: Helius down, or two sources down at once. (RugCheck alone or GoPlus alone: see "DOWN, alone" below.)
+  const marked: Array<[string, () => void]> = [
+    ["Helius", silences[0][1]],
+    ["RugCheck + GoPlus", () => { silences[1][1](); silences[2][1](); }],
+  ];
+
+  for (const [name, silence] of marked) {
     it(name + " silent | Pro: marked, degraded, kept 30 s, written nowhere (not the rug database, not the history, not the memory)", async () => {
       setupGoodTokenMocks();
       silence();
@@ -493,11 +509,45 @@ describe("scan — a source did not answer", () => {
     });
   }
 
+  // 2026-10-14: RugCheck answered nothing for the established tokens for hours, GoPlus can do the same: ONE of them down is not "Limited data". The scan is what it was
+  // before the feature: the verdict, the flag, cached for the usual time, recorded and in the history.
+  for (const [name, silence] of [silences[1], silences[2]]) {
+    it(name + " DOWN, alone | Pro: the verdict as before, not marked, cached for the usual time, recorded and in the history", async () => {
+      setupGoodTokenMocks();
+      silence();
+      const res = createMockRes();
+      await run(createMockReq({ ca: WSOL }), res);
+      const body = jsonBody(res);
+      expect(body?.sourceGap).toBe(false);
+      expect(sourceGapOf(body as never)).toBe(false);
+      expect(body?.freshForSec).not.toBe(30);
+      expect(vi.mocked(setCachedResult)).toHaveBeenCalled();
+      expect(mockRecordRug).toHaveBeenCalledTimes(1);
+      expect(mockPushHistory).toHaveBeenCalledTimes(1);
+      expect(mockRecordScanOutcome.mock.calls[0][0]).toEqual([]); // counted as a cold scan, with no cause
+    });
+
+    it(name + " DOWN, alone | Free: not marked either, the same verdict word as Pro", async () => {
+      setupGoodTokenMocks();
+      silence();
+      const pro = createMockRes();
+      await run(createMockReq({ ca: WSOL }), pro);
+      setupGoodTokenMocks();
+      silence();
+      const free = createMockRes();
+      await run(freeReq(), free);
+      const body = (free as unknown as { getBody: () => Record<string, unknown> }).getBody();
+      expect(body?.sourceGap).toBe(false);
+      expect(sourceGapOf(body as never)).toBe(false);
+      expect(body?.risk).toBe(jsonBody(pro)?.risk);
+    });
+  }
+
   describe("the emergency switch (LIMITED_DATA=off)", () => {
     const saved = process.env.LIMITED_DATA;
     afterEach(() => { if (saved === undefined) delete process.env.LIMITED_DATA; else process.env.LIMITED_DATA = saved; });
 
-    for (const [name, silence] of silences) {
+    for (const [name, silence] of marked) {
       it(name + " silent with the switch off: not marked, the engine's verdict as before, still degraded (cached 30 s), recorded and in the history as before", async () => {
         process.env.LIMITED_DATA = "off";
         setupGoodTokenMocks();
@@ -547,7 +597,7 @@ describe("scan — a source did not answer", () => {
       silence();
       await run(createMockReq({ ca: WSOL }), createMockRes());
       expect(mockRecordScanOutcome, name).toHaveBeenCalledTimes(1);
-      expect(mockRecordScanOutcome.mock.calls[0][0], name).toEqual([name.toLowerCase()]);
+      expect(mockRecordScanOutcome.mock.calls[0][0], name).toEqual(name === "Helius" ? ["helius"] : []); // RugCheck or GoPlus alone: no cause, it is not Limited data
     }
     mockRecordScanOutcome.mockClear();
     setupGoodTokenMocks();
@@ -555,6 +605,12 @@ describe("scan — a source did not answer", () => {
     silences[2][1](); // GoPlus
     await run(createMockReq({ ca: WSOL }), createMockRes());
     expect(mockRecordScanOutcome.mock.calls[0][0]).toEqual(["helius", "goplus"]);
+    mockRecordScanOutcome.mockClear();
+    setupGoodTokenMocks();
+    silences[1][1](); // RugCheck
+    silences[2][1](); // GoPlus
+    await run(createMockReq({ ca: WSOL }), createMockRes());
+    expect(mockRecordScanOutcome.mock.calls[0][0]).toEqual(["rugcheck", "goplus"]);
   });
 
   it("the chart silent on an old token, or a source with nothing for this token, is no outage: the scan is counted (a cold scan) with no cause", async () => {
@@ -681,16 +737,26 @@ describe("scan — a source did not answer", () => {
         String(url).includes(host) ? Promise.resolve({ ok: false, status: 503, json: () => Promise.resolve(null) }) : good(url, ...rest));
     };
 
-    it("RugCheck failing for real (no seeding): its calls of this scan are the outage, so the scan is Limited data", async () => {
+    it("RugCheck failing for real (no seeding), alone: its calls of this scan are the outage, but ONE source is not enough: the scan keeps its verdict and its flag", async () => {
       setupGoodTokenMocks();
       fail503("rugcheck");
       const res = createMockRes();
       await run(createMockReq({ ca: WSOL }), res);
-      expect(jsonBody(res)?.sourceGap).toBe(true);
+      expect(jsonBody(res)?.sourceGap).toBe(false);
+      expect(((jsonBody(res)?.layers ?? {}) as Record<string, { available: boolean }>).rugcheck?.available).toBe(false);
     });
 
-    it("GoPlus failing for real (no seeding): a lookup makes two calls, the authenticated one and the public one, both failing is the outage, so the scan is Limited data", async () => {
+    it("GoPlus failing for real (no seeding), alone: a lookup makes two calls, the authenticated one and the public one, both failing is the outage, but ONE source is not enough", async () => {
       setupGoodTokenMocks();
+      fail503("gopluslabs");
+      const res = createMockRes();
+      await run(createMockReq({ ca: WSOL }), res);
+      expect(jsonBody(res)?.sourceGap).toBe(false);
+    });
+
+    it("RugCheck AND GoPlus failing for real at the same time (no seeding): two sources at once, so the scan is Limited data", async () => {
+      setupGoodTokenMocks();
+      fail503("rugcheck");
       fail503("gopluslabs");
       const res = createMockRes();
       await run(createMockReq({ ca: WSOL }), res);
@@ -763,9 +829,9 @@ describe("a silent source: Limited data, whatever the verdict, Free or Pro", () 
   const heliusDown = () => { mockHeliusGetLargestAccounts.mockResolvedValue(null); mockHeliusGetMintAccount.mockResolvedValue(null); declareOutage("helius"); };
   const SILENCES: Array<[string, () => void]> = [
     ["Helius", () => heliusDown()],
-    ["RugCheck", () => down("rugcheck")],
-    ["GoPlus", () => down("gopluslabs")],
     ["Helius + GoPlus", () => { heliusDown(); down("gopluslabs"); }],
+    ["Helius + RugCheck", () => { heliusDown(); down("rugcheck"); }],
+    ["RugCheck + GoPlus (two sources at once)", () => { down("rugcheck"); down("gopluslabs"); }],
     ["Helius + RugCheck + GoPlus", () => { heliusDown(); down("rugcheck"); down("gopluslabs"); }],
   ];
   const bodyOf = (res: VercelResponse, tier: "pro" | "free") =>
@@ -795,6 +861,30 @@ describe("a silent source: Limited data, whatever the verdict, Free or Pro", () 
           // and it is kept for 30 s only, never as the memory of a verdict
           expect(vi.mocked(setCachedResult)).not.toHaveBeenCalled();
           expect(vi.mocked(setLastGoodResult)).not.toHaveBeenCalled();
+        });
+      }
+    }
+  }
+
+  // ONE of RugCheck or GoPlus down is not enough (2026-10-14: RugCheck answered nothing for the established tokens for hours, 5 tokens out of 8 open at once were
+  // "Limited data"). The scan keeps its verdict and, for Pro, the flag that says the source is unavailable; badge, alerts, history and rug database hear of it as before.
+  for (const [name, silence] of [["RugCheck", () => down("rugcheck")], ["GoPlus", () => down("gopluslabs")]] as Array<[string, () => void]>) {
+    for (const verdict of VERDICTS) {
+      for (const tier of ["pro", "free"] as const) {
+        it(name + " DOWN, alone | the engine reached " + verdict + " | " + tier + ": the verdict, never Limited data; badge, history and rug database are told", async () => {
+          forced.verdict = verdict;
+          setupGoodTokenMocks();
+          silence();
+          const res = createMockRes();
+          await run(tier === "free" ? freeReq() : createMockReq({ ca: WSOL }), res);
+          const body = bodyOf(res, tier);
+          expect(body.risk).toBe(verdict);
+          expect(body.sourceGap).toBe(false);
+          expect(sourceGapOf(body)).toBe(false);
+          expect(body.freshForSec).not.toBe(30);
+          expect(buildScanResultMessage(WSOL, body as never)?.risk).toBe(verdict);
+          expect(mockRecordRug).toHaveBeenCalledTimes(1);
+          expect(mockPushHistory).toHaveBeenCalledTimes(1);
         });
       }
     }
@@ -832,7 +922,8 @@ describe("a silent source: Limited data, whatever the verdict, Free or Pro", () 
 //     blip     one failed call fewer than the threshold within the minute: a blip.
 //     outage   the threshold of failed calls within the minute (Helius 3, RugCheck 2, GoPlus 2): the source is DOWN.
 //     ended    the same failures, but more than a minute ago: the outage is over.
-//   which source: Helius, RugCheck and GoPlus can make a scan Limited data (and only in the "outage" state); Solscan, DexScreener and the chart never do.
+//   which source: HELIUS alone can make a scan Limited data (only in the "outage" state); RugCheck and GoPlus only together, or with Helius (the combinations below);
+//   Solscan, DexScreener and the chart never do.
 
 describe("WHEN Limited data activates: verdict x missing source x how it is missing x tier", () => {
   const VERDICTS = ["SAFE", "CAUTION", "DANGER", "RUG"] as const;
@@ -875,8 +966,8 @@ describe("WHEN Limited data activates: verdict x missing source x how it is miss
     if (mode === "ended") await vi.advanceTimersByTimeAsync(61_000);
   };
 
-  /** The rule, as the product owner stated it: Limited data only for a real outage of one of the three sources. */
-  const expectLimited = (src: Source, mode: Mode): boolean => DECIDES.has(src) && mode === "outage";
+  /** The rule, as the product owner stated it (2026-10-14): Limited data only for a real outage of Helius, or of two of the three sources at once (the combinations below). */
+  const expectLimited = (src: Source, mode: Mode): boolean => src === "helius" && mode === "outage";
 
   const rows: Array<{ tier: string; verdict: string; src: Source; mode: Mode; limited: boolean; degraded: boolean | undefined; badge: string | null }> = [];
 
@@ -927,7 +1018,12 @@ describe("WHEN Limited data activates: verdict x missing source x how it is miss
   // Combinations: several sources silent at once. Only the ones that are DOWN make it Limited data; the others do not add anything.
   const COMBOS: Array<{ name: string; silent: Source[]; down: Source[]; limited: boolean }> = [
     { name: "Helius and RugCheck silent, only Helius down", silent: ["helius", "rugcheck"], down: ["helius"], limited: true },
-    { name: "Helius and RugCheck silent, only RugCheck down", silent: ["helius", "rugcheck"], down: ["rugcheck"], limited: true },
+    { name: "Helius and RugCheck silent, only RugCheck down (one source is not enough)", silent: ["helius", "rugcheck"], down: ["rugcheck"], limited: false },
+    { name: "RugCheck silent and down, alone", silent: ["rugcheck"], down: ["rugcheck"], limited: false },
+    { name: "GoPlus silent and down, alone", silent: ["goplus"], down: ["goplus"], limited: false },
+    { name: "RugCheck and GoPlus silent, both down (two sources at once)", silent: ["rugcheck", "goplus"], down: ["rugcheck", "goplus"], limited: true },
+    { name: "RugCheck and GoPlus silent, only RugCheck down", silent: ["rugcheck", "goplus"], down: ["rugcheck"], limited: false },
+    { name: "RugCheck silent and down, GoPlus down but it answered", silent: ["rugcheck"], down: ["rugcheck", "goplus"], limited: false },
     { name: "Helius and RugCheck silent, neither down (both have nothing for this token)", silent: ["helius", "rugcheck"], down: [], limited: false },
     { name: "all three silent, none down", silent: ["helius", "rugcheck", "goplus"], down: [], limited: false },
     { name: "all three silent, all down", silent: ["helius", "rugcheck", "goplus"], down: ["helius", "rugcheck", "goplus"], limited: true },
@@ -978,14 +1074,15 @@ describe("WHEN Limited data activates: verdict x missing source x how it is miss
       }
     }
     const limitedCount = rows.filter((r) => r.limited).length;
-    lines.push("## Summary", "", `- ${rows.length} scans, ${limitedCount} Limited data, ${rows.length - limitedCount} with their verdict.`, "- Limited data happens only in the **outage** column of Helius, RugCheck and GoPlus.", "- Solscan, DexScreener and the chart never make a scan Limited data.", "- Free and Pro always agree.", "");
+    lines.push("## Summary", "", `- ${rows.length} scans, ${limitedCount} Limited data, ${rows.length - limitedCount} with their verdict.`, "- Limited data happens only in the **outage** column of Helius, or when two of Helius, RugCheck and GoPlus are down at once (RugCheck alone or GoPlus alone keeps its verdict).", "- Solscan, DexScreener and the chart never make a scan Limited data.", "- Free and Pro always agree.", "");
     writeFileSync(out, lines.join("\n"));
   });
 });
 
 // ─── RugCheck's memory, through the real handler ─────────────────────────────────────────────────────────────────────────────────────────────────────────
 // RugCheck is the source that fails the most. A token scanned before keeps its last good RugCheck answer for a while (api/_lib/rugcheck-memory.ts), read only for what RugCheck
-// does not give back: during an outage the scan of such a token has its RugCheck layer, so it is not "Limited data"; a token never scanned before is, as it was.
+// does not give back: during an outage the scan of such a token has its RugCheck layer. RugCheck alone being down is no longer "Limited data" (Helius alone, or two sources at
+// once, are): the memory matters when a SECOND source is down too, because it keeps RugCheck's layer and so leaves a single source missing.
 describe("RugCheck's memory: a token scanned before survives a RugCheck outage", () => {
   const kept = new Map<string, unknown>();
   const sets: Array<{ key: string; opts: unknown }> = [];
@@ -1000,6 +1097,13 @@ describe("RugCheck's memory: a token scanned before survives a RugCheck outage",
       String(url).includes("rugcheck") ? Promise.resolve({ ok: false, status: 503, json: () => Promise.resolve(null) }) : good(url, ...rest));
     declareOutage("rugcheck");
   };
+  const goplusDown = () => {
+    const good = mockFetch.getMockImplementation()!;
+    mockFetch.mockImplementation((url: string, ...rest: unknown[]) =>
+      String(url).includes("gopluslabs") ? Promise.resolve({ ok: false, status: 503, json: () => Promise.resolve(null) }) : good(url, ...rest));
+    declareOutage("goplus");
+  };
+  const rugcheckAndGoplusDown = () => { rugcheckDown(); goplusDown(); };
   const flagLabels = (b: Record<string, unknown> | undefined) => ((b?.flags ?? []) as Array<{ label: string }>).map((f) => f.label).filter((l) => !/RugCheck unavailable/i.test(l)).sort();
   const layerUp = (b: Record<string, unknown> | undefined) => (b?.layers as Record<string, { available: boolean }> | undefined)?.rugcheck?.available;
 
@@ -1039,22 +1143,35 @@ describe("RugCheck's memory: a token scanned before survives a RugCheck outage",
     expect(during?.sourceGap).toBe(false);
   });
 
-  it("a token never scanned before, during the same outage: Limited data, as it was", async () => {
+  it("a token never scanned before, RugCheck down ALONE: its verdict and its flag, not Limited data (the 2026-10-14 case)", async () => {
     const during = await scanOnce(rugcheckDown);
+    expect(during?.sourceGap).toBe(false);
+    expect(layerUp(during)).toBe(false);
+  });
+
+  it("a token never scanned before, RugCheck AND GoPlus down together: Limited data (two sources at once)", async () => {
+    const during = await scanOnce(rugcheckAndGoplusDown);
     expect(during?.sourceGap).toBe(true);
   });
 
-  it("a memory older than 6 hours is not read: Limited data", async () => {
+  it("a token scanned before, RugCheck AND GoPlus down together: the memory keeps RugCheck's layer, so one source is missing, not two: not Limited data", async () => {
+    await scanOnce();
+    const during = await scanOnce(rugcheckAndGoplusDown);
+    expect(layerUp(during)).toBe(true);
+    expect(during?.sourceGap).toBe(false);
+  });
+
+  it("a memory older than 6 hours is not read: with a second source down, Limited data", async () => {
     await scanOnce();
     vi.setSystemTime(Date.now() + 7 * 3600_000);
-    const during = await scanOnce(rugcheckDown);
+    const during = await scanOnce(rugcheckAndGoplusDown);
     expect(during?.sourceGap).toBe(true);
   });
 
-  it("a Redis that fails on the read: the scan goes on without the memory (Limited data during the outage), it does not fail", async () => {
+  it("a Redis that fails on the read: the scan goes on without the memory (Limited data if a second source is down), it does not fail", async () => {
     await scanOnce();
     vi.mocked(getCacheRedis).mockReturnValue(fakeRedis({ get: async () => { throw new Error("redis down"); } }) as never);
-    const during = await scanOnce(rugcheckDown);
+    const during = await scanOnce(rugcheckAndGoplusDown);
     expect(during?.sourceGap).toBe(true);
   });
 

@@ -715,16 +715,18 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // And for a scan with no DexScreener pool at all: DexScreener answers "no pairs" during an outage too (about an hour, 2026-10-07), the
     // answer cannot be told from a token that really has no pool, and a verdict born from a market nobody read (a RUG for a token the market
     // would have cleared) must not stick for 30 minutes.
-    // And for a scan made while Helius, RugCheck or GoPlus is DOWN (outage.ts): see sourceGap below.
+    // And for a scan made while Helius is DOWN, or two of Helius, RugCheck and GoPlus are DOWN at once (outage.ts): see sourceGap below.
     const deadlineSpent = scanDeadline - Date.now() < MIN_STEP_MS;
     const chartGap = isChartGapDegraded(result.risk, result.layers?.chart?.available, tokenAgeMinutes);
     const reportGap = isReportGapDegraded(result.risk, resolvedMint !== ca, rugReport !== null);
     // 2026-10-14: replayed on the 1 121 tokens of the corpus with ONE source silent, the verdict a scan reaches without it is not the token's: without Helius
     // 172 SAFE read CAUTION and 132 RUG read DANGER, without RugCheck 4 DANGER read SAFE, without GoPlus 21 SAFE read CAUTION, and a token that flips from one
-    // verdict to another is not credible. So a scan made while a source is DOWN carries NO verdict for the user: `sourceGap` makes the overlay show "Limited data",
-    // count down and ask again (the answer is kept 30 s). It is a LAST RESORT: DOWN means the source has failed several calls within the last minute (outage.ts), not
-    // that it has nothing for THIS token (Helius cannot list the holders of BONK or JUP, RugCheck does not know a brand-new token): those scans keep their verdict
-    // and their flags, as before. The badge, the alerts and the history ignore a Limited data scan, and so does the rug database (below). "No pool" is not in this
+    // verdict to another is not credible. So a scan made while Helius is DOWN, or while two of Helius, RugCheck and GoPlus are DOWN at once, carries NO verdict for
+    // the user: `sourceGap` makes the overlay show "Limited data", count down and ask again (the answer is kept 30 s). RugCheck alone or GoPlus alone is NOT enough
+    // (2026-10-14: RugCheck answered nothing for the established tokens for hours, 5 tokens out of 8 open at once were "Limited data"; without it 13 verdicts out of
+    // 1 121 move, 63 without GoPlus): such a scan keeps its verdict and its flag, as before the feature (helpers.ts gapSources). It is a LAST RESORT: DOWN means the
+    // source has failed several calls within the last minute (outage.ts), not that it has nothing for THIS token (Helius cannot list the holders of BONK or JUP,
+    // RugCheck does not know a brand-new token): those scans keep their verdict and their flags, as before. The badge, the alerts and the history ignore a Limited data scan, and so does the rug database (below). "No pool" is not in this
     // rule (it cannot be told from a token that has none), and an issuer's asset whose market cannot be read keeps its own answer (the last verdict, with its age:
     // api/_lib/last-good.ts).
     const gapSourcesNow = gapSources(result.layers, downSources());
