@@ -77,12 +77,13 @@ function isAvailable(): boolean {
 /**
  * Comma-separated list of install_ids the dev wants to force into a
  * paid tier without going through the payment flow. Used so the dev
- * can keep running their own extension on Pro mode without burning
- * the Free quota during day-to-day work — and so QA installs don't
- * need real on-chain payments to test paid surfaces.
+ * can keep running their own extension on a paid tier during day-to-day
+ * work — and so QA installs don't need real on-chain payments to test
+ * paid surfaces.
  *
  * `DEV_PRO_INSTALLS=install-aaaaaaaaaaa,install-bbbbbbbbbbb`
- *   → both ids return tier="lifetime", quota check is bypassed.
+ *   → both ids get the tier the X-Antares-Dev-Tier header names, Yearly
+ *     otherwise (row 1 of the table in entitlements.ts).
  *
  * Not meant for production grants: the env var is the audit trail.
  * Real customers go through /api/redeem like everyone else.
@@ -184,11 +185,10 @@ export interface TierResolution {
  * Returns:
  *   - `tier`: the same value `getEffectiveTierFromRequest` would return
  *   - `bypassQuota`: true if the caller is dev-allowlisted (env-var or
- *     bound dev email). When true, callers should skip the Free-tier
- *     daily-quota enforcement so the dev can flip the Options dropdown
- *     to Free and test the locked-overlay UX without burning through
- *     the 50-scan/day cap. Quota counter is still surfaced honestly
- *     in response headers — we just don't 429 the request.
+ *     bound dev email). It used to exempt devs from the Free tier's
+ *     daily scan cap. That cap no longer exists (every tier is
+ *     unlimited), so nothing reads this flag today; it stays in the
+ *     entitlements table until that table is next edited.
  *
  * For non-dev users this returns `{ tier, bypassQuota: false }` and
  * behaves identically to `getEffectiveTierFromRequest`.
@@ -378,7 +378,7 @@ export async function getEffectiveTierFromRequest(
   installId: string,
 ): Promise<Tier> {
   // Thin wrapper around resolveTierAndBypass so callers that don't care
-  // about the dev-quota-bypass flag stay simple. Both functions share one
+  // about the dev-bypass flag stay simple. Both functions share one
   // session+binding read internally.
   const { tier } = await resolveTierAndBypass(req, installId);
   return tier;
@@ -389,8 +389,8 @@ export async function getEffectiveTierFromRequest(
 /**
  * Read the user's tier. Default Free; treats expired Pro/Lifetime as Free
  * automatically (server-side enforcement, not just client trust). Dev
- * installs listed in DEV_PRO_INSTALLS short-circuit to lifetime so the
- * dev never gets quota-locked on their own install.
+ * installs listed in DEV_PRO_INSTALLS short-circuit to yearly so the
+ * dev's own install is never Free by accident.
  */
 export async function getUserTier(installId: string): Promise<Tier> {
   if (isDevProInstall(installId)) return "yearly";

@@ -113,8 +113,8 @@ export function applySafeGateOverride(input: SafeGateInput): boolean {
   const hasHardReason = input.safeBlockedReasons.some(r => HARD_BLOCK_REASONS.has(r));
   if (hasHardReason) return true; // Always keep safeBlocked for hard reasons
 
-  // Only 'age' and 'holders' are soft reasons that can potentially unlock
-  // SOFT_REASONS imported from constants.ts
+  // Only the SOFT_REASONS (the list lives in constants.ts, next to HARD_BLOCK_REASONS)
+  // can potentially unlock. Anything else keeps the safe gate closed.
   const onlySoftReasons = input.safeBlockedReasons.length > 0 &&
     input.safeBlockedReasons.every(r => SOFT_REASONS[r] === true);
 
@@ -134,7 +134,7 @@ export function applySafeGateOverride(input: SafeGateInput): boolean {
     // Path 2: Established token override — for blue chips where LP is not burned
     // but the token is clearly legitimate (massive holder base, very old, GoPlus clean).
     // Tokens like Fartcoin (600k+ holders, 30d+) were stuck in DANGER because
-    // the safe gate required lpBurned to unlock even soft reasons like 'holders'.
+    // the safe gate required lpBurned to unlock even when only soft reasons blocked it.
     // This path uses MUCH stricter thresholds to compensate for unburned LP.
     const isEstablished =
       (input.tokenAgeHours !== null && ageHours >= 720) && // 30+ days
@@ -208,7 +208,7 @@ export function determineVerdict(input: VerdictInput): Verdict {
       (input.sourcesUsedCount ?? 0) >= MIN_SOURCES_FOR_CLEAN_SAFE
     ) return "SAFE";
 
-    // Soft reasons (age/holders) only: tightened from 550 to 700 for CAUTION
+    // Soft reasons (SOFT_REASONS) only: tightened from 550 to 700 for CAUTION
     if (input.score >= 700) return "CAUTION";
     return "DANGER";
   }
