@@ -221,20 +221,18 @@ describe("buildResult — Free-tier gating", () => {
     expect(cf.getAttribute("href")).not.toContain("install=")
   })
 
-  it("at-cap quota badge in header bakes install_id into href synchronously", () => {
-    // Same async-popup-block bug, same fix. The "0/50 → PRO" badge
-    // is a fallback handle for users who miss the OUT OF SCANS card
-    // (e.g. it scrolled off-screen) — it must navigate on a single
-    // click without async indirection.
+  it("a stale payload that says the daily cap was reached draws no pill and no upgrade link in the header", () => {
+    // There is no cap any more (every tier is unlimited). The header used to show a "0/50 → PRO" link
+    // for such a payload; that pill, its install_id href and its CSS are gone. The wordmark carries
+    // the tier signal, and the only upgrade links left are the locked Pro buttons.
     const data = makeScanData({
       _quota: { tier: "free", used: 50, limit: 50, remaining: 0, resetAt: 0 },
     })
     const html = buildResult(data, "So11111111111111111111111111111111111111112", "install-test-bbbbbbbbbbbb")
     const doc = new DOMParser().parseFromString(html, "text/html")
-    const badge = doc.querySelector(".quota-badge.danger") as HTMLAnchorElement
-    expect(badge).not.toBeNull()
-    expect(badge.tagName).toBe("A")
-    expect(badge.getAttribute("href")).toContain("install=install-test-bbbbbbbbbbbb")
+    expect(doc.querySelector(".quota-badge")).toBeNull()
+    expect(doc.querySelector(".hd a")).toBeNull()
+    expect(doc.querySelector(".hd .brand")?.textContent).toBe("ANTARES")
   })
 
   it("Pro/Lifetime users still get <button> for cf/ai (toggles panel, doesn't navigate)", () => {

@@ -355,101 +355,6 @@ export function formatTimeAgo(ts: number): string {
   return `${Math.floor(hrs / 24)}d ago`
 }
 
-// Renders a quota status badge for the overlay header.
-//
-//   Free, unlimited (limit = -1) → "FREE" badge (post-2026-05 model where
-//                                  Free tier has unlimited scans; only the
-//                                  paid features stay locked)
-//   Pro / Lifetime               → green "PRO" / "LIFE" badge
-//   Free, capped (legacy, kept for back-compat with stale cached responses):
-//     Free, plenty left  → dim "47/50"
-//     Free, ≤ 5 left     → yellow "3/50" (warning state)
-//     Free, at 0         → red link "0/50 → PRO" (clickable to /pricing)
-//
-// Returns null when quota is undefined so the header can omit the badge
-// entirely (cached results pre-quota launch, anonymous traffic without
-// identity headers, or API responses where CORS didn't expose the headers).
-const QUOTA_WARN_THRESHOLD = 5
-
-function buildQuotaBadge(
-  quota?: QuotaStatus,
-  installId?: string | null,
-): HTMLElement | null {
-  if (!quota) return null
-
-  if (quota.tier === "pro" || quota.tier === "yearly" || quota.tier === "lifetime") {
-    // Badge text:
-    //   "PRO"   = 30-day pass
-    //   "YEAR"  = 1-year subscription (replaces "LIFE" as of 2026-05)
-    //   "LIFE"  = grandfathered legacy tier — a small minority of users
-    //             paid before the rename and keep their forever pass
-    const label =
-      quota.tier === "lifetime" ? "LIFE" : quota.tier === "yearly" ? "YEAR" : "PRO"
-    const fullName =
-      quota.tier === "lifetime" ? "Lifetime" : quota.tier === "yearly" ? "Yearly" : "Pro"
-    return el(
-      "span",
-      {
-        class: "quota-badge pro",
-        title: `${fullName} · Unlimited scans`,
-      },
-      label,
-    )
-  }
-
-  // Free tier with unlimited quota (limit=-1): show a plain FREE badge —
-  // the count is meaningless when the cap is gone. The Pro-locked features
-  // (Critical Flags, Full Analysis, AI Summary) stay locked via separate
-  // gating in the UI; quota is now purely a tier label.
-  if (quota.limit < 0) {
-    return el(
-      "span",
-      { class: "quota-badge free", title: "Free · Unlimited scans" },
-      "FREE",
-    )
-  }
-
-  // Legacy Free tier with the 50/day cap (kept so cached pre-rollout
-  // responses still render gracefully). Same visuals as before.
-  const text = `${quota.used}/${quota.limit}`
-  const remaining = quota.remaining
-
-  if (remaining === 0) {
-    // Limit reached — surface as a clickable link to the pricing page.
-    // install_id is baked into href synchronously by the caller (passed
-    // in via buildHeaderNode), so the native <a target="_blank"> nav
-    // works on a single user-click. Earlier versions wrapped this in
-    // an async window.open inside a click handler — that consumed the
-    // user-gesture grace before the popup could open and silently got
-    // popup-blocked, leaving the link dead.
-    const href = installId
-      ? `${PRICING_URL}?install=${encodeURIComponent(installId)}`
-      : PRICING_URL
-    return el(
-      "a",
-      {
-        class: "quota-badge danger",
-        href,
-        target: "_blank",
-        rel: "noopener noreferrer",
-        title: "Daily limit reached — upgrade to Pro for unlimited scans",
-      },
-      `${text} → PRO`,
-    )
-  }
-
-  const className =
-    remaining <= QUOTA_WARN_THRESHOLD ? "quota-badge warn" : "quota-badge"
-  return el(
-    "span",
-    {
-      class: className,
-      title: `${remaining} scan${remaining === 1 ? "" : "s"} remaining today`,
-    },
-    text,
-  )
-}
-
 // Optional affiliate row — only rendered when:
 //   1. PHOTON_REF is non-empty (we actually have a referral relationship)
 //   2. The user is on the Free tier (Pro/Lifetime get a clean UI as part
@@ -490,10 +395,7 @@ function buildAffiliateRow(
   )
 }
 
-function buildHeaderNode(
-  quota?: QuotaStatus,
-  installId?: string | null,
-): HTMLElement {
+function buildHeaderNode(quota?: QuotaStatus): HTMLElement {
   const dragIcon = el("span", { class: "drag-icon" })
   setStaticSvg(dragIcon, SVG_MOVE)
   const closeBtn = el("button", { class: "x", id: "ant-close" })
@@ -512,125 +414,17 @@ function buildHeaderNode(
     : quota?.tier === "yearly" ? "Yearly · Unlimited scans"
     : quota?.tier === "pro"    ? "Pro · Unlimited scans"
     : "Free · Unlimited scans"
-  // Legacy quota-exhausted badge — only relevant when a Free user
-  // hits the 50/day cap (quota.limit > 0 + remaining === 0). Render
-  // it so the "0/50 → PRO" upgrade link still appears in that edge
-  // case. For everything else (unlimited Free, Pro, no-quota), the
-  // wordmark colour carries the full tier signal.
-  const showLegacyCapPill =
-    !!quota && !isPro && quota.limit > 0 && quota.remaining === 0
   return el("div", { class: "hd" },
     el("span", {
       class: `brand ${isPro ? "pro" : ""}`.trim(),
       title: tierTitle,
     }, "ANTARES"),
-    showLegacyCapPill ? buildQuotaBadge(quota, installId) : null,
     el("div", { class: "hd-right" }, dragIcon, closeBtn),
   )
 }
 
 export function buildHeader(): string {
   return buildHeaderNode().outerHTML
-}
-
-// Quota-exhausted state — rendered when a Free user has burned through
-// their daily 50 scans and the API returns 429 with quota headers
-// signalling remaining=0. Replaces the silent box-hide that made the
-// extension look broken once the cap landed: now the user sees exactly
-// what's happening and gets a primary upgrade CTA pointing at /pricing
-// with their install_id baked in.
-//
-// Design intent: compact (don't dominate the page), no redundant
-// header badge (the OUT OF SCANS message says it already), one-line
-// CTA that fits the 290px width without wrapping the arrow.
-//
-// Click reliability: the install_id is baked into href synchronously
-// at build time so the native <a target="_blank"> navigation works
-// without any JS handler — that fixes the "click does nothing"
-// regression where window.open() inside an async .then() lost its
-// user-gesture grace and got popup-blocked.
-export function buildQuotaExhaustedNode(
-  quota: QuotaStatus,
-  installId?: string | null,
-): HTMLElement {
-  if (state.boxEl) state.boxEl.className = "box caution"
-
-  // Reset countdown — recomputed on every render. The interval below
-  // updates the .reset-time text so the user sees the minutes tick
-  // down without re-rendering the entire subtree.
-  function fmtReset(): string {
-    if (!quota.resetAt) return "midnight UTC"
-    const ms = quota.resetAt - Date.now()
-    if (ms <= 0) return "any moment"
-    const totalMin = Math.floor(ms / 60000)
-    const h = Math.floor(totalMin / 60)
-    const m = totalMin % 60
-    if (h <= 0) return `${m}m`
-    return `${h}h ${m}m`
-  }
-  const resetEl = el("span", { class: "qx-reset-time" }, fmtReset())
-
-  // Cap the displayed counter at the limit — `quota.used` keeps
-  // incrementing even past the cap (server INCRs first, then denies).
-  // Showing "117/50" looks broken; users care that they're at the cap,
-  // not by how much they've blown past it.
-  const usedDisplay = Math.min(quota.used, quota.limit)
-
-  // Bake install_id into href so the link works on a single user-click
-  // without async indirection. Falls back to the bare URL when the
-  // install_id is missing (rare — only on first scan before storage).
-  const href = installId
-    ? `${PRICING_URL}?install=${encodeURIComponent(installId)}`
-    : PRICING_URL
-
-  // Design picked from /quota-overlay-demos.html (#91) → Demo 3
-  // "Premium / calm". White headline (no all-caps drama), outline
-  // CTA (not screaming green button), price visible so the user
-  // knows what they'd pay before clicking.
-  const root = el("div", undefined,
-    el("div", { class: "topbar" }),
-    // Pass undefined so the header quota-badge is suppressed — the
-    // body says it already, double signal was visual noise.
-    buildHeaderNode(undefined),
-    el("div", { class: "qx-vb" },
-      el("h1", undefined, "Daily limit reached"),
-      el("div", { class: "qx-sub" }, "resets in ", resetEl),
-    ),
-    el("div", { class: "qx-counter" },
-      "You've used today's ",
-      el("b", undefined, `${usedDisplay} / ${quota.limit}`),
-      " scans",
-    ),
-    el("a", {
-      class: "qx-cta",
-      href,
-      target: "_blank",
-      rel: "noopener noreferrer",
-      // No JS click handler — native <a> nav is reliable, async
-      // window.open() loses the user-gesture grace and gets blocked.
-    }, "Unlock unlimited"),
-  )
-
-  // Adaptive tick: when more than 2 minutes remain we tick once per
-  // minute (matches the displayed precision — "1h 24m"), so the user
-  // doesn't see a number sit unchanged for 60s then jump 2). Under
-  // 2 minutes we tick every 10s so the final approach to "any moment"
-  // feels live without single-digit flashing.
-  let timer: ReturnType<typeof setTimeout> | null = null
-  function schedule() {
-    if (!resetEl.isConnected) {
-      if (timer) clearTimeout(timer)
-      timer = null
-      return
-    }
-    resetEl.textContent = fmtReset()
-    const ms = quota.resetAt ? quota.resetAt - Date.now() : 60_000
-    const interval = ms > 120_000 ? 60_000 : 10_000
-    timer = setTimeout(schedule, interval)
-  }
-  timer = setTimeout(schedule, 0)
-
-  return root
 }
 
 // Loading-state skeleton injected while a scan is in-flight. Exported as
@@ -935,7 +729,7 @@ export function buildResultNode(
 
   const root = el("div", undefined,
     el("div", { class: "topbar" }),
-    buildHeaderNode(data._quota, installId),
+    buildHeaderNode(data._quota),
     tkNode,
     el("div", { class: "vb" },
       el("h1", undefined, label),

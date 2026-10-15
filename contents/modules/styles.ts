@@ -268,45 +268,6 @@ export const SHADOW_CSS = `
   outline: 1px solid rgba(0,229,176,.5);
   outline-offset: 2px;
 }
-.quota-badge {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 7px;
-  letter-spacing: 0.18em;
-  font-weight: 600;
-  color: #888;
-  padding: 3px 7px;
-  border: 1px solid #2a2a2e;
-  border-radius: 2px;
-  text-transform: uppercase;
-  white-space: nowrap;
-  text-decoration: none;
-  flex-shrink: 0;
-  margin: 0 8px;
-  transition: color .2s, border-color .2s, background .2s;
-}
-.quota-badge.warn {
-  color: #f5d000;
-  border-color: rgba(245, 208, 0, 0.3);
-  background: rgba(245, 208, 0, 0.04);
-}
-.quota-badge.danger {
-  color: #ff5f5f;
-  border-color: rgba(255, 95, 95, 0.4);
-  background: rgba(255, 95, 95, 0.06);
-  cursor: pointer;
-  letter-spacing: 0.16em;
-}
-.quota-badge.danger:hover {
-  background: rgba(255, 95, 95, 0.12);
-  border-color: rgba(255, 95, 95, 0.6);
-  color: #ff7777;
-}
-.quota-badge.pro {
-  color: #00e5b0;
-  border-color: rgba(0, 229, 176, 0.3);
-  background: rgba(0, 229, 176, 0.05);
-  letter-spacing: 0.22em;
-}
 .aff-row {
   display: flex;
   align-items: center;
@@ -475,72 +436,10 @@ export const SHADOW_CSS = `
   outline: 1px solid rgba(0,229,176,.5);
   outline-offset: 2px;
 }
-.qx-cta:focus-visible {
-  outline: 1px solid rgba(0,229,176,.6);
-  outline-offset: 2px;
-}
 .aff-link:focus-visible {
   outline: 1px solid rgba(0,229,176,.5);
   outline-offset: 2px;
 }
-.quota-badge.danger:focus-visible {
-  outline: 1px solid rgba(255,95,95,.6);
-  outline-offset: 2px;
-}
-
-/* Quota-exhausted state — picked from /quota-overlay-demos.html
-   "Demo 3 — Premium / calm". Total ~210px tall.
-   - Neutral white headline (no all-caps drama)
-   - Subtle outline CTA (not a screaming filled button)
-   - Price visible so the user knows what they'd pay before clicking
-   - Live "resets in Xh Ym" countdown that ticks every 30s */
-.qx-vb {
-  padding: 16px 14px 6px;
-  text-align: center;
-}
-.qx-vb h1 {
-  font-family: 'Bebas Neue', 'Arial Black', sans-serif;
-  font-size: 28px; line-height: 1; font-weight: 400; letter-spacing: .04em;
-  color: #eaeaea;
-  margin-bottom: 4px;
-}
-.qx-vb .qx-sub {
-  font: 400 10px/1.5 'IBM Plex Mono', monospace;
-  color: #666; letter-spacing: .04em;
-}
-.qx-vb .qx-sub .qx-reset-time {
-  color: #aaa; font-weight: 600;
-}
-.qx-counter {
-  padding: 6px 14px;
-  text-align: center;
-  font: 600 10px/1.5 'IBM Plex Mono', monospace;
-  color: #7a7a82; letter-spacing: .04em;
-}
-.qx-counter b {
-  color: #aaa; font-weight: 700;
-}
-.qx-cta {
-  display: block; margin: 10px 14px 8px;
-  padding: 12px;
-  background: transparent;
-  color: #00e5b0 !important;
-  font: 700 11px/1 'IBM Plex Mono', monospace;
-  letter-spacing: .16em; text-transform: uppercase;
-  text-decoration: none; text-align: center;
-  border: 1px solid rgba(0,229,176,.6);
-  border-radius: 2px;
-  white-space: nowrap;
-  transition: background .2s, border-color .2s, transform .2s;
-}
-.qx-cta:hover {
-  background: rgba(0,229,176,.08);
-  border-color: #00e5b0;
-  transform: translateY(-1px);
-}
-/* Trailing margin so the CTA isn't flush against the box edge —
-   replaces the dropped .qx-price footer that used to provide spacing. */
-.qx-cta { margin-bottom: 14px; }
 
 /* Free-tier locked variant — Critical Flags / Full Analysis / AI Summary
    stay visible (so users see what they're missing) and full-colour, but
