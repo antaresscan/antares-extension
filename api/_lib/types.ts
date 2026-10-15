@@ -96,7 +96,7 @@ export type Verdict = "SAFE" | "CAUTION" | "DANGER" | "RUG";
 /**
  * What a RUG verdict means. The verdict alone cannot say: on 579 real recorded tokens 153 were RUG, 151 of them through the single
  * "top 10 hold > 80 %" rule, 100 of them still trading with more than $10k of liquidity, and one carried a proof of an event.
- *   "confirmed"  something happened to THIS token (RugEvidence): its pool was drained while it still traded, it cannot be sold, or it
+ *   "confirmed"  something happened to THIS token (RugEvidence): its pool was drained while it still traded, or it
  *                already lost 75 % or more of its value from a high of the last 14 days
  *   "risk"       the structure of the token (who holds it, how it is built) looks like a rug; nothing has happened yet
  * Only a RUG verdict carries a kind; any other verdict has none (null).
@@ -113,7 +113,6 @@ export type RugKind = "confirmed" | "risk";
  */
 export type RugEvidence =
   | "pool_abandoned"  // volume over $10k in 24 h and zero liquidity: the pool was drained while it still traded
-  | "sells_blocked"   // a source says nobody can sell. NOTHING produces it today: it was GoPlus's honeypot / cannot-sell-all (EVM-only fields, never in a Solana answer, removed)
   | "price_collapse"; // down 75 % or more from the highest close of the last 14 days (4-hour candles): it already collapsed
 
 // ─── DEXSCREENER ─────────────────────────────────────────────────────────────────────────

@@ -32,12 +32,12 @@ describe("rugKindOf", () => {
   });
 
   it('is "confirmed" for a RUG verdict when an available layer observed an event', () => {
-    expect(rugKindOf("RUG", [layer(), layer({ source: "goplus", rugEvidence: ["sells_blocked"] })])).toBe("confirmed");
+    expect(rugKindOf("RUG", [layer(), layer({ source: "dexscreener", rugEvidence: ["pool_abandoned"] })])).toBe("confirmed");
   });
 
   it("ignores an empty evidence list and the evidence of a layer that was not available", () => {
     expect(rugKindOf("RUG", [layer({ rugEvidence: [] })])).toBe("risk");
-    expect(rugKindOf("RUG", [layer({ available: false, rugEvidence: ["sells_blocked"] })])).toBe("risk");
+    expect(rugKindOf("RUG", [layer({ available: false, rugEvidence: ["pool_abandoned"] })])).toBe("risk");
   });
 
   it("does not read the flags' texts: a flag that says 'abandoned pool' proves nothing without the evidence", () => {

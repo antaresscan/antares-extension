@@ -186,12 +186,12 @@ describe("judgeIssuerAsset: the verdict of an issuer-backed token, from its mark
     }
   });
 
-  it("blocked sales are a RUG whatever the structure: the honeypot facts are kept", () => {
-    const hp = [layer("dexscreener"), layer("goplus", [flag("critical", "Honeypot detected — cannot sell")], { rugEvidence: ["sells_blocked" as RugEvidence] })];
-    const r = judgeIssuerAsset(input({ kind: "stable", layers: hp, flags: [...BY_DESIGN, flag("critical", "Honeypot detected — cannot sell")] }))!;
+  it("a drained pool is a RUG whatever the structure: the market facts are kept", () => {
+    const drained = [layer("dexscreener", [flag("critical", "Volume with zero liquidity — abandoned pool")], { rugEvidence: ["pool_abandoned" as RugEvidence] })];
+    const r = judgeIssuerAsset(input({ kind: "stable", layers: drained, flags: [...BY_DESIGN, flag("critical", "Volume with zero liquidity — abandoned pool")] }))!;
     expect(r.risk).toBe("RUG");
     expect(r.rugKind).toBe("confirmed");
-    expect(sevOf(r, /^Honeypot/)).toBe("critical");
+    expect(sevOf(r, /^Volume with zero liquidity/)).toBe("critical");
   });
 
   it("a stablecoin that loses its peg: a warning from 3 %, critical from 10 %, up or down, over an hour or a day", () => {
