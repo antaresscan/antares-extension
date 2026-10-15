@@ -2,7 +2,7 @@
 // Layer 7 (Identity/Copycat) REMOVED — caused massive false positives
 
 import type {
-    LayerResult, ScanFlag, RugEvidence,
+    LayerResult, ScanFlag, RugEvidence, FlagTag,
   DexScreenerPair, DexScreenerSocial,
   RugCheckSummary, RugCheckReport,
   GoPlusTokenResult,
@@ -168,12 +168,12 @@ export function layerDexScreener(
     // A warning (not info): a visible warning keeps the token out of the "no visible issue -> SAFE" grant, and SAFE needs a measured pool.
     flags.push(makeFlag("Liquidity not reported — token still on its bonding curve (not migrated yet)", "warning", 0, { tags: ["lp"] }));
     penalties.push(0.90); safeBlocked = true;
-  } else if (liq < 1000) { flags.push(makeFlag("Very low liquidity (<$1k)", "critical", 0)); penalties.push(0.25); }
-  else if (liq < 5000) { flags.push(makeFlag("Low liquidity (<$5k)", "warning", 0)); penalties.push(0.65); }
-  else if (liq < 20000) { flags.push(makeFlag("Liquidity < $20k", "info", 0)); penalties.push(0.90); }
+  } else if (liq < 1000) { flags.push(makeFlag("Very low liquidity (<$1k)", "critical", 0, { tags: ["market_health", "pool_depth"] })); penalties.push(0.25); }
+  else if (liq < 5000) { flags.push(makeFlag("Low liquidity (<$5k)", "warning", 0, { tags: ["market_health", "pool_depth"] })); penalties.push(0.65); }
+  else if (liq < 20000) { flags.push(makeFlag("Liquidity < $20k", "info", 0, { tags: ["market_health", "pool_depth"] })); penalties.push(0.90); }
 
   if (!liqUnknown && liq === 0 && vol > 10000) {
-    flags.push(makeFlag("Volume with zero liquidity — abandoned pool", "critical", 0, { tags: ["rug_evidence"] }));
+    flags.push(makeFlag("Volume with zero liquidity — abandoned pool", "critical", 0, { tags: ["rug_evidence", "market_health"] }));
     penalties.push(0.10); forceRug = true; safeBlocked = true;
     rugEvidence.push("pool_abandoned");
   } else if (liq > 0 && vol / liq > 15) {
@@ -251,14 +251,14 @@ export function layerDexScreener(
       // A blue chip (see isBlueChipByMarket) can crash like that on a bad day (a market-wide sell-off, a liquidation cascade) without being
       // rugged: audit A-09 had a 2-year-old token with 200k holders and $20M of liquidity forced to RUG by two price figures. It stays a
       // critical flag (DANGER at least), but nothing here proves a rug: no forced RUG, no rug evidence (so no Wall of Shame, no condemnation).
-      flags.push(makeFlag(`Sharp crash: ${Math.round(pc6)}% on 6h + ${Math.round(pc1)}% on 1h`, "critical", 0));
+      flags.push(makeFlag(`Sharp crash: ${Math.round(pc6)}% on 6h + ${Math.round(pc1)}% on 1h`, "critical", 0, { tags: ["market_health"] }));
       penalties.push(0.15); safeBlocked = true;
     } else {
-      flags.push(makeFlag("Slow rug detected: -50% on 6h + -15% on 1h", "critical", 0, { tags: ["rug_evidence"] }));
+      flags.push(makeFlag("Slow rug detected: -50% on 6h + -15% on 1h", "critical", 0, { tags: ["rug_evidence", "market_health"] }));
       penalties.push(0.15); forceRug = true; safeBlocked = true;
     }
   } else if (pc6 < -30) {
-    flags.push(makeFlag(`Sharp 6h sell-off (${Math.round(pc6)}%)`, "warning", 0));
+    flags.push(makeFlag(`Sharp 6h sell-off (${Math.round(pc6)}%)`, "warning", 0, { tags: ["market_health"] }));
     penalties.push(0.55); safeBlocked = true;
   }
   if (!hasWebsite && !hasTwitter && !hasTelegram) {
@@ -282,10 +282,10 @@ export function layerDexScreener(
   if (txns5m < 5 && mc > 50000 && ageMinutes < 1440) { flags.push(makeFlag("Low 5m transactions vs market cap", "info", 0)); penalties.push(0.92); }
   if ((sells5m === 0 && buys5m > 0 && txns5m > 5) || (sells5m > 0 && buys5m > sells5m * 5)) { flags.push(makeFlag("Buy/sell imbalance (coordinated pump)", "warning", 0, { reasons: ["pump_imbalance"] })); penalties.push(0.85); }
   if (pc24 < -80) {
-    flags.push(makeFlag("Brutal dump 24h (-80%)", "critical", 0));
+    flags.push(makeFlag("Brutal dump 24h (-80%)", "critical", 0, { tags: ["market_health"] }));
     penalties.push(0.35); safeBlocked = true;
   } else if (pc24 < -40) {
-    flags.push(makeFlag(`Significant 24h dump (${Math.round(pc24)}%)`, "warning", 0));
+    flags.push(makeFlag(`Significant 24h dump (${Math.round(pc24)}%)`, "warning", 0, { tags: ["market_health"] }));
     penalties.push(0.50); safeBlocked = true;
   }
 
@@ -330,7 +330,7 @@ export function layerDexScreener(
   // negative but below the standalone thresholds (< -30% and < -40%).
   // Two timeframes confirming each other = ongoing distribution, not a blip.
   if (pc6 < -20 && pc6 > -30 && pc24 < -25 && pc24 > -40) {
-    flags.push(makeFlag(`Progressive dump: ${Math.round(pc6)}% (6h) + ${Math.round(pc24)}% (24h)`, "warning", 0));
+    flags.push(makeFlag(`Progressive dump: ${Math.round(pc6)}% (6h) + ${Math.round(pc24)}% (24h)`, "warning", 0, { tags: ["market_health"] }));
     penalties.push(0.55); safeBlocked = true;
   }
 
@@ -523,7 +523,7 @@ export function judgeContractFacts(facts: AuthorityFacts | null | undefined): Co
     if (!facts.trusted) safeBlocked = true;
   }
   if (facts.sellBlocked === true) {
-    flags.push(makeFlag(NON_TRANSFERABLE_LABEL, "critical", 0, { tags: ["rug_evidence"] })); penalties.push(0.05);
+    flags.push(makeFlag(NON_TRANSFERABLE_LABEL, "critical", 0, { tags: ["rug_evidence", "market_health", "non_transferable"] })); penalties.push(0.05);
     safeBlocked = true;
   }
   // Token-2022 extensions (audit A-10): each is a power someone holds over the holders' tokens. Same reading as mint / freeze: critical and a
@@ -532,14 +532,14 @@ export function judgeContractFacts(facts: AuthorityFacts | null | undefined): Co
   if (ext) {
     // The penalties of the two that GoPlus already said (and that it still says when the chain is unreadable) are GoPlus's own, so that the
     // chain saying them first never makes a verdict more lenient: "Balances can be changed by an authority" 0.10, "Transfer pausable" 0.30.
-    const extFlag = (label: string, penalty = 0.25) => {
-      flags.push(makeFlag(label, sev, 0, { reasons: ["token_extension"] })); penalties.push(facts.trusted ? pen : penalty);
+    const extFlag = (label: string, tag: FlagTag | null, penalty = 0.25) => {
+      flags.push(makeFlag(label, sev, 0, { reasons: ["token_extension"], tags: tag ? [tag] : [] })); penalties.push(facts.trusted ? pen : penalty);
       if (!facts.trusted) safeBlocked = true;
     };
-    if (ext.permanentDelegate) extFlag("Permanent delegate — an address can move or burn any holder's tokens", 0.10);
-    if (ext.pausable) extFlag("Pausable token — an authority can pause every transfer", 0.30);
-    if (ext.defaultFrozen) extFlag("New accounts start frozen — nobody can sell until their account is thawed");
-    if (ext.transferHook) extFlag("Transfer hook — a program runs on every transfer and can refuse it");
+    if (ext.permanentDelegate) extFlag("Permanent delegate — an address can move or burn any holder's tokens", "permanent_delegate", 0.10);
+    if (ext.pausable) extFlag("Pausable token — an authority can pause every transfer", "pausable", 0.30);
+    if (ext.defaultFrozen) extFlag("New accounts start frozen — nobody can sell until their account is thawed", null);
+    if (ext.transferHook) extFlag("Transfer hook — a program runs on every transfer and can refuse it", "transfer_hook");
     if (ext.feeBps !== null && ext.feeBps > 0) {
       // A fee that applies NOW is a tax on every transfer, read like GoPlus's buy / sell tax (below): under 2 % ordinary (information), 2 to
       // 10 % "suspicious" (a warning), over 10 % critical. It is not a hard block by itself: that is the fee an authority CAN change (next).
@@ -549,7 +549,7 @@ export function judgeContractFacts(facts: AuthorityFacts | null | undefined): Co
       penalties.push(feeSev === "info" ? 0.95 : feeSev === "critical" ? 0.35 : 0.80);
     }
     if (ext.feeBps !== null && ext.feeCanChange) {
-      extFlag("Transfer fee can be changed — an authority can raise it to 100%");
+      extFlag("Transfer fee can be changed — an authority can raise it to 100%", null);
     }
   }
   return { flags, penalties, safeBlocked };
@@ -595,25 +595,25 @@ export function layerGoPlus(
   };
   const gpNum = (field: keyof GoPlusTokenResult) => asNumber(goplus[field]);
   if (gp("is_honeypot")) {
-    flags.push(makeFlag("Honeypot detected — cannot sell", "critical", 0, { reasons: ["honeypot"], tags: ["rug_evidence"] }));
+    flags.push(makeFlag("Honeypot detected — cannot sell", "critical", 0, { reasons: ["honeypot"], tags: ["rug_evidence", "market_health"] }));
     trust = 0; forceRug = true; safeBlocked = true;
     return { source: "goplus", trust: 0, available: true, flags, forceRug, safeBlocked, rugEvidence: ["sells_blocked"] };
   }
   if (gp("cannot_sell_all")) {
-    flags.push(makeFlag("Cannot sell all tokens", "critical", 0));
+    flags.push(makeFlag("Cannot sell all tokens", "critical", 0, { tags: ["market_health"] }));
     trust = 0; forceRug = true; safeBlocked = true;
     return { source: "goplus", trust: 0, available: true, flags, forceRug, safeBlocked, rugEvidence: ["sells_blocked"] };
   }
   // The chain already said these three (judgeContractFacts, audit A-10): GoPlus saying them again would show the same signal twice, in two
   // wordings. Only for a token that is not trusted: for a trusted issuer the chain says them as information and GoPlus's reading stays.
-  const chainSays = (label: RegExp) => !facts?.trusted && contract.flags.some((f) => label.test(f.label));
+  const chainSays = (tag: FlagTag) => !facts?.trusted && contract.flags.some((f) => f.tags?.includes(tag));
   // Solana structural fields (real GoPlus contract, all absent / "0" on a clean token)
-  if (gpStatus(goplus.balance_mutable_authority) === true && !chainSays(/^Permanent delegate/)) { flags.push(makeFlag("Balances can be changed by an authority", "critical", 0)); penalties.push(0.10); safeBlocked = true; }
-  if (gpStatus(goplus.non_transferable) === true && !contract.flags.some((f) => f.label === NON_TRANSFERABLE_LABEL)) { flags.push(makeFlag(NON_TRANSFERABLE_LABEL, "critical", 0, { tags: ["rug_evidence"] })); penalties.push(0.05); safeBlocked = true; }
+  if (gpStatus(goplus.balance_mutable_authority) === true && !chainSays("permanent_delegate")) { flags.push(makeFlag("Balances can be changed by an authority", "critical", 0)); penalties.push(0.10); safeBlocked = true; }
+  if (gpStatus(goplus.non_transferable) === true && !contract.flags.some((f) => f.tags?.includes("non_transferable"))) { flags.push(makeFlag(NON_TRANSFERABLE_LABEL, "critical", 0, { tags: ["rug_evidence", "market_health"] })); penalties.push(0.05); safeBlocked = true; }
   if (gpStatus(goplus.closable) === true) { flags.push(makeFlag("Token accounts can be closed by an authority", "warning", 0)); penalties.push(0.80); }
-  if (Array.isArray(goplus.transfer_hook) && goplus.transfer_hook.length > 0 && !chainSays(/^Transfer hook/)) { flags.push(makeFlag("Transfer hook installed — a custom program runs on every transfer", "warning", 0)); penalties.push(0.75); }
+  if (Array.isArray(goplus.transfer_hook) && goplus.transfer_hook.length > 0 && !chainSays("transfer_hook")) { flags.push(makeFlag("Transfer hook installed — a custom program runs on every transfer", "warning", 0)); penalties.push(0.75); }
   if (gp("is_blacklisted")) { flags.push(makeFlag("Blacklist capability", "critical", 0)); penalties.push(0.30); safeBlocked = true; }
-  if (gp("transfer_pausable") && !chainSays(/^Pausable token/)) { flags.push(makeFlag("Transfer pausable", "critical", 0)); penalties.push(0.30); safeBlocked = true; }
+  if (gp("transfer_pausable") && !chainSays("pausable")) { flags.push(makeFlag("Transfer pausable", "critical", 0)); penalties.push(0.30); safeBlocked = true; }
   if (gp("hidden_owner")) { flags.push(makeFlag("Hidden owner detected", "critical", 0)); penalties.push(0.30); safeBlocked = true; }
   if (gp("is_proxy")) { flags.push(makeFlag("Upgradeable/proxy contract", "critical", 0)); penalties.push(0.50); safeBlocked = true; }
   const sellTaxRaw = gpNum("sell_tax");
@@ -1238,10 +1238,10 @@ export function layerChart(
   if (pc24h < -60 && pc1h < -20) {
     if (blueChip && pc24h >= BLUECHIP_CRASH_FLOOR_24H) {
       // Same reading as the 6 h rule in layerDexScreener: a violent move on a blue chip is critical (DANGER at least), not a forced RUG.
-      flags.push(makeFlag(`Sharp crash: ${Math.round(pc24h)}% on 24h + ${Math.round(pc1h)}% on 1h`, "critical", 0));
+      flags.push(makeFlag(`Sharp crash: ${Math.round(pc24h)}% on 24h + ${Math.round(pc1h)}% on 1h`, "critical", 0, { tags: ["market_health"] }));
       penalties.push(0.25); safeBlocked = true;
     } else {
-      flags.push(makeFlag("Active dump: -60% 24h + -20% 1h (slow rug)", "critical", 0));
+      flags.push(makeFlag("Active dump: -60% 24h + -20% 1h (slow rug)", "critical", 0, { tags: ["market_health"] }));
       penalties.push(0.25); forceRug = true; safeBlocked = true;
     }
   }
@@ -1255,10 +1255,10 @@ export function layerChart(
     if (isRecentATH && peak > 0) {
       const dumpFromATH = (last - peak) / peak;
       if (dumpFromATH < -0.50) {
-        flags.push(makeFlag(`Post-ATH dump ${Math.round(dumpFromATH * 100)}% — rug exit in progress`, "critical", 0));
+        flags.push(makeFlag(`Post-ATH dump ${Math.round(dumpFromATH * 100)}% — rug exit in progress`, "critical", 0, { tags: ["market_health"] }));
         penalties.push(0.10); forceRug = true; safeBlocked = true;
       } else if (dumpFromATH < -0.35) {
-        flags.push(makeFlag(`Post-ATH dump ${Math.round(dumpFromATH * 100)}% — exit liquidity pattern`, "warning", 0, { reasons: ["rug_pattern"] }));
+        flags.push(makeFlag(`Post-ATH dump ${Math.round(dumpFromATH * 100)}% — exit liquidity pattern`, "warning", 0, { reasons: ["rug_pattern"], tags: ["market_health"] }));
         penalties.push(0.40); safeBlocked = true;
       }
     }
@@ -1440,7 +1440,7 @@ function collapseFlag(c: Collapse): { flag: ScanFlag; penalty: number; forceRug:
   const n = Math.round(c.peakAgeDays);
   const age = c.peakAgeDays < 1 ? "less than a day" : `${n} day${n === 1 ? "" : "s"}`;
   return {
-    flag: makeFlag(`Collapsed -${Math.round(c.dropPct)}% from its high ${age} ago`, "critical", 0),
+    flag: makeFlag(`Collapsed -${Math.round(c.dropPct)}% from its high ${age} ago`, "critical", 0, { tags: ["market_health"] }),
     penalty: c.recent ? 0.10 : 0.30,
     forceRug: c.recent,
     evidence: c.recent ? ["price_collapse"] : [],

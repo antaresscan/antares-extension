@@ -87,12 +87,20 @@ describe("isRugEvidence reads the rug_evidence tag", () => {
 });
 
 describe("the door for an upstream's own text", () => {
-  it("tagsOfText gives the four tags an upstream's text can have, in a fixed order", () => {
+  it("tagsOfText gives the six tags an upstream's text can have, in a fixed order", () => {
     expect(tagsOfText("Large Amount of LP Unlocked (40%)")).toEqual(["lp"]);
     expect(tagsOfText("RugCheck unavailable")).toEqual(["source_status"]);
     expect(tagsOfText("Pumped +340% over 7 days")).toEqual(["pump_price_only"]);
-    expect(tagsOfText("Volume with zero liquidity — abandoned pool")).toEqual(["rug_evidence"]);
+    expect(tagsOfText("Volume with zero liquidity — abandoned pool")).toEqual(["rug_evidence", "market_health"]);
+    expect(tagsOfText("Very low liquidity (<$1k)")).toEqual(["market_health", "pool_depth"]);
+    expect(tagsOfText("Collapsed -97% from its high 2 days ago")).toEqual(["market_health"]);
     expect(tagsOfText("Mutable metadata")).toEqual([]);
+  });
+
+  it("a RugCheck risk name about the market gets market_health at the door, a structural one does not", () => {
+    expect(codesFromUpstreamText("rugcheck", "Low Liquidity ($3k)").tags).toEqual(["market_health", "pool_depth"]);
+    expect(codesFromUpstreamText("rugcheck", "Top 10 holders high ownership").tags).toEqual([]);
+    expect(codesFromUpstreamText("rugcheck", "Large Amount of LP Unlocked (40%)").tags).toEqual(["lp"]);
   });
 
   it("codesFromUpstreamText returns the reasons, the fallback reasons and the tags of a label, once", () => {

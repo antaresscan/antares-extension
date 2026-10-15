@@ -140,12 +140,28 @@ export const PUMP_PRICE_ONLY_TEXT = /Pumped \+[\d,]+% (in 24h|over \d+ days)|Lar
 /** Something that happened to the token, or a closed trap: what the rug database asks for (with a critical flag) besides a RUG verdict. */
 export const RUG_EVIDENCE_TEXT = /abandoned pool|liquidity removed|honeypot detected|sells blocked|non-transferable|creator history of rugged|slow rug detected|exit (liquidity )?trap/i;
 
-/** The tags the TEXT of a label gives it among the four an upstream's own text can have. */
+/**
+ * The flags that stay what they were for an issuer-backed token: they are about the MARKET (can anybody sell, is there a pool, did the price
+ * collapse), not about the structure. A positive list on purpose: a flag nobody thought about is not promoted to a verdict.
+ */
+export const MARKET_HEALTH: RegExp[] = [
+  /^Very low liquidity/i, /^Low liquidity/i, /^Liquidity < /i, /abandoned pool/i,
+  /^Brutal dump/i, /^Significant 24h dump/i, /^Sharp 6h sell-off/i, /^Sharp crash/i, /^Slow rug detected/i, /^Active dump/i,
+  /^Progressive dump/i, /^Post-ATH dump/i, /^Collapsed -/i,
+  /^Honeypot detected/i, /^Cannot sell all tokens/i, /^Non-transferable token/i, /^Sells blocked/i,
+];
+
+/** The flags about how thin the pool is. A vault share is redeemed with the protocol, not sold in a pool: they stay information for it. */
+export const POOL_DEPTH: RegExp[] = [/^Very low liquidity/i, /^Low liquidity/i, /^Liquidity < /i];
+
+/** The tags the TEXT of a label gives it among the six an upstream's own text can have. */
 export function tagsOfText(label: string): FlagTag[] {
   const out: FlagTag[] = [];
   if (LP_TEXT.test(label)) out.push("lp");
   if (SOURCE_STATUS_TEXT.test(label)) out.push("source_status");
   if (PUMP_PRICE_ONLY_TEXT.test(label)) out.push("pump_price_only");
   if (RUG_EVIDENCE_TEXT.test(label)) out.push("rug_evidence");
+  if (MARKET_HEALTH.some((re) => re.test(label))) out.push("market_health");
+  if (POOL_DEPTH.some((re) => re.test(label))) out.push("pool_depth");
   return out;
 }

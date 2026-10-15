@@ -35,7 +35,7 @@ export function evaluatePostLayerFlags(input: PostLayerFlagsInput): PostLayerFla
     ageInHoneypotWindow &&
     totalTxns5m > 5
   ) {
-    flags.push(makeFlag("Sells blocked (social honeypot)", "critical", 0, { tags: ["rug_evidence"] }));
+    flags.push(makeFlag("Sells blocked (social honeypot)", "critical", 0, { tags: ["rug_evidence", "market_health"] }));
     forceRug = true;
     safeBlocked = true;
   }

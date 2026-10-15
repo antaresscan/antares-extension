@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { issuerKindOf, judgeIssuerAsset, lstPriceInSol, NON_USD_STABLE, LST_PEG_WARN, LST_PEG_CRITICAL, type IssuerInput } from "../api/_lib/issuer-assets";
 import { LST_MINTS, STABLE_MINTS, TOKENIZED_MINTS, VAULT_MINTS, WRAPPED_MINTS, YIELD_MINTS } from "../api/_lib/issuer-assets.data";
 import type { DexScreenerPair, LayerResult, RugEvidence, ScanFlag } from "../api/_lib/types";
+import { flagFromText } from "./fixtures/flag-codes";
 
 // Stablecoins and tokenized stocks are built as their issuer built them. Read as meme coins they came out RUG (all 46 tokenized stocks of the
 // replay corpus). They are judged on their MARKET: the owner's rule (2026-10-13) — with a healthy market, a stablecoin AND a tokenized stock /
@@ -95,7 +96,11 @@ describe("the registry: by mint address, from Jupiter's verified list", () => {
   });
 });
 
-const flag = (severity: ScanFlag["severity"], label: string, tags?: ScanFlag["tags"]): ScanFlag => ({ label, severity, impact: 0, ...(tags ? { tags } : {}) });
+// A flag built by hand has what the layer would have put on it for that label (the tags are what the judgement reads, never the words).
+const flag = (severity: ScanFlag["severity"], label: string, tags?: ScanFlag["tags"]): ScanFlag => {
+  const built = flagFromText(label, severity, 0);
+  return tags ? { ...built, tags } : built;
+};
 const layer = (source: string, flags: ScanFlag[] = [], over: Partial<LayerResult> = {}): LayerResult => ({ source, trust: 1, available: true, flags, forceRug: false, safeBlocked: false, ...over });
 
 // What the general engine says about a healthy stablecoin / stock: every one of these is the issuer's structure.
@@ -172,9 +177,9 @@ describe("judgeIssuerAsset: the verdict of an issuer-backed token, from its mark
   });
 
   it("a drained pool is a RUG whatever the structure: a confirmed fact, for both kinds", () => {
-    const drained = [layer("dexscreener", [flag("critical", "Volume with zero liquidity — abandoned pool", ["rug_evidence"])], { rugEvidence: ["pool_abandoned" as RugEvidence] }), layer("chart")];
+    const drained = [layer("dexscreener", [flag("critical", "Volume with zero liquidity — abandoned pool")], { rugEvidence: ["pool_abandoned" as RugEvidence] }), layer("chart")];
     for (const kind of ["stable", "tokenized"] as const) {
-      const r = judgeIssuerAsset(input({ kind, layers: drained, flags: [...BY_DESIGN, flag("critical", "Volume with zero liquidity — abandoned pool", ["rug_evidence"])] }))!;
+      const r = judgeIssuerAsset(input({ kind, layers: drained, flags: [...BY_DESIGN, flag("critical", "Volume with zero liquidity — abandoned pool")] }))!;
       expect(r.risk).toBe("RUG");
       expect(r.rugKind).toBe("confirmed");
       expect(r.score).toBeLessThanOrEqual(100);
@@ -182,8 +187,8 @@ describe("judgeIssuerAsset: the verdict of an issuer-backed token, from its mark
   });
 
   it("blocked sales are a RUG whatever the structure: the honeypot facts are kept", () => {
-    const hp = [layer("dexscreener"), layer("goplus", [flag("critical", "Honeypot detected — cannot sell", ["rug_evidence"])], { rugEvidence: ["sells_blocked" as RugEvidence] })];
-    const r = judgeIssuerAsset(input({ kind: "stable", layers: hp, flags: [...BY_DESIGN, flag("critical", "Honeypot detected — cannot sell", ["rug_evidence"])] }))!;
+    const hp = [layer("dexscreener"), layer("goplus", [flag("critical", "Honeypot detected — cannot sell")], { rugEvidence: ["sells_blocked" as RugEvidence] })];
+    const r = judgeIssuerAsset(input({ kind: "stable", layers: hp, flags: [...BY_DESIGN, flag("critical", "Honeypot detected — cannot sell")] }))!;
     expect(r.risk).toBe("RUG");
     expect(r.rugKind).toBe("confirmed");
     expect(sevOf(r, /^Honeypot/)).toBe("critical");
@@ -278,7 +283,7 @@ describe("liquid staking tokens: SAFE with their peg to SOL read", () => {
     expect(lst({ flags: [...BY_DESIGN, flag("critical", "Very low liquidity (<$1k)")] }).risk).toBe("DANGER");
     expect(lst({ flags: [...BY_DESIGN, flag("warning", "Low liquidity (<$5k)")] }).risk).toBe("CAUTION");
     const drained = [layer("dexscreener", [], { rugEvidence: ["pool_abandoned" as RugEvidence] }), layer("chart")];
-    expect(lst({ layers: drained, flags: [...BY_DESIGN, flag("critical", "Volume with zero liquidity — abandoned pool", ["rug_evidence"])] }).risk).toBe("RUG");
+    expect(lst({ layers: drained, flags: [...BY_DESIGN, flag("critical", "Volume with zero liquidity — abandoned pool")] }).risk).toBe("RUG");
   });
 });
 
@@ -379,7 +384,7 @@ describe("wrapped majors: SAFE when the market is healthy, judged on the market 
     expect(wrapped({ flags: [...WRAPPED_STRUCTURE, flag("warning", "Low liquidity (<$5k)")] }).risk).toBe("CAUTION");
     expect(wrapped({ flags: [...WRAPPED_STRUCTURE, flag("critical", "Collapsed -80% from its high 3 days ago")] }).risk).toBe("DANGER");
     const drained = [layer("dexscreener", [], { rugEvidence: ["pool_abandoned" as RugEvidence] }), layer("chart")];
-    expect(wrapped({ layers: drained, flags: [...WRAPPED_STRUCTURE, flag("critical", "Volume with zero liquidity — abandoned pool", ["rug_evidence"])] }).risk).toBe("RUG");
+    expect(wrapped({ layers: drained, flags: [...WRAPPED_STRUCTURE, flag("critical", "Volume with zero liquidity — abandoned pool")] }).risk).toBe("RUG");
   });
 
   it("no peg is read for it (no reference price of BTC or ETH): a +12 % day is a market move, not a flag", () => {
@@ -449,12 +454,41 @@ describe("yield-bearing dollar tokens: SAFE when the market is healthy; a price 
     expect(yielding({ flags: [...BY_DESIGN, flag("critical", "Very low liquidity (<$1k)")] }).risk).toBe("DANGER");
     expect(yielding({ flags: [...BY_DESIGN, flag("critical", "Collapsed -80% from its high 3 days ago")] }).risk).toBe("DANGER");
     const drained = [layer("dexscreener", [], { rugEvidence: ["pool_abandoned" as RugEvidence] }), layer("chart")];
-    expect(yielding({ layers: drained, flags: [...BY_DESIGN, flag("critical", "Volume with zero liquidity — abandoned pool", ["rug_evidence"])] }).risk).toBe("RUG");
+    expect(yielding({ layers: drained, flags: [...BY_DESIGN, flag("critical", "Volume with zero liquidity — abandoned pool")] }).risk).toBe("RUG");
   });
 
   it("not enough sources is not a clean bill of health, and no market reading keeps SAFE", () => {
     expect(yielding({ flags: [], sourcesUsedCount: 2 }).risk).toBe("CAUTION");
     expect(judgeIssuerAsset(input({ kind: "yield", layers: [layer("dexscreener", [], { available: false })] })).risk).toBe("SAFE");
+  });
+});
+
+// ─── The tags decide, not the words ─────────────────────────────────────────────────────────────
+describe("judgeIssuerAsset reads the tags of the flags, never their words", () => {
+  it("a flag that speaks of the market but carries no market_health tag stays information", () => {
+    const untagged: ScanFlag = { label: "Honeypot detected — cannot sell", severity: "critical", impact: 0 };
+    const r = judgeIssuerAsset(input({ kind: "stable", flags: [...BY_DESIGN, untagged] }))!;
+    expect(r.risk).toBe("SAFE");
+    expect(r.flags.find((f) => f.label === untagged.label)?.severity).toBe("info");
+  });
+
+  it("a flag with other words but the market_health tag decides the verdict", () => {
+    const tagged: ScanFlag = { label: "Something nobody wrote a pattern for", severity: "critical", impact: 0, tags: ["market_health"] };
+    const r = judgeIssuerAsset(input({ kind: "stable", flags: [...BY_DESIGN, tagged] }))!;
+    expect(r.risk).not.toBe("SAFE");
+    expect(r.flags.find((f) => f.label === tagged.label)?.severity).toBe("critical");
+  });
+
+  it("the pool_depth tag is what a vault share ignores: the same flag without it decides", () => {
+    const thin: ScanFlag = { label: "Very low liquidity (<$1k)", severity: "critical", impact: 0, tags: ["market_health", "pool_depth"] };
+    const notDepth: ScanFlag = { label: "Very low liquidity (<$1k)", severity: "critical", impact: 0, tags: ["market_health"] };
+    expect(judgeIssuerAsset(input({ kind: "vault", flags: [...BY_DESIGN, thin], poolLiquidityUsd: 47 }))!.risk).toBe("SAFE");
+    expect(judgeIssuerAsset(input({ kind: "vault", flags: [...BY_DESIGN, notDepth], poolLiquidityUsd: 47 }))!.risk).toBe("DANGER");
+  });
+
+  it("an info flag with the tag is not promoted to a verdict (only critical and warning decide)", () => {
+    const info: ScanFlag = { label: "Low liquidity (<$5k)", severity: "info", impact: 0, tags: ["market_health", "pool_depth"] };
+    expect(judgeIssuerAsset(input({ kind: "stable", flags: [...BY_DESIGN, info] }))!.risk).toBe("SAFE");
   });
 });
 
@@ -489,7 +523,7 @@ describe("Jupiter's vault shares: SAFE when the market is healthy; a thin DEX po
     expect(vault({ flags: [...BY_DESIGN, flag("critical", "Significant 24h dump (-45%)")] }).risk).toBe("DANGER");
     expect(vault({ flags: [...BY_DESIGN, flag("critical", "Honeypot detected — sells blocked")] }).risk).toBe("DANGER");
     const drained = [layer("dexscreener", [], { rugEvidence: ["pool_abandoned" as RugEvidence] }), layer("chart")];
-    expect(vault({ layers: drained, flags: [...BY_DESIGN, flag("critical", "Volume with zero liquidity — abandoned pool", ["rug_evidence"])] }).risk).toBe("RUG");
+    expect(vault({ layers: drained, flags: [...BY_DESIGN, flag("critical", "Volume with zero liquidity — abandoned pool")] }).risk).toBe("RUG");
   });
 
   it("no reference price is read: JLP follows a basket and jlWSOL follows SOL, a +12 % day or a price of $4.63 or $113 is not a flag", () => {
@@ -527,8 +561,8 @@ describe("judgeIssuerAsset: the market cannot be read (DexScreener did not answe
     for (const kind of KINDS) {
       // 2 sources: not a clean bill of health, for any kind
       expect(judgeIssuerAsset(input({ kind, layers: silent, flags: [], sourcesUsedCount: 2 })).risk, kind).toBe("CAUTION");
-      const drained = [layer("dexscreener", [], { available: false }), layer("chart", [flag("critical", "Collapsed -97% from its high 2 days ago", ["rug_evidence"])], { rugEvidence: ["pool_abandoned" as RugEvidence] })];
-      const r = judgeIssuerAsset(input({ kind, layers: drained, flags: [flag("critical", "Collapsed -97% from its high 2 days ago", ["rug_evidence"])] }));
+      const drained = [layer("dexscreener", [], { available: false }), layer("chart", [flag("critical", "Collapsed -97% from its high 2 days ago")], { rugEvidence: ["pool_abandoned" as RugEvidence] })];
+      const r = judgeIssuerAsset(input({ kind, layers: drained, flags: [flag("critical", "Collapsed -97% from its high 2 days ago")] }));
       expect(r.risk, kind).toBe("RUG");
       expect(r.rugKind, kind).toBe("confirmed");
     }
@@ -542,8 +576,8 @@ describe("judgeIssuerAsset: the market cannot be read (DexScreener did not answe
   });
 
   it("a fact from another source still counts: a collapse on the chart (a drained pool) is RUG, an unreadable market does not hide it", () => {
-    const drained = [layer("dexscreener", [], { available: false }), layer("chart", [flag("critical", "Collapsed -97% from its high 2 days ago", ["rug_evidence"])], { rugEvidence: ["pool_abandoned" as RugEvidence] })];
-    const r = judgeIssuerAsset(input({ kind: "tokenized", layers: drained, flags: [flag("critical", "Collapsed -97% from its high 2 days ago", ["rug_evidence"])] }));
+    const drained = [layer("dexscreener", [], { available: false }), layer("chart", [flag("critical", "Collapsed -97% from its high 2 days ago")], { rugEvidence: ["pool_abandoned" as RugEvidence] })];
+    const r = judgeIssuerAsset(input({ kind: "tokenized", layers: drained, flags: [flag("critical", "Collapsed -97% from its high 2 days ago")] }));
     expect(r.risk).toBe("RUG");
     expect(r.rugKind).toBe("confirmed");
   });
