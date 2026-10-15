@@ -88,4 +88,26 @@ test.describe('API Security & Hardening', () => {
       });
     }
   });
+
+  // (A-14b) "Delete my account" exists on the deployment under test and shuts the door to a stranger: nobody signed in = 401, and an origin that is
+  // not the website or the extension = 403. It needs no account and deletes nothing. (api/auth/[action].ts, api/_lib/account-erasure.ts)
+  test.describe('Account deletion', () => {
+    test('refuses a request with no session', async ({ request }) => {
+      const r = await request.post(`${BASE}/api/auth/delete-account`, {
+        headers: { origin: 'https://antaresscan.com' },
+        data: { password: 'definitely-not-a-password' },
+      });
+      test.skip(r.status() === 429, 'Rate-limited (429) on shared CI — soft skip');
+      expect(r.status(), 'the route is missing or lets a stranger through').toBe(401);
+      expect(await r.json()).toEqual({ ok: false, reason: 'not_authenticated' });
+    });
+
+    test('refuses an origin that is not ours', async ({ request }) => {
+      const r = await request.post(`${BASE}/api/auth/delete-account`, {
+        headers: { origin: 'https://attacker.example.com' },
+        data: { password: 'definitely-not-a-password' },
+      });
+      expect(r.status()).toBe(403);
+    });
+  });
 });

@@ -129,11 +129,12 @@ describe("readSessionToken", () => {
 describe("getAccountFromRequest", () => {
   it("returns the account when cookie carries a valid signed JWT", async () => {
     const redis = new Redis({ url: "x", token: "y" });
-    await createAccount(redis, {
+    const created = await createAccount(redis, {
       email: "alice@example.com",
       password: "firstpass1",
     });
-    const token = signSession("alice@example.com");
+    // signed with the session number the account was given when it was created, as the application does
+    const token = signSession("alice@example.com", Date.now(), created.ok ? created.account.sessionVersion : 0);
     const req = mockReq(`${SESSION_COOKIE_NAME}=${token}`);
     const account = await getAccountFromRequest(req, redis);
     expect(account?.email).toBe("alice@example.com");

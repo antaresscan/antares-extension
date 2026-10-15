@@ -42,6 +42,10 @@ vi.mock("../api/_lib/middleware", async () => {
 
 import dispatcher from "../api/auth/[action]";
 import { signSession } from "../api/_lib/account";
+
+/** A token as the application signs it for an account that exists: with the session number the account was given when it was created. */
+const signedFor = (email: string) =>
+  signSession(email, Date.now(), Number((mocks.store.get(`account:${email}`) as Record<string, string> | undefined)?.sessionVersion ?? 0));
 import { SESSION_COOKIE_NAME } from "../api/_lib/session-cookie";
 
 const ORIGIN = "https://antares-website.vercel.app";
@@ -303,7 +307,7 @@ describe("GET /api/auth/me", () => {
   });
 
   it("returns 200 + email when valid session cookie", async () => {
-    const token = signSession("alice@example.com");
+    const token = signedFor("alice@example.com");
     const req = mockReq({
       method: "GET",
       headers: { origin: ORIGIN, cookie: `${SESSION_COOKIE_NAME}=${token}` },
@@ -358,7 +362,7 @@ describe("POST /api/auth/sync-token", () => {
   });
 
   it("returns 200 + JWT when signed in", async () => {
-    const cookie = signSession("alice@example.com");
+    const cookie = signedFor("alice@example.com");
     const req = mockReq({
       headers: { origin: ORIGIN, cookie: `${SESSION_COOKIE_NAME}=${cookie}` },
     });
@@ -370,7 +374,7 @@ describe("POST /api/auth/sync-token", () => {
   });
 
   it("auto-binds install_id to email when install has no binding yet", async () => {
-    const cookie = signSession("alice@example.com");
+    const cookie = signedFor("alice@example.com");
     const req = mockReq({
       headers: {
         origin: ORIGIN,
@@ -393,7 +397,7 @@ describe("POST /api/auth/sync-token", () => {
     mocks.store.set(`user:${OTHER_INSTALL}:tier`, "yearly");
 
     // Eve signs in on bob's browser and tries to claim bob's install
-    const cookie = signSession("alice@example.com");
+    const cookie = signedFor("alice@example.com");
     const req = mockReq({
       headers: {
         origin: ORIGIN,
@@ -420,7 +424,7 @@ describe("POST /api/auth/sync-token", () => {
   it("idempotent re-bind (same email) is a no-op", async () => {
     mocks.store.set(`account:install:${VALID_INSTALL}`, "alice@example.com");
 
-    const cookie = signSession("alice@example.com");
+    const cookie = signedFor("alice@example.com");
     const req = mockReq({
       headers: {
         origin: ORIGIN,
@@ -437,7 +441,7 @@ describe("POST /api/auth/sync-token", () => {
   });
 
   it("works without install_id header (cookie-only flow, no bind attempted)", async () => {
-    const cookie = signSession("alice@example.com");
+    const cookie = signedFor("alice@example.com");
     const req = mockReq({
       headers: { origin: ORIGIN, cookie: `${SESSION_COOKIE_NAME}=${cookie}` },
     });
@@ -488,7 +492,7 @@ describe("auth origin gate", () => {
 
   for (const [label, origin] of NOT_FIRST_PARTY) {
     it(`sync-token is refused for ${label}, even with the visitor's cookie`, async () => {
-      const cookie = signSession("alice@example.com");
+      const cookie = signedFor("alice@example.com");
       const req = mockReq({
         headers: {
           origin,
@@ -530,7 +534,7 @@ describe("auth origin gate", () => {
 
   it("the production website origins still get a JWT and Allow-Credentials", async () => {
     for (const origin of ["https://antaresscan.com", "https://www.antaresscan.com"]) {
-      const cookie = signSession("alice@example.com");
+      const cookie = signedFor("alice@example.com");
       const req = mockReq({
         headers: { origin, cookie: `${SESSION_COOKIE_NAME}=${cookie}` },
       });
@@ -546,7 +550,7 @@ describe("auth origin gate", () => {
   });
 
   it("the extension origin still reaches /me (the options page calls it)", async () => {
-    const token = signSession("alice@example.com");
+    const token = signedFor("alice@example.com");
     const req = mockReq({
       method: "GET",
       headers: {

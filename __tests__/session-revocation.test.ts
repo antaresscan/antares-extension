@@ -107,6 +107,8 @@ const PASSWORD = "a-long-enough-password";
 
 const redis = () => new Redis({ url: "x", token: "y" });
 const account = (email: string) => mocks.store.get(`account:${email}`) as Record<string, string> | undefined;
+/** The session number a new account was given: the time of its creation, not 0 (see createAccount). */
+const startOf = (email: string) => Number(account(email)?.sessionVersion);
 
 beforeEach(() => {
   mocks.store.clear();
@@ -197,9 +199,18 @@ describe("the session number in the token", () => {
     expect((await getAccount(redis(), ALICE))?.sessionVersion).toBe(0);
   });
 
-  it("a new account starts at 0", async () => {
+  it("a new account starts at the time of its creation, never at 0: the tokens of a deleted account of the same e-mail must not revive", async () => {
+    const before = Date.now();
     const r = await createAccount(redis(), { email: ALICE, password: PASSWORD });
-    expect(r.ok && r.account.sessionVersion).toBe(0);
+    const after = Date.now();
+    expect(r.ok).toBe(true);
+    const n = r.ok ? r.account.sessionVersion : 0;
+    expect(n).toBeGreaterThanOrEqual(before);
+    expect(n).toBeLessThanOrEqual(after);
+    expect(account(ALICE)?.sessionVersion).toBe(String(n)); // stored, so the account reads the same afterwards
+    // a token of an older account of this e-mail (the number 0 of before this change, or any smaller one) is refused by the new account
+    expect(isCurrentSession({ sub: ALICE, iat: 0, exp: 0 }, { sessionVersion: n } as Account)).toBe(false);
+    expect(isCurrentSession({ sub: ALICE, iat: 0, exp: 0, sv: 5 }, { sessionVersion: n } as Account)).toBe(false);
   });
 
   it("isCurrentSession: equal numbers only; a token with no number reads as 0", () => {
@@ -248,7 +259,7 @@ describe("a token only counts while it carries the account's current number", ()
   it("login signs the token with the account's number, and /me answers", async () => {
     await signUp(ALICE);
     const token = await logIn(ALICE);
-    expect(payloadOf(token).sv).toBe(0);
+    expect(payloadOf(token).sv).toBe(startOf(ALICE));
     const me = await call("me", { method: "GET", headers: withCookie(token) });
     expect(me.status).toBe(200);
     expect((me.body as { email: string }).email).toBe(ALICE);
@@ -257,10 +268,11 @@ describe("a token only counts while it carries the account's current number", ()
   it("after revokeAllSessions the tokens signed before are refused, and a token signed with the new number is accepted", async () => {
     await signUp(ALICE);
     const oldToken = await logIn(ALICE);
-    expect(await revokeAllSessions(redis(), ALICE)).toBe(1);
+    const start = startOf(ALICE);
+    expect(await revokeAllSessions(redis(), ALICE)).toBe(start + 1);
     expect(await getAccountFromRequest(reqFor(withCookie(oldToken)), redis())).toBeNull();
     expect(await getAccountFromRequest(reqFor(withHeader(oldToken)), redis())).toBeNull();
-    const fresh = signSession(ALICE, Date.now(), 1);
+    const fresh = signSession(ALICE, Date.now(), start + 1);
     expect((await getAccountFromRequest(reqFor(withCookie(fresh)), redis()))?.email).toBe(ALICE);
   });
 
@@ -272,10 +284,12 @@ describe("a token only counts while it carries the account's current number", ()
   it("revokeAllSessions raises the number by one each time, touches no other account, and creates nothing for an unknown one", async () => {
     await signUp(ALICE);
     await signUp(BOB);
-    expect(await revokeAllSessions(redis(), ALICE)).toBe(1);
-    expect(await revokeAllSessions(redis(), ALICE)).toBe(2);
-    expect(account(ALICE)?.sessionVersion).toBe("2");
-    expect(account(BOB)?.sessionVersion).toBeUndefined();
+    const start = startOf(ALICE);
+    const bobStart = startOf(BOB);
+    expect(await revokeAllSessions(redis(), ALICE)).toBe(start + 1);
+    expect(await revokeAllSessions(redis(), ALICE)).toBe(start + 2);
+    expect(account(ALICE)?.sessionVersion).toBe(String(start + 2));
+    expect(account(BOB)?.sessionVersion).toBe(String(bobStart));
     expect(await revokeAllSessions(redis(), "ghost@example.com")).toBeNull();
     expect(mocks.store.has("account:ghost@example.com")).toBe(false);
     expect(await revokeAllSessions(redis(), "not an email")).toBeNull();
@@ -283,10 +297,11 @@ describe("a token only counts while it carries the account's current number", ()
 
   it("works when the client gives the number back as a number", async () => {
     await signUp(ALICE);
+    const start = startOf(ALICE);
     await revokeAllSessions(redis(), ALICE);
     mocks.deserialise = true;
-    expect(await getAccountFromRequest(reqFor(withCookie(signSession(ALICE, Date.now(), 1))), redis())).not.toBeNull();
-    expect(await getAccountFromRequest(reqFor(withCookie(signSession(ALICE, Date.now(), 0))), redis())).toBeNull();
+    expect(await getAccountFromRequest(reqFor(withCookie(signSession(ALICE, Date.now(), start + 1))), redis())).not.toBeNull();
+    expect(await getAccountFromRequest(reqFor(withCookie(signSession(ALICE, Date.now(), start))), redis())).toBeNull();
   });
 });
 
@@ -304,36 +319,39 @@ describe("POST /api/auth/logout-all", () => {
 
   it("nobody signed in: 401, and nothing is raised", async () => {
     await signUp(ALICE);
+    const start = startOf(ALICE);
     const r = await call("logout-all");
     expect(r.status).toBe(401);
-    expect(account(ALICE)?.sessionVersion).toBeUndefined();
+    expect(account(ALICE)?.sessionVersion).toBe(String(start));
   });
 
   it("a token that no longer counts cannot revoke anything either", async () => {
     await signUp(ALICE);
     const old = await logIn(ALICE);
+    const start = startOf(ALICE);
     await revokeAllSessions(redis(), ALICE);
     const r = await call("logout-all", { headers: withCookie(old) });
     expect(r.status).toBe(401);
-    expect(account(ALICE)?.sessionVersion).toBe("1");
+    expect(account(ALICE)?.sessionVersion).toBe(String(start + 1));
   });
 
   it("signed in: 200, this browser's cookie is cleared, the number is raised, and the OLD cookie is refused from then on", async () => {
     await signUp(ALICE);
     const token = await logIn(ALICE);
+    const start = startOf(ALICE);
 
     const r = await call("logout-all", { headers: withCookie(token) });
     expect(r.status).toBe(200);
     expect(r.body).toEqual({ ok: true });
     expect(r.setCookie).toContain("Max-Age=0"); // cleared in the same answer
-    expect(account(ALICE)?.sessionVersion).toBe("1");
+    expect(account(ALICE)?.sessionVersion).toBe(String(start + 1));
 
     expect((await call("me", { method: "GET", headers: withCookie(token) })).status).toBe(401);
     expect((await call("sync-token", { headers: withCookie(token) })).status).toBe(401);
 
     // signing in again works, with the new number
     const fresh = await logIn(ALICE);
-    expect(payloadOf(fresh).sv).toBe(1);
+    expect(payloadOf(fresh).sv).toBe(start + 1);
     expect((await call("me", { method: "GET", headers: withCookie(fresh) })).status).toBe(200);
   });
 
@@ -350,9 +368,10 @@ describe("POST /api/auth/logout-all", () => {
     await signUp(BOB);
     const aliceToken = await logIn(ALICE);
     const bobToken = await logIn(BOB);
+    const bobStart = startOf(BOB);
     await call("logout-all", { headers: withCookie(aliceToken) });
     expect((await call("me", { method: "GET", headers: withCookie(bobToken) })).status).toBe(200);
-    expect(account(BOB)?.sessionVersion).toBeUndefined();
+    expect(account(BOB)?.sessionVersion).toBe(String(bobStart));
   });
 
   it("two browsers: signing out everywhere from one logs the other one out", async () => {
@@ -368,10 +387,11 @@ describe("POST /api/auth/logout-all", () => {
   it("the plain logout is unchanged: it clears the cookie and revokes nothing", async () => {
     await signUp(ALICE);
     const token = await logIn(ALICE);
+    const start = startOf(ALICE);
     const r = await call("logout", { headers: withCookie(token) });
     expect(r.status).toBe(200);
     expect(r.setCookie).toContain("Max-Age=0");
-    expect(account(ALICE)?.sessionVersion).toBeUndefined();
+    expect(account(ALICE)?.sessionVersion).toBe(String(start));
     expect((await call("me", { method: "GET", headers: withCookie(token) })).status).toBe(200); // the same token, if somebody kept a copy
   });
 });
@@ -390,7 +410,8 @@ describe("the overlay follows the site: website -> sync-token -> the extension's
     const sync = await call("sync-token", { headers: { ...withCookie(cookie), "x-antares-install": INSTALL } });
     expect(sync.status).toBe(200);
     const extensionCopy = (sync.body as { token: string }).token;
-    expect(payloadOf(extensionCopy).sv).toBe(0);
+    const start = startOf(ALICE);
+    expect(payloadOf(extensionCopy).sv).toBe(start);
 
     // 2. the overlay's scans send it as X-Antares-Session: the badge says Pro
     expect(await tierOfOverlay(extensionCopy)).toBe("pro");
@@ -405,7 +426,7 @@ describe("the overlay follows the site: website -> sync-token -> the extension's
     const cookie2 = await logIn(ALICE);
     const sync2 = await call("sync-token", { headers: { ...withCookie(cookie2), "x-antares-install": INSTALL } });
     const extensionCopy2 = (sync2.body as { token: string }).token;
-    expect(payloadOf(extensionCopy2).sv).toBe(1);
+    expect(payloadOf(extensionCopy2).sv).toBe(start + 1);
     expect(await tierOfOverlay(extensionCopy2)).toBe("pro");
     expect(await tierOfOverlay(extensionCopy)).toBe("free"); // the old copy stays refused
   });
