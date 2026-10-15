@@ -2,9 +2,9 @@
 //
 //   GET /api/history?limit=<n>&since=<ms>  → { items, count, retentionDays, tier }
 //
-// Tier policy:
-//   Free          last 10 entries, any time window
-//   Pro/Lifetime  last 100 entries from last 30 days (`since` clamps to 30d)
+// The same for everyone: up to 100 entries from the last 30 days (`since` clamps to 30 days). The Free tier is the verdict, unlimited;
+// only the explanation of the verdict is a Pro feature, so the tier changes nothing here. It is still reported in the answer, for the
+// clients that read it.
 //
 // Storage is populated by /api/scan on every successful scan when an
 // install_id is present. Anonymous scans don't push history (no identity
@@ -26,7 +26,6 @@ import {
   HISTORY_DAY_WINDOW,
 } from "./_lib/user";
 import { apiError } from "./_lib/helpers";
-import { isPaidTier } from "./_lib/entitlements";
 import { logger } from "./_lib/logger";
 
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
@@ -39,10 +38,8 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
   initUserStorage(redis);
 }
 
-const FREE_HISTORY_LIMIT = 10;
-const PRO_HISTORY_LIMIT = 100;
-const FREE_RETENTION_DAYS = HISTORY_DAY_WINDOW;
-const PRO_RETENTION_DAYS = HISTORY_DAY_WINDOW;
+const HISTORY_LIMIT = 100;
+const RETENTION_DAYS = HISTORY_DAY_WINDOW;
 
 function clampInt(v: unknown, min: number, max: number, fallback: number): number {
   const n = typeof v === "string" ? parseInt(v, 10) : Number(v);
@@ -68,22 +65,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Cache-Control", "no-store, max-age=0");
 
   try {
-    // Session-gated tier resolution: signed-out users see Free history
-    // (10 entries); signed-in users get their account tier's window.
-    // Dev-tier override flows through the same path for dev-allowlisted
-    // emails — see api/_lib/user.ts:getEffectiveTierFromRequest.
+    // The tier is only reported (the clients that read it keep reading it): it does not change what the caller gets.
     const tier = await getEffectiveTierFromRequest(req, installId);
-    const isPaid = isPaidTier(tier);
 
-    const maxLimit = isPaid ? PRO_HISTORY_LIMIT : FREE_HISTORY_LIMIT;
-    const limit = clampInt(req.query.limit, 1, maxLimit, maxLimit);
+    const limit = clampInt(req.query.limit, 1, HISTORY_LIMIT, HISTORY_LIMIT);
 
-    const retentionDays = isPaid ? PRO_RETENTION_DAYS : FREE_RETENTION_DAYS;
+    const retentionDays = RETENTION_DAYS;
     const retentionMs = retentionDays * 24 * 60 * 60 * 1000;
     const minSinceMs = Date.now() - retentionMs;
 
-    // Honour user-supplied `since` only if it's stricter than the tier floor —
-    // a Free user can't ask for older data than their tier permits.
+    // Honour user-supplied `since` only if it's stricter than the retention window — nobody can ask for older data than it keeps.
     const requestedSince = clampInt(
       req.query.since,
       minSinceMs,
