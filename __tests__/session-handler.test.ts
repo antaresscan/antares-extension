@@ -23,7 +23,6 @@ vi.mock("../contents/modules/scanner", () => ({
   scan: vi.fn().mockResolvedValue(undefined),
   scheduleRescanIfPriceCrash: vi.fn(),
   isValid: vi.fn(),
-  QuotaExhaustedError: class QuotaExhaustedError extends Error {},
 }))
 
 vi.mock("../contents/modules/address-detector", () => ({

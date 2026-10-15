@@ -4,7 +4,7 @@ import { state, resetSourceGap } from "./state"
 import { getCached, getStale, cacheScan, expireCached } from "./cache"
 import { SCAN_BUDGET_MS, STALE_TICK_MS, SLOW_SCAN_HINT, SOURCE_GAP_GIVE_UP_MS, SOURCE_GAP_REPEAT_MS, sleep, recoveryDelayMs, scannedAgoText, scannedAgoOf, sourceGapOf, sourceGapRetryAt, sourceGapText } from "./resilience"
 import { readSessionToken } from "./session-token"
-import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimations, applyFinalAnimationValues, buildResultNode, buildSkeletonNode, buildQuotaExhaustedNode, hideBox, appendScannedAgo, updateScannedAgo, appendSourceGap, updateSourceGap } from "./components"
+import { getBox, showBox, attachClose, attachAnalysisBtn, triggerResultAnimations, applyFinalAnimationValues, buildResultNode, buildSkeletonNode, hideBox, appendScannedAgo, updateScannedAgo, appendSourceGap, updateSourceGap } from "./components"
 import { scanRateLimiter } from "../../shared/rate-limit"
 import { logger } from "../../shared/logger"
 import { getInstallId } from "../../shared/install-id"
@@ -21,20 +21,6 @@ import { reportScanResult } from "./scan-report"
 //      caught this)
 //   2. A fail-open posture that does not import the Zod schema at
 //      module top-level (defer behind a flag or lazy-load)
-
-/**
- * Thrown by fetchWithRetry when a 429 carries quota headers showing
- * the user has burned their daily allowance (limit > 0, remaining = 0).
- * Distinct from a generic 429 (rate-limit burst, which is recoverable
- * with a retry) — quota exhaustion needs different UX: stop retrying,
- * tell the user, point them at /pricing.
- */
-export class QuotaExhaustedError extends Error {
-  constructor(public readonly quota: QuotaStatus) {
-    super("quota_exhausted")
-    this.name = "QuotaExhaustedError"
-  }
-}
 
 /**
  * Read the dev-tier override from chrome.storage.local. Set via the
@@ -189,18 +175,6 @@ export async function fetchWithRetry(
       const res = await fetch(url, { signal, headers })
       if (!res.ok) {
         const status = res.status
-        // Quota exhaustion vs rate-limit burst: both surface as 429,
-        // but only the second is recoverable via retry. The server
-        // sets X-Antares-Quota-Remaining=0 only when the daily limit
-        // is hit, so we use that as the discriminator. Surface as a
-        // typed error so the caller can render the right overlay
-        // instead of bouncing through MAX_RETRIES delays for nothing.
-        if (status === 429) {
-          const quota = extractQuotaFromHeaders(res.headers)
-          if (quota && quota.limit > 0 && quota.remaining === 0) {
-            throw new QuotaExhaustedError(quota)
-          }
-        }
         if ((status === 429 || status >= 500) && attempt < retries) {
           const delay = BASE_RETRY_DELAY * Math.pow(2, attempt)
           await sleep(delay, signal)
@@ -212,8 +186,6 @@ export async function fetchWithRetry(
     } catch (e: unknown) {
       lastError = e
       if (signal.aborted) throw e
-      // QuotaExhaustedError is by design non-retryable — bubble up.
-      if (e instanceof QuotaExhaustedError) throw e
       if (!isRetryable(e) || attempt >= retries) throw e
       const delay = BASE_RETRY_DELAY * Math.pow(2, attempt)
       await sleep(delay, signal)
@@ -474,7 +446,7 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
   const skipFlashUI = !!opts.silent && wasOverlayVisible && !wasWaiting
 
   // Resolve install_id once up-front so every render path (cached,
-  // loading skeleton, result, quota-exhausted) can bake it into
+  // loading skeleton, result) can bake it into
   // upgrade-CTA hrefs synchronously. Async window.open in click
   // handlers gets popup-blocked, so the install_id must be present at
   // the moment the <a> is constructed, not awaited inside a click.
@@ -663,23 +635,6 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
     })
   } catch (e: unknown) {
     if (cancelled()) return
-    // Quota exhausted: render a clear "you've hit the cap" overlay
-    // with an upgrade CTA — never silently hide the box, that just
-    // makes the extension look broken on the 26th scan of the day.
-    if (e instanceof QuotaExhaustedError) {
-      logger.info("scanner", "quota exhausted", {
-        used: e.quota.used,
-        limit: e.quota.limit,
-        resetAt: e.quota.resetAt,
-      })
-      if (state.lastCA === ca) {
-        if (state.boxEl) state.boxEl.className = "box caution"
-        el.replaceChildren(buildQuotaExhaustedNode(e.quota, installId))
-        showBox()
-        attachClose(null)
-      }
-      return
-    }
     logger.warn("scanner", timedOut ? "scan timed out" : "scan failed after retries", e)
     chrome.runtime.sendMessage({ type: "LOG_ERROR", message: (e as Error).message, stack: (e as Error).stack }).catch(() => {})
     // Don't tear down a visible overlay on a silent-fetch failure —
