@@ -530,8 +530,9 @@ export function judgeContractFacts(facts: AuthorityFacts | null | undefined): Co
   // hard block, information only for a trusted issuer (a stablecoin or a tokenised stock holds them by design).
   const ext = facts.extensionFacts;
   if (ext) {
-    // The penalties of the two that GoPlus already said (and that it still says when the chain is unreadable) are GoPlus's own, so that the
-    // chain saying them first never makes a verdict more lenient: "Balances can be changed by an authority" 0.10, "Transfer pausable" 0.30.
+    // The penalties of "Permanent delegate" 0.10 and "Pausable token" 0.30 are the ones GoPlus's flags carried when they were the only source ("Balances
+    // can be changed by an authority" 0.10, "Transfer pausable" 0.30, the latter an EVM-only field GoPlus's Solana answers never have and that is no longer
+    // read), so that the chain saying them never makes a verdict more or less lenient than before.
     const extFlag = (label: string, tag: FlagTag | null, penalty = 0.25) => {
       flags.push(makeFlag(label, sev, 0, { reasons: ["token_extension"], tags: tag ? [tag] : [] })); penalties.push(facts.trusted ? pen : penalty);
       if (!facts.trusted) safeBlocked = true;
@@ -541,8 +542,9 @@ export function judgeContractFacts(facts: AuthorityFacts | null | undefined): Co
     if (ext.defaultFrozen) extFlag("New accounts start frozen — nobody can sell until their account is thawed", null);
     if (ext.transferHook) extFlag("Transfer hook — a program runs on every transfer and can refuse it", "transfer_hook");
     if (ext.feeBps !== null && ext.feeBps > 0) {
-      // A fee that applies NOW is a tax on every transfer, read like GoPlus's buy / sell tax (below): under 2 % ordinary (information), 2 to
-      // 10 % "suspicious" (a warning), over 10 % critical. It is not a hard block by itself: that is the fee an authority CAN change (next).
+      // A fee that applies NOW is a tax on every transfer, read with the thresholds GoPlus's buy / sell tax checks used (EVM-only fields, no longer
+      // read): under 2 % ordinary (information), 2 to 10 % "suspicious" (a warning), over 10 % critical. It is not a hard block by itself: that is
+      // the fee an authority CAN change (next).
       const pct = `${(ext.feeBps / 100).toFixed(ext.feeBps % 100 === 0 ? 0 : 2)}%`;
       const feeSev = facts.trusted || ext.feeBps < 200 ? "info" : ext.feeBps > 1000 ? "critical" : "warning";
       flags.push(makeFlag(`Transfer fee ${pct} on every transfer`, feeSev, 0));
@@ -584,26 +586,6 @@ export function layerGoPlus(
     flags: [makeFlag("GoPlus unavailable", "info", 0, { tags: ["source_status"] }), ...flags],
     forceRug: false, safeBlocked,
   };
-  const gp = (field: keyof GoPlusTokenResult) => {
-    const v = goplus[field];
-    if (v === "1" || v === 1 || v === true) return true;
-    if (typeof v === "string") {
-      const s = v.trim().toLowerCase();
-      if (s === "true" || s === "yes") return true;
-    }
-    return false;
-  };
-  const gpNum = (field: keyof GoPlusTokenResult) => asNumber(goplus[field]);
-  if (gp("is_honeypot")) {
-    flags.push(makeFlag("Honeypot detected — cannot sell", "critical", 0, { reasons: ["honeypot"], tags: ["rug_evidence", "market_health"] }));
-    trust = 0; forceRug = true; safeBlocked = true;
-    return { source: "goplus", trust: 0, available: true, flags, forceRug, safeBlocked, rugEvidence: ["sells_blocked"] };
-  }
-  if (gp("cannot_sell_all")) {
-    flags.push(makeFlag("Cannot sell all tokens", "critical", 0, { tags: ["market_health"] }));
-    trust = 0; forceRug = true; safeBlocked = true;
-    return { source: "goplus", trust: 0, available: true, flags, forceRug, safeBlocked, rugEvidence: ["sells_blocked"] };
-  }
   // The chain already said these three (judgeContractFacts, audit A-10): GoPlus saying them again would show the same signal twice, in two
   // wordings. Only for a token that is not trusted: for a trusted issuer the chain says them as information and GoPlus's reading stays.
   const chainSays = (tag: FlagTag) => !facts?.trusted && contract.flags.some((f) => f.tags?.includes(tag));
@@ -612,27 +594,6 @@ export function layerGoPlus(
   if (gpStatus(goplus.non_transferable) === true && !contract.flags.some((f) => f.tags?.includes("non_transferable"))) { flags.push(makeFlag(NON_TRANSFERABLE_LABEL, "critical", 0, { tags: ["rug_evidence", "market_health"] })); penalties.push(0.05); safeBlocked = true; }
   if (gpStatus(goplus.closable) === true) { flags.push(makeFlag("Token accounts can be closed by an authority", "warning", 0)); penalties.push(0.80); }
   if (Array.isArray(goplus.transfer_hook) && goplus.transfer_hook.length > 0 && !chainSays("transfer_hook")) { flags.push(makeFlag("Transfer hook installed — a custom program runs on every transfer", "warning", 0)); penalties.push(0.75); }
-  if (gp("is_blacklisted")) { flags.push(makeFlag("Blacklist capability", "critical", 0)); penalties.push(0.30); safeBlocked = true; }
-  if (gp("transfer_pausable") && !chainSays("pausable")) { flags.push(makeFlag("Transfer pausable", "critical", 0)); penalties.push(0.30); safeBlocked = true; }
-  if (gp("hidden_owner")) { flags.push(makeFlag("Hidden owner detected", "critical", 0)); penalties.push(0.30); safeBlocked = true; }
-  if (gp("is_proxy")) { flags.push(makeFlag("Upgradeable/proxy contract", "critical", 0)); penalties.push(0.50); safeBlocked = true; }
-  const sellTaxRaw = gpNum("sell_tax");
-  const buyTaxRaw  = gpNum("buy_tax");
-  const sellTax = sellTaxRaw > 1 ? sellTaxRaw / 100 : sellTaxRaw;
-  const buyTax  = buyTaxRaw  > 1 ? buyTaxRaw  / 100 : buyTaxRaw;
-  if (sellTax > 0.10) { flags.push(makeFlag("Sell tax > 10%", "critical", 0)); penalties.push(0.35); }
-  if (buyTax  > 0.10) { flags.push(makeFlag("Buy tax > 10%",  "critical", 0)); penalties.push(0.35); }
-  // Fix(TAX_WARNING): Tax between 2% and 10% is a common rug mechanic — flag it.
-  // VDOR had 4.5% tax which previously passed through completely undetected.
-  if (sellTax > 0.02 && sellTax <= 0.10) { flags.push(makeFlag(`Sell tax ${Math.round(sellTax * 100)}% — suspicious`, "warning", 0)); penalties.push(0.80); }
-  if (buyTax  > 0.02 && buyTax  <= 0.10) { flags.push(makeFlag(`Buy tax ${Math.round(buyTax  * 100)}% — suspicious`,  "warning", 0)); penalties.push(0.80); }
-  if (gpNum("owner_percent") > 0.05) { flags.push(makeFlag("Owner holds > 5%", "critical", 0)); penalties.push(0.50); }
-  if (gpNum("creator_percent") > 0.05) { flags.push(makeFlag("Creator holds > 5%", "critical", 0)); penalties.push(0.50); }
-  if (gp("is_mintable")) { flags.push(makeFlag("Token is mintable", "warning", 0)); penalties.push(0.60); }
-  if (gp("slippage_modifiable")) { flags.push(makeFlag("Slippage/tax modifiable", "warning", 0)); penalties.push(0.75); }
-  if (gp("is_anti_whale_modifiable")) { flags.push(makeFlag("Anti-whale rules modifiable", "warning", 0)); penalties.push(0.80); }
-  if (gp("trading_cooldown")) { flags.push(makeFlag("Trading cooldown enabled", "info", 0)); penalties.push(0.90); }
-  if (gp("is_whitelisted")) { flags.push(makeFlag("Whitelist system detected", "warning", 0)); penalties.push(0.80); }
 
           // Fix(LP_GOPLUS): LP burn/lock detection using GoPlus dex[].burn_percent
     // RugCheck does NOT return lpBurned/lpLocked booleans — only lpLockedPct which is unreliable

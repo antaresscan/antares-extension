@@ -113,7 +113,7 @@ export type RugKind = "confirmed" | "risk";
  */
 export type RugEvidence =
   | "pool_abandoned"  // volume over $10k in 24 h and zero liquidity: the pool was drained while it still traded
-  | "sells_blocked"   // GoPlus: honeypot, or the holder cannot sell everything
+  | "sells_blocked"   // a source says nobody can sell. NOTHING produces it today: it was GoPlus's honeypot / cannot-sell-all (EVM-only fields, never in a Solana answer, removed)
   | "price_collapse"; // down 75 % or more from the highest close of the last 14 days (4-hour candles): it already collapsed
 
 // ─── DEXSCREENER ─────────────────────────────────────────────────────────────────────────
@@ -205,23 +205,8 @@ export interface RugCheckReport {
 
 // ─── GOPLUS ────────────────────────────────────────────────────────────────────────────────────
 export interface GoPlusTokenResult {
-  is_honeypot?: string | number | boolean;
-  cannot_sell_all?: string | number | boolean;
   mint_authority?: string;
   freeze_authority?: string;
-  is_blacklisted?: string | number | boolean;
-  transfer_pausable?: string | number | boolean;
-  hidden_owner?: string | number | boolean;
-  is_proxy?: string | number | boolean;
-  sell_tax?: string | number;
-  buy_tax?: string | number;
-  owner_percent?: string | number;
-  creator_percent?: string | number;
-  is_mintable?: string | number | boolean;
-  slippage_modifiable?: string | number | boolean;
-  is_anti_whale_modifiable?: string | number | boolean;
-  trading_cooldown?: string | number | boolean;
-  is_whitelisted?: string | number | boolean;
     dex?: Array<{ burn_percent?: number | null; dex_name?: string; lp_amount?: string | null; tvl?: string | number; type?: string }>;
     // GoPlus exposes the actual on-chain holder count — they index this
     // themselves and it matches what DexScreener / Solscan show. Free

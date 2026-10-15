@@ -428,20 +428,6 @@ describe("layerGoPlus", () => {
     expect(result.available).toBe(false);
   });
 
-  it("honeypot sets trust:0 AND safeBlocked:true", () => {
-    const result = layerGoPlus({ is_honeypot: "1" });
-    expect(result.trust).toBe(0);
-    expect(result.forceRug).toBe(true);
-    expect(result.safeBlocked).toBe(true);
-  });
-
-  it("cannot_sell_all sets safeBlocked", () => {
-    const result = layerGoPlus({ cannot_sell_all: "1" });
-    expect(result.trust).toBe(0);
-    expect(result.forceRug).toBe(true);
-    expect(result.safeBlocked).toBe(true);
-  });
-
   it("active mint + freeze authorities (read on-chain) raise critical flags and block SAFE, without forcing RUG", () => {
     const facts = deriveAuthorityFacts(chainMint({ mintAuthority: true, freezeAuthority: true }), null);
     const result = layerGoPlus({ holder_count: "10" } as GoPlusTokenResult, undefined, facts);
@@ -540,41 +526,16 @@ describe("layerGoPlus", () => {
     expect(trusted.flags.map(f => f.severity)).toEqual(["info"]);
   });
 
-  it("Fix(TAX_WARNING): sell_tax '10' (=10%) is at boundary — triggers warning (>0.02 && <=0.10)", () => {
-    // sell_tax='10' -> normalized to 0.10 -> 0.10 > 0.02 && 0.10 <= 0.10 → TRUE → warning flag present
-    const goplus: GoPlusTokenResult = { sell_tax: "10", buy_tax: "0" };
-    const result = layerGoPlus(goplus);
-    expect(result.flags.some(f => /sell tax.*suspicious/i.test(f.label))).toBe(true);
-  });
-
-  it("Fix(TAX_WARNING): sell_tax '4.5' (VDOR-style) triggers warning flag", () => {
-    const goplus: GoPlusTokenResult = { sell_tax: "4.5", buy_tax: "0" };
-    const result = layerGoPlus(goplus);
-    expect(result.flags.some(f => /sell tax.*suspicious/i.test(f.label))).toBe(true);
-    expect(result.trust).toBeLessThan(1.0);
-  });
-
-  it("Fix(TAX_WARNING): sell_tax '0.15' (=15%) is hard flagged as > 10%", () => {
-    const goplus: GoPlusTokenResult = { sell_tax: "0.15", buy_tax: "0" };
-    const result = layerGoPlus(goplus);
-    expect(result.flags.some(f => /sell tax > 10%/i.test(f.label))).toBe(true);
-  });
-
-  it("Fix(TAX_WARNING): sell_tax '11' (=11%) is hard flagged as > 10%", () => {
-    const goplus: GoPlusTokenResult = { sell_tax: "11", buy_tax: "0" };
-    const result = layerGoPlus(goplus);
-    expect(result.flags.some(f => /sell tax > 10%/i.test(f.label))).toBe(true);
-  });
-
-  it("clean token (sell_tax=0, buy_tax=0) returns trust 1.0", () => {
-    const goplus: GoPlusTokenResult = {
-      is_honeypot: "0",
-      cannot_sell_all: "0",
-      mint_authority: "0",
-      freeze_authority: "0",
-      sell_tax: "0",
-      buy_tax: "0",
-    };
+  it("a clean Solana token (every authority field off) returns trust 1.0", () => {
+    // The real GoPlus Solana contract: structural fields as { status, authority }, absent or "0" when off.
+    const goplus = {
+      mintable: { status: "0", authority: [] },
+      freezable: { status: "0", authority: [] },
+      closable: { status: "0", authority: [] },
+      balance_mutable_authority: { status: "0", authority: [] },
+      non_transferable: "0",
+      transfer_hook: [],
+    } as GoPlusTokenResult;
     const result = layerGoPlus(goplus);
     expect(result.trust).toBe(1.0);
     expect(result.safeBlocked).toBe(false);
@@ -2061,17 +2022,16 @@ describe("judgeContractFacts: Token-2022 extensions", () => {
   });
 
   it("GoPlus answers too: what the chain already said is not said twice (a trusted issuer keeps GoPlus own reading)", () => {
-    const gp = { balance_mutable_authority: { status: "1" }, transfer_pausable: "1", transfer_hook: [{ program_id: "x" }] } as unknown as GoPlusTokenResult;
+    const gp = { balance_mutable_authority: { status: "1" }, transfer_hook: [{ program_id: "x" }] } as unknown as GoPlusTokenResult;
     const l = layerGoPlus(gp, undefined, ext({ permanentDelegate: true, pausable: true, transferHook: true }));
     const said = l.flags.map((f) => f.label);
     expect(said).toContain("Permanent delegate — an address can move or burn any holder's tokens");
     expect(said).not.toContain("Balances can be changed by an authority");
-    expect(said).not.toContain("Transfer pausable");
     expect(said.some((x) => /^Transfer hook installed/.test(x))).toBe(false);
     // the chain said nothing, or the issuer is trusted: GoPlus flags stay as they were
-    expect(layerGoPlus(gp, undefined, ext()).flags.map((f) => f.label)).toEqual(expect.arrayContaining(["Balances can be changed by an authority", "Transfer pausable"]));
+    expect(layerGoPlus(gp, undefined, ext()).flags.map((f) => f.label)).toEqual(expect.arrayContaining(["Balances can be changed by an authority"]));
     const trusted = layerGoPlus(gp, undefined, ext({ permanentDelegate: true, pausable: true, transferHook: true }, true));
-    expect(trusted.flags.map((f) => f.label)).toEqual(expect.arrayContaining(["Balances can be changed by an authority", "Transfer pausable"]));
+    expect(trusted.flags.map((f) => f.label)).toEqual(expect.arrayContaining(["Balances can be changed by an authority"]));
   });
 
   it("token_extension is a hard reason: with a score under 400 the verdict is RUG, over it DANGER", () => {

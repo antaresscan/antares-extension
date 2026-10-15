@@ -1,7 +1,7 @@
 // api/_lib/upstream-schemas.ts — Runtime validation for third-party API responses.
 //
 // Scoring correctness depends on us correctly reading fields like GoPlus
-// `is_honeypot`, RugCheck `lpBurned`, or Helius holder `uiAmount`. Previously
+// `holder_count`, RugCheck `lpBurned`, or Helius holder `uiAmount`. Previously
 // these responses were cast via `as unknown as T` with only a shallow
 // top-level existence check, which meant a silent upstream schema change
 // could propagate into the scoring engine undetected — the exact failure
@@ -52,23 +52,8 @@ export const GoPlusDexEntrySchema = z.object({
 });
 
 export const GoPlusTokenResultSchema = z.object({
-  is_honeypot: GoPlusFlagSchema.optional(),
-  cannot_sell_all: GoPlusFlagSchema.optional(),
   mint_authority: z.string().optional(),
   freeze_authority: z.string().optional(),
-  is_blacklisted: GoPlusFlagSchema.optional(),
-  transfer_pausable: GoPlusFlagSchema.optional(),
-  hidden_owner: GoPlusFlagSchema.optional(),
-  is_proxy: GoPlusFlagSchema.optional(),
-  sell_tax: z.union([z.string(), z.number()]).optional(),
-  buy_tax: z.union([z.string(), z.number()]).optional(),
-  owner_percent: z.union([z.string(), z.number()]).optional(),
-  creator_percent: z.union([z.string(), z.number()]).optional(),
-  is_mintable: GoPlusFlagSchema.optional(),
-  slippage_modifiable: GoPlusFlagSchema.optional(),
-  is_anti_whale_modifiable: GoPlusFlagSchema.optional(),
-  trading_cooldown: GoPlusFlagSchema.optional(),
-  is_whitelisted: GoPlusFlagSchema.optional(),
   dex: z.array(GoPlusDexEntrySchema).optional(),
   holder_count: z.union([z.string(), z.number()]).optional(),
   // Solana contract (real field names, checked against live responses)

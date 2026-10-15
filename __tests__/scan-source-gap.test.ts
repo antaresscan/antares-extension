@@ -239,15 +239,8 @@ function setupGoodTokenMocks() {
         json: () => Promise.resolve({
           result: {
             So11111111111111111111111111111111111111112: {
-              is_honeypot: "0",
-              cannot_sell_all: "0",
               mint_authority: "0",
               freeze_authority: "0",
-              is_blacklisted: "0",
-              sell_tax: "0",
-              buy_tax: "0",
-              owner_percent: "0",
-              creator_percent: "0",
             },
           },
         }),
