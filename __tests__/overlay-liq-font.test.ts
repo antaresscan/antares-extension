@@ -1,0 +1,139 @@
+/* @vitest-environment happy-dom */
+
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
+import type { ScanResponseData } from "../shared/types"
+
+// The liquidity figure of the overlay's footer line ($4.36M) was the only figure of the card set in IBM Plex Mono; everything else is Bebas Neue (2026-10-15). It is Bebas Neue
+// now, in the same colours as before (green above $50K, red under $5K, white between). The dash of a liquidity nobody could read, and the check marks and dashes of the
+// other four cells, are untouched.
+
+vi.mock("../shared/install-id", () => ({ getInstallId: () => Promise.resolve("install-test-aaaaaaaaaaaa") }))
+vi.mock("../contents/modules/scan-report", () => ({ reportScanResult: vi.fn() }))
+vi.mock("../contents/modules/session-token", () => ({ readSessionToken: () => Promise.resolve(null) }))
+vi.mock("../shared/rate-limit", () => ({ scanRateLimiter: { tryAcquire: () => Promise.resolve(true), getRetryAfterMs: () => Promise.resolve(0) } }))
+
+;(window as unknown as { happyDOM: { settings: { disableCSSFileLoading: boolean } } }).happyDOM.settings.disableCSSFileLoading = true
+
+const { scan } = await import("../contents/modules/scanner")
+const { state, scanCache, resetSourceGap } = await import("../contents/modules/state")
+const { SHADOW_CSS } = await import("../contents/modules/styles")
+
+const CA = "So1anaTokenAddressForTests11111111111111111"
+const T = 1_800_000_000_000
+
+const data = (over: Record<string, unknown> = {}): ScanResponseData => ({
+  score: 500, risk: "DANGER", flags: [], pair: null, resolvedMint: CA, confidence: 90, sources_used: ["dexscreener", "helius"],
+  holders: 36_900, marketCap: 13_300_000, priceUsd: 0.37, liquidity: 4_360_000, tokenSymbol: "CARDS", tokenName: "Cards Collector Crypt", safeBlocked: false,
+  mintAuthority: false, freezeAuthority: false, lpBurned: false, lpLocked: false, honeypot: false,
+  freshForSec: 300, staleLeftSec: 1200, fetchedAt: Date.now(), ...over,
+}) as unknown as ScanResponseData
+
+let store: Map<string, unknown>
+const fetchMock = vi.fn()
+const sendMessage = vi.fn((_msg: unknown, cb?: (r: unknown) => void) => { cb?.({ ok: true }); return Promise.resolve() })
+
+function installChrome() {
+  store = new Map()
+  const local = {
+    get: (keys: string | string[] | null, cb: (items: Record<string, unknown>) => void) => {
+      const list = keys === null ? [...store.keys()] : Array.isArray(keys) ? keys : [keys]
+      const out: Record<string, unknown> = {}
+      for (const k of list) if (store.has(k)) out[k] = structuredClone(store.get(k))
+      cb(out)
+    },
+    set: (items: Record<string, unknown>, cb: () => void) => { for (const [k, v] of Object.entries(items)) store.set(k, structuredClone(v)); cb() },
+    remove: (keys: string[], cb: () => void) => { for (const k of keys) store.delete(k); cb() },
+  }
+  vi.stubGlobal("chrome", { storage: { local }, runtime: { lastError: undefined, sendMessage } })
+}
+const quotaHeaders = (tier: string) => new Headers({
+  "X-Antares-Quota-Tier": tier, "X-Antares-Quota-Used": "3", "X-Antares-Quota-Limit": "-1", "X-Antares-Quota-Remaining": "-1", "X-Antares-Quota-Reset": "0",
+})
+const answer = (body: unknown, tier: string) => Promise.resolve({ ok: true, status: 200, headers: quotaHeaders(tier), json: () => Promise.resolve(body) })
+/** The mark in the Liq cell (the last of the five) and in the other four. */
+const liqB = () => state.shadow?.querySelector(".ss .si:last-child b") as HTMLElement | null
+const otherBs = () => [...(state.shadow?.querySelectorAll(".ss .si:not(:last-child) b") ?? [])] as HTMLElement[]
+
+beforeEach(() => {
+  vi.useFakeTimers({ now: T })
+  installChrome()
+  sendMessage.mockClear()
+  fetchMock.mockReset()
+  vi.stubGlobal("fetch", fetchMock)
+  scanCache.clear()
+  document.documentElement.querySelector("#antares-host")?.remove()
+  resetSourceGap()
+  Object.assign(state, {
+    host: null, shadow: null, boxEl: null, lastCA: "", manuallyDismissed: false, currentScanController: null, failureView: null,
+    recoveryTimer: null, recoveryCa: "", recoveryAttempt: 0, recoveryStartedAt: 0, staleExpiryTimer: null, rescanTimer: null,
+  })
+})
+afterEach(() => {
+  resetSourceGap()
+  if (state.recoveryTimer) clearTimeout(state.recoveryTimer)
+  vi.useRealTimers()
+  vi.unstubAllGlobals()
+})
+
+const rule = (selector: string): string | null => {
+  const at = SHADOW_CSS.indexOf(selector + " {")
+  return at < 0 ? null : SHADOW_CSS.slice(at + selector.length + 2, SHADOW_CSS.indexOf("}", at))
+}
+
+describe("the liquidity figure, in the CSS", () => {
+  it("is Bebas Neue, like the rest of the card", () => {
+    const r = rule(".si b.liq")
+    expect(r, "the .si b.liq rule").not.toBeNull()
+    expect(r).toMatch(/font-family:\s*'Bebas Neue'/)
+    expect(r).not.toMatch(/IBM Plex Mono/)
+    expect(r).toMatch(/font-size:\s*11px/) // 12px was a touch too big next to the 9px labels (2026-10-15)
+  })
+
+  it("the other marks of the line keep their face: the dashes stay the same dash (IBM Plex Mono), the ticks and crosses are drawn shapes", () => {
+    expect(rule(".si b")).toMatch(/font-family:\s*'IBM Plex Mono'/)
+    expect(rule(".si b.ok")).not.toMatch(/Bebas/)
+    expect(rule(".si b.no")).not.toMatch(/Bebas/)
+  })
+
+  it("its colours are the ones it had: green, red, amber", () => {
+    expect(rule(".si b.y")).toMatch(/#00e5b0/)
+    expect(rule(".si b.n")).toMatch(/#ff5f5f/)
+  })
+})
+
+describe("the liquidity figure, in the overlay", () => {
+  for (const tier of ["pro", "free"] as const) {
+    it.each([
+      [4_360_000, "liq y", "$4.36M"],
+      [267_900, "liq y", "$267.9K"],
+      [21_400, "liq", "$21.4K"],
+      [3_200, "liq n", "$3.2K"],
+    ])(`${tier} | liquidity %d: class "%s", shown as %s`, async (liquidity, cls, text) => {
+      fetchMock.mockImplementation(() => answer(data({ liquidity, ...(tier === "free" ? { proLocked: true } : {}) }), tier))
+      await scan(CA)
+      expect(liqB()?.getAttribute("class")).toBe(cls)
+      expect(liqB()?.textContent).toBe(text)
+    })
+  }
+
+  it("a liquidity nobody could read is the little dash, not a Bebas figure", async () => {
+    fetchMock.mockImplementation(() => answer(data({ liquidity: null }), "pro"))
+    await scan(CA)
+    expect(liqB()?.textContent).toBe("—")
+    expect(liqB()?.classList.contains("liq")).toBe(false)
+  })
+
+  it("the other four cells are not touched: none of them carries the class", async () => {
+    fetchMock.mockImplementation(() => answer(data({ mintAuthority: true, lpBurned: true }), "pro"))
+    await scan(CA)
+    expect(otherBs()).toHaveLength(4)
+    for (const b of otherBs()) expect(b.classList.contains("liq")).toBe(false)
+  })
+
+  it("the Limited data card keeps its liquidity figure, in the same face", async () => {
+    fetchMock.mockImplementation(() => answer(data({ degraded: true, sourceGap: true, freshForSec: 30, staleLeftSec: 0 }), "pro"))
+    await scan(CA)
+    expect(liqB()?.getAttribute("class")).toBe("liq y")
+    expect(liqB()?.textContent).toBe("$4.36M")
+  })
+})

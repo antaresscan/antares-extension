@@ -617,7 +617,8 @@ export function buildResultNode(
     buildSiLp(facts),
     el("div", { class: "si" },
       el("span", undefined, "Liq"),
-      el("b", { class: liqClass }, liqDisplay),
+      // The figure is set in Bebas Neue like the rest of the card (class "liq"); the dash of a liquidity nobody could read stays the little dash of the other cells.
+      el("b", { class: liq !== null ? (liqClass ? `liq ${liqClass}` : "liq") : liqClass }, liqDisplay),
     ),
   )
 
