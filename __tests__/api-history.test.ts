@@ -117,7 +117,7 @@ describe("GET /api/history", () => {
     expect(payload.limit).toBeGreaterThan(0);
   });
 
-  it("clamps Free-tier limit to the smaller cap", async () => {
+  it("clamps a huge limit to 100, for a Free caller too", async () => {
     const req = mockReq({
       headers: { origin: ORIGIN, "x-antares-install": INSTALL },
       query: { limit: "1000" },
@@ -125,9 +125,19 @@ describe("GET /api/history", () => {
     const res = mockRes();
     await handler(req, res);
     const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock
-      .calls[0][0] as { limit: number };
-    // Free is capped at 10 — even when client requests 1000
-    expect(payload.limit).toBeLessThanOrEqual(10);
+      .calls[0][0] as { limit: number; tier: string };
+    expect(payload.tier).toBe("free");
+    expect(payload.limit).toBe(100);
+  });
+
+  it("gives a Free caller the whole limit it asks for, up to 100, and 100 when it asks for nothing", async () => {
+    const asked = async (query: Record<string, string>) => {
+      const res = mockRes();
+      await handler(mockReq({ headers: { origin: ORIGIN, "x-antares-install": INSTALL }, query }), res);
+      return ((res.json as unknown as { mock: { calls: unknown[][] } }).mock.calls[0][0] as { limit: number }).limit;
+    };
+    expect(await asked({ limit: "50" })).toBe(50);
+    expect(await asked({})).toBe(100);
   });
 
   it("disables caching to avoid serving stale history", async () => {
