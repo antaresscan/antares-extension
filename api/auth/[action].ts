@@ -33,6 +33,7 @@ import {
   revokeAllSessions,
   ACCOUNT_INSTALL_KEY,
 } from "../_lib/account";
+import { checkLoginLock, recordLoginFailure, clearLoginFailures } from "../_lib/login-guard";
 import {
   setSessionCookie,
   clearSessionCookie,
@@ -138,14 +139,31 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
   const password = String(body.password ?? "");
 
   try {
+    // The lock of this e-mail's login (audit A-11): 10 failed logins in 15 minutes, from any address, and the next ones are refused until the
+    // window ends, the right password included. It counts unknown e-mails exactly like known ones, so the lock tells nothing about who has an account.
+    const lock = await checkLoginLock(redis, email);
+    if (lock.locked) {
+      const minutes = Math.max(1, Math.ceil(lock.retryAfterSec / 60));
+      res.setHeader("Retry-After", String(lock.retryAfterSec));
+      logger.metric("auth.login-locked", { emailRef: emailRef(email) });
+      // `error` is what the website's login form shows, word for word, on a 429.
+      return res.status(429).json({
+        ok: false,
+        reason: "too_many_attempts",
+        error: `Too many failed attempts. Try again in ${minutes} minute${minutes > 1 ? "s" : ""}.`,
+        retryAfterSec: lock.retryAfterSec,
+      });
+    }
     const outcome = await authenticate(redis, { email, password });
     if (!outcome.ok) {
+      await recordLoginFailure(redis, email);
       // 401 not 404 — never differentiate "no account" from "wrong
       // password" or we leak account existence.
       return res
         .status(401)
         .json({ ok: false, reason: "invalid_credentials" });
     }
+    await clearLoginFailures(redis, email, lock.failures);
     setSessionCookie(res, outcome.account.email, {}, outcome.account.sessionVersion);
     // Auto-grant dev licences (Pro + Lifetime). Idempotent — only
     // mints once per email-and-tier regardless of how many logins.

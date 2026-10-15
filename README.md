@@ -218,7 +218,7 @@ GET  /api/payment-status?reference=…    Poll an in-flight payment
 POST /api/redeem                        Redeem a license key against an install_id
 
 POST /api/auth/signup                   Create an account
-POST /api/auth/login                    Sign in
+POST /api/auth/login                    Sign in (10 failed attempts on one e-mail in 15 minutes lock that e-mail's login: 429 + Retry-After)
 POST /api/auth/logout                   Sign out (this browser)
 POST /api/auth/logout-all               Sign out everywhere: every session of the account stops working
 GET  /api/auth/me                       Get current session

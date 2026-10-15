@@ -11,6 +11,7 @@
 //   who a person is
 //     account:<email>                      ACCOUNT_KEY               the account (a hash: id, e-mail, password hash, creation date, e-mail verified)
 //     account:install:<installId>          ACCOUNT_INSTALL_KEY       which e-mail an install is bound to (value: the e-mail)
+//     auth_fail:<sha256 of the e-mail>     LOGIN_FAILURES_KEY        the failed logins of one e-mail (a counter, 15 minutes: login-guard.ts)
 //   what a person has
 //     user:<installId>:tier                TIER_KEY                  the tier stored on the install (pro, yearly, lifetime)
 //     user:<installId>:tierExpires         TIER_EXPIRES_KEY          epoch ms when that tier ends
@@ -42,6 +43,8 @@
 
 export const ACCOUNT_KEY = (emailLc: string) => `account:${emailLc}`;
 export const ACCOUNT_INSTALL_KEY = (installId: string) => `account:install:${installId}`;
+/** The failed logins of one e-mail. The key holds the SHA-256 (hex) of the normalised address, never the address. */
+export const LOGIN_FAILURES_KEY = (emailSha256Hex: string) => `auth_fail:${emailSha256Hex}`;
 
 // ─── what a person has ────────────────────────────────────────────────────────
 
