@@ -219,7 +219,8 @@ POST /api/redeem                        Redeem a license key against an install_
 
 POST /api/auth/signup                   Create an account
 POST /api/auth/login                    Sign in
-POST /api/auth/logout                   Sign out
+POST /api/auth/logout                   Sign out (this browser)
+POST /api/auth/logout-all               Sign out everywhere: every session of the account stops working
 GET  /api/auth/me                       Get current session
 POST /api/auth/sync-token               Get JWT for the extension bridge
 POST /api/auth/nowpayments-ipn          NOWPayments webhook (HMAC-SHA512 verified)
