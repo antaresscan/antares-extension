@@ -33,8 +33,8 @@
 //                                                              (Free once its end date has passed)
 //   9  none of the above (a session, no licence, no binding)   Free                              if dev       no-license-no-binding
 //
-// "bypassQuota" is the dev exemption from the daily scan quota. Every tier is unlimited today, so it changes nothing visible; it is kept
-// because the quota code still asks.
+// "bypassQuota" was the dev exemption from the daily scan quota. There is no quota any more (every tier is unlimited) and nothing reads
+// the flag; it stays in the table, and in its tests, until the table is next edited.
 
 export type Tier = "free" | "pro" | "yearly" | "lifetime";
 

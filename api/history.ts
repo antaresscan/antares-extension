@@ -18,7 +18,6 @@ import {
   checkRateLimit,
   initRateLimiters,
 } from "./_lib/middleware";
-import { initQuota } from "./_lib/quota";
 import {
   initUserStorage,
   getEffectiveTierFromRequest,
@@ -34,7 +33,6 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
     token: process.env.UPSTASH_REDIS_REST_TOKEN,
   });
   initRateLimiters(redis);
-  initQuota(redis);
   initUserStorage(redis);
 }
 

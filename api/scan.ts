@@ -36,7 +36,7 @@ import { selectBestPair } from "./_lib/dex-pair-select";
 import { decide } from "./_lib/decide";
 import { toPublicFlag } from "./_lib/pipeline";
 import { setCorsHeaders, getClientIp, getInstallId, checkRateLimit, checkColdScanLimit, validateCA, initRateLimiters } from "./_lib/middleware";
-import { initQuota, checkDailyQuota, setQuotaHeaders, secondsUntilReset } from "./_lib/quota";
+import { unlimitedQuota, setQuotaHeaders } from "./_lib/quota";
 import { enforceProGate } from "./_lib/pro-gate";
 import { initUserStorage, pushScanHistory, resolveTierAndBypass } from "./_lib/user";
 import { initCache, getCachedResult, setCachedResult, setShortCachedResult, setLastGoodResult, getLastGoodResult, acquireScanLock, releaseScanLock, waitForCachedResult } from "./_lib/cache";
@@ -76,7 +76,6 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
   });
   initCache(redis);
   initRateLimiters(redis);
-  initQuota(redis);
   initUserStorage(redis);
   initRugDb(redis);
   initCondemned(redis);
@@ -145,35 +144,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const rateLimitOk = await checkRateLimit(res, ip, installId);
   if (!rateLimitOk) return;
 
-  // Daily quota gate — runs after CA validation (don't charge invalid CAs
-  // against the user's budget) but before the cache lookup (cache hits still
-  // count, otherwise users could spam the same token for free). install_id
-  // is the primary identity key; falling back to IP keeps anonymous traffic
-  // bounded and prevents quota-bypass via missing header.
+  // install_id is the primary identity key; falling back to IP keeps anonymous traffic bounded and prevents a bypass via a missing
+  // header. Session-gated tier resolution: the tier is what the overlay should display (a Free overlay locks the explanation of the
+  // verdict, even for a dev who picked Free in the Options dropdown to test it).
   const identityKey = installId ?? ip;
-  // Session-gated tier resolution + dev quota bypass in one pass:
-  //   - tier: what the overlay should display (Free overlay locks
-  //     features even when bypassQuota is true)
-  //   - bypassQuota: dev users (env-var or bound dev email) skip the
-  //     50/day Free counter so they can flip the Options dropdown to
-  //     Free and test the locked UX without burning quota
-  const { tier: effectiveTier, bypassQuota } = await resolveTierAndBypass(
+  const { tier: effectiveTier } = await resolveTierAndBypass(
     req,
     identityKey,
   );
   // The Pro/Free line is drawn here, on the server: from now on every scan this response sends is the Free view when the caller
   // is Free (verdict, score, the Sell/Mint/Freeze/LP line, public market data). See api/_lib/pro-gate.ts.
   enforceProGate(res, effectiveTier);
-  const quota = await checkDailyQuota(identityKey, effectiveTier, { bypassQuota });
-  setQuotaHeaders(res, quota);
-  if (!quota.allowed) {
-    res.setHeader("Retry-After", String(secondsUntilReset(quota)));
-    return apiError(
-      res,
-      429,
-      `Daily limit reached (${quota.limit} scans on Free tier). Resets at midnight UTC. Upgrade to Pro for unlimited scans.`,
-    );
-  }
+  // There is no scan quota (every tier is unlimited); the headers keep telling the extension the tier and "unlimited".
+  setQuotaHeaders(res, unlimitedQuota(effectiveTier));
 
   // ?fresh=1 bypasses the Redis cache so users can manually trigger a
   // fresh scan from the page — the front-end refresh button passes this
