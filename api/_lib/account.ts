@@ -18,7 +18,7 @@
 import { randomBytes, scryptSync, timingSafeEqual, createHmac } from "node:crypto";
 import { Redis } from "@upstash/redis";
 import { logger } from "./logger";
-import { emailRef } from "./log-ref";
+import { emailRef, maskLicenseKey } from "./log-ref";
 import { issueLicense, normalizeEmail, type License } from "./license";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -436,7 +436,7 @@ export async function ensureDevLifetimeLicense(
     });
     logger.info("auth", "dev-yearly ensured", {
       emailRef: emailRef(norm),
-      key: license.key,
+      key: maskLicenseKey(license.key),
       reference: intentReference,
     });
     return license;
@@ -517,7 +517,7 @@ export async function ensureDevProLicense(
     });
     logger.info("auth", "dev-pro ensured", {
       emailRef: emailRef(norm),
-      key: license.key,
+      key: maskLicenseKey(license.key),
       reference: intentReference,
     });
     return license;
