@@ -75,7 +75,12 @@ export function createHost() {
   state.host = document.createElement("div")
   state.host.id = "antares-host"
   document.documentElement.appendChild(state.host)
-  state.shadow = state.host.attachShadow({ mode: "open" })
+  // CLOSED: the overlay is drawn on top of pages we do not control (a trading site, whatever scripts it loads). With an open root any of
+  // those scripts could read host.shadowRoot and rewrite the verdict on screen ("SAFE" over a rug). A closed root hands it null: the
+  // reference to the root lives only in `state.shadow`. Consequence for the code in this extension: nothing may reach the overlay through
+  // host.shadowRoot, and an event heard OUTSIDE the root (on the host) no longer lists the elements inside it in composedPath() (drag.ts
+  // listens inside the root for that reason). __tests__/overlay-closed-shadow.test.ts keeps both true.
+  state.shadow = state.host.attachShadow({ mode: "closed" })
   const styleEl = document.createElement("style")
   styleEl.textContent = SHADOW_CSS
   state.shadow.appendChild(styleEl)

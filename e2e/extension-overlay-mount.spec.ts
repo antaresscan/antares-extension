@@ -153,19 +153,21 @@ test.describe("Extension — overlay mount smoke", () => {
     // documentElement. Its presence is the second checkpoint that
     // initialisation reached the visible-UI stage, not just the
     // import-time scrub of antares-inject.ts.
-    const hostExists = await page.evaluate(() => {
-      // The exact tag/id is private to components.ts but we know it
-      // sits as a direct child of <html> (not <body>) so DOM-tree
+    const mounted = await page.evaluate(() => {
+      // The host sits as a direct child of <html> (not <body>) so DOM-tree
       // mutations on the page can't strip it without the
-      // MutationObserver re-creating it.
-      const children = Array.from(document.documentElement.children);
-      return children.some(
-        (el) =>
-          (el as HTMLElement).id?.startsWith("ant-") ||
-          (el as HTMLElement).shadowRoot != null
-      );
+      // MutationObserver re-creating it. Its id is "antares-host"
+      // (components.ts). This runs in the PAGE's world, like any script of
+      // the page: it is what a hostile site could do.
+      const host = Array.from(document.documentElement.children).find(
+        (el) => (el as HTMLElement).id === "antares-host"
+      ) as HTMLElement | undefined;
+      return { exists: host !== undefined, rootVisibleToPage: host?.shadowRoot != null };
     });
 
-    expect(hostExists).toBe(true);
+    expect(mounted.exists).toBe(true);
+    // The root is CLOSED: a script of the page gets null from host.shadowRoot, so it can neither read nor rewrite the verdict drawn in it
+    // (A-22). This used to check the opposite (that shadowRoot was not null), which only held while the root was open.
+    expect(mounted.rootVisibleToPage).toBe(false);
   });
 });

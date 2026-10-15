@@ -63,12 +63,16 @@ export function initDrag() {
   // Clamp on window resize so widget never gets stuck off-screen
   window.addEventListener("resize", clampPosition)
 
-  state.host.addEventListener("pointerdown", (e: PointerEvent) => {
-    const target = e.composedPath()[0] as Element
+  // The press is heard INSIDE the shadow root, not on the host. The root is closed (components.ts), and for a listener outside a closed root
+  // the event path stops at the host: composedPath()[0] would be the host, never the header that was pressed, and no drag would ever start.
+  // Inside the root, e.target is the real element. The pointer is still captured on the host, so the moves and the release below (heard on the
+  // host) keep arriving when the pointer leaves the card.
+  state.shadow?.addEventListener("pointerdown", (ev: Event) => {
+    const e = ev as PointerEvent
+    const target = e.target as Element | null
     if (target?.closest?.(".x")) return
     if (!target?.closest?.(".hd")) return
-    const hdEl = (e.currentTarget as HTMLElement)
-    try { hdEl.setPointerCapture(e.pointerId) } catch (e2: unknown) { logger.warn(e2) }
+    try { state.host!.setPointerCapture(e.pointerId) } catch (e2: unknown) { logger.warn(e2) }
     state.activePointerId = e.pointerId
     const r = state.host!.getBoundingClientRect()
     state.dragOX = e.clientX - r.left
