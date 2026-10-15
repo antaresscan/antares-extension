@@ -69,6 +69,8 @@ nav .actions .nav-inert{
   pointer-events:none;user-select:none;
 }
 nav .actions .nav-inert.warn{color:#996060}
+/* A header button whose address could not be built from a valid id: dimmed, does nothing. */
+nav .actions .nav-inert.off{opacity:.45}
 
 /* ── Pro gate: what a Free visitor sees instead of the Full Analysis ── */
 .pro-gate{max-width:560px;margin:90px auto 0;padding:34px 30px;border:1px solid var(--risk-border);background:var(--card);text-align:center}
@@ -113,7 +115,9 @@ nav .actions .nav-inert.warn{color:#996060}
 @media(max-width:600px){.verdict-row{flex-direction:column;align-items:flex-start;gap:14px}}
 
 .tk-line{font-size:19px;color:#777;letter-spacing:.06em}
-.tk-line b{color:#ddd;font-weight:700;font-size:22px;letter-spacing:.09em}
+/* The symbol under the verdict: Bebas Neue has one weight, so "bold" was a smeared, synthesized one (2026-10-15: too thick). The marketing demo keeps its look (html.is-demo). */
+.tk-line b{color:#ddd;font-weight:400;font-size:22px;letter-spacing:.09em}
+html.is-demo .tk-line b{font-weight:700}
 
 .meta-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:2px}
 .age-badge{font-size:15px;color:#666;background:#0e0e10;border:1px solid var(--border);border-radius:2px;padding:4px 10px;letter-spacing:.08em}
@@ -121,6 +125,8 @@ nav .actions .nav-inert.warn{color:#996060}
 .soc:hover{color:var(--risk);border-color:var(--risk-border);background:var(--risk-soft)}
 /* Demo mode: the same chip, but a <span> that nothing can click (see socChip in js/token-app.js): no hover state either. */
 .soc.soc-inert{pointer-events:none;user-select:none;cursor:default}
+/* A chip with no valid address (no website, no Twitter listed): a dimmed <span> that does nothing, never a link at random. */
+.soc.soc-off{opacity:.35;pointer-events:none;user-select:none;cursor:default}
 
 /* Logo wrap : fallback letters under the <img>; if image fails, onerror
    removes it and the fallback shows through. CSP allows https: in img-src. */
@@ -486,6 +492,9 @@ nav .actions .nav-inert.warn{color:#996060}
    navigation, no wallet sub-link drill-through. cursor:default makes
    the inert state obvious; the wallet hover hint is suppressed too. */
 .iw-row-demo{cursor:default}
+/* A real row with no valid transaction signature or wallet address: the same layout, but a <div> that opens nothing. */
+.iw-row-off{cursor:default}
+.iw-row-off:hover{background:transparent !important}
 .iw-row-demo:hover{background:transparent !important}
 .iw-row-demo .iw-row-wallet{cursor:default}
 .iw-row-demo .iw-row-wallet:hover{color:var(--wc,#888);border-bottom-color:transparent}
@@ -826,6 +835,6 @@ footer span{color:var(--c)}
 
 </div>
 
-<script type="module" src="/js/token-app.js?v=20261011-rug-kind"></script>
+<script type="module" src="/js/token-app.js?v=20261015-links"></script>
 <script defer src="/js/token-bg.js?v=20260429a"></script>
 </body></html>

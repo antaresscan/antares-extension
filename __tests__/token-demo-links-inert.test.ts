@@ -69,7 +69,7 @@ describe("the demo's website and social chips are decoration", () => {
 });
 
 describe("a real token keeps its links", () => {
-  it("the website and the social chips are real links that open in a new tab, safely", async () => {
+  it("the website and the Twitter chips are real links that open in a new tab, safely (Telegram and the other socials are not shown any more: __tests__/token-links.test.ts)", async () => {
     const answer = {
       risk: "SAFE", score: 900, flags: [], tokenSymbol: "TKN", tokenName: "Token", resolvedMint: REAL_CA, tokenDecimals: 6,
       pair: { info: { websites: [{ url: "https://github.com/example", label: "Website" }], socials: [{ type: "twitter", url: "https://x.com/example" }, { type: "telegram", url: "https://t.me/example" }] } },
@@ -80,8 +80,8 @@ describe("a real token keeps its links", () => {
     await settle();
 
     const chips = [...document.querySelectorAll(".soc")];
-    expect(chips.map((c) => c.tagName)).toEqual(["A", "A", "A"]);
-    expect(chips.map((c) => c.getAttribute("href"))).toEqual(["https://github.com/example", "https://x.com/example", "https://t.me/example"]);
+    expect(chips.map((c) => c.tagName)).toEqual(["A", "A"]);
+    expect(chips.map((c) => c.getAttribute("href"))).toEqual(["https://github.com/example", "https://x.com/example"]);
     for (const chip of chips) {
       expect(chip.getAttribute("target")).toBe("_blank");
       expect(chip.getAttribute("rel")).toBe("noopener noreferrer");
