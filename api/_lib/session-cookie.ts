@@ -15,7 +15,7 @@
 // is permitted.
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Redis } from "@upstash/redis";
-import { signSession, verifySession, getAccount, type Account } from "./account";
+import { signSession, verifySession, getAccount, isCurrentSession, type Account } from "./account";
 
 export const SESSION_COOKIE_NAME = "antares_session";
 
@@ -67,8 +67,9 @@ export function setSessionCookie(
   res: VercelResponse,
   emailLc: string,
   attrs: CookieAttrs = {},
+  sessionVersion: number = 0,
 ): void {
-  const token = signSession(emailLc);
+  const token = signSession(emailLc, Date.now(), sessionVersion);
   res.setHeader("Set-Cookie", buildSessionCookie(token, attrs));
 }
 
@@ -128,5 +129,9 @@ export async function getAccountFromRequest(
   if (!token) return null;
   const payload = verifySession(token);
   if (!payload) return null;
-  return getAccount(redis, payload.sub);
+  const account = await getAccount(redis, payload.sub);
+  if (!account) return null;
+  // The token must carry the account's CURRENT session number (revokeAllSessions raises it): a stolen or forgotten session stops working at
+  // once. Same single Redis read as before: the number is a field of the account hash that getAccount already fetches.
+  return isCurrentSession(payload, account) ? account : null;
 }

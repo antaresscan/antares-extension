@@ -30,12 +30,19 @@ export interface Account {
   passwordHash: string;
   createdAt: number;
   emailVerified: boolean;
+  /**
+   * "Log out everywhere" (audit A-12): a session token only counts while it carries THIS number. revokeAllSessions raises it, and every
+   * token signed before stops working at once. An account that predates it has none stored, which reads as 0.
+   */
+  sessionVersion: number;
 }
 
 export interface SessionPayload {
   sub: string; // email_lc
   exp: number; // epoch-seconds
   iat: number;
+  /** The account's sessionVersion when the token was signed. A token signed before the number existed carries none: it reads as 0. */
+  sv?: number;
 }
 
 // ─── Redis keys ───────────────────────────────────────────────────────────────
@@ -203,12 +210,13 @@ export function _resetSessionSecretCacheForTests(): void {
 
 const SESSION_TTL_SECONDS = 30 * 24 * 60 * 60; // 30 days
 
-export function signSession(emailLc: string, now: number = Date.now()): string {
+export function signSession(emailLc: string, now: number = Date.now(), sessionVersion: number = 0): string {
   const header = base64UrlEncode(JSON.stringify({ alg: "HS256", typ: "JWT" }));
   const payload: SessionPayload = {
     sub: emailLc,
     iat: Math.floor(now / 1000),
     exp: Math.floor(now / 1000) + SESSION_TTL_SECONDS,
+    sv: sessionVersion,
   };
   const payloadB64 = base64UrlEncode(JSON.stringify(payload));
   const data = `${header}.${payloadB64}`;
@@ -242,7 +250,23 @@ export function verifySession(token: string, now: number = Date.now()): SessionP
   }
   if (typeof payload.sub !== "string" || typeof payload.exp !== "number") return null;
   if (payload.exp * 1000 < now) return null;
+  // The session number, when there is one, is a whole number from 0 up. Anything else is not a token we signed.
+  if (payload.sv !== undefined && !(Number.isInteger(payload.sv) && payload.sv >= 0)) return null;
   return payload;
+}
+
+/** A session number as read from Redis: a string ("2") or, when the client deserialises, a number (2). Absent or garbage = 0. */
+export function parseSessionVersion(raw: unknown): number {
+  const n = typeof raw === "number" ? raw : Number(raw);
+  return Number.isInteger(n) && n >= 0 ? n : 0;
+}
+
+/**
+ * Does this signed token still belong to the account's current sessions? A token signed before "log out everywhere" existed carries no
+ * number, which reads as 0: the number of every account until its first revocation, so nobody is logged out by the deployment of this check.
+ */
+export function isCurrentSession(payload: SessionPayload, account: Account): boolean {
+  return (payload.sv ?? 0) === account.sessionVersion;
 }
 
 // ─── Account CRUD ─────────────────────────────────────────────────────────────
@@ -279,6 +303,7 @@ export async function createAccount(
     passwordHash,
     createdAt: Date.now(),
     emailVerified: false,
+    sessionVersion: 0,
   };
 
   await redis.hset(ACCOUNT_KEY(email), {
@@ -307,7 +332,23 @@ export async function getAccount(
     passwordHash: raw.passwordHash,
     createdAt: Number(raw.createdAt) || 0,
     emailVerified: raw.emailVerified === "1",
+    sessionVersion: parseSessionVersion(raw.sessionVersion),
   };
+}
+
+/**
+ * Logs the account out of EVERY browser and install: raises its session number, so every token signed before (the 30-day cookie, the copy the
+ * extension keeps, a stolen one) is refused from the next request on. Returns the new number, or null when there is no such account
+ * (HINCRBY would otherwise create a hash holding only the counter).
+ */
+export async function revokeAllSessions(redis: Redis, email: string): Promise<number | null> {
+  const norm = normalizeEmail(email);
+  if (!norm) return null;
+  const key = ACCOUNT_KEY(norm);
+  if (!(await redis.hget(key, "email"))) return null;
+  const next = Number(await redis.hincrby(key, "sessionVersion", 1));
+  logger.info("account", "sessions revoked", { emailRef: emailRef(norm), sessionVersion: next });
+  return next;
 }
 
 export type AuthOutcome =

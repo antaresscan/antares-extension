@@ -7,6 +7,7 @@
 //   POST /api/auth/signup → action=signup
 //   POST /api/auth/login  → action=login
 //   POST /api/auth/logout → action=logout
+//   POST /api/auth/logout-all → action=logout-all (every session of the account, everywhere)
 //   GET  /api/auth/me     → action=me
 //
 // Each branch keeps its own method/body/contract guarantees so the
@@ -29,6 +30,7 @@ import {
   ensureDevLifetimeLicense,
   ensureDevProLicense,
   signSession,
+  revokeAllSessions,
   ACCOUNT_INSTALL_KEY,
 } from "../_lib/account";
 import {
@@ -100,7 +102,7 @@ async function handleSignup(req: VercelRequest, res: VercelResponse) {
       const status = outcome.reason === "already_exists" ? 409 : 400;
       return res.status(status).json({ ok: false, reason: outcome.reason });
     }
-    setSessionCookie(res, outcome.account.email);
+    setSessionCookie(res, outcome.account.email, {}, outcome.account.sessionVersion);
     // Auto-grant dev licences (no-op for non-allowlisted emails).
     // Both Pro and Lifetime are issued for emails on either list so
     // devs can switch between expiry-aware Pro testing and Lifetime
@@ -144,7 +146,7 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
         .status(401)
         .json({ ok: false, reason: "invalid_credentials" });
     }
-    setSessionCookie(res, outcome.account.email);
+    setSessionCookie(res, outcome.account.email, {}, outcome.account.sessionVersion);
     // Auto-grant dev licences (Pro + Lifetime). Idempotent — only
     // mints once per email-and-tier regardless of how many logins.
     await ensureDevLifetimeLicense(redis, outcome.account.email);
@@ -172,6 +174,46 @@ function handleLogout(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") return apiError(res, 405, "Method not allowed.");
   clearSessionCookie(res);
   return res.status(200).json({ ok: true });
+}
+
+// ── logout-all ──────────────────────────────────────────────────────────
+//
+// "Log me out everywhere" (audit A-12). A session is a signed token valid 30 days and the server keeps no list of them, so "log out" only
+// forgets the token in THIS browser: a copy that was stolen, or left on another machine, kept working until it expired. Here the account's
+// session number is raised (revokeAllSessions): every token signed before is refused from the next request on, in every browser and in the
+// extension. The caller must be signed in with a token that still counts; the cookie of this browser is cleared in the same answer (this
+// token is one of the revoked ones). Signing in again signs a token with the new number.
+async function handleLogoutAll(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== "POST") return apiError(res, 405, "Method not allowed.");
+
+  const redis = getRedis();
+  if (!redis) return apiError(res, 503, "Storage unavailable.");
+  initRateLimiters(redis);
+
+  const ip = getClientIp(req);
+  const allowed = await checkRateLimit(res, ip);
+  if (!allowed) return;
+
+  try {
+    const account = await getAccountFromRequest(req, redis);
+    if (!account) {
+      return res.status(401).json({ ok: false, reason: "not_authenticated" });
+    }
+    const next = await revokeAllSessions(redis, account.email);
+    if (next === null) {
+      return res.status(401).json({ ok: false, reason: "not_authenticated" });
+    }
+    clearSessionCookie(res);
+    logger.metric("auth.logout-all", { emailRef: emailRef(account.email), sessionVersion: next });
+    return res.status(200).json({ ok: true });
+  } catch (err) {
+    logger.error("auth/logout-all", "revocation failed", { error: String(err) });
+    if (String(err).includes("SESSION_SECRET")) {
+      return apiError(res, 503, "Auth not configured on this deployment.");
+    }
+    captureError(err, { endpoint: "auth/logout-all" });
+    return apiError(res, 500, "Could not log out everywhere.");
+  }
 }
 
 // ── sync-token ──────────────────────────────────────────────────────────
@@ -255,7 +297,7 @@ async function handleSyncToken(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    const token = signSession(account.email);
+    const token = signSession(account.email, Date.now(), account.sessionVersion);
     return res.json({ ok: true, token, email: account.email });
   } catch (err) {
     logger.error("auth/sync-token", "lookup failed", { error: String(err) });
@@ -532,6 +574,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return await handleLogin(req, res);
       case "logout":
         return await handleLogout(req, res);
+      case "logout-all":
+        return await handleLogoutAll(req, res);
       case "me":
         return await handleMe(req, res);
       case "sync-token":
@@ -542,7 +586,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return apiError(
           res,
           404,
-          "Unknown auth action. Use signup | login | logout | me | sync-token | nowpayments-ipn.",
+          "Unknown auth action. Use signup | login | logout | logout-all | me | sync-token | nowpayments-ipn.",
         );
     }
   } catch (err) {
