@@ -30,7 +30,7 @@ vi.mock("../api/_lib/fetchers", () => ({
   heliusResolveAccountOwners: (...a: unknown[]) => mockOwners(...a),
 }));
 vi.mock("../api/_lib/insider-graph", () => ({ buildInsiderGraph: (...a: unknown[]) => mockBuildGraph(...a), initGraphCache: vi.fn() }));
-vi.mock("../api/_lib/user", () => ({ initUserStorage: vi.fn(), resolveTierAndBypass: (...a: unknown[]) => mockTier(...a) }));
+vi.mock("../api/_lib/user", () => ({ initUserStorage: vi.fn(), resolveTier: (...a: unknown[]) => mockTier(...a) }));
 vi.mock("../api/_lib/graph-access", () => ({
   initGraphAccess: vi.fn(),
   graphAccessAvailable: () => mockAvailable(),
@@ -78,7 +78,7 @@ beforeEach(() => {
   mockBuildActivity.mockResolvedValue({ activity: [], wallets: [] });
   // A signed-in Pro user, well inside every limit: the default of every test below that is not about access.
   mockAvailable.mockReturnValue(true);
-  mockTier.mockResolvedValue({ tier: "pro", bypassQuota: false });
+  mockTier.mockResolvedValue({ tier: "pro" });
   mockUserKeyOf.mockResolvedValue("u:abc");
   mockUserLimit.mockResolvedValue({ ok: true });
   mockDayBudget.mockResolvedValue({ ok: true });
@@ -191,7 +191,7 @@ describe("access: Pro only, per user, per day (audit A-03)", () => {
   };
 
   it("402 for a Free caller, before any upstream call and before any budget is taken", async () => {
-    mockTier.mockResolvedValue({ tier: "free", bypassQuota: false });
+    mockTier.mockResolvedValue({ tier: "free" });
     const res = await run({ ca: MINT, activity: "1" });
     expect(res.code).toBe(402);
     expect((res.body as { details: { code: string } }).details.code).toBe("pro_required");
@@ -201,7 +201,7 @@ describe("access: Pro only, per user, per day (audit A-03)", () => {
   });
 
   it.each(["pro", "yearly", "lifetime"] as const)("a %s caller is answered", async (tier) => {
-    mockTier.mockResolvedValue({ tier, bypassQuota: false });
+    mockTier.mockResolvedValue({ tier });
     expect((await run()).code).toBe(200);
   });
 
@@ -266,9 +266,9 @@ describe("access: Pro only, per user, per day (audit A-03)", () => {
   });
 
   it("every answer, refusals included, is private and uncached", async () => {
-    mockTier.mockResolvedValue({ tier: "free", bypassQuota: false });
+    mockTier.mockResolvedValue({ tier: "free" });
     expect((await run()).headers["Cache-Control"]).toBe("private, no-store");
-    mockTier.mockResolvedValue({ tier: "pro", bypassQuota: false });
+    mockTier.mockResolvedValue({ tier: "pro" });
     mockDayBudget.mockResolvedValue({ ok: false, reason: "limited", retryAfterSec: 5 });
     expect((await run()).headers["Cache-Control"]).toBe("private, no-store");
   });

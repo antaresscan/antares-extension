@@ -11,7 +11,7 @@
 import { Redis } from "@upstash/redis";
 import { logger } from "./logger";
 import { emailRef } from "./log-ref";
-// Static imports for the auth + tier helpers we use inside resolveTierAndBypass.
+// Static imports for the auth + tier helpers we use inside resolveTier.
 // Previously these were `await import("./session-cookie")` and `await
 // import("./account")`. The dynamic-import path was added to dodge the
 // known circular dep (user → session-cookie → account → license → user)
@@ -174,26 +174,20 @@ export async function getEffectiveTier(
 
 export interface TierResolution {
   tier: Tier;
-  bypassQuota: boolean;
   /** Epoch ms when a time-limited tier (pro, yearly) lapses; null for free, lifetime and dev grants. /api/quota hands it to the Options page ("expires on ..."). */
   tierExpiresAt: number | null;
 }
 
 /**
- * Combined tier + dev-bypass resolution. One session lookup, two answers.
+ * The tier of the caller, and when a time-limited tier lapses. One session lookup, two answers.
  *
  * Returns:
  *   - `tier`: the same value `getEffectiveTierFromRequest` would return
- *   - `bypassQuota`: true if the caller is dev-allowlisted (env-var or
- *     bound dev email). It used to exempt devs from the Free tier's
- *     daily scan cap. That cap no longer exists (every tier is
- *     unlimited), so nothing reads this flag today; it stays in the
- *     entitlements table until that table is next edited.
+ *   - `tierExpiresAt`: epoch ms when a pro / yearly tier lapses, null otherwise
  *
- * For non-dev users this returns `{ tier, bypassQuota: false }` and
- * behaves identically to `getEffectiveTierFromRequest`.
+ * Which row of the table in entitlements.ts decided it is logged here (logTierDecision).
  */
-export async function resolveTierAndBypass(
+export async function resolveTier(
   req: { headers: { cookie?: string | string[]; "x-antares-dev-tier"?: string | string[] } },
   installId: string,
 ): Promise<TierResolution> {
@@ -248,7 +242,7 @@ export async function resolveTierAndBypass(
   let tierExpiresAt: number | null = null;
   if (decision.reason === "license") tierExpiresAt = licenseExpiresAt;
   else if (decision.reason === "install-stored" && (decision.tier === "pro" || decision.tier === "yearly")) tierExpiresAt = await readTierExpiry(installId);
-  return { tier: decision.tier, bypassQuota: decision.bypassQuota, tierExpiresAt };
+  return { tier: decision.tier, tierExpiresAt };
 }
 
 /** One metric per decision, with the names and fields the dashboards have always read. A dev install logs nothing. */
@@ -377,10 +371,10 @@ export async function getEffectiveTierFromRequest(
   req: { headers: { cookie?: string | string[]; "x-antares-dev-tier"?: string | string[] } },
   installId: string,
 ): Promise<Tier> {
-  // Thin wrapper around resolveTierAndBypass so callers that don't care
+  // Thin wrapper around resolveTier so callers that don't care
   // about the dev-bypass flag stay simple. Both functions share one
   // session+binding read internally.
-  const { tier } = await resolveTierAndBypass(req, installId);
+  const { tier } = await resolveTier(req, installId);
   return tier;
 }
 

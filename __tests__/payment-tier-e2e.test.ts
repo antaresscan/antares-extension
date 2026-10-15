@@ -11,7 +11,7 @@
 //      install tier flipped
 //   3. simulate a /api/scan call from the extension carrying a session
 //      JWT for the buyer's email
-//   4. confirm resolveTierAndBypass returns "pro"
+//   4. confirm resolveTier returns "pro"
 //   5. repeat the whole sequence with a Yearly intent → tier "yearly"
 //   6. expire the license → tier flips back to "free"
 //
@@ -97,7 +97,7 @@ vi.mock("../api/_lib/middleware", async () => {
 
 import dispatcher from "../api/auth/[action]";
 import {
-  resolveTierAndBypass,
+  resolveTier,
   initUserStorage,
   _resetUserStorageForTests,
 } from "../api/_lib/user";
@@ -169,7 +169,7 @@ function seedPendingIntent(
 }
 
 // ── Pre-seed an account record so getAccountFromRequest can find the
-// caller. resolveTierAndBypass calls getAccount(redis, email) under the
+// caller. resolveTier calls getAccount(redis, email) under the
 // hood, which reads account:<email> as a HASH; without this, even a
 // valid JWT resolves to a null account and the function returns Free.
 function seedAccount(email: string): void {
@@ -240,7 +240,7 @@ describe("End-to-end: NOWPayments IPN → license issued → /api/scan tier", ()
 
     // 3. Now simulate the extension scanning. Build a session JWT for
     //    the buyer's email + an X-Antares-Install header with their
-    //    install_id. resolveTierAndBypass should return "pro".
+    //    install_id. resolveTier should return "pro".
     const { signSession } = await import("../api/_lib/account");
     const token = signSession(TEST_EMAIL);
     const scanReq = {
@@ -249,12 +249,11 @@ describe("End-to-end: NOWPayments IPN → license issued → /api/scan tier", ()
         "x-antares-install": TEST_INSTALL,
       },
     };
-    const result = await resolveTierAndBypass(
-      scanReq as unknown as Parameters<typeof resolveTierAndBypass>[0],
+    const result = await resolveTier(
+      scanReq as unknown as Parameters<typeof resolveTier>[0],
       TEST_INSTALL,
     );
     expect(result.tier).toBe("pro");
-    expect(result.bypassQuota).toBe(false);
   });
 
   it("YEARLY purchase → /api/scan resolves tier=yearly", async () => {
@@ -279,13 +278,13 @@ describe("End-to-end: NOWPayments IPN → license issued → /api/scan tier", ()
 
     const { signSession } = await import("../api/_lib/account");
     const token = signSession(TEST_EMAIL);
-    const result = await resolveTierAndBypass(
+    const result = await resolveTier(
       {
         headers: {
           "x-antares-session": token,
           "x-antares-install": TEST_INSTALL,
         },
-      } as unknown as Parameters<typeof resolveTierAndBypass>[0],
+      } as unknown as Parameters<typeof resolveTier>[0],
       TEST_INSTALL,
     );
     expect(result.tier).toBe("yearly");
@@ -315,18 +314,18 @@ describe("End-to-end: NOWPayments IPN → license issued → /api/scan tier", ()
     // Device A — bound + tier set
     expect(store.get(`account:install:${INSTALL_A}`)).toBe(TEST_EMAIL);
 
-    // Device B — fresh install, no binding yet. resolveTierAndBypass
+    // Device B — fresh install, no binding yet. resolveTier
     // should still return "pro" because the session email's licenses
     // are the source of truth.
     const { signSession } = await import("../api/_lib/account");
     const token = signSession(TEST_EMAIL);
-    const result = await resolveTierAndBypass(
+    const result = await resolveTier(
       {
         headers: {
           "x-antares-session": token,
           "x-antares-install": INSTALL_B,
         },
-      } as unknown as Parameters<typeof resolveTierAndBypass>[0],
+      } as unknown as Parameters<typeof resolveTier>[0],
       INSTALL_B,
     );
     expect(result.tier).toBe("pro");
@@ -340,13 +339,13 @@ describe("End-to-end: NOWPayments IPN → license issued → /api/scan tier", ()
     seedAccount("attacker.b@example.com");
     const { signSession } = await import("../api/_lib/account");
     const token = signSession("attacker.b@example.com");
-    const result = await resolveTierAndBypass(
+    const result = await resolveTier(
       {
         headers: {
           "x-antares-session": token,
           "x-antares-install": TEST_INSTALL,
         },
-      } as unknown as Parameters<typeof resolveTierAndBypass>[0],
+      } as unknown as Parameters<typeof resolveTier>[0],
       TEST_INSTALL,
     );
     expect(result.tier).toBe("free");
@@ -367,8 +366,8 @@ describe("End-to-end: NOWPayments IPN → license issued → /api/scan tier", ()
     expect(store.get(`user:${TEST_INSTALL}:tier`)).toBe("pro");
 
     // Scan WITHOUT session token → free (logout = free, by design)
-    const result = await resolveTierAndBypass(
-      { headers: { "x-antares-install": TEST_INSTALL } } as unknown as Parameters<typeof resolveTierAndBypass>[0],
+    const result = await resolveTier(
+      { headers: { "x-antares-install": TEST_INSTALL } } as unknown as Parameters<typeof resolveTier>[0],
       TEST_INSTALL,
     );
     expect(result.tier).toBe("free");

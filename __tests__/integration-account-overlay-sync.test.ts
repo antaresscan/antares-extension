@@ -12,12 +12,12 @@
 //   3. POST /api/auth/sync-token with the cookie + X-Antares-Install
 //                                → server auto-binds install→email,
 //                                  returns JWT for the bridge
-//   4. resolveTierAndBypass(req, install) using the JWT in
+//   4. resolveTier(req, install) using the JWT in
 //      X-Antares-Session header → MUST return X (the user's actual tier)
 //
 // A single bug anywhere in that chain (cookie not set, sync-token not
 // auto-binding, header not honoured by readSessionToken,
-// resolveTierAndBypass not honouring binding, etc.) makes this test
+// resolveTier not honouring binding, etc.) makes this test
 // fail. So when it's green, the production flow is verified.
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
@@ -100,7 +100,7 @@ vi.mock("../api/_lib/middleware", async () => {
 
 import dispatcher from "../api/auth/[action]";
 import { Redis } from "@upstash/redis";
-import { initUserStorage, setUserTier, resolveTierAndBypass } from "../api/_lib/user";
+import { initUserStorage, setUserTier, resolveTier } from "../api/_lib/user";
 import { SESSION_COOKIE_NAME } from "../api/_lib/session-cookie";
 
 const ORIGIN = "https://antares-website.vercel.app";
@@ -213,7 +213,7 @@ describe("E2E: account ↔ overlay tier sync (the one the founder kept asking fo
         cookie: `${SESSION_COOKIE_NAME}=${sessionJwt}`,
       },
     });
-    const preBindTier = await resolveTierAndBypass(preBindRequest, VALID_INSTALL);
+    const preBindTier = await resolveTier(preBindRequest, VALID_INSTALL);
     expect(
       preBindTier.tier,
       "before sync-token auto-bind, signed-in user with no binding gets Free",
@@ -252,7 +252,7 @@ describe("E2E: account ↔ overlay tier sync (the one the founder kept asking fo
     ).toBe("alice@example.com");
 
     // ── 4. The extension's NEXT scan call uses the JWT as a header ──────
-    // resolveTierAndBypass should now return the user's actual tier.
+    // resolveTier should now return the user's actual tier.
     // This is what the overlay uses to render Pro/Yearly/Lifetime.
     const scanRequest = mockReq({
       method: "GET",
@@ -261,7 +261,7 @@ describe("E2E: account ↔ overlay tier sync (the one the founder kept asking fo
         "x-antares-session": syncTokenBody.token,
       },
     });
-    const result = await resolveTierAndBypass(scanRequest, VALID_INSTALL);
+    const result = await resolveTier(scanRequest, VALID_INSTALL);
 
     expect(
       result.tier,
@@ -279,7 +279,7 @@ describe("E2E: account ↔ overlay tier sync (the one the founder kept asking fo
       method: "GET",
       headers: { origin: ORIGIN },
     });
-    const result = await resolveTierAndBypass(scanRequest, VALID_INSTALL);
+    const result = await resolveTier(scanRequest, VALID_INSTALL);
 
     expect(
       result.tier,
@@ -334,7 +334,7 @@ describe("E2E: account ↔ overlay tier sync (the one the founder kept asking fo
         "x-antares-session": (syncTokenRes.json() as { token: string }).token,
       },
     });
-    const result = await resolveTierAndBypass(scanReq, VALID_INSTALL);
+    const result = await resolveTier(scanReq, VALID_INSTALL);
     expect(
       result.tier,
       "Eve must see Free on Bob's install — anti-hijack",
@@ -351,7 +351,7 @@ describe("E2E: account ↔ overlay tier sync (the one the founder kept asking fo
     // Cause: redeemLicense() in api/_lib/license.ts writes
     // user:<install>:tier but does NOT write account:install:<install>
     // = email. So even after a successful redeem the install→email
-    // binding is missing, and resolveTierAndBypass returns Free
+    // binding is missing, and resolveTier returns Free
     // because session email ≠ bound email (no bound email at all).
 
     // Sign up
@@ -395,7 +395,7 @@ describe("E2E: account ↔ overlay tier sync (the one the founder kept asking fo
         "x-antares-install": VALID_INSTALL,
       },
     });
-    const result = await resolveTierAndBypass(scanReq, VALID_INSTALL);
+    const result = await resolveTier(scanReq, VALID_INSTALL);
     expect(
       result.tier,
       "After redeem the overlay must show the user's tier — currently it returns Free because redeemLicense doesn't write account:install:<id>",
@@ -445,7 +445,7 @@ describe("E2E: account ↔ overlay tier sync (the one the founder kept asking fo
         "x-antares-install": VALID_INSTALL,
       },
     });
-    const result = await resolveTierAndBypass(scanReq, VALID_INSTALL);
+    const result = await resolveTier(scanReq, VALID_INSTALL);
     expect(result.tier).toBe("yearly");
   });
 });

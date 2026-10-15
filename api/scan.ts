@@ -38,7 +38,7 @@ import { toPublicFlag } from "./_lib/pipeline";
 import { setCorsHeaders, getClientIp, getInstallId, checkRateLimit, checkColdScanLimit, validateCA, initRateLimiters } from "./_lib/middleware";
 import { unlimitedQuota, setQuotaHeaders } from "./_lib/quota";
 import { enforceProGate } from "./_lib/pro-gate";
-import { initUserStorage, pushScanHistory, resolveTierAndBypass } from "./_lib/user";
+import { initUserStorage, pushScanHistory, resolveTier } from "./_lib/user";
 import { initCache, getCachedResult, setCachedResult, setShortCachedResult, setLastGoodResult, getLastGoodResult, acquireScanLock, releaseScanLock, waitForCachedResult } from "./_lib/cache";
 import { serveLastGood } from "./_lib/last-good";
 import { initSentry, captureError } from "./_lib/sentry";
@@ -148,7 +148,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // header. Session-gated tier resolution: the tier is what the overlay should display (a Free overlay locks the explanation of the
   // verdict, even for a dev who picked Free in the Options dropdown to test it).
   const identityKey = installId ?? ip;
-  const { tier: effectiveTier } = await resolveTierAndBypass(
+  const { tier: effectiveTier } = await resolveTier(
     req,
     identityKey,
   );

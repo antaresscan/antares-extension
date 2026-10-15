@@ -332,7 +332,7 @@ describe("GET /api/auth/me", () => {
 //   2. AUTO-BINDS the install_id to the user's email if the install
 //      isn't yet bound (this is the fix for the "I'm signed in but
 //      overlay shows Free" bug — without auto-bind the API has a valid
-//      session but no install→email mapping, so resolveTierAndBypass
+//      session but no install→email mapping, so resolveTier
 //      returns Free).
 //   3. Returns the JWT in the response body so the website can hand
 //      it to the extension via the bridge.
