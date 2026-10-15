@@ -142,7 +142,7 @@ api/
 
   payment-intent.ts          — POST /api/payment-intent         Create NOWPayments invoice
   payment-status.ts          — GET  /api/payment-status         Poll an in-flight payment
-  cron-check-payments.ts     — Cron sweep to reconcile pending intents
+  cron-check-payments.ts     — Cron sweep to reconcile pending intents (opened only by Authorization: Bearer CRON_SECRET)
   redeem.ts                  — POST /api/redeem                 Redeem a license key
   account-licenses.ts        — GET  /api/account-licenses       List a user's licenses
 
