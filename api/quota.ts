@@ -6,9 +6,9 @@
 //   Body out:    { tier, used, limit, remaining, resetAt, unlimited, tierExpiresAt }
 //                tierExpiresAt: epoch ms when a pro / yearly tier lapses, null otherwise (free, lifetime, dev grants).
 //
-// The extension overlay uses this to display "47/50 today" without spending
-// one of the user's scans on a UI refresh. The endpoint is rate-limited the
-// same as /api/scan but does NOT increment the daily counter.
+// There is no scan quota any more (every tier is unlimited), so this only tells the caller its
+// tier ("unlimited": true) and, for a pro / yearly tier, when it lapses. It is rate-limited the
+// same as /api/scan. The body keeps the shape the extension and the Options page read.
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Redis } from "@upstash/redis";
 import {
@@ -18,7 +18,7 @@ import {
   checkRateLimit,
   initRateLimiters,
 } from "./_lib/middleware";
-import { initQuota, peekDailyQuota, setQuotaHeaders } from "./_lib/quota";
+import { unlimitedQuota, setQuotaHeaders } from "./_lib/quota";
 import { initUserStorage, resolveTierAndBypass } from "./_lib/user";
 import { apiError } from "./_lib/helpers";
 import { logger } from "./_lib/logger";
@@ -29,7 +29,6 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
     token: process.env.UPSTASH_REDIS_REST_TOKEN,
   });
   initRateLimiters(redis);
-  initQuota(redis);
   initUserStorage(redis);
 }
 
@@ -47,19 +46,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const identityKey = installId ?? ip;
 
   try {
-    // Session-gated: logged-out users get Free quota (50/day) regardless
-    // of what tier their install has stored. Signing back in restores
-    // their paid tier without any data being mutated. Devs with the
-    // dropdown set to Free get an unlimited Free view (bypassQuota=true)
-    // so the overlay UI test never gets locked out.
-    const { tier: effectiveTier, bypassQuota, tierExpiresAt } = await resolveTierAndBypass(
+    // Session-gated: logged-out users are Free regardless of what tier their install has stored.
+    // Signing back in restores their paid tier without any data being mutated.
+    const { tier: effectiveTier, tierExpiresAt } = await resolveTierAndBypass(
       req,
       identityKey,
     );
-    const quota = await peekDailyQuota(identityKey, effectiveTier, { bypassQuota });
+    const quota = unlimitedQuota(effectiveTier);
     setQuotaHeaders(res, quota);
 
-    // No-cache: quota state changes per request, stale data is misleading.
+    // No-cache: the tier changes with the session, stale data is misleading.
     res.setHeader("Cache-Control", "no-store, max-age=0");
 
     return res.json({

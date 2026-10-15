@@ -37,12 +37,7 @@ import {
   initUserStorage,
   _resetUserStorageForTests,
 } from "../api/_lib/user";
-import {
-  checkDailyQuota,
-  peekDailyQuota,
-  initQuota,
-  _resetQuotaForTests,
-} from "../api/_lib/quota";
+import { unlimitedQuota } from "../api/_lib/quota";
 
 const DEV_INSTALL_A = "install-dev-a-aaaaaaa";
 const DEV_INSTALL_B = "install-dev-b-bbbbbbb";
@@ -52,13 +47,11 @@ beforeEach(() => {
   mocks.store.clear();
   const redis = new Redis({ url: "x", token: "y" });
   initUserStorage(redis);
-  initQuota(redis);
 });
 
 afterEach(() => {
   delete process.env.DEV_PRO_INSTALLS;
   _resetUserStorageForTests();
-  _resetQuotaForTests();
 });
 
 describe("isDevProInstall", () => {
@@ -117,33 +110,19 @@ describe("getUserTier with DEV_PRO_INSTALLS override", () => {
   });
 });
 
-describe("checkDailyQuota — unlimited for everyone post-2026-05", () => {
-  it("dev installs return unlimited Yearly", async () => {
+describe("what the quota headers say about dev and regular installs (unlimited for everyone)", () => {
+  it("a dev install is unlimited Yearly", async () => {
     process.env.DEV_PRO_INSTALLS = DEV_INSTALL_A;
-    const result = await checkDailyQuota(DEV_INSTALL_A);
+    const result = unlimitedQuota(await getUserTier(DEV_INSTALL_A));
     expect(result.tier).toBe("yearly");
-    expect(result.allowed).toBe(true);
     expect(result.limit).toBe(-1);
     expect(result.remaining).toBe(-1);
   });
 
-  it("regular Free installs are also unlimited (feature gating only)", async () => {
+  it("a regular Free install is unlimited too (the tier is only for gating the explanation)", async () => {
     process.env.DEV_PRO_INSTALLS = DEV_INSTALL_A;
-    // 200 scans — every one allowed under the new uncapped Free model.
-    for (let i = 0; i < 200; i++) {
-      const r = await checkDailyQuota(REGULAR_INSTALL);
-      expect(r.allowed).toBe(true);
-      expect(r.tier).toBe("free");
-      expect(r.limit).toBe(-1);
-    }
-  });
-});
-
-describe("peekDailyQuota matches checkDailyQuota for dev installs", () => {
-  it("returns unlimited for dev installs", async () => {
-    process.env.DEV_PRO_INSTALLS = DEV_INSTALL_A;
-    const result = await peekDailyQuota(DEV_INSTALL_A);
-    expect(result.tier).toBe("yearly");
+    const result = unlimitedQuota(await getUserTier(REGULAR_INSTALL));
+    expect(result.tier).toBe("free");
     expect(result.limit).toBe(-1);
   });
 });

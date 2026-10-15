@@ -180,7 +180,7 @@ api/
     account.ts               — Email/password account model (scrypt + JWT)
     session-cookie.ts        — Set/read session cookie + X-Antares-Session header
     user.ts                  — Per-install state (tier, quota counters)
-    quota.ts                 — Daily quota check (Pro/Lifetime unlimited)
+    quota.ts                 — X-Antares-Quota-* headers (every tier is unlimited; wire format kept for the published extension)
 
     license.ts               — License keys (ANT-XXXX-XXXX-XXXX-XXXX) + bind
     payments.ts              — Payment-intent persistence + indexes

@@ -92,17 +92,17 @@ describe("GET /api/quota", () => {
     await handler(req, res);
 
     expect(res.json).toHaveBeenCalledOnce();
-    const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock.calls[0][0] as {
-      tier: string;
-      limit: number;
-      remaining: number;
-      unlimited: boolean;
-    };
-    // Without Redis init in tests, falls back to permissive Free defaults
-    expect(payload).toMatchObject({ tier: "free" });
-    expect(typeof payload.limit).toBe("number");
-    expect(typeof payload.remaining).toBe("number");
-    expect(typeof payload.unlimited).toBe("boolean");
+    const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock.calls[0][0];
+    // The exact body the extension and the Options page read. There is no scan quota: unlimited, whatever the tier.
+    expect(payload).toEqual({
+      tier: "free",
+      used: 0,
+      limit: -1,
+      remaining: -1,
+      resetAt: 0,
+      unlimited: true,
+      tierExpiresAt: null,
+    });
   });
 
   it("sets quota response headers and disables caching", async () => {
@@ -115,11 +115,15 @@ describe("GET /api/quota", () => {
 
     const headers = (res.setHeader as unknown as { mock: { calls: [string, string][] } }).mock
       .calls;
-    const headerNames = headers.map(([name]) => name);
-    expect(headerNames).toContain("X-Antares-Quota-Tier");
-    expect(headerNames).toContain("X-Antares-Quota-Limit");
-    expect(headerNames).toContain("X-Antares-Quota-Remaining");
-    expect(headerNames).toContain("Cache-Control");
+    const sent = Object.fromEntries(headers);
+    expect(sent).toMatchObject({
+      "X-Antares-Quota-Tier": "free",
+      "X-Antares-Quota-Limit": "-1",
+      "X-Antares-Quota-Used": "0",
+      "X-Antares-Quota-Remaining": "-1",
+      "X-Antares-Quota-Reset": "0",
+    });
+    expect(Object.keys(sent)).toContain("Cache-Control");
   });
 
   it("falls back to IP when install header is missing", async () => {

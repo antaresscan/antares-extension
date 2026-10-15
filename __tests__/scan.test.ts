@@ -478,6 +478,22 @@ describe("scan handler", () => {
     expect(res.setHeader).toHaveBeenCalledWith("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
   });
 
+  it("stamps the quota headers the published extension reads (its tier, unlimited) and never refuses a scan for a quota", async () => {
+    setupGoodTokenMocks();
+    const req = createMockReq({ ca: "So11111111111111111111111111111111111111112" });
+    const res = createMockRes();
+    await handler(req, res);
+    expect((res as unknown as { getStatusCode: () => number }).getStatusCode()).toBe(200);
+    // The install of these tests is in DEV_PRO_INSTALLS (see the top of this file): its tier is Yearly.
+    expect((res as unknown as { getHeaders: () => Record<string, string> }).getHeaders()).toMatchObject({
+      "X-Antares-Quota-Tier": "yearly",
+      "X-Antares-Quota-Limit": "-1",
+      "X-Antares-Quota-Used": "0",
+      "X-Antares-Quota-Remaining": "-1",
+      "X-Antares-Quota-Reset": "0",
+    });
+  });
+
   it("handles fetch failures gracefully", async () => {
     mockFetch.mockRejectedValue(new Error("network error"));
     mockHeliusGetLargestAccounts.mockResolvedValue(null);
