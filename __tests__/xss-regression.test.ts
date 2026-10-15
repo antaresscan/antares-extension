@@ -394,13 +394,25 @@ describe("toggleCriticalFlags — DOM-API rendering", () => {
 
   it("renders descriptions for known flag labels", () => {
     const flags = [
-      { label: "Honeypot detected — cannot sell", severity: "critical", impact: 200 },
+      { label: "Mint Authority enabled", severity: "critical", impact: 200 },
     ]
     toggleCriticalFlags(flags)
     const panel = document.getElementById("ant-critical-flags")!
     const desc = panel.querySelector(".cf-flag-desc")
     expect(desc).not.toBeNull()
-    expect(desc!.textContent).toContain("cannot sell")
+    expect(desc!.textContent).toContain("unlimited new tokens")
+  })
+
+  it("a label the engine no longer emits (EVM-only GoPlus fields) still renders, just without a description", () => {
+    // Their texts left the table: GoPlus's Solana answers never carry honeypot / tax / owner share / blacklist / hidden owner / proxy.
+    const flags = [
+      { label: "Honeypot detected — cannot sell", severity: "critical", impact: 200 },
+      { label: "Sell tax > 10%", severity: "critical", impact: 100 },
+    ]
+    toggleCriticalFlags(flags)
+    const panel = document.getElementById("ant-critical-flags")!
+    expect(panel.querySelectorAll(".cf-flag")).toHaveLength(2)
+    expect(panel.querySelector(".cf-flag-desc")).toBeNull()
   })
 
   it("does not re-render on subsequent open/close cycles", () => {
