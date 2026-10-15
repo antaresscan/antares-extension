@@ -86,7 +86,7 @@ describe("the liquidity figure, in the CSS", () => {
     expect(r, "the .si b.liq rule").not.toBeNull()
     expect(r).toMatch(/font-family:\s*'Bebas Neue'/)
     expect(r).not.toMatch(/IBM Plex Mono/)
-    expect(r).toMatch(/font-size:\s*\d+px/)
+    expect(r).toMatch(/font-size:\s*11px/) // 12px was a touch too big next to the 9px labels (2026-10-15)
   })
 
   it("the other marks of the line keep their face: the dashes stay the same dash (IBM Plex Mono), the ticks and crosses are drawn shapes", () => {
