@@ -19,7 +19,7 @@ import {
   initRateLimiters,
 } from "./_lib/middleware";
 import { unlimitedQuota, setQuotaHeaders } from "./_lib/quota";
-import { initUserStorage, resolveTierAndBypass } from "./_lib/user";
+import { initUserStorage, resolveTier } from "./_lib/user";
 import { apiError } from "./_lib/helpers";
 import { logger } from "./_lib/logger";
 
@@ -48,7 +48,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     // Session-gated: logged-out users are Free regardless of what tier their install has stored.
     // Signing back in restores their paid tier without any data being mutated.
-    const { tier: effectiveTier, tierExpiresAt } = await resolveTierAndBypass(
+    const { tier: effectiveTier, tierExpiresAt } = await resolveTier(
       req,
       identityKey,
     );

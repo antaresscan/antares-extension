@@ -10,7 +10,7 @@ import {
   isDevAllowlistedInstall,
   getEffectiveTier,
   getEffectiveTierFromRequest,
-  resolveTierAndBypass,
+  resolveTier,
   HISTORY_HARD_CAP,
   HISTORY_DAY_WINDOW,
   _resetUserStorageForTests,
@@ -706,7 +706,7 @@ describe("getEffectiveTierFromRequest (session-gated)", () => {
 
 // ─── Dev quota bypass (free tier unlimited for the founder/QA) ────────────────
 
-describe("resolveTierAndBypass (dev quota bypass)", () => {
+describe("resolveTier (dev quota bypass)", () => {
   const ORIG_ENV = { ...process.env };
 
   beforeEach(() => {
@@ -724,7 +724,7 @@ describe("resolveTierAndBypass (dev quota bypass)", () => {
     const headers: Record<string, string | string[]> = {};
     if (token) headers.cookie = `${SESSION_COOKIE_NAME}=${token}`;
     if (devTier) headers["x-antares-dev-tier"] = devTier;
-    return { headers } as unknown as Parameters<typeof resolveTierAndBypass>[0];
+    return { headers } as unknown as Parameters<typeof resolveTier>[0];
   }
 
   function seedAccount(m: MockBundle, email: string) {
@@ -736,19 +736,18 @@ describe("resolveTierAndBypass (dev quota bypass)", () => {
     });
   }
 
-  it("bypassQuota=true for env-var dev installs (legacy headless path)", async () => {
+  it("an env-var dev install is Yearly (legacy headless path)", async () => {
     process.env.DEV_PRO_INSTALLS = "install-headless";
     const m = mockRedis({});
     initUserStorage(m.redis);
 
-    const result = await resolveTierAndBypass(reqWithCookie(null), "install-headless");
-    expect(result.bypassQuota).toBe(true);
+    const result = await resolveTier(reqWithCookie(null), "install-headless");
     // No header + env-var dev → getUserTier short-circuits to yearly (was
     // "lifetime" pre-2026-05; rename keeps the same dev-unlimited semantics)
     expect(result.tier).toBe("yearly");
   });
 
-  it("bypassQuota=true for signed-in dev-allowlisted email (Yearly grant)", async () => {
+  it("a signed-in dev-allowlisted email gets the Yearly grant", async () => {
     const m = mockRedis({
       "account:install:install-dev": "test-dev@example.com",
       // Stored tier is "yearly" (the new dev-grant tier post-2026-05).
@@ -758,12 +757,11 @@ describe("resolveTierAndBypass (dev quota bypass)", () => {
     seedAccount(m, "test-dev@example.com");
 
     const token = signSession("test-dev@example.com");
-    const result = await resolveTierAndBypass(reqWithCookie(token), "install-dev");
-    expect(result.bypassQuota).toBe(true);
+    const result = await resolveTier(reqWithCookie(token), "install-dev");
     expect(result.tier).toBe("yearly");
   });
 
-  it("dev forcing Free still bypasses quota (the use case from the user)", async () => {
+  it("a dev forcing Free from the Options dropdown is Free (so the overlay locks)", async () => {
     const m = mockRedis({
       "account:install:install-dev": "test-dev@example.com",
       "user:install-dev:tier": "lifetime",
@@ -772,14 +770,12 @@ describe("resolveTierAndBypass (dev quota bypass)", () => {
     seedAccount(m, "test-dev@example.com");
 
     const token = signSession("test-dev@example.com");
-    // Dev sets dropdown to Free → tier reports as Free (so overlay locks),
-    // but bypassQuota is still true (so no 429 hit on every scan).
-    const result = await resolveTierAndBypass(reqWithCookie(token, "free"), "install-dev");
+    // Dev sets dropdown to Free → tier reports as Free (so overlay locks).
+    const result = await resolveTier(reqWithCookie(token, "free"), "install-dev");
     expect(result.tier).toBe("free");
-    expect(result.bypassQuota).toBe(true);
   });
 
-  it("bypassQuota=false for signed-in non-dev users (paying customers)", async () => {
+  it("a signed-in non-dev user gets the tier they paid for", async () => {
     const m = mockRedis({
       "account:install:install-paid": "alice@example.com",
       "user:install-paid:tier": "lifetime",
@@ -788,20 +784,18 @@ describe("resolveTierAndBypass (dev quota bypass)", () => {
     seedAccount(m, "alice@example.com");
 
     const token = signSession("alice@example.com");
-    const result = await resolveTierAndBypass(reqWithCookie(token), "install-paid");
-    expect(result.bypassQuota).toBe(false);
+    const result = await resolveTier(reqWithCookie(token), "install-paid");
     expect(result.tier).toBe("lifetime");
   });
 
-  it("bypassQuota=false for signed-out users (Free with real quota)", async () => {
+  it("a signed-out user is Free, whatever tier the install has stored", async () => {
     const m = mockRedis({
       "account:install:install-paid": "alice@example.com",
       "user:install-paid:tier": "lifetime",
     });
     initUserStorage(m.redis);
 
-    const result = await resolveTierAndBypass(reqWithCookie(null), "install-paid");
-    expect(result.bypassQuota).toBe(false);
+    const result = await resolveTier(reqWithCookie(null), "install-paid");
     expect(result.tier).toBe("free");
   });
 });

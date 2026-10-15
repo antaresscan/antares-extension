@@ -36,7 +36,7 @@ import { buildInsiderActivity, initActivityCache } from "./_lib/insider-activity
 import type { HeliusHolder } from "./_lib/types";
 import { logger } from "./_lib/logger";
 import { initUsage, flushUsage } from "./_lib/usage";
-import { initUserStorage, resolveTierAndBypass } from "./_lib/user";
+import { initUserStorage, resolveTier } from "./_lib/user";
 import {
   initGraphAccess,
   graphAccessAvailable,
@@ -101,7 +101,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const identity = getInstallId(req) ?? ip;
   let userKey: string;
   try {
-    const { tier } = await resolveTierAndBypass(req, identity);
+    const { tier } = await resolveTier(req, identity);
     if (tier === "free") {
       logger.metric("graph.refused", { reason: "pro_required" });
       return apiError(res, 402, "Insider Watch is part of Antares Pro.", { code: "pro_required" });

@@ -72,7 +72,7 @@ vi.mock("@upstash/redis", () => {
 });
 
 import { Redis } from "@upstash/redis";
-import { initUserStorage, resolveTierAndBypass } from "../api/_lib/user";
+import { initUserStorage, resolveTier } from "../api/_lib/user";
 import { signSession } from "../api/_lib/account";
 import { issueLicense } from "../api/_lib/license";
 import { SESSION_COOKIE_NAME } from "../api/_lib/session-cookie";
@@ -170,7 +170,7 @@ describe("Integration: overlay tier follows the user's SIGNED-IN EMAIL", () => {
     expect(mocks.store.get(`account:install:${VALID_INSTALL}`)).toBeUndefined();
 
     const token = signSession("alice@example.com");
-    const result = await resolveTierAndBypass(reqWithCookie(token), VALID_INSTALL);
+    const result = await resolveTier(reqWithCookie(token), VALID_INSTALL);
 
     expect(
       result.tier,
@@ -181,14 +181,14 @@ describe("Integration: overlay tier follows the user's SIGNED-IN EMAIL", () => {
   it("signed in + email has active Yearly licence → returns Yearly", async () => {
     await seedEmailWithLicense("alice@example.com", "yearly");
     const token = signSession("alice@example.com");
-    const result = await resolveTierAndBypass(reqWithCookie(token), VALID_INSTALL);
+    const result = await resolveTier(reqWithCookie(token), VALID_INSTALL);
     expect(result.tier).toBe("yearly");
   });
 
   it("signed in + email has active Pro licence → returns Pro", async () => {
     await seedEmailWithLicense("alice@example.com", "pro");
     const token = signSession("alice@example.com");
-    const result = await resolveTierAndBypass(reqWithCookie(token), VALID_INSTALL);
+    const result = await resolveTier(reqWithCookie(token), VALID_INSTALL);
     expect(result.tier).toBe("pro");
   });
 
@@ -202,7 +202,7 @@ describe("Integration: overlay tier follows the user's SIGNED-IN EMAIL", () => {
     });
 
     const token = signSession("alice@example.com");
-    const result = await resolveTierAndBypass(reqWithCookie(token), VALID_INSTALL);
+    const result = await resolveTier(reqWithCookie(token), VALID_INSTALL);
     expect(result.tier).toBe("free");
   });
 
@@ -210,7 +210,7 @@ describe("Integration: overlay tier follows the user's SIGNED-IN EMAIL", () => {
     // Bob paid + linked previously, install_id has lifetime stored.
     mocks.store.set(`user:${VALID_INSTALL}:tier`, "lifetime");
 
-    const result = await resolveTierAndBypass(reqWithCookie(null), VALID_INSTALL);
+    const result = await resolveTier(reqWithCookie(null), VALID_INSTALL);
     expect(result.tier).toBe("free");
   });
 
@@ -225,7 +225,7 @@ describe("Integration: overlay tier follows the user's SIGNED-IN EMAIL", () => {
     mocks.store.set(`account:install:${OTHER_INSTALL}`, "bob@example.com");
 
     const token = signSession("alice@example.com");
-    const result = await resolveTierAndBypass(reqWithCookie(token), OTHER_INSTALL);
+    const result = await resolveTier(reqWithCookie(token), OTHER_INSTALL);
     expect(
       result.tier,
       "Alice has her own Pro license — must see Pro, not Free, even when install was bound to Bob first",
@@ -240,7 +240,7 @@ describe("Integration: overlay tier follows the user's SIGNED-IN EMAIL", () => {
     mocks.store.set(`account:install:${OTHER_INSTALL}`, "bob@example.com");
 
     const token = signSession("eve@example.com"); // no license seeded
-    const result = await resolveTierAndBypass(reqWithCookie(token), OTHER_INSTALL);
+    const result = await resolveTier(reqWithCookie(token), OTHER_INSTALL);
     expect(
       result.tier,
       "Eve (no license) on Bob's install must stay Free — anti-hijack",
@@ -252,7 +252,7 @@ describe("Integration: overlay tier follows the user's SIGNED-IN EMAIL", () => {
     await seedEmailWithLicense("alice@example.com", "lifetime");
 
     const token = signSession("alice@example.com");
-    const result = await resolveTierAndBypass(reqWithCookie(token), VALID_INSTALL);
+    const result = await resolveTier(reqWithCookie(token), VALID_INSTALL);
     expect(result.tier).toBe("lifetime");
   });
 
@@ -274,7 +274,7 @@ describe("Integration: overlay tier follows the user's SIGNED-IN EMAIL", () => {
     });
 
     const token = signSession("alice@example.com");
-    const result = await resolveTierAndBypass(reqWithCookie(token), VALID_INSTALL);
+    const result = await resolveTier(reqWithCookie(token), VALID_INSTALL);
     expect(result.tier).toBe("free");
   });
 
@@ -286,7 +286,7 @@ describe("Integration: overlay tier follows the user's SIGNED-IN EMAIL", () => {
     await seedEmailWithLicense("test-dev@example.com", "yearly");
 
     const token = signSession("test-dev@example.com");
-    const result = await resolveTierAndBypass(
+    const result = await resolveTier(
       reqWithCookie(token),
       VALID_INSTALL,
     );
@@ -295,8 +295,6 @@ describe("Integration: overlay tier follows the user's SIGNED-IN EMAIL", () => {
       result.tier,
       "Founder signs in → email has Yearly licence → overlay returns Yearly. No clicks, no redeem, no binding required.",
     ).toBe("yearly");
-    // Founder is dev-allowlisted → bypassQuota fires
-    expect(result.bypassQuota).toBe(true);
   });
 
   // Audit A-20: the Options page reads tierExpiresAt from /api/quota, which never sent it.
@@ -305,7 +303,7 @@ describe("Integration: overlay tier follows the user's SIGNED-IN EMAIL", () => {
 
     it("an active Pro pass lapses 30 days after it was issued", async () => {
       await seedEmailWithLicense("alice@example.com", "pro");
-      const result = await resolveTierAndBypass(reqWithCookie(signSession("alice@example.com")), VALID_INSTALL);
+      const result = await resolveTier(reqWithCookie(signSession("alice@example.com")), VALID_INSTALL);
       expect(result.tier).toBe("pro");
       expect(result.tierExpiresAt).toBeGreaterThan(Date.now() + 30 * DAY - 60_000);
       expect(result.tierExpiresAt).toBeLessThan(Date.now() + 30 * DAY + 60_000);
@@ -313,7 +311,7 @@ describe("Integration: overlay tier follows the user's SIGNED-IN EMAIL", () => {
 
     it("an active Yearly lapses 365 days after it was issued", async () => {
       await seedEmailWithLicense("alice@example.com", "yearly");
-      const result = await resolveTierAndBypass(reqWithCookie(signSession("alice@example.com")), VALID_INSTALL);
+      const result = await resolveTier(reqWithCookie(signSession("alice@example.com")), VALID_INSTALL);
       expect(result.tier).toBe("yearly");
       expect(result.tierExpiresAt).toBeGreaterThan(Date.now() + 365 * DAY - 60_000);
       expect(result.tierExpiresAt).toBeLessThan(Date.now() + 365 * DAY + 60_000);
@@ -321,7 +319,7 @@ describe("Integration: overlay tier follows the user's SIGNED-IN EMAIL", () => {
 
     it("Lifetime has no expiry", async () => {
       await seedEmailWithLicense("alice@example.com", "lifetime");
-      const result = await resolveTierAndBypass(reqWithCookie(signSession("alice@example.com")), VALID_INSTALL);
+      const result = await resolveTier(reqWithCookie(signSession("alice@example.com")), VALID_INSTALL);
       expect(result.tier).toBe("lifetime");
       expect(result.tierExpiresAt).toBeNull();
     });
@@ -332,7 +330,7 @@ describe("Integration: overlay tier follows the user's SIGNED-IN EMAIL", () => {
       const older = await issueLicense(redis, { email: "alice@example.com", tier: "monthly", intentReference: "ref-older", amountUsd: 0, now: Date.now() - 10 * DAY });
       const newer = await issueLicense(redis, { email: "alice@example.com", tier: "monthly", intentReference: "ref-newer", amountUsd: 0, now: Date.now() });
       expect(older.expiresAt).toBeLessThan(newer.expiresAt!);
-      const result = await resolveTierAndBypass(reqWithCookie(signSession("alice@example.com")), VALID_INSTALL);
+      const result = await resolveTier(reqWithCookie(signSession("alice@example.com")), VALID_INSTALL);
       expect(result.tierExpiresAt).toBe(newer.expiresAt);
     });
 
@@ -340,7 +338,7 @@ describe("Integration: overlay tier follows the user's SIGNED-IN EMAIL", () => {
       const redis = new Redis({ url: "x", token: "y" });
       mocks.store.set("account:alice@example.com", { email: "alice@example.com", status: "active", emailVerified: "0", createdAt: String(Date.now()) });
       await issueLicense(redis, { email: "alice@example.com", tier: "monthly", intentReference: "ref-old", amountUsd: 0, now: Date.now() - 40 * DAY });
-      const result = await resolveTierAndBypass(reqWithCookie(signSession("alice@example.com")), VALID_INSTALL);
+      const result = await resolveTier(reqWithCookie(signSession("alice@example.com")), VALID_INSTALL);
       expect(result.tier).toBe("free");
       expect(result.tierExpiresAt ?? null).toBeNull();
     });
@@ -351,13 +349,13 @@ describe("Integration: overlay tier follows the user's SIGNED-IN EMAIL", () => {
       mocks.store.set(`account:install:${VALID_INSTALL}`, "alice@example.com");
       mocks.store.set(`user:${VALID_INSTALL}:tier`, "pro");
       mocks.store.set(`user:${VALID_INSTALL}:tierExpires`, endsAt);
-      const result = await resolveTierAndBypass(reqWithCookie(signSession("alice@example.com")), VALID_INSTALL);
+      const result = await resolveTier(reqWithCookie(signSession("alice@example.com")), VALID_INSTALL);
       expect(result.tier).toBe("pro");
       expect(result.tierExpiresAt).toBe(endsAt);
     });
 
     it("signed out: Free, no expiry", async () => {
-      const result = await resolveTierAndBypass(reqWithCookie(null), VALID_INSTALL);
+      const result = await resolveTier(reqWithCookie(null), VALID_INSTALL);
       expect(result.tier).toBe("free");
       expect(result.tierExpiresAt ?? null).toBeNull();
     });

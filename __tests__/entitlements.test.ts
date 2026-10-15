@@ -30,7 +30,7 @@ function facts(over: Options = {}) {
 describe("row 1: a dev install", () => {
   it("is Yearly with no header, and bypasses the quota", async () => {
     const { f } = facts({ devInstall: true });
-    expect(await decideTier(f)).toEqual({ tier: "yearly", bypassQuota: true, reason: "dev-install" });
+    expect(await decideTier(f)).toEqual({ tier: "yearly", reason: "dev-install" });
   });
 
   it("is the tier the header names", async () => {
@@ -51,19 +51,19 @@ describe("row 1: a dev install", () => {
 describe("rows 2 to 4: nothing proves who the caller is", () => {
   it("2. without storage the caller is Free, and nothing is read", async () => {
     const { f, calls } = facts({ storageAvailable: false, license: "lifetime" });
-    expect(await decideTier(f)).toEqual({ tier: "free", bypassQuota: false, reason: "no-storage" });
+    expect(await decideTier(f)).toEqual({ tier: "free", reason: "no-storage" });
     expect(calls.session).not.toHaveBeenCalled();
   });
 
   it("3. a session that cannot be read is Free, with the error kept for the logs", async () => {
     const { f, calls } = facts({ session: { kind: "error", name: "TypeError", message: "boom" }, license: "lifetime" });
-    expect(await decideTier(f)).toEqual({ tier: "free", bypassQuota: false, reason: "session-error", error: { name: "TypeError", message: "boom" } });
+    expect(await decideTier(f)).toEqual({ tier: "free", reason: "session-error", error: { name: "TypeError", message: "boom" } });
     expect(calls.licenseTier).not.toHaveBeenCalled();
   });
 
   it("4. no session is Free, even for a paying customer: logging out means Free", async () => {
     const { f, calls } = facts({ session: { kind: "none" }, license: "lifetime", stored: "lifetime", bound: EMAIL });
-    expect(await decideTier(f)).toEqual({ tier: "free", bypassQuota: false, reason: "no-session" });
+    expect(await decideTier(f)).toEqual({ tier: "free", reason: "no-session" });
     expect(calls.boundEmail).not.toHaveBeenCalled();
     expect(calls.licenseTier).not.toHaveBeenCalled();
     expect(calls.installTier).not.toHaveBeenCalled();
@@ -74,7 +74,7 @@ describe("row 5: a dev e-mail can test with the tier it names", () => {
   it("takes the tier of the header, bypasses the quota, and does not look for a licence", async () => {
     const { f, calls } = facts({ isDevEmail: (e) => e === EMAIL, devTier: "free", license: "lifetime" });
     const d = await decideTier(f);
-    expect(d).toMatchObject({ tier: "free", bypassQuota: true, reason: "dev-header", sessionEmail: EMAIL });
+    expect(d).toMatchObject({ tier: "free", reason: "dev-header", sessionEmail: EMAIL });
     expect(calls.licenseTier).not.toHaveBeenCalled();
   });
 
@@ -85,21 +85,21 @@ describe("row 5: a dev e-mail can test with the tier it names", () => {
 
   it("witness: a dev e-mail with no header (or a header naming no tier) falls through to its licence", async () => {
     const { f } = facts({ isDevEmail: () => true, devTier: null, license: "yearly" });
-    expect(await decideTier(f)).toMatchObject({ tier: "yearly", bypassQuota: true, reason: "license" });
+    expect(await decideTier(f)).toMatchObject({ tier: "yearly", reason: "license" });
   });
 });
 
 describe("row 6: a licence owned by the e-mail", () => {
   it.each(["pro", "yearly", "lifetime"] as Tier[])("gives %s, and the stored tier of the install is not read", async (t) => {
     const { f, calls } = facts({ license: t });
-    expect(await decideTier(f)).toMatchObject({ tier: t, bypassQuota: false, reason: "license" });
+    expect(await decideTier(f)).toMatchObject({ tier: t, reason: "license" });
     expect(calls.installTier).not.toHaveBeenCalled();
     expect(calls.licenseTier).toHaveBeenCalledWith(EMAIL);
   });
 
-  it("bypasses the quota only for a dev e-mail", async () => {
+  it("marks a dev e-mail as dev (it only changes what is logged, never the tier)", async () => {
     const { f } = facts({ license: "pro", isDevEmail: () => true });
-    expect((await decideTier(f)).bypassQuota).toBe(true);
+    expect(await decideTier(f)).toMatchObject({ tier: "pro", isDev: true });
   });
 
   it("beats a binding to another e-mail: what you paid with your own e-mail follows you to any install", async () => {
@@ -111,7 +111,7 @@ describe("row 6: a licence owned by the e-mail", () => {
 describe("rows 7 and 8: the install", () => {
   it("7. an install bound to ANOTHER e-mail is Free: nobody inherits what someone else paid on it", async () => {
     const { f, calls } = facts({ bound: OTHER, stored: "lifetime" });
-    expect(await decideTier(f)).toMatchObject({ tier: "free", bypassQuota: false, reason: "install-bound-elsewhere", boundEmail: OTHER });
+    expect(await decideTier(f)).toMatchObject({ tier: "free", reason: "install-bound-elsewhere", boundEmail: OTHER });
     expect(calls.installTier).not.toHaveBeenCalled();
   });
 
@@ -120,16 +120,16 @@ describe("rows 7 and 8: the install", () => {
     expect(await decideTier(f)).toMatchObject({ tier: t, reason: "install-stored" });
   });
 
-  it("8. bypasses the quota for a dev e-mail", async () => {
+  it("8. marks a dev e-mail as dev (it only changes what is logged, never the tier)", async () => {
     const { f } = facts({ bound: EMAIL, stored: "free", isDevEmail: () => true });
-    expect((await decideTier(f)).bypassQuota).toBe(true);
+    expect(await decideTier(f)).toMatchObject({ tier: "free", isDev: true });
   });
 });
 
 describe("row 9: a session, no licence, no binding", () => {
   it("is Free", async () => {
     const { f, calls } = facts();
-    expect(await decideTier(f)).toMatchObject({ tier: "free", bypassQuota: false, reason: "no-license-no-binding" });
+    expect(await decideTier(f)).toMatchObject({ tier: "free", reason: "no-license-no-binding" });
     expect(calls.installTier).not.toHaveBeenCalled();
   });
 });

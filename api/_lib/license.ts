@@ -450,7 +450,7 @@ async function applyTier(
   await setUserTier(installId, userTier, license.expiresAt);
 
   // Bind the install to the buyer's email so the API's session-gated
-  // tier resolution (`resolveTierAndBypass` in api/_lib/user.ts) can
+  // tier resolution (`resolveTier` in api/_lib/user.ts) can
   // map "the user signed in as X" → "X owns this install" → "return
   // the tier stored on this install". Without this write the user
   // sees Free in the overlay even after a successful redeem because

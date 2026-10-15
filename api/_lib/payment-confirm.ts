@@ -114,7 +114,7 @@ export async function confirmIntent(
     //     extension bridge) with their email
     //   - setUserTier writes user:<install>:tier = pro
     //   - But account:install:<install> stays unset
-    //   - Next scan: resolveTierAndBypass sees no session AND no
+    //   - Next scan: resolveTier sees no session AND no
     //     binding → returns Free → extension shows locked overlay
     //     even though the user just paid 10 seconds ago
     //
