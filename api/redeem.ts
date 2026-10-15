@@ -22,6 +22,7 @@ import {
 } from "./_lib/middleware";
 import { apiError } from "./_lib/helpers";
 import { logger } from "./_lib/logger";
+import { maskLicenseKey } from "./_lib/log-ref";
 import { initUserStorage } from "./_lib/user";
 import { redeemLicense, isValidLicenseKey } from "./_lib/license";
 import { initSentry, captureError } from "./_lib/sentry";
@@ -114,7 +115,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     logger.metric("redeem.success", {
-      licenseKey,
+      licenseKey: maskLicenseKey(licenseKey),
       installId,
       tier: outcome.license.tier,
     });
@@ -127,7 +128,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   } catch (err) {
     logger.error("redeem", "redemption failed", { error: String(err) });
-    captureError(err, { endpoint: "redeem", licenseKey, installId });
+    captureError(err, { endpoint: "redeem", licenseKey: maskLicenseKey(licenseKey), installId });
     return apiError(res, 500, "Could not redeem license.");
   }
 }

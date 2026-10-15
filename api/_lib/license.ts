@@ -34,7 +34,7 @@ import { Redis } from "@upstash/redis";
 import { setUserTier, type Tier as UserTier } from "./user";
 import { PRO_PASS_DAYS, type Tier as IntentTier } from "./payments";
 import { logger } from "./logger";
-import { emailRef } from "./log-ref";
+import { emailRef, maskLicenseKey } from "./log-ref";
 
 // The keys live in keys.ts, which imports nothing: no copy to keep in sync, and no circular dependency with account.ts.
 import {
@@ -166,7 +166,7 @@ async function readIssuedLicense(redis: Redis, intentReference: string): Promise
   // Index points at a non-existent license — Redis got out of sync. The caller issues a fresh key.
   logger.warn("license", "intent index points at missing license", {
     intent: intentReference,
-    key: existingKey,
+    key: maskLicenseKey(existingKey),
   });
   return null;
 }
@@ -276,7 +276,7 @@ async function writeLicense(
     .exec();
 
   logger.info("license", "issued", {
-    key: license.key,
+    key: maskLicenseKey(license.key),
     emailRef: emailRef(email),
     tier,
     intent: params.intentReference,
@@ -425,7 +425,7 @@ export async function redeemLicense(
   await applyTier(redis, installId, updated);
 
   logger.info("license", "redeemed", {
-    key: existing.key,
+    key: maskLicenseKey(existing.key),
     install: installId,
     tier: existing.tier,
   });

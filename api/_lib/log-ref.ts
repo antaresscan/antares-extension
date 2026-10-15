@@ -33,6 +33,25 @@ export function emailRef(email: unknown): string | null {
   return createHmac("sha256", key).update(normalised).digest("hex").slice(0, REF_LENGTH);
 }
 
+/**
+ * A licence key as a log line may show it: its first 8 characters and an ellipsis ("ANT-7K2M..."). Enough to tell two keys apart in the
+ * logs, nowhere near enough to use one: a key is 16 characters of 5 bits (80 bits), and this shows 4 of them. A key is a credential: anyone
+ * who holds it can redeem it on an install of their own (api/redeem.ts). null for anything that is not a non-empty string.
+ */
+export function maskLicenseKey(key: unknown): string | null {
+  if (typeof key !== "string") return null;
+  const trimmed = key.trim();
+  return trimmed ? `${trimmed.slice(0, 8)}\u2026` : null;
+}
+
+/** A whole licence key inside a piece of text (the shape generateLicenseKey makes: ANT- and four groups of four). */
+export const LICENSE_KEY_IN_TEXT = /\bANT-[0-9A-HJ-NP-TV-Z]{4}-[0-9A-HJ-NP-TV-Z]{4}-[0-9A-HJ-NP-TV-Z]{4}-[0-9A-HJ-NP-TV-Z]{4}\b/g;
+
+/** The same text with every whole licence key in it cut to its first 8 characters: the safety net of the logger. */
+export function redactLicenseKeys(text: string): string {
+  return text.replace(LICENSE_KEY_IN_TEXT, (key) => maskLicenseKey(key) ?? "");
+}
+
 /** Anything that looks like an e-mail address inside a piece of text. */
 export const EMAIL_IN_TEXT = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+/g;
 

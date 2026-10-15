@@ -2,11 +2,12 @@
 //
 // No log line holds an e-mail address (GDPR: an address is personal data, and the logs are kept by Vercel and read by whoever debugs).
 // A line says "the same account as a minute ago" with a reference (api/_lib/log-ref.ts); and the logger itself rewrites any address that
-// slips through into "[email]". The last test reads the source of api/ and fails if a log call writes an address again.
+// slips through into "[email]". The same goes for a licence key, which is a credential (whoever holds one can redeem it on an install of their
+// own): a log line shows its first 8 characters. The last tests read the source of api/ and fail if a log call writes an address or a key again.
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { emailRef, redactEmails } from "../api/_lib/log-ref";
+import { emailRef, maskLicenseKey, redactEmails, redactLicenseKeys } from "../api/_lib/log-ref";
 import { logger } from "../api/_lib/logger";
 
 const SECRET = "s".repeat(40);
@@ -100,6 +101,52 @@ describe("redactEmails and the logger", () => {
   });
 });
 
+describe("licence keys", () => {
+  const KEY = "ANT-7K2M-QX9P-4DHT-WV3R";
+
+  it("maskLicenseKey keeps the first 8 characters and an ellipsis, nothing more", () => {
+    expect(maskLicenseKey(KEY)).toBe("ANT-7K2M\u2026");
+    expect(maskLicenseKey(`  ${KEY} `)).toBe("ANT-7K2M\u2026");
+    expect(maskLicenseKey(KEY)).not.toContain("QX9P");
+  });
+
+  it("an absent key stays absent: null for what is not a non-empty string", () => {
+    for (const v of [null, undefined, "", "   ", 42, {}, []]) expect(maskLicenseKey(v)).toBeNull();
+  });
+
+  it("redactLicenseKeys cuts every whole key in a text, and leaves the rest alone", () => {
+    expect(redactLicenseKeys(`a ${KEY} then ANT-AAAA-BBBB-CCCC-DDDD.`)).toBe("a ANT-7K2M\u2026 then ANT-AAAA\u2026.");
+    expect(redactLicenseKeys("no key here, a mint 9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump, ANT-1234 is too short")).toBe(
+      "no key here, a mint 9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump, ANT-1234 is too short",
+    );
+  });
+
+  it("the logger never writes a whole key, in a message, in a field, in an error, in a metric, and the line stays valid JSON", () => {
+    const out: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((s: string) => { out.push(String(s)); });
+    vi.spyOn(console, "warn").mockImplementation((s: string) => { out.push(String(s)); });
+    vi.spyOn(console, "error").mockImplementation((s: string) => { out.push(String(s)); });
+
+    logger.metric("redeem.success", { licenseKey: KEY });
+    logger.warn("x", `no licence ${KEY}`, { nested: { deep: KEY } });
+    logger.error("x", "boom", { error: String(new Error(`bad key ${KEY}`)) });
+
+    expect(out).toHaveLength(3);
+    for (const line of out) {
+      expect(line).not.toContain("QX9P");
+      expect(line).toContain("ANT-7K2M\u2026");
+      expect(() => JSON.parse(line)).not.toThrow();
+    }
+  });
+
+  it("the logger still cuts an address and a key in the same line", () => {
+    const out: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((s: string) => { out.push(String(s)); });
+    logger.metric("e", { who: "victim@example.com", licenseKey: KEY });
+    expect(JSON.parse(out[0])).toMatchObject({ who: "[email]", licenseKey: "ANT-7K2M\u2026" });
+  });
+});
+
 // ── The guard: the source of api/ writes no address in a log call.
 function sources(dir: string, out: string[] = []): string[] {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
@@ -110,14 +157,14 @@ function sources(dir: string, out: string[] = []): string[] {
   return out;
 }
 
-/** Removes the calls to emailRef( ... ), parentheses balanced, so what is left is what a log call writes by itself. */
-function withoutEmailRefCalls(call: string): string {
+/** Removes the calls to `name`( ... ), parentheses balanced, so what is left is what a log call writes by itself. */
+function withoutCallsTo(name: string, call: string): string {
   let s = call;
   for (;;) {
-    const i = s.indexOf("emailRef(");
+    const i = s.indexOf(`${name}(`);
     if (i === -1) return s;
     let depth = 0;
-    let j = i + "emailRef".length;
+    let j = i + name.length;
     for (; j < s.length; j++) {
       if (s[j] === "(") depth++;
       else if (s[j] === ")" && --depth === 0) break;
@@ -134,7 +181,7 @@ function withoutStringText(code: string): string {
     .replace(/`(?:[^`\\]|\\.)*`/g, (t) => (t.match(/\$\{[^}]*\}/g) ?? []).join(" "));
 }
 
-describe("no log call of api/ writes an e-mail address", () => {
+describe("no log call of api/ writes an e-mail address or a licence key", () => {
   const calls: Array<{ where: string; text: string }> = [];
   for (const file of sources("api")) {
     const src = readFileSync(file, "utf8").split(String.fromCharCode(13)).join("");
@@ -161,12 +208,24 @@ describe("no log call of api/ writes an e-mail address", () => {
     const offenders = calls
       .map((c) => ({
         where: c.where,
-        rest: withoutStringText(withoutEmailRefCalls(c.text))
+        rest: withoutStringText(withoutCallsTo("emailRef", c.text))
           .replace(/\bemailRef\b|\b[a-zA-Z]+Ref\b/g, "") // the keys that hold a reference
           .replace(/hasEmail:\s*!!\s*[\w.]+/g, "") //       a boolean
           .replace(/authedEmail\s*\?/g, ""), //              a test, not a value
       }))
       .filter((c) => /email/i.test(c.rest));
     expect(offenders.map((o) => o.where), "a log call writes an e-mail address: log emailRef(address) (api/_lib/log-ref.ts) instead").toEqual([]);
+  });
+
+  it("none of them writes a licence key, except through maskLicenseKey (a test 'a key was issued' is fine)", () => {
+    const offenders = calls
+      .map((c) => ({
+        where: c.where,
+        // "key: maskLicenseKey(...)" is a masked key whole (its field name included); what is left is what a log call writes by itself.
+        rest: withoutStringText(withoutCallsTo("maskLicenseKey", c.text.replace(/\b\w+\s*:\s*(?=maskLicenseKey\()/g, "")))
+          .replace(/licenseKey\s*!==?\s*null/g, ""), // a test, not a value
+      }))
+      .filter((c) => /\blicenseKey\b|\blicense\.key\b|\bexisting(?:Key|\.key)\b|\bkey\s*:/.test(c.rest));
+    expect(offenders.map((o) => o.where), "a log call writes a licence key: log maskLicenseKey(key) (api/_lib/log-ref.ts) instead").toEqual([]);
   });
 });
