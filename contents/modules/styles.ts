@@ -408,6 +408,8 @@ export const SHADOW_CSS = `
 .si b.y { color: #00e5b0; position: relative; top: 1.5px; }
 .si b.n { color: #ff5f5f; }
 .si b.w { color: #f5d000; }
+/* The liquidity figure: Bebas Neue like the rest of the card (it was IBM Plex Mono, the only figure of the card in that face). */
+.si b.liq { font-family: 'Bebas Neue', sans-serif; font-size: 12px; letter-spacing: .06em; }
 .si b.ok { display: inline-flex; align-items: flex-start; justify-content: center; width: 12px; height: 12px; position: relative; font-size: 0; vertical-align: top; }
 .si b.ok::before { content: ''; position: absolute; width: 7px; height: 4px; border-left: 1.5px solid #00e5b0; border-bottom: 1.5px solid #00e5b0; top: 3px; left: 50%; transform: translateX(-50%) rotate(-45deg); }
 .si b.no { display: inline-flex; align-items: flex-start; justify-content: center; width: 12px; height: 12px; position: relative; top: 1.5px; font-size: 0; vertical-align: top; }
