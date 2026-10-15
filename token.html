@@ -113,7 +113,9 @@ nav .actions .nav-inert.warn{color:#996060}
 @media(max-width:600px){.verdict-row{flex-direction:column;align-items:flex-start;gap:14px}}
 
 .tk-line{font-size:19px;color:#777;letter-spacing:.06em}
-.tk-line b{color:#ddd;font-weight:700;font-size:22px;letter-spacing:.09em}
+/* The symbol under the verdict: Bebas Neue has one weight, so "bold" was a smeared, synthesized one (2026-10-15: too thick). The marketing demo keeps its look (html.is-demo). */
+.tk-line b{color:#ddd;font-weight:400;font-size:22px;letter-spacing:.09em}
+html.is-demo .tk-line b{font-weight:700}
 
 .meta-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:2px}
 .age-badge{font-size:15px;color:#666;background:#0e0e10;border:1px solid var(--border);border-radius:2px;padding:4px 10px;letter-spacing:.08em}

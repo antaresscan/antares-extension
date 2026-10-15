@@ -70,6 +70,8 @@ const caShort = ca ? ca.slice(0, 6) + "…" + ca.slice(-4) : "—";
 document.getElementById("ca-disp").textContent = caShort;
 
 const isDemo = params.get("demo") === "1";
+// A marker for the demo's own look in token.html's CSS (html.is-demo): the marketing demo stays exactly as it was when the page's style changes. Nothing else reads it.
+if (isDemo) document.documentElement.classList.add("is-demo");
 
 // ──────────────────────────────────────────────────────────────────────
 // DEMO_DATA — hardcoded snapshots for the 4 marketing demo tokens.
