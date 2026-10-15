@@ -18,6 +18,8 @@ import {
   formatAgeMin,
 } from "./formatters.js";
 import { applyClusterCards } from "./views.js";
+// The wallet and transaction links are built only from a valid address or signature (a new file: a cached copy from before the deploy cannot be missing it).
+import { explorerUrl } from "./links.js?v=20261015-links";
 
 // ──────────────────────────────────────────────────────────────────────
 // Cursor-tracking glow (hero background visual). Pure CSS update —
@@ -209,15 +211,18 @@ export async function loadInsiderActivity() {
         const status = w.active ? "ACTIVE" : "IDLE";
         const cls = w.active ? "active" : "idle";
         const wColor = WALLET_COLORS[i % WALLET_COLORS.length];
-        const url = `https://solscan.io/account/${encodeURIComponent(w.walletFull || "")}`;
+        // A wallet with no valid address is a row that does nothing (a <div>, same look), never a link to "solscan.io/account/".
+        const url = explorerUrl("account", w.walletFull);
         return `
-        <a class="iw-holder-row ${cls}" style="--wc:${wColor}" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">
+        ${url
+          ? `<a class="iw-holder-row ${cls}" style="--wc:${wColor}" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">`
+          : `<div class="iw-holder-row ${cls} iw-row-off" style="--wc:${wColor}">`}
           <span class="iw-holder-rank">#${idx}</span>
           <span class="iw-holder-wallet" title="${escapeHtml(w.walletFull || "")}">${escapeHtml(w.wallet || "")}</span>
           <span class="iw-holder-pct">${escapeHtml(pct)}</span>
           <span class="iw-holder-amount">${escapeHtml(hold)}</span>
           <span class="iw-holder-state">${escapeHtml(status)}</span>
-        </a>
+        ${url ? "</a>" : "</div>"}
       `;
       })
       .join("");
@@ -315,20 +320,23 @@ export async function loadInsiderActivity() {
             : "—";
         const tokAmt = fmtTok(e.tokenAmount);
         const ageTxt = formatAgeMin(e.ageMin);
-        const sigUrl = `https://solscan.io/tx/${encodeURIComponent(e.signature || "")}`;
+        // A transaction with no valid signature is a row that does nothing (a <div>, same look), never a link to "solscan.io/tx/".
+        const sigUrl = explorerUrl("tx", e.signature);
         const actionLbl = action.replace("_", " ");
         const rank = rankByWallet.get(e.walletFull) || "?";
         const rankDisp = rank === "?" ? "?" : "#" + rank;
         const wColor = colorByWallet.get(e.walletFull) || "#333";
         return `
-        <a class="iw-row ${cls}" style="--wc:${wColor}" href="${escapeHtml(sigUrl)}" target="_blank" rel="noopener noreferrer">
+        ${sigUrl
+          ? `<a class="iw-row ${cls}" style="--wc:${wColor}" href="${escapeHtml(sigUrl)}" target="_blank" rel="noopener noreferrer">`
+          : `<div class="iw-row ${cls} iw-row-off" style="--wc:${wColor}">`}
           <span class="iw-row-rank" title="Rank in top 10 holders">${escapeHtml(rankDisp)}</span>
           <span class="iw-row-wallet" data-wallet="${escapeHtml(e.walletFull || "")}" title="${escapeHtml(e.walletFull || "")}">${escapeHtml(e.wallet || "")}</span>
           <span class="iw-row-action">${escapeHtml(actionLbl)}</span>
           <span class="iw-row-amount">${escapeHtml(tokAmt)}</span>
           <span class="iw-row-usd">${escapeHtml(usd)}</span>
           <span class="iw-row-age">${escapeHtml(ageTxt)}</span>
-        </a>
+        ${sigUrl ? "</a>" : "</div>"}
       `;
       })
       .join("");
@@ -341,8 +349,8 @@ export async function loadInsiderActivity() {
         el.addEventListener("click", (ev) => {
           ev.stopPropagation();
           ev.preventDefault();
-          const w = el.getAttribute("data-wallet");
-          if (w) window.open("https://solscan.io/account/" + encodeURIComponent(w), "_blank", "noopener");
+          const wallet = explorerUrl("account", el.getAttribute("data-wallet"));
+          if (wallet) window.open(wallet, "_blank", "noopener");
         });
       });
     }

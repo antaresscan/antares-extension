@@ -56,7 +56,7 @@ import {
   displayFlagLabel,
 } from "./compute.js?v=20261007-holders";
 // The website and Twitter links under the token's name (a new file on purpose: a copy cached from before the deploy cannot be missing it).
-import { officialLinks } from "./links.js?v=20261015-links";
+import { officialLinks, explorerUrl, dexscreenerLink } from "./links.js?v=20261015-links";
 
 // ──────────────────────────────────────────────────────────────────────
 // Boot — parse the CA from the URL, kick off the initial fetch, and
@@ -650,7 +650,12 @@ function render(d, ca) {
     }
     return "#";
   }
-  const dexUrl = d.pair?.url || `https://dexscreener.com/solana/${mint}`;
+  // The three explorer buttons of the header. Each is a real link only when its address could be built from a valid id (js/links.js); otherwise it is a button that does
+  // nothing (an inert <span>, dimmed, with a tooltip), never "#" and never a link to nothing: "#" in a new tab reopens this very page.
+  const navButton = (href, label, extraClass) =>
+    href
+      ? `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer"${extraClass ? ` class="${extraClass}"` : ""}>${label}</a>`
+      : `<span class="nav-inert off${extraClass ? " " + extraClass : ""}" aria-disabled="true" title="Not available for this token">${label}</span>`;
   // In demo mode the three explorer links are rendered as inert <span>
   // elements — the demo lives inside antaresscan.com/demo and we don't
   // want a visitor accidentally pulled out to DexScreener/Solscan/Rug-
@@ -664,9 +669,9 @@ function render(d, ca) {
     <span class="nav-inert warn">⚠ RugCheck</span>
   `
     : `
-    <a href="${safeUrl(dexUrl)}" target="_blank" rel="noopener noreferrer">↗ DexScreener</a>
-    <a href="https://solscan.io/token/${encodeURIComponent(mint)}" target="_blank" rel="noopener noreferrer">↗ Solscan</a>
-    <a href="https://rugcheck.xyz/tokens/${encodeURIComponent(mint)}" target="_blank" rel="noopener noreferrer" class="warn">⚠ RugCheck</a>
+    ${navButton(dexscreenerLink(d.pair?.url, mint), "↗ DexScreener")}
+    ${navButton(explorerUrl("token", mint), "↗ Solscan")}
+    ${navButton(explorerUrl("rugcheck", mint), "⚠ RugCheck", "warn")}
   `;
   document.getElementById("nav-actions").innerHTML = `
     <span class="ca-pill" id="ca-disp">${escapeHtml(caShort)}</span>${navLinksHtml}`;
@@ -775,15 +780,22 @@ function render(d, ca) {
   // three explorer links of the header, .nav-inert).
   const socChip = (label, url) =>
     `<span class="soc soc-inert" aria-hidden="true">${escapeHtml(label)}</span>`;
-  const linkChip = (label, link) =>
-    `<a class="soc" href="${escapeHtml(link.href)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(link.title)}">${label}</a>`;
+  // Both chips are always there. With a valid address the chip is a link; without one it is a button that does nothing (a dimmed <span>: no href, nothing to click or to
+  // focus, a tooltip that says why), never a link at random.
+  const linkChip = (label, link, missing) =>
+    link
+      ? `<a class="soc" href="${escapeHtml(link.href)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(link.title)}">${label}</a>`
+      : `<span class="soc soc-off" aria-disabled="true" title="${escapeHtml(missing)}">${label}</span>`;
   const links = officialLinks(websites, socials);
   const socialsHtml = isDemo
     ? [
         ...websites.map((w) => socChip(w.label || "Website", w.url)),
         ...socials.map((s) => socChip(s.type || "Social", s.url)),
       ].join("")
-    : [links.website && linkChip("Website", links.website), links.twitter && linkChip("Twitter", links.twitter)].filter(Boolean).join("");
+    : [
+        linkChip("Website", links.website, "No website listed for this token"),
+        linkChip("Twitter", links.twitter, "No Twitter account listed for this token"),
+      ].join("");
 
   // Market Cap card — sparkline still uses price candles (live signal),
   // but the headline metric is FDV market cap. Sub-line keeps the unit

@@ -81,3 +81,40 @@ export function officialLinks(websites, socials) {
   }
   return { website, twitter };
 }
+
+// ─── The explorer links of the page ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+// Solscan, RugCheck and DexScreener addresses are built from an id the API gave (a token, a wallet, a transaction). An id that is not what it should be used to give a
+// link to nothing ("solscan.io/tx/" with no signature) or, through the trusted-host guard, "#" (which reopens this page). Now an id is checked first, and when it
+// is not good there is NO link: the caller draws a button that does nothing. Never a link at random, never "#".
+const SOLANA_ADDRESS = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+const SOLANA_SIGNATURE = /^[1-9A-HJ-NP-Za-km-z]{80,90}$/;
+
+/** A Solana address (a token mint or a wallet): 32 to 44 characters of base58. */
+export const isSolanaAddress = (s) => typeof s === "string" && SOLANA_ADDRESS.test(s);
+/** A Solana transaction signature: 80 to 90 characters of base58. */
+export const isSolanaSignature = (s) => typeof s === "string" && SOLANA_SIGNATURE.test(s);
+
+/**
+ * The address of `id` on an explorer, or null when `id` is not a valid one for that kind.
+ * kind: "token" | "account" | "tx" (Solscan), "rugcheck" (RugCheck), "dexscreener" (DexScreener's page of a token).
+ */
+export function explorerUrl(kind, id) {
+  switch (kind) {
+    case "token": return isSolanaAddress(id) ? "https://solscan.io/token/" + id : null;
+    case "account": return isSolanaAddress(id) ? "https://solscan.io/account/" + id : null;
+    case "tx": return isSolanaSignature(id) ? "https://solscan.io/tx/" + id : null;
+    case "rugcheck": return isSolanaAddress(id) ? "https://rugcheck.xyz/tokens/" + id : null;
+    case "dexscreener": return isSolanaAddress(id) ? "https://dexscreener.com/solana/" + id : null;
+    default: return null;
+  }
+}
+
+/**
+ * DexScreener's page for this token: the pair address the API gave when it is an https address on dexscreener.com, else the token's own page there, else null.
+ * (A pair address on another host is never followed: it used to become "#", which reopened this page.)
+ */
+export function dexscreenerLink(pairUrl, mint) {
+  const p = parseWebUrl(pairUrl);
+  if (p && p.url.protocol === "https:" && (p.host === "dexscreener.com" || p.host.endsWith(".dexscreener.com"))) return p.url.href;
+  return explorerUrl("dexscreener", mint);
+}

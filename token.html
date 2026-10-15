@@ -69,6 +69,8 @@ nav .actions .nav-inert{
   pointer-events:none;user-select:none;
 }
 nav .actions .nav-inert.warn{color:#996060}
+/* A header button whose address could not be built from a valid id: dimmed, does nothing. */
+nav .actions .nav-inert.off{opacity:.45}
 
 /* ── Pro gate: what a Free visitor sees instead of the Full Analysis ── */
 .pro-gate{max-width:560px;margin:90px auto 0;padding:34px 30px;border:1px solid var(--risk-border);background:var(--card);text-align:center}
@@ -123,6 +125,8 @@ html.is-demo .tk-line b{font-weight:700}
 .soc:hover{color:var(--risk);border-color:var(--risk-border);background:var(--risk-soft)}
 /* Demo mode: the same chip, but a <span> that nothing can click (see socChip in js/token-app.js): no hover state either. */
 .soc.soc-inert{pointer-events:none;user-select:none;cursor:default}
+/* A chip with no valid address (no website, no Twitter listed): a dimmed <span> that does nothing, never a link at random. */
+.soc.soc-off{opacity:.35;pointer-events:none;user-select:none;cursor:default}
 
 /* Logo wrap : fallback letters under the <img>; if image fails, onerror
    removes it and the fallback shows through. CSP allows https: in img-src. */
@@ -488,6 +492,9 @@ html.is-demo .tk-line b{font-weight:700}
    navigation, no wallet sub-link drill-through. cursor:default makes
    the inert state obvious; the wallet hover hint is suppressed too. */
 .iw-row-demo{cursor:default}
+/* A real row with no valid transaction signature or wallet address: the same layout, but a <div> that opens nothing. */
+.iw-row-off{cursor:default}
+.iw-row-off:hover{background:transparent !important}
 .iw-row-demo:hover{background:transparent !important}
 .iw-row-demo .iw-row-wallet{cursor:default}
 .iw-row-demo .iw-row-wallet:hover{color:var(--wc,#888);border-bottom-color:transparent}
