@@ -5,7 +5,7 @@
 // back, the honeypot was patched, the price flat for a while, the window of a rule ended. A rug does not stop being a rug because the
 // numbers calmed down, and a user who sees SAFE on a token that already rugged is the worst thing this product can show.
 //
-// WHAT CONDEMNS: a scan whose verdict is RUG *and* confirmed by a fact (RugKind "confirmed": a drained pool, blocked sells, a collapse...)
+// WHAT CONDEMNS: a scan whose verdict is RUG *and* confirmed by a fact (RugKind "confirmed": a drained pool, a collapse...)
 // on complete data. A RUG that only comes from structure ("RUG RISK": concentration, authorities, a young token...) does NOT condemn: it is a
 // risk, it can honestly go away (an authority renounced, a holder who sold), and an issuer's stablecoin must not be condemned for its
 // authorities. A scan that ran out of time or had no source never condemns (the data was not there), and neither does a preview deployment

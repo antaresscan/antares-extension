@@ -194,7 +194,7 @@ export function judgeIssuerAsset(input: IssuerInput): IssuerJudgement {
 
   const flags = [issuerFlag, ...kept, ...shown].sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9));
   const counts = countVerdictFlags(flags);
-  // The facts that a rug happened (a drained pool, blocked sells, a collapse) are facts whatever the structure.
+  // The facts that a rug happened (a drained pool, a collapse) are facts whatever the structure.
   const evidence = layers.some((l) => l.available && (l.rugEvidence?.length ?? 0) > 0);
 
   let score = Math.round(950 * Math.pow(0.5, counts.critical) * Math.pow(0.85, counts.warning));
