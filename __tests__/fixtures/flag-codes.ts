@@ -15,6 +15,14 @@ const XV: Array<[RegExp, FlagTag]> = [
   [/holder concentration/i, "xv_holder_concentration"],
 ];
 
+/** The flags of judgeContractFacts (the chain) say which Token-2022 power or which sale block they report: GoPlus's layer reads these tags, not the words. */
+const CHAIN: Array<[RegExp, FlagTag]> = [
+  [/^Permanent delegate/, "permanent_delegate"],
+  [/^Pausable token/, "pausable"],
+  [/^Transfer hook/, "transfer_hook"],
+  [/^Non-transferable token — cannot be sold$/, "non_transferable"],
+];
+
 /** The pump percentage of a pump label: the first "+N%" of a label that speaks of a pump (what the pump deduplication used to read). */
 export function pumpPctOfText(label: string): number | undefined {
   if (!/pump|pumped/i.test(label)) return undefined;
@@ -22,19 +30,22 @@ export function pumpPctOfText(label: string): number | undefined {
   return m ? parseInt(m[1], 10) : undefined;
 }
 
-/** The tags the label would have had, among all of them (the layer a flag belongs to decides two of them). */
+/** The tags the label would have had, among all of them (the layer a flag belongs to decides three groups of them: concentration, xv_*, chain). */
 function allTags(source: string, label: string, doorTags: FlagTag[]): FlagTag[] {
   const tags: FlagTag[] = [...doorTags];
   if (source === "helius" && CONCENTRATION.test(label)) tags.push("concentration");
   if (source === "crossvalidation") {
     for (const [re, t] of XV) if (re.test(label)) { tags.push(t); break; }
   }
+  if (source === "chain") {
+    for (const [re, t] of CHAIN) if (re.test(label)) { tags.push(t); break; }
+  }
   return tags;
 }
 
 /** A flag as the layer of `source` would have made it for this label. */
 export function flagFromText(label: string, severity: Severity = "critical", impact = 0, source = "dexscreener"): ScanFlag {
-  const codes = codesFromUpstreamText(source, label);
+  const codes = codesFromUpstreamText(source === "chain" ? "goplus" : source, label); // the chain is read like GoPlus for the safe-gate reasons
   return makeFlag(label, severity, impact, { ...codes, tags: allTags(source, label, codes.tags ?? []), pumpPct: pumpPctOfText(label) });
 }
 

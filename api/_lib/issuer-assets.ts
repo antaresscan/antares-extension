@@ -54,17 +54,10 @@ export function issuerKindOf(mint: string | null | undefined): IssuerKind | null
   return null;
 }
 
-/**
- * The flags that stay what they were for an issuer-backed token: they are about the MARKET (can anybody sell, is there a pool, did the price
- * collapse), not about the structure. Everything else that was critical or warning is shown as information: the user still sees it, it
- * just does not decide the verdict. A positive list on purpose: a flag nobody thought about is not promoted to a verdict.
- */
-const MARKET_HEALTH: RegExp[] = [
-  /^Very low liquidity/i, /^Low liquidity/i, /^Liquidity < /i, /abandoned pool/i,
-  /^Brutal dump/i, /^Significant 24h dump/i, /^Sharp 6h sell-off/i, /^Sharp crash/i, /^Slow rug detected/i, /^Active dump/i,
-  /^Progressive dump/i, /^Post-ATH dump/i, /^Collapsed -/i,
-  /^Honeypot detected/i, /^Cannot sell all tokens/i, /^Non-transferable token/i, /^Sells blocked/i,
-];
+// The flags that stay what they were for an issuer-backed token are the ones the layers tagged "market_health": they are about the MARKET
+// (can anybody sell, is there a pool, did the price collapse), not about the structure. Everything else that was critical or warning is shown
+// as information: the user still sees it, it just does not decide the verdict. A positive list on purpose (a flag nobody tagged is not promoted
+// to a verdict); the layers put the tag, the text of the flags that upstreams invent gets it at the door (upstream-text.ts).
 
 /** A stablecoin that moved or sits this far from its $1 peg: a warning from 3 %, critical from 10 %. */
 const DEPEG_WARN_PCT = 3;
@@ -75,9 +68,6 @@ const MIN_POOL_LIQUIDITY_FOR_PEG_USD = 25_000;
 /** A liquid staking token is worth about 1 SOL and more, rising with the rewards it accrues: under 0.97 SOL a warning, under 0.90 critical. */
 export const LST_PEG_WARN = 0.97;
 export const LST_PEG_CRITICAL = 0.90;
-
-/** The flags about how thin the pool is. A vault share is redeemed with the protocol, not sold in a pool: they stay on screen as information. */
-const POOL_DEPTH: RegExp[] = [/^Very low liquidity/i, /^Low liquidity/i, /^Liquidity < /i];
 
 const SEVERITY_ORDER: Record<string, number> = { critical: 0, warning: 1, info: 2, bonus: 3 };
 
@@ -149,8 +139,9 @@ export function judgeIssuerAsset(input: IssuerInput): IssuerJudgement {
   const kept: ScanFlag[] = [];
   const shown: ScanFlag[] = [];
   for (const f of input.flags) {
-    const marketHealth = (f.severity === "critical" || f.severity === "warning") && MARKET_HEALTH.some((re) => re.test(f.label))
-      && !(kind === "vault" && POOL_DEPTH.some((re) => re.test(f.label)));
+    // A vault share is redeemed with the protocol, not sold in a pool: the flags about how thin the pool is ("pool_depth") stay information.
+    const marketHealth = (f.severity === "critical" || f.severity === "warning") && !!f.tags?.includes("market_health")
+      && !(kind === "vault" && f.tags.includes("pool_depth"));
     if (marketHealth) kept.push(f);
     else shown.push(f.severity === "critical" || f.severity === "warning" ? { ...f, severity: "info" } : f);
   }

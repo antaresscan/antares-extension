@@ -39,10 +39,18 @@ export interface ScanFlag {
  *   concentration          a holder-concentration flag (the holders layer drops them when its holder data is broken)
  *   xv_lp_burn, xv_mint_authority, xv_age, xv_holder_concentration
  *                          the four disagreements between two sources that each cost the score a penalty
+ *   market_health          about the MARKET (can anybody sell, is there a pool, did the price collapse): for a token of a known issuer these are
+ *                          the only flags that still decide the verdict (issuer-assets.ts)
+ *   pool_depth             about how thin the pool is: a vault share is redeemed with its protocol, so these stay information for it
+ *   permanent_delegate, pausable, transfer_hook, non_transferable
+ *                          what the chain already said about a Token-2022 token (only the flags of judgeContractFacts carry them):
+ *                          GoPlus saying it again would show the signal twice
  */
 export type FlagTag =
   | "source_status" | "pump_price_only" | "lp" | "rug_evidence" | "concentration"
-  | "xv_lp_burn" | "xv_mint_authority" | "xv_age" | "xv_holder_concentration";
+  | "xv_lp_burn" | "xv_mint_authority" | "xv_age" | "xv_holder_concentration"
+  | "market_health" | "pool_depth"
+  | "permanent_delegate" | "pausable" | "transfer_hook" | "non_transferable";
 
 // IMPORTANT: 'lp' and 'deceptive_name' are HARD reasons — they can never
 // be soft-unlocked by applySafeGateOverride. A token with LP not burned

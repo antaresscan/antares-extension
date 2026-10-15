@@ -21,7 +21,7 @@ import type { RugCheckSummary, ScanFlag } from "../api/_lib/types";
 const BT = String.fromCharCode(96);
 const SOURCE = readFileSync(fileURLToPath(new URL("../api/_lib/layers.ts", import.meta.url)), "utf8").replace(/\r\n/g, "\n");
 const SOURCE_OF: Record<string, string> = {
-  layerDexScreener: "dexscreener", layerRugCheck: "rugcheck", judgeContractFacts: "goplus", layerGoPlus: "goplus",
+  layerDexScreener: "dexscreener", layerRugCheck: "rugcheck", judgeContractFacts: "chain", layerGoPlus: "goplus",
   layerHelius: "helius", layerSolscan: "solscan", layerChart: "chart", collapseFromPeak: "chart", layerCrossValidation: "crossvalidation",
 };
 
@@ -219,7 +219,35 @@ describe("the flags with a variable label", () => {
     const f = v.flags.find((x) => /Non-transferable/.test(x.label))!;
     expect(f.reasons).toBeUndefined();
     expect(reasonsOfText(f.label)).toEqual([]);
-    expect(f.tags).toEqual(["rug_evidence"]); // "non-transferable" is evidence for the rug database
+    // "non-transferable" is evidence for the rug database, a fact about the market (nobody can sell), and the chain's own word for it
+    expect(f.tags).toEqual(["rug_evidence", "market_health", "non_transferable"]);
+    expect(f.tags).toEqual(flagFromText(f.label, "critical", 0, "chain").tags);
+  });
+
+  it("every Token-2022 power the chain reports says which one it is (extFlag), as the tables give for its label; the others say nothing more", () => {
+    const facts = {
+      mint: false, freeze: false, sellBlocked: false, trusted: false, source: "chain", compared: false, conflicts: [], riskyExtensions: [],
+      extensionFacts: { permanentDelegate: true, pausable: true, defaultFrozen: true, transferHook: true, feeBps: 300, feeCanChange: true },
+    } as unknown as AuthorityFacts;
+    const v = judgeContractFacts(facts);
+    const byStart = (re: RegExp) => v.flags.find((x) => re.test(x.label))!;
+    expect(byStart(/^Permanent delegate/).tags).toEqual(["permanent_delegate"]);
+    expect(byStart(/^Pausable token/).tags).toEqual(["pausable"]);
+    expect(byStart(/^Transfer hook/).tags).toEqual(["transfer_hook"]);
+    expect(byStart(/^New accounts start frozen/).tags).toBeUndefined();
+    expect(byStart(/^Transfer fee can be changed/).tags).toBeUndefined();
+    expect(byStart(/^Transfer fee 3%/).tags).toBeUndefined();
+    expect(v.flags).toHaveLength(6);
+    for (const f of v.flags) expect(f.tags ?? [], f.label).toEqual(flagFromText(f.label, f.severity, f.impact, "chain").tags ?? []);
+  });
+
+  it("the same flags of a trusted issuer carry the same tags (the severity changes, what the flag is does not)", () => {
+    const facts = {
+      mint: false, freeze: false, sellBlocked: false, trusted: true, source: "chain", compared: false, conflicts: [], riskyExtensions: [],
+      extensionFacts: { permanentDelegate: true, pausable: true, defaultFrozen: false, transferHook: true, feeBps: null, feeCanChange: false },
+    } as unknown as AuthorityFacts;
+    const tags = judgeContractFacts(facts).flags.map((f) => f.tags);
+    expect(tags).toEqual([["permanent_delegate"], ["pausable"], ["transfer_hook"]]);
   });
 });
 
