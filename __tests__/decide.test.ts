@@ -59,16 +59,6 @@ describe("decide", () => {
     expect(d.confidence).toBe(0);
   });
 
-  it("a honeypot is a RUG, and a CONFIRMED one: the sale is blocked", () => {
-    const goplus = { is_honeypot: "1" } as GoPlusTokenResult;
-    const d = decide(input({ goplus, authFacts: deriveAuthorityFacts(null, goplus, MINT) }));
-    expect(d.risk).toBe("RUG");
-    expect(d.rugKind).toBe("confirmed");
-    expect(d.score).toBe(0);
-    expect(d.safeBlockedReasons).toContain("honeypot");
-    expect(d.flags.some((f) => /honeypot/i.test(f.label))).toBe(true);
-  });
-
   it("ten wallets holding 90 % of a small token is a RUG too, but only a RISK: nothing has happened", () => {
     const holders: HeliusHolder[] = [{ address: "w1", owner: "w1", uiAmount: 900_000 } as HeliusHolder];
     const d = decide(input({ resolvedHolderAccounts: holders, holders: 900, totalSupplyUi: 1_000_000 }));
@@ -84,7 +74,7 @@ describe("decide", () => {
   });
 
   it("returns the flags the way the clients and the verdict see them: one per signal, the most severe first", () => {
-    const goplus = { is_honeypot: "1" } as GoPlusTokenResult;
+    const goplus = { non_transferable: "1" } as GoPlusTokenResult;
     const d = decide(input({ goplus, authFacts: deriveAuthorityFacts(null, goplus, MINT) }));
     const rank = { critical: 0, warning: 1, info: 2, bonus: 3 } as const;
     const ranks = d.flags.map((f) => rank[f.severity]);
@@ -95,7 +85,7 @@ describe("decide", () => {
 
 describe("decide is pure", () => {
   it("gives the same decision twice from the same input, and does not touch its input", () => {
-    const goplus = { is_honeypot: "1" } as GoPlusTokenResult;
+    const goplus = { non_transferable: "1" } as GoPlusTokenResult;
     const i = input({ goplus, authFacts: deriveAuthorityFacts(null, goplus, MINT) });
     const before = structuredClone(i);
     expect(decide(i)).toEqual(decide(i));

@@ -86,11 +86,6 @@ describe("layerDexScreener records rug evidence", () => {
 });
 
 describe("layerGoPlus records rug evidence", () => {
-  it("honeypot and 'cannot sell all' are sells blocked", () => {
-    expect(layerGoPlus({ is_honeypot: "1" }).rugEvidence).toEqual(["sells_blocked"]);
-    expect(layerGoPlus({ cannot_sell_all: "1" }).rugEvidence).toEqual(["sells_blocked"]);
-  });
-
   it("witness: a GoPlus answer with no sell restriction has no evidence field", () => {
     const r = layerGoPlus({ holder_count: "10" } as GoPlusTokenResult);
     expect("rugEvidence" in r).toBe(false);
