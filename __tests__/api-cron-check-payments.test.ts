@@ -81,9 +81,12 @@ interface MockReqOpts {
   headers?: Record<string, string>;
 }
 
+// Vercel starts the sweep with `Authorization: Bearer <CRON_SECRET>` (audit A-28): that is how these tests ask, unless they say otherwise.
+const CRON_SECRET = "test-cron-secret-0123456789abcdef";
+
 function mockReq({
   method = "GET",
-  headers = { "x-vercel-cron": "1" },
+  headers = { authorization: `Bearer ${CRON_SECRET}` },
 }: MockReqOpts = {}): VercelRequest {
   return { method, headers, query: {}, socket: {} } as unknown as VercelRequest;
 }
@@ -133,6 +136,7 @@ beforeEach(() => {
   process.env.NOWPAYMENTS_API_KEY = "test-key";
   process.env.UPSTASH_REDIS_REST_URL = "https://fake.upstash";
   process.env.UPSTASH_REDIS_REST_TOKEN = "fake-token";
+  process.env.CRON_SECRET = CRON_SECRET;
 });
 
 afterEach(() => {
@@ -312,5 +316,99 @@ describe("GET /api/cron-check-payments", () => {
     expect(payload.outcome.errors).toBe(1);
     expect(payload.outcome.expired).toBe(0);
     expect(mocks.pending.has(REFERENCE)).toBe(true);
+  });
+});
+
+
+// ── (A-28) who may start the sweep ─────────────────────────────────────────────────────────────────
+// The sweep asks NOWPayments about every pending checkout, so it must not start for a stranger. `x-vercel-cron: 1` used to be enough on its own:
+// anybody can type it. Now only `Authorization: Bearer <CRON_SECRET>` opens it, which is what Vercel sends itself (documented), and the owner can
+// send by hand. Nothing must be read or asked before that gate.
+describe("(A-28) the sweep opens for the secret and for nothing else", () => {
+  /** What the sweep must NOT do for a caller who is refused: ask NOWPayments, confirm, expire, or even look at the pending checkouts. */
+  function untouched() {
+    expect(mocks.getPayment).not.toHaveBeenCalled();
+    expect(mocks.listPaymentsForInvoice).not.toHaveBeenCalled();
+    expect(mocks.issueLicense).not.toHaveBeenCalled();
+    expect(mocks.setUserTier).not.toHaveBeenCalled();
+    expect(mocks.pending.has(REFERENCE)).toBe(true); // still waiting, not processed
+  }
+  const refused = async (headers: Record<string, string>) => {
+    seedPendingIntent({ expiresIn: -2 * 60 * 60 * 1000 }); // a checkout the sweep WOULD expire if it ran
+    const res = mockRes();
+    await handler(mockReq({ headers }), res);
+    expect(res.status).toHaveBeenCalledWith(401);
+    untouched();
+  };
+
+  it("the header a stranger can type, alone: refused, and nothing is asked of NOWPayments", async () => {
+    await refused({ "x-vercel-cron": "1" });
+  });
+
+  it("the forged header with a CRON_SECRET on the deployment but no Authorization: refused", async () => {
+    await refused({ "x-vercel-cron": "1", "x-vercel-cron-schedule": "0 0 * * *", "user-agent": "vercel-cron/1.0" });
+  });
+
+  it("a wrong secret is refused, even with the forged header", async () => {
+    await refused({ authorization: "Bearer not-the-secret", "x-vercel-cron": "1" });
+  });
+
+  it("a secret of another length (shorter, longer, empty) is refused and nothing is thrown", async () => {
+    for (const given of ["Bearer a", `Bearer ${CRON_SECRET}-and-more`, "Bearer ", "Bearer"]) {
+      mocks.pending.clear();
+      await refused({ authorization: given });
+    }
+  });
+
+  it("the secret without the Bearer word, or with another case, is refused: Vercel sends 'Bearer <secret>'", async () => {
+    await refused({ authorization: CRON_SECRET });
+    mocks.pending.clear();
+    await refused({ authorization: `bearer ${CRON_SECRET}` });
+    mocks.pending.clear();
+    await refused({ authorization: `Basic ${CRON_SECRET}` });
+  });
+
+  it("no CRON_SECRET on the deployment: NOTHING opens it, not the forged header, not an empty Bearer, not 'Bearer undefined'", async () => {
+    delete process.env.CRON_SECRET;
+    for (const headers of [
+      { "x-vercel-cron": "1" },
+      { authorization: "Bearer " },
+      { authorization: "Bearer undefined" },
+      { authorization: "Bearer" },
+      { authorization: "" },
+    ] as Array<Record<string, string>>) {
+      mocks.pending.clear();
+      await refused(headers);
+    }
+  });
+
+  it("exactly what Vercel sends (the secret as Bearer, its user agent, its schedule header): the sweep runs", async () => {
+    seedPendingIntent({ expiresIn: -2 * 60 * 60 * 1000 });
+    const res = mockRes();
+    await handler(mockReq({ headers: { authorization: `Bearer ${CRON_SECRET}`, "user-agent": "vercel-cron/1.0", "x-vercel-cron-schedule": "0 0 * * *" } }), res);
+    expect(res.status).toHaveBeenCalledWith(200);
+    const payload = (res.json as unknown as { mock: { calls: unknown[][] } }).mock.calls[0][0] as { outcome: { scanned: number; expired: number } };
+    expect(payload.outcome.scanned).toBe(1);
+    expect(payload.outcome.expired).toBe(1);
+  });
+
+  it("the owner starting it by hand with the same secret works too", async () => {
+    const res = mockRes();
+    await handler(mockReq({ method: "POST", headers: { authorization: `Bearer ${CRON_SECRET}` } }), res);
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
+
+  it("the forged header next to the right secret changes nothing: the secret decides", async () => {
+    const res = mockRes();
+    await handler(mockReq({ headers: { authorization: `Bearer ${CRON_SECRET}`, "x-vercel-cron": "1" } }), res);
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
+
+  it("the gate comes before everything else: a refused caller gets 401, not a hint about NOWPayments or the storage", async () => {
+    delete process.env.NOWPAYMENTS_API_KEY;
+    delete process.env.UPSTASH_REDIS_REST_URL;
+    const res = mockRes();
+    await handler(mockReq({ headers: { "x-vercel-cron": "1" } }), res);
+    expect(res.status).toHaveBeenCalledWith(401); // not 503: a stranger learns nothing about how the deployment is configured
   });
 });

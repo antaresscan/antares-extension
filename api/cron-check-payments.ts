@@ -15,10 +15,10 @@
 // hiccup, our handler bug) can still drop one. The cron sweeps any
 // pending intent the webhook didn't finalise.
 //
-// Authentication:
-//   - Vercel attaches `x-vercel-cron: 1` to legitimate scheduled invocations.
-//   - For local testing or manual triggers we accept `Authorization: Bearer
-//     <CRON_SECRET>` so we can probe the endpoint without spinning up Vercel.
+// Authentication (audit A-28): `Authorization: Bearer <CRON_SECRET>` and nothing else. With a CRON_SECRET variable on the project Vercel
+// sends exactly that on every scheduled call, and the owner can send the same to start a sweep by hand. The header `x-vercel-cron: 1`
+// used to be enough on its own: anybody can type it, so a stranger could start the sweep at will (every run asks NOWPayments about each
+// pending checkout). See api/_lib/cron-auth.ts.
 //
 // Failure modes:
 //   - NOWPayments down → cron iteration logs and moves on; next tick retries.
@@ -40,20 +40,13 @@ import {
 } from "./_lib/payments";
 import { isConfigured as nowpaymentsConfigured } from "./_lib/nowpayments";
 import { reconcileIntent } from "./_lib/payment-reconcile";
+import { hasCronSecret } from "./_lib/cron-auth";
 
 function getRedis(): Redis | null {
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!url || !token) return null;
   return new Redis({ url, token });
-}
-
-function isAuthorized(req: VercelRequest): boolean {
-  if (req.headers["x-vercel-cron"] === "1") return true;
-  const secret = process.env.CRON_SECRET ?? "";
-  if (!secret) return false;
-  const auth = req.headers.authorization ?? "";
-  return auth === `Bearer ${secret}`;
 }
 
 interface CronOutcome {
@@ -73,7 +66,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: "method_not_allowed" });
   }
 
-  if (!isAuthorized(req)) {
+  if (!hasCronSecret(req)) {
     return res.status(401).json({ error: "unauthorized" });
   }
 
