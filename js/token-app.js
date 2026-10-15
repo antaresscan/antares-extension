@@ -55,6 +55,8 @@ import {
   isHoldersUnverifiedFlag,
   displayFlagLabel,
 } from "./compute.js?v=20261007-holders";
+// The website and Twitter links under the token's name (a new file on purpose: a copy cached from before the deploy cannot be missing it).
+import { officialLinks } from "./links.js?v=20261015-links";
 
 // ──────────────────────────────────────────────────────────────────────
 // Boot — parse the CA from the URL, kick off the initial fetch, and
@@ -763,17 +765,23 @@ function render(d, ca) {
       </div>`
       : "";
 
-  // The website / CMC / CoinGecko / Twitter / Telegram chips. In demo mode they are purely decorative: the demo tokens are fictional
-  // snapshots, so every one of these links led to a dead page. Same chip, same look (the CSS of .soc applies to the span too), but
-  // no href, no target, nothing to click or to focus (the same choice as the three explorer links of the header, .nav-inert).
+  // A real token shows two chips at most: its Website and its Twitter / X account, each only when its address is a real one (js/links.js). It used to show one
+  // chip per entry DexScreener returned (Shopify, Telegram, TikTok, Instagram, Reddit...), and a token's own website was turned into "#" by the host list of
+  // safeUrl, so the Website chip reopened this page (2026-10-15).
+  // In demo mode the chips are purely decorative and stay exactly as they were: the demo tokens are fictional snapshots, so every one of these links led to a
+  // dead page. Same chip, same look (the CSS of .soc applies to the span too), but no href, no target, nothing to click or to focus (the same choice as the
+  // three explorer links of the header, .nav-inert).
   const socChip = (label, url) =>
-    isDemo
-      ? `<span class="soc soc-inert" aria-hidden="true">${escapeHtml(label)}</span>`
-      : `<a class="soc" href="${safeUrl(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a>`;
-  const socialsHtml = [
-    ...websites.map((w) => socChip(w.label || "Website", w.url)),
-    ...socials.map((s) => socChip(s.type || "Social", s.url)),
-  ].join("");
+    `<span class="soc soc-inert" aria-hidden="true">${escapeHtml(label)}</span>`;
+  const linkChip = (label, link) =>
+    `<a class="soc" href="${escapeHtml(link.href)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(link.title)}">${label}</a>`;
+  const links = officialLinks(websites, socials);
+  const socialsHtml = isDemo
+    ? [
+        ...websites.map((w) => socChip(w.label || "Website", w.url)),
+        ...socials.map((s) => socChip(s.type || "Social", s.url)),
+      ].join("")
+    : [links.website && linkChip("Website", links.website), links.twitter && linkChip("Twitter", links.twitter)].filter(Boolean).join("");
 
   // Market Cap card — sparkline still uses price candles (live signal),
   // but the headline metric is FDV market cap. Sub-line keeps the unit
