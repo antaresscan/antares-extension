@@ -405,14 +405,19 @@ export const SHADOW_CSS = `
   font-family: 'Bebas Neue', sans-serif;
 }
 .si b { font-size: 8.5px; letter-spacing: .06em; font-weight: 400; line-height: 1; font-family: 'IBM Plex Mono', monospace; color: #f0f0f0; vertical-align: top; }
-.si b.y { color: #00e5b0; position: relative; top: 1.5px; }
+.si b.y { color: #00e5b0; }
 .si b.n { color: #ff5f5f; }
 .si b.w { color: #f5d000; }
-/* The liquidity figure: Bebas Neue like the rest of the card (it was IBM Plex Mono, the only figure of the card in that face). */
-.si b.liq { font-family: 'Bebas Neue', sans-serif; font-size: 11px; letter-spacing: .06em; }
+/* The liquidity figure: Bebas Neue like the rest of the card (it was IBM Plex Mono, the only figure of the card in that face).
+   THE LINE OF THE FOOTER: the check, the cross, the dash and the figure all sit on the same line, whatever the figure's colour or length. The check and the cross are
+   drawn shapes (their middle is about 6.5px and 7.25px under the top of the line); the dash and the figure are text, which sits higher than a drawn shape of the same
+   box, so each gets its own small push down to the middle of the two (about 6.9px). The push is the same for every colour (the green figure used to be pushed 1.5px
+   and the others not, so the figure moved with its colour). Measured on the real rendering, enlarged 8 times (the gallery of the Liq demo). */
+.si b.liq { font-family: 'Bebas Neue', sans-serif; font-size: 11px; letter-spacing: .06em; position: relative; top: 1.3px; }
+.si b.dash { position: relative; top: 1.3px; }
 .si b.ok { display: inline-flex; align-items: flex-start; justify-content: center; width: 12px; height: 12px; position: relative; font-size: 0; vertical-align: top; }
 .si b.ok::before { content: ''; position: absolute; width: 7px; height: 4px; border-left: 1.5px solid #00e5b0; border-bottom: 1.5px solid #00e5b0; top: 3px; left: 50%; transform: translateX(-50%) rotate(-45deg); }
-.si b.no { display: inline-flex; align-items: flex-start; justify-content: center; width: 12px; height: 12px; position: relative; top: 1.5px; font-size: 0; vertical-align: top; }
+.si b.no { display: inline-flex; align-items: flex-start; justify-content: center; width: 12px; height: 12px; position: relative; top: -.1px; font-size: 0; vertical-align: top; }
 .si b.no::before, .si b.no::after { content: ''; position: absolute; width: 9px; height: 1.5px; background: #ff5f5f; border-radius: .75px; top: 5px; left: 50%; }
 .si b.no::before { transform: translateX(-50%) rotate(45deg); }
 .si b.no::after { transform: translateX(-50%) rotate(-45deg); }

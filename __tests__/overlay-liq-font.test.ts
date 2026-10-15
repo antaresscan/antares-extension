@@ -137,3 +137,42 @@ describe("the liquidity figure, in the overlay", () => {
     expect(liqB()?.textContent).toBe("$4.36M")
   })
 })
+
+// ─── The line of the footer (2026-10-16) ────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+// The figure sat at a different height depending on its colour and next to a cross or a check: the green one was pushed 1.5px down, the white and red ones not (2px above
+// the checks and 4px above the cross), and the cross was 1.8px under the checks. Measured in real Chromium, at 8x pixels and at the usual screen scalings (the gallery of the
+// Liq demo): now the check, the cross, the dash and the figure share one line, within half a pixel. happy-dom has no layout, so what is pinned here is the CSS that makes it:
+// one push for the figure whatever its colour, one for the dash, the cross brought up to the checks.
+describe("the line of the footer", () => {
+  it("the colour of the figure moves nothing: the colour classes carry a colour and no position", () => {
+    for (const cls of [".si b.y", ".si b.n", ".si b.w"]) {
+      expect(rule(cls), cls).not.toBeNull()
+      expect(rule(cls), cls).not.toMatch(/\btop\s*:|position\s*:|margin|padding|transform/)
+    }
+  })
+
+  it("the figure has ONE push, the same for every colour", () => {
+    expect(rule(".si b.liq")).toMatch(/position:\s*relative/)
+    expect(rule(".si b.liq")).toMatch(/top:\s*1\.3px/)
+  })
+
+  it("the dash has its own push, and it is the same dash everywhere (the cells and the Liq cell)", () => {
+    expect(rule(".si b.dash")).toMatch(/position:\s*relative/)
+    expect(rule(".si b.dash")).toMatch(/top:\s*1\.3px/)
+  })
+
+  it("the cross is brought up to the line of the checks (it was pushed 1.5px down), the check is not moved", () => {
+    expect(rule(".si b.no")).toMatch(/top:\s*-\.1px/)
+    expect(rule(".si b.no")).not.toMatch(/top:\s*1\.5px/)
+    expect(rule(".si b.ok")).not.toMatch(/\btop\s*:/)
+  })
+
+  it("the dash is drawn the same way in the check cells, in the LP cell and in the Liq cell: one class", async () => {
+    fetchMock.mockImplementation(() => answer(data({ liquidity: null, honeypot: null, lpBurned: null, lpLocked: null }), "pro"))
+    await scan(CA)
+    const dashes = [...(state.shadow?.querySelectorAll(".ss .si b.dash") ?? [])]
+    expect(dashes.length).toBeGreaterThanOrEqual(2)
+    for (const d of dashes) expect(d.textContent).toBe("\u2014")
+    expect(liqB()?.classList.contains("dash")).toBe(true)
+  })
+})

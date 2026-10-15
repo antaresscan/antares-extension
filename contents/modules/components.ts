@@ -464,7 +464,7 @@ export function buildSkeletonNode(): DocumentFragment {
 }
 
 // The little dash of a check that is neither passed nor failed (Sell on Solana, a source that did not answer, an issuer's authority): the same under every label.
-const dashNode = (): HTMLElement => el("b", { style: "color:#333" }, "\u2014")
+const dashNode = (): HTMLElement => el("b", { class: "dash", style: "color:#333" }, "\u2014")
 
 function buildSiBool(siLabel: string, val: unknown, invert = false): HTMLElement {
   if (val == null) {
@@ -618,7 +618,7 @@ export function buildResultNode(
     el("div", { class: "si" },
       el("span", undefined, "Liq"),
       // The figure is set in Bebas Neue like the rest of the card (class "liq"); the dash of a liquidity nobody could read stays the little dash of the other cells.
-      el("b", { class: liq !== null ? (liqClass ? `liq ${liqClass}` : "liq") : liqClass }, liqDisplay),
+      el("b", { class: liq !== null ? (liqClass ? `liq ${liqClass}` : "liq") : "dash" }, liqDisplay),
     ),
   )
 

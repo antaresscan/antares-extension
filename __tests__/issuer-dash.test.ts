@@ -63,7 +63,7 @@ function cells() {
   }
   return out
 }
-const isDash = (c: { text: string; cls: string }) => c.text === "—" && c.cls === ""
+const isDash = (c: { text: string; cls: string }) => c.text === "—" && c.cls === "dash"
 
 beforeEach(() => {
   vi.useFakeTimers({ now: T })
