@@ -46,6 +46,7 @@ import { generateAISummary } from "./_lib/ai-summary";
 
 import { initRugDb, recordRug } from "./_lib/rugdb";
 import { initCondemned, getCondemned, condemn, condemnedEntryOf, shouldCondemn, applyCondemnation } from "./_lib/condemned";
+import { settleWithin } from "./_lib/settle";
 import { isPreviewDeployment } from "./_lib/deployment";
 import { logger } from "./_lib/logger";
 import { composeCriticalActors } from "./_lib/critical-actors";
@@ -105,6 +106,8 @@ const MIN_STEP_MS = 1500;
 // Below this much remaining time a request that waited on another scan's lock
 // cannot run a meaningful scan of its own: it asks the client to retry.
 const MIN_OWN_SCAN_MS = 8000;
+// How long the answer to a RUG may wait for the writes that remember it (a Redis round trip is 20 to 60 ms; recordRug makes three).
+const RUG_WRITE_WAIT_MS = 1000;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const requestId = randomUUID();
@@ -757,12 +760,19 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       if (resolvedMint !== ca) setShortCachedResult(resolvedMint, result, 30);
     }
 
+    // The two writes that remember a RUG for good (the Wall of Shame entry and the condemnation) are waited for, up to RUG_WRITE_WAIT_MS,
+    // before the answer goes out: once it has, the platform may stop this function, and a write still in flight is lost with it.
+    // Only a RUG verdict waits; every other verdict answers exactly as before (its recordRug call does nothing and is not waited for).
+    const rugWrites: Array<Promise<unknown>> = [];
     // A preview deployment must not write into production's rug database (see deployment.ts).
-    if (!isPreviewDeployment() && !result.sourceGap) void recordRug({ mint: resolvedMint, symbol: sanitizeString(pair?.baseToken?.symbol) ?? null, score, risk, flags, creator: tokenCreator });
+    if (!isPreviewDeployment() && !result.sourceGap) {
+      const recorded = recordRug({ mint: resolvedMint, symbol: sanitizeString(pair?.baseToken?.symbol) ?? null, score, risk, flags, creator: tokenCreator });
+      if (risk === "RUG") rugWrites.push(recorded); else void recorded;
+    }
 
     // A RUG confirmed by a fact, on complete data, condemns the token for good (the first record is kept; a record that exists is not rewritten).
     if (!condemnedEntry && shouldCondemn({ risk, rugKind, degraded, preview: isPreviewDeployment() })) {
-      void condemn(condemnedEntryOf(decision, resolvedMint, sanitizeString(pair?.baseToken?.symbol) ?? null));
+      rugWrites.push(condemn(condemnedEntryOf(decision, resolvedMint, sanitizeString(pair?.baseToken?.symbol) ?? null)));
     }
 
     // Emit a structured outcome event for every completed scan. Downstream
@@ -803,7 +813,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     }
 
     // Write the upstream-usage counters of this cold scan (one Redis command, at most 300 ms, never an error for the user).
-    await flushUsage();
+    // The rug writes wait at the same time (nothing to wait for on any other verdict).
+    await Promise.all([flushUsage(), settleWithin(rugWrites, RUG_WRITE_WAIT_MS)]);
     return res.json(withServeWindows(result));
   } catch (e) {
     logger.error("scan", "analysis error", { requestId, version: SCORING_VERSION, error: String(e) });

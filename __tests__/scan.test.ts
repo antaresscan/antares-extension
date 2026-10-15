@@ -990,6 +990,67 @@ describe("scan handler — a condemned token stays a RUG", () => {
     expect(entry.condemnedAt).toBeGreaterThan(Date.now() - 60_000);
   });
 
+  // The writes that remember a RUG for good (condemnation, Wall of Shame) used to be started and left: once the answer is out the platform may
+  // stop the function, and a write still in flight is lost. They are now waited for (1 s at most) before a RUG is answered, and for no other verdict.
+  async function untilCalled(fn: ReturnType<typeof vi.fn>) {
+    const t0 = Date.now();
+    while (fn.mock.calls.length === 0 && Date.now() - t0 < 3000) await new Promise((r) => setTimeout(r, 10));
+  }
+
+  it("a confirmed rug: the answer is not sent before the condemnation has landed, and it is the same RUG", async () => {
+    drainedPool();
+    let land!: () => void;
+    mockCondemn.mockReturnValue(new Promise<void>((resolve) => { land = resolve; }));
+    const res = createMockRes();
+    const pending = handler(createMockReq({ ca: MINT }), res);
+
+    await untilCalled(mockCondemn);
+    await new Promise((r) => setTimeout(r, 150)); // everything else is long done: only the write is holding the answer
+    expect(mockCondemn).toHaveBeenCalledTimes(1);
+    expect(res.json).not.toHaveBeenCalled();
+
+    land();
+    await pending;
+    const body = (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as { risk: string; rugKind: string | null };
+    expect(body.risk).toBe("RUG");
+    expect(body.rugKind).toBe("confirmed");
+  });
+
+  it("a condemnation that never lands holds the answer for 1 s at most, and the verdict does not change", async () => {
+    drainedPool();
+    mockCondemn.mockReturnValue(new Promise<void>(() => {})); // Redis hangs
+    const res = createMockRes();
+    const t0 = Date.now();
+    await handler(createMockReq({ ca: MINT }), res);
+    const elapsed = Date.now() - t0;
+
+    expect(elapsed).toBeGreaterThanOrEqual(900);
+    expect(elapsed).toBeLessThan(3000);
+    const body = (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as { risk: string; rugKind: string | null };
+    expect(body.risk).toBe("RUG");
+    expect(body.rugKind).toBe("confirmed");
+  });
+
+  it("a condemnation that fails cannot break the answer", async () => {
+    drainedPool();
+    mockCondemn.mockRejectedValue(new Error("redis down"));
+    const body = await run();
+    expect(body.risk).toBe("RUG");
+    expect(mockCondemn).toHaveBeenCalledTimes(1);
+  });
+
+  it("a verdict that is not a RUG never waits for the rug writes", async () => {
+    setupGoodTokenMocks();
+    mockCondemn.mockReturnValue(new Promise<void>(() => {})); // would hang, but a clean scan does not even call it
+    const res = createMockRes();
+    const t0 = Date.now();
+    await handler(createMockReq({ ca: MINT }), res);
+
+    expect(Date.now() - t0).toBeLessThan(800);
+    expect(mockCondemn).not.toHaveBeenCalled();
+    expect((res.json as ReturnType<typeof vi.fn>).mock.calls[0][0].risk).not.toBe("RUG");
+  });
+
   it("a record that cannot be read (Redis slow or down) is 'not condemned': the scan goes on from the data and still answers", async () => {
     setupGoodTokenMocks();
     mockGetCondemned.mockRejectedValue(new Error("redis down"));
