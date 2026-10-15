@@ -19,15 +19,19 @@ import { HOLDERS_UNVERIFIED_LABEL, isHoldersUnverifiedFlag } from "../../shared/
 //      new 2-axis LP risk matrix (api/_lib/lp-risk-matrix.ts) and embed
 //      the actual percentage value, so they can't be string-matched.
 //
-// Keep both copies in sync with js/token-app.js (the standalone analysis
-// page has its own copy because it's plain JS, not a TS import).
+// The standalone analysis page (token.html) has a twin of this table in
+// js/formatters.js, because it is plain JS and not a TS import. Entries
+// are only kept for labels the engine can still emit: the GoPlus ones that
+// only exist on EVM (honeypot, taxes, owner / creator share, blacklist,
+// pausable, hidden owner, proxy) were never in a Solana answer and left the
+// engine, so their texts left this table. The twin still lists them; they
+// are never looked up.
 const FLAG_DESCRIPTIONS: Record<string, string> = {
   // ── critical ──
   "Mint Authority enabled": "The dev can print unlimited new tokens and dump them on you at any time.",
   "Mint Authority enabled (RugCheck)": "The dev can print unlimited new tokens and dump them on you at any time.",
   "Freeze Authority enabled": "The dev can freeze your wallet and prevent you from selling.",
   "Freeze Authority enabled (RugCheck)": "The dev can freeze your wallet and prevent you from selling.",
-  "Honeypot detected — cannot sell": "You cannot sell this token. Any funds spent are gone.",
   "Bundle activity detected": "Coordinated wallets bought together to fake demand — classic pump and dump setup.",
   "Bundle holds": "A coordinated group controls a large portion of supply and can dump at will.",
   "Small bundle detected": "A few linked wallets bought together at launch. The share is small, but they can still sell at the same moment.",
@@ -43,14 +47,6 @@ const FLAG_DESCRIPTIONS: Record<string, string> = {
   "Top 10 holders > 50%": "Half the supply is in 10 wallets — high dump risk.",
   "Single wallet holds": "One wallet controls a huge portion of supply and can crash the price alone.",
   "Wash trading detected": "The trading volume is fake — bots trading with themselves to create false activity.",
-  "Sell tax": "A hidden fee is taken every time you sell — often used to bleed holders slowly.",
-  "Buy tax": "A fee is taken on every purchase — used to fund the dev or prevent exits.",
-  "Owner holds > 5%": "The owner wallet holds a large stake and can dump it at any time.",
-  "Creator holds > 5%": "The creator wallet holds a large stake and can dump it at any time.",
-  "Blacklist capability": "The dev can blacklist specific wallets and prevent them from selling.",
-  "Transfer pausable": "The dev can pause all transfers, trapping everyone's funds.",
-  "Hidden owner": "The real owner of the contract is hidden — a known red flag for rug pulls.",
-  "Upgradeable/proxy contract": "The contract code can be replaced after launch — any security audit becomes worthless.",
   "Metadata mutable": "The dev can change the token name, symbol and logo after launch — common in rug setups.",
   "No website / Twitter / Telegram": "Zero social presence — the team can disappear without any trace.",
   // ── legacy LP labels (kept for back-compat with cached scans) ──
