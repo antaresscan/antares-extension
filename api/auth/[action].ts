@@ -8,6 +8,7 @@
 //   POST /api/auth/login  → action=login
 //   POST /api/auth/logout → action=logout
 //   POST /api/auth/logout-all → action=logout-all (every session of the account, everywhere)
+//   POST /api/auth/delete-account → action=delete-account (erases the account and what hangs on it; needs the password)
 //   GET  /api/auth/me     → action=me
 //
 // Each branch keeps its own method/body/contract guarantees so the
@@ -34,6 +35,7 @@ import {
   ACCOUNT_INSTALL_KEY,
 } from "../_lib/account";
 import { checkLoginLock, recordLoginFailure, clearLoginFailures } from "../_lib/login-guard";
+import { eraseAccount } from "../_lib/account-erasure";
 import {
   setSessionCookie,
   clearSessionCookie,
@@ -231,6 +233,67 @@ async function handleLogoutAll(req: VercelRequest, res: VercelResponse) {
     }
     captureError(err, { endpoint: "auth/logout-all" });
     return apiError(res, 500, "Could not log out everywhere.");
+  }
+}
+
+// ── delete-account ──────────────────────────────────────────────────────
+//
+// "Delete my account" (audit A-14b, GDPR article 17). Erases the account, the link between its installs and its e-mail, the scan history
+// and the plan stored on those installs (account-erasure.ts says what goes and what stays: the record of what was bought stays).
+// Three things must be true before anything is touched: a session that still counts, the PASSWORD in the body (a stolen session alone must
+// not be able to destroy the account), and an e-mail whose login is not locked. A wrong password counts as a failed login: this endpoint is
+// no way round the lock of login.
+async function handleDeleteAccount(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== "POST") return apiError(res, 405, "Method not allowed.");
+
+  const redis = getRedis();
+  if (!redis) return apiError(res, 503, "Storage unavailable.");
+  initRateLimiters(redis);
+
+  const ip = getClientIp(req);
+  const allowed = await checkRateLimit(res, ip);
+  if (!allowed) return;
+
+  try {
+    const account = await getAccountFromRequest(req, redis);
+    if (!account) {
+      return res.status(401).json({ ok: false, reason: "not_authenticated" });
+    }
+
+    const lock = await checkLoginLock(redis, account.email);
+    if (lock.locked) {
+      const minutes = Math.max(1, Math.ceil(lock.retryAfterSec / 60));
+      res.setHeader("Retry-After", String(lock.retryAfterSec));
+      return res.status(429).json({
+        ok: false,
+        reason: "too_many_attempts",
+        error: `Too many failed attempts. Try again in ${minutes} minute${minutes > 1 ? "s" : ""}.`,
+        retryAfterSec: lock.retryAfterSec,
+      });
+    }
+    const password = String(readBody(req).password ?? "");
+    const outcome = await authenticate(redis, { email: account.email, password });
+    if (!outcome.ok) {
+      await recordLoginFailure(redis, account.email);
+      return res.status(401).json({ ok: false, reason: "invalid_credentials" });
+    }
+    await clearLoginFailures(redis, account.email, lock.failures);
+
+    const result = await eraseAccount(redis, account.email, { installHint: getInstallId(req) });
+    if (!result.ok) {
+      // Nothing was deleted: the account is still there and the same request can be sent again.
+      return res.status(503).json({ ok: false, reason: "try_again", message: "Could not finish deleting the account. Nothing was deleted: please try again in a few minutes." });
+    }
+    clearSessionCookie(res);
+    logger.metric("auth.delete-account", { emailRef: emailRef(account.email), installsErased: result.installsErased });
+    return res.status(200).json({ ok: true, installsErased: result.installsErased });
+  } catch (err) {
+    logger.error("auth/delete-account", "erasure failed", { error: String(err) });
+    if (String(err).includes("SESSION_SECRET")) {
+      return apiError(res, 503, "Auth not configured on this deployment.");
+    }
+    captureError(err, { endpoint: "auth/delete-account" });
+    return apiError(res, 500, "Could not delete the account.");
   }
 }
 
@@ -594,6 +657,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return await handleLogout(req, res);
       case "logout-all":
         return await handleLogoutAll(req, res);
+      case "delete-account":
+        return await handleDeleteAccount(req, res);
       case "me":
         return await handleMe(req, res);
       case "sync-token":
@@ -604,7 +669,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return apiError(
           res,
           404,
-          "Unknown auth action. Use signup | login | logout | logout-all | me | sync-token | nowpayments-ipn.",
+          "Unknown auth action. Use signup | login | logout | logout-all | delete-account | me | sync-token | nowpayments-ipn.",
         );
     }
   } catch (err) {
@@ -656,6 +721,7 @@ export const __test = {
   handleSignup,
   handleLogin,
   handleLogout,
+  handleDeleteAccount,
   handleMe,
   handleSyncToken,
   handleNowpaymentsIpn,

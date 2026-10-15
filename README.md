@@ -221,6 +221,7 @@ POST /api/auth/signup                   Create an account
 POST /api/auth/login                    Sign in (10 failed attempts on one e-mail in 15 minutes lock that e-mail's login: 429 + Retry-After)
 POST /api/auth/logout                   Sign out (this browser)
 POST /api/auth/logout-all               Sign out everywhere: every session of the account stops working
+POST /api/auth/delete-account           Delete the account (needs the password): erases the account, its installs' history and plan; purchase records are kept
 GET  /api/auth/me                       Get current session
 POST /api/auth/sync-token               Get JWT for the extension bridge
 POST /api/auth/nowpayments-ipn          NOWPayments webhook (HMAC-SHA512 verified)

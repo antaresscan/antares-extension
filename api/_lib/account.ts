@@ -32,7 +32,8 @@ export interface Account {
   emailVerified: boolean;
   /**
    * "Log out everywhere" (audit A-12): a session token only counts while it carries THIS number. revokeAllSessions raises it, and every
-   * token signed before stops working at once. An account that predates it has none stored, which reads as 0.
+   * token signed before stops working at once. An account that predates it has none stored, which reads as 0. A new account starts at the
+   * time of its creation (ms), see createAccount.
    */
   sessionVersion: number;
 }
@@ -303,7 +304,9 @@ export async function createAccount(
     passwordHash,
     createdAt: Date.now(),
     emailVerified: false,
-    sessionVersion: 0,
+    // Not 0: an account that was deleted (A-14b) and is created again with the same e-mail must not honour the tokens of the old one, which
+    // are signed with the same e-mail and live 30 days. A start at the moment of creation can never equal the number of an older account.
+    sessionVersion: Date.now(),
   };
 
   await redis.hset(ACCOUNT_KEY(email), {
@@ -312,6 +315,7 @@ export async function createAccount(
     passwordHash: account.passwordHash,
     createdAt: String(account.createdAt),
     emailVerified: account.emailVerified ? "1" : "0",
+    sessionVersion: String(account.sessionVersion),
   });
 
   logger.info("account", "created", { emailRef: emailRef(email) });
