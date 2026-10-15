@@ -6,9 +6,9 @@ import {
   determineVerdict,
 } from "../api/_lib/pipeline";
 import {
-  layerGoPlus, layerRugCheck,
+  layerRugCheck,
 } from "../api/_lib/layers";
-import type { LayerResult, GoPlusTokenResult, RugCheckSummary } from "../api/_lib/types";
+import type { LayerResult, RugCheckSummary } from "../api/_lib/types";
 import { computeCacheTTL } from "../api/_lib/helpers";
 
 // ─── Session 1: Safety overhaul regressions ──────────────────────────────────
