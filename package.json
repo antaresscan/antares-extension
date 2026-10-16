@@ -20,7 +20,7 @@
     "replay:capture": "tsx scripts/replay/capture.ts"
   },
   "dependencies": {
-    "@sentry/browser": "^10.76.1",
+    "@sentry/browser": "^10.76.2",
     "@sentry/node": "10.76.2",
     "@upstash/ratelimit": "^2.2.0",
     "@upstash/redis": "^1.39.0",
