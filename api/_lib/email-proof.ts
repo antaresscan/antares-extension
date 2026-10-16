@@ -17,11 +17,12 @@ import type { Account } from "./account";
 
 /**
  * Accounts created before this instant existed before the rule: they get the grace. It must be the moment this code goes LIVE: an account made
- * by the old code (which asked for no proof) has to fall before it, an account made by the new code (which asks) after it. It is written as the
- * day the work started and is MOVED to the instant of the merge when A-01 is merged (the grace end below moves with it).
+ * by the old code (which asked for no proof) has to fall before it, an account made by the new code (which asks) after it. It was MOVED to the
+ * instant of the merge (2026-10-16 01:40 UTC, a few minutes BEFORE the deployment, never after): an account made in that gap gets its
+ * confirmation link at its next login, and an account made by the new code can never be taken for an old one.
  * Never in the future: an account created by a test or by the new code before this date would count as an old one.
  */
-export const LEGACY_ACCOUNTS_CREATED_BEFORE = Date.UTC(2026, 9, 16);
+export const LEGACY_ACCOUNTS_CREATED_BEFORE = Date.UTC(2026, 9, 16, 1, 40);
 /** The end of the grace: from this instant an unconfirmed account of any age has no licence. 2026-11-20 00:00 UTC. */
 export const LEGACY_GRACE_ENDS_AT = Date.UTC(2026, 10, 20);
 

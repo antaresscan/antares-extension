@@ -26,9 +26,9 @@ Taking the plan of a paying customer away on the day this ships would be unfair,
 link (at most once every 10 minutes), and the website's account page shows a notice with the date. After that date it is treated like a new
 account: confirm, or Free.
 
-**At merge time, set `LEGACY_ACCOUNTS_CREATED_BEFORE` to the instant of the merge and `LEGACY_GRACE_ENDS_AT` about four weeks later.** The first
-must never be in the future (an account created by the new code would count as an old one), and it must not be earlier than the last account
-made by the old code.
+`LEGACY_ACCOUNTS_CREATED_BEFORE` was set to the instant of the merge (2026-10-16 01:40 UTC) and `LEGACY_GRACE_ENDS_AT` to 2026-11-20. The first
+must never be in the future (an account created by the new code would count as an old one). An account made by the old code in the few minutes
+between that instant and the deployment is not in the grace; it receives its confirmation link at its next login.
 
 ## What the deployment needs
 
