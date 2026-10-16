@@ -158,6 +158,7 @@ describe("every outside service the API calls is named in the table of processor
     ["api.helius.xyz", /Helius/],
     ["pro-api.solscan.io", /Solscan/],
     ["api.geckoterminal.com", /GeckoTerminal/],
+    ["lite-api.jup.ag", /Jupiter/],
     ["generativelanguage.googleapis.com", /Gemini/],
     ["api.nowpayments.io", /NOWPayments/],
     ["api.resend.com", /Resend/],
