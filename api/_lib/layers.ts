@@ -1111,7 +1111,7 @@ export function layerChart(
   // legit blue-chips like FWOG/NEET get capped at score 500 because
   // chart pattern detectors mistake quiet sideways trading for
   // controlled dumps.
-  maturityContext?: { holders: number | null; liquidity: number; tokenAgeHours: number | null; mintAuthority: boolean; freezeAuthority: boolean; honeypot: boolean; lpBurned?: boolean | null; lpPctOfSupply?: number | null; athDropPct?: number | null; athDate?: string | null; athCollapsed?: boolean | null },
+  maturityContext?: { holders: number | null; liquidity: number; tokenAgeHours: number | null; mintAuthority: boolean; freezeAuthority: boolean; honeypot: boolean; lpBurned?: boolean | null; lpPctOfSupply?: number | null; athDropPct?: number | null; athDate?: string | null; athSource?: "solscan" | "coingecko" | null; athCollapsed?: boolean | null },
   // Daily candles (up to 31 days) for weekly / monthly pump detection.
   // Sorted ascending (oldest first). Fetched separately from GeckoTerminal
   // /ohlcv/day so short-term candles stay cheap (40 × 5-min).
@@ -1124,7 +1124,7 @@ export function layerChart(
   const penalties: number[] = [];
   let forceRug = false, safeBlocked = false;
   const collapse = collapseFromPeak(dailyCandles);
-  const athFlag = athDropFlag(maturityContext?.athDropPct, maturityContext?.athDate, maturityContext?.athCollapsed);
+  const athFlag = athDropFlag(maturityContext?.athDropPct, maturityContext?.athDate, maturityContext?.athCollapsed, maturityContext?.athSource);
   if (!candles || candles.length < 3) {
     // Nothing traded in the last hours (a dead token) leaves nothing to chart, but a collapse seen in the 30-day history is still said.
     if (collapse) {
@@ -1436,7 +1436,7 @@ export function layerChart(
     if (c.forceRug) forceRug = true;
     rugEvidence.push(...c.evidence);
   }
-  // A token that lost most of its value since its all-time high (CoinGecko), said once, as a warning (the collapse above says the last 90 days).
+  // A token that lost most of its value since its all-time high, said once, as a warning (the collapse above says the last 90 days).
   if (athFlag) { flags.push(athFlag.flag); penalties.push(athFlag.penalty); safeBlocked = true; }
 
   trust = applyDiminishingPenalties(trust, penalties);
@@ -1446,12 +1446,12 @@ export function layerChart(
 // ═══ Collapse from the all-time high ══════════════════════════════════════════════════════════════
 /**
  * The flag of a token that has collapsed (ATH_COLLAPSE_PCT or more below the highest price it ever traded at): a WARNING (see ATH_FLAG_MIN_AGE_DAYS for why never a critical).
- * The source is named in the label (CoinGecko asks for it). null above the line or when the fall is unknown.
+ * The source of the high is named in the label (Solscan, else CoinGecko: the number is only as good as its source). null above the line or when the fall is unknown.
  */
-function athDropFlag(dropPct: number | null | undefined, athDate: string | null | undefined, athCollapsed?: boolean | null): { flag: ScanFlag; penalty: number } | null {
+function athDropFlag(dropPct: number | null | undefined, athDate: string | null | undefined, athCollapsed?: boolean | null, source?: "solscan" | "coingecko" | null): { flag: ScanFlag; penalty: number } | null {
   if (dropPct == null || !Number.isFinite(dropPct) || historyIsClean(dropPct, athCollapsed)) return null;
   const when = athDate && /^\d{4}-\d{2}/.test(athDate) ? `, ${athDate.slice(0, 7)}` : "";
-  return { flag: makeFlag(`Down ${Math.floor(dropPct)}% from its all-time high (CoinGecko${when})`, "warning", 0), penalty: 0.85 };
+  return { flag: makeFlag(`Down ${Math.floor(dropPct)}% from its all-time high (${source === "solscan" ? "Solscan" : "CoinGecko"}${when})`, "warning", 0), penalty: 0.85 };
 }
 
 // ═══ Collapse from the recent high ════════════════════════════════════════════════════════════════

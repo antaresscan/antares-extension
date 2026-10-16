@@ -55,7 +55,7 @@ export interface DecideInput {
   dailyCandles: OHLCVCandle[];
   recentTransfers: SolscanTransfer[];
   creatorReputation: CreatorReputation | null;
-  /** The highest price the token ever traded at (CoinGecko), asked for only when isTop10Candidate (api/_lib/ath.ts); null or absent when unknown. */
+  /** The highest price the token ever traded at (Solscan, else CoinGecko), asked for only when the verdict can use it (api/_lib/ath.ts); null or absent when unknown. */
   allTimeHigh?: AllTimeHigh | null;
   /** The side of the line the token is on, with the memory of where it was (judgeHistory in ath.ts); absent: the plain line on the fall computed here. */
   athCollapsed?: boolean | null;
@@ -107,7 +107,7 @@ export function decide(input: DecideInput): Decision {
   } = input;
   const notes: DecisionNote[] = [];
 
-  // How far the price stands below the all-time high (CoinGecko), when both are known.
+  // How far the price stands below the all-time high, when both are known.
   const athDrop = athDropPct(allTimeHigh, asNumber(pair?.priceUsd));
   // A mint authority held by a bridge is softened only for a token whose history is not a collapse (LUNA -98 %, TRUNK -96 % keep the critical: nobody holds a key for the
   // authority, but the token itself already lost almost everything, and its wrapped supply can only follow that). An unknown history is no softening.
@@ -166,6 +166,7 @@ export function decide(input: DecideInput): Decision {
     // How far the token stands below its all-time high, only for a token that is read for it (athDropFlag says it from ATH_COLLAPSE_PCT).
     athDropPct: (isAthFlagCandidate({ tokenAgeMinutes, marketCapUsd: marketCap, issuerBacked: issuerKindOf(resolvedMint) !== null }) ? athDrop : null) as number | null,
     athDate: (allTimeHigh?.athDate ?? null) as string | null,
+    athSource: allTimeHigh?.source ?? null,
     athCollapsed: athCollapsed ?? null,
   };
   // A token the market has proven AND whose history does not say the insiders already sold: its concentrated top 10 is a warning, not a critical (isTop10Proven).

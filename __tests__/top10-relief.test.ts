@@ -77,7 +77,7 @@ describe("isTop10Proven with the memory of the line (athCollapsed): the side of 
 });
 
 describe("athDropPct", () => {
-  const ath = { ath: 2, athDate: "2025-01-19T00:00:00.000Z" };
+  const ath = { ath: 2, athDate: "2025-01-19T00:00:00.000Z", source: "coingecko" as const };
   it("is how far the price stands below the high, in percent, and never negative", () => {
     expect(athDropPct(ath, 1)).toBeCloseTo(50, 6);
     expect(athDropPct(ath, 0.02)).toBeCloseTo(99, 6);
@@ -88,7 +88,7 @@ describe("athDropPct", () => {
     expect(athDropPct(ath, null)).toBeNull();
     expect(athDropPct(ath, 0)).toBeNull();
     expect(athDropPct(ath, Number.NaN)).toBeNull();
-    expect(athDropPct({ ath: 0, athDate: null }, 1)).toBeNull();
+    expect(athDropPct({ ath: 0, athDate: null, source: "coingecko" }, 1)).toBeNull();
   });
 });
 
@@ -212,12 +212,12 @@ describe("decide: CARDS and MELANIA, the same top 10, two histories", () => {
     expect(isTop10Candidate(top10ReliefFactsOf(thin))).toBe(false);
   });
   it("-9 % from its high: the top 10 at 73 % is a warning, the verdict is not DANGER", () => {
-    const d = decide(input({ ath: 0.381, athDate: "2025-09-14T00:00:00.000Z" }));
+    const d = decide(input({ ath: 0.381, athDate: "2025-09-14T00:00:00.000Z", source: "coingecko" }));
     expect(d.flags.filter((f) => f.severity === "critical")).toEqual([]);
     expect(d.risk).toBe("CAUTION");
   });
   it("-99 % from its high: the same top 10 is the critical it always was", () => {
-    const d = decide(input({ ath: 34.7, athDate: "2025-01-19T00:00:00.000Z" }));
+    const d = decide(input({ ath: 34.7, athDate: "2025-01-19T00:00:00.000Z", source: "coingecko" }));
     expect(d.flags.some((f) => f.severity === "critical" && /Top 10 hold 73%/.test(f.label))).toBe(true);
     expect(d.risk).toBe("DANGER");
   });

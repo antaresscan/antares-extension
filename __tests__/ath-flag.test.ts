@@ -47,6 +47,13 @@ describe("layerChart: the flag", () => {
     expect(r.flags.some((x) => x.severity === "critical")).toBe(false);
     expect(r.trust).toBeLessThan(layerChart(flat(), pair(), 700 * DAY, ctx(50)).trust);
   });
+  it("the flag names the source that gave the high: Solscan when it did, CoinGecko otherwise (and when the source is not known)", () => {
+    const label = (athSource?: "solscan" | "coingecko" | null) => layerChart(flat(), pair(), 700 * DAY, { ...ctx(94.2, "2024-11-13"), athSource }).flags.find((x) => /all-time high/.test(x.label))?.label;
+    expect(label("solscan")).toBe("Down 94% from its all-time high (Solscan, 2024-11)");
+    expect(label("coingecko")).toBe("Down 94% from its all-time high (CoinGecko, 2024-11)");
+    expect(label(null)).toBe("Down 94% from its all-time high (CoinGecko, 2024-11)");
+    expect(label(undefined)).toBe("Down 94% from its all-time high (CoinGecko, 2024-11)");
+  });
   it("the line is 90 %: 89.9 % says nothing, 90 % says it, and the number shown is never rounded up to the line", () => {
     expect(layerChart(flat(), pair(), 700 * DAY, ctx(89.9)).flags.some((x) => /all-time high/.test(x.label))).toBe(false);
     expect(layerChart(flat(), pair(), 700 * DAY, ctx(90)).flags.some((x) => /^Down 90% from/.test(x.label))).toBe(true);
@@ -87,7 +94,7 @@ describe("decide: the flag, for the tokens that are read for it", () => {
     totalSupplyUi: 1_000_000, solscanTokenAgeHours: 700 * 24, dexTokenAgeHours: 700 * 24, resolvedHolderAccounts: [],
     solscanTrades24h: null, solscanTraders24h: null, solscanAnswered: false, candles: flat(), dailyCandles: [], recentTransfers: [], creatorReputation: null, ...over,
   });
-  const high = (ath: number) => ({ ath, athDate: "2024-11-13T00:00:00.000Z" });
+  const high = (ath: number) => ({ ath, athDate: "2024-11-13T00:00:00.000Z", source: "coingecko" as const });
   const hasFlag = (d: ReturnType<typeof decide>) => d.flags.some((f) => /all-time high/.test(f.label));
 
   it("95 % below its high: the flag is there and it is a warning, never a critical", () => {
@@ -96,7 +103,12 @@ describe("decide: the flag, for the tokens that are read for it", () => {
     expect(d.flags.find((f) => /all-time high/.test(f.label))?.severity).toBe("warning");
     expect(d.risk).not.toBe("SAFE");
   });
-  it("20 % below its high, an unknown high, or a high that CoinGecko does not give: no flag", () => {
+  it("the flag says which source gave the high: the label follows the AllTimeHigh it was given", () => {
+    const label = (source: "solscan" | "coingecko") => decide(input({ allTimeHigh: { ...high(1), source } })).flags.find((f) => /all-time high/.test(f.label))?.label;
+    expect(label("solscan")).toBe("Down 95% from its all-time high (Solscan, 2024-11)");
+    expect(label("coingecko")).toBe("Down 95% from its all-time high (CoinGecko, 2024-11)");
+  });
+  it("20 % below its high, an unknown high, or a high that no source gives: no flag", () => {
     expect(hasFlag(decide(input({ allTimeHigh: high(0.0625) })))).toBe(false);
     expect(hasFlag(decide(input({ allTimeHigh: null })))).toBe(false);
     expect(hasFlag(decide(input()))).toBe(false);

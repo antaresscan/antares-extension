@@ -1,57 +1,75 @@
-// api/_lib/ath.ts — the highest price a token ever traded at (CoinGecko), asked only for the few tokens whose verdict can depend on it.
+// api/_lib/ath.ts — the highest price a token ever traded at (Solscan Pro, else CoinGecko), asked only for the few tokens whose verdict can depend on it.
 //
 // Why it exists: the engine reads 90 days of candles at most, and a token that lost 99 % of its value two years ago looks, in 90 days, like a quiet token. The all-time high
 // says it (MELANIA -99 %, YZY -90 %, ZEREBRO -94 %: a top 10 that holds 80 % of the supply is then control, not exchanges and treasuries), where a serious token that lost
 // next to nothing (CARDS -9 %, BC -8 %) keeps its relief. It is ONE number per token, and it moves slowly, so it is kept in Redis for a day.
 //
+// Where it comes from: Solscan Pro first (token/price, one USD price per day since 2021: the plan is already paid, and it is not rate limited like a public API), CoinGecko's
+// public API when Solscan has nothing for the token, does not answer, or has no key here. The source that gave the number is kept with it and named in the flag.
+//
 // Rules, all of them to keep it from ever showing something wrong:
-//   - it is only ASKED for a token that could use it (isTop10Candidate, a bridge-held mint authority, isAthFlagCandidate), so CoinGecko's public API (no key, a few calls a
-//     minute) sees a few hundred tokens a day;
+//   - it is only ASKED for a token that could use it (isTop10Candidate, a bridge-held mint authority, isAthFlagCandidate), so a source sees a few hundred tokens a day;
 //   - it is a HELP, never a requirement of the scan: a refusal, a timeout or an answer of an unexpected shape give "no high" and the verdict the engine gave before this existed
 //     (no relief, no softening, no flag), never a different or a wrong verdict. But such a scan says that it is missing something (`failed`): the handler keeps its result
-//     only 30 seconds, like any scan born from missing data, so that one hiccup of CoinGecko does not pin a worse verdict on CARDS for ten minutes;
-//   - a token CoinGecko does not list (404), or lists without a high, is an ANSWER: it is remembered for 6 h so that it is not asked again at each scan, and it is not a failure;
+//     only 30 seconds, like any scan born from missing data, so that one hiccup does not pin a worse verdict on CARDS for ten minutes. It is `failed` unless the sources
+//     ANSWERED: Solscan silent and CoinGecko answering "no such token" is still a gap (Solscan may know the token), and nothing is remembered about it;
+//   - a token that the sources answer they do not know (CoinGecko 404, Solscan without a price), or know without a high, is an ANSWER: it is remembered for 6 h so that it is not
+//     asked again at each scan, and it is not a failure;
 //   - CoinGecko's public API (no key) is rate limited and shared: measured live on 2026-10-16, it refused every call after the sixth in a minute. So after a refusal or a
-//     silence NOBODY asks for ATH_BACKOFF_S seconds (one Redis key shared by every instance), instead of each failed scan asking again; and an optional Demo key
-//     (COINGECKO_DEMO_API_KEY, free, about 30 calls a minute) is sent when the environment has one. Nothing needs it: without it the code works as described here;
+//     silence NOBODY asks it for ATH_BACKOFF_S seconds (one Redis key shared by every instance), instead of each failed scan asking again; and an optional Demo key
+//     (COINGECKO_DEMO_API_KEY, free, about 30 calls a minute) is sent when the environment has one. Solscan has its own pause of the same length, and a refused key
+//     (401/403) already pauses Solscan for ten minutes (fetchSolscan). Nothing needs a key that is not there: without Solscan the code works as it did with CoinGecko alone;
+//   - Solscan's feed has glitches like any feed: a day that stands ten times above both its neighbours is not a price (parseSolscanHigh);
 //   - Redis missing or failing: nothing is read or written, the scan goes on (fail open), a preview deployment keeps its own entries (deployment.ts).
-// Cost: one or two Redis commands per candidate scan, plus one CoinGecko request per candidate token a day.
+// Cost: one or two Redis commands per candidate scan, plus one Solscan request (100 compute units) per candidate token a day, and one CoinGecko request when Solscan has nothing.
 import { getCacheRedis } from "./cache";
 import { deploymentNamespace } from "./deployment";
+import { fetchSolscan, solscanUsable } from "./fetchers";
 import { fetchJson } from "./http";
 import { logger } from "./logger";
-import { ATH_COLLAPSE_PCT, ATH_COLLAPSE_EXIT_PCT } from "./constants";
+import { ATH_COLLAPSE_PCT, ATH_COLLAPSE_EXIT_PCT, SOLSCAN_PRICE_FROM, SOLSCAN_PRICE_SPIKE_FACTOR } from "./constants";
+
+/** Who gave the number: named in the flag, so that anyone can see where "down 94 % from its high" comes from. */
+export type AthSource = "solscan" | "coingecko";
 
 export interface AllTimeHigh {
   /** The highest price ever, in USD. */
   ath: number;
-  /** When it was reached (ISO date), or null when CoinGecko does not say. */
+  /** When it was reached (ISO date; just the day for Solscan), or null when the source does not say. */
   athDate: string | null;
+  source: AthSource;
 }
 
 /** What asking for the all-time high came to. */
 export interface AllTimeHighLookup {
-  /** The high, or null when there is none to give (CoinGecko does not know the token, or the answer could not be had). */
+  /** The high, or null when there is none to give (no source knows the token, or the answer could not be had). */
   high: AllTimeHigh | null;
-  /** The answer could not be had (CoinGecko refused, did not answer or sent something unreadable): the verdict that follows is born from missing data. A token CoinGecko does not know is NOT a failure. */
+  /** The answer could not be had (a source refused, did not answer or sent something unreadable, and no other one answered): the verdict that follows is born from missing data. A token that the sources answer they do not know is NOT a failure. */
   failed: boolean;
 }
 
 /** How long a known all-time high is kept. It changes only when a new high is made, and a token that makes one is nowhere near the line (ATH_COLLAPSE_PCT). */
 export const ATH_TTL_S = 24 * 3600;
-/** How long "CoinGecko has no high for this token" is kept. */
+/** How long "the sources have no high for this token" is kept. */
 export const ATH_NOT_LISTED_TTL_S = 6 * 3600;
 const ATH_TIMEOUT_MS = 4000;
-/** After a refusal or a silence of CoinGecko, nobody asks for this long (seconds). */
+const SOLSCAN_ATH_TIMEOUT_MS = 3000;
+/** After a refusal or a silence of CoinGecko (or of Solscan), nobody asks that source for this long (seconds). */
 export const ATH_BACKOFF_S = 60;
 
 export const athKey = (mint: string): string => `antares:ath:${deploymentNamespace()}${mint}`;
-/** One key for the whole deployment: set when CoinGecko refused or was silent, so that the next scans do not ask (see the rules above). */
+/** One key for the whole deployment: set when CoinGecko refused or was silent, so that the next scans do not ask it (see the rules above). */
 export const athBackoffKey = (): string => `antares:ath-backoff:${deploymentNamespace()}`;
+/** The same for Solscan (a 401/403 is handled apart, in fetchSolscan: it pauses the instance for ten minutes). */
+export const athSolscanBackoffKey = (): string => `antares:ath-backoff-solscan:${deploymentNamespace()}`;
 
 /** The CoinGecko request: the coin of a Solana contract, with everything but the market data left out (it is a few kilobytes instead of a hundred). */
 export const athUrl = (mint: string): string =>
   `https://api.coingecko.com/api/v3/coins/solana/contract/${encodeURIComponent(mint)}?localization=false&tickers=false&community_data=false&developer_data=false&sparkline=false`;
+
+/** The Solscan request: the daily USD prices of a token from SOLSCAN_PRICE_FROM to `today` (YYYYMMDD). */
+export const solscanPriceEndpoint = (mint: string, today: string): string =>
+  `/token/price?address=${encodeURIComponent(mint)}&from_time=${SOLSCAN_PRICE_FROM}&to_time=${today}`;
 
 /** What CoinGecko says about the all-time high, or null when the answer is not a positive USD price. Never throws. */
 export function parseAllTimeHigh(raw: unknown): AllTimeHigh | null {
@@ -59,7 +77,38 @@ export function parseAllTimeHigh(raw: unknown): AllTimeHigh | null {
   const ath = md?.ath?.usd;
   if (typeof ath !== "number" || !Number.isFinite(ath) || ath <= 0) return null;
   const date = md?.ath_date?.usd;
-  return { ath, athDate: typeof date === "string" && /^\d{4}-\d{2}-\d{2}/.test(date) ? date : null };
+  return { ath, athDate: typeof date === "string" && /^\d{4}-\d{2}-\d{2}/.test(date) ? date : null, source: "coingecko" };
+}
+
+/** A Solscan day, 20250914 (number or text) or 2025-09-14, as 2025-09-14; null when it is neither. */
+function solscanDay(raw: unknown): string | null {
+  const text = typeof raw === "number" && Number.isFinite(raw) ? String(Math.trunc(raw)) : typeof raw === "string" ? raw.trim() : "";
+  const m = text.match(/^(\d{4})-?(\d{2})-?(\d{2})/);
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : null;
+}
+
+/**
+ * The highest daily price of what Solscan sent ({ success, data: [{ date, price }] }), or null when there is no positive USD price in it. Never throws.
+ * A day that stands more than SOLSCAN_PRICE_SPIKE_FACTOR times above EVERY neighbour it has is a glitch of the feed, not a price: it counts as the higher of its neighbours.
+ */
+export function parseSolscanHigh(raw: unknown): AllTimeHigh | null {
+  const body = raw as { success?: unknown; data?: unknown } | null | undefined;
+  if (!body || body.success === false || !Array.isArray(body.data)) return null;
+  const days: Array<{ day: string; price: number }> = [];
+  for (const row of body.data as Array<{ date?: unknown; price?: unknown } | null>) {
+    const price = row?.price;
+    const day = solscanDay(row?.date);
+    if (day && typeof price === "number" && Number.isFinite(price) && price > 0) days.push({ day, price });
+  }
+  days.sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0));
+  let best: { day: string; price: number } | null = null;
+  for (let i = 0; i < days.length; i++) {
+    const neighbours = [days[i - 1]?.price, days[i + 1]?.price].filter((n): n is number => n !== undefined);
+    const glitch = neighbours.length > 0 && neighbours.every((n) => days[i].price > n * SOLSCAN_PRICE_SPIKE_FACTOR);
+    const price = glitch ? Math.max(...neighbours) : days[i].price;
+    if (!best || price > best.price) best = { day: days[i].day, price };
+  }
+  return best ? { ath: best.price, athDate: best.day, source: "solscan" } : null;
 }
 
 /** How far the price stands below the all-time high, in percent (0 at or above it). null when either number is not a positive finite number. */
@@ -98,10 +147,61 @@ export async function judgeHistory(mint: string, dropPct: number | null | undefi
   return collapsed;
 }
 
-interface Memory { known: boolean; ath: number | null; athDate: string | null }
+/** What is kept in Redis for a token. `source` is absent from what was written before Solscan was asked: that was CoinGecko. */
+interface Memory { known: boolean; ath: number | null; athDate: string | null; source?: AthSource }
+
+type Redis = ReturnType<typeof getCacheRedis>;
+
+/** What one source came to: a high, an ANSWER without one (the token is not there), or no answer at all. `unused` = nothing was sent (no key, key refused, paused). */
+type Asked = { kind: "high"; high: AllTimeHigh } | { kind: "nothing" } | { kind: "failed" } | { kind: "unused" };
+
+const today = (): string => new Date().toISOString().slice(0, 10).replace(/-/g, "");
+
+async function paused(redis: Redis, key: string): Promise<boolean> {
+  try {
+    return !!(redis && (await redis.get(key)));
+  } catch (e: unknown) {
+    logger.warn("ath", "backoff not read", { error: String(e) });
+    return false;
+  }
+}
+
+async function pause(redis: Redis, key: string): Promise<void> {
+  try { if (redis) await redis.set(key, 1, { ex: ATH_BACKOFF_S }); } catch (e: unknown) { logger.warn("ath", "backoff not kept", { error: String(e) }); }
+}
+
+async function askSolscan(mint: string, redis: Redis): Promise<Asked> {
+  if (!solscanUsable()) return { kind: "unused" };
+  if (await paused(redis, athSolscanBackoffKey())) return { kind: "failed" };
+  let status = 0;
+  const raw = await fetchSolscan(solscanPriceEndpoint(mint, today()), { timeoutMs: SOLSCAN_ATH_TIMEOUT_MS, retries: 0, onStatus: (s) => { status = s; } });
+  const high = parseSolscanHigh(raw);
+  if (high) return { kind: "high", high };
+  if (status === 401 || status === 403) return { kind: "unused" }; // the key is refused: fetchSolscan stops asking for ten minutes, CoinGecko does the work
+  if (status === 0 || status === 429 || status >= 500) {
+    await pause(redis, athSolscanBackoffKey()); // silence, refusal or server error: let Solscan breathe
+    return { kind: "failed" };
+  }
+  if (status !== 200 && status !== 404) logger.warn("ath", "solscan price refused the request", { status }); // a 400 on every token would mean that the request itself is wrong: say it
+  return { kind: "nothing" }; // 200 without a usable price, 404, or a request it refuses: Solscan has no history for this token
+}
+
+async function askCoinGecko(mint: string, redis: Redis): Promise<Asked> {
+  if (await paused(redis, athBackoffKey())) return { kind: "failed" }; // CoinGecko refused a moment ago: nobody asks again yet
+  let status = 0;
+  const demoKey = process.env.COINGECKO_DEMO_API_KEY;
+  const raw = await fetchJson<unknown>(athUrl(mint), { headers: { accept: "application/json", ...(demoKey ? { "x-cg-demo-api-key": demoKey } : {}) } }, ATH_TIMEOUT_MS, 0, (s) => { status = s; });
+  const high = parseAllTimeHigh(raw);
+  if (high) return { kind: "high", high };
+  // CoinGecko ANSWERED that it has no such token (404), or answered about a token it has no high for (200 with something else): an answer, not a failure.
+  if (status === 404 || (status === 200 && raw !== null)) return { kind: "nothing" };
+  // A refusal (429), a server error or a silence (no status at all): let CoinGecko breathe. A reply that is unreadable in another way does not stop anyone.
+  if (status === 0 || status === 429 || status >= 500) await pause(redis, athBackoffKey());
+  return { kind: "failed" };
+}
 
 /**
- * The all-time high of this token, from Redis or else from CoinGecko. Never throws.
+ * The all-time high of this token, from Redis or else from Solscan, else from CoinGecko. Never throws.
  * Ask only for a token that can use it (see the rules above).
  */
 export async function getAllTimeHigh(mint: string): Promise<AllTimeHighLookup> {
@@ -111,35 +211,24 @@ export async function getAllTimeHigh(mint: string): Promise<AllTimeHighLookup> {
       const kept = await redis.get<Memory>(athKey(mint));
       if (kept && typeof kept === "object" && typeof kept.known === "boolean") {
         if (!kept.known) return { high: null, failed: false };
-        if (typeof kept.ath === "number" && kept.ath > 0) return { high: { ath: kept.ath, athDate: typeof kept.athDate === "string" ? kept.athDate : null }, failed: false };
+        if (typeof kept.ath === "number" && kept.ath > 0) return { high: { ath: kept.ath, athDate: typeof kept.athDate === "string" ? kept.athDate : null, source: kept.source === "solscan" ? "solscan" : "coingecko" }, failed: false };
       }
     }
   } catch (e: unknown) {
     logger.warn("ath", "not read", { error: String(e) });
   }
-  try {
-    if (redis && (await redis.get(athBackoffKey()))) return { high: null, failed: true }; // CoinGecko refused a moment ago: nobody asks again yet
-  } catch (e: unknown) {
-    logger.warn("ath", "backoff not read", { error: String(e) });
-  }
-  let status = 0;
-  const demoKey = process.env.COINGECKO_DEMO_API_KEY;
-  const raw = await fetchJson<unknown>(athUrl(mint), { headers: { accept: "application/json", ...(demoKey ? { "x-cg-demo-api-key": demoKey } : {}) } }, ATH_TIMEOUT_MS, 0, (s) => { status = s; });
-  const high = parseAllTimeHigh(raw);
-  // CoinGecko ANSWERED that it has no such token (404), or answered about a token it has no high for (200 without one): an answer, not a failure.
-  const answeredNothing = status === 404 || (status === 200 && raw !== null && high === null);
+  const solscan = await askSolscan(mint, redis);
+  const coingecko: Asked = solscan.kind === "high" ? solscan : await askCoinGecko(mint, redis);
+  const high = solscan.kind === "high" ? solscan.high : coingecko.kind === "high" ? coingecko.high : null;
+  // The token is unknown ONLY if every source that was asked answered so: a Solscan that did not answer leaves the question open.
+  const answeredNothing = !high && coingecko.kind === "nothing" && solscan.kind !== "failed";
   try {
     if (redis) {
-      if (high) await redis.set(athKey(mint), { known: true, ath: high.ath, athDate: high.athDate } satisfies Memory, { ex: ATH_TTL_S });
+      if (high) await redis.set(athKey(mint), { known: true, ath: high.ath, athDate: high.athDate, source: high.source } satisfies Memory, { ex: ATH_TTL_S });
       else if (answeredNothing) await redis.set(athKey(mint), { known: false, ath: null, athDate: null } satisfies Memory, { ex: ATH_NOT_LISTED_TTL_S });
     }
   } catch (e: unknown) {
     logger.warn("ath", "not kept", { error: String(e) });
   }
-  const failed = !high && !answeredNothing;
-  // A refusal (429), a server error or a silence (no status at all): let CoinGecko breathe. A reply that is unreadable in another way does not stop anyone.
-  if (failed && (status === 0 || status === 429 || status >= 500)) {
-    try { if (redis) await redis.set(athBackoffKey(), 1, { ex: ATH_BACKOFF_S }); } catch (e: unknown) { logger.warn("ath", "backoff not kept", { error: String(e) }); }
-  }
-  return { high, failed };
+  return { high, failed: !high && !answeredNothing };
 }

@@ -548,7 +548,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // everything after it speak of the verdict the user will see. A slow or failed read is "not condemned": it never delays or changes a scan.
     const condemnedEntry = await withBudget(getCondemned(resolvedMint), 800);
 
-    // The all-time high (CoinGecko), asked for only when the token can use it: for the top-10 relief, to soften a bridge-held mint authority, or to say that it collapsed
+    // The all-time high (Solscan, else CoinGecko), asked for only when the token can use it: for the top-10 relief, to soften a bridge-held mint authority, or to say that it collapsed
     // (a few hundred tokens a day in all, kept in Redis for a day: api/_lib/ath.ts). No high means no relief, no softening and no flag: the verdict of before.
     const historyDecidesVerdict = isTop10Candidate(top10ReliefFactsOf({ pair, dexData, resolvedMint, marketCap, tokenAgeMinutes, holders, authFacts })) || !!authFacts.mintHolder;
     const wantsAllTimeHigh = historyDecidesVerdict || isAthFlagCandidate({ tokenAgeMinutes, marketCapUsd: marketCap, issuerBacked: issuerKindOf(resolvedMint) !== null });
@@ -556,9 +556,9 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const allTimeHigh = athLookup?.high ?? null;
     // Which side of the line the token is on, WITH the memory of where it was (in at 90 %, out only below 85 %): a few percent of price next to the line do not flip the verdict.
     const athCollapsed = allTimeHigh ? await withBudget(judgeHistory(resolvedMint, athDropPct(allTimeHigh, priceUsd)), 300) : null;
-    // Needed and not had (CoinGecko refused or was silent, or no time was left): the verdict is born from missing data, like a scan without its chart. It is kept 30 seconds, not
-    // for the full TTL, so that one hiccup of CoinGecko does not pin a DANGER without the relief on CARDS for ten minutes. Only where the high decides a verdict (the relief, a bridge):
-    // for the flag alone its absence gives the verdict of before, which is no worse than it was. A token CoinGecko does not know is not a gap.
+    // Needed and not had (the sources refused or were silent, or no time was left): the verdict is born from missing data, like a scan without its chart. It is kept 30 seconds, not
+    // for the full TTL, so that one hiccup of the sources does not pin a DANGER without the relief on CARDS for ten minutes. Only where the high decides a verdict (the relief, a bridge):
+    // for the flag alone its absence gives the verdict of before, which is no worse than it was. A token that the sources answer they do not know is not a gap.
     const athGap = historyDecidesVerdict && (athLookup === null || athLookup.failed);
 
     // From what the upstreams said to the verdict: a pure function (api/_lib/decide.ts), nothing is read or written there.

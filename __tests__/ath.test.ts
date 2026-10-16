@@ -1,6 +1,7 @@
 // __tests__/ath.test.ts
 //
-// The all-time high of a token (api/_lib/ath.ts). It is a help, never a requirement: whatever goes wrong, the answer is null (no relief), never a wrong number.
+// The all-time high of a token (api/_lib/ath.ts): Solscan Pro first, CoinGecko when Solscan has nothing. It is a help, never a requirement: whatever goes wrong, the answer is null
+// (no relief), never a wrong number.
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("../api/_lib/logger", () => ({ logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn(), metric: vi.fn() } }));
@@ -10,17 +11,24 @@ const setCalls: Array<{ key: string; value: unknown; opts: unknown }> = [];
 let redis: { get: ReturnType<typeof vi.fn>; set: ReturnType<typeof vi.fn> } | null;
 vi.mock("../api/_lib/cache", () => ({ getCacheRedis: () => redis }));
 
+// What CoinGecko answers (`answer`) and what Solscan answers (`solscanAnswer`); the mock routes by address.
 let answer: { body: unknown; status: number } | "throws";
-const fetchJson = vi.fn(async (_url: string, _init: unknown, _ms: number, _retries: number, onStatus?: (s: number) => void) => {
-  if (answer === "throws") throw new Error("network");
-  onStatus?.(answer.status);
-  return answer.status >= 200 && answer.status < 300 ? answer.body : null;
+let solscanAnswer: { body: unknown; status: number };
+const fetchJson = vi.fn(async (url: string, _init: unknown, _ms: number, _retries: number, onStatus?: (s: number) => void) => {
+  const a = url.includes("pro-api.solscan.io") ? solscanAnswer : answer;
+  if (a === "throws") throw new Error("network");
+  onStatus?.(a.status);
+  return a.status >= 200 && a.status < 300 ? a.body : null;
 });
 vi.mock("../api/_lib/http", () => ({ fetchJson: (...a: Parameters<typeof fetchJson>) => fetchJson(...a) }));
 
-import { getAllTimeHigh, judgeHistory, athSideKey, parseAllTimeHigh, athKey, athBackoffKey, athUrl, ATH_TTL_S, ATH_NOT_LISTED_TTL_S, ATH_BACKOFF_S, ATH_SIDE_TTL_S } from "../api/_lib/ath";
+import { getAllTimeHigh, judgeHistory, athSideKey, parseAllTimeHigh, parseSolscanHigh, athKey, athBackoffKey, athSolscanBackoffKey, athUrl, solscanPriceEndpoint, ATH_TTL_S, ATH_NOT_LISTED_TTL_S, ATH_BACKOFF_S, ATH_SIDE_TTL_S } from "../api/_lib/ath";
+import { _resetSolscanBackoffForTests } from "../api/_lib/fetchers";
 
-const HIGH = { ath: 0.381443, athDate: "2025-09-14T08:27:34.512Z" };
+const HIGH = { ath: 0.381443, athDate: "2025-09-14T08:27:34.512Z", source: "coingecko" };
+const SOLSCAN_HIGH = { ath: 0.37, athDate: "2025-09-13", source: "solscan" };
+/** What Solscan sends for token/price: one row a day. */
+const prices = (...rows: Array<[number | string, unknown]>) => ({ success: true, data: rows.map(([date, price]) => ({ date, price })) });
 
 const MINT = "CARDSccUMFKoPRZxt5vt3ksUbxEFEcnZ3H2pd3dKxYjp";
 const coin = (ath: unknown, date: unknown = "2025-09-14T08:27:34.512Z") => ({ id: "collector-crypt", market_data: { ath: { usd: ath }, ath_date: { usd: date } } });
@@ -32,17 +40,20 @@ beforeEach(() => {
     set: vi.fn(async (k: string, v: unknown, opts: unknown) => { setCalls.push({ key: k, value: v, opts }); store.set(k, v); return "OK"; }),
   };
   answer = { body: coin(0.381443), status: 200 };
+  solscanAnswer = { body: prices([20250912, 0.2], [20250913, 0.37], [20250914, 0.3], [20251020, 0.02]), status: 200 };
   delete process.env.VERCEL_ENV;
+  delete process.env.SOLSCAN_API_KEY; // most of these tests are about CoinGecko alone: Solscan has its own block below
+  _resetSolscanBackoffForTests();
 });
-afterEach(() => { delete process.env.VERCEL_ENV; });
+afterEach(() => { delete process.env.VERCEL_ENV; delete process.env.SOLSCAN_API_KEY; _resetSolscanBackoffForTests(); });
 
 describe("parseAllTimeHigh: only a positive USD price is a high", () => {
   it("reads the high and its date", () => {
-    expect(parseAllTimeHigh(coin(0.381443))).toEqual({ ath: 0.381443, athDate: "2025-09-14T08:27:34.512Z" });
+    expect(parseAllTimeHigh(coin(0.381443))).toEqual({ ath: 0.381443, athDate: "2025-09-14T08:27:34.512Z", source: "coingecko" });
   });
   it("keeps the high when the date is missing or not a date", () => {
-    expect(parseAllTimeHigh(coin(2, null))).toEqual({ ath: 2, athDate: null });
-    expect(parseAllTimeHigh(coin(2, "yesterday"))).toEqual({ ath: 2, athDate: null });
+    expect(parseAllTimeHigh(coin(2, null))).toEqual({ ath: 2, athDate: null, source: "coingecko" });
+    expect(parseAllTimeHigh(coin(2, "yesterday"))).toEqual({ ath: 2, athDate: null, source: "coingecko" });
   });
   it.each([[null], [undefined], [{}], [{ market_data: {} }], [coin(0)], [coin(-1)], [coin("2")], [coin(Number.NaN)], [coin(Infinity)], ["text"], [42]])("is null for %j", (raw) => {
     expect(parseAllTimeHigh(raw)).toBeNull();
@@ -69,7 +80,7 @@ describe("getAllTimeHigh", () => {
     expect(fetchJson).toHaveBeenCalledTimes(1);
     expect(setCalls).toHaveLength(1);
     expect(setCalls[0].opts).toEqual({ ex: ATH_TTL_S });
-    expect(setCalls[0].value).toEqual({ known: true, ath: 0.381443, athDate: "2025-09-14T08:27:34.512Z" });
+    expect(setCalls[0].value).toEqual({ known: true, ath: 0.381443, athDate: "2025-09-14T08:27:34.512Z", source: "coingecko" });
     expect(await getAllTimeHigh(MINT)).toEqual({ high: HIGH, failed: false });
     expect(fetchJson).toHaveBeenCalledTimes(1); // not asked again
   });
@@ -149,6 +160,143 @@ describe("getAllTimeHigh", () => {
   it("Redis failing on read and on write: the answer is still the high", async () => {
     redis = { get: vi.fn(async () => { throw new Error("redis down"); }), set: vi.fn(async () => { throw new Error("redis down"); }) };
     expect(await getAllTimeHigh(MINT)).toEqual({ high: HIGH, failed: false });
+  });
+});
+
+describe("parseSolscanHigh: the highest daily price", () => {
+  it("is the highest price of the series and its day", () => {
+    expect(parseSolscanHigh(prices([20250912, 0.2], [20250913, 0.37], [20250914, 0.3]))).toEqual(SOLSCAN_HIGH);
+  });
+  it("reads the day as a number, as 8 digits of text or as an ISO date, and does not depend on the order of the rows", () => {
+    expect(parseSolscanHigh(prices([20250914, 3], [20250913, 5], [20250912, 4]))?.athDate).toBe("2025-09-13");
+    expect(parseSolscanHigh(prices(["20250913", 5], ["20250912", 4]))?.athDate).toBe("2025-09-13");
+    expect(parseSolscanHigh(prices(["2025-09-13", 5], ["2025-09-12", 4]))?.athDate).toBe("2025-09-13");
+  });
+  it("skips a row whose price is not a positive number or whose day is not a day", () => {
+    expect(parseSolscanHigh(prices([20250912, 0.2], [20250913, "9"], [20250914, -1], [20250915, 0], [20250916, null], [20250917, Number.NaN], ["soon", 7]))).toEqual({ ath: 0.2, athDate: "2025-09-12", source: "solscan" });
+  });
+  it.each([[null], [undefined], [{}], [{ success: false, data: [] }], [{ success: true }], [{ success: true, data: "x" }], [{ success: true, data: [] }], [prices([20250912, 0])], ["text"], [42]])("is null for %j", (raw) => {
+    expect(parseSolscanHigh(raw)).toBeNull();
+  });
+  it("does not take a lone spike for a price: a day ten times above BOTH its neighbours counts as the higher neighbour", () => {
+    expect(parseSolscanHigh(prices([20250910, 1], [20250911, 1.2], [20250912, 500], [20250913, 1.1]))?.ath).toBe(1.2);
+  });
+  it("keeps a high that the days around it confirm, however sharp the fall afterwards", () => {
+    expect(parseSolscanHigh(prices([20250910, 1], [20250911, 500], [20250912, 480], [20250913, 2]))).toEqual({ ath: 500, athDate: "2025-09-11", source: "solscan" });
+    expect(parseSolscanHigh(prices([20250910, 1], [20250911, 40], [20250912, 5]))?.ath).toBe(40); // 40 is above its next day by 8 times only
+  });
+  it("a single row is its own high", () => {
+    expect(parseSolscanHigh(prices([20250910, 3]))?.ath).toBe(3);
+  });
+});
+
+describe("the Solscan request", () => {
+  it("asks for the daily prices of the mint, from 2021 to the given day", () => {
+    expect(solscanPriceEndpoint(MINT, "20261016")).toBe(`/token/price?address=${MINT}&from_time=20210101&to_time=20261016`);
+  });
+});
+
+describe("getAllTimeHigh: Solscan first, CoinGecko when Solscan has nothing", () => {
+  const solscanCalls = () => fetchJson.mock.calls.filter((c) => c[0].includes("pro-api.solscan.io"));
+  const coingeckoCalls = () => fetchJson.mock.calls.filter((c) => c[0].includes("coingecko.com"));
+  beforeEach(() => { process.env.SOLSCAN_API_KEY = "test-key-not-real"; });
+
+  it("takes the high from Solscan, never asks CoinGecko, and remembers who gave it", async () => {
+    expect(await getAllTimeHigh(MINT)).toEqual({ high: SOLSCAN_HIGH, failed: false });
+    expect(solscanCalls()).toHaveLength(1);
+    expect(coingeckoCalls()).toHaveLength(0);
+    expect(setCalls[0].value).toEqual({ known: true, ath: 0.37, athDate: "2025-09-13", source: "solscan" });
+    expect(setCalls[0].opts).toEqual({ ex: ATH_TTL_S });
+  });
+  it("sends the key in the header Solscan wants, asks without a retry and with a short timeout: it must never slow a scan", async () => {
+    await getAllTimeHigh(MINT);
+    const [url, init, ms, retries] = solscanCalls()[0];
+    expect(url).toMatch(/^https:\/\/pro-api\.solscan\.io\/v2\.0\/token\/price\?address=CARDS/);
+    expect(url).toContain("from_time=20210101");
+    expect(url).toMatch(/to_time=\d{8}$/);
+    expect((init as { headers: Record<string, string> }).headers.token).toBe("test-key-not-real");
+    expect(ms).toBeLessThanOrEqual(3000);
+    expect(retries).toBe(0);
+  });
+  it("serves the next ask from Redis with the source it was kept with; what was kept before Solscan was asked is CoinGecko's", async () => {
+    await getAllTimeHigh(MINT);
+    fetchJson.mockClear();
+    expect(await getAllTimeHigh(MINT)).toEqual({ high: SOLSCAN_HIGH, failed: false });
+    expect(fetchJson).not.toHaveBeenCalled();
+    store.set(athKey("Older111111111111111111111111111111111111111"), { known: true, ath: 5, athDate: "2024-03-01T00:00:00.000Z" });
+    expect(await getAllTimeHigh("Older111111111111111111111111111111111111111")).toEqual({ high: { ath: 5, athDate: "2024-03-01T00:00:00.000Z", source: "coingecko" }, failed: false });
+  });
+  it.each([
+    ["no price for this token (200 without a row)", { body: { success: true, data: [] }, status: 200 }],
+    ["a token it does not know (404)", { body: { success: false }, status: 404 }],
+    ["a request it refuses (400)", { body: { success: false }, status: 400 }],
+  ])("%s: Solscan ANSWERED, CoinGecko is asked and gives the high", async (_name, a) => {
+    solscanAnswer = a;
+    expect(await getAllTimeHigh(MINT)).toEqual({ high: HIGH, failed: false });
+    expect(coingeckoCalls()).toHaveLength(1);
+    expect(setCalls.some((c) => c.key === athSolscanBackoffKey())).toBe(false); // an answer is not a reason to stop asking
+    expect((setCalls.find((c) => c.key === athKey(MINT))?.value as { source: string }).source).toBe("coingecko");
+  });
+  it.each([[500], [503], [429], [0]])("Solscan failing (%i): CoinGecko gives the high, and nobody asks Solscan for a minute", async (status) => {
+    solscanAnswer = { body: null, status };
+    expect(await getAllTimeHigh(MINT)).toEqual({ high: HIGH, failed: false });
+    expect(setCalls.find((c) => c.key === athSolscanBackoffKey())?.opts).toEqual({ ex: ATH_BACKOFF_S });
+    expect(setCalls.some((c) => c.key === athBackoffKey())).toBe(false); // CoinGecko did answer: it is not paused
+    fetchJson.mockClear();
+    await getAllTimeHigh("OtherMint1111111111111111111111111111111111");
+    expect(solscanCalls()).toHaveLength(0);
+    expect(coingeckoCalls()).toHaveLength(1);
+  });
+  it.each([[401], [403]])("a key Solscan refuses (%i) is CoinGecko's job from then on, and fetchSolscan stops asking for ten minutes", async (status) => {
+    solscanAnswer = { body: null, status };
+    expect(await getAllTimeHigh(MINT)).toEqual({ high: HIGH, failed: false });
+    expect(setCalls.some((c) => c.key === athSolscanBackoffKey())).toBe(false);
+    fetchJson.mockClear();
+    await getAllTimeHigh("OtherMint1111111111111111111111111111111111");
+    expect(solscanCalls()).toHaveLength(0);
+  });
+  it("Solscan answered nothing AND CoinGecko does not know the token: an answer, remembered for 6 hours, not a failure", async () => {
+    solscanAnswer = { body: { success: true, data: [] }, status: 200 };
+    answer = { body: { error: "coin not found" }, status: 404 };
+    expect(await getAllTimeHigh(MINT)).toEqual({ high: null, failed: false });
+    expect(setCalls[0].opts).toEqual({ ex: ATH_NOT_LISTED_TTL_S });
+    fetchJson.mockClear();
+    expect(await getAllTimeHigh(MINT)).toEqual({ high: null, failed: false });
+    expect(fetchJson).not.toHaveBeenCalled();
+  });
+  it("Solscan SILENT and CoinGecko not knowing the token is NOT an answer: Solscan may know it. A failure, and nothing is remembered about the token", async () => {
+    solscanAnswer = { body: null, status: 503 };
+    answer = { body: { error: "coin not found" }, status: 404 };
+    expect(await getAllTimeHigh(MINT)).toEqual({ high: null, failed: true });
+    expect(setCalls.some((c) => c.key === athKey(MINT))).toBe(false);
+  });
+  it("Solscan answering nothing and CoinGecko failing: a failure, with CoinGecko's own pause", async () => {
+    solscanAnswer = { body: { success: true, data: [] }, status: 200 };
+    answer = { body: null, status: 429 };
+    expect(await getAllTimeHigh(MINT)).toEqual({ high: null, failed: true });
+    expect(setCalls.some((c) => c.key === athBackoffKey())).toBe(true);
+    expect(setCalls.some((c) => c.key === athKey(MINT))).toBe(false);
+  });
+  it("both silent: no high, a failure, both pauses set, and the next token reaches neither", async () => {
+    solscanAnswer = { body: null, status: 503 };
+    answer = { body: null, status: 503 };
+    expect(await getAllTimeHigh(MINT)).toEqual({ high: null, failed: true });
+    fetchJson.mockClear();
+    expect(await getAllTimeHigh("OtherMint1111111111111111111111111111111111")).toEqual({ high: null, failed: true });
+    expect(fetchJson).not.toHaveBeenCalled();
+  });
+  it("a Solscan answer that is not what it should be (a body with no list) is an answer of nothing: CoinGecko is asked", async () => {
+    solscanAnswer = { body: { success: true, data: { price: 1 } }, status: 200 };
+    expect(await getAllTimeHigh(MINT)).toEqual({ high: HIGH, failed: false });
+  });
+  it("no key in this environment: Solscan is not asked at all, and the result is what CoinGecko alone gave", async () => {
+    delete process.env.SOLSCAN_API_KEY;
+    expect(await getAllTimeHigh(MINT)).toEqual({ high: HIGH, failed: false });
+    expect(solscanCalls()).toHaveLength(0);
+  });
+  it("Redis missing: Solscan still gives the high", async () => {
+    redis = null;
+    expect(await getAllTimeHigh(MINT)).toEqual({ high: SOLSCAN_HIGH, failed: false });
   });
 });
 

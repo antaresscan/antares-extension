@@ -63,6 +63,9 @@ function insiderGraphAnswer(href: string, body: string | null): Response | null 
  */
 let athTable: Record<string, { ath: number; athDate: string | null }> | null = null;
 function athAnswer(href: string, down = false): Response | null {
+  // Solscan is asked first (api/_lib/ath.ts) when the recording holds Solscan calls. Its price history is not recorded either: the replay answers "no price for this token" (an
+  // answer, 200 without a row), so that the high comes from the table through the CoinGecko request, as it always did in the replay.
+  if (/^https:\/\/pro-api\.solscan\.io\/v2\.0\/token\/price\?/.test(href)) return new Response(JSON.stringify({ success: true, data: [] }), { status: 200, headers: { "content-type": "application/json" } });
   const m = href.match(/^https:\/\/api\.coingecko\.com\/api\/v3\/coins\/solana\/contract\/([^?/]+)\?/);
   if (!m) return null;
   if (down) return new Response("replay: CoinGecko is down", { status: 503 }); // a test of what a scan does when CoinGecko does not answer

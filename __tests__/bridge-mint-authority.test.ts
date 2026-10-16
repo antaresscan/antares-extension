@@ -114,7 +114,7 @@ describe("decide: a mature token whose mint authority is the bridge", () => {
   });
   const chainOf = (auth: string): MintState => parseMintState(rawMint(auth)) as MintState;
 
-  const high = (ath: number) => ({ ath, athDate: "2025-07-28T00:00:00.000Z" }); // the price is $0.35
+  const high = (ath: number) => ({ ath, athDate: "2025-07-28T00:00:00.000Z", source: "coingecko" as const }); // the price is $0.35
   it("held by the bridge, a history that is not a collapse (-85 %, SPX): no critical flag and not DANGER (the LP rule reads the token's age again)", () => {
     const d = decide({ ...input(chainOf(WORMHOLE_MINT_AUTHORITY)), allTimeHigh: high(2.27) });
     expect(d.flags.filter((f) => f.severity === "critical")).toEqual([]);
