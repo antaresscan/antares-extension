@@ -18,6 +18,9 @@ instant, so it is not in each recording. The replay answers that request from on
 CoinGecko's public API, not one per token); a token that is not in the table gets CoinGecko's own "not found". A recording that holds the request itself (a capture made since the engine asks
 for it) wins. Rebuild the table when the corpus grows.
 
+The engine asks Solscan first (`token/price`, a DAILY price) and CoinGecko second. By default the replay answers Solscan "no price", so the table above is what gives the high. `replayScan(rec, { athViaSolscan: 0.92 })`
+makes Solscan answer a daily series whose highest day is that factor of the table's intraday high (`ath-solscan.test.ts`: no verdict or score may move, whole corpus with `REPLAY_FULL=1`).
+
 `credibility.test.ts` holds the owner's own judgement on real tokens (serious ones the engine must never call DANGER or RUG, tokens that already rugged it must never call SAFE or CAUTION), with the
 reason and the date of each. It reads the golden files, so it needs no network.
 

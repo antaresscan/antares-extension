@@ -22,7 +22,7 @@ const fetchJson = vi.fn(async (url: string, _init: unknown, _ms: number, _retrie
 });
 vi.mock("../api/_lib/http", () => ({ fetchJson: (...a: Parameters<typeof fetchJson>) => fetchJson(...a) }));
 
-import { getAllTimeHigh, judgeHistory, athSideKey, parseAllTimeHigh, parseSolscanHigh, solscanSpan, athKey, athBackoffKey, athSolscanBackoffKey, athUrl, solscanPriceEndpoint, ATH_TTL_S, ATH_NOT_LISTED_TTL_S, ATH_BACKOFF_S, ATH_SIDE_TTL_S } from "../api/_lib/ath";
+import { getAllTimeHigh, judgeHistory, athSideKey, parseAllTimeHigh, parseSolscanHigh, solscanSpan, isInDoubt, athKey, athBackoffKey, athSolscanBackoffKey, athUrl, solscanPriceEndpoint, ATH_TTL_S, ATH_NOT_LISTED_TTL_S, ATH_BACKOFF_S, ATH_SIDE_TTL_S } from "../api/_lib/ath";
 import { _resetSolscanBackoffForTests } from "../api/_lib/fetchers";
 
 const HIGH = { ath: 0.381443, athDate: "2025-09-14T08:27:34.512Z", source: "coingecko" };
@@ -80,7 +80,7 @@ describe("getAllTimeHigh", () => {
     expect(fetchJson).toHaveBeenCalledTimes(1);
     expect(setCalls).toHaveLength(1);
     expect(setCalls[0].opts).toEqual({ ex: ATH_TTL_S });
-    expect(setCalls[0].value).toEqual({ known: true, ath: 0.381443, athDate: "2025-09-14T08:27:34.512Z", source: "coingecko" });
+    expect(setCalls[0].value).toEqual({ known: true, ath: 0.381443, athDate: "2025-09-14T08:27:34.512Z", source: "coingecko", checked: true });
     expect(await getAllTimeHigh(MINT)).toEqual({ high: HIGH, failed: false });
     expect(fetchJson).toHaveBeenCalledTimes(1); // not asked again
   });
@@ -214,7 +214,7 @@ describe("getAllTimeHigh: Solscan first, CoinGecko when Solscan has nothing", ()
     expect(await getAllTimeHigh(MINT)).toEqual({ high: SOLSCAN_HIGH, failed: false });
     expect(solscanCalls()).toHaveLength(1);
     expect(coingeckoCalls()).toHaveLength(0);
-    expect(setCalls[0].value).toEqual({ known: true, ath: 0.37, athDate: "2025-09-13", source: "solscan" });
+    expect(setCalls[0].value).toEqual({ known: true, ath: 0.37, athDate: "2025-09-13", source: "solscan", checked: false });
     expect(setCalls[0].opts).toEqual({ ex: ATH_TTL_S });
   });
   it("sends the key in the header Solscan wants, asks without a retry and with a short timeout: it must never slow a scan", async () => {
@@ -306,6 +306,79 @@ describe("getAllTimeHigh: Solscan first, CoinGecko when Solscan has nothing", ()
   it("Redis missing: Solscan still gives the high", async () => {
     redis = null;
     expect(await getAllTimeHigh(MINT)).toEqual({ high: SOLSCAN_HIGH, failed: false });
+  });
+
+  describe("a daily high cannot place a token within reach of the line: CoinGecko's intraday high is asked too", () => {
+    // Solscan's high is 0.37: a price of 0.0481 is 87 % under it, 0.185 is 50 % under, 0.0333 is 91 % under.
+    const IN_DOUBT = 0.0481, FAR_ABOVE = 0.185, FAR_BELOW = 0.0333;
+    const stored = () => store.get(athKey(MINT)) as { ath: number; source: string; checked?: boolean };
+    it("between 80 % and the line, CoinGecko is asked and its higher high is the high (the intraday side of the line, where the rule is written)", async () => {
+      expect(await getAllTimeHigh(MINT, IN_DOUBT)).toEqual({ high: HIGH, failed: false });
+      expect(solscanCalls()).toHaveLength(1);
+      expect(coingeckoCalls()).toHaveLength(1);
+      expect(stored()).toMatchObject({ ath: 0.381443, source: "coingecko", checked: true });
+    });
+    it("when CoinGecko's high is NOT higher, the daily high stays, and the check is remembered: nobody asks again", async () => {
+      answer = { body: coin(0.3), status: 200 };
+      expect(await getAllTimeHigh(MINT, IN_DOUBT)).toEqual({ high: SOLSCAN_HIGH, failed: false });
+      expect(stored()).toMatchObject({ ath: 0.37, source: "solscan", checked: true });
+      fetchJson.mockClear();
+      expect(await getAllTimeHigh(MINT, IN_DOUBT)).toEqual({ high: SOLSCAN_HIGH, failed: false });
+      expect(fetchJson).not.toHaveBeenCalled();
+    });
+    it.each([[FAR_ABOVE, "50 % under its high"], [FAR_BELOW, "91 % under its high (over the line: an intraday high can only make it more so)"], [0.37, "at its high"]])("outside the band (%s: %s) CoinGecko is not asked", async (price) => {
+      expect(await getAllTimeHigh(MINT, price)).toEqual({ high: SOLSCAN_HIGH, failed: false });
+      expect(coingeckoCalls()).toHaveLength(0);
+    });
+    it("the band is [80 %, 90 %): 80 is in, 79.9 and 90 are out", async () => {
+      expect(isInDoubt(80)).toBe(true);
+      expect(isInDoubt(89.99)).toBe(true);
+      for (const out of [79.9, 90, 99, 0, null, undefined, Number.NaN]) expect(isInDoubt(out), String(out)).toBe(false);
+    });
+    it("no price, no check", async () => {
+      expect(await getAllTimeHigh(MINT)).toEqual({ high: SOLSCAN_HIGH, failed: false });
+      expect(await getAllTimeHigh("OtherMint1111111111111111111111111111111111", null)).toEqual({ high: SOLSCAN_HIGH, failed: false });
+      expect(coingeckoCalls()).toHaveLength(0);
+    });
+    it("CoinGecko does not know the token (404): the daily high is all there is, it is not a failure, and it is not asked again", async () => {
+      answer = { body: { error: "coin not found" }, status: 404 };
+      expect(await getAllTimeHigh(MINT, IN_DOUBT)).toEqual({ high: SOLSCAN_HIGH, failed: false });
+      expect(stored()).toMatchObject({ source: "solscan", checked: true });
+      fetchJson.mockClear();
+      await getAllTimeHigh(MINT, IN_DOUBT);
+      expect(fetchJson).not.toHaveBeenCalled();
+    });
+    it("CoinGecko cannot be had: the daily high is returned with `failed` (the side of the line is not certain), it is not checked, and it is checked the next time CoinGecko answers", async () => {
+      answer = { body: null, status: 503 };
+      expect(await getAllTimeHigh(MINT, IN_DOUBT)).toEqual({ high: SOLSCAN_HIGH, failed: true });
+      expect(stored()).toMatchObject({ source: "solscan", checked: false });
+      answer = { body: coin(0.381443), status: 200 };
+      store.delete(athBackoffKey()); // the pause is over
+      expect(await getAllTimeHigh(MINT, IN_DOUBT)).toEqual({ high: HIGH, failed: false });
+      expect(stored()).toMatchObject({ source: "coingecko", checked: true });
+      expect(solscanCalls()).toHaveLength(1); // the daily high was kept: Solscan is not asked again
+    });
+    it("a daily high kept before the token came near the line is checked the day it does, and not before", async () => {
+      await getAllTimeHigh(MINT, FAR_ABOVE);
+      expect(stored().checked).toBe(false);
+      expect(coingeckoCalls()).toHaveLength(0);
+      expect(await getAllTimeHigh(MINT, FAR_ABOVE)).toEqual({ high: SOLSCAN_HIGH, failed: false });
+      expect(coingeckoCalls()).toHaveLength(0);
+      expect(await getAllTimeHigh(MINT, IN_DOUBT)).toEqual({ high: HIGH, failed: false });
+      expect(coingeckoCalls()).toHaveLength(1);
+      expect(solscanCalls()).toHaveLength(1);
+      expect(stored()).toMatchObject({ source: "coingecko", checked: true });
+    });
+    it("a number that is CoinGecko's own is never checked again", async () => {
+      store.set(athKey(MINT), { known: true, ath: 0.381443, athDate: "2025-09-14T08:27:34.512Z", source: "coingecko" });
+      expect(await getAllTimeHigh(MINT, IN_DOUBT)).toEqual({ high: HIGH, failed: false });
+      expect(fetchJson).not.toHaveBeenCalled();
+    });
+    it("with no Solscan key the number is CoinGecko's and it is never asked twice", async () => {
+      delete process.env.SOLSCAN_API_KEY;
+      expect(await getAllTimeHigh(MINT, IN_DOUBT)).toEqual({ high: HIGH, failed: false });
+      expect(coingeckoCalls()).toHaveLength(1);
+    });
   });
 });
 

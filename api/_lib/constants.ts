@@ -365,6 +365,13 @@ export const TOP10_RELIEF_MAX_SINGLE = 0.60;  // one wallet above this share is 
 // fake a collapse on a serious token.
 export const SOLSCAN_PRICE_FROM = "20210101";
 export const SOLSCAN_PRICE_SPIKE_FACTOR = 10;
+// The line (ATH_COLLAPSE_PCT) is the owner's rule on the highest price the token ever traded at, and CoinGecko's high is an intraday one. A DAILY price cannot say on which side
+// of a line a token stands when it stands within a point or two of it: PYTH's daily high is 8 % under CoinGecko's, which is enough to move YZY (-90.2 %) to -89.3 % and give it
+// the relief of a serious token. So Solscan's number is trusted where the line cannot be crossed by the difference (far above it, or far below it), and where the token stands from
+// ATH_DAILY_DOUBT_FROM_PCT up to the line, CoinGecko's high is asked too and the higher of the two is the high (a daily high is never above an intraday one, so this can only move a
+// token up to the intraday side of the line, the side the rule is written on). 80 % covers a daily high down to half of the intraday one against the line at 90 % (1 - 0.10 / 0.5 = 80)
+// and down to three quarters of it against the exit of the line at 85 % (1 - 0.15 / 0.75 = 80).
+export const ATH_DAILY_DOUBT_FROM_PCT = 80;
 // The all-time-high flag: a token that has collapsed (ATH_COLLAPSE_PCT, 90 %) says so, in a WARNING: it is never SAFE, and with two other warnings it is a DANGER; it is never a
 // critical on its own, because the same fall describes BONK (-95 %), WIF (-96 %), PYTH (-92 %) and JTO (-92 %), real tokens that a critical would send to DANGER. It is read for a token
 // of 90 days or more (a younger one is read by the 90-day collapse rule) and $5M of cap or more: below it CoinGecko lists thousands of tokens that nobody scans twice, and measured on

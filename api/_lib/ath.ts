@@ -27,7 +27,7 @@ import { deploymentNamespace } from "./deployment";
 import { fetchSolscan, solscanUsable } from "./fetchers";
 import { fetchJson } from "./http";
 import { logger } from "./logger";
-import { ATH_COLLAPSE_PCT, ATH_COLLAPSE_EXIT_PCT, SOLSCAN_PRICE_FROM, SOLSCAN_PRICE_SPIKE_FACTOR } from "./constants";
+import { ATH_COLLAPSE_PCT, ATH_COLLAPSE_EXIT_PCT, ATH_DAILY_DOUBT_FROM_PCT, SOLSCAN_PRICE_FROM, SOLSCAN_PRICE_SPIKE_FACTOR } from "./constants";
 
 /** Who gave the number: named in the flag, so that anyone can see where "down 94 % from its high" comes from. */
 export type AthSource = "solscan" | "coingecko";
@@ -155,8 +155,8 @@ export async function judgeHistory(mint: string, dropPct: number | null | undefi
   return collapsed;
 }
 
-/** What is kept in Redis for a token. `source` is absent from what was written before Solscan was asked: that was CoinGecko. */
-interface Memory { known: boolean; ath: number | null; athDate: string | null; source?: AthSource }
+/** What is kept in Redis for a token. `source` is absent from what was written before Solscan was asked: that was CoinGecko. `checked`: CoinGecko's intraday high was looked at for a Solscan number (see isInDoubt). */
+interface Memory { known: boolean; ath: number | null; athDate: string | null; source?: AthSource; checked?: boolean }
 
 type Redis = ReturnType<typeof getCacheRedis>;
 
@@ -209,35 +209,72 @@ async function askCoinGecko(mint: string, redis: Redis): Promise<Asked> {
   return { kind: "failed" };
 }
 
+/** Does the line (ATH_COLLAPSE_PCT) stand within reach of the difference between a daily high and an intraday one? From ATH_DAILY_DOUBT_FROM_PCT up to the line. */
+export function isInDoubt(dropPct: number | null | undefined): boolean {
+  return dropPct != null && Number.isFinite(dropPct) && dropPct >= ATH_DAILY_DOUBT_FROM_PCT && dropPct < ATH_COLLAPSE_PCT;
+}
+
 /**
  * The all-time high of this token, from Redis or else from Solscan, else from CoinGecko. Never throws.
  * Ask only for a token that can use it (see the rules above).
+ *
+ * `priceUsd` is the price now. A Solscan number is a DAILY high, a little under the intraday one that the line (ATH_COLLAPSE_PCT) is written on: where the token stands within reach of
+ * the line (isInDoubt) CoinGecko's high is asked as well and the higher of the two is kept, once (`checked` in Redis; a number that was kept before the token came near the line is
+ * checked the day it does). If CoinGecko cannot be had at that moment the Solscan number is returned with `failed`: the token's side of the line is then not certain, and the scan
+ * says so like any scan born from missing data.
  */
-export async function getAllTimeHigh(mint: string): Promise<AllTimeHighLookup> {
+export async function getAllTimeHigh(mint: string, priceUsd?: number | null): Promise<AllTimeHighLookup> {
   const redis = getCacheRedis();
+  let high: AllTimeHigh | null = null;
+  let checked = false; // the number is CoinGecko's own, or CoinGecko's intraday high has been looked at for it
+  let fromMemory = false;
   try {
     if (redis) {
       const kept = await redis.get<Memory>(athKey(mint));
       if (kept && typeof kept === "object" && typeof kept.known === "boolean") {
         if (!kept.known) return { high: null, failed: false };
-        if (typeof kept.ath === "number" && kept.ath > 0) return { high: { ath: kept.ath, athDate: typeof kept.athDate === "string" ? kept.athDate : null, source: kept.source === "solscan" ? "solscan" : "coingecko" }, failed: false };
+        if (typeof kept.ath === "number" && kept.ath > 0) {
+          const source: AthSource = kept.source === "solscan" ? "solscan" : "coingecko";
+          high = { ath: kept.ath, athDate: typeof kept.athDate === "string" ? kept.athDate : null, source };
+          checked = source === "coingecko" || kept.checked === true;
+          fromMemory = true;
+        }
       }
     }
   } catch (e: unknown) {
     logger.warn("ath", "not read", { error: String(e) });
   }
-  const solscan = await askSolscan(mint, redis);
-  const coingecko: Asked = solscan.kind === "high" ? solscan : await askCoinGecko(mint, redis);
-  const high = solscan.kind === "high" ? solscan.high : coingecko.kind === "high" ? coingecko.high : null;
-  // The token is unknown ONLY if every source that was asked answered so: a Solscan that did not answer leaves the question open.
-  const answeredNothing = !high && coingecko.kind === "nothing" && solscan.kind !== "failed";
+  let answeredNothing = false;
+  if (!high) {
+    const solscan = await askSolscan(mint, redis);
+    if (solscan.kind === "high") {
+      high = solscan.high;
+    } else {
+      const coingecko = await askCoinGecko(mint, redis);
+      if (coingecko.kind === "high") { high = coingecko.high; checked = true; }
+      // The token is unknown ONLY if every source that was asked answered so: a Solscan that did not answer leaves the question open.
+      else answeredNothing = coingecko.kind === "nothing" && solscan.kind !== "failed";
+    }
+  }
+  let uncertain = false;
+  let changed = !fromMemory;
+  if (high && high.source === "solscan" && !checked && isInDoubt(athDropPct(high, priceUsd))) {
+    const coingecko = await askCoinGecko(mint, redis);
+    if (coingecko.kind === "high") {
+      if (coingecko.high.ath > high.ath) high = coingecko.high;
+      checked = true;
+    } else if (coingecko.kind === "nothing") checked = true; // CoinGecko does not know the token: the daily high is all there is
+    else uncertain = true;
+    changed = changed || checked;
+  }
   try {
     if (redis) {
-      if (high) await redis.set(athKey(mint), { known: true, ath: high.ath, athDate: high.athDate, source: high.source } satisfies Memory, { ex: ATH_TTL_S });
-      else if (answeredNothing) await redis.set(athKey(mint), { known: false, ath: null, athDate: null } satisfies Memory, { ex: ATH_NOT_LISTED_TTL_S });
+      if (high && changed) await redis.set(athKey(mint), { known: true, ath: high.ath, athDate: high.athDate, source: high.source, checked } satisfies Memory, { ex: ATH_TTL_S });
+      else if (!high && answeredNothing) await redis.set(athKey(mint), { known: false, ath: null, athDate: null } satisfies Memory, { ex: ATH_NOT_LISTED_TTL_S });
     }
   } catch (e: unknown) {
     logger.warn("ath", "not kept", { error: String(e) });
   }
-  return { high, failed: !high && !answeredNothing };
+  return { high, failed: uncertain || (!high && !answeredNothing) };
 }
+

@@ -552,7 +552,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // (a few hundred tokens a day in all, kept in Redis for a day: api/_lib/ath.ts). No high means no relief, no softening and no flag: the verdict of before.
     const historyDecidesVerdict = isTop10Candidate(top10ReliefFactsOf({ pair, dexData, resolvedMint, marketCap, tokenAgeMinutes, holders, authFacts })) || !!authFacts.mintHolder;
     const wantsAllTimeHigh = historyDecidesVerdict || isAthFlagCandidate({ tokenAgeMinutes, marketCapUsd: marketCap, issuerBacked: issuerKindOf(resolvedMint) !== null });
-    const athLookup = wantsAllTimeHigh ? await stepBudget(() => getAllTimeHigh(resolvedMint)) : null;
+    const athLookup = wantsAllTimeHigh ? await stepBudget(() => getAllTimeHigh(resolvedMint, priceUsd)) : null;
     const allTimeHigh = athLookup?.high ?? null;
     // Which side of the line the token is on, WITH the memory of where it was (in at 90 %, out only below 85 %): a few percent of price next to the line do not flip the verdict.
     const athCollapsed = allTimeHigh ? await withBudget(judgeHistory(resolvedMint, athDropPct(allTimeHigh, priceUsd)), 300) : null;
