@@ -76,6 +76,7 @@ vi.mock("@upstash/redis", () => {
         hset: (k: string, f: Record<string, string>) => { queued.push(() => this.hset(k, f)); return tx; },
         sadd: (k: string, ...m: string[]) => { queued.push(() => this.sadd(k, ...m)); return tx; },
         set: (k: string, v: unknown) => { queued.push(() => this.set(k, v)); return tx; },
+        expire: () => { queued.push(() => Promise.resolve(1)); return tx; },
         exec: async () => { const out: unknown[] = []; for (const q of queued) out.push(await q()); return out; },
       };
       return tx;
@@ -90,6 +91,7 @@ vi.mock("../api/_lib/middleware", async () => {
 });
 
 import { Redis } from "@upstash/redis";
+import { createConfirmedAccount } from "./_helpers/confirmed-account";
 import dispatcher from "../api/auth/[action]";
 import {
   signSession, verifySession, getAccount, createAccount, revokeAllSessions, parseSessionVersion, isCurrentSession,
@@ -147,10 +149,11 @@ const withCookie = (token: string) => ({ cookie: `${SESSION_COOKIE_NAME}=${encod
 const withHeader = (token: string) => ({ "x-antares-session": token });
 const payloadOf = (token: string) => verifySession(token) as SessionPayload;
 
+// A-01: a sign-up no longer signs anybody in (it sends a link), and an account owns nothing until its e-mail is confirmed. These tests are about
+// sessions, so the account is created CONFIRMED (the real createAccount, then the flag the click would set) and then logs in.
 async function signUp(email: string): Promise<string> {
-  const r = await call("signup", { body: { email, password: PASSWORD } });
-  expect(r.status).toBe(200);
-  return tokenOf(r.setCookie);
+  await createConfirmedAccount(redis(), mocks.store, email, PASSWORD);
+  return logIn(email);
 }
 async function logIn(email: string): Promise<string> {
   const r = await call("login", { body: { email, password: PASSWORD } });
@@ -236,7 +239,7 @@ describe("the deployment logs nobody out", () => {
   }
 
   it("a token signed before the number existed (no sv) still works for an account that has no number stored", async () => {
-    mocks.store.set(`account:${ALICE}`, { email: ALICE, id: "1", passwordHash: "x", createdAt: "1", emailVerified: "0" }); // an account of before
+    mocks.store.set(`account:${ALICE}`, { email: ALICE, id: "1", passwordHash: "x", createdAt: "1", emailVerified: "1" }); // an account of before
     const token = legacyToken(ALICE);
     expect(payloadOf(token).sv).toBeUndefined(); // really the old shape
     const acc = await getAccountFromRequest(reqFor(withCookie(token)), redis());
@@ -246,7 +249,7 @@ describe("the deployment logs nobody out", () => {
   });
 
   it("the old-shape cookie and the extension's copy both still say Pro the day after the deployment", async () => {
-    mocks.store.set(`account:${ALICE}`, { email: ALICE, id: "1", passwordHash: "x", createdAt: "1", emailVerified: "0" });
+    mocks.store.set(`account:${ALICE}`, { email: ALICE, id: "1", passwordHash: "x", createdAt: "1", emailVerified: "1" });
     await givePro(ALICE);
     const token = legacyToken(ALICE);
     expect((await resolveTier(reqFor(withCookie(token)), INSTALL)).tier).toBe("pro");

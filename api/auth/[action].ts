@@ -9,10 +9,13 @@
 //   POST /api/auth/logout → action=logout
 //   POST /api/auth/logout-all → action=logout-all (every session of the account, everywhere)
 //   POST /api/auth/delete-account → action=delete-account (erases the account and what hangs on it; needs the password)
+//   POST /api/auth/verify-email → action=verify-email (the owner opens the link of the e-mail AND types the password: audit A-01)
+//   POST /api/auth/resend-verification → action=resend-verification (a signed-in, unconfirmed account asks for its link again)
 //   GET  /api/auth/me     → action=me
 //
 // Each branch keeps its own method/body/contract guarantees so the
 // caller surface is identical to the previous one-file-per-verb shape.
+import { createHash } from "node:crypto";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Redis } from "@upstash/redis";
 import {
@@ -28,6 +31,8 @@ import { emailRef } from "../_lib/log-ref";
 import {
   createAccount,
   authenticate,
+  hashPassword,
+  ACCOUNT_KEY,
   ensureDevLifetimeLicense,
   ensureDevProLicense,
   signSession,
@@ -36,6 +41,15 @@ import {
 } from "../_lib/account";
 import { checkLoginLock, recordLoginFailure, clearLoginFailures } from "../_lib/login-guard";
 import { eraseAccount } from "../_lib/account-erasure";
+import {
+  emailProofOf, isEmailProven, VERIFY_MAIL_COOLDOWN_MS, VERIFY_MAIL_ON_LOGIN_COOLDOWN_MS, ALREADY_REGISTERED_MAIL_COOLDOWN_SECONDS, LEGACY_GRACE_ENDS_AT,
+} from "../_lib/email-proof";
+import { beginVerification, confirmEmail, parseVerifyToken, sentRecently } from "../_lib/email-verify";
+import { sendMail, mailConfigured, type MailResult } from "../_lib/mailer";
+import { normalizeEmail } from "../_lib/license";
+import { verificationMail, alreadyRegisteredMail } from "../_lib/mail-templates";
+import { ALREADY_REGISTERED_MAIL_KEY } from "../_lib/keys";
+import type { Account } from "../_lib/account";
 import {
   setSessionCookie,
   clearSessionCookie,
@@ -84,6 +98,17 @@ function readBody(req: VercelRequest): Record<string, unknown> {
 }
 
 // ── signup ──────────────────────────────────────────────────────────────
+//
+// E-mail proof (audit A-01). A sign-up creates an account that is NOT confirmed: it owns no licence, gets no dev grant and is Free until the
+// owner opens the link in the e-mail AND types the password (see email-verify.ts for why both). So the answer to a sign-up is ALWAYS the same
+// "check your inbox", no session cookie, whatever the address is: new, waiting for its confirmation, or already an account. A sign-up form
+// that answered "already registered" told anybody which addresses have an account (that was the 409 of before, and the A-11 note that this
+// had to wait for the e-mail proof). What is DONE differs, and only the owner of the mailbox sees it:
+//   - new address: the account is created and the link is sent;
+//   - an account waiting for its confirmation: nothing changes (the password is NEVER replaced), the link is sent again unless one left less
+//     than a minute ago;
+//   - a confirmed account: nothing changes, an e-mail says "you already have an account" (once an hour at most per address).
+// With no RESEND_API_KEY nothing is created (the account could never be confirmed) and the answer is 503, the same for every address.
 async function handleSignup(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") return apiError(res, 405, "Method not allowed.");
 
@@ -99,21 +124,41 @@ async function handleSignup(req: VercelRequest, res: VercelResponse) {
   const email = String(body.email ?? "");
   const password = String(body.password ?? "");
 
+  // What is wrong with the input is the same answer whether or not the mail service is up (createAccount stays the authority on the rules).
+  if (!normalizeEmail(email)) return res.status(400).json({ ok: false, reason: "invalid_email" });
+  if (password.length < 8) return res.status(400).json({ ok: false, reason: "weak_password" });
+
   try {
-    const outcome = await createAccount(redis, { email, password });
-    if (!outcome.ok) {
-      const status = outcome.reason === "already_exists" ? 409 : 400;
-      return res.status(status).json({ ok: false, reason: outcome.reason });
+    if (!mailConfigured()) {
+      logger.error("auth/signup", "RESEND_API_KEY is not set: sign-ups are refused (an account that cannot be confirmed is useless)", {});
+      return res.status(503).json({ ok: false, reason: "email_unavailable" });
     }
-    setSessionCookie(res, outcome.account.email, {}, outcome.account.sessionVersion);
-    // Auto-grant dev licences (no-op for non-allowlisted emails).
-    // Both Pro and Lifetime are issued for emails on either list so
-    // devs can switch between expiry-aware Pro testing and Lifetime
-    // testing without touching env vars. Failures don't block signup.
-    await ensureDevLifetimeLicense(redis, outcome.account.email);
-    await ensureDevProLicense(redis, outcome.account.email);
-    logger.metric("auth.signup", { emailRef: emailRef(outcome.account.email) });
-    return res.status(200).json({ ok: true, email: outcome.account.email });
+    const outcome = await createAccount(redis, { email, password });
+    if (!outcome.ok && outcome.reason !== "already_exists") {
+      return res.status(400).json({ ok: false, reason: outcome.reason });
+    }
+
+    let sent: MailResult | null = null;
+    if (outcome.ok) {
+      sent = await sendVerificationMail(redis, outcome.account);
+    } else {
+      // Same CPU as a creation, so that the time the answer takes does not say that the address is taken.
+      try { hashPassword(password); } catch { /* the password was valid when createAccount looked at it */ }
+      const existing = outcome.existing;
+      if (existing && !existing.emailVerified) {
+        if (!sentRecently(existing, VERIFY_MAIL_COOLDOWN_MS)) sent = await sendVerificationMail(redis, existing);
+      } else if (existing) {
+        const noticeKey = ALREADY_REGISTERED_MAIL_KEY(createHash("sha256").update(existing.email).digest("hex"));
+        const first = await redis.set(noticeKey, "1", { nx: true, ex: ALREADY_REGISTERED_MAIL_COOLDOWN_SECONDS });
+        if (first) sent = await sendMail(alreadyRegisteredMail(existing.email));
+      }
+    }
+    if (sent && !sent.ok) {
+      logger.error("auth/signup", "the e-mail could not be sent", { reason: sent.reason });
+      return res.status(503).json({ ok: false, reason: "email_unavailable" });
+    }
+    logger.metric("auth.signup", { emailRef: emailRef(email), created: outcome.ok });
+    return res.status(200).json({ ok: true, status: "check_email" });
   } catch (err) {
     logger.error("auth/signup", "creation failed", { error: String(err) });
     if (String(err).includes("SESSION_SECRET")) {
@@ -122,6 +167,17 @@ async function handleSignup(req: VercelRequest, res: VercelResponse) {
     captureError(err, { endpoint: "auth/signup" });
     return apiError(res, 500, "Could not create account.");
   }
+}
+
+/** Sends (or sends again) the confirmation link of an account. Records the moment, for the cooldown. */
+async function sendVerificationMail(redis: Redis, account: Account): Promise<MailResult> {
+  const { token } = await beginVerification(redis, account);
+  const result = await sendMail(verificationMail(account.email, token));
+  if (!result.ok) {
+    // Nothing left the building: the minute of cooldown must not stand between the person and their next try.
+    try { await redis.hset(ACCOUNT_KEY(account.email), { verifySentAt: "0" }); } catch { /* the cooldown ends by itself */ }
+  }
+  return result;
 }
 
 // ── login ───────────────────────────────────────────────────────────────
@@ -167,12 +223,25 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
     }
     await clearLoginFailures(redis, email, lock.failures);
     setSessionCookie(res, outcome.account.email, {}, outcome.account.sessionVersion);
-    // Auto-grant dev licences (Pro + Lifetime). Idempotent — only
-    // mints once per email-and-tier regardless of how many logins.
-    await ensureDevLifetimeLicense(redis, outcome.account.email);
-    await ensureDevProLicense(redis, outcome.account.email);
+    // An unconfirmed account can log in (to see why it is Free, and to ask for its link) but owns nothing yet: no dev grant until the e-mail is
+    // proven (audit A-01). Inside the grace of the accounts that predate the rule it still counts as proven.
+    if (isEmailProven(outcome.account)) {
+      // Auto-grant dev licences (Pro + Lifetime). Idempotent — only mints once per email-and-tier regardless of how many logins.
+      await ensureDevLifetimeLicense(redis, outcome.account.email);
+      await ensureDevProLicense(redis, outcome.account.email);
+    }
+    // An account that never confirmed gets its link again at its next login (no more than once every 10 minutes): this is how the accounts that
+    // existed before the rule learn they have to confirm. A failure here never blocks the login.
+    if (!outcome.account.emailVerified && mailConfigured() && !sentRecently(outcome.account, VERIFY_MAIL_ON_LOGIN_COOLDOWN_MS)) {
+      try { await sendVerificationMail(redis, outcome.account); } catch (err) { logger.warn("auth/login", "confirmation e-mail not sent", { error: String(err) }); }
+    }
     logger.metric("auth.login", { emailRef: emailRef(outcome.account.email) });
-    return res.status(200).json({ ok: true, email: outcome.account.email });
+    return res.status(200).json({
+      ok: true,
+      email: outcome.account.email,
+      emailVerified: outcome.account.emailVerified,
+      emailProof: emailProofOf(outcome.account),
+    });
   } catch (err) {
     logger.error("auth/login", "auth failed", { error: String(err) });
     if (String(err).includes("SESSION_SECRET")) {
@@ -297,6 +366,103 @@ async function handleDeleteAccount(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+// ── verify-email ────────────────────────────────────────────────────────
+//
+// The owner opens the link of the e-mail (verify.html, on this host) and types the password: the e-mail becomes PROVEN (audit A-01). The
+// link alone is not enough (email-verify.ts says why). A wrong password counts against the same lock as the login, the link is not used up by
+// it, and every other answer about the link is the same "invalid_token": not ours, run out, already used, the account gone.
+async function handleVerifyEmail(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== "POST") return apiError(res, 405, "Method not allowed.");
+
+  const redis = getRedis();
+  if (!redis) return apiError(res, 503, "Storage unavailable.");
+  initRateLimiters(redis);
+
+  const ip = getClientIp(req);
+  const allowed = await checkRateLimit(res, ip);
+  if (!allowed) return;
+
+  const body = readBody(req);
+  const parsed = parseVerifyToken(body.token);
+  if (!parsed.ok) return res.status(400).json({ ok: false, reason: "invalid_token" });
+
+  try {
+    const lock = await checkLoginLock(redis, parsed.email);
+    if (lock.locked) {
+      const minutes = Math.max(1, Math.ceil(lock.retryAfterSec / 60));
+      res.setHeader("Retry-After", String(lock.retryAfterSec));
+      return res.status(429).json({
+        ok: false,
+        reason: "too_many_attempts",
+        error: `Too many failed attempts. Try again in ${minutes} minute${minutes > 1 ? "s" : ""}.`,
+        retryAfterSec: lock.retryAfterSec,
+      });
+    }
+    const outcome = await confirmEmail(redis, parsed, String(body.password ?? ""));
+    if (!outcome.ok) {
+      if (outcome.reason === "invalid_credentials") {
+        await recordLoginFailure(redis, parsed.email);
+        return res.status(401).json({ ok: false, reason: "invalid_credentials" });
+      }
+      return res.status(400).json({ ok: false, reason: "invalid_token" });
+    }
+    await clearLoginFailures(redis, parsed.email, lock.failures);
+    // The password was just typed: this is a login too. The grants that waited for the proof are given now (a no-op for any other address).
+    setSessionCookie(res, outcome.account.email, {}, outcome.account.sessionVersion);
+    await ensureDevLifetimeLicense(redis, outcome.account.email);
+    await ensureDevProLicense(redis, outcome.account.email);
+    logger.metric("auth.verify-email", { emailRef: emailRef(outcome.account.email) });
+    return res.status(200).json({ ok: true, email: outcome.account.email });
+  } catch (err) {
+    logger.error("auth/verify-email", "confirmation failed", { error: String(err) });
+    if (String(err).includes("SESSION_SECRET")) {
+      return apiError(res, 503, "Auth not configured on this deployment.");
+    }
+    captureError(err, { endpoint: "auth/verify-email" });
+    return apiError(res, 500, "Could not confirm the e-mail.");
+  }
+}
+
+// ── resend-verification ─────────────────────────────────────────────────
+//
+// A signed-in account that has not confirmed asks for its link again (the button on the website's account page). Never faster than once a minute.
+async function handleResendVerification(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== "POST") return apiError(res, 405, "Method not allowed.");
+
+  const redis = getRedis();
+  if (!redis) return apiError(res, 503, "Storage unavailable.");
+  initRateLimiters(redis);
+
+  const ip = getClientIp(req);
+  const allowed = await checkRateLimit(res, ip);
+  if (!allowed) return;
+
+  try {
+    const account = await getAccountFromRequest(req, redis);
+    if (!account) return res.status(401).json({ ok: false, reason: "not_authenticated" });
+    if (account.emailVerified) return res.status(200).json({ ok: true, status: "already_verified" });
+    if (!mailConfigured()) return res.status(503).json({ ok: false, reason: "email_unavailable" });
+    if (sentRecently(account, VERIFY_MAIL_COOLDOWN_MS)) {
+      const retryAfterSec = Math.max(1, Math.ceil((account.verifySentAt + VERIFY_MAIL_COOLDOWN_MS - Date.now()) / 1000));
+      res.setHeader("Retry-After", String(retryAfterSec));
+      return res.status(429).json({ ok: false, reason: "too_soon", retryAfterSec });
+    }
+    const sent = await sendVerificationMail(redis, account);
+    if (!sent.ok) {
+      logger.error("auth/resend-verification", "the e-mail could not be sent", { reason: sent.reason });
+      return res.status(503).json({ ok: false, reason: "email_unavailable" });
+    }
+    return res.status(200).json({ ok: true, status: "sent" });
+  } catch (err) {
+    logger.error("auth/resend-verification", "failed", { error: String(err) });
+    if (String(err).includes("SESSION_SECRET")) {
+      return apiError(res, 503, "Auth not configured on this deployment.");
+    }
+    captureError(err, { endpoint: "auth/resend-verification" });
+    return apiError(res, 500, "Could not send the e-mail.");
+  }
+}
+
 // ── sync-token ──────────────────────────────────────────────────────────
 //
 // Returns the session JWT in the response body so the website can hand
@@ -350,7 +516,8 @@ async function handleSyncToken(req: VercelRequest, res: VercelResponse) {
     // succeeds so the user can scan; their tier just stays Free
     // until they redeem their own license.
     const installId = getInstallId(req);
-    if (installId) {
+    // An address nobody has confirmed does not get an install bound to it (audit A-01).
+    if (installId && isEmailProven(account)) {
       try {
         const existing = await redis.get<string>(ACCOUNT_INSTALL_KEY(installId));
         if (!existing) {
@@ -402,10 +569,14 @@ async function handleMe(req: VercelRequest, res: VercelResponse) {
     if (!account) {
       return res.status(401).json({ ok: false, reason: "not_authenticated" });
     }
+    const proof = emailProofOf(account);
     return res.json({
       ok: true,
       email: account.email,
       emailVerified: account.emailVerified,
+      // "verified" | "grace" (not confirmed, still honoured until graceEndsAt) | "unverified" (Free until confirmed): the website says which.
+      emailProof: proof,
+      ...(proof === "grace" ? { graceEndsAt: LEGACY_GRACE_ENDS_AT } : {}),
       createdAt: account.createdAt,
     });
   } catch (err) {
@@ -659,6 +830,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return await handleLogoutAll(req, res);
       case "delete-account":
         return await handleDeleteAccount(req, res);
+      case "verify-email":
+        return await handleVerifyEmail(req, res);
+      case "resend-verification":
+        return await handleResendVerification(req, res);
       case "me":
         return await handleMe(req, res);
       case "sync-token":
@@ -669,7 +844,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return apiError(
           res,
           404,
-          "Unknown auth action. Use signup | login | logout | logout-all | delete-account | me | sync-token | nowpayments-ipn.",
+          "Unknown auth action. Use signup | login | logout | logout-all | delete-account | verify-email | resend-verification | me | sync-token | nowpayments-ipn.",
         );
     }
   } catch (err) {
@@ -722,6 +897,8 @@ export const __test = {
   handleLogin,
   handleLogout,
   handleDeleteAccount,
+  handleVerifyEmail,
+  handleResendVerification,
   handleMe,
   handleSyncToken,
   handleNowpaymentsIpn,

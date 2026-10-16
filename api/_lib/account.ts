@@ -15,11 +15,12 @@
 // SESSION_SECRET; that invalidates every session at once. Future:
 // per-token allowlist for fine-grained revocation.
 
-import { randomBytes, scryptSync, timingSafeEqual, createHmac } from "node:crypto";
+import { randomBytes, scryptSync, timingSafeEqual, createHmac, createHash } from "node:crypto";
 import { Redis } from "@upstash/redis";
 import { logger } from "./logger";
 import { emailRef, maskLicenseKey } from "./log-ref";
 import { issueLicense, normalizeEmail, type License } from "./license";
+import { PENDING_ACCOUNT_TTL_SECONDS } from "./email-proof";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -36,6 +37,13 @@ export interface Account {
    * time of its creation (ms), see createAccount.
    */
   sessionVersion: number;
+  /**
+   * E-mail proof (audit A-01): the secret half of the confirmation link, "n" + 32 hex. Present from the creation of the account until the owner
+   * confirms; the link carries it, and a link only works while it equals this. (The letter in front keeps Redis from handing it back as a number.)
+   */
+  verifyNonce?: string;
+  /** When the last confirmation e-mail was sent (ms), 0 when none: the cooldown between two sends. */
+  verifySentAt: number;
 }
 
 export interface SessionPayload {
@@ -49,7 +57,7 @@ export interface SessionPayload {
 // ─── Redis keys ───────────────────────────────────────────────────────────────
 
 // The keys are defined once, in keys.ts; they are still exported from here for the modules that import them from this file.
-import { ACCOUNT_KEY, ACCOUNT_INSTALL_KEY } from "./keys";
+import { ACCOUNT_KEY, ACCOUNT_INSTALL_KEY, ACCOUNT_CREATE_LOCK_KEY } from "./keys";
 export { ACCOUNT_KEY, ACCOUNT_INSTALL_KEY };
 
 // ─── Password hashing (scrypt) ────────────────────────────────────────────────
@@ -274,8 +282,24 @@ export function isCurrentSession(payload: SessionPayload, account: Account): boo
 
 export type CreateAccountOutcome =
   | { ok: true; account: Account }
-  | { ok: false; reason: "invalid_email" | "weak_password" | "already_exists" };
+  | { ok: false; reason: "invalid_email" | "weak_password" }
+  /** `existing` is the account that holds the address (null when another sign-up for it was in flight at the same moment). */
+  | { ok: false; reason: "already_exists"; existing: Account | null };
 
+const CREATE_LOCK_SECONDS = 20;
+
+/** The e-mail as it appears in a key name: its SHA-256, never the address. */
+const emailSha256 = (emailLc: string) => createHash("sha256").update(emailLc).digest("hex");
+
+/**
+ * Creates the account of a sign-up, UNCONFIRMED (audit A-01): it has a confirmation secret (verifyNonce), it is deleted by Redis after
+ * PENDING_ACCOUNT_TTL_SECONDS if nobody confirms it, and until it is confirmed it owns no licence (email-proof.ts).
+ *
+ * The first sign-up for an address holds it: a second sign-up never replaces the password of an existing account, confirmed or not (that
+ * would let anybody take over an address between its owner's sign-up and the click on the link). An address that already has an account
+ * comes back as `already_exists` WITH that account, so that the caller can answer the same thing in every case and send the right e-mail.
+ * Two sign-ups for one address at the same moment are serialised by a 20 s mutex: the loser is told `already_exists` with no account.
+ */
 export async function createAccount(
   redis: Redis,
   params: { email: string; password: string },
@@ -286,40 +310,68 @@ export async function createAccount(
     return { ok: false, reason: "weak_password" };
   }
 
-  const existing = await redis.hgetall<Record<string, string>>(ACCOUNT_KEY(email));
-  if (existing && existing.email) {
-    return { ok: false, reason: "already_exists" };
-  }
-
-  let passwordHash: string;
+  const lockKey = ACCOUNT_CREATE_LOCK_KEY(emailSha256(email));
+  const locked = await redis.set(lockKey, "1", { nx: true, ex: CREATE_LOCK_SECONDS });
+  if (!locked) return { ok: false, reason: "already_exists", existing: null };
   try {
-    passwordHash = hashPassword(params.password);
-  } catch {
-    return { ok: false, reason: "weak_password" };
+    const existing = await getAccount(redis, email);
+    if (existing) return { ok: false, reason: "already_exists", existing };
+
+    let passwordHash: string;
+    try {
+      passwordHash = hashPassword(params.password);
+    } catch {
+      return { ok: false, reason: "weak_password" };
+    }
+
+    const now = Date.now();
+    const account: Account = {
+      id: randomBytes(16).toString("hex"),
+      email,
+      passwordHash,
+      createdAt: now,
+      emailVerified: false,
+      // Not 0: an account that was deleted (A-14b) and is created again with the same e-mail must not honour the tokens of the old one, which
+      // are signed with the same e-mail and live 30 days. A start at the moment of creation can never equal the number of an older account.
+      sessionVersion: now,
+      verifyNonce: newVerifyNonce(),
+      verifySentAt: 0,
+    };
+
+    // One transaction: the account and its expiry appear together, so a crash cannot leave an unconfirmed account that never expires.
+    await redis
+      .multi()
+      .hset(ACCOUNT_KEY(email), {
+        id: account.id,
+        email: account.email,
+        passwordHash: account.passwordHash,
+        createdAt: String(account.createdAt),
+        emailVerified: "0",
+        sessionVersion: String(account.sessionVersion),
+        verifyNonce: account.verifyNonce as string,
+        verifySentAt: "0",
+      })
+      .expire(ACCOUNT_KEY(email), PENDING_ACCOUNT_TTL_SECONDS)
+      .exec();
+
+    logger.info("account", "created (unconfirmed)", { emailRef: emailRef(email) });
+    return { ok: true, account };
+  } finally {
+    try { await redis.del(lockKey); } catch { /* it expires by itself */ }
   }
+}
 
-  const account: Account = {
-    id: randomBytes(16).toString("hex"),
-    email,
-    passwordHash,
-    createdAt: Date.now(),
-    emailVerified: false,
-    // Not 0: an account that was deleted (A-14b) and is created again with the same e-mail must not honour the tokens of the old one, which
-    // are signed with the same e-mail and live 30 days. A start at the moment of creation can never equal the number of an older account.
-    sessionVersion: Date.now(),
-  };
+/** A fresh confirmation secret: "n" + 32 hex. The letter keeps it from being all digits, which Redis would hand back as a number. */
+export function newVerifyNonce(): string {
+  return `n${randomBytes(16).toString("hex")}`;
+}
 
-  await redis.hset(ACCOUNT_KEY(email), {
-    id: account.id,
-    email: account.email,
-    passwordHash: account.passwordHash,
-    createdAt: String(account.createdAt),
-    emailVerified: account.emailVerified ? "1" : "0",
-    sessionVersion: String(account.sessionVersion),
-  });
-
-  logger.info("account", "created", { emailRef: emailRef(email) });
-  return { ok: true, account };
+/**
+ * A key for one purpose, derived from the session secret with its own label (domain separation): the confirmation links are signed with
+ * deriveKey("antares-email-verify-v1"), so a link can never pass for a session token and a session token never for a link.
+ */
+export function deriveKey(label: string): Buffer {
+  return createHmac("sha256", getSessionSecret()).update(label).digest();
 }
 
 export async function getAccount(
@@ -328,15 +380,19 @@ export async function getAccount(
 ): Promise<Account | null> {
   const norm = normalizeEmail(email);
   if (!norm) return null;
-  const raw = await redis.hgetall<Record<string, string>>(ACCOUNT_KEY(norm));
+  const raw = await redis.hgetall<Record<string, unknown>>(ACCOUNT_KEY(norm));
   if (!raw || !raw.email) return null;
+  const nonce = raw.verifyNonce === undefined || raw.verifyNonce === null || raw.verifyNonce === "" ? undefined : String(raw.verifyNonce);
   return {
-    id: raw.id,
-    email: raw.email,
-    passwordHash: raw.passwordHash,
+    id: String(raw.id),
+    email: String(raw.email),
+    passwordHash: String(raw.passwordHash),
     createdAt: Number(raw.createdAt) || 0,
-    emailVerified: raw.emailVerified === "1",
+    // Redis may hand "1" back as the number 1 (Upstash deserialises): compare as text, or a confirmed account would read as unconfirmed.
+    emailVerified: String(raw.emailVerified) === "1",
     sessionVersion: parseSessionVersion(raw.sessionVersion),
+    verifyNonce: nonce,
+    verifySentAt: Number(raw.verifySentAt) || 0,
   };
 }
 

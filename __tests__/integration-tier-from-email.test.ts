@@ -117,7 +117,7 @@ async function seedEmailWithLicense(
   mocks.store.set(`account:${email}`, {
     email,
     status: "active",
-    emailVerified: "0",
+    emailVerified: "1",
     createdAt: String(Date.now()),
   });
   // Intent vocabulary uses "monthly" for Pro 30-day passes; licence
@@ -136,7 +136,7 @@ function seedGrandfatheredLifetime(email: string) {
   mocks.store.set(`account:${email}`, {
     email,
     status: "active",
-    emailVerified: "0",
+    emailVerified: "1",
     createdAt: String(Date.now()),
   });
   // Valid licence-key format. Crockford-base32 alphabet excludes I/O/U
@@ -197,7 +197,7 @@ describe("Integration: overlay tier follows the user's SIGNED-IN EMAIL", () => {
     mocks.store.set(`account:alice@example.com`, {
       email: "alice@example.com",
       status: "active",
-      emailVerified: "0",
+      emailVerified: "1",
       createdAt: String(Date.now()),
     });
 
@@ -262,7 +262,7 @@ describe("Integration: overlay tier follows the user's SIGNED-IN EMAIL", () => {
     mocks.store.set(`account:alice@example.com`, {
       email: "alice@example.com",
       status: "active",
-      emailVerified: "0",
+      emailVerified: "1",
       createdAt: String(Date.now()),
     });
     await issueLicense(redis, {
@@ -326,7 +326,7 @@ describe("Integration: overlay tier follows the user's SIGNED-IN EMAIL", () => {
 
     it("with two active Pro passes the tier lasts until the later one ends", async () => {
       const redis = new Redis({ url: "x", token: "y" });
-      mocks.store.set("account:alice@example.com", { email: "alice@example.com", status: "active", emailVerified: "0", createdAt: String(Date.now()) });
+      mocks.store.set("account:alice@example.com", { email: "alice@example.com", status: "active", emailVerified: "1", createdAt: String(Date.now()) });
       const older = await issueLicense(redis, { email: "alice@example.com", tier: "monthly", intentReference: "ref-older", amountUsd: 0, now: Date.now() - 10 * DAY });
       const newer = await issueLicense(redis, { email: "alice@example.com", tier: "monthly", intentReference: "ref-newer", amountUsd: 0, now: Date.now() });
       expect(older.expiresAt).toBeLessThan(newer.expiresAt!);
@@ -336,7 +336,7 @@ describe("Integration: overlay tier follows the user's SIGNED-IN EMAIL", () => {
 
     it("an expired Pro pass is Free, with no expiry", async () => {
       const redis = new Redis({ url: "x", token: "y" });
-      mocks.store.set("account:alice@example.com", { email: "alice@example.com", status: "active", emailVerified: "0", createdAt: String(Date.now()) });
+      mocks.store.set("account:alice@example.com", { email: "alice@example.com", status: "active", emailVerified: "1", createdAt: String(Date.now()) });
       await issueLicense(redis, { email: "alice@example.com", tier: "monthly", intentReference: "ref-old", amountUsd: 0, now: Date.now() - 40 * DAY });
       const result = await resolveTier(reqWithCookie(signSession("alice@example.com")), VALID_INSTALL);
       expect(result.tier).toBe("free");
@@ -345,7 +345,7 @@ describe("Integration: overlay tier follows the user's SIGNED-IN EMAIL", () => {
 
     it("signed in, no license, install bound to the same email: the install's stored expiry is used", async () => {
       const endsAt = Date.now() + 12 * DAY;
-      mocks.store.set("account:alice@example.com", { email: "alice@example.com", status: "active", emailVerified: "0", createdAt: String(Date.now()) });
+      mocks.store.set("account:alice@example.com", { email: "alice@example.com", status: "active", emailVerified: "1", createdAt: String(Date.now()) });
       mocks.store.set(`account:install:${VALID_INSTALL}`, "alice@example.com");
       mocks.store.set(`user:${VALID_INSTALL}:tier`, "pro");
       mocks.store.set(`user:${VALID_INSTALL}:tierExpires`, endsAt);

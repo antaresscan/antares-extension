@@ -110,4 +110,40 @@ test.describe('API Security & Hardening', () => {
       expect(r.status()).toBe(403);
     });
   });
+
+  // (A-01) The e-mail proof is on the deployment under test. None of these makes an account or sends an e-mail: a garbage link is refused, nobody
+  // signed in cannot ask for a link, a sign-up with an invalid address is a 400, and the page the link opens is served. (api/auth/[action].ts, verify.html)
+  test.describe('E-mail proof', () => {
+    test('a link that is not ours is refused', async ({ request }) => {
+      const r = await request.post(`${BASE}/api/auth/verify-email`, {
+        headers: { origin: 'https://antares-extension.vercel.app' },
+        data: { token: 'definitely-not-a-token', password: 'definitely-not-a-password' },
+      });
+      test.skip(r.status() === 429, 'Rate-limited (429) on shared CI — soft skip');
+      expect(r.status(), 'the route is missing or accepts anything').toBe(400);
+      expect(await r.json()).toEqual({ ok: false, reason: 'invalid_token' });
+    });
+
+    test('nobody signed in cannot ask for a link', async ({ request }) => {
+      const r = await request.post(`${BASE}/api/auth/resend-verification`, { headers: { origin: 'https://antaresscan.com' }, data: {} });
+      test.skip(r.status() === 429, 'Rate-limited (429) on shared CI — soft skip');
+      expect(r.status()).toBe(401);
+      expect(await r.json()).toEqual({ ok: false, reason: 'not_authenticated' });
+    });
+
+    test('a sign-up with an invalid address is a 400 and creates nothing', async ({ request }) => {
+      const r = await request.post(`${BASE}/api/auth/signup`, { headers: { origin: 'https://antaresscan.com' }, data: { email: 'not-an-address', password: 'a-long-enough-password' } });
+      test.skip(r.status() === 429, 'Rate-limited (429) on shared CI — soft skip');
+      expect(r.status()).toBe(400);
+      expect(await r.json()).toEqual({ ok: false, reason: 'invalid_email' });
+    });
+
+    test('the page of the link is served, and is not indexed', async ({ request }) => {
+      const r = await request.get(`${BASE}/verify.html`);
+      expect(r.status()).toBe(200);
+      const html = await r.text();
+      expect(html).toContain('Confirm your');
+      expect(html).toContain('noindex');
+    });
+  });
 });

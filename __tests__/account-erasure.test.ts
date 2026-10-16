@@ -113,6 +113,7 @@ vi.mock("@upstash/redis", () => {
         hset: (k: string, f: Record<string, string>) => { queued.push(() => this.hset(k, f)); return tx; },
         sadd: (k: string, ...m: string[]) => { queued.push(() => this.sadd(k, ...m)); return tx; },
         set: (k: string, v: unknown) => { queued.push(() => this.set(k, v)); return tx; },
+        expire: () => { queued.push(() => Promise.resolve(1)); return tx; },
         exec: async () => { const out: unknown[] = []; for (const q of queued) out.push(await q()); return out; },
       };
       return tx;
@@ -127,6 +128,7 @@ vi.mock("../api/_lib/middleware", async () => {
 });
 
 import { Redis } from "@upstash/redis";
+import { createConfirmedAccount } from "./_helpers/confirmed-account";
 import dispatcher from "../api/auth/[action]";
 import { eraseAccount, ERASURE_SCAN_BUDGET_MS } from "../api/_lib/account-erasure";
 import { createAccount, getAccount } from "../api/_lib/account";
@@ -188,10 +190,11 @@ const withCookie = (token: string) => ({ cookie: `${SESSION_COOKIE_NAME}=${encod
 const withHeader = (token: string) => ({ "x-antares-session": token });
 const reqFor = (headers: Record<string, string>) => ({ headers }) as unknown as VercelRequest;
 
-async function signUp(email: string): Promise<string> {
-  const r = await call("signup", { body: { email, password: PASSWORD } });
-  expect(r.status).toBe(200);
-  return tokenOf(r.setCookie);
+// A-01: a sign-up sends a link and signs nobody in, and an account owns nothing until its e-mail is confirmed: these tests start from an account that
+// is confirmed (the real createAccount, then the flag the click would set), and log in.
+async function signUp(email: string, password = PASSWORD): Promise<string> {
+  await createConfirmedAccount(redis(), mocks.store, email, password);
+  return tokenOf((await logIn(email, password)).setCookie);
 }
 async function logIn(email: string, password = PASSWORD): Promise<Out> {
   return call("login", { body: { email, password } });
@@ -295,7 +298,7 @@ describe("what the erasure keeps: the record of purchases", () => {
 
     expect((await del(token)).status).toBe(200);
 
-    const again = tokenOf((await call("signup", { body: { email: ALICE, password: "another-long-password" } })).setCookie);
+    const again = await signUp(ALICE, "another-long-password"); // sign-up + confirmation of the new account, then login
     expect((await resolveTier(reqFor(withCookie(again)), INSTALL_A)).tier).toBe("yearly");
   });
 });
@@ -410,7 +413,7 @@ describe("after the erasure", () => {
     await buy(ALICE);
     expect((await del(oldCookie)).status).toBe(200);
 
-    const newCookie = tokenOf((await call("signup", { body: { email: ALICE, password: PASSWORD } })).setCookie);
+    const newCookie = await signUp(ALICE); // the same e-mail signs up again, confirms, logs in
     expect((await call("me", { method: "GET", headers: withCookie(newCookie) })).status).toBe(200);
     expect((await call("me", { method: "GET", headers: withCookie(oldCookie) })).status).toBe(401);
     expect((await call("me", { method: "GET", headers: withHeader(oldExtensionCopy) })).status).toBe(401);

@@ -585,7 +585,7 @@ describe("getEffectiveTierFromRequest (session-gated)", () => {
     m.store.hashes.set(`account:${email}`, {
       email,
       status: "active",
-      emailVerified: "0",
+      emailVerified: "1",
       createdAt: String(Date.now()),
     });
   }
@@ -731,7 +731,7 @@ describe("resolveTier (dev quota bypass)", () => {
     m.store.hashes.set(`account:${email}`, {
       email,
       status: "active",
-      emailVerified: "0",
+      emailVerified: "1",
       createdAt: String(Date.now()),
     });
   }

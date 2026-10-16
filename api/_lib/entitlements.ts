@@ -23,17 +23,20 @@
 //   2  the storage (Redis) is not reachable                    Free                              no-storage
 //   3  reading the session fails                               Free                              session-error
 //   4  there is no session                                     Free                              no-session
-//   5  the e-mail is a dev e-mail AND the header names a tier  that tier                         dev-header
-//   6  the e-mail owns an active licence                       the best one: Lifetime > Yearly   license
+//   5  the session's account has NOT proved its e-mail         Free (a licence, a binding, a dev   email-unverified
+//      (audit A-01: see email-proof.ts)                        e-mail: none of them counts for an
+//                                                              address nobody has confirmed)
+//   6  the e-mail is a dev e-mail AND the header names a tier  that tier                         dev-header
+//   7  the e-mail owns an active licence                       the best one: Lifetime > Yearly   license
 //                                                              > Pro (a licence with an end date
 //                                                              counts until that date)
-//   7  the install is bound to ANOTHER e-mail                  Free (no inheriting what someone    install-bound-elsewhere
+//   8  the install is bound to ANOTHER e-mail                  Free (no inheriting what someone    install-bound-elsewhere
 //                                                              else paid on this install)
-//   8  the install is bound to THIS e-mail                     the tier stored on the install    install-stored
+//   9  the install is bound to THIS e-mail                     the tier stored on the install    install-stored
 //                                                              (Free once its end date has passed)
-//   9  none of the above (a session, no licence, no binding)   Free                              no-license-no-binding
+//  10  none of the above (a session, no licence, no binding)   Free                              no-license-no-binding
 //
-// A dev e-mail (rows 5 to 9) is also marked `isDev` on the decision, which only changes what is logged. There used to be a
+// A dev e-mail (rows 6 to 10) is also marked `isDev` on the decision, which only changes what is logged. There used to be a
 // "bypassQuota" column here, the dev exemption from the daily scan quota; there is no quota any more (every tier is unlimited).
 
 export type Tier = "free" | "pro" | "yearly" | "lifetime";
@@ -57,7 +60,8 @@ export function parseDevTier(raw: string | string[] | null | undefined): Tier | 
 export type SessionFact =
   | { kind: "none" }
   | { kind: "error"; name: string; message: string }
-  | { kind: "email"; email: string };
+  /** `proven`: the account owns its e-mail (confirmed, or inside the grace of the accounts that predate the rule): email-proof.ts. */
+  | { kind: "email"; email: string; proven: boolean };
 
 /** Everything the decision reads. The functions are only called when a row needs them, in the order of the table. */
 export interface TierFacts {
@@ -78,7 +82,7 @@ export interface TierFacts {
 }
 
 export type TierReason =
-  | "dev-install" | "no-storage" | "session-error" | "no-session" | "dev-header" | "license"
+  | "dev-install" | "no-storage" | "session-error" | "no-session" | "email-unverified" | "dev-header" | "license"
   | "install-bound-elsewhere" | "install-stored" | "no-license-no-binding";
 
 export interface TierDecision {
@@ -104,25 +108,30 @@ export async function decideTier(f: TierFacts): Promise<TierDecision> {
   if (session.kind === "error") return { tier: "free", reason: "session-error", error: { name: session.name, message: session.message } };
   if (session.kind === "none") return { tier: "free", reason: "no-session" };
   const email = session.email;
+
+  // 5. Nobody has shown that this address is theirs (audit A-01): everything below is a claim on the address, so none of it counts.
+  //    This comes BEFORE the dev e-mails and the licences: anyone can type a founder's address or a customer's at sign-up.
+  if (!session.proven) return { tier: "free", reason: "email-unverified", sessionEmail: email };
+
   const boundEmail = await f.boundEmail();
   const isDev = f.isDevEmail(email);
 
-  // 5. A dev e-mail can test with the tier it names.
+  // 6. A dev e-mail can test with the tier it names.
   if (isDev && f.devTier) return { tier: f.devTier, reason: "dev-header", sessionEmail: email, boundEmail, isDev };
 
-  // 6. A licence owned by this e-mail.
+  // 7. A licence owned by this e-mail.
   const licenseTier = await f.licenseTier(email);
   if (licenseTier !== "free") return { tier: licenseTier, reason: "license", sessionEmail: email, boundEmail, isDev };
 
-  // 7. This install was paid by someone else: its tier is not for this e-mail.
+  // 8. This install was paid by someone else: its tier is not for this e-mail.
   if (boundEmail && boundEmail !== email) return { tier: "free", reason: "install-bound-elsewhere", sessionEmail: email, boundEmail, isDev };
 
-  // 8. This install is bound to this e-mail: the tier stored on it (set when a licence was redeemed here).
+  // 9. This install is bound to this e-mail: the tier stored on it (set when a licence was redeemed here).
   if (boundEmail === email) {
     const stored = await f.installTier();
     return { tier: stored, reason: "install-stored", sessionEmail: email, boundEmail, isDev };
   }
 
-  // 9. A session, no licence, no binding: Free until a licence is redeemed or the install is linked.
+  // 10. A session, no licence, no binding: Free until a licence is redeemed or the install is linked.
   return { tier: "free", reason: "no-license-no-binding", sessionEmail: email, boundEmail, isDev };
 }

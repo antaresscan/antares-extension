@@ -96,6 +96,7 @@ vi.mock("@upstash/redis", () => {
         hset: (k: string, f: Record<string, string>) => { queued.push(() => this.hset(k, f)); return tx; },
         sadd: (k: string, ...m: string[]) => { queued.push(() => this.sadd(k, ...m)); return tx; },
         set: (k: string, v: unknown) => { queued.push(() => this.set(k, v)); return tx; },
+        expire: (k: string, sec: number) => { queued.push(() => this.expire(k, sec)); return tx; },
         exec: async () => { const out: unknown[] = []; for (const q of queued) out.push(await q()); return out; },
       };
       return tx;
@@ -110,6 +111,7 @@ vi.mock("../api/_lib/middleware", async () => {
 });
 
 import { Redis } from "@upstash/redis";
+import { createConfirmedAccount } from "./_helpers/confirmed-account";
 import dispatcher from "../api/auth/[action]";
 import { loginFailuresKey, checkLoginLock, recordLoginFailure, clearLoginFailures, LOGIN_MAX_FAILURES, LOGIN_FAILURE_WINDOW_SECONDS } from "../api/_lib/login-guard";
 import { initUserStorage, resolveTier } from "../api/_lib/user";
@@ -167,7 +169,8 @@ const tokenOf = (setCookie: string | null) => decodeURIComponent((setCookie ?? "
 const withCookie = (token: string) => ({ cookie: `${SESSION_COOKIE_NAME}=${encodeURIComponent(token)}` });
 const login = (email: string, password: string, ip = "203.0.113.7") =>
   call("login", { headers: { "x-forwarded-for": ip }, body: { email, password } });
-const signUp = async (email: string) => { expect((await call("signup", { body: { email, password: PASSWORD } })).status).toBe(200); };
+// A-01: a sign-up sends a link and signs nobody in; these tests are about the login lock, so the account is created confirmed (see _helpers).
+const signUp = async (email: string) => { await createConfirmedAccount(new Redis({ url: "x", token: "y" }), mocks.store, email, PASSWORD); };
 async function failTimes(email: string, n: number, ipFor: (i: number) => string = () => "203.0.113.7") {
   const statuses: number[] = [];
   for (let i = 0; i < n; i++) statuses.push((await login(email, WRONG, ipFor(i))).status);
@@ -361,10 +364,22 @@ describe("POST /api/auth/login", () => {
     for (const k of counterKeys()) expect(k).not.toContain("alice");
   });
 
-  it("signup is untouched by this lock (an existing account still answers as before: that part is for A-01)", async () => {
-    await signUp(ALICE);
-    const again = await call("signup", { body: { email: ALICE, password: PASSWORD } });
-    expect(again.status).toBe(409);
+  it("signup is untouched by this lock, and since A-01 an address that already has an account gets the SAME answer as a new one (no more 409 that says who has an account)", async () => {
+    process.env.RESEND_API_KEY = "re_test_key";
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, status: 200 })));
+    try {
+      await signUp(ALICE);
+      await failTimes(ALICE, 12); // Alice's LOGIN is locked now
+      const again = await call("signup", { body: { email: ALICE, password: PASSWORD } });
+      const fresh = await call("signup", { body: { email: "new-person@example.com", password: PASSWORD } });
+      expect(again.status).toBe(200);
+      expect(again.body).toEqual({ ok: true, status: "check_email" });
+      expect(fresh.status).toBe(again.status);
+      expect(fresh.body).toEqual(again.body);
+    } finally {
+      delete process.env.RESEND_API_KEY;
+      vi.unstubAllGlobals();
+    }
   });
 });
 

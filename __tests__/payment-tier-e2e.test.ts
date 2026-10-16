@@ -178,7 +178,7 @@ function seedAccount(email: string): void {
     email: email.toLowerCase().trim(),
     passwordHash: "scrypt$0000$0000",
     createdAt: String(Date.now()),
-    emailVerified: "0",
+    emailVerified: "1",
   });
 }
 

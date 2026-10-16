@@ -7,11 +7,22 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@upstash/redis", () => {
   class MockRedis {
-    set = vi.fn(async (k: string, v: unknown) => {
+    set = vi.fn(async (k: string, v: unknown, opts?: { nx?: boolean }) => {
+      if (opts?.nx && mocks.store.has(k)) return null;
       mocks.store.set(k, v);
       return "OK";
     });
     get = vi.fn(async (k: string) => mocks.store.get(k) ?? null);
+    del = vi.fn(async (k: string) => (mocks.store.delete(k) ? 1 : 0));
+    multi = () => {
+      const queued: Array<() => Promise<unknown>> = [];
+      const tx = {
+        hset: (k: string, f: Record<string, string>) => { queued.push(() => this.hset(k, f)); return tx; },
+        expire: () => { queued.push(() => Promise.resolve(1)); return tx; },
+        exec: async () => { const out: unknown[] = []; for (const q of queued) out.push(await q()); return out; },
+      };
+      return tx;
+    };
     hset = vi.fn(async (k: string, fields: Record<string, string>) => {
       const existing = (mocks.store.get(k) as Record<string, string>) ?? {};
       mocks.store.set(k, { ...existing, ...fields });
