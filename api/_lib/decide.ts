@@ -16,7 +16,7 @@ import type {
 } from "./types";
 import type { CreatorReputation } from "./fetchers";
 import {
-  layerDexScreener, layerRugCheck, layerGoPlus, layerHelius, layerSolscan, layerChart, layerCrossValidation, isBlueChipByMarket, isTop10Proven, historyIsClean, type Top10ReliefFacts,
+  layerDexScreener, layerRugCheck, layerGoPlus, layerHelius, layerSolscan, layerChart, layerCrossValidation, isBlueChipByMarket, isTop10Proven, historyIsClean, isAthFlagCandidate, type Top10ReliefFacts,
 } from "./layers";
 import { computeFinalScore, classifySafeBlockedReasons } from "./scoring";
 import {
@@ -163,6 +163,10 @@ export function decide(input: DecideInput): Decision {
     lpBurned: _earlyLpBurned,
     lpPctOfSupply: _lpPctOfSupply,
     top10Proven: false,
+    // How far the token stands below its all-time high, only for a token that is read for it (athDropFlag says it from ATH_COLLAPSE_PCT).
+    athDropPct: (isAthFlagCandidate({ tokenAgeMinutes, marketCapUsd: marketCap, issuerBacked: issuerKindOf(resolvedMint) !== null }) ? athDrop : null) as number | null,
+    athDate: (allTimeHigh?.athDate ?? null) as string | null,
+    athCollapsed: athCollapsed ?? null,
   };
   // A token the market has proven AND whose history does not say the insiders already sold: its concentrated top 10 is a warning, not a critical (isTop10Proven).
   maturityCtx.top10Proven = isTop10Proven({ ...top10ReliefFactsOf({ ...input, authFacts }), athDropPct: athDrop, athCollapsed });

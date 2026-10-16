@@ -32,6 +32,7 @@ const NOT_FORGIVEN: Entry[] = [
   { symbol: "LUNA", mint: "9se6kma7LeGcQWyRBNcYzyxZPE3r9t9qWZ8SnjnN3jJ7", why: "Wormhole-wrapped LUNA: -98.4 % from its all-time high. The owner, 2026-10-16: it cannot be CAUTION, it should even be a RUG; a bridge-held mint authority does not change that." },
   { symbol: "TRUNK", mint: "9mV4WUukVsva5wYcYW4veo34CNDiF44sh3Ji65JNdvh5", why: "Wormhole-wrapped TRUNK: -96.3 % from its all-time high. The owner, 2026-10-16: it cannot be CAUTION, it should even be a RUG." },
   { symbol: "YZY", mint: "DrZ26cKJDksVRWib3DVVsjo9eeXccc7hKhDJviiYEEZY", why: "-90 % from its all-time high, three insider wallets (27 / 18 / 18 %). The owner, 2026-10-15: a scam that already rugged, not credible." },
+  { symbol: "GRIFFAIN", mint: "KENJSUYLASHUMfHyy5o4Hp2FdNqZg1AsUPhfH2kYvEP", why: "-98 % from its all-time high, a top 10 at 49 %, a buy / sell imbalance. The owner, 2026-10-16: a rug the engine left in CAUTION while SPX and CARDS were DANGER, not credible." },
 ];
 
 function goldenVerdicts(): Map<string, Verdict> {

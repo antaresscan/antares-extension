@@ -189,7 +189,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v63"; // 2026-10-16: a token the market has proven is not condemned for who holds its supply unless it has collapsed (lost 90 % or more from its all-time high, ATH_COLLAPSE_PCT): a concentrated top 10 or one big wallet is a warning (TOP10_RELIEF_*, depth read on all its pools), and a mint authority held by the Wormhole bridge (BRIDGE_MINT_AUTHORITIES) is a warning that keeps it out of SAFE and no longer makes the contract "not clean" for the LP rule. RugCheck's concentration risks are counted once on such a token. Flushes the DANGER / RUG cached for CARDS, MET, BC, DBR, HUMA, ANSEM, SPX, JUP, RAY. v62 (2026-10-14): an issuer-backed token of the registry (stablecoin, tokenized stock, LST, wrapped, yield, vault) whose market cannot be read (DexScreener silent or no pool) keeps its verdict (SAFE on enough sources, one information line), and the verdict of the last time its market WAS read is served again with its age (scannedAgoSec). Flushes the CAUTION cached for these tokens during an outage.
+const ENGINE_VERSION_MANUAL = "v64"; // 2026-10-16: a token of 90 days and $5M of cap or more that has collapsed (lost 90 % or more from its all-time high, CoinGecko) carries a warning (ATH_FLAG_*): never SAFE, and a DANGER with two other warnings (GRIFFAIN, LION). Flushes the SAFE and CAUTION cached for these tokens. v63 (2026-10-16): a token the market has proven is not condemned for who holds its supply unless it has collapsed (lost 90 % or more from its all-time high, ATH_COLLAPSE_PCT): a concentrated top 10 or one big wallet is a warning (TOP10_RELIEF_*, depth read on all its pools), and a mint authority held by the Wormhole bridge (BRIDGE_MINT_AUTHORITIES) is a warning that keeps it out of SAFE and no longer makes the contract "not clean" for the LP rule. RugCheck's concentration risks are counted once on such a token. Flushes the DANGER / RUG cached for CARDS, MET, BC, DBR, HUMA, ANSEM, SPX, JUP, RAY. v62 (2026-10-14): an issuer-backed token of the registry (stablecoin, tokenized stock, LST, wrapped, yield, vault) whose market cannot be read (DexScreener silent or no pool) keeps its verdict (SAFE on enough sources, one information line), and the verdict of the last time its market WAS read is served again with its age (scannedAgoSec). Flushes the CAUTION cached for these tokens during an outage.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.
@@ -354,6 +354,12 @@ export const TOP10_RELIEF_MIN_POOL_PCT_OF_CAP = 0.001;
 export const TOP10_RELIEF_MIN_HOLDERS = 10_000;
 export const TOP10_RELIEF_MAX_TOP10 = 0.90;   // from this share the top 10 is control whatever the market says
 export const TOP10_RELIEF_MAX_SINGLE = 0.60;  // one wallet above this share is a control risk whatever the market says
+// The all-time-high flag: a token that has collapsed (ATH_COLLAPSE_PCT, 90 %) says so, in a WARNING: it is never SAFE, and with two other warnings it is a DANGER; it is never a
+// critical on its own, because the same fall describes BONK (-95 %), WIF (-96 %), PYTH (-92 %) and JTO (-92 %), real tokens that a critical would send to DANGER. It is read for a token
+// of 90 days or more (a younger one is read by the 90-day collapse rule) and $5M of cap or more: below it CoinGecko lists thousands of tokens that nobody scans twice, and measured on
+// the 1 121 recorded tokens the flag without that floor moved 136 verdicts (128 SAFE to CAUTION, 108 of them under $5M) against 21 with it.
+export const ATH_FLAG_MIN_AGE_DAYS = 90;
+export const ATH_FLAG_MIN_MARKET_CAP_USD = 5_000_000;
 // Below these moves it is no longer a market-wide sell-off, whatever the token: the RUG stays forced (the -75 % collapse rule, from a
 // 90-day high, needs the chart source; these two numbers do not).
 export const BLUECHIP_CRASH_FLOOR_6H  = -70; // %
