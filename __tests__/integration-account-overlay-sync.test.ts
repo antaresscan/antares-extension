@@ -79,6 +79,7 @@ vi.mock("@upstash/redis", () => {
         hset: (k: string, f: Record<string, string>) => { queued.push(() => this.hset(k, f)); return tx; },
         sadd: (k: string, ...m: string[]) => { queued.push(() => this.sadd(k, ...m)); return tx; },
         set: (k: string, v: unknown) => { queued.push(() => this.set(k, v)); return tx; },
+        expire: () => { queued.push(() => Promise.resolve(1)); return tx; },
         exec: async () => { const out: unknown[] = []; for (const q of queued) out.push(await q()); return out; },
       };
       return tx;
@@ -102,6 +103,7 @@ import dispatcher from "../api/auth/[action]";
 import { Redis } from "@upstash/redis";
 import { initUserStorage, setUserTier, resolveTier } from "../api/_lib/user";
 import { SESSION_COOKIE_NAME } from "../api/_lib/session-cookie";
+import { createConfirmedAccount } from "./_helpers/confirmed-account";
 
 const ORIGIN = "https://antares-website.vercel.app";
 const VALID_INSTALL = "11111111-1111-4111-8111-111111111111";
@@ -154,6 +156,19 @@ function mockRes(): MockResHelper {
   };
 }
 
+/**
+ * A-01: a sign-up no longer signs anybody in (it sends a link), and an account owns nothing until its e-mail is confirmed. These flows are about the
+ * tier the overlay shows, so the account is created CONFIRMED (the real createAccount, then the flag the click on the link sets) and then LOGS IN
+ * through the real handler, which is where the cookie comes from. The sign-up and the confirmation have their own tests (email-proof.test.ts).
+ */
+async function signUpConfirmed(email: string, password: string): Promise<string> {
+  await createConfirmedAccount(new Redis({ url: "x", token: "y" }), mocks.store, email, password);
+  const login = mockRes();
+  await dispatcher(mockReq({ method: "POST", action: "login", headers: { origin: ORIGIN }, body: { email, password } }), login.res);
+  expect(login.status()).toBe(200);
+  return extractTokenFromCookie(login.setCookie()!);
+}
+
 function extractTokenFromCookie(setCookie: string): string {
   // Format: antares_session=<jwt>; Max-Age=...; Path=/; HttpOnly; ...
   const match = setCookie.match(new RegExp(`${SESSION_COOKIE_NAME}=([^;]+)`));
@@ -177,21 +192,8 @@ beforeEach(() => {
 
 describe("E2E: account ↔ overlay tier sync (the one the founder kept asking for)", () => {
   it("sign up → simulate payment → /api/auth/sync-token auto-binds → scan returns user's tier", async () => {
-    // ── 1. User signs up at /signup.html with email + password ──────────
-    const signup = mockRes();
-    await dispatcher(
-      mockReq({
-        method: "POST",
-        action: "signup",
-        headers: { origin: ORIGIN },
-        body: { email: "alice@example.com", password: "supersecret1" },
-      }),
-      signup.res,
-    );
-    expect(signup.status()).toBe(200);
-    const setCookieHeader = signup.setCookie();
-    expect(setCookieHeader, "signup must set the session cookie").toBeTruthy();
-    const sessionJwt = extractTokenFromCookie(setCookieHeader!);
+    // ── 1. User signs up with email + password and confirms the e-mail (A-01: the link, then the password), then logs in ──────────
+    const sessionJwt = await signUpConfirmed("alice@example.com", "supersecret1");
 
     // ── 2. Simulate a Solana payment confirming on this install ─────────
     // (cron-check-payments calls setUserTier(install, "yearly", expiry))
@@ -293,17 +295,7 @@ describe("E2E: account ↔ overlay tier sync (the one the founder kept asking fo
     await setUserTier(VALID_INSTALL, "yearly", Date.now() + 365 * 24 * 60 * 60 * 1000);
 
     // Eve signs up on Bob's browser.
-    const signup = mockRes();
-    await dispatcher(
-      mockReq({
-        method: "POST",
-        action: "signup",
-        headers: { origin: ORIGIN },
-        body: { email: "eve@example.com", password: "supersecret1" },
-      }),
-      signup.res,
-    );
-    const eveJwt = extractTokenFromCookie(signup.setCookie()!);
+    const eveJwt = await signUpConfirmed("eve@example.com", "supersecret1");
 
     // Eve calls sync-token with install_id — must NOT overwrite Bob's binding.
     const syncTokenRes = mockRes();
@@ -355,17 +347,7 @@ describe("E2E: account ↔ overlay tier sync (the one the founder kept asking fo
     // because session email ≠ bound email (no bound email at all).
 
     // Sign up
-    const signup = mockRes();
-    await dispatcher(
-      mockReq({
-        method: "POST",
-        action: "signup",
-        headers: { origin: ORIGIN },
-        body: { email: "alice@example.com", password: "supersecret1" },
-      }),
-      signup.res,
-    );
-    const sessionJwt = extractTokenFromCookie(signup.setCookie()!);
+    const sessionJwt = await signUpConfirmed("alice@example.com", "supersecret1");
 
     // Issue + redeem a Lifetime licence (mimics LINK TO MY EXTENSION
     // button — auto-redeem of an unredeemed licence).
@@ -406,17 +388,7 @@ describe("E2E: account ↔ overlay tier sync (the one the founder kept asking fo
     // The extension can't carry the cookie cross-origin reliably; it
     // sends X-Antares-Session: <jwt> instead. This test exercises
     // exactly that path.
-    const signup = mockRes();
-    await dispatcher(
-      mockReq({
-        method: "POST",
-        action: "signup",
-        headers: { origin: ORIGIN },
-        body: { email: "alice@example.com", password: "supersecret1" },
-      }),
-      signup.res,
-    );
-    const sessionJwt = extractTokenFromCookie(signup.setCookie()!);
+    const sessionJwt = await signUpConfirmed("alice@example.com", "supersecret1");
 
     await setUserTier(VALID_INSTALL, "yearly", Date.now() + 365 * 24 * 60 * 60 * 1000);
 

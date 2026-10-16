@@ -40,6 +40,7 @@ import {
   type License,
 } from "./_lib/license";
 import { getAccountFromRequest } from "./_lib/session-cookie";
+import { emailProofOf, isEmailProven } from "./_lib/email-proof";
 
 function getRedis(): Redis | null {
   const url = process.env.UPSTASH_REDIS_REST_URL;
@@ -118,7 +119,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   let authedEmail: string | null = null;
   try {
     const account = await getAccountFromRequest(req, redis);
-    if (account) authedEmail = account.email;
+    if (account) {
+      // An address nobody has confirmed owns no licence (audit A-01): a signed-in account that has not proved its e-mail gets an empty
+      // list and the reason, not an error (it is signed in; it just has nothing yet). Confirming the e-mail brings the licences.
+      if (!isEmailProven(account)) {
+        return res.json({ ok: true, email: account.email, licenses: [], emailProof: emailProofOf(account) });
+      }
+      authedEmail = account.email;
+    }
   } catch {
     // SESSION_SECRET unset, etc. Fall through to legacy auth.
   }

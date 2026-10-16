@@ -7,11 +7,22 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@upstash/redis", () => {
   class MockRedis {
-    set = vi.fn(async (k: string, v: unknown) => {
+    set = vi.fn(async (k: string, v: unknown, opts?: { nx?: boolean }) => {
+      if (opts?.nx && mocks.store.has(k)) return null;
       mocks.store.set(k, v);
       return "OK";
     });
     get = vi.fn(async (k: string) => mocks.store.get(k) ?? null);
+    del = vi.fn(async (k: string) => (mocks.store.delete(k) ? 1 : 0));
+    multi = () => {
+      const queued: Array<() => Promise<unknown>> = [];
+      const tx = {
+        hset: (k: string, f: Record<string, string>) => { queued.push(() => this.hset(k, f)); return tx; },
+        expire: () => { queued.push(() => Promise.resolve(1)); return tx; },
+        exec: async () => { const out: unknown[] = []; for (const q of queued) out.push(await q()); return out; },
+      };
+      return tx;
+    };
     hset = vi.fn(async (k: string, fields: Record<string, string>) => {
       const existing = (mocks.store.get(k) as Record<string, string>) ?? {};
       mocks.store.set(k, { ...existing, ...fields });
@@ -129,11 +140,12 @@ describe("readSessionToken", () => {
 describe("getAccountFromRequest", () => {
   it("returns the account when cookie carries a valid signed JWT", async () => {
     const redis = new Redis({ url: "x", token: "y" });
-    await createAccount(redis, {
+    const created = await createAccount(redis, {
       email: "alice@example.com",
       password: "firstpass1",
     });
-    const token = signSession("alice@example.com");
+    // signed with the session number the account was given when it was created, as the application does
+    const token = signSession("alice@example.com", Date.now(), created.ok ? created.account.sessionVersion : 0);
     const req = mockReq(`${SESSION_COOKIE_NAME}=${token}`);
     const account = await getAccountFromRequest(req, redis);
     expect(account?.email).toBe("alice@example.com");

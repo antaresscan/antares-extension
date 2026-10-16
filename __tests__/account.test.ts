@@ -3,15 +3,42 @@ import { vi, describe, it, expect, beforeEach } from "vitest";
 const mocks = vi.hoisted(() => ({
   store: new Map<string, unknown>(),
   sets: new Map<string, Set<string>>(),
+  /** key -> seconds, as set by EXPIRE (and cleared by PERSIST / DEL). */
+  ttl: new Map<string, number>(),
 }));
 
 vi.mock("@upstash/redis", () => {
   class MockRedis {
-    set = vi.fn(async (k: string, v: unknown) => {
+    set = vi.fn(async (k: string, v: unknown, opts?: { nx?: boolean; ex?: number }) => {
+      if (opts?.nx && mocks.store.has(k)) return null;
       mocks.store.set(k, v);
+      if (opts?.ex) mocks.ttl.set(k, opts.ex);
       return "OK";
     });
     get = vi.fn(async (k: string) => mocks.store.get(k) ?? null);
+    del = vi.fn(async (...keys: string[]) => {
+      let n = 0;
+      for (const k of keys) { mocks.ttl.delete(k); if (mocks.store.delete(k)) n++; }
+      return n;
+    });
+    expire = vi.fn(async (k: string, seconds: number) => { if (!mocks.store.has(k)) return 0; mocks.ttl.set(k, seconds); return 1; });
+    persist = vi.fn(async (k: string) => (mocks.ttl.delete(k) ? 1 : 0));
+    hdel = vi.fn(async (k: string, ...fields: string[]) => {
+      const h = mocks.store.get(k) as Record<string, string> | undefined;
+      if (!h) return 0;
+      let n = 0;
+      for (const f of fields) if (f in h) { delete h[f]; n++; }
+      return n;
+    });
+    multi = () => {
+      const queued: Array<() => Promise<unknown>> = [];
+      const tx = {
+        hset: (k: string, f: Record<string, string>) => { queued.push(() => this.hset(k, f)); return tx; },
+        expire: (k: string, sec: number) => { queued.push(() => this.expire(k, sec)); return tx; },
+        exec: async () => { const out: unknown[] = []; for (const q of queued) out.push(await q()); return out; },
+      };
+      return tx;
+    };
     hset = vi.fn(async (k: string, fields: Record<string, string>) => {
       const existing = (mocks.store.get(k) as Record<string, string>) ?? {};
       mocks.store.set(k, { ...existing, ...fields });
@@ -47,10 +74,12 @@ import {
   getAccountByInstall,
   _resetSessionSecretCacheForTests,
 } from "../api/_lib/account";
+import { PENDING_ACCOUNT_TTL_SECONDS } from "../api/_lib/email-proof";
 
 beforeEach(() => {
   mocks.store.clear();
   mocks.sets.clear();
+  mocks.ttl.clear();
   process.env.SESSION_SECRET = "0".repeat(64); // 64-char test secret
   // getSessionSecret is now memoised at module scope (fires the bootstrap
   // warn once per cold-start instead of once per request). Vitest reuses
@@ -193,6 +222,53 @@ describe("createAccount + getAccount", () => {
     expect(out.account.passwordHash).toMatch(/^scrypt\$/);
   });
 
+  it("A-01: the new account is UNCONFIRMED, holds a confirmation secret that is never a bare number, and expires by itself after 48 h", async () => {
+    const redis = new Redis({ url: "x", token: "y" });
+    const out = await createAccount(redis, { email: "alice@example.com", password: "supersecret" });
+    expect(out.ok).toBe(true);
+    if (!out.ok) return;
+    expect(out.account.emailVerified).toBe(false);
+    expect(out.account.verifyNonce).toMatch(/^n[0-9a-f]{32}$/);
+    expect(out.account.verifySentAt).toBe(0);
+    const stored = mocks.store.get("account:alice@example.com") as Record<string, string>;
+    expect(stored.emailVerified).toBe("0");
+    expect(stored.verifyNonce).toBe(out.account.verifyNonce);
+    expect(mocks.ttl.get("account:alice@example.com")).toBe(PENDING_ACCOUNT_TTL_SECONDS);
+    expect(PENDING_ACCOUNT_TTL_SECONDS).toBe(48 * 3600);
+  });
+
+  it("A-01: two accounts never share a confirmation secret", async () => {
+    const redis = new Redis({ url: "x", token: "y" });
+    const a = await createAccount(redis, { email: "a@example.com", password: "supersecret" });
+    const b = await createAccount(redis, { email: "b@example.com", password: "supersecret" });
+    expect(a.ok && b.ok && a.account.verifyNonce !== b.account.verifyNonce).toBe(true);
+  });
+
+  it("A-01: the creation mutex is released afterwards (a sign-up that fails later can try again at once)", async () => {
+    const redis = new Redis({ url: "x", token: "y" });
+    await createAccount(redis, { email: "alice@example.com", password: "supersecret" });
+    expect([...mocks.store.keys()].filter((k) => k.startsWith("account-create:"))).toEqual([]);
+  });
+
+  it("A-01: the mutex key names a hash of the address, never the address", async () => {
+    const redis = new Redis({ url: "x", token: "y" });
+    const seen: string[] = [];
+    const real = (redis as unknown as { set: (k: string, ...r: unknown[]) => unknown }).set.bind(redis);
+    (redis as unknown as { set: unknown }).set = (k: string, ...r: unknown[]) => { seen.push(k); return real(k, ...r); };
+    await createAccount(redis, { email: "alice@example.com", password: "supersecret" });
+    expect(seen.some((k) => /^account-create:[0-9a-f]{64}$/.test(k))).toBe(true);
+    expect(seen.some((k) => k.includes("alice"))).toBe(false);
+  });
+
+  it("A-01: a sign-up that arrives while another one for the same address is in flight creates nothing and is told the address is taken", async () => {
+    const redis = new Redis({ url: "x", token: "y" });
+    const { createHash } = await import("node:crypto");
+    mocks.store.set(`account-create:${createHash("sha256").update("alice@example.com").digest("hex")}`, "1"); // the winner holds the mutex
+    const out = await createAccount(redis, { email: "alice@example.com", password: "supersecret" });
+    expect(out).toEqual({ ok: false, reason: "already_exists", existing: null });
+    expect(mocks.store.has("account:alice@example.com")).toBe(false);
+  });
+
   it("rejects invalid email", async () => {
     const redis = new Redis({ url: "x", token: "y" });
     const out = await createAccount(redis, {
@@ -221,7 +297,26 @@ describe("createAccount + getAccount", () => {
       email: "Alice@example.com", // case-insensitive duplicate
       password: "secondpass1",
     });
-    expect(second).toEqual({ ok: false, reason: "already_exists" });
+    expect(second).toMatchObject({ ok: false, reason: "already_exists" });
+    // the second sign-up never replaces anything: the first password still opens the account (nobody can take an address between its owner's
+    // sign-up and the click on the link)
+    expect((await authenticate(redis, { email: "alice@example.com", password: "firstpass1" })).ok).toBe(true);
+    expect((await authenticate(redis, { email: "alice@example.com", password: "secondpass1" })).ok).toBe(false);
+    if (!second.ok && second.reason === "already_exists") expect(second.existing?.email).toBe("alice@example.com");
+  });
+
+  it("getAccount reads a confirmed account even when Redis hands back the NUMBER 1 (Upstash deserialises), and a numeric-looking nonce as text", async () => {
+    const redis = new Redis({ url: "x", token: "y" });
+    mocks.store.set("account:alice@example.com", { id: "abc", email: "alice@example.com", passwordHash: "x", createdAt: 1_700_000_000_000, emailVerified: 1, sessionVersion: 5, verifyNonce: 12345, verifySentAt: 99 });
+    const a = await getAccount(redis, "alice@example.com");
+    expect(a?.emailVerified).toBe(true);
+    expect(a?.verifyNonce).toBe("12345");
+    expect(a?.verifySentAt).toBe(99);
+    mocks.store.set("account:bob@example.com", { id: "abc", email: "bob@example.com", passwordHash: "x", createdAt: "1", emailVerified: "0" });
+    const b = await getAccount(redis, "bob@example.com");
+    expect(b?.emailVerified).toBe(false);
+    expect(b?.verifyNonce).toBeUndefined();
+    expect(b?.verifySentAt).toBe(0);
   });
 
   it("getAccount returns null for unknown email", async () => {

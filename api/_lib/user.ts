@@ -23,6 +23,7 @@ import { emailRef } from "./log-ref";
 // circular gracefully (license.ts only needs setUserTier at call time,
 // not at module init).
 import { getAccountFromRequest } from "./session-cookie";
+import { isEmailProven } from "./email-proof";
 import { isDevLifetimeEmail, isDevProEmail } from "./account";
 import { getLicensesByEmail } from "./license";
 import { decideTier, parseDevTier, type Tier, type TierDecision, type TierFacts } from "./entitlements";
@@ -208,7 +209,7 @@ export async function resolveTier(
     session: async () => {
       try {
         const account = await getAccountFromRequest(req as unknown as Parameters<typeof getAccountFromRequest>[0], redis as Redis);
-        return account?.email ? { kind: "email", email: account.email } : { kind: "none" };
+        return account?.email ? { kind: "email", email: account.email, proven: isEmailProven(account) } : { kind: "none" };
       } catch (err) {
         return {
           kind: "error",

@@ -217,10 +217,13 @@ POST /api/payment-intent                Create a NOWPayments invoice
 GET  /api/payment-status?reference=…    Poll an in-flight payment
 POST /api/redeem                        Redeem a license key against an install_id
 
-POST /api/auth/signup                   Create an account
+POST /api/auth/signup                   Create an UNCONFIRMED account and e-mail it a link. Always answers {ok, status:"check_email"} (no session, same answer for every address); 503 when no RESEND_API_KEY
+POST /api/auth/verify-email             Confirm the e-mail: the token of the link AND the account's password (a wrong password is counted by the login lock)
+POST /api/auth/resend-verification      A signed-in, unconfirmed account asks for its link again (once a minute at most)
 POST /api/auth/login                    Sign in (10 failed attempts on one e-mail in 15 minutes lock that e-mail's login: 429 + Retry-After)
 POST /api/auth/logout                   Sign out (this browser)
 POST /api/auth/logout-all               Sign out everywhere: every session of the account stops working
+POST /api/auth/delete-account           Delete the account (needs the password): erases the account, its installs' history and plan; purchase records are kept
 GET  /api/auth/me                       Get current session
 POST /api/auth/sync-token               Get JWT for the extension bridge
 POST /api/auth/nowpayments-ipn          NOWPayments webhook (HMAC-SHA512 verified)
@@ -324,6 +327,8 @@ HELIUS_API_KEY=...                   # Helius RPC + Enhanced Transactions API
 UPSTASH_REDIS_REST_URL=...           # Upstash Redis URL
 UPSTASH_REDIS_REST_TOKEN=...         # Upstash Redis token
 ANTARES_API_KEY=...                  # Chrome extension auth (X-Antares-Key)
+RESEND_API_KEY=...                   # e-mails of the account (confirmation link): without it, sign-ups answer 503
+MAIL_FROM=...                        # optional, default: Antares <contact@antaresscan.com> (the domain must be verified in Resend)
 SESSION_SECRET=...                   # 32+ chars, openssl rand -hex 32
                                        (bootstraps from UPSTASH_REDIS_REST_TOKEN
                                         if missing — set explicitly ASAP; see

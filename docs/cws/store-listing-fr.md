@@ -111,14 +111,17 @@ VIE PRIVÉE
   • Compte optionnel (email + mot de passe) — utile uniquement pour
     les tiers payants et la sync multi-device. Free fonctionne sans
     compte.
-  • L'API reçoit l'adresse du contrat scanné plus les métadonnées HTTPS
-    standards (IP, user-agent) utilisées uniquement pour le rate limiting.
-  • L'historique de scans (feature Pro) est lié à ton compte, jamais
-    vendu.
+  • L'API reçoit l'adresse du contrat scanné, un identifiant
+    d'installation aléatoire, ton jeton de connexion si tu es connecté,
+    et les métadonnées HTTPS standards (IP, user-agent).
+  • Les scans sont enregistrés par installation (les plus récents), liés
+    à ton compte si tu en as un, jamais vendus.
   • Pas d'analytics tiers, pas de pixels de tracking, pas de
     fingerprinting.
-  • On ne lit pas les champs de formulaire, credentials, cookies ou
-    historique de navigation.
+  • On ne lit pas les champs de formulaire, credentials ni cookies.
+    L'extension compare seulement les adresses de tes onglets ouverts,
+    sur ton appareil, pour réutiliser un onglet d'analyse déjà ouvert ;
+    elles ne sont jamais stockées ni envoyées.
   • Politique complète : https://antaresscan.com/privacy
 
 LIMITES — LIRE CECI
