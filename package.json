@@ -42,7 +42,7 @@
     "globals": "^16.0.0",
     "happy-dom": "^20.14.5",
     "plasmo": "0.90.5",
-    "prettier": "^3.9.9",
+    "prettier": "^3.9.10",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.71.1",
