@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#0ca88c">
+<title>Confirm your e-mail — Antares</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* The look of antaresscan.com (glass mint), because this is where the link of the e-mail lands. */
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px;color:#1d4a43;font-family:"IBM Plex Mono",monospace;font-size:15px;line-height:1.7;background:linear-gradient(118deg,#cfefe1 0%,#a8e3ce 32%,#84d7c9 65%,#6fcdd0 100%) fixed}
+.wrap{width:100%;max-width:520px}
+h1{font:400 clamp(44px,11vw,72px)/.92 "Bebas Neue",sans-serif;letter-spacing:.04em;color:rgba(14,66,58,.36);text-shadow:0 1px 1px rgba(255,255,255,.65),0 -1px 1px rgba(8,60,52,.28),0 12px 26px rgba(8,80,70,.12);margin-bottom:22px}
+h1 span{color:#0ca88c;white-space:nowrap}
+.card{background:rgba(255,255,255,.34);border:1px solid rgba(14,80,70,.16);border-radius:6px;padding:24px 26px;backdrop-filter:blur(12px) saturate(1.2);-webkit-backdrop-filter:blur(12px) saturate(1.2);box-shadow:0 14px 38px rgba(8,80,70,.1)}
+p{font-family:"Bebas Neue",sans-serif;font-size:19px;letter-spacing:.04em;color:#57837b;margin-bottom:14px}
+label{display:block;font:400 13px/1 "Bebas Neue",sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#4f7d74;margin:6px 0 8px}
+input{width:100%;padding:12px 14px;background:#e7f7f0;color:#123b35;border:1px solid rgba(14,80,70,.16);border-radius:3px;font:400 15px/1.2 "IBM Plex Mono",monospace;letter-spacing:.04em}
+input:focus{outline:none;border-color:#0ca88c}
+button,a.btn{display:inline-block;margin-top:16px;padding:12px 24px;background:#0ca88c;color:#fff;border:0;border-radius:6px;font:400 17px/1 "Bebas Neue",sans-serif;letter-spacing:.18em;text-transform:uppercase;text-decoration:none;cursor:pointer}
+button:hover,a.btn:hover{background:#0b9a80}
+button:disabled{opacity:.6;cursor:default}
+.msg{margin-top:14px;padding:11px 14px;border-radius:3px;font:400 15px/1.5 "Bebas Neue",sans-serif;letter-spacing:.04em}
+.msg.err{background:rgba(214,72,72,.07);border:1px solid rgba(214,72,72,.4);color:#c23b3b}
+.hidden{display:none}
+.small{font-size:16px;color:#6f9c93}
+:focus-visible{outline:2px solid #0b7d68;outline-offset:2px}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <h1 id="title">Confirm your <span>e-mail</span>.</h1>
+
+  <!-- The link of the e-mail, and the password you chose: both are needed (the link alone proves the mailbox, the password proves it is your account). -->
+  <section class="card" id="form-view">
+    <p>Type the password you chose when you created your account, to confirm that this e-mail address is yours.</p>
+    <form id="form" novalidate>
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password" placeholder="********">
+      <button type="submit" id="submit">Confirm</button>
+      <div class="msg err hidden" id="error" role="alert"></div>
+    </form>
+  </section>
+
+  <section class="card hidden" id="done-view" role="status">
+    <p>Your e-mail is confirmed. Your account now counts: your licenses and your plan are yours.</p>
+    <a class="btn" href="https://antaresscan.com/account">Go to my account</a>
+  </section>
+
+  <section class="card hidden" id="bad-view">
+    <p id="bad-text"></p>
+    <a class="btn" href="https://antaresscan.com/auth">Log in</a>
+  </section>
+</main>
+
+<script>
+(function () {
+  // The token is in the FRAGMENT (#t=...): a browser never sends it to a server or in a Referer. Take it, then wipe it from the address bar.
+  var token = '';
+  var m = /(?:^#|&)t=([A-Za-z0-9_.-]+)/.exec(window.location.hash || '');
+  if (m) token = m[1];
+  try { history.replaceState(null, '', window.location.pathname); } catch (_) {}
+
+  var $ = function (id) { return document.getElementById(id); };
+  var formView = $('form-view'), doneView = $('done-view'), badView = $('bad-view');
+  var form = $('form'), pw = $('password'), submit = $('submit'), err = $('error');
+
+  // The title says where things stand: "Confirm your e-mail." while there is something to do, then what happened.
+  function setTitle(plain, accent) {
+    var h = $('title'), span = document.createElement('span');
+    h.textContent = plain;
+    span.textContent = accent;
+    h.appendChild(span);
+    h.appendChild(document.createTextNode('.'));
+  }
+  function bad(text) {
+    setTitle('Link ', 'not valid');
+    formView.classList.add('hidden');
+    $('bad-text').textContent = text;
+    badView.classList.remove('hidden');
+  }
+  function showError(text) { err.textContent = text; err.classList.remove('hidden'); }
+
+  if (!token) {
+    bad('This link is incomplete. Open the link from the e-mail again, in full.');
+    return;
+  }
+
+  form.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    err.classList.add('hidden');
+    if (!pw.value) { showError('Type your password to confirm.'); pw.focus(); return; }
+    submit.disabled = true;
+    submit.textContent = 'Confirming…';
+    fetch('/api/auth/verify-email', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: token, password: pw.value })
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (b) { return { status: r.status, body: b || {} }; });
+    }).then(function (r) {
+      submit.disabled = false;
+      submit.textContent = 'Confirm';
+      if (r.status === 200 && r.body.ok) {
+        setTitle('E-mail ', 'confirmed');
+        formView.classList.add('hidden');
+        doneView.classList.remove('hidden');
+        return;
+      }
+      pw.value = '';
+      if (r.status === 401) { showError('That password is not right.'); pw.focus(); return; }
+      if (r.status === 429) { showError(r.body.error || 'Too many failed attempts. Try again in a few minutes.'); return; }
+      if (r.status === 400 && r.body.reason === 'invalid_token') {
+        bad('This link is no longer valid: it was already used, or it has expired. Log in on antaresscan.com and ask for a new one from your account page.');
+        return;
+      }
+      showError('Something went wrong. Please try again in a few minutes.');
+    }).catch(function () {
+      submit.disabled = false;
+      submit.textContent = 'Confirm';
+      showError('Network error. Please try again.');
+    });
+  });
+  pw.focus();
+})();
+</script>
+</body>
+</html>

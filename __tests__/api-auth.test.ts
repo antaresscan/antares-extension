@@ -7,7 +7,8 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@upstash/redis", () => {
   class MockRedis {
-    set = vi.fn(async (k: string, v: unknown) => {
+    set = vi.fn(async (k: string, v: unknown, opts?: { nx?: boolean }) => {
+      if (opts?.nx && mocks.store.has(k)) return null;
       mocks.store.set(k, v);
       return "OK";
     });
@@ -25,6 +26,15 @@ vi.mock("@upstash/redis", () => {
       const v = mocks.store.get(k);
       return v ? { ...(v as Record<string, string>) } : null;
     });
+    multi = () => {
+      const queued: Array<() => Promise<unknown>> = [];
+      const tx = {
+        hset: (k: string, f: Record<string, string>) => { queued.push(() => this.hset(k, f)); return tx; },
+        expire: () => { queued.push(() => Promise.resolve(1)); return tx; },
+        exec: async () => { const out: unknown[] = []; for (const q of queued) out.push(await q()); return out; },
+      };
+      return tx;
+    };
   }
   return { Redis: MockRedis };
 });
@@ -40,8 +50,13 @@ vi.mock("../api/_lib/middleware", async () => {
   };
 });
 
+import { Redis } from "@upstash/redis";
 import dispatcher from "../api/auth/[action]";
 import { signSession } from "../api/_lib/account";
+import { createConfirmedAccount } from "./_helpers/confirmed-account";
+
+/** A-01: a sign-up sends a link and signs nobody in, and an account owns nothing until it is confirmed. The tests below that need Alice start from her account CONFIRMED. */
+const seedConfirmedAlice = () => createConfirmedAccount(new Redis({ url: "x", token: "y" }), mocks.store, "alice@example.com", "supersecret1");
 
 /** A token as the application signs it for an account that exists: with the session number the account was given when it was created. */
 const signedFor = (email: string) =>
@@ -158,47 +173,54 @@ describe("POST /api/auth/signup", () => {
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
-  it("creates account, sets session cookie, returns 200", async () => {
-    const req = mockReq({
-      headers: { origin: ORIGIN },
-      body: { email: "alice@example.com", password: "supersecret1" },
+  // A-01: with the e-mail proof a sign-up creates an UNCONFIRMED account, sends the link, and signs nobody in. The whole behaviour (the e-mail, the
+  // answer that is the same for every address, the confirmation) is tested in email-proof.test.ts; here, the shape of the handler.
+  describe("with the mail service available", () => {
+    beforeEach(() => {
+      process.env.RESEND_API_KEY = "re_test_key";
+      vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, status: 200 })));
     });
-    const res = mockRes();
-    await signupHandler(req, res);
-    const setCookie = getSetCookieHeader(res);
-    expect(setCookie).toContain(SESSION_COOKIE_NAME);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ ok: true, email: "alice@example.com" }),
-    );
+    afterEach(() => {
+      delete process.env.RESEND_API_KEY;
+      vi.unstubAllGlobals();
+    });
+
+    it("creates an unconfirmed account, sets NO session cookie, answers 'check_email'", async () => {
+      const req = mockReq({
+        headers: { origin: ORIGIN },
+        body: { email: "alice@example.com", password: "supersecret1" },
+      });
+      const res = mockRes();
+      await signupHandler(req, res);
+      expect(getSetCookieHeader(res)).toBeNull();
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ ok: true, status: "check_email" });
+      expect((mocks.store.get("account:alice@example.com") as Record<string, string>).emailVerified).toBe("0");
+    });
+
+    it("an address that already has an account gets the same answer (200, check_email), not a 409 that says who has an account", async () => {
+      await seedConfirmedAlice();
+      const res = mockRes();
+      await signupHandler(mockReq({ headers: { origin: ORIGIN }, body: { email: "alice@example.com", password: "differentpass" } }), res);
+      expect(res.status).not.toHaveBeenCalledWith(409);
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ ok: true, status: "check_email" });
+      expect(getSetCookieHeader(res)).toBeNull();
+    });
   });
 
-  it("rejects duplicate email with 409", async () => {
-    const req1 = mockReq({
-      headers: { origin: ORIGIN },
-      body: { email: "alice@example.com", password: "supersecret1" },
-    });
-    await signupHandler(req1, mockRes());
-    const req2 = mockReq({
-      headers: { origin: ORIGIN },
-      body: { email: "alice@example.com", password: "differentpass" },
-    });
-    const res2 = mockRes();
-    await signupHandler(req2, res2);
-    expect(res2.status).toHaveBeenCalledWith(409);
+  it("with no mail service (no RESEND_API_KEY) nothing is created and the answer is 503: an account that could never be confirmed is useless", async () => {
+    const res = mockRes();
+    await signupHandler(mockReq({ headers: { origin: ORIGIN }, body: { email: "alice@example.com", password: "supersecret1" } }), res);
+    expect(res.status).toHaveBeenCalledWith(503);
+    expect(mocks.store.has("account:alice@example.com")).toBe(false);
   });
 });
 
 // ── login ────────────────────────────────────────────────────────────────
 describe("POST /api/auth/login", () => {
   beforeEach(async () => {
-    // Pre-create an account
-    await signupHandler(
-      mockReq({
-        headers: { origin: ORIGIN },
-        body: { email: "alice@example.com", password: "supersecret1" },
-      }),
-      mockRes(),
-    );
+    await seedConfirmedAlice();
   });
 
   it("returns 200 + cookie on correct credentials", async () => {
@@ -290,13 +312,7 @@ describe("POST /api/auth/logout", () => {
 // ── me ────────────────────────────────────────────────────────────────
 describe("GET /api/auth/me", () => {
   beforeEach(async () => {
-    await signupHandler(
-      mockReq({
-        headers: { origin: ORIGIN },
-        body: { email: "alice@example.com", password: "supersecret1" },
-      }),
-      mockRes(),
-    );
+    await seedConfirmedAlice();
   });
 
   it("returns 401 when no session cookie", async () => {
@@ -345,13 +361,7 @@ describe("POST /api/auth/sync-token", () => {
   const OTHER_INSTALL = "22222222-2222-4222-8222-222222222222";
 
   beforeEach(async () => {
-    await signupHandler(
-      mockReq({
-        headers: { origin: ORIGIN },
-        body: { email: "alice@example.com", password: "supersecret1" },
-      }),
-      mockRes(),
-    );
+    await seedConfirmedAlice();
   });
 
   it("returns 401 when no session cookie", async () => {
@@ -481,13 +491,7 @@ describe("auth origin gate", () => {
   ];
 
   beforeEach(async () => {
-    await signupHandler(
-      mockReq({
-        headers: { origin: ORIGIN },
-        body: { email: "alice@example.com", password: "supersecret1" },
-      }),
-      mockRes(),
-    );
+    await seedConfirmedAlice();
   });
 
   for (const [label, origin] of NOT_FIRST_PARTY) {

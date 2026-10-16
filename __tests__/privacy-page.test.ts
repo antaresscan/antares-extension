@@ -20,6 +20,7 @@ import { RUGCHECK_MEMORY_TTL_S } from "../api/_lib/rugcheck-memory";
 import { computeCacheTTL } from "../api/_lib/helpers";
 import { signSession, verifySession, _resetSessionSecretCacheForTests } from "../api/_lib/account";
 import { ERASURE_SCAN_BUDGET_MS } from "../api/_lib/account-erasure";
+import { PENDING_ACCOUNT_TTL_SECONDS, VERIFY_TOKEN_TTL_MS } from "../api/_lib/email-proof";
 
 const read = (file: string) => readFileSync(resolve(process.cwd(), file), "utf8").split(String.fromCharCode(13)).join("");
 const html = read("privacy.html");
@@ -55,6 +56,9 @@ describe("the page says what the API stores", () => {
     ["the scan history per install", /Scan history/],
     ["licences / the record of purchases", /purchase record/i],
     ["NOWPayments as a processor", /NOWPayments/],
+    ["Resend as a processor (the e-mail proof, A-01)", /Resend/],
+    ["the confirmation of the e-mail", /Confirming your e-mail/],
+    ["the sign-up answers the same for every address", /same answer/],
     ["the install identifier is linked to the e-mail", /linked to your e-mail address/i],
     ["self-service deletion", /Delete account/],
     ["what deletion keeps", /not<\/strong> erased when you delete your account|NOT erased when you delete your account/i],
@@ -95,6 +99,13 @@ describe("the retention section is read from the code", () => {
     expect(text).toMatch(/about the 1,000 most recent scans per install/);
     expect(text).toMatch(/only shows the last 30 days/);
     expect(text).toMatch(/not erased at 30 days/);
+  });
+
+  it("unconfirmed accounts: PENDING_ACCOUNT_TTL_SECONDS; confirmation links: VERIFY_TOKEN_TTL_MS (A-01)", () => {
+    expect(PENDING_ACCOUNT_TTL_SECONDS / 3600).toBe(48);
+    expect(VERIFY_TOKEN_TTL_MS / 3_600_000).toBe(24);
+    expect(retention).toMatch(/Unconfirmed account:\s*48 hours/);
+    expect(text).toMatch(/works for 24 hours/);
   });
 
   it("sessions: 30 days (the token's own expiry)", () => {
@@ -149,6 +160,7 @@ describe("every outside service the API calls is named in the table of processor
     ["api.geckoterminal.com", /GeckoTerminal/],
     ["generativelanguage.googleapis.com", /Gemini/],
     ["api.nowpayments.io", /NOWPayments/],
+    ["api.resend.com", /Resend/],
     ["solana-rpc.publicnode.com", /PublicNode/],
     ["api.mainnet-beta.solana.com", /Solana public RPC/],
   ];
