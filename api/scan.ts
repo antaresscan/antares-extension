@@ -797,6 +797,9 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       ...(limitedCauses.length > 0 ? { limitedCauses } : {}),
       // RugCheck did not answer and its last good answer for this token was read instead (api/_lib/rugcheck-memory.ts).
       ...(rugcheckMemory.fromMemory ? { rugcheckMemory: true } : {}),
+      // The all-time high, when this scan asked for it: who gave it ("solscan" or "coingecko"), "none" (the sources answer that they have no price), "failed" (no source answered)
+      // or "skipped" (no time left). Counted per day to see how much of the work Solscan does and how often CoinGecko has to step in.
+      ...(wantsAllTimeHigh ? { athSource: athLookup?.high ? athLookup.high.source : athLookup === null ? "skipped" : athLookup.failed ? "failed" : "none" } : {}),
       scoringVersion: SCORING_VERSION,
     });
     recordScanOutcome(limitedCauses);
