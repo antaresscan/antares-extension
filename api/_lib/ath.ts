@@ -155,7 +155,7 @@ export async function judgeHistory(mint: string, dropPct: number | null | undefi
   return collapsed;
 }
 
-/** What is kept in Redis for a token. `source` is absent from what was written before Solscan was asked: that was CoinGecko. `checked`: CoinGecko's intraday high was looked at for a Solscan number (see isInDoubt). */
+/** What is kept in Redis for a token. `source` is absent from what was written before Solscan was asked: that was CoinGecko. `checked`: CoinGecko's intraday high was looked at for a Solscan number (see getAllTimeHigh). */
 interface Memory { known: boolean; ath: number | null; athDate: string | null; source?: AthSource; checked?: boolean }
 
 type Redis = ReturnType<typeof getCacheRedis>;
@@ -218,12 +218,14 @@ export function isInDoubt(dropPct: number | null | undefined): boolean {
  * The all-time high of this token, from Redis or else from Solscan, else from CoinGecko. Never throws.
  * Ask only for a token that can use it (see the rules above).
  *
- * `priceUsd` is the price now. A Solscan number is a DAILY high, a little under the intraday one that the line (ATH_COLLAPSE_PCT) is written on: where the token stands within reach of
- * the line (isInDoubt) CoinGecko's high is asked as well and the higher of the two is kept, once (`checked` in Redis; a number that was kept before the token came near the line is
- * checked the day it does). If CoinGecko cannot be had at that moment the Solscan number is returned with `failed`: the token's side of the line is then not certain, and the scan
- * says so like any scan born from missing data.
+ * `priceUsd` is the price now. A Solscan number is a DAILY high, a little under the intraday one that the line (ATH_COLLAPSE_PCT) is written on, and far under it for a launch that
+ * spiked and dumped within hours (YZY: a daily price can miss the spike altogether). A daily high can say "collapsed" (the intraday high is higher still) but it cannot say "clean".
+ * So, once and kept in Redis (`checked`; a number kept before the check was needed is checked the day it is), CoinGecko's high is asked as well and the higher of the two is kept:
+ *   - `decisive` (the high decides the verdict: a relief, a softening): whenever the token is not already over the line by the daily high. If CoinGecko cannot be had at that moment
+ *     the high is WITHHELD (null, `failed`): a relief is never granted on a daily number alone, the scan is the verdict of before, and it says it is missing data;
+ *   - otherwise (the high only adds a flag): where the token stands within reach of the line (isInDoubt), and if CoinGecko cannot be had the daily number is returned with `failed`.
  */
-export async function getAllTimeHigh(mint: string, priceUsd?: number | null): Promise<AllTimeHighLookup> {
+export async function getAllTimeHigh(mint: string, priceUsd?: number | null, decisive = false): Promise<AllTimeHighLookup> {
   const redis = getCacheRedis();
   let high: AllTimeHigh | null = null;
   let checked = false; // the number is CoinGecko's own, or CoinGecko's intraday high has been looked at for it
@@ -258,7 +260,9 @@ export async function getAllTimeHigh(mint: string, priceUsd?: number | null): Pr
   }
   let uncertain = false;
   let changed = !fromMemory;
-  if (high && high.source === "solscan" && !checked && isInDoubt(athDropPct(high, priceUsd))) {
+  const drop = high ? athDropPct(high, priceUsd) : null;
+  const needsIntradayHigh = high?.source === "solscan" && !checked && (decisive ? drop != null && drop < ATH_COLLAPSE_PCT : isInDoubt(drop));
+  if (high && needsIntradayHigh) {
     const coingecko = await askCoinGecko(mint, redis);
     if (coingecko.kind === "high") {
       if (coingecko.high.ath > high.ath) high = coingecko.high;
@@ -275,6 +279,6 @@ export async function getAllTimeHigh(mint: string, priceUsd?: number | null): Pr
   } catch (e: unknown) {
     logger.warn("ath", "not kept", { error: String(e) });
   }
-  return { high, failed: uncertain || (!high && !answeredNothing) };
+  return { high: uncertain && decisive ? null : high, failed: uncertain || (!high && !answeredNothing) };
 }
 

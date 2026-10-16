@@ -44,6 +44,24 @@ describe("a daily high from Solscan gives the verdict of CoinGecko's intraday hi
       expect(verdict(viaSolscan), `a daily high at ${factor} of the intraday one`).toEqual(reference);
     }
   });
+  // A launch that spiked and dumped within hours has a daily high far under its intraday one (a daily price can miss the spike): YZY went from RUG to CAUTION on the preview of the first
+  // version of this code (2026-10-16), the Solscan drop standing outside the doubt band. A daily high can say "collapsed", never "clean": where the high DECIDES the verdict CoinGecko
+  // confirms it whatever the daily number says, and without CoinGecko the relief is not granted.
+  const DECIDED_BY_THE_HIGH = [...NAMED.filter(([s]) => ["CARDS", "MET", "SPX", "JUP", "LUNA", "TRUNK", "MELANIA"].includes(s)), ...NEXT_TO_THE_LINE.filter(([s]) => ["YZY", "RAY", "CLOUD", "BAT", "ENA", "VIRTUAL"].includes(s))];
+  it.each(DECIDED_BY_THE_HIGH)("%s: a daily high at 30 % and at 10 % of the intraday one does not move a verdict that the high decides", async (_symbol, mint) => {
+    const rec = loadRecording(mint)!;
+    const reference = verdict(await replayScan(rec));
+    for (const factor of [0.3, 0.1]) expect(verdict(await replayScan(rec, { athViaSolscan: factor })), `a daily high at ${factor}`).toEqual(reference);
+  });
+  it("what a far-too-low daily high does cost: a token whose high only adds a FLAG (PYTH, -92 %) loses the flag, which is the verdict of before and never a relief", async () => {
+    const rec = loadRecording("HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3")!;
+    const reference = await replayScan(rec);
+    const spiky = await replayScan(rec, { athViaSolscan: 0.3 });
+    expect(reference.result.flags.some((f) => /all-time high/.test(f))).toBe(true);
+    expect(spiky.result.flags.some((f) => /all-time high/.test(f))).toBe(false);
+    expect(spiky.result.risk).toBe(reference.result.risk);
+    expect(spiky.result.score).toBeGreaterThan(reference.result.score);
+  });
   it.skipIf(!FULL)("the whole corpus, one daily high at 92 % of the intraday one", async () => {
     const moved: string[] = [];
     for (const [symbol, mint] of ALL) {
@@ -54,20 +72,17 @@ describe("a daily high from Solscan gives the verdict of CoinGecko's intraday hi
     }
     expect(moved).toEqual([]);
   }, 600_000);
-  it("witness: YZY (-90.2 % by CoinGecko) with a daily high at 92 % and CoinGecko DOWN is NOT what CoinGecko's high gives (the check can fail), and the scan says that it is missing something", async () => {
-    const rec = loadRecording("DrZ26cKJDksVRWib3DVVsjo9eeXccc7hKhDJviiYEEZY")!;
-    const reference = verdict(await replayScan(rec));
-    expect(reference.risk).toBe("RUG");
-    const blind = await replayScan(rec, { athViaSolscan: 0.92, athDown: true });
-    expect(verdict(blind)).not.toEqual(reference);
-    expect((blind.body as { degraded?: boolean }).degraded).toBe(true);
-  });
-  it("witness: Solscan's high IS used (RAY, -89 %): with CoinGecko down the daily high keeps its relief, the scan says it is missing something, and without any high it would be a DANGER", async () => {
-    const rec = loadRecording("4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R")!;
-    const withDaily = await replayScan(rec, { athViaSolscan: 0.92, athDown: true });
-    expect(withDaily.result.risk).toBe("CAUTION");
-    expect((withDaily.body as { degraded?: boolean }).degraded).toBe(true);
-    const nothing = await replayScan(rec, { athDown: true });
-    expect(nothing.result.risk).toBe("DANGER");
+  it("a relief is never granted on a daily number alone: with CoinGecko DOWN the high is withheld, the verdict is the one of before, and the scan says that it is missing data", async () => {
+    const yzy = loadRecording("DrZ26cKJDksVRWib3DVVsjo9eeXccc7hKhDJviiYEEZY")!;
+    const blindYzy = await replayScan(yzy, { athViaSolscan: 0.92, athDown: true });
+    expect(verdict(blindYzy)).toEqual(verdict(await replayScan(yzy)));
+    expect((blindYzy.body as { degraded?: boolean }).degraded).toBe(true);
+    const ray = loadRecording("4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R")!;
+    const blindRay = await replayScan(ray, { athViaSolscan: 0.92, athDown: true });
+    expect(blindRay.result.risk).toBe("DANGER"); // witness: no relief without the intraday high...
+    expect((blindRay.body as { degraded?: boolean }).degraded).toBe(true);
+    const sighted = await replayScan(ray, { athViaSolscan: 0.92 });
+    expect(sighted.result.risk).toBe("CAUTION"); // ...and the relief it gets with it (the check can fail)
+    expect((sighted.body as { degraded?: boolean }).degraded === true).toBe(false);
   });
 });

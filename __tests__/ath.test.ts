@@ -379,6 +379,49 @@ describe("getAllTimeHigh: Solscan first, CoinGecko when Solscan has nothing", ()
       expect(await getAllTimeHigh(MINT, IN_DOUBT)).toEqual({ high: HIGH, failed: false });
       expect(coingeckoCalls()).toHaveLength(1);
     });
+
+    describe("when the high DECIDES the verdict (a relief, a softening): a daily number can say 'collapsed', never 'clean'", () => {
+      // A launch that spiked and dumped within hours (YZY: -90.2 % by the intraday high) can have a daily high far under it, and so stand 50 % under its daily high.
+      it("a token that does not stand over the line by the daily high is checked with CoinGecko wherever it stands, and the intraday high is the high", async () => {
+        expect(await getAllTimeHigh(MINT, FAR_ABOVE, true)).toEqual({ high: HIGH, failed: false });
+        expect(coingeckoCalls()).toHaveLength(1);
+        expect(stored()).toMatchObject({ source: "coingecko", checked: true });
+      });
+      it("a daily high that is not under the intraday one stays, and the check is made once", async () => {
+        answer = { body: coin(0.2), status: 200 };
+        expect(await getAllTimeHigh(MINT, FAR_ABOVE, true)).toEqual({ high: SOLSCAN_HIGH, failed: false });
+        fetchJson.mockClear();
+        expect(await getAllTimeHigh(MINT, FAR_ABOVE, true)).toEqual({ high: SOLSCAN_HIGH, failed: false });
+        expect(fetchJson).not.toHaveBeenCalled();
+      });
+      it("over the line by the daily high it is collapsed whatever CoinGecko says (an intraday high is higher still): CoinGecko is not asked", async () => {
+        expect(await getAllTimeHigh(MINT, FAR_BELOW, true)).toEqual({ high: SOLSCAN_HIGH, failed: false });
+        expect(coingeckoCalls()).toHaveLength(0);
+      });
+      it("CoinGecko cannot be had: the daily high is WITHHELD (a relief is never granted on it), the scan says it is missing data, and the daily number is kept for the next check", async () => {
+        answer = { body: null, status: 429 };
+        expect(await getAllTimeHigh(MINT, FAR_ABOVE, true)).toEqual({ high: null, failed: true });
+        expect(stored()).toMatchObject({ source: "solscan", checked: false });
+        // the same token, over the line by its daily high, is not concerned: it is still given
+        expect(await getAllTimeHigh("OtherMint1111111111111111111111111111111111", FAR_BELOW, true)).toEqual({ high: SOLSCAN_HIGH, failed: false });
+        answer = { body: coin(0.381443), status: 200 };
+        store.delete(athBackoffKey()); // the pause is over
+        expect(await getAllTimeHigh(MINT, FAR_ABOVE, true)).toEqual({ high: HIGH, failed: false });
+        expect(solscanCalls()).toHaveLength(2); // MINT once, the other token once: the kept daily high of MINT was not asked for again
+      });
+      it("CoinGecko does not know the token (404): the daily high is all there is, it is given", async () => {
+        answer = { body: { error: "coin not found" }, status: 404 };
+        expect(await getAllTimeHigh(MINT, FAR_ABOVE, true)).toEqual({ high: SOLSCAN_HIGH, failed: false });
+      });
+      it("without a price there is no fall to judge, so nothing to check", async () => {
+        expect(await getAllTimeHigh(MINT, null, true)).toEqual({ high: SOLSCAN_HIGH, failed: false });
+        expect(coingeckoCalls()).toHaveLength(0);
+      });
+      it("a high that only adds a flag keeps the narrow rule: far from the line, CoinGecko is not asked", async () => {
+        expect(await getAllTimeHigh(MINT, FAR_ABOVE, false)).toEqual({ high: SOLSCAN_HIGH, failed: false });
+        expect(coingeckoCalls()).toHaveLength(0);
+      });
+    });
   });
 });
 
