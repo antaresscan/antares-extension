@@ -1,0 +1,1082 @@
+[
+ {
+  "symbol": "CARDS",
+  "mint": "CARDSccUMFKoPRZxt5vt3ksUbxEFEcnZ3H2pd3dKxYjp",
+  "group": "named",
+  "cgDrop": 8.45,
+  "cgAth": 0.381443,
+  "cgAthDate": "2025-09-14T12:18:08.000Z",
+  "capUsd": 246107796,
+  "ageDays": 407
+ },
+ {
+  "symbol": "MET",
+  "mint": "METvsvVRapdj9cFLzq4Tr43xK4tAjQfwX76z3n6mWQL",
+  "group": "named",
+  "cgDrop": 44.68,
+  "cgAth": 0.686913,
+  "cgAthDate": "2025-10-23T05:01:20.000Z",
+  "capUsd": 237312100,
+  "ageDays": 332
+ },
+ {
+  "symbol": "SPX",
+  "mint": "J3NKxxXZcnNiMjKw9hYb2K4LUxgwB6t1FtPtQVsv3KFr",
+  "group": "named",
+  "cgDrop": 84.62,
+  "cgAth": 2.27,
+  "cgAthDate": "2025-07-28T03:24:33.000Z",
+  "capUsd": 345890856,
+  "ageDays": 1025
+ },
+ {
+  "symbol": "JUP",
+  "mint": "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN",
+  "group": "named",
+  "cgDrop": 84.28,
+  "cgAth": 2,
+  "cgAthDate": "2024-01-31T07:02:47.000Z",
+  "capUsd": 1221344853,
+  "ageDays": 983
+ },
+ {
+  "symbol": "RAY",
+  "mint": "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R",
+  "group": "named",
+  "cgDrop": 89.01,
+  "cgAth": 16.83,
+  "cgAthDate": "2021-09-12T12:20:23.000Z",
+  "capUsd": 641659873,
+  "ageDays": 1413
+ },
+ {
+  "symbol": "LUNA",
+  "mint": "9se6kma7LeGcQWyRBNcYzyxZPE3r9t9qWZ8SnjnN3jJ7",
+  "group": "named",
+  "cgDrop": 98.38,
+  "cgAth": 0.251805,
+  "cgAthDate": "2024-10-27T08:45:53.000Z",
+  "capUsd": 5433096,
+  "ageDays": 724
+ },
+ {
+  "symbol": "TRUNK",
+  "mint": "9mV4WUukVsva5wYcYW4veo34CNDiF44sh3Ji65JNdvh5",
+  "group": "named",
+  "cgDrop": 96.27,
+  "cgAth": 0.899901,
+  "cgAthDate": "2024-08-17T23:47:05.000Z",
+  "capUsd": 4110969,
+  "ageDays": 927
+ },
+ {
+  "symbol": "MELANIA",
+  "mint": "FUAfBo2jgks6gB4Z4LfZkqSZgzNucisEHqnNebaRxM1P",
+  "group": "named",
+  "cgDrop": 99.34,
+  "cgAth": 13.05,
+  "cgAthDate": "2025-01-19T23:00:55.000Z",
+  "capUsd": 91332405,
+  "ageDays": 629
+ },
+ {
+  "symbol": "YZY",
+  "mint": "DrZ26cKJDksVRWib3DVVsjo9eeXccc7hKhDJviiYEEZY",
+  "group": "named",
+  "cgDrop": 90.23,
+  "cgAth": 2.95,
+  "cgAthDate": "2025-08-20T18:38:44.000Z",
+  "capUsd": 288257269,
+  "ageDays": 418
+ },
+ {
+  "symbol": "GRIFFAIN",
+  "mint": "KENJSUYLASHUMfHyy5o4Hp2FdNqZg1AsUPhfH2kYvEP",
+  "group": "named",
+  "cgDrop": 97.64,
+  "cgAth": 0.62487,
+  "cgAthDate": "2025-01-21T19:30:30.000Z",
+  "capUsd": 17711591,
+  "ageDays": 707
+ },
+ {
+  "symbol": "ZEREBRO",
+  "mint": "8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn",
+  "group": "named",
+  "cgDrop": 93.65,
+  "cgAth": 0.784071,
+  "cgAthDate": "2025-01-01T23:41:04.000Z",
+  "capUsd": 28760575,
+  "ageDays": 712
+ },
+ {
+  "symbol": "PYTH",
+  "mint": "HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3",
+  "group": "named",
+  "cgDrop": 92.06,
+  "cgAth": 1.2,
+  "cgAthDate": "2024-03-15T23:01:15.000Z",
+  "capUsd": 623993223,
+  "ageDays": 786
+ },
+ {
+  "symbol": "BONK",
+  "mint": "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+  "group": "named",
+  "cgDrop": 94.71,
+  "cgAth": 0.00005825,
+  "cgAthDate": "2024-11-19T20:01:06.000Z",
+  "capUsd": 298340806,
+  "ageDays": 1385
+ },
+ {
+  "symbol": "WIF",
+  "mint": "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm",
+  "group": "named",
+  "cgDrop": 95.81,
+  "cgAth": 4.83,
+  "cgAthDate": "2024-03-31T01:34:58.000Z",
+  "capUsd": 216053772,
+  "ageDays": 1055
+ },
+ {
+  "symbol": "CLOUD",
+  "mint": "CLoUDKc4Ane7HeQcPpE3YHnznRxhMimJ4MyaUqyHFzAu",
+  "group": "named",
+  "cgDrop": 89.96,
+  "cgAth": 0.625172,
+  "cgAthDate": "2024-11-13T11:17:35.000Z",
+  "capUsd": 35525008,
+  "ageDays": 814
+ },
+ {
+  "symbol": "META_META",
+  "mint": "METADDFL6wWMWEoKTFJwcThTbUmtarRJZjRpzUvkxhr",
+  "group": "near-the-line",
+  "cgDrop": 80.83,
+  "cgAth": 27311,
+  "cgAthDate": "2026-08-17T16:16:50.000Z",
+  "capUsd": 121383200,
+  "ageDays": 778
+ },
+ {
+  "symbol": "WLFI",
+  "mint": "WLFinEv6ypjkczcS83FZqFpgFZYwQXutRbxGe7oC16g",
+  "group": "near-the-line",
+  "cgDrop": 82.74,
+  "cgAth": 0.331336,
+  "cgAthDate": "2025-09-01T04:20:09.000Z",
+  "capUsd": 5695053990,
+  "ageDays": 404
+ },
+ {
+  "symbol": "GRASS",
+  "mint": "Grass7B4RdKfBCjTKgSqnXkqjwiGvQyFbuSCUJr3XXjs",
+  "group": "near-the-line",
+  "cgDrop": 83.04,
+  "cgAth": 3.89,
+  "cgAthDate": "2024-11-08T04:26:05.000Z",
+  "capUsd": 449087971,
+  "ageDays": 712
+ },
+ {
+  "symbol": "NST",
+  "mint": "G7iK3prSzAA4vzcJWvsLUEsdCqzR7PnMzJV61vSdFSNW",
+  "group": "near-the-line",
+  "cgDrop": 83.25,
+  "cgAth": 8.5,
+  "cgAthDate": "2024-12-06T07:41:39.000Z",
+  "capUsd": 14646337,
+  "ageDays": 886
+ },
+ {
+  "symbol": "WET",
+  "mint": "WETZjtprkDMCcUxPi9PfWnowMRZkiGGHDb9rABuRZ2U",
+  "group": "near-the-line",
+  "cgDrop": 83.71,
+  "cgAth": 0.333169,
+  "cgAthDate": "2025-12-10T04:07:09.000Z",
+  "capUsd": 13976333,
+  "ageDays": 306
+ },
+ {
+  "symbol": "MANIFEST",
+  "mint": "BCdwQBAn8dYB5YjTsoB6TdHAWokxv28k2oZUodERpump",
+  "group": "near-the-line",
+  "cgDrop": 84.03,
+  "cgAth": 0.053044,
+  "cgAthDate": "2026-06-14T00:03:10.000Z",
+  "capUsd": 9101744,
+  "ageDays": 149
+ },
+ {
+  "symbol": "INTCX",
+  "mint": "XshPgPdXFRWB8tP1j82rebb2Q9rPgGX37RuqzohmArM",
+  "group": "near-the-line",
+  "cgDrop": 84.25,
+  "cgAth": 608.91,
+  "cgAthDate": "2026-05-03T13:17:00.000Z",
+  "capUsd": 13586703,
+  "ageDays": 201
+ },
+ {
+  "symbol": "KMNO",
+  "mint": "KMNo3nJsBXfcpJTVhZcXLW7RmTwTt4GVFE7suUBo9sS",
+  "group": "near-the-line",
+  "cgDrop": 84.39,
+  "cgAth": 0.247842,
+  "cgAthDate": "2024-12-15T08:45:25.000Z",
+  "capUsd": 201077931,
+  "ageDays": 730
+ },
+ {
+  "symbol": "TBB",
+  "mint": "42cXQvAAr7hcPBPWAS4ocVtDyeJ4Fa6gRR2uG4gppump",
+  "group": "near-the-line",
+  "cgDrop": 84.45,
+  "cgAth": 0.04763176,
+  "cgAthDate": "2026-07-26T18:33:40.000Z",
+  "capUsd": 8071336,
+  "ageDays": 105
+ },
+ {
+  "symbol": "ALCH",
+  "mint": "HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump",
+  "group": "near-the-line",
+  "cgDrop": 84.45,
+  "cgAth": 0.243323,
+  "cgAthDate": "2025-12-17T20:32:38.000Z",
+  "capUsd": 42492883,
+  "ageDays": 682
+ },
+ {
+  "symbol": "SAVE",
+  "mint": "SAVEaeeqeXNKYb4Lyx28DkUms5gyZ76vGa6fCfdzWfK",
+  "group": "near-the-line",
+  "cgDrop": 84.87,
+  "cgAth": 1.2,
+  "cgAthDate": "2024-12-13T22:15:54.000Z",
+  "capUsd": 8331490,
+  "ageDays": 551
+ },
+ {
+  "symbol": "RENDER",
+  "mint": "rndrizKT3MK1iimdxRdWabcF7Zg7AR5T4nud4EkHBof",
+  "group": "near-the-line",
+  "cgDrop": 85.45,
+  "cgAth": 13.53,
+  "cgAthDate": "2024-03-17T08:30:24.000Z",
+  "capUsd": 786985940,
+  "ageDays": 786
+ },
+ {
+  "symbol": "BAN",
+  "mint": "9PR7nCP9DpcUotnDPVLUBUZKu5WAYkwrCUx9wDnSpump",
+  "group": "near-the-line",
+  "cgDrop": 85.84,
+  "cgAth": 0.37799,
+  "cgAthDate": "2024-11-18T01:35:57.000Z",
+  "capUsd": 58123894,
+  "ageDays": 715
+ },
+ {
+  "symbol": "BUTTCOIN",
+  "mint": "Cm6fNnMk7NfzStP9CZpsQA2v3jjzbcYGAxdJySmHpump",
+  "group": "near-the-line",
+  "cgDrop": 86.15,
+  "cgAth": 0.04941144,
+  "cgAthDate": "2026-02-07T12:21:02.000Z",
+  "capUsd": 8263684,
+  "ageDays": 274
+ },
+ {
+  "symbol": "CODEC",
+  "mint": "69LjZUUzxj3Cb3Fxeo1X4QpYEQTboApkhXTysPpbpump",
+  "group": "near-the-line",
+  "cgDrop": 86.35,
+  "cgAth": 0.04559507,
+  "cgAthDate": "2025-09-14T22:35:42.000Z",
+  "capUsd": 7192248,
+  "ageDays": 534
+ },
+ {
+  "symbol": "ENA",
+  "mint": "72QvBVwpxqmheEPfaCwWSWqEFsUy3rhWt6JhQBMNTwD1",
+  "group": "near-the-line",
+  "cgDrop": 86.52,
+  "cgAth": 1.52,
+  "cgAthDate": "2024-04-11T05:15:15.000Z",
+  "capUsd": 2796301185,
+  "ageDays": 91
+ },
+ {
+  "symbol": "VIRTUAL",
+  "mint": "3iQL8BFS2vE7mww4ehAqQHAsbmRNCrPxizWAT2Zfyr9y",
+  "group": "near-the-line",
+  "cgDrop": 86.52,
+  "cgAth": 5.07,
+  "cgAthDate": "2025-01-01T22:15:38.000Z",
+  "capUsd": 733580279,
+  "ageDays": 612
+ },
+ {
+  "symbol": "TROLL",
+  "mint": "5UUH9RTDiSpq6HKS6bp4NdU9PNJpXRXuiw6ShBTBhgH2",
+  "group": "near-the-line",
+  "cgDrop": 87.03,
+  "cgAth": 0.282604,
+  "cgAthDate": "2025-08-22T13:48:29.000Z",
+  "capUsd": 37368345,
+  "ageDays": 538
+ },
+ {
+  "symbol": "BAT",
+  "mint": "EPeUFDgHRxs9xxEPVaL6kfGQvCon7jmAWKVUHuux1Tpz",
+  "group": "near-the-line",
+  "cgDrop": 88.74,
+  "cgAth": 1.9,
+  "cgAthDate": "2021-11-27T16:23:51.000Z",
+  "capUsd": 258548235,
+  "ageDays": 1415
+ },
+ {
+  "symbol": "PENGU",
+  "mint": "2zMMhcVQEXDtdE6vsFS7S7D5oUodfJHE8vd1gnBouauv",
+  "group": "near-the-line",
+  "cgDrop": 88.84,
+  "cgAth": 0.068447,
+  "cgAthDate": "2024-12-17T05:05:22.000Z",
+  "capUsd": 521738905,
+  "ageDays": 318
+ },
+ {
+  "symbol": "JELLYJELLY",
+  "mint": "FeR8VBqNRSUD5NtXAj2n3j1dAHkZHfyDktKuLXD4pump",
+  "group": "near-the-line",
+  "cgDrop": 88.94,
+  "cgAth": 0.473157,
+  "cgAthDate": "2025-11-04T13:30:40.000Z",
+  "capUsd": 52474740,
+  "ageDays": 619
+ },
+ {
+  "symbol": "NATIX",
+  "mint": "FRySi8LPkuByB7VPSCCggxpewFUeeJiwEGRKKuhwpKcX",
+  "group": "near-the-line",
+  "cgDrop": 88.97,
+  "cgAth": 0.00197488,
+  "cgAthDate": "2025-05-29T19:00:45.000Z",
+  "capUsd": 10755585,
+  "ageDays": 801
+ },
+ {
+  "symbol": "PIPE",
+  "mint": "7s9MoSt7VV1J3jVNnw2AyocsQDBdCkPYz5apQDPKy9i5",
+  "group": "near-the-line",
+  "cgDrop": 89,
+  "cgAth": 0.282006,
+  "cgAthDate": "2025-10-08T06:40:07.000Z",
+  "capUsd": 6620029,
+  "ageDays": 367
+ },
+ {
+  "symbol": "BIRB",
+  "mint": "G7vQWurMkMMm2dU3iZpXYFTHT9Biio4F4gZCrwFpKNwG",
+  "group": "near-the-line",
+  "cgDrop": 89.02,
+  "cgAth": 0.476945,
+  "cgAthDate": "2026-02-03T01:15:57.000Z",
+  "capUsd": 17285413,
+  "ageDays": 255
+ },
+ {
+  "symbol": "BORG",
+  "mint": "3dQTr7ror2QPKQ3GbBCokJUmjErGg8kTJzdnYjNfvi3Z",
+  "group": "near-the-line",
+  "cgDrop": 89.49,
+  "cgAth": 1.64,
+  "cgAthDate": "2021-05-04T09:14:50.000Z",
+  "capUsd": 170581565,
+  "ageDays": 888
+ },
+ {
+  "symbol": "CLASH",
+  "mint": "6nR8wBnfsmXfcdDr1hovJKjvFQxNSidN6XFyfAFZpump",
+  "group": "near-the-line",
+  "cgDrop": 89.78,
+  "cgAth": 0.082293,
+  "cgAthDate": "2025-10-03T07:16:44.000Z",
+  "capUsd": 8564715,
+  "ageDays": 390
+ },
+ {
+  "symbol": "FARTBOY",
+  "mint": "y1AZt42vceCmStjW4zetK3VoNarC1VxJ5iDjpiupump",
+  "group": "near-the-line",
+  "cgDrop": 89.91,
+  "cgAth": 0.194444,
+  "cgAthDate": "2025-02-13T02:22:27.000Z",
+  "capUsd": 17934600,
+  "ageDays": 645
+ },
+ {
+  "symbol": "ANTFUN",
+  "mint": "CWZ6BsdnjkDVTGkmL6bGbJXXig6ceef12KvyGQW14cMt",
+  "group": "near-the-line",
+  "cgDrop": 90.03,
+  "cgAth": 0.091529,
+  "cgAthDate": "2026-09-15T14:28:00.000Z",
+  "capUsd": 28932307,
+  "ageDays": 95
+ },
+ {
+  "symbol": "$DBT",
+  "mint": "DBTNHU51SBFi3dsoGGCRfKbno4teZXqsDSL37s4jgRKv",
+  "group": "near-the-line",
+  "cgDrop": 90.03,
+  "cgAth": 0.00959821,
+  "cgAthDate": "2026-05-08T00:16:00.000Z",
+  "capUsd": 5680868,
+  "ageDays": 178
+ },
+ {
+  "symbol": "ORCA",
+  "mint": "orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE",
+  "group": "near-the-line",
+  "cgDrop": 90.22,
+  "cgAth": 20.33,
+  "cgAthDate": "2021-10-02T12:14:11.000Z",
+  "capUsd": 150908755,
+  "ageDays": 1010
+ },
+ {
+  "symbol": "DOG",
+  "mint": "dog1viwbb2vWDpER5FrJ4YFG6gq6XuyFohUe9TXN65u",
+  "group": "near-the-line",
+  "cgDrop": 90.41,
+  "cgAth": 0.0099237,
+  "cgAthDate": "2024-12-11T08:05:38.000Z",
+  "capUsd": 98530088,
+  "ageDays": 598
+ },
+ {
+  "symbol": "FIGHT",
+  "mint": "8f62NyJGo7He5uWeveTA2JJQf4xzf8aqxkmzxRQ3mxfU",
+  "group": "near-the-line",
+  "cgDrop": 90.81,
+  "cgAth": 0.0311556,
+  "cgAthDate": "2026-01-22T03:33:37.000Z",
+  "capUsd": 7704724,
+  "ageDays": 261
+ },
+ {
+  "symbol": "ORE",
+  "mint": "oreoU2P8bN6jkk3jbaiVxYnG1dCXcYxwhwyK9jSybcp",
+  "group": "near-the-line",
+  "cgDrop": 91.68,
+  "cgAth": 1451.62,
+  "cgAthDate": "2024-07-29T21:07:18.000Z",
+  "capUsd": 50482366,
+  "ageDays": 293
+ },
+ {
+  "symbol": "DOOD",
+  "mint": "DvjbEsdca43oQcw2h3HW1CT7N3x5vRcr3QrvTUHnXvgV",
+  "group": "near-the-line",
+  "cgDrop": 92.03,
+  "cgAth": 0.01753469,
+  "cgAthDate": "2025-10-06T21:09:59.000Z",
+  "capUsd": 12323670,
+  "ageDays": 519
+ },
+ {
+  "symbol": "JTO",
+  "mint": "jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL",
+  "group": "near-the-line",
+  "cgDrop": 92.07,
+  "cgAth": 6.01,
+  "cgAthDate": "2023-12-07T08:04:48.000Z",
+  "capUsd": 535627918,
+  "ageDays": 1038
+ },
+ {
+  "symbol": "RIV",
+  "mint": "2bpT3ksMdwdZ6DuHyq3FDUr7HDwvZ5DRZoT1fUPALJaH",
+  "group": "near-the-line",
+  "cgDrop": 92.37,
+  "cgAth": 0.04727658,
+  "cgAthDate": "2026-05-08T09:33:00.000Z",
+  "capUsd": 33867643,
+  "ageDays": 201
+ },
+ {
+  "symbol": "SOETH",
+  "mint": "2FPyTwcZLUg1MDrwsyoP4D6s1tM7hAkHYRjkNb5w6Pxk",
+  "group": "near-the-line",
+  "cgDrop": 92.6,
+  "cgAth": 3424.49,
+  "cgAthDate": "2022-04-07T19:27:51.000Z",
+  "capUsd": 153940122,
+  "ageDays": 1413
+ },
+ {
+  "symbol": "PHY",
+  "mint": "EswgBj2hZKdgovX2ihWSUDnuBg9VNbGmSGoH5yjNsPRa",
+  "group": "near-the-line",
+  "cgDrop": 92.67,
+  "cgAth": 0.77773,
+  "cgAthDate": "2022-10-12T23:04:37.000Z",
+  "capUsd": 181482611,
+  "ageDays": 1388
+ },
+ {
+  "symbol": "FOXY",
+  "mint": "FoXyMu5xwXre7zEoSvzViRk3nGawHUp9kUh97y2NDhcq",
+  "group": "near-the-line",
+  "cgDrop": 92.7,
+  "cgAth": 0.01497274,
+  "cgAthDate": "2024-04-11T23:36:21.000Z",
+  "capUsd": 64806327,
+  "ageDays": 652
+ },
+ {
+  "symbol": "BERT",
+  "mint": "HgBRWfYxEfvPhtqkaeymCQtHCrKE46qQ43pKe8HCpump",
+  "group": "near-the-line",
+  "cgDrop": 92.92,
+  "cgAth": 0.188598,
+  "cgAthDate": "2024-11-15T05:00:48.000Z",
+  "capUsd": 15167686,
+  "ageDays": 740
+ },
+ {
+  "symbol": "SOON",
+  "mint": "4eDf52YYzL6i6gbZ6FXqrLUPXbtP61f1gPSFM66M4XHe",
+  "group": "near-the-line",
+  "cgDrop": 92.93,
+  "cgAth": 4.3,
+  "cgAthDate": "2025-11-14T12:10:58.000Z",
+  "capUsd": 107759936,
+  "ageDays": 508
+ },
+ {
+  "symbol": "GP",
+  "mint": "31k88G5Mq7ptbRDf3AM13HAq6wRQHXHikR8hik7wPygk",
+  "group": "near-the-line",
+  "cgDrop": 93.01,
+  "cgAth": 6.89,
+  "cgAthDate": "2025-07-26T15:48:16.000Z",
+  "capUsd": 89084103,
+  "ageDays": 527
+ },
+ {
+  "symbol": "HOME",
+  "mint": "J3umBWqhSjd13sag1E1aUojViWvPYA5dFNyqpKuX3WXj",
+  "group": "near-the-line",
+  "cgDrop": 93.12,
+  "cgAth": 0.074757,
+  "cgAthDate": "2026-06-07T09:01:30.000Z",
+  "capUsd": 43187805,
+  "ageDays": 479
+ },
+ {
+  "symbol": "DJI6930",
+  "mint": "DQnkBM4eYYMnVE8Qy2K3BB7uts1fh2EwBVktEz6jpump",
+  "group": "near-the-line",
+  "cgDrop": 93.35,
+  "cgAth": 0.084787,
+  "cgAthDate": "2025-07-21T17:32:03.000Z",
+  "capUsd": 5397424,
+  "ageDays": 491
+ },
+ {
+  "symbol": "NOS",
+  "mint": "nosXBVoaCTtYdLvKY6Csb4AC8JCdQKKAaWYtx2ZMoo7",
+  "group": "near-the-line",
+  "cgDrop": 93.61,
+  "cgAth": 7.83,
+  "cgAthDate": "2024-03-06T11:15:02.000Z",
+  "capUsd": 57766820,
+  "ageDays": 320
+ },
+ {
+  "symbol": "FARTCOIN",
+  "mint": "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump",
+  "group": "near-the-line",
+  "cgDrop": 93.72,
+  "cgAth": 2.48,
+  "cgAthDate": "2025-01-19T12:41:07.000Z",
+  "capUsd": 163010700,
+  "ageDays": 722
+ },
+ {
+  "symbol": "ARC",
+  "mint": "61V8vBaqAGMpgDQi4JcAwo1dmBGHsyhzodcPqnEVpump",
+  "group": "near-the-line",
+  "cgDrop": 93.74,
+  "cgAth": 0.623197,
+  "cgAthDate": "2025-01-21T19:35:28.000Z",
+  "capUsd": 61465409,
+  "ageDays": 631
+ },
+ {
+  "symbol": "REKT",
+  "mint": "vQoYWru2pbUdcVkUrRH74ktQDJgVjRcDvsoDbUzM5n9",
+  "group": "near-the-line",
+  "cgDrop": 93.93,
+  "cgAth": 0.00000141,
+  "cgAthDate": "2025-08-08T10:38:01.000Z",
+  "capUsd": 36487099,
+  "ageDays": 487
+ },
+ {
+  "symbol": "MOODENG",
+  "mint": "ED5nyyWEzpPPiWimP8vYm7sD7TD3LAt3Q3gRTWHzPJBY",
+  "group": "near-the-line",
+  "cgDrop": 94.22,
+  "cgAth": 0.680378,
+  "cgAthDate": "2024-11-15T06:06:28.000Z",
+  "capUsd": 42973252,
+  "ageDays": 760
+ },
+ {
+  "symbol": "MPLX",
+  "mint": "METAewgxyPbgwsseH8T16a39CQ5VyVxZi9zXiDPY18m",
+  "group": "near-the-line",
+  "cgDrop": 94.46,
+  "cgAth": 0.896784,
+  "cgAthDate": "2022-09-19T19:29:58.000Z",
+  "capUsd": 22517752,
+  "ageDays": 354
+ },
+ {
+  "symbol": "SCS",
+  "mint": "SCSuPPNUSypLBsV4darsrYNg4ANPgaGhKhsA3GmMyjz",
+  "group": "near-the-line",
+  "cgDrop": 94.62,
+  "cgAth": 0.03099588,
+  "cgAthDate": "2024-03-27T14:42:12.000Z",
+  "capUsd": 10128241,
+  "ageDays": 926
+ },
+ {
+  "symbol": "LFNTY",
+  "mint": "LFNTYraetVioAPnGJht4yNg2aUZFXR776cMeN9VMjXp",
+  "group": "near-the-line",
+  "cgDrop": 95.47,
+  "cgAth": 25.03,
+  "cgAthDate": "2023-07-26T01:49:15.000Z",
+  "capUsd": 22830507,
+  "ageDays": 800
+ },
+ {
+  "symbol": "SMOLE",
+  "mint": "9Ttyez3xiruyj6cqaR495hbBkJU6SUWdV6AmQ9MvbyyS",
+  "group": "near-the-line",
+  "cgDrop": 95.7,
+  "cgAth": 0.00050863,
+  "cgAthDate": "2024-03-20T23:22:15.000Z",
+  "capUsd": 9549571,
+  "ageDays": 934
+ },
+ {
+  "symbol": "CWU",
+  "mint": "CmVUoJUt7hMGc9ze7s8zYdnA7enMfCAFdQCggxcbACWU",
+  "group": "near-the-line",
+  "cgDrop": 95.97,
+  "cgAth": 0.133167,
+  "cgAthDate": "2026-05-07T15:54:00.000Z",
+  "capUsd": 5952171,
+  "ageDays": 185
+ },
+ {
+  "symbol": "LION",
+  "mint": "7kN5FQMD8ja4bzysEgc5FXmryKd6gCgjiWnhksjHCFb3",
+  "group": "near-the-line",
+  "cgDrop": 95.99,
+  "cgAth": 0.03159196,
+  "cgAthDate": "2025-08-27T18:22:49.000Z",
+  "capUsd": 38671908,
+  "ageDays": 585
+ },
+ {
+  "symbol": "LIKE",
+  "mint": "3bRTivrVsitbmCTGtqwp7hxXPsybkjn4XLNtPsHqa3zR",
+  "group": "collapsed",
+  "cgDrop": 99.95,
+  "cgAth": 1.041,
+  "cgAthDate": "2021-09-06T22:10:27.000Z",
+  "capUsd": 205991941860353,
+  "ageDays": 1415
+ },
+ {
+  "symbol": "W",
+  "mint": "85VBFQZC9TZkfaptBWjvUw7YbZjy52A6mjtPGjstQAmQ",
+  "group": "collapsed",
+  "cgDrop": 99.11,
+  "cgAth": 1.66,
+  "cgAthDate": "2024-04-03T03:46:35.000Z",
+  "capUsd": 116151833,
+  "ageDays": 569
+ },
+ {
+  "symbol": "ME",
+  "mint": "MEFNBXixkEbait3xn9bkm8WsJzXtVsaJEn4c8Sam21u",
+  "group": "collapsed",
+  "cgDrop": 99.62,
+  "cgAth": 17,
+  "cgAthDate": "2024-12-10T06:00:45.000Z",
+  "capUsd": 73501692,
+  "ageDays": 669
+ },
+ {
+  "symbol": "HSOL",
+  "mint": "he1iusmfkpAdwvxLNGV8Y1iSbj4rUy6yMhEA3fotn9A",
+  "group": "collapsed",
+  "cgDrop": 98.31,
+  "cgAth": 7454.05,
+  "cgAthDate": "2026-04-23T15:43:00.000Z",
+  "capUsd": 63664248,
+  "ageDays": 896
+ },
+ {
+  "symbol": "POPCAT",
+  "mint": "7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr",
+  "group": "collapsed",
+  "cgDrop": 97.75,
+  "cgAth": 2.05,
+  "cgAthDate": "2024-11-17T07:50:59.000Z",
+  "capUsd": 47018497,
+  "ageDays": 1033
+ },
+ {
+  "symbol": "GMT",
+  "mint": "7i5KKsX2weiTkry7jA4ZwSuXGhs5eJBEjY8vVxR4pfRx",
+  "group": "collapsed",
+  "cgDrop": 99.81,
+  "cgAth": 4.11,
+  "cgAthDate": "2022-04-27T19:29:53.000Z",
+  "capUsd": 27346556,
+  "ageDays": 1389
+ },
+ {
+  "symbol": "GIGA",
+  "mint": "63LfDmNb3MQ8mw9MtZ2To9bEA2M71kZUUGq5tiJxcqj9",
+  "group": "collapsed",
+  "cgDrop": 97.96,
+  "cgAth": 0.095127,
+  "cgAthDate": "2025-01-03T08:26:00.000Z",
+  "capUsd": 19356529,
+  "ageDays": 1010
+ },
+ {
+  "symbol": "GOAT",
+  "mint": "CzLSujWBLFsSjncfkh59rUFqvafWcY5tzedWJSuypump",
+  "group": "collapsed",
+  "cgDrop": 98.83,
+  "cgAth": 1.35,
+  "cgAthDate": "2024-11-17T05:01:21.000Z",
+  "capUsd": 16501670,
+  "ageDays": 730
+ },
+ {
+  "symbol": "MNDE",
+  "mint": "MNDEFzGvMt87ueuHvVU9VcTqsAP5b3fTGPsHuuPA5ey",
+  "group": "collapsed",
+  "cgDrop": 98.41,
+  "cgAth": 1.64,
+  "cgAthDate": "2021-10-08T16:00:00.000Z",
+  "capUsd": 14418957,
+  "ageDays": 1413
+ },
+ {
+  "symbol": "CHILLGUY",
+  "mint": "Df6yfrKC8kZE3KNkrHERKzAetSxbrWeniQfyJY4Jpump",
+  "group": "collapsed",
+  "cgDrop": 98.49,
+  "cgAth": 0.657518,
+  "cgAthDate": "2024-11-27T02:40:57.000Z",
+  "capUsd": 10776280,
+  "ageDays": 694
+ },
+ {
+  "symbol": "PONKE",
+  "mint": "5z3EqYQo9HiCEs3R84RCDMu2n7anpDMxRhdK8PSWmrRC",
+  "group": "collapsed",
+  "cgDrop": 97.48,
+  "cgAth": 0.836512,
+  "cgAthDate": "2024-11-18T20:12:44.000Z",
+  "capUsd": 9930041,
+  "ageDays": 1022
+ },
+ {
+  "symbol": "SONIC",
+  "mint": "SonicxvLud67EceaEzCLRnMTBqzYUUYNr93DBkBdDES",
+  "group": "collapsed",
+  "cgDrop": 98.17,
+  "cgAth": 1.23,
+  "cgAthDate": "2025-01-07T20:26:11.000Z",
+  "capUsd": 9326715,
+  "ageDays": 641
+ },
+ {
+  "symbol": "AURA",
+  "mint": "DtR4D9FtVoTX2569gaL837ZgrB6wNjj6tkmnX9Rdk9B2",
+  "group": "collapsed",
+  "cgDrop": 96.7,
+  "cgAth": 0.239828,
+  "cgAthDate": "2025-07-22T14:59:58.000Z",
+  "capUsd": 8536116,
+  "ageDays": 863
+ },
+ {
+  "symbol": "VINE",
+  "mint": "6AJcP7wuLwmRYLBNbi825wgguaPsWzPBEHcHndpRpump",
+  "group": "collapsed",
+  "cgDrop": 98.38,
+  "cgAth": 0.469941,
+  "cgAthDate": "2025-01-26T02:00:27.000Z",
+  "capUsd": 7482632,
+  "ageDays": 626
+ },
+ {
+  "symbol": "EUSX",
+  "mint": "3ThdFZQKM6kRyVGLG48kaPg5TRMhYMKY1iCRa9xop1WC",
+  "group": "clean",
+  "cgDrop": 7.91,
+  "cgAth": 1.14,
+  "cgAthDate": "2026-07-09T10:27:10.000Z",
+  "capUsd": 102241936640366,
+  "ageDays": 402
+ },
+ {
+  "symbol": "PYUSD",
+  "mint": "2b1kV6DkPAnxd5ixfnxCpjxmKwqjjaYmCZfHsFu24GXo",
+  "group": "clean",
+  "cgDrop": 2.05,
+  "cgAth": 1.021,
+  "cgAthDate": "2023-10-23T14:44:57.000Z",
+  "capUsd": 2902084037,
+  "ageDays": 601
+ },
+ {
+  "symbol": "SYRUPUSDC",
+  "mint": "AvZZF1YaZDziPY2RCK4oJrRVrbN3mTD9NL24hPeaZeUj",
+  "group": "clean",
+  "cgDrop": 0.08,
+  "cgAth": 1.19,
+  "cgAthDate": "2026-09-22T08:24:30.000Z",
+  "capUsd": 1373713913,
+  "ageDays": 498
+ },
+ {
+  "symbol": "USDE",
+  "mint": "DEkqHyPN7GMRJ5cArtQFAWefqbZb33Hyf6s5iCwjEonT",
+  "group": "clean",
+  "cgDrop": 3.35,
+  "cgAth": 1.034,
+  "cgAthDate": "2025-12-09T09:10:12.000Z",
+  "capUsd": 491243743,
+  "ageDays": 569
+ },
+ {
+  "symbol": "TBTC",
+  "mint": "6DNSN2BJsaPFdFFc1zP37kkeNe4Usc1Sqkzr9C9vPWcU",
+  "group": "clean",
+  "cgDrop": 34.48,
+  "cgAth": 125646,
+  "cgAthDate": "2025-10-06T09:18:25.000Z",
+  "capUsd": 480699868,
+  "ageDays": 441
+ },
+ {
+  "symbol": "CBBTC",
+  "mint": "cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij",
+  "group": "clean",
+  "cgDrop": 34.62,
+  "cgAth": 125954,
+  "cgAthDate": "2025-10-06T10:58:50.000Z",
+  "capUsd": 229159685,
+  "ageDays": 702
+ },
+ {
+  "symbol": "USELESS",
+  "mint": "Dz9mQ9NzkBcCsuGPFJ3r1bS4wgqKMHBPiVuniW8Mbonk",
+  "group": "clean",
+  "cgDrop": 59.81,
+  "cgAth": 0.434591,
+  "cgAthDate": "2025-10-14T06:50:41.000Z",
+  "capUsd": 184455464,
+  "ageDays": 518
+ },
+ {
+  "symbol": "AUSD",
+  "mint": "AUSD1jCcCyPLybk1YnvPWsHQSrZ46dxwoMniN4N2UEB9",
+  "group": "clean",
+  "cgDrop": 2.2,
+  "cgAth": 1.022,
+  "cgAthDate": "2024-10-05T13:15:26.000Z",
+  "capUsd": 149000297,
+  "ageDays": 607
+ },
+ {
+  "symbol": "META",
+  "mint": "METAwkXcqyXKy1AtsSgJ8JiUHwGCafnZL38n3vYmeta",
+  "group": "clean",
+  "cgDrop": 51.82,
+  "cgAth": 10.84,
+  "cgAthDate": "2025-10-21T09:10:23.000Z",
+  "capUsd": 133892859,
+  "ageDays": 278
+ },
+ {
+  "symbol": "MSTRX",
+  "mint": "XsP7xzNPvEHS1m6qfanPUGjNmdnmsLKEoNAnHjdxxyZ",
+  "group": "clean",
+  "cgDrop": 67.76,
+  "cgAth": 462.34,
+  "cgAthDate": "2025-07-17T21:29:46.000Z",
+  "capUsd": 116278838,
+  "ageDays": 467
+ },
+ {
+  "symbol": "ONYC",
+  "mint": "5Y8NV33Vv7WbnLfq3zBcKSdYPrk7g2KoiQoe7M2tcxp5",
+  "group": "clean",
+  "cgDrop": 1.09,
+  "cgAth": 1.17,
+  "cgAthDate": "2026-07-25T16:25:40.000Z",
+  "capUsd": 115170717,
+  "ageDays": 507
+ },
+ {
+  "symbol": "SSOL",
+  "mint": "sSo14endRuUbvQaJS3dq36Q829a3A6BEfoeeRGJywEh",
+  "group": "clean",
+  "cgDrop": 59.14,
+  "cgAth": 304.31,
+  "cgAthDate": "2025-01-19T03:25:44.000Z",
+  "capUsd": 86147339,
+  "ageDays": 807
+ },
+ {
+  "symbol": "SPYX",
+  "mint": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
+  "group": "clean",
+  "cgDrop": 1.36,
+  "cgAth": 786.11,
+  "cgAthDate": "2026-10-12T03:52:30.000Z",
+  "capUsd": 65290346,
+  "ageDays": 241
+ },
+ {
+  "symbol": "ARX",
+  "mint": "ARXwZkNAtzPfdcoqQiduJn8EPv9fKiDfGn2KyggyDrFs",
+  "group": "clean",
+  "cgDrop": 50.76,
+  "cgAth": 0.466923,
+  "cgAthDate": "2026-06-22T11:50:00.000Z",
+  "capUsd": 54245088,
+  "ageDays": 112
+ },
+ {
+  "symbol": "DIME",
+  "mint": "3ywtR9qQH4BuA7LSfLvEuW1gh6ha7EK18XwLbHvhryPZ",
+  "group": "clean",
+  "cgDrop": 48,
+  "cgAth": 0.102264,
+  "cgAthDate": "2026-10-11T08:27:50.000Z",
+  "capUsd": 42306831,
+  "ageDays": 179
+ },
+ {
+  "symbol": "MRVLX",
+  "mint": "XsuxRGDzbLjnJ72v74b7p9VY6N66uYgTCyfwwRjVCJA",
+  "group": "clean",
+  "cgDrop": 30.04,
+  "cgAth": 346.24,
+  "cgAthDate": "2026-06-03T07:16:00.000Z",
+  "capUsd": 31648016,
+  "ageDays": 128
+ },
+ {
+  "symbol": "USDG",
+  "mint": "2u1tszSeqZ3qBWF3uNGPFc8TzMk2tdiwknnRMWGWjGWH",
+  "group": "clean",
+  "cgDrop": 39.56,
+  "cgAth": 1.65,
+  "cgAthDate": "2025-01-29T16:11:05.000Z",
+  "capUsd": 26999115,
+  "ageDays": 579
+ },
+ {
+  "symbol": "PYBOBO",
+  "mint": "D6xWgRCSHoMEB5fqPwk3p6Stxirn5ytm2WwboSTTx4oE",
+  "group": "clean",
+  "cgDrop": 32.06,
+  "cgAth": 0.00112111,
+  "cgAthDate": "2026-01-26T04:31:42.000Z",
+  "capUsd": 21414888,
+  "ageDays": 192
+ },
+ {
+  "symbol": "MON",
+  "mint": "CrAr4RRJMBVwRsZtT62pEhfA9H5utymC2mVx8e7FreP2",
+  "group": "clean",
+  "cgDrop": 52.3,
+  "cgAth": 0.04863352,
+  "cgAthDate": "2025-11-26T04:51:59.000Z",
+  "capUsd": 14480051,
+  "ageDays": 320
+ },
+ {
+  "symbol": "PUMPCADE",
+  "mint": "Eg2ymQ2aQqjMcibnmTt8erC6Tvk9PVpJZCxvVPJz2agu",
+  "group": "clean",
+  "cgDrop": 52.97,
+  "cgAth": 0.0484425,
+  "cgAthDate": "2026-04-15T13:53:00.000Z",
+  "capUsd": 13133239,
+  "ageDays": 385
+ },
+ {
+  "symbol": "DUSD",
+  "mint": "DUSDt4AeLZHWYmcXnVGYdgAzjtzU5mXUVnTMdnSzAttM",
+  "group": "clean",
+  "cgDrop": 3.96,
+  "cgAth": 1.039,
+  "cgAthDate": "2025-11-20T23:46:31.000Z",
+  "capUsd": 12193569,
+  "ageDays": 641
+ },
+ {
+  "symbol": "GLDX",
+  "mint": "Xsv9hRk1z5ystj9MhnA7Lq4vjSsLwzL2nxrwmwtD3re",
+  "group": "clean",
+  "cgDrop": 25.22,
+  "cgAth": 510.77,
+  "cgAthDate": "2026-01-28T16:00:00.000Z",
+  "capUsd": 11712432,
+  "ageDays": 244
+ },
+ {
+  "symbol": "AVGOX",
+  "mint": "XsgSaSvNSqLTtFuyWPBhK9196Xb9Bbdyjj4fH3cPJGo",
+  "group": "clean",
+  "cgDrop": 33.94,
+  "cgAth": 525.34,
+  "cgAthDate": "2026-05-31T02:09:30.000Z",
+  "capUsd": 11218472,
+  "ageDays": 235
+ },
+ {
+  "symbol": "P2P",
+  "mint": "P2PXup1ZvMpCDkJn3PQxtBYgxeCSfH39SFeurGSmeta",
+  "group": "clean",
+  "cgDrop": 26.68,
+  "cgAth": 0.548022,
+  "cgAthDate": "2026-04-09T21:16:00.000Z",
+  "capUsd": 10445552,
+  "ageDays": 192
+ }
+]
