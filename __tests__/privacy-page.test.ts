@@ -11,7 +11,7 @@
 //   3. every outside service the API calls is named in the table of processors ("we do not use processors beyond this list").
 import { describe, it, expect } from "vitest";
 import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { join, relative, resolve } from "node:path";
 import { INTENT_RETENTION_SECONDS } from "../api/_lib/payments";
 import { LOGIN_FAILURE_WINDOW_SECONDS } from "../api/_lib/login-guard";
 import { HISTORY_HARD_CAP, HISTORY_DAY_WINDOW } from "../api/_lib/user";
@@ -186,5 +186,92 @@ describe("every outside service the API calls is named in the table of processor
     const hosts = new Set([...code.matchAll(/https:\/\/([a-z0-9.-]+)/gi)].map((m) => m[1].toLowerCase()).filter((h) => h.includes(".") && !h.endsWith(".")));
     const unknown = [...hosts].filter((h) => !known.has(h) && !ignore.test(h));
     expect(unknown, "a new outside service: add it to the processors table of privacy.html, then to SERVICES here").toEqual([]);
+  });
+});
+
+// ── Chrome permissions (audit A-14b, second pass) ───────────────────────────────────────────────────────────────────────────────────────────
+// Section 8 used to say that `alarms` re-scans the tokens you watch (it is a one-minute keepalive), that `storage` holds a theme and alert
+// thresholds (neither exists), that `activeTab` reads the page (nothing uses it), and that the Extension reads no browsing history (Chrome shows
+// the `tabs` permission as "Read your browsing history"). The same sentences were in the Chrome Web Store texts of docs/cws. Now the page is tied
+// to the manifest and to the code: add a permission, use `activeTab`, or add a second alarm, and this test fails until the page says it.
+describe("the Chrome permissions section says what the code does", () => {
+  const manifest = JSON.parse(read("package.json")).manifest as { permissions: string[]; host_permissions: string[] };
+  const rawSection8 = html.slice(html.indexOf("<h2>8. Chrome permissions</h2>"), html.indexOf("<h2>9. Your rights</h2>"));
+  const perms = section("8. Chrome permissions", "9. Your rights");
+  const retention = section("7. Data retention", "8. Chrome permissions");
+  const clientSources = (dir: string): string[] =>
+    readdirSync(dir).flatMap((name) => {
+      if (["node_modules", "__tests__", "api", "build", ".claude", ".plasmo", "e2e", "docs", "scripts"].includes(name)) return [];
+      const p = join(dir, name);
+      return statSync(p).isDirectory() ? clientSources(p) : /\.tsx?$/.test(p) && !/\.config\.ts$/.test(p) ? [p] : [];
+    });
+  const files = clientSources(process.cwd());
+  const code = files.map((f) => readFileSync(f, "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, ""));
+  const all = code.join("\n");
+
+  it("lists exactly the permissions of the manifest", () => {
+    const listed = [...rawSection8.matchAll(/<strong>([A-Za-z_]+)<\/strong>/g)].map((m) => m[1]).sort();
+    expect(listed).toEqual([...manifest.permissions, "host_permissions"].sort());
+  });
+
+  it("the sentences that were false about permissions do not come back", () => {
+    for (const re of [/theme/i, /alert thresholds/i, /periodic background re-?scan/i, /flagged for monitoring/i, /you(’|')re actively watching/i, /read the URL and the visible page DOM on supported sites only/i, /No browsing history/i]) {
+      expect(perms, String(re)).not.toMatch(re);
+      expect(retention, String(re)).not.toMatch(re);
+    }
+  });
+
+  it("the numbers come from the code: scans kept on the device, cache size, alarm interval", () => {
+    const maxHistory = Number(/maxHistoryEntries:\s*(\d+)/.exec(readFileSync("shared/config.ts", "utf8"))![1]);
+    const maxCache = Number(/SCAN_CACHE_MAX_ENTRIES\s*=\s*(\d+)/.exec(readFileSync("contents/modules/constants.ts", "utf8"))![1]);
+    const everyMinutes = Number(/keepaliveIntervalMinutes:\s*(\d+)/.exec(readFileSync("shared/config.ts", "utf8"))![1]);
+    expect(perms).toContain(`your ${maxHistory} most recent scans`);
+    expect(perms).toContain(`up to ${maxCache} recent scan results`);
+    expect(everyMinutes).toBe(1);
+    expect(perms).toContain("fires every minute");
+  });
+
+  it("alarms: there is exactly one alarm, the keepalive, so the page may not say the Extension re-scans in the background", () => {
+    expect(all.match(/chrome\.alarms\.create\(/g)?.length).toBe(1);
+    expect(all).toContain("chrome.alarms.create(config.keepaliveAlarmName");
+    expect(perms).toMatch(/alarms<\/strong>|alarms /);
+    expect(perms).toMatch(/It scans nothing and sends nothing/);
+  });
+
+  it("activeTab: nothing in the code needs it, and the page says so (if you use it, change the page)", () => {
+    expect(all, "the code now uses activeTab: say what for in section 8 and in docs/cws/permission-justifications.md").not.toMatch(/chrome\.scripting|captureVisibleTab/);
+    expect(perms).toMatch(/activeTab\s*—\s*declared in the manifest, but the current version of the Extension does not use it/);
+  });
+
+  it("tabs: the only places that read the tabs are the two in background.ts that the page describes", () => {
+    const queries = files.flatMap((f, i) => (code[i].match(/chrome\.tabs\.query\(/g) ?? []).map(() => relative(process.cwd(), f).split("\\").join("/")));
+    expect(queries).toEqual(["background.ts", "background.ts"]);
+    expect(perms).toMatch(/Read your browsing history/);
+    expect(perms).toMatch(/none is stored or sent/);
+  });
+
+  it("notifications: only the worsened-verdict alert and the Options test button create one", () => {
+    const creators = files.flatMap((f, i) => (code[i].match(/chrome\.notifications\.create\(/g) ?? []).map(() => relative(process.cwd(), f).split("\\").join("/")));
+    expect(creators.sort()).toEqual(["background.ts", "options.tsx"]);
+    expect(perms).toMatch(/worse verdict than the last one this device saw/);
+    expect(perms).toMatch(/test notification/);
+  });
+
+  it("the Chrome Web Store justifications describe every permission and host, and not the old fiction", () => {
+    const cws = read("docs/cws/permission-justifications.md");
+    for (const p of manifest.permissions) expect(cws, p).toContain("### `" + p + "`");
+    for (const h of manifest.host_permissions) expect(cws, h).toContain("### `" + h + "`");
+    for (const re of [/Reserved for the upcoming Pro v2/i, /No notifications fire/i, /5-second forced rescan/i, /Periodic clean-up of the local scan cache/i, /Required by `chrome\.tabs\.create`/, /antares-website\.vercel\.app\/privacy/]) {
+      expect(cws, String(re)).not.toMatch(re);
+    }
+    expect(cws).toContain("Privacy policy URL: https://antaresscan.com/privacy");
+  });
+
+  it("the store listings do not say that no browsing history is read, nor that the scan history is a Pro feature bound to the account", () => {
+    for (const f of ["docs/cws/store-listing-en.md", "docs/cws/store-listing-fr.md"]) {
+      const listing = read(f);
+      expect(listing, f).not.toMatch(/cookies, or browsing history|cookies ou\s+historique de navigation/);
+      expect(listing, f).not.toMatch(/Scan history \(Pro feature\)|L'historique de scans \(feature Pro\)/);
+    }
   });
 });
