@@ -57,43 +57,46 @@ function insiderGraphAnswer(href: string, body: string | null): Response | null 
 }
 
 /**
- * The all-time high of a token (api/_lib/ath.ts asks CoinGecko for it) is not a fact of the capture instant, so it is not in each recording: the replay answers that
- * request from one table (ath.json, built by scripts/replay/ath-table.ts from CoinGecko's market data). A token that is not in the table gets CoinGecko's own "not found"
- * (404), which is what the engine would see. A recording that holds the request itself (a capture made since the engine asks for it) always wins.
+ * What a scan asks of Solscan and Jupiter beyond the recording. Neither is a fact of the capture instant, so neither is in each recording: the replay answers from two tables.
+ *   - the all-time high (api/_lib/ath.ts asks Solscan `token/price`: ONE price per day): from ath.json (the highest prices the corpus tokens reached, with their day), as a DAILY series whose
+ *     highest day is DAILY_HIGH_SHARE of that number (PYTH, measured on Solscan on 2026-10-16: 1.10 against 1.20 = 0.92). A token that is not in the table gets "no price" (a 200 without a row).
+ *   - the organic score (api/_lib/jupiter.ts asks Jupiter's public token search): from jupiter.json, measured on the whole corpus on 2026-10-16. A token that is not in it gets an empty list.
+ * A recording that holds the request itself always wins. What the recordings hold of Solscan (the 401 of the days the key was refused) is not what the engine meets today with a key that works:
+ * every Solscan request of a replay is answered here (a 404, "nothing for this token", for the routes that are not the price history).
  */
+export const DAILY_HIGH_SHARE = 0.92;
 let athTable: Record<string, { ath: number; athDate: string | null }> | null = null;
+let organicTable: Record<string, number> | null = null;
 /** The day of a table date (ISO text or null) as the number Solscan sends, 20250114. */
 function solscanDayOf(athDate: string | null, shiftDays = 0): number {
   const t = athDate ? Date.parse(athDate) : Date.parse("2024-01-01T00:00:00Z");
   return Number(new Date(t + shiftDays * 86_400_000).toISOString().slice(0, 10).replace(/-/g, ""));
 }
 
-function athAnswer(href: string, down = false, viaSolscan?: number): Response | null {
+interface UpstreamOptions { athDown?: boolean; dailyShare?: number; organicDown?: boolean }
+
+function solscanAndJupiterAnswer(href: string, opts: UpstreamOptions): Response | null {
   const json = { "content-type": "application/json" };
-  // Solscan is asked first (api/_lib/ath.ts) when the recording holds Solscan calls. Its price history is not recorded either. By default the replay answers "no price for this
-  // token" (an answer, 200 without a row), so that the high comes from the table through the CoinGecko request, as it always did in the replay. With `viaSolscan` (a factor) it
-  // answers from the same table the way a DAILY series would: the highest day at factor x CoinGecko's intraday high, with lower days around it.
   const sp = href.match(/^https:\/\/pro-api\.solscan\.io\/v2\.0\/token\/price\?address=([^&]+)/);
   if (sp) {
-    if (viaSolscan === undefined) return new Response(JSON.stringify({ success: true, data: [] }), { status: 200, headers: json });
+    if (opts.athDown) return new Response("replay: Solscan is down", { status: 503 }); // a test of what a scan does when Solscan does not answer
     athTable ??= (JSON.parse(readFileSync(`${HERE}ath.json`, "utf8")) as { tokens: Record<string, { ath: number; athDate: string | null }> }).tokens;
     const t = athTable[decodeURIComponent(sp[1])];
     if (!t) return new Response(JSON.stringify({ success: true, data: [] }), { status: 200, headers: json });
-    const top = t.ath * viaSolscan;
+    const top = t.ath * (opts.dailyShare ?? DAILY_HIGH_SHARE);
     const data = [{ date: solscanDayOf(t.athDate, -1), price: top * 0.8 }, { date: solscanDayOf(t.athDate), price: top }, { date: solscanDayOf(t.athDate, 1), price: top * 0.8 }];
     return new Response(JSON.stringify({ success: true, data }), { status: 200, headers: json });
   }
-  // Every other Solscan request of a scan that was not recorded: "nothing for this token" (a 404 is an answer: it does not trip the key backoff nor the circuit breaker).
-  if (viaSolscan !== undefined && /^https:\/\/pro-api\.solscan\.io\//.test(href)) return new Response("{}", { status: 404, headers: json });
-  const m = href.match(/^https:\/\/api\.coingecko\.com\/api\/v3\/coins\/solana\/contract\/([^?/]+)\?/);
-  if (!m) return null;
-  if (down) return new Response("replay: CoinGecko is down", { status: 503 }); // a test of what a scan does when CoinGecko does not answer
-  athTable ??= (JSON.parse(readFileSync(`${HERE}ath.json`, "utf8")) as { tokens: Record<string, { ath: number; athDate: string | null }> }).tokens;
-  const t = athTable[decodeURIComponent(m[1])];
-  const headers = { "content-type": "application/json" };
-  return t
-    ? new Response(JSON.stringify({ id: "replay", market_data: { ath: { usd: t.ath }, ath_date: { usd: t.athDate } } }), { status: 200, headers })
-    : new Response(JSON.stringify({ error: "coin not found" }), { status: 404, headers });
+  if (/^https:\/\/pro-api\.solscan\.io\//.test(href)) return new Response("{}", { status: 404, headers: json });
+  const jp = href.match(/^https:\/\/lite-api\.jup\.ag\/tokens\/v2\/search\?query=([^&]+)/);
+  if (jp) {
+    if (opts.organicDown) return new Response("replay: Jupiter is down", { status: 503 });
+    organicTable ??= (JSON.parse(readFileSync(`${HERE}jupiter.json`, "utf8")) as { tokens: Record<string, number> }).tokens;
+    const mint = decodeURIComponent(jp[1]);
+    const score = organicTable[mint];
+    return new Response(JSON.stringify(score === undefined ? [] : [{ id: mint, organicScore: score }]), { status: 200, headers: json });
+  }
+  return null;
 }
 
 const UNSET = ["GEMINI_API_KEY", "GOPLUS_APP_KEY", "GOPLUS_APP_SECRET", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN", "SENTRY_DSN", "VERCEL_ENV", "LOG_LEVEL"];
@@ -112,10 +115,11 @@ function fakeRes() {
 
 /** Replays the scan of one recording through the real handler. */
 /**
- * `athDown`: CoinGecko answers 503 to the all-time-high request (a test of what a scan does without it).
- * `athViaSolscan`: Solscan has a key and answers the price history with a daily series whose highest day is that factor of CoinGecko's high (a test that the daily high does not move a verdict).
+ * `athDown`: Solscan answers 503 to the price-history request (a test of what a scan does without the all-time high).
+ * `dailyShare`: the highest day of the daily series Solscan answers is that share of the table's high (DAILY_HIGH_SHARE by default; a test that a daily number does not move a verdict).
+ * `organicDown`: Jupiter answers 503 (a test of what a scan does when it cannot tell whether the market is alive).
  */
-export async function replayScan(rec: Recording, opts: { athDown?: boolean; athViaSolscan?: number } = {}): Promise<ReplayOutcome> {
+export async function replayScan(rec: Recording, opts: UpstreamOptions = {}): Promise<ReplayOutcome> {
   const byKey = new Map<string, RecordedExchange[]>();
   for (const e of rec.exchanges) { const k = canonicalKey(e.k); byKey.set(k, [...(byKey.get(k) ?? []), e]); }
   const used = new Map<string, number>();
@@ -133,18 +137,16 @@ export async function replayScan(rec: Recording, opts: { athDown?: boolean; athV
       return new Response(JSON.stringify({ code: 1, message: "OK", result: { access_token: "Bearer replay-token", expires_in: 7200 } }), { status: 200, headers: { "content-type": "application/json" } });
     }
     const body = init?.body == null ? null : String(init.body);
-    // With \`athViaSolscan\` Solscan ACCEPTS the key: what the recordings hold of it (the 401 of the days the key was refused) is not what it answers, and a 401 would pause it.
-    if (opts.athViaSolscan !== undefined) {
-      const solscan = athAnswer(href, false, opts.athViaSolscan);
-      if (solscan && /pro-api\.solscan\.io/.test(href)) return solscan;
+    // Solscan ACCEPTS the key and Jupiter answers: what the recordings hold of them (the 401 of the days the key was refused) is not what they answer today, and a 401 would pause Solscan.
+    if (/pro-api\.solscan\.io|lite-api\.jup\.ag/.test(href)) {
+      const upstream = solscanAndJupiterAnswer(href, opts);
+      if (upstream) return upstream;
     }
     const key = exchangeKey(method, href, body, authorized);
     const list = byKey.get(key);
     if (!list) {
       const graph = insiderGraphAnswer(href, body);
       if (graph) return graph;
-      const ath = athAnswer(href, opts.athDown === true, opts.athViaSolscan);
-      if (ath) return ath;
       misses.push(`${method.toUpperCase()} ${redactUrl(href)}`);
       if (process.env.REPLAY_DEBUG) console.log(`[replay] not recorded: ${method.toUpperCase()} ${redactUrl(href)} ${init?.body ? String(init.body).slice(0, 160) : ""}`);
       return new Response("replay: this request was not recorded", { status: 599 });
@@ -162,8 +164,7 @@ export async function replayScan(rec: Recording, opts: { athDown?: boolean; athV
   vi.stubEnv("HELIUS_API_KEY", "replay-key"); // the capture had keys: the same calls are made, and answered from the recording
   // Solscan: the engine pauses it for 10 minutes after a 401, so a recording made after the first 401 of its instance holds
   // no Solscan call at all. The replay gives a key only when the recording has such calls (and then answers them as recorded).
-  if (opts.athViaSolscan !== undefined || rec.exchanges.some((e) => e.k.includes("pro-api.solscan.io"))) vi.stubEnv("SOLSCAN_API_KEY", "replay-key");
-  else vi.stubEnv("SOLSCAN_API_KEY", undefined);
+  vi.stubEnv("SOLSCAN_API_KEY", "replay-key");
   // GoPlus: credentials only when the recording holds an authenticated call (see the token exchange above).
   if (rec.exchanges.some((e) => e.k.includes("gopluslabs.io/api/v1/solana/token_security") && e.k.endsWith(" #auth"))) {
     vi.stubEnv("GOPLUS_APP_KEY", "replay-key");

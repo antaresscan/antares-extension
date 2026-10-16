@@ -7,7 +7,9 @@ import type { DexScreenerPair, HeliusHolder, RugCheckSummary } from "../api/_lib
 
 // CARDS (31 000 holders, $4M pool, $246M cap, 407 days) was DANGER because its top 10 holds 73 %: exchanges, treasuries and vaults. MET was RUG (82 %). A token the market has
 // proven keeps a concentrated top 10 as a warning (CAUTION), unless it already fell most of the way from its all-time high (MELANIA -99 %, YZY -90 %: the insiders sold).
-// The line is 90 %: SPX (-84.6 %), JUP (-84.3 %) and RAY (-89.0 %), which the owner names as real tokens, are under it; YZY (-90.2 %), ZEREBRO, TRUNK, LUNA, MELANIA are over it.
+// The line is 89 % on Solscan's DAILY highs (90 % on an intraday one): SPX (-84.6 %), JUP (-84.3 %) and RAY (-88 % daily), which the owner names as real tokens, are under it; ZEREBRO, TRUNK,
+// LUNA, MELANIA are over it. A launch that pumped and dumped within hours (YZY) has a daily high far under its real one and stands under the line too: it is the LIVING MARKET (Jupiter's
+// organic score) that refuses it, not the line.
 
 const DAY = 1440;
 /** CARDS-like: everything the relief asks for, one number at a time can be taken away. */
@@ -16,9 +18,14 @@ const proven = (over: Partial<Top10ReliefFacts> = {}): Top10ReliefFacts => ({
 });
 
 describe("isTop10Candidate / isTop10Proven: what the market must say, one condition at a time", () => {
-  it("a token that has all of it is a candidate, and is proven when its all-time high is within reach", () => {
+  it("a token that has all of it is a candidate, and is proven when its market is alive and its all-time high is within reach", () => {
     expect(isTop10Candidate(proven())).toBe(true);
-    expect(isTop10Proven({ ...proven(), athDropPct: 9 })).toBe(true);
+    expect(isTop10Proven({ ...proven(), athDropPct: 9, livingMarket: true })).toBe(true);
+  });
+  it("a candidate whose market is NOT alive (BAN, JELLYJELLY, ALCH: organic score 0) or not known is not proven, whatever its history says", () => {
+    expect(isTop10Proven({ ...proven(), athDropPct: 9, livingMarket: false })).toBe(false);
+    expect(isTop10Proven({ ...proven(), athDropPct: 9, livingMarket: null })).toBe(false);
+    expect(isTop10Proven({ ...proven(), athDropPct: 9 })).toBe(false);
   });
   it.each([
     ["too young (59 days)", { tokenAgeMinutes: 59 * DAY }],
@@ -37,7 +44,7 @@ describe("isTop10Candidate / isTop10Proven: what the market must say, one condit
     ["an active freeze authority", { freezeActive: true }],
   ] as Array<[string, Partial<Top10ReliefFacts>]>)("is not a candidate with %s", (_name, over) => {
     expect(isTop10Candidate(proven(over))).toBe(false);
-    expect(isTop10Proven({ ...proven(over), athDropPct: 0 })).toBe(false);
+    expect(isTop10Proven({ ...proven(over), athDropPct: 0, livingMarket: true })).toBe(false);
   });
   it("a token whose liquidity is split between many pools is read on ALL of them (JUP: $2.2M in its biggest pool, $4.6M together, for a $1.2B cap)", () => {
     const jup = proven({ marketCapUsd: 1_200_000_000, liquidityUsd: 2_200_000, poolDepthUsd: 4_600_000, holders: 830_000 });
@@ -46,38 +53,40 @@ describe("isTop10Candidate / isTop10Proven: what the market must say, one condit
     expect(isTop10Candidate(proven({ marketCapUsd: 500_000_000, liquidityUsd: 700_000, poolDepthUsd: 1_400_000 }))).toBe(true);
     expect(isTop10Candidate(proven({ marketCapUsd: 500_000_000, liquidityUsd: 700_000, poolDepthUsd: 700_000 }))).toBe(false);
   });
-  it("is not proven when it fell 90 % or more from its all-time high, or when that high is unknown", () => {
-    expect(isTop10Proven({ ...proven(), athDropPct: 84.6 })).toBe(true);  // SPX
-    expect(isTop10Proven({ ...proven(), athDropPct: 84.3 })).toBe(true);  // JUP
-    expect(isTop10Proven({ ...proven(), athDropPct: 89.0 })).toBe(true);  // RAY
-    expect(isTop10Proven({ ...proven(), athDropPct: 89.99 })).toBe(true);
-    expect(isTop10Proven({ ...proven(), athDropPct: 90 })).toBe(false);
-    expect(isTop10Proven({ ...proven(), athDropPct: 90.2 })).toBe(false); // YZY
-    expect(isTop10Proven({ ...proven(), athDropPct: 96.3 })).toBe(false); // TRUNK
-    expect(isTop10Proven({ ...proven(), athDropPct: 99.3 })).toBe(false); // MELANIA
-    expect(isTop10Proven({ ...proven(), athDropPct: null })).toBe(false);
-    expect(isTop10Proven({ ...proven(), athDropPct: undefined })).toBe(false);
-    expect(isTop10Proven({ ...proven(), athDropPct: Number.NaN })).toBe(false);
+  it("is not proven when it fell 89 % or more from its all-time high, or when that high is unknown", () => {
+    const alive = { ...proven(), livingMarket: true };
+    expect(isTop10Proven({ ...alive, athDropPct: 84.6 })).toBe(true);  // SPX
+    expect(isTop10Proven({ ...alive, athDropPct: 84.3 })).toBe(true);  // JUP
+    expect(isTop10Proven({ ...alive, athDropPct: 88.0 })).toBe(true);  // RAY, by a daily high
+    expect(isTop10Proven({ ...alive, athDropPct: 88.99 })).toBe(true);
+    expect(isTop10Proven({ ...alive, athDropPct: 89 })).toBe(false);
+    expect(isTop10Proven({ ...alive, athDropPct: 89.4 })).toBe(false); // YZY, by a daily high
+    expect(isTop10Proven({ ...alive, athDropPct: 96.3 })).toBe(false); // TRUNK
+    expect(isTop10Proven({ ...alive, athDropPct: 99.3 })).toBe(false); // MELANIA
+    expect(isTop10Proven({ ...alive, athDropPct: null })).toBe(false);
+    expect(isTop10Proven({ ...alive, athDropPct: undefined })).toBe(false);
+    expect(isTop10Proven({ ...alive, athDropPct: Number.NaN })).toBe(false);
   });
 });
 
 describe("isTop10Proven with the memory of the line (athCollapsed): the side of the line decides, not the spot price", () => {
-  it("a token that has collapsed stays refused between 85 % and 90 % (YZY at -88 % after a good week)", () => {
-    expect(isTop10Proven({ ...proven(), athDropPct: 88, athCollapsed: true })).toBe(false);
-    expect(isTop10Proven({ ...proven(), athDropPct: 88, athCollapsed: false })).toBe(true);
-    expect(isTop10Proven({ ...proven(), athDropPct: 88 })).toBe(true); // no memory: the plain line
+  const alive = { ...proven(), livingMarket: true };
+  it("a token that has collapsed stays refused between 84 % and 89 % (a token at -87 % after a good week)", () => {
+    expect(isTop10Proven({ ...alive, athDropPct: 87, athCollapsed: true })).toBe(false);
+    expect(isTop10Proven({ ...alive, athDropPct: 87, athCollapsed: false })).toBe(true);
+    expect(isTop10Proven({ ...alive, athDropPct: 87 })).toBe(true); // no memory: the plain line
   });
   it("a token that was clean keeps its relief at -91 % if the memory says it never crossed (it is the memory that moves it, once, at the crossing)", () => {
-    expect(isTop10Proven({ ...proven(), athDropPct: 91, athCollapsed: false })).toBe(true);
-    expect(isTop10Proven({ ...proven(), athDropPct: 91, athCollapsed: true })).toBe(false);
+    expect(isTop10Proven({ ...alive, athDropPct: 91, athCollapsed: false })).toBe(true);
+    expect(isTop10Proven({ ...alive, athDropPct: 91, athCollapsed: true })).toBe(false);
   });
   it("an unknown fall is never relief, whatever the memory says", () => {
-    expect(isTop10Proven({ ...proven(), athDropPct: null, athCollapsed: false })).toBe(false);
+    expect(isTop10Proven({ ...alive, athDropPct: null, athCollapsed: false })).toBe(false);
   });
 });
 
 describe("athDropPct", () => {
-  const ath = { ath: 2, athDate: "2025-01-19T00:00:00.000Z", source: "coingecko" as const };
+  const ath = { ath: 2, athDate: "2025-01-19" };
   it("is how far the price stands below the high, in percent, and never negative", () => {
     expect(athDropPct(ath, 1)).toBeCloseTo(50, 6);
     expect(athDropPct(ath, 0.02)).toBeCloseTo(99, 6);
@@ -88,7 +97,7 @@ describe("athDropPct", () => {
     expect(athDropPct(ath, null)).toBeNull();
     expect(athDropPct(ath, 0)).toBeNull();
     expect(athDropPct(ath, Number.NaN)).toBeNull();
-    expect(athDropPct({ ath: 0, athDate: null, source: "coingecko" }, 1)).toBeNull();
+    expect(athDropPct({ ath: 0, athDate: null }, 1)).toBeNull();
   });
 });
 
@@ -192,11 +201,12 @@ describe("decide: CARDS and MELANIA, the same top 10, two histories", () => {
     pairCreatedAt: 1_700_000_000_000, marketCap: 246_000_000,
     info: { socials: [{ type: "twitter", url: "https://twitter.com/t" }], websites: [{ url: "https://t.example" }] },
   });
-  const input = (allTimeHigh: DecideInput["allTimeHigh"]): DecideInput => ({
+  // CARDS: Jupiter's organic score is 95 (a living market) unless a test says otherwise.
+  const input = (allTimeHigh: DecideInput["allTimeHigh"], organicScore: number | null | undefined = 95): DecideInput => ({
     pair: pair(), dexData: null, resolvedMint: MINT, marketCap: 246_000_000, tokenAgeMinutes: 407 * DAY, holders: 31_000,
     rugData: null, rugReport: null, tokenName: "Collector Crypt", goplus: null, authFacts: deriveAuthorityFacts(null, null, MINT),
     totalSupplyUi: SUPPLY, solscanTokenAgeHours: 407 * 24, dexTokenAgeHours: 407 * 24, resolvedHolderAccounts: holdersOf(10, 73),
-    solscanTrades24h: null, solscanTraders24h: null, solscanAnswered: false, candles: [], dailyCandles: [], recentTransfers: [], creatorReputation: null, allTimeHigh,
+    solscanTrades24h: null, solscanTraders24h: null, solscanAnswered: false, candles: [], dailyCandles: [], recentTransfers: [], creatorReputation: null, allTimeHigh, organicScore,
   });
 
   it("the scan asks for the all-time high only for a candidate (top10ReliefFactsOf feeds isTop10Candidate), with the pools of the token added up", () => {
@@ -212,17 +222,33 @@ describe("decide: CARDS and MELANIA, the same top 10, two histories", () => {
     expect(isTop10Candidate(top10ReliefFactsOf(thin))).toBe(false);
   });
   it("-9 % from its high: the top 10 at 73 % is a warning, the verdict is not DANGER", () => {
-    const d = decide(input({ ath: 0.381, athDate: "2025-09-14T00:00:00.000Z", source: "coingecko" }));
+    const d = decide(input({ ath: 0.381, athDate: "2025-09-14" }));
     expect(d.flags.filter((f) => f.severity === "critical")).toEqual([]);
     expect(d.risk).toBe("CAUTION");
   });
   it("-99 % from its high: the same top 10 is the critical it always was", () => {
-    const d = decide(input({ ath: 34.7, athDate: "2025-01-19T00:00:00.000Z", source: "coingecko" }));
+    const d = decide(input({ ath: 34.7, athDate: "2025-01-19" }));
     expect(d.flags.some((f) => f.severity === "critical" && /Top 10 hold 73%/.test(f.label))).toBe(true);
     expect(d.risk).toBe("DANGER");
   });
-  it("its all-time high unknown (CoinGecko silent or not listing it): no relief, the verdict the engine gave before", () => {
+  it("its all-time high unknown (Solscan silent or without a price for it): no relief, the verdict the engine gave before", () => {
     expect(decide(input(null)).risk).toBe("DANGER");
     expect(decide(input(undefined)).risk).toBe("DANGER");
+  });
+  // A daily price history cannot see a launch that pumped and dumped within hours (YZY): its daily high is far under the real one, it stands under the line and its history looks clean.
+  // What stops the relief is that its market is not alive.
+  it("a clean history but a market that is NOT alive (organic score 0: BAN, JELLYJELLY, ALCH, YZY): the top 10 at 73 % is the critical it always was", () => {
+    const d = decide(input({ ath: 0.381, athDate: "2025-09-14" }, 0));
+    expect(d.flags.some((f) => f.severity === "critical" && /Top 10 hold 73%/.test(f.label))).toBe(true);
+    expect(d.risk).toBe("DANGER");
+  });
+  it("a market nobody could read (Jupiter silent or not listing the token): no relief, the verdict of before", () => {
+    expect(decide(input({ ath: 0.381, athDate: "2025-09-14" }, null)).risk).toBe("DANGER");
+    expect(decide({ ...input({ ath: 0.381, athDate: "2025-09-14" }), organicScore: undefined }).risk).toBe("DANGER");
+  });
+  it("the least active token that is relieved today (BC, organic 49) keeps its relief; 29 does not, 30 does", () => {
+    expect(decide(input({ ath: 0.381, athDate: "2025-09-14" }, 49)).risk).toBe("CAUTION");
+    expect(decide(input({ ath: 0.381, athDate: "2025-09-14" }, 30)).risk).toBe("CAUTION");
+    expect(decide(input({ ath: 0.381, athDate: "2025-09-14" }, 29)).risk).toBe("DANGER");
   });
 });

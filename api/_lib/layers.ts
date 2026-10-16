@@ -14,7 +14,7 @@ import {
   PUMP_7D_WARN_PCT, PUMP_7D_HIGH_PCT, PUMP_30D_WARN_PCT, PUMP_30D_HIGH_PCT,
   COLLAPSE_DROP_PCT, COLLAPSE_RECENT_DAYS, COLLAPSE_WINDOW_DAYS, COLLAPSE_MIN_CANDLES,
   ATH_FLAG_MIN_AGE_DAYS, ATH_FLAG_MIN_MARKET_CAP_USD,
-  TOP10_RELIEF_MIN_MARKET_CAP_USD, TOP10_RELIEF_MIN_POOL_DEPTH_USD, TOP10_RELIEF_MIN_POOL_PCT_OF_CAP, TOP10_RELIEF_MIN_HOLDERS, TOP10_RELIEF_MAX_TOP10, TOP10_RELIEF_MAX_SINGLE, ATH_COLLAPSE_PCT,
+  TOP10_RELIEF_MIN_MARKET_CAP_USD, TOP10_RELIEF_MIN_POOL_DEPTH_USD, TOP10_RELIEF_MIN_POOL_PCT_OF_CAP, TOP10_RELIEF_MIN_HOLDERS, TOP10_RELIEF_MAX_TOP10, TOP10_RELIEF_MAX_SINGLE, ATH_COLLAPSE_PCT, LIVING_MARKET_MIN_ORGANIC_SCORE,
   BLUECHIP_MIN_AGE_DAYS, BLUECHIP_MIN_LIQUIDITY_USD, BLUECHIP_MIN_MARKET_CAP_USD, BLUECHIP_CRASH_FLOOR_6H, BLUECHIP_CRASH_FLOOR_24H,
   LP_UNVERIFIED_MIN_LIQUIDITY,
 } from "./constants";
@@ -143,15 +143,24 @@ export function isTop10Candidate(i: Top10ReliefFacts): boolean {
 }
 
 /**
- * isTop10Candidate AND a history that is not a collapse (historyIsClean; unknown is no relief). It softens the top-10 ladder, it never makes a token SAFE by itself.
+ * Is the market of this token ALIVE? Jupiter's organic score (real activity) is at least LIVING_MARKET_MIN_ORGANIC_SCORE. Unknown is not alive: a market nobody could read is no proof.
+ * A daily price history cannot see a launch that pumped and dumped within hours (YZY, MELANIA): this is what stops the relief for them.
  */
-export function isTop10Proven(i: Top10ReliefFacts & { athDropPct: number | null | undefined; athCollapsed?: boolean | null }): boolean {
-  return historyIsClean(i.athDropPct, i.athCollapsed) && isTop10Candidate(i);
+export function isLivingMarket(organicScore: number | null | undefined): boolean {
+  return organicScore != null && Number.isFinite(organicScore) && organicScore >= LIVING_MARKET_MIN_ORGANIC_SCORE;
+}
+
+/**
+ * isTop10Candidate AND a living market (isLivingMarket) AND a history that is not a collapse (historyIsClean; unknown is no relief). It softens the top-10 ladder, it never makes a
+ * token SAFE by itself.
+ */
+export function isTop10Proven(i: Top10ReliefFacts & { athDropPct: number | null | undefined; athCollapsed?: boolean | null; livingMarket?: boolean | null }): boolean {
+  return i.livingMarket === true && historyIsClean(i.athDropPct, i.athCollapsed) && isTop10Candidate(i);
 }
 
 /**
  * A token for which the all-time high is read to say that it collapsed (athDropFlag): 90 days or more, $5M of cap or more, and not a token of the issuer registry (a stablecoin,
- * a liquid-staking token: CoinGecko's "all-time high" of such a token is a glitch, HSOL -98 %, and its market is judged by its own rules).
+ * a liquid-staking token: the "all-time high" of such a token is a glitch of the feeds, HSOL -98 %, and its market is judged by its own rules).
  */
 export function isAthFlagCandidate(i: { tokenAgeMinutes: number | null | undefined; marketCapUsd: number | null | undefined; issuerBacked: boolean }): boolean {
   if (i.issuerBacked) return false;
@@ -1111,7 +1120,7 @@ export function layerChart(
   // legit blue-chips like FWOG/NEET get capped at score 500 because
   // chart pattern detectors mistake quiet sideways trading for
   // controlled dumps.
-  maturityContext?: { holders: number | null; liquidity: number; tokenAgeHours: number | null; mintAuthority: boolean; freezeAuthority: boolean; honeypot: boolean; lpBurned?: boolean | null; lpPctOfSupply?: number | null; athDropPct?: number | null; athDate?: string | null; athSource?: "solscan" | "coingecko" | null; athCollapsed?: boolean | null },
+  maturityContext?: { holders: number | null; liquidity: number; tokenAgeHours: number | null; mintAuthority: boolean; freezeAuthority: boolean; honeypot: boolean; lpBurned?: boolean | null; lpPctOfSupply?: number | null; athDropPct?: number | null; athDate?: string | null; athCollapsed?: boolean | null },
   // Daily candles (up to 31 days) for weekly / monthly pump detection.
   // Sorted ascending (oldest first). Fetched separately from GeckoTerminal
   // /ohlcv/day so short-term candles stay cheap (40 × 5-min).
@@ -1124,7 +1133,7 @@ export function layerChart(
   const penalties: number[] = [];
   let forceRug = false, safeBlocked = false;
   const collapse = collapseFromPeak(dailyCandles);
-  const athFlag = athDropFlag(maturityContext?.athDropPct, maturityContext?.athDate, maturityContext?.athCollapsed, maturityContext?.athSource);
+  const athFlag = athDropFlag(maturityContext?.athDropPct, maturityContext?.athDate, maturityContext?.athCollapsed);
   if (!candles || candles.length < 3) {
     // Nothing traded in the last hours (a dead token) leaves nothing to chart, but a collapse seen in the 30-day history is still said.
     if (collapse) {
@@ -1446,12 +1455,12 @@ export function layerChart(
 // ═══ Collapse from the all-time high ══════════════════════════════════════════════════════════════
 /**
  * The flag of a token that has collapsed (ATH_COLLAPSE_PCT or more below the highest price it ever traded at): a WARNING (see ATH_FLAG_MIN_AGE_DAYS for why never a critical).
- * The source of the high is named in the label (Solscan, else CoinGecko: the number is only as good as its source). null above the line or when the fall is unknown.
+ * The source of the high is named in the label (Solscan: the number is only as good as its source). null above the line or when the fall is unknown.
  */
-function athDropFlag(dropPct: number | null | undefined, athDate: string | null | undefined, athCollapsed?: boolean | null, source?: "solscan" | "coingecko" | null): { flag: ScanFlag; penalty: number } | null {
+function athDropFlag(dropPct: number | null | undefined, athDate: string | null | undefined, athCollapsed?: boolean | null): { flag: ScanFlag; penalty: number } | null {
   if (dropPct == null || !Number.isFinite(dropPct) || historyIsClean(dropPct, athCollapsed)) return null;
   const when = athDate && /^\d{4}-\d{2}/.test(athDate) ? `, ${athDate.slice(0, 7)}` : "";
-  return { flag: makeFlag(`Down ${Math.floor(dropPct)}% from its all-time high (${source === "solscan" ? "Solscan" : "CoinGecko"}${when})`, "warning", 0), penalty: 0.85 };
+  return { flag: makeFlag(`Down ${Math.floor(dropPct)}% from its all-time high (Solscan${when})`, "warning", 0), penalty: 0.85 };
 }
 
 // ═══ Collapse from the recent high ════════════════════════════════════════════════════════════════

@@ -189,7 +189,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v66"; // 2026-10-16: the all-time high comes from Solscan first (token/price), CoinGecko when Solscan has nothing; the flag names the source, and the verdicts that depended on a high are recomputed. v65 (2026-10-16): SAFE needs a market of $100k, all the pools added up (SAFE_MIN_MARKET_DEPTH_USD): under it a token with nothing else against it is CAUTION, with one warning that says why (40 dead memecoins of the corpus were SAFE). Flushes the SAFE cached for these tokens. v64 (2026-10-16): a token of 90 days and $5M of cap or more that has collapsed (lost 90 % or more from its all-time high, CoinGecko) carries a warning (ATH_FLAG_*): never SAFE, and a DANGER with two other warnings (GRIFFAIN, LION). Flushes the SAFE and CAUTION cached for these tokens. v63 (2026-10-16): a token the market has proven is not condemned for who holds its supply unless it has collapsed (lost 90 % or more from its all-time high, ATH_COLLAPSE_PCT): a concentrated top 10 or one big wallet is a warning (TOP10_RELIEF_*, depth read on all its pools), and a mint authority held by the Wormhole bridge (BRIDGE_MINT_AUTHORITIES) is a warning that keeps it out of SAFE and no longer makes the contract "not clean" for the LP rule. RugCheck's concentration risks are counted once on such a token. Flushes the DANGER / RUG cached for CARDS, MET, BC, DBR, HUMA, ANSEM, SPX, JUP, RAY. v62 (2026-10-14): an issuer-backed token of the registry (stablecoin, tokenized stock, LST, wrapped, yield, vault) whose market cannot be read (DexScreener silent or no pool) keeps its verdict (SAFE on enough sources, one information line), and the verdict of the last time its market WAS read is served again with its age (scannedAgoSec). Flushes the CAUTION cached for these tokens during an outage.
+const ENGINE_VERSION_MANUAL = "v67"; // 2026-10-16: the history of a token comes from Solscan alone (token/price, one price a day, line read at 89 %/84 %) and the relief of a concentrated top 10 and the softening of a bridge-held mint authority also need a LIVING market (Jupiter organic score >= 30): BAN, JELLYJELLY, ALCH, NST, UNI wrapped (score 0) go back to DANGER/RUG. v66 (2026-10-16): the all-time high read from a second source. v65 (2026-10-16): SAFE needs a market of $100k, all the pools added up (SAFE_MIN_MARKET_DEPTH_USD): under it a token with nothing else against it is CAUTION, with one warning that says why (40 dead memecoins of the corpus were SAFE). Flushes the SAFE cached for these tokens. v64 (2026-10-16): a token of 90 days and $5M of cap or more that has collapsed (lost 90 % or more from its all-time high, CoinGecko) carries a warning (ATH_FLAG_*): never SAFE, and a DANGER with two other warnings (GRIFFAIN, LION). Flushes the SAFE and CAUTION cached for these tokens. v63 (2026-10-16): a token the market has proven is not condemned for who holds its supply unless it has collapsed (lost 90 % or more from its all-time high, ATH_COLLAPSE_PCT): a concentrated top 10 or one big wallet is a warning (TOP10_RELIEF_*, depth read on all its pools), and a mint authority held by the Wormhole bridge (BRIDGE_MINT_AUTHORITIES) is a warning that keeps it out of SAFE and no longer makes the contract "not clean" for the LP rule. RugCheck's concentration risks are counted once on such a token. Flushes the DANGER / RUG cached for CARDS, MET, BC, DBR, HUMA, ANSEM, SPX, JUP, RAY. v62 (2026-10-14): an issuer-backed token of the registry (stablecoin, tokenized stock, LST, wrapped, yield, vault) whose market cannot be read (DexScreener silent or no pool) keeps its verdict (SAFE on enough sources, one information line), and the verdict of the last time its market WAS read is served again with its age (scannedAgoSec). Flushes the CAUTION cached for these tokens during an outage.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.
@@ -338,16 +338,21 @@ export const BLUECHIP_MIN_MARKET_CAP_USD = 5_000_000;
 export const SAFE_MIN_MARKET_DEPTH_USD = 100_000;
 // A token that lost 90 % or more from its highest price has COLLAPSED (the owner's rule, 2026-10-16: a token that lost more than 90 % has rugged). ONE line, shared by everything
 // that reads the all-time high: such a token gets no relief and no softening (the top-10 relief below, a mint authority held by a bridge), and carries a warning (the flag).
-// Measured on the 642 recorded tokens CoinGecko knows: SPX (-84.6 %), JUP (-84.3 %) and RAY (-89.0 %), which the owner names as real tokens, are under the line; YZY (-90.2 %),
+// Measured on the 642 recorded tokens whose highest price is known (intraday): SPX (-84.6 %), JUP (-84.3 %) and RAY (-89.0 %), which the owner names as real tokens, are under the line; YZY (-90.2 %),
 // ZEREBRO (-93.6 %), TRUNK (-96.3 %), LUNA (-98.4 %) and MELANIA (-99.3 %) are over it. A line at 80 % would refuse SPX, JUP and RAY too. Next to the line (RAY 89.0, YZY 90.2,
 // CLOUD 89.96) a token would change side with a few percent of price, and a verdict that flips from one scan to the next is not credible. So the line has a memory (api/_lib/ath.ts,
 // judgeHistory): a token ENTERS "collapsed" at ATH_COLLAPSE_PCT and LEAVES it only when it stands less than ATH_COLLAPSE_EXIT_PCT below its high (a rally of a third of its price
 // from the line), whatever its price does in between.
-export const ATH_COLLAPSE_PCT = 90;
-export const ATH_COLLAPSE_EXIT_PCT = 85;
+export const ATH_COLLAPSE_PCT = 89;
+export const ATH_COLLAPSE_EXIT_PCT = 84;
+// The owner's rule is "a token that lost more than 90 % from its highest price has rugged". The highest price comes from Solscan Pro (token/price), which gives ONE price per day: its high is
+// a little under the intraday high the rule was thought on (PYTH, measured live on 2026-10-16: 1.10 against 1.20, 8 % under, so a token at 90 % under the intraday high stands 89.1 % under the
+// daily one). So the line is read on the daily series at 89 % (and 84 % to leave it), the same line on the number Solscan gives. A token that spiked and dumped within hours (YZY, GRIFFAIN)
+// has a daily high far under its intraday one and stands under the line: that is NOT repaired by a lower line (JUP -84 %, SPX -85 % and RAY -88 %, which the owner names as real tokens,
+// would be refused too), it is repaired by asking whether the market is alive (LIVING_MARKET_MIN_ORGANIC_SCORE below).
 // Top-10 relief (the owner's idea, 2026-10-15). A token the MARKET has proven keeps a concentrated top 10 and one big wallet as a WARNING (CAUTION at most) instead of a CRITICAL
 // (DANGER / RUG): on such a token the top 10 is exchanges, treasuries and vaults. The market cap alone is not a proof (a thin pool fakes it: WLFI "$5.7B" with $28k of pools), so the
-// market must also be deep, the holders many and the authorities cut, and its history must not be a collapse (ATH_COLLAPSE_PCT). An unknown all-time high (CoinGecko silent, or
+// market must also be deep, the holders many and the authorities cut, and its history must not be a collapse (ATH_COLLAPSE_PCT). An unknown all-time high (Solscan silent, or
 // without the token) is no relief.
 export const TOP10_RELIEF_MIN_MARKET_CAP_USD = 25_000_000;
 // Depth of the market: ALL the pools the token is the base of (its liquidity is split between pools: RAY 30, BONK 30, CARDS 22), in dollars AND in proportion to the cap. The proportion
@@ -358,23 +363,20 @@ export const TOP10_RELIEF_MIN_POOL_PCT_OF_CAP = 0.001;
 export const TOP10_RELIEF_MIN_HOLDERS = 10_000;
 export const TOP10_RELIEF_MAX_TOP10 = 0.90;   // from this share the top 10 is control whatever the market says
 export const TOP10_RELIEF_MAX_SINGLE = 0.60;  // one wallet above this share is a control risk whatever the market says
-// The all-time high is read from Solscan Pro first (token/price: one USD price per day, the plan we already pay for), then from CoinGecko's public API when Solscan has nothing or does
-// not answer. Solscan gives a DAILY price, so its high is a little under an intraday high: the line (ATH_COLLAPSE_PCT) is read on it as it is. How far back it looks: Solana
-// tokens that matter all date from 2021 or later. A day whose price is more than SOLSCAN_PRICE_SPIKE_FACTOR times that of BOTH its neighbours is a glitch of the feed, not a
-// price (a daily close does not rise tenfold and fall back tenfold in the days around it), and it is replaced by the higher of its neighbours so that one bad point cannot
-// fake a collapse on a serious token.
+// The all-time high is read from Solscan Pro (token/price: one USD price per day, the plan we already pay for) and from nothing else. How far back it looks: Solana tokens that matter all
+// date from 2021 or later. A day whose price is more than SOLSCAN_PRICE_SPIKE_FACTOR times that of BOTH its neighbours is a glitch of the feed, not a price (a daily close does not rise
+// tenfold and fall back tenfold in the days around it), and it is replaced by the higher of its neighbours so that one bad point cannot fake a collapse on a serious token.
 export const SOLSCAN_PRICE_FROM = "20210101";
 export const SOLSCAN_PRICE_SPIKE_FACTOR = 10;
-// The line (ATH_COLLAPSE_PCT) is the owner's rule on the highest price the token ever traded at, and CoinGecko's high is an intraday one. A DAILY price cannot say on which side
-// of a line a token stands when it stands within a point or two of it: PYTH's daily high is 8 % under CoinGecko's, which is enough to move YZY (-90.2 %) to -89.3 % and give it
-// the relief of a serious token. So Solscan's number is trusted where the line cannot be crossed by the difference (far above it, or far below it), and where the token stands from
-// ATH_DAILY_DOUBT_FROM_PCT up to the line, CoinGecko's high is asked too and the higher of the two is the high (a daily high is never above an intraday one, so this can only move a
-// token up to the intraday side of the line, the side the rule is written on). 80 % covers a daily high down to half of the intraday one against the line at 90 % (1 - 0.10 / 0.5 = 80)
-// and down to three quarters of it against the exit of the line at 85 % (1 - 0.15 / 0.75 = 80).
-export const ATH_DAILY_DOUBT_FROM_PCT = 80;
+// A LIVING market. The relief of a concentrated top 10 and the softening of a bridge-held mint authority are for a token whose market is alive, not for a token that only has a pool and a
+// cap: Jupiter's organic score (real activity, not wash trading or a single bot) is 0 for the tokens that the owner doubts (BAN, JELLYJELLY, ALCH, NST, UNI wrapped: 0) and 49 or more for
+// every other token the engine relieves (BC 49, HUMA 54, DBR 62, NPC 62, SPX 73, MET 82, JUP 95: measured on the 19 relieved tokens of the 1 121 recorded). Nothing lies between 1 and
+// 48, and 30 is the middle of the empty gap. It does what the all-time high cannot do for a launch that spiked and dumped within hours (a daily price misses the spike): YZY, MELANIA,
+// LUNA and TRUNK are at 0 whatever their history says.
+export const LIVING_MARKET_MIN_ORGANIC_SCORE = 30;
 // The all-time-high flag: a token that has collapsed (ATH_COLLAPSE_PCT, 90 %) says so, in a WARNING: it is never SAFE, and with two other warnings it is a DANGER; it is never a
 // critical on its own, because the same fall describes BONK (-95 %), WIF (-96 %), PYTH (-92 %) and JTO (-92 %), real tokens that a critical would send to DANGER. It is read for a token
-// of 90 days or more (a younger one is read by the 90-day collapse rule) and $5M of cap or more: below it CoinGecko lists thousands of tokens that nobody scans twice, and measured on
+// of 90 days or more (a younger one is read by the 90-day collapse rule) and $5M of cap or more: below it there are thousands of tokens that nobody scans twice, and measured on
 // the 1 121 recorded tokens the flag without that floor moved 136 verdicts (128 SAFE to CAUTION, 108 of them under $5M) against 21 with it.
 export const ATH_FLAG_MIN_AGE_DAYS = 90;
 export const ATH_FLAG_MIN_MARKET_CAP_USD = 5_000_000;

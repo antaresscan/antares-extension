@@ -16,7 +16,7 @@ import type {
 } from "./types";
 import type { CreatorReputation } from "./fetchers";
 import {
-  layerDexScreener, layerRugCheck, layerGoPlus, layerHelius, layerSolscan, layerChart, layerCrossValidation, isBlueChipByMarket, isTop10Proven, historyIsClean, isAthFlagCandidate, type Top10ReliefFacts,
+  layerDexScreener, layerRugCheck, layerGoPlus, layerHelius, layerSolscan, layerChart, layerCrossValidation, isBlueChipByMarket, isTop10Proven, isLivingMarket, historyIsClean, isAthFlagCandidate, type Top10ReliefFacts,
 } from "./layers";
 import { computeFinalScore, classifySafeBlockedReasons } from "./scoring";
 import {
@@ -55,8 +55,10 @@ export interface DecideInput {
   dailyCandles: OHLCVCandle[];
   recentTransfers: SolscanTransfer[];
   creatorReputation: CreatorReputation | null;
-  /** The highest price the token ever traded at (Solscan, else CoinGecko), asked for only when the verdict can use it (api/_lib/ath.ts); null or absent when unknown. */
+  /** The highest daily price the token ever traded at (Solscan), asked for only when the verdict can use it (api/_lib/ath.ts); null or absent when unknown. */
   allTimeHigh?: AllTimeHigh | null;
+  /** Jupiter's organic score (real trading activity, 0 to 100), asked for only when a relief or a bridge depends on it (api/_lib/jupiter.ts); null or absent when unknown, which is no relief. */
+  organicScore?: number | null;
   /** The side of the line the token is on, with the memory of where it was (judgeHistory in ath.ts); absent: the plain line on the fall computed here. */
   athCollapsed?: boolean | null;
 }
@@ -103,15 +105,17 @@ export function decide(input: DecideInput): Decision {
   const {
     pair, dexData, resolvedMint, marketCap, tokenAgeMinutes, holders, rugData, rugReport, tokenName, goplus, authFacts: authFactsAsRead, totalSupplyUi,
     solscanTokenAgeHours, dexTokenAgeHours, resolvedHolderAccounts, solscanTrades24h, solscanTraders24h, solscanAnswered,
-    candles, dailyCandles, recentTransfers, creatorReputation, allTimeHigh, athCollapsed,
+    candles, dailyCandles, recentTransfers, creatorReputation, allTimeHigh, athCollapsed, organicScore,
   } = input;
   const notes: DecisionNote[] = [];
 
   // How far the price stands below the all-time high, when both are known.
   const athDrop = athDropPct(allTimeHigh, asNumber(pair?.priceUsd));
-  // A mint authority held by a bridge is softened only for a token whose history is not a collapse (LUNA -98 %, TRUNK -96 % keep the critical: nobody holds a key for the
-  // authority, but the token itself already lost almost everything, and its wrapped supply can only follow that). An unknown history is no softening.
-  const authFacts = authFactsAsRead.mintHolder && !historyIsClean(athDrop, athCollapsed) ? { ...authFactsAsRead, mintHolder: null } : authFactsAsRead;
+  // Is the market alive? (Jupiter's organic score: a daily price history cannot see a launch that pumped and dumped within hours.)
+  const livingMarket = isLivingMarket(organicScore);
+  // A mint authority held by a bridge is softened only for a token whose history is not a collapse AND whose market is alive (LUNA -98 %, TRUNK -96 % keep the critical: nobody holds a
+  // key for the authority, but the token itself already lost almost everything, and its wrapped supply can only follow that). An unknown history, or a market nobody could read, is no softening.
+  const authFacts = authFactsAsRead.mintHolder && !(livingMarket && historyIsClean(athDrop, athCollapsed)) ? { ...authFactsAsRead, mintHolder: null } : authFactsAsRead;
 
   // Deepest pool of THIS token (it is the base token of the pair). selectBestPair can settle on a thinner pool than the deepest
   // one (JTO: a $62k Raydium pool next to a $1.3M Orca pool); the "no registered links" check asks whether the token has real
@@ -166,11 +170,10 @@ export function decide(input: DecideInput): Decision {
     // How far the token stands below its all-time high, only for a token that is read for it (athDropFlag says it from ATH_COLLAPSE_PCT).
     athDropPct: (isAthFlagCandidate({ tokenAgeMinutes, marketCapUsd: marketCap, issuerBacked: issuerKindOf(resolvedMint) !== null }) ? athDrop : null) as number | null,
     athDate: (allTimeHigh?.athDate ?? null) as string | null,
-    athSource: allTimeHigh?.source ?? null,
     athCollapsed: athCollapsed ?? null,
   };
-  // A token the market has proven AND whose history does not say the insiders already sold: its concentrated top 10 is a warning, not a critical (isTop10Proven).
-  maturityCtx.top10Proven = isTop10Proven({ ...top10ReliefFactsOf({ ...input, authFacts }), athDropPct: athDrop, athCollapsed });
+  // A token the market has proven, whose market is alive, AND whose history does not say the insiders already sold: its concentrated top 10 is a warning, not a critical (isTop10Proven).
+  maturityCtx.top10Proven = isTop10Proven({ ...top10ReliefFactsOf({ ...input, authFacts }), athDropPct: athDrop, athCollapsed, livingMarket });
   const l2 = layerRugCheck(rugData, rugReport, resolvedMint, tokenName, maturityCtx);
   const l3 = layerGoPlus(goplus, maturityCtx, authFacts);
   // Collect all DEXScreener pair addresses for this token.

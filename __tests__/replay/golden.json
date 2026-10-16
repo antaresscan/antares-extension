@@ -8,7 +8,7 @@
       "info:LP holds 0.06% of supply — negligible rug risk",
       "info:Mutable metadata",
       "info:Top 10 hold 38% — moderate · exchanges likely included",
-      "warning:Down 94% from its all-time high (CoinGecko, 2024-11)"
+      "warning:Down 93% from its all-time high (Solscan, 2024-11)"
     ],
     "sources_used": [
       "chart",
@@ -66,7 +66,7 @@
       "bonus:Established token (30d+) ✓",
       "bonus:LP Burned 100% (GoPlus) ✓",
       "info:Top 10 hold 44% — moderate · exchanges likely included",
-      "warning:Down 95% from its all-time high (CoinGecko, 2024-03)"
+      "warning:Down 95% from its all-time high (Solscan, 2024-03)"
     ],
     "sources_used": [
       "chart",
@@ -183,7 +183,7 @@
       "bonus:LP Burned 99% (GoPlus) ✓",
       "info:Top 10 hold 40% — moderate · exchanges likely included",
       "warning:Buy/sell imbalance (coordinated pump)",
-      "warning:Down 97% from its all-time high (CoinGecko, 2024-11)"
+      "warning:Down 97% from its all-time high (Solscan, 2024-11)"
     ],
     "sources_used": [
       "chart",
@@ -241,7 +241,7 @@
       "bonus:Established token (30d+) ✓",
       "bonus:LP Burned 100% (GoPlus) ✓",
       "critical:Top 10 hold 65% — high concentration",
-      "warning:Down 96% from its all-time high (CoinGecko, 2024-11)"
+      "warning:Down 95% from its all-time high (Solscan, 2024-11)"
     ],
     "sources_used": [
       "chart",
@@ -300,7 +300,7 @@
     "flags": [
       "bonus:Established token (30d+) ✓",
       "bonus:LP Burned 99% (GoPlus) ✓",
-      "warning:Down 98% from its all-time high (CoinGecko, 2024-11)",
+      "warning:Down 98% from its all-time high (Solscan, 2024-11)",
       "warning:Top 10 hold 46% — elevated · exchanges may be included"
     ],
     "sources_used": [
@@ -361,7 +361,7 @@
       "bonus:Established token (30d+) ✓",
       "bonus:LP Burned 99% (GoPlus) ✓",
       "critical:Top 10 hold 68% — high concentration",
-      "warning:Down 97% from its all-time high (CoinGecko, 2024-11)"
+      "warning:Down 97% from its all-time high (Solscan, 2024-11)"
     ],
     "sources_used": [
       "chart",
@@ -421,7 +421,7 @@
       "bonus:Established token (30d+) ✓",
       "bonus:LP Burned 99% (GoPlus) ✓",
       "info:Top 10 hold 35% — moderate · exchanges likely included",
-      "warning:Down 93% from its all-time high (CoinGecko, 2025-01)"
+      "warning:Down 92% from its all-time high (Solscan, 2025-01)"
     ],
     "sources_used": [
       "chart",
@@ -593,7 +593,7 @@
       "bonus:Established token (30d+) ✓",
       "bonus:LP Burned 100% (GoPlus) ✓",
       "info:Top 10 hold 34% — moderate · exchanges likely included",
-      "warning:Down 99% from its all-time high (CoinGecko, 2024-11)"
+      "warning:Down 99% from its all-time high (Solscan, 2024-11)"
     ],
     "sources_used": [
       "chart",
@@ -651,7 +651,7 @@
       "bonus:Established token (30d+) ✓",
       "bonus:LP Burned 100% (GoPlus) ✓",
       "critical:Top 10 hold 76% — high concentration",
-      "warning:Down 98% from its all-time high (CoinGecko, 2024-11)",
+      "warning:Down 98% from its all-time high (Solscan, 2024-11)",
       "warning:RugCheck: Single holder ownership",
       "warning:RugCheck: Top 10 holders high ownership"
     ],
@@ -713,7 +713,7 @@
       "bonus:Established token (30d+) ✓",
       "bonus:LP Burned 100% (GoPlus) ✓",
       "info:Top 10 hold 34% — moderate · exchanges likely included",
-      "warning:Down 97% from its all-time high (CoinGecko, 2025-01)"
+      "warning:Down 97% from its all-time high (Solscan, 2025-01)"
     ],
     "sources_used": [
       "chart",
@@ -770,7 +770,7 @@
     "flags": [
       "bonus:Established token (30d+) ✓",
       "bonus:LP Burned 99% (GoPlus) ✓",
-      "warning:Down 98% from its all-time high (CoinGecko, 2026-02)",
+      "warning:Down 97% from its all-time high (Solscan, 2026-02)",
       "warning:Top 10 hold 61% — elevated · exchanges may be included"
     ],
     "sources_used": [
@@ -831,7 +831,7 @@
       "bonus:Established token (30d+) ✓",
       "critical:Top 10 hold 89% — extreme concentration",
       "info:LP holds 0.31% of supply — negligible rug risk",
-      "warning:Down 97% from its all-time high (CoinGecko, 2025-01)",
+      "warning:Down 97% from its all-time high (Solscan, 2025-01)",
       "warning:RugCheck: High ownership",
       "warning:RugCheck: Single holder ownership",
       "warning:RugCheck: Top 10 holders high ownership"
@@ -1144,7 +1144,7 @@
       "info:Mutable metadata",
       "info:No website / Twitter / Telegram registered on DexScreener",
       "info:Top 10 hold 26% — moderate · exchanges likely included",
-      "warning:Down 99% from its all-time high (CoinGecko, 2021-11)"
+      "warning:Down 99% from its all-time high (Solscan, 2021-11)"
     ],
     "sources_used": [
       "chart",
@@ -1325,7 +1325,7 @@
       "info:LP holds 0.01% of supply — negligible rug risk",
       "info:Mutable metadata",
       "info:No website / Twitter / Telegram registered on DexScreener",
-      "warning:Down 91% from its all-time high (CoinGecko, 2023-12)",
+      "warning:Down 90% from its all-time high (Solscan, 2023-12)",
       "warning:Top 10 hold 49% — elevated · exchanges may be included"
     ],
     "sources_used": [

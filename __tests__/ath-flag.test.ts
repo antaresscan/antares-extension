@@ -20,7 +20,7 @@ describe("isAthFlagCandidate: which tokens are read for it", () => {
     ["under $5M of cap", { marketCapUsd: 4_999_999 }],
     ["an unknown age", { tokenAgeMinutes: null }],
     ["an unknown cap", { marketCapUsd: null }],
-    ["a token of the issuer registry (HSOL: CoinGecko says -98 %, a glitch)", { issuerBacked: true }],
+    ["a token of the issuer registry (HSOL: the feeds say -98 %, a glitch)", { issuerBacked: true }],
   ] as Array<[string, Partial<typeof ok>]>)("is not read with %s", (_n, over) => {
     expect(isAthFlagCandidate({ ...ok, ...over })).toBe(false);
   });
@@ -37,44 +37,37 @@ const ctx = (athDropPct: number | null, athDate: string | null = "2024-11-13T00:
 });
 
 describe("layerChart: the flag", () => {
-  it("94 % below the high: one warning that names its source and the month of the high, the token is kept out of SAFE", () => {
+  it("94 % below the high: one warning that names its source (Solscan) and the month of the high, the token is kept out of SAFE", () => {
     const r = layerChart(flat(), pair(), 700 * DAY, ctx(94.2));
     const f = r.flags.filter((x) => /all-time high/.test(x.label));
     expect(f).toHaveLength(1);
-    expect(f[0]).toMatchObject({ severity: "warning", label: "Down 94% from its all-time high (CoinGecko, 2024-11)" });
+    expect(f[0]).toMatchObject({ severity: "warning", label: "Down 94% from its all-time high (Solscan, 2024-11)" });
     expect(r.safeBlocked).toBe(true);
     expect(r.forceRug).toBe(false);
     expect(r.flags.some((x) => x.severity === "critical")).toBe(false);
     expect(r.trust).toBeLessThan(layerChart(flat(), pair(), 700 * DAY, ctx(50)).trust);
   });
-  it("the flag names the source that gave the high: Solscan when it did, CoinGecko otherwise (and when the source is not known)", () => {
-    const label = (athSource?: "solscan" | "coingecko" | null) => layerChart(flat(), pair(), 700 * DAY, { ...ctx(94.2, "2024-11-13"), athSource }).flags.find((x) => /all-time high/.test(x.label))?.label;
-    expect(label("solscan")).toBe("Down 94% from its all-time high (Solscan, 2024-11)");
-    expect(label("coingecko")).toBe("Down 94% from its all-time high (CoinGecko, 2024-11)");
-    expect(label(null)).toBe("Down 94% from its all-time high (CoinGecko, 2024-11)");
-    expect(label(undefined)).toBe("Down 94% from its all-time high (CoinGecko, 2024-11)");
+  it("the line is 89 % (Solscan's daily highs): 88.9 % says nothing, 89 % says it, and the number shown is never rounded up to the line", () => {
+    expect(layerChart(flat(), pair(), 700 * DAY, ctx(88.9)).flags.some((x) => /all-time high/.test(x.label))).toBe(false);
+    expect(layerChart(flat(), pair(), 700 * DAY, ctx(89)).flags.some((x) => /^Down 89% from/.test(x.label))).toBe(true);
+    expect(layerChart(flat(), pair(), 700 * DAY, ctx(88.99)).flags.some((x) => /all-time high/.test(x.label))).toBe(false);
   });
-  it("the line is 90 %: 89.9 % says nothing, 90 % says it, and the number shown is never rounded up to the line", () => {
-    expect(layerChart(flat(), pair(), 700 * DAY, ctx(89.9)).flags.some((x) => /all-time high/.test(x.label))).toBe(false);
-    expect(layerChart(flat(), pair(), 700 * DAY, ctx(90)).flags.some((x) => /^Down 90% from/.test(x.label))).toBe(true);
-    expect(layerChart(flat(), pair(), 700 * DAY, ctx(89.99)).flags.some((x) => /all-time high/.test(x.label))).toBe(false);
-  });
-  it("the memory of the line decides: -88 % says it for a token that had collapsed, and -92 % says nothing for one that never crossed", () => {
+  it("the memory of the line decides: -87 % says it for a token that had collapsed, and -92 % says nothing for one that never crossed", () => {
     const c = (drop: number, collapsed: boolean | null) => layerChart(flat(), pair(), 700 * DAY, { ...ctx(drop), athCollapsed: collapsed }).flags.some((x) => /all-time high/.test(x.label));
-    expect(c(88, true)).toBe(true);
-    expect(c(88, false)).toBe(false);
+    expect(c(87, true)).toBe(true);
+    expect(c(87, false)).toBe(false);
     expect(c(92, false)).toBe(false);
     expect(c(92, true)).toBe(true);
     expect(c(92, null)).toBe(true);  // no memory: the plain line
-    expect(c(88, null)).toBe(false);
+    expect(c(87, null)).toBe(false);
   });
   it("an unknown fall (no high, no price) says nothing", () => {
     expect(layerChart(flat(), pair(), 700 * DAY, ctx(null)).flags.some((x) => /all-time high/.test(x.label))).toBe(false);
     expect(layerChart(flat(), pair(), 700 * DAY).flags.some((x) => /all-time high/.test(x.label))).toBe(false);
   });
   it("a missing or odd date does not stop the flag", () => {
-    expect(layerChart(flat(), pair(), 700 * DAY, ctx(95, null)).flags.find((x) => /all-time high/.test(x.label))?.label).toBe("Down 95% from its all-time high (CoinGecko)");
-    expect(layerChart(flat(), pair(), 700 * DAY, ctx(95, "soon")).flags.find((x) => /all-time high/.test(x.label))?.label).toBe("Down 95% from its all-time high (CoinGecko)");
+    expect(layerChart(flat(), pair(), 700 * DAY, ctx(95, null)).flags.find((x) => /all-time high/.test(x.label))?.label).toBe("Down 95% from its all-time high (Solscan)");
+    expect(layerChart(flat(), pair(), 700 * DAY, ctx(95, "soon")).flags.find((x) => /all-time high/.test(x.label))?.label).toBe("Down 95% from its all-time high (Solscan)");
   });
   it("a token with nothing traded in the last hours (no candles) still says it", () => {
     const r = layerChart([], pair(), 700 * DAY, ctx(97));
@@ -94,7 +87,7 @@ describe("decide: the flag, for the tokens that are read for it", () => {
     totalSupplyUi: 1_000_000, solscanTokenAgeHours: 700 * 24, dexTokenAgeHours: 700 * 24, resolvedHolderAccounts: [],
     solscanTrades24h: null, solscanTraders24h: null, solscanAnswered: false, candles: flat(), dailyCandles: [], recentTransfers: [], creatorReputation: null, ...over,
   });
-  const high = (ath: number) => ({ ath, athDate: "2024-11-13T00:00:00.000Z", source: "coingecko" as const });
+  const high = (ath: number) => ({ ath, athDate: "2024-11-13" });
   const hasFlag = (d: ReturnType<typeof decide>) => d.flags.some((f) => /all-time high/.test(f.label));
 
   it("95 % below its high: the flag is there and it is a warning, never a critical", () => {
@@ -103,12 +96,10 @@ describe("decide: the flag, for the tokens that are read for it", () => {
     expect(d.flags.find((f) => /all-time high/.test(f.label))?.severity).toBe("warning");
     expect(d.risk).not.toBe("SAFE");
   });
-  it("the flag says which source gave the high: the label follows the AllTimeHigh it was given", () => {
-    const label = (source: "solscan" | "coingecko") => decide(input({ allTimeHigh: { ...high(1), source } })).flags.find((f) => /all-time high/.test(f.label))?.label;
-    expect(label("solscan")).toBe("Down 95% from its all-time high (Solscan, 2024-11)");
-    expect(label("coingecko")).toBe("Down 95% from its all-time high (CoinGecko, 2024-11)");
+  it("the flag names Solscan and the month of the high", () => {
+    expect(decide(input({ allTimeHigh: high(1) })).flags.find((f) => /all-time high/.test(f.label))?.label).toBe("Down 95% from its all-time high (Solscan, 2024-11)");
   });
-  it("20 % below its high, an unknown high, or a high that no source gives: no flag", () => {
+  it("20 % below its high, an unknown high, or a high that Solscan does not give: no flag", () => {
     expect(hasFlag(decide(input({ allTimeHigh: high(0.0625) })))).toBe(false);
     expect(hasFlag(decide(input({ allTimeHigh: null })))).toBe(false);
     expect(hasFlag(decide(input()))).toBe(false);

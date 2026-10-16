@@ -111,11 +111,12 @@ describe("decide: a mature token whose mint authority is the bridge", () => {
     rugData: null, rugReport: null, tokenName: "SPX6900 (Wormhole)", goplus: unburnedLp, authFacts: deriveAuthorityFacts(chain, unburnedLp, MINT),
     totalSupplyUi: 930_000_000, solscanTokenAgeHours: 24 * 1000, dexTokenAgeHours: 24 * 1000, resolvedHolderAccounts: [],
     solscanTrades24h: null, solscanTraders24h: null, solscanAnswered: false, candles: [], dailyCandles: [], recentTransfers: [], creatorReputation: null,
+    organicScore: 73, // SPX: a living market (Jupiter's organic score), unless a test says otherwise
   });
   const chainOf = (auth: string): MintState => parseMintState(rawMint(auth)) as MintState;
 
-  const high = (ath: number) => ({ ath, athDate: "2025-07-28T00:00:00.000Z", source: "coingecko" as const }); // the price is $0.35
-  it("held by the bridge, a history that is not a collapse (-85 %, SPX): no critical flag and not DANGER (the LP rule reads the token's age again)", () => {
+  const high = (ath: number) => ({ ath, athDate: "2025-07-28" }); // the price is $0.35
+  it("held by the bridge, a history that is not a collapse (-85 %, SPX) and a living market: no critical flag and not DANGER (the LP rule reads the token's age again)", () => {
     const d = decide({ ...input(chainOf(WORMHOLE_MINT_AUTHORITY)), allTimeHigh: high(2.27) });
     expect(d.flags.filter((f) => f.severity === "critical")).toEqual([]);
     expect(d.risk === "SAFE" || d.risk === "CAUTION").toBe(true);
@@ -131,19 +132,31 @@ describe("decide: a mature token whose mint authority is the bridge", () => {
       expect(d.mintHeldByBridge).toBeNull();
     }
   });
-  it("held by the bridge, -88 %: clean on the plain line, but the memory says the token had collapsed (it is still above -85 %): the critical stays", () => {
+  it("held by the bridge, -88 %: clean on the plain line, but the memory says the token had collapsed (it is still above -84 %): the critical stays", () => {
     const d = decide({ ...input(chainOf(WORMHOLE_MINT_AUTHORITY)), allTimeHigh: high(2.9), athCollapsed: true }); // price 0.35 = -88 %
     expect(d.flags.some((f) => f.severity === "critical" && /Mint authority active/.test(f.label))).toBe(true);
     expect(d.risk).toBe("DANGER");
     const clean = decide({ ...input(chainOf(WORMHOLE_MINT_AUTHORITY)), allTimeHigh: high(2.9), athCollapsed: false });
     expect(clean.flags.filter((f) => f.severity === "critical")).toEqual([]);
   });
-  it("held by the bridge and the history unknown (CoinGecko silent, or it does not list the token): no softening, the critical stays", () => {
+  it("held by the bridge and the history unknown (Solscan silent, or without a price for the token): no softening, the critical stays", () => {
     for (const allTimeHigh of [null, undefined]) {
       const d = decide({ ...input(chainOf(WORMHOLE_MINT_AUTHORITY)), allTimeHigh });
       expect(d.flags.some((f) => f.severity === "critical" && /Mint authority active/.test(f.label))).toBe(true);
       expect(d.risk).toBe("DANGER");
     }
+  });
+  // NST (organic 0) and UNI wrapped (0) are held by the bridge too and their history is clean: a market that is not alive, or that nobody could read, gets no softening.
+  it("held by the bridge, a clean history but a market that is NOT alive (organic score 0) or unknown: no softening, the critical stays", () => {
+    for (const organicScore of [0, 29, null, undefined]) {
+      const d = decide({ ...input(chainOf(WORMHOLE_MINT_AUTHORITY)), allTimeHigh: high(2.27), organicScore });
+      expect(d.flags.some((f) => f.severity === "critical" && /Mint authority active/.test(f.label)), String(organicScore)).toBe(true);
+      expect(d.risk, String(organicScore)).toBe("DANGER");
+      expect(d.mintHeldByBridge).toBeNull();
+    }
+    const alive = decide({ ...input(chainOf(WORMHOLE_MINT_AUTHORITY)), allTimeHigh: high(2.27), organicScore: 30 });
+    expect(alive.flags.filter((f) => f.severity === "critical")).toEqual([]);
+    expect(alive.mintHeldByBridge).toBe("Wormhole");
   });
   it("held by a wallet: the same token is condemned twice, as before (the mint, and the LP of a contract that is not clean)", () => {
     const d = decide(input(chainOf(A_WALLET)));
