@@ -15,45 +15,47 @@
 
 ### `storage`
 
-> Used to persist a randomly-generated, opaque install identifier across
-> browser sessions so the API can rate-limit per-installation rather than
-> per-IP (which would punish users behind shared NAT). Also caches scan
-> results locally so the overlay shows instantly on revisited tokens.
-> Never stores personal data, credentials, or content from web pages.
+> Keeps on the user's device (chrome.storage.local, never synced): the
+> on/off switch, the stealth-mode and automatic re-scan settings, a
+> randomly generated and opaque install identifier (sent with scans so
+> the API can rate-limit per installation instead of per IP, and keep
+> the scan history of that installation), the last verdict seen for
+> each token (to detect that it got worse), the 10 most recent scans, a
+> short-lived cache of up to 60 recent scan results (so the overlay
+> shows instantly on a revisited token) and, when the user is signed in,
+> the session token. No content from web pages is stored.
 
 ### `notifications`
 
-> Reserved for the upcoming Pro v2 feature (real-time alerts when a
-> watch-listed token crashes more than -30 % in the last hour or a
-> dev wallet starts dumping). The permission is declared in advance so
-> users grant it once at install rather than mid-session via a future
-> update prompt. No notifications fire in v1.3.0.
+> Shows a Chrome notification when a token the user scans gets a worse
+> verdict than the last one seen on this device (for example CAUTION to
+> DANGER). The Options page also has a "test notification" button, so a
+> reviewer can see it without waiting for a verdict to change.
 
 ### `activeTab`
 
-> Lets the content script read the URL and DOM of the *currently focused
-> tab on a supported trading platform* (DexScreener, pump.fun, etc.) to
-> detect Solana contract addresses. Granted only on user interaction
-> (extension icon click or page navigation on a host-permitted domain).
-> The script does not read form fields, cookies, or credentials.
+> Declared in the manifest but not used by the current version of the
+> extension: no code calls it. Content scripts run on the eight trading
+> platforms through host permissions, not through activeTab. Remove it
+> from the manifest at the next release, or keep this line truthful.
 
 ### `alarms`
 
-> Schedules:
->   1. The 5-second forced rescan when a token drops more than 30 %/hour
->      so the overlay reflects post-crash state.
->   2. Periodic clean-up of the local scan cache to bound storage usage.
-> Required because content scripts cannot use long-lived `setTimeout` in
-> Manifest V3 service workers without losing the timer on idle eviction.
+> One alarm, "keepalive", every minute. It is meant to keep the
+> Manifest V3 background service worker from being stopped in the middle
+> of a scan. It does not scan, re-scan, clean any cache or send anything.
 
 ### `tabs`
 
-> Required by `chrome.tabs.create` / `chrome.tabs.update` in the
-> background service worker, which the "Full Analysis →" button uses to
-> open `token.html?ca=<address>` and update an existing analysis tab in
-> place rather than spawning a new tab on every click. Without this
-> permission the deep-dive UX would leave a stack of stale analysis tabs
-> behind every token the user scans.
+> Chrome presents this permission as "Read your browsing history".
+> Two uses, both in the background service worker:
+>   1. When the user clicks "Full Analysis", chrome.tabs.query looks at
+>      the addresses of the open tabs to find out whether the analysis
+>      page is already open; if it is, that tab is reused instead of
+>      opening a second one.
+>   2. When the user switches the extension on or off, the change is
+>      passed to the open tabs (only their identifiers are used).
+> Addresses are compared on the device; none is stored or sent.
 
 ---
 
@@ -138,7 +140,7 @@ is *designed* to scan. It does **not** request `<all_urls>` or any wildcard.
   • Data used or transferred to determine creditworthiness
     or for lending purposes:                               no
 
-Privacy policy URL: https://antares-website.vercel.app/privacy
+Privacy policy URL: https://antaresscan.com/privacy
 
 ---
 

@@ -106,11 +106,15 @@ PRIVACY
 
   • Optional account (email + password) — only needed for paid tiers
     and cross-device sync. Free works without one.
-  • The API receives the contract address you scan plus standard HTTPS
-    metadata (IP, user-agent) used only for rate limiting.
-  • Scan history (Pro feature) is bound to your account, never sold.
+  • The API receives the contract address you scan, a random install
+    identifier, your sign-in token if you are signed in, and standard
+    HTTPS metadata (IP, user-agent).
+  • Scans are recorded per installation (the most recent ones), linked
+    to your account if you have one, never sold.
   • No third-party analytics, no tracking pixels, no fingerprinting.
-  • We do not read form fields, credentials, cookies, or browsing history.
+  • We do not read form fields, credentials or cookies. The extension only
+    compares the addresses of your open tabs, on your device, to reuse an
+    analysis tab that is already open; they are never stored or sent.
   • Full disclosure: https://antaresscan.com/privacy
 
 LIMITATIONS — READ THIS
