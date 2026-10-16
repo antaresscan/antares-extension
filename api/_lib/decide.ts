@@ -24,7 +24,7 @@ import {
 } from "./pipeline";
 import { computeLpPctOfSupply, getLpRiskBucket } from "./lp-risk-matrix";
 import { weightedBurnPct, type AuthorityFacts } from "./facts";
-import { HARD_BLOCK_REASONS, LAYER_WEIGHTS, SOLSCAN_AGE_AND_HOLDERS_ONLY } from "./constants";
+import { HARD_BLOCK_REASONS, LAYER_WEIGHTS, SOLSCAN_AGE_AND_HOLDERS_ONLY, SAFE_MIN_MARKET_DEPTH_USD } from "./constants";
 import { asNumber } from "./math";
 import { athDropPct, type AllTimeHigh } from "./ath";
 import { makeFlag } from "./helpers";
@@ -319,13 +319,24 @@ export function decide(input: DecideInput): Decision {
   flags.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
 
   const _counts = countVerdictFlags(flags);
-  const risk: Verdict = determineVerdict({
+  let risk: Verdict = determineVerdict({
     score, forceRug, safeBlocked, safeBlockedReasons,
     sourcesUsedCount: sources_used.length,
     warningFlagsCount: _counts.warning,
     criticalFlagsCount: _counts.critical,
     pumpPriceOnlyFlagsCount: _counts.pumpPriceOnly,
   });
+
+  // SAFE needs a market a holder can leave: under SAFE_MIN_MARKET_DEPTH_USD (all the pools added up) a token that has nothing else against it is CAUTION. A token of the issuer
+  // registry is judged on its market below (judgeIssuerAsset), not here.
+  const marketDepthUsd = top10ReliefFactsOf({ ...input, authFacts }).poolDepthUsd;
+  if (risk === "SAFE" && issuerKindOf(resolvedMint) === null && marketDepthUsd != null && marketDepthUsd < SAFE_MIN_MARKET_DEPTH_USD) {
+    risk = "CAUTION";
+    flags.push(makeFlag(`Thin market — ${marketDepthUsd < 1000 ? "under $1k" : "$" + Math.floor(marketDepthUsd / 1000) + "k"} in the pools: a token needs $100k to be SAFE`, "warning", 0));
+    flags.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
+    score = Math.min(score, 899);
+    safeBlocked = true;
+  }
 
   const confidence = Math.round(sources_used.reduce((sum, src) => sum + (LAYER_WEIGHTS[src] ?? 0), 0) * 100);
   const layersSnapshot: Record<string, LayerSnapshot> = Object.fromEntries(
