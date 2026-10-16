@@ -111,6 +111,14 @@ export function parseSolscanHigh(raw: unknown): AllTimeHigh | null {
   return best ? { ath: best.price, athDate: best.day, source: "solscan" } : null;
 }
 
+/** How many days Solscan gave and from which day to which (for the log: a high read on a short history would be a wrong high, and this is how it shows). */
+export function solscanSpan(raw: unknown): { rows: number; firstDay: string | null; lastDay: string | null } {
+  const data = (raw as { data?: unknown } | null | undefined)?.data;
+  if (!Array.isArray(data)) return { rows: 0, firstDay: null, lastDay: null };
+  const days = (data as Array<{ date?: unknown } | null>).map((r) => solscanDay(r?.date)).filter((d): d is string => d !== null).sort();
+  return { rows: data.length, firstDay: days[0] ?? null, lastDay: days[days.length - 1] ?? null };
+}
+
 /** How far the price stands below the all-time high, in percent (0 at or above it). null when either number is not a positive finite number. */
 export function athDropPct(ath: AllTimeHigh | null | undefined, priceUsd: number | null | undefined): number | null {
   if (!ath || !(ath.ath > 0) || priceUsd == null || !Number.isFinite(priceUsd) || !(priceUsd > 0)) return null;
@@ -176,6 +184,7 @@ async function askSolscan(mint: string, redis: Redis): Promise<Asked> {
   let status = 0;
   const raw = await fetchSolscan(solscanPriceEndpoint(mint, today()), { timeoutMs: SOLSCAN_ATH_TIMEOUT_MS, retries: 0, onStatus: (s) => { status = s; } });
   const high = parseSolscanHigh(raw);
+  logger.info("ath", "solscan price", { mint, status, ...solscanSpan(raw), ath: high?.ath ?? null, athDate: high?.athDate ?? null }); // once per token and day (the answer is kept in Redis)
   if (high) return { kind: "high", high };
   if (status === 401 || status === 403) return { kind: "unused" }; // the key is refused: fetchSolscan stops asking for ten minutes, CoinGecko does the work
   if (status === 0 || status === 429 || status >= 500) {

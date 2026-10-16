@@ -22,7 +22,7 @@ const fetchJson = vi.fn(async (url: string, _init: unknown, _ms: number, _retrie
 });
 vi.mock("../api/_lib/http", () => ({ fetchJson: (...a: Parameters<typeof fetchJson>) => fetchJson(...a) }));
 
-import { getAllTimeHigh, judgeHistory, athSideKey, parseAllTimeHigh, parseSolscanHigh, athKey, athBackoffKey, athSolscanBackoffKey, athUrl, solscanPriceEndpoint, ATH_TTL_S, ATH_NOT_LISTED_TTL_S, ATH_BACKOFF_S, ATH_SIDE_TTL_S } from "../api/_lib/ath";
+import { getAllTimeHigh, judgeHistory, athSideKey, parseAllTimeHigh, parseSolscanHigh, solscanSpan, athKey, athBackoffKey, athSolscanBackoffKey, athUrl, solscanPriceEndpoint, ATH_TTL_S, ATH_NOT_LISTED_TTL_S, ATH_BACKOFF_S, ATH_SIDE_TTL_S } from "../api/_lib/ath";
 import { _resetSolscanBackoffForTests } from "../api/_lib/fetchers";
 
 const HIGH = { ath: 0.381443, athDate: "2025-09-14T08:27:34.512Z", source: "coingecko" };
@@ -187,6 +187,15 @@ describe("parseSolscanHigh: the highest daily price", () => {
   });
   it("a single row is its own high", () => {
     expect(parseSolscanHigh(prices([20250910, 3]))?.ath).toBe(3);
+  });
+});
+
+describe("solscanSpan: how much history Solscan gave", () => {
+  it("counts the rows and names the first and the last day, whatever the order", () => {
+    expect(solscanSpan(prices([20250914, 3], [20250912, 4], [20250913, 5]))).toEqual({ rows: 3, firstDay: "2025-09-12", lastDay: "2025-09-14" });
+  });
+  it.each([[null], [{}], [{ data: "x" }], [{ data: [] }]])("is empty for %j", (raw) => {
+    expect(solscanSpan(raw)).toEqual({ rows: 0, firstDay: null, lastDay: null });
   });
 });
 
