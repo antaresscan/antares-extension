@@ -112,8 +112,8 @@ describe("every makeFlag of layers.ts carries the codes the tables give for its 
   const sites = readSites(SOURCE);
   const known = sites.filter((s) => labelOf(s.args[0] ?? "") !== null);
 
-  it("finds the 128 places that create a flag, and most of them have a label that can be checked", () => {
-    expect(sites.length).toBe(128);
+  it("finds the 131 places that create a flag, and most of them have a label that can be checked", () => {
+    expect(sites.length).toBe(131);
     expect(known.length).toBeGreaterThan(108);
     expect(sites.every((s) => s.source !== undefined)).toBe(true);
   });

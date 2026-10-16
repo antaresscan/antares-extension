@@ -60,6 +60,7 @@ export type SafeBlockedReason =
   | "holders"         // soft — can unlock with enough holders
   | "lp"              // HARD — LP not burned/locked, dev can rug at any time
   | "mint"            // HARD
+  | "bridge_mint"     // SOFT-BLOCK — the mint authority is a bridge (no key exists): max CAUTION, never SAFE
   | "freeze"          // HARD
   | "honeypot"        // HARD
   | "copycat"         // HARD

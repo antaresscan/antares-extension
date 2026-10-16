@@ -33,7 +33,8 @@ import {
   LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS, SOLSCAN_AGE_AND_HOLDERS_ONLY,
 } from "./_lib/constants";
 import { selectBestPair } from "./_lib/dex-pair-select";
-import { decide } from "./_lib/decide";
+import { decide, top10ReliefFactsOf } from "./_lib/decide";
+import { isTop10Candidate } from "./_lib/layers";
 import { toPublicFlag } from "./_lib/pipeline";
 import { setCorsHeaders, getClientIp, getInstallId, checkRateLimit, checkColdScanLimit, validateCA, initRateLimiters } from "./_lib/middleware";
 import { unlimitedQuota, setQuotaHeaders } from "./_lib/quota";
@@ -53,6 +54,7 @@ import { composeCriticalActors } from "./_lib/critical-actors";
 import { initUsage, flushUsage, recordScanOutcome } from "./_lib/usage";
 import { downSources } from "./_lib/outage";
 import { reconcileRugCheck } from "./_lib/rugcheck-memory";
+import { getAllTimeHigh, athDropPct, judgeHistory } from "./_lib/ath";
 import { deriveEvent } from "./_lib/verdict-history";
 // initHistoryCache / pushVerdictHistory / getVerdictHistory are no
 // longer imported — the Verdict Timeline feature was decommissioned
@@ -545,9 +547,20 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // everything after it speak of the verdict the user will see. A slow or failed read is "not condemned": it never delays or changes a scan.
     const condemnedEntry = await withBudget(getCondemned(resolvedMint), 800);
 
+    // The all-time high (CoinGecko), asked for only when the history decides a verdict: for the top-10 relief, or to soften a bridge-held mint authority (a few dozen tokens a day,
+    // kept in Redis for a day: api/_lib/ath.ts). No high means no relief and no softening: the verdict of before.
+    const historyDecidesVerdict = isTop10Candidate(top10ReliefFactsOf({ pair, dexData, resolvedMint, marketCap, tokenAgeMinutes, holders, authFacts })) || !!authFacts.mintHolder;
+    const athLookup = historyDecidesVerdict ? await stepBudget(() => getAllTimeHigh(resolvedMint)) : null;
+    const allTimeHigh = athLookup?.high ?? null;
+    // Which side of the line the token is on, WITH the memory of where it was (in at 90 %, out only below 85 %): a few percent of price next to the line do not flip the verdict.
+    const athCollapsed = allTimeHigh ? await withBudget(judgeHistory(resolvedMint, athDropPct(allTimeHigh, priceUsd)), 300) : null;
+    // Needed and not had (CoinGecko refused or was silent, or no time was left): the verdict is born from missing data, like a scan without its chart. It is kept 30 seconds, not
+    // for the full TTL, so that one hiccup of CoinGecko does not pin a DANGER without the relief on CARDS for ten minutes. A token CoinGecko does not know is not a gap.
+    const athGap = historyDecidesVerdict && (athLookup === null || athLookup.failed);
+
     // From what the upstreams said to the verdict: a pure function (api/_lib/decide.ts), nothing is read or written there.
     const decision = applyCondemnation(decide({
-      pair, dexData, resolvedMint, marketCap, tokenAgeMinutes, holders, rugData, rugReport, tokenName, goplus, authFacts, totalSupplyUi,
+      pair, dexData, resolvedMint, marketCap, tokenAgeMinutes, holders, rugData, rugReport, tokenName, goplus, authFacts, totalSupplyUi, allTimeHigh, athCollapsed,
       solscanTokenAgeHours, dexTokenAgeHours, resolvedHolderAccounts, solscanTrades24h, solscanTraders24h,
       solscanAnswered: solMetaData !== null || solTransfersData !== null || solMarketsData !== null,
       candles, dailyCandles, recentTransfers, creatorReputation,
@@ -625,7 +638,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       holders, marketCap, liquidity,
       lpBurned,
       lpLocked,
-      mintAuthority: authFacts.mint,
+      // A bridge holds the mint authority: the summary must not narrate it as "the dev can print tokens" (the flag says what it is).
+      mintAuthority: decision.mintHeldByBridge ? null : authFacts.mint,
       freezeAuthority: authFacts.freeze,
       honeypot: authFacts.sellBlocked,
       tokenAgeHours: solscanTokenAgeHours ?? dexTokenAgeHours ?? null,
@@ -717,7 +731,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // rule (it cannot be told from a token that has none), and an issuer's asset whose market cannot be read keeps its own answer (the last verdict, with its age:
     // api/_lib/last-good.ts).
     const gapSourcesNow = gapSources(result.layers, downSources());
-    const degraded = sources_used.length === 0 || deadlineSpent || pair === null || chartGap || reportGap || gapSourcesNow.length > 0;
+    const degraded = sources_used.length === 0 || deadlineSpent || pair === null || chartGap || reportGap || gapSourcesNow.length > 0 || athGap;
     result.degraded = degraded;
     // LIMITED_DATA=off (helpers.ts limitedDataEnabled) is the emergency switch: no scan is marked, the engine's verdict is shown as before.
     result.sourceGap = limitedDataEnabled() && gapSourcesNow.length > 0;

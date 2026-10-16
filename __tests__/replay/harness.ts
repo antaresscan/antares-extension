@@ -56,6 +56,24 @@ function insiderGraphAnswer(href: string, body: string | null): Response | null 
   return null;
 }
 
+/**
+ * The all-time high of a token (api/_lib/ath.ts asks CoinGecko for it) is not a fact of the capture instant, so it is not in each recording: the replay answers that
+ * request from one table (ath.json, built by scripts/replay/ath-table.ts from CoinGecko's market data). A token that is not in the table gets CoinGecko's own "not found"
+ * (404), which is what the engine would see. A recording that holds the request itself (a capture made since the engine asks for it) always wins.
+ */
+let athTable: Record<string, { ath: number; athDate: string | null }> | null = null;
+function athAnswer(href: string, down = false): Response | null {
+  const m = href.match(/^https:\/\/api\.coingecko\.com\/api\/v3\/coins\/solana\/contract\/([^?/]+)\?/);
+  if (!m) return null;
+  if (down) return new Response("replay: CoinGecko is down", { status: 503 }); // a test of what a scan does when CoinGecko does not answer
+  athTable ??= (JSON.parse(readFileSync(`${HERE}ath.json`, "utf8")) as { tokens: Record<string, { ath: number; athDate: string | null }> }).tokens;
+  const t = athTable[decodeURIComponent(m[1])];
+  const headers = { "content-type": "application/json" };
+  return t
+    ? new Response(JSON.stringify({ id: "replay", market_data: { ath: { usd: t.ath }, ath_date: { usd: t.athDate } } }), { status: 200, headers })
+    : new Response(JSON.stringify({ error: "coin not found" }), { status: 404, headers });
+}
+
 const UNSET = ["GEMINI_API_KEY", "GOPLUS_APP_KEY", "GOPLUS_APP_SECRET", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN", "SENTRY_DSN", "VERCEL_ENV", "LOG_LEVEL"];
 
 function fakeRes() {
@@ -71,7 +89,8 @@ function fakeRes() {
 }
 
 /** Replays the scan of one recording through the real handler. */
-export async function replayScan(rec: Recording): Promise<ReplayOutcome> {
+/** `athDown`: CoinGecko answers 503 to the all-time-high request (a test of what a scan does without it). */
+export async function replayScan(rec: Recording, opts: { athDown?: boolean } = {}): Promise<ReplayOutcome> {
   const byKey = new Map<string, RecordedExchange[]>();
   for (const e of rec.exchanges) { const k = canonicalKey(e.k); byKey.set(k, [...(byKey.get(k) ?? []), e]); }
   const used = new Map<string, number>();
@@ -94,6 +113,8 @@ export async function replayScan(rec: Recording): Promise<ReplayOutcome> {
     if (!list) {
       const graph = insiderGraphAnswer(href, body);
       if (graph) return graph;
+      const ath = athAnswer(href, opts.athDown === true);
+      if (ath) return ath;
       misses.push(`${method.toUpperCase()} ${redactUrl(href)}`);
       if (process.env.REPLAY_DEBUG) console.log(`[replay] not recorded: ${method.toUpperCase()} ${redactUrl(href)} ${init?.body ? String(init.body).slice(0, 160) : ""}`);
       return new Response("replay: this request was not recorded", { status: 599 });

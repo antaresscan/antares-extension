@@ -13,6 +13,7 @@ import {
   LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS, OFFICIAL_MINTS,
   PUMP_7D_WARN_PCT, PUMP_7D_HIGH_PCT, PUMP_30D_WARN_PCT, PUMP_30D_HIGH_PCT,
   COLLAPSE_DROP_PCT, COLLAPSE_RECENT_DAYS, COLLAPSE_WINDOW_DAYS, COLLAPSE_MIN_CANDLES,
+  TOP10_RELIEF_MIN_MARKET_CAP_USD, TOP10_RELIEF_MIN_POOL_DEPTH_USD, TOP10_RELIEF_MIN_POOL_PCT_OF_CAP, TOP10_RELIEF_MIN_HOLDERS, TOP10_RELIEF_MAX_TOP10, TOP10_RELIEF_MAX_SINGLE, ATH_COLLAPSE_PCT,
   BLUECHIP_MIN_AGE_DAYS, BLUECHIP_MIN_LIQUIDITY_USD, BLUECHIP_MIN_MARKET_CAP_USD, BLUECHIP_CRASH_FLOOR_6H, BLUECHIP_CRASH_FLOOR_24H,
   LP_UNVERIFIED_MIN_LIQUIDITY,
 } from "./constants";
@@ -102,6 +103,49 @@ export function isBlueChipByMarket(
   return tokenAgeMinutes >= BLUECHIP_MIN_AGE_DAYS * 24 * 60
     && liquidityUsd >= BLUECHIP_MIN_LIQUIDITY_USD
     && marketCapUsd >= BLUECHIP_MIN_MARKET_CAP_USD;
+}
+
+/** What the market says about a token, before its history is read (isTop10Candidate / isTop10Proven). Every number must be KNOWN. */
+export interface Top10ReliefFacts {
+  tokenAgeMinutes: number | null | undefined;
+  /** The pool the scan reads (the deepest one quoted in a stable asset): what isBlueChipByMarket looks at. */
+  liquidityUsd: number | null | undefined;
+  /** ALL the pools the token is the base of, added up: the depth of its market (a token's liquidity is split between pools). */
+  poolDepthUsd: number | null | undefined;
+  marketCapUsd: number | null | undefined;
+  holders: number | null | undefined; mintActive: boolean; freezeActive: boolean;
+}
+
+/**
+ * The history of a token does not say it collapsed: its all-time high is known and the price is less than ATH_COLLAPSE_PCT percent below it. `athCollapsed` is the side of the
+ * line the token is on WITH the memory of where it was (judgeHistory in ath.ts: in at 90 %, out only below 85 %); without it, the plain line.
+ */
+export function historyIsClean(athDropPct: number | null | undefined, athCollapsed?: boolean | null): boolean {
+  if (athDropPct == null || !Number.isFinite(athDropPct)) return false; // unknown is not clean
+  if (typeof athCollapsed === "boolean") return !athCollapsed;           // the side the token is on, with the memory of the line (ath.ts judgeHistory)
+  return athDropPct < ATH_COLLAPSE_PCT;
+}
+
+/**
+ * A token whose top 10 MAY be read as exchanges, treasuries and vaults rather than as control (the owner's idea, 2026-10-15): a blue chip by the market
+ * (isBlueChipByMarket) that ALSO has a market cap of at least $25M, pools worth $1M together and 0.1 % of the cap (a faked cap sits under 0.05 %), 10 000 holders, and
+ * no active mint or freeze authority. This is the cheap part, known before the scan reads anything else: it decides whether the all-time high is worth asking for.
+ */
+export function isTop10Candidate(i: Top10ReliefFacts): boolean {
+  if (!isBlueChipByMarket(i.tokenAgeMinutes, i.liquidityUsd, i.marketCapUsd)) return false;
+  const cap = i.marketCapUsd as number;
+  const depth = i.poolDepthUsd;
+  return cap >= TOP10_RELIEF_MIN_MARKET_CAP_USD
+    && depth != null && Number.isFinite(depth) && depth >= TOP10_RELIEF_MIN_POOL_DEPTH_USD && depth / cap >= TOP10_RELIEF_MIN_POOL_PCT_OF_CAP
+    && (i.holders ?? 0) >= TOP10_RELIEF_MIN_HOLDERS
+    && !i.mintActive && !i.freezeActive;
+}
+
+/**
+ * isTop10Candidate AND a history that is not a collapse (historyIsClean; unknown is no relief). It softens the top-10 ladder, it never makes a token SAFE by itself.
+ */
+export function isTop10Proven(i: Top10ReliefFacts & { athDropPct: number | null | undefined; athCollapsed?: boolean | null }): boolean {
+  return historyIsClean(i.athDropPct, i.athCollapsed) && isTop10Candidate(i);
 }
 
 /** Liquidity an established token must also have for the "no registered links" exemption. */
@@ -361,7 +405,7 @@ export function layerRugCheck(
   rugReportData: RugCheckReport | null,
   resolvedMint: string,
   tokenName?: string | null,
-  maturityContext?: { holders: number | null; liquidity: number; tokenAgeHours: number | null; mintAuthority: boolean; freezeAuthority: boolean; honeypot: boolean; lpPctOfSupply?: number | null }
+  maturityContext?: { holders: number | null; liquidity: number; tokenAgeHours: number | null; mintAuthority: boolean; freezeAuthority: boolean; honeypot: boolean; lpPctOfSupply?: number | null; top10Proven?: boolean }
 ): LayerResult {
   const flags: ScanFlag[] = [];
   let trust = 1.0;
@@ -470,7 +514,9 @@ export function layerRugCheck(
 const top10 = asNumber(rugData?.topHolders?.top10Percentage);
   // Top-1 holder check removed (7.7.4) — replaced by top-10 distribution in layerHelius.
   // RugCheck's top-10 threshold is kept as a cross-check signal only.
-  if (top10 > 70) { flags.push(makeFlag("Top 10 holders > 70% (RugCheck)", "critical", 0)); penalties.push(0.45); }
+  // A token the market has proven (isTop10Proven) keeps RugCheck's top 10 as information: RugCheck counts pool and vault accounts as holders, and layerHelius says it.
+  const top10Proven = maturityContext?.top10Proven === true;
+  if (top10 > 70) { flags.push(makeFlag("Top 10 holders > 70% (RugCheck)", top10Proven ? "info" : "critical", 0)); if (!top10Proven) penalties.push(0.45); }
   else if (top10 > 50) { flags.push(makeFlag("Top 10 holders > 50% (RugCheck)", "warning", 0)); penalties.push(0.70); }
   if (riskIncludes(rugReportData, /sniper/i)) { flags.push(makeFlag("Sniper activity detected", "critical", 0, { reasons: ["sniper"] })); penalties.push(0.15); safeBlocked = true; }
   if (riskIncludes(rugReportData, /rug/i)) { flags.push(makeFlag("Rug pull history", "critical", 0)); penalties.push(0.15); forceRug = true; }
@@ -487,8 +533,16 @@ const top10 = asNumber(rugData?.topHolders?.top10Percentage);
       if (rule.block) safeBlocked = true;
     } else if (r?.level === "danger") {
       const label = `RugCheck: ${name}`;
-      flags.push(makeFlag(label, "warning", 0, codesFromUpstreamText("rugcheck", label))); // an unknown risk is not automatically critical
-      penalties.push(0.85);
+      // On a token the market has proven RugCheck's concentration risks say what layerHelius already says (the top 10, the biggest wallet): context, with no penalty of
+      // their own, so the same fact is not counted three times (three warnings make a DANGER). "Single holder ownership" only while the biggest wallet is within
+      // TOP10_RELIEF_MAX_SINGLE, as RugCheck's own report says.
+      const rcTop1Pct = Array.isArray(rugReportData?.topHolders) ? asNumber(rugReportData.topHolders[0]?.pct) : null;
+      const softened = top10Proven && (
+        /^(Top 10 holders high ownership|High ownership|High holder concentration)$/i.test(name)
+        || (/^Single holder ownership$/i.test(name) && rcTop1Pct !== null && rcTop1Pct > 0 && rcTop1Pct <= TOP10_RELIEF_MAX_SINGLE * 100)
+      );
+      flags.push(makeFlag(label, softened ? "info" : "warning", 0, codesFromUpstreamText("rugcheck", label))); // an unknown risk is not automatically critical
+      if (!softened) penalties.push(0.85);
     }
   }
   if (rugData.mintAuthorityEnabled) { flags.push(makeFlag("Mint Authority enabled (RugCheck)", "critical", 0, { reasons: ["mint"] })); penalties.push(0.25); }
@@ -514,7 +568,12 @@ export function judgeContractFacts(facts: AuthorityFacts | null | undefined): Co
   if (!facts) return { flags, penalties, safeBlocked };
   const sev = facts.trusted ? "info" : "critical";
   const pen = facts.trusted ? 0.95 : 0.25;
-  if (facts.mint === true) {
+  if (facts.mint === true && facts.mintHolder && !facts.trusted) {
+    // A bridge holds it: no developer has a key, so the supply cannot be inflated on Solana. It still follows the original token on its own chain (and the bridge
+    // itself), so this is a warning: the token is never SAFE, and it is not DANGER for a power nobody holds.
+    flags.push(makeFlag(`Mint held by the ${facts.mintHolder} bridge — no developer key; the supply follows the original token on its own chain`, "warning", 0, { reasons: ["bridge_mint"] })); penalties.push(0.85);
+    safeBlocked = true;
+  } else if (facts.mint === true) {
     flags.push(makeFlag("Mint authority active — supply can be inflated", sev, 0, { reasons: ["mint"] })); penalties.push(pen);
     if (!facts.trusted) safeBlocked = true;
   }
@@ -654,7 +713,7 @@ export function layerHelius(
   // never a rug pattern — it's an exchange / treasury / legit whale.
   // Without context, the geometric-mean dragged MEW (and other blue
   // chips) into DANGER even when every other layer was clean.
-  maturityContext?: { holders: number | null; liquidity: number; tokenAgeHours: number | null; mintAuthority: boolean; freezeAuthority: boolean; honeypot: boolean; lpBurned?: boolean | null; lpPctOfSupply?: number | null },
+  maturityContext?: { holders: number | null; liquidity: number; tokenAgeHours: number | null; mintAuthority: boolean; freezeAuthority: boolean; honeypot: boolean; lpBurned?: boolean | null; lpPctOfSupply?: number | null; top10Proven?: boolean },
   // DEXScreener pair addresses for this token. For AMMs that use per-pool
   // PDAs as vault authority (PumpSwap, Meteora DBC, etc.), the pair address
   // IS the authority of the LP vault token account. Passing them here lets
@@ -746,9 +805,15 @@ export function layerHelius(
   let top10ConcentrationBand: "none" | "moderate" | "soft" | "hard" = "none";
   const t10pct = Math.round(top10Pct * 100);
 
+  // A token the market has proven (isTop10Proven) and whose top 10 is below the extreme: the hard bands become a WARNING (CAUTION at most). It must stay a warning: a soft
+  // reason with no warning at all lets determineVerdict grant SAFE, and a concentrated token is never SAFE on this rule.
+  const top10Relief = maturityContext?.top10Proven === true && isEstablishedToken && top10Pct < TOP10_RELIEF_MAX_TOP10;
   if (isEstablishedToken) {
     // Established tier — looser thresholds, contextual labels
-    if (top10Pct >= 0.80) {
+    if (top10Relief && top10Pct >= 0.65) {
+      flags.push(makeFlag(`Top 10 hold ${t10pct}% — high · established token, exchanges, treasuries and vaults may be included`, "warning", 0, { reasons: ["concentration_light"], fallbackReasons: ["holders"] }));
+      penalties.push(0.50); safeBlocked = true; top10ConcentrationBand = "soft";
+    } else if (top10Pct >= 0.80) {
       flags.push(makeFlag(`Top 10 hold ${t10pct}% — extreme concentration`, "critical", 0, { reasons: ["concentration"], fallbackReasons: ["holders"], tags: ["concentration"] }));
       penalties.push(0.10); safeBlocked = true; top10ConcentrationBand = "hard";
     } else if (top10Pct >= 0.65) {
@@ -817,7 +882,15 @@ export function layerHelius(
   if (top10ConcentrationBand !== "hard") {
     const isBlueChipHolders = (maturityContext?.holders ?? 0) >= 50_000;
     const t1pct = Math.round(top1Pct * 100);
-    if (top1Pct > 0.55) {
+    // A token the market has proven, one wallet at most TOP10_RELIEF_MAX_SINGLE: a treasury, an exchange or insiders. A warning (CAUTION at most). When the top-10 ladder
+    // already said the concentration as a warning this is context only: three warnings make a DANGER, and it is one fact told twice.
+    const singleRelief = maturityContext?.top10Proven === true && isEstablishedToken && top1Pct <= TOP10_RELIEF_MAX_SINGLE;
+    if (singleRelief && top1Pct > 0.40) {
+      const ladderWarned = top10ConcentrationBand === "soft";
+      flags.push(makeFlag(`Single wallet holds ${t1pct}% — high · established token, a treasury, an exchange or insiders may be included`, ladderWarned ? "info" : "warning", 0, { reasons: ["concentration_light"], fallbackReasons: ["holders"] }));
+      if (!ladderWarned) penalties.push(0.45);
+      safeBlocked = true;
+    } else if (top1Pct > 0.55) {
       flags.push(makeFlag(`Single wallet holds ${t1pct}% — extreme concentration`, "critical", 0, { reasons: ["concentration"], fallbackReasons: ["holders"], tags: ["concentration"] }));
       penalties.push(0.10); safeBlocked = true;
       if (!isBlueChipHolders) forceRug = true;
@@ -881,7 +954,7 @@ export function layerHelius(
     // Fresh threshold: > 75% (aligns with the 75% extreme band for fresh tokens)
     // Established threshold: > 80% (aligns with the 80% extreme band for established tokens)
     const forceRugThreshold = isEstablishedToken ? 0.80 : 0.75;
-    if (top10Pct > forceRugThreshold && !isBlueChipDistribution) {
+    if (top10Pct > forceRugThreshold && !isBlueChipDistribution && !top10Relief) {
       forceRug = true;
     }
   }

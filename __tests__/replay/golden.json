@@ -996,14 +996,14 @@
     "safeBlockedReasons": []
   },
   "JUP": {
-    "risk": "DANGER",
-    "score": 763,
+    "risk": "CAUTION",
+    "score": 890,
     "confidence": 90,
     "flags": [
       "bonus:Established token (30d+) ✓",
-      "critical:Top 10 hold 66% — high concentration",
       "info:LP holds 0.04% of supply — negligible rug risk",
-      "info:Mutable metadata"
+      "info:Mutable metadata",
+      "warning:Top 10 hold 66% — high · established token, exchanges, treasuries and vaults may be included"
     ],
     "sources_used": [
       "chart",
@@ -1031,7 +1031,7 @@
       },
       "helius": {
         "available": true,
-        "trust": 0.25
+        "trust": 0.5
       },
       "rugcheck": {
         "available": true,
@@ -1052,7 +1052,7 @@
     "topHolderPct": 24.78,
     "safeBlocked": false,
     "safeBlockedReasons": [
-      "concentration"
+      "concentration_light"
     ]
   },
   "RENDER": {
@@ -1192,7 +1192,8 @@
       "info:Mutable metadata",
       "info:No website / Twitter / Telegram registered on DexScreener",
       "info:RugCheck: Single holder ownership",
-      "info:Top 10 hold 69% — high concentration",
+      "info:Single wallet holds 60% — extreme concentration",
+      "info:Top 10 hold 69% — high · established token, exchanges, treasuries and vaults may be included",
       "info:Wrapped asset — the bridge or the custodian holds the mint authority and most of the supply by design: they are not read as rug signals"
     ],
     "sources_used": [
@@ -1221,7 +1222,7 @@
       },
       "helius": {
         "available": true,
-        "trust": 0.25
+        "trust": 0.062
       },
       "rugcheck": {
         "available": true,
@@ -1364,16 +1365,16 @@
     ]
   },
   "RAY": {
-    "risk": "DANGER",
-    "score": 525,
+    "risk": "CAUTION",
+    "score": 858,
     "confidence": 90,
     "flags": [
       "bonus:Established token (30d+) ✓",
-      "critical:Top 10 hold 77% — high concentration",
       "info:LP holds 0.28% of supply — negligible rug risk",
       "info:Mutable metadata",
+      "info:RugCheck: Top 10 holders high ownership",
       "warning:Buy/sell imbalance (coordinated pump)",
-      "warning:RugCheck: Top 10 holders high ownership"
+      "warning:Top 10 hold 77% — high · established token, exchanges, treasuries and vaults may be included"
     ],
     "sources_used": [
       "chart",
@@ -1401,11 +1402,11 @@
       },
       "helius": {
         "available": true,
-        "trust": 0.25
+        "trust": 0.5
       },
       "rugcheck": {
         "available": true,
-        "trust": 0.817
+        "trust": 0.95
       },
       "solscan": {
         "available": false,
@@ -1420,9 +1421,9 @@
     "holders": 266088,
     "top10HolderPct": 77.04,
     "topHolderPct": 24.97,
-    "safeBlocked": true,
+    "safeBlocked": false,
     "safeBlockedReasons": [
-      "concentration"
+      "concentration_light"
     ]
   },
   "PYUSD": {
@@ -1436,9 +1437,10 @@
       "info:LP holds 1.2% of supply",
       "info:Mint authority active — supply can be inflated",
       "info:Permanent delegate — an address can move or burn any holder's tokens",
+      "info:Single wallet holds 56% — high · established token, a treasury, an exchange or insiders may be included",
       "info:Stablecoin — the issuer holds the mint and freeze authorities and most of the supply by design: they are not read as rug signals",
       "info:Token accounts can be closed by an authority",
-      "info:Top 10 hold 83% — extreme concentration",
+      "info:Top 10 hold 83% — high · established token, exchanges, treasuries and vaults may be included",
       "info:Transfer fee can be changed — an authority can raise it to 100%"
     ],
     "sources_used": [
@@ -1467,7 +1469,7 @@
       },
       "helius": {
         "available": true,
-        "trust": 0.1
+        "trust": 0.5
       },
       "rugcheck": {
         "available": true,

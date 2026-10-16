@@ -134,6 +134,14 @@ export const OFFICIAL_MINTS = new Set([
   "HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3", // SPX6900 (Wormhole)
 ]);
 
+// Mint authorities that are a BRIDGE, not a person. Wormhole's Token Bridge mints a wrapped token on Solana when the original is locked on its own chain, and the
+// authority of every wrapped mint is one program-derived address: PDA(["mint_signer"], wormDTUJ6AWPNvk59vGQbDvGJmqbDTdgWgAqcLBCgUb). No key exists for it, so no
+// developer can inflate the supply on Solana. What it leaves is the risk of the ORIGINAL token and of the bridge, which is why the flag is a warning (never SAFE).
+// __tests__/bridge-mint-authority.test.ts derives the address from the program, so the constant cannot be a typo.
+export const BRIDGE_MINT_AUTHORITIES: ReadonlyMap<string, string> = new Map<string, string>([
+  ["BCD75RNBHrJJpW4dXVagL5mPjzRLnVZq4YirJdjEYMV7", "Wormhole"],
+]);
+
 // ═══ LAYER WEIGHTS (identity layer removed) ════════════════════════════════════════════════════
 export const LAYER_WEIGHTS: Record<string, number> = {
   dexscreener: 0.20,
@@ -181,7 +189,7 @@ export const TRUST_FLOOR = 0.001;
 // numeric constants so accidental "I changed a weight but forgot to bump"
 // is caught automatically — different fingerprint, different cache key,
 // stale entries naturally expire on first read miss.
-const ENGINE_VERSION_MANUAL = "v62"; // 2026-10-14: an issuer-backed token of the registry (stablecoin, tokenized stock, LST, wrapped, yield, vault) whose market cannot be read (DexScreener silent or no pool) keeps its verdict (SAFE on enough sources, one information line), and the verdict of the last time its market WAS read is served again with its age (scannedAgoSec). Flushes the CAUTION cached for these tokens during an outage.
+const ENGINE_VERSION_MANUAL = "v63"; // 2026-10-16: a token the market has proven is not condemned for who holds its supply unless it has collapsed (lost 90 % or more from its all-time high, ATH_COLLAPSE_PCT): a concentrated top 10 or one big wallet is a warning (TOP10_RELIEF_*, depth read on all its pools), and a mint authority held by the Wormhole bridge (BRIDGE_MINT_AUTHORITIES) is a warning that keeps it out of SAFE and no longer makes the contract "not clean" for the LP rule. RugCheck's concentration risks are counted once on such a token. Flushes the DANGER / RUG cached for CARDS, MET, BC, DBR, HUMA, ANSEM, SPX, JUP, RAY. v62 (2026-10-14): an issuer-backed token of the registry (stablecoin, tokenized stock, LST, wrapped, yield, vault) whose market cannot be read (DexScreener silent or no pool) keeps its verdict (SAFE on enough sources, one information line), and the verdict of the last time its market WAS read is served again with its age (scannedAgoSec). Flushes the CAUTION cached for these tokens during an outage.
 
 function fingerprint(): string {
   // Stable, order-independent stringify — JSON.stringify with sorted keys.
@@ -324,6 +332,28 @@ export const COLLAPSE_WINDOW_DAYS = 90; // ... from a high 15 to 90 days old: cr
 export const BLUECHIP_MIN_AGE_DAYS      = 60;        // traded for at least 2 months
 export const BLUECHIP_MIN_LIQUIDITY_USD = 100_000;   // in the pool whose price is falling. The load-bearing number: without it a collapsed token (NEON, -61 % on 24 h, $73k) passes. Not lower: no blue chip has a pool under $100k. Not higher: W, ZBCN, PHY... are real tokens with a thin DEX pool.
 export const BLUECHIP_MIN_MARKET_CAP_USD = 5_000_000;
+// A token that lost 90 % or more from its highest price has COLLAPSED (the owner's rule, 2026-10-16: a token that lost more than 90 % has rugged). ONE line, shared by everything
+// that reads the all-time high: such a token gets no relief and no softening (the top-10 relief below, a mint authority held by a bridge), and carries a warning (the flag).
+// Measured on the 642 recorded tokens CoinGecko knows: SPX (-84.6 %), JUP (-84.3 %) and RAY (-89.0 %), which the owner names as real tokens, are under the line; YZY (-90.2 %),
+// ZEREBRO (-93.6 %), TRUNK (-96.3 %), LUNA (-98.4 %) and MELANIA (-99.3 %) are over it. A line at 80 % would refuse SPX, JUP and RAY too. Next to the line (RAY 89.0, YZY 90.2,
+// CLOUD 89.96) a token would change side with a few percent of price, and a verdict that flips from one scan to the next is not credible. So the line has a memory (api/_lib/ath.ts,
+// judgeHistory): a token ENTERS "collapsed" at ATH_COLLAPSE_PCT and LEAVES it only when it stands less than ATH_COLLAPSE_EXIT_PCT below its high (a rally of a third of its price
+// from the line), whatever its price does in between.
+export const ATH_COLLAPSE_PCT = 90;
+export const ATH_COLLAPSE_EXIT_PCT = 85;
+// Top-10 relief (the owner's idea, 2026-10-15). A token the MARKET has proven keeps a concentrated top 10 and one big wallet as a WARNING (CAUTION at most) instead of a CRITICAL
+// (DANGER / RUG): on such a token the top 10 is exchanges, treasuries and vaults. The market cap alone is not a proof (a thin pool fakes it: WLFI "$5.7B" with $28k of pools), so the
+// market must also be deep, the holders many and the authorities cut, and its history must not be a collapse (ATH_COLLAPSE_PCT). An unknown all-time high (CoinGecko silent, or
+// without the token) is no relief.
+export const TOP10_RELIEF_MIN_MARKET_CAP_USD = 25_000_000;
+// Depth of the market: ALL the pools the token is the base of (its liquidity is split between pools: RAY 30, BONK 30, CARDS 22), in dollars AND in proportion to the cap. The proportion
+// alone refused JUP ($4.6M of pools for a $1.2B cap, 0.38 %: it trades on exchanges, the pools follow the price); the dollars alone let a faked cap through. A faked cap sits under
+// 0.05 % (WLFI 0.0005 %); the real tokens measured sit between 0.1 % (PYTH) and 3 % (RAY).
+export const TOP10_RELIEF_MIN_POOL_DEPTH_USD = 1_000_000;
+export const TOP10_RELIEF_MIN_POOL_PCT_OF_CAP = 0.001;
+export const TOP10_RELIEF_MIN_HOLDERS = 10_000;
+export const TOP10_RELIEF_MAX_TOP10 = 0.90;   // from this share the top 10 is control whatever the market says
+export const TOP10_RELIEF_MAX_SINGLE = 0.60;  // one wallet above this share is a control risk whatever the market says
 // Below these moves it is no longer a market-wide sell-off, whatever the token: the RUG stays forced (the -75 % collapse rule, from a
 // 90-day high, needs the chart source; these two numbers do not).
 export const BLUECHIP_CRASH_FLOOR_6H  = -70; // %
@@ -452,7 +482,7 @@ export const SCORING_VERSION = "7.7.21";
 // Blocks SAFE — collective 60%+ concentration means coordinated selling
 // could crash the price — but allows CAUTION when the rest of the token
 // looks clean. The verdict floors at CAUTION; SAFE is never appropriate.
-export const SOFT_REASONS: Record<string, boolean> = { age: true, lp_unverified: true, pump_imbalance: true, concentration_light: true };
+export const SOFT_REASONS: Record<string, boolean> = { age: true, lp_unverified: true, pump_imbalance: true, concentration_light: true, bridge_mint: true };
 
 // ── RUG DATABASE ───────────────────────────────────────────
 export const MAX_RUG_INDEX = 5000;  // increased from 500 for production scale

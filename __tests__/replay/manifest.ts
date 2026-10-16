@@ -50,13 +50,13 @@ export const REPLAY_TOKENS: ReplayToken[] = [
   { symbol: "USELESS", mint: "HhJpBhRRn4g56VsyLuT8DL5Bv31HkXqsrahTTUCZeZg4", expected: ["SAFE", "CAUTION"], why: "Matured into a legitimate memecoin: 51k holders, LP burned, 30 d+, clean contract." },
 
   // ── Established non-meme tokens (the audit documented false DANGER verdicts on them) ──
-  { symbol: "JUP", mint: "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN", expected: ["SAFE", "CAUTION"], why: "Jupiter: the Solana DEX aggregator token, 800k+ holders, multi-year history.", knownIssue: { id: "concentration", note: "One wallet holds 24.8 % and the top 10 hold 66.2 % (team, DAO and vesting wallets); critical high concentration, DANGER 763 on a 983-day-old token with 830k holders and $1.2B of market cap." } },
+  { symbol: "JUP", mint: "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN", expected: ["SAFE", "CAUTION"], why: "Jupiter: the Solana DEX aggregator token, 800k+ holders, multi-year history." },
   { symbol: "RENDER", mint: "rndrizKT3MK1iimdxRdWabcF7Zg7AR5T4nud4EkHBof", expected: ["CAUTION", "DANGER"], why: "Established, but mint AND freeze authority are active and GoPlus does not list it as trusted: critical by the 2026-10-10 decision." },
   { symbol: "HNT", mint: "hntyVP6YFm1Hg25TN9WGLqM12b8TQmcknKrdu1oxWux", expected: ["SAFE", "CAUTION"], why: "Helium: established network token, 500k+ holders; its mint authority is the protocol's and GoPlus lists it as trusted." },
   { symbol: "WBTC", mint: "3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh", expected: ["SAFE", "CAUTION"], why: "Wormhole-wrapped Bitcoin: 120k+ holders, years of history." },
   { symbol: "WSOL", mint: "So11111111111111111111111111111111111111112", expected: ["SAFE", "CAUTION"], why: "Wrapped SOL: the native asset's token, millions of holders." },
   { symbol: "JTO", mint: "jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL", expected: ["SAFE", "CAUTION"], why: "Jito governance token: established DAO token, many holders (its top-20 list used to collapse the holder count to 20)." },
-  { symbol: "RAY", mint: "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R", expected: ["SAFE", "CAUTION"], why: "Raydium: the AMM's token, years of history, hundreds of thousands of holders.", knownIssue: { id: "concentration", note: "The top 10 hold 77 % (protocol treasury wallets); critical high concentration, DANGER 525 on a years-old AMM token with 266k holders." } },
+  { symbol: "RAY", mint: "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R", expected: ["SAFE", "CAUTION"], why: "Raydium: the AMM's token, years of history, hundreds of thousands of holders." },
   { symbol: "PYUSD", mint: "2b1kV6DkPAnxd5ixfnxCpjxmKwqjjaYmCZfHsFu24GXo", expected: ["SAFE", "CAUTION"], why: "Regulated stablecoin (Token-2022 with an issuer-controlled permanent delegate, transfer fee and hook, all by design). Owner's rule of 2026-10-13: a stablecoin with a healthy market is SAFE; never DANGER or RUG for its structure." },
 
   // ── Tokens whose liquidity was removed or abandoned (objective: liquidity under 500 $ on a pair older than 6 h) ──

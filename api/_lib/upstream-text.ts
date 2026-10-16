@@ -27,6 +27,7 @@ export const HARD_BLOCK_PATTERNS: Array<[RegExp, SafeBlockedReason]> = [
   // the matrix refactor. Safe to remove after the cache fully cycles.
   [/unverified LP|LP not burned but token is mature/i, "lp_unverified"],
   [/LP not burned|LP not locked/i, "lp"],
+  [/^Mint held by the .+ bridge/i, "bridge_mint"],
   [/mint authority/i, "mint"],
   [/freeze authority/i, "freeze"],
   [/honeypot/i, "honeypot"],
@@ -62,7 +63,7 @@ export const HARD_BLOCK_PATTERNS: Array<[RegExp, SafeBlockedReason]> = [
   //   Established: "Top 10 hold X% — high concentration"
   //   Both:        "Top 10 hold X% — extreme concentration"
   //   → Caught by /(high|extreme) concentration/.
-  [/top 10 hold \d+% — elevated\b/i, "concentration_light"],
+  [/top 10 hold \d+% — (elevated\b|high · established token)/i, "concentration_light"],
   [/top 10 hold \d+% — (high|extreme) concentration/i, "concentration"],
   // Single-wallet safety net (7.7.11): a single wallet >40% routes to the
   // hard "concentration" reason → DANGER/RUG. Catches the HAWK-class case
@@ -70,7 +71,7 @@ export const HARD_BLOCK_PATTERNS: Array<[RegExp, SafeBlockedReason]> = [
   // Young-token elevated tier (7.7.12, 10-15%): soft → CAUTION max.
   // Must come BEFORE the hard "concentration" pattern so "elevated" labels
   // don't accidentally match the (high|extreme) regex below.
-  [/single wallet holds \d+% — elevated\b/i, "concentration_light"],
+  [/single wallet holds \d+% — (elevated\b|high · established token)/i, "concentration_light"],
   [/single wallet holds \d+% — (high|extreme) concentration/i, "concentration"],
 ];
 

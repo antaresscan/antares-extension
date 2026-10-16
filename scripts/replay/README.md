@@ -13,6 +13,14 @@ neither fail nor prove anything. The replay does the opposite (it proves STABILI
 - the clock is set to the instant of the capture, so token age, pump windows and candle recency are the same;
 - nothing else is faked: schemas, fetchers, layers, scoring and verdict all run for real.
 
+One exception to "every request is answered from a recording": the **all-time high** of a token (CoinGecko, asked by `api/_lib/ath.ts` for the few tokens that can use it) is not a fact of the capture
+instant, so it is not in each recording. The replay answers that request from one table, `__tests__/replay/ath.json`, built by `npx tsx scripts/replay/ath-table.ts` (four requests to
+CoinGecko's public API, not one per token); a token that is not in the table gets CoinGecko's own "not found". A recording that holds the request itself (a capture made since the engine asks
+for it) wins. Rebuild the table when the corpus grows.
+
+`credibility.test.ts` holds the owner's own judgement on real tokens (serious ones the engine must never call DANGER or RUG, tokens that already rugged it must never call SAFE or CAUTION), with the
+reason and the date of each. It reads the golden files, so it needs no network.
+
 ## Two kinds of tokens
 
 | | hand-vetted (`manifest.ts`) | bulk (`bulk.json`) |
