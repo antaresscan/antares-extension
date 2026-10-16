@@ -174,11 +174,11 @@ describe("getAllTimeHigh", () => {
   });
 });
 
-describe("judgeHistory: a line with a memory (in at 89 %, out only below 84 %)", () => {
-  it("with no memory it is the plain line: 88.9 % is clean, 89 % is collapsed, an unknown fall is unknown", async () => {
-    expect(await judgeHistory(MINT, 88.9)).toBe(false);
+describe("judgeHistory: a line with a memory (in at 90 %, out only below 85 %)", () => {
+  it("with no memory it is the plain line: 89.9 % is clean, 90 % is collapsed, an unknown fall is unknown", async () => {
+    expect(await judgeHistory(MINT, 89.9)).toBe(false);
     store.clear();
-    expect(await judgeHistory(MINT, 89)).toBe(true);
+    expect(await judgeHistory(MINT, 90)).toBe(true);
     expect(await judgeHistory(MINT, null)).toBeNull();
     expect(await judgeHistory(MINT, Number.NaN)).toBeNull();
   });
@@ -191,15 +191,15 @@ describe("judgeHistory: a line with a memory (in at 89 %, out only below 84 %)",
     expect(store.get(athSideKey(MINT))).toBe("clean");
   });
   it("a token that was clean stays clean while it flirts with the line from below, and is collapsed the day it crosses it", async () => {
-    expect(await judgeHistory(MINT, 88.2)).toBe(false); // RAY today (-89.2 by an intraday high, about -88.2 by a daily one)
-    expect(await judgeHistory(MINT, 87.0)).toBe(false);
-    expect(await judgeHistory(MINT, 89.1)).toBe(true);  // it crossed
+    expect(await judgeHistory(MINT, 89.3)).toBe(false); // RAY today
+    expect(await judgeHistory(MINT, 88.0)).toBe(false);
+    expect(await judgeHistory(MINT, 90.1)).toBe(true);  // it crossed
   });
-  it("a token that has collapsed stays collapsed for every fall down to 84 %: it needs a rally of a third of its price from the line to be clean again", async () => {
-    expect(await judgeHistory(MINT, 89.4)).toBe(true); // YZY today
-    for (const drop of [88.9, 88.0, 86.0, 85.0, 84.0]) expect(await judgeHistory(MINT, drop), `at ${drop} %`).toBe(true);
-    expect(await judgeHistory(MINT, 83.9)).toBe(false);
-    expect(await judgeHistory(MINT, 88.9)).toBe(false); // clean again: the line is the plain one from this side
+  it("a token that has collapsed stays collapsed for every fall down to 85 %: it needs a rally of a third of its price from the line to be clean again", async () => {
+    expect(await judgeHistory(MINT, 90.23)).toBe(true); // YZY today
+    for (const drop of [89.9, 89.0, 88.0, 86.0, 85.0]) expect(await judgeHistory(MINT, drop), `at ${drop} %`).toBe(true);
+    expect(await judgeHistory(MINT, 84.9)).toBe(false);
+    expect(await judgeHistory(MINT, 89.9)).toBe(false); // clean again: the line is the plain one from this side
   });
   it("the memory of one token is not the memory of another", async () => {
     await judgeHistory(MINT, 95);
@@ -207,8 +207,8 @@ describe("judgeHistory: a line with a memory (in at 89 %, out only below 84 %)",
   });
   it("Redis missing or failing: the plain line, and the scan goes on", async () => {
     redis = null;
-    expect(await judgeHistory(MINT, 88.9)).toBe(false);
-    expect(await judgeHistory(MINT, 89)).toBe(true);
+    expect(await judgeHistory(MINT, 89.9)).toBe(false);
+    expect(await judgeHistory(MINT, 90)).toBe(true);
     redis = { get: vi.fn(async () => { throw new Error("redis down"); }), set: vi.fn(async () => { throw new Error("redis down"); }) };
     expect(await judgeHistory(MINT, 91)).toBe(true);
     expect(await judgeHistory(MINT, 80)).toBe(false);

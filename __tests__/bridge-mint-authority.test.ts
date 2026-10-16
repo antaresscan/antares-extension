@@ -132,7 +132,7 @@ describe("decide: a mature token whose mint authority is the bridge", () => {
       expect(d.mintHeldByBridge).toBeNull();
     }
   });
-  it("held by the bridge, -88 %: clean on the plain line, but the memory says the token had collapsed (it is still above -84 %): the critical stays", () => {
+  it("held by the bridge, -88 %: clean on the plain line, but the memory says the token had collapsed (it is still above -85 %): the critical stays", () => {
     const d = decide({ ...input(chainOf(WORMHOLE_MINT_AUTHORITY)), allTimeHigh: high(2.9), athCollapsed: true }); // price 0.35 = -88 %
     expect(d.flags.some((f) => f.severity === "critical" && /Mint authority active/.test(f.label))).toBe(true);
     expect(d.risk).toBe("DANGER");

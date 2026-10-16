@@ -47,19 +47,19 @@ describe("layerChart: the flag", () => {
     expect(r.flags.some((x) => x.severity === "critical")).toBe(false);
     expect(r.trust).toBeLessThan(layerChart(flat(), pair(), 700 * DAY, ctx(50)).trust);
   });
-  it("the line is 89 % (Solscan's daily highs): 88.9 % says nothing, 89 % says it, and the number shown is never rounded up to the line", () => {
-    expect(layerChart(flat(), pair(), 700 * DAY, ctx(88.9)).flags.some((x) => /all-time high/.test(x.label))).toBe(false);
-    expect(layerChart(flat(), pair(), 700 * DAY, ctx(89)).flags.some((x) => /^Down 89% from/.test(x.label))).toBe(true);
-    expect(layerChart(flat(), pair(), 700 * DAY, ctx(88.99)).flags.some((x) => /all-time high/.test(x.label))).toBe(false);
+  it("the line is 90 % (read on Solscan's numbers as it is): 89.9 % says nothing, 90 % says it, and the number shown is never rounded up to the line", () => {
+    expect(layerChart(flat(), pair(), 700 * DAY, ctx(89.9)).flags.some((x) => /all-time high/.test(x.label))).toBe(false);
+    expect(layerChart(flat(), pair(), 700 * DAY, ctx(90)).flags.some((x) => /^Down 90% from/.test(x.label))).toBe(true);
+    expect(layerChart(flat(), pair(), 700 * DAY, ctx(89.99)).flags.some((x) => /all-time high/.test(x.label))).toBe(false);
   });
-  it("the memory of the line decides: -87 % says it for a token that had collapsed, and -92 % says nothing for one that never crossed", () => {
+  it("the memory of the line decides: -88 % says it for a token that had collapsed, and -92 % says nothing for one that never crossed", () => {
     const c = (drop: number, collapsed: boolean | null) => layerChart(flat(), pair(), 700 * DAY, { ...ctx(drop), athCollapsed: collapsed }).flags.some((x) => /all-time high/.test(x.label));
-    expect(c(87, true)).toBe(true);
-    expect(c(87, false)).toBe(false);
+    expect(c(88, true)).toBe(true);
+    expect(c(88, false)).toBe(false);
     expect(c(92, false)).toBe(false);
     expect(c(92, true)).toBe(true);
     expect(c(92, null)).toBe(true);  // no memory: the plain line
-    expect(c(87, null)).toBe(false);
+    expect(c(88, null)).toBe(false);
   });
   it("an unknown fall (no high, no price) says nothing", () => {
     expect(layerChart(flat(), pair(), 700 * DAY, ctx(null)).flags.some((x) => /all-time high/.test(x.label))).toBe(false);

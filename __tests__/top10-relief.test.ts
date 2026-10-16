@@ -7,7 +7,7 @@ import type { DexScreenerPair, HeliusHolder, RugCheckSummary } from "../api/_lib
 
 // CARDS (31 000 holders, $4M pool, $246M cap, 407 days) was DANGER because its top 10 holds 73 %: exchanges, treasuries and vaults. MET was RUG (82 %). A token the market has
 // proven keeps a concentrated top 10 as a warning (CAUTION), unless it already fell most of the way from its all-time high (MELANIA -99 %, YZY -90 %: the insiders sold).
-// The line is 89 % on Solscan's DAILY highs (90 % on an intraday one): SPX (-84.6 %), JUP (-84.3 %) and RAY (-88 % daily), which the owner names as real tokens, are under it; ZEREBRO, TRUNK,
+// The line is 90 % on Solscan's numbers (a daily high, never above an intraday one): SPX (-84.6 %), JUP (-84.3 %) and RAY (-89 %), which the owner names as real tokens, are under it; ZEREBRO, TRUNK,
 // LUNA, MELANIA are over it. A launch that pumped and dumped within hours (YZY) has a daily high far under its real one and stands under the line too: it is the LIVING MARKET (Jupiter's
 // organic score) that refuses it, not the line.
 
@@ -53,14 +53,14 @@ describe("isTop10Candidate / isTop10Proven: what the market must say, one condit
     expect(isTop10Candidate(proven({ marketCapUsd: 500_000_000, liquidityUsd: 700_000, poolDepthUsd: 1_400_000 }))).toBe(true);
     expect(isTop10Candidate(proven({ marketCapUsd: 500_000_000, liquidityUsd: 700_000, poolDepthUsd: 700_000 }))).toBe(false);
   });
-  it("is not proven when it fell 89 % or more from its all-time high, or when that high is unknown", () => {
+  it("is not proven when it fell 90 % or more from its all-time high, or when that high is unknown", () => {
     const alive = { ...proven(), livingMarket: true };
     expect(isTop10Proven({ ...alive, athDropPct: 84.6 })).toBe(true);  // SPX
     expect(isTop10Proven({ ...alive, athDropPct: 84.3 })).toBe(true);  // JUP
-    expect(isTop10Proven({ ...alive, athDropPct: 88.0 })).toBe(true);  // RAY, by a daily high
-    expect(isTop10Proven({ ...alive, athDropPct: 88.99 })).toBe(true);
-    expect(isTop10Proven({ ...alive, athDropPct: 89 })).toBe(false);
-    expect(isTop10Proven({ ...alive, athDropPct: 89.4 })).toBe(false); // YZY, by a daily high
+    expect(isTop10Proven({ ...alive, athDropPct: 89.3 })).toBe(true);  // RAY today
+    expect(isTop10Proven({ ...alive, athDropPct: 89.99 })).toBe(true);
+    expect(isTop10Proven({ ...alive, athDropPct: 90 })).toBe(false);
+    expect(isTop10Proven({ ...alive, athDropPct: 90.2 })).toBe(false); // YZY
     expect(isTop10Proven({ ...alive, athDropPct: 96.3 })).toBe(false); // TRUNK
     expect(isTop10Proven({ ...alive, athDropPct: 99.3 })).toBe(false); // MELANIA
     expect(isTop10Proven({ ...alive, athDropPct: null })).toBe(false);
@@ -71,7 +71,7 @@ describe("isTop10Candidate / isTop10Proven: what the market must say, one condit
 
 describe("isTop10Proven with the memory of the line (athCollapsed): the side of the line decides, not the spot price", () => {
   const alive = { ...proven(), livingMarket: true };
-  it("a token that has collapsed stays refused between 84 % and 89 % (a token at -87 % after a good week)", () => {
+  it("a token that has collapsed stays refused between 85 % and 90 % (a token at -87 % after a good week)", () => {
     expect(isTop10Proven({ ...alive, athDropPct: 87, athCollapsed: true })).toBe(false);
     expect(isTop10Proven({ ...alive, athDropPct: 87, athCollapsed: false })).toBe(true);
     expect(isTop10Proven({ ...alive, athDropPct: 87 })).toBe(true); // no memory: the plain line
