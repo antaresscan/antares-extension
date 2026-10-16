@@ -16,7 +16,7 @@ neither fail nor prove anything. The replay does the opposite (it proves STABILI
 Two exceptions to "every request is answered from a recording", because neither is a fact of the capture instant:
 
 - the **all-time high** of a token (Solscan `token/price`, ONE price a day, asked by `api/_lib/ath.ts` for the few tokens that can use it) is answered from `__tests__/replay/ath.json` (the highest prices
-  of the recorded tokens, a one-off fixture) as a DAILY series whose highest day is `DAILY_HIGH_SHARE` (0.92, PYTH measured on Solscan: 1.10 against 1.20) of that number; a token that is not in the table gets
+  of the recorded tokens, a fixture built by `npx tsx scripts/replay/ath-table.ts`, which reads a public price service once; it is only the REPLAY's table, the engine does not call that service) as a DAILY series whose highest day is `DAILY_HIGH_SHARE` (0.92, PYTH measured on Solscan: 1.10 against 1.20) of that number; a token that is not in the table gets
   "no price". `replayScan(rec, { dailyShare })` changes the share, `{ athDown: true }` makes Solscan answer 503.
 - the **organic score** of a token (Jupiter's free token search, asked by `api/_lib/jupiter.ts` for the tokens whose relief depends on it) is answered from `__tests__/replay/jupiter.json`, measured on the whole
   corpus on 2026-10-16; a token that is not in it gets an empty list. `{ organicDown: true }` makes Jupiter answer 503.

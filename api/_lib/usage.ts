@@ -17,12 +17,12 @@ import type { Redis } from "@upstash/redis";
 import { PUBLIC_SOLANA_RPCS } from "./constants";
 import { logger } from "./logger";
 
-export type Provider = "helius" | "goplus" | "rugcheck" | "dexscreener" | "geckoterminal" | "jupiter" | "solscan" | "gemini" | "publicrpc" | "other";
+export type Provider = "helius" | "goplus" | "rugcheck" | "dexscreener" | "geckoterminal" | "coingecko" | "jupiter" | "solscan" | "gemini" | "publicrpc" | "other";
 export type Field = "calls" | "ok" | "refused" | "denied" | "failed" | "skipped" | "credits";
 export type ProviderUsage = Record<Field, number>;
 
 const FIELDS: Field[] = ["calls", "ok", "refused", "denied", "failed", "skipped", "credits"];
-export const PROVIDERS: Provider[] = ["helius", "goplus", "rugcheck", "dexscreener", "geckoterminal", "jupiter", "solscan", "gemini", "publicrpc", "other"];
+export const PROVIDERS: Provider[] = ["helius", "goplus", "rugcheck", "dexscreener", "geckoterminal", "coingecko", "jupiter", "solscan", "gemini", "publicrpc", "other"];
 
 /** What one "credit" means for each provider: an estimate to size a plan with, not an invoice. */
 export const CREDIT_BASIS: Record<Provider, string> = {
@@ -31,6 +31,7 @@ export const CREDIT_BASIS: Record<Provider, string> = {
   rugcheck: "1 per request (no credit system known)",
   dexscreener: "1 per request (public limit about 300 a minute)",
   geckoterminal: "1 per request (public limit 30 a minute per address)",
+  coingecko: "1 per request (public API, no key: a few calls a minute)",
   jupiter: "1 per request (free public API, no key; one call per candidate token a day, kept in Redis)",
   solscan: "1 per request (Pro API: 100 compute units for an endpoint of v2, the price history included; one call per candidate token a day, kept in Redis)",
   gemini: "1 per request (the bill is in tokens, and the free quota in requests a day)",
@@ -46,6 +47,7 @@ const HOST_PROVIDERS: Array<[RegExp, Provider]> = [
   [/(^|\.)rugcheck\.xyz$/, "rugcheck"],
   [/(^|\.)dexscreener\.com$/, "dexscreener"],
   [/(^|\.)geckoterminal\.com$/, "geckoterminal"],
+  [/(^|\.)coingecko\.com$/, "coingecko"],
   [/(^|\.)jup\.ag$/, "jupiter"],
   [/(^|\.)solscan\.io$/, "solscan"],
   [/(^|\.)googleapis\.com$/, "gemini"],
