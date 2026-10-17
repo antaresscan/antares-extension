@@ -178,12 +178,39 @@ async function parseTransactions(
     const res = await fetchJson(`${HELIUS_REST_BASE}/v0/transactions?api-key=${apiKey}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ transactions: signatures.slice(0, 20) }),
+      body: JSON.stringify({ transactions: signatures.slice(0, PARSE_BATCH) }),
     }, 8000);
     return Array.isArray(res) ? res : [];
   } catch {
     return [];
   }
+}
+
+/** How many signatures one Enhanced Transactions call parses (parseTransactions sends at most this many: one call, 100 credits). */
+const PARSE_BATCH = 20;
+
+/**
+ * The signatures to parse, taken from the wallets IN TURNS: the newest of each wallet, then the second newest of each... up to `max`.
+ * They used to be laid end to end and cut: wallet 1's 50 signatures came first, so the 20 that were parsed were all wallet 1's, and
+ * the graph could only ever see the transfers of the largest holder. Same cost (one call of 20), every analysed wallet represented.
+ */
+export function interleaveSignatures(lists: string[][], max: number): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (let i = 0; out.length < max; i++) {
+    let more = false;
+    for (const list of lists) {
+      if (i >= list.length) continue;
+      more = true;
+      const s = list[i];
+      if (seen.has(s)) continue;
+      seen.add(s);
+      out.push(s);
+      if (out.length >= max) break;
+    }
+    if (!more) break;
+  }
+  return out;
 }
 
 // ─── MAIN GRAPH BUILDER ───────────────────────────────────────────────
@@ -228,8 +255,8 @@ export async function buildInsiderGraph(
     (w) => getCachedWalletSignatures(w, apiKey),
   );
 
-  // Parse transactions to find transfers between holders
-  const allSigs = [...new Set(sigResults.flat())].slice(0, 50);
+  // Parse transactions to find transfers between holders: the newest signatures of EVERY analysed wallet, in turns (see interleaveSignatures).
+  const allSigs = interleaveSignatures(sigResults, PARSE_BATCH);
   const parsedTxs = await parseTransactions(allSigs, apiKey);
 
   // Build edges from token transfers between top holders
