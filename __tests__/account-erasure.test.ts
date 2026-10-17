@@ -113,6 +113,7 @@ vi.mock("@upstash/redis", () => {
         hset: (k: string, f: Record<string, string>) => { queued.push(() => this.hset(k, f)); return tx; },
         sadd: (k: string, ...m: string[]) => { queued.push(() => this.sadd(k, ...m)); return tx; },
         set: (k: string, v: unknown) => { queued.push(() => this.set(k, v)); return tx; },
+        del: (...k: string[]) => { queued.push(() => this.del(...k)); return tx; },
         expire: () => { queued.push(() => Promise.resolve(1)); return tx; },
         exec: async () => { const out: unknown[] = []; for (const q of queued) out.push(await q()); return out; },
       };
