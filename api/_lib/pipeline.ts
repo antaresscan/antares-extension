@@ -167,7 +167,10 @@ export function applyEstablishedBonus(input: EstablishedBonusInput): number {
 export function determineVerdict(input: VerdictInput): Verdict {
   if (input.forceRug) return "RUG";
   if (!input.sourcesUsedCount || input.sourcesUsedCount <= 0) return "DANGER";
-  // Flag-count hard floors: 1+ critical OR 3+ total token-side flags → minimum DANGER.
+  // Flag-count floors: 1+ critical OR 3+ token-side warnings → DANGER, and DANGER exactly: the return comes before the score is
+  // read, so neither the score-based RUG below (score < 350) nor the hard-reason RUG (score < 400) is reached once a critical flag
+  // is there. A RUG then needs forceRug. (The comment said "minimum DANGER": 23 DANGER verdicts of the replay corpus have a score
+  // under 350; whether they should read RUG is the owner's decision, see the audit of 2026-10-17, lot 18.)
   // Prevents tokens with many accumulated risk signals from staying at CAUTION when
   // individual layer penalties are offset by clean scores from other layers.
   if ((input.criticalFlagsCount ?? 0) >= 1) return "DANGER";
