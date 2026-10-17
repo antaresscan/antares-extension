@@ -62,15 +62,19 @@ export function makeSOLAddrRegex(): RegExp {
   return /\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/g
 }
 export const WALKER_LIMIT = 500
+// Program and sysvar ids: never the token of a page, so the address finder never picks one of them. The Token-2022 program id held
+// an "O", which no base58 address can contain, and so never matched (fixed by the audit of 2026-10-17).
+// Wrapped SOL (So111…112) is deliberately NOT here: it is the token of SOL's own pages (Birdeye, GMGN, DexScreener /solana/So111…112)
+// and the base token of DexScreener's SOL/USDC page, where ignoring it would make the finder take the next token link (USDC). The
+// entry that stood here, "So1…1112" (34 characters, the real mint has 43), matched nothing.
 export const IGNORE = new Set([
   "11111111111111111111111111111111",
-  "So11111111111111111111111111111112",
   "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
   "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
   "SysvarRent111111111111111111111111111111111",
   "SysvarC1ock11111111111111111111111111111111",
   "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s",
-  "TokenzQdBNbequAOoiqaLs8AA6CRCmvsembyniztzCFm",
+  "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
   "ComputeBudget111111111111111111111111111111",
   "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr",
 ])
