@@ -6,6 +6,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+> This file was not kept up between 1.3.7 and 1.3.21 (the version of `package.json`): those releases are in the git history and
+> the pull requests only. The privacy policy (`privacy.html`, section 13) promises a note here whenever the way the Extension
+> processes data changes materially; the notes below cover the changes it has had since.
+
+### Privacy policy — updated 2026-10-17
+
+- Section 4 names the second content script, which runs only on the Antares website (antaresscan.com, www.antaresscan.com,
+  antares-website.vercel.app): it tells the page the Extension is installed, gives it the install identifier and keeps the sign-in
+  token the account page hands over.
+- Section 5 declares Google Fonts (the overlay asks Google for its typefaces on the trading sites; the pages served by
+  antares-extension.vercel.app do the same), and the rows of RugCheck, GoPlus, Solscan and Gemini now say what each is used for.
+- Sections 3.5 and 7: the sign-up counters added by #928 (sign-up e-mails per address per day, sign-ups per network per hour, each
+  under a one-way hash).
+- Section 7: the rug database holds the tokens flagged RUG on evidence only, for 90 days.
+
+### Privacy policy — updated 2026-10-16
+
+- Accounts can be deleted by their owner from the account page, with the password; it erases the account, the link between the
+  installs and the e-mail address, and the scan history and plan of those installs; the purchase records are kept, as accounting
+  records (section 9.1, #918).
+- An account owns the licences bought with its e-mail address only once the address is confirmed: a confirmation link is e-mailed
+  through Resend (a new processor in section 5), it works for 24 hours, and an account never confirmed is deleted after 48 hours
+  (#920).
+- The Chrome permissions section says what each permission is really used for, and is tied to the code by tests (section 8, #921).
+
+### Data the Extension sends — changed by the file-by-file audit of 2026-10-17 (not released yet)
+
+- "Full Analysis" opens `token.html?ca=<mint>` only: the whole scan no longer rides along in the address (`#data=…`), which no
+  page ever read and which stayed in the browser's history.
+
 ## [1.3.7] - 2026-05-28
 
 ### Fixed

@@ -19,7 +19,7 @@
 
 - Reads the **mint and freeze authorities from the chain itself** (Helius `getAccountInfo`); GoPlus is the cross-check, and relays them when the chain cannot be read. An authority that could not be verified is shown as *not verified*, never as passed
 - Says whether **the token itself can stop a holder from selling** (non-transferable, a freeze authority, risky Token-2022 extensions). A pool-level honeypot is not measured: no Solana source reports it, and the Sell cell shows "—" instead of a tick when a sale cannot be verified
-- Checks the **LP burn/lock** (GoPlus pool data weighted by each pool's TVL, RugCheck) and reads RugCheck's own risk list (creator history of rugs, permanent delegate, mutable metadata, copycat…)
+- Checks the **LP burn** (GoPlus pool data weighted by each pool's TVL). An LP *lock* is not measured: RugCheck's own LP figure is unreliable and is not read. It also reads RugCheck's own risk list (creator history of rugs, permanent delegate, a large unlocked LP, mutable metadata, copycat…)
 - Counts **holders** (exact from the chain up to 10,000, then GoPlus / RugCheck) and measures **concentration** (top 1 / top 10, with liquidity pools and foundation wallets left out) from Helius
 - Reads market behaviour from DexScreener and GeckoTerminal: liquidity, volume, price moves, parabolic pumps, dumps, wash volume
 - Cross-validates the sources and flags conflicts
@@ -49,7 +49,9 @@ address visible in the URL or page DOM.
 | `app.telemetry.io` | Telemetry trading dashboard | `TelemetryAdapter` |
 | `www.geckoterminal.com` | GeckoTerminal pool pages | `GeckoTerminalAdapter` |
 
-The extension does **not** run on any other site. Adding a new platform
+The overlay does **not** run on any other site. One more content script, the bridge
+(`contents/antares-website-bridge.ts`), runs on Antares' own website only (`antaresscan.com`, `www.antaresscan.com`,
+`antares-website.vercel.app`): it hands the install id and the session token between the site and the extension. Adding a new platform
 requires adding both a host to `host_permissions` and a matching adapter
 in `contents/modules/adapters/`.
 
@@ -62,7 +64,7 @@ Score starts at **1000** and is reduced by weighted penalties across **6 weighte
 | Layer | Source | Weight | What it checks |
 |---|---|---|---|
 | L1 | DexScreener | 0.20 | Liquidity, volume, price changes, links the project registered, bonding-curve state |
-| L2 | RugCheck | 0.20 | RugCheck's risk list (creator history, permanent delegate, unlocked LP, mutable metadata…), LP locked % |
+| L2 | RugCheck | 0.20 | RugCheck's risk list (creator history, permanent delegate, unlocked LP, mutable metadata…) |
 | L3 | GoPlus | 0.20 | Mint/freeze authority (cross-check of the chain), balance-mutable / non-transferable / closable / transfer hook, LP burn per pool |
 | L4 | Helius | 0.20 | Holder distribution (top 1 / top 10), creator history; the chain is also where the authorities are read |
 | L5 | Solscan | 0.10 | Optional: needs a paid Solscan Pro key. Without one the layer reports nothing and is not counted as a source |
@@ -71,7 +73,7 @@ Score starts at **1000** and is reduced by weighted penalties across **6 weighte
 
 A layer only counts as a source when it answered **and read something**. Layers 1–6 contribute weighted trust scores to the geometric mean. Layer 8 (CrossValidation) produces flags and penalty multipliers but does not feed the geometric mean directly.
 
-**SAFE** needs, together: no warning or critical flag on the token, at least 4 sources (5 for the plain 900+ rule), a score of 750 or more, and no hard safe-block reason (an active authority, an unlocked LP, a concentration…). A visible price-pump flag also keeps a token out of SAFE. A single critical flag makes it DANGER at best; three warnings do too.
+**SAFE** needs, together: no warning or critical flag on the token, at least 3 sources (5 for the plain 900+ rule), a score of 750 or more, and no hard safe-block reason (an active authority, an unlocked LP, a concentration…). A visible price-pump flag also keeps a token out of SAFE. A single critical flag makes it DANGER at best; three warnings do too.
 
 ### Cache versioning
 
@@ -103,7 +105,7 @@ need one for cross-device sync.
 | Tier | Price | What you get |
 |---|---|---|
 | **Free** | $0 | Unlimited scans, verdict + score + Sell/Mint/Freeze/LP grid. Subject to per-minute rate limits. |
-| **Pro** | $24.99 / 30 days | Everything in Free + Critical Flags panel, AI Summary, Full Analysis page (5 deep-dive tabs), Critical Actors top-3, Insider Watch, scan history, CSV/JSON export. |
+| **Pro** | $24.99 / 30 days | Everything in Free + Critical Flags panel, AI Summary, Full Analysis page (5 deep-dive tabs), Critical Actors top-3, Insider Watch. |
 | **Yearly** | $149.99 / year | Everything in Pro. Best value — pay 6 months, get 12. |
 
 Payments are processed by **NOWPayments hosted checkout** — pay in any of
@@ -135,7 +137,7 @@ See `api/_lib/account.ts`, `api/_lib/session-cookie.ts`, and
 api/
   scan.ts                    — GET /api/scan?ca=<mint>          Main scoring pipeline
   graph.ts                   — GET /api/graph?ca=<mint>         Insider graph + activity feed
-  history.ts                 — GET /api/history                 Pro-tier scan history
+  history.ts                 — GET /api/history                 Scan history of an install (the same for every tier)
   quota.ts                   — GET /api/quota                   Per-install quota status
   rugs.ts                    — GET /api/rugs                    Wall of Shame: recent RUG verdicts backed by evidence
   health.ts                  — GET /api/health                  Liveness probe
@@ -193,13 +195,13 @@ js/
   compute.js                 — Pure business logic (computeExitLiquidity, parsePctFromFlags)
   token-bg.js                — Animated background canvas
 
-privacy.ts                   — GET /privacy — Privacy Policy page (CWS requirement)
+privacy.html                 — Privacy Policy page (CWS requirement); /api/privacy redirects to it
 token.html                   — Full Analysis page (Pro) served at /token.html?ca=<mint>; a Free visitor sees the Pro message
 
-background.ts                — Chrome extension service worker (MV3, keepalive via alarms)
-popup.tsx                    — Extension popup UI (recent scans, stealth toggle, account)
-options.tsx                  — Extension options page (stealth mode, auto-rescan)
-contents/                    — Per-platform overlay adapters + scoring engine
+background.ts                — Chrome extension service worker (MV3, keepalive via alarms); the toolbar button is the overlay's on/off switch
+options.tsx                  — Extension options page (account and plan, auto-rescan, test notification, install id, dev tier)
+contents/                    — The overlay: per-platform address adapters, scanner, rendering (the scoring engine is api/_lib)
+                               and the bridge content script of Antares' website (there is no popup)
 ```
 
 ---
@@ -211,7 +213,7 @@ All endpoints are documented in code with examples. The most-used ones:
 ```
 GET  /api/scan?ca=<mint>                Main scan, returns score / risk / flags / layers
 GET  /api/graph?ca=<mint>&activity=1    Top-holder graph + 6h activity feed (Pro only, 10/min per user)
-GET  /api/history                       Pro-tier scan history (auth required)
+GET  /api/history                       Scan history of the install named by X-Antares-Install (up to 100 entries, 30 days; same for every tier)
 
 POST /api/payment-intent                Create a NOWPayments invoice
 GET  /api/payment-status?reference=…    Poll an in-flight payment
@@ -304,7 +306,7 @@ npm run lint       # ESLint
 
 E2E tests:
 ```bash
-npm run test:e2e   # Playwright, requires CHROME_TEST_HOST=… for live runs
+npm run test:e2e   # Playwright; targets production unless E2E_BASE_URL=<a deployment URL> (playwright.config.ts)
 ```
 
 Regression replay (the real engine on recorded upstream responses, see `scripts/replay/README.md`):
@@ -326,7 +328,7 @@ Copy `.env.example` to `.env.local` and fill in your values.
 HELIUS_API_KEY=...                   # Helius RPC + Enhanced Transactions API
 UPSTASH_REDIS_REST_URL=...           # Upstash Redis URL
 UPSTASH_REDIS_REST_TOKEN=...         # Upstash Redis token
-ANTARES_API_KEY=...                  # Chrome extension auth (X-Antares-Key)
+CRON_SECRET=...                      # Vercel crons + /api/health usage view (Authorization: Bearer); without it they are refused
 RESEND_API_KEY=...                   # e-mails of the account (confirmation link): without it, sign-ups answer 503
 MAIL_FROM=...                        # optional, default: Antares <contact@antaresscan.com> (the domain must be verified in Resend)
 SESSION_SECRET=...                   # 32+ chars, openssl rand -hex 32
