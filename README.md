@@ -19,7 +19,7 @@
 
 - Reads the **mint and freeze authorities from the chain itself** (Helius `getAccountInfo`); GoPlus is the cross-check, and relays them when the chain cannot be read. An authority that could not be verified is shown as *not verified*, never as passed
 - Says whether **the token itself can stop a holder from selling** (non-transferable, a freeze authority, risky Token-2022 extensions). A pool-level honeypot is not measured: no Solana source reports it, and the Sell cell shows "—" instead of a tick when a sale cannot be verified
-- Checks the **LP burn/lock** (GoPlus pool data weighted by each pool's TVL, RugCheck) and reads RugCheck's own risk list (creator history of rugs, permanent delegate, mutable metadata, copycat…)
+- Checks the **LP burn** (GoPlus pool data weighted by each pool's TVL). An LP *lock* is not measured: RugCheck's own LP figure is unreliable and is not read. It also reads RugCheck's own risk list (creator history of rugs, permanent delegate, a large unlocked LP, mutable metadata, copycat…)
 - Counts **holders** (exact from the chain up to 10,000, then GoPlus / RugCheck) and measures **concentration** (top 1 / top 10, with liquidity pools and foundation wallets left out) from Helius
 - Reads market behaviour from DexScreener and GeckoTerminal: liquidity, volume, price moves, parabolic pumps, dumps, wash volume
 - Cross-validates the sources and flags conflicts
@@ -64,7 +64,7 @@ Score starts at **1000** and is reduced by weighted penalties across **6 weighte
 | Layer | Source | Weight | What it checks |
 |---|---|---|---|
 | L1 | DexScreener | 0.20 | Liquidity, volume, price changes, links the project registered, bonding-curve state |
-| L2 | RugCheck | 0.20 | RugCheck's risk list (creator history, permanent delegate, unlocked LP, mutable metadata…), LP locked % |
+| L2 | RugCheck | 0.20 | RugCheck's risk list (creator history, permanent delegate, unlocked LP, mutable metadata…) |
 | L3 | GoPlus | 0.20 | Mint/freeze authority (cross-check of the chain), balance-mutable / non-transferable / closable / transfer hook, LP burn per pool |
 | L4 | Helius | 0.20 | Holder distribution (top 1 / top 10), creator history; the chain is also where the authorities are read |
 | L5 | Solscan | 0.10 | Optional: needs a paid Solscan Pro key. Without one the layer reports nothing and is not counted as a source |
@@ -73,7 +73,7 @@ Score starts at **1000** and is reduced by weighted penalties across **6 weighte
 
 A layer only counts as a source when it answered **and read something**. Layers 1–6 contribute weighted trust scores to the geometric mean. Layer 8 (CrossValidation) produces flags and penalty multipliers but does not feed the geometric mean directly.
 
-**SAFE** needs, together: no warning or critical flag on the token, at least 4 sources (5 for the plain 900+ rule), a score of 750 or more, and no hard safe-block reason (an active authority, an unlocked LP, a concentration…). A visible price-pump flag also keeps a token out of SAFE. A single critical flag makes it DANGER at best; three warnings do too.
+**SAFE** needs, together: no warning or critical flag on the token, at least 3 sources (5 for the plain 900+ rule), a score of 750 or more, and no hard safe-block reason (an active authority, an unlocked LP, a concentration…). A visible price-pump flag also keeps a token out of SAFE. A single critical flag makes it DANGER at best; three warnings do too.
 
 ### Cache versioning
 
@@ -105,7 +105,7 @@ need one for cross-device sync.
 | Tier | Price | What you get |
 |---|---|---|
 | **Free** | $0 | Unlimited scans, verdict + score + Sell/Mint/Freeze/LP grid. Subject to per-minute rate limits. |
-| **Pro** | $24.99 / 30 days | Everything in Free + Critical Flags panel, AI Summary, Full Analysis page (5 deep-dive tabs), Critical Actors top-3, Insider Watch, scan history, CSV/JSON export. |
+| **Pro** | $24.99 / 30 days | Everything in Free + Critical Flags panel, AI Summary, Full Analysis page (5 deep-dive tabs), Critical Actors top-3, Insider Watch. |
 | **Yearly** | $149.99 / year | Everything in Pro. Best value — pay 6 months, get 12. |
 
 Payments are processed by **NOWPayments hosted checkout** — pay in any of
