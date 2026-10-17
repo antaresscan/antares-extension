@@ -100,6 +100,16 @@ function computeWordTarget(significantFlagCount: number): { min: number; max: nu
 // the entire 3-paragraph narrative deterministically.
 
 /**
+ * Text that comes from the token's creator (its symbol, its name inside a flag label) as it may enter the prompt: on ONE line, and
+ * bounded. The prompt is a list of lines ("Token:", "Metrics:", "- [critical] ..."): a symbol or a name carrying a line break could
+ * write a line of its own ("No flags raised — ..."), i.e. instructions to the model in the creator's words.
+ */
+function promptText(s: string, max: number): string {
+  // eslint-disable-next-line no-control-regex -- the control characters ARE what is removed (a line break must not reach the prompt)
+  return s.replace(/[\u0000-\u001f\u007f\u2028\u2029]+/g, " ").trim().slice(0, max)
+}
+
+/**
  * Build a structured explanation prompt from the scan data.
  */
 function buildUserPrompt(
@@ -108,7 +118,7 @@ function buildUserPrompt(
   target: { min: number; max: number },
 ): string {
   const lines: string[] = []
-  lines.push(`Token: ${input.tokenSymbol || "unknown"}`)
+  lines.push(`Token: ${promptText(input.tokenSymbol || "", 32) || "unknown"}`)
   lines.push(`Score: ${input.score}/1000, Verdict: ${input.risk}`)
   lines.push(`Sources used: ${input.sourcesUsed.join(", ") || "none"}`)
 
@@ -164,7 +174,7 @@ function buildUserPrompt(
     lines.push("")
     lines.push("Detected flags (AUTHORITATIVE — discuss ONLY these as risks/context; the Metrics line above is for adding numbers to flags that DID fire, never for inventing new risks):")
     for (const f of topFlags) {
-      lines.push(`- [${f.severity}] ${f.label} (impact: ${f.impact})`)
+      lines.push(`- [${f.severity}] ${promptText(f.label, 200)} (impact: ${f.impact})`)
     }
   } else {
     lines.push("")
@@ -573,6 +583,10 @@ function buildStructuredFallback(
   // /scan code surfaces directly. All other narratives require a flag
   // in topFlags so we never invent a risk from raw metric values.
   let para1: string
+  // What paragraph 1 named as the cause of a DANGER: the closer of paragraph 3 speaks of "the holder structure" only when that is it
+  // (bundle or concentration). It used to say so for every DANGER: "lands on DANGER because the contract retains mint authority ...
+  // But the holder structure alone is enough ..." was written about tokens whose holders were never the issue.
+  let dangerFromHolders = false
   if (verdict === "RUG") {
     if (input.honeypot) {
       para1 = `${sym} is a honeypot — once you buy, the contract blocks every sell, trapping your funds permanently.`
@@ -594,11 +608,13 @@ function buildStructuredFallback(
     if (bundleFlag) {
       const pctClause = bundlePct ? `roughly ${bundlePct}% of supply` : "a meaningful share of supply"
       para1 = `${sym} lands on DANGER because of bundle activity — coordinated wallets hold ${pctClause}, masking concentration that visible top-holder metrics don't catch.`
+      dangerFromHolders = true
     } else if (concentrationFlag && (top10PctFromFlag != null ? top10PctFromFlag >= 55 : top1 !== null && top1 >= 20)) {
       const concDisp = top10PctFromFlag != null
         ? `the top 10 wallets collectively hold ${top10PctFromFlag}% of supply`
         : `a single wallet holds ${top1!.toFixed(1)}% of supply`
       para1 = `${sym} lands on DANGER because of stacked concentration risk — ${concDisp}, enough to dictate price action through coordinated selling.`
+      dangerFromHolders = true
     } else if (lpFlag && !lpProtected) {
       para1 = `${sym} lands on DANGER because liquidity is neither locked nor burned — the dev retains the option to drain the pool whenever they choose.`
     } else if ((mintFlag && input.mintAuthority === true) || (freezeFlag && input.freezeAuthority === true)) {
@@ -727,7 +743,9 @@ function buildStructuredFallback(
   if (verdict === "RUG") {
     para3 = "Hard kill. Treat any remaining liquidity as exit-only."
   } else if (verdict === "DANGER") {
-    para3 = "But the holder structure alone is enough to treat this as exit-liquidity risk."
+    para3 = dangerFromHolders
+      ? "But the holder structure alone is enough to treat this as exit-liquidity risk."
+      : "That risk alone is enough to treat this as exit-liquidity risk."
   } else if (verdict === "CAUTION") {
     para3 = "The verdict is not DANGER because the rest is clean; it is not SAFE because the dominant flag alone has enough leverage to swing the price."
   } else {
