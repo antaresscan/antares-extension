@@ -46,7 +46,7 @@ describe("1. a serious token is clean whatever the daily high: what a relief dec
     expect(RELIEVED(reference), "the reference is relieved").toBe(true);
     expect(degraded(reference)).toBe(false);
     for (const dailyShare of [0.8, 0.6, 0.3, 0.1]) expect(verdict(await replayScan(rec, { dailyShare })), `a daily high at ${dailyShare}`).toEqual(verdict(reference));
-  });
+  }, 60_000); // five replays of one recording: a machine under load needs more than the default five seconds
 });
 
 describe("2. a market that is not alive is never relieved, whatever the history says", () => {
@@ -56,7 +56,7 @@ describe("2. a market that is not alive is never relieved, whatever the history 
       const r = await replayScan(rec, { dailyShare });
       expect(RELIEVED(r), `at a daily high of ${dailyShare}: ${r.result.risk} ${r.result.score}`).toBe(false);
     }
-  });
+  }, 60_000);
   it("witness: the organic score is what grants the relief (the check can fail): CARDS is relieved with Jupiter's answer and is not without it", async () => {
     const cards = loadRecording("CARDSccUMFKoPRZxt5vt3ksUbxEFEcnZ3H2pd3dKxYjp")!;
     expect((await replayScan(cards)).result.risk).toBe("CAUTION");

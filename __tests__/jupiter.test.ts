@@ -18,7 +18,7 @@ const fetchJson = vi.fn(async (_url: string, _init: unknown, _ms: number, _retri
 });
 vi.mock("../api/_lib/http", () => ({ fetchJson: (...a: Parameters<typeof fetchJson>) => fetchJson(...a) }));
 
-import { getOrganicScore, parseOrganicScore, jupiterSearchUrl, organicKey, organicBackoffKey, ORGANIC_TTL_S, ORGANIC_NOT_LISTED_TTL_S, ORGANIC_BACKOFF_S } from "../api/_lib/jupiter";
+import { getOrganicScore, parseOrganicScore, jupiterSearchUrl, organicKey, organicLastKey, organicBackoffKey, ORGANIC_TTL_S, ORGANIC_STALE_S, ORGANIC_NOT_LISTED_TTL_S, ORGANIC_BACKOFF_S } from "../api/_lib/jupiter";
 import { isLivingMarket } from "../api/_lib/layers";
 import { LIVING_MARKET_MIN_ORGANIC_SCORE } from "../api/_lib/constants";
 
@@ -34,6 +34,7 @@ beforeEach(() => {
   };
   answer = { body: found(95.4), status: 200 };
   delete process.env.VERCEL_ENV;
+  delete process.env.JUPITER_API_KEY;
 });
 
 describe("parseOrganicScore: the score of THIS mint", () => {
@@ -47,8 +48,8 @@ describe("parseOrganicScore: the score of THIS mint", () => {
 });
 
 describe("the request", () => {
-  it("is Jupiter's public token search by mint", () => {
-    expect(jupiterSearchUrl(MINT)).toBe(`https://lite-api.jup.ag/tokens/v2/search?query=${MINT}`);
+  it("is Jupiter's token search by mint, on the hostname of its documentation", () => {
+    expect(jupiterSearchUrl(MINT)).toBe(`https://api.jup.ag/tokens/v2/search?query=${MINT}`);
   });
   it("keeps a preview deployment's entries apart from production's", () => {
     expect(organicKey(MINT)).toBe(`antares:organic:${MINT}`);
@@ -110,6 +111,76 @@ describe("getOrganicScore", () => {
     expect(await getOrganicScore(MINT)).toEqual({ score: 95.4, failed: false });
     redis = { get: vi.fn(async () => { throw new Error("redis down"); }), set: vi.fn(async () => { throw new Error("redis down"); }) };
     expect(await getOrganicScore(MINT)).toEqual({ score: 95.4, failed: false });
+  });
+});
+
+describe("the optional API key (JUPITER_API_KEY): more headroom, never a requirement", () => {
+  const headerOf = (call: number) => (fetchJson.mock.calls[call][1] as { headers: Record<string, string> }).headers;
+  it("without a key nothing is sent but the accept header", async () => {
+    await getOrganicScore(MINT);
+    expect(headerOf(0)).toEqual({ accept: "application/json" });
+  });
+  it("with a key it is sent as x-api-key, and kept nowhere (Redis holds scores only)", async () => {
+    process.env.JUPITER_API_KEY = "test-key-not-real";
+    try {
+      await getOrganicScore(MINT);
+      expect(headerOf(0)["x-api-key"]).toBe("test-key-not-real");
+      expect(JSON.stringify([...store.entries()])).not.toContain("test-key-not-real");
+    } finally { delete process.env.JUPITER_API_KEY; }
+  });
+  it("a key that Jupiter refuses (401, 403) costs nothing: the same request is asked again WITHOUT it and gives the score", async () => {
+    process.env.JUPITER_API_KEY = "refused-key-not-real";
+    try {
+      for (const refused of [401, 403]) {
+        fetchJson.mockClear(); store.clear();
+        let calls = 0;
+        fetchJson.mockImplementationOnce(async (_u, _i, _m, _r, onStatus) => { calls++; onStatus?.(refused); return null; });
+        expect(await getOrganicScore(MINT)).toEqual({ score: 95.4, failed: false });
+        expect(calls).toBe(1);
+        expect(fetchJson).toHaveBeenCalledTimes(2);
+        expect(headerOf(0)["x-api-key"]).toBe("refused-key-not-real");
+        expect(headerOf(1)["x-api-key"]).toBeUndefined();
+      }
+    } finally { delete process.env.JUPITER_API_KEY; }
+  });
+});
+
+describe("getOrganicScore: when Jupiter does not answer, a score read less than two days ago is served", () => {
+  const LAST = { known: true, score: 95.4 };
+  it("keeps the last score for two days next to the answer for one", async () => {
+    await getOrganicScore(MINT);
+    expect(setCalls[0]).toMatchObject({ key: organicKey(MINT), opts: { ex: ORGANIC_TTL_S } });
+    expect(setCalls[1]).toMatchObject({ key: organicLastKey(MINT), value: { known: true, score: 95.4 }, opts: { ex: ORGANIC_STALE_S } });
+    expect(ORGANIC_STALE_S).toBe(48 * 3600);
+  });
+  it.each([[429], [500], [503], [0]])("a refusal or a silence (%i) with a score kept: it is served, not a failure", async (status) => {
+    store.set(organicLastKey(MINT), LAST);
+    answer = { body: null, status };
+    expect(await getOrganicScore(MINT)).toEqual({ score: 95.4, failed: false });
+  });
+  it("during the pause, and when the answer is not a list: served too", async () => {
+    store.set(organicLastKey(MINT), LAST);
+    store.set(organicBackoffKey(), 1);
+    expect(await getOrganicScore(MINT)).toEqual({ score: 95.4, failed: false });
+    expect(fetchJson).not.toHaveBeenCalled();
+    store.delete(organicBackoffKey());
+    answer = { body: { error: "x" }, status: 200 };
+    expect(await getOrganicScore(MINT)).toEqual({ score: 95.4, failed: false });
+  });
+  it("nothing kept: a failure; a score kept for another token, or a value that is not what was written: a failure", async () => {
+    answer = { body: null, status: 503 };
+    expect(await getOrganicScore(MINT)).toEqual({ score: null, failed: true });
+    store.delete(organicBackoffKey());
+    store.set(organicLastKey(OTHER), LAST);
+    expect(await getOrganicScore(MINT)).toEqual({ score: null, failed: true });
+    store.delete(organicBackoffKey());
+    store.set(organicLastKey(MINT), { known: true, score: "x" });
+    expect(await getOrganicScore(MINT)).toEqual({ score: null, failed: true });
+  });
+  it("when Jupiter ANSWERS that it does not list the token, the old score is not served (an answer is not a silence)", async () => {
+    store.set(organicLastKey(MINT), LAST);
+    answer = { body: [{ id: OTHER, organicScore: 70 }], status: 200 };
+    expect(await getOrganicScore(MINT)).toEqual({ score: null, failed: false });
   });
 });
 

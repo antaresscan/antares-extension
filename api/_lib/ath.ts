@@ -19,7 +19,9 @@
 //   - after a silence, a 429 or a server error NOBODY asks for ATH_BACKOFF_S seconds (one Redis key shared by every instance), and a refused key (401/403) already pauses Solscan
 //     for ten minutes (fetchSolscan);
 //   - Solscan's feed has glitches like any feed: a day that stands ten times above both its neighbours is not a price (parseSolscanHigh);
-//   - Redis missing or failing: nothing is read or written, the scan goes on (fail open), a preview deployment keeps its own entries (deployment.ts).
+//   - Redis missing or failing: nothing is read or written, the scan goes on (fail open), a preview deployment keeps its own entries (deployment.ts);
+//   - the last high that was read is kept for ATH_STALE_S and served when Solscan does not answer: a high never goes down (a new high only makes it higher), so an old one is at worst a
+//     little too low, which can only make a collapse look a little smaller, and a token cannot have fallen 90 % from a NEW high within a week without it showing in the 90 days of candles.
 import { getCacheRedis } from "./cache";
 import { deploymentNamespace } from "./deployment";
 import { fetchSolscan, solscanUsable } from "./fetchers";
@@ -43,6 +45,8 @@ export interface AllTimeHighLookup {
 
 /** How long a known all-time high is kept. It changes only when a new high is made, and a token that makes one is nowhere near the line (ATH_COLLAPSE_PCT). */
 export const ATH_TTL_S = 24 * 3600;
+/** How long the last high read is kept to be served when Solscan does not answer. */
+export const ATH_STALE_S = 7 * 24 * 3600;
 /** How long "Solscan has no price for this token" is kept. */
 export const ATH_NOT_LISTED_TTL_S = 6 * 3600;
 const SOLSCAN_ATH_TIMEOUT_MS = 3000;
@@ -50,6 +54,7 @@ const SOLSCAN_ATH_TIMEOUT_MS = 3000;
 export const ATH_BACKOFF_S = 60;
 
 export const athKey = (mint: string): string => `antares:ath:${deploymentNamespace()}${mint}`;
+export const athLastKey = (mint: string): string => `antares:ath-last:${deploymentNamespace()}${mint}`;
 /** One key for the whole deployment: set when Solscan was silent or refused, so that the next scans do not ask (a 401/403 is handled apart, in fetchSolscan: it pauses the instance for ten minutes). */
 export const athBackoffKey = (): string => `antares:ath-backoff:${deploymentNamespace()}`;
 
@@ -154,10 +159,23 @@ export async function getAllTimeHigh(mint: string): Promise<AllTimeHighLookup> {
   } catch (e: unknown) {
     logger.warn("ath", "not read", { error: String(e) });
   }
+  /** Solscan did not give a price: the last high read (up to ATH_STALE_S ago) if there is one, else a failure. */
+  const unanswered = async (): Promise<AllTimeHighLookup> => {
+    try {
+      const last = redis ? await redis.get<Memory>(athLastKey(mint)) : null;
+      if (last && typeof last === "object" && last.known === true && typeof last.ath === "number" && last.ath > 0) {
+        logger.info("ath", "serving the last known high", { mint });
+        return { high: { ath: last.ath, athDate: typeof last.athDate === "string" ? last.athDate : null }, failed: false };
+      }
+    } catch (e: unknown) {
+      logger.warn("ath", "last high not read", { error: String(e) });
+    }
+    return { high: null, failed: true };
+  };
   // No key here, or the key was refused less than ten minutes ago (fetchSolscan stops asking): there is no one to ask. A missing history, not a silence worth a pause.
-  if (!solscanUsable()) return { high: null, failed: true };
+  if (!solscanUsable()) return await unanswered();
   try {
-    if (redis && (await redis.get(athBackoffKey()))) return { high: null, failed: true }; // Solscan was silent a moment ago: nobody asks again yet
+    if (redis && (await redis.get(athBackoffKey()))) return await unanswered(); // Solscan was silent a moment ago: nobody asks again yet
   } catch (e: unknown) {
     logger.warn("ath", "backoff not read", { error: String(e) });
   }
@@ -169,7 +187,10 @@ export async function getAllTimeHigh(mint: string): Promise<AllTimeHighLookup> {
   const answeredNothing = !high && (status === 200 || (status >= 400 && status < 500 && status !== 401 && status !== 403 && status !== 429));
   try {
     if (redis) {
-      if (high) await redis.set(athKey(mint), { known: true, ath: high.ath, athDate: high.athDate } satisfies Memory, { ex: ATH_TTL_S });
+      if (high) {
+        await redis.set(athKey(mint), { known: true, ath: high.ath, athDate: high.athDate } satisfies Memory, { ex: ATH_TTL_S });
+        await redis.set(athLastKey(mint), { known: true, ath: high.ath, athDate: high.athDate } satisfies Memory, { ex: ATH_STALE_S });
+      }
       else if (answeredNothing) await redis.set(athKey(mint), { known: false, ath: null, athDate: null } satisfies Memory, { ex: ATH_NOT_LISTED_TTL_S });
     }
   } catch (e: unknown) {
@@ -180,5 +201,6 @@ export async function getAllTimeHigh(mint: string): Promise<AllTimeHighLookup> {
     try { if (redis) await redis.set(athBackoffKey(), 1, { ex: ATH_BACKOFF_S }); } catch (e: unknown) { logger.warn("ath", "backoff not kept", { error: String(e) }); }
   }
   if (!high && status >= 400 && status < 500 && status !== 404 && status !== 401 && status !== 403 && status !== 429) logger.warn("ath", "solscan price refused the request", { status }); // a 400 on every token would mean that the request itself is wrong: say it
-  return { high, failed: !high && !answeredNothing };
+  if (!high && !answeredNothing) return await unanswered();
+  return { high, failed: false };
 }

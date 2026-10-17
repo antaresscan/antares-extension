@@ -19,7 +19,7 @@ const fetchJson = vi.fn(async (_url: string, _init: unknown, _ms: number, _retri
 });
 vi.mock("../api/_lib/http", () => ({ fetchJson: (...a: Parameters<typeof fetchJson>) => fetchJson(...a) }));
 
-import { getAllTimeHigh, judgeHistory, athSideKey, parseSolscanHigh, solscanSpan, athDropPct, athKey, athBackoffKey, solscanPriceEndpoint, ATH_TTL_S, ATH_NOT_LISTED_TTL_S, ATH_BACKOFF_S, ATH_SIDE_TTL_S } from "../api/_lib/ath";
+import { getAllTimeHigh, judgeHistory, athSideKey, parseSolscanHigh, solscanSpan, athDropPct, athKey, athLastKey, athBackoffKey, solscanPriceEndpoint, ATH_TTL_S, ATH_STALE_S, ATH_NOT_LISTED_TTL_S, ATH_BACKOFF_S, ATH_SIDE_TTL_S } from "../api/_lib/ath";
 import { _resetSolscanBackoffForTests } from "../api/_lib/fetchers";
 
 const MINT = "CARDSccUMFKoPRZxt5vt3ksUbxEFEcnZ3H2pd3dKxYjp";
@@ -100,9 +100,9 @@ describe("getAllTimeHigh", () => {
   it("asks Solscan once, keeps the answer for a day, and serves the next ask from Redis", async () => {
     expect(await getAllTimeHigh(MINT)).toEqual({ high: HIGH, failed: false });
     expect(fetchJson).toHaveBeenCalledTimes(1);
-    expect(setCalls).toHaveLength(1);
-    expect(setCalls[0].opts).toEqual({ ex: ATH_TTL_S });
-    expect(setCalls[0].value).toEqual({ known: true, ath: 0.37, athDate: "2025-09-13" });
+    expect(setCalls).toHaveLength(2); // the answer for a day, and the last known high for a week (served when Solscan does not answer)
+    expect(setCalls[0]).toMatchObject({ key: athKey(MINT), opts: { ex: ATH_TTL_S }, value: { known: true, ath: 0.37, athDate: "2025-09-13" } });
+    expect(setCalls[1]).toMatchObject({ key: athLastKey(MINT), opts: { ex: ATH_STALE_S }, value: { known: true, ath: 0.37, athDate: "2025-09-13" } });
     expect(await getAllTimeHigh(MINT)).toEqual({ high: HIGH, failed: false });
     expect(fetchJson).toHaveBeenCalledTimes(1); // not asked again
   });
@@ -171,6 +171,47 @@ describe("getAllTimeHigh", () => {
   it("Redis failing on read and on write: the answer is still the high", async () => {
     redis = { get: vi.fn(async () => { throw new Error("redis down"); }), set: vi.fn(async () => { throw new Error("redis down"); }) };
     expect(await getAllTimeHigh(MINT)).toEqual({ high: HIGH, failed: false });
+  });
+});
+
+describe("getAllTimeHigh: when Solscan does not answer, the last high read is served (a high never goes down)", () => {
+  const LAST = { known: true, ath: 0.37, athDate: "2025-09-13" };
+  const withLast = () => store.set(athLastKey(MINT), LAST);
+  it.each([[429], [500], [503], [0], [401], [403]])("Solscan failing (%i) with a high kept: that high is served, not a failure, and the scan is not marked as missing data", async (status) => {
+    withLast();
+    answer = { body: null, status };
+    expect(await getAllTimeHigh(MINT)).toEqual({ high: HIGH, failed: false });
+  });
+  it("during a pause, or without a key: the last high is served too", async () => {
+    withLast();
+    store.set(athBackoffKey(), 1);
+    expect(await getAllTimeHigh(MINT)).toEqual({ high: HIGH, failed: false });
+    expect(fetchJson).not.toHaveBeenCalled();
+    store.delete(athBackoffKey());
+    delete process.env.SOLSCAN_API_KEY;
+    expect(await getAllTimeHigh(MINT)).toEqual({ high: HIGH, failed: false });
+    expect(fetchJson).not.toHaveBeenCalled();
+  });
+  it("nothing kept: still a failure, as before", async () => {
+    answer = { body: null, status: 503 };
+    expect(await getAllTimeHigh(MINT)).toEqual({ high: null, failed: true });
+  });
+  it("only a high kept for THIS token is served, and a value that is not what was written is not", async () => {
+    withLast();
+    answer = { body: null, status: 503 };
+    expect(await getAllTimeHigh(OTHER)).toEqual({ high: null, failed: true });
+    store.set(athLastKey(OTHER), { known: true, ath: "x" });
+    expect(await getAllTimeHigh(OTHER)).toEqual({ high: null, failed: true });
+  });
+  it("when Solscan ANSWERS it has no price for the token, the old high is not served (an answer is not a silence)", async () => {
+    withLast();
+    answer = { body: { success: true, data: [] }, status: 200 };
+    expect(await getAllTimeHigh(MINT)).toEqual({ high: null, failed: false });
+  });
+  it("Redis failing: no copy to serve, a failure, no exception", async () => {
+    redis = { get: vi.fn(async () => { throw new Error("redis down"); }), set: vi.fn(async () => { throw new Error("redis down"); }) };
+    answer = { body: null, status: 503 };
+    expect(await getAllTimeHigh(MINT)).toEqual({ high: null, failed: true });
   });
 });
 

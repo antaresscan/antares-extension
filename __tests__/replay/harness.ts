@@ -88,7 +88,7 @@ function solscanAndJupiterAnswer(href: string, opts: UpstreamOptions): Response 
     return new Response(JSON.stringify({ success: true, data }), { status: 200, headers: json });
   }
   if (/^https:\/\/pro-api\.solscan\.io\//.test(href)) return new Response("{}", { status: 404, headers: json });
-  const jp = href.match(/^https:\/\/lite-api\.jup\.ag\/tokens\/v2\/search\?query=([^&]+)/);
+  const jp = href.match(/^https:\/\/api\.jup\.ag\/tokens\/v2\/search\?query=([^&]+)/);
   if (jp) {
     if (opts.organicDown) return new Response("replay: Jupiter is down", { status: 503 });
     organicTable ??= (JSON.parse(readFileSync(`${HERE}jupiter.json`, "utf8")) as { tokens: Record<string, number> }).tokens;
@@ -138,7 +138,7 @@ export async function replayScan(rec: Recording, opts: UpstreamOptions = {}): Pr
     }
     const body = init?.body == null ? null : String(init.body);
     // Solscan ACCEPTS the key and Jupiter answers: what the recordings hold of them (the 401 of the days the key was refused) is not what they answer today, and a 401 would pause Solscan.
-    if (/pro-api\.solscan\.io|lite-api\.jup\.ag/.test(href)) {
+    if (/pro-api\.solscan\.io|api\.jup\.ag/.test(href)) {
       const upstream = solscanAndJupiterAnswer(href, opts);
       if (upstream) return upstream;
     }
