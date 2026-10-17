@@ -41,6 +41,14 @@ function clampPosition(persist = true) {
   try { localStorage.setItem(POS_KEY, JSON.stringify({ x: state.posX, y: state.posY })) } catch (e: unknown) { logger.warn(e) }
 }
 
+/** How much of the card's top-left corner must be in view for the user to see it and grab it by its header. */
+const GRIP_W = 100
+const GRIP_H = 60
+
+function headerInView(x: number, y: number): boolean {
+  return x >= 0 && y >= 0 && x <= window.innerWidth - GRIP_W && y <= window.innerHeight - GRIP_H
+}
+
 // One reference, so that the listener added by every initDrag (createHost runs again when the page strips the host) is added only once.
 const clampOnResize = () => clampPosition()
 
@@ -69,7 +77,11 @@ export function initDrag() {
 
   state.pendingX = state.posX; state.pendingY = state.posY
   state.host.style.transform = `translate(${state.posX}px,${state.posY}px)`
-  clampPosition(false)
+  // Only a spot that would leave the card (nearly) out of this window is moved. At injection the box is still empty, so its size is a guess
+  // (280 x 360): clamping every spot with it moved a card parked low in the window up by the difference with the real card (measured in a real
+  // Chromium: parked at y 489, card 311 high, drawn at 440), and the real height is not steady either (178, 323, then 311 px while it is drawn).
+  // A spot where the header is in view stays as the user left it, as before.
+  if (!headerInView(state.posX, state.posY)) clampPosition(false)
 
   // Clamp on window resize so widget never gets stuck off-screen
   window.addEventListener("resize", clampOnResize)

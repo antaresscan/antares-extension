@@ -50,4 +50,35 @@ describe("drag — the box is always drawn inside the window", () => {
     initDrag()
     expect(state.host!.style.transform).toBe("translate(60px,30px)")
   })
+
+  // The box is empty when it is injected and has no size: counting it as 360 high moved a card parked low in the window up by the difference
+  // with the real card (real Chromium: parked at y 489, card 311 high, drawn at 440; the card's height is not steady while it is drawn either).
+  it("a card parked low, where the real card fits, stays exactly there (it came back higher)", () => {
+    const y = window.innerHeight - 311
+    localStorage.setItem(POS_KEY, JSON.stringify({ x: 60, y }))
+    initDrag()
+    expect(state.host!.style.transform).toBe(`translate(60px,${y}px)`)
+  })
+
+  it("a spot whose header is in view stays as it is, even when the card is cut at the bottom (as before)", () => {
+    const y = window.innerHeight - 100
+    localStorage.setItem(POS_KEY, JSON.stringify({ x: window.innerWidth - 150, y }))
+    initDrag()
+    expect(state.host!.style.transform).toBe(`translate(${window.innerWidth - 150}px,${y}px)`)
+  })
+
+  it("a spot whose header is barely in view, or not at all, is brought inside the window", () => {
+    localStorage.setItem(POS_KEY, JSON.stringify({ x: 60, y: window.innerHeight - 20 }))
+    initDrag()
+    expect(state.host!.style.transform).toBe(`translate(60px,${window.innerHeight - 360}px)`)
+    localStorage.setItem(POS_KEY, JSON.stringify({ x: window.innerWidth - 10, y: 30 }))
+    initDrag()
+    expect(state.host!.style.transform).toBe(`translate(${window.innerWidth - 280}px,30px)`)
+  })
+
+  it("a negative saved spot is brought back to the corner", () => {
+    localStorage.setItem(POS_KEY, JSON.stringify({ x: -500, y: -5 }))
+    initDrag()
+    expect(state.host!.style.transform).toBe("translate(0px,0px)")
+  })
 })
