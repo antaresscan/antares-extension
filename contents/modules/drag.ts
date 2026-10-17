@@ -22,8 +22,10 @@ function commitPos() {
  *
  * Skip entirely when nothing changed — avoids wasted style recalc on
  * every resize event when the widget is already inside bounds.
+ *
+ * `persist: false` when the box is placed at injection: the saved spot is kept for a larger window, the box is only drawn inside this one.
  */
-function clampPosition() {
+function clampPosition(persist = true) {
   if (!state.host) return
   const w = state.host.offsetWidth || 280
   const h = state.host.offsetHeight || 360
@@ -35,33 +37,42 @@ function clampPosition() {
   state.pendingX = state.posX
   state.pendingY = state.posY
   state.host.style.transform = `translate(${state.posX}px,${state.posY}px)`
+  if (!persist) return
   try { localStorage.setItem(POS_KEY, JSON.stringify({ x: state.posX, y: state.posY })) } catch (e: unknown) { logger.warn(e) }
+}
+
+// One reference, so that the listener added by every initDrag (createHost runs again when the page strips the host) is added only once.
+const clampOnResize = () => clampPosition()
+
+/** The saved spot, when it is one: two finite numbers. It sits in the SITE's localStorage, so it is read as unknown. */
+function savedPosition(): { x: number; y: number } | null {
+  try {
+    const saved = localStorage.getItem(POS_KEY)
+    if (!saved) return null
+    const p = JSON.parse(saved) as { x?: unknown; y?: unknown } | null
+    if (typeof p?.x === "number" && Number.isFinite(p.x) && typeof p.y === "number" && Number.isFinite(p.y)) return { x: p.x, y: p.y }
+  } catch (e: unknown) {
+    logger.warn(e)
+  }
+  return null
 }
 
 export function initDrag() {
   if (!state.host) return
 
-  // Restore or default position
-  try {
-    const saved = localStorage.getItem(POS_KEY)
-    if (saved) {
-      const p = JSON.parse(saved) as { x: number; y: number }
-      state.posX = p.x; state.posY = p.y
-    } else {
-      state.posX = window.innerWidth - 310
-      state.posY = window.innerHeight - 400
-    }
-  } catch (e: unknown) {
-    logger.warn(e)
-    state.posX = window.innerWidth - 310
-    state.posY = window.innerHeight - 400
-  }
+  // Restore or default position, then draw it inside THIS window. The spot may have been saved in a larger window (another screen):
+  // restored as it was, the box sat off-screen, invisible on every page of the site until the window was resized (the clamp only ran
+  // on resize). A saved value that is not two numbers counts as none.
+  const saved = savedPosition()
+  state.posX = saved ? saved.x : window.innerWidth - 310
+  state.posY = saved ? saved.y : window.innerHeight - 400
 
   state.pendingX = state.posX; state.pendingY = state.posY
   state.host.style.transform = `translate(${state.posX}px,${state.posY}px)`
+  clampPosition(false)
 
   // Clamp on window resize so widget never gets stuck off-screen
-  window.addEventListener("resize", clampPosition)
+  window.addEventListener("resize", clampOnResize)
 
   // The press is heard INSIDE the shadow root, not on the host. The root is closed (components.ts), and for a listener outside a closed root
   // the event path stops at the host: composedPath()[0] would be the host, never the header that was pressed, and no drag would ever start.

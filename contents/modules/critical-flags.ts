@@ -119,9 +119,14 @@ const FLAG_PATTERNS: Array<{ pattern: RegExp; build: (m: RegExpMatchArray) => st
 
 function getFlagDescription(label: string): string | null {
   if (FLAG_DESCRIPTIONS[label]) return FLAG_DESCRIPTIONS[label]
+  // The LONGEST key the label starts with: the engine's "Transfer fee can be changed — an authority can raise it to 100%" also starts
+  // with "Transfer fee", and the first key in the table used to win, so the panel explained a plain fee instead of a possible honeypot.
+  const lower = label.toLowerCase()
+  let best: string | null = null
   for (const key of Object.keys(FLAG_DESCRIPTIONS)) {
-    if (label.toLowerCase().startsWith(key.toLowerCase())) return FLAG_DESCRIPTIONS[key]
+    if (lower.startsWith(key.toLowerCase()) && (best === null || key.length > best.length)) best = key
   }
+  if (best !== null) return FLAG_DESCRIPTIONS[best]
   for (const entry of FLAG_PATTERNS) {
     const m = label.match(entry.pattern)
     if (m) return entry.build(m)
