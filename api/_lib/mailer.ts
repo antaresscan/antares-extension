@@ -36,6 +36,8 @@ export async function sendMail(mail: Mail): Promise<MailResult> {
       body: JSON.stringify({ from: process.env.MAIL_FROM || DEFAULT_FROM, to: [mail.to], subject: mail.subject, text: mail.text, html: mail.html }),
       signal: controller.signal,
     });
+    // The answer is never read: cancel it, so its connection goes back to the pool instead of waiting for the garbage collector.
+    await (res.body as { cancel?: () => Promise<void> } | null | undefined)?.cancel?.().catch(() => undefined);
     if (!res.ok) {
       logger.warn("mailer", "Resend refused the send", { status: res.status });
       return { ok: false, reason: "rejected", status: res.status };

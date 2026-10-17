@@ -39,7 +39,7 @@ import {
   revokeAllSessions,
   ACCOUNT_INSTALL_KEY,
 } from "../_lib/account";
-import { checkLoginLock, recordLoginFailure, clearLoginFailures } from "../_lib/login-guard";
+import { checkLoginLock, clearLoginFailures } from "../_lib/login-guard";
 import { eraseAccount } from "../_lib/account-erasure";
 import {
   emailProofOf, isEmailProven, VERIFY_MAIL_COOLDOWN_MS, VERIFY_MAIL_ON_LOGIN_COOLDOWN_MS, ALREADY_REGISTERED_MAIL_COOLDOWN_SECONDS, LEGACY_GRACE_ENDS_AT,
@@ -214,14 +214,14 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
     }
     const outcome = await authenticate(redis, { email, password });
     if (!outcome.ok) {
-      await recordLoginFailure(redis, email);
+      // The attempt was counted by checkLoginLock before the password was checked (concurrent guesses cannot slip under the lock).
       // 401 not 404 — never differentiate "no account" from "wrong
       // password" or we leak account existence.
       return res
         .status(401)
         .json({ ok: false, reason: "invalid_credentials" });
     }
-    await clearLoginFailures(redis, email, lock.failures);
+    await clearLoginFailures(redis, email, lock.attempts);
     setSessionCookie(res, outcome.account.email, {}, outcome.account.sessionVersion);
     // An unconfirmed account can log in (to see why it is Free, and to ask for its link) but owns nothing yet: no dev grant until the e-mail is
     // proven (audit A-01). Inside the grace of the accounts that predate the rule it still counts as proven.
@@ -343,10 +343,10 @@ async function handleDeleteAccount(req: VercelRequest, res: VercelResponse) {
     const password = String(readBody(req).password ?? "");
     const outcome = await authenticate(redis, { email: account.email, password });
     if (!outcome.ok) {
-      await recordLoginFailure(redis, account.email);
+      // Counted by checkLoginLock, before the password was checked.
       return res.status(401).json({ ok: false, reason: "invalid_credentials" });
     }
-    await clearLoginFailures(redis, account.email, lock.failures);
+    await clearLoginFailures(redis, account.email, lock.attempts);
 
     const result = await eraseAccount(redis, account.email, { installHint: getInstallId(req) });
     if (!result.ok) {
@@ -400,13 +400,13 @@ async function handleVerifyEmail(req: VercelRequest, res: VercelResponse) {
     }
     const outcome = await confirmEmail(redis, parsed, String(body.password ?? ""));
     if (!outcome.ok) {
+      // A wrong password was counted by checkLoginLock, before the check. (An invalid token is counted too: it is an attempt like any other.)
       if (outcome.reason === "invalid_credentials") {
-        await recordLoginFailure(redis, parsed.email);
         return res.status(401).json({ ok: false, reason: "invalid_credentials" });
       }
       return res.status(400).json({ ok: false, reason: "invalid_token" });
     }
-    await clearLoginFailures(redis, parsed.email, lock.failures);
+    await clearLoginFailures(redis, parsed.email, lock.attempts);
     // The password was just typed: this is a login too. The grants that waited for the proof are given now (a no-op for any other address).
     setSessionCookie(res, outcome.account.email, {}, outcome.account.sessionVersion);
     await ensureDevLifetimeLicense(redis, outcome.account.email);

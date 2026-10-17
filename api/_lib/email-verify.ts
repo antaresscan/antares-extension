@@ -14,7 +14,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { Redis } from "@upstash/redis";
 import { ACCOUNT_KEY } from "./keys";
-import { deriveKey, getAccount, newVerifyNonce, verifyPassword, type Account } from "./account";
+import { deriveKey, getAccount, newVerifyNonce, verifyPasswordAsync, type Account } from "./account";
 import { VERIFY_TOKEN_TTL_MS } from "./email-proof";
 import { normalizeEmail } from "./license";
 import { logger } from "./logger";
@@ -80,7 +80,8 @@ export async function confirmEmail(redis: Redis, token: Extract<ParsedVerifyToke
   const a = Buffer.from(token.nonce);
   const b = Buffer.from(account.verifyNonce);
   if (a.length !== b.length || !timingSafeEqual(a, b)) return { ok: false, reason: "invalid_token" };
-  if (!verifyPassword(password, account.passwordHash)) return { ok: false, reason: "invalid_credentials" };
+  // Off the event loop (the synchronous scrypt held the whole instance for ~50 ms: audit lot 3).
+  if (!(await verifyPasswordAsync(password, account.passwordHash))) return { ok: false, reason: "invalid_credentials" };
 
   // One transaction: confirmed, link spent, and the 48 h expiry of an unconfirmed account lifted, all or none.
   await redis

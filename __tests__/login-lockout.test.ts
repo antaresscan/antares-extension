@@ -10,7 +10,7 @@
 //   3. a legitimate user is not bothered: a good login before the 10th failure wipes the count, the lock ends by itself, and the sessions already
 //      signed in keep working while somebody else is guessing;
 //   4. the guard never stops the login from working when Redis does not answer it, and a counter that lost its end date cannot lock for ever;
-//   5. the website, the extension and the overlay's badge stay in step (login -> sync-token -> tier), and a login costs one Redis round trip more.
+//   5. the website, the extension and the overlay's badge stay in step (login -> sync-token -> tier), and a login costs its count (INCR, and its end date the first time) and, when it works, the wipe.
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
@@ -113,7 +113,7 @@ vi.mock("../api/_lib/middleware", async () => {
 import { Redis } from "@upstash/redis";
 import { createConfirmedAccount } from "./_helpers/confirmed-account";
 import dispatcher from "../api/auth/[action]";
-import { loginFailuresKey, checkLoginLock, recordLoginFailure, clearLoginFailures, LOGIN_MAX_FAILURES, LOGIN_FAILURE_WINDOW_SECONDS } from "../api/_lib/login-guard";
+import { loginFailuresKey, checkLoginLock, clearLoginFailures, LOGIN_MAX_FAILURES, LOGIN_FAILURE_WINDOW_SECONDS } from "../api/_lib/login-guard";
 import { initUserStorage, resolveTier } from "../api/_lib/user";
 import { issueLicense } from "../api/_lib/license";
 import { SESSION_COOKIE_NAME } from "../api/_lib/session-cookie";
@@ -193,10 +193,8 @@ describe("the guard: the key, the count, the window", () => {
     expect(loginFailuresKey("x".repeat(5000))).toMatch(/^auth_fail:[0-9a-f]{64}$/);
   });
 
-  it("9 failures: not locked. The 10th: locked, with the seconds left (between 1 and 15 minutes)", async () => {
-    for (let i = 0; i < LOGIN_MAX_FAILURES - 1; i++) await recordLoginFailure(redis(), ALICE);
-    expect(await checkLoginLock(redis(), ALICE)).toEqual({ locked: false, failures: 9 });
-    await recordLoginFailure(redis(), ALICE);
+  it("10 attempts go on, the 11th is locked, with the seconds left (between 1 and 15 minutes)", async () => {
+    for (let i = 1; i <= LOGIN_MAX_FAILURES; i++) expect(await checkLoginLock(redis(), ALICE)).toEqual({ locked: false, attempts: i });
     const lock = await checkLoginLock(redis(), ALICE);
     expect(lock.locked).toBe(true);
     if (lock.locked) {
@@ -205,24 +203,29 @@ describe("the guard: the key, the count, the window", () => {
     }
   });
 
-  it("the window starts at the first failure and the following ones do not extend it", async () => {
-    await recordLoginFailure(redis(), ALICE);
+  it("guesses sent at the same moment cannot slip under the lock: of 30 concurrent attempts, exactly 10 go on (audit lot 4)", async () => {
+    const all = await Promise.all(Array.from({ length: 30 }, () => checkLoginLock(redis(), ALICE)));
+    expect(all.filter((l) => !l.locked)).toHaveLength(LOGIN_MAX_FAILURES);
+  });
+
+  it("the window starts at the first attempt and the following ones do not extend it", async () => {
+    await checkLoginLock(redis(), ALICE);
     vi.setSystemTime(T0 + 10 * 60 * 1000); // 10 minutes later
-    await recordLoginFailure(redis(), ALICE);
+    await checkLoginLock(redis(), ALICE);
     const k = loginFailuresKey(ALICE);
     expect(mocks.expires.get(k)).toBe(T0 + LOGIN_FAILURE_WINDOW_SECONDS * 1000); // still 15 minutes from the FIRST one
   });
 
   it("the count ends by itself: after 15 minutes the e-mail is not locked any more", async () => {
-    for (let i = 0; i < LOGIN_MAX_FAILURES; i++) await recordLoginFailure(redis(), ALICE);
+    for (let i = 0; i < LOGIN_MAX_FAILURES; i++) await checkLoginLock(redis(), ALICE);
     expect((await checkLoginLock(redis(), ALICE)).locked).toBe(true);
     vi.setSystemTime(T0 + (LOGIN_FAILURE_WINDOW_SECONDS + 1) * 1000);
-    expect(await checkLoginLock(redis(), ALICE)).toEqual({ locked: false, failures: 0 });
+    expect(await checkLoginLock(redis(), ALICE)).toEqual({ locked: false, attempts: 1 });
   });
 
-  it("a counter that lost its end date is given one by the next check, so it cannot lock for ever", async () => {
+  it("a counter that lost its end date is given one when it reaches the lock, so it cannot lock for ever", async () => {
     const k = loginFailuresKey(ALICE);
-    mocks.store.set(k, String(LOGIN_MAX_FAILURES)); // INCR happened, the EXPIRE after it never did
+    mocks.store.set(k, String(LOGIN_MAX_FAILURES)); // the INCRs happened, the EXPIRE after the first one never did
     expect(mocks.expires.has(k)).toBe(false);
     const lock = await checkLoginLock(redis(), ALICE);
     expect(lock.locked).toBe(true);
@@ -231,26 +234,24 @@ describe("the guard: the key, the count, the window", () => {
     expect((await checkLoginLock(redis(), ALICE)).locked).toBe(false);
   });
 
-  it("reads the count whether the client gives it back as a string or as a number (Upstash deserialises)", async () => {
-    for (let i = 0; i < LOGIN_MAX_FAILURES; i++) await recordLoginFailure(redis(), ALICE);
-    mocks.deserialise = true;
+  it("reads the count whether it is stored as text or as a number", async () => {
+    mocks.store.set(loginFailuresKey(ALICE), LOGIN_MAX_FAILURES); // a number, as a client that deserialises would leave it
     expect((await checkLoginLock(redis(), ALICE)).locked).toBe(true);
   });
 
-  it("clearLoginFailures wipes the count, and with nothing to wipe it makes no round trip at all", async () => {
-    await recordLoginFailure(redis(), ALICE);
+  it("clearLoginFailures wipes the count, and with nothing counted (Redis did not answer) it makes no round trip at all", async () => {
+    const lock = await checkLoginLock(redis(), ALICE);
     mocks.calls.length = 0;
     await clearLoginFailures(redis(), ALICE, 0);
     expect(mocks.calls).toEqual([]);
-    await clearLoginFailures(redis(), ALICE, 1);
+    await clearLoginFailures(redis(), ALICE, lock.locked ? 0 : lock.attempts);
     expect(mocks.calls).toEqual(["del"]);
     expect(counterKeys()).toEqual([]);
   });
 
   it("when Redis does not answer the guard, the attempt goes through and nothing is thrown", async () => {
     mocks.down = true;
-    expect(await checkLoginLock(redis(), ALICE)).toEqual({ locked: false, failures: 0 });
-    await expect(recordLoginFailure(redis(), ALICE)).resolves.toBeUndefined();
+    expect(await checkLoginLock(redis(), ALICE)).toEqual({ locked: false, attempts: 0 });
   });
 });
 
@@ -385,31 +386,29 @@ describe("POST /api/auth/login", () => {
 
 // ── 3. the cost of a login ─────────────────────────────────────────────────────────────────────────
 describe("what a login costs", () => {
-  it("a good login with no failure behind it: ONE round trip more (the count and its end date together), nothing to wipe", async () => {
+  it("a good login with no failure behind it: the attempt is counted before the password is checked (INCR + its end date), then wiped (DEL)", async () => {
     await signUp(ALICE);
     mocks.calls.length = 0;
     expect((await login(ALICE, PASSWORD)).status).toBe(200);
-    expect(mocks.calls.filter((c) => ["get", "ttl", "incr", "expire", "del"].includes(c))).toEqual(["get", "ttl"]); // the pipeline: get + ttl
-    expect(mocks.calls).not.toContain("incr");
-    expect(mocks.calls).not.toContain("del");
+    expect(mocks.calls.filter((c) => ["get", "ttl", "incr", "expire", "del"].includes(c))).toEqual(["incr", "expire", "del"]);
   });
 
-  it("a failed login counts itself: the check, the account read, the increment and the end date (once)", async () => {
+  it("a failed login is counted BEFORE the account is read: the increment and the end date (once), then the account read", async () => {
     await signUp(ALICE);
     mocks.calls.length = 0;
     expect((await login(ALICE, WRONG)).status).toBe(401);
-    expect(mocks.calls).toEqual(["get", "ttl", "hgetall", "incr", "expire"]);
+    expect(mocks.calls).toEqual(["incr", "expire", "hgetall"]);
     mocks.calls.length = 0;
     await login(ALICE, WRONG);
-    expect(mocks.calls).toEqual(["get", "ttl", "hgetall", "incr"]); // no second end date: the window is fixed
+    expect(mocks.calls).toEqual(["incr", "hgetall"]); // no second end date: the window is fixed
   });
 
-  it("a locked login stops at the check: the account is not even read", async () => {
+  it("a locked login stops at the count: the account is not even read", async () => {
     await signUp(ALICE);
     await failTimes(ALICE, 10);
     mocks.calls.length = 0;
     expect((await login(ALICE, PASSWORD)).status).toBe(429);
-    expect(mocks.calls).toEqual(["get", "ttl"]);
+    expect(mocks.calls).toEqual(["incr", "ttl"]);
   });
 });
 

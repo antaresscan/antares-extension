@@ -1,8 +1,9 @@
 // api/_lib/session-cookie.ts — HTTP-only session cookie helpers.
 //
-// We're set up cross-origin: the website lives at antares-website.vercel.app
-// and the API at antares-extension.vercel.app. To make session cookies
-// flow between them we need:
+// We're set up cross-origin: the website lives at antaresscan.com (and its
+// legacy alias antares-website.vercel.app) and the API at
+// antares-extension.vercel.app. To make session cookies flow between them
+// we need:
 //   - SameSite=None (cross-site requests included)
 //   - Secure         (required when SameSite=None)
 //   - HttpOnly       (defense against XSS — JS can't read it)
