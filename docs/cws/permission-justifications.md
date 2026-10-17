@@ -109,6 +109,19 @@ is *designed* to scan. It does **not** request `<all_urls>` or any wildcard.
 > Address detection + overlay on Telemetry, a wallet-tracking platform
 > users browse to vet token deployers.
 
+### Content script on Antares' own website: `https://antaresscan.com/*`, `https://www.antaresscan.com/*`, `https://antares-website.vercel.app/*`
+
+These three are not in `host_permissions`: they are the `matches` of a second content script (`contents/antares-website-bridge.ts`),
+and the built manifest lists them under `content_scripts`, so the dashboard shows them among the sites the extension can access.
+
+> Antares' own website (the account and pricing pages). A small bridge
+> script answers the site's request for the extension's anonymous install
+> identifier (so a purchase activates the plan on this installation) and
+> stores, or clears, the session token when the user signs in or out on
+> the site, so the overlay shows the user's plan. It only accepts messages
+> from these three origins, reads nothing from the page, and is the only
+> script the extension runs outside the eight trading platforms.
+
 ---
 
 ## Single-purpose justification
