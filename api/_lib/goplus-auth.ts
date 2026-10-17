@@ -77,8 +77,10 @@ export async function fetchGoPlusSecurity(mint: string): Promise<unknown> {
     const authed = await fetchJson<{ code?: number }>(url, { headers: { Authorization: authorizationValue(token) } }, 4000);
     if (authed && authed.code === 1) return authed;
     // Code 4029 is "too many requests" (seen live: 20 of 30 simultaneous calls): the token is fine, only the plan's rate limit
-    // is hit, so keep it. Any other answer means the token was rejected or expired: renew it next time.
-    if (authed?.code !== GOPLUS_RATE_LIMITED) cached = null;
+    // is hit, so keep it. Any other ANSWER means the token was rejected or expired: renew it next time. No answer at all (a
+    // timeout, a network error: authed is null) says nothing about the token: it is kept. Dropping it there made every scan
+    // after a blip ask for a new token, one more GoPlus call per scan exactly when GoPlus is struggling.
+    if (authed && authed.code !== GOPLUS_RATE_LIMITED) cached = null;
     // Either way this scan is answered from the anonymous tier (its own quota) instead of losing GoPlus.
   }
   return fetchJson(url, {}, 4000);
