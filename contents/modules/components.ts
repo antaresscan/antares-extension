@@ -83,10 +83,10 @@ export function createHost() {
   const styleEl = document.createElement("style")
   styleEl.textContent = SHADOW_CSS
   state.shadow.appendChild(styleEl)
-  const fontLink = document.createElement("link")
-  fontLink.rel = "stylesheet"
-  fontLink.href = "https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap"
-  state.shadow.appendChild(fontLink)
+  // No Google Fonts <link> here (there was one until the audit of 2026-10-17): Chrome downloads a stylesheet linked inside a shadow root
+  // but ignores the @font-face it declares (measured in Chrome 152: text in the root kept the fallback's width until the font was declared
+  // in the document). The fonts the card shows are the ones injectFonts() declares in the document, embedded and hinted. The link only
+  // sent every visitor of a supported page to Google (address, browser, the site's origin), which the privacy policy does not list.
   state.boxEl = document.createElement("div")
   state.boxEl.className = "box"
   state.shadow.appendChild(state.boxEl)
