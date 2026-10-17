@@ -454,6 +454,8 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
 
   // ── Cached path ──────────────────────────────────────────────────────────────
   if (cached) {
+    // The user moved on while the install id was read: a newer scan owns the overlay, this answer is not for the page on screen.
+    if (state.lastCA !== ca) return
     // A fresh answer is in hand: whatever the overlay was showing because the scanner could not be reached is over. (Unless the answer is itself
     // a verdict the server served from memory, see showServedFromMemory.)
     const cachedMemoryAge = scannedAgoOf(cached)
@@ -542,7 +544,7 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
     const res = await fetchWithRetry(`${API}?ca=${ca}`, controller.signal, headers)
     if (cancelled()) return
     const quota = extractQuotaFromHeaders(res.headers)
-    const raw = await res.json()
+    const raw: unknown = await res.json()
     if (cancelled()) return
     // RUNTIME VALIDATION REMOVED (2026-05-20, incident PR #510).
     //
@@ -571,6 +573,8 @@ export async function scan(ca: string, opts: ScanOptions = {}) {
     // persistent mirror lives in chrome.storage.local — NOT the host page's
     // localStorage, which any script on the site can read and forge.
     await cacheScan(ca, data, sessionToken ?? null)
+    // Cancelled while the answer was being cached (it hashes the session first): kept in the cache, never drawn over the newer scan.
+    if (cancelled()) return
     // Hold the shimmer for the minimum visible duration before swapping
     // in the result. Only matters on silent rescans (where the shimmer
     // is the loading affordance) — non-silent paths show a skeleton
