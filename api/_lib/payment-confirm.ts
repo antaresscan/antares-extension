@@ -26,7 +26,10 @@ import {
 } from "./payments"
 
 export interface ConfirmIntentOpts {
-  /** On-chain tx hash from the provider (payin_hash / payout_hash). */
+  /**
+   * On-chain hash of the BUYER's transaction (payin_hash). Never payout_hash: that one is NOWPayments paying US, and
+   * /api/payment-status shows txSignature to the buyer, i.e. it would hand out the merchant's wallet (and its balance).
+   */
   txSignature?: string
   /**
    * Share of the asked crypto amount the buyer really sent (nowpayments.ts paidRatio: actually_paid / pay_amount). When
@@ -105,6 +108,11 @@ export async function confirmIntent(
         reference: intent.reference,
         error: String(err),
       })
+      // A checkout without an e-mail (payment-intent.ts accepts install_id alone) gets no licence: the tier stored on the
+      // install IS the purchase. Swallowing this error marked the intent confirmed with nothing delivered, and nothing ever
+      // came back to it. Same rule as for the licence below: throw, the intent stays pending, the IPN retry / poll / cron
+      // run this again. With an e-mail the licence carries the purchase, so the tier on the install can wait.
+      if (!intent.email) throw err
     }
 
     // Auto-bind install→email so the next /api/scan call resolves the
@@ -122,19 +130,28 @@ export async function confirmIntent(
     // If somehow the install is already tied to a different email
     // (would be unusual), we leave it alone and log a warning so the
     // operator can investigate. Same-email re-bind is a no-op.
+    // "Unbound" is decided by Redis (SET NX), not by a read followed by
+    // a write: two confirmations at once (IPN + poll), or a sync-token
+    // at the same moment, could both see "unbound" and both write.
     if (intent.email) {
       try {
-        const existingBinding = await redis.get<string>(
+        let existingBinding = await redis.get<string>(
           ACCOUNT_INSTALL_KEY(intent.installId),
         )
         if (!existingBinding) {
-          await redis.set(ACCOUNT_INSTALL_KEY(intent.installId), intent.email)
-          logger.info("payment-confirm", "install auto-bound via payment", {
-            reference: intent.reference,
-            installId: intent.installId,
-            emailRef: emailRef(intent.email),
-          })
-        } else if (existingBinding !== intent.email) {
+          const written = await redis.set(ACCOUNT_INSTALL_KEY(intent.installId), intent.email, { nx: true })
+          if (written === "OK") {
+            logger.info("payment-confirm", "install auto-bound via payment", {
+              reference: intent.reference,
+              installId: intent.installId,
+              emailRef: emailRef(intent.email),
+            })
+          } else {
+            // Bound by someone else between the read and the write: that binding stands.
+            existingBinding = await redis.get<string>(ACCOUNT_INSTALL_KEY(intent.installId))
+          }
+        }
+        if (existingBinding && existingBinding !== intent.email) {
           logger.warn("payment-confirm", "install bound to different email — leaving as-is", {
             reference: intent.reference,
             installId: intent.installId,

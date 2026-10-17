@@ -779,8 +779,8 @@ async function handleNowpaymentsIpn(req: VercelRequest, res: VercelResponse) {
     // (actually_paid / pay_amount) so confirmIntent can guard against the
     // partially-paid → finished corner case (anti-underpay).
     const ratio = paidRatio(payment);
-    const txSignature =
-      payment.payin_hash ?? payment.payout_hash ?? undefined;
+    // The buyer's transaction only: payout_hash is NOWPayments paying us (see ConfirmIntentOpts.txSignature).
+    const txSignature = payment.payin_hash ?? undefined;
     const outcome = await confirmIntent(redis, intent, {
       txSignature: typeof txSignature === "string" ? txSignature : undefined,
       paidRatio: ratio,

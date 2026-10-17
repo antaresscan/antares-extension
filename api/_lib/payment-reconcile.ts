@@ -82,7 +82,8 @@ export async function reconcileIntent(redis: Redis, intent: PaymentIntent, now: 
 
   const internal = mapStatus(canonical.payment_status)
   if (internal === "confirmed") {
-    const txSignature = canonical.payin_hash ?? canonical.payout_hash ?? undefined
+    // The buyer's transaction only: payout_hash is NOWPayments paying us (see ConfirmIntentOpts.txSignature).
+    const txSignature = canonical.payin_hash ?? undefined
     const ratio = paidRatio(canonical)
     const outcome = await confirmIntent(redis, working, {
       txSignature: typeof txSignature === "string" ? txSignature : undefined,
