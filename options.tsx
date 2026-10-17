@@ -17,7 +17,11 @@ interface AccountStateSignedOut {
 interface AccountStateSignedIn {
   kind: "signed_in";
   email: string;
-  tier: "free" | "pro" | "yearly" | "lifetime";
+  /**
+   * null: the plan could not be read right now (/api/quota did not answer, or answered without a plan). Never shown as Free: the Free
+   * view says "no active Pro subscription found" and offers to upgrade, which would invite a paying customer to pay a second time.
+   */
+  tier: "free" | "pro" | "yearly" | "lifetime" | null;
   expiresAt: number | null;
 }
 interface AccountStateError {
@@ -70,7 +74,7 @@ function Options() {
       if (isSessionRejected(meRes.status)) {
         // Stale or invalid token — drop it so future scans go out as
         // anonymous (Free) instead of with a token the server rejects.
-        chrome.storage.local.remove(SESSION_TOKEN_KEY);
+        void chrome.storage.local.remove(SESSION_TOKEN_KEY);
         setAccount({ kind: "signed_out" });
         return;
       }
@@ -102,7 +106,7 @@ function Options() {
             ...(installIdNow ? { "X-Antares-Install": installIdNow } : {}),
           },
         });
-        let tier: AccountStateSignedIn["tier"] = "free";
+        let tier: AccountStateSignedIn["tier"] = null;
         let expiresAt: number | null = null;
         if (quotaRes.ok) {
           const q = (await quotaRes.json()) as {
@@ -123,12 +127,11 @@ function Options() {
         }
         setAccount({ kind: "signed_in", email: me.email, tier, expiresAt });
       } catch {
-        // /api/quota down — fall back to "signed_in but tier unknown"
-        // shown as "free" so we never falsely advertise Pro.
+        // /api/quota down: signed in, plan unknown. Neither Pro (never falsely advertised) nor Free (which offers to pay again).
         setAccount({
           kind: "signed_in",
           email: me.email,
-          tier: "free",
+          tier: null,
           expiresAt: null,
         });
       }
@@ -276,6 +279,7 @@ function Options() {
   }
 
   function tierLabel(tier: AccountStateSignedIn["tier"]): string {
+    if (tier === null) return "Plan unknown";
     if (tier === "lifetime") return "Lifetime";
     if (tier === "yearly") return "Yearly";
     if (tier === "pro") return "Pro";
@@ -457,6 +461,11 @@ function Options() {
               Sign out
             </button>
           </div>
+          {account.tier === null && (
+            <p role="status" style={{ fontSize: 12, color: "#888", marginTop: 12, lineHeight: 1.6 }}>
+              Your plan could not be checked right now. Reload this page to retry.
+            </p>
+          )}
           {account.tier === "free" && (
             <p style={{ fontSize: 12, color: "#888", marginTop: 12, lineHeight: 1.6 }}>
               You're signed in but no active Pro subscription found.{" "}
