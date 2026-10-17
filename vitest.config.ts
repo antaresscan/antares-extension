@@ -25,6 +25,9 @@ const dataBase64Stub = {
 
 export default defineConfig({
   plugins: [dataBase64Stub],
+  // Plasmo's tsconfig keeps JSX as written ("preserve": its own bundler compiles it). A test that renders a .tsx page (options.tsx) needs
+  // it compiled: the automatic runtime, as Plasmo builds it. No effect on .ts files.
+  oxc: { jsx: { runtime: "automatic" } },
   test: {
     globals: true,
     environment: "node",

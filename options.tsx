@@ -17,7 +17,11 @@ interface AccountStateSignedOut {
 interface AccountStateSignedIn {
   kind: "signed_in";
   email: string;
-  tier: "free" | "pro" | "yearly" | "lifetime";
+  /**
+   * null: the plan could not be read right now (/api/quota did not answer, or answered without a plan). Never shown as Free: the Free
+   * view says "no active Pro subscription found" and offers to upgrade, which would invite a paying customer to pay a second time.
+   */
+  tier: "free" | "pro" | "yearly" | "lifetime" | null;
   expiresAt: number | null;
 }
 interface AccountStateError {
@@ -31,7 +35,6 @@ type AccountState =
   | AccountStateError;
 
 function Options() {
-  const [stealthMode, setStealthMode] = useState(false);
   const [autoRescan, setAutoRescan] = useState(true);
   const [version, setVersion] = useState("");
   const [installId, setInstallId] = useState<string>("");
@@ -70,7 +73,7 @@ function Options() {
       if (isSessionRejected(meRes.status)) {
         // Stale or invalid token — drop it so future scans go out as
         // anonymous (Free) instead of with a token the server rejects.
-        chrome.storage.local.remove(SESSION_TOKEN_KEY);
+        void chrome.storage.local.remove(SESSION_TOKEN_KEY);
         setAccount({ kind: "signed_out" });
         return;
       }
@@ -102,7 +105,7 @@ function Options() {
             ...(installIdNow ? { "X-Antares-Install": installIdNow } : {}),
           },
         });
-        let tier: AccountStateSignedIn["tier"] = "free";
+        let tier: AccountStateSignedIn["tier"] = null;
         let expiresAt: number | null = null;
         if (quotaRes.ok) {
           const q = (await quotaRes.json()) as {
@@ -123,12 +126,11 @@ function Options() {
         }
         setAccount({ kind: "signed_in", email: me.email, tier, expiresAt });
       } catch {
-        // /api/quota down — fall back to "signed_in but tier unknown"
-        // shown as "free" so we never falsely advertise Pro.
+        // /api/quota down: signed in, plan unknown. Neither Pro (never falsely advertised) nor Free (which offers to pay again).
         setAccount({
           kind: "signed_in",
           email: me.email,
-          tier: "free",
+          tier: null,
           expiresAt: null,
         });
       }
@@ -143,7 +145,7 @@ function Options() {
 
   useEffect(() => {
     chrome.storage.local.get(
-      ["antares_stealth", "autoRescan", "antares_dev_tier"],
+      ["autoRescan", "antares_dev_tier"],
       (data) => {
         if (chrome.runtime.lastError) {
           console.error(
@@ -152,7 +154,6 @@ function Options() {
           );
           return;
         }
-        setStealthMode(!!data.antares_stealth);
         setAutoRescan(data.autoRescan !== false);
         const stored = data.antares_dev_tier;
         if (
@@ -276,6 +277,7 @@ function Options() {
   }
 
   function tierLabel(tier: AccountStateSignedIn["tier"]): string {
+    if (tier === null) return "Plan unknown";
     if (tier === "lifetime") return "Lifetime";
     if (tier === "yearly") return "Yearly";
     if (tier === "pro") return "Pro";
@@ -293,21 +295,6 @@ function Options() {
     <div style={{ maxWidth: 600, margin: "40px auto", fontFamily: "system-ui" }}>
       <h1>Antares Scanner Settings</h1>
 
-      <div style={{ marginBottom: 16 }}>
-        <label>
-          <input
-            type="checkbox"
-            checked={stealthMode}
-            onChange={(e) => {
-              setStealthMode(e.target.checked);
-              void chrome.storage.local.set({
-                antares_stealth: e.target.checked,
-              });
-            }}
-          />
-          {" "}Stealth Mode (hide overlay on pages)
-        </label>
-      </div>
       <div style={{ marginBottom: 16 }}>
         <label>
           <input
@@ -457,6 +444,11 @@ function Options() {
               Sign out
             </button>
           </div>
+          {account.tier === null && (
+            <p role="status" style={{ fontSize: 12, color: "#888", marginTop: 12, lineHeight: 1.6 }}>
+              Your plan could not be checked right now. Reload this page to retry.
+            </p>
+          )}
           {account.tier === "free" && (
             <p style={{ fontSize: 12, color: "#888", marginTop: 12, lineHeight: 1.6 }}>
               You're signed in but no active Pro subscription found.{" "}

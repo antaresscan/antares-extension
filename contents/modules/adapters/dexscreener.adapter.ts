@@ -54,6 +54,27 @@ export function mintOfPairFromLinks(doc: Document | null, urlAddress: string): s
   }
   return ""
 }
+
+/**
+ * True when the page shows the link of a pair and none of them is the pair named by `urlAddress`: the page on screen is the PREVIOUS
+ * one. Measured on dexscreener.com (2026-10-17): after a click to another pair the URL changes at once, and the page keeps the previous
+ * pair's links for about 0.9 s, longer than the 800 ms the detector waits (address-detector.ts onNav). The only solscan.io/account links
+ * of a pair page are the pair's own (checked on Bonk/SOL and Nubi/SOL: no wallet links).
+ */
+export function pageShowsAnotherPair(doc: Document | null, urlAddress: string): boolean {
+  if (!doc || !urlAddress) return false
+  const wanted = urlAddress.toLowerCase()
+  const accountRe = new RegExp(`solscan\\.io/account/(${BASE58_ADDRESS})`)
+  let showsAPair = false
+  for (const a of doc.querySelectorAll("a[href]")) {
+    const account = (a.getAttribute("href") || "").match(accountRe)
+    if (!account) continue
+    if (account[1].toLowerCase() === wanted) return false
+    showsAPair = true
+  }
+  return showsAPair
+}
+
 export const DexScreenerAdapter: SiteAdapter = {
   name: "DexScreener",
   hostnames: ["dexscreener.com"],
@@ -66,7 +87,8 @@ export const DexScreenerAdapter: SiteAdapter = {
     }
 
     // 1. The token itself, read from the page next to the pair of this URL (see the note above): the URL holds the pair's address.
-    const fromPage = mintOfPairFromLinks(doc, url.pathname.split("/")[2] ?? "")
+    const pairInUrl = url.pathname.split("/")[2] ?? ""
+    const fromPage = mintOfPairFromLinks(doc, pairInUrl)
     if (fromPage) return fromPage
 
     // 2. The page is not ready (or is not a pair page): the URL (works if the address is valid base58). The API resolves a pair
@@ -77,6 +99,9 @@ export const DexScreenerAdapter: SiteAdapter = {
     // 3. URL extraction failed (lowercased address).
     //    Extract token mint from Solscan token links in the DOM.
     //    These links use the real mixed-case base58 address.
+    //    Never while the page still shows ANOTHER pair: its first token link is the previous token, and the detector, finding the token
+    //    it already shows, would keep the previous verdict on this page. Nothing yet: the detector looks again (pollAfterNav).
+    if (pageShowsAnotherPair(doc, pairInUrl)) return ""
     const re = makeSOLAddrRegex()
     for (const a of doc.querySelectorAll("a[href]")) {
       const href = a.getAttribute("href") || ""

@@ -40,6 +40,23 @@ export function poll(): string {
 }
 
 /**
+ * After a navigation the page may not show its token yet: DexScreener keeps the previous pair's links for about 0.9 s after the URL
+ * changed (measured 2026-10-17, see dexscreener.adapter.ts pageShowsAnotherPair). One read at 800 ms then found nothing and the overlay
+ * stayed empty until the next navigation. Look again every NAV_RETRY_MS, NAV_RETRIES times at most (3.2 s), until a token is found.
+ * The timer lives in state.navDebounce: a new navigation (onNav) and disabling the extension (cleanupNavListeners) cancel it.
+ */
+const NAV_RETRY_MS = 400
+const NAV_RETRIES = 8
+
+function pollAfterNav(retriesLeft: number): void {
+  if (poll() || retriesLeft <= 0 || !state.enabled) return
+  state.navDebounce = setTimeout(() => {
+    state.navDebounce = null
+    pollAfterNav(retriesLeft - 1)
+  }, NAV_RETRY_MS)
+}
+
+/**
  * Timestamp of the last onNav call that actually triggered a poll.
  * Used to prevent MutationObserver + history.pushState from both
  * triggering onNav within the same navigation event.
@@ -88,7 +105,7 @@ export function onNav(): void {
     }
 
     resetState()
-    poll()
+    pollAfterNav(NAV_RETRIES)
   }, 800)
 }
 

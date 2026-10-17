@@ -112,10 +112,15 @@ describe("privacy.html names what the code does", () => {
     expect(pages, "no page loads Google Fonts any more: take the row out of the policy").not.toEqual([]);
     const start = table.indexOf("Google (Fonts)");
     expect(start, "the Google Fonts row is missing").toBeGreaterThan(-1);
-    const fontsRow = table.slice(start, table.indexOf("policy", start));
+    const nextRow = table.indexOf("Resend", start); // the processor listed after Google Fonts
+    expect(nextRow, "the table no longer lists Resend after Google Fonts: update this test").toBeGreaterThan(start);
+    const fontsRow = table.slice(start, nextRow);
     const overlayAsksGoogle = /fonts\.googleapis\.com/.test(read("contents/modules/components.ts"));
-    if (overlayAsksGoogle) expect(fontsRow, "the overlay asks Google for fonts: the row must say so").toMatch(/overlay on the trading sites/i);
-    else expect(fontsRow, "the overlay no longer asks Google for fonts: take it out of the row").not.toMatch(/overlay on the trading sites/i);
+    if (overlayAsksGoogle) expect(fontsRow, "the overlay asks Google for fonts: the row must say so").toMatch(/typefaces of the overlay on the trading sites/i);
+    else {
+      expect(fontsRow, "the overlay no longer asks Google for fonts: the row must not say it does").not.toMatch(/typefaces of the overlay on the trading sites/i);
+      expect(fontsRow, "versions published before the change did ask: the row says so").toMatch(/Earlier versions of the Extension also asked Google/i);
+    }
   });
 
   it("section 5 does not credit a source with what the engine does not use from it", () => {

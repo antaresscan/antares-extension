@@ -24,9 +24,12 @@
 // `externally_connectable`? The postMessage approach doesn't require
 // hardcoding the extension's Chrome Web Store ID on the website (which
 // changes when re-publishing or developing locally). The trade-off is
-// any other extension running on the page can listen too, but we send
-// nothing sensitive — the install_id is an opaque random UUID that's
-// already sent in plaintext to our API as `X-Antares-Install`.
+// that any script running on the page (or another extension's content
+// script) can ask too. The install_id is an opaque random UUID, but it is
+// not nothing: it is the key under which /api/history serves the install's
+// scan history. That is acceptable only because the website's pages load
+// no third-party script (checked 2026-10-17: no external <script src>):
+// keep it that way, or gate the history behind the session.
 
 import type { PlasmoCSConfig } from "plasmo"
 import { getInstallId } from "../shared/install-id"
@@ -100,6 +103,16 @@ const ALLOWED_BRIDGE_ORIGINS = new Set([
   "https://antares-website.vercel.app"
 ])
 
+// A session token is a JWT: three base64url parts, a few hundred characters (api/_lib/account.ts signSession). Anything else is not
+// one of ours and is not stored: an unbounded string written by a script of the page would sit in the extension's storage and go out
+// as X-Antares-Session on every scan.
+const SESSION_TOKEN_RE = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/
+const SESSION_TOKEN_MAX_LENGTH = 4096
+
+function isSessionTokenShape(token: unknown): token is string {
+  return typeof token === "string" && token.length <= SESSION_TOKEN_MAX_LENGTH && SESSION_TOKEN_RE.test(token)
+}
+
 function setStoredSessionToken(token: string): Promise<void> {
   return new Promise((resolve) => {
     chrome.storage.local.set({ [SESSION_TOKEN_KEY]: token }, () => {
@@ -169,7 +182,7 @@ window.addEventListener("message", (event) => {
   // is the cookie-free path — works even when Chrome blocks third-party
   // cookies for chrome-extension origins.
   if (data.type === "antares:set-session-token") {
-    if (typeof data.token === "string" && data.token.length > 0) {
+    if (isSessionTokenShape(data.token)) {
       void setStoredSessionToken(data.token).then(() => {
         window.postMessage(
           { type: "antares:session-token-stored", v: 1 },

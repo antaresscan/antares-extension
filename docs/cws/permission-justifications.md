@@ -16,7 +16,7 @@
 ### `storage`
 
 > Keeps on the user's device (chrome.storage.local, never synced): the
-> on/off switch, the stealth-mode and automatic re-scan settings, a
+> on/off switch, the automatic re-scan setting, a
 > randomly generated and opaque install identifier (sent with scans so
 > the API can rate-limit per installation instead of per IP, and keep
 > the scan history of that installation), the last verdict seen for

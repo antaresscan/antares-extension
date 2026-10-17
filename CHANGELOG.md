@@ -34,6 +34,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Data the Extension sends — changed by the file-by-file audit of 2026-10-17 (not released yet)
 
+- The overlay no longer asks Google for its typefaces on the trading pages: the fonts it shows were always the ones embedded in the
+  Extension (Chrome ignores a font declared inside the overlay's shadow root), so nothing changes on screen. Privacy policy, section 5.
+- The Options page no longer shows the "Stealth Mode" checkbox: it saved a setting that nothing in the Extension read.
 - "Full Analysis" opens `token.html?ca=<mint>` only: the whole scan no longer rides along in the address (`#data=…`), which no
   page ever read and which stayed in the browser's history.
 

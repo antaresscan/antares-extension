@@ -179,11 +179,16 @@ export const FLAG_DESCRIPTIONS = {
 
 /** Resolve a plain-language description for a flag label. Tries exact match
  *  first, then prefix-match so suffixed variants (e.g. "Single wallet holds 18%")
- *  still resolve to the base description. Returns null when no match. */
+ *  still resolve to the base description. Returns null when no match.
+ *  The prefix is the LONGEST key the label starts with: the engine's "Transfer fee can be changed — an authority can raise it to 100%"
+ *  also starts with "Transfer fee", and the first key of the table used to win, so the page explained a plain fee instead of a possible
+ *  honeypot. Same rule as the overlay (contents/modules/critical-flags.ts). */
 export function getFlagDescription(label) {
   if (FLAG_DESCRIPTIONS[label]) return FLAG_DESCRIPTIONS[label];
+  const lower = label.toLowerCase();
+  let best = null;
   for (const key of Object.keys(FLAG_DESCRIPTIONS)) {
-    if (label.toLowerCase().startsWith(key.toLowerCase())) return FLAG_DESCRIPTIONS[key];
+    if (lower.startsWith(key.toLowerCase()) && (best === null || key.length > best.length)) best = key;
   }
-  return null;
+  return best === null ? null : FLAG_DESCRIPTIONS[best];
 }

@@ -1,5 +1,5 @@
 import type { ScanResponseFlag, ScanResponseData, QuotaStatus } from "../../shared/types"
-import { RISK_CLASS, ANALYSIS_PAGE, SVG_MOVE, SVG_CLOSE, VERDICT_COLORS, PHOTON_REF, buildPhotonUrl, PRICING_URL } from "./constants"
+import { RISK_CLASS, ANALYSIS_PAGE, SVG_MOVE, SVG_CLOSE, PHOTON_REF, buildPhotonUrl, PRICING_URL } from "./constants"
 import { verdictLabel } from "./verdict-label"
 import { state, resetSourceGap } from "./state"
 import { SHADOW_CSS, injectFonts } from "./styles"
@@ -83,10 +83,10 @@ export function createHost() {
   const styleEl = document.createElement("style")
   styleEl.textContent = SHADOW_CSS
   state.shadow.appendChild(styleEl)
-  const fontLink = document.createElement("link")
-  fontLink.rel = "stylesheet"
-  fontLink.href = "https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap"
-  state.shadow.appendChild(fontLink)
+  // No Google Fonts <link> here (there was one until the audit of 2026-10-17): Chrome downloads a stylesheet linked inside a shadow root
+  // but ignores the @font-face it declares (measured in Chrome 152: text in the root kept the fallback's width until the font was declared
+  // in the document). The fonts the card shows are the ones injectFonts() declares in the document, embedded and hinted. The link only
+  // sent every visitor of a supported page to Google (address, browser, the site's origin), which the privacy policy does not list.
   state.boxEl = document.createElement("div")
   state.boxEl.className = "box"
   state.shadow.appendChild(state.boxEl)
@@ -265,17 +265,6 @@ export function attachAnalysisBtn(mint: string) {
   })
 }
 
-export function showCachedBadge(ageMs: number) {
-  const fo = state.shadow?.querySelector(".fo")
-  if (!fo) return
-  fo.querySelector(".cached-badge")?.remove()
-  const mins = Math.max(1, Math.round(ageMs / 60_000))
-  const badge = document.createElement("span")
-  badge.className = "cached-badge"
-  badge.textContent = `\u26a1 cached \u00b7 ${mins}m ago`
-  fo.prepend(badge)
-}
-
 export function triggerResultAnimations(el: HTMLDivElement) {
   requestAnimationFrame(() => {
     // Score bar fills synchronously with the score number animation —
@@ -329,32 +318,6 @@ export function animateScore(el: HTMLElement, target: number, duration = 1100) {
     if (progress < 1) requestAnimationFrame(tick)
   }
   requestAnimationFrame(tick)
-}
-
-export function buildSparkline(candles: Array<{ close: number }> | undefined, risk: string): string {
-  if (!candles || candles.length < 2) return ""
-  const closes = candles.map((c) => c.close)
-  const min = Math.min(...closes)
-  const max = Math.max(...closes)
-  const range = max - min || 1
-  const w = 60, h = 30
-  const points = closes.map((v, i) => {
-    const x = (i / (closes.length - 1)) * w
-    const y = h - ((v - min) / range) * h
-    return `${x.toFixed(1)},${y.toFixed(1)}`
-  }).join(" ")
-  const color = VERDICT_COLORS[risk] || "#555"
-  return `<div class="sparkline"><svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg"><polyline points="${points}" fill="none" stroke="${color}" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`
-}
-
-export function formatTimeAgo(ts: number): string {
-  const diff = Date.now() - ts
-  const mins = Math.floor(diff / 60_000)
-  if (mins < 1) return "now"
-  if (mins < 60) return `${mins}m ago`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h ago`
-  return `${Math.floor(hrs / 24)}d ago`
 }
 
 // Optional affiliate row — only rendered when:
@@ -423,10 +386,6 @@ function buildHeaderNode(quota?: QuotaStatus): HTMLElement {
     }, "ANTARES"),
     el("div", { class: "hd-right" }, dragIcon, closeBtn),
   )
-}
-
-export function buildHeader(): string {
-  return buildHeaderNode().outerHTML
 }
 
 // Loading-state skeleton injected while a scan is in-flight. Exported as
