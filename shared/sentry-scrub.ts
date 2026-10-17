@@ -50,6 +50,11 @@ export const SCRUB_KEYS = new Set<string>([
   // redeem onto a different install via /api/redeem)
   "licensekey",
   "license_key",
+  // A checkout reference reveals the licence key of a paid checkout (/api/payment-status), under every name the code gives it
+  "reference",
+  "orderid",
+  "order_id",
+  "intentreference",
   // The install id the extension sends as a header: /api/history serves an install's scans to whoever sends it, and
   // "delete my account" erases the data of the install named in it (account-erasure.ts). (A context field `install_id` stays readable
   // for triage: that is a decision pinned by sentry-scrub.test.ts.)

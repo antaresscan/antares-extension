@@ -52,6 +52,12 @@ export interface SessionPayload {
   iat: number;
   /** The account's sessionVersion when the token was signed. A token signed before the number existed carries none: it reads as 0. */
   sv?: number;
+  /**
+   * When the password was typed (epoch seconds), for a token re-issued from another one (/api/auth/sync-token): the re-issue keeps it,
+   * so no chain of re-issues outlives SESSION_MAX_AGE_SECONDS after the sign-in. A token signed before the field existed carries none:
+   * its iat stands in.
+   */
+  auth?: number;
 }
 
 // ─── Redis keys ───────────────────────────────────────────────────────────────
@@ -245,14 +251,25 @@ export function _resetSessionSecretCacheForTests(): void {
 }
 
 const SESSION_TTL_SECONDS = 30 * 24 * 60 * 60; // 30 days
+/**
+ * The longest a session lives after the password was typed, re-issues included: the 30-day cookie of the sign-in, then the 30-day token
+ * that sync-token signs from it on its last day. Without this bound, a token handed to sync-token came back as a fresh 30-day token, again
+ * and again: a stolen token never died (only "log out everywhere" stopped it).
+ */
+export const SESSION_MAX_AGE_SECONDS = 2 * SESSION_TTL_SECONDS;
 
-export function signSession(emailLc: string, now: number = Date.now(), sessionVersion: number = 0): string {
+/**
+ * Signs a session token. `signedInAt` (epoch ms) is when the password was typed: omitted for a sign-in (it is `now`), given by a re-issue
+ * (sync-token passes the one of the token it was shown, see signedInAtOf).
+ */
+export function signSession(emailLc: string, now: number = Date.now(), sessionVersion: number = 0, signedInAt: number = now): string {
   const header = base64UrlEncode(JSON.stringify({ alg: "HS256", typ: "JWT" }));
   const payload: SessionPayload = {
     sub: emailLc,
     iat: Math.floor(now / 1000),
     exp: Math.floor(now / 1000) + SESSION_TTL_SECONDS,
     sv: sessionVersion,
+    auth: Math.floor(Math.min(signedInAt, now) / 1000),
   };
   const payloadB64 = base64UrlEncode(JSON.stringify(payload));
   const data = `${header}.${payloadB64}`;
@@ -288,7 +305,16 @@ export function verifySession(token: string, now: number = Date.now()): SessionP
   if (payload.exp * 1000 < now) return null;
   // The session number, when there is one, is a whole number from 0 up. Anything else is not a token we signed.
   if (payload.sv !== undefined && !(Number.isInteger(payload.sv) && payload.sv >= 0)) return null;
+  // However it was re-issued, a session ends SESSION_MAX_AGE_SECONDS after the password was typed.
+  const signedIn = signedInAtOf(payload);
+  if (signedIn === null || signedIn + SESSION_MAX_AGE_SECONDS * 1000 < now) return null;
   return payload;
+}
+
+/** When the password of this session was typed (epoch ms): its `auth`, or its iat for a token signed before `auth` existed. null when neither is a number. */
+export function signedInAtOf(payload: Pick<SessionPayload, "auth" | "iat">): number | null {
+  const seconds = typeof payload.auth === "number" ? payload.auth : payload.iat;
+  return typeof seconds === "number" && Number.isFinite(seconds) ? seconds * 1000 : null;
 }
 
 /** A session number as read from Redis: a string ("2") or, when the client deserialises, a number (2). Absent or garbage = 0. */

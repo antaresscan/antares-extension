@@ -16,7 +16,7 @@
 // is permitted.
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Redis } from "@upstash/redis";
-import { signSession, verifySession, getAccount, isCurrentSession, type Account } from "./account";
+import { signSession, verifySession, getAccount, isCurrentSession, type Account, type SessionPayload } from "./account";
 
 export const SESSION_COOKIE_NAME = "antares_session";
 
@@ -118,14 +118,14 @@ export function readSessionToken(req: VercelRequest): string | null {
 }
 
 /**
- * Parse + verify the session cookie. Returns the account record or
- * null when the cookie is missing/invalid/expired/tampered. Reads
- * Redis to get the full account record so callers don't have to.
+ * Parse + verify the session token of the request (header or cookie). Returns the account record AND the verified payload (sync-token
+ * needs the payload: a re-issued token keeps the sign-in time of the one it was shown), or null when the token is
+ * missing/invalid/expired/tampered/revoked.
  */
-export async function getAccountFromRequest(
+export async function getSessionFromRequest(
   req: VercelRequest,
   redis: Redis,
-): Promise<Account | null> {
+): Promise<{ account: Account; payload: SessionPayload } | null> {
   const token = readSessionToken(req);
   if (!token) return null;
   const payload = verifySession(token);
@@ -134,5 +134,17 @@ export async function getAccountFromRequest(
   if (!account) return null;
   // The token must carry the account's CURRENT session number (revokeAllSessions raises it): a stolen or forgotten session stops working at
   // once. Same single Redis read as before: the number is a field of the account hash that getAccount already fetches.
-  return isCurrentSession(payload, account) ? account : null;
+  return isCurrentSession(payload, account) ? { account, payload } : null;
+}
+
+/**
+ * Parse + verify the session cookie. Returns the account record or
+ * null when the cookie is missing/invalid/expired/tampered. Reads
+ * Redis to get the full account record so callers don't have to.
+ */
+export async function getAccountFromRequest(
+  req: VercelRequest,
+  redis: Redis,
+): Promise<Account | null> {
+  return (await getSessionFromRequest(req, redis))?.account ?? null;
 }

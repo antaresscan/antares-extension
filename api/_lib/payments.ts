@@ -139,14 +139,25 @@ export async function saveNewIntent(
   }
 }
 
+/**
+ * How a lookup treats a Redis error. By default it reads as "no intent" (null), which is what a page that polls again can live with.
+ * `strict: true` throws it instead, for the caller to which "could not read" and "does not exist" must not mean the same thing: the IPN
+ * webhook answers 200 to an intent that does not exist (NOWPayments then stops retrying), and must answer 500 to one it could not read.
+ */
+export interface IntentLookupOpts {
+  strict?: boolean
+}
+
 export async function getPaymentIntent(
   redis: Redis,
   reference: string,
+  opts: IntentLookupOpts = {},
 ): Promise<PaymentIntent | null> {
   try {
     const raw = await redis.get<PaymentIntent>(INTENT_KEY(reference))
     return raw ?? null
   } catch (err) {
+    if (opts.strict) throw err
     logger.warn("payments", "intent get failed", { error: String(err) })
     return null
   }
@@ -155,12 +166,14 @@ export async function getPaymentIntent(
 export async function getIntentByNpPaymentId(
   redis: Redis,
   paymentId: string,
+  opts: IntentLookupOpts = {},
 ): Promise<PaymentIntent | null> {
   try {
     const ref = await redis.get<string>(INTENT_BY_NP_PAYMENT_KEY(paymentId))
     if (!ref) return null
-    return await getPaymentIntent(redis, ref)
-  } catch {
+    return await getPaymentIntent(redis, ref, opts)
+  } catch (err) {
+    if (opts.strict) throw err
     return null
   }
 }
@@ -168,12 +181,14 @@ export async function getIntentByNpPaymentId(
 export async function getIntentByNpInvoiceId(
   redis: Redis,
   invoiceId: string,
+  opts: IntentLookupOpts = {},
 ): Promise<PaymentIntent | null> {
   try {
     const ref = await redis.get<string>(INTENT_BY_NP_INVOICE_KEY(invoiceId))
     if (!ref) return null
-    return await getPaymentIntent(redis, ref)
-  } catch {
+    return await getPaymentIntent(redis, ref, opts)
+  } catch (err) {
+    if (opts.strict) throw err
     return null
   }
 }

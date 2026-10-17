@@ -37,6 +37,7 @@ import {
   ensureDevLifetimeLicense,
   ensureDevProLicense,
   signSession,
+  signedInAtOf,
   revokeAllSessions,
   ACCOUNT_INSTALL_KEY,
 } from "../_lib/account";
@@ -55,6 +56,7 @@ import {
   setSessionCookie,
   clearSessionCookie,
   getAccountFromRequest,
+  getSessionFromRequest,
 } from "../_lib/session-cookie";
 import {
   verifyIpnSignature,
@@ -67,7 +69,6 @@ import {
   getIntentByNpInvoiceId,
   getIntentByNpPaymentId,
   getPaymentIntent,
-  markIntentExpired,
 } from "../_lib/payments";
 import { confirmIntent } from "../_lib/payment-confirm";
 import { initUserStorage } from "../_lib/user";
@@ -530,8 +531,11 @@ async function handleResendVerification(req: VercelRequest, res: VercelResponse)
 // scan calls send X-Antares-Session: <token> header → API verifies.
 //
 // The token is a fresh sign of the same email payload. Same TTL as the
-// cookie (30 days). Logout clears the bridge-stored token via a
-// separate postMessage (handled in the bridge content script).
+// cookie (30 days), but it keeps the sign-in time of the token it was
+// shown: a chain of re-issues ends SESSION_MAX_AGE_SECONDS (60 days)
+// after the password was typed, whatever is presented (the cookie, or
+// a token in X-Antares-Session). Logout clears the bridge-stored token
+// via a separate postMessage (handled in the bridge content script).
 async function handleSyncToken(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") return apiError(res, 405, "Method not allowed.");
 
@@ -539,10 +543,11 @@ async function handleSyncToken(req: VercelRequest, res: VercelResponse) {
   if (!redis) return apiError(res, 503, "Storage unavailable.");
 
   try {
-    const account = await getAccountFromRequest(req, redis);
-    if (!account) {
+    const session = await getSessionFromRequest(req, redis);
+    if (!session) {
       return res.status(401).json({ ok: false, reason: "not_authenticated" });
     }
+    const { account, payload } = session;
 
     // Auto-bind the caller's install_id to their email so subsequent scan
     // calls resolve tier without requiring a separate "Link to my
@@ -563,18 +568,30 @@ async function handleSyncToken(req: VercelRequest, res: VercelResponse) {
     // no-op; idempotent.) Refusal is silent — the sync-token still
     // succeeds so the user can scan; their tier just stays Free
     // until they redeem their own license.
+    //
+    // "Only when UNBOUND" is decided by Redis, not by a read followed by
+    // a write: SET NX writes only if no binding exists. A read-then-write
+    // let two accounts signing in at the same moment both see "unbound"
+    // and both write, the last one silently replacing the first.
     const installId = getInstallId(req);
     // An address nobody has confirmed does not get an install bound to it (audit A-01).
     if (installId && isEmailProven(account)) {
       try {
-        const existing = await redis.get<string>(ACCOUNT_INSTALL_KEY(installId));
+        // The usual case (already bound to this account) costs one read, as before.
+        let existing = await redis.get<string>(ACCOUNT_INSTALL_KEY(installId));
         if (!existing) {
-          await redis.set(ACCOUNT_INSTALL_KEY(installId), account.email);
-          logger.info("auth/sync-token", "install auto-bound", {
-            installId,
-            emailRef: emailRef(account.email),
-          });
-        } else if (existing !== account.email) {
+          const written = await redis.set(ACCOUNT_INSTALL_KEY(installId), account.email, { nx: true });
+          if (written === "OK") {
+            logger.info("auth/sync-token", "install auto-bound", {
+              installId,
+              emailRef: emailRef(account.email),
+            });
+          } else {
+            // Another sign-in bound it between the read and the write: that binding stands.
+            existing = await redis.get<string>(ACCOUNT_INSTALL_KEY(installId));
+          }
+        }
+        if (existing && existing !== account.email) {
           logger.warn("auth/sync-token", "install bound to different email", {
             installId,
             sessionRef: emailRef(account.email),
@@ -593,7 +610,9 @@ async function handleSyncToken(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    const token = signSession(account.email, Date.now(), account.sessionVersion);
+    const now = Date.now();
+    // verifySession accepted the payload, so its sign-in time is a number; `now` is only the type's fallback.
+    const token = signSession(account.email, now, account.sessionVersion, signedInAtOf(payload) ?? now);
     return res.json({ ok: true, token, email: account.email });
   } catch (err) {
     logger.error("auth/sync-token", "lookup failed", { error: String(err) });
@@ -664,7 +683,8 @@ async function handleNowpaymentsIpn(req: VercelRequest, res: VercelResponse) {
   if (!redis) return apiError(res, 503, "Storage unavailable.");
 
   // Per-IP rate limit. NOWPayments fires from a stable set of IPs so
-  // legit traffic never approaches the cap (30/min). The check protects
+  // legit traffic never approaches the cap (60/min, and 429 is retried
+  // by NOWPayments like any other non-200). The check protects
   // against spoofed-source flood: an attacker with a known endpoint can
   // POST garbage all day; without a limit each request would HMAC-verify
   // (cheap but non-zero), look up a Redis key, and burn function quota.
@@ -684,7 +704,8 @@ async function handleNowpaymentsIpn(req: VercelRequest, res: VercelResponse) {
   if (!verifyIpnSignature(body, sigHeader)) {
     logger.warn("auth/nowpayments-ipn", "signature verification failed", {
       hasSig: typeof sigHeader === "string" && sigHeader.length > 0,
-      orderId: typeof body.order_id === "string" ? body.order_id : null,
+      // Unsigned, so written by anyone: at most 80 characters of it reach the logs.
+      orderId: typeof body.order_id === "string" ? body.order_id.slice(0, 80) : null,
     });
     return res.status(401).json({ ok: false, reason: "invalid_signature" });
   }
@@ -704,16 +725,22 @@ async function handleNowpaymentsIpn(req: VercelRequest, res: VercelResponse) {
         ? String(payment.invoice_id)
         : "";
 
+  const internalStatus = mapStatus(payment.payment_status);
+
   // Locate the intent. order_id is our reference (what we passed to
   // NOWPayments), so it's the primary lookup. Fall back to the
   // payment_id → reference index, then the invoice_id index, in case
   // an upstream relay drops the order_id field.
-  let intent = orderId ? await getPaymentIntent(redis, orderId) : null;
+  //
+  // Strict reads: a Redis error THROWS (the dispatcher answers 500 and
+  // NOWPayments retries). Read as "no intent", it got the 200 below,
+  // NOWPayments stopped retrying, and a confirmed payment was lost.
+  let intent = orderId ? await getPaymentIntent(redis, orderId, { strict: true }) : null;
   if (!intent && npPaymentId) {
-    intent = await getIntentByNpPaymentId(redis, npPaymentId);
+    intent = await getIntentByNpPaymentId(redis, npPaymentId, { strict: true });
   }
   if (!intent && npInvoiceId) {
-    intent = await getIntentByNpInvoiceId(redis, npInvoiceId);
+    intent = await getIntentByNpInvoiceId(redis, npInvoiceId, { strict: true });
   }
   if (!intent) {
     logger.warn("auth/nowpayments-ipn", "intent not found", {
@@ -723,7 +750,7 @@ async function handleNowpaymentsIpn(req: VercelRequest, res: VercelResponse) {
     });
     // A CONFIRMED payment with no intent is money received and nothing to give back for it: nothing else will ever
     // retry it (the 200 below stops NOWPayments from doing so), so it has to reach a human.
-    if (mapStatus(payment.payment_status) === "confirmed") {
+    if (internalStatus === "confirmed") {
       captureError(new Error("NOWPayments confirmed a payment whose intent no longer exists"), {
         endpoint: "auth/nowpayments-ipn",
         phase: "confirmedWithoutIntent",
@@ -745,8 +772,6 @@ async function handleNowpaymentsIpn(req: VercelRequest, res: VercelResponse) {
       intent = await bindNpPaymentId(redis, intent, npPaymentId);
     } catch { /* non-critical */ }
   }
-
-  const internalStatus = mapStatus(payment.payment_status);
 
   if (internalStatus === "confirmed") {
     // The IPN body is HMAC-signed so we trust *what NOWPayments saw*,
@@ -782,16 +807,18 @@ async function handleNowpaymentsIpn(req: VercelRequest, res: VercelResponse) {
   }
 
   if (internalStatus === "expired") {
-    if (intent.status !== "expired") {
-      try {
-        await markIntentExpired(redis, intent);
-      } catch { /* non-critical */ }
-    }
+    // ONE payment of the invoice is dead (failed / refunded / expired). That does not close the intent: an invoice can hold
+    // several payments (the buyer picks a coin, then another one), so the dead one may be the abandoned attempt of an intent
+    // that another payment has already confirmed, or is confirming right now. Expiring here turned a paid intent into
+    // "expired": the buyer's page lost its licence key, the cron stopped looking at it, and a re-delivered "finished" IPN
+    // granted the tier a second time from scratch. The intent is left as it is; the reconciliation (payment-reconcile.ts,
+    // run by the poll and the cron), which asks NOWPayments for EVERY payment of the invoice, is the one that expires it.
     logger.metric("auth/nowpayments-ipn.expired", {
       reference: intent.reference,
       providerStatus: payment.payment_status,
+      intentStatus: intent.status,
     });
-    return res.status(200).json({ ok: true, status: "expired" });
+    return res.status(200).json({ ok: true, status: intent.status });
   }
 
   // Pending / partially-paid / waiting / confirming — record the event but
@@ -855,7 +882,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Wrap dispatch in a try/catch so an unhandled throw inside a
   // sub-handler (Upstash quota exceeded, Redis transient flake,
-  // bcrypt OOM, …) doesn't bubble up to Vercel as
+  // scrypt out of memory, …) doesn't bubble up to Vercel as
   // FUNCTION_INVOCATION_FAILED — that error path returns Vercel's
   // generic 500 page without the CORS headers we set above, so the
   // browser sees a CORS rejection instead of our error JSON and
@@ -886,8 +913,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return await handleMe(req, res);
       case "sync-token":
         return await handleSyncToken(req, res);
-      case "nowpayments-ipn":
-        return await handleNowpaymentsIpn(req, res);
+      // ("nowpayments-ipn" never reaches this switch: it is answered above, outside the CORS gate.)
       default:
         return apiError(
           res,
@@ -900,7 +926,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // mutating auth handler (signup, login, logout, sync-token) writes
     // to Redis, so when the quota cap is hit those handlers throw and
     // we land here. Smaller incidents (transient Redis ECONNRESET, a
-    // bcrypt OOM under load, a Vercel function reaching its CPU
+    // scrypt out of memory under load, a Vercel function reaching its CPU
     // budget) follow the same path.
     //
     // We classify the error to choose between 503 (transient, retry

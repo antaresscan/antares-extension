@@ -1,6 +1,6 @@
 // api/_lib/logger.ts — Structured logger for Antares API
 // Replaces console.warn/console.error with silenceable, structured logging
-import { redactEmails, redactLicenseKeys } from "./log-ref";
+import { paymentRef, redactEmails, redactLicenseKeys } from "./log-ref";
 
 type LogLevel = "info" | "warn" | "error";
 
@@ -20,6 +20,14 @@ function clean(line: string): string {
   return redactLicenseKeys(redactEmails(line));
 }
 
+// The fields in which the code logs a checkout reference. Its value is written as its fingerprint (log-ref.ts paymentRef): the reference
+// hands out the licence key of a paid checkout, and it was written whole by the IPN webhook, payment-confirm, the cron and payment-status.
+// Only a value of the reference's shape is replaced: a readable reference such as "dev-grant-yearly" stays as it is.
+const PAYMENT_REFERENCE_FIELDS = new Set(["reference", "orderId", "order_id", "intentReference"]);
+function referenceAsFingerprint(key: string, value: unknown): unknown {
+  return typeof value === "string" && PAYMENT_REFERENCE_FIELDS.has(key) ? (paymentRef(value) ?? value) : value;
+}
+
 function formatMessage(level: LogLevel, module: string, message: string, data?: Record<string, unknown>): string {
   return clean(JSON.stringify({
     level,
@@ -27,7 +35,7 @@ function formatMessage(level: LogLevel, module: string, message: string, data?: 
     message,
     ...(data ? { data } : {}),
     ts: new Date().toISOString(),
-  }));
+  }, referenceAsFingerprint));
 }
 
 function formatMetric(event: string, data: Record<string, unknown>): string {
@@ -36,7 +44,7 @@ function formatMetric(event: string, data: Record<string, unknown>): string {
     event,
     ...data,
     ts: new Date().toISOString(),
-  }));
+  }, referenceAsFingerprint));
 }
 
 export const logger = {

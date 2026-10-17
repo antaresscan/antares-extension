@@ -10,7 +10,7 @@
 // reference is the word "unkeyed": a plain hash of an address can be tested against a list of addresses, so none is ever written.
 //
 // Rotating the key changes every reference: logs from before and after cannot be matched any more. That is the price of the protection.
-import { createHmac } from "node:crypto";
+import { createHash, createHmac } from "node:crypto";
 
 const REF_LENGTH = 12;
 const DERIVATION_LABEL = "antares:log-pepper:v1";
@@ -58,4 +58,19 @@ export const EMAIL_IN_TEXT = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)
 /** The same text with every address in it replaced by "[email]": the safety net of the logger, for what nobody thought of. */
 export function redactEmails(text: string): string {
   return text.replace(EMAIL_IN_TEXT, "[email]");
+}
+
+/** The shape of a checkout reference (payments.ts generateReference: 32 random bytes in hex). */
+export const PAYMENT_REFERENCE_RE = /^[0-9a-f]{64}$/;
+
+/**
+ * A checkout reference as a log line may show it: "ref_" and 12 hexadecimal characters of its SHA-256. The reference is a credential
+ * (api/payment-status.ts hands the licence key of a paid checkout to whoever presents it, and a licence key is never logged whole), so it
+ * is never written either. It is 256 random bits, so a plain hash cannot be reversed or guessed, and needs no key: whoever holds a
+ * reference (the NOWPayments dashboard shows it as the order id) computes its fingerprint to find its lines. null for anything that is not
+ * a reference.
+ */
+export function paymentRef(reference: unknown): string | null {
+  if (typeof reference !== "string" || !PAYMENT_REFERENCE_RE.test(reference)) return null;
+  return `ref_${createHash("sha256").update(reference).digest("hex").slice(0, REF_LENGTH)}`;
 }
