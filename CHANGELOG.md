@@ -6,6 +6,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+> This file was not kept up between 1.3.7 and 1.3.21 (the version of `package.json`): those releases are in the git history and
+> the pull requests only. The privacy policy (`privacy.html`, section 13) promises a note here whenever the way the Extension
+> processes data changes materially; the notes below cover the changes it has had since.
+
+### Privacy policy — updated 2026-10-16
+
+- Accounts can be deleted by their owner from the account page, with the password; it erases the account, the link between the
+  installs and the e-mail address, and the scan history and plan of those installs; the purchase records are kept, as accounting
+  records (section 9.1, #918).
+- An account owns the licences bought with its e-mail address only once the address is confirmed: a confirmation link is e-mailed
+  through Resend (a new processor in section 5), it works for 24 hours, and an account never confirmed is deleted after 48 hours
+  (#920).
+- The Chrome permissions section says what each permission is really used for, and is tied to the code by tests (section 8, #921).
+
+### Data the Extension sends — changed by the file-by-file audit of 2026-10-17 (not released yet)
+
+- The overlay no longer loads Google Fonts on the trading pages: the fonts it shows were always the ones embedded in the Extension
+  (Chrome ignores a font declared inside the overlay's shadow root), so nothing changes on screen.
+- "Full Analysis" opens `token.html?ca=<mint>` only: the whole scan no longer rides along in the address (`#data=…`), which no
+  page ever read and which stayed in the browser's history.
+
 ## [1.3.7] - 2026-05-28
 
 ### Fixed
