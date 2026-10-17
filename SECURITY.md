@@ -52,7 +52,7 @@ In scope for a security report:
 - Shared backend libraries (`api/_lib/*`) — scoring, pipeline,
   rate limiting, input validation, Redis usage
 - Chrome extension service worker (`background.ts`), content scripts
-  (`contents/*`), popup / options UI
+  (`contents/*`, including the bridge that runs on Antares' website), the Options page (`options.tsx`)
 - Extension manifest permissions and CSP configuration
 - CI / release pipelines (`.github/workflows/*`) as they affect what
   ships to users

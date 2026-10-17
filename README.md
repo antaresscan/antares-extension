@@ -49,7 +49,9 @@ address visible in the URL or page DOM.
 | `app.telemetry.io` | Telemetry trading dashboard | `TelemetryAdapter` |
 | `www.geckoterminal.com` | GeckoTerminal pool pages | `GeckoTerminalAdapter` |
 
-The extension does **not** run on any other site. Adding a new platform
+The overlay does **not** run on any other site. One more content script, the bridge
+(`contents/antares-website-bridge.ts`), runs on Antares' own website only (`antaresscan.com`, `www.antaresscan.com`,
+`antares-website.vercel.app`): it hands the install id and the session token between the site and the extension. Adding a new platform
 requires adding both a host to `host_permissions` and a matching adapter
 in `contents/modules/adapters/`.
 
@@ -135,7 +137,7 @@ See `api/_lib/account.ts`, `api/_lib/session-cookie.ts`, and
 api/
   scan.ts                    — GET /api/scan?ca=<mint>          Main scoring pipeline
   graph.ts                   — GET /api/graph?ca=<mint>         Insider graph + activity feed
-  history.ts                 — GET /api/history                 Pro-tier scan history
+  history.ts                 — GET /api/history                 Scan history of an install (the same for every tier)
   quota.ts                   — GET /api/quota                   Per-install quota status
   rugs.ts                    — GET /api/rugs                    Wall of Shame: recent RUG verdicts backed by evidence
   health.ts                  — GET /api/health                  Liveness probe
@@ -193,13 +195,13 @@ js/
   compute.js                 — Pure business logic (computeExitLiquidity, parsePctFromFlags)
   token-bg.js                — Animated background canvas
 
-privacy.ts                   — GET /privacy — Privacy Policy page (CWS requirement)
+privacy.html                 — Privacy Policy page (CWS requirement); /api/privacy redirects to it
 token.html                   — Full Analysis page (Pro) served at /token.html?ca=<mint>; a Free visitor sees the Pro message
 
-background.ts                — Chrome extension service worker (MV3, keepalive via alarms)
-popup.tsx                    — Extension popup UI (recent scans, stealth toggle, account)
-options.tsx                  — Extension options page (stealth mode, auto-rescan)
-contents/                    — Per-platform overlay adapters + scoring engine
+background.ts                — Chrome extension service worker (MV3, keepalive via alarms); the toolbar button is the overlay's on/off switch
+options.tsx                  — Extension options page (account and plan, auto-rescan, test notification, install id, dev tier)
+contents/                    — The overlay: per-platform address adapters, scanner, rendering (the scoring engine is api/_lib)
+                               and the bridge content script of Antares' website (there is no popup)
 ```
 
 ---
@@ -211,7 +213,7 @@ All endpoints are documented in code with examples. The most-used ones:
 ```
 GET  /api/scan?ca=<mint>                Main scan, returns score / risk / flags / layers
 GET  /api/graph?ca=<mint>&activity=1    Top-holder graph + 6h activity feed (Pro only, 10/min per user)
-GET  /api/history                       Pro-tier scan history (auth required)
+GET  /api/history                       Scan history of the install named by X-Antares-Install (up to 100 entries, 30 days; same for every tier)
 
 POST /api/payment-intent                Create a NOWPayments invoice
 GET  /api/payment-status?reference=…    Poll an in-flight payment
@@ -304,7 +306,7 @@ npm run lint       # ESLint
 
 E2E tests:
 ```bash
-npm run test:e2e   # Playwright, requires CHROME_TEST_HOST=… for live runs
+npm run test:e2e   # Playwright; targets production unless E2E_BASE_URL=<a deployment URL> (playwright.config.ts)
 ```
 
 Regression replay (the real engine on recorded upstream responses, see `scripts/replay/README.md`):
@@ -326,7 +328,7 @@ Copy `.env.example` to `.env.local` and fill in your values.
 HELIUS_API_KEY=...                   # Helius RPC + Enhanced Transactions API
 UPSTASH_REDIS_REST_URL=...           # Upstash Redis URL
 UPSTASH_REDIS_REST_TOKEN=...         # Upstash Redis token
-ANTARES_API_KEY=...                  # Chrome extension auth (X-Antares-Key)
+CRON_SECRET=...                      # Vercel crons + /api/health usage view (Authorization: Bearer); without it they are refused
 RESEND_API_KEY=...                   # e-mails of the account (confirmation link): without it, sign-ups answer 503
 MAIL_FROM=...                        # optional, default: Antares <contact@antaresscan.com> (the domain must be verified in Resend)
 SESSION_SECRET=...                   # 32+ chars, openssl rand -hex 32

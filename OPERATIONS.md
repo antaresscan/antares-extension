@@ -15,7 +15,7 @@ The e2e only tells you something when a run can change an HTTP response, so it *
 | `package.json` / `package-lock.json`: a **production** dependency, the Node engine or a build script | runs |
 | `package.json` / `package-lock.json`: `@playwright/test` (the e2e runner) | runs |
 | `package.json` / `package-lock.json`: devDependencies only (`typescript-eslint`, `tsx`, `@types/*`...) | skipped |
-| extension code (`contents/`, `background.ts`, `popup.tsx`, `options.tsx`), tests, scripts, docs, other workflows | skipped |
+| extension code (`contents/`, `background.ts`, `options.tsx`), tests, scripts, docs, other workflows | skipped |
 | a push to a branch that already has an open pull request | skipped (the `pull_request` run of the same commit does it) |
 | anything it cannot determine (API error, more than 300 files, unreadable lockfile) | **runs** |
 
