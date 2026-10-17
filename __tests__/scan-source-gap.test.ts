@@ -1274,4 +1274,31 @@ describe("issuerKind: the answer names the issuer's asset", () => {
     expect(body?.servedFromMemory).toBe(true);
     expect(body?.issuerKind).toBe("stable");
   });
+
+  // Audit 2026-10-17, lot 62: the memory of an issuer's asset is written only from a scan that is not degraded (api/scan.ts: `if (!degraded) setLastGoodResult`).
+  // The test above the guarantee ("a scan with a silent source is never the memory...") scans WSOL, which is not an issuer's asset: it passed with the guard removed.
+  // Without the guard, a USDC scan made while Helius is down (no verdict for the user) would become the verdict served again, as trustworthy, the next time
+  // DexScreener cannot be read.
+  it("an issuer's asset scanned while Helius is DOWN, its market read: that scan is never kept as the memory of the token; witness: every source answered, it is", async () => {
+    setupGoodTokenMocks();
+    marketOf(USDC, "USDC");
+    mockHeliusGetLargestAccounts.mockResolvedValue(null);
+    mockHeliusGetMintAccount.mockResolvedValue(null);
+    declareOutage("helius");
+    const res = createMockRes();
+    await run(createMockReq({ ca: USDC }), res);
+    expect(jsonBody(res)?.issuerKind).toBe("stable");
+    expect(jsonBody(res)?.sourceGap).toBe(true);
+    expect(vi.mocked(setLastGoodResult)).not.toHaveBeenCalled();
+
+    // A minute later the outage is over and every source answers: this scan is the token's, and it is kept.
+    vi.setSystemTime(Date.now() + 2 * 60_000);
+    setupGoodTokenMocks();
+    marketOf(USDC, "USDC");
+    const witness = createMockRes();
+    await run(createMockReq({ ca: USDC }), witness);
+    expect(jsonBody(witness)?.sourceGap).toBe(false);
+    expect(vi.mocked(setLastGoodResult)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(setLastGoodResult).mock.calls[0][0]).toBe(USDC);
+  });
 });

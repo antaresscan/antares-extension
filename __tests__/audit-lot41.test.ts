@@ -15,7 +15,8 @@ describe(".env.example names what the server really reads", () => {
   // Set by the platform, legacy names honoured as a fallback (api/_lib/payments.ts priceUsd), or build-time variables of the extension.
   const NOT_OPERATOR = /^(NODE_ENV|VERCEL_[A-Z_]+|SOLANA_PRICE_[A-Z_]+|PLASMO_PUBLIC_[A-Z_]+)$/
   const read_ = [...new Set(["api", "shared"].flatMap((d) => files(resolve(root, d))).filter((f) => f.endsWith(".ts"))
-    .flatMap((f) => [...readFileSync(f, "utf8").matchAll(/process\.env\.([A-Z][A-Z0-9_]+)/g)].map((m) => m[1])))]
+    // `env.NAME` too: a function may take the environment as a parameter defaulting to process.env (helpers.ts limitedDataEnabled reads LIMITED_DATA so).
+    .flatMap((f) => [...readFileSync(f, "utf8").matchAll(/\b(?:process\.)?env\.([A-Z][A-Z0-9_]+)/g)].map((m) => m[1])))]
 
   it("every variable an operator sets is in the file (CRON_SECRET, DEV_PRO_INSTALLS and LOG_LEVEL were missing)", () => {
     expect(read_.filter((v) => !NOT_OPERATOR.test(v) && !named.has(v)).sort()).toEqual([])
