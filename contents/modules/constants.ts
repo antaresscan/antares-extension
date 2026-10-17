@@ -83,10 +83,6 @@ export const SVG_MOVE = `<svg width="13" height="13" viewBox="0 0 14 14" fill="n
 
 export const SVG_CLOSE = `<svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="2" y1="2" x2="11" y2="11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="11" y1="2" x2="2" y2="11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`
 
-export const VERDICT_COLORS: Record<string, string> = {
-  SAFE: "#00e5b0", CAUTION: "#f5d000", DANGER: "#ff5f5f", RUG: "#ff2244",
-}
-
 // ─── Affiliate ────────────────────────────────────────────────────────────────
 // Set PLASMO_PUBLIC_PHOTON_REF at build time (or hardcode here once we have a
 // real referral handle). When empty the affiliate row is hidden — no link is
