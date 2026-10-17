@@ -680,4 +680,18 @@ describe("buildInsiderActivity - Redis keys on a preview deployment", () => {
     expect(writes).toContain(`iasig:${HOLDER_A}`);
     expect(writes).toContain(`iact:${MINT}`);
   });
+
+  // Audit 2026-10-17, lot 65: the READS were not tested. The signature-list lookup could go back to production's key with the whole suite green:
+  // a preview would then build its feed from the lists production cached, not from what its own code fetched.
+  it("a preview also READS the wallet signature list and the result under its namespace, never production's keys", async () => {
+    vi.stubEnv("VERCEL_ENV", "preview");
+    vi.stubEnv("VERCEL_DEPLOYMENT_ID", "dpl_AAA");
+    scriptHelius({ sigsByWallet: { [HOLDER_A]: [{ signature: "sigA", blockTime: sec(60_000) }] }, txs: [] });
+    const reads: string[] = [];
+    initActivityCache({ get: async (k: string) => { reads.push(k); return null; }, set: async () => "OK" } as unknown as Redis);
+    await buildInsiderActivity(MINT, [{ owner: HOLDER_A, uiAmount: 1000 }], 1_000_000, 0.5, "key");
+    expect(reads).toContain(`pv:dpl_AAA:iasig:${HOLDER_A}`);
+    expect(reads).toContain(`pv:dpl_AAA:iact:${MINT}`);
+    expect(reads.every((k) => k.startsWith("pv:dpl_AAA:"))).toBe(true);
+  });
 });
