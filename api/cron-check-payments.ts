@@ -90,7 +90,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // round-trip dominates. Parallelising would barely help and would
     // multiply the chance of hitting their rate limit during a burst.
     for (const ref of refs) {
-      const intent = await getPaymentIntent(redis, ref);
+      // Strict read: a Redis error is an error of this run (the reference stays in the index for the next one), never "the
+      // intent is gone". Read as gone, the reference was removed from the index: a paid checkout whose IPN was missed fell out
+      // of the one safety net that would have confirmed it.
+      let intent;
+      try {
+        intent = await getPaymentIntent(redis, ref, { strict: true });
+      } catch (err) {
+        outcome.errors++;
+        logger.warn("cron-check-payments", "intent read failed", { reference: ref, error: String(err) });
+        captureError(err, { endpoint: "cron-check-payments", phase: "readIntent", reference: ref });
+        continue;
+      }
       if (!intent) {
         // Its keys are gone (retention over): nothing left to reconcile, and the reference must not stay in the index.
         try {

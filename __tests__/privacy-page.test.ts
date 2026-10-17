@@ -18,7 +18,7 @@ import { HISTORY_HARD_CAP, HISTORY_DAY_WINDOW } from "../api/_lib/user";
 import { LAST_GOOD_TTL_SEC } from "../api/_lib/cache";
 import { RUGCHECK_MEMORY_TTL_S } from "../api/_lib/rugcheck-memory";
 import { computeCacheTTL } from "../api/_lib/helpers";
-import { signSession, verifySession, _resetSessionSecretCacheForTests } from "../api/_lib/account";
+import { signSession, verifySession, _resetSessionSecretCacheForTests, SESSION_MAX_AGE_SECONDS } from "../api/_lib/account";
 import { ERASURE_SCAN_BUDGET_MS } from "../api/_lib/account-erasure";
 import { PENDING_ACCOUNT_TTL_SECONDS, VERIFY_TOKEN_TTL_MS } from "../api/_lib/email-proof";
 
@@ -108,7 +108,7 @@ describe("the retention section is read from the code", () => {
     expect(text).toMatch(/works for 24 hours/);
   });
 
-  it("sessions: 30 days (the token's own expiry)", () => {
+  it("sessions: the cookie and the token last 30 days, and a session ends SESSION_MAX_AGE_SECONDS after the password was typed", () => {
     const kept = process.env.SESSION_SECRET;
     process.env.SESSION_SECRET = "0".repeat(64);
     _resetSessionSecretCacheForTests();
@@ -120,7 +120,10 @@ describe("the retention section is read from the code", () => {
       if (kept === undefined) delete process.env.SESSION_SECRET; else process.env.SESSION_SECRET = kept;
       _resetSessionSecretCacheForTests();
     }
-    expect(retention).toMatch(/Sign-in sessions last 30 days at most/);
+    const days = SESSION_MAX_AGE_SECONDS / 86400;
+    expect(days).toBe(60);
+    expect(retention).toContain(`A sign-in session ends at the latest ${days} days after you typed your password`);
+    expect(text).toContain(`A session ends at the latest ${days} days after you typed your password`);
     expect(text).toMatch(/valid 30 days/);
   });
 

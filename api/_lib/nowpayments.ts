@@ -97,6 +97,21 @@ function getIpnSecret(): string | null {
 
 // ─── REST client ──────────────────────────────────────────────────────────────
 
+/**
+ * The longest one NOWPayments call may take, body included. There was no limit: a NOWPayments that hangs held the buyer's
+ * status poll (every 2-3 s, so one hung function after another) and the daily cron (one intent after another) until Vercel
+ * killed them. 8 s leaves the cron and payment-status room to answer within their own limit.
+ */
+export const NP_TIMEOUT_MS = 8_000
+
+/** A NOWPayments answer that is not 2xx. `status` is the HTTP status: a caller tells "not found" (404) from "could not ask" by it. */
+export class NpApiError extends Error {
+  constructor(readonly path: string, readonly status: number) {
+    super(`NOWPayments ${path} failed: ${status}`)
+    this.name = "NpApiError"
+  }
+}
+
 async function npFetch<T>(
   path: string,
   init: RequestInit = {},
@@ -113,17 +128,27 @@ async function npFetch<T>(
     headers["Content-Type"] = "application/json"
   }
 
-  const res = await fetch(`${NP_BASE}${path}`, { ...init, headers })
-  if (!res.ok) {
-    const text = await res.text().catch(() => "")
-    logger.warn("nowpayments", "API call failed", {
-      path,
-      status: res.status,
-      body: text.slice(0, 200),
-    })
-    throw new Error(`NOWPayments ${path} failed: ${res.status}`)
+  // The deadline covers the body too: a server can answer its headers at once and then never finish the body.
+  const ctrl = new AbortController()
+  const timer = setTimeout(() => ctrl.abort(new Error(`NOWPayments ${path} timed out after ${NP_TIMEOUT_MS} ms`)), NP_TIMEOUT_MS)
+  try {
+    const res = await fetch(`${NP_BASE}${path}`, { ...init, headers, signal: ctrl.signal })
+    if (!res.ok) {
+      const text = await res.text().catch(() => "")
+      logger.warn("nowpayments", "API call failed", {
+        path,
+        status: res.status,
+        body: text.slice(0, 200),
+      })
+      throw new NpApiError(path, res.status)
+    }
+    return (await res.json()) as T
+  } catch (err) {
+    // An abort rejects with the signal's reason (the timeout error above), whichever await it interrupted.
+    throw ctrl.signal.aborted && ctrl.signal.reason instanceof Error ? ctrl.signal.reason : err
+  } finally {
+    clearTimeout(timer)
   }
-  return (await res.json()) as T
 }
 
 /**
@@ -165,9 +190,11 @@ export async function getPayment(
   try {
     return await npFetch<NpPayment>(`/payment/${encodeURIComponent(paymentId)}`)
   } catch (err) {
-    // 404 is the common case (buyer hasn't picked a crypto yet) — quiet.
+    // 404 is the common case (buyer hasn't picked a crypto yet) — quiet. Read from the status, not from the message: the message
+    // holds the path, i.e. the payment id, and about 1 ten-digit id in 125 contains "404" — a 500, a 429 or a timeout on such a
+    // payment read as "no payment", even in strict mode, the one case strict mode exists to rule out.
     const msg = err instanceof Error ? err.message : String(err)
-    if (msg.includes("404")) return null
+    if (err instanceof NpApiError && err.status === 404) return null
     logger.warn("nowpayments", "getPayment failed", { paymentId, error: msg })
     // strict: "NOWPayments could not be asked" is NOT "there is no payment" (reconcileIntent expires on the second only).
     if (opts.strict) throw err

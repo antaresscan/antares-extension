@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Sections 3.5 and 7: the sign-up counters added by #928 (sign-up e-mails per address per day, sign-ups per network per hour, each
   under a one-way hash).
 - Section 7: the rug database holds the tokens flagged RUG on evidence only, for 90 days.
+- Sections 3.5 and 7: a sign-in session ends at the latest 60 days after the password was typed. It used to be renewable without end by anyone holding the token (the cookie lasts 30 days, `sync-token` handed out a new one each time).
 
 ### Privacy policy — updated 2026-10-16
 

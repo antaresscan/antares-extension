@@ -25,9 +25,9 @@ describe("Sentry PII scrubber", () => {
   it("scrubs `email` at the top level", () => {
     const out = _scrubObjectForTests({
       email: "user@example.com",
-      reference: "ref-123",
+      endpoint: "payment-intent",
     });
-    expect(out).toEqual({ email: "[scrubbed]", reference: "ref-123" });
+    expect(out).toEqual({ email: "[scrubbed]", endpoint: "payment-intent" });
   });
 
   it("is case-insensitive on key names", () => {
@@ -51,11 +51,11 @@ describe("Sentry PII scrubber", () => {
           password: "supersecret",
         },
       },
-      reference: "ref-123",
+      endpoint: "payment-intent",
     });
     expect(out).toEqual({
       request: { body: { email: "[scrubbed]", password: "[scrubbed]" } },
-      reference: "ref-123",
+      endpoint: "payment-intent",
     });
   });
 
@@ -106,19 +106,21 @@ describe("Sentry PII scrubber", () => {
 
   it("leaves non-sensitive keys intact", () => {
     const out = _scrubObjectForTests({
-      reference: "ref-123",
       install_id: "uuid-here",
       endpoint: "payment-intent",
       status: 500,
       ca: "ukHH6c7mMyiWCf1b9pnWe25TSpkDDt3H5pQZgZ74J82",
     });
     expect(out).toEqual({
-      reference: "ref-123",
       install_id: "uuid-here",
       endpoint: "payment-intent",
       status: 500,
       ca: "ukHH6c7mMyiWCf1b9pnWe25TSpkDDt3H5pQZgZ74J82",
     });
+  });
+
+  it("scrubs a checkout reference: /api/payment-status hands the licence key of a paid checkout to whoever holds it (audit lot 2)", () => {
+    expect(_scrubObjectForTests({ reference: "ab".repeat(32) })).toEqual({ reference: "[scrubbed]" });
   });
 
   it("does not crash on null / undefined / primitives", () => {
@@ -185,14 +187,14 @@ describe("Sentry event scrubber (beforeSend)", () => {
   it("scrubs request.data, headers, cookies via key allowlist", () => {
     const event = {
       request: {
-        data: { email: "x@y.z", reference: "ref-1" },
+        data: { email: "x@y.z", endpoint: "redeem" },
         headers: { authorization: "Bearer xxx", "user-agent": "Mozilla" },
         cookies: { antares_session: "jwt-here", theme: "dark" },
       },
     };
     const out = _scrubEventForTests(event);
     expect(out.request.data.email).toBe("[scrubbed]");
-    expect(out.request.data.reference).toBe("ref-1");
+    expect(out.request.data.endpoint).toBe("redeem");
     expect(out.request.headers.authorization).toBe("[scrubbed]");
     expect(out.request.headers["user-agent"]).toBe("Mozilla");
     expect(out.request.cookies.theme).toBe("dark");

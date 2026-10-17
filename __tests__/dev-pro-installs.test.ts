@@ -11,10 +11,19 @@ vi.mock("@upstash/redis", () => {
       return "OK";
     });
     get = vi.fn(async (k: string) => mocks.store.get(k) ?? null);
-    del = vi.fn(async (k: string) => {
-      mocks.store.delete(k);
-      return 1;
+    del = vi.fn(async (...keys: string[]) => {
+      for (const k of keys) mocks.store.delete(k);
+      return keys.length;
     });
+    multi = () => {
+      const queued: Array<() => void> = [];
+      const tx = {
+        set: (k: string, v: unknown) => { queued.push(() => mocks.store.set(k, v)); return tx; },
+        del: (k: string) => { queued.push(() => mocks.store.delete(k)); return tx; },
+        exec: async () => { for (const apply of queued) apply(); return queued.map(() => "OK"); },
+      };
+      return tx;
+    };
     incr = vi.fn(async (k: string) => {
       const cur = (mocks.store.get(k) as number | undefined) ?? 0;
       const next = cur + 1;
@@ -32,7 +41,6 @@ import { Redis } from "@upstash/redis";
 import {
   isDevProInstall,
   getUserTier,
-  getEffectiveTier,
   setUserTier,
   initUserStorage,
   _resetUserStorageForTests,
@@ -127,46 +135,5 @@ describe("what the quota headers say about dev and regular installs (unlimited f
   });
 });
 
-describe("getEffectiveTier with X-Antares-Dev-Tier header", () => {
-  it("dev install + valid header → header tier wins", async () => {
-    process.env.DEV_PRO_INSTALLS = DEV_INSTALL_A;
-    expect(await getEffectiveTier(DEV_INSTALL_A, "free")).toBe("free");
-    expect(await getEffectiveTier(DEV_INSTALL_A, "pro")).toBe("pro");
-    expect(await getEffectiveTier(DEV_INSTALL_A, "yearly")).toBe("yearly");
-    // "lifetime" still honoured for grandfathered legacy installs
-    expect(await getEffectiveTier(DEV_INSTALL_A, "lifetime")).toBe("lifetime");
-  });
-
-  it("dev install + no header → default yearly (DEV_PRO_INSTALLS shortcut)", async () => {
-    process.env.DEV_PRO_INSTALLS = DEV_INSTALL_A;
-    expect(await getEffectiveTier(DEV_INSTALL_A)).toBe("yearly");
-    expect(await getEffectiveTier(DEV_INSTALL_A, null)).toBe("yearly");
-  });
-
-  it("dev install + invalid header → ignored, falls back to default", async () => {
-    process.env.DEV_PRO_INSTALLS = DEV_INSTALL_A;
-    expect(await getEffectiveTier(DEV_INSTALL_A, "admin")).toBe("yearly");
-    expect(await getEffectiveTier(DEV_INSTALL_A, "")).toBe("yearly");
-  });
-
-  it("non-dev install + valid header → header IGNORED, normal tier read", async () => {
-    process.env.DEV_PRO_INSTALLS = DEV_INSTALL_A;
-    // Server trusts the header only for dev-listed installs.
-    expect(await getEffectiveTier(REGULAR_INSTALL, "yearly")).toBe("free");
-    await setUserTier(REGULAR_INSTALL, "pro");
-    expect(await getEffectiveTier(REGULAR_INSTALL, "yearly")).toBe("pro");
-  });
-
-  it("array-shaped header (Vercel sometimes wraps) → first value used", async () => {
-    process.env.DEV_PRO_INSTALLS = DEV_INSTALL_A;
-    expect(
-      await getEffectiveTier(DEV_INSTALL_A, ["pro", "ignored"]),
-    ).toBe("pro");
-  });
-
-  it("header case-insensitive ('PRO' = 'pro')", async () => {
-    process.env.DEV_PRO_INSTALLS = DEV_INSTALL_A;
-    expect(await getEffectiveTier(DEV_INSTALL_A, "PRO")).toBe("pro");
-    expect(await getEffectiveTier(DEV_INSTALL_A, "  Yearly  ")).toBe("yearly");
-  });
-});
+// The X-Antares-Dev-Tier header of a dev install (row 1 of the table) is tested through decideTier in entitlements.test.ts: the
+// session-less getEffectiveTier these tests drove was removed in the audit of 2026-10-17 (nothing called it, and it skipped the session).

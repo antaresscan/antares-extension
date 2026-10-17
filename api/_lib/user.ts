@@ -5,8 +5,9 @@
 // state across reinstalls by attaching email to install_id.
 //
 // Storage shape:
-//   user:{id}:tier        STRING   "free" | "pro" | "lifetime"
-//   user:{id}:tierExpires STRING   epoch-ms when tier downgrades to free
+//   user:{id}:tier        STRING   "pro" | "yearly" | "lifetime" (absent = free)
+//   user:{id}:tierExpires STRING   epoch-ms when tier downgrades to free (absent = no end)
+//   The two keys are always written together, in one transaction (setUserTier).
 //   user:{id}:history     LIST     LPUSH JSON entries, LTRIM 0 999
 import { Redis } from "@upstash/redis";
 import { logger } from "./logger";
@@ -105,73 +106,10 @@ export function isDevProInstall(installId: string): boolean {
   return getDevProInstalls().has(installId);
 }
 
-/**
- * Async dev-install check that ALSO honours installs whose bound email
- * is in the dev-Lifetime / dev-Pro hardcoded allowlists (see
- * api/_lib/account.ts: DEV_LIFETIME_EMAILS_HARDCODED,
- * DEV_PRO_EMAILS_HARDCODED).
- *
- * Why this exists: previously the X-Antares-Dev-Tier header was only
- * honoured for installs in the `DEV_PRO_INSTALLS` env var — meaning
- * the founder had to look up each install's UUID and add it manually,
- * for every browser they tested on, surviving every reinstall. Tying
- * the dev override to EMAIL instead means: sign up once with the
- * dev-allowlisted email, redeem any license in the extension once
- * (which binds install_id → email via account:install:<install_id>),
- * and from that moment on every tier-switch from this install's
- * Options dropdown is honoured by the server.
- *
- * Resolution order:
- *   1. installId in process.env.DEV_PRO_INSTALLS  → true (legacy path)
- *   2. installId has a bound email AND that email is dev-allowlisted → true
- *   3. otherwise → false
- *
- * Reads Redis (one cheap GET) on path 2. Path 1 short-circuits without
- * a network round-trip so per-scan latency is unchanged for the common
- * env-var case.
- */
-export async function isDevAllowlistedInstall(
-  installId: string,
-): Promise<boolean> {
-  if (!installId) return false;
-  if (isDevProInstall(installId)) return true;
-  if (!isAvailable() || !redis) return false;
-  try {
-    const email = await redis.get<string>(ACCOUNT_INSTALL_KEY(installId));
-    if (!email) return false;
-    return isDevLifetimeEmail(email) || isDevProEmail(email);
-  } catch (err) {
-    logger.warn("user", "dev-allowlist check failed", { error: String(err), installId });
-    return false;
-  }
-}
-
-/**
- * Resolve the effective tier for a request — non-session-aware variant.
- *
- * Used by callers that don't have a request object (tests, internal
- * batch jobs). Honours the dev-tier header for dev-allowlisted installs
- * and otherwise reads the stored install tier.
- *
- * The session-gated production path is `getEffectiveTierFromRequest`,
- * which is what every HTTP handler should call. This variant exists
- * so we don't break existing tests or any code path that legitimately
- * needs to read the raw install tier without the "are you signed in"
- * gate.
- */
-export async function getEffectiveTier(
-  installId: string,
-  devTierHeaderRaw?: string | string[] | null,
-): Promise<Tier> {
-  if (devTierHeaderRaw && (await isDevAllowlistedInstall(installId))) {
-    const raw = Array.isArray(devTierHeaderRaw)
-      ? devTierHeaderRaw[0]
-      : devTierHeaderRaw;
-    const v = String(raw ?? "").trim().toLowerCase();
-    if (v === "free" || v === "pro" || v === "yearly" || v === "lifetime") return v as Tier;
-  }
-  return getUserTier(installId);
-}
+// (getEffectiveTier and isDevAllowlistedInstall were removed in the audit of 2026-10-17. Nothing called them, and they were a tier read
+// WITHOUT the session: any install bound to a dev e-mail could name its tier in X-Antares-Dev-Tier. A binding is also written by a
+// payment, from the e-mail the buyer typed, which nobody has confirmed (audit A-01): paying once with a founder's address would have
+// been enough. The one way to read a caller's tier is resolveTier, which applies the whole table of entitlements.ts.)
 
 export interface TierResolution {
   tier: Tier;
@@ -246,9 +184,14 @@ export async function resolveTier(
   return { tier: decision.tier, tierExpiresAt };
 }
 
-/** One metric per decision, with the names and fields the dashboards have always read. A dev install logs nothing. */
+/**
+ * One metric per decision, with the names and fields the dashboards have always read. A dev install logs nothing. Every row of the
+ * table has its case: the switch is exhaustive (a row added to entitlements.ts without its metric does not compile). The row of the
+ * accounts whose e-mail is not confirmed (A-01) had none: a buyer told "I paid and I am Free" left no trace of why.
+ */
 function logTierDecision(d: TierDecision, installId: string, authSource: string): void {
-  switch (d.reason) {
+  const reason = d.reason;
+  switch (reason) {
     case "dev-install":
       return;
     case "no-storage":
@@ -277,6 +220,13 @@ function logTierDecision(d: TierDecision, installId: string, authSource: string)
     case "no-license-no-binding":
       logger.metric("tier-resolve.no-license-no-binding", { installId, authSource, sessionRef: emailRef(d.sessionEmail), tier: "free", isDev: d.isDev });
       return;
+    case "email-unverified":
+      logger.metric("tier-resolve.email-unverified", { installId, authSource, sessionRef: emailRef(d.sessionEmail), tier: "free" });
+      return;
+    default: {
+      const unhandled: never = reason;
+      return unhandled;
+    }
   }
 }
 
@@ -412,9 +362,12 @@ export async function getUserTier(installId: string): Promise<Tier> {
 }
 
 /**
- * Persist a tier change. Used by payment webhooks (Lemonsqueezy) to flip
- * an install_id between free/pro/lifetime as subscriptions start, renew
- * and cancel.
+ * Persist a tier change. Used by the payment confirmation (payment-confirm.ts) and the redeem of a licence (license.ts) to flip an
+ * install_id between free/pro/yearly/lifetime.
+ *
+ * The tier and its end date are written in ONE transaction (MULTI/EXEC: one round trip, all or nothing). Written one after the other,
+ * a failure between the two left a mix that reads wrong for good: a 30-day Pro without its end date is a Pro that never ends, and a
+ * Lifetime redeemed on an install whose old Pro end date could not be cleared read as Free at once (getUserTier applies the old date).
  *
  * @param expiresAtMs  Optional epoch-ms when the tier should auto-revert
  *                     to free. Lifetime should be set without expiry.
@@ -431,17 +384,19 @@ export async function setUserTier(
   }
   try {
     if (tier === "free") {
-      await redis.del(TIER_KEY(installId));
-      await redis.del(TIER_EXPIRES_KEY(installId));
+      // One DEL of both keys: atomic on its own.
+      await redis.del(TIER_KEY(installId), TIER_EXPIRES_KEY(installId));
       return;
     }
-    await redis.set(TIER_KEY(installId), tier);
+    const tx = redis.multi();
+    tx.set(TIER_KEY(installId), tier);
     if (expiresAtMs && expiresAtMs > 0) {
-      await redis.set(TIER_EXPIRES_KEY(installId), String(expiresAtMs));
+      tx.set(TIER_EXPIRES_KEY(installId), String(expiresAtMs));
     } else {
       // Lifetime or perpetual Pro — clear any prior expiry
-      await redis.del(TIER_EXPIRES_KEY(installId));
+      tx.del(TIER_EXPIRES_KEY(installId));
     }
+    await tx.exec();
   } catch (err) {
     logger.warn("user", "setUserTier failed", { error: String(err), tier });
     throw err;
