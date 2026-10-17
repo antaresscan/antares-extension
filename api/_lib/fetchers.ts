@@ -363,14 +363,23 @@ export function _resetSolscanBackoffForTests(): void {
     solscanRejectedUntil = 0;
 }
 
-export async function fetchSolscan(endpoint: string) {
+/**
+ * `opts.timeoutMs` / `opts.retries` replace the defaults (5 s, one retry) for a caller that has less time to spend; `opts.onStatus` receives the HTTP status of the answer
+ * (0 when there was none, and not called at all when no request was sent: no key, or the key was refused less than 10 minutes ago).
+ */
+export async function fetchSolscan(endpoint: string, opts: { timeoutMs?: number; retries?: number; onStatus?: (status: number) => void } = {}) {
     const key = process.env.SOLSCAN_API_KEY || "";
     if (!key) return null;
     if (Date.now() < solscanRejectedUntil) return null;
     let status = 0;
-    const res = await fetchJson(SOLSCAN_BASE + endpoint, { headers: { token: key } }, 5000, 1, (s) => { status = s; });
+    const res = await fetchJson(SOLSCAN_BASE + endpoint, { headers: { token: key } }, opts.timeoutMs ?? 5000, opts.retries ?? 1, (s) => { status = s; opts.onStatus?.(s); });
     if (status === 401 || status === 403) solscanRejectedUntil = Date.now() + SOLSCAN_REJECT_BACKOFF_MS;
     return res;
+}
+
+/** Is a Solscan key configured and not refused right now? (A caller that would only ask Solscan can skip itself.) */
+export function solscanUsable(): boolean {
+    return !!process.env.SOLSCAN_API_KEY && Date.now() >= solscanRejectedUntil;
 }
 
 // ─── GECKOTERMINAL CANDLES ─────────────────────────────────────────────────

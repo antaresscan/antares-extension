@@ -56,6 +56,49 @@ function insiderGraphAnswer(href: string, body: string | null): Response | null 
   return null;
 }
 
+/**
+ * What a scan asks of Solscan and Jupiter beyond the recording. Neither is a fact of the capture instant, so neither is in each recording: the replay answers from two tables.
+ *   - the all-time high (api/_lib/ath.ts asks Solscan `token/price`: ONE price per day): from ath.json (the highest prices the corpus tokens reached, with their day), as a DAILY series whose
+ *     highest day is DAILY_HIGH_SHARE of that number (PYTH, measured on Solscan on 2026-10-16: 1.10 against 1.20 = 0.92). A token that is not in the table gets "no price" (a 200 without a row).
+ *   - the organic score (api/_lib/jupiter.ts asks Jupiter's public token search): from jupiter.json, measured on the whole corpus on 2026-10-16. A token that is not in it gets an empty list.
+ * A recording that holds the request itself always wins. What the recordings hold of Solscan (the 401 of the days the key was refused) is not what the engine meets today with a key that works:
+ * every Solscan request of a replay is answered here (a 404, "nothing for this token", for the routes that are not the price history).
+ */
+export const DAILY_HIGH_SHARE = 0.92;
+let athTable: Record<string, { ath: number; athDate: string | null }> | null = null;
+let organicTable: Record<string, number> | null = null;
+/** The day of a table date (ISO text or null) as the number Solscan sends, 20250114. */
+function solscanDayOf(athDate: string | null, shiftDays = 0): number {
+  const t = athDate ? Date.parse(athDate) : Date.parse("2024-01-01T00:00:00Z");
+  return Number(new Date(t + shiftDays * 86_400_000).toISOString().slice(0, 10).replace(/-/g, ""));
+}
+
+interface UpstreamOptions { athDown?: boolean; dailyShare?: number; organicDown?: boolean }
+
+function solscanAndJupiterAnswer(href: string, opts: UpstreamOptions): Response | null {
+  const json = { "content-type": "application/json" };
+  const sp = href.match(/^https:\/\/pro-api\.solscan\.io\/v2\.0\/token\/price\?address=([^&]+)/);
+  if (sp) {
+    if (opts.athDown) return new Response("replay: Solscan is down", { status: 503 }); // a test of what a scan does when Solscan does not answer
+    athTable ??= (JSON.parse(readFileSync(`${HERE}ath.json`, "utf8")) as { tokens: Record<string, { ath: number; athDate: string | null }> }).tokens;
+    const t = athTable[decodeURIComponent(sp[1])];
+    if (!t) return new Response(JSON.stringify({ success: true, data: [] }), { status: 200, headers: json });
+    const top = t.ath * (opts.dailyShare ?? DAILY_HIGH_SHARE);
+    const data = [{ date: solscanDayOf(t.athDate, -1), price: top * 0.8 }, { date: solscanDayOf(t.athDate), price: top }, { date: solscanDayOf(t.athDate, 1), price: top * 0.8 }];
+    return new Response(JSON.stringify({ success: true, data }), { status: 200, headers: json });
+  }
+  if (/^https:\/\/pro-api\.solscan\.io\//.test(href)) return new Response("{}", { status: 404, headers: json });
+  const jp = href.match(/^https:\/\/api\.jup\.ag\/tokens\/v2\/search\?query=([^&]+)/);
+  if (jp) {
+    if (opts.organicDown) return new Response("replay: Jupiter is down", { status: 503 });
+    organicTable ??= (JSON.parse(readFileSync(`${HERE}jupiter.json`, "utf8")) as { tokens: Record<string, number> }).tokens;
+    const mint = decodeURIComponent(jp[1]);
+    const score = organicTable[mint];
+    return new Response(JSON.stringify(score === undefined ? [] : [{ id: mint, organicScore: score }]), { status: 200, headers: json });
+  }
+  return null;
+}
+
 const UNSET = ["GEMINI_API_KEY", "GOPLUS_APP_KEY", "GOPLUS_APP_SECRET", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN", "SENTRY_DSN", "VERCEL_ENV", "LOG_LEVEL"];
 
 function fakeRes() {
@@ -71,7 +114,12 @@ function fakeRes() {
 }
 
 /** Replays the scan of one recording through the real handler. */
-export async function replayScan(rec: Recording): Promise<ReplayOutcome> {
+/**
+ * `athDown`: Solscan answers 503 to the price-history request (a test of what a scan does without the all-time high).
+ * `dailyShare`: the highest day of the daily series Solscan answers is that share of the table's high (DAILY_HIGH_SHARE by default; a test that a daily number does not move a verdict).
+ * `organicDown`: Jupiter answers 503 (a test of what a scan does when it cannot tell whether the market is alive).
+ */
+export async function replayScan(rec: Recording, opts: UpstreamOptions = {}): Promise<ReplayOutcome> {
   const byKey = new Map<string, RecordedExchange[]>();
   for (const e of rec.exchanges) { const k = canonicalKey(e.k); byKey.set(k, [...(byKey.get(k) ?? []), e]); }
   const used = new Map<string, number>();
@@ -89,6 +137,11 @@ export async function replayScan(rec: Recording): Promise<ReplayOutcome> {
       return new Response(JSON.stringify({ code: 1, message: "OK", result: { access_token: "Bearer replay-token", expires_in: 7200 } }), { status: 200, headers: { "content-type": "application/json" } });
     }
     const body = init?.body == null ? null : String(init.body);
+    // Solscan ACCEPTS the key and Jupiter answers: what the recordings hold of them (the 401 of the days the key was refused) is not what they answer today, and a 401 would pause Solscan.
+    if (/pro-api\.solscan\.io|api\.jup\.ag/.test(href)) {
+      const upstream = solscanAndJupiterAnswer(href, opts);
+      if (upstream) return upstream;
+    }
     const key = exchangeKey(method, href, body, authorized);
     const list = byKey.get(key);
     if (!list) {
@@ -111,8 +164,7 @@ export async function replayScan(rec: Recording): Promise<ReplayOutcome> {
   vi.stubEnv("HELIUS_API_KEY", "replay-key"); // the capture had keys: the same calls are made, and answered from the recording
   // Solscan: the engine pauses it for 10 minutes after a 401, so a recording made after the first 401 of its instance holds
   // no Solscan call at all. The replay gives a key only when the recording has such calls (and then answers them as recorded).
-  if (rec.exchanges.some((e) => e.k.includes("pro-api.solscan.io"))) vi.stubEnv("SOLSCAN_API_KEY", "replay-key");
-  else vi.stubEnv("SOLSCAN_API_KEY", undefined);
+  vi.stubEnv("SOLSCAN_API_KEY", "replay-key");
   // GoPlus: credentials only when the recording holds an authenticated call (see the token exchange above).
   if (rec.exchanges.some((e) => e.k.includes("gopluslabs.io/api/v1/solana/token_security") && e.k.endsWith(" #auth"))) {
     vi.stubEnv("GOPLUS_APP_KEY", "replay-key");

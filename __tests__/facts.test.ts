@@ -146,7 +146,7 @@ describe("deriveAuthorityFacts: the chain decides, GoPlus relays", () => {
   });
 
   it("nothing readable: every fact stays null, never false", () => {
-    expect(deriveAuthorityFacts(null, null)).toEqual({ mint: null, freeze: null, sellBlocked: null, trusted: false, source: null, compared: false, conflicts: [], riskyExtensions: [], extensionFacts: null });
+    expect(deriveAuthorityFacts(null, null)).toEqual({ mint: null, freeze: null, sellBlocked: null, trusted: false, mintHolder: null, source: null, compared: false, conflicts: [], riskyExtensions: [], extensionFacts: null });
   });
 
   it("the chain and GoPlus disagree: the chain wins and the conflict is reported", () => {

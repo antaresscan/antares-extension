@@ -13,6 +13,23 @@ neither fail nor prove anything. The replay does the opposite (it proves STABILI
 - the clock is set to the instant of the capture, so token age, pump windows and candle recency are the same;
 - nothing else is faked: schemas, fetchers, layers, scoring and verdict all run for real.
 
+Two exceptions to "every request is answered from a recording", because neither is a fact of the capture instant:
+
+- the **all-time high** of a token (Solscan `token/price`, ONE price a day, asked by `api/_lib/ath.ts` for the few tokens that can use it) is answered from `__tests__/replay/ath.json` (the highest prices
+  of the recorded tokens, a fixture built by `npx tsx scripts/replay/ath-table.ts`, which reads a public price service once; it is only the REPLAY's table, the engine does not call that service) as a DAILY series whose highest day is `DAILY_HIGH_SHARE` (0.92, PYTH measured on Solscan: 1.10 against 1.20) of that number; a token that is not in the table gets
+  "no price". `replayScan(rec, { dailyShare })` changes the share, `{ athDown: true }` makes Solscan answer 503.
+- the **organic score** of a token (Jupiter's free token search, asked by `api/_lib/jupiter.ts` for the tokens whose relief depends on it) is answered from `__tests__/replay/jupiter.json`, measured on the whole
+  corpus on 2026-10-16; a token that is not in it gets an empty list. `{ organicDown: true }` makes Jupiter answer 503.
+
+What the recordings hold of Solscan (the 401 of the days the key was refused) is not what the engine meets today with a key that works, so every Solscan request of a replay is answered by the harness (a 404, "nothing
+for this token", for the routes that are not the price history). A recording that holds one of the two other requests itself wins. `ath-solscan.test.ts` tests what follows from it (a serious token is clean whatever the daily
+high, a market that is not alive is never relieved, no relief without Solscan or without Jupiter; the whole corpus with `REPLAY_FULL=1`).
+
+To replace the fixture by Solscan's own numbers, run `node scripts/solscan/price-history.mjs scripts/solscan/ath-mints.json scripts/solscan/out/price-history.json` (the key is typed hidden, nothing is saved but prices).
+
+`credibility.test.ts` holds the owner's own judgement on real tokens (serious ones the engine must never call DANGER or RUG, tokens that already rugged it must never call SAFE or CAUTION), with the
+reason and the date of each. It reads the golden files, so it needs no network.
+
 ## Two kinds of tokens
 
 | | hand-vetted (`manifest.ts`) | bulk (`bulk.json`) |

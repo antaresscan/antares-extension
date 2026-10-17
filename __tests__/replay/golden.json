@@ -1,13 +1,14 @@
 {
   "BONK": {
-    "risk": "SAFE",
-    "score": 1000,
+    "risk": "CAUTION",
+    "score": 893,
     "confidence": 90,
     "flags": [
       "bonus:Established token (30d+) ✓",
       "info:LP holds 0.06% of supply — negligible rug risk",
       "info:Mutable metadata",
-      "info:Top 10 hold 38% — moderate · exchanges likely included"
+      "info:Top 10 hold 38% — moderate · exchanges likely included",
+      "warning:Down 93% from its all-time high (Solscan, 2024-11)"
     ],
     "sources_used": [
       "chart",
@@ -19,7 +20,7 @@
     "layers": {
       "chart": {
         "available": true,
-        "trust": 1
+        "trust": 0.85
       },
       "crossvalidation": {
         "available": true,
@@ -54,17 +55,18 @@
     "holders": 1024809,
     "top10HolderPct": 38.33,
     "topHolderPct": 8.83,
-    "safeBlocked": false,
+    "safeBlocked": true,
     "safeBlockedReasons": []
   },
   "WIF": {
-    "risk": "SAFE",
-    "score": 1000,
+    "risk": "CAUTION",
+    "score": 893,
     "confidence": 90,
     "flags": [
       "bonus:Established token (30d+) ✓",
       "bonus:LP Burned 100% (GoPlus) ✓",
-      "info:Top 10 hold 44% — moderate · exchanges likely included"
+      "info:Top 10 hold 44% — moderate · exchanges likely included",
+      "warning:Down 95% from its all-time high (Solscan, 2024-03)"
     ],
     "sources_used": [
       "chart",
@@ -76,7 +78,7 @@
     "layers": {
       "chart": {
         "available": true,
-        "trust": 1
+        "trust": 0.85
       },
       "crossvalidation": {
         "available": true,
@@ -111,7 +113,7 @@
     "holders": 262978,
     "top10HolderPct": 44.19,
     "topHolderPct": 13.72,
-    "safeBlocked": false,
+    "safeBlocked": true,
     "safeBlockedReasons": []
   },
   "PENGU": {
@@ -174,13 +176,14 @@
   },
   "POPCAT": {
     "risk": "CAUTION",
-    "score": 1000,
+    "score": 893,
     "confidence": 90,
     "flags": [
       "bonus:Established token (30d+) ✓",
       "bonus:LP Burned 99% (GoPlus) ✓",
       "info:Top 10 hold 40% — moderate · exchanges likely included",
-      "warning:Buy/sell imbalance (coordinated pump)"
+      "warning:Buy/sell imbalance (coordinated pump)",
+      "warning:Down 97% from its all-time high (Solscan, 2024-11)"
     ],
     "sources_used": [
       "chart",
@@ -192,7 +195,7 @@
     "layers": {
       "chart": {
         "available": true,
-        "trust": 1
+        "trust": 0.85
       },
       "crossvalidation": {
         "available": true,
@@ -227,7 +230,7 @@
     "holders": 138254,
     "top10HolderPct": 39.51,
     "topHolderPct": 11.03,
-    "safeBlocked": false,
+    "safeBlocked": true,
     "safeBlockedReasons": []
   },
   "MEW": {
@@ -237,7 +240,8 @@
     "flags": [
       "bonus:Established token (30d+) ✓",
       "bonus:LP Burned 100% (GoPlus) ✓",
-      "critical:Top 10 hold 65% — high concentration"
+      "critical:Top 10 hold 65% — high concentration",
+      "warning:Down 95% from its all-time high (Solscan, 2024-11)"
     ],
     "sources_used": [
       "chart",
@@ -249,7 +253,7 @@
     "layers": {
       "chart": {
         "available": true,
-        "trust": 1
+        "trust": 0.85
       },
       "crossvalidation": {
         "available": true,
@@ -291,11 +295,12 @@
   },
   "GOAT": {
     "risk": "CAUTION",
-    "score": 900,
+    "score": 884,
     "confidence": 90,
     "flags": [
       "bonus:Established token (30d+) ✓",
       "bonus:LP Burned 99% (GoPlus) ✓",
+      "warning:Down 98% from its all-time high (Solscan, 2024-11)",
       "warning:Top 10 hold 46% — elevated · exchanges may be included"
     ],
     "sources_used": [
@@ -308,7 +313,7 @@
     "layers": {
       "chart": {
         "available": true,
-        "trust": 1
+        "trust": 0.85
       },
       "crossvalidation": {
         "available": true,
@@ -355,7 +360,8 @@
     "flags": [
       "bonus:Established token (30d+) ✓",
       "bonus:LP Burned 99% (GoPlus) ✓",
-      "critical:Top 10 hold 68% — high concentration"
+      "critical:Top 10 hold 68% — high concentration",
+      "warning:Down 97% from its all-time high (Solscan, 2024-11)"
     ],
     "sources_used": [
       "chart",
@@ -367,7 +373,7 @@
     "layers": {
       "chart": {
         "available": true,
-        "trust": 1
+        "trust": 0.85
       },
       "crossvalidation": {
         "available": true,
@@ -408,13 +414,14 @@
     ]
   },
   "FARTCOIN": {
-    "risk": "SAFE",
-    "score": 1000,
+    "risk": "CAUTION",
+    "score": 893,
     "confidence": 90,
     "flags": [
       "bonus:Established token (30d+) ✓",
       "bonus:LP Burned 99% (GoPlus) ✓",
-      "info:Top 10 hold 35% — moderate · exchanges likely included"
+      "info:Top 10 hold 35% — moderate · exchanges likely included",
+      "warning:Down 92% from its all-time high (Solscan, 2025-01)"
     ],
     "sources_used": [
       "chart",
@@ -426,7 +433,7 @@
     "layers": {
       "chart": {
         "available": true,
-        "trust": 1
+        "trust": 0.85
       },
       "crossvalidation": {
         "available": true,
@@ -461,7 +468,7 @@
     "holders": 187958,
     "top10HolderPct": 35.48,
     "topHolderPct": 10.36,
-    "safeBlocked": false,
+    "safeBlocked": true,
     "safeBlockedReasons": []
   },
   "NEET": {
@@ -579,13 +586,14 @@
     "safeBlockedReasons": []
   },
   "FWOG": {
-    "risk": "SAFE",
-    "score": 1000,
+    "risk": "CAUTION",
+    "score": 893,
     "confidence": 90,
     "flags": [
       "bonus:Established token (30d+) ✓",
       "bonus:LP Burned 100% (GoPlus) ✓",
-      "info:Top 10 hold 34% — moderate · exchanges likely included"
+      "info:Top 10 hold 34% — moderate · exchanges likely included",
+      "warning:Down 99% from its all-time high (Solscan, 2024-11)"
     ],
     "sources_used": [
       "chart",
@@ -597,7 +605,7 @@
     "layers": {
       "chart": {
         "available": true,
-        "trust": 1
+        "trust": 0.85
       },
       "crossvalidation": {
         "available": true,
@@ -632,7 +640,7 @@
     "holders": 68404,
     "top10HolderPct": 33.53,
     "topHolderPct": 5.4,
-    "safeBlocked": false,
+    "safeBlocked": true,
     "safeBlockedReasons": []
   },
   "ACT": {
@@ -643,6 +651,7 @@
       "bonus:Established token (30d+) ✓",
       "bonus:LP Burned 100% (GoPlus) ✓",
       "critical:Top 10 hold 76% — high concentration",
+      "warning:Down 98% from its all-time high (Solscan, 2024-11)",
       "warning:RugCheck: Single holder ownership",
       "warning:RugCheck: Top 10 holders high ownership"
     ],
@@ -656,7 +665,7 @@
     "layers": {
       "chart": {
         "available": true,
-        "trust": 1
+        "trust": 0.85
       },
       "crossvalidation": {
         "available": true,
@@ -697,13 +706,14 @@
     ]
   },
   "GIGA": {
-    "risk": "SAFE",
-    "score": 1000,
+    "risk": "CAUTION",
+    "score": 893,
     "confidence": 90,
     "flags": [
       "bonus:Established token (30d+) ✓",
       "bonus:LP Burned 100% (GoPlus) ✓",
-      "info:Top 10 hold 34% — moderate · exchanges likely included"
+      "info:Top 10 hold 34% — moderate · exchanges likely included",
+      "warning:Down 97% from its all-time high (Solscan, 2025-01)"
     ],
     "sources_used": [
       "chart",
@@ -715,7 +725,7 @@
     "layers": {
       "chart": {
         "available": true,
-        "trust": 1
+        "trust": 0.85
       },
       "crossvalidation": {
         "available": true,
@@ -750,16 +760,17 @@
     "holders": 83392,
     "top10HolderPct": 33.96,
     "topHolderPct": 12.04,
-    "safeBlocked": false,
+    "safeBlocked": true,
     "safeBlockedReasons": []
   },
   "PIPPIN": {
     "risk": "CAUTION",
-    "score": 900,
+    "score": 884,
     "confidence": 90,
     "flags": [
       "bonus:Established token (30d+) ✓",
       "bonus:LP Burned 99% (GoPlus) ✓",
+      "warning:Down 97% from its all-time high (Solscan, 2026-02)",
       "warning:Top 10 hold 61% — elevated · exchanges may be included"
     ],
     "sources_used": [
@@ -772,7 +783,7 @@
     "layers": {
       "chart": {
         "available": true,
-        "trust": 1
+        "trust": 0.85
       },
       "crossvalidation": {
         "available": true,
@@ -820,6 +831,7 @@
       "bonus:Established token (30d+) ✓",
       "critical:Top 10 hold 89% — extreme concentration",
       "info:LP holds 0.31% of supply — negligible rug risk",
+      "warning:Down 97% from its all-time high (Solscan, 2025-01)",
       "warning:RugCheck: High ownership",
       "warning:RugCheck: Single holder ownership",
       "warning:RugCheck: Top 10 holders high ownership"
@@ -834,7 +846,7 @@
     "layers": {
       "chart": {
         "available": true,
-        "trust": 1
+        "trust": 0.85
       },
       "crossvalidation": {
         "available": true,
@@ -996,14 +1008,14 @@
     "safeBlockedReasons": []
   },
   "JUP": {
-    "risk": "DANGER",
-    "score": 763,
+    "risk": "CAUTION",
+    "score": 890,
     "confidence": 90,
     "flags": [
       "bonus:Established token (30d+) ✓",
-      "critical:Top 10 hold 66% — high concentration",
       "info:LP holds 0.04% of supply — negligible rug risk",
-      "info:Mutable metadata"
+      "info:Mutable metadata",
+      "warning:Top 10 hold 66% — high · established token, exchanges, treasuries and vaults may be included"
     ],
     "sources_used": [
       "chart",
@@ -1031,7 +1043,7 @@
       },
       "helius": {
         "available": true,
-        "trust": 0.25
+        "trust": 0.5
       },
       "rugcheck": {
         "available": true,
@@ -1052,7 +1064,7 @@
     "topHolderPct": 24.78,
     "safeBlocked": false,
     "safeBlockedReasons": [
-      "concentration"
+      "concentration_light"
     ]
   },
   "RENDER": {
@@ -1122,8 +1134,8 @@
     ]
   },
   "HNT": {
-    "risk": "SAFE",
-    "score": 1000,
+    "risk": "CAUTION",
+    "score": 893,
     "confidence": 90,
     "flags": [
       "bonus:Established token (30d+) ✓",
@@ -1131,7 +1143,8 @@
       "info:Mint authority active — supply can be inflated",
       "info:Mutable metadata",
       "info:No website / Twitter / Telegram registered on DexScreener",
-      "info:Top 10 hold 26% — moderate · exchanges likely included"
+      "info:Top 10 hold 26% — moderate · exchanges likely included",
+      "warning:Down 99% from its all-time high (Solscan, 2021-11)"
     ],
     "sources_used": [
       "chart",
@@ -1143,7 +1156,7 @@
     "layers": {
       "chart": {
         "available": true,
-        "trust": 1
+        "trust": 0.85
       },
       "crossvalidation": {
         "available": true,
@@ -1178,7 +1191,7 @@
     "holders": 537767,
     "top10HolderPct": 25.97,
     "topHolderPct": 4.18,
-    "safeBlocked": false,
+    "safeBlocked": true,
     "safeBlockedReasons": []
   },
   "WBTC": {
@@ -1192,7 +1205,8 @@
       "info:Mutable metadata",
       "info:No website / Twitter / Telegram registered on DexScreener",
       "info:RugCheck: Single holder ownership",
-      "info:Top 10 hold 69% — high concentration",
+      "info:Single wallet holds 60% — extreme concentration",
+      "info:Top 10 hold 69% — high · established token, exchanges, treasuries and vaults may be included",
       "info:Wrapped asset — the bridge or the custodian holds the mint authority and most of the supply by design: they are not read as rug signals"
     ],
     "sources_used": [
@@ -1221,7 +1235,7 @@
       },
       "helius": {
         "available": true,
-        "trust": 0.25
+        "trust": 0.062
       },
       "rugcheck": {
         "available": true,
@@ -1304,13 +1318,14 @@
   },
   "JTO": {
     "risk": "CAUTION",
-    "score": 880,
+    "score": 864,
     "confidence": 90,
     "flags": [
       "bonus:Established token (30d+) ✓",
       "info:LP holds 0.01% of supply — negligible rug risk",
       "info:Mutable metadata",
       "info:No website / Twitter / Telegram registered on DexScreener",
+      "warning:Down 90% from its all-time high (Solscan, 2023-12)",
       "warning:Top 10 hold 49% — elevated · exchanges may be included"
     ],
     "sources_used": [
@@ -1323,7 +1338,7 @@
     "layers": {
       "chart": {
         "available": true,
-        "trust": 1
+        "trust": 0.85
       },
       "crossvalidation": {
         "available": true,
@@ -1364,16 +1379,16 @@
     ]
   },
   "RAY": {
-    "risk": "DANGER",
-    "score": 525,
+    "risk": "CAUTION",
+    "score": 858,
     "confidence": 90,
     "flags": [
       "bonus:Established token (30d+) ✓",
-      "critical:Top 10 hold 77% — high concentration",
       "info:LP holds 0.28% of supply — negligible rug risk",
       "info:Mutable metadata",
+      "info:RugCheck: Top 10 holders high ownership",
       "warning:Buy/sell imbalance (coordinated pump)",
-      "warning:RugCheck: Top 10 holders high ownership"
+      "warning:Top 10 hold 77% — high · established token, exchanges, treasuries and vaults may be included"
     ],
     "sources_used": [
       "chart",
@@ -1401,11 +1416,11 @@
       },
       "helius": {
         "available": true,
-        "trust": 0.25
+        "trust": 0.5
       },
       "rugcheck": {
         "available": true,
-        "trust": 0.817
+        "trust": 0.95
       },
       "solscan": {
         "available": false,
@@ -1420,9 +1435,9 @@
     "holders": 266088,
     "top10HolderPct": 77.04,
     "topHolderPct": 24.97,
-    "safeBlocked": true,
+    "safeBlocked": false,
     "safeBlockedReasons": [
-      "concentration"
+      "concentration_light"
     ]
   },
   "PYUSD": {
@@ -1436,9 +1451,10 @@
       "info:LP holds 1.2% of supply",
       "info:Mint authority active — supply can be inflated",
       "info:Permanent delegate — an address can move or burn any holder's tokens",
+      "info:Single wallet holds 56% — high · established token, a treasury, an exchange or insiders may be included",
       "info:Stablecoin — the issuer holds the mint and freeze authorities and most of the supply by design: they are not read as rug signals",
       "info:Token accounts can be closed by an authority",
-      "info:Top 10 hold 83% — extreme concentration",
+      "info:Top 10 hold 83% — high · established token, exchanges, treasuries and vaults may be included",
       "info:Transfer fee can be changed — an authority can raise it to 100%"
     ],
     "sources_used": [
@@ -1467,7 +1483,7 @@
       },
       "helius": {
         "available": true,
-        "trust": 0.1
+        "trust": 0.5
       },
       "rugcheck": {
         "available": true,

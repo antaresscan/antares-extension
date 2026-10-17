@@ -33,7 +33,9 @@ import {
   LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS, SOLSCAN_AGE_AND_HOLDERS_ONLY,
 } from "./_lib/constants";
 import { selectBestPair } from "./_lib/dex-pair-select";
-import { decide } from "./_lib/decide";
+import { decide, top10ReliefFactsOf } from "./_lib/decide";
+import { isTop10Candidate, isAthFlagCandidate } from "./_lib/layers";
+import { issuerKindOf } from "./_lib/issuer-assets";
 import { toPublicFlag } from "./_lib/pipeline";
 import { setCorsHeaders, getClientIp, getInstallId, checkRateLimit, checkColdScanLimit, validateCA, initRateLimiters } from "./_lib/middleware";
 import { unlimitedQuota, setQuotaHeaders } from "./_lib/quota";
@@ -53,6 +55,8 @@ import { composeCriticalActors } from "./_lib/critical-actors";
 import { initUsage, flushUsage, recordScanOutcome } from "./_lib/usage";
 import { downSources } from "./_lib/outage";
 import { reconcileRugCheck } from "./_lib/rugcheck-memory";
+import { getAllTimeHigh, athDropPct, judgeHistory } from "./_lib/ath";
+import { getOrganicScore } from "./_lib/jupiter";
 import { deriveEvent } from "./_lib/verdict-history";
 // initHistoryCache / pushVerdictHistory / getVerdictHistory are no
 // longer imported — the Verdict Timeline feature was decommissioned
@@ -545,9 +549,26 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // everything after it speak of the verdict the user will see. A slow or failed read is "not condemned": it never delays or changes a scan.
     const condemnedEntry = await withBudget(getCondemned(resolvedMint), 800);
 
+    // The all-time high (Solscan), asked for only when the token can use it: for the top-10 relief, to soften a bridge-held mint authority, or to say that it collapsed (a few hundred
+    // tokens a day in all, kept in Redis for a day: api/_lib/ath.ts). No high means no relief, no softening and no flag: the verdict of before. The relief and the softening ALSO need a
+    // living market (Jupiter's organic score, api/_lib/jupiter.ts), asked at the same time and only for them: a daily price cannot see a launch that pumped and dumped within hours.
+    const historyDecidesVerdict = isTop10Candidate(top10ReliefFactsOf({ pair, dexData, resolvedMint, marketCap, tokenAgeMinutes, holders, authFacts })) || !!authFacts.mintHolder;
+    const wantsAllTimeHigh = historyDecidesVerdict || isAthFlagCandidate({ tokenAgeMinutes, marketCapUsd: marketCap, issuerBacked: issuerKindOf(resolvedMint) !== null });
+    const [athLookup, organicLookup] = await Promise.all([
+      wantsAllTimeHigh ? stepBudget(() => getAllTimeHigh(resolvedMint)) : Promise.resolve(null),
+      historyDecidesVerdict ? stepBudget(() => getOrganicScore(resolvedMint)) : Promise.resolve(null),
+    ]);
+    const allTimeHigh = athLookup?.high ?? null;
+    // Which side of the line the token is on, WITH the memory of where it was (in at 90 %, out only below 85 %): a few percent of price next to the line do not flip the verdict.
+    const athCollapsed = allTimeHigh ? await withBudget(judgeHistory(resolvedMint, athDropPct(allTimeHigh, priceUsd)), 300) : null;
+    // Needed and not had (the sources refused or were silent, or no time was left): the verdict is born from missing data, like a scan without its chart. It is kept 30 seconds, not
+    // for the full TTL, so that one hiccup of the sources does not pin a DANGER without the relief on CARDS for ten minutes. Only where the high decides a verdict (the relief, a bridge):
+    // for the flag alone its absence gives the verdict of before, which is no worse than it was. A token that the sources answer they do not know is not a gap.
+    const athGap = historyDecidesVerdict && (athLookup === null || athLookup.failed || organicLookup === null || organicLookup.failed);
+
     // From what the upstreams said to the verdict: a pure function (api/_lib/decide.ts), nothing is read or written there.
     const decision = applyCondemnation(decide({
-      pair, dexData, resolvedMint, marketCap, tokenAgeMinutes, holders, rugData, rugReport, tokenName, goplus, authFacts, totalSupplyUi,
+      pair, dexData, resolvedMint, marketCap, tokenAgeMinutes, holders, rugData, rugReport, tokenName, goplus, authFacts, totalSupplyUi, allTimeHigh, athCollapsed, organicScore: organicLookup?.score ?? null,
       solscanTokenAgeHours, dexTokenAgeHours, resolvedHolderAccounts, solscanTrades24h, solscanTraders24h,
       solscanAnswered: solMetaData !== null || solTransfersData !== null || solMarketsData !== null,
       candles, dailyCandles, recentTransfers, creatorReputation,
@@ -625,7 +646,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       holders, marketCap, liquidity,
       lpBurned,
       lpLocked,
-      mintAuthority: authFacts.mint,
+      // A bridge holds the mint authority: the summary must not narrate it as "the dev can print tokens" (the flag says what it is).
+      mintAuthority: decision.mintHeldByBridge ? null : authFacts.mint,
       freezeAuthority: authFacts.freeze,
       honeypot: authFacts.sellBlocked,
       tokenAgeHours: solscanTokenAgeHours ?? dexTokenAgeHours ?? null,
@@ -717,7 +739,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     // rule (it cannot be told from a token that has none), and an issuer's asset whose market cannot be read keeps its own answer (the last verdict, with its age:
     // api/_lib/last-good.ts).
     const gapSourcesNow = gapSources(result.layers, downSources());
-    const degraded = sources_used.length === 0 || deadlineSpent || pair === null || chartGap || reportGap || gapSourcesNow.length > 0;
+    const degraded = sources_used.length === 0 || deadlineSpent || pair === null || chartGap || reportGap || gapSourcesNow.length > 0 || athGap;
     result.degraded = degraded;
     // LIMITED_DATA=off (helpers.ts limitedDataEnabled) is the emergency switch: no scan is marked, the engine's verdict is shown as before.
     result.sourceGap = limitedDataEnabled() && gapSourcesNow.length > 0;
@@ -780,6 +802,10 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       ...(limitedCauses.length > 0 ? { limitedCauses } : {}),
       // RugCheck did not answer and its last good answer for this token was read instead (api/_lib/rugcheck-memory.ts).
       ...(rugcheckMemory.fromMemory ? { rugcheckMemory: true } : {}),
+      // The all-time high and the organic score, when this scan asked for them: "found", "none" (the source answers that it does not know the token), "failed" (it did not answer) or
+      // "skipped" (no time left). Counted per day to see how often a relief is decided without the number it needs.
+      ...(wantsAllTimeHigh ? { athState: athLookup?.high ? "found" : athLookup === null ? "skipped" : athLookup.failed ? "failed" : "none" } : {}),
+      ...(historyDecidesVerdict ? { organicState: organicLookup?.score != null ? "found" : organicLookup === null ? "skipped" : organicLookup.failed ? "failed" : "none" } : {}),
       scoringVersion: SCORING_VERSION,
     });
     recordScanOutcome(limitedCauses);

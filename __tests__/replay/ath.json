@@ -1,0 +1,2574 @@
+{
+ "recordedAt": "2026-10-15",
+ "source": "CoinGecko /coins/list?include_platform=true and /coins/markets (public API, no key)",
+ "tokens": {
+  "1Qf8gESP4i6CFNWerUSDdLKJ9U1LpqTYvjJ2MM4pain": {
+   "ath": 24.3,
+   "athDate": "2025-02-19T19:51:07.000Z"
+  },
+  "1zJX5gRnjLgmTpq5sVwkq69mNDQkCemqoasyjaPW6jm": {
+   "ath": 0.056163,
+   "athDate": "2026-01-15T06:06:15.000Z"
+  },
+  "25hAyBQfoDhfWx9ay6rarbgvWGwDdNqcHsXS3jQ3mTDJ": {
+   "ath": 0.02759909,
+   "athDate": "2024-04-25T20:25:06.000Z"
+  },
+  "27G8MtK7VtTcCHkpASjSDdkWWYfoqT6ggEuKidVJidD4": {
+   "ath": 5.99,
+   "athDate": "2025-10-06T09:35:59.000Z"
+  },
+  "29CWsqH84TykHDDwA6DtETUtXQPuKbVgKCmxtkBsbrrr": {
+   "ath": 0.02258762,
+   "athDate": "2026-04-22T15:25:00.000Z"
+  },
+  "2DfBjrPFZjDTiCY6pxchS6aSdUdEpkm7PdqpovHjBAGS": {
+   "ath": 0.00307941,
+   "athDate": "2026-05-15T16:47:00.000Z"
+  },
+  "2Dx7XJQp2LGdq14nP98swmtUhfhHz8FVs98bt11Mpump": {
+   "ath": 0.00085403,
+   "athDate": "2026-10-11T13:33:30.000Z"
+  },
+  "2FPyTwcZLUg1MDrwsyoP4D6s1tM7hAkHYRjkNb5w6Pxk": {
+   "ath": 3424.49,
+   "athDate": "2022-04-07T19:27:51.000Z"
+  },
+  "2JcXacFwt9mVAwBQ5nZkYwCyXQkRcdsYrDXn6hj22SbP": {
+   "ath": 0.096963,
+   "athDate": "2024-10-13T20:06:32.000Z"
+  },
+  "2Wu1g2ft7qZHfTpfzP3wLdfPeV1is4EwQ3CXBfRYAciD": {
+   "ath": 277.7,
+   "athDate": "2025-03-30T11:14:20.000Z"
+  },
+  "2akXpuyFXAVN5YofZpZMfBp2Vxognpmv9NooBMuHpump": {
+   "ath": 0.00301527,
+   "athDate": "2026-04-14T23:48:00.000Z"
+  },
+  "2b1kV6DkPAnxd5ixfnxCpjxmKwqjjaYmCZfHsFu24GXo": {
+   "ath": 1.021,
+   "athDate": "2023-10-23T14:44:57.000Z"
+  },
+  "2bpT3ksMdwdZ6DuHyq3FDUr7HDwvZ5DRZoT1fUPALJaH": {
+   "ath": 0.04727658,
+   "athDate": "2026-05-08T09:33:00.000Z"
+  },
+  "2eXamy7t3kvKhfV6aJ6Uwe3eh8cuREFcTKs1mFKZpump": {
+   "ath": 0.063262,
+   "athDate": "2025-01-25T06:45:55.000Z"
+  },
+  "2j5SaS7xy776qCBpyPQbZjyQSAtKiFgrwjfErthnW2ZM": {
+   "ath": 0.01186699,
+   "athDate": "2026-10-11T12:59:10.000Z"
+  },
+  "2nP9yKQNSGQy851iyawDvBkzkK2R2aqKArQCKc2gpump": {
+   "ath": 0.00976314,
+   "athDate": "2026-03-01T16:20:48.000Z"
+  },
+  "2oGLxYuNBJRcepT1mEV6KnETaLD7Bf6qq3CM6skasBfe": {
+   "ath": 3.87,
+   "athDate": "2024-07-01T14:41:32.000Z"
+  },
+  "2oQNkePakuPbHzrVVkQ875WHeewLHCd2cAwfwiLQbonk": {
+   "ath": 0.01457916,
+   "athDate": "2025-10-06T19:13:09.000Z"
+  },
+  "2qEHjDLDLbuBgRYvsxhc5D6uDWAivNFZGan56P1tpump": {
+   "ath": 2.44,
+   "athDate": "2024-11-13T17:20:47.000Z"
+  },
+  "2u1tszSeqZ3qBWF3uNGPFc8TzMk2tdiwknnRMWGWjGWH": {
+   "ath": 1.65,
+   "athDate": "2025-01-29T16:11:05.000Z"
+  },
+  "2xpoapWZuP4sRHnAxtXHibe57RhKDLVo7a3a3MEqpump": {
+   "ath": 0.01644731,
+   "athDate": "2026-09-07T08:20:40.000Z"
+  },
+  "2zMMhcVQEXDtdE6vsFS7S7D5oUodfJHE8vd1gnBouauv": {
+   "ath": 0.068447,
+   "athDate": "2024-12-17T05:05:22.000Z"
+  },
+  "31k88G5Mq7ptbRDf3AM13HAq6wRQHXHikR8hik7wPygk": {
+   "ath": 6.89,
+   "athDate": "2025-07-26T15:48:16.000Z"
+  },
+  "32CdQdBUxbCsLy5AUHWmyidfwhgGUr9N573NBUrDpump": {
+   "ath": 0.00748838,
+   "athDate": "2026-05-09T02:49:00.000Z"
+  },
+  "34q2KmCvapecJgR6ZrtbCTrzZVtkt3a5mHEA3TuEsWYb": {
+   "ath": 0.01212889,
+   "athDate": "2026-04-03T15:22:00.000Z"
+  },
+  "375aiUqZERLrB9sHtsArKr4nuWCgBrtqibUDBMGeLvZC": {
+   "ath": 0.076463,
+   "athDate": "2025-11-10T08:28:02.000Z"
+  },
+  "38PgzpJYu2HkiYvV8qePFakB8tuobPdGm2FFEn7Dpump": {
+   "ath": 0.0832,
+   "athDate": "2025-05-04T09:55:13.000Z"
+  },
+  "39HqgQ18g9R33sUfKq1TjX4sbKrgTb4YntnBCFhURJvy": {
+   "ath": 0.00289904,
+   "athDate": "2026-09-21T14:58:10.000Z"
+  },
+  "3B1ijcocM5EDga6XxQ7JLW7weocQPWWjuhBYG8Vepump": {
+   "ath": 0.01422732,
+   "athDate": "2026-02-13T22:45:24.000Z"
+  },
+  "3B5wuUrMEi5yATD7on46hKfej3pfmd7t1RKgrsN3pump": {
+   "ath": 0.231516,
+   "athDate": "2024-07-21T07:30:36.000Z"
+  },
+  "3DFnwGLJUfxc4eMxDgQwW6oWaeKBrJ1iwA26YjTfpump": {
+   "ath": 0.00317118,
+   "athDate": "2026-08-27T22:20:00.000Z"
+  },
+  "3E7nd9oom8Wdvc6jdHWRSLhpZ6kymd8oYXT5zaU2pump": {
+   "ath": 0.01071285,
+   "athDate": "2026-04-25T05:47:00.000Z"
+  },
+  "3Gdx9LmKZJyciSz3mbge3YKLqskiMG71m1iDMPAwpump": {
+   "ath": 0.00595883,
+   "athDate": "2026-04-17T20:45:00.000Z"
+  },
+  "3KHMZhpthXuiCcgfTv7vVu9PpEz64KAEURFwi6Lopump": {
+   "ath": 0.02649191,
+   "athDate": "2026-05-11T19:52:00.000Z"
+  },
+  "3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh": {
+   "ath": 126009,
+   "athDate": "2025-10-06T11:10:10.000Z"
+  },
+  "3TYgKwkE2Y3rxdw9osLRSpxpXmSC1C1oo19W9KHspump": {
+   "ath": 0.01085955,
+   "athDate": "2026-04-15T14:00:00.000Z"
+  },
+  "3ThdFZQKM6kRyVGLG48kaPg5TRMhYMKY1iCRa9xop1WC": {
+   "ath": 1.14,
+   "athDate": "2026-07-09T10:27:10.000Z"
+  },
+  "3XTp12PmKMHxB6YkejaGPUjMGBLKRGgzHWgJuVTsBCoP": {
+   "ath": 0.01784183,
+   "athDate": "2024-06-21T07:26:40.000Z"
+  },
+  "3b8X44fLF9ooXaUm3hhSgjpmVs6rZZ3pPoGnGahc3Uu7": {
+   "ath": 1.5,
+   "athDate": "2026-03-11T07:16:40.000Z"
+  },
+  "3bRTivrVsitbmCTGtqwp7hxXPsybkjn4XLNtPsHqa3zR": {
+   "ath": 1.041,
+   "athDate": "2021-09-06T22:10:27.000Z"
+  },
+  "3dQTr7ror2QPKQ3GbBCokJUmjErGg8kTJzdnYjNfvi3Z": {
+   "ath": 1.64,
+   "athDate": "2021-05-04T09:14:50.000Z"
+  },
+  "3iC63FgnB7EhcPaiSaC51UkVweeBDkqu17SaRyy2pump": {
+   "ath": 0.01316483,
+   "athDate": "2026-02-16T13:55:44.000Z"
+  },
+  "3iQL8BFS2vE7mww4ehAqQHAsbmRNCrPxizWAT2Zfyr9y": {
+   "ath": 5.07,
+   "athDate": "2025-01-01T22:15:38.000Z"
+  },
+  "3vgopg7xm3EWkXfxmWPUpcf7g939hecfqg18sLuXDzVt": {
+   "ath": 0.02963426,
+   "athDate": "2025-01-12T00:05:38.000Z"
+  },
+  "3wtGGWZ8wLWW6BqtC5rxmkHdqvM62atUcGTH4cw3pump": {
+   "ath": 0.00933626,
+   "athDate": "2026-10-05T18:03:40.000Z"
+  },
+  "3xvLSHrLcM7246X1vu34cM9gNX741kQrzqj6T2HhLvXp": {
+   "ath": 0.00078364,
+   "athDate": "2024-09-11T18:05:31.000Z"
+  },
+  "3ywtR9qQH4BuA7LSfLvEuW1gh6ha7EK18XwLbHvhryPZ": {
+   "ath": 0.102264,
+   "athDate": "2026-10-11T08:27:50.000Z"
+  },
+  "3z2tRjNuQjoq6UDcw4zyEPD1Eb5KXMPYb4GWFzVT1DPg": {
+   "ath": 0.153743,
+   "athDate": "2026-01-18T22:26:43.000Z"
+  },
+  "42cXQvAAr7hcPBPWAS4ocVtDyeJ4Fa6gRR2uG4gppump": {
+   "ath": 0.04763176,
+   "athDate": "2026-07-26T18:33:40.000Z"
+  },
+  "43VWkd99HjqkhFTZbWBpMpRhjG469nWa7x7uEsgSH7We": {
+   "ath": 370.17,
+   "athDate": "2024-12-04T02:55:44.000Z"
+  },
+  "43YakhC3TcSuTgSXnxFgw8uKL8VkuLuFa4M6Bninpump": {
+   "ath": 0.01562586,
+   "athDate": "2025-12-22T13:07:07.000Z"
+  },
+  "463SK47VkB7uE7XenTHKiVcMtxRsfNE2X4Q9wByaURVA": {
+   "ath": 0.02513879,
+   "athDate": "2024-12-03T04:20:28.000Z"
+  },
+  "4Cnk9EPnW5ixfLZatCPJjDB1PUtcRpVVgTQukm9epump": {
+   "ath": 0.288644,
+   "athDate": "2024-06-14T03:48:46.000Z"
+  },
+  "4G86CMxGsMdLETrYnavMFKPhQzKTvDBYGMRAdVtr72nu": {
+   "ath": 0.00014924,
+   "athDate": "2024-03-16T22:15:57.000Z"
+  },
+  "4GFe6MBDorSy5bLbiUMrgETr6pZcjyfxMDm5ehSgpump": {
+   "ath": 0.01737179,
+   "athDate": "2024-06-23T02:37:11.000Z"
+  },
+  "4LLbsb5ReP3yEtYzmXewyGjcir5uXtKFURtaEUVC2AHs": {
+   "ath": 0.736957,
+   "athDate": "2024-04-22T02:16:47.000Z"
+  },
+  "4TyZGqRLG3VcHTGMcLBoPUmqYitMVojXinAmkL8xpump": {
+   "ath": 0.02315462,
+   "athDate": "2026-01-23T09:20:21.000Z"
+  },
+  "4UeLCRqARmfb6e6KQijtiktqqXUxbfk6jZng7DhuBAGS": {
+   "ath": 0.01854772,
+   "athDate": "2026-05-13T21:58:00.000Z"
+  },
+  "4Zp52aF4hZi9fzH19xpbWKYKQvgLyCN67KFbrQDqeTKh": {
+   "ath": 0.107368,
+   "athDate": "2026-09-23T05:54:10.000Z"
+  },
+  "4bY7N2hPq4aHQJwbhawceNqS5ksyQAayiLEsjNMwpump": {
+   "ath": 0.00120444,
+   "athDate": "2026-01-24T03:39:08.000Z"
+  },
+  "4df1wZoygsynEZ6XmpcoabrVwv7nBgjHLyCns5xApump": {
+   "ath": 0.00391734,
+   "athDate": "2026-04-27T16:24:00.000Z"
+  },
+  "4eDf52YYzL6i6gbZ6FXqrLUPXbtP61f1gPSFM66M4XHe": {
+   "ath": 4.3,
+   "athDate": "2025-11-14T12:10:58.000Z"
+  },
+  "4h49hPGphLNJNDRyiBwzvKoasR3rw1WJCEv19PhUbSS4": {
+   "ath": 0.210264,
+   "athDate": "2023-12-31T13:00:25.000Z"
+  },
+  "4ikwYoNvoGEwtMbziUyYBTz1zRM6nmxspsfw9G7Bpump": {
+   "ath": 0.01946461,
+   "athDate": "2025-06-18T09:30:43.000Z"
+  },
+  "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R": {
+   "ath": 16.83,
+   "athDate": "2021-09-12T12:20:23.000Z"
+  },
+  "4mbPZzDCWXvTCJbscMWeDD7TT1pra9mkZHGaBxc2jupx": {
+   "ath": 0.00016466,
+   "athDate": "2026-10-13T16:54:20.000Z"
+  },
+  "4nCmpwne7hCoWTSpAd54uENmCgHJrHTyn4DMPCEMpump": {
+   "ath": 0.00036436,
+   "athDate": "2026-10-12T16:42:40.000Z"
+  },
+  "4nV5gNwwP68zUDat26ySChREqVaQaLudfJBkSgEzpump": {
+   "ath": 0.02384075,
+   "athDate": "2026-05-10T09:54:00.000Z"
+  },
+  "4sWNB8zGWHkh6UnmwiEtzNxL4XrN7uK9tosbESbJFfVs": {
+   "ath": 2.08,
+   "athDate": "2025-10-26T17:43:20.000Z"
+  },
+  "4vMsoUT2BWatFweudnQM1xedRLfJgJ7hswhcpz4xgBTy": {
+   "ath": 0.376287,
+   "athDate": "2023-12-12T05:44:51.000Z"
+  },
+  "52nVoVk3BimAtvu2y9q1gnxqgR8pmjcc3v3byGnCuBa": {
+   "ath": 0.00022567,
+   "athDate": "2026-06-11T14:23:40.000Z"
+  },
+  "57dYAUq7Y4hiCSdAB7iBDg4gcYFq7HeUaEs3XnNkbrrr": {
+   "ath": 0.04596965,
+   "athDate": "2026-05-25T07:35:00.000Z"
+  },
+  "59obFNBzyTBGowrkif5uK7ojS58vsuWz3ZCvg6tfZAGw": {
+   "ath": 1.16,
+   "athDate": "2026-07-10T15:15:10.000Z"
+  },
+  "5HV956n7UQT1XdJzv43fHPocest5YAmi9ipsuiJx7zt7": {
+   "ath": 0.01581955,
+   "athDate": "2026-04-29T00:53:00.000Z"
+  },
+  "5HsZR8eG7QpQcN8Mnp8oFdENRkJMP9ZkcKhPSCKTJSWh": {
+   "ath": 0.00301151,
+   "athDate": "2025-08-23T04:30:10.000Z"
+  },
+  "5LafQUrVco6o7KMz42eqVEJ9LW31StPyGjeeu5sKoMtA": {
+   "ath": 0.00012003,
+   "athDate": "2024-07-29T03:40:32.000Z"
+  },
+  "5MAYDfq5yxtudAhtfyuMBuHZjgAbaS9tbEyEQYAhDS5y": {
+   "ath": 0.02687893,
+   "athDate": "2023-02-15T17:23:46.000Z"
+  },
+  "5SVG3T9CNQsm2kEwzbRq6hASqh1oGfjqTtLXYUibpump": {
+   "ath": 0.172153,
+   "athDate": "2024-11-10T02:56:12.000Z"
+  },
+  "5UUH9RTDiSpq6HKS6bp4NdU9PNJpXRXuiw6ShBTBhgH2": {
+   "ath": 0.282604,
+   "athDate": "2025-08-22T13:48:29.000Z"
+  },
+  "5XZw2LKTyrfvfiskJ78AMpackRjPcyCif1WhUsPDuVqQ": {
+   "ath": 125932,
+   "athDate": "2025-10-06T10:55:19.000Z"
+  },
+  "5Y8NV33Vv7WbnLfq3zBcKSdYPrk7g2KoiQoe7M2tcxp5": {
+   "ath": 1.17,
+   "athDate": "2026-07-25T16:25:40.000Z"
+  },
+  "5YMkXAYccHSGnHn9nob9xEvv6Pvka9DZWH7nTbotTu9E": {
+   "ath": 100.36,
+   "athDate": "2026-05-10T21:24:00.000Z"
+  },
+  "5a6LTLwdMJBY2JDLjw8B1w4JwFRdZszGF9W56ZzrriS1": {
+   "ath": 0.078702,
+   "athDate": "2021-11-18T01:34:17.000Z"
+  },
+  "5csfa95Xf8ebiCwP9joQ7mtC8KwFvnnejnYx5FbYpump": {
+   "ath": 0.00388614,
+   "athDate": "2025-01-28T08:06:00.000Z"
+  },
+  "5g6wVay8NYQ5Tspo4irj9YqSFfQoPDW7apkX352N29PP": {
+   "ath": 0.110892,
+   "athDate": "2025-11-19T22:35:57.000Z"
+  },
+  "5gTPspC2ricuGWiYQ4Ghausg8fsq7uCrGgSVACatcoin": {
+   "ath": 0.00198659,
+   "athDate": "2026-04-25T19:48:00.000Z"
+  },
+  "5mbK36SZ7J19An8jFochhQS4of8g6BwUjbeCSxBSoWdp": {
+   "ath": 0.587659,
+   "athDate": "2024-05-16T19:35:57.000Z"
+  },
+  "5sMyPtYRcrEVt27DW3xhGVVha3zCXLv4caVt88PXjBgV": {
+   "ath": 3.47,
+   "athDate": "2022-01-09T11:12:13.000Z"
+  },
+  "5z3EqYQo9HiCEs3R84RCDMu2n7anpDMxRhdK8PSWmrRC": {
+   "ath": 0.836512,
+   "athDate": "2024-11-18T20:12:44.000Z"
+  },
+  "61V8vBaqAGMpgDQi4JcAwo1dmBGHsyhzodcPqnEVpump": {
+   "ath": 0.623197,
+   "athDate": "2025-01-21T19:35:28.000Z"
+  },
+  "61Wj56QgGyyB966T7YsMzEAKRLcMvJpDbPzjkrCZc4Bi": {
+   "ath": 0.01724954,
+   "athDate": "2026-08-29T17:28:00.000Z"
+  },
+  "63LfDmNb3MQ8mw9MtZ2To9bEA2M71kZUUGq5tiJxcqj9": {
+   "ath": 0.095127,
+   "athDate": "2025-01-03T08:26:00.000Z"
+  },
+  "69G8CpUVZAxbPMiEBrfCCCH445NwFxH6PzVL693Xpump": {
+   "ath": 0.01869435,
+   "athDate": "2025-06-16T23:25:21.000Z"
+  },
+  "69LjZUUzxj3Cb3Fxeo1X4QpYEQTboApkhXTysPpbpump": {
+   "ath": 0.04559507,
+   "athDate": "2025-09-14T22:35:42.000Z"
+  },
+  "69kdRLyP5DTRkpHraaSZAQbWmAwzF9guKjZfzMXzcbAs": {
+   "ath": 0.00002545,
+   "athDate": "2025-01-19T09:26:12.000Z"
+  },
+  "6AJcP7wuLwmRYLBNbi825wgguaPsWzPBEHcHndpRpump": {
+   "ath": 0.469941,
+   "athDate": "2025-01-26T02:00:27.000Z"
+  },
+  "6AVAUKa9uxQpruHZUinFECpXEh1usRVtzQWK8N2wpump": {
+   "ath": 0.01189349,
+   "athDate": "2026-04-28T16:51:00.000Z"
+  },
+  "6Bp9LWtyVXcEATi5nuquX5p1hPGUg1cVoUuXGN9Epump": {
+   "ath": 0.00055782,
+   "athDate": "2026-05-10T03:43:00.000Z"
+  },
+  "6DNSN2BJsaPFdFFc1zP37kkeNe4Usc1Sqkzr9C9vPWcU": {
+   "ath": 125646,
+   "athDate": "2025-10-06T09:18:25.000Z"
+  },
+  "6FrrzDk5mQARGc1TDYoyVnSyRdds1t4PbtohCD6p3tgG": {
+   "ath": 1.21,
+   "athDate": "2026-07-14T11:48:30.000Z"
+  },
+  "6GmAFSYs4gk3FDao5FzzySQpPZaWsa4rUJHacpMpUNgx": {
+   "ath": 0.401304,
+   "athDate": "2026-09-21T19:45:30.000Z"
+  },
+  "6HHzBVkxtoz86Bjy2duaUw77hVfJzQkuoLizWeEMBLEM": {
+   "ath": 0.00775503,
+   "athDate": "2026-04-16T20:06:00.000Z"
+  },
+  "6MQpbiTC2YcogidTmKqMLK82qvE9z5QEm7EP3AEDpump": {
+   "ath": 0.02911246,
+   "athDate": "2025-06-11T03:35:26.000Z"
+  },
+  "6Mix12LiHrQFojaQEnfPUC65Qkwd6X4Y5Qg93oFbordr": {
+   "ath": 0.00874108,
+   "athDate": "2026-10-15T00:18:00.000Z"
+  },
+  "6NwarBvDkXhByqVp2Qkq5i9XbtA2B3Bwe8SWGu9vpump": {
+   "ath": 0.02109288,
+   "athDate": "2026-08-22T04:44:00.000Z"
+  },
+  "6Rwcmkz9yiYVM5EzyMcr4JsQPGEAWhcUvLvfBperYnUt": {
+   "ath": 0.00474081,
+   "athDate": "2024-10-24T21:44:51.000Z"
+  },
+  "6Tk3uHQpLDtd4Qob5fduLjfhXxAasWgvdo8hYeswxMiL": {
+   "ath": 0.00984706,
+   "athDate": "2026-01-22T05:48:06.000Z"
+  },
+  "6UpQcMAb5xMzxc7ZfPaVMgx3KqsvKZdT5U718BzD5We2": {
+   "ath": 2.41,
+   "athDate": "2026-09-06T16:53:40.000Z"
+  },
+  "6dKCoWjpj5MFU5gWDEFdpUUeBasBLK3wLEwhUzQPAa1e": {
+   "ath": 0.804342,
+   "athDate": "2024-12-16T18:50:34.000Z"
+  },
+  "6e8LLHkqCTa4mzGuL1PoUxSfeHmDeceJ3DaJSSUNg937": {
+   "ath": 0.00188981,
+   "athDate": "2026-10-01T09:52:30.000Z"
+  },
+  "6eftxVbSAunVEoxUWdGhPdxg5UdsJ8Wkwy5w5YFuxouw": {
+   "ath": 0.878633,
+   "athDate": "2021-03-13T00:04:21.000Z"
+  },
+  "6iA73gWCKkLWKbVr8rgibV57MMRxzsaqS9cWpgKBpump": {
+   "ath": 0.0080748,
+   "athDate": "2026-03-06T05:25:03.000Z"
+  },
+  "6nR8wBnfsmXfcdDr1hovJKjvFQxNSidN6XFyfAFZpump": {
+   "ath": 0.082293,
+   "athDate": "2025-10-03T07:16:44.000Z"
+  },
+  "6ogzHhzdrQr9Pgv6hZ2MNze7UrzBMAFyBBWUYp1Fhitx": {
+   "ath": 0.242205,
+   "athDate": "2024-11-07T14:35:41.000Z"
+  },
+  "6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN": {
+   "ath": 73.43,
+   "athDate": "2025-01-19T03:50:34.000Z"
+  },
+  "6yjNqPzTSanBWSa6dxVEgTjePXBrZ2FoHLDQwYwEsyM6": {
+   "ath": 0.03484076,
+   "athDate": "2024-11-14T09:12:13.000Z"
+  },
+  "71Jvq4Epe2FCJ7JFSF7jLXdNk1Wy4Bhqd9iL6bEFELvg": {
+   "ath": 0.056621,
+   "athDate": "2025-06-21T09:06:03.000Z"
+  },
+  "71S9cppWipeUEQDFngYwxjoxB6Sz1MUqX72byLsVYJqy": {
+   "ath": 1.36,
+   "athDate": "2021-11-14T03:25:59.000Z"
+  },
+  "72QvBVwpxqmheEPfaCwWSWqEFsUy3rhWt6JhQBMNTwD1": {
+   "ath": 1.52,
+   "athDate": "2024-04-11T05:15:15.000Z"
+  },
+  "739dnZEG4yaBWFsY8L8ZwrfhGG6dhtCSercW8Umspump": {
+   "ath": 0.01871968,
+   "athDate": "2026-10-14T08:09:00.000Z"
+  },
+  "73xsLcBnLnc9bh81cqVKqj8uEyiarXng5ZwJuTbnVebG": {
+   "ath": 0.00000167,
+   "athDate": "2024-07-21T12:44:30.000Z"
+  },
+  "74SBV4zDXxTRgv1pEMoECskKBkZHc2yGPnc7GYVepump": {
+   "ath": 0.605474,
+   "athDate": "2025-01-07T00:50:45.000Z"
+  },
+  "75gGuxuqKhQQiHae8JKDQaetK3XguKf1rUJ1csispump": {
+   "ath": 0.01449592,
+   "athDate": "2026-10-06T13:47:10.000Z"
+  },
+  "7BgBvyjrZX1YKz4oh9mjb8ZScatkkwb8DzFx7LoiVkM3": {
+   "ath": 1.3,
+   "athDate": "2024-03-18T21:25:04.000Z"
+  },
+  "7C94RweVKZtBhA291WpXW7pkYEnbqhGvCFTU8nPoBTFY": {
+   "ath": 0.057393,
+   "athDate": "2025-01-22T09:36:25.000Z"
+  },
+  "7EW5dDD6MYJK4PcZ89MGApJQwWeDEeNgH4NCVU4qpump": {
+   "ath": 0.00250729,
+   "athDate": "2026-05-05T19:05:00.000Z"
+  },
+  "7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr": {
+   "ath": 2.05,
+   "athDate": "2024-11-17T07:50:59.000Z"
+  },
+  "7GdpaeSzvkx1a78rRkU11KstM1x8naMmMmmpWQnQSEAS": {
+   "ath": 0.373508,
+   "athDate": "2026-06-07T19:20:30.000Z"
+  },
+  "7JA5eZdCzztSfQbJvS8aVVxMFfd81Rs9VvwnocV1mKHu": {
+   "ath": 0.374342,
+   "athDate": "2025-01-25T12:51:06.000Z"
+  },
+  "7Q2afV64in6N6SeZsAAB81TJzwDoD6zpqmHkzi9Dcavn": {
+   "ath": 652.43,
+   "athDate": "2023-11-23T17:21:27.000Z"
+  },
+  "7RDvypx3p9EWq4nZZKux1ZQAc7DUWXpHTVKxCCnupump": {
+   "ath": 0.01377281,
+   "athDate": "2024-12-10T16:40:52.000Z"
+  },
+  "7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL": {
+   "ath": 0.187194,
+   "athDate": "2025-02-03T16:51:00.000Z"
+  },
+  "7ZCm8WBN9aLa3o47SoYctU6iLdj7wkGG5SV2hE5CgtD5": {
+   "ath": 0.00000259,
+   "athDate": "2021-10-30T12:39:32.000Z"
+  },
+  "7atgF8KQo4wJrD5ATGX7t1V2zVvykPJbFfNeVf1icFv1": {
+   "ath": 0.00000224,
+   "athDate": "2024-06-02T08:59:56.000Z"
+  },
+  "7b6dX3nE25xrfNViEKZHL9wVJFcBxQYuWPpmzHUxx28H": {
+   "ath": 0.00054907,
+   "athDate": "2026-10-14T12:56:20.000Z"
+  },
+  "7dHbWXmci3dT8UFYWYZweBLXgycu7Y3iL6trKn1Y7ARj": {
+   "ath": 350.04,
+   "athDate": "2025-01-19T03:21:29.000Z"
+  },
+  "7fj85y28pKMndm4So66Szkb5GMGfLHFEkwsZdDx2pump": {
+   "ath": 0.00040836,
+   "athDate": "2026-02-20T09:59:09.000Z"
+  },
+  "7hWcHohzwtLddDUG81H2PkWq6KEkMtSDNkYXsso18Fy3": {
+   "ath": 1.69e-9,
+   "athDate": "2024-03-25T23:56:39.000Z"
+  },
+  "7i5KKsX2weiTkry7jA4ZwSuXGhs5eJBEjY8vVxR4pfRx": {
+   "ath": 4.11,
+   "athDate": "2022-04-27T19:29:53.000Z"
+  },
+  "7kN5FQMD8ja4bzysEgc5FXmryKd6gCgjiWnhksjHCFb3": {
+   "ath": 0.03159196,
+   "athDate": "2025-08-27T18:22:49.000Z"
+  },
+  "7nZuYZYZnof9gF3zr9QhdnxpQ1mTM8LN3VaJuhrGbonk": {
+   "ath": 0.00323388,
+   "athDate": "2026-05-02T09:52:00.000Z"
+  },
+  "7oBYdEhV4GkXC19ZfgAvXpJWp2Rn9pm1Bx2cVNxFpump": {
+   "ath": 0.775747,
+   "athDate": "2025-02-09T18:05:22.000Z"
+  },
+  "7oLWGMuGbBm9uwDmffSdxLE98YChFAH1UdY5XpKYLff8": {
+   "ath": 0.01122976,
+   "athDate": "2025-08-28T20:00:10.000Z"
+  },
+  "7s9MoSt7VV1J3jVNnw2AyocsQDBdCkPYz5apQDPKy9i5": {
+   "ath": 0.282006,
+   "athDate": "2025-10-08T06:40:07.000Z"
+  },
+  "7thxAzq4B9KwPe4NqMNAntF2Njgqb9FTKQb4z6fYpump": {
+   "ath": 0.00009108,
+   "athDate": "2026-10-09T16:04:10.000Z"
+  },
+  "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs": {
+   "ath": 4951.88,
+   "athDate": "2025-08-24T11:26:08.000Z"
+  },
+  "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU": {
+   "ath": 0.236987,
+   "athDate": "2021-10-28T09:58:36.000Z"
+  },
+  "85VBFQZC9TZkfaptBWjvUw7YbZjy52A6mjtPGjstQAmQ": {
+   "ath": 1.66,
+   "athDate": "2024-04-03T03:46:35.000Z"
+  },
+  "85WdpEBNDSN9oNkPomBGspnBZsaKb7WF1NQ51pdouxML": {
+   "ath": 0.00005429,
+   "athDate": "2026-10-08T06:29:30.000Z"
+  },
+  "85cQsFgbi8mBZxiPppbpPXuV7j1hA8tBwhjF4gKW6mHg": {
+   "ath": 0.00018285,
+   "athDate": "2024-11-28T03:56:12.000Z"
+  },
+  "86T4G3zJaBxQAuWAbfXggE5d5XEt4bns3Y41jgVLpump": {
+   "ath": 0.00057752,
+   "athDate": "2026-09-13T20:02:40.000Z"
+  },
+  "8Aq4fWMgPqJbF3w8w8PnLDRVUAFe4mzsCvPKxAArbonk": {
+   "ath": 0.177836,
+   "athDate": "2025-09-24T10:45:06.000Z"
+  },
+  "8FU95xFJhUUkyyCLU13HSzDLs7oC4QZdXQHL6SCeab36": {
+   "ath": 19.85,
+   "athDate": "2024-12-19T08:44:59.000Z"
+  },
+  "8J69rbLTzWWgUJziFY8jeu5tDwEPBwUz4pKBMr5rpump": {
+   "ath": 0.062342,
+   "athDate": "2025-11-28T06:37:15.000Z"
+  },
+  "8Jx8AAHj86wbQgUTjGuj6GTTL5Ps3cqxKRTvpaJApump": {
+   "ath": 0.1605,
+   "athDate": "2026-01-24T15:22:01.000Z"
+  },
+  "8Ki8DpuWNxu9VsS3kQbarsCWMcFGWkzzA8pUPto9zBd5": {
+   "ath": 0.115837,
+   "athDate": "2024-11-07T17:17:39.000Z"
+  },
+  "8NCievmJCg2d9Vc2TWgz2HkE6ANeSX7kwvdq5AL7pump": {
+   "ath": 0.00863041,
+   "athDate": "2025-06-26T19:26:02.000Z"
+  },
+  "8PGyHCKvSUjezHkV7KLwMacnmSJLe1YbRM1zvDVApump": {
+   "ath": 0.00273995,
+   "athDate": "2026-10-12T11:18:30.000Z"
+  },
+  "8RVBk8vxLiUHueLUW1f4izFVqN3nWippLhkohKg6EGkS": {
+   "ath": 0.04983031,
+   "athDate": "2026-09-11T15:53:10.000Z"
+  },
+  "8SMMso8Muv8d6i4WmMDthKt6TN1ysN6937sx3DKLXZqB": {
+   "ath": 0.199879,
+   "athDate": "2026-09-27T23:25:30.000Z"
+  },
+  "8SkfuQkYNTskoQUbbjr2JbZQeqQV9egnJXgfMXf5bonk": {
+   "ath": 0.01010416,
+   "athDate": "2026-08-02T16:40:20.000Z"
+  },
+  "8SpPaFLycx897D6sowPZkEkcNdDahzRZb5itr6D8pump": {
+   "ath": 0.02507131,
+   "athDate": "2025-01-25T21:01:07.000Z"
+  },
+  "8TiMkgvsrat9tM2esko8zVTt99LZLpefUM4SnZaziXaQ": {
+   "ath": 0.00384711,
+   "athDate": "2026-10-10T11:27:30.000Z"
+  },
+  "8XtRWb4uAAJFMP4QQhoYYCWR6XXb7ybcCdiqPwz9s5WS": {
+   "ath": 0.04872215,
+   "athDate": "2025-01-24T04:25:20.000Z"
+  },
+  "8ZHE4ow1a2jjxuoMfyExuNamQNALv5ekZhsBn5nMDf5e": {
+   "ath": 0.200485,
+   "athDate": "2025-07-06T06:31:38.000Z"
+  },
+  "8avjtjHAHFqp4g2RR9ALAGBpSTqKPZR8nRbzSTwZERA": {
+   "ath": 0.04713878,
+   "athDate": "2025-10-11T12:18:10.000Z"
+  },
+  "8c71AvjQeKKeWRe8jtTGG1bJ2WiYXQdbjqFbUfhHgSVk": {
+   "ath": 0.354915,
+   "athDate": "2025-06-03T12:56:16.000Z"
+  },
+  "8f62NyJGo7He5uWeveTA2JJQf4xzf8aqxkmzxRQ3mxfU": {
+   "ath": 0.0311556,
+   "athDate": "2026-01-22T03:33:37.000Z"
+  },
+  "8fr7WGTVFszfyNWRMXj6fRjZZAnDwmXwEpCrtzmUkdih": {
+   "ath": 1.071,
+   "athDate": "2026-02-07T09:31:02.000Z"
+  },
+  "8sWe4GzK1YqG3vyzKHf8ZyB1WB5asofw2o6TqgFePtPo": {
+   "ath": 0.01433446,
+   "athDate": "2026-10-13T00:51:40.000Z"
+  },
+  "8t5C4AWDg4CroMChxdo7rG2e8nJM31QG2GG7Czx9X7x2": {
+   "ath": 0.00264117,
+   "athDate": "2026-10-15T23:01:20.000Z"
+  },
+  "8vGr1eX9vfpootWiUPYa5kYoGx9bTuRy2Xc4dNMrpump": {
+   "ath": 0.00794327,
+   "athDate": "2025-12-07T20:47:10.000Z"
+  },
+  "8wXtPeU6557ETkp9WHFY1n1EcU6NxDvbAggHGsMYiHsB": {
+   "ath": 0.03189362,
+   "athDate": "2024-06-07T01:55:54.000Z"
+  },
+  "8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn": {
+   "ath": 0.784071,
+   "athDate": "2025-01-01T23:41:04.000Z"
+  },
+  "96egraTCizRpzNx4WvMMhPJf7TKS7W5kUHeenmd1XfuN": {
+   "ath": 21.62,
+   "athDate": "2026-08-27T18:59:20.000Z"
+  },
+  "96ugdN1zEe1RShH1xWsMLBbopDvS96WXfvxwRELqUwqk": {
+   "ath": 0.00080942,
+   "athDate": "2025-08-11T09:50:56.000Z"
+  },
+  "98sMhvDwXj1RQi5c5Mndm3vPe9cBqPrbLaufMXFNMh5g": {
+   "ath": 97.96,
+   "athDate": "2026-09-23T05:16:50.000Z"
+  },
+  "9999FVbjHioTcoJpoBiSjpxHW6xEn3witVuXKqBh2RFQ": {
+   "ath": 0.02088694,
+   "athDate": "2025-10-22T19:50:19.000Z"
+  },
+  "9AvytnUKsLxPxFHFqS6VLxaxt5p6BhYNr53SD2Chpump": {
+   "ath": 0.04363399,
+   "athDate": "2025-11-18T17:16:29.000Z"
+  },
+  "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump": {
+   "ath": 2.48,
+   "athDate": "2025-01-19T12:41:07.000Z"
+  },
+  "9CPfv7rc6vxBd3jtovmZtf5Zy8bdvssv8c4BwzbGk147": {
+   "ath": 0.00276781,
+   "athDate": "2026-10-09T02:52:30.000Z"
+  },
+  "9LzCMqDgTKYz9Drzqnpgee3SGa89up3a247ypMj2xrqM": {
+   "ath": 4.95,
+   "athDate": "2021-03-27T07:45:35.000Z"
+  },
+  "9McvH6w97oewLmPxqQEoHUAv3u5iYMyQ9AeZZhguYf1T": {
+   "ath": 24.73,
+   "athDate": "2025-01-16T05:01:24.000Z"
+  },
+  "9PR7nCP9DpcUotnDPVLUBUZKu5WAYkwrCUx9wDnSpump": {
+   "ath": 0.37799,
+   "athDate": "2024-11-18T01:35:57.000Z"
+  },
+  "9Pfync3ejPC9eHqVzq3nYQJAhyhjqpnB9UsaSfLxpump": {
+   "ath": 0.01871222,
+   "athDate": "2026-07-25T08:16:50.000Z"
+  },
+  "9R8rrjXxcfQPmLTCLhmVpjr2uesjjkcgkinE6Lwdpump": {
+   "ath": 0.0001518,
+   "athDate": "2026-09-19T02:43:40.000Z"
+  },
+  "9TPL8droGJ7jThsq4momaoz6uhTcvX2SeMqipoPmNa8R": {
+   "ath": 184.69,
+   "athDate": "2026-01-28T01:40:40.000Z"
+  },
+  "9Ttyez3xiruyj6cqaR495hbBkJU6SUWdV6AmQ9MvbyyS": {
+   "ath": 0.00050863,
+   "athDate": "2024-03-20T23:22:15.000Z"
+  },
+  "9UNqoPEXXxEnEphmyYsZYdL5dnmAUtdiKRUchpnUF5Ph": {
+   "ath": 0.00555113,
+   "athDate": "2025-09-18T09:24:08.000Z"
+  },
+  "9WPTUkh8fKuCnepRWoPYLH3aK9gSjPHFDenBq2X1Czdp": {
+   "ath": 0.063906,
+   "athDate": "2024-11-06T18:31:34.000Z"
+  },
+  "9cRCn9rGT8V2imeM2BaKs13yhMEais3ruM3rPvTGpump": {
+   "ath": 0.443616,
+   "athDate": "2026-07-06T22:05:30.000Z"
+  },
+  "9ckR7pPPvyPadACDTzLwK2ZAEeUJ3qGSnzPs8bVaHrSy": {
+   "ath": 1.018,
+   "athDate": "2025-12-06T12:30:09.000Z"
+  },
+  "9doRRAik5gvhbEwjbZDbZR6GxXSAfdoomyJR57xKpump": {
+   "ath": 0.064363,
+   "athDate": "2025-01-15T11:41:16.000Z"
+  },
+  "9ezFthWrDUpSSeMdpLW6SDD9TJigHdc4AuQ5QN5bpump": {
+   "ath": 0.00732041,
+   "athDate": "2026-02-16T20:05:19.000Z"
+  },
+  "9f52wiW2zrt2497HroMHtZtuj7VzWu4AsEusmW3pump": {
+   "ath": 0.00419454,
+   "athDate": "2026-04-17T17:01:00.000Z"
+  },
+  "9g4Pib6AM3oVdP9YA7ZcssAXAuhoUzkjR8w27doYpump": {
+   "ath": 0.00184016,
+   "athDate": "2026-10-15T03:50:50.000Z"
+  },
+  "9mNjA6BizTwpvd4DS3o7BjwZ6aPM9DC2jLHS7JFGbonk": {
+   "ath": 0.00428003,
+   "athDate": "2026-09-27T08:17:20.000Z"
+  },
+  "9mV4WUukVsva5wYcYW4veo34CNDiF44sh3Ji65JNdvh5": {
+   "ath": 0.899901,
+   "athDate": "2024-08-17T23:47:05.000Z"
+  },
+  "9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E": {
+   "ath": 46705,
+   "athDate": "2022-04-07T19:27:50.000Z"
+  },
+  "9nEqaUcb16sQ3Tn1psbkWqyhPdLmfHWjKGymREjsAgTE": {
+   "ath": 0.00419024,
+   "athDate": "2021-11-06T16:00:00.000Z"
+  },
+  "9oxGicd5KXNcthYM6yD23X9zcznQVnHjrAEN38fFpump": {
+   "ath": 0.00242599,
+   "athDate": "2026-03-07T16:33:03.000Z"
+  },
+  "9raUVuzeWUk53co63M4WXLWPWE4Xc6Lpn7RS9dnkpump": {
+   "ath": 0.01572952,
+   "athDate": "2025-09-01T23:56:46.000Z"
+  },
+  "9se6kma7LeGcQWyRBNcYzyxZPE3r9t9qWZ8SnjnN3jJ7": {
+   "ath": 0.251805,
+   "athDate": "2024-10-27T08:45:53.000Z"
+  },
+  "9tqjeRS1swj36Ee5C1iGiwAxjQJNGAVCzaTLwFY8bonk": {
+   "ath": 0.087073,
+   "athDate": "2025-07-22T21:40:52.000Z"
+  },
+  "9voQQTTdfbqfXwc9rZAdJEeXXjUWjHnB4wkShMT8pump": {
+   "ath": 0.00418483,
+   "athDate": "2026-05-31T17:19:00.000Z"
+  },
+  "9yZ5Ru8pbmJZ6Q2DKLCGXkaLNwkm83cnJ4QCw4PFpump": {
+   "ath": 0.00269383,
+   "athDate": "2026-05-11T20:56:00.000Z"
+  },
+  "9zqre5sRRdFvKqyTyvEd1jcKDRF4g47s7mZSGUnQpump": {
+   "ath": 0.00783346,
+   "athDate": "2026-05-18T17:56:00.000Z"
+  },
+  "A1KLoBrKBde8Ty9qtNQUtq3C2ortoC3u7twggz7sEto6": {
+   "ath": 1.26,
+   "athDate": "2024-03-26T21:24:08.000Z"
+  },
+  "A7bdiYdS5GjqGFtxf17ppRHtDKPkkRqbKtR27dxvQXaS": {
+   "ath": 1687.78,
+   "athDate": "2026-09-26T21:49:10.000Z"
+  },
+  "A8C3xuqscfmyLrte3VmTqrAq8kgMASius9AFNANwpump": {
+   "ath": 0.736315,
+   "athDate": "2024-11-13T16:40:53.000Z"
+  },
+  "AAqZ6CECabwnYLm3FDqPrVQotXLPGQ3BJSfecYmXeJU5": {
+   "ath": 0.00423586,
+   "athDate": "2025-09-21T05:43:13.000Z"
+  },
+  "ACtfUWtgvaXrQGNMiohTusi5jcx5RJf5zwu9aAxkpump": {
+   "ath": 0.00727827,
+   "athDate": "2026-04-27T14:22:00.000Z"
+  },
+  "AFbX8oGjGpmVFywbVouvhQSRmiW2aR1mohfahi4Y2AdB": {
+   "ath": 8.51,
+   "athDate": "2022-04-28T14:59:17.000Z"
+  },
+  "AMjzRn1TBQwQfNAjHFeBb7uGbbqbJB7FzXAnGgdFPk6K": {
+   "ath": 0.058722,
+   "athDate": "2024-11-07T11:40:35.000Z"
+  },
+  "APbVLtq66bKBpUUdncHtVSab9TM1UrcqZ9wodXzmpump": {
+   "ath": 0.00254264,
+   "athDate": "2026-01-19T18:14:43.000Z"
+  },
+  "ARXwZkNAtzPfdcoqQiduJn8EPv9fKiDfGn2KyggyDrFs": {
+   "ath": 0.466923,
+   "athDate": "2026-06-22T11:50:00.000Z"
+  },
+  "AT13ipG8K4HDyEJm3H1ZVQV2Bw8sihewoLQReSMsYo3o": {
+   "ath": 0.03850425,
+   "athDate": "2025-09-13T07:41:05.000Z"
+  },
+  "AT79ReYU9XtHUTF5vM6Q4oa9K8w7918Fp5SU7G1MDMQY": {
+   "ath": 0.090041,
+   "athDate": "2024-02-19T23:08:13.000Z"
+  },
+  "ATLASXmbPQxBUYbxPsV97usA3fPQYEqzQBUHgiFCUsXx": {
+   "ath": 0.267549,
+   "athDate": "2021-09-03T21:59:47.000Z"
+  },
+  "AURYydfxJib1ZkTir1Jn1J9ECYUtjb6rKQVmtYaixWPP": {
+   "ath": 23.29,
+   "athDate": "2021-11-08T08:04:04.000Z"
+  },
+  "AUSD1jCcCyPLybk1YnvPWsHQSrZ46dxwoMniN4N2UEB9": {
+   "ath": 1.022,
+   "athDate": "2024-10-05T13:15:26.000Z"
+  },
+  "AUuCEHQ7sm2i5GmaHrpE961voWcTY8U6mgrkhcV7pump": {
+   "ath": 0.02841684,
+   "athDate": "2025-09-03T13:41:36.000Z"
+  },
+  "AVF9F4C4j8b1Kh4BmNHqybDaHgnZpJ7W7yLvL7hUpump": {
+   "ath": 0.01025885,
+   "athDate": "2026-02-24T07:35:05.000Z"
+  },
+  "AVLhahDcDQ4m4vHM4ug63oh7xc8Jtk49Dm5hoe9Sazqr": {
+   "ath": 0.15101,
+   "athDate": "2024-03-08T14:00:23.000Z"
+  },
+  "AY1Ww6MxwC3cCiyrandHqLrp4FXvzgcwQTZpJ2FEpump": {
+   "ath": 0.076694,
+   "athDate": "2026-01-12T10:36:38.000Z"
+  },
+  "AYABiqKuTh9Va5Aqc6AujFevHwDGmECGQiFmKW5g3K4Z": {
+   "ath": 0.02200124,
+   "athDate": "2025-10-13T09:43:02.000Z"
+  },
+  "AZbem4s8iLJE5eniDZJ7c8q1ahbfMwWgCA8TxVW2tDUB": {
+   "ath": 0.00626321,
+   "athDate": "2026-08-28T02:19:40.000Z"
+  },
+  "AZsHEMXd36Bj1EMNXhowJajpUXzrKcK57wW4ZGXVa7yR": {
+   "ath": 6.5592e-7,
+   "athDate": "2024-03-08T07:10:10.000Z"
+  },
+  "AavE1kKKnesPw4MuRJmJ9jZs9QzEE8CPxQ3ViczUDfc1": {
+   "ath": 661.69,
+   "athDate": "2021-05-18T13:19:59.000Z"
+  },
+  "AhhdRu5YZdjVkKR3wbnUDaymVQL2ucjMQ63sZ3LFHsch": {
+   "ath": 1.32,
+   "athDate": "2026-01-27T10:37:58.000Z"
+  },
+  "Ai4CL1SAxVRigxQFwBH8S2JkuL7EqrdiGwTC7JpCpump": {
+   "ath": 0.01505533,
+   "athDate": "2025-01-25T12:10:56.000Z"
+  },
+  "ApZuxdpzMrbEYTGEzeY9afh5pj9d6qPRJCTgQYiipbKg": {
+   "ath": 0.03436079,
+   "athDate": "2026-08-23T13:19:30.000Z"
+  },
+  "AuQaustGiaqxRvj2gtCdrd22PBzTn8kM3kEPEkZCtuDw": {
+   "ath": 0.234875,
+   "athDate": "2024-11-08T19:43:51.000Z"
+  },
+  "AvZZF1YaZDziPY2RCK4oJrRVrbN3mTD9NL24hPeaZeUj": {
+   "ath": 1.19,
+   "athDate": "2026-09-22T08:24:30.000Z"
+  },
+  "Ax8PSfCXxmxb8C8kYTzN5CPpTe6PyeZfFf8rrXNCjupx": {
+   "ath": 0.00595151,
+   "athDate": "2026-09-12T11:22:00.000Z"
+  },
+  "AxriehR6Xw3adzHopnvMn7GcpRFcD41ddpiTWMg6pump": {
+   "ath": 0.217874,
+   "athDate": "2025-02-09T07:45:55.000Z"
+  },
+  "AymATz4TCL9sWNEEV9Kvyz45CHVhDZ6kUgjTJPzLpU9P": {
+   "ath": 5601.7,
+   "athDate": "2026-01-28T22:36:27.000Z"
+  },
+  "AyrQpt5xsVYiN4BqgZdd2tZJAWswT9yLUZmP1jKqpump": {
+   "ath": 0.01823708,
+   "athDate": "2026-01-16T11:32:49.000Z"
+  },
+  "AywAYdNJnSLSXwKWYxDciPjqGRnwp4iZdQptuuQTpump": {
+   "ath": 0.00493736,
+   "athDate": "2026-08-25T18:24:50.000Z"
+  },
+  "B89Hd5Juz7JP2dxCZXFJWk4tMTcbw7feDhuWGb3kq5qE": {
+   "ath": 0.329888,
+   "athDate": "2025-01-17T04:51:03.000Z"
+  },
+  "B9u8h65uM1oifqmP82VyUDb68iG2fKfZiyubmNMtu3h7": {
+   "ath": 0.04176505,
+   "athDate": "2021-09-03T13:53:06.000Z"
+  },
+  "BABANGA4JE7Kkam4nTrALAwAVgsNJUuFJnnkF7S16BZp": {
+   "ath": 401.13,
+   "athDate": "2026-09-19T21:49:10.000Z"
+  },
+  "BANKJmvhT8tiJRsBSS1n2HryMBPvT5Ze4HU95DUAmeta": {
+   "ath": 7.56,
+   "athDate": "2025-11-26T10:21:52.000Z"
+  },
+  "BBKPiLM9KjdJW7oQSKt99RVWcZdhF6sEHRKnwqeBGHST": {
+   "ath": 0.02603224,
+   "athDate": "2025-11-02T01:57:41.000Z"
+  },
+  "BCNT4t3rv5Hva8RnUtJUJLnxzeFAabcYp8CghC1SmWin": {
+   "ath": 0.04108352,
+   "athDate": "2026-08-27T15:11:10.000Z"
+  },
+  "BCdwQBAn8dYB5YjTsoB6TdHAWokxv28k2oZUodERpump": {
+   "ath": 0.053044,
+   "athDate": "2026-06-14T00:03:10.000Z"
+  },
+  "BDCs2xEqzXyRpp9P6uPDnAvERpLKBfzHPEzbe3BfCxDY": {
+   "ath": 0.153886,
+   "athDate": "2024-11-19T04:41:03.000Z"
+  },
+  "BFgdzMkTPdKKJeTipv2njtDEwhKxkgFueJQfJGt1jups": {
+   "ath": 0.728988,
+   "athDate": "2025-07-30T16:54:27.000Z"
+  },
+  "BFiGUxnidogqcZAPVPDZRCfhx3nXnFLYqpQUaUGpump": {
+   "ath": 0.01754519,
+   "athDate": "2026-04-26T06:36:00.000Z"
+  },
+  "BHvPQ9dFAiZJUSYJFpEmdfMmgz48iLohyxyixBfZjups": {
+   "ath": 0.03822927,
+   "athDate": "2025-11-04T17:31:37.000Z"
+  },
+  "BLVxek8YMXUQhcKmMvrFTrzh5FXg8ec88Crp6otEaCMf": {
+   "ath": 0.356908,
+   "athDate": "2025-05-14T16:55:57.000Z"
+  },
+  "BLZEEuZUBVqFhj8adcCFPJvPVCiCyVmh3hkJMrU8KuJA": {
+   "ath": 0.00492087,
+   "athDate": "2023-12-15T04:44:59.000Z"
+  },
+  "BLiUhfaUFbSoMVeRqq3QYTA1eJsTsB3ZDEYtUsGGQ9em": {
+   "ath": 3.45,
+   "athDate": "2025-01-29T19:07:23.000Z"
+  },
+  "BMBtwz6LFDJVJd2aZvL5F64fdvWP3RPn4NP5q9Xe15UD": {
+   "ath": 0.075889,
+   "athDate": "2025-11-12T06:01:53.000Z"
+  },
+  "BNso1VUJnh4zcfpZa6986Ea66P6TCp59hvtNJ8b1X85": {
+   "ath": 297.96,
+   "athDate": "2025-01-19T03:30:53.000Z"
+  },
+  "BPxxfRCXkUVhig4HS1Lh7kZqV6SPJhzfEk4x6fVBjPCy": {
+   "ath": 1.65,
+   "athDate": "2026-10-01T03:57:10.000Z"
+  },
+  "BQAeeSowpwEx8Km8GcporcbuLKq4a7EQceH3F2qZpump": {
+   "ath": 0.00848737,
+   "athDate": "2026-10-10T05:20:20.000Z"
+  },
+  "BTr5SwWSKPBrdUzboi2SVr1QvSjmh1caCYUkxsxLpump": {
+   "ath": 0.04783106,
+   "athDate": "2025-08-27T10:32:48.000Z"
+  },
+  "BVdbH7PLTSQxBssqvWTxVDoA8qfsztdVtMsZQSS9CScZ": {
+   "ath": 0.0009731,
+   "athDate": "2026-10-12T07:59:40.000Z"
+  },
+  "BWsnyEa1XtsNRdgPaDoA1WVUonF7BBGZTd2zc72NQsWT": {
+   "ath": 0.251926,
+   "athDate": "2026-04-29T04:39:00.000Z"
+  },
+  "BZLbGTNCSFfoth2GYDtwr7e4imWzpR5jqcUuGEwr646K": {
+   "ath": 6.43,
+   "athDate": "2024-06-12T13:14:55.000Z"
+  },
+  "Bb4jR951QtVjeFAYFLBYXDSMKjbTDroCLPbFLdd7pump": {
+   "ath": 0.01603038,
+   "athDate": "2026-05-19T20:37:00.000Z"
+  },
+  "BdzaE3T7uU59pBVDBHZVZh3yWrrpo4oPrXdv4nPDpump": {
+   "ath": 0.00014538,
+   "athDate": "2026-09-28T08:35:20.000Z"
+  },
+  "BeGY8KqKxboEwRbJd1q9H2K829jS4Rc5dEyNMYXCbV5p": {
+   "ath": 0.066169,
+   "athDate": "2024-11-18T00:46:10.000Z"
+  },
+  "BgJW7U1u2RY5XJk9uYb5AqFRzjMtqE7pw3kaf9iw9Ntz": {
+   "ath": 0.00246013,
+   "athDate": "2024-03-11T11:57:25.000Z"
+  },
+  "Bo9jh3wsmcC2AjakLWzNmKJ3SgtZmXEcSaW7L2FAvUsU": {
+   "ath": 0.752851,
+   "athDate": "2025-02-17T08:40:47.000Z"
+  },
+  "BonK1YhkXEGLZzwtcvRTip3gAL9nCeQD7ppZBLXhtTs": {
+   "ath": 5972.9,
+   "athDate": "2026-04-23T15:52:00.000Z"
+  },
+  "BorGY4ub2Fz4RLboGxnuxWdZts7EKhUTB624AFmfCgX": {
+   "ath": 0.00034029,
+   "athDate": "2025-10-01T05:32:50.000Z"
+  },
+  "BpdHpqznEgYPXZNrJVRZvBhdWoafYLVVuLxTQo34pump": {
+   "ath": 0.01655851,
+   "athDate": "2025-09-02T19:16:31.000Z"
+  },
+  "BreuhVohXX5fv6q41uyb3sojtAuGoGaiAhKBMtcrpump": {
+   "ath": 0.04613771,
+   "athDate": "2024-11-17T10:57:49.000Z"
+  },
+  "BwUTq7fS6sfUmHDwAiCQZ3asSiPEapW5zDrsbwtapump": {
+   "ath": 0.00100916,
+   "athDate": "2025-11-02T10:04:50.000Z"
+  },
+  "Bybit2vBJGhPF52GBdNaQfUJ6ZpThSgHBobjWZpLPb4B": {
+   "ath": 308.6,
+   "athDate": "2025-01-19T03:17:15.000Z"
+  },
+  "C1MHyoTJpRTeS9AQCyspNVu2EWAYCZwmJ1jNkEArFP1f": {
+   "ath": 26.7,
+   "athDate": "2022-04-28T13:44:21.000Z"
+  },
+  "C1mBfBoDkwWfd6uTFZp62ARHLjeVp3bDpCDMfMZtPngE": {
+   "ath": 0.01636712,
+   "athDate": "2026-10-03T11:31:40.000Z"
+  },
+  "C29ebrgYjYoJPMGPnPSGY1q3mMGk4iDSqnQeQQA7moon": {
+   "ath": 0.093258,
+   "athDate": "2025-09-07T20:02:46.000Z"
+  },
+  "C2omVhcvt3DDY77S2KZzawFJQeETZofgZ4eNWWkXpump": {
+   "ath": 0.051905,
+   "athDate": "2025-11-29T16:50:54.000Z"
+  },
+  "C7heQqfNzdMbUFQwcHkL9FvdwsFsDRBnfwZDDyWYCLTZ": {
+   "ath": 0.08975,
+   "athDate": "2025-05-25T16:20:57.000Z"
+  },
+  "C9dJfTGUzhuqPWxh9mcDr66JZN4uzXh2gh9EWnEdpump": {
+   "ath": 0.04478671,
+   "athDate": "2026-03-11T17:40:13.000Z"
+  },
+  "CARDSccUMFKoPRZxt5vt3ksUbxEFEcnZ3H2pd3dKxYjp": {
+   "ath": 0.381443,
+   "athDate": "2025-09-14T12:18:08.000Z"
+  },
+  "CARSsxWPkpQWvfyRBwfGMGvysJBHdHGfE46X5MNgmeta": {
+   "ath": 0.206333,
+   "athDate": "2026-10-11T08:23:30.000Z"
+  },
+  "CASHx9KJUStyftLFWGvEVf59SGeG9sh5FfcnZMVPCASH": {
+   "ath": 1.058,
+   "athDate": "2025-11-15T12:50:58.000Z"
+  },
+  "CAjtTHvC878f8cZ4zEwdvgjkjFM7rbYN8Mb1go1cpump": {
+   "ath": 0.00634485,
+   "athDate": "2026-04-18T16:01:00.000Z"
+  },
+  "CB9dDufT3ZuQXqqSfa1c5kY935TEreyBw9XJXxHKpump": {
+   "ath": 0.074542,
+   "athDate": "2025-09-01T00:42:30.000Z"
+  },
+  "CBLx6CRcCTtbmgTdxpqnF2dP1MpWbMUjngtNbFTApump": {
+   "ath": 0.00136818,
+   "athDate": "2026-10-06T16:31:10.000Z"
+  },
+  "CFYhdWXsYfS7swnJgHRwb5toTHMEQD7Ljd5gGwKLpump": {
+   "ath": 0.00141004,
+   "athDate": "2026-03-09T11:00:39.000Z"
+  },
+  "CGEDT9QZDvvH5GmVkWJH2BXiMJqMJySC9ihWyr7Spump": {
+   "ath": 0.0244791,
+   "athDate": "2026-04-26T15:56:00.000Z"
+  },
+  "CJUrENDAuSm4FxxziUgftnUJqqXjm4VL1zhJgwXupump": {
+   "ath": 0.0023663,
+   "athDate": "2026-04-27T12:23:00.000Z"
+  },
+  "CJjraBaedPnKzjnag12i7PVo5pSP6cB9heV8zr89bonk": {
+   "ath": 0.00642953,
+   "athDate": "2025-10-19T10:06:29.000Z"
+  },
+  "CKfatsPMUf8SkiURsDXs7eK6GWb4Jsd6UDbs7twMCWxo": {
+   "ath": 0.0400155,
+   "athDate": "2023-11-23T17:17:01.000Z"
+  },
+  "CLoUDKc4Ane7HeQcPpE3YHnznRxhMimJ4MyaUqyHFzAu": {
+   "ath": 0.625172,
+   "athDate": "2024-11-13T11:17:35.000Z"
+  },
+  "CQCDTp8rsFV3PhaPeYjcCW5LdGTxi6jFx7eC3UXnpump": {
+   "ath": 0.0320993,
+   "athDate": "2026-10-13T03:30:00.000Z"
+  },
+  "CRAMvzDsSpXYsFpcoDr6vFLJMBeftez1E7277xwPpump": {
+   "ath": 0.01174348,
+   "athDate": "2025-06-16T05:45:31.000Z"
+  },
+  "CREDBHvVqREBCAxMihzr8D1nepHMr2gmQoZWpmgGmeta": {
+   "ath": 1.042,
+   "athDate": "2026-07-27T06:08:50.000Z"
+  },
+  "CRWNYkqdgvhGGae9CKfNka58j6QQkaD5bLhKXvUYqnc1": {
+   "ath": 0.189898,
+   "athDate": "2021-04-26T04:18:38.000Z"
+  },
+  "CTgiaZUK12kCcB8sosn4Nt2NZtzLgtPqDwyQyr2syATC": {
+   "ath": 0.373421,
+   "athDate": "2024-10-12T21:00:06.000Z"
+  },
+  "CWZ6BsdnjkDVTGkmL6bGbJXXig6ceef12KvyGQW14cMt": {
+   "ath": 0.091529,
+   "athDate": "2026-09-15T14:28:00.000Z"
+  },
+  "CbcyNo7m1amFWqEQm2m4PLv1UNvpcL3C1Ujm6AkzpKoU": {
+   "ath": 0.02320458,
+   "athDate": "2026-10-01T15:55:20.000Z"
+  },
+  "CcLd8HTAKLWtQHatqPwBQjtuCA72FNB9E1ckRTEzpump": {
+   "ath": 0.00904484,
+   "athDate": "2026-05-29T22:00:00.000Z"
+  },
+  "Ce2gx9KGXJ6C9Mp5b5x1sn9Mg87JwEbrQby4Zqo3pump": {
+   "ath": 0.055605,
+   "athDate": "2026-09-25T05:50:10.000Z"
+  },
+  "Cm6fNnMk7NfzStP9CZpsQA2v3jjzbcYGAxdJySmHpump": {
+   "ath": 0.04941144,
+   "athDate": "2026-02-07T12:21:02.000Z"
+  },
+  "CmVUoJUt7hMGc9ze7s8zYdnA7enMfCAFdQCggxcbACWU": {
+   "ath": 0.133167,
+   "athDate": "2026-05-07T15:54:00.000Z"
+  },
+  "CniPCE4b3s8gSUPhUiyMjXnytrEqUrMfSsnbBjLCpump": {
+   "ath": 0.053377,
+   "athDate": "2025-03-14T20:35:33.000Z"
+  },
+  "CoRAitPvr9seu5F9Hk39vbjqA1o1XuoryHjSk1Z1q2mo": {
+   "ath": 0.00327121,
+   "athDate": "2025-05-21T07:46:23.000Z"
+  },
+  "CrAr4RRJMBVwRsZtT62pEhfA9H5utymC2mVx8e7FreP2": {
+   "ath": 0.04863352,
+   "athDate": "2025-11-26T04:51:59.000Z"
+  },
+  "CreiuhfwdWCN5mJbMJtA9bBpYQrQF2tCBuZwSPWfpump": {
+   "ath": 0.125047,
+   "athDate": "2025-08-27T10:31:23.000Z"
+  },
+  "CtzPWv73Sn1dMGVU3ZtLv9yWSyUAanBni19YWDaznnkn": {
+   "ath": 126175,
+   "athDate": "2025-10-06T11:06:20.000Z"
+  },
+  "CudisfkgWvMKnZ3TWf6iCuHm8pN2ikXhDcWytwz6f6RN": {
+   "ath": 0.269889,
+   "athDate": "2025-11-04T14:11:13.000Z"
+  },
+  "Cy1GS2FqefgaMbi45UunrUzin1rfEmTUYnomddzBpump": {
+   "ath": 0.19171,
+   "athDate": "2025-01-22T11:21:15.000Z"
+  },
+  "Cz7LGKdZPpAxonXx23ZYPW3RtDQvjcf17ZDCZEzFpump": {
+   "ath": 0.02828482,
+   "athDate": "2025-11-11T19:25:34.000Z"
+  },
+  "CzLSujWBLFsSjncfkh59rUFqvafWcY5tzedWJSuypump": {
+   "ath": 1.35,
+   "athDate": "2024-11-17T05:01:21.000Z"
+  },
+  "CzLTZppPdZtTjyq3WGpHLstoc3GLhu7zH5Zg6xUa6Gv5": {
+   "ath": 127.44,
+   "athDate": "2026-10-04T22:32:30.000Z"
+  },
+  "D1wZHkfk8d6QsCjF3NTiYHLzsZJ2Qb4Q7WBFFbGuzBLV": {
+   "ath": 0.00450112,
+   "athDate": "2026-01-02T20:36:14.000Z"
+  },
+  "D25bi7oHQjqkVrzbfuM6k2gzVNHTSpBLhtakDCzCCDUB": {
+   "ath": 0.00511529,
+   "athDate": "2026-09-08T22:54:20.000Z"
+  },
+  "D4Yc5xRjRYcjxtnYG4Ay3mKLYMMF91RBnbuoKk7cpump": {
+   "ath": 0.00838249,
+   "athDate": "2024-11-07T23:00:40.000Z"
+  },
+  "D6xWgRCSHoMEB5fqPwk3p6Stxirn5ytm2WwboSTTx4oE": {
+   "ath": 0.00112111,
+   "athDate": "2026-01-26T04:31:42.000Z"
+  },
+  "DBRiDgJAMsM95moTzJs7M9LnkGErpbv9v6CUR1DXnUu5": {
+   "ath": 0.05521,
+   "athDate": "2024-12-21T16:26:03.000Z"
+  },
+  "DBTNHU51SBFi3dsoGGCRfKbno4teZXqsDSL37s4jgRKv": {
+   "ath": 0.00959821,
+   "athDate": "2026-05-08T00:16:00.000Z"
+  },
+  "DEADsWJZaonaiZPFkrqEEBGf43mzA5uHeHpwgy9dW666": {
+   "ath": 0.00104623,
+   "athDate": "2025-10-12T13:31:13.000Z"
+  },
+  "DEEZgP19ZPovNeWRJZw7KuNbkLH6xjNjZ4HsUJnmZv7J": {
+   "ath": 1.27,
+   "athDate": "2024-02-24T04:54:16.000Z"
+  },
+  "DEW9dSN6QpWyNthphCpMmAbZP1Q4cEKR9xQXAri98WDP": {
+   "ath": 0.067787,
+   "athDate": "2026-09-30T13:25:00.000Z"
+  },
+  "DEkqHyPN7GMRJ5cArtQFAWefqbZb33Hyf6s5iCwjEonT": {
+   "ath": 1.034,
+   "athDate": "2025-12-09T09:10:12.000Z"
+  },
+  "DKu9kykSfbN5LBfFXtNNDPaX35o4Fv6vJ9FKk7pZpump": {
+   "ath": 0.331799,
+   "athDate": "2025-01-15T05:46:02.000Z"
+  },
+  "DLUNTKRQt7CrpqSX1naHUYoBznJ9pvMP65uCeWQgYnRK": {
+   "ath": 0.376176,
+   "athDate": "2024-03-23T09:39:14.000Z"
+  },
+  "DNhQZ1CE9qZ2FNrVhsCXwQJ2vZG8ufZkcYakTS5Jpump": {
+   "ath": 0.00811097,
+   "athDate": "2026-02-14T22:55:18.000Z"
+  },
+  "DPdNMhjBnftREwT82KXytQBk7zd5RBkRrG41L795pump": {
+   "ath": 0.00086934,
+   "athDate": "2025-10-07T12:10:04.000Z"
+  },
+  "DQnkBM4eYYMnVE8Qy2K3BB7uts1fh2EwBVktEz6jpump": {
+   "ath": 0.084787,
+   "athDate": "2025-07-21T17:32:03.000Z"
+  },
+  "DUSDt4AeLZHWYmcXnVGYdgAzjtzU5mXUVnTMdnSzAttM": {
+   "ath": 1.039,
+   "athDate": "2025-11-20T23:46:31.000Z"
+  },
+  "DbVhWYxBv9jyQdARFbjw7Vktbps9L6f9813JQC8xmoon": {
+   "ath": 0.00034464,
+   "athDate": "2026-06-03T11:05:00.000Z"
+  },
+  "DeaKMzAeZja3Mh5okZE6WUvygLP3Lfuvm6Rg78HqXTz9": {
+   "ath": 0.01108836,
+   "athDate": "2024-12-15T17:41:09.000Z"
+  },
+  "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263": {
+   "ath": 0.00005825,
+   "athDate": "2024-11-19T20:01:06.000Z"
+  },
+  "Df6yfrKC8kZE3KNkrHERKzAetSxbrWeniQfyJY4Jpump": {
+   "ath": 0.657518,
+   "athDate": "2024-11-27T02:40:57.000Z"
+  },
+  "Dfh5DzRgSvvCFDoYc2ciTkMrbDfRKybA4SoFbPmApump": {
+   "ath": 0.897199,
+   "athDate": "2026-02-26T07:35:05.000Z"
+  },
+  "DitHyRMQiSDhn5cnKMJV2CDDt6sVct96YrECiM49pump": {
+   "ath": 0.117813,
+   "athDate": "2025-04-30T16:06:16.000Z"
+  },
+  "DpBzjtgGLF7QA9Ug3eUVGbnqa6j3jvYBn1XuQuktvfhm": {
+   "ath": 0.00594326,
+   "athDate": "2025-09-15T13:21:54.000Z"
+  },
+  "DrZ26cKJDksVRWib3DVVsjo9eeXccc7hKhDJviiYEEZY": {
+   "ath": 2.95,
+   "athDate": "2025-08-20T18:38:44.000Z"
+  },
+  "DriFtupJYLTosbwoN8koMbEYSx54aFAVLddWsbksjwg7": {
+   "ath": 2.6,
+   "athDate": "2024-11-08T17:41:24.000Z"
+  },
+  "DtR4D9FtVoTX2569gaL837ZgrB6wNjj6tkmnX9Rdk9B2": {
+   "ath": 0.239828,
+   "athDate": "2025-07-22T14:59:58.000Z"
+  },
+  "DuEy8wWrzCUun5ZbbG9hkVqXqqicpTQw8gB7nEAzpCHQ": {
+   "ath": 24.4,
+   "athDate": "2021-06-16T12:02:32.000Z"
+  },
+  "DuMbhu7mvQvqQHGcnikDgb4XegXJRyhUBfdU22uELiZA": {
+   "ath": 0.01078386,
+   "athDate": "2025-11-07T02:27:00.000Z"
+  },
+  "DvjbEsdca43oQcw2h3HW1CT7N3x5vRcr3QrvTUHnXvgV": {
+   "ath": 0.01753469,
+   "athDate": "2025-10-06T21:09:59.000Z"
+  },
+  "Dx2bQe2UPv4k3BmcW8G2KhaL5oKsxduM5XxLSV3Sbonk": {
+   "ath": 0.075044,
+   "athDate": "2025-07-06T05:01:48.000Z"
+  },
+  "Dxg9cLvssqb1WEMpyynjf17kGRc4UTNyUqjzNj99opus": {
+   "ath": 0.084014,
+   "athDate": "2024-11-28T23:26:19.000Z"
+  },
+  "Dz9mQ9NzkBcCsuGPFJ3r1bS4wgqKMHBPiVuniW8Mbonk": {
+   "ath": 0.434591,
+   "athDate": "2025-10-14T06:50:41.000Z"
+  },
+  "E3yUqBNTZxV8ELvW99oRLC7z4ddbJqqR4NphwrMug9zu": {
+   "ath": 0.852266,
+   "athDate": "2025-11-09T21:50:25.000Z"
+  },
+  "E6vtwCUtcNJdQEPGY8vWKahtu2sfwxQ4j68pUKm7pump": {
+   "ath": 0.00720364,
+   "athDate": "2026-10-10T00:00:30.000Z"
+  },
+  "ED5nyyWEzpPPiWimP8vYm7sD7TD3LAt3Q3gRTWHzPJBY": {
+   "ath": 0.680378,
+   "athDate": "2024-11-15T06:06:28.000Z"
+  },
+  "EFFECT1A1R3Dz8Hg4q5SXKjkiPc6KDRUWQ7Czjvy4H7E": {
+   "ath": 0.113691,
+   "athDate": "2025-01-11T05:05:09.000Z"
+  },
+  "EJPtJEDogxzDbvM8qvAsqYbLmPj5n1vQeqoAzj9Yfv3q": {
+   "ath": 0.068165,
+   "athDate": "2024-01-29T08:14:04.000Z"
+  },
+  "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm": {
+   "ath": 4.83,
+   "athDate": "2024-03-31T01:34:58.000Z"
+  },
+  "ENcwYGVhRsEqKpH4SzRH4mcYSGc9Cb6s4WJGS9ojpump": {
+   "ath": 0.00438245,
+   "athDate": "2026-04-18T18:29:00.000Z"
+  },
+  "EPeUFDgHRxs9xxEPVaL6kfGQvCon7jmAWKVUHuux1Tpz": {
+   "ath": 1.9,
+   "athDate": "2021-11-27T16:23:51.000Z"
+  },
+  "ETAtLmCmsoiEEKfNrHKJ2kYy3MoABhU6NQvpSfij5tDs": {
+   "ath": 312.25,
+   "athDate": "2021-04-30T05:18:25.000Z"
+  },
+  "Ee4ooSk6GMC34T1Gbh8rRY2XLyuk2FsyiWtq3jrHUcPR": {
+   "ath": 0.07466,
+   "athDate": "2025-05-15T14:15:30.000Z"
+  },
+  "EfPoo4wWgxKVToit7yX5VtXXBrhao4G8L7vrbKy6pump": {
+   "ath": 0.00589035,
+   "athDate": "2026-01-04T05:52:34.000Z"
+  },
+  "Eg2ymQ2aQqjMcibnmTt8erC6Tvk9PVpJZCxvVPJz2agu": {
+   "ath": 0.0484425,
+   "athDate": "2026-04-15T13:53:00.000Z"
+  },
+  "Eh6XEPhSwoLv5wFApukmnaVSHQ6sAnoD9BmgmwQoN2sN": {
+   "ath": 1.29,
+   "athDate": "2025-01-29T09:52:32.000Z"
+  },
+  "EhzVcKKmGjLk6pD5gLT6ZrTg62bMgPgTSCXXmANnSyQA": {
+   "ath": 0.04431972,
+   "athDate": "2025-10-28T00:37:08.000Z"
+  },
+  "EsP4kJfKUDLfX274WoBSiiEy74Sh4tZKUCDjfULHpump": {
+   "ath": 0.03571436,
+   "athDate": "2024-12-10T03:11:16.000Z"
+  },
+  "EswgBj2hZKdgovX2ihWSUDnuBg9VNbGmSGoH5yjNsPRa": {
+   "ath": 0.77773,
+   "athDate": "2022-10-12T23:04:37.000Z"
+  },
+  "F2k82EcxLtzekq1bfoGVdgp6EXZ5dLT1jE7g3LvQpump": {
+   "ath": 0.00771213,
+   "athDate": "2025-10-25T08:06:03.000Z"
+  },
+  "F3nefJBcejYbtdREjui1T9DPh5dBgpkKq7u2GAAMXs5B": {
+   "ath": 0.04441747,
+   "athDate": "2021-12-28T03:53:46.000Z"
+  },
+  "F4K2SbLNgyz9gzNqT8bPeLpRkxy4oMA9twaffUDdZtB6": {
+   "ath": 0.00150398,
+   "athDate": "2026-10-06T20:12:40.000Z"
+  },
+  "F8Pz2mx7V8exRkBNFzvpkZAwjNPxWPGqzYJL2ckrpump": {
+   "ath": 0.00141405,
+   "athDate": "2026-03-30T04:38:00.000Z"
+  },
+  "F9CpWoyeBJfoRB8f2pBe2ZNPbPsEE76mWZWme3StsvHK": {
+   "ath": 0.03610407,
+   "athDate": "2024-03-09T17:50:19.000Z"
+  },
+  "FAFxVxnkzZHMCodkWyoccgUNgVScqMw2mhhQBYDFjFAF": {
+   "ath": 0.01830922,
+   "athDate": "2025-09-23T08:06:42.000Z"
+  },
+  "FBaQqJAuYkuKQpAcDuHtuupSPpqi33fbTxKXSjLDQory": {
+   "ath": 0.00496658,
+   "athDate": "2026-01-14T01:31:28.000Z"
+  },
+  "FQ1tyso61AH1tzodyJfSwmzsD3GToybbRNoZxUBz21p8": {
+   "ath": 0.20873,
+   "athDate": "2024-11-18T19:30:53.000Z"
+  },
+  "FQgtfugBdpFN7PZ6NdPrZpVLDBrPGxXesi4gVu3vErhY": {
+   "ath": 0.317341,
+   "athDate": "2025-03-18T07:20:52.000Z"
+  },
+  "FRAGMEWj2z65qM62zqKhNtwNFskdfKs4ekDUDX3b4VD5": {
+   "ath": 0.170403,
+   "athDate": "2025-07-01T01:42:06.000Z"
+  },
+  "FRySi8LPkuByB7VPSCCggxpewFUeeJiwEGRKKuhwpKcX": {
+   "ath": 0.00197488,
+   "athDate": "2025-05-29T19:00:45.000Z"
+  },
+  "FS66v5XYtJAFo14LiPz5HT93EUMAHmYipCfQhLpU4ss8": {
+   "ath": 0.377248,
+   "athDate": "2024-03-08T06:37:56.000Z"
+  },
+  "FThrNpdic79XRV6i9aCWQ2UTp7oRQuCXAgUWtZR2cs42": {
+   "ath": 0.01153924,
+   "athDate": "2025-01-11T17:50:04.000Z"
+  },
+  "FUAfBo2jgks6gB4Z4LfZkqSZgzNucisEHqnNebaRxM1P": {
+   "ath": 13.05,
+   "athDate": "2025-01-19T23:00:55.000Z"
+  },
+  "Faf89929Ni9fbg4gmVZTca7eW6NFg877Jqn6MizT3Gvw": {
+   "ath": 0.02227097,
+   "athDate": "2024-06-21T06:09:51.000Z"
+  },
+  "FbmmdcCYHL7WETG89xtWmNFMzQAaQ8Zs9NXVbimibonk": {
+   "ath": 0.00007408,
+   "athDate": "2026-01-23T05:16:03.000Z"
+  },
+  "Fch1oixTPri8zxBnmdCEADoJW2toyFHxqDZacQkwdvSP": {
+   "ath": 0.088468,
+   "athDate": "2024-11-13T17:34:13.000Z"
+  },
+  "FeR8VBqNRSUD5NtXAj2n3j1dAHkZHfyDktKuLXD4pump": {
+   "ath": 0.473157,
+   "athDate": "2025-11-04T13:30:40.000Z"
+  },
+  "FgQ3sxj54SmVzttkxuK4bdiEnUNi6kF9Hyx3ezKW72hn": {
+   "ath": 0.02158741,
+   "athDate": "2025-06-18T09:21:28.000Z"
+  },
+  "Fh7mLxtPAysdvHcMcJ37A3vc6WvBVh7JVDwxmwk6pump": {
+   "ath": 0.02798668,
+   "athDate": "2025-12-19T10:57:34.000Z"
+  },
+  "FoXyMu5xwXre7zEoSvzViRk3nGawHUp9kUh97y2NDhcq": {
+   "ath": 0.01497274,
+   "athDate": "2024-04-11T23:36:21.000Z"
+  },
+  "Fz9edBpaURPPzpKVRR1A8PENYDEgHqwx5D5th28ondo": {
+   "ath": 1253.71,
+   "athDate": "2026-06-25T13:36:10.000Z"
+  },
+  "G4QRtYNRPyxdKwcAqqW3xSeEynDDxEyRvrDT9FJEpump": {
+   "ath": 0.00056548,
+   "athDate": "2026-05-02T04:21:00.000Z"
+  },
+  "G4uJcvo5UAJ3fU1gj96e5DjBJU2RDDPx9Txzbjw6Y3LA": {
+   "ath": 0.02986281,
+   "athDate": "2025-08-18T11:45:03.000Z"
+  },
+  "G4zwEA9NSd3nMBbEj31MMPq2853Brx2oGsKzex3ebonk": {
+   "ath": 0.04080881,
+   "athDate": "2025-07-25T17:06:42.000Z"
+  },
+  "G5bStqnKXv11fmPvMaagUbZi86BGnpf9zZtyPQtAdaos": {
+   "ath": 0.02905236,
+   "athDate": "2025-10-03T11:41:33.000Z"
+  },
+  "G6mNZN8o16QBcTqfuEx6FzjiWa94B1XWhfyDxjDibrrr": {
+   "ath": 0.01048217,
+   "athDate": "2026-05-03T19:42:00.000Z"
+  },
+  "G7iK3prSzAA4vzcJWvsLUEsdCqzR7PnMzJV61vSdFSNW": {
+   "ath": 8.5,
+   "athDate": "2024-12-06T07:41:39.000Z"
+  },
+  "G7vQWurMkMMm2dU3iZpXYFTHT9Biio4F4gZCrwFpKNwG": {
+   "ath": 0.476945,
+   "athDate": "2026-02-03T01:15:57.000Z"
+  },
+  "G85CQEBqwsoe3qkb5oXXpdZFh7uhYXhDRsQAM4aJuBLV": {
+   "ath": 0.01718456,
+   "athDate": "2026-01-31T15:35:30.000Z"
+  },
+  "GACpABn18xqiSJbD9ZEyArJDT9RHRMUut5nK9Z9Spump": {
+   "ath": 0.01150304,
+   "athDate": "2025-01-16T05:14:41.000Z"
+  },
+  "GDfnEsia2WLAW5t8yx2X5j2mkfA74i5kwGdDuZHt7XmG": {
+   "ath": 1.98,
+   "athDate": "2024-02-27T23:40:30.000Z"
+  },
+  "GENEtH5amGSi8kHAtQoezp1XEXwZJ8vcuePYnXdKrMYz": {
+   "ath": 37.83,
+   "athDate": "2021-11-30T00:53:29.000Z"
+  },
+  "GJAFwWjJ3vnTsrQVabjBVK2TYB1YtRCQXRDfDgUnpump": {
+   "ath": 0.919768,
+   "athDate": "2024-11-14T00:35:39.000Z"
+  },
+  "GJtJuWD9qYcCkrwMBmtY1tpapV1sKfB2zUv9Q4aqpump": {
+   "ath": 0.247831,
+   "athDate": "2024-11-18T09:31:13.000Z"
+  },
+  "GKHgTd6tqvycgG3mqcZraSZDFR32hXhRgo6sZQtudMsC": {
+   "ath": 0.00501104,
+   "athDate": "2025-01-03T22:39:08.000Z"
+  },
+  "GMai1NvHreNe135cvxya1gHaUJZiT1NAvbJkF4hPHQJ9": {
+   "ath": 0.050041,
+   "athDate": "2024-09-26T00:02:30.000Z"
+  },
+  "GMvCfcZg8YvkkQmwDaAzCtHDrrEtgE74nQpQ7xNabonk": {
+   "ath": 0.04228821,
+   "athDate": "2025-11-05T07:50:40.000Z"
+  },
+  "GMzuntWYJLpNuCizrSR7ZXggiMdDzTNiEmSNHHunpump": {
+   "ath": 0.03903129,
+   "athDate": "2025-11-07T22:16:26.000Z"
+  },
+  "GNE6oDS6jHrfaV3GQVVCCp37fDnT7PiPuewMKBj2bqNm": {
+   "ath": 1.026,
+   "athDate": "2026-10-09T20:55:40.000Z"
+  },
+  "GQe8DCQTBkuX5E2sjvwuKDZsjGYhU8k3DN5dkSbQLfqJ": {
+   "ath": 0.177496,
+   "athDate": "2025-06-14T02:29:56.000Z"
+  },
+  "GTBxUiw6wJdmmkCGZgRHLyYxqu1vG4KtRpeox6yDpump": {
+   "ath": 0.01525363,
+   "athDate": "2026-10-09T07:20:00.000Z"
+  },
+  "GTH3wG3NErjwcf7VGCoXEXkgXSHvYhx5gtATeeM5JAS1": {
+   "ath": 4.41,
+   "athDate": "2024-02-26T08:34:58.000Z"
+  },
+  "GbbesPbaYh5uiAZSYNXTc7w9jty1rpg3P9L4JeN4LkKc": {
+   "ath": 0.376028,
+   "athDate": "2026-05-26T12:12:00.000Z"
+  },
+  "GdZ9rwHyKcriLdbSzhtEFLe5MLs7Vk6AY1aE5ei7nsmP": {
+   "ath": 0.02710749,
+   "athDate": "2025-09-16T23:55:15.000Z"
+  },
+  "GkyPYa7NnCFbduLknCfBfP7p8564X1VZhwZYJ6CZpump": {
+   "ath": 0.02919086,
+   "athDate": "2025-10-28T01:13:14.000Z"
+  },
+  "GnFMf6JVRhAqPbA9r8yW16xycynKNkXfbaYbusLEpump": {
+   "ath": 0.01344771,
+   "athDate": "2026-01-19T04:51:09.000Z"
+  },
+  "GnM6XZ7DN9KSPW2ZVMNqCggsxjnxHMGb2t4kiWrUpump": {
+   "ath": 0.00527581,
+   "athDate": "2025-07-03T03:35:00.000Z"
+  },
+  "GoLDppdjB1vDTPSGxyMJFqdnj134yH6Prg9eqsGDiw6A": {
+   "ath": 9999.99,
+   "athDate": "2026-03-04T14:10:15.000Z"
+  },
+  "GodL6KZ9uuUoQwELggtVzQkKmU1LfqmDokPibPeDKkhF": {
+   "ath": 23.72,
+   "athDate": "2025-12-16T05:26:44.000Z"
+  },
+  "GpdRNotihwXZJ3z3y6yCRAhecFrALc4J8SX92pxnbonk": {
+   "ath": 0.00325662,
+   "athDate": "2026-05-05T20:22:00.000Z"
+  },
+  "GpmmQBjXxoppbELykD2PGQ4wwVR74o5sSZXVW6hVpump": {
+   "ath": 0.00360947,
+   "athDate": "2026-05-16T22:08:00.000Z"
+  },
+  "Grass7B4RdKfBCjTKgSqnXkqjwiGvQyFbuSCUJr3XXjs": {
+   "ath": 3.89,
+   "athDate": "2024-11-08T04:26:05.000Z"
+  },
+  "GtV6g1ey2NERrcbvL5bdzrxRJQDfxpMaLU9oLtRipump": {
+   "ath": 0.00026844,
+   "athDate": "2026-10-10T17:02:30.000Z"
+  },
+  "H2c31USxu35MDkBrGph8pUDUnmzo2e4Rf4hnvL2Upump": {
+   "ath": 0.172673,
+   "athDate": "2024-11-15T05:05:45.000Z"
+  },
+  "H74CYmXgMkYHYuSRsZt6RJb4NYp2u72Vw8BS5huApump": {
+   "ath": 0.00598811,
+   "athDate": "2026-05-19T04:33:00.000Z"
+  },
+  "H7bTHGb5Cvo5fGe5jBDNDPUv8KykQnzyZA3qZ8sH7yxw": {
+   "ath": 0.227728,
+   "athDate": "2024-04-22T07:10:51.000Z"
+  },
+  "H8xQ6poBjB9DTPMDTKWzWPrnxu4bDEhybxiouF8Ppump": {
+   "ath": 0.076117,
+   "athDate": "2025-08-15T20:31:04.000Z"
+  },
+  "H9muD33usLGYv1tHvxCVpFwwVSn27x67tBQYH1ANbonk": {
+   "ath": 0.00754141,
+   "athDate": "2025-01-04T12:50:26.000Z"
+  },
+  "HAPPYwgFcjEJDzRtfWE6tiHE9zGdzpNky2FvjPHsvvGZ": {
+   "ath": 0.055847,
+   "athDate": "2024-11-14T05:51:07.000Z"
+  },
+  "HAYQtfJEQ9DbDbaHEhxfGsWbSZ3ywthdsVB3PuB72DYe": {
+   "ath": 1.012,
+   "athDate": "2026-03-12T16:27:03.000Z"
+  },
+  "HBoNJ5v8g71s2boRivrHnfSB5MVPLDHHyVjruPfhGkvL": {
+   "ath": 0.00031481,
+   "athDate": "2024-11-25T23:26:12.000Z"
+  },
+  "HCgvbV9Qcf9TVGPGKMGbVEj8WwwVD6HhTt5E2i3qkeN9": {
+   "ath": 0.071012,
+   "athDate": "2025-01-01T23:21:30.000Z"
+  },
+  "HKJHsYJHMVK5VRyHHk5GhvzY9tBAAtPvDkZfDH6RLDTd": {
+   "ath": 0.078356,
+   "athDate": "2025-10-05T01:32:05.000Z"
+  },
+  "HMaJxXp3Ja81jSwigF6zGaMt79hNZuczrw6i7LjTbonk": {
+   "ath": 0.00505559,
+   "athDate": "2026-04-18T23:27:00.000Z"
+  },
+  "HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump": {
+   "ath": 0.243323,
+   "athDate": "2025-12-17T20:32:38.000Z"
+  },
+  "HQ7DaoiUxzC2K1Dr7KXRHccNtXvEYgNvoUextXe8dmBh": {
+   "ath": 0.04078933,
+   "athDate": "2024-05-21T17:09:52.000Z"
+  },
+  "HUMA1821qVDKta3u2ovmfDQeW2fSQouSKE8fkF44wvGw": {
+   "ath": 0.115647,
+   "athDate": "2025-05-26T04:20:35.000Z"
+  },
+  "HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3": {
+   "ath": 1.2,
+   "athDate": "2024-03-15T23:01:15.000Z"
+  },
+  "HZG1RVn4zcRM7zEFEVGYPGoPzPAWAj2AAdvQivfmLYNK": {
+   "ath": 0.069168,
+   "athDate": "2025-02-04T10:52:22.000Z"
+  },
+  "HaP8r3ksG76PhQLTqR8FYBeNiQpejcFbQmiHbg787Ut1": {
+   "ath": 17.69,
+   "athDate": "2024-06-01T03:56:38.000Z"
+  },
+  "Hax9LTgsQkze1YFychnBLtFH8gYbQKtKfWKKg2SP6gdD": {
+   "ath": 0.493712,
+   "athDate": "2024-12-13T00:30:52.000Z"
+  },
+  "HcRLc9VDgjLeK154xDawfb1dmVJ98DoSqcwTHGqiDeJR": {
+   "ath": 0.175532,
+   "athDate": "2026-09-07T00:53:50.000Z"
+  },
+  "HcfnJxLov6tY8i1dq9uYRRZKCvxADPpovcfkyXzdpump": {
+   "ath": 0.01198474,
+   "athDate": "2026-08-05T16:48:40.000Z"
+  },
+  "HeJUFDxfJSzYFUuHLxkMqCgytU31G6mjP4wKviwqpump": {
+   "ath": 0.18181,
+   "athDate": "2024-10-19T22:50:40.000Z"
+  },
+  "Hg5Ja55T5wESq4vyFoiVCMeHXtGyVA69X2UHq8hgpump": {
+   "ath": 0.01995945,
+   "athDate": "2026-10-12T06:28:00.000Z"
+  },
+  "HgBRWfYxEfvPhtqkaeymCQtHCrKE46qQ43pKe8HCpump": {
+   "ath": 0.188598,
+   "athDate": "2024-11-15T05:00:48.000Z"
+  },
+  "Hh3oTaqDCKKfdBgsQEvxp9sUwyNf8x9qmKqEMLBWpump": {
+   "ath": 0.00595729,
+   "athDate": "2026-05-13T06:35:00.000Z"
+  },
+  "HmBdm8vbisABUjkxms6ZUnoaXbfwFM6ymxShWfAENaoi": {
+   "ath": 0.386553,
+   "athDate": "2026-05-03T21:39:00.000Z"
+  },
+  "HmjCoarLh5duURfJ333DwfFiPyTCgFT35pRSAoP8pump": {
+   "ath": 0.04388847,
+   "athDate": "2026-07-12T22:31:50.000Z"
+  },
+  "Hon2rHAiqkcDtUzL5gA2vjXPr7T1MPCK2UT2AHKCpump": {
+   "ath": 0.02939673,
+   "athDate": "2026-04-25T03:26:00.000Z"
+  },
+  "HtTYHz1Kf3rrQo6AqDLmss7gq5WrkWAaXn3tupUZbonk": {
+   "ath": 0.057977,
+   "athDate": "2025-07-13T09:45:26.000Z"
+  },
+  "HuAXPyDWDaMYFKuwQHpqL1oPnj93zdzWmtvFGzCeCUa7": {
+   "ath": 0.057683,
+   "athDate": "2026-10-02T19:37:20.000Z"
+  },
+  "HxhWkVpk5NS4Ltg5nij2G671CKXFRKPK8vy271Ub4uEK": {
+   "ath": 0.800981,
+   "athDate": "2021-06-04T16:59:41.000Z"
+  },
+  "HyLXondhNhGkvWPXr8z4EPSgZNRRs4j8BHdyqMdVpump": {
+   "ath": 0.00696958,
+   "athDate": "2026-03-26T18:59:00.000Z"
+  },
+  "HzwqbKZw8HxMN6bF2yFZNrht3c2iXXzpKcFu7uBEDKtr": {
+   "ath": 1.35,
+   "athDate": "2023-03-14T01:50:50.000Z"
+  },
+  "J1Wpmugrooj1yMyQKrdZ2vwRXG5rhfx3vTnYE39gpump": {
+   "ath": 0.701724,
+   "athDate": "2025-04-02T12:23:54.000Z"
+  },
+  "J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn": {
+   "ath": 339.52,
+   "athDate": "2025-01-19T03:21:54.000Z"
+  },
+  "J27UYHX5oeaG1YbUGQc8BmJySXDjNWChdGB2Pi2TMDAq": {
+   "ath": 0.056439,
+   "athDate": "2025-10-03T09:26:25.000Z"
+  },
+  "J3NKxxXZcnNiMjKw9hYb2K4LUxgwB6t1FtPtQVsv3KFr": {
+   "ath": 2.27,
+   "athDate": "2025-07-28T03:24:33.000Z"
+  },
+  "J3umBWqhSjd13sag1E1aUojViWvPYA5dFNyqpKuX3WXj": {
+   "ath": 0.074757,
+   "athDate": "2026-06-07T09:01:30.000Z"
+  },
+  "J6pQQ3FAcJQeWPPGppWRb4nM8jU3wLyYbRrLh7feMfvd": {
+   "ath": 0.893679,
+   "athDate": "2025-10-02T05:11:45.000Z"
+  },
+  "J8PSdNP3QewKq2Z1JJJFDMaqF7KcaiJhR7gbr5KZpump": {
+   "ath": 0.0270134,
+   "athDate": "2026-07-23T22:49:20.000Z"
+  },
+  "J9BcrQfX4p9D1bvLzRNCbMDv8f44a9LFdeqNE4Yk2WMD": {
+   "ath": 3.15,
+   "athDate": "2025-12-03T23:29:44.000Z"
+  },
+  "JDwzFSxcUvLubUb9xAuuZNvh4bbcEJcuM9TezpmRHVWF": {
+   "ath": 2.3,
+   "athDate": "2024-03-22T08:32:05.000Z"
+  },
+  "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN": {
+   "ath": 2,
+   "athDate": "2024-01-31T07:02:47.000Z"
+  },
+  "Jambjx1oJoZNBZiqbiF9TqgatEZPdyfvYa9WVsKNzUh": {
+   "ath": 0.910484,
+   "athDate": "2025-01-22T02:15:17.000Z"
+  },
+  "JuprjznTrTSp2UFa3ZBUFgwdAmtZCq4MQCwysN55USD": {
+   "ath": 1.023,
+   "athDate": "2026-04-26T05:01:00.000Z"
+  },
+  "KENJSUYLASHUMfHyy5o4Hp2FdNqZg1AsUPhfH2kYvEP": {
+   "ath": 0.62487,
+   "athDate": "2025-01-21T19:30:30.000Z"
+  },
+  "KMNo3nJsBXfcpJTVhZcXLW7RmTwTt4GVFE7suUBo9sS": {
+   "ath": 0.247842,
+   "athDate": "2024-12-15T08:45:25.000Z"
+  },
+  "LASocYgQAo8GfypSjedNQgLft8y8DVGg1kSqR3smeta": {
+   "ath": 0.166147,
+   "athDate": "2026-07-08T18:23:10.000Z"
+  },
+  "LAYER4xPpTCb3QL8S9u41EAhAX7mhBn8Q6xMTwY2Yzc": {
+   "ath": 3.39,
+   "athDate": "2025-05-04T22:55:39.000Z"
+  },
+  "LBTCgU4b3wsFKsPwBn1rRZDx5DoFutM6RPiEt1TPDsY": {
+   "ath": 125812,
+   "athDate": "2025-10-06T11:07:38.000Z"
+  },
+  "LFNTYraetVioAPnGJht4yNg2aUZFXR776cMeN9VMjXp": {
+   "ath": 25.03,
+   "athDate": "2023-07-26T01:49:15.000Z"
+  },
+  "LRxbtkvPfpctgR6MS52MAwtobrCCY9KiJgKMmpPpump": {
+   "ath": 0.01424572,
+   "athDate": "2026-10-01T06:57:30.000Z"
+  },
+  "LSTxxxnJzKDFSLr4dUkPcmCf5VyryEqzPLz5j4bpxFp": {
+   "ath": 375.5,
+   "athDate": "2025-01-18T21:06:07.000Z"
+  },
+  "LhcykxUt6xVdiSZyWyaGdNHE3W8sAEmdnEjpMdkpump": {
+   "ath": 0.00457556,
+   "athDate": "2025-10-02T07:21:03.000Z"
+  },
+  "LiGHtkg3uTa9836RaNkKLLriqTNRcMdRAhqjGWNv777": {
+   "ath": 0.244507,
+   "athDate": "2025-08-20T08:22:25.000Z"
+  },
+  "Lrxqnh6ZHKbGy3dcrCED43nsoLkM1LTzU2jRfWe8qUC": {
+   "ath": 0.10623,
+   "athDate": "2021-09-29T21:20:34.000Z"
+  },
+  "MAPS41MDahZ9QdKXhVa4dWB9RuyfV4XqhyAZ8XcYepb": {
+   "ath": 2,
+   "athDate": "2021-05-02T23:34:26.000Z"
+  },
+  "MEFNBXixkEbait3xn9bkm8WsJzXtVsaJEn4c8Sam21u": {
+   "ath": 17,
+   "athDate": "2024-12-10T06:00:45.000Z"
+  },
+  "METADDFL6wWMWEoKTFJwcThTbUmtarRJZjRpzUvkxhr": {
+   "ath": 27311,
+   "athDate": "2026-08-17T16:16:50.000Z"
+  },
+  "METAewgxyPbgwsseH8T16a39CQ5VyVxZi9zXiDPY18m": {
+   "ath": 0.896784,
+   "athDate": "2022-09-19T19:29:58.000Z"
+  },
+  "METAwkXcqyXKy1AtsSgJ8JiUHwGCafnZL38n3vYmeta": {
+   "ath": 10.84,
+   "athDate": "2025-10-21T09:10:23.000Z"
+  },
+  "METvsvVRapdj9cFLzq4Tr43xK4tAjQfwX76z3n6mWQL": {
+   "ath": 0.686913,
+   "athDate": "2025-10-23T05:01:20.000Z"
+  },
+  "MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5": {
+   "ath": 0.01288153,
+   "athDate": "2024-11-17T08:03:04.000Z"
+  },
+  "MNDEFzGvMt87ueuHvVU9VcTqsAP5b3fTGPsHuuPA5ey": {
+   "ath": 1.64,
+   "athDate": "2021-10-08T16:00:00.000Z"
+  },
+  "NUZ3FDWTtN5SP72BsefbsqpnbAY5oe21LE8bCSkqsEK": {
+   "ath": 1.58,
+   "athDate": "2025-10-06T11:05:51.000Z"
+  },
+  "NV2RYH954cTJ3ckFUpvfqaQXU4ARqqDH3562nFSpump": {
+   "ath": 0.0484662,
+   "athDate": "2026-02-22T04:35:58.000Z"
+  },
+  "NeonTjSjsuo3rexg9o6vHuMXw62f9V7zvmu8M8Zut44": {
+   "ath": 3.91,
+   "athDate": "2024-01-01T18:35:01.000Z"
+  },
+  "NomuBwKJEvJ8d4dsaq7NZoHaXWXzKcfke1c7Y8ruFYL": {
+   "ath": 0.00881366,
+   "athDate": "2025-11-10T04:30:16.000Z"
+  },
+  "P2PXup1ZvMpCDkJn3PQxtBYgxeCSfH39SFeurGSmeta": {
+   "ath": 0.548022,
+   "athDate": "2026-04-09T21:16:00.000Z"
+  },
+  "PAYmo6moDF3Ro3X6bU2jwe2UdBnBhv8YjLgL1j4DxGu": {
+   "ath": 0.01895245,
+   "athDate": "2025-12-21T17:25:19.000Z"
+  },
+  "PERLEQKUNUp1dgFZ8EvyXHdN9d6ZQqfGxALDvfs6pDs": {
+   "ath": 0.46776,
+   "athDate": "2026-08-19T00:36:20.000Z"
+  },
+  "PLAYs3GSSadH2q2JLS7djp7yzeT75NK78XgrE5YLrfq": {
+   "ath": 0.00866098,
+   "athDate": "2025-11-17T07:53:48.000Z"
+  },
+  "PRTLSwfLzpVGSAQiUfXEenJkq1cwTsEcsn1hPL9zwwg": {
+   "ath": 0.269855,
+   "athDate": "2025-09-16T05:34:30.000Z"
+  },
+  "PRVT6TB7uss3FrUd2D9xs2zqDBsa3GbMJMwCQsgmeta": {
+   "ath": 2.48,
+   "athDate": "2025-10-12T23:45:11.000Z"
+  },
+  "Pre8AREmFPtoJFT8mQSXQLh56cwJmM7CFDRuoGBZiUP": {
+   "ath": 900.84,
+   "athDate": "2026-09-11T04:11:00.000Z"
+  },
+  "PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh": {
+   "ath": 880.4,
+   "athDate": "2026-05-22T09:52:00.000Z"
+  },
+  "PreC1KtJ1sBPPqaeeqL6Qb15GTLCYVvyYEwxhdfTwfx": {
+   "ath": 138.77,
+   "athDate": "2026-01-29T06:49:59.000Z"
+  },
+  "Pren1FvFX6J3E4kXhJuCiAD5aDmGEb7qJRncwA8Lkhw": {
+   "ath": 1408.85,
+   "athDate": "2026-05-09T04:48:00.000Z"
+  },
+  "PresTj4Yc2bAR197Er7wz4UUKSfqt6FryBEdAriBoQB": {
+   "ath": 349.4,
+   "athDate": "2026-09-06T15:26:30.000Z"
+  },
+  "PreweJYECqtQwBtpxHL171nL2K6umo692gTm7Q3rpgF": {
+   "ath": 4932.02,
+   "athDate": "2026-09-30T20:49:30.000Z"
+  },
+  "RoamA1USA8xjvpTJZ6RvvxyDRzNh6GCA1zVGKSiMVkn": {
+   "ath": 0.409919,
+   "athDate": "2025-03-06T10:26:24.000Z"
+  },
+  "SAVEaeeqeXNKYb4Lyx28DkUms5gyZ76vGa6fCfdzWfK": {
+   "ath": 1.2,
+   "athDate": "2024-12-13T22:15:54.000Z"
+  },
+  "SCSuPPNUSypLBsV4darsrYNg4ANPgaGhKhsA3GmMyjz": {
+   "ath": 0.03099588,
+   "athDate": "2024-03-27T14:42:12.000Z"
+  },
+  "SHDWyBxihqiCj6YekG2GUr7wqKLeLAMK1gHZck9pL6y": {
+   "ath": 2.82,
+   "athDate": "2022-01-04T17:24:14.000Z"
+  },
+  "SKHYhSjuRWHgikq8eRKbtBbpABgJSkd7ytQV14i9EQ3": {
+   "ath": 199.04,
+   "athDate": "2026-09-09T19:59:30.000Z"
+  },
+  "SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3": {
+   "ath": 0.055818,
+   "athDate": "2026-01-21T19:32:20.000Z"
+  },
+  "SLNDpmoWTVADgEdndyvWzroNL7zSi1dF9PC3xHGtPwp": {
+   "ath": 16.65,
+   "athDate": "2021-11-07T10:55:10.000Z"
+  },
+  "SNAPcESrvnH8yUdgeMF6xm1hym9b6hW6s8YeqeHdZFz": {
+   "ath": 6.83,
+   "athDate": "2026-10-13T14:27:30.000Z"
+  },
+  "SNS8DJbHc34nKySHVhLGMUUE72ho6igvJaxtq9T3cX3": {
+   "ath": 0.00347868,
+   "athDate": "2025-09-18T17:28:25.000Z"
+  },
+  "SPCXxcqXj6e5dJDVNovHN8744zkbhM2bYudU45BimGb": {
+   "ath": 223.88,
+   "athDate": "2026-06-16T14:04:00.000Z"
+  },
+  "SRMuApVNdxXokk5GT7XD5cUUgXMBCoAz2LHeuAoKWRt": {
+   "ath": 13.78,
+   "athDate": "2021-09-10T18:45:47.000Z"
+  },
+  "STREAMribRwybYpMmSYoCsQUdr6MZNXEqHgm7p1gu9M": {
+   "ath": 0.180045,
+   "athDate": "2024-12-17T20:15:20.000Z"
+  },
+  "STrikemJEk2tFVYpg7SMo9nGPrnJ56fHnS1K7PV2fPw": {
+   "ath": 0.00835658,
+   "athDate": "2025-02-10T23:05:45.000Z"
+  },
+  "SW1TCHLmRGTfW5xZknqQdpdarB8PD95sJYWpNp9TbFx": {
+   "ath": 0.203248,
+   "athDate": "2025-09-09T22:13:02.000Z"
+  },
+  "Saber2gLauYim4Mvftnrasomsv6NvAuncvMEZwcLpD1": {
+   "ath": 0.960362,
+   "athDate": "2021-09-09T22:49:45.000Z"
+  },
+  "SarosY6Vscao718M4A778z4CGtvcwcGef5M9MEH1LGL": {
+   "ath": 0.427192,
+   "athDate": "2025-09-14T08:30:39.000Z"
+  },
+  "So11111111111111111111111111111111111111112": {
+   "ath": 290.3,
+   "athDate": "2025-01-19T03:20:39.000Z"
+  },
+  "SoLiDMWBct5TurG1LNcocemBK7QmTn4P33GSrRrcd2n": {
+   "ath": 0.01632385,
+   "athDate": "2025-02-14T10:14:14.000Z"
+  },
+  "SoLo9oxzLDpcq1dpqAgMwgce5WqkRDtNXK7EPnbmeta": {
+   "ath": 1.41,
+   "athDate": "2025-12-03T17:16:57.000Z"
+  },
+  "SonicxvLud67EceaEzCLRnMTBqzYUUYNr93DBkBdDES": {
+   "ath": 1.23,
+   "athDate": "2025-01-07T20:26:11.000Z"
+  },
+  "TNSRxcUxoT9xBG3de7PiJyTDYu7kskLqcpddxnEJAS6": {
+   "ath": 2.23,
+   "athDate": "2024-04-08T07:35:40.000Z"
+  },
+  "TSPXcLV76s6V2zDiZQ18kBfcbnjaE2ZzNT3ga2Pd99v": {
+   "ath": 900.98,
+   "athDate": "2026-05-24T17:36:00.000Z"
+  },
+  "TUNAfXDZEdQizTMTh3uEvNvYqJmqFHZbEJt8joP4cyx": {
+   "ath": 0.184547,
+   "athDate": "2025-09-11T17:22:04.000Z"
+  },
+  "TuLipcqtGVXP9XR62wM8WWCm6a9vhLs7T1uoWBk6FDs": {
+   "ath": 50.22,
+   "athDate": "2021-11-07T09:41:23.000Z"
+  },
+  "UPTx1d24aBWuRgwxVnFmX4gNraj3QGFzL3QqBgxtWQG": {
+   "ath": 0.03765864,
+   "athDate": "2024-06-10T00:49:56.000Z"
+  },
+  "USD1ttGY1N17NEEHLmELoaybftRBUSErhqYiQzvEmuB": {
+   "ath": 1.048,
+   "athDate": "2026-07-09T10:14:50.000Z"
+  },
+  "USDSwr9ApdHk5bvJKMjzff41FfuX8bSxdKcR81vTwcA": {
+   "ath": 1.057,
+   "athDate": "2024-10-28T21:40:51.000Z"
+  },
+  "VAULTVXqi93aaq9FsyPKgdgp6Ge1H1HoSvNC4ZbqFDs": {
+   "ath": 0.119747,
+   "athDate": "2026-01-14T08:42:26.000Z"
+  },
+  "VNo7EjR3XVzvbjUgQrFAXNwSms34fHwHBt1Xoaopump": {
+   "ath": 0.0019328,
+   "athDate": "2026-04-29T02:14:00.000Z"
+  },
+  "WCTk5xWdn5SYg56twGj32sUF3W4WFQ48ogezLBuYTBY": {
+   "ath": 1.34,
+   "athDate": "2025-05-30T23:55:32.000Z"
+  },
+  "WENWENvqqNya429ubCdR81ZmD69brwQaaBYY6p3LCpk": {
+   "ath": 0.00051049,
+   "athDate": "2024-03-27T03:00:20.000Z"
+  },
+  "WETZjtprkDMCcUxPi9PfWnowMRZkiGGHDb9rABuRZ2U": {
+   "ath": 0.333169,
+   "athDate": "2025-12-10T04:07:09.000Z"
+  },
+  "WFRGSWjaz8tbAxsJitmbfRuFV2mSNwy7BMWcCwaA28U": {
+   "ath": 271.8,
+   "athDate": "2025-09-18T09:28:48.000Z"
+  },
+  "WLFinEv6ypjkczcS83FZqFpgFZYwQXutRbxGe7oC16g": {
+   "ath": 0.331336,
+   "athDate": "2025-09-01T04:20:09.000Z"
+  },
+  "WingsAYbfs4qnEgcw8jpSvetqp8XHM3GkKvow54WLcd": {
+   "ath": 0.01089803,
+   "athDate": "2026-04-24T11:12:00.000Z"
+  },
+  "XANDuUoVoUqniKkpcKhrxmvYJybpJvUxJLr21Gaj3Hx": {
+   "ath": 0.01842785,
+   "athDate": "2024-11-01T10:36:15.000Z"
+  },
+  "XBGdqJ9P175hCC1LangCEyXWNeCPHaKWA17tymz2PrY": {
+   "ath": 0.41625,
+   "athDate": "2024-12-15T17:05:28.000Z"
+  },
+  "Xs151QeqTCiuKtinzfRATnUESM2xTU6V9Wy8Vy538ci": {
+   "ath": 199.03,
+   "athDate": "2026-05-10T10:54:00.000Z"
+  },
+  "Xs2yquAgsHByNzx68WJC55WHjHBvG9JsMB7CWjTLyPy": {
+   "ath": 32.51,
+   "athDate": "2025-07-17T05:15:03.000Z"
+  },
+  "Xs3ZFkPYT2BN7qBMqf1j1bfTeTm1rFzEFSsQ1z3wAKU": {
+   "ath": 289.64,
+   "athDate": "2025-10-06T16:26:27.000Z"
+  },
+  "Xs3eBt7uRfJX8QUs4suhyU8p2M6DoUDrJyWBa8LLZsg": {
+   "ath": 1080.7,
+   "athDate": "2025-07-05T00:30:19.000Z"
+  },
+  "Xs3oZwbHvqis4NYcf4YKWmEia2eC84wSiVrcYcTqpH8": {
+   "ath": 225.31,
+   "athDate": "2026-06-16T01:00:00.000Z"
+  },
+  "Xs6B6zawENwAbWVi7w92rjazLuAr5Az59qgWKcNb45x": {
+   "ath": 546.27,
+   "athDate": "2025-10-26T02:25:48.000Z"
+  },
+  "Xs78JED6PFZxWc2wCEPspZW9kL3Se5J7L5TChKgsidH": {
+   "ath": 139.97,
+   "athDate": "2026-06-02T22:11:00.000Z"
+  },
+  "Xs7ZdzSHLU9ftNJsii5fCeJhoRWSC32SQGzGQtePxNu": {
+   "ath": 444.29,
+   "athDate": "2025-07-18T06:16:47.000Z"
+  },
+  "Xs8S1uUs1zvS2p7iwtsG3b6fkhpvmwz4GYU3gWAmWHZ": {
+   "ath": 2014.76,
+   "athDate": "2025-07-05T18:59:42.000Z"
+  },
+  "XsApJFV9MAktqnAc6jqzsHVujxkGm9xcSUffaBoYLKC": {
+   "ath": 11039.47,
+   "athDate": "2026-09-13T04:35:00.000Z"
+  },
+  "XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN": {
+   "ath": 408.3,
+   "athDate": "2026-05-18T14:26:00.000Z"
+  },
+  "XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB": {
+   "ath": 496.55,
+   "athDate": "2025-12-22T06:58:38.000Z"
+  },
+  "XsEH7wWfJJu2ZT3UCFeVfALnVA6CP5ur7Ee11KmzVpL": {
+   "ath": 1754.14,
+   "athDate": "2025-11-17T01:45:26.000Z"
+  },
+  "XsGVi5eo1Dh2zUpic4qACcjuWGjNv8GCt3dm5XcX6Dn": {
+   "ath": 283.24,
+   "athDate": "2026-09-28T21:58:30.000Z"
+  },
+  "XsHtf5RpxsQ7jeJ9ivNewouZKJHbPxhPoEy6yYvULr7": {
+   "ath": 1994.74,
+   "athDate": "2025-09-19T21:56:57.000Z"
+  },
+  "XsMAqkcKsUewDrzVkait4e5u4y8REgtyS7jWgCpLV2C": {
+   "ath": 594.28,
+   "athDate": "2026-09-12T16:42:10.000Z"
+  },
+  "XsNNMt7WTNA2sV3jrb1NNfNgapxRF5i4i6GcnTRRHts": {
+   "ath": 310.05,
+   "athDate": "2026-03-08T18:30:18.000Z"
+  },
+  "XsP7xzNPvEHS1m6qfanPUGjNmdnmsLKEoNAnHjdxxyZ": {
+   "ath": 462.34,
+   "athDate": "2025-07-17T21:29:46.000Z"
+  },
+  "XsXcJ6GZ9kVnjqGsjBnktRcuwMBmvKWh8S93RefZ1rF": {
+   "ath": 657.46,
+   "athDate": "2026-10-06T15:20:10.000Z"
+  },
+  "XsYdjDjNUygZ7yGKfQaB6TxLh2gC6RRjzLtLAGJrhzV": {
+   "ath": 178,
+   "athDate": "2026-03-02T06:45:14.000Z"
+  },
+  "Xsa62P5mvPszXL1krVUnU5ar38bBSVcWAB6fmPCo5Zu": {
+   "ath": 1359.31,
+   "athDate": "2025-07-03T02:50:58.000Z"
+  },
+  "XsaBXg8dU5cPM6ehmVctMkVqoiRG2ZjMo1cyBJ3AykQ": {
+   "ath": 166.34,
+   "athDate": "2026-09-06T17:41:50.000Z"
+  },
+  "XsaHND8sHyfMfsWPj6kSdd5VwvCayZvjYgKmmcNL5qh": {
+   "ath": 306.42,
+   "athDate": "2026-02-28T03:01:40.000Z"
+  },
+  "XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp": {
+   "ath": 348.51,
+   "athDate": "2026-10-13T13:35:00.000Z"
+  },
+  "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh": {
+   "ath": 243.56,
+   "athDate": "2026-10-06T15:01:30.000Z"
+  },
+  "Xsf9mBktVB9BSU5kf4nHxPq5hCBJ2j2ui3ecFGxPRGc": {
+   "ath": 175.86,
+   "athDate": "2026-01-25T10:41:35.000Z"
+  },
+  "XsfAzPzYrYjd4Dpa9BU3cusBsvWfVB9gBcyGC87S57n": {
+   "ath": 99.76,
+   "athDate": "2026-09-09T20:44:40.000Z"
+  },
+  "XsgSaSvNSqLTtFuyWPBhK9196Xb9Bbdyjj4fH3cPJGo": {
+   "ath": 525.34,
+   "athDate": "2026-05-31T02:09:30.000Z"
+  },
+  "XshPgPdXFRWB8tP1j82rebb2Q9rPgGX37RuqzohmArM": {
+   "ath": 608.91,
+   "athDate": "2026-05-03T13:17:00.000Z"
+  },
+  "XsjFwUPiLofddX5cWFHW35GCbXcSu1BCUGfxoQAQjeL": {
+   "ath": 341.33,
+   "athDate": "2025-10-19T14:28:00.000Z"
+  },
+  "XsjQP3iMAaQ3kQScQKthQpx9ALRbjKAjQtHg6TFomoc": {
+   "ath": 235.95,
+   "athDate": "2025-10-29T06:55:50.000Z"
+  },
+  "Xsnuv4omNoHozR6EEW5mXkw8Nrny5rB3jVfLqi6gKMH": {
+   "ath": 1304.12,
+   "athDate": "2026-09-07T19:14:40.000Z"
+  },
+  "XsoBhf2ufR8fTyNSjqfU71DYGaE6Z3SUGAidpzriAA4": {
+   "ath": 214.9,
+   "athDate": "2026-09-07T20:11:30.000Z"
+  },
+  "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W": {
+   "ath": 786.11,
+   "athDate": "2026-10-12T03:52:30.000Z"
+  },
+  "XspwhyYPdWVM8XBHZnpS9hgyag9MKjLRyE3tVfmCbSr": {
+   "ath": 340.56,
+   "athDate": "2026-06-01T11:42:30.000Z"
+  },
+  "XspzcW1PRtgf6Wj92HCiZdjzKCyFekVD8P5Ueh3dRMX": {
+   "ath": 767.64,
+   "athDate": "2025-09-29T05:18:50.000Z"
+  },
+  "XsqE9cRRpzxcGKDXj1BJ7Xmg4GRhZoyY1KpmGSxAWT2": {
+   "ath": 370.05,
+   "athDate": "2026-03-02T06:40:32.000Z"
+  },
+  "XsqgsbXwWogGJsNcVZ3TyVouy2MbTkfCFhCGGGcQZ2p": {
+   "ath": 45595,
+   "athDate": "2026-09-19T18:00:20.000Z"
+  },
+  "Xsr3pdLQyXvDJBFgpR5nexCEZwXvigb8wbPYp4YoNFf": {
+   "ath": 136.33,
+   "athDate": "2026-05-25T16:40:00.000Z"
+  },
+  "XsssYEQjzxBCFgvYFFNuhJFBeHNdLWYeUSP8F45cDr9": {
+   "ath": 449.92,
+   "athDate": "2026-10-04T17:29:20.000Z"
+  },
+  "XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1": {
+   "ath": 257.13,
+   "athDate": "2025-07-18T06:16:12.000Z"
+  },
+  "XsuxRGDzbLjnJ72v74b7p9VY6N66uYgTCyfwwRjVCJA": {
+   "ath": 346.24,
+   "athDate": "2026-06-03T07:16:00.000Z"
+  },
+  "Xsv99frTRUeornyvCfvhnDesQDWuvns1M852Pez91vF": {
+   "ath": 184.18,
+   "athDate": "2026-02-25T17:13:38.000Z"
+  },
+  "Xsv9hRk1z5ystj9MhnA7Lq4vjSsLwzL2nxrwmwtD3re": {
+   "ath": 510.77,
+   "athDate": "2026-01-28T16:00:00.000Z"
+  },
+  "XsvNBAYkrDRNhA7wPHQfX3ZUXZyZLdnCQDfHZ56bzpg": {
+   "ath": 533.13,
+   "athDate": "2025-07-03T03:10:47.000Z"
+  },
+  "XszvaiXGPwvk2nwb3o9C1CX4K6zH8sez11E6uyup6fe": {
+   "ath": 472.38,
+   "athDate": "2026-07-16T13:35:00.000Z"
+  },
+  "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU": {
+   "ath": 0.00700261,
+   "athDate": "2025-05-29T19:20:44.000Z"
+  },
+  "ZEUS1aR7aX8DFFJf5QjWj2ftDDdNTroMNGo8YoQm3Gq": {
+   "ath": 1.11,
+   "athDate": "2024-04-08T01:00:52.000Z"
+  },
+  "ZEXy1pqteRu3n13kdyh4LwPQknkFk3GzmMYMuNadWPo": {
+   "ath": 0.307774,
+   "athDate": "2024-06-27T06:06:08.000Z"
+  },
+  "a11bdAAuV8iB2fu7X6AxAvDTo1QZ8FXB3kk5eecdasp": {
+   "ath": 9.66,
+   "athDate": "2021-10-04T14:09:54.000Z"
+  },
+  "a3W4qutoEJA4232T2gwZUfgYJTetr96pU4SJMwppump": {
+   "ath": 0.197852,
+   "athDate": "2026-01-10T11:41:44.000Z"
+  },
+  "aqQRs3UJmHs7ktoLo46HZAzvG9P3oCoZ41nENqFbory": {
+   "ath": 8.77,
+   "athDate": "2026-06-15T18:14:10.000Z"
+  },
+  "bSo13r4TkiE4KumL71LsHTPpL2euBYLFx6h9HP3piy1": {
+   "ath": 344.04,
+   "athDate": "2025-01-19T03:27:31.000Z"
+  },
+  "bbahNA5vT9WJeYft8tALrH1LXWffjwqVoUbqYa1ondo": {
+   "ath": 407.56,
+   "athDate": "2026-05-18T14:19:00.000Z"
+  },
+  "bioJ9JTqW62MLz7UKHU69gtKhPpGi1BQhccj2kmSvUJ": {
+   "ath": 0.888995,
+   "athDate": "2025-01-03T05:16:10.000Z"
+  },
+  "bobaM3u8QmqZhY1HwAtnvze9DLXvkgKYk3td3t8MLva": {
+   "ath": 0.00328851,
+   "athDate": "2024-12-12T01:22:22.000Z"
+  },
+  "cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij": {
+   "ath": 125954,
+   "athDate": "2025-10-06T10:58:50.000Z"
+  },
+  "ch7rTovcUK7C1zNFM7F93kXU2CByYUsJT4pwYx7pump": {
+   "ath": 0.01444103,
+   "athDate": "2025-11-16T21:30:08.000Z"
+  },
+  "dTzEP9JU2NRDPuWtM32gaVKip2fTHBqjheU1APBpump": {
+   "ath": 0.0200771,
+   "athDate": "2025-09-05T03:07:40.000Z"
+  },
+  "degod39zqQWzpG6h4b7SJLLTCFE6FeZnZD8BwHBFxaN": {
+   "ath": 0.00965087,
+   "athDate": "2024-09-15T18:45:26.000Z"
+  },
+  "dog1viwbb2vWDpER5FrJ4YFG6gq6XuyFohUe9TXN65u": {
+   "ath": 0.0099237,
+   "athDate": "2024-12-11T08:05:38.000Z"
+  },
+  "eL5fUxj2J4CiQsmW85k5FG9DvuQjjUoBHoQBi2Kpump": {
+   "ath": 0.403185,
+   "athDate": "2025-01-19T03:15:39.000Z"
+  },
+  "edge86g9cVz87xcpKpy3J77vbp4wYd9idEV562CCntt": {
+   "ath": 324.07,
+   "athDate": "2025-01-19T12:45:45.000Z"
+  },
+  "euro5sNHrZC2wu2RoLvy6xxoVMc3Qnd1vjxoWf4MftA": {
+   "ath": 1.19,
+   "athDate": "2026-01-29T13:18:02.000Z"
+  },
+  "ezSoL6fY1PVdJcJsUpe5CM3xkfmy3zoVCABybm5WtiC": {
+   "ath": 344.19,
+   "athDate": "2025-01-19T03:22:21.000Z"
+  },
+  "fRfKGCriduzDwSudCwpL7ySCEiboNuryhZDVJtr1a1C": {
+   "ath": 0.062064,
+   "athDate": "2025-05-13T18:06:04.000Z"
+  },
+  "hKyXZVKmrBDPhKKhdSaaGf1qrFwUkwjqrdzRc63farm": {
+   "ath": 0.00005228,
+   "athDate": "2026-10-13T19:12:40.000Z"
+  },
+  "he1iusmfkpAdwvxLNGV8Y1iSbj4rUy6yMhEA3fotn9A": {
+   "ath": 7454.05,
+   "athDate": "2026-04-23T15:43:00.000Z"
+  },
+  "hntyVP6YFm1Hg25TN9WGLqM12b8TQmcknKrdu1oxWux": {
+   "ath": 54.88,
+   "athDate": "2021-11-12T15:08:25.000Z"
+  },
+  "hy1oXYgrBW6PVcJ4s6s2FKavRdwgWTXdfE69AxT7kPT": {
+   "ath": 109632,
+   "athDate": "2026-04-13T17:46:00.000Z"
+  },
+  "inxKXw9V2NDZE7hDijzpJaKKUb97NEPJDTCEEiYg4yY": {
+   "ath": 0.03339159,
+   "athDate": "2026-01-30T11:03:44.000Z"
+  },
+  "iotEVVZLEywoTn1QdwNPddxPWszn3zFhEot3MfL9fns": {
+   "ath": 0.00381263,
+   "athDate": "2023-04-25T10:20:06.000Z"
+  },
+  "iy11ytbSGcUnrjE6Lfv78TFqxKyUESfku1FugS9ondo": {
+   "ath": 109.63,
+   "athDate": "2026-01-29T06:20:58.000Z"
+  },
+  "jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL": {
+   "ath": 6.01,
+   "athDate": "2023-12-07T08:04:48.000Z"
+  },
+  "jupSoLaHXQiZZTSfEWMTRRgpnyFm8f6sZdosWBjx93v": {
+   "ath": 309.67,
+   "athDate": "2025-01-19T03:22:28.000Z"
+  },
+  "kLqMvUm1p4pRbxU4r8kWCTVAuWMJLtcTJqGb4b5pump": {
+   "ath": 0.01410698,
+   "athDate": "2026-04-17T17:01:00.000Z"
+  },
+  "kMKX8hBaj3BTRBbeYix9c16EieBP5dih8DTSSwCpump": {
+   "ath": 0.00651403,
+   "athDate": "2026-04-18T20:34:00.000Z"
+  },
+  "kedoobK2qe2f1V8ee5vDXFr3H7gKnhQVNJXA3Ltcyai": {
+   "ath": 2.46,
+   "athDate": "2025-12-16T07:52:07.000Z"
+  },
+  "kinXdEcpDQeHPEuQnqmUgtYykqKGVFq6CeVX5iAHJq6": {
+   "ath": 0.00122572,
+   "athDate": "2018-01-06T16:00:00.000Z"
+  },
+  "kySo1nETpsZE2NWe5vj2C64mPSciH1SppmHb4XieQ7B": {
+   "ath": 344.77,
+   "athDate": "2025-01-19T03:11:56.000Z"
+  },
+  "mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So": {
+   "ath": 363.77,
+   "athDate": "2025-01-19T03:26:02.000Z"
+  },
+  "mb1eu7TzEc71KxDpsmsKoucSSuuoGLv1drys1oP2jh6": {
+   "ath": 0.00777336,
+   "athDate": "2023-12-18T22:39:20.000Z"
+  },
+  "mo7mapMrCsyci5w1td1wgrKPtNeCfjfkKi96DknWi5N": {
+   "ath": 0.00323215,
+   "athDate": "2025-02-23T16:36:11.000Z"
+  },
+  "moonThZEkkTVoNB7v6YVCQiT56JYDZ1oN185ba3WizL": {
+   "ath": 0.071899,
+   "athDate": "2025-10-21T09:41:36.000Z"
+  },
+  "mpoxP5wyoR3eRW8L9bZjGPFtCsmX8WcqU5BHxFW1xkn": {
+   "ath": 0.098854,
+   "athDate": "2024-09-04T16:49:54.000Z"
+  },
+  "myrcAs6bpP2g5oGHZ3qpgrfZQAFkbo9KUHdqYDXMjGv": {
+   "ath": 0.270468,
+   "athDate": "2025-02-02T18:22:38.000Z"
+  },
+  "nosXBVoaCTtYdLvKY6Csb4AC8JCdQKKAaWYtx2ZMoo7": {
+   "ath": 7.83,
+   "athDate": "2024-03-06T11:15:02.000Z"
+  },
+  "omfgRBnxHsNJh6YeGbGAmWenNkenzsXyBXm3WDhmeta": {
+   "ath": 1.86,
+   "athDate": "2025-10-04T21:10:12.000Z"
+  },
+  "orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE": {
+   "ath": 20.33,
+   "athDate": "2021-10-02T12:14:11.000Z"
+  },
+  "oreoU2P8bN6jkk3jbaiVxYnG1dCXcYxwhwyK9jSybcp": {
+   "ath": 1451.62,
+   "athDate": "2024-07-29T21:07:18.000Z"
+  },
+  "pSo1f9nQXWgXibFtKf7NWYxb5enAM4qfP6UJSiXRQfL": {
+   "ath": 261.11,
+   "athDate": "2025-09-18T09:21:13.000Z"
+  },
+  "phaseZSfPxTDBpiVb96H4XFSD8xHeHxZre5HerehBJG": {
+   "ath": 144.93,
+   "athDate": "2026-10-06T15:07:50.000Z"
+  },
+  "poLisWXnNRwC6oBu1vHiuKQzFjGL4XDSu4g9qjz9qVk": {
+   "ath": 18.55,
+   "athDate": "2021-09-03T22:21:21.000Z"
+  },
+  "pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn": {
+   "ath": 0.00881908,
+   "athDate": "2025-09-14T08:42:40.000Z"
+  },
+  "rizo34MUwbCBqpSTSfnEktdWB4CTByqqYh8zBxL3WAR": {
+   "ath": 0.00015128,
+   "athDate": "2024-11-18T11:00:49.000Z"
+  },
+  "rndrizKT3MK1iimdxRdWabcF7Zg7AR5T4nud4EkHBof": {
+   "ath": 13.53,
+   "athDate": "2024-03-17T08:30:24.000Z"
+  },
+  "sSo14endRuUbvQaJS3dq36Q829a3A6BEfoeeRGJywEh": {
+   "ath": 304.31,
+   "athDate": "2025-01-19T03:25:44.000Z"
+  },
+  "spinezMPKxkBpf4Q9xET2587fehM3LuKe4xoAoXtSjR": {
+   "ath": 0.01343126,
+   "athDate": "2025-09-14T01:33:03.000Z"
+  },
+  "strng7mqqc1MBJJV6vMzYbEqnwVGvKKGKedeCvtktWA": {
+   "ath": 311.43,
+   "athDate": "2025-01-19T03:22:07.000Z"
+  },
+  "susdabGDNbhrnCa6ncrYo81u4s9GM8ecK2UwMyZiq4X": {
+   "ath": 1.16,
+   "athDate": "2026-07-09T17:56:00.000Z"
+  },
+  "svy5ErijNYy9hEVzxknCdwWdZ3NeXJTdpb9Ndnso17f": {
+   "ath": 0.01469095,
+   "athDate": "2026-01-15T01:41:26.000Z"
+  },
+  "tSATdGGSLYBVCrm3pXiib8NmzKcB1iUdjRRseNGssxu": {
+   "ath": 0.0017227,
+   "athDate": "2025-10-27T17:33:17.000Z"
+  },
+  "ukHH6c7mMyiWCf1b9pnWe25TSpkDDt3H5pQZgZ74J82": {
+   "ath": 0.02688878,
+   "athDate": "2024-03-16T05:51:17.000Z"
+  },
+  "usdsfJbX78ktZUnoRC7dwvvQz7xH3WdkpGne76gdUia": {
+   "ath": 1.002,
+   "athDate": "2026-02-17T23:45:44.000Z"
+  },
+  "vQoYWru2pbUdcVkUrRH74ktQDJgVjRcDvsoDbUzM5n9": {
+   "ath": 0.00000141,
+   "athDate": "2025-08-08T10:38:01.000Z"
+  },
+  "vRseBFqTy9QLmmo5qGiwo74AVpdqqMTnxPqWoWMpump": {
+   "ath": 0.910916,
+   "athDate": "2025-06-09T13:00:43.000Z"
+  },
+  "vSoLxydx6akxyMD9XEcPvGYNGq6Nn66oqVb3UkGkei7": {
+   "ath": 288.13,
+   "athDate": "2025-01-18T21:07:10.000Z"
+  },
+  "x95HN3DWvbfCBtTjGm587z8suK3ec6cwQwgZNLbWKyp": {
+   "ath": 2.3563e-8,
+   "athDate": "2026-01-18T17:51:11.000Z"
+  },
+  "xNETbUB7cRb3AAu2pNG2pUwQcJ2BHcktfvSB8x1Pq6L": {
+   "ath": 0.267945,
+   "athDate": "2024-09-13T15:39:27.000Z"
+  },
+  "y1AZt42vceCmStjW4zetK3VoNarC1VxJ5iDjpiupump": {
+   "ath": 0.194444,
+   "athDate": "2025-02-13T02:22:27.000Z"
+  },
+  "z3dn17yLaGMKffVogeFHQ9zWVcXgqgf3PQnDsNs2g6M": {
+   "ath": 4.16,
+   "athDate": "2021-03-16T14:38:50.000Z"
+  },
+  "zBTCug3er3tLyffELcvDNrKkCymbPWysGcWihESYfLg": {
+   "ath": 125791,
+   "athDate": "2025-10-06T11:05:13.000Z"
+  },
+  "zGh48JtNHVBb5evgoZLXwgPD2Qu4MhkWdJLGDAupump": {
+   "ath": 0.02035761,
+   "athDate": "2025-10-03T17:11:09.000Z"
+  }
+ }
+}

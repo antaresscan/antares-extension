@@ -16,7 +16,7 @@ import type {
 } from "./types";
 import type { CreatorReputation } from "./fetchers";
 import {
-  layerDexScreener, layerRugCheck, layerGoPlus, layerHelius, layerSolscan, layerChart, layerCrossValidation, isBlueChipByMarket,
+  layerDexScreener, layerRugCheck, layerGoPlus, layerHelius, layerSolscan, layerChart, layerCrossValidation, isBlueChipByMarket, isTop10Proven, isLivingMarket, historyIsClean, isAthFlagCandidate, type Top10ReliefFacts,
 } from "./layers";
 import { computeFinalScore, classifySafeBlockedReasons } from "./scoring";
 import {
@@ -24,8 +24,9 @@ import {
 } from "./pipeline";
 import { computeLpPctOfSupply, getLpRiskBucket } from "./lp-risk-matrix";
 import { weightedBurnPct, type AuthorityFacts } from "./facts";
-import { HARD_BLOCK_REASONS, LAYER_WEIGHTS, SOLSCAN_AGE_AND_HOLDERS_ONLY } from "./constants";
+import { HARD_BLOCK_REASONS, LAYER_WEIGHTS, SOLSCAN_AGE_AND_HOLDERS_ONLY, SAFE_MIN_MARKET_DEPTH_USD } from "./constants";
 import { asNumber } from "./math";
+import { athDropPct, type AllTimeHigh } from "./ath";
 import { makeFlag } from "./helpers";
 import { issuerKindOf, judgeIssuerAsset, lstPriceInSol, type IssuerKind } from "./issuer-assets";
 
@@ -54,6 +55,24 @@ export interface DecideInput {
   dailyCandles: OHLCVCandle[];
   recentTransfers: SolscanTransfer[];
   creatorReputation: CreatorReputation | null;
+  /** The highest daily price the token ever traded at (Solscan), asked for only when the verdict can use it (api/_lib/ath.ts); null or absent when unknown. */
+  allTimeHigh?: AllTimeHigh | null;
+  /** Jupiter's organic score (real trading activity, 0 to 100), asked for only when a relief or a bridge depends on it (api/_lib/jupiter.ts); null or absent when unknown, which is no relief. */
+  organicScore?: number | null;
+  /** The side of the line the token is on, with the memory of where it was (judgeHistory in ath.ts); absent: the plain line on the fall computed here. */
+  athCollapsed?: boolean | null;
+}
+
+/** The market facts isTop10Candidate reads, from what a scan has collected before it decides (the scan asks for the all-time high only when they say it can matter). */
+export function top10ReliefFactsOf(i: Pick<DecideInput, "pair" | "dexData" | "resolvedMint" | "marketCap" | "tokenAgeMinutes" | "holders" | "authFacts">): Top10ReliefFacts {
+  const pool = i.pair ? asNumber(i.pair.liquidity?.usd) : null;
+  // The depth of the market is ALL the pools of the token, added up (DexScreener lists up to 30: a floor); without the list, the pool the scan reads.
+  const summed = (i.dexData?.pairs ?? []).filter((p) => p.baseToken?.address === i.resolvedMint).reduce((sum, p) => sum + asNumber(p.liquidity?.usd), 0);
+  return {
+    tokenAgeMinutes: i.tokenAgeMinutes, liquidityUsd: pool, poolDepthUsd: summed > 0 ? Math.max(summed, pool ?? 0) : pool, marketCapUsd: i.marketCap, holders: i.holders,
+    mintActive: i.authFacts.mint === true && !i.authFacts.trusted && !i.authFacts.mintHolder,
+    freezeActive: i.authFacts.freeze === true && !i.authFacts.trusted,
+  };
 }
 
 /** Something the handler logs for this request (with its id and the mint), decided in the middle of the decision. */
@@ -64,6 +83,8 @@ export interface Decision {
   risk: Verdict;
   /** What a RUG verdict means (see RugKind); null for any other verdict. */
   rugKind: RugKind | null;
+  /** The bridge that holds the mint authority and whose softening applied to this token ("Wormhole"), else null. */
+  mintHeldByBridge?: string | null;
   /** The flags of the layers and the post-layer flags, one per distinct signal, the most severe first. The engine's own: codes included. */
   flags: ScanFlag[];
   safeBlocked: boolean;
@@ -82,11 +103,19 @@ export interface Decision {
 
 export function decide(input: DecideInput): Decision {
   const {
-    pair, dexData, resolvedMint, marketCap, tokenAgeMinutes, holders, rugData, rugReport, tokenName, goplus, authFacts, totalSupplyUi,
+    pair, dexData, resolvedMint, marketCap, tokenAgeMinutes, holders, rugData, rugReport, tokenName, goplus, authFacts: authFactsAsRead, totalSupplyUi,
     solscanTokenAgeHours, dexTokenAgeHours, resolvedHolderAccounts, solscanTrades24h, solscanTraders24h, solscanAnswered,
-    candles, dailyCandles, recentTransfers, creatorReputation,
+    candles, dailyCandles, recentTransfers, creatorReputation, allTimeHigh, athCollapsed, organicScore,
   } = input;
   const notes: DecisionNote[] = [];
+
+  // How far the price stands below the all-time high, when both are known.
+  const athDrop = athDropPct(allTimeHigh, asNumber(pair?.priceUsd));
+  // Is the market alive? (Jupiter's organic score: a daily price history cannot see a launch that pumped and dumped within hours.)
+  const livingMarket = isLivingMarket(organicScore);
+  // A mint authority held by a bridge is softened only for a token whose history is not a collapse AND whose market is alive (LUNA -98 %, TRUNK -96 % keep the critical: nobody holds a
+  // key for the authority, but the token itself already lost almost everything, and its wrapped supply can only follow that). An unknown history, or a market nobody could read, is no softening.
+  const authFacts = authFactsAsRead.mintHolder && !(livingMarket && historyIsClean(athDrop, athCollapsed)) ? { ...authFactsAsRead, mintHolder: null } : authFactsAsRead;
 
   // Deepest pool of THIS token (it is the base token of the pair). selectBestPair can settle on a thinner pool than the deepest
   // one (JTO: a $62k Raydium pool next to a $1.3M Orca pool); the "no registered links" check asks whether the token has real
@@ -132,12 +161,19 @@ export function decide(input: DecideInput): Decision {
     holders: holders,
     liquidity: asNumber(pair?.liquidity?.usd),
     tokenAgeHours: solscanTokenAgeHours,
-    mintAuthority: authFacts.mint === true && !authFacts.trusted,
+    mintAuthority: authFacts.mint === true && !authFacts.trusted && !authFacts.mintHolder, // a bridge holds it: nobody can inflate the supply, the contract is clean for the LP rule
     freezeAuthority: authFacts.freeze === true && !authFacts.trusted,
     honeypot: authFacts.sellBlocked === true,
     lpBurned: _earlyLpBurned,
     lpPctOfSupply: _lpPctOfSupply,
+    top10Proven: false,
+    // How far the token stands below its all-time high, only for a token that is read for it (athDropFlag says it from ATH_COLLAPSE_PCT).
+    athDropPct: (isAthFlagCandidate({ tokenAgeMinutes, marketCapUsd: marketCap, issuerBacked: issuerKindOf(resolvedMint) !== null }) ? athDrop : null) as number | null,
+    athDate: (allTimeHigh?.athDate ?? null) as string | null,
+    athCollapsed: athCollapsed ?? null,
   };
+  // A token the market has proven, whose market is alive, AND whose history does not say the insiders already sold: its concentrated top 10 is a warning, not a critical (isTop10Proven).
+  maturityCtx.top10Proven = isTop10Proven({ ...top10ReliefFactsOf({ ...input, authFacts }), athDropPct: athDrop, athCollapsed, livingMarket });
   const l2 = layerRugCheck(rugData, rugReport, resolvedMint, tokenName, maturityCtx);
   const l3 = layerGoPlus(goplus, maturityCtx, authFacts);
   // Collect all DEXScreener pair addresses for this token.
@@ -287,13 +323,24 @@ export function decide(input: DecideInput): Decision {
   flags.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
 
   const _counts = countVerdictFlags(flags);
-  const risk: Verdict = determineVerdict({
+  let risk: Verdict = determineVerdict({
     score, forceRug, safeBlocked, safeBlockedReasons,
     sourcesUsedCount: sources_used.length,
     warningFlagsCount: _counts.warning,
     criticalFlagsCount: _counts.critical,
     pumpPriceOnlyFlagsCount: _counts.pumpPriceOnly,
   });
+
+  // SAFE needs a market a holder can leave: under SAFE_MIN_MARKET_DEPTH_USD (all the pools added up) a token that has nothing else against it is CAUTION. A token of the issuer
+  // registry is judged on its market below (judgeIssuerAsset), not here.
+  const marketDepthUsd = top10ReliefFactsOf({ ...input, authFacts }).poolDepthUsd;
+  if (risk === "SAFE" && issuerKindOf(resolvedMint) === null && marketDepthUsd != null && marketDepthUsd < SAFE_MIN_MARKET_DEPTH_USD) {
+    risk = "CAUTION";
+    flags.push(makeFlag(`Thin market — ${marketDepthUsd < 1000 ? "under $1k" : "$" + Math.floor(marketDepthUsd / 1000) + "k"} in the pools: a token needs $100k to be SAFE`, "warning", 0));
+    flags.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
+    score = Math.min(score, 899);
+    safeBlocked = true;
+  }
 
   const confidence = Math.round(sources_used.reduce((sum, src) => sum + (LAYER_WEIGHTS[src] ?? 0), 0) * 100);
   const layersSnapshot: Record<string, LayerSnapshot> = Object.fromEntries(
@@ -315,6 +362,7 @@ export function decide(input: DecideInput): Decision {
   if (issuer) notes.push({ message: "issuer-backed token judged on its market", data: { kind: issuerKind, wasRisk: risk, wasScore: score, risk: issuer.risk, score: issuer.score } });
 
   return {
+    mintHeldByBridge: authFacts.mint === true && !authFacts.trusted ? authFacts.mintHolder ?? null : null,
     score: issuer?.score ?? score, risk: issuer?.risk ?? risk, rugKind: issuer ? issuer.rugKind : rugKindOf(risk, allLayers),
     flags: issuer?.flags ?? flags, safeBlocked: issuer?.safeBlocked ?? safeBlocked, safeBlockedReasons: issuer?.safeBlockedReasons ?? safeBlockedReasons,
     confidence, sources_used, layersSnapshot, lpBurned, lpLocked, lpBurnedPct: _gpBP, notes,

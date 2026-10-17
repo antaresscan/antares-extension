@@ -7,7 +7,7 @@
 // turned into "OK": the overlay shows it as unknown and the AI summary does not narrate it.
 import type { GoPlusTokenResult } from "./types";
 import { HeliusTokenAccountsResponseSchema } from "./upstream-schemas";
-import { HOLDER_PAGE_LIMIT, OFFICIAL_MINTS } from "./constants";
+import { HOLDER_PAGE_LIMIT, OFFICIAL_MINTS, BRIDGE_MINT_AUTHORITIES } from "./constants";
 
 export type Tri = boolean | null;
 
@@ -18,6 +18,8 @@ export interface MintState {
   /** true = an authority that can sign exists (it can still mint). false = renounced (null, or the System Program). null = the field is missing from the response. */
   mintAuthority: Tri;
   freezeAuthority: Tri;
+  /** The address of the mint authority when one can sign (null when renounced). Read to tell a bridge from a person (BRIDGE_MINT_AUTHORITIES). */
+  mintAuthorityAddress?: string | null;
   /** Token-2022 extension names (camelCase, as jsonParsed returns them). Empty for the classic program. */
   extensions: string[];
   /** The state of each extension as jsonParsed returns it (authority, delegate, fee...). Absent when the response carried none. */
@@ -69,6 +71,7 @@ export function parseMintState(raw: unknown): MintState | null {
     supplyRaw: typeof info.supply === "string" ? info.supply : null,
     // A missing field is NOT "renounced": only an explicit null (or the System Program, see authorityExists) means renounced.
     mintAuthority: "mintAuthority" in info ? authorityExists(info.mintAuthority) : null,
+    mintAuthorityAddress: authorityExists(info.mintAuthority) ? (info.mintAuthority as string) : null,
     freezeAuthority: "freezeAuthority" in info ? authorityExists(info.freezeAuthority) : null,
     extensions: Array.isArray(info.extensions) ? info.extensions.map((e) => String(e?.extension ?? "")) : [],
     extensionStates: Array.isArray(info.extensions)
@@ -172,6 +175,8 @@ export interface AuthorityFacts {
    * when GoPlus said nothing about this token, our own list of official mints stands in, so an outage does not turn USDC critical.
    */
   trusted: boolean;
+  /** Who holds the mint authority when it is a bridge (BRIDGE_MINT_AUTHORITIES): "Wormhole". Null when it is not (or when there is none). Read from the chain only. */
+  mintHolder?: string | null;
   source: "onchain" | "goplus" | null;
   /** The chain AND GoPlus both answered for at least one authority, so the two could be compared. */
   compared: boolean;
@@ -213,7 +218,8 @@ export function deriveAuthorityFacts(chain: MintState | null, goplus: GoPlusToke
     else if (gpFreeze === false && gpStatus(goplus.non_transferable) === false && hookEmpty && feeEmpty) sellBlocked = false;
   }
 
-  return { mint, freeze, sellBlocked, trusted, source, compared, conflicts, riskyExtensions, extensionFacts: deriveExtensionFacts(chain) };
+  const mintHolder = chain?.mintAuthority === true && chain.mintAuthorityAddress ? (BRIDGE_MINT_AUTHORITIES.get(chain.mintAuthorityAddress) ?? null) : null;
+  return { mint, freeze, sellBlocked, trusted, mintHolder, source, compared, conflicts, riskyExtensions, extensionFacts: deriveExtensionFacts(chain) };
 }
 
 /**
