@@ -635,18 +635,21 @@ function render(d, ca) {
     // Antares-owned
     "antaresscan.com", "antares-extension.vercel.app",
   ]);
+  // Returns the address as the URL parser wrote it back (parsed.href), never the string it was given: a parser accepts
+  // `https://x.com/a"onerror="…"` and writes the quote back as %22, but the raw string, put in src="…", closed the attribute and
+  // added an event handler of the attacker's to the <img> (audit 2026-10-17). The caller escapes it as well.
   function safeUrl(u) {
     if (typeof u !== "string") return "#";
     let parsed;
     try { parsed = new URL(u); } catch { return "#"; }
     if (parsed.protocol !== "https:") return "#";
     const host = parsed.hostname.toLowerCase().replace(/^www\./, "");
-    if (ALLOWED_HOSTS.has(host)) return u;
+    if (ALLOWED_HOSTS.has(host)) return parsed.href;
     // Subdomain match — `foo.dexscreener.com` is OK if `dexscreener.com`
     // is on the allowlist. Endswith `.${host}` (with the dot) prevents
     // `evildexscreener.com` from matching `dexscreener.com`.
     for (const allowed of ALLOWED_HOSTS) {
-      if (host.endsWith("." + allowed)) return u;
+      if (host.endsWith("." + allowed)) return parsed.href;
     }
     return "#";
   }
@@ -768,7 +771,7 @@ function render(d, ca) {
     logo || sym
       ? `<div class="token-logo-wrap">
         ${sym ? `<div class="token-logo-fallback">${escapeHtml(sym.slice(0, 4))}</div>` : ""}
-        ${logo ? `<img class="token-logo" src="${safeUrl(logo)}" alt="${escapeHtml(sym)}" onerror="this.remove()"/>` : ""}
+        ${logo ? `<img class="token-logo" src="${escapeHtml(safeUrl(logo))}" alt="${escapeHtml(sym)}" onerror="this.remove()"/>` : ""}
       </div>`
       : "";
 
