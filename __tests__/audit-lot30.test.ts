@@ -34,8 +34,8 @@ describe("drag — the box is always drawn inside the window", () => {
   it("a spot saved in a larger window is drawn inside this one (it stayed off-screen until a resize), and the saved spot is kept", () => {
     localStorage.setItem(POS_KEY, JSON.stringify({ x: 3000, y: 2000 }))
     initDrag()
-    // happy-dom: a 1024 x 768 window, and a host of no size (the clamp then counts the box as 280 x 360).
-    expect(state.host!.style.transform).toBe(`translate(${window.innerWidth - 280}px,${window.innerHeight - 360}px)`)
+    // happy-dom: a 1024 x 768 window, and a host of no size (the clamp then counts the box as 290 x 360).
+    expect(state.host!.style.transform).toBe(`translate(${window.innerWidth - 290}px,${window.innerHeight - 360}px)`)
     expect(JSON.parse(localStorage.getItem(POS_KEY)!)).toEqual({ x: 3000, y: 2000 })
   })
 
@@ -73,7 +73,7 @@ describe("drag — the box is always drawn inside the window", () => {
     expect(state.host!.style.transform).toBe(`translate(60px,${window.innerHeight - 360}px)`)
     localStorage.setItem(POS_KEY, JSON.stringify({ x: window.innerWidth - 10, y: 30 }))
     initDrag()
-    expect(state.host!.style.transform).toBe(`translate(${window.innerWidth - 280}px,30px)`)
+    expect(state.host!.style.transform).toBe(`translate(${window.innerWidth - 290}px,30px)`)
   })
 
   it("a negative saved spot is brought back to the corner", () => {
