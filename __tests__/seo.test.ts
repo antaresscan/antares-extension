@@ -58,7 +58,7 @@ describe("sitemap.xml", () => {
   })
 
   it("does not list the bare root — it is a redirect, not a page", () => {
-    // `/` 301s to the canonical website on GitHub Pages. Listing it in
+    // `/` redirects for good to the canonical website, antaresscan.com (vercel.json). Listing it in
     // our sitemap would tell Google to crawl a redirect that lands on
     // a different host — wasteful at best, confusing at worst.
     expect(body).not.toContain("<loc>https://antares-extension.vercel.app/</loc>")
