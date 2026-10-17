@@ -89,7 +89,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   initUserStorage(redis);
   initRateLimiters(redis);
 
-  // Standard 30-req/min IP limit. Each poll hits NOWPayments REST,
+  // Standard 60-req/min network limit. Each poll hits NOWPayments REST,
   // which costs API quota — without this, a leaked reference (URL bar,
   // Referer log, `?ref=` query string) becomes a DoS-economic vector.
   // The reference's 2^256 entropy makes guessing infeasible, but
@@ -98,7 +98,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const allowed = await checkRateLimit(res, ip);
   if (!allowed) return;
 
-  const stored = await getPaymentIntent(redis, reference);
+  // Strict read: "could not read" must not answer 404. The website's account.html takes a 404 as final ("Payment not found
+  // ... Try again") and stops polling: a Redis hiccup right after the buyer paid told them to pay again. A 503 is what it keeps
+  // polling through.
+  let stored: PaymentIntent | null;
+  try {
+    stored = await getPaymentIntent(redis, reference, { strict: true });
+  } catch (err) {
+    logger.warn("payment-status", "intent read failed", { reference, error: String(err) });
+    captureError(err, { endpoint: "payment-status", phase: "read", reference });
+    return res.status(503).json({ status: "unavailable" });
+  }
   if (!stored) {
     return res.status(404).json({ status: "not_found" });
   }
