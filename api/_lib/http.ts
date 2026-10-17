@@ -20,6 +20,7 @@
 import { logger } from "./logger";
 import { recordCall, recordSkipped } from "./usage";
 import { noteSourceFailure, _resetOutageForTests } from "./outage";
+import { redactSecretQueryParams } from "../../shared/sentry-scrub";
 
 // ─── Limits ──────────────────────────────────────────────────────────────────
 
@@ -137,12 +138,10 @@ export function _resetCircuitBreakersForTests(): void {
 
 // Native fetch failures can carry the request URL in their message, and Helius' /v0/* REST surface only accepts the key as a
 // query parameter, so a logged URL can leak the key into the runtime logs. Every query parameter whose name says "secret" is
-// redacted at the log boundary. One precompiled pattern (the names are literal, no escaping needed).
-const SENSITIVE_QS_KEYS = ["api-key", "api_key", "apikey", "key", "token", "access_token", "secret", "password", "auth"];
-const SENSITIVE_QS_RE = new RegExp(`([?&](?:${SENSITIVE_QS_KEYS.join("|")})=)[^&\\s"'#]+`, "gi");
-
+// redacted at the log boundary. The list of names lives once, in shared/sentry-scrub.ts (the logger applies the same rule to
+// every line it writes).
 export function scrubSensitive(input: string): string {
-  return String(input).replace(SENSITIVE_QS_RE, "$1[REDACTED]");
+  return redactSecretQueryParams(String(input));
 }
 
 /** One log-safe line for an error: its message, scrubbed, plus the network code of its cause (ECONNRESET...), capped in length. */

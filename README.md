@@ -169,7 +169,6 @@ api/
     pipeline.ts              — Post-layer flags, safe-gate, established bonus, verdict
     ai-summary.ts            — Gemini-powered 2-4 sentence verdict synthesis
     upstream-schemas.ts      — Zod-style guards for noisy upstream responses
-    server-errors.ts         — Standard error responses
     known-treasuries.ts      — Foundation / DAO / LP wallet allowlists
 
     insider-graph.ts         — Top-holder cluster detection (Helius enhanced txns)

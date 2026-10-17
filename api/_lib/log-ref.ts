@@ -44,21 +44,16 @@ export function maskLicenseKey(key: unknown): string | null {
   return trimmed ? `${trimmed.slice(0, 8)}\u2026` : null;
 }
 
-/** A whole licence key inside a piece of text (the shape generateLicenseKey makes: ANT- and four groups of four). */
-export const LICENSE_KEY_IN_TEXT = /\bANT-[0-9A-HJ-NP-TV-Z]{4}-[0-9A-HJ-NP-TV-Z]{4}-[0-9A-HJ-NP-TV-Z]{4}-[0-9A-HJ-NP-TV-Z]{4}\b/g;
-
-/** The same text with every whole licence key in it cut to its first 8 characters: the safety net of the logger. */
-export function redactLicenseKeys(text: string): string {
-  return text.replace(LICENSE_KEY_IN_TEXT, (key) => maskLicenseKey(key) ?? "");
-}
-
-/** Anything that looks like an e-mail address inside a piece of text. */
-export const EMAIL_IN_TEXT = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+/g;
-
-/** The same text with every address in it replaced by "[email]": the safety net of the logger, for what nobody thought of. */
-export function redactEmails(text: string): string {
-  return text.replace(EMAIL_IN_TEXT, "[email]");
-}
+// The text redactors (a whole licence key cut to its first 8 characters, an address replaced by "[email]", the value of a secret
+// query parameter replaced by "[REDACTED]") are the safety net of the logger AND of Sentry, so they are defined once, in
+// shared/sentry-scrub.ts (the extension bundles it too), and re-exported here for the callers that already import them from this module.
+export {
+  LICENSE_KEY_IN_TEXT,
+  redactLicenseKeys,
+  EMAIL_IN_TEXT,
+  redactEmails,
+  redactSecretQueryParams,
+} from "../../shared/sentry-scrub";
 
 /** The shape of a checkout reference (payments.ts generateReference: 32 random bytes in hex). */
 export const PAYMENT_REFERENCE_RE = /^[0-9a-f]{64}$/;
