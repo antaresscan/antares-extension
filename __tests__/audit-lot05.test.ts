@@ -83,13 +83,16 @@ async function call(dispatcher: (req: VercelRequest, res: VercelResponse) => unk
 describe("sign-up — the form cannot be used to mail-bomb an inbox", () => {
   it("a script re-signing a stranger's address every minute gets at most 5 e-mails sent to it in a day (it got one a minute: 1 440)", async () => {
     const { default: dispatcher } = await import("../api/auth/[action]");
-    for (let i = 0; i < 30; i++) {
+    // 12 sign-ups are enough to tell the ceiling (5) from no ceiling (12 mails). Each one hashes a password (scrypt, ~50 ms, and seconds on a loaded
+    // machine), so the test has its own large deadline: at the default 15 s it was cut on a busy machine while its loop went on, and the mails the loop
+    // still sent landed in the counter of the next test ("expected 25 to be 20").
+    for (let i = 0; i < 12; i++) {
       // from a different network each time, so that only the per-address ceiling can stop it
       expect((await call(dispatcher, { email: "victim@example.com", password: "attacker-password" }, `198.51.100.${i + 1}`)).status).toBe(200);
       vi.setSystemTime(Date.now() + 61_000); // past the 1-minute cooldown of the link, every time
     }
     expect(mailsSent.filter((to) => to === "victim@example.com").length).toBeLessThanOrEqual(5);
-  });
+  }, 120_000);
 
   it("one network may start at most 20 sign-ups an hour (each one makes us write to an inbox of its choosing)", async () => {
     const { default: dispatcher } = await import("../api/auth/[action]");
@@ -98,7 +101,7 @@ describe("sign-up — the form cannot be used to mail-bomb an inbox", () => {
     expect(statuses.slice(0, 20).every((s) => s === 200)).toBe(true);
     expect(statuses.slice(20).every((s) => s === 429)).toBe(true);
     expect(mailsSent.length).toBe(20);
-  });
+  }, 120_000); // 25 password hashes: see the first test of this file
 });
 
 describe("sign-up — its duration does not tell whether the address has an account", () => {
