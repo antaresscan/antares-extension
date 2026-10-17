@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 const BASE = process.env.E2E_BASE_URL || 'https://antares-extension.vercel.app';
 
-// `/` on this deployment is a 301 to antares-website.vercel.app, so we
+// `/` on this deployment is a permanent redirect to antaresscan.com, so we
 // only meaningfully test the pages this Vercel project actually serves.
 const PAGES = [
   { name: 'Token', path: '/token.html' },
@@ -105,7 +105,7 @@ test.describe('SEO & Meta Tags', () => {
   });
 
   test.describe('Canonical & Structured Data', () => {
-    // The bare `/` here 301s to antares-website.vercel.app, so duplicate /
+    // The bare `/` here redirects for good to antaresscan.com, so duplicate /
     // canonical / favicon checks for a "landing page" don't apply to this
     // deployment. The pages this Vercel project actually serves
     // (privacy.html, token.html) are covered by the per-page suite above.

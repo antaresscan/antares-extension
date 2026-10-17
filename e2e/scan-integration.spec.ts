@@ -70,6 +70,6 @@ test.describe('Scan Integration \u2014 Full Flow E2E', () => {
   });
 
   // The landing-page CTA test was removed: `/` on this deployment now
-  // 301s to antares-website.vercel.app, where the CTA belongs and is
+  // redirects for good to antaresscan.com, where the CTA belongs and is
   // tested separately. Asserting it from here would test the wrong project.
 });

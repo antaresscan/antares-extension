@@ -6,8 +6,8 @@ const BASE = process.env.E2E_BASE_URL || 'https://antares-extension.vercel.app';
  * Verify all security headers from vercel.json are applied
  * on every route category (pages, API endpoints).
  *
- * `/` is intentionally excluded: this deployment 301-redirects it to
- * antares-website.vercel.app, which is a separate Vercel project with
+ * `/` is intentionally excluded: this deployment redirects it for good to
+ * antaresscan.com (the antares-website project), which is a separate Vercel project with
  * its own header policy. Asserting headers there would test the wrong
  * project.
  */
