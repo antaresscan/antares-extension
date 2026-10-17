@@ -10,17 +10,19 @@
 //   1. /api/payment-intent accepts an `email` field. The intent stores
 //      it alongside the install_id (or in place of it for site-only
 //      visitors).
-//   2. /api/cron-check-payments confirms the on-chain payment, then
-//      calls `issueLicense()` here. The license is keyed by intent
-//      reference so a second cron tick on the same intent is a no-op.
+//   2. The confirmation of the payment (payment-confirm.ts, reached by
+//      the NOWPayments IPN, the status poll and the daily cron) calls
+//      `issueLicense()` here. The license is keyed by intent reference
+//      so a second confirmation of the same intent is a no-op.
 //   3. /api/payment-status returns the license_key in its response so
 //      the pricing modal can show it to the buyer immediately.
 //   4. /api/redeem accepts {license_key, install_id}. It atomically
 //      marks the license redeemed and calls setUserTier on the
 //      install_id. A license can only be redeemed once.
-//   5. /api/account-licenses lets a user re-fetch their licenses by
-//      proving ownership: email + at least one valid key for that
-//      email. No passwords, no sessions — the key IS the credential.
+//   5. /api/account-licenses lets a user re-fetch their licenses: with
+//      the session of a confirmed account (every key in full), or with
+//      email + one valid key for that email (the other keys masked: one
+//      key never hands out the others).
 //
 // Redis layout:
 //   license:<KEY>           HASH  → all License fields
@@ -164,8 +166,9 @@ async function readIssuedLicense(redis: Redis, intentReference: string): Promise
   const existing = await getLicense(redis, existingKey);
   if (existing) return existing;
   // Index points at a non-existent license — Redis got out of sync. The caller issues a fresh key.
+  // Under `reference`, the logger writes a checkout reference as its fingerprint (log-ref.ts paymentRef): the reference is a credential.
   logger.warn("license", "intent index points at missing license", {
-    intent: intentReference,
+    reference: intentReference,
     key: maskLicenseKey(existingKey),
   });
   return null;
@@ -279,7 +282,7 @@ async function writeLicense(
     key: maskLicenseKey(license.key),
     emailRef: emailRef(email),
     tier,
-    intent: params.intentReference,
+    reference: params.intentReference,
   });
 
   return license;
@@ -380,8 +383,8 @@ export async function redeemLicense(
   }
 
   // Atomic claim — HSETNX writes `redeemedBy` only if the field is
-  // absent. issueLicense (line 216-223) creates the hash WITHOUT
-  // `redeemedBy`, so absence is equivalent to "not yet redeemed".
+  // absent. writeLicense creates the hash WITHOUT `redeemedBy`, so
+  // absence is equivalent to "not yet redeemed".
   // HSETNX returns 1 if we set the field (we won the race), 0 if a
   // concurrent caller already claimed it. Race window without this
   // serialisation was the Redis RTT (~50ms): a stolen / shared key +

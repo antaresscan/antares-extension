@@ -9,15 +9,15 @@
 // the URL bar — license keys are credentials. POST + JSON body is the
 // least leaky option without standing up a session/cookie layer.
 //
-// Auth model: there are no passwords or sessions. The license key
-// itself is the credential — knowing one license key for an email
-// proves ownership of that email (because the key was generated
-// server-side and only delivered to the buyer). Once proof checks
-// out, we return all licenses for that email so the buyer can see
-// every Pro 30-day pass and Lifetime they've ever bought.
+// Auth model, two paths:
+//   - the session of an account whose e-mail is confirmed (what /account.html uses): every licence of the e-mail, keys in full;
+//   - the legacy proof, e-mail + ONE licence key of that e-mail (no first-party client uses it any more): the list of the
+//     purchases, but only the key that was shown comes back in full; the others are masked ("ANT-7K2M..."). A key is a
+//     credential for ONE licence (whoever holds it redeems it, api/redeem.ts, which also answers with its e-mail): it used to
+//     hand out every other key of the buyer, the unredeemed ones included, to whoever held one (a pass given to a friend, a key
+//     pasted in a chat). The full keys are behind the session, i.e. behind the confirmed e-mail (audit A-01).
 //
-// Rate limit: 5 requests per minute per IP via the existing
-// withMiddleware helper. Brute-force is infeasible against the 80-bit
+// Rate limit: the shared per-network window of checkRateLimit (60 per minute). Brute-force is infeasible against the 80-bit
 // key space anyway, but rate-limiting closes the timing-attack door.
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Redis } from "@upstash/redis";
@@ -29,7 +29,7 @@ import {
 } from "./_lib/middleware";
 import { apiError } from "./_lib/helpers";
 import { logger } from "./_lib/logger";
-import { emailRef } from "./_lib/log-ref";
+import { emailRef, maskLicenseKey } from "./_lib/log-ref";
 import { initSentry, captureError } from "./_lib/sentry";
 
 initSentry();
@@ -101,7 +101,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
   initRateLimiters(redis);
 
-  // Standard 30-req/min IP limit covers brute-force; the 80-bit key
+  // Standard 60-req/min network limit covers brute-force; the 80-bit key
   // space makes guessing infeasible anyway, but rate-limiting closes
   // the door on enumeration timing.
   const ip = getClientIp(req);
@@ -135,12 +135,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Cache the first lookup so the legacy proof-verify path doesn't
   // double-charge Redis with two getLicensesByEmail calls.
   let prefetched: License[] | null = null;
+  // The key shown as proof (legacy path only): the one key that comes back in full.
+  let proofKey: string | null = null;
   if (authedEmail) {
     email = authedEmail;
   } else {
     const body = readBody(req);
     email = normalizeEmail(body.email);
-    const proofKey = String(body.license_key ?? "").trim().toUpperCase();
+    proofKey = String(body.license_key ?? "").trim().toUpperCase();
     if (!email) {
       return apiError(res, 400, "Valid email required in body.");
     }
@@ -169,10 +171,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       count: licenses.length,
       via: authedEmail ? "session" : "license_key",
     });
+    // Legacy path: only the key that was shown comes back in full (see the header).
+    const view = (l: License) => {
+      const out = sanitize(l);
+      return proofKey !== null && l.key !== proofKey ? { ...out, key: maskLicenseKey(l.key) } : out;
+    };
     return res.json({
       ok: true,
       email,
-      licenses: licenses.map(sanitize),
+      licenses: licenses.map(view),
     });
   } catch (err) {
     logger.error("account-licenses", "lookup failed", { error: String(err) });

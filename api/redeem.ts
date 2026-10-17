@@ -67,7 +67,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // damage from brute-forcing keys is energy waste on Redis lookups, but
   // an unrestricted endpoint also lets an attacker confirm whether a
   // stolen key has already been redeemed (oracle attack on `already_
-  // redeemed` vs `not_found`). The shared 30/min sliding window matches
+  // redeemed` vs `not_found`). The shared 60/min sliding window matches
   // every other paid-resource endpoint and is way above any honest user
   // (one redeem per fresh install, ever).
   const rlRedis = getRedis();
