@@ -455,6 +455,22 @@ describe("scan deadline — what gets cached", () => {
     expect(setCachedResult).toHaveBeenCalled();
     expect(setShortCachedResult).not.toHaveBeenCalled();
   });
+
+  // Audit 2026-10-17, lot 61: a cached result is served again ONLY if it carries its AI summary (api/scan.ts: `cached && cached.aiSummary`).
+  // A mutation that cached the result without it (or without the analysis) left the whole suite green, though the cache would then never
+  // serve and every scan would go cold, paying Helius each time. What is cached must be the full answer, the one a Pro caller gets.
+  it("what is cached is the full answer: the AI summary and the layers are in it, so the next scan is served from the cache", async () => {
+    setupGoodTokenMocks();
+    const res = createMockRes();
+
+    await run(createMockReq({ ca: WSOL }), res);
+
+    const cached = vi.mocked(setCachedResult).mock.calls[0]?.[1] as { aiSummary?: unknown; layers?: unknown; risk?: unknown } | undefined;
+    expect(cached, "the scan was cached").toBeDefined();
+    expect(typeof cached!.aiSummary === "string" && cached!.aiSummary.length > 0, "the cached result carries its AI summary").toBe(true);
+    expect(cached!.layers, "the cached result carries the analysis").toBeTypeOf("object");
+    expect(cached!.risk).toBe(jsonBody(res)?.risk);
+  });
 });
 
 // ─── A scan started from a PAIR address (audit A-07) ─────────────────────────
