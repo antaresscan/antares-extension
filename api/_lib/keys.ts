@@ -14,6 +14,8 @@
 //     auth_fail:<sha256 of the e-mail>     LOGIN_FAILURES_KEY        the failed logins of one e-mail (a counter, 15 minutes: login-guard.ts)
 //     account-create:<sha256 of the e-mail> ACCOUNT_CREATE_LOCK_KEY  a 20 s mutex around "look, then create" of a sign-up (account.ts)
 //     signup-notice:<sha256 of the e-mail> ALREADY_REGISTERED_MAIL_KEY  "you already have an account" was e-mailed to this address: not again for an hour (A-01)
+//     signup-mail:<sha256 of the e-mail>   SIGNUP_MAIL_BUDGET_KEY    e-mails the sign-up form sent to this address today (24 h): at most 5
+//     signup-net:<sha256 of the network>   SIGNUP_NETWORK_KEY        sign-ups started from one network this hour (1 h): at most 20
 //   what a person has
 //     user:<installId>:tier                TIER_KEY                  the tier stored on the install (pro, yearly, lifetime)
 //     user:<installId>:tierExpires         TIER_EXPIRES_KEY          epoch ms when that tier ends
@@ -51,6 +53,10 @@ export const LOGIN_FAILURES_KEY = (emailSha256Hex: string) => `auth_fail:${email
 export const ACCOUNT_CREATE_LOCK_KEY = (emailSha256Hex: string) => `account-create:${emailSha256Hex}`;
 /** "You already have an account" was sent to this address (A-01): a cooldown, so that a sign-up form cannot be used to flood an inbox. SHA-256 of the address. */
 export const ALREADY_REGISTERED_MAIL_KEY = (emailSha256Hex: string) => `signup-notice:${emailSha256Hex}`;
+/** E-mails the sign-up form has sent to one address today (a counter, 24 h): the ceiling that stops the form from mail-bombing an inbox. SHA-256 of the address. */
+export const SIGNUP_MAIL_BUDGET_KEY = (emailSha256Hex: string) => `signup-mail:${emailSha256Hex}`;
+/** Sign-ups started from one network this hour (a counter, 1 h): the ceiling on how many inboxes one sender can make us write to. SHA-256 of the network. */
+export const SIGNUP_NETWORK_KEY = (networkSha256Hex: string) => `signup-net:${networkSha256Hex}`;
 
 // ─── what a person has ────────────────────────────────────────────────────────
 

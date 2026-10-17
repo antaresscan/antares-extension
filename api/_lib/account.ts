@@ -2,20 +2,20 @@
 // HMAC-SHA256 JWT sessions. Zero-dep on top of node:crypto so we don't
 // have to add bcrypt or jose to the bundle.
 //
-// Storage in Redis:
+// Storage in Redis (keys.ts holds the catalogue):
 //   account:<email_lc>            HASH
-//     id, email, passwordHash, createdAt, emailVerified
+//     id, email, passwordHash, createdAt, emailVerified, sessionVersion, verifyNonce, verifySentAt
 //   account:install:<install_id>  STRING → email_lc
-//     reverse index for "extension wants to know which account owns
-//     this install"
+//     which account an install belongs to
 //
-// Sessions are stateless JWTs signed with SESSION_SECRET (env var).
-// Token contains {sub: email_lc, exp}. We don't keep a server-side
-// allowlist for MVP — if we need to revoke we can rotate
-// SESSION_SECRET; that invalidates every session at once. Future:
-// per-token allowlist for fine-grained revocation.
+// Sessions are JWTs signed with SESSION_SECRET (env var), carrying {sub: email_lc, iat, exp, sv}. `sv` is the account's
+// sessionVersion when the token was signed: raising it (revokeAllSessions, "log out everywhere") refuses every older token at once.
+//
+// Password hashing is scrypt (N=16384): about 50 ms of CPU. The request paths use the ASYNC form (hashPasswordAsync /
+// verifyPasswordAsync), which runs on libuv's thread pool: the synchronous form blocks the event loop for those 50 ms, and an
+// instance that serves several requests at once (Vercel's concurrent functions) would make every other request wait.
 
-import { randomBytes, scryptSync, timingSafeEqual, createHmac, createHash } from "node:crypto";
+import { randomBytes, scrypt, scryptSync, timingSafeEqual, createHmac, createHash, type ScryptOptions } from "node:crypto";
 import { Redis } from "@upstash/redis";
 import { logger } from "./logger";
 import { emailRef, maskLicenseKey } from "./log-ref";
@@ -67,48 +67,71 @@ const SCRYPT_R = 8;
 const SCRYPT_P = 1;
 const SCRYPT_KEYLEN = 64;
 const SCRYPT_SALTLEN = 16;
+const SCRYPT_OPTIONS: ScryptOptions = { N: SCRYPT_N, r: SCRYPT_R, p: SCRYPT_P };
+/** The longest password accepted. hashPassword refuses longer ones, so a longer one can never match: it is refused before any hashing. */
+const PASSWORD_MAX_LENGTH = 256;
 
-export function hashPassword(plain: string): string {
+function checkNewPassword(plain: unknown): asserts plain is string {
   if (typeof plain !== "string" || plain.length < 8) {
     throw new Error("password must be at least 8 characters");
   }
-  if (plain.length > 256) {
+  if (plain.length > PASSWORD_MAX_LENGTH) {
     throw new Error("password too long");
   }
-  const salt = randomBytes(SCRYPT_SALTLEN);
-  const derived = scryptSync(plain, salt, SCRYPT_KEYLEN, {
-    N: SCRYPT_N,
-    r: SCRYPT_R,
-    p: SCRYPT_P,
+}
+
+/** A stored hash split into its parts, or null when it is not one of ours ("scrypt$<salt-hex>$<derived-hex>", 64-byte derived key). */
+function parseStoredHash(stored: string): { salt: Buffer; expected: Buffer } | null {
+  const parts = stored.split("$");
+  if (parts.length !== 3 || parts[0] !== "scrypt") return null;
+  const salt = Buffer.from(parts[1], "hex");
+  const expected = Buffer.from(parts[2], "hex");
+  return expected.length === SCRYPT_KEYLEN && salt.length > 0 ? { salt, expected } : null;
+}
+
+const scryptAsync = (plain: string, salt: Buffer): Promise<Buffer> =>
+  new Promise((resolve, reject) => {
+    scrypt(plain, salt, SCRYPT_KEYLEN, SCRYPT_OPTIONS, (err, key) => (err ? reject(err) : resolve(key)));
   });
+
+/** Synchronous hash. Kept for the callers and tests that have not moved to hashPasswordAsync; a request path should not use it (it blocks). */
+export function hashPassword(plain: string): string {
+  checkNewPassword(plain);
+  const salt = randomBytes(SCRYPT_SALTLEN);
+  const derived = scryptSync(plain, salt, SCRYPT_KEYLEN, SCRYPT_OPTIONS);
   return `scrypt$${salt.toString("hex")}$${derived.toString("hex")}`;
 }
 
+/** The hash to store for a new password, computed off the event loop. Same format and rules as hashPassword. */
+export async function hashPasswordAsync(plain: string): Promise<string> {
+  checkNewPassword(plain);
+  const salt = randomBytes(SCRYPT_SALTLEN);
+  const derived = await scryptAsync(plain, salt);
+  return `scrypt$${salt.toString("hex")}$${derived.toString("hex")}`;
+}
+
+/** Synchronous check. Kept for the callers and tests that have not moved to verifyPasswordAsync; a request path should not use it. */
 export function verifyPassword(plain: string, stored: string): boolean {
-  if (typeof plain !== "string" || typeof stored !== "string") return false;
-  const parts = stored.split("$");
-  if (parts.length !== 3 || parts[0] !== "scrypt") return false;
-  const [, saltHex, derivedHex] = parts;
-  let salt: Buffer;
-  let expected: Buffer;
+  if (typeof plain !== "string" || typeof stored !== "string" || plain.length > PASSWORD_MAX_LENGTH) return false;
+  const parsed = parseStoredHash(stored);
+  if (!parsed) return false;
   try {
-    salt = Buffer.from(saltHex, "hex");
-    expected = Buffer.from(derivedHex, "hex");
+    return timingSafeEqual(scryptSync(plain, parsed.salt, SCRYPT_KEYLEN, SCRYPT_OPTIONS), parsed.expected);
   } catch {
     return false;
   }
-  if (expected.length !== SCRYPT_KEYLEN) return false;
-  let derived: Buffer;
+}
+
+/** Does `plain` match the stored hash? Computed off the event loop; never throws (a malformed hash is simply no match). */
+export async function verifyPasswordAsync(plain: string, stored: string): Promise<boolean> {
+  if (typeof plain !== "string" || typeof stored !== "string" || plain.length > PASSWORD_MAX_LENGTH) return false;
+  const parsed = parseStoredHash(stored);
+  if (!parsed) return false;
   try {
-    derived = scryptSync(plain, salt, SCRYPT_KEYLEN, {
-      N: SCRYPT_N,
-      r: SCRYPT_R,
-      p: SCRYPT_P,
-    });
+    return timingSafeEqual(await scryptAsync(plain, parsed.salt), parsed.expected);
   } catch {
     return false;
   }
-  return timingSafeEqual(derived, expected);
 }
 
 // ─── JWT (HMAC-SHA256) ────────────────────────────────────────────────────────
@@ -193,9 +216,13 @@ function getSessionSecret(): Buffer {
     // ever appears in production Sentry, set SESSION_SECRET explicitly
     // and redeploy: existing sessions get invalidated (users re-login
     // once) and the auth surface decouples from Redis token secrecy.
+    // A SESSION_SECRET that IS set but too short lands here too: the message says which case it is, so it is not read as "missing".
+    const why = typeof explicit === "string" && explicit.length > 0
+      ? `SESSION_SECRET is set but has ${explicit.length} characters (32 needed)`
+      : "SESSION_SECRET not set";
     logger.warn(
       "auth",
-      "SESSION_SECRET not set — using bootstrap fallback derived from UPSTASH_REDIS_REST_TOKEN. Set a dedicated SESSION_SECRET ASAP via the Vercel dashboard or `vercel env add SESSION_SECRET production`. See AUTH-SETUP.md §2. Session-forge risk if Upstash token leaks.",
+      `${why} — using bootstrap fallback derived from UPSTASH_REDIS_REST_TOKEN. Set a SESSION_SECRET of 32+ characters (\`openssl rand -hex 32\`) via the Vercel dashboard or \`vercel env add SESSION_SECRET production\`. Session-forge risk if the Upstash token leaks.`,
     );
     cachedSessionSecret = createHmac("sha256", redisToken)
       .update(SESSION_SECRET_DERIVATION_INFO)
@@ -319,7 +346,7 @@ export async function createAccount(
 
     let passwordHash: string;
     try {
-      passwordHash = hashPassword(params.password);
+      passwordHash = await hashPasswordAsync(params.password);
     } catch {
       return { ok: false, reason: "weak_password" };
     }
@@ -407,6 +434,12 @@ export async function revokeAllSessions(redis: Redis, email: string): Promise<nu
   const key = ACCOUNT_KEY(norm);
   if (!(await redis.hget(key, "email"))) return null;
   const next = Number(await redis.hincrby(key, "sessionVersion", 1));
+  // The account may have been erased between the two commands (a "delete my account" at the same moment): HINCRBY then created a hash
+  // that holds only the counter, an orphan with no expiry. Look once more and remove it.
+  if (!(await redis.hget(key, "email"))) {
+    await redis.del(key);
+    return null;
+  }
   logger.info("account", "sessions revoked", { emailRef: emailRef(norm), sessionVersion: next });
   return next;
 }
@@ -421,40 +454,18 @@ export async function authenticate(
 ): Promise<AuthOutcome> {
   const account = await getAccount(redis, params.email);
   if (!account) {
-    // Sleep ~50ms to roughly match the verify cost — defends against
-    // user-existence enumeration via timing.
-    try {
-      hashPassword("dummy-password-for-timing-defense-only");
-    } catch {
-      /* ignore */
-    }
+    // The same ~50 ms of hashing as a real check, so that the time of the answer does not tell whether the account exists.
+    await verifyPasswordAsync(TIMING_DECOY_PASSWORD, TIMING_DECOY_HASH);
     return { ok: false, reason: "invalid_credentials" };
   }
-  const ok = verifyPassword(params.password, account.passwordHash);
+  const ok = await verifyPasswordAsync(params.password, account.passwordHash);
   if (!ok) return { ok: false, reason: "invalid_credentials" };
   return { ok: true, account };
 }
 
-// ─── Install ↔ account binding ────────────────────────────────────────────────
-
-export async function bindInstallToAccount(
-  redis: Redis,
-  installId: string,
-  email: string,
-): Promise<void> {
-  const norm = normalizeEmail(email);
-  if (!norm) throw new Error("invalid email");
-  await redis.set(ACCOUNT_INSTALL_KEY(installId), norm);
-}
-
-export async function getAccountByInstall(
-  redis: Redis,
-  installId: string,
-): Promise<Account | null> {
-  const email = await redis.get<string>(ACCOUNT_INSTALL_KEY(installId));
-  if (!email) return null;
-  return getAccount(redis, email);
-}
+/** A fixed, valid hash for the "no such account" path: verifying against it costs exactly what verifying a real password costs. */
+const TIMING_DECOY_PASSWORD = "timing-decoy-never-a-real-password";
+const TIMING_DECOY_HASH = `scrypt$${"00".repeat(SCRYPT_SALTLEN)}$${"00".repeat(SCRYPT_KEYLEN)}`;
 
 // ─── Dev Lifetime grant ───────────────────────────────────────────────────────
 //
@@ -464,9 +475,8 @@ export async function getAccountByInstall(
 // var in user.ts, but keyed by email so it survives extension
 // re-installs and works for any device the developer logs in from.
 //
-// Resolution:
-//   1. Hardcoded fallback list (audit-friendly, ships with the code)
-//   2. plus DEV_LIFETIME_EMAILS env var, comma-separated, normalised
+// Resolution: the DEV_LIFETIME_EMAILS env var, comma-separated, normalised (there is no list in the code: see below).
+// The grant is only made once the e-mail is PROVEN (email-proof.ts), by the callers in api/auth/[action].ts.
 //
 // On the auth handler's success path (signup + login), if the email
 // matches we call ensureDevLifetimeLicense() — that issues a real
@@ -538,7 +548,8 @@ export async function ensureDevLifetimeLicense(
     logger.info("auth", "dev-yearly ensured", {
       emailRef: emailRef(norm),
       key: maskLicenseKey(license.key),
-      reference: intentReference,
+      // The reference holds the address ("dev-grant-yearly:<e-mail>"): only its kind is logged.
+      reference: "dev-grant-yearly",
     });
     return license;
   } catch (err) {
@@ -619,7 +630,7 @@ export async function ensureDevProLicense(
     logger.info("auth", "dev-pro ensured", {
       emailRef: emailRef(norm),
       key: maskLicenseKey(license.key),
-      reference: intentReference,
+      reference: "dev-grant-pro",
     });
     return license;
   } catch (err) {

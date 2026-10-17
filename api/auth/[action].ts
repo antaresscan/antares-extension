@@ -24,6 +24,7 @@ import {
   getClientIp,
   getInstallId,
   initRateLimiters,
+  coldScanKey,
 } from "../_lib/middleware";
 import { apiError } from "../_lib/helpers";
 import { logger } from "../_lib/logger";
@@ -31,7 +32,7 @@ import { emailRef } from "../_lib/log-ref";
 import {
   createAccount,
   authenticate,
-  hashPassword,
+  hashPasswordAsync,
   ACCOUNT_KEY,
   ensureDevLifetimeLicense,
   ensureDevProLicense,
@@ -39,7 +40,7 @@ import {
   revokeAllSessions,
   ACCOUNT_INSTALL_KEY,
 } from "../_lib/account";
-import { checkLoginLock, recordLoginFailure, clearLoginFailures } from "../_lib/login-guard";
+import { checkLoginLock, clearLoginFailures } from "../_lib/login-guard";
 import { eraseAccount } from "../_lib/account-erasure";
 import {
   emailProofOf, isEmailProven, VERIFY_MAIL_COOLDOWN_MS, VERIFY_MAIL_ON_LOGIN_COOLDOWN_MS, ALREADY_REGISTERED_MAIL_COOLDOWN_SECONDS, LEGACY_GRACE_ENDS_AT,
@@ -48,7 +49,7 @@ import { beginVerification, confirmEmail, parseVerifyToken, sentRecently } from 
 import { sendMail, mailConfigured, type MailResult } from "../_lib/mailer";
 import { normalizeEmail } from "../_lib/license";
 import { verificationMail, alreadyRegisteredMail } from "../_lib/mail-templates";
-import { ALREADY_REGISTERED_MAIL_KEY } from "../_lib/keys";
+import { ALREADY_REGISTERED_MAIL_KEY, SIGNUP_MAIL_BUDGET_KEY, SIGNUP_NETWORK_KEY } from "../_lib/keys";
 import type { Account } from "../_lib/account";
 import {
   setSessionCookie,
@@ -97,6 +98,33 @@ function readBody(req: VercelRequest): Record<string, unknown> {
   return {};
 }
 
+const sha256Hex = (s: string): string => createHash("sha256").update(s).digest("hex");
+
+/**
+ * The shortest time a sign-up answer takes (from the moment the input is valid), so that its duration does not tell a new address (scrypt +
+ * an e-mail sent) from a known one (scrypt only). Only on a Vercel deployment: a local run and the unit tests answer at once.
+ */
+export const SIGNUP_MIN_ANSWER_MS = process.env.VERCEL_ENV ? 1500 : 0;
+/** Sign-ups one network may start in an hour. */
+export const SIGNUPS_PER_NETWORK_PER_HOUR = 20;
+/** E-mails the sign-up form may send to one address in a day (links and "already registered" notices together). */
+export const SIGNUP_MAILS_PER_ADDRESS_PER_DAY = 5;
+
+/**
+ * One more use of a counted allowance: true while the counter stays within `max` over its window. Fails OPEN (Redis down → allowed): a
+ * ceiling against abuse must not stop people from signing up.
+ */
+async function underCeiling(redis: Redis, key: string, max: number, windowSeconds: number): Promise<boolean> {
+  try {
+    const n = Number(await redis.incr(key));
+    if (n === 1) await redis.expire(key, windowSeconds);
+    return n <= max;
+  } catch (e: unknown) {
+    logger.warn("auth/signup", "ceiling unavailable — allowed", { error: String(e) });
+    return true;
+  }
+}
+
 // ── signup ──────────────────────────────────────────────────────────────
 //
 // E-mail proof (audit A-01). A sign-up creates an account that is NOT confirmed: it owns no licence, gets no dev grant and is Free until the
@@ -128,37 +156,57 @@ async function handleSignup(req: VercelRequest, res: VercelResponse) {
   if (!normalizeEmail(email)) return res.status(400).json({ ok: false, reason: "invalid_email" });
   if (password.length < 8) return res.status(400).json({ ok: false, reason: "weak_password" });
 
+  // From here on, the answer must not tell whether the address has an account: neither by its content (always "check_email") nor by the
+  // TIME it takes. A new address costs a scrypt AND an e-mail sent through Resend (hundreds of ms); a confirmed address inside its hourly
+  // cooldown costs a scrypt only. So every answer of this path waits until SIGNUP_MIN_ANSWER_MS after the start (audit lot 5).
+  const started = Date.now();
+  const answer = async (status: number, payload: Record<string, unknown>) => {
+    const wait = SIGNUP_MIN_ANSWER_MS - (Date.now() - started);
+    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+    return res.status(status).json(payload);
+  };
+
   try {
     if (!mailConfigured()) {
       logger.error("auth/signup", "RESEND_API_KEY is not set: sign-ups are refused (an account that cannot be confirmed is useless)", {});
-      return res.status(503).json({ ok: false, reason: "email_unavailable" });
+      return answer(503, { ok: false, reason: "email_unavailable" });
+    }
+    // One network may start SIGNUPS_PER_NETWORK_PER_HOUR sign-ups an hour: each one can make us write to an inbox of its choosing.
+    if (!(await underCeiling(redis, SIGNUP_NETWORK_KEY(sha256Hex(coldScanKey(ip))), SIGNUPS_PER_NETWORK_PER_HOUR, 60 * 60))) {
+      res.setHeader("Retry-After", "3600");
+      return answer(429, { ok: false, reason: "too_many_signups", error: "Too many sign-ups from this network. Try again in an hour." });
     }
     const outcome = await createAccount(redis, { email, password });
     if (!outcome.ok && outcome.reason !== "already_exists") {
-      return res.status(400).json({ ok: false, reason: outcome.reason });
+      return answer(400, { ok: false, reason: outcome.reason });
     }
 
+    // At most SIGNUP_MAILS_PER_ADDRESS_PER_DAY e-mails a day to one address, whatever kind: the per-kind cooldowns (1 minute for the link,
+    // 1 hour for "already registered") still let a script send 1 440 links a day to somebody else's inbox. Past the ceiling nothing is sent and
+    // the answer is the same "check_email" (the ceiling says nothing about the account).
+    const mailAllowed = () =>
+      underCeiling(redis, SIGNUP_MAIL_BUDGET_KEY(sha256Hex(normalizeEmail(email) ?? email)), SIGNUP_MAILS_PER_ADDRESS_PER_DAY, 24 * 60 * 60);
     let sent: MailResult | null = null;
     if (outcome.ok) {
-      sent = await sendVerificationMail(redis, outcome.account);
+      if (await mailAllowed()) sent = await sendVerificationMail(redis, outcome.account);
     } else {
-      // Same CPU as a creation, so that the time the answer takes does not say that the address is taken.
-      try { hashPassword(password); } catch { /* the password was valid when createAccount looked at it */ }
+      // Same CPU as a creation (off the event loop, like the creation's own hash), on top of the minimum answer time.
+      try { await hashPasswordAsync(password); } catch { /* the password was valid when createAccount looked at it */ }
       const existing = outcome.existing;
       if (existing && !existing.emailVerified) {
-        if (!sentRecently(existing, VERIFY_MAIL_COOLDOWN_MS)) sent = await sendVerificationMail(redis, existing);
+        if (!sentRecently(existing, VERIFY_MAIL_COOLDOWN_MS) && (await mailAllowed())) sent = await sendVerificationMail(redis, existing);
       } else if (existing) {
-        const noticeKey = ALREADY_REGISTERED_MAIL_KEY(createHash("sha256").update(existing.email).digest("hex"));
+        const noticeKey = ALREADY_REGISTERED_MAIL_KEY(sha256Hex(existing.email));
         const first = await redis.set(noticeKey, "1", { nx: true, ex: ALREADY_REGISTERED_MAIL_COOLDOWN_SECONDS });
-        if (first) sent = await sendMail(alreadyRegisteredMail(existing.email));
+        if (first && (await mailAllowed())) sent = await sendMail(alreadyRegisteredMail(existing.email));
       }
     }
     if (sent && !sent.ok) {
       logger.error("auth/signup", "the e-mail could not be sent", { reason: sent.reason });
-      return res.status(503).json({ ok: false, reason: "email_unavailable" });
+      return answer(503, { ok: false, reason: "email_unavailable" });
     }
     logger.metric("auth.signup", { emailRef: emailRef(email), created: outcome.ok });
-    return res.status(200).json({ ok: true, status: "check_email" });
+    return answer(200, { ok: true, status: "check_email" });
   } catch (err) {
     logger.error("auth/signup", "creation failed", { error: String(err) });
     if (String(err).includes("SESSION_SECRET")) {
@@ -214,14 +262,14 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
     }
     const outcome = await authenticate(redis, { email, password });
     if (!outcome.ok) {
-      await recordLoginFailure(redis, email);
+      // The attempt was counted by checkLoginLock before the password was checked (concurrent guesses cannot slip under the lock).
       // 401 not 404 — never differentiate "no account" from "wrong
       // password" or we leak account existence.
       return res
         .status(401)
         .json({ ok: false, reason: "invalid_credentials" });
     }
-    await clearLoginFailures(redis, email, lock.failures);
+    await clearLoginFailures(redis, email, lock.attempts);
     setSessionCookie(res, outcome.account.email, {}, outcome.account.sessionVersion);
     // An unconfirmed account can log in (to see why it is Free, and to ask for its link) but owns nothing yet: no dev grant until the e-mail is
     // proven (audit A-01). Inside the grace of the accounts that predate the rule it still counts as proven.
@@ -343,10 +391,10 @@ async function handleDeleteAccount(req: VercelRequest, res: VercelResponse) {
     const password = String(readBody(req).password ?? "");
     const outcome = await authenticate(redis, { email: account.email, password });
     if (!outcome.ok) {
-      await recordLoginFailure(redis, account.email);
+      // Counted by checkLoginLock, before the password was checked.
       return res.status(401).json({ ok: false, reason: "invalid_credentials" });
     }
-    await clearLoginFailures(redis, account.email, lock.failures);
+    await clearLoginFailures(redis, account.email, lock.attempts);
 
     const result = await eraseAccount(redis, account.email, { installHint: getInstallId(req) });
     if (!result.ok) {
@@ -400,13 +448,13 @@ async function handleVerifyEmail(req: VercelRequest, res: VercelResponse) {
     }
     const outcome = await confirmEmail(redis, parsed, String(body.password ?? ""));
     if (!outcome.ok) {
+      // A wrong password was counted by checkLoginLock, before the check. (An invalid token is counted too: it is an attempt like any other.)
       if (outcome.reason === "invalid_credentials") {
-        await recordLoginFailure(redis, parsed.email);
         return res.status(401).json({ ok: false, reason: "invalid_credentials" });
       }
       return res.status(400).json({ ok: false, reason: "invalid_token" });
     }
-    await clearLoginFailures(redis, parsed.email, lock.failures);
+    await clearLoginFailures(redis, parsed.email, lock.attempts);
     // The password was just typed: this is a login too. The grants that waited for the proof are given now (a no-op for any other address).
     setSessionCookie(res, outcome.account.email, {}, outcome.account.sessionVersion);
     await ensureDevLifetimeLicense(redis, outcome.account.email);

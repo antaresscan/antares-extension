@@ -411,9 +411,19 @@ export function sanitizeString(val: string | null | undefined): string | null {
   return String(val).replace(/[&<>"']/g, ch => HTML_ESCAPE_MAP[ch] || ch);
 }
 
+/**
+ * An http(s) address, as the URL parser writes it back (quotes, spaces and angle brackets percent-encoded), or null. It used to return the
+ * string it was given once it started with http(s)://, so a logo address written by a token's creator kept its quote: the token page put
+ * it in <img src="…"> and the quote closed the attribute (audit 2026-10-17, js/token-app.js). No address longer than 2048 characters.
+ */
 export function sanitizeUrl(val: string | null | undefined): string | null {
   if (val == null) return null;
   const s = String(val).trim();
-  if (/^https?:\/\//i.test(s)) return s;
-  return null;
+  if (s.length > 2048 || !/^https?:\/\//i.test(s)) return null;
+  try {
+    const u = new URL(s);
+    return u.protocol === "https:" || u.protocol === "http:" ? u.href : null;
+  } catch {
+    return null;
+  }
 }

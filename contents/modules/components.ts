@@ -1,10 +1,9 @@
 import type { ScanResponseFlag, ScanResponseData, QuotaStatus } from "../../shared/types"
 import { RISK_CLASS, ANALYSIS_PAGE, SVG_MOVE, SVG_CLOSE, VERDICT_COLORS, PHOTON_REF, buildPhotonUrl, PRICING_URL } from "./constants"
 import { verdictLabel } from "./verdict-label"
-import { state, scanCache, resetSourceGap } from "./state"
+import { state, resetSourceGap } from "./state"
 import { SHADOW_CSS, injectFonts } from "./styles"
 import { initDrag } from "./drag"
-import { encodeHashPayload } from "../../shared/hash-payload"
 import { toggleAiSummary } from "./ai-summary"
 import { toggleCriticalFlags } from "./critical-flags"
 import { isHoldersUnverifiedFlag } from "../../shared/holders-unverified"
@@ -243,12 +242,10 @@ export function attachAnalysisBtn(mint: string) {
 
   fresh.addEventListener("click", (e) => {
     e.preventDefault()
-    const cacheEntry = scanCache.get(mint)
-    const hashFragment = cacheEntry
-      ? encodeHashPayload(cacheEntry.data as unknown as Record<string, unknown>)
-      : ""
-    const baseUrl = `${ANALYSIS_PAGE}?ca=${encodeURIComponent(mint)}`
-    const url = hashFragment ? `${baseUrl}#data=${hashFragment}` : baseUrl
+    // The address of the page, nothing more. The whole scan used to ride along as "#data=<base64>" (15-40 KB in the address, kept in
+    // the browser's history), but no version of the token page ever read it: it always asks /api/scan itself (audit 2026-10-17). A
+    // forged #data= could therefore never put a fake verdict on the page, and dropping it changes nothing on the page.
+    const url = `${ANALYSIS_PAGE}?ca=${encodeURIComponent(mint)}`
     // Match any analysis-page tab regardless of mint — keeps a single
     // Antares deep-dive tab around and updates its URL on each click.
     // Previously the pattern was per-mint so every new token spawned a

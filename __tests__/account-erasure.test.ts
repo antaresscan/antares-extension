@@ -515,7 +515,9 @@ describe("the source keeps it that way", () => {
     const order = ["getAccountFromRequest(", "checkLoginLock(", "authenticate(", "eraseAccount("].map((s) => handler.indexOf(s));
     expect(order.every((i) => i > 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
-    expect(handler).toMatch(/recordLoginFailure\(/);
+    // The attempt is counted by checkLoginLock itself, BEFORE the password is checked (audit lot 4: counting after the check let
+    // concurrent guesses slip under the lock). A good password wipes the count.
+    expect(handler).toMatch(/clearLoginFailures\(/);
     expect(handler).not.toMatch(/body\.email|readBody\(req\)\.email/);
   });
 

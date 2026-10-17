@@ -827,7 +827,8 @@ describe("the source keeps it that way", () => {
     const order = ["parseVerifyToken(", "checkLoginLock(", "confirmEmail(", "clearLoginFailures("].map((s) => v.indexOf(s));
     expect(order.every((i) => i > 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
-    expect(v).toMatch(/recordLoginFailure\(/);
+    // A wrong password is counted by checkLoginLock, which takes the count BEFORE confirmEmail checks the password (audit lot 4).
+    expect(v).not.toMatch(/recordLoginFailure\(/);
     expect(v).not.toMatch(/req\.query|\.token\b.*query/);
   });
 
