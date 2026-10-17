@@ -70,8 +70,6 @@ import {
   createAccount,
   getAccount,
   authenticate,
-  bindInstallToAccount,
-  getAccountByInstall,
   _resetSessionSecretCacheForTests,
 } from "../api/_lib/account";
 import { PENDING_ACCOUNT_TTL_SECONDS } from "../api/_lib/email-proof";
@@ -372,20 +370,5 @@ describe("authenticate", () => {
   });
 });
 
-describe("bindInstallToAccount + getAccountByInstall", () => {
-  it("binds an install_id to an account and looks it up", async () => {
-    const redis = new Redis({ url: "x", token: "y" });
-    await createAccount(redis, {
-      email: "alice@example.com",
-      password: "firstpass1",
-    });
-    await bindInstallToAccount(redis, "install-test-aaaaaaaaaaaa", "alice@example.com");
-    const fetched = await getAccountByInstall(redis, "install-test-aaaaaaaaaaaa");
-    expect(fetched?.email).toBe("alice@example.com");
-  });
-
-  it("returns null for unbound install", async () => {
-    const redis = new Redis({ url: "x", token: "y" });
-    expect(await getAccountByInstall(redis, "install-test-zzzzzzzzzzzz")).toBeNull();
-  });
-});
+// bindInstallToAccount / getAccountByInstall were removed (audit lot 3): no production code called them; the binding is written by
+// license.ts (redeem), payment-confirm.ts and the sync-token route, and read by user.ts.
