@@ -202,7 +202,10 @@ export function decide(input: DecideInput): Decision {
   } else if (holdersSource === "helius-last") {
     notes.push({ message: "holder list from Helius's last answer (recent, or it gave none now)", data: { holders: resolvedHolderAccounts.length } });
   }
-  // Holder count: null, as it effectively always was (the Solscan holders endpoint is dead).
+  // Holder count: null, as it effectively always was. So the low-holder rules of layerSolscan ("Very few holders (<15)" critical,
+  // "Low holders (<50)" warning, the only source of the hard reason "low_holders") never fire, although the scan knows the count
+  // (`holders`, pickHolderCount: the chain, Solscan token/meta since 2026-10-13, GoPlus, RugCheck). Passing it would move verdicts:
+  // the owner's decision (audit of 2026-10-17, lot 18).
   const l5 = layerSolscan(null, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h, solscanAnswered);
   const l6 = layerChart(candles, pair, tokenAgeMinutes, maturityCtx, dailyCandles.length >= 2 ? dailyCandles : undefined, blueChip);
   // Solscan's age is the token's mint time, DexScreener's is a pool's: two different events, they differ for most tokens. Not a cross-check
@@ -234,6 +237,9 @@ export function decide(input: DecideInput): Decision {
   // response was previously claiming "LP not locked" even when
   // RugCheck reported a real lock — which read like a contradiction
   // when the verdict surfaced LP-locked bonuses elsewhere.
+  // In fact it is always false: RugCheck's summary has no `lpLocked` field (none of the 1 117 real summaries of the replay corpus;
+  // what it has is `lpLockedPct`, which nothing reads). No LP lock is ever detected; an LP counts as safe only when GoPlus sees it
+  // burned (lpBurned above). Audit of 2026-10-17, lot 18.
   const lpLocked = rugData?.lpLocked === true;
   const goPlusClean = l3.available && l3.trust >= 0.95 && !l3.forceRug;
   const tokenAgeHours = solscanTokenAgeHours ?? dexTokenAgeHours ?? null;

@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { timingSafeEqual } from "node:crypto";
 import { Redis } from "@upstash/redis";
 import { describeHeliusKey, getHeliusDiagnostics, probeHelius } from "./_lib/helius";
 import { initUsage, readUsage, limitedShareAlert } from "./_lib/usage";
+import { hasCronSecret } from "./_lib/cron-auth";
 import { logger } from "./_lib/logger";
 import { initSentry, captureError } from "./_lib/sentry";
 
@@ -13,15 +13,14 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
 }
 
 /**
- * `Authorization: Bearer <CRON_SECRET>`, compared in constant time. Without a CRON_SECRET the usage view is switched OFF, never open.
- * (Vercel Hobby allows 12 functions and the project already has 12: the usage report lives here instead of in a function of its own.)
+ * `Authorization: Bearer <CRON_SECRET>`. Without a CRON_SECRET the usage view is switched OFF, never open. (Vercel Hobby allows 12
+ * functions and the project already has 12: the usage report lives here instead of in a function of its own.)
+ *
+ * The comparison is cron-auth.ts's (the SHA-256 of both sides, then timingSafeEqual): this file had its own, which compared the
+ * LENGTHS first, in the clear, so the time of a refusal said whether a guess had the secret's length.
  */
 function isAuthorizedForUsage(req: VercelRequest): boolean {
-  const secret = process.env.CRON_SECRET ?? "";
-  if (!secret) return false;
-  const given = Buffer.from(String(req.headers?.authorization ?? ""));
-  const expected = Buffer.from(`Bearer ${secret}`);
-  return given.length === expected.length && timingSafeEqual(given, expected);
+  return hasCronSecret(req);
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

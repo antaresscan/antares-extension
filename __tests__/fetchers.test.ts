@@ -133,7 +133,6 @@ const {
   heliusGetTokenAccountsPage,
   heliusGetHolderPages,
   heliusGetCreatorReputation,
-  heliusGetProgramAccountHolderCount,
   fetchSolscan,
   _resetSolscanBackoffForTests,
   fetchDexCandles,
@@ -216,7 +215,7 @@ describe("heliusGetCreatorReputation", () => {
       { type: "initialize_mint", description: "initialize mint for token 2" },
       { type: "initialize_mint", description: "initialize mint for token 3" },
     ]);
-    const result = await heliusGetCreatorReputation("creator1", "key1");
+    const result = await heliusGetCreatorReputation("7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU", "key1");
     expect(result?.flagged).toBe(true);
     expect(result?.priorTokens).toBeGreaterThanOrEqual(3);
   });
@@ -226,7 +225,7 @@ describe("heliusGetCreatorReputation", () => {
       { type: "transfer", description: "sent SOL" },
       { type: "create", description: "initialize mint" },
     ]);
-    const result = await heliusGetCreatorReputation("creator2", "key2");
+    const result = await heliusGetCreatorReputation("9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM", "key2");
     expect(result?.flagged).toBe(false);
   });
 
@@ -235,15 +234,15 @@ describe("heliusGetCreatorReputation", () => {
   // reputation never resolved. The key is a query parameter, with no header.
   it("sends the key as ?api-key= and no Authorization header", async () => {
     mockFetchJson.mockResolvedValue([]);
-    await heliusGetCreatorReputation("creator9", "key-xyz");
+    await heliusGetCreatorReputation("DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263", "key-xyz");
     const [url, init] = mockFetchJson.mock.calls[0] as [string, RequestInit | undefined];
-    expect(url).toBe("https://api.helius.xyz/v0/addresses/creator9/transactions?limit=200&api-key=key-xyz");
+    expect(url).toBe("https://api.helius.xyz/v0/addresses/DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263/transactions?limit=200&api-key=key-xyz");
     expect(init?.headers).toBeUndefined();
   });
 
   it("returns null for non-array response", async () => {
     mockFetchJson.mockResolvedValue({ error: "invalid" });
-    const result = await heliusGetCreatorReputation("creator3", "key3");
+    const result = await heliusGetCreatorReputation("So11111111111111111111111111111111111111112", "key3");
     expect(result).toBeNull();
   });
 });
@@ -426,41 +425,7 @@ describe("heliusGetHolderPages", () => {
   });
 });
 
-// ─── Helius getProgramAccounts holder count (canonical method) ──────────────
-describe("heliusGetProgramAccountHolderCount", () => {
-  it("returns the length of the result array (= # of token accounts for the mint)", async () => {
-    const items = Array.from({ length: 87 }, (_, i) => ({ pubkey: `addr${i}` }));
-    mockFetchJsonPost.mockResolvedValue({ result: items });
-    expect(await heliusGetProgramAccountHolderCount("mint", "k")).toBe(87);
-  });
-
-  it("returns null when the response shape is missing result", async () => {
-    mockFetchJsonPost.mockResolvedValue({ error: { code: -32012, message: "scan aborted" } });
-    expect(await heliusGetProgramAccountHolderCount("mint", "k")).toBeNull();
-  });
-
-  it("returns null on thrown error (network / timeout)", async () => {
-    mockFetchJsonPost.mockRejectedValue(new Error("timeout"));
-    expect(await heliusGetProgramAccountHolderCount("mint", "k")).toBeNull();
-  });
-
-  it("calls getProgramAccounts on the SPL Token program with the mint memcmp filter", async () => {
-    mockFetchJsonPost.mockResolvedValue({ result: [] });
-    await heliusGetProgramAccountHolderCount("MINT_PUBKEY_42", "key");
-    const body = (mockFetchJsonPost.mock.calls[0] as [string, Record<string, unknown>, ...unknown[]])[1];
-    expect(body.method).toBe("getProgramAccounts");
-    const params = body.params as [string, { filters?: unknown[]; dataSlice?: unknown }];
-    expect(params[0]).toBe("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
-    // Filters must include both the dataSize and the mint memcmp.
-    const filters = params[1].filters as Array<Record<string, unknown>>;
-    expect(filters).toEqual(expect.arrayContaining([
-      expect.objectContaining({ dataSize: 165 }),
-      expect.objectContaining({ memcmp: expect.objectContaining({ offset: 0, bytes: "MINT_PUBKEY_42" }) }),
-    ]));
-    // dataSlice {0, 0} keeps the response small — only addresses come back.
-    expect(params[1].dataSlice).toEqual({ offset: 0, length: 0 });
-  });
-});
+// (heliusGetProgramAccountHolderCount was removed in the audit of 2026-10-17: nothing called it. See audit-lot11.test.ts.)
 
 // ─── Public Solana RPC pool fallback ────────────────────────────────────────
 describe("publicRpc helpers", () => {

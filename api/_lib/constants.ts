@@ -1,4 +1,4 @@
-// api/constants.ts — All constants for Antares scan engine
+// api/_lib/constants.ts — All constants for Antares scan engine
 
 export const DEXSCREENER_BASE = "https://api.dexscreener.com/latest/dex";
 export const RUGCHECK_BASE = "https://api.rugcheck.xyz/v1";
@@ -109,13 +109,18 @@ export const FOUNDATION_WALLETS = new Set([
   "CURVGoZn8zycx6FXwwevgBTB2gVvdbGTEpvMJDbgs2t4", // Saber/Curves
 ]);
 
+// Three labels below were wrong until the audit of 2026-10-17 (checked against the DexScreener answers of the replay corpus): the
+// mints are those of TRUMP, BOME and PYTH, not of JUP, POPCAT and SPX6900 as written. Only the LABELS were corrected: what the set
+// holds decides verdicts (layers.ts: the LP branch of RugCheck; facts.ts: "trusted" when GoPlus is silent), so which mints belong
+// here is the owner's decision. POPCAT (7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr) and SPX6900 (J3NKxxXZcnNiMjKw9hYb2K4LUxgwB6t1FtPtQVsv3KFr)
+// are NOT in the set.
 export const OFFICIAL_MINTS = new Set([
   "So11111111111111111111111111111111111111112",    // wSOL
   "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263", // BONK
   "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm", // WIF
-  "6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN",  // JUP
+  "6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN",  // TRUMP (OFFICIAL TRUMP) — was labelled "JUP"; JUP is JUPyiw... below
   "MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5",  // MEW
-  "ukHH6c7mMyiWCf1b9pnWe25TSpkDDt3H5pQZgZ74J82",  // POPCAT
+  "ukHH6c7mMyiWCf1b9pnWe25TSpkDDt3H5pQZgZ74J82",  // BOME (BOOK OF MEME) — was labelled "POPCAT"
   "ED5nyyWEzpPPiWimP8vYm7sD7TD3LAt3Q3gRTWHzPJBY", // MOODENG
   "CzLSujWBLFsSjncfkh59rUFqvafWcY5tzedWJSuypump", // GOAT
   "Df6yfrKC8kZE3KNkrHERKzAetSxbrWeniQfyJY4Jpump", // CHILLGUY
@@ -131,7 +136,7 @@ export const OFFICIAL_MINTS = new Set([
   "bSo13r4TkiE4KumL71LsHTPpL2euBYLFx6h9HP3piy1",  // bSOL
   "7dHbWXmci3dT8UFYWYZweBLXgycu7Y3iL6trKn1Y7ARj", // stSOL
   "mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So",  // mSOL
-  "HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3", // SPX6900 (Wormhole)
+  "HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3", // PYTH (Pyth Network) — was labelled "SPX6900 (Wormhole)"
 ]);
 
 // Mint authorities that are a BRIDGE, not a person. Wormhole's Token Bridge mints a wrapped token on Solana when the original is locked on its own chain, and the

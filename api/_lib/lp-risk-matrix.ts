@@ -158,6 +158,10 @@ function fmtPct(pct: number | null): string {
 //   safeBlock=false  → does NOT cap verdict at CAUTION
 //   safeBlock=true   → caps at CAUTION (verdict picked by score)
 //   forceRug=true    → overrides everything, returns RUG
+//
+// A cell is what a token of 90 days or more gets. Younger tokens are overridden in getLpRiskBucket (the founder rules of 2026-10-13):
+// under 30 days every non-critical cell becomes critical, and from 30 to 90 days every "info" cell becomes a warning that blocks SAFE.
+// So "NEVER safeBlock" below holds from 90 days only, whatever the cell's own age column says.
 
 type Cell = Omit<LpRiskBucket, "pctBucket" | "ageBucket" | "flagLabel" | "flagReasons" | "flagTooltip" | "summaryLine"> & {
   estimatedImpact: string
@@ -174,9 +178,9 @@ const MATRIX: Record<Exclude<LpPctBucket, "unknown">, Record<Exclude<LpAgeBucket
   },
 
   // ── LP 1-5 % ─────────────────────────────────────────────────
-  // < 10 % rule: NEVER safeBlock. A full drain causes < 15 % price impact —
-  // absorbed by orderbook arbitrage. Show as warning on fresh tokens
-  // (score penalty applies) but never cap the verdict.
+  // < 10 % rule: NEVER safeBlock (from 90 days, see above). A full drain causes < 15 % price impact —
+  // absorbed by orderbook arbitrage. Every cell is "info" since 7.7.9 (it used to be a warning on
+  // fresh tokens); the score penalty still applies.
   "1-5%": {
     "<14d":   { severity: "info",    penalty: 0.92, safeBlock: false, forceRug: false, estimatedImpact: "-5% to -15%" },
     "14-90d": { severity: "info",    penalty: 0.96, safeBlock: false, forceRug: false, estimatedImpact: "-5% to -15%" },
@@ -185,8 +189,8 @@ const MATRIX: Record<Exclude<LpPctBucket, "unknown">, Record<Exclude<LpAgeBucket
   },
 
   // ── LP 5-10 % ────────────────────────────────────────────────
-  // < 10 % rule: NEVER safeBlock. A drain causes < 20 % impact — survivable.
-  // Warning on fresh tokens (visible, penalised), info once established.
+  // < 10 % rule: NEVER safeBlock (from 90 days, see above). A drain causes < 20 % impact — survivable.
+  // Every cell is "info" since 7.7.9 (it used to be a warning on fresh tokens); the penalty grows with youth.
   "5-10%": {
     "<14d":   { severity: "info",    penalty: 0.87, safeBlock: false, forceRug: false, estimatedImpact: "-10% to -20%" },
     "14-90d": { severity: "info",    penalty: 0.93, safeBlock: false, forceRug: false, estimatedImpact: "-10% to -20%" },

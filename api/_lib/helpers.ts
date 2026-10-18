@@ -1,4 +1,4 @@
-// api/helpers.ts — Utility functions for Antares scan engine
+// api/_lib/helpers.ts — Utility functions for Antares scan engine
 // Re-exports split modules for backward compatibility
 
 import type { VercelResponse } from "@vercel/node";
@@ -75,11 +75,13 @@ export function settled<T>(p: Promise<T>): Promise<T | null> {
 // Used in scan.ts to bound each upstream fetch: when one source (e.g. Helius)
 // is slow, the others still return real data and scoring can degrade
 // gracefully instead of hitting the global 9s timeout and returning 504.
+//
+// The timer is cleared as soon as the race is decided: it used to stay armed for the whole budget after the promise had answered
+// (about ten per scan, up to 9 s each), one more timer per call alive in an instance that serves several scans at once.
 export function withBudget<T>(p: Promise<T>, ms: number): Promise<T | null> {
-  return Promise.race([
-    p.then(v => v).catch(() => null),
-    new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
-  ]);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const budget = new Promise<null>((resolve) => { timer = setTimeout(() => resolve(null), ms); });
+  return Promise.race([p.then(v => v).catch(() => null), budget]).finally(() => clearTimeout(timer));
 }
 
 /**

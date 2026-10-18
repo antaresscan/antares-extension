@@ -30,6 +30,9 @@ if (config.sentryDsn) {
     tracesSampleRate: config.sentryTracesSampleRate,
     sendDefaultPii: false,
     beforeSend: (event) => scrubEvent(event),
+    // A transaction is NOT passed to beforeSend: with tracesSampleRate above 0, any transaction the SDK makes (its spans, its URLs:
+    // ?ca=<contract>) would leave unscrubbed. Same hook as the server (api/_lib/sentry.ts, audit of 2026-10-17, lot 2).
+    beforeSendTransaction: (event) => scrubEvent(event),
     beforeBreadcrumb: (breadcrumb) => scrubBreadcrumb(breadcrumb),
   })
 }

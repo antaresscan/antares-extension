@@ -7,14 +7,11 @@
 // approval, vesting schedule) so flagging them as "concentration
 // hard rug risk" is a credibility-killer false positive.
 //
-// This list is the data-quality fallback for Path 3 (blue-chip
-// concentration exemption in pipeline.ts). The heuristic Path 3
-// requires holders ≥ 50k AND lpBurned to fire — but when Solscan,
-// RugCheck and GoPlus are simultaneously rate-limited / down, the
-// holder count collapses to the Helius top-20 view (= 20) and the
-// heuristic misses. This allowlist trips the same concentration
-// exemption based on the mint address alone, immune to upstream
-// data quality.
+// This list IS Path 3 (the blue-chip concentration exemption in pipeline.ts applySafeGateOverride). It used to be the data-quality
+// fallback of a heuristic Path 3 (holders ≥ 50k AND lpBurned), but that heuristic was retired in 7.7.1 (the founder rule: a wallet of
+// the top 10 above 10 % is DANGER): since then only the mints below can bypass the concentration reason, by address alone, immune to
+// upstream data quality. When "concentration" (with soft reasons only) is all that blocks the safe gate of one of them, the gate opens:
+// the verdict is then decided by the score and the flags, SAFE included.
 //
 // CRITERIA for adding a token here:
 //   1. Public DAO / protocol with multi-month track record
@@ -56,12 +53,12 @@ export const KNOWN_DAO_TREASURY_MINTS = new Set<string>([
 
 /**
  * Returns true if the mint is a well-known DAO/protocol token whose
- * concentration should be treated as a soft concern (CAUTION ceiling)
- * rather than a hard rug-pull signal.
+ * concentration is not read as a hard rug-pull signal.
  *
- * Used by pipeline.ts applySafeGateOverride to bypass the heuristic
- * Path 3 holder/LP gates when we already KNOW the wallet structure
- * is benign.
+ * Used by pipeline.ts applySafeGateOverride (Path 3): when the only
+ * reasons blocking the safe gate are "concentration" and soft ones, the
+ * gate opens for these mints (no CAUTION ceiling of its own: the score
+ * and the flags decide).
  */
 export function isKnownDaoTreasury(mint: string | null | undefined): boolean {
   if (!mint) return false

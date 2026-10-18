@@ -5,9 +5,11 @@
 //
 // DEPRECATED in #430: the Timeline tab on the Full Analysis page was
 // replaced by Insider Watch, so the `verdictHistory` field is no longer
-// consumed by the frontend. The history is still persisted on every
-// scan — kept for future analytics (verdict-evolution tracking,
-// rugpull-leadtime analysis) and so cached scans don't lose data.
+// consumed by the frontend. Nothing is persisted any more either: scan.ts
+// stopped calling initHistoryCache / pushVerdictHistory / getVerdictHistory
+// in the Upstash budget audit (2026-05-11), so `vh:` keys are never written
+// and the two functions below only run in tests. Only deriveEvent is used
+// (the one "current" entry scan.ts still sends).
 //
 // The persistence path is failure-tolerant: if Redis is down, push and
 // read both no-op silently — the scan still serves the current verdict.
