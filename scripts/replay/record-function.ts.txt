@@ -7,6 +7,10 @@
 // from one token into the next, so that later tokens never even ask the host that failed before. A request that FAILS
 // (timeout, abort) is recorded too, as a failure, so the replay fails it in the same way.
 //
+// ONE REQUEST AT A TIME: globalThis.fetch is replaced for the whole instance while a scan runs. A second request at the same moment
+// (a second capture, a probe, a curl) mixes its exchanges into this recording, and its `finally` restores the real fetch while this
+// scan is still running, so the end of this scan is not recorded. scripts/replay/capture.ts asks one token after the other.
+//
 // Secrets never leave the function: credentials in URL query strings are redacted, headers are not recorded, the GoPlus token
 // exchange (its body carries the app key and its signature) and the Gemini calls (key in the URL, the prompt in the body) are
 // not recorded at all. Deploy it with Redis and Sentry blanked, so nothing is written to production's database.

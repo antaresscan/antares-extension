@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 const BASE = process.env.E2E_BASE_URL || 'https://antares-extension.vercel.app';
 
-// `/` on this deployment is a 301 to antares-website.vercel.app, so we
+// `/` on this deployment is a permanent redirect to antaresscan.com, so we
 // only meaningfully test the pages this Vercel project actually serves.
 const PAGES = [
   { name: 'Token', path: '/token.html' },
@@ -85,6 +85,6 @@ test.describe('Accessibility (a11y)', () => {
   }
 
   // The "Landing Page Specific" describe block was removed: `/` on this
-  // deployment 301s to antares-website.vercel.app, so landing-page a11y
+  // deployment redirects for good to antaresscan.com, so landing-page a11y
   // belongs in that repo's tests, not here.
 });

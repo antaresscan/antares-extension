@@ -11,6 +11,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Read only, like the other jobs: this one runs `npm ci` (the install scripts of every dependency) and nothing in it writes to
+    # the repository. Without the block it got the repository's default token, which can be read-write.
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 

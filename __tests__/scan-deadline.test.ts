@@ -281,7 +281,7 @@ process.env.DEV_PRO_INSTALLS = "test-pro-install-0001";
 
 const { default: handler } = await import("../api/scan");
 // The cache module is mocked above; import it AFTER the mock variables exist.
-const { acquireScanLock, waitForCachedResult, getCachedResult, setCachedResult, setShortCachedResult, getLastGoodResult, setLastGoodResult } = await import("../api/_lib/cache");
+const { acquireScanLock, releaseScanLock, waitForCachedResult, getCachedResult, setCachedResult, setShortCachedResult, getLastGoodResult, setLastGoodResult } = await import("../api/_lib/cache");
 
 // ─── Deadline behaviour ──────────────────────────────────────────────────────
 // With every upstream merely SLOW (not down) the scan used to reach the global
@@ -418,6 +418,44 @@ describe("scan deadline — requests waiting on the single-flight lock", () => {
     // after the wait would fire at 29 s, past Vercel's 25 s kill.
     expect(elapsedMs).toBe(GLOBAL_MS);
   });
+
+  // Audit 2026-10-17, lot 63: the request that holds the lock releases it when it is done (api/scan.ts, the `finally` of the handler), whatever the
+  // outcome. Dropping that release left the whole suite green; the lock would then live its 28 s TTL after every scan, and after a scan that failed
+  // (nothing cached) every viewer of the token would wait ~21 s on it and get a 503 "Scan in progress", until it expired.
+  it("the holder releases its lock when its scan is done, with its own request id", async () => {
+    setupGoodTokenMocks();
+    const res = createMockRes();
+
+    await run(createMockReq({ ca: WSOL }), res);
+
+    expect(jsonBody(res)?.risk).toBeDefined();
+    expect(releaseScanLock).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(releaseScanLock).mock.calls[0][0]).toBe(WSOL);
+    expect(vi.mocked(releaseScanLock).mock.calls[0][1]).toBe(vi.mocked(acquireScanLock).mock.calls[0][1]);
+  });
+
+  it("the holder releases its lock when its scan runs out of time (504) too: a failed scan must not block the token for the lock's TTL", async () => {
+    setupGoodTokenMocks();
+    // The cache read for the resolved mint never answers, so only the global timer can end this request.
+    vi.mocked(getCachedResult).mockResolvedValueOnce(null).mockImplementationOnce(() => new Promise(() => {}));
+    const res = createMockRes();
+
+    await run(createMockReq({ ca: "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU" }), res, 40_000);
+
+    expect(res.status).toHaveBeenCalledWith(504);
+    expect(releaseScanLock).toHaveBeenCalledTimes(1);
+  });
+
+  it("witness: a request that waited on another one's lock never releases it (it is not its own)", async () => {
+    setupGoodTokenMocks();
+    vi.mocked(acquireScanLock).mockResolvedValue(false);
+    const res = createMockRes();
+
+    await run(createMockReq({ ca: WSOL }), res);
+
+    expect(jsonBody(res)?.risk).toBeDefined(); // the holder delivered nothing: this request scanned for itself
+    expect(releaseScanLock).not.toHaveBeenCalled();
+  });
 });
 
 describe("scan deadline — what gets cached", () => {
@@ -454,6 +492,22 @@ describe("scan deadline — what gets cached", () => {
 
     expect(setCachedResult).toHaveBeenCalled();
     expect(setShortCachedResult).not.toHaveBeenCalled();
+  });
+
+  // Audit 2026-10-17, lot 61: a cached result is served again ONLY if it carries its AI summary (api/scan.ts: `cached && cached.aiSummary`).
+  // A mutation that cached the result without it (or without the analysis) left the whole suite green, though the cache would then never
+  // serve and every scan would go cold, paying Helius each time. What is cached must be the full answer, the one a Pro caller gets.
+  it("what is cached is the full answer: the AI summary and the layers are in it, so the next scan is served from the cache", async () => {
+    setupGoodTokenMocks();
+    const res = createMockRes();
+
+    await run(createMockReq({ ca: WSOL }), res);
+
+    const cached = vi.mocked(setCachedResult).mock.calls[0]?.[1] as { aiSummary?: unknown; layers?: unknown; risk?: unknown } | undefined;
+    expect(cached, "the scan was cached").toBeDefined();
+    expect(typeof cached!.aiSummary === "string" && cached!.aiSummary.length > 0, "the cached result carries its AI summary").toBe(true);
+    expect(cached!.layers, "the cached result carries the analysis").toBeTypeOf("object");
+    expect(cached!.risk).toBe(jsonBody(res)?.risk);
   });
 });
 

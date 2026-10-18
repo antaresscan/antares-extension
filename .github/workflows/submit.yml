@@ -5,6 +5,10 @@ on:
 jobs:
   submit:
     runs-on: ubuntu-latest
+    # The Web Store is reached with SUBMIT_KEYS, not with the GitHub token: the token only needs to read the code. Without the
+    # block it got the repository's default token, which can be read-write, in a job that runs `npm ci`.
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 

@@ -68,7 +68,7 @@ BASE=https://<preview>.vercel.app N=20 node scripts/distinct-cold-test.mjs
 
 | Metric | Fields | Meaning |
 |---|---|---|
-| `scan.outcome` | `latencyMs`, `sourcesUsed`, `partial`, `degraded`, `verdict` | One per scan actually run. `degraded: true` = the scan ran out of time or had no source at all; its result is cached for 30 s only. |
+| `scan.outcome` | `latencyMs`, `sourcesUsed`, `partial`, `degraded`, `limited`, `limitedCauses`, `verdict` | One per scan actually run. `degraded: true` = its result is cached for 30 s only: the scan ran out of time, had no source or no DexScreener pool, missed the chart (a SAFE or CAUTION token old enough to have one) or the RugCheck report (a scan started from a pair address), or was made while a source was down. `limited: true` = the user got "Limited data" instead of a verdict (Helius down, or two of Helius, RugCheck and GoPlus down at once); `limitedCauses` names them. |
 | `scan.cache_hit` | `latencyMs` | Served from the cache. |
 | `scan.coalesced` | `latencyMs` | Served by the result of another scan of the same token. |
 | `scan.cold_limited` | `retryAfterSec` | A network went over 60 cold scans a minute and was refused (429). No IP is logged. |
@@ -96,3 +96,7 @@ Where to set them depends on the plan and lives in the provider accounts, not in
   `vercel logs --environment production --since 30m --no-branch --json` and count the metric names.
 - **Upstash**: usage and budget alerts on the Redis database (commands per day).
 - **Helius / Gemini / GeckoTerminal**: their dashboards have credit and quota alerts. A silent expiry of the Helius key once hid a month-long outage; the `upstream rejected our credentials` log line (401/403 from an upstream, at most once a minute per host) is the early warning.
+
+## 4. Emergency switch: "Limited data"
+
+A scan made while Helius is down, or while two of Helius, RugCheck and GoPlus are down at once, shows "Limited data" instead of a verdict (`gapSources` in `api/_lib/helpers.ts`). If it shows where it should not (a source misbehaving for a whole class of tokens), set `LIMITED_DATA=off` (`0`, `false` and `no` work too) in the production environment on Vercel and redeploy: about a minute, no code revert. Every scan then shows the engine's verdict again; a scan made during an outage is still cached for 30 s only. Remove the variable and redeploy to switch it back on.

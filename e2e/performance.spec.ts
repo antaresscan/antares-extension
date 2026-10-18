@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 const BASE = process.env.E2E_BASE_URL || 'https://antares-extension.vercel.app';
 
-// `/` on this deployment is a 301 to antares-website.vercel.app, so the
+// `/` on this deployment is a permanent redirect to antaresscan.com, so the
 // pages we performance-test here are the ones this Vercel project actually
 // serves. Landing-page perf belongs in the antares-website repo.
 test.describe('Performance', () => {

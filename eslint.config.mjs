@@ -35,6 +35,9 @@ export default tseslint.config(
       ".plasmo/",
       "build/",
       "e2e/",
+      // Claude Code's local folder (git-ignored): it can hold whole copies of the repo (agent worktrees), and `npm run lint` then
+      // type-checked every copy and ran out of memory on the developer's machine. Never present in CI.
+      ".claude/",
       "**/*.js",
       "**/*.mjs",
     ],

@@ -121,6 +121,12 @@ to those calls. A bug in how the graph is built or displayed is therefore not ca
 The recorder is a throwaway function that runs the real scan handler in a **preview deployment** and returns every outgoing
 exchange. It never goes to production and never writes to production's database.
 
+**One request to the preview at a time, never two.** The recorder replaces `globalThis.fetch` for the whole (warm, shared) instance
+while a scan runs (`record-function.ts.txt`): a second request at the same moment, a second capture, a probe or a manual `curl`,
+puts ITS exchanges in the first recording, and when it ends it puts the real `fetch` back while the first scan is still running, so
+the rest of that scan is not recorded. `npm run replay:capture` asks one token after the other; run one capture, and nothing else
+against the preview while it runs.
+
 1. Copy `scripts/replay/record-function.ts.txt` to `api/replay-record.ts`; give it `maxDuration: 60` in `vercel.json`
    (`functions`). From a worktree, also add a `.vercelignore` (`node_modules`, `coverage`, `build`, `.plasmo`, `.claude`, `.git`) so that
    only the sources are uploaded. Do not commit any of these changes.

@@ -6,9 +6,24 @@
 // upstream batch degrades gracefully or cascades into errors.
 //
 // Quota cost: N cold scans = N upstream batches. Keep N modest.
+//
+// SAFETY (same rule as distinct-cold-test.mjs): BASE is REQUIRED, there is no default target, and the production host is refused
+// unless ALLOW_PROD=1. It used to default to production.
+//   BASE=https://<preview>.vercel.app N=20 node scripts/stampede-test.mjs
 
-const BASE = process.env.BASE || "https://antares-extension.vercel.app";
-const ENDPOINT = `${BASE}/api/scan`;
+const PROD_HOST = "antares-extension.vercel.app";
+const BASE = process.env.BASE;
+if (!BASE) {
+  console.error("BASE is required, e.g. BASE=https://<preview>.vercel.app (no default target by design).");
+  process.exit(2);
+}
+let host;
+try { host = new URL(BASE).hostname; } catch { console.error(`BASE is not a URL: ${BASE}`); process.exit(2); }
+if (host === PROD_HOST && process.env.ALLOW_PROD !== "1") {
+  console.error(`Refusing to run against production (${PROD_HOST}). Use a preview URL, or set ALLOW_PROD=1 if you really mean it.`);
+  process.exit(2);
+}
+const ENDPOINT = `${BASE.replace(/\/$/, "")}/api/scan`;
 const N = Number(process.env.N || 20);
 const CA = process.env.CA || "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263"; // BONK
 const REQ_TIMEOUT_MS = Number(process.env.REQ_TIMEOUT_MS || 30000);

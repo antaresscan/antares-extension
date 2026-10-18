@@ -18,12 +18,25 @@
 //   correctly fires (abuse protection).
 //
 // Usage:
-//   node scripts/load-test.mjs                       # full ramp
-//   BASE=https://...vercel.app node scripts/load-test.mjs
-//   STAGES=50,100,200 DURATION=10 node scripts/load-test.mjs
+//   BASE=https://<preview>.vercel.app node scripts/load-test.mjs                       # full ramp
+//   BASE=https://<preview>.vercel.app STAGES=50,100,200 DURATION=10 node scripts/load-test.mjs
+//
+// SAFETY (same rule as distinct-cold-test.mjs): BASE is REQUIRED, there is no default target, and the production host is refused
+// unless ALLOW_PROD=1. It used to default to production: `node scripts/load-test.mjs` alone ramped to 800 concurrent workers on it.
 
-const BASE = process.env.BASE || "https://antares-extension.vercel.app";
-const ENDPOINT = `${BASE}/api/scan`;
+const PROD_HOST = "antares-extension.vercel.app";
+const BASE = process.env.BASE;
+if (!BASE) {
+  console.error("BASE is required, e.g. BASE=https://<preview>.vercel.app (no default target by design).");
+  process.exit(2);
+}
+let host;
+try { host = new URL(BASE).hostname; } catch { console.error(`BASE is not a URL: ${BASE}`); process.exit(2); }
+if (host === PROD_HOST && process.env.ALLOW_PROD !== "1") {
+  console.error(`Refusing to run against production (${PROD_HOST}). Use a preview URL, or set ALLOW_PROD=1 if you really mean it.`);
+  process.exit(2);
+}
+const ENDPOINT = `${BASE.replace(/\/$/, "")}/api/scan`;
 const DURATION = Number(process.env.DURATION || 12);          // seconds per stage
 const STAGES = (process.env.STAGES || "50,100,200,400,800")
   .split(",").map((n) => parseInt(n.trim(), 10)).filter(Boolean);
