@@ -242,9 +242,11 @@ describe("the Chrome permissions section says what the code does", () => {
     expect(perms).toMatch(/It scans nothing and sends nothing/);
   });
 
-  it("activeTab: nothing in the code needs it, and the page says so (if you use it, change the page)", () => {
-    expect(all, "the code now uses activeTab: say what for in section 8 and in docs/cws/permission-justifications.md").not.toMatch(/chrome\.scripting|captureVisibleTab/);
-    expect(perms).toMatch(/activeTab\s*—\s*declared in the manifest, but the current version of the Extension does not use it/);
+  it("activeTab: nothing in the code needs it, so it is not declared (if you use it, declare it and say what for here and in docs/cws/permission-justifications.md)", () => {
+    expect(all, "the code now uses activeTab: declare it, and say what for in section 8 and in docs/cws/permission-justifications.md").not.toMatch(/chrome\.scripting|captureVisibleTab/);
+    expect(manifest.permissions).not.toContain("activeTab");
+    expect(perms).not.toMatch(/activeTab/);
+    expect(read("docs/cws/permission-justifications.md")).not.toMatch(/activeTab/);
   });
 
   it("tabs: the only places that read the tabs are the two in background.ts that the page describes", () => {
@@ -269,6 +271,20 @@ describe("the Chrome permissions section says what the code does", () => {
       expect(cws, String(re)).not.toMatch(re);
     }
     expect(cws).toContain("Privacy policy URL: https://antaresscan.com/privacy");
+  });
+
+  // The "Privacy practices" tab of the dashboard is answered from this document. It said "none" for the identity, the authentication and the web history while the
+  // policy says the Extension keeps a session token and an install identifier and that the API keeps a scan history per install: a tab that contradicts the policy
+  // is a classic reason for the Web Store to refuse a version.
+  it("the Privacy practices answers agree with the policy: identity, session token, IP address, web history and page content are declared", () => {
+    const cws = read("docs/cws/permission-justifications.md");
+    const summary = cws.slice(cws.indexOf("## Privacy practices summary"), cws.indexOf("Privacy policy URL:"));
+    expect(summary.length).toBeGreaterThan(200);
+    for (const label of ["Personally identifiable information collected", "Authentication information collected", "Location data collected", "Web history collected", "Website content read"]) {
+      expect(summary, label).toMatch(new RegExp(label + ":\\s+\\*\\*yes\\*\\*"));
+    }
+    expect(html).toMatch(/Install identifier/);
+    expect(html).toMatch(/3\.4 Scan history/);
   });
 
   it("the store listings do not say that no browsing history is read, nor that the scan history is a Pro feature bound to the account", () => {

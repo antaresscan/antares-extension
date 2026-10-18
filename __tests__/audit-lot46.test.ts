@@ -25,8 +25,12 @@ describe("changelog — it carries the note the privacy policy promises", () => 
     for (const pr of ["#918", "#920", "#921"]) expect(changelog).toContain(pr)
   })
 
-  it("the changelog says plainly that 1.3.8 to the current version are not documented in it", () => {
+  // 1.3.22 is the last version that was published without a note here. From the next one on, each version of package.json has its own section: a version raised
+  // without a note fails here, so the changelog cannot fall behind again (it stood at 1.3.7 while the Web Store had 1.3.22).
+  it("the changelog says plainly that 1.3.8 to 1.3.22 are not documented in it, and it has a section for the version of package.json", () => {
     const version = (JSON.parse(read("package.json")) as { version: string }).version
-    expect(read("CHANGELOG.md")).toContain(`between 1.3.7 and ${version}`)
+    const changelog = read("CHANGELOG.md")
+    expect(changelog).toContain("between 1.3.7 and 1.3.22")
+    expect(changelog).toMatch(new RegExp(`^### ${version.replace(/\./g, "\\.")} `, "m"))
   })
 })

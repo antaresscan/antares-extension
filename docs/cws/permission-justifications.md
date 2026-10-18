@@ -32,13 +32,6 @@
 > DANGER). The Options page also has a "test notification" button, so a
 > reviewer can see it without waiting for a verdict to change.
 
-### `activeTab`
-
-> Declared in the manifest but not used by the current version of the
-> extension: no code calls it. Content scripts run on the eight trading
-> platforms through host permissions, not through activeTab. Remove it
-> from the manifest at the next release, or keep this line truthful.
-
 ### `alarms`
 
 > One alarm, "keepalive", every minute. It is meant to keep the
@@ -138,20 +131,34 @@ and the built manifest lists them under `content_scripts`, so the dashboard show
 
 ## Privacy practices summary
 
-  • Personally identifiable information collected:        **none**
-  • Health information collected:                          none
-  • Financial / payment information collected:             none
-  • Authentication information collected:                  none
-  • Personal communications collected:                     none
-  • Location data collected:                               none
-  • Web history collected:                                 none
-  • User activity collected:                               none
-  • Website content read:                                  yes — public token addresses on supported trading sites only
+> Tick the boxes below in the "Privacy practices" tab of the dashboard. They must agree with the privacy policy
+> (privacy.html, sections 3, 5 and 8): a tab that says "none" where the policy says "we keep it" is a classic reason for a refusal.
+> When in doubt, declare the type; declaring a type the Extension barely touches costs nothing, hiding one can cost the listing.
+
+  • Personally identifiable information collected:        **yes** — the e-mail address of the optional account
+                                                           (created on the website, never asked by the Extension), and the
+                                                           anonymous install identifier that is linked to it
+  • Health information collected:                          no
+  • Financial / payment information collected:             no  (payments are made at NOWPayments, with a cryptocurrency;
+                                                           the Extension never sees them)
+  • Authentication information collected:                  **yes** — the sign-in session token, kept in chrome.storage.local
+                                                           so the overlay can show the plan
+  • Personal communications collected:                     no
+  • Location data collected:                               **yes** — the IP address, used transiently to rate-limit
+                                                           (policy 3.2); no GPS, no region lookup
+  • Web history collected:                                 **yes** — the Solana contract addresses read on the 8 supported
+                                                           platforms are sent to the API, and the scan history (address,
+                                                           symbol, name, verdict, time) is kept per install identifier
+                                                           (policy 3.4); never the other pages the user visits
+  • User activity collected:                               no  (no clicks, no keystrokes, no mouse position, no scroll)
+  • Website content read:                                  **yes** — public token addresses on supported trading sites only
   • Data sold to third parties:                            no
   • Data used or transferred for purposes unrelated to
     the extension's single purpose:                        no
   • Data used or transferred to determine creditworthiness
     or for lending purposes:                               no
+  • Remote code:                                           none — no script and no style is loaded from outside the
+                                                           package, the package holds no .wasm file, no eval, no new Function
 
 Privacy policy URL: https://antaresscan.com/privacy
 
