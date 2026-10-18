@@ -202,6 +202,10 @@ jobs:
           # The Origin the tests present is a fixed, allowed one: it must not
           # follow the deployment URL (a preview host is not an allowed origin).
           E2E_ORIGIN: https://antares-extension.vercel.app
+          # A Pro caller: without it the specs that read the full analysis (the engine contract, the layers, the flags, the token page) are SKIPPED
+          # and the run is green all the same (e2e/pro.ts). The value is a random string that must ALSO be listed in DEV_PRO_INSTALLS on Vercel.
+          # Empty when the secret does not exist (or on a fork): the specs then skip, as before.
+          E2E_PRO_INSTALL: ${{ secrets.E2E_PRO_INSTALL }}
 
       - name: Upload E2E report
         if: always() && steps.decide.outputs.needed == 'true'
