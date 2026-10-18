@@ -9,7 +9,9 @@
 // THE CATALOG
 //
 //   who a person is
-//     account:<email>                      ACCOUNT_KEY               the account (a hash: id, e-mail, password hash, creation date, e-mail verified)
+//     account:<email>                      ACCOUNT_KEY               the account (a hash: id, e-mail, password hash, creation date, e-mail verified,
+//                                                                    sessionVersion, verifyNonce, verifySentAt). The e-mail must already be
+//                                                                    normalised (normalizeEmail): this builder does not lower-case it.
 //     account:install:<installId>          ACCOUNT_INSTALL_KEY       which e-mail an install is bound to (value: the e-mail)
 //     auth_fail:<sha256 of the e-mail>     LOGIN_FAILURES_KEY        the failed logins of one e-mail (a counter, 15 minutes: login-guard.ts)
 //     account-create:<sha256 of the e-mail> ACCOUNT_CREATE_LOCK_KEY  a 20 s mutex around "look, then create" of a sign-up (account.ts)
@@ -33,15 +35,21 @@
 //     payment-intent-by-inv:<invoiceId>    INTENT_BY_NP_INVOICE_KEY  checkout found from NOWPayments' invoice id
 //
 // Keys that only ONE module touches stay next to the code that owns them (and are listed here so that the whole map is in one place):
-//   antares:<namespace><engineVersion>:<mint>        cache.ts      the cached scan of a token (the namespace separates previews from production)
-//   antares:lock:<namespace><engineVersion>:<mint>   cache.ts      the single-flight lock of a cold scan
-//   ig:, igsig:, iasig:, iact:                       insider-*.ts  the insider graph and its activity
-//   rug:<mint>, rug:index                            rugdb.ts      the rug database
-//   condemned:<mint>                                 condemned.ts  a token that rugged (a RUG confirmed by a fact), kept for good, no expiry. To clear a mistake: delete it
-//   usage:<day>                                      usage.ts      how much each upstream was used
-//   quota:<key>:<day>                                quota.ts      the daily counter (kept for analytics; no tier is limited)
-//   vh:<mint>                                        constants.ts  the verdict history (decommissioned)
-//   antares_rl, antares_burst, antares_cold, antares_net   middleware.ts   the rate limiters
+// (<namespace> is deploymentNamespace(): empty in production, "pv:<deployment>:" on a preview, "dev:" under `vercel dev`.)
+//   antares:<namespace><engineVersion>:<mint>           cache.ts            the cached scan of a token
+//   antares:lock:<namespace><engineVersion>:<mint>      cache.ts            the single-flight lock of a cold scan (value: the request id)
+//   antares:lastgood:<namespace><engineVersion>:<mint>  cache.ts            the verdict of the last time an issuer-backed token's market was read, used only when DexScreener cannot be (6 h)
+//   antares:goplus:<namespace><mint>                    goplus-cache.ts     GoPlus' answer, reused 0 to 30 minutes depending on the token's age
+//   antares:rugcheck:<namespace><mint>                  rugcheck-memory.ts  RugCheck's last answer, kept 6 h for when RugCheck is down
+//   <namespace>ig:, <namespace>igsig:, <namespace>iasig:, <namespace>iact:  insider-*.ts  the insider graph and its activity
+//   rug:<mint>, rug:index                               rugdb.ts            the rug database
+//   condemned:<mint>                                    condemned.ts        a token that rugged (a RUG confirmed by a fact), kept for good, no expiry. To clear a mistake: delete it
+//   usage:<YYYY-MM-DD>                                  usage.ts            how much each upstream was used (a hash, 40 days)
+//   vh:<mint>                                           constants.ts        the verdict history (decommissioned)
+//   antares_graph_day:<YYYY-MM-DD>                      graph-access.ts     the insider graphs built that day (the global daily ceiling, 2 days)
+//   antares_rl, antares_burst, antares_cold, antares_net   middleware.ts    the rate limiters (@upstash/ratelimit prefixes)
+//   antares_graph                                       graph-access.ts     the per-user insider-graph rate limiter
+// (There is no quota counter any more: quota.ts writes nothing, every tier is unlimited.)
 
 // ─── who a person is ──────────────────────────────────────────────────────────
 

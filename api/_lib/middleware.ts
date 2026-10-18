@@ -1,4 +1,4 @@
-// api/middleware.ts — CORS, rate limiting, and input validation middleware
+// api/_lib/middleware.ts — CORS, rate limiting, and input validation middleware
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
@@ -132,10 +132,8 @@ export function initRateLimiters(redis: Redis): void {
   redisConfigured = true;
   // ── Per-user rate limits ─────────────────────────────────────────────
   // Keyed by (ip:install_id) — these are PER-USER limits, not global.
-  // 1000 active users each at burst capacity = 60K req/10s globally,
-  // which is well within Vercel Pro + Upstash Pro 2K capacity. The
-  // numbers here exist to stop ONE abuser, not to throttle aggregate
-  // traffic.
+  // The numbers here exist to stop ONE abuser, not to throttle aggregate
+  // traffic. Each request costs three Redis commands (one per window).
   //
   // Earlier limits (5/10s burst + 30/60s sustained) blocked a power
   // user who opened 8 DexScreener tabs at once — scans 6-8 hit 429
@@ -276,7 +274,9 @@ export function setCorsHeaders(
     // working too as a fallback.)
     res.setHeader("Access-Control-Allow-Credentials", "true");
     res.setHeader("Access-Control-Expose-Headers", EXPOSED_RESPONSE_HEADERS);
-    res.setHeader("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
+    res.setHeader("Access-Control-Max-Age", "86400");
+    // Same rule as for the other origins below: a preflight is never cached at the edge (its CORS headers depend on the Origin).
+    res.setHeader("Cache-Control", req.method === "OPTIONS" ? "no-store, max-age=0" : "s-maxage=15, stale-while-revalidate=30");
     return true;
   }
 
@@ -378,24 +378,21 @@ export async function checkRateLimit(res: VercelResponse, ip: string, installId:
   // the network ceiling asked below.
   const key = installId ? `${net}:${installId}` : net;
 
-  // The three windows are asked together: one round trip to Redis instead of two in a row. The network ceiling fails OPEN (a
-  // Redis error there must not take the service down, as for the cold-scan limiter); an address that cannot be identified has no
-  // bucket of its own, so it is not counted (every unidentifiable client would share one).
+  // The three windows are asked together: one round trip to Redis instead of two in a row. ALL THREE fail OPEN on a Redis error
+  // (an abuse guard must not take the service down, as for the cold-scan limiter): the per-install and burst windows used to let
+  // the error through, so an Upstash hiccup made /api/scan answer 500 instead of scanning. An address that cannot be identified has
+  // no bucket of its own in the network window, so it is not counted there (every unidentifiable client would share one).
   const [perInstall, burst, perNetwork] = await Promise.all([
-    ratelimit ? ratelimit.limit(key) : null,
-    burstRatelimit ? burstRatelimit.limit(key) : null,
-    networkRatelimit && net !== "unknown"
-      ? networkRatelimit.limit(net).catch((e: unknown) => {
-          logger.warn("middleware", "network limiter unavailable — failing open", { error: String(e) });
-          return null;
-        })
-      : null,
+    ratelimit ? ratelimit.limit(key).catch(limiterFailedOpen("per-install")) : null,
+    burstRatelimit ? burstRatelimit.limit(key).catch(limiterFailedOpen("burst")) : null,
+    networkRatelimit && net !== "unknown" ? networkRatelimit.limit(net).catch(limiterFailedOpen("network")) : null,
   ]);
 
   if (perInstall) {
     res.setHeader("X-RateLimit-Limit", "60");
     res.setHeader("X-RateLimit-Remaining", String(perInstall.remaining));
     if (!perInstall.success) {
+      res.setHeader("Retry-After", String(retryAfterSeconds(perInstall.reset, 60)));
       apiError(res, 429, "Too many requests. Please slow down.");
       return false;
     }
@@ -408,13 +405,31 @@ export async function checkRateLimit(res: VercelResponse, ip: string, installId:
   }
 
   if (perNetwork && !perNetwork.success) {
-    const waitMs = typeof perNetwork.reset === "number" ? perNetwork.reset - Date.now() : 10_000;
-    res.setHeader("Retry-After", String(Math.min(60, Math.max(1, Math.ceil(waitMs / 1000)))));
+    res.setHeader("Retry-After", String(retryAfterSeconds(perNetwork.reset, 60)));
     apiError(res, 429, "Too many requests from this network. Please slow down.");
     return false;
   }
 
   return true;
+}
+
+/** Seconds until a window's reset (epoch ms), between 1 and `max`; 10 s when the reset is unknown. */
+function retryAfterSeconds(reset: unknown, max: number): number {
+  const waitMs = typeof reset === "number" && Number.isFinite(reset) ? reset - Date.now() : 10_000;
+  return Math.min(max, Math.max(1, Math.ceil(waitMs / 1000)));
+}
+
+// A Redis outage makes every request fail its limiter: one log line per limiter and per minute, not one per request.
+const limiterLogAt = new Map<string, number>();
+function limiterFailedOpen(name: string): (e: unknown) => null {
+  return (e: unknown) => {
+    const now = Date.now();
+    if (now - (limiterLogAt.get(name) ?? 0) >= 60_000) {
+      limiterLogAt.set(name, now);
+      logger.warn("middleware", `${name} limiter unavailable — failing open`, { error: String(e) });
+    }
+    return null;
+  };
 }
 
 export function validateCA(ca: unknown): string | null {

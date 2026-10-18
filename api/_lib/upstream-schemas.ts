@@ -120,7 +120,10 @@ export const RugCheckSummarySchema = z.object({
 
 export const RugCheckReportSchema = z.object({
   risks: z.array(RugCheckRiskSchema).optional(),
-  topHolders: z.union([RugCheckTopHoldersSchema, z.array(RugCheckHolderSchema)]).optional(),
+  // RugCheck sends `topHolders: null` for some tokens (9 of the 1 117 reports of the replay corpus). Rejecting null dropped the WHOLE
+  // report (its risks, its creator, its holder count), the same failure as GoPlus' `burn_percent: null` above. Every reader of
+  // topHolders already checks Array.isArray / typeof first.
+  topHolders: z.union([RugCheckTopHoldersSchema, z.array(RugCheckHolderSchema)]).nullable().optional(),
   totalHolders: z.number().optional(),
   creator: z.string().nullable().optional(),
 });

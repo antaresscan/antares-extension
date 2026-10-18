@@ -25,7 +25,7 @@
 // and only error captures elsewhere, we have 50× headroom for normal
 // traffic.
 import * as Sentry from "@sentry/node";
-import { scrubEvent, scrubObject } from "../../shared/sentry-scrub";
+import { scrubEvent, scrubObject, scrubBreadcrumb } from "../../shared/sentry-scrub";
 
 let initialized = false;
 
@@ -65,6 +65,14 @@ export function initSentry(): void {
       defaults.filter((i) => i.name !== "Console"),
     beforeSend(event) {
       return scrubEvent(event);
+    },
+    // Transactions (the 10 % of requests traced for performance) are NOT passed to beforeSend: without this hook their spans,
+    // URLs and request data (?ca=<contract>, ?reference=<checkout secret>) left unscrubbed, against privacy.html.
+    beforeSendTransaction(event) {
+      return scrubEvent(event);
+    },
+    beforeBreadcrumb(breadcrumb) {
+      return scrubBreadcrumb(breadcrumb);
     },
   });
   initialized = true;

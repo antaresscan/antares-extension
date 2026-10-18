@@ -198,7 +198,8 @@ export interface RugCheckSummary {
 
 export interface RugCheckReport {
   risks?: RugCheckRisk[];
-  topHolders?: RugCheckTopHolders | RugCheckHolder[];
+  /** null is a real answer of RugCheck for some tokens (upstream-schemas.ts RugCheckReportSchema). */
+  topHolders?: RugCheckTopHolders | RugCheckHolder[] | null;
   totalHolders?: number;
   creator?: string | null;
 }

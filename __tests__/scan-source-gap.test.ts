@@ -313,6 +313,7 @@ process.env.DEV_PRO_INSTALLS = "test-pro-install-0001";
 
 const { default: handler } = await import("../api/scan");
 const { _resetCircuitBreakersForTests } = await import("../api/_lib/http");
+const { _resetGoPlusAuthForTests } = await import("../api/_lib/goplus-auth");
 const { noteSourceFailure, OUTAGE_THRESHOLD } = await import("../api/_lib/outage");
 /** A source is DOWN (outage.ts): enough failed calls within the minute. The mocks below make a source silent; this makes the silence an outage. */
 const OUTAGE_HOST = { helius: "mainnet.helius-rpc.com", rugcheck: "api.rugcheck.xyz", goplus: "api.gopluslabs.io" } as const;
@@ -748,12 +749,32 @@ describe("scan — a source did not answer", () => {
     });
 
     it("RugCheck AND GoPlus failing for real at the same time (no seeding): two sources at once, so the scan is Limited data", async () => {
+      // GoPlus as configured with credentials: one lookup makes TWO calls (the token request, then the public lookup), both fail.
+      // (This test used to run without credentials, so with ONE GoPlus call, and passed only because a 503 was counted twice by
+      // http.ts: audit lot 1, 2026-10-17.)
+      vi.stubEnv("GOPLUS_APP_KEY", "test-key");
+      vi.stubEnv("GOPLUS_APP_SECRET", "test-secret");
+      _resetGoPlusAuthForTests();
+      try {
+        setupGoodTokenMocks();
+        fail503("rugcheck");
+        fail503("gopluslabs");
+        const res = createMockRes();
+        await run(createMockReq({ ca: WSOL }), res);
+        expect(jsonBody(res)?.sourceGap).toBe(true);
+      } finally {
+        vi.unstubAllEnvs();
+        _resetGoPlusAuthForTests();
+      }
+    });
+
+    it("without GoPlus credentials, ONE failed GoPlus call in a scan is a blip (outage.ts), even next to a RugCheck outage: the scan keeps its verdict", async () => {
       setupGoodTokenMocks();
       fail503("rugcheck");
       fail503("gopluslabs");
       const res = createMockRes();
       await run(createMockReq({ ca: WSOL }), res);
-      expect(jsonBody(res)?.sourceGap).toBe(true);
+      expect(jsonBody(res)?.sourceGap).toBe(false);
     });
 
     it("the outage ends: a minute later the same silent source, now with nothing for the token (no new failure), is not an outage any more", async () => {
