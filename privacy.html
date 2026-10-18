@@ -142,7 +142,6 @@ code{background:#111;padding:.1rem .35rem;border-radius:3px;font-size:.85em}
 <li><strong>notifications</strong> — shows a Chrome notification when a token you scan gets a worse verdict than the last one this device saw for it (for example CAUTION to DANGER). The Options page also has a button that sends a test notification.</li>
 <li><strong>tabs</strong> — Chrome presents this permission as “Read your browsing history”, because it lets an extension see the address of the tabs you have open. The Extension uses it for two things only: when you click “Full Analysis” it looks at the addresses of your open tabs to see whether the analysis page is already open, and if so reuses that tab; and when you switch the Extension on or off it passes that change to your open tabs. Addresses are only compared on your device; none is stored or sent.</li>
 <li><strong>alarms</strong> — one timer that fires every minute, meant to keep the Extension's background process awake during a scan. It scans nothing and sends nothing.</li>
-<li><strong>activeTab</strong> — declared in the manifest, but the current version of the Extension does not use it.</li>
 <li><strong>host_permissions</strong> — only the 8 trading platforms enumerated in section 4: this is what lets the Extension read those pages, and no others.</li>
 </ul>
 

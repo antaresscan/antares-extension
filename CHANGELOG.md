@@ -6,9 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-> This file was not kept up between 1.3.7 and 1.3.21 (the version of `package.json`): those releases are in the git history and
-> the pull requests only. The privacy policy (`privacy.html`, section 13) promises a note here whenever the way the Extension
-> processes data changes materially; the notes below cover the changes it has had since.
+> This file was not kept up between 1.3.7 and 1.3.22 (the last version published on the Chrome Web Store): those releases are in the
+> git history and the pull requests only. The privacy policy (`privacy.html`, section 13) promises a note here whenever the way the
+> Extension processes data changes materially; the notes below cover the changes it has had since.
+
+### 1.4.0 — Web Store package (2026-10-18)
+
+- The version is raised above the one published on the Chrome Web Store (1.3.22): the Store refuses an upload whose version is not higher.
+- The `activeTab` permission is no longer declared: no code uses it (`chrome.scripting` and `captureVisibleTab` are never called; the
+  content scripts run through the host permissions). Nothing changes for users; the permission list is one line shorter, in the Store
+  and in `privacy.html` (section 8).
+- `docs/cws/permission-justifications.md`: the answers of the "Privacy practices" tab now agree with the privacy policy (identity,
+  session token, IP address used for rate limiting, scan history, page content).
 
 ### Privacy policy — updated 2026-10-17
 
