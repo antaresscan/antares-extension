@@ -15,6 +15,7 @@ import type {
   RugKind, SafeBlockedReason, ScanFlag, Severity, SolscanTransfer, Verdict,
 } from "./types";
 import type { CreatorReputation } from "./fetchers";
+import type { HoldersSource } from "./holders-memory";
 import {
   layerDexScreener, layerRugCheck, layerGoPlus, layerHelius, layerSolscan, layerChart, layerCrossValidation, isBlueChipByMarket, isTop10Proven, isLivingMarket, historyIsClean, isAthFlagCandidate, type Top10ReliefFacts,
 } from "./layers";
@@ -61,6 +62,8 @@ export interface DecideInput {
   organicScore?: number | null;
   /** The side of the line the token is on, with the memory of where it was (judgeHistory in ath.ts); absent: the plain line on the fall computed here. */
   athCollapsed?: boolean | null;
+  /** Where the list of the biggest holders came from (api/_lib/holders-memory.ts). "rugcheck": RugCheck's own report, which no second source confirmed. Absent or null: Helius, or no list. */
+  holdersSource?: HoldersSource | null;
 }
 
 /** The market facts isTop10Candidate reads, from what a scan has collected before it decides (the scan asks for the all-time high only when they say it can matter). */
@@ -105,7 +108,7 @@ export function decide(input: DecideInput): Decision {
   const {
     pair, dexData, resolvedMint, marketCap, tokenAgeMinutes, holders, rugData, rugReport, tokenName, goplus, authFacts: authFactsAsRead, totalSupplyUi,
     solscanTokenAgeHours, dexTokenAgeHours, resolvedHolderAccounts, solscanTrades24h, solscanTraders24h, solscanAnswered,
-    candles, dailyCandles, recentTransfers, creatorReputation, allTimeHigh, athCollapsed, organicScore,
+    candles, dailyCandles, recentTransfers, creatorReputation, allTimeHigh, athCollapsed, organicScore, holdersSource,
   } = input;
   const notes: DecisionNote[] = [];
 
@@ -186,7 +189,19 @@ export function decide(input: DecideInput): Decision {
       .map((p: DexScreenerPair) => p.pairAddress)
       .filter((a: unknown): a is string => typeof a === "string" && a.length > 0)
   );
-  const l4 = layerHelius(resolvedHolderAccounts, totalSupplyUi, maturityCtx, dexPairAddresses);
+  let l4 = layerHelius(resolvedHolderAccounts, totalSupplyUi, maturityCtx, dexPairAddresses);
+  // The list came from RugCheck's own report (holders-memory.ts): the concentration is read and counts in the score, but no second source confirmed it, so SAFE stays blocked, for the
+  // reason it was blocked before this fallback existed (the holders are unverified), and a line says it. A list from Helius, live or from a few hours ago, needs none of this.
+  if (holdersSource === "rugcheck" && l4.available) {
+    l4 = {
+      ...l4,
+      safeBlocked: true,
+      flags: [...l4.flags, makeFlag("Holder concentration read from RugCheck — Helius did not answer, no second source confirms it", "info", 0, { fallbackReasons: ["holders"], tags: ["source_status", "concentration"] })],
+    };
+    notes.push({ message: "holder list from RugCheck (Helius gave none)", data: { holders: resolvedHolderAccounts.length } });
+  } else if (holdersSource === "helius-last") {
+    notes.push({ message: "holder list from Helius's last answer (recent, or it gave none now)", data: { holders: resolvedHolderAccounts.length } });
+  }
   // Holder count: null, as it effectively always was (the Solscan holders endpoint is dead).
   const l5 = layerSolscan(null, solscanTokenAgeHours, solscanTrades24h, solscanTraders24h, solscanAnswered);
   const l6 = layerChart(candles, pair, tokenAgeMinutes, maturityCtx, dailyCandles.length >= 2 ? dailyCandles : undefined, blueChip);

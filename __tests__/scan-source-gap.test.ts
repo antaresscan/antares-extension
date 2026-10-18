@@ -134,6 +134,8 @@ function mintAccountResponse(o: { supply?: number; decimals?: number; mintAuthor
 
 vi.mock("../api/_lib/fetchers", () => ({
   heliusGetLargestAccounts: (...args: unknown[]) => mockHeliusGetLargestAccounts(...args),
+  // The scan asks for the list through this one (it adds the last list and the retries): here it is the same mock, as a live answer.
+  heliusGetLargestAccountsRemembered: async (...args: unknown[]) => ({ response: (await mockHeliusGetLargestAccounts(...args)) as unknown, source: "helius" as const }),
   heliusGetTokenSupply: (...args: unknown[]) => mockHeliusGetTokenSupply(...args),
   heliusGetMintAccount: (...args: unknown[]) => mockHeliusGetMintAccount(...args),
   heliusGetHolderPages: vi.fn().mockResolvedValue(null), // no chain holder count in these tests

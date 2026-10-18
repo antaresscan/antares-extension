@@ -149,7 +149,8 @@ beforeEach(() => {
 
 describe("heliusGetLargestAccounts", () => {
   it("calls fetchJsonPost with correct params", async () => {
-    mockFetchJsonPost.mockResolvedValue({ result: { value: [] } });
+    const answer = { result: { value: [{ address: "acct1", uiAmount: 5 }] } };
+    mockFetchJsonPost.mockResolvedValue(answer);
     const result = await heliusGetLargestAccounts("mint123", "key456");
     expect(mockFetchJsonPost).toHaveBeenCalledOnce();
     const [url, body, , , headers] = mockFetchJsonPost.mock.calls[0] as [string, Record<string, unknown>, number, number, Record<string, string>];
@@ -159,7 +160,14 @@ describe("heliusGetLargestAccounts", () => {
     expect(headers).toEqual({});
     expect(body.method).toBe("getTokenLargestAccounts");
     expect(body.params).toEqual(["mint123"]);
-    expect(result).toEqual({ result: { value: [] } });
+    expect(result).toEqual(answer);
+  });
+
+  it("an answer without accounts is not an answer: null (an error body with an HTTP 200 used to be returned as it was)", async () => {
+    mockFetchJsonPost.mockResolvedValue({ error: { code: -32602, message: "Invalid param" } });
+    expect(await heliusGetLargestAccounts("mint", "key")).toBeNull();
+    mockFetchJsonPost.mockResolvedValue({ result: { value: [] } });
+    expect(await heliusGetLargestAccounts("mint", "key")).toBeNull();
   });
 
   it("returns null on failure", async () => {
