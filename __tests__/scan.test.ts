@@ -114,6 +114,8 @@ function mintAccountResponse(o: { supply?: number; decimals?: number; mintAuthor
 
 vi.mock("../api/_lib/fetchers", () => ({
   heliusGetLargestAccounts: (...args: unknown[]) => mockHeliusGetLargestAccounts(...args),
+  // The scan asks for the list through this one (it adds the last list and the retries): here it is the same mock, as a live answer.
+  heliusGetLargestAccountsRemembered: async (...args: unknown[]) => ({ response: (await mockHeliusGetLargestAccounts(...args)) as unknown, source: "helius" as const }),
   heliusGetTokenSupply: (...args: unknown[]) => mockHeliusGetTokenSupply(...args),
   heliusGetMintAccount: (...args: unknown[]) => mockHeliusGetMintAccount(...args),
   heliusGetHolderPages: (...args: unknown[]) => mockHeliusGetHolderPages(...args),
@@ -780,6 +782,126 @@ describe("scan handler — young token, one wallet at 12 %", () => {
 
     expect(body.flags.some((x) => x.severity === "critical" && /single wallet holds 20%/i.test(x.label))).toBe(true);
     expect(body.risk).toBe("DANGER");
+  });
+});
+
+// ─── The biggest holders when Helius gives none (2026-10-18) ──────────────────────────────────────────
+// Helius answers the tokens with the most holders (TRUMP, RAY, JUP, PENGU, BONK) with "account index service overloaded" and an HTTP 200 about nine scans in ten; the scan then had no
+// list, the whole Helius layer went missing and the verdict moved from one scan to the next. The call is asked again and the last list is served (fetchers.ts, tested there); when there
+// is none, RugCheck's report holds the same 20 biggest holders: the concentration is read from them, SAFE stays blocked, and a line says where the list came from.
+describe("scan handler — no list of the biggest holders from Helius", () => {
+  const MINT = "So11111111111111111111111111111111111111112";
+  const rcHolder = (i: number, uiAmount: number) => ({ address: `rc${i}`, owner: `rcowner${i}`, uiAmount, pct: uiAmount / 1000, amount: uiAmount, decimals: 9, insider: false });
+
+  /** The good-token mocks, with a RugCheck report that has these holders (supply of the good-token mocks: 100,000). */
+  function scanWithRugCheckHolders(topHolders: unknown, heliusList: unknown = null, pairAgeHours?: number) {
+    setupGoodTokenMocks();
+    const goodMocks = mockFetch.getMockImplementation() as (url: string, ...rest: unknown[]) => Promise<unknown>;
+    mockFetch.mockImplementation((url: string, ...rest: unknown[]) => {
+      if (url.includes("rugcheck") && url.includes("report") && !url.includes("summary")) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ risks: [], topHolders, totalHolders: 5000 }) });
+      }
+      if (pairAgeHours !== undefined && url.includes("dexscreener")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            pairs: [{
+              pairAddress: "pair1",
+              baseToken: { address: MINT, symbol: "YNG", name: "Young" },
+              liquidity: { usd: 200_000 },
+              volume: { h24: 100_000, h1: 5_000 },
+              priceChange: { m5: 0.5, h1: 2, h6: 6, h24: 12 },
+              txns: { m5: { buys: 15, sells: 12 } },
+              priceUsd: "0.01",
+              marketCap: 1_000_000,
+              fdv: 1_000_000,
+              pairCreatedAt: Date.now() - pairAgeHours * 3600 * 1000,
+              info: { socials: [{ type: "twitter", url: "https://twitter.com/test" }], websites: [{ url: "https://test.com" }] },
+            }],
+          }),
+        });
+      }
+      return goodMocks(url, ...rest);
+    });
+    mockHeliusGetLargestAccounts.mockResolvedValue(heliusList);
+  }
+
+  async function run() {
+    const res = createMockRes();
+    await handler(createMockReq({ ca: MINT }), res);
+    return (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0] as { risk: string; flags: Array<{ label: string; severity: string }> };
+  }
+
+  const READ_FROM_RUGCHECK = /holder concentration read from rugcheck/i;
+  const HELIUS_UNAVAILABLE = /helius unavailable/i;
+
+  it("RugCheck's list is read: a wallet at 60 % is the critical flag it is with Helius's list, and a line says where the list came from", async () => {
+    scanWithRugCheckHolders([rcHolder(0, 60_000), ...Array.from({ length: 19 }, (_, i) => rcHolder(i + 1, 400))]);
+
+    const body = await run();
+
+    expect(body.flags.some((f) => f.severity === "critical" && /single wallet holds 60%/i.test(f.label))).toBe(true);
+    expect(body.flags.some((f) => f.severity === "info" && READ_FROM_RUGCHECK.test(f.label))).toBe(true);
+    expect(body.flags.some((f) => HELIUS_UNAVAILABLE.test(f.label))).toBe(false);
+    expect(body.risk).not.toBe("SAFE");
+    // RugCheck gives the owner of every account: no Helius call to find them (and none the recorded corpus of the replay would not have).
+    expect(mockHeliusResolveAccountOwners).not.toHaveBeenCalled();
+  });
+
+  it("a quiet distribution is read too, and SAFE stays blocked: no second source confirms it", async () => {
+    scanWithRugCheckHolders(Array.from({ length: 20 }, (_, i) => rcHolder(i, 400)));
+
+    const body = await run();
+
+    expect(body.flags.some((f) => READ_FROM_RUGCHECK.test(f.label))).toBe(true);
+    expect(body.flags.some((f) => HELIUS_UNAVAILABLE.test(f.label))).toBe(false);
+    expect(body.risk).not.toBe("SAFE");
+  });
+
+  it("witness: when Helius gives its list, RugCheck's is not used and no line is added", async () => {
+    scanWithRugCheckHolders(
+      [rcHolder(0, 60_000), ...Array.from({ length: 19 }, (_, i) => rcHolder(i + 1, 400))],
+      { result: { value: Array.from({ length: 20 }, (_, i) => ({ address: `h${i}`, uiAmount: 400 })) } },
+    );
+
+    const body = await run();
+
+    expect(body.flags.some((f) => READ_FROM_RUGCHECK.test(f.label))).toBe(false);
+    expect(body.flags.some((f) => /single wallet holds 60%/i.test(f.label))).toBe(false);
+  });
+
+  it("a NEW token keeps the honest 'unverified': a launch's bonding curve is not a pool whose address is known, its vault would be read as a whale", async () => {
+    scanWithRugCheckHolders([rcHolder(0, 60_000), ...Array.from({ length: 19 }, (_, i) => rcHolder(i + 1, 400))], null, 48);
+
+    const body = await run();
+
+    expect(body.flags.some((f) => READ_FROM_RUGCHECK.test(f.label))).toBe(false);
+    expect(body.flags.some((f) => /single wallet holds 60%/i.test(f.label))).toBe(false);
+    expect(body.flags.some((f) => HELIUS_UNAVAILABLE.test(f.label))).toBe(true);
+  });
+
+  it("witness: the same token at 4 days old is an established one, its list is read", async () => {
+    scanWithRugCheckHolders([rcHolder(0, 60_000), ...Array.from({ length: 19 }, (_, i) => rcHolder(i + 1, 400))], null, 96);
+
+    const body = await run();
+
+    expect(body.flags.some((f) => READ_FROM_RUGCHECK.test(f.label))).toBe(true);
+    expect(body.flags.some((f) => HELIUS_UNAVAILABLE.test(f.label))).toBe(false);
+  });
+
+  it.each([
+    ["absent", undefined],
+    ["null", null],
+    ["empty", []],
+    ["with an entry that has no amount (an incomplete list is a wrong concentration)", [rcHolder(0, 400), { address: "x", owner: "y" }]],
+  ])("a RugCheck report whose list is %s: the layer is missing as before, with its warning", async (_name, topHolders) => {
+    scanWithRugCheckHolders(topHolders);
+
+    const body = await run();
+
+    expect(body.flags.some((f) => HELIUS_UNAVAILABLE.test(f.label))).toBe(true);
+    expect(body.flags.some((f) => READ_FROM_RUGCHECK.test(f.label))).toBe(false);
+    expect(body.risk).not.toBe("SAFE");
   });
 });
 

@@ -19,13 +19,14 @@ import {
   isChartGapDegraded, isReportGapDegraded, gapSources, limitedDataEnabled, withServeWindows,
 } from "./_lib/helpers";
 import {
-  heliusGetLargestAccounts, heliusGetMintAccount, heliusGetHolderPages, heliusGetCreatorReputation,
+  heliusGetLargestAccountsRemembered, heliusGetMintAccount, heliusGetHolderPages, heliusGetCreatorReputation,
   heliusResolveAccountOwners,
   publicRpcGetLargestAccounts, publicRpcGetTokenSupply, publicRpcGetMintInfo, publicRpcGetMintAccount,
   fetchSolscan, fetchDexCandles, fetchDexCandlesDaily,
   type CreatorReputation,
 } from "./_lib/fetchers";
 import { readHeliusKey } from "./_lib/helius";
+import { holdersFromRugCheck, rugCheckListMayStandIn, type HoldersSource } from "./_lib/holders-memory";
 import { parseMintState, mintSupplyUi, deriveAuthorityFacts, parseChainHolders, pickHolderCount, positiveCount } from "./_lib/facts";
 import { fetchGoPlusSecurityCached } from "./_lib/goplus-cache";
 import {
@@ -103,6 +104,9 @@ const AI_RESERVE_MS = 1500;
 // same instant the global timer cuts it (which used to give a 504 whenever
 // every upstream was merely slow: 20 of 20 scans in the simulation).
 const SCAN_RESERVE_MS = 2500;
+// The longest the scan waits for the list of the biggest holders from Helius, its few attempts included (fetchers.ts heliusGetLargestAccounts). A list that is given takes up to ~6 s
+// for the tokens Helius struggles with; past this the scan goes on with the last list, RugCheck's, or none, instead of holding every other source back.
+const HOLDERS_ARM_MS = 5000;
 // A serial step (owner resolution, creator reputation, fallback RPCs, insider
 // graph) is only worth starting when at least this much time is left.
 const MIN_STEP_MS = 1500;
@@ -379,6 +383,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       .then((raw) => (isSolscanMeta(raw) ? positiveCount(raw.data?.holder) : null))
       .catch(() => null);
 
+    // Where the list of the biggest holders comes from (fetchers.ts heliusGetLargestAccountsRemembered): live from Helius, or its last list. Read only when a list was returned.
+    let armHoldersSource: HoldersSource | null = null;
     const [
       candlesRaw, candlesDailyRaw, goplusRaw,
       heliusHoldersRaw, heliusSupplyRaw, heliusHolderPagesRaw,
@@ -388,7 +394,12 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       withBudget(fetchDexCandles(pairAddress), remainingMs()),
       withBudget(fetchDexCandlesDaily(pairAddress, resolvedMint), remainingMs()),
       goplusPromise,
-      HELIUS_API_KEY ? withBudget(heliusGetLargestAccounts(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
+      HELIUS_API_KEY
+        ? withBudget(
+            heliusGetLargestAccountsRemembered(resolvedMint, HELIUS_API_KEY, { tokenAgeMinutes, fresh, deadlineAt: Math.min(scanDeadline, Date.now() + HOLDERS_ARM_MS - 400) })
+              .then((r) => { armHoldersSource = r.source; return r.response; }),
+            Math.min(remainingMs(), HOLDERS_ARM_MS))
+        : null,
       HELIUS_API_KEY ? withBudget(heliusGetMintAccount(resolvedMint, HELIUS_API_KEY), remainingMs()) : null,
       HELIUS_API_KEY ? withBudget(heliusGetHolderPages(resolvedMint, HELIUS_API_KEY, goplusHolderCount, solscanHolderCount), remainingMs()) : null,
       // (No Solscan holders-count call: the public endpoint it used answers
@@ -411,6 +422,8 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const goplus = pickGoPlusResult(goplusRaw, resolvedMint);
     const heliusResponse = isHeliusLargestAccountsResponse(heliusHoldersRaw) ? heliusHoldersRaw : null;
     let rawHolderAccounts: HeliusHolder[] = heliusResponse?.result?.value ?? [];
+    // "helius" (live) or "helius-last" (its last list, a few hours old); null when no list came back, whatever the arm's variable says by now (a budget may have cut it short).
+    let holdersSource: HoldersSource | null = rawHolderAccounts.length > 0 ? armHoldersSource : null;
     // heliusSupplyRaw is a getAccountInfo(jsonParsed) response on the mint: supply AND authorities in one request.
     let mintState = parseMintState(heliusSupplyRaw);
     let totalSupplyUi: number = mintSupplyUi(mintState);
@@ -432,6 +445,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
         const fallback = await stepBudget(() => publicRpcGetLargestAccounts(resolvedMint));
         const parsed = isHeliusLargestAccountsResponse(fallback) ? fallback : null;
         rawHolderAccounts = parsed?.result?.value ?? [];
+        if (rawHolderAccounts.length > 0) holdersSource = "public-rpc";
       } catch { /* keep empty — section will gracefully degrade */ }
     }
     if (totalSupplyUi <= 0) {
@@ -453,7 +467,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     }
 
     const solMarketsData = isSolscanMarketsResponse(solMarkets) ? solMarkets : null;
-    const resolvedHolderAccounts: HeliusHolder[] = HELIUS_API_KEY && rawHolderAccounts.length > 0
+    let resolvedHolderAccounts: HeliusHolder[] = HELIUS_API_KEY && rawHolderAccounts.length > 0
       ? await stepBudget(() => heliusResolveAccountOwners(rawHolderAccounts, HELIUS_API_KEY)) ?? rawHolderAccounts.map(h => ({ ...h, owner: h.owner ?? h.address }))
       : rawHolderAccounts.map(h => ({ ...h, owner: h.owner ?? h.address }));
     const solMarketPool: SolscanMarketPool | null =
@@ -513,6 +527,16 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
     const rugcheckMemory = (await stepBudget(() => reconcileRugCheck(resolvedMint, rugcheckLive, tokenAgeMinutes))) ?? { ...rugcheckLive, fromMemory: false };
     rugData = rugcheckMemory.summary;
     const rugReport = rugcheckMemory.report;
+    // No list from Helius (live or its last), nor from the public pool: RugCheck's report holds the 20 biggest holders too (api/_lib/holders-memory.ts). The concentration is read from them, but
+    // no second source confirmed it: decide.ts keeps SAFE blocked and says so in a line. RugCheck gives the OWNER of every account itself, so no Helius call is made to find it
+    // (the pool vaults are told from wallets by the layer, with the DEXScreener pair addresses and the known pool programs).
+    if (resolvedHolderAccounts.length === 0 && rugCheckListMayStandIn(tokenAgeMinutes, dexData?.pairs?.length ?? 0)) {
+      const fromRugCheck = holdersFromRugCheck(rugReport?.topHolders);
+      if (fromRugCheck.length > 0) {
+        resolvedHolderAccounts = fromRugCheck;
+        holdersSource = "rugcheck";
+      }
+    }
     const rugTotalHolders: number | null =
       typeof rugReport?.totalHolders === "number" && rugReport.totalHolders > 0
       ? rugReport.totalHolders : null;
@@ -571,7 +595,7 @@ async function runAnalysis(req: VercelRequest, res: VercelResponse, requestId: s
       pair, dexData, resolvedMint, marketCap, tokenAgeMinutes, holders, rugData, rugReport, tokenName, goplus, authFacts, totalSupplyUi, allTimeHigh, athCollapsed, organicScore: organicLookup?.score ?? null,
       solscanTokenAgeHours, dexTokenAgeHours, resolvedHolderAccounts, solscanTrades24h, solscanTraders24h,
       solscanAnswered: solMetaData !== null || solTransfersData !== null || solMarketsData !== null,
-      candles, dailyCandles, recentTransfers, creatorReputation,
+      candles, dailyCandles, recentTransfers, creatorReputation, holdersSource,
     }), condemnedEntry);
     for (const note of decision.notes) logger.info("scan", note.message, { requestId, ca: resolvedMint, ...note.data });
     const { score, risk, rugKind, flags, safeBlocked, safeBlockedReasons, confidence, sources_used, layersSnapshot, lpBurned, lpLocked } = decision;

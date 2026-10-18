@@ -11,16 +11,97 @@ import { fetchJson, fetchJsonPost } from "./http";
 import { heliusRpc, heliusRestUrl } from "./helius";
 import { asNumber } from "./math";
 import { logger } from "./logger";
+import { rememberHolders, lastKnownHolders, HOLDERS_FRESH_S, type HoldersSource } from "./holders-memory";
 
 
 // ─── HELIUS HELPERS ─────────────────────────────────────────────────────────
 // Every Helius RPC call goes through heliusRpc (api/_lib/helius.ts): it sends the
 // key the way Helius accepts it (Bearer header or ?api-key=, detected at run
 // time) and logs when Helius refuses the key, instead of failing silently.
-export async function heliusGetLargestAccounts(mint: string, key: string) {
-    return heliusRpc(key, {
-        jsonrpc: "2.0", id: "holders", method: "getTokenLargestAccounts", params: [mint],
-    }, 6000, 1);
+
+/** Attempts at getTokenLargestAccounts, and the pause between two. Helius answers the tokens with the most holders with a transient error (see holders-memory.ts); measured on 2026-10-18, two short attempts get a list for about a quarter of these tokens' scans, three for four in ten, at the cost of 3 to 6 s more: two, and the last list or RugCheck's do the rest. */
+export const LARGEST_ACCOUNTS_ATTEMPTS = 2;
+export const LARGEST_ACCOUNTS_RETRY_MS = 400;
+/** The time an attempt needs to be worth starting (a list that is given takes 1.4 to 5.6 s on these tokens): no new attempt is started with less than this before the deadline. */
+const LARGEST_ACCOUNTS_MIN_ATTEMPT_MS = 2500;
+
+/** A JSON-RPC answer that is an error worth asking again for: Helius's "account index service overloaded, please try again." (-32603) and its kin. HTTP 200, no `result`. */
+export function isTransientRpcError(res: unknown): boolean {
+    if (!res || typeof res !== "object") return false;
+    const r = res as { result?: unknown; error?: { code?: unknown; message?: unknown } };
+    if (r.result !== undefined || !r.error || typeof r.error !== "object") return false;
+    const message = String(r.error.message ?? "").toLowerCase();
+    return r.error.code === -32603 || /overload|try again|too many|busy|temporar/.test(message);
+}
+
+const largestAccountsOf = (res: unknown): HeliusHolder[] => {
+    const value = (res as { result?: { value?: unknown } } | null)?.result?.value;
+    return Array.isArray(value) ? (value as HeliusHolder[]) : [];
+};
+
+let largestLogAt = 0;
+
+/**
+ * The biggest token accounts of a mint, as Helius answers them, or null when it gave none. An error answer is NOT an answer: it used to be returned as it was (HTTP 200, so "not null"), and the
+ * scan read an empty list from it. A transient error is asked again (LARGEST_ACCOUNTS_ATTEMPTS in all) while there is time (`deadlineAt`, epoch ms).
+ */
+export async function heliusGetLargestAccounts(mint: string, key: string, opts: { deadlineAt?: number } = {}): Promise<unknown | null> {
+    let last: unknown = null;
+    for (let attempt = 0; attempt < LARGEST_ACCOUNTS_ATTEMPTS; attempt++) {
+        if (attempt > 0) {
+            if (opts.deadlineAt !== undefined && Date.now() + LARGEST_ACCOUNTS_RETRY_MS + LARGEST_ACCOUNTS_MIN_ATTEMPT_MS > opts.deadlineAt) break;
+            await new Promise((resolve) => setTimeout(resolve, LARGEST_ACCOUNTS_RETRY_MS));
+        }
+        try {
+            last = await heliusRpc(key, {
+                jsonrpc: "2.0", id: "holders", method: "getTokenLargestAccounts", params: [mint],
+            }, 6000, 1);
+        } catch (e: unknown) {
+            // Never an exception into the scan's Promise.all: no answer is the same as "Helius gave none".
+            logger.warn("helius", "getTokenLargestAccounts threw", { error: String(e).slice(0, 160) });
+            return null;
+        }
+        if (largestAccountsOf(last).length > 0) return last;
+        if (!isTransientRpcError(last)) break; // no answer at all (already asked twice by http.ts), or an error that asking again does not change
+    }
+    // One line a minute, not one per scan: for these tokens it is the usual state of Helius.
+    if (Date.now() - largestLogAt >= 60_000) {
+        largestLogAt = Date.now();
+        logger.warn("helius", "getTokenLargestAccounts gave no accounts", { error: JSON.stringify((last as { error?: unknown } | null)?.error ?? null).slice(0, 160) });
+    }
+    return null;
+}
+
+/**
+ * The list of the biggest holders: Helius's last list when it is under HOLDERS_FRESH_S old (not asked again, unless `fresh`), else Helius live, else the last list however old it is
+ * allowed to be (holders-memory.ts: about a day, not for a new token). `source` says which one it is. A list Helius gives is kept for the next time.
+ * Never throws (Redis failing is the same as Redis missing).
+ */
+export async function heliusGetLargestAccountsRemembered(
+    mint: string,
+    key: string,
+    opts: { tokenAgeMinutes: number | null; deadlineAt?: number; fresh?: boolean },
+): Promise<{ response: unknown | null; source: HoldersSource | null }> {
+    const asAnswer = (holders: HeliusHolder[]) => ({ result: { value: holders } });
+    const memory = await lastKnownHolders(mint, opts.tokenAgeMinutes);
+    if (memory && memory.ageS <= HOLDERS_FRESH_S && !opts.fresh) return { response: asAnswer(memory.holders), source: "helius-last" };
+    // The live attempts are raced against the deadline: a list that arrives after it (it takes up to 6 s) must not leave the scan with nothing when a last list is in hand. What arrives late is still kept.
+    const liveAttempts = heliusGetLargestAccounts(mint, key, { deadlineAt: opts.deadlineAt }).then(async (answer) => {
+        const holders = largestAccountsOf(answer);
+        if (holders.length > 0) await rememberHolders(mint, holders);
+        return answer;
+    }).catch(() => null);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const live = opts.deadlineAt === undefined
+        ? await liveAttempts
+        : await Promise.race([
+            liveAttempts,
+            new Promise<null>((resolve) => { timer = setTimeout(() => resolve(null), Math.max(0, opts.deadlineAt! - Date.now())); }),
+        ]);
+    if (timer !== undefined) clearTimeout(timer);
+    if (largestAccountsOf(live).length > 0) return { response: live, source: "helius" };
+    if (memory) return { response: asAnswer(memory.holders), source: "helius-last" };
+    return { response: null, source: null };
 }
 
 
