@@ -259,7 +259,8 @@ describe("the workflow can read the code and write issues, nothing else", () => 
     expect(code).not.toMatch(/secrets\./);
     const uses = [...code.matchAll(/uses:\s*(\S+)/g)].map((m) => m[1]);
     expect(uses.length).toBeGreaterThan(0);
-    for (const u of uses) expect(u).toMatch(/^actions\/checkout@v\d+$/);
+    // GitHub's checkout only: pinned to a commit (workflow-pins.test.ts requires it for every action), or, as it used to be, to a major tag.
+    for (const u of uses) expect(u).toMatch(/^actions\/checkout@(v\d+|[0-9a-f]{40})$/);
     expect(code).not.toMatch(/npm (ci|install)|npx /);
   });
 

@@ -31,7 +31,7 @@ jobs:
       contents: read
       issues: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       # The scripts use Node's own modules only (fetch, fs, path): the Node that comes with the runner is enough, nothing is installed.
       - name: Compare the registry with Jupiter's verified list
