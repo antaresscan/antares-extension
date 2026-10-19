@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - The `activeTab` permission is no longer declared: no code uses it (`chrome.scripting` and `captureVisibleTab` are never called; the
   content scripts run through the host permissions). Nothing changes for users; the permission list is one line shorter, in the Store
   and in `privacy.html` (section 8).
+- The row Sell / Mint / Freeze / LP / Liq of the overlay card is now guarded in a real browser: `npm run overlay:check` renders the real overlay for every verdict, plan, liquidity colour and state
+  and measures the ink of every mark (CI runs it). The little dash of an unknown check, and of an unreadable liquidity, is drawn like the tick and the cross instead of being a letter:
+  at 150 % screen scaling the letter landed up to one device pixel off the line.
 - `docs/cws/permission-justifications.md`: the answers of the "Privacy practices" tab now agree with the privacy policy (identity,
   session token, IP address used for rate limiting, scan history, page content).
 

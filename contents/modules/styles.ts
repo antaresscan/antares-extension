@@ -410,11 +410,19 @@ export const SHADOW_CSS = `
 .si b.w { color: #f5d000; }
 /* The liquidity figure: Bebas Neue like the rest of the card (it was IBM Plex Mono, the only figure of the card in that face).
    THE LINE OF THE FOOTER: the check, the cross, the dash and the figure all sit on the same line, whatever the figure's colour or length. The check and the cross are
-   drawn shapes (their middle is about 6.5px and 7.25px under the top of the line); the dash and the figure are text, which sits higher than a drawn shape of the same
-   box, so each gets its own small push down to the middle of the two (about 6.9px). The push is the same for every colour (the green figure used to be pushed 1.5px
+   drawn shapes (their middle is about 6.5px and 7.25px under the top of the line); the figure is text, which sits higher than a drawn shape of the same
+   box, so it gets a small push down to the middle of the two (about 6.9px). The dash is drawn like the check and the cross (a bar in the same 12x12 box, no push): a glyph is rounded to whole
+   device pixels on its own and landed one pixel off the line at 150 % screen scaling. scripts/overlay-alignment.mjs measures all of it in real Chromium (npm run overlay:check). The push is the same for every colour (the green figure used to be pushed 1.5px
    and the others not, so the figure moved with its colour). Measured on the real rendering, enlarged 8 times (the gallery of the Liq demo). */
 .si b.liq { font-family: 'Bebas Neue', sans-serif; font-size: 11px; letter-spacing: .06em; position: relative; top: 1.3px; }
-.si b.dash { position: relative; top: 1.3px; }
+/* The figure is TEXT, and where a line of text puts its glyphs depends on the ascent and descent the platform rounds for the font: the push above, tuned on Windows, left the figure
+   1px lower than the ticks on Linux (measured by scripts/overlay-alignment.mjs in CI). Where the browser can trim the line box to the height of the capitals (Chrome 133+), the figure's
+   box IS its capitals, on every platform: the same margin gives the same line everywhere (measured: Windows and Linux agree within half a pixel). Older browsers keep the push. */
+@supports (text-box: trim-both cap alphabetic) {
+  .si b.liq { display: inline-block; line-height: 1; text-box: trim-both cap alphabetic; margin-top: 2px; top: 0; vertical-align: top; }
+}
+.si b.dash { display: inline-flex; width: 12px; height: 12px; position: relative; font-size: 0; vertical-align: top; }
+.si b.dash::before { content: ''; position: absolute; left: 50%; top: 5.2px; width: 6px; height: 1px; margin-left: -3px; background: currentColor; }
 .si b.ok { display: inline-flex; align-items: flex-start; justify-content: center; width: 12px; height: 12px; position: relative; font-size: 0; vertical-align: top; }
 .si b.ok::before { content: ''; position: absolute; width: 7px; height: 4px; border-left: 1.5px solid #00e5b0; border-bottom: 1.5px solid #00e5b0; top: 3px; left: 50%; transform: translateX(-50%) rotate(-45deg); }
 .si b.no { display: inline-flex; align-items: flex-start; justify-content: center; width: 12px; height: 12px; position: relative; top: -.1px; font-size: 0; vertical-align: top; }
