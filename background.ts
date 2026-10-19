@@ -11,7 +11,7 @@ import { CA_RE } from "./shared/constants"
 import { config } from "./shared/config"
 import { logger } from "./shared/logger"
 import { getInstallId } from "./shared/install-id"
-import { toggleExtensionEnabled } from "./shared/extension-toggle"
+import { toggleExtensionEnabled, enabledFromStored, EXTENSION_ENABLED_KEY } from "./shared/extension-toggle"
 import { scrubEvent, scrubBreadcrumb } from "./shared/sentry-scrub"
 
 // ─── SENTRY INITIALIZATION ───────────────────────────────────────────────────
@@ -67,7 +67,11 @@ const ALLOWED_OPEN_TAB_HOSTS = new Set([
 // ─── INSTALL ID ───────────────────────────────────────────────────────────────
 // Create the install id as soon as the extension is installed or updated, so it exists before any content script or the
 // Options page asks for it (shared/install-id.ts is safe when they race, this makes the race rare in the first place).
-chrome.runtime.onInstalled.addListener(() => { void getInstallId() })
+// It also draws the on/off dot at once (see EXTENSION TOGGLE below).
+chrome.runtime.onInstalled.addListener(() => {
+  void getInstallId()
+  void paintStoredToggleDot()
+})
 
 // ─── KEEPALIVE ────────────────────────────────────────────────────────────────
 void chrome.alarms.create(config.keepaliveAlarmName, { periodInMinutes: config.keepaliveIntervalMinutes })
@@ -302,12 +306,39 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 // ─── EXTENSION TOGGLE ─────────────────────────────────────────────────────────
 // The state is read from chrome.storage at click time (shared/extension-toggle.ts), not kept in a variable: the service
 // worker that handles the click was often started by it, before any startup read could have finished.
-chrome.action.onClicked.addListener(async (_tab) => {
-  const extensionEnabled = await toggleExtensionEnabled(chrome.storage.local)
+//
+// The dot is also drawn WITHOUT any click: when the extension is installed or updated (onInstalled), when the browser starts
+// (onStartup) and whenever the service worker starts (the line below). Chrome forgets the badge on a restart, and a button that is
+// blank until the first click made that first click look like "switch on" while it switches OFF.
+let toggleDotVersion = 0
 
+/** Draw the on/off dot (green = ON, red = OFF) and say the state in the button's tooltip. */
+function paintToggleDot(extensionEnabled: boolean): void {
   void chrome.action.setBadgeText({ text: "\u25CF" })
   void chrome.action.setBadgeBackgroundColor({ color: "#FFFFFF" })
   void chrome.action.setBadgeTextColor({ color: extensionEnabled ? "#00e5b0" : "#ff5f5f" })
+  void chrome.action.setTitle({ title: extensionEnabled ? "Antares is ON (green dot). Click to turn it off." : "Antares is OFF (red dot). Click to turn it on." })
+}
+
+/** Draw the dot for the state that is stored. A click that happens meanwhile has the last word. */
+async function paintStoredToggleDot(): Promise<void> {
+  const version = toggleDotVersion
+  try {
+    const stored = await chrome.storage.local.get([EXTENSION_ENABLED_KEY])
+    if (version === toggleDotVersion) paintToggleDot(enabledFromStored(stored?.[EXTENSION_ENABLED_KEY]))
+  } catch (e: unknown) {
+    logger.warn("background", "could not draw the on/off dot", String(e))
+  }
+}
+
+void paintStoredToggleDot()
+chrome.runtime.onStartup.addListener(() => { void paintStoredToggleDot() })
+
+chrome.action.onClicked.addListener(async (_tab) => {
+  toggleDotVersion++
+  const extensionEnabled = await toggleExtensionEnabled(chrome.storage.local)
+  toggleDotVersion++
+  paintToggleDot(extensionEnabled)
 
   chrome.tabs.query({}, (tabs) => {
     for (const t of tabs) {

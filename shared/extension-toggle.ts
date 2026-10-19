@@ -10,6 +10,11 @@ export function nextEnabledState(stored: unknown): boolean {
   return typeof stored === "boolean" ? !stored : false
 }
 
+/** What the toolbar dot must show, given what is stored: only an explicit `false` means OFF. Nothing stored = a fresh install = ON. */
+export function enabledFromStored(stored: unknown): boolean {
+  return stored !== false
+}
+
 type Storage = {
   get: (keys: string[]) => Promise<Record<string, unknown>>
   set: (items: Record<string, unknown>) => Promise<void>
