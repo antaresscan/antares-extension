@@ -156,9 +156,23 @@ describe("the line of the footer", () => {
     expect(rule(".si b.liq")).toMatch(/top:\s*1\.3px/)
   })
 
-  it("the dash has its own push, and it is the same dash everywhere (the cells and the Liq cell)", () => {
-    expect(rule(".si b.dash")).toMatch(/position:\s*relative/)
-    expect(rule(".si b.dash")).toMatch(/top:\s*1\.3px/)
+  // The dash used to be a letter (an em dash in the card's mono face, pushed 1.3px down). A glyph is rounded to whole device pixels on its own, so at 150 % screen scaling it landed
+  // up to one device pixel off the line of the drawn marks (measured in real Chromium by scripts/overlay-alignment.mjs). It is now drawn like the check and the cross: a bar in the
+  // same 12x12 box, with no push of its own and no dependence on a font.
+  it("the dash is a DRAWN mark in the same 12x12 box as the check and the cross, the same everywhere (the cells and the Liq cell)", () => {
+    const box = rule(".si b.dash")
+    expect(box).toMatch(/display:\s*inline-flex/)
+    expect(box).toMatch(/width:\s*12px/)
+    expect(box).toMatch(/height:\s*12px/)
+    expect(box).toMatch(/position:\s*relative/)
+    expect(box).toMatch(/font-size:\s*0/)
+    expect(box, "no push of its own: the bar sits inside the box, like the tick and the cross").not.toMatch(/\btop\s*:/)
+    const bar = rule(".si b.dash::before")
+    expect(bar).not.toBeNull()
+    expect(bar).toMatch(/content:\s*''/)
+    expect(bar).toMatch(/position:\s*absolute/)
+    expect(bar).toMatch(/height:\s*1px/)
+    expect(bar).toMatch(/background:\s*currentColor/)
   })
 
   it("the cross is brought up to the line of the checks (it was pushed 1.5px down), the check is not moved", () => {

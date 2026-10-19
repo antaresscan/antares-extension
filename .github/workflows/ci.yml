@@ -68,6 +68,15 @@ jobs:
       - name: Smoke-test packaged bundles (content script + Options page)
         run: npm run smoke
 
+      # The row of the overlay card (Sell / Mint / Freeze / LP lock / Liq), MEASURED in a real Chromium: the five marks must share one line and one font for every verdict,
+      # plan, liquidity colour and state, at 100 % to 300 % screen scaling and next to a host page with aggressive typography (scripts/overlay-alignment.mjs). The unit
+      # tests only read the CSS text: the liquidity figure sat 2 px above the ticks (4 px above the cross) and moved with its colour, and nothing in CI noticed.
+      - name: Install Chromium for the overlay alignment check
+        run: npx playwright install --with-deps chromium
+
+      - name: Overlay alignment (real Chromium)
+        run: npm run overlay:check
+
       - name: Upload build artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
