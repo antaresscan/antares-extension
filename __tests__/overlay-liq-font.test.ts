@@ -156,6 +156,19 @@ describe("the line of the footer", () => {
     expect(rule(".si b.liq")).toMatch(/top:\s*1\.3px/)
   })
 
+  // Where the browser can trim the line box to the capitals, the figure does not depend on the font metrics the platform rounds (the push above, tuned on Windows, left the figure 1px
+  // lower than the ticks on Linux): scripts/overlay-alignment.mjs measured Windows and Linux within half a pixel of each other with this rule, and 1 to 1.5px apart without it.
+  it("where the browser can trim the line box to the capitals, the figure is its capitals: one margin, no push, for every colour", () => {
+    const at = SHADOW_CSS.indexOf("@supports (text-box: trim-both cap alphabetic) {")
+    expect(at, "the @supports block of the figure").toBeGreaterThan(-1)
+    const block = SHADOW_CSS.slice(at, SHADOW_CSS.indexOf("\n}", at))
+    expect(block).toMatch(/\.si b\.liq \{[^}]*display:\s*inline-block/)
+    expect(block).toMatch(/text-box:\s*trim-both cap alphabetic/)
+    expect(block).toMatch(/margin-top:\s*2px/)
+    expect(block).toMatch(/\btop:\s*0\b/)
+    expect(block, "the colour classes still carry no position inside the block").not.toMatch(/\.si b\.(y|n|w)\b/)
+  })
+
   // The dash used to be a letter (an em dash in the card's mono face, pushed 1.3px down). A glyph is rounded to whole device pixels on its own, so at 150 % screen scaling it landed
   // up to one device pixel off the line of the drawn marks (measured in real Chromium by scripts/overlay-alignment.mjs). It is now drawn like the check and the cross: a bar in the
   // same 12x12 box, with no push of its own and no dependence on a font.
