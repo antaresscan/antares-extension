@@ -44,6 +44,7 @@ async function loadBackground(): Promise<Fake> {
       id: OWN_ID,
       lastError: undefined,
       onInstalled: { addListener: vi.fn() },
+      onStartup: { addListener: vi.fn() },
       onMessage: {
         addListener: (l: Listener) => {
           listener = l;
@@ -68,6 +69,7 @@ async function loadBackground(): Promise<Fake> {
       setBadgeText,
       setBadgeBackgroundColor: vi.fn(),
       setBadgeTextColor,
+      setTitle: vi.fn(),
       onClicked: { addListener: vi.fn() },
     },
     notifications: { create: notificationsCreate },
@@ -76,6 +78,10 @@ async function loadBackground(): Promise<Fake> {
   vi.resetModules();
   await import("../background");
   if (!listener) throw new Error("background.ts did not register a runtime.onMessage listener");
+  // The worker draws the on/off dot as it starts (toolbar-dot-at-start.test.ts); forget that, these tests are about what a SCAN_RESULT does.
+  await new Promise((r) => setTimeout(r, 0));
+  setBadgeText.mockClear();
+  setBadgeTextColor.mockClear();
   return { storage, setBadgeText, setBadgeTextColor, notificationsCreate, listener };
 }
 
