@@ -184,10 +184,11 @@ async function inkRows(page, shotB64, clip, dsf, cells) {
 const HOSTILE = "html{font-size:23px;line-height:2.4;letter-spacing:.12em;word-spacing:7px;font-family:Times,serif;text-transform:uppercase}body{margin:0;zoom:1}*{box-sizing:content-box}"
 const failures = []
 let renders = 0, worstSpread = 0, worstWhere = ""
-// The round marks are measured in DEVICE pixels, to a fraction of one. Measured on the drawn marks: every circle within 0.2 device px of its size, every symbol within 0.21 of the
-// centre of its circle, at 100 %, 125 %, 150 %, 175 %, 200 %, 225 %, 250 %, 262 % and 300 %. Before they were drawn (a CSS circle of 14px with a font character on it) a circle was
-// 17 or 18 device px at 125 % depending on its row, a cross was 21 x 22 at 150 %, a digit sat up to 0.74 device px off centre: all of that is above these limits.
-const SIZE_TOLERANCE_DP = 0.6
+// The round marks are measured in DEVICE pixels, to a fraction of one. The size of a circle is read from the pixels at its edge, whose anti-aliasing is not the same in every
+// renderer: the same drawing measures 19.8-20.0 high in a full Chromium and 19.4-19.6 in the headless shell the CI runs (a circle of 16 css px at 125 % is 20 device px), and a symbol
+// is within 0.21 device px of the centre of its circle in the one and 0.29 in the other. The limits sit above that noise and far below the defect they guard against: a 14px CSS circle was
+// 17.5 device px at 125 % and 21 at 150 % (2.5 and 3 below the 20 and 24 it should be), a symbol up to 0.75 off centre. Every circle is also compared with the others of its scaling.
+const SIZE_TOLERANCE_DP = 1.0
 const CENTRE_TOLERANCE_DP = 0.5
 let panelChecks = 0, panelWorst = 0, panelWorstWhere = ""
 const colourClass = (liq) => (liq === null ? "dash" : liq < 5000 ? "liq n" : liq > 50_000 ? "liq y" : "liq")
@@ -337,6 +338,7 @@ async function panelSweep(browser, js, { name, dsf }) {
     await open("cf")
     const marks = await page.evaluate(() => window.__overlay.panelMarks())
     if (marks.length < 12) failures.push(`${name}: only ${marks.length} round marks found in the Critical Flags panel (the check is blind)`)
+    const circleHeights = []
     // Every mark, not one of each kind: two circles of the same kind sitting on different rows are what used to come out at different sizes.
     for (const g of marks) {
       const where = `${name} | ${g.kind} "${g.text}"`
@@ -354,6 +356,12 @@ async function panelSweep(browser, js, { name, dsf }) {
       const off = Math.max(Math.abs(m.dx), Math.abs(m.dy))
       if (off > CENTRE_TOLERANCE_DP) once(`${where}: the symbol is ${m.dx.toFixed(2)} device px right and ${m.dy.toFixed(2)} down of the centre of its circle at ${dsf}x (${px(m.dx)} / ${px(m.dy)} css px; limit ${CENTRE_TOLERANCE_DP})`)
       if (off > panelWorst) { panelWorst = off; panelWorstWhere = where }
+      if (g.kind === "mark" || g.text.length === 1) circleHeights.push(m.h)
+    }
+    // 4. Every circle of one scaling is the size of the others (the 17 circles of the panel: numbers of one digit and marks).
+    if (circleHeights.length > 1) {
+      const spread = Math.max(...circleHeights) - Math.min(...circleHeights)
+      if (spread > SIZE_TOLERANCE_DP) once(`${name}: the circles are not all the same size: from ${Math.min(...circleHeights).toFixed(2)} to ${Math.max(...circleHeights).toFixed(2)} device px high at ${dsf}x`)
     }
     panelChecks += marks.length
   } catch (e) {

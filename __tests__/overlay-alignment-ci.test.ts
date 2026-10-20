@@ -74,9 +74,11 @@ describe("the overlay alignment guard stays on", () => {
     expect(script).toContain("of the centre of its circle")
   })
 
-  it("keeps the limits of the round marks to a fraction of a device pixel: 0.5 for the centring (measured 0.37 at worst), 0.6 for the size (0.2)", () => {
-    expect(script).toMatch(/const SIZE_TOLERANCE_DP = 0\.6\b/)
+  it("keeps the limits of the round marks within a device pixel: 0.5 for the centring (0.29 at worst), 1 for the size (the edge of a circle measures 19.4-20.1 for 20 in the CI's headless Chromium; the defect was 2.5-3 off)", () => {
+    expect(script).toMatch(/const SIZE_TOLERANCE_DP = 1\.0\b/)
     expect(script).toMatch(/const CENTRE_TOLERANCE_DP = 0\.5\b/)
+    // and every circle of a scaling is compared with the others of that scaling
+    expect(script).toContain("the circles are not all the same size")
     // at the scalings of a Windows screen, where a 14px circle was 17.5 / 21 / 24.5 device pixels: 100, 125, 150, 175, 200 %, and the in-between ones
     expect(script).toMatch(/\[1, 1\.25, 1\.5, 1\.75, 2, 2\.25, 2\.5, 2\.625, 3, 8\]/)
   })
