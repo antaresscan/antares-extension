@@ -57,6 +57,8 @@ import {
 } from "./compute.js?v=20261007-holders";
 // The website and Twitter links under the token's name (a new file on purpose: a copy cached from before the deploy cannot be missing it).
 import { officialLinks, explorerUrl, dexscreenerLink } from "./links.js?v=20261015-links";
+// The round marks of the flags, drawn (a new file on purpose: a copy cached from before the deploy cannot be missing it). The marketing demo keeps the character (html.is-demo).
+import { markSvg } from "./round-marks.js?v=20261020-marks";
 
 // ──────────────────────────────────────────────────────────────────────
 // Boot — parse the CA from the URL, kick off the initial fetch, and
@@ -70,6 +72,8 @@ const caShort = ca ? ca.slice(0, 6) + "…" + ca.slice(-4) : "—";
 document.getElementById("ca-disp").textContent = caShort;
 
 const isDemo = params.get("demo") === "1";
+/** The mark of a flag: the character (hidden by the CSS) and the drawing on the real page, the character alone in the marketing demo (its look is unchanged). */
+const flagMark = (key, char) => (isDemo ? char : char + markSvg(key));
 // A marker for the demo's own look in token.html's CSS (html.is-demo): the marketing demo stays exactly as it was when the page's style changes. Nothing else reads it.
 if (isDemo) document.documentElement.classList.add("is-demo");
 
@@ -687,7 +691,7 @@ function render(d, ca) {
   }
   const flagsRowsHtml =
     fAll.length === 0
-      ? `<div class="flag-row"><div class="flag-icon g">✓</div><div class="flag-body"><div class="flag-label ok">No critical flags detected</div><div class="flag-desc">All sources agree — this token has no automated red flags.</div></div><div></div></div>`
+      ? `<div class="flag-row"><div class="flag-icon g">${flagMark("g", "✓")}</div><div class="flag-body"><div class="flag-label ok">No critical flags detected</div><div class="flag-desc">All sources agree — this token has no automated red flags.</div></div><div></div></div>`
       : fAll
           .filter((f) => {
             const l = f.label || f;
@@ -712,7 +716,7 @@ function render(d, ca) {
               ? null
               : getFlagDescription(rawLabel);
             return `<div class="flag-row">
-            <div class="flag-icon ${ic}">${ico}</div>
+            <div class="flag-icon ${ic}">${flagMark(ic, ico)}</div>
             <div class="flag-body">
               <div class="flag-label ${cls}">${escapeHtml(displayLabel)}</div>
               ${desc ? `<div class="flag-desc">${escapeHtml(desc)}</div>` : ""}

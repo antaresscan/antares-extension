@@ -797,6 +797,67 @@ html.is-demo .tk-line b{font-weight:700}
 
 footer{text-align:center;padding:32px 0 20px;color:#2a2a2f;font-size:10px;letter-spacing:.15em;text-transform:uppercase;margin-top:40px;border-top:1px solid var(--border)}
 footer span{color:var(--c)}
+
+/* ╔════════════════════════════════════════════════════════════════════
+   ║  THE TOKEN PAGE IN THE CARD'S OWN VOICE — Bebas Neue (2026-10-20)    ║
+   ║  The flags, the AI verdict and the Insider Watch tab (wallet addresses ║
+   ║  and figures included) were set in IBM Plex Mono, with synthesized    ║
+   ║  bold and italic. The overlay card and its panels are Bebas Neue: one ║
+   ║  weight, no italic. The sizes are about 1.3x the monospace ones (a    ║
+   ║  narrow face with a small body for its cap height). Every rule here   ║
+   ║  is for the real page: the marketing demo (html.is-demo) keeps its    ║
+   ║  look, with the rules above.                                          ║
+   ╚════════════════════════════════════════════════════════════════════ */
+html:not(.is-demo) .flags-head .lbl{font-family:'Bebas Neue',sans-serif;font-size:13px;font-weight:400;letter-spacing:.16em}
+html:not(.is-demo) .flags-head .count{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:.08em}
+html:not(.is-demo) .flag-label{font-family:'Bebas Neue',sans-serif;font-size:16px;font-weight:400;line-height:1.3;letter-spacing:.06em;word-spacing:.12em}
+html:not(.is-demo) .flag-desc{font-family:'Bebas Neue',sans-serif;font-size:14px;font-style:normal;line-height:1.35;letter-spacing:.06em;word-spacing:.12em}
+html:not(.is-demo) .ai-head h3{font-family:'Bebas Neue',sans-serif;font-size:14px;font-weight:400;letter-spacing:.18em}
+html:not(.is-demo) .ai-body{font-family:'Bebas Neue',sans-serif;font-size:17px;line-height:1.5;letter-spacing:.05em;word-spacing:.1em}
+html:not(.is-demo) .ai-body b{font-weight:400}
+html:not(.is-demo) .ai-loading{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:.08em}
+/* the round marks of the flags are one 16px drawing each (js/round-marks.js): the character stays in the element, hidden, for screen readers */
+html:not(.is-demo) .flag-icon{display:block;width:16px;height:16px;border-radius:0;font-size:0;line-height:0}
+html:not(.is-demo) .flag-icon svg{display:block;overflow:visible}
+html:not(.is-demo) .flag-icon.r{background:none;color:var(--orange)}
+html:not(.is-demo) .flag-icon.y{background:none;color:var(--yellow)}
+html:not(.is-demo) .flag-icon.g{background:none;color:var(--c)}
+html:not(.is-demo) .flag-icon.r .mark-bg{fill:rgba(255,60,80,.18)}
+html:not(.is-demo) .flag-icon.y .mark-bg{fill:rgba(245,208,0,.14)}
+html:not(.is-demo) .flag-icon.g .mark-bg{fill:rgba(0,229,176,.12)}
+html:not(.is-demo) .mark-ink{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+html:not(.is-demo) .mark-dot{fill:currentColor}
+/* Insider Watch: the feed, the fallback list of holders, the net flow, and the heat tiles */
+html:not(.is-demo) .iw-feed-title{font-weight:400}
+html:not(.is-demo) .iw-tile{font-family:'Bebas Neue',sans-serif}
+html:not(.is-demo) .iw-name{font-size:13px;font-weight:400;letter-spacing:.08em}
+html:not(.is-demo) .iw-action{font-size:11px;font-weight:400;letter-spacing:.14em}
+html:not(.is-demo) .iw-tile.dev::after{font-size:10px;font-weight:400}
+html:not(.is-demo) .iw-row{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.06em}
+html:not(.is-demo) .iw-row-rank{font-size:13px;font-weight:400;letter-spacing:.06em}
+html:not(.is-demo) .iw-row-wallet{font-size:14px;letter-spacing:.06em}
+html:not(.is-demo) .iw-row-action{font-size:13px;font-weight:400;letter-spacing:.14em}
+html:not(.is-demo) .iw-row-usd{font-weight:400}
+html:not(.is-demo) .iw-row-age{font-size:13px;letter-spacing:.06em}
+html:not(.is-demo) .iw-holder-row{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.06em}
+html:not(.is-demo) .iw-holder-rank{font-size:13px;font-weight:400}
+html:not(.is-demo) .iw-holder-wallet{font-weight:400}
+html:not(.is-demo) .iw-holder-pct{font-weight:400}
+html:not(.is-demo) .iw-holder-state{font-size:12px;font-weight:400;letter-spacing:.16em}
+html:not(.is-demo) .iw-flow{font-family:'Bebas Neue',sans-serif;font-size:16px}
+html:not(.is-demo) .iw-flow-label{font-size:15px;font-weight:400;letter-spacing:.16em}
+html:not(.is-demo) .iw-flow-val{font-size:18px;font-weight:400}
+html:not(.is-demo) .iw-flow-state{font-size:15px;font-weight:400;letter-spacing:.16em}
+@media(max-width:640px){
+  html:not(.is-demo) .iw-row{font-size:13px;gap:6px}
+  html:not(.is-demo) .iw-row-rank{font-size:12px}
+  html:not(.is-demo) .iw-row-wallet{font-size:12px;letter-spacing:.03em}
+  html:not(.is-demo) .iw-row-action{font-size:11px;letter-spacing:.06em}
+  html:not(.is-demo) .iw-row-header span{font-size:11px !important}
+  html:not(.is-demo) .iw-flow{flex-wrap:wrap;gap:2px 12px}
+  html:not(.is-demo) .iw-flow-label,html:not(.is-demo) .iw-flow-state{font-size:13px;letter-spacing:.1em}
+  html:not(.is-demo) .iw-flow-val{font-size:16px}
+}
 </style>
 </head>
 <body>
@@ -835,6 +896,6 @@ footer span{color:var(--c)}
 
 </div>
 
-<script type="module" src="/js/token-app.js?v=20261015-links"></script>
+<script type="module" src="/js/token-app.js?v=20261020-marks"></script>
 <script defer src="/js/token-bg.js?v=20260429a"></script>
 </body></html>
