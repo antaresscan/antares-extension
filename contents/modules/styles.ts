@@ -784,18 +784,34 @@ export const SHADOW_CSS = `
   padding-top: 8px;
 }
 
+/* The round marks (cross, !, i, tick) are drawn, not typed: a character comes out of whichever font the page falls back to (a thin tick, a serifed
+   "i", a "!" that sits low), so the four were never the same size from one computer to the next. The text stays in the element (font-size 0) for
+   screen readers; the shapes are drawn on the same 14px circle, like the marks of the Sell / Mint / Freeze row. */
 .cf-flag-icon {
   width: 14px; height: 14px;
   border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 8px; font-weight: 700;
+  position: relative;
+  font-size: 0; line-height: 0;
   flex-shrink: 0;
   margin-top: 1px;
 }
+.cf-flag-icon::before, .cf-flag-icon::after { content: ''; position: absolute; background: currentColor; }
 .cf-flag-icon-r { background: rgba(255,60,80,.15); color: #ff5f5f; }
 .cf-flag-icon-y { background: rgba(245,208,0,.12); color: #f5d000; }
 .cf-flag-icon-b { background: rgba(80,150,250,.12); color: #6aa5f0; }
 .cf-flag-icon-g { background: rgba(0,229,176,.12); color: #00e5b0; }
+/* cross: two bars crossed at the centre */
+.cf-flag-icon-r::before, .cf-flag-icon-r::after { left: 50%; top: 50%; width: 7.4px; height: 1.4px; border-radius: .7px; }
+.cf-flag-icon-r::before { transform: translate(-50%, -50%) rotate(45deg); }
+.cf-flag-icon-r::after { transform: translate(-50%, -50%) rotate(-45deg); }
+/* tick: the corner of a box, turned */
+.cf-flag-icon-g::before { left: 50%; top: 50%; width: 6.6px; height: 3.6px; background: none; border-left: 1.4px solid currentColor; border-bottom: 1.4px solid currentColor; transform: translate(-54.5%, -77%) rotate(-45deg); }
+/* ! : a bar over a dot */
+.cf-flag-icon-y::before { left: 50%; top: 3.2px; width: 1.5px; height: 4.6px; border-radius: .75px; transform: translateX(-50%); }
+.cf-flag-icon-y::after { left: 50%; top: 9px; width: 1.7px; height: 1.7px; border-radius: 50%; transform: translateX(-50%); }
+/* i : a dot over a bar */
+.cf-flag-icon-b::before { left: 50%; top: 3.2px; width: 1.7px; height: 1.7px; border-radius: 50%; transform: translateX(-50%); }
+.cf-flag-icon-b::after { left: 50%; top: 6.2px; width: 1.5px; height: 4.6px; border-radius: .75px; transform: translateX(-50%); }
 
 .cf-flag-body {
   display: flex;
@@ -836,10 +852,13 @@ export const SHADOW_CSS = `
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 16px; height: 16px;
   border-radius: 8px;
-  padding: 0 6px;
+  /* one digit: exactly a 16px circle (it was a 17-19px oval); two digits: a pill. The 2px on top puts the digits (Bebas Neue sits high in its line)
+     on the middle of the circle. */
+  padding: 2px 4px 0;
   font-size: 12px;
   font-weight: 400;
-  letter-spacing: .04em;
+  line-height: 1;
+  letter-spacing: 0;
 }
 .cf-section-title { color: #888; font-weight: 400; }
 .cf-section-critical .cf-section-count { background: rgba(255,60,80,.18); color: #ff5f5f; }

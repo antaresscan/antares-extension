@@ -59,6 +59,19 @@ describe("the overlay alignment guard stays on", () => {
     expect(script).toContain("colourClass")
   })
 
+  it("also measures the two panels under the card (Critical Flags, AI Summary): their fonts and their round marks, at every scaling", () => {
+    expect(script).toContain("panelSweep")
+    expect(script).toContain("panels: true")
+    expect(script).toMatch(/for \(const dsf of DSFS\) jobs\.push\(\{ name: `panels/)
+    expect(script).toContain("ant-critical-flags")
+    expect(script).toContain("ant-ai-summary")
+    // fonts: Bebas Neue, weight 400, no italic; marks: an exact circle (an oval, 18.67 x 16, was the bug), 14 x 14 for the marks, ink on the centre
+    expect(script).toContain("not Bebas Neue")
+    expect(script).toContain("an oval")
+    expect(script).toContain("not 14 x 14")
+    expect(script).toContain("of the centre of its circle")
+  })
+
   it("keeps the tolerance that catches the bug: 0.75px where the measure is clean, 1.1px on fractional scalings (the bug was 2px)", () => {
     expect(script).toMatch(/OVERLAY_TOL \?\? 0\.75/)
     expect(script).toMatch(/OVERLAY_TOL_FRACTIONAL \?\? 1\.1/)

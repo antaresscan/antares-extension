@@ -35,6 +35,32 @@ describe("the Critical Flags and AI Summary panels are set in Bebas Neue", () =>
   })
 })
 
+// The round marks of the flags (cross, !, i, tick) and the number of each section are shapes of the card, not characters: a character comes out of whichever font the page falls
+// back to (a thin tick, an "i" with serifs, a "!" that sits low) and a number in a padded pill is an oval. The real browser measures them (npm run overlay:check, panels); this
+// keeps the CSS that makes them round and drawn from being edited away.
+describe("the round marks of the Critical Flags panel are drawn on exact circles", () => {
+  it("the mark is a 14px circle with its character hidden (it stays in the page for screen readers) and the shape drawn on it", () => {
+    const css = rule(".cf-flag-icon")
+    expect(css).toMatch(/width:\s*14px;\s*height:\s*14px/)
+    expect(css).toMatch(/border-radius:\s*50%/)
+    expect(css).toMatch(/font-size:\s*0/)
+    expect(css).toMatch(/position:\s*relative/)
+  })
+
+  it.each(["r", "y", "b", "g"])("the %s mark has its shape drawn (a ::before rule with its own geometry)", (variant) => {
+    expect(SHADOW_CSS).toMatch(new RegExp(`\\.cf-flag-icon-${variant}::before[^{]*\\{[^}]*(?:width|border-left)`))
+  })
+
+  it("the number of a section is a 16px circle for one digit (padding of 4px or less on the sides) and a pill from two", () => {
+    const css = rule(".cf-section-count")
+    expect(css).toMatch(/min-width:\s*16px;\s*height:\s*16px/)
+    expect(css).toMatch(/border-radius:\s*8px/)
+    const padding = /padding:\s*(\d+(?:\.\d+)?)px\s+(\d+(?:\.\d+)?)px/.exec(css)
+    expect(padding, "the padding of the number").not.toBeNull()
+    expect(Number(padding![2])).toBeLessThanOrEqual(4) // (a digit is about 5px wide: 5 + 2 x 4 = 13 < 16, so min-width makes the circle)
+  })
+})
+
 describe("no text of the two panels is left without one of those rules", () => {
   const covered = new Set([...CRITICAL_FLAGS_TEXT, ...AI_SUMMARY_TEXT].map((s) => s.slice(1)))
   // The round marks (✕ ! i ✓) are shapes, not text to read.

@@ -15,6 +15,10 @@
 // It repeats a reduced sweep at the usual screen scalings (100 % to 300 %, a phone, and 8x for hair-line precision) and with a host page that sets aggressive typography
 // (the shadow host resets it with `all: initial`: this proves the reset holds). The sweeps run side by side, in separate pages.
 //
+// The two panels under the card (Critical Flags, AI Summary) are checked the same way, at the usual screen scalings: every text in them is Bebas Neue (weight 400, no italic), the
+// round marks are exact circles (the number of a section: 16 x 16 px, a pill only from two digits; the cross, !, i and tick: 14 x 14 px) and the ink of each one sits on the
+// centre of its circle. They were oval, and drawn by whichever font the page fell back to.
+//
 // Run: `npm run overlay:check` (a Chromium is needed: `npx playwright install chromium`). Locally set OVERLAY_CHROMIUM to the path of a Chromium or Chrome
 // binary to use one that is already installed. Exit code 1 on any failure, with the failing combinations printed.
 // Debugging aids: --quick (a reduced matrix), OVERLAY_SKIP_FULL=1 (only the scaling sweeps), OVERLAY_DSFS=1,2 (choose the scalings), OVERLAY_TOL / OVERLAY_TOL_FRACTIONAL (the
@@ -95,6 +99,20 @@ window.__overlay = {
     }
   }),
   row: () => { const r = state.shadow.querySelector(".ss").getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height } },
+  // The two panels under the card. Opening one is the click the user makes; the panel scrolls after 140 px, so it is unfolded to put every mark on screen, and the card is moved
+  // to the top of the page so that nothing is cut by the bottom of the window.
+  openPanel: (which) => {
+    state.shadow.querySelector(which === "cf" ? "#ant-critical-flags-btn" : "#ant-ai-summary-btn").click()
+    const s = document.createElement("style"); s.textContent = ".cf-panel-inner,.ai-panel-inner{max-height:none !important;overflow:visible !important}"; state.shadow.appendChild(s)
+    const h = document.getElementById("antares-host"); h.style.transform = "translate(" + h.getBoundingClientRect().x + "px, 10px)"
+  },
+  panelMarks: () => [...state.shadow.querySelectorAll("#ant-critical-flags .cf-section-count, #ant-critical-flags .cf-flag-icon")].map((e) => {
+    const r = e.getBoundingClientRect()
+    return { kind: e.className.indexOf("cf-section-count") >= 0 ? "count" : "mark", text: (e.textContent || "").trim(), x: r.x, y: r.y, w: r.width, h: r.height }
+  }),
+  panelText: (id) => [...state.shadow.querySelectorAll("#" + id + " *")]
+    .filter((e) => e.className.indexOf("cf-flag-icon") < 0 && [...e.childNodes].some((n) => n.nodeType === 3 && (n.textContent || "").trim() !== ""))
+    .map((e) => { const cs = getComputedStyle(e); return { cls: e.className, family: cs.fontFamily, weight: cs.fontWeight, style: cs.fontStyle } }),
 }
 `
 const plugin = {
@@ -166,6 +184,7 @@ async function inkRows(page, shotB64, clip, dsf, cells) {
 const HOSTILE = "html{font-size:23px;line-height:2.4;letter-spacing:.12em;word-spacing:7px;font-family:Times,serif;text-transform:uppercase}body{margin:0;zoom:1}*{box-sizing:content-box}"
 const failures = []
 let renders = 0, worstSpread = 0, worstWhere = ""
+let panelChecks = 0, panelWorst = 0, panelWorstWhere = ""
 const colourClass = (liq) => (liq === null ? "dash" : liq < 5000 ? "liq n" : liq > 50_000 ? "liq y" : "liq")
 
 async function sweep(browser, js, { name, dsf, tiers, verdicts, liquidities, facts, hostile }) {
@@ -220,6 +239,99 @@ async function sweep(browser, js, { name, dsf, tiers, verdicts, liquidities, fac
   await context.close()
 }
 
+// ── The two panels under the card ──────────────────────────────────────────────────────
+// A card with every kind of flag (one section of ten warnings, so that a count has two digits), Pro (the panels are the Pro buttons), a CAUTION verdict (which shows the info and
+// the bonus sections).
+const PANEL_BODY = {
+  ...body("CAUTION", 800, 40_400, { lpBurned: true }),
+  flags: [
+    { label: "Mint Authority enabled", severity: "critical", impact: 40 },
+    ...Array.from({ length: 10 }, (_, i) => ({ label: i ? "Sniper activity detected " + i : "Liquidity < $50k", severity: "warning", impact: 5 })),
+    { label: "Top 10 hold 38%", severity: "info", impact: 0 },
+    { label: "LP Burned ✓", severity: "bonus", impact: 0 },
+  ],
+  aiSummary: "A first sentence that gives the verdict. A second one with a detail. A third one to finish.",
+}
+// Where the ink of a mark sits relative to the centre of its own circle (or pill), in CSS px: the pixels that differ from the fill of the element, inside its shape.
+async function inkCentre(page, b64, g, dsf, pad) {
+  return page.evaluate(async ([b64, g, dsf, pad]) => {
+    const img = new Image(); img.src = "data:image/png;base64," + b64; await img.decode()
+    const c = document.createElement("canvas"); c.width = img.width; c.height = img.height
+    const ctx = c.getContext("2d", { willReadFrequently: true }); ctx.drawImage(img, 0, 0)
+    const d = ctx.getImageData(0, 0, img.width, img.height).data
+    const px = (x, y) => { const k = (Math.round(y) * img.width + Math.round(x)) * 4; return [d[k], d[k + 1], d[k + 2]] }
+    const cx = (pad + g.w / 2) * dsf, cy = (pad + g.h / 2) * dsf, R = (g.h / 2) * dsf, straight = Math.max(0, (g.w / 2) * dsf - R)
+    const fill = px((pad + 2.2) * dsf, cy)
+    let x0 = 1e9, x1 = -1, y0 = 1e9, y1 = -1
+    for (let y = 0; y < img.height; y++) for (let x = 0; x < img.width; x++) {
+      if (Math.hypot(Math.max(0, Math.abs(x - cx) - straight), y - cy) > R - 1.2 * dsf) continue // inside the shape, away from its anti-aliased edge
+      const p = px(x, y)
+      if (Math.abs(p[0] - fill[0]) + Math.abs(p[1] - fill[1]) + Math.abs(p[2] - fill[2]) > 110) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y }
+    }
+    return x1 < 0 ? null : { dx: ((x0 + x1 + 1) / 2 - cx) / dsf, dy: ((y0 + y1 + 1) / 2 - cy) / dsf }
+  }, [b64, g, dsf, pad])
+}
+
+const once = (message) => { if (!failures.includes(message)) failures.push(message) } // (a panel of ten flags would otherwise report the same font ten times)
+async function panelSweep(browser, js, { name, dsf }) {
+  const context = await browser.newContext({ viewport: { width: 900, height: 1800 }, deviceScaleFactor: dsf })
+  await context.route("**/*", (r) => (/^(data|about):/.test(r.request().url()) ? r.continue() : r.fulfill({ status: 200, contentType: "text/html", body: "<html></html>" })))
+  const page = await context.newPage()
+  const pageErrors = []
+  page.on("pageerror", (e) => pageErrors.push(String(e.message || e)))
+  await page.setContent('<!doctype html><html><head><title>host</title></head><body style="background:#0e1014;height:2000px"></body></html>')
+  await page.addScriptTag({ content: js })
+  const open = async (which) => {
+    await page.evaluate(() => window.__overlay.reset())
+    await page.evaluate(async ([b, ca]) => { window.__stub.setScan(b, "pro"); await window.__overlay.scan(ca) }, [PANEL_BODY, CA])
+    await page.waitForFunction(() => window.__overlay.ready(), null, { timeout: 15_000 })
+    await page.evaluate(() => window.__overlay.settle())
+    await page.evaluate((w) => window.__overlay.openPanel(w), which)
+    await page.waitForTimeout(250)
+  }
+  try {
+    // 1. every text of both panels is Bebas Neue, weight 400, not italic (Bebas Neue has neither: the browser would fake them)
+    for (const [which, id] of [["cf", "ant-critical-flags"], ["ai", "ant-ai-summary"]]) {
+      await open(which)
+      const texts = await page.evaluate((id) => window.__overlay.panelText(id), id)
+      if (texts.length < 3) failures.push(`${name} | ${id}: only ${texts.length} text(s) found in the panel (the check is blind)`)
+      for (const t of texts) {
+        if (!/^["']?Bebas Neue/.test(t.family)) once(`${name} | ${id} | .${t.cls}: set in ${t.family}, not Bebas Neue`)
+        if (t.weight !== "400") once(`${name} | ${id} | .${t.cls}: weight ${t.weight}, Bebas Neue has only 400`)
+        if (t.style !== "normal") once(`${name} | ${id} | .${t.cls}: ${t.style}, Bebas Neue has no italic`)
+      }
+    }
+    // 2. the round marks of the Critical Flags panel: exact circles, ink on their centre
+    await open("cf")
+    const marks = await page.evaluate(() => window.__overlay.panelMarks())
+    if (marks.length < 12) failures.push(`${name}: only ${marks.length} round marks found in the Critical Flags panel (the check is blind)`)
+    const seen = new Set()
+    const tol = Math.max(tolFor(dsf), dsf < 2 ? 1.1 : 0)
+    for (const g of marks) {
+      const where = `${name} | ${g.kind} "${g.text}"`
+      if (g.kind === "count") {
+        if (g.text.length === 1 && Math.abs(g.w - g.h) > 0.05) once(`${where}: the circle is ${g.w.toFixed(2)} x ${g.h.toFixed(2)} px, an oval`)
+        if (g.h !== 16) once(`${where}: ${g.h} px high, not 16`)
+      } else if (Math.abs(g.w - 14) > 0.05 || Math.abs(g.h - 14) > 0.05) once(`${where}: ${g.w.toFixed(2)} x ${g.h.toFixed(2)} px, not 14 x 14`)
+      const key = g.kind + g.text + g.w.toFixed(1)
+      if (seen.has(key)) continue
+      seen.add(key)
+      const pad = 3
+      const shot = (await page.screenshot({ clip: { x: g.x - pad, y: g.y - pad, width: g.w + pad * 2, height: g.h + pad * 2 } })).toString("base64")
+      const ink = await inkCentre(page, shot, g, dsf, pad)
+      if (!ink) { failures.push(`${where}: nothing drawn in the circle`); continue }
+      const limit = g.kind === "count" ? Math.max(tol, 1.0) : tol
+      if (Math.abs(ink.dx) > limit || Math.abs(ink.dy) > limit) failures.push(`${where}: the ink is ${ink.dx.toFixed(2)} px right and ${ink.dy.toFixed(2)} px down of the centre of its circle (limit ${limit})`)
+      const off = Math.max(Math.abs(ink.dx), Math.abs(ink.dy)); if (off > panelWorst) { panelWorst = off; panelWorstWhere = where }
+    }
+    panelChecks += marks.length
+  } catch (e) {
+    failures.push(`${name}: ${String(e.message || e).split("\n")[0]}`)
+  }
+  if (pageErrors.length) failures.push(`${name}: page errors: ${pageErrors.slice(0, 2).join(" | ")}`)
+  await context.close()
+}
+
 async function launch() {
   const executablePath = process.env.OVERLAY_CHROMIUM || undefined
   return chromium.launch({ executablePath })
@@ -245,17 +357,20 @@ const DSFS = process.env.OVERLAY_DSFS ? process.env.OVERLAY_DSFS.split(",").map(
 for (const dsf of DSFS) jobs.push({ name: `${dsf}x`, dsf, ...reduced, hostile: false })
 // 3. A host page with aggressive typography (the shadow host resets it).
 jobs.push({ name: "hostile host page", dsf: 2, ...reduced, hostile: true })
+// 4. The two panels under the card (fonts, round marks), at the same screen scalings.
+for (const dsf of DSFS) jobs.push({ name: `panels ${dsf}x`, dsf, panels: true })
 // The jobs run side by side (each in its own page): the measurement waits for animation frames, so it is the waiting that is shared out.
 const POOL = Math.max(2, Math.min(4, os.availableParallelism?.() ?? 2))
 let next = 0
-await Promise.all(Array.from({ length: POOL }, async () => { while (next < jobs.length) await sweep(browser, js, jobs[next++]) }))
+await Promise.all(Array.from({ length: POOL }, async () => { while (next < jobs.length) { const job = jobs[next++]; await (job.panels ? panelSweep : sweep)(browser, js, job) } }))
 await browser.close()
 
 console.log(`overlay alignment: ${renders} renders in real Chromium, ${((Date.now() - t0) / 1000).toFixed(0)} s; worst spread of the five marks ${worstSpread.toFixed(2)} px (limit ${TOLERANCE_PX}) at ${worstWhere}`)
+console.log(`panels: ${panelChecks} round marks measured, worst offset of a mark from the centre of its circle ${panelWorst.toFixed(2)} px at ${panelWorstWhere}`)
 if (failures.length) {
   console.error(`\nFAIL: ${failures.length} problem(s):`)
   for (const f of failures.slice(0, 40)) console.error("  - " + f)
   if (failures.length > 40) console.error(`  ... and ${failures.length - 40} more`)
   process.exit(1)
 }
-console.log("OK: the check marks, the cross, the dashes and the liquidity figure share one line and one font in every verdict, plan, colour and state.")
+console.log("OK: the check marks, the cross, the dashes and the liquidity figure share one line and one font in every verdict, plan, colour and state; the panels are Bebas Neue with round, centred marks.")
