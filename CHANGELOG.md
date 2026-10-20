@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - The row Sell / Mint / Freeze / LP / Liq of the overlay card is now guarded in a real browser: `npm run overlay:check` renders the real overlay for every verdict, plan, liquidity colour and state
   and measures the ink of every mark (CI runs it). The little dash of an unknown check, and of an unreadable liquidity, is drawn like the tick and the cross instead of being a letter:
   at 150 % screen scaling the letter landed up to one device pixel off the line.
+- The two panels under the overlay card, Critical Flags and AI Summary, are set in Bebas Neue like the rest of the card (the flags, their
+  explanations, the section titles and the summary were in IBM Plex Mono, bold or italic). The round marks of the flags are exact circles
+  too: the number of a section was an oval, and the cross, `!`, `i` and tick were letters that came out differently on each computer; they are
+  now drawn, centred in their circle. Same texts, same panels; `npm run overlay:check` measures all of it in a real Chromium on every CI run.
 - `docs/cws/permission-justifications.md`: the answers of the "Privacy practices" tab now agree with the privacy policy (identity,
   session token, IP address used for rate limiting, scan history, page content).
 

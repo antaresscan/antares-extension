@@ -659,32 +659,35 @@ export const SHADOW_CSS = `
 
 /* First sentence — acts as a verdict summary */
 .ai-panel-verdict {
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 400;
   color: #c4b5fd;
-  line-height: 1.5;
-  font-family: 'IBM Plex Mono', monospace;
-  letter-spacing: .01em;
+  line-height: 1.3;
+  font-family: 'Bebas Neue', sans-serif;
+  letter-spacing: .06em;
+  word-spacing: .12em;
   padding-bottom: 6px;
   border-bottom: 1px solid rgba(167,139,250,.1);
 }
 
 /* Subsequent sentences */
 .ai-panel-line {
-  font-size: 9.5px;
+  font-size: 12px;
+  font-weight: 400;
   color: #8a8aad;
-  line-height: 1.55;
-  font-family: 'IBM Plex Mono', monospace;
-  letter-spacing: .01em;
+  line-height: 1.35;
+  font-family: 'Bebas Neue', sans-serif;
+  letter-spacing: .06em;
+  word-spacing: .12em;
 }
 
 /* Loading state */
 .ai-panel-loading {
   padding: 10px 12px;
-  font-size: 9px;
+  font-size: 12px;
   color: #555;
-  font-family: 'IBM Plex Mono', monospace;
-  letter-spacing: .04em;
+  font-family: 'Bebas Neue', sans-serif;
+  letter-spacing: .08em;
   text-align: center;
   animation: ant-pulse 1.2s ease-in-out infinite;
 }
@@ -692,10 +695,10 @@ export const SHADOW_CSS = `
 /* Empty state */
 .ai-panel-empty {
   padding: 10px 12px;
-  font-size: 9px;
+  font-size: 12px;
   color: #444;
-  font-family: 'IBM Plex Mono', monospace;
-  letter-spacing: .04em;
+  font-family: 'Bebas Neue', sans-serif;
+  letter-spacing: .08em;
   text-align: center;
 }
 
@@ -781,18 +784,34 @@ export const SHADOW_CSS = `
   padding-top: 8px;
 }
 
+/* The round marks (cross, !, i, tick) are drawn, not typed: a character comes out of whichever font the page falls back to (a thin tick, a serifed
+   "i", a "!" that sits low), so the four were never the same size from one computer to the next. The text stays in the element (font-size 0) for
+   screen readers; the shapes are drawn on the same 14px circle, like the marks of the Sell / Mint / Freeze row. */
 .cf-flag-icon {
   width: 14px; height: 14px;
   border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 8px; font-weight: 700;
+  position: relative;
+  font-size: 0; line-height: 0;
   flex-shrink: 0;
   margin-top: 1px;
 }
+.cf-flag-icon::before, .cf-flag-icon::after { content: ''; position: absolute; background: currentColor; }
 .cf-flag-icon-r { background: rgba(255,60,80,.15); color: #ff5f5f; }
 .cf-flag-icon-y { background: rgba(245,208,0,.12); color: #f5d000; }
 .cf-flag-icon-b { background: rgba(80,150,250,.12); color: #6aa5f0; }
 .cf-flag-icon-g { background: rgba(0,229,176,.12); color: #00e5b0; }
+/* cross: two bars crossed at the centre */
+.cf-flag-icon-r::before, .cf-flag-icon-r::after { left: 50%; top: 50%; width: 7.4px; height: 1.4px; border-radius: .7px; }
+.cf-flag-icon-r::before { transform: translate(-50%, -50%) rotate(45deg); }
+.cf-flag-icon-r::after { transform: translate(-50%, -50%) rotate(-45deg); }
+/* tick: the corner of a box, turned */
+.cf-flag-icon-g::before { left: 50%; top: 50%; width: 6.6px; height: 3.6px; background: none; border-left: 1.4px solid currentColor; border-bottom: 1.4px solid currentColor; transform: translate(-54.5%, -77%) rotate(-45deg); }
+/* ! : a bar over a dot */
+.cf-flag-icon-y::before { left: 50%; top: 3.2px; width: 1.5px; height: 4.6px; border-radius: .75px; transform: translateX(-50%); }
+.cf-flag-icon-y::after { left: 50%; top: 9px; width: 1.7px; height: 1.7px; border-radius: 50%; transform: translateX(-50%); }
+/* i : a dot over a bar */
+.cf-flag-icon-b::before { left: 50%; top: 3.2px; width: 1.7px; height: 1.7px; border-radius: 50%; transform: translateX(-50%); }
+.cf-flag-icon-b::after { left: 50%; top: 6.2px; width: 1.5px; height: 4.6px; border-radius: .75px; transform: translateX(-50%); }
 
 .cf-flag-body {
   display: flex;
@@ -803,11 +822,12 @@ export const SHADOW_CSS = `
 }
 
 .cf-flag-label {
-  font-size: 10px;
-  font-weight: 600;
-  line-height: 1.4;
-  font-family: 'IBM Plex Mono', monospace;
-  letter-spacing: .01em;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.3;
+  font-family: 'Bebas Neue', sans-serif;
+  letter-spacing: .06em;
+  word-spacing: .12em;
 }
 .cf-flag-cr .cf-flag-label { color: #cc7070; }
 .cf-flag-wr .cf-flag-label { color: #c8a840; }
@@ -821,8 +841,8 @@ export const SHADOW_CSS = `
 .cf-section-header {
   display: flex; align-items: center; gap: 8px;
   padding: 4px 0 8px;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 9px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 12px;
   letter-spacing: .14em;
   text-transform: uppercase;
   border-bottom: 1px solid rgba(255,255,255,.05);
@@ -832,11 +852,15 @@ export const SHADOW_CSS = `
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 16px; height: 16px;
   border-radius: 8px;
-  padding: 0 6px;
-  font-size: 9px;
-  font-weight: 700;
+  /* one digit: exactly a 16px circle (it was a 17-19px oval); two digits: a pill. The 2px on top puts the digits (Bebas Neue sits high in its line)
+     on the middle of the circle. */
+  padding: 2px 4px 0;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0;
 }
-.cf-section-title { color: #888; font-weight: 600; }
+.cf-section-title { color: #888; font-weight: 400; }
 .cf-section-critical .cf-section-count { background: rgba(255,60,80,.18); color: #ff5f5f; }
 .cf-section-critical .cf-section-title { color: #cc7070; }
 .cf-section-warning  .cf-section-count { background: rgba(245,208,0,.15); color: #f5d000; }
@@ -847,20 +871,21 @@ export const SHADOW_CSS = `
 .cf-section-bonus    .cf-section-title { color: #00d99a; }
 
 .cf-flag-desc {
-  font-size: 9px;
+  font-size: 11.5px;
+  font-weight: 400;
   color: #777;
-  line-height: 1.5;
-  font-style: italic;
-  letter-spacing: .01em;
-  font-family: 'IBM Plex Mono', monospace;
+  line-height: 1.35;
+  letter-spacing: .06em;
+  word-spacing: .12em;
+  font-family: 'Bebas Neue', sans-serif;
 }
 
 .cf-panel-empty {
   padding: 10px 12px;
-  font-size: 9px;
+  font-size: 12px;
   color: #444;
-  font-family: 'IBM Plex Mono', monospace;
-  letter-spacing: .04em;
+  font-family: 'Bebas Neue', sans-serif;
+  letter-spacing: .08em;
   text-align: center;
 }
 `
