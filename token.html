@@ -804,59 +804,60 @@ footer span{color:var(--c)}
    ║  and figures included) were set in IBM Plex Mono, with synthesized    ║
    ║  bold and italic. The overlay card and its panels are Bebas Neue: one ║
    ║  weight, no italic. The sizes are about 1.3x the monospace ones (a    ║
-   ║  narrow face with a small body for its cap height). Every rule here   ║
-   ║  is for the real page: the marketing demo (html.is-demo) keeps its    ║
-   ║  look, with the rules above.                                          ║
+   ║  narrow face with a small body for its cap height). The rules are for ║
+   ║  the whole page, the marketing demo (?demo=1) included: it is drawn   ║
+   ║  by this same page, its data is locked in DEMO_DATA, its look is the  ║
+   ║  page's. The old rules above stay as the base (layout, colours).      ║
    ╚════════════════════════════════════════════════════════════════════ */
-html:not(.is-demo) .flags-head .lbl{font-family:'Bebas Neue',sans-serif;font-size:13px;font-weight:400;letter-spacing:.16em}
-html:not(.is-demo) .flags-head .count{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:.08em}
-html:not(.is-demo) .flag-label{font-family:'Bebas Neue',sans-serif;font-size:16px;font-weight:400;line-height:1.3;letter-spacing:.06em;word-spacing:.12em}
-html:not(.is-demo) .flag-desc{font-family:'Bebas Neue',sans-serif;font-size:14px;font-style:normal;line-height:1.35;letter-spacing:.06em;word-spacing:.12em}
-html:not(.is-demo) .ai-head h3{font-family:'Bebas Neue',sans-serif;font-size:14px;font-weight:400;letter-spacing:.18em}
-html:not(.is-demo) .ai-body{font-family:'Bebas Neue',sans-serif;font-size:17px;line-height:1.5;letter-spacing:.05em;word-spacing:.1em}
-html:not(.is-demo) .ai-body b{font-weight:400}
-html:not(.is-demo) .ai-loading{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:.08em}
+.flags-head .lbl{font-family:'Bebas Neue',sans-serif;font-size:13px;font-weight:400;letter-spacing:.16em}
+.flags-head .count{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:.08em}
+.flag-label{font-family:'Bebas Neue',sans-serif;font-size:16px;font-weight:400;line-height:1.3;letter-spacing:.06em;word-spacing:.12em}
+.flag-desc{font-family:'Bebas Neue',sans-serif;font-size:14px;font-style:normal;line-height:1.35;letter-spacing:.06em;word-spacing:.12em}
+.ai-head h3{font-family:'Bebas Neue',sans-serif;font-size:14px;font-weight:400;letter-spacing:.18em}
+.ai-body{font-family:'Bebas Neue',sans-serif;font-size:17px;line-height:1.5;letter-spacing:.05em;word-spacing:.1em}
+.ai-body b{font-weight:400}
+.ai-loading{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:.08em}
 /* the round marks of the flags are one 16px drawing each (js/round-marks.js): the character stays in the element, hidden, for screen readers */
-html:not(.is-demo) .flag-icon{display:block;width:16px;height:16px;border-radius:0;font-size:0;line-height:0}
-html:not(.is-demo) .flag-icon svg{display:block;overflow:visible}
-html:not(.is-demo) .flag-icon.r{background:none;color:var(--orange)}
-html:not(.is-demo) .flag-icon.y{background:none;color:var(--yellow)}
-html:not(.is-demo) .flag-icon.g{background:none;color:var(--c)}
-html:not(.is-demo) .flag-icon.r .mark-bg{fill:rgba(255,60,80,.18)}
-html:not(.is-demo) .flag-icon.y .mark-bg{fill:rgba(245,208,0,.14)}
-html:not(.is-demo) .flag-icon.g .mark-bg{fill:rgba(0,229,176,.12)}
-html:not(.is-demo) .mark-ink{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
-html:not(.is-demo) .mark-dot{fill:currentColor}
+.flag-icon{display:block;width:16px;height:16px;border-radius:0;font-size:0;line-height:0}
+.flag-icon svg{display:block;overflow:visible}
+.flag-icon.r{background:none;color:var(--orange)}
+.flag-icon.y{background:none;color:var(--yellow)}
+.flag-icon.g{background:none;color:var(--c)}
+.flag-icon.r .mark-bg{fill:rgba(255,60,80,.18)}
+.flag-icon.y .mark-bg{fill:rgba(245,208,0,.14)}
+.flag-icon.g .mark-bg{fill:rgba(0,229,176,.12)}
+.mark-ink{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.mark-dot{fill:currentColor}
 /* Insider Watch: the feed, the fallback list of holders, the net flow, and the heat tiles */
-html:not(.is-demo) .iw-feed-title{font-weight:400}
-html:not(.is-demo) .iw-tile{font-family:'Bebas Neue',sans-serif}
-html:not(.is-demo) .iw-name{font-size:13px;font-weight:400;letter-spacing:.08em}
-html:not(.is-demo) .iw-action{font-size:11px;font-weight:400;letter-spacing:.14em}
-html:not(.is-demo) .iw-tile.dev::after{font-size:10px;font-weight:400}
-html:not(.is-demo) .iw-row{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.06em}
-html:not(.is-demo) .iw-row-rank{font-size:13px;font-weight:400;letter-spacing:.06em}
-html:not(.is-demo) .iw-row-wallet{font-size:14px;letter-spacing:.06em}
-html:not(.is-demo) .iw-row-action{font-size:13px;font-weight:400;letter-spacing:.14em}
-html:not(.is-demo) .iw-row-usd{font-weight:400}
-html:not(.is-demo) .iw-row-age{font-size:13px;letter-spacing:.06em}
-html:not(.is-demo) .iw-holder-row{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.06em}
-html:not(.is-demo) .iw-holder-rank{font-size:13px;font-weight:400}
-html:not(.is-demo) .iw-holder-wallet{font-weight:400}
-html:not(.is-demo) .iw-holder-pct{font-weight:400}
-html:not(.is-demo) .iw-holder-state{font-size:12px;font-weight:400;letter-spacing:.16em}
-html:not(.is-demo) .iw-flow{font-family:'Bebas Neue',sans-serif;font-size:16px}
-html:not(.is-demo) .iw-flow-label{font-size:15px;font-weight:400;letter-spacing:.16em}
-html:not(.is-demo) .iw-flow-val{font-size:18px;font-weight:400}
-html:not(.is-demo) .iw-flow-state{font-size:15px;font-weight:400;letter-spacing:.16em}
+.iw-feed-title{font-weight:400}
+.iw-tile{font-family:'Bebas Neue',sans-serif}
+.iw-name{font-size:13px;font-weight:400;letter-spacing:.08em}
+.iw-action{font-size:11px;font-weight:400;letter-spacing:.14em}
+.iw-tile.dev::after{font-size:10px;font-weight:400}
+.iw-row{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.06em}
+.iw-row-rank{font-size:13px;font-weight:400;letter-spacing:.06em}
+.iw-row-wallet{font-size:14px;letter-spacing:.06em}
+.iw-row-action{font-size:13px;font-weight:400;letter-spacing:.14em}
+.iw-row-usd{font-weight:400}
+.iw-row-age{font-size:13px;letter-spacing:.06em}
+.iw-holder-row{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.06em}
+.iw-holder-rank{font-size:13px;font-weight:400}
+.iw-holder-wallet{font-weight:400}
+.iw-holder-pct{font-weight:400}
+.iw-holder-state{font-size:12px;font-weight:400;letter-spacing:.16em}
+.iw-flow{font-family:'Bebas Neue',sans-serif;font-size:16px}
+.iw-flow-label{font-size:15px;font-weight:400;letter-spacing:.16em}
+.iw-flow-val{font-size:18px;font-weight:400}
+.iw-flow-state{font-size:15px;font-weight:400;letter-spacing:.16em}
 @media(max-width:640px){
-  html:not(.is-demo) .iw-row{font-size:13px;gap:6px}
-  html:not(.is-demo) .iw-row-rank{font-size:12px}
-  html:not(.is-demo) .iw-row-wallet{font-size:12px;letter-spacing:.03em}
-  html:not(.is-demo) .iw-row-action{font-size:11px;letter-spacing:.06em}
-  html:not(.is-demo) .iw-row-header span{font-size:11px !important}
-  html:not(.is-demo) .iw-flow{flex-wrap:wrap;gap:2px 12px}
-  html:not(.is-demo) .iw-flow-label,html:not(.is-demo) .iw-flow-state{font-size:13px;letter-spacing:.1em}
-  html:not(.is-demo) .iw-flow-val{font-size:16px}
+  .iw-row{font-size:13px;gap:6px}
+  .iw-row-rank{font-size:12px}
+  .iw-row-wallet{font-size:12px;letter-spacing:.03em}
+  .iw-row-action{font-size:11px;letter-spacing:.06em}
+  .iw-row-header span{font-size:11px !important}
+  .iw-flow{flex-wrap:wrap;gap:2px 12px}
+  .iw-flow-label,.iw-flow-state{font-size:13px;letter-spacing:.1em}
+  .iw-flow-val{font-size:16px}
 }
 </style>
 </head>
@@ -896,6 +897,6 @@ html:not(.is-demo) .iw-flow-state{font-size:15px;font-weight:400;letter-spacing:
 
 </div>
 
-<script type="module" src="/js/token-app.js?v=20261020-marks"></script>
+<script type="module" src="/js/token-app.js?v=20261020-demo"></script>
 <script defer src="/js/token-bg.js?v=20260429a"></script>
 </body></html>

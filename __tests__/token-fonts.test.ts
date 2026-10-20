@@ -3,7 +3,8 @@
 // bold and italic; the overlay card and its panels are Bebas Neue, which has one weight and no italic. The round marks of the flags were a 16px circle with a font character
 // on it, placed on the pixel grid on its own: they are now one drawing each (js/round-marks.js), twin of the extension's contents/modules/round-marks.ts.
 //
-// The marketing demo (token.html?...&demo=1, html.is-demo) keeps its look: every new rule is for `html:not(.is-demo)`, the old rules stay, and the demo still draws the character.
+// The marketing demo (antaresscan.com/demo -> "Full Analysis" -> token.html?...&demo=1) is drawn by this same page: its DATA is locked (DEMO_DATA, see token-demo-untouched.test.ts),
+// its look is the page's. It had kept the old look (every new rule was for `html:not(.is-demo)`); on the owner's word it has the new one too.
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -15,9 +16,9 @@ const block = html.slice(BLOCK_START, html.indexOf("</style>", BLOCK_START));
 /** The rules of the block, without the comments (the header comment says what the fonts were). */
 const code = block.slice(block.indexOf("*/") + 2).replace(/\/\*[\s\S]*?\*\//g, "");
 
-/** The declarations of the rule `selector{...}` inside the new block (the selector is written without its `html:not(.is-demo)` prefix). */
+/** The declarations of the rule `selector{...}` inside the new block (a rule starts its line). */
 const rule = (selector: string): string => {
-  const needle = `html:not(.is-demo) ${selector}{`;
+  const needle = `\n${selector}{`;
   const at = block.indexOf(needle);
   expect(at, `${selector} has a rule for the real page`).toBeGreaterThan(-1);
   return block.slice(at + needle.length, block.indexOf("}", at));
@@ -51,7 +52,7 @@ describe("the flags, the AI verdict and the Insider Watch tab are set in Bebas N
 
   it("the wallet addresses and every figure of the feed are covered: the row, its parts and the net flow", () => {
     for (const part of [".iw-row", ".iw-row-rank", ".iw-row-wallet", ".iw-row-action", ".iw-row-usd", ".iw-row-age", ".iw-holder-row", ".iw-flow", ".iw-flow-label", ".iw-flow-val", ".iw-flow-state"]) {
-      expect(block, part).toContain(`html:not(.is-demo) ${part}`)
+      expect(code, part).toMatch(new RegExp("(?:^|[\\n ,])" + part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "[{,]"))
     }
   })
 
@@ -60,21 +61,19 @@ describe("the flags, the AI verdict and the Insider Watch tab are set in Bebas N
   })
 })
 
-describe("the marketing demo keeps its look", () => {
-  it("every rule of the new block, at any depth of @media, is for the real page only", () => {
+describe("the marketing demo has the same look as the page", () => {
+  it("no rule of the block is scoped to a kind of page: they apply to the demo as they do to a real token", () => {
+    expect(code).not.toContain("is-demo")
+    expect(code).not.toContain(":not(")
     const selectors = [...code.matchAll(/(?:^|[}\n{])\s*([^{}\n@][^{}]*?)\{/g)].map((m) => m[1].trim()).filter(Boolean)
     expect(selectors.length).toBeGreaterThan(30)
-    for (const sel of selectors) for (const one of sel.split(",")) expect(one.trim(), sel).toMatch(/^html:not\(\.is-demo\) /)
   })
 
-  it("the old rules are still there, in IBM Plex Mono: they are what the demo is drawn with", () => {
-    for (const old of [
-      ".flag-label{font-size:12px;font-weight:600;line-height:1.4;word-break:break-word;font-family:'IBM Plex Mono',monospace}",
-      ".ai-body{font-size:13px;line-height:1.7;color:#a89fc6;max-width:880px;font-family:'IBM Plex Mono',monospace}",
-      ".flag-icon{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;flex-shrink:0;margin-top:2px}",
-    ]) expect(html).toContain(old)
-    expect(html).toMatch(/\.iw-row\{[^}]*font-family:'IBM Plex Mono',monospace/)
-    expect(html).toMatch(/\.iw-flow\{[^}]*font-family:'IBM Plex Mono',monospace/)
+  it("the old rules are the base (layout, colours) under the block, and the block comes last, so that it wins at equal weight", () => {
+    expect(html.indexOf(".flag-label{font-size:12px")).toBeGreaterThan(-1)
+    expect(html.indexOf(".flag-label{font-size:12px")).toBeLessThan(BLOCK_START)
+    expect(html.indexOf("</style>", BLOCK_START)).toBeGreaterThan(BLOCK_START)
+    expect(html.indexOf("<style", BLOCK_START)).toBe(-1) // (the block is the end of the last style element)
   })
 })
 
@@ -123,7 +122,7 @@ describe("the round marks of the flags are one 16 x 16 drawing", () => {
   })
 })
 
-// The page itself: the demo draws the character (its look is unchanged), the real page draws the mark.
+// The page itself: the demo and a real token both draw the mark.
 const DEMO_DANGER = "Dfh5DzRgSvvCFDoYc2ciTkMrbDfRKybA4SoFbPmApump";
 const REAL_CA = "ukHH6c7mMyiWCf1b9pnWe25TSpkDDt3H5pQZgZ74J82";
 const body = (() => {
@@ -138,11 +137,11 @@ function openPage(query: string) {
 }
 const settle = () => new Promise((r) => setTimeout(r, 200))
 
-describe("the page draws the marks on the real page and the character in the demo", () => {
+describe("the page draws the marks, in the marketing demo as on a real token", () => {
   beforeEach(() => { vi.resetModules() })
   afterEach(() => { vi.unstubAllGlobals() })
 
-  it("the marketing demo: the character alone, no drawing", async () => {
+  it("the marketing demo: every flag has its mark drawn (and no call to the API)", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("the demo must never call the API") }))
     openPage(`ca=${DEMO_DANGER}&demo=1`)
     await import("../js/token-app.js")
@@ -151,8 +150,8 @@ describe("the page draws the marks on the real page and the character in the dem
     expect(document.documentElement.classList.contains("is-demo")).toBe(true)
     expect(icons.length).toBeGreaterThan(0)
     for (const icon of icons) {
-      expect(icon.querySelector("svg"), "the demo draws no mark").toBeNull()
-      expect(["✕", "!", "✓"]).toContain((icon.textContent ?? "").trim())
+      expect(icon.querySelector("svg circle.mark-bg"), "the demo draws the mark").not.toBeNull()
+      expect(["✕", "!", "✓"]).toContain((icon.textContent ?? "").trim()) // (the character stays, hidden by the CSS, for screen readers)
     }
   })
 
