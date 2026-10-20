@@ -392,16 +392,19 @@ describe("scan handler", () => {
       expect(body.flags.some((f) => /^Collapsed/.test(f.label))).toBe(false);
     });
 
-    it("a collapse from a high 20 days back is DANGER, not a forced RUG; from a high 150 days back it is not read at all", async () => {
+    it("a collapse from a high 20 days back is a warning (CAUTION, never SAFE), not a forced RUG; from a high 150 days back it is not read at all", async () => {
       const T0 = 1_760_000_000;
       const bleedFrom = (days: number) => Array.from({ length: days * 6 + 1 }, (_, i) => { const c = i === 0 ? 100 : 5; return { ts: T0 + i * 4 * 3600, o: c, h: c, l: c, c, v: 100 }; }); // 6 candles a day
       setupGoodTokenMocks();
       const { fetchDexCandlesDaily } = await import("../api/_lib/fetchers");
       vi.mocked(fetchDexCandlesDaily).mockResolvedValueOnce(bleedFrom(20));
       const slow = await scanBody();
-      expect(slow.risk).toBe("DANGER");
+      // the owner's decision, 2026-10-21: a fall of 75 % over weeks is not a crash in progress. It is said (a warning: never SAFE), the verdict follows the other flags (none here).
+      expect(slow.risk).toBe("CAUTION");
       expect(slow.rugKind).toBeNull(); // only a RUG verdict has a kind
-      expect(slow.flags.find((f) => /^Collapsed/.test(f.label))?.label).toBe("Collapsed -95% from its high 20 days ago");
+      const slowFlag = slow.flags.find((f) => /^Collapsed/.test(f.label));
+      expect(slowFlag?.label).toBe("Collapsed -95% from its high 20 days ago");
+      expect(slowFlag?.severity).toBe("warning");
 
       setupGoodTokenMocks();
       vi.mocked(fetchDexCandlesDaily).mockResolvedValueOnce(bleedFrom(150));

@@ -5,7 +5,7 @@ import {
 } from "../api/_lib/layers";
 import type { DexScreenerPair, RugCheckSummary, RugCheckReport, GoPlusTokenResult, HeliusHolder } from "../api/_lib/types";
 import { deriveAuthorityFacts, type MintState } from "../api/_lib/facts";
-import { judgeContractFacts } from "../api/_lib/layers";
+import { judgeContractFacts, collapseFromPeak } from "../api/_lib/layers";
 import { classifySafeBlockedReasons } from "../api/_lib/scoring";
 import { rugKindOf } from "../api/_lib/pipeline";
 import { dedupeFlags, countVerdictFlags, determineVerdict } from "../api/_lib/pipeline";
@@ -1643,13 +1643,14 @@ describe("layerChart: collapse from the recent high", () => {
     expect(collapseFlag(l)!.label).toMatch(/^Collapsed -80% from its high \d+ days? ago$|^Collapsed -80% from its high less than a day ago$/);
   });
 
-  it("a high of the last 14 days: a forced RUG PULL. A high 15 to 90 days old: critical alone, DANGER, no evidence. Older than 90 days: not read", () => {
+  it("a high of the last 14 days: a forced RUG PULL. A high 15 to 90 days old: a warning, CAUTION, never SAFE, no evidence. Older than 90 days: not read", () => {
     const peakAgo = (days: number) => {
       const n = Math.round(days * 6) + 1; // 6 candles a day
       return chart(fourHour([100, ...Array.from({ length: n - 1 }, () => 5)]));
     };
     const recent = peakAgo(10);
     expect(collapseFlag(recent)!.label).toBe("Collapsed -95% from its high 10 days ago");
+    expect(collapseFlag(recent)!.severity).toBe("critical");
     expect(recent.forceRug).toBe(true);
     expect(recent.rugEvidence).toEqual(["price_collapse"]);
     expect(verdictOf(recent)).toBe("RUG");
@@ -1660,7 +1661,8 @@ describe("layerChart: collapse from the recent high", () => {
       expect(l.forceRug, `${days} days`).toBe(false);
       expect(l.rugEvidence, `${days} days`).toBeUndefined();
       expect(l.safeBlocked, `${days} days`).toBe(true);
-      expect(verdictOf(l), `${days} days`).toBe("DANGER");
+      expect(collapseFlag(l)!.severity, `${days} days`).toBe("warning"); // the owner's decision, 2026-10-21: a fall of 75 % over weeks is not a crash in progress
+      expect(verdictOf(l), `${days} days`).toBe("CAUTION");
       expect(l.trust, `${days} days`).toBeGreaterThan(recent.trust); // a lighter penalty than a collapse in progress
     }
 
@@ -1668,7 +1670,8 @@ describe("layerChart: collapse from the recent high", () => {
   });
 
   // The owner's question, age by age: from half a day to three months, a token that lost 75 % is flagged. Up to 14 days it is a forced RUG PULL; from 15
-  // to 90 days it is critical alone (DANGER, or RUG when the other flags force it); past 90 days the high is not read (a blue chip can lose 75 % in a year).
+  // to 90 days it is a warning (2026-10-21: CAUTION, never SAFE, DANGER with two other warnings, RUG when the other flags force it); past 90 days the high is not read
+  // (a blue chip can lose 75 % in a year).
   describe("every age of the high, from half a day to three months", () => {
     // `days` back the price was 100, and it has been 5 since (-95 %), 6 candles a day
     const highDaysAgo = (days: number) => {
@@ -1701,13 +1704,14 @@ describe("layerChart: collapse from the recent high", () => {
     });
 
     it.each([[15, "15 days ago"], [20, "20 days ago"], [30, "30 days ago"], [45, "45 days ago"], [60, "60 days ago"], [75, "75 days ago"], [90, "90 days ago"]])(
-      "a high %s days back: critical alone, the verdict follows the other flags (DANGER here, no other flag)", (days, text) => {
+      "a high %s days back: a warning, never SAFE, the verdict follows the other flags (CAUTION here, no other flag)", (days, text) => {
         const l = highDaysAgo(days);
         expect(age(l)).toBe(text);
+        expect(collapseFlag(l)!.severity).toBe("warning");
         expect(l.forceRug).toBe(false);
         expect(l.rugEvidence).toBeUndefined();
         expect(l.safeBlocked).toBe(true);
-        expect(verdictOf(l)).toBe("DANGER");
+        expect(verdictOf(l)).toBe("CAUTION");
       },
     );
 
@@ -1719,6 +1723,140 @@ describe("layerChart: collapse from the recent high", () => {
       const slow = highDaysAgo(45);
       const other = { ...slow, forceRug: true, flags: [...slow.flags, { label: "Top 10 hold 97% — extreme concentration", severity: "critical" as const, impact: 0 }] };
       expect(verdictOf(other)).toBe("RUG");
+    });
+  });
+
+  // ── The whole grid: every age of the high (1 to 95 days) x every depth of the fall. The rule in one table: a fall under 75 % is left alone; 75 % or more from a high of the last 14 days is
+  // critical, a forced RUG and a fact (price_collapse); from a high 15 to 90 days old a warning (no force, no evidence); from a high older than 90 days not read.
+  describe("the grid: age of the high x depth of the fall", () => {
+    const fall = (days: number, dropPct: number) => {
+      const n = Math.max(7, Math.round(days * 6) + 1); // 6 candles a day, at least 24 h of history
+      return chart(fourHour([100, ...Array.from({ length: n - 1 }, () => 100 - dropPct)]));
+    };
+    const AGES = Array.from({ length: 95 }, (_, i) => i + 1);
+    const DROPS = [50, 60, 74, 75, 76, 80, 90, 97, 99.9];
+    const cases = AGES.flatMap((d) => DROPS.map((p) => [d, p] as const));
+
+    it(`${cases.length} combinations: flag or not, critical or warning, forced RUG or not, evidence or not, as the rule says`, () => {
+      const wrong: string[] = [];
+      for (const [days, drop] of cases) {
+        const l = fall(days, drop);
+        const f = collapseFlag(l);
+        const flagged = drop >= 75 && days <= 90;
+        const recent = flagged && days <= 14;
+        const where = `${days} d / -${drop} %`;
+        if (!!f !== flagged) { wrong.push(`${where}: flag ${!!f}, expected ${flagged}`); continue }
+        if (!f) { if (l.forceRug) wrong.push(`${where}: forced RUG without a flag`); continue }
+        if (f.severity !== (recent ? "critical" : "warning")) wrong.push(`${where}: severity ${f.severity}`);
+        if (l.forceRug !== recent) wrong.push(`${where}: forceRug ${l.forceRug}`);
+        if (JSON.stringify(l.rugEvidence ?? []) !== JSON.stringify(recent ? ["price_collapse"] : [])) wrong.push(`${where}: evidence ${JSON.stringify(l.rugEvidence)}`);
+        if (!l.safeBlocked) wrong.push(`${where}: not safe-blocked (a collapsed token is never SAFE)`);
+        const verdict = verdictOf(l);
+        if (verdict !== (recent ? "RUG" : "CAUTION")) wrong.push(`${where}: verdict ${verdict}`);
+        if (f.label !== `Collapsed -${Math.round(drop)}% from its high ${Math.round(days)} day${Math.round(days) === 1 ? "" : "s"} ago`) wrong.push(`${where}: label ${f.label}`);
+      }
+      expect(wrong).toEqual([]);
+    });
+
+    it("a warning weighs less than a critical: for the same fall, the older high costs the chart layer less trust than the recent one", () => {
+      for (const drop of [80, 95]) expect(fall(30, drop).trust, `-${drop} %`).toBeGreaterThan(fall(5, drop).trust);
+    });
+
+    it("the edge of the 14 days: a high 14 days old is critical, one 15 days old a warning (4-hour candles: the age comes from the timestamps)", () => {
+      expect(collapseFlag(fall(14, 90))!.severity).toBe("critical");
+      expect(collapseFlag(fall(15, 90))!.severity).toBe("warning");
+      // 14 days and 4 hours is already "older"
+      const older = chart(fourHour([100, ...Array.from({ length: 14 * 6 + 1 }, () => 10)]));
+      expect(collapseFlag(older)!.severity).toBe("warning");
+    });
+
+    it("the edge of the 75 %: 75 % is flagged, 74.99 % is not (any age)", () => {
+      for (const days of [3, 30, 80]) {
+        expect(collapseFlag(fall(days, 75)), `${days} d / 75 %`).toBeDefined();
+        expect(collapseFlag(chart(fourHour([100, ...Array.from({ length: Math.round(days * 6) }, () => 25.01)]))), `${days} d / 74.99 %`).toBeUndefined();
+      }
+    });
+  });
+
+  // ── What the verdict does with that warning (determineVerdict, as the scan calls it). TripleT: -77 % from a high 89 days old, LP burned, authorities cut, a $539k pool: no other flag.
+  describe("what the verdict makes of the collapse warning", () => {
+    const verdict = (over: Partial<Parameters<typeof determineVerdict>[0]>) => determineVerdict({
+      score: 850, forceRug: false, safeBlocked: true, safeBlockedReasons: [], sourcesUsedCount: 5, warningFlagsCount: 1, criticalFlagsCount: 0, pumpPriceOnlyFlagsCount: 0, ...over,
+    });
+
+    it("TripleT's shape (a fall of 77 % from a high 89 days old, nothing else against the token) is CAUTION, no longer DANGER, and never SAFE", () => {
+      const l = chart(fourHour([100, ...Array.from({ length: 89 * 6 }, () => 23)]));
+      expect(collapseFlag(l)!.label).toBe("Collapsed -77% from its high 89 days ago");
+      expect(collapseFlag(l)!.severity).toBe("warning");
+      expect(verdictOf(l)).toBe("CAUTION");
+      expect(l.safeBlocked).toBe(true);
+    });
+
+    it("one warning (this one) is CAUTION; two other warnings with it are three: DANGER; any critical flag: DANGER; a flag that forces RUG: RUG", () => {
+      expect(verdict({ warningFlagsCount: 1 })).toBe("CAUTION");
+      expect(verdict({ warningFlagsCount: 2 })).toBe("CAUTION");
+      expect(verdict({ warningFlagsCount: 3 })).toBe("DANGER");
+      expect(verdict({ warningFlagsCount: 2, criticalFlagsCount: 1 })).toBe("DANGER");
+      expect(verdict({ warningFlagsCount: 2, forceRug: true })).toBe("RUG");
+    });
+
+    it("the score still decides between CAUTION and DANGER once the chart is safe-blocked: 700 is CAUTION, 699 is DANGER (a documented floor, not new)", () => {
+      expect(verdict({ score: 700 })).toBe("CAUTION");
+      expect(verdict({ score: 699 })).toBe("DANGER");
+    });
+
+    it("a token with this warning is never SAFE, whatever its score and its sources", () => {
+      for (const score of [750, 900, 1000]) expect(verdict({ score, sourcesUsedCount: 7 }), String(score)).not.toBe("SAFE");
+    });
+  });
+
+  // ── Seeded random series (a PRNG, so the failure is reproducible): the rule's invariants hold on 3,000 shapes of price history, gaps and all.
+  describe("random price histories: the invariants of the rule", () => {
+    // mulberry32
+    const prng = (seed: number) => () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    const series = (rand: () => number) => {
+      const n = 6 + Math.floor(rand() * 536); // 6 to 541 candles
+      let price = 0.01 + rand();
+      const out: Array<{ ts: number; o: number; h: number; l: number; c: number; v: number }> = [];
+      let ts = T0;
+      for (let i = 0; i < n; i++) {
+        const move = rand();
+        if (move < 0.02) price *= 0.02 + rand() * 0.4;       // a crash
+        else if (move < 0.05) price *= 1 + rand() * 4;        // a pump
+        else price *= 0.97 + rand() * 0.06;                   // noise
+        price = Math.max(price, 1e-9);
+        out.push({ ts, o: price, h: price * 1.01, l: price * 0.99, c: price, v: 100 });
+        ts += H4 * (rand() < 0.1 ? 1 + Math.floor(rand() * 6) : 1); // gaps in a thin token
+      }
+      return out;
+    };
+
+    it("flag, severity, force and evidence agree with collapseFromPeak on 3 000 random histories (and an older high is never critical)", () => {
+      const rand = prng(20261021);
+      const wrong: string[] = [];
+      let flagged = 0, recentCount = 0, olderCount = 0;
+      for (let k = 0; k < 3000; k++) {
+        const daily = series(rand);
+        const c = collapseFromPeak(daily);
+        const l = chart(daily);
+        const f = collapseFlag(l);
+        if (!c) { if (f) wrong.push(`#${k}: a flag without a collapse`); continue }
+        flagged++;
+        if (c.dropPct < 75) wrong.push(`#${k}: a drop of ${c.dropPct} under 75 % was flagged`);
+        if (c.peakAgeDays > 90) wrong.push(`#${k}: a high ${c.peakAgeDays} days old was read`);
+        if (c.recent !== (c.peakAgeDays <= 14)) wrong.push(`#${k}: recent=${c.recent} for ${c.peakAgeDays} days`);
+        if (c.recent) recentCount++; else olderCount++;
+        if (!f) { wrong.push(`#${k}: a collapse without its flag`); continue }
+        if (f.severity !== (c.recent ? "critical" : "warning")) wrong.push(`#${k}: severity ${f.severity} for recent=${c.recent}`);
+        if (l.forceRug !== c.recent) wrong.push(`#${k}: forceRug ${l.forceRug} for recent=${c.recent}`);
+        if ((l.rugEvidence?.length ?? 0) !== (c.recent ? 1 : 0)) wrong.push(`#${k}: evidence ${JSON.stringify(l.rugEvidence)}`);
+        if (!c.recent && l.flags.some((x) => /^Collapsed/.test(x.label) && x.severity === "critical")) wrong.push(`#${k}: an older high gave a critical`);
+      }
+      expect(wrong.slice(0, 10)).toEqual([]);
+      // the sweep must reach both kinds, or it proves nothing
+      expect(recentCount, "recent collapses reached").toBeGreaterThan(50);
+      expect(olderCount, "older collapses reached").toBeGreaterThan(50);
+      expect(flagged).toBeGreaterThan(200);
     });
   });
 
@@ -1740,13 +1878,15 @@ describe("layerChart: collapse from the recent high", () => {
     expect(collapseFlag(l)!.label).toMatch(/^Collapsed -80% from its high 1[34] days ago$/);
   });
 
-  it("a collapse of 75 % or more only from an OLDER high (15 to 90 days) is critical alone: no forced RUG, no evidence", () => {
+  it("a collapse of 75 % or more only from an OLDER high (15 to 90 days) is a warning: no forced RUG, no evidence, no critical", () => {
     // spike to 100 on day 0, then 20 from day 1 on, for 25 days: the last 14 days are flat at 20
     const closes = Array.from({ length: 150 }, (_, i) => (i === 0 ? 100 : 20));
     const l = chart(fourHour(closes));
     expect(collapseFlag(l)!.label).toMatch(/^Collapsed -80% from its high 2[45] days ago$/);
+    expect(collapseFlag(l)!.severity).toBe("warning");
     expect(l.forceRug).toBe(false);
     expect(l.rugEvidence).toBeUndefined();
+    expect(l.flags.filter((x) => x.severity === "critical")).toHaveLength(0);
   });
 
   it("a slow decline that never reaches 75 % is left alone, however long it lasts (-70 % over 90 days)", () => {

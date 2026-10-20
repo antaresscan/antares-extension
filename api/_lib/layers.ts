@@ -12,7 +12,7 @@ import type {
 import {
   LP_PROGRAM_ADDRESSES, FOUNDATION_WALLETS, OFFICIAL_MINTS,
   PUMP_7D_WARN_PCT, PUMP_7D_HIGH_PCT, PUMP_30D_WARN_PCT, PUMP_30D_HIGH_PCT,
-  COLLAPSE_DROP_PCT, COLLAPSE_RECENT_DAYS, COLLAPSE_WINDOW_DAYS, COLLAPSE_MIN_CANDLES,
+  COLLAPSE_DROP_PCT, COLLAPSE_RECENT_DAYS, COLLAPSE_WINDOW_DAYS, COLLAPSE_MIN_CANDLES, COLLAPSE_OLD_PENALTY,
   ATH_FLAG_MIN_AGE_DAYS, ATH_FLAG_MIN_MARKET_CAP_USD,
   TOP10_RELIEF_MIN_MARKET_CAP_USD, TOP10_RELIEF_MIN_POOL_DEPTH_USD, TOP10_RELIEF_MIN_POOL_PCT_OF_CAP, TOP10_RELIEF_MIN_HOLDERS, TOP10_RELIEF_MAX_TOP10, TOP10_RELIEF_MAX_SINGLE, ATH_COLLAPSE_PCT, LIVING_MARKET_MIN_ORGANIC_SCORE,
   BLUECHIP_MIN_AGE_DAYS, BLUECHIP_MIN_LIQUIDITY_USD, BLUECHIP_MIN_MARKET_CAP_USD, BLUECHIP_CRASH_FLOOR_6H, BLUECHIP_CRASH_FLOOR_24H,
@@ -1501,16 +1501,18 @@ export function collapseFromPeak(daily: OHLCVCandle[] | undefined): Collapse | n
 }
 
 /**
- * The flag of a collapse: critical always. From a high of the last 14 days (a collapse in progress) it is a forced RUG AND a fact that the
+ * The flag of a collapse. From a high of the last 14 days (a collapse in progress) it is critical, a forced RUG AND a fact that the
  * token has already collapsed (RugEvidence "price_collapse": the verdict reads "RUG PULL", not "RUG RISK"). From a high 15 to 90 days
- * old it is critical alone: the verdict follows the other flags (DANGER, or RUG when they force it, which then reads "RUG RISK").
+ * old it is a WARNING (the owner's decision, 2026-10-21: a fall of 75 % over weeks is not a crash in progress, and a token with a burned LP,
+ * cut authorities and a deep pool was DANGER on that flag alone): the token is never SAFE, and with two other warnings it is a DANGER;
+ * the verdict follows the other flags (RUG when they force it, which then reads "RUG RISK"). The label is the same in both cases.
  */
 function collapseFlag(c: Collapse): { flag: ScanFlag; penalty: number; forceRug: boolean; evidence: RugEvidence[] } {
   const n = Math.round(c.peakAgeDays);
   const age = c.peakAgeDays < 1 ? "less than a day" : `${n} day${n === 1 ? "" : "s"}`;
   return {
-    flag: makeFlag(`Collapsed -${Math.round(c.dropPct)}% from its high ${age} ago`, "critical", 0, { tags: ["market_health"] }),
-    penalty: c.recent ? 0.10 : 0.30,
+    flag: makeFlag(`Collapsed -${Math.round(c.dropPct)}% from its high ${age} ago`, c.recent ? "critical" : "warning", 0, { tags: ["market_health"] }),
+    penalty: c.recent ? 0.10 : COLLAPSE_OLD_PENALTY,
     forceRug: c.recent,
     evidence: c.recent ? ["price_collapse"] : [],
   };
