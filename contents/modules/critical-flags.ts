@@ -2,6 +2,7 @@ import { state } from "./state"
 import { closePanelAnimated } from "./panel-close"
 import type { ScanResponseFlag } from "../../shared/types"
 import { HOLDERS_UNVERIFIED_LABEL, isHoldersUnverifiedFlag } from "../../shared/holders-unverified"
+import { drawCount, drawMark } from "./round-marks"
 
 // ─── FLAG DESCRIPTIONS ────────────────────────────────────────────
 // Plain-English descriptions for every common flag label. The Critical
@@ -280,7 +281,7 @@ function renderPanel(
     header.className = "cf-section-header"
     const count = document.createElement("span")
     count.className = "cf-section-count"
-    count.textContent = String(items.length)
+    drawCount(count, items.length)
     const title = document.createElement("span")
     title.className = "cf-section-title"
     title.textContent = section.title
@@ -311,6 +312,7 @@ function renderPanel(
       const icon = document.createElement("div")
       icon.className = `cf-flag-icon cf-flag-icon-${iconClass}`
       icon.textContent = iconChar
+      drawMark(icon, iconClass)
 
       const body = document.createElement("div")
       body.className = "cf-flag-body"

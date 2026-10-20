@@ -65,11 +65,20 @@ describe("the overlay alignment guard stays on", () => {
     expect(script).toMatch(/for \(const dsf of DSFS\) jobs\.push\(\{ name: `panels/)
     expect(script).toContain("ant-critical-flags")
     expect(script).toContain("ant-ai-summary")
-    // fonts: Bebas Neue, weight 400, no italic; marks: an exact circle (an oval, 18.67 x 16, was the bug), 14 x 14 for the marks, ink on the centre
+    // fonts: Bebas Neue, weight 400, no italic
     expect(script).toContain("not Bebas Neue")
-    expect(script).toContain("an oval")
-    expect(script).toContain("not 14 x 14")
+    // marks: every one of them (not one of each kind), measured in DEVICE pixels from the screenshot: the size of the circle, an exact circle, the symbol on its centre
+    expect(script).toContain("markGeometry")
+    expect(script).toContain("it should be")
+    expect(script).toContain("an oval, not a circle")
     expect(script).toContain("of the centre of its circle")
+  })
+
+  it("keeps the limits of the round marks to a fraction of a device pixel: 0.5 for the centring (measured 0.37 at worst), 0.6 for the size (0.2)", () => {
+    expect(script).toMatch(/const SIZE_TOLERANCE_DP = 0\.6\b/)
+    expect(script).toMatch(/const CENTRE_TOLERANCE_DP = 0\.5\b/)
+    // at the scalings of a Windows screen, where a 14px circle was 17.5 / 21 / 24.5 device pixels: 100, 125, 150, 175, 200 %, and the in-between ones
+    expect(script).toMatch(/\[1, 1\.25, 1\.5, 1\.75, 2, 2\.25, 2\.5, 2\.625, 3, 8\]/)
   })
 
   it("keeps the tolerance that catches the bug: 0.75px where the measure is clean, 1.1px on fractional scalings (the bug was 2px)", () => {
