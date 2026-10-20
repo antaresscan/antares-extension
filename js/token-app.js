@@ -57,7 +57,7 @@ import {
 } from "./compute.js?v=20261007-holders";
 // The website and Twitter links under the token's name (a new file on purpose: a copy cached from before the deploy cannot be missing it).
 import { officialLinks, explorerUrl, dexscreenerLink } from "./links.js?v=20261015-links";
-// The round marks of the flags, drawn (a new file on purpose: a copy cached from before the deploy cannot be missing it). The marketing demo keeps the character (html.is-demo).
+// The round marks of the flags, drawn (a new file on purpose: a copy cached from before the deploy cannot be missing it).
 import { markSvg } from "./round-marks.js?v=20261020-marks";
 
 // ──────────────────────────────────────────────────────────────────────
@@ -72,9 +72,9 @@ const caShort = ca ? ca.slice(0, 6) + "…" + ca.slice(-4) : "—";
 document.getElementById("ca-disp").textContent = caShort;
 
 const isDemo = params.get("demo") === "1";
-/** The mark of a flag: the character (hidden by the CSS) and the drawing on the real page, the character alone in the marketing demo (its look is unchanged). */
-const flagMark = (key, char) => (isDemo ? char : char + markSvg(key));
-// A marker for the demo's own look in token.html's CSS (html.is-demo): the marketing demo stays exactly as it was when the page's style changes. Nothing else reads it.
+/** The mark of a flag: the character (hidden by the CSS, for screen readers) and the drawing. The marketing demo has them too: its data is locked, its look is the page's. */
+const flagMark = (key, char) => char + markSvg(key);
+// A marker for the demo in token.html's CSS (html.is-demo): the few rules that are the demo's own (the symbol under the verdict). The fonts and the round marks are the page's.
 if (isDemo) document.documentElement.classList.add("is-demo");
 
 // ──────────────────────────────────────────────────────────────────────
