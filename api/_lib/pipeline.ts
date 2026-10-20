@@ -6,7 +6,7 @@ import type {
   SafeGateInput, EstablishedBonusInput, VerdictInput,
 } from "./types";
 import { makeFlag } from "./helpers";
-import { HARD_BLOCK_REASONS, SOFT_REASONS, MIN_SOURCES_FOR_CLEAN_SAFE } from "./constants";
+import { HARD_BLOCK_REASONS, SOFT_REASONS, MIN_SOURCES_FOR_CLEAN_SAFE, COLLAPSE_SOFT_MIN_LIQUIDITY_USD } from "./constants";
 import { isKnownDaoTreasury } from "./known-treasuries";
 
 export function evaluatePostLayerFlags(input: PostLayerFlagsInput): PostLayerFlagsResult {
@@ -296,6 +296,37 @@ export function dedupeFlags(input: ScanFlag[]): ScanFlag[] {
     if (!existing || SEVERITY_RANK[f.severity] < SEVERITY_RANK[existing.severity]) pumpPctMap.set(pct, f);
   }
   return [...nonPump, ...pumpPctMap.values()];
+}
+
+/** What the five cells of the overlay (Sell, Mint, Freeze, LP, Liq) are made of. A cell is green only when its fact is known AND good: unknown (null) is a dash, never green. */
+export interface StructureFacts {
+  sellBlocked: boolean | null;
+  mintActive: boolean | null;
+  freezeActive: boolean | null;
+  lpBurned: boolean | null;
+  lpLocked: boolean | null;
+  liquidityUsd: number | null;
+}
+
+/** The five cells of the overlay are all green: can sell, no mint authority, no freeze authority, LP burned or locked, liquidity over the overlay's green line. */
+export function structureIsGreen(f: StructureFacts): boolean {
+  return f.sellBlocked === false
+    && f.mintActive === false
+    && f.freezeActive === false
+    && (f.lpBurned === true || f.lpLocked === true)
+    && f.liquidityUsd != null && f.liquidityUsd > COLLAPSE_SOFT_MIN_LIQUIDITY_USD;
+}
+
+/**
+ * The owner's rule: a collapse from a high 15 to 90 days old, alone, does not condemn a token whose structure is sound. If the ONLY risky flag of the list
+ * (critical or warning, counting the price-only pump flags too: it is "a single flag") is that collapse, and the five cells are all green, the flag is
+ * returned as a warning. Anything else (another flag, a red or unknown cell, a collapse from a high of the last 14 days) returns null.
+ */
+export function softenLoneOldCollapse(flags: ScanFlag[], facts: StructureFacts): ScanFlag[] | null {
+  const risky = flags.filter((f) => (f.severity === "warning" || f.severity === "critical") && f.tags?.includes("source_status") !== true);
+  if (risky.length !== 1 || risky[0].severity !== "critical" || risky[0].tags?.includes("collapse_old") !== true) return null;
+  if (!structureIsGreen(facts)) return null;
+  return flags.map((f) => (f === risky[0] ? { ...f, severity: "warning" as const } : f));
 }
 
 /** Warning / critical / pump-only counts of a (deduplicated) flag list, as determineVerdict reads them. */

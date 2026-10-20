@@ -392,22 +392,54 @@ describe("scan handler", () => {
       expect(body.flags.some((f) => /^Collapsed/.test(f.label))).toBe(false);
     });
 
-    it("a collapse from a high 20 days back is DANGER, not a forced RUG; from a high 150 days back it is not read at all", async () => {
-      const T0 = 1_760_000_000;
-      const bleedFrom = (days: number) => Array.from({ length: days * 6 + 1 }, (_, i) => { const c = i === 0 ? 100 : 5; return { ts: T0 + i * 4 * 3600, o: c, h: c, l: c, c, v: 100 }; }); // 6 candles a day
+    const T0 = 1_760_000_000;
+    const bleedFrom = (days: number) => Array.from({ length: days * 6 + 1 }, (_, i) => { const c = i === 0 ? 100 : 5; return { ts: T0 + i * 4 * 3600, o: c, h: c, l: c, c, v: 100 }; }); // 6 candles a day
+
+    // The owner's rule (2026-10-21, TripleT): the collapse is the ONLY risky flag and Sell, Mint, Freeze, LP and Liq are all green (this token: burned LP, $500k pool).
+    it("a collapse from a high 20 days back, alone, on a token whose five cells are green is a CAUTION, not a DANGER or a forced RUG; from a high 150 days back it is not read at all", async () => {
       setupGoodTokenMocks();
       const { fetchDexCandlesDaily } = await import("../api/_lib/fetchers");
       vi.mocked(fetchDexCandlesDaily).mockResolvedValueOnce(bleedFrom(20));
       const slow = await scanBody();
-      expect(slow.risk).toBe("DANGER");
+      expect(slow.risk).toBe("CAUTION");
       expect(slow.rugKind).toBeNull(); // only a RUG verdict has a kind
-      expect(slow.flags.find((f) => /^Collapsed/.test(f.label))?.label).toBe("Collapsed -95% from its high 20 days ago");
+      const flag = slow.flags.find((f) => /^Collapsed/.test(f.label));
+      expect(flag?.label).toBe("Collapsed -95% from its high 20 days ago");
+      expect(flag?.severity).toBe("warning"); // shown as a warning: the token is never SAFE with it
+      expect(slow.flags.filter((f) => f.severity === "critical" || f.severity === "warning")).toHaveLength(1);
 
       setupGoodTokenMocks();
       vi.mocked(fetchDexCandlesDaily).mockResolvedValueOnce(bleedFrom(150));
       const old = await scanBody();
       expect(old.risk).not.toBe("RUG");
       expect(old.flags.some((f) => /^Collapsed/.test(f.label))).toBe(false);
+    });
+
+    it("the same collapse stays a critical DANGER when one cell is not green: here the pool is under $50k (the Liq cell)", async () => {
+      setupGoodTokenMocks();
+      const base = mockFetch.getMockImplementation()!;
+      mockFetch.mockImplementation(async (url: string, ...rest: unknown[]) => {
+        const res = await base(url, ...rest) as { ok: boolean; json: () => Promise<{ pairs: Array<{ liquidity: { usd: number } }> }> };
+        if (!String(url).includes("dexscreener")) return res;
+        const body = await res.json();
+        body.pairs[0].liquidity = { usd: 40_000 };
+        return { ok: true, json: () => Promise.resolve(body) };
+      });
+      const { fetchDexCandlesDaily } = await import("../api/_lib/fetchers");
+      vi.mocked(fetchDexCandlesDaily).mockResolvedValueOnce(bleedFrom(20));
+      const thin = await scanBody();
+      expect(thin.risk).toBe("DANGER");
+      expect(thin.flags.find((f) => /^Collapsed/.test(f.label))?.severity).toBe("critical");
+    });
+
+    it("a collapse from a high 10 days back stays a RUG PULL on the same green token: the rule is for the older highs only", async () => {
+      setupGoodTokenMocks();
+      const { fetchDexCandlesDaily } = await import("../api/_lib/fetchers");
+      vi.mocked(fetchDexCandlesDaily).mockResolvedValueOnce(bleedFrom(10));
+      const fresh = await scanBody();
+      expect(fresh.risk).toBe("RUG");
+      expect(fresh.rugKind).toBe("confirmed");
+      expect(fresh.flags.find((f) => /^Collapsed/.test(f.label))?.severity).toBe("critical");
     });
   });
 

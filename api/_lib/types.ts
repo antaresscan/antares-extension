@@ -42,6 +42,7 @@ export interface ScanFlag {
  *   market_health          about the MARKET (can anybody sell, is there a pool, did the price collapse): for a token of a known issuer these are
  *                          the only flags that still decide the verdict (issuer-assets.ts)
  *   pool_depth             about how thin the pool is: a vault share is redeemed with its protocol, so these stay information for it
+ *   collapse_old           a collapse of 75 % or more from a high 15 to 90 days old (not a crash in progress): the only critical flag a token with a sound structure can be softened from
  *   permanent_delegate, pausable, transfer_hook, non_transferable
  *                          what the chain already said about a Token-2022 token (only the flags of judgeContractFacts carry them):
  *                          GoPlus saying it again would show the signal twice
@@ -49,7 +50,7 @@ export interface ScanFlag {
 export type FlagTag =
   | "source_status" | "pump_price_only" | "lp" | "rug_evidence" | "concentration"
   | "xv_lp_burn" | "xv_mint_authority" | "xv_age" | "xv_holder_concentration"
-  | "market_health" | "pool_depth"
+  | "market_health" | "pool_depth" | "collapse_old"
   | "permanent_delegate" | "pausable" | "transfer_hook" | "non_transferable";
 
 // IMPORTANT: 'lp' and 'deceptive_name' are HARD reasons — they can never

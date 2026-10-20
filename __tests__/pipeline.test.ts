@@ -6,6 +6,9 @@ import {
   determineVerdict,
   dedupeFlags,
   countVerdictFlags,
+  structureIsGreen,
+  softenLoneOldCollapse,
+  type StructureFacts,
 } from "../api/_lib/pipeline";
 import type {
   ScanFlag,
@@ -747,5 +750,97 @@ describe("the verdict counts what the user sees (M4)", () => {
   it("witness: three DISTINCT warnings are still the DANGER floor", () => {
     const three = [flag("w1", "warning"), flag("w2", "warning"), flag("w3", "warning")];
     expect(verdictOf(dedupeFlags(three))).toBe("DANGER");
+  });
+});
+
+// ─── The owner's rule (2026-10-21): a lone collapse from a high 15 to 90 days old, on a token whose five cells are green, is a CAUTION ───────────────
+
+describe("structureIsGreen — the five cells of the overlay", () => {
+  const green: StructureFacts = { sellBlocked: false, mintActive: false, freezeActive: false, lpBurned: true, lpLocked: false, liquidityUsd: 539_000 };
+
+  it("is green when the token can be sold, has no mint and no freeze authority, has its LP burned (or locked) and over $50k of liquidity", () => {
+    expect(structureIsGreen(green)).toBe(true);
+    expect(structureIsGreen({ ...green, lpBurned: false, lpLocked: true })).toBe(true);
+    expect(structureIsGreen({ ...green, lpBurned: null, lpLocked: true })).toBe(true);
+  });
+
+  it("each cell alone, red, makes it not green", () => {
+    expect(structureIsGreen({ ...green, sellBlocked: true })).toBe(false);
+    expect(structureIsGreen({ ...green, mintActive: true })).toBe(false);
+    expect(structureIsGreen({ ...green, freezeActive: true })).toBe(false);
+    expect(structureIsGreen({ ...green, lpBurned: false, lpLocked: false })).toBe(false);
+    expect(structureIsGreen({ ...green, liquidityUsd: 40_000 })).toBe(false);
+  });
+
+  it("a cell nobody could read (a dash in the overlay) is not green", () => {
+    expect(structureIsGreen({ ...green, sellBlocked: null })).toBe(false);
+    expect(structureIsGreen({ ...green, mintActive: null })).toBe(false);
+    expect(structureIsGreen({ ...green, freezeActive: null })).toBe(false);
+    expect(structureIsGreen({ ...green, lpBurned: null, lpLocked: null })).toBe(false);
+    expect(structureIsGreen({ ...green, liquidityUsd: null })).toBe(false);
+  });
+
+  it("the liquidity line is the overlay's: $50,000 exactly is not green, a dollar more is", () => {
+    expect(structureIsGreen({ ...green, liquidityUsd: 50_000 })).toBe(false);
+    expect(structureIsGreen({ ...green, liquidityUsd: 50_001 })).toBe(true);
+  });
+});
+
+describe("softenLoneOldCollapse", () => {
+  const green: StructureFacts = { sellBlocked: false, mintActive: false, freezeActive: false, lpBurned: true, lpLocked: false, liquidityUsd: 539_000 };
+  const oldCollapse = (): ScanFlag => ({ label: "Collapsed -77% from its high 89 days ago", severity: "critical", impact: 0, tags: ["market_health", "collapse_old"] });
+  const recentCollapse = (): ScanFlag => ({ label: "Collapsed -77% from its high 10 days ago", severity: "critical", impact: 0, tags: ["market_health"] });
+  const bonus: ScanFlag = { label: "LP Burned 100% (GoPlus) ✓", severity: "bonus", impact: 0 };
+  const info: ScanFlag = { label: "Liquidity < $20k", severity: "info", impact: 0 };
+
+  it("returns the lone old collapse as a warning, the other flags (bonus, info) untouched, and does not change the list it was given", () => {
+    const flags = [oldCollapse(), bonus, info];
+    const softened = softenLoneOldCollapse(flags, green)!;
+    expect(softened.map((f) => f.severity)).toEqual(["warning", "bonus", "info"]);
+    expect(softened[0].label).toBe("Collapsed -77% from its high 89 days ago");
+    expect(flags[0].severity).toBe("critical");
+  });
+
+  it("a collapse from a high of the last 14 days is not softened: it is a collapse in progress", () => {
+    expect(softenLoneOldCollapse([recentCollapse()], green)).toBeNull();
+  });
+
+  it("any other warning or critical flag next to it (even a price-only pump) keeps it critical", () => {
+    for (const other of [
+      flagFromText("Top 10 hold 52% — elevated · exchanges may be included", "warning"),
+      flagFromText("LP holds 40% of supply — high rug exposure", "critical"),
+      flagFromText("Pumped +362% over 30 days — elevated retracement risk", "warning"),
+      flagFromText("Large 24h pump +553% on token <24h", "warning"),
+    ]) {
+      expect(softenLoneOldCollapse([oldCollapse(), other], green), other.label).toBeNull();
+    }
+  });
+
+  it("a source that did not answer is not a flag of the token: it does not stop the rule", () => {
+    const status: ScanFlag = { label: "Helius unavailable", severity: "warning", impact: 0, tags: ["source_status"] };
+    expect(softenLoneOldCollapse([oldCollapse(), status], green)?.[0].severity).toBe("warning");
+  });
+
+  it("each red cell keeps the collapse critical", () => {
+    for (const red of [
+      { sellBlocked: true }, { mintActive: true }, { freezeActive: true },
+      { lpBurned: false, lpLocked: false }, { liquidityUsd: 40_000 }, { liquidityUsd: null }, { sellBlocked: null },
+    ] as Array<Partial<StructureFacts>>) {
+      expect(softenLoneOldCollapse([oldCollapse()], { ...green, ...red }), JSON.stringify(red)).toBeNull();
+    }
+  });
+
+  it("no collapse, or a list with no risky flag, returns null (nothing to soften)", () => {
+    expect(softenLoneOldCollapse([], green)).toBeNull();
+    expect(softenLoneOldCollapse([bonus, info], green)).toBeNull();
+  });
+
+  it("the softened list counts as one warning and no critical: determineVerdict reads a CAUTION, not a DANGER (the score at the CAUTION line of the soft path)", () => {
+    const counts = countVerdictFlags(softenLoneOldCollapse([oldCollapse()], green)!);
+    expect(counts).toEqual({ warning: 1, critical: 0, pumpPriceOnly: 0 });
+    const verdict = (score: number) => determineVerdict({ score, forceRug: false, safeBlocked: true, safeBlockedReasons: [], sourcesUsedCount: 5, warningFlagsCount: counts.warning, criticalFlagsCount: counts.critical, pumpPriceOnlyFlagsCount: 0 });
+    expect(verdict(700)).toBe("CAUTION");
+    expect(verdict(1000)).toBe("CAUTION"); // never SAFE: a visible warning blocks it
+    expect(determineVerdict({ score: 893, forceRug: false, safeBlocked: true, safeBlockedReasons: [], sourcesUsedCount: 5, warningFlagsCount: 1, criticalFlagsCount: 1, pumpPriceOnlyFlagsCount: 0 })).toBe("DANGER"); // as a critical, it was a DANGER
   });
 });
