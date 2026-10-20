@@ -659,32 +659,35 @@ export const SHADOW_CSS = `
 
 /* First sentence — acts as a verdict summary */
 .ai-panel-verdict {
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 400;
   color: #c4b5fd;
-  line-height: 1.5;
-  font-family: 'IBM Plex Mono', monospace;
-  letter-spacing: .01em;
+  line-height: 1.3;
+  font-family: 'Bebas Neue', sans-serif;
+  letter-spacing: .06em;
+  word-spacing: .12em;
   padding-bottom: 6px;
   border-bottom: 1px solid rgba(167,139,250,.1);
 }
 
 /* Subsequent sentences */
 .ai-panel-line {
-  font-size: 9.5px;
+  font-size: 12px;
+  font-weight: 400;
   color: #8a8aad;
-  line-height: 1.55;
-  font-family: 'IBM Plex Mono', monospace;
-  letter-spacing: .01em;
+  line-height: 1.35;
+  font-family: 'Bebas Neue', sans-serif;
+  letter-spacing: .06em;
+  word-spacing: .12em;
 }
 
 /* Loading state */
 .ai-panel-loading {
   padding: 10px 12px;
-  font-size: 9px;
+  font-size: 12px;
   color: #555;
-  font-family: 'IBM Plex Mono', monospace;
-  letter-spacing: .04em;
+  font-family: 'Bebas Neue', sans-serif;
+  letter-spacing: .08em;
   text-align: center;
   animation: ant-pulse 1.2s ease-in-out infinite;
 }
@@ -692,10 +695,10 @@ export const SHADOW_CSS = `
 /* Empty state */
 .ai-panel-empty {
   padding: 10px 12px;
-  font-size: 9px;
+  font-size: 12px;
   color: #444;
-  font-family: 'IBM Plex Mono', monospace;
-  letter-spacing: .04em;
+  font-family: 'Bebas Neue', sans-serif;
+  letter-spacing: .08em;
   text-align: center;
 }
 
@@ -803,11 +806,12 @@ export const SHADOW_CSS = `
 }
 
 .cf-flag-label {
-  font-size: 10px;
-  font-weight: 600;
-  line-height: 1.4;
-  font-family: 'IBM Plex Mono', monospace;
-  letter-spacing: .01em;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.3;
+  font-family: 'Bebas Neue', sans-serif;
+  letter-spacing: .06em;
+  word-spacing: .12em;
 }
 .cf-flag-cr .cf-flag-label { color: #cc7070; }
 .cf-flag-wr .cf-flag-label { color: #c8a840; }
@@ -821,8 +825,8 @@ export const SHADOW_CSS = `
 .cf-section-header {
   display: flex; align-items: center; gap: 8px;
   padding: 4px 0 8px;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 9px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 12px;
   letter-spacing: .14em;
   text-transform: uppercase;
   border-bottom: 1px solid rgba(255,255,255,.05);
@@ -833,10 +837,11 @@ export const SHADOW_CSS = `
   min-width: 16px; height: 16px;
   border-radius: 8px;
   padding: 0 6px;
-  font-size: 9px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: .04em;
 }
-.cf-section-title { color: #888; font-weight: 600; }
+.cf-section-title { color: #888; font-weight: 400; }
 .cf-section-critical .cf-section-count { background: rgba(255,60,80,.18); color: #ff5f5f; }
 .cf-section-critical .cf-section-title { color: #cc7070; }
 .cf-section-warning  .cf-section-count { background: rgba(245,208,0,.15); color: #f5d000; }
@@ -847,20 +852,21 @@ export const SHADOW_CSS = `
 .cf-section-bonus    .cf-section-title { color: #00d99a; }
 
 .cf-flag-desc {
-  font-size: 9px;
+  font-size: 11.5px;
+  font-weight: 400;
   color: #777;
-  line-height: 1.5;
-  font-style: italic;
-  letter-spacing: .01em;
-  font-family: 'IBM Plex Mono', monospace;
+  line-height: 1.35;
+  letter-spacing: .06em;
+  word-spacing: .12em;
+  font-family: 'Bebas Neue', sans-serif;
 }
 
 .cf-panel-empty {
   padding: 10px 12px;
-  font-size: 9px;
+  font-size: 12px;
   color: #444;
-  font-family: 'IBM Plex Mono', monospace;
-  letter-spacing: .04em;
+  font-family: 'Bebas Neue', sans-serif;
+  letter-spacing: .08em;
   text-align: center;
 }
 `
