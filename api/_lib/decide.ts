@@ -21,11 +21,11 @@ import {
 } from "./layers";
 import { computeFinalScore, classifySafeBlockedReasons } from "./scoring";
 import {
-  evaluatePostLayerFlags, applySafeGateOverride, applyEstablishedBonus, determineVerdict, rugKindOf, dedupeFlags, countVerdictFlags,
+  evaluatePostLayerFlags, applySafeGateOverride, applyEstablishedBonus, determineVerdict, rugKindOf, dedupeFlags, countVerdictFlags, softenLoneOldCollapse,
 } from "./pipeline";
 import { computeLpPctOfSupply, getLpRiskBucket } from "./lp-risk-matrix";
 import { weightedBurnPct, type AuthorityFacts } from "./facts";
-import { HARD_BLOCK_REASONS, LAYER_WEIGHTS, SOLSCAN_AGE_AND_HOLDERS_ONLY, SAFE_MIN_MARKET_DEPTH_USD } from "./constants";
+import { HARD_BLOCK_REASONS, LAYER_WEIGHTS, SOLSCAN_AGE_AND_HOLDERS_ONLY, SAFE_MIN_MARKET_DEPTH_USD, COLLAPSE_SOFT_MIN_SCORE } from "./constants";
 import { asNumber } from "./math";
 import { athDropPct, type AllTimeHigh } from "./ath";
 import { makeFlag } from "./helpers";
@@ -351,6 +351,21 @@ export function decide(input: DecideInput): Decision {
     criticalFlagsCount: _counts.critical,
     pumpPriceOnlyFlagsCount: _counts.pumpPriceOnly,
   });
+
+  // A collapse from a high 15 to 90 days old, alone, on a token whose Sell / Mint / Freeze / LP / Liq cells are all green: a CAUTION, the flag shown as a warning (see softenLoneOldCollapse).
+  if (risk === "DANGER" && !forceRug) {
+    const softened = softenLoneOldCollapse(flags, {
+      sellBlocked: authFacts.sellBlocked, mintActive: authFacts.mint, freezeActive: authFacts.freeze,
+      lpBurned, lpLocked, liquidityUsd: asNumber(pair?.liquidity?.usd) || null,
+    });
+    if (softened) {
+      flags.splice(0, flags.length, ...softened);
+      flags.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
+      risk = "CAUTION";
+      score = Math.max(score, COLLAPSE_SOFT_MIN_SCORE);
+      notes.push({ message: "lone old collapse softened: structure all green", data: { score } });
+    }
+  }
 
   // SAFE needs a market a holder can leave: under SAFE_MIN_MARKET_DEPTH_USD (all the pools added up) a token that has nothing else against it is CAUTION. A token of the issuer
   // registry is judged on its market below (judgeIssuerAsset), not here.

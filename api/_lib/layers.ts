@@ -1503,13 +1503,17 @@ export function collapseFromPeak(daily: OHLCVCandle[] | undefined): Collapse | n
 /**
  * The flag of a collapse: critical always. From a high of the last 14 days (a collapse in progress) it is a forced RUG AND a fact that the
  * token has already collapsed (RugEvidence "price_collapse": the verdict reads "RUG PULL", not "RUG RISK"). From a high 15 to 90 days
- * old it is critical alone: the verdict follows the other flags (DANGER, or RUG when they force it, which then reads "RUG RISK").
+ * old it is critical alone: the verdict follows the other flags (DANGER, or RUG when they force it, which then reads "RUG RISK"), and it carries
+ * the tag "collapse_old": when it is the ONLY risky flag of a token whose Sell, Mint, Freeze, LP and Liq cells are all green, decide.ts shows it as a
+ * warning and the token is a CAUTION (softenLoneOldCollapse, pipeline.ts).
  */
 function collapseFlag(c: Collapse): { flag: ScanFlag; penalty: number; forceRug: boolean; evidence: RugEvidence[] } {
   const n = Math.round(c.peakAgeDays);
   const age = c.peakAgeDays < 1 ? "less than a day" : `${n} day${n === 1 ? "" : "s"}`;
+  const flag = makeFlag(`Collapsed -${Math.round(c.dropPct)}% from its high ${age} ago`, "critical", 0, { tags: ["market_health"] });
+  if (!c.recent) flag.tags = [...(flag.tags ?? []), "collapse_old"]; // set here, not in the call: the table test reads the codes of the call itself (flag-codes-layers.test.ts)
   return {
-    flag: makeFlag(`Collapsed -${Math.round(c.dropPct)}% from its high ${age} ago`, "critical", 0, { tags: ["market_health"] }),
+    flag,
     penalty: c.recent ? 0.10 : 0.30,
     forceRug: c.recent,
     evidence: c.recent ? ["price_collapse"] : [],
