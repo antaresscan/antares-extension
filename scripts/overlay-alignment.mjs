@@ -111,8 +111,8 @@ window.__overlay = {
     return { kind: e.className.indexOf("cf-section-count") >= 0 ? "count" : "mark", text: (e.textContent || "").trim(), x: r.x, y: r.y, w: r.width, h: r.height }
   }),
   panelText: (id) => [...state.shadow.querySelectorAll("#" + id + " *")]
-    .filter((e) => e.className.indexOf("cf-flag-icon") < 0 && [...e.childNodes].some((n) => n.nodeType === 3 && (n.textContent || "").trim() !== ""))
-    .map((e) => { const cs = getComputedStyle(e); return { cls: e.className, family: cs.fontFamily, weight: cs.fontWeight, style: cs.fontStyle } }),
+    .filter((e) => (e.getAttribute("class") || "").indexOf("cf-flag-icon") < 0 && [...e.childNodes].some((n) => n.nodeType === 3 && (n.textContent || "").trim() !== ""))
+    .map((e) => { const cs = getComputedStyle(e); return { cls: e.getAttribute("class") || e.tagName, family: cs.fontFamily, weight: cs.fontWeight, style: cs.fontStyle } }),
 }
 `
 const plugin = {
@@ -184,6 +184,12 @@ async function inkRows(page, shotB64, clip, dsf, cells) {
 const HOSTILE = "html{font-size:23px;line-height:2.4;letter-spacing:.12em;word-spacing:7px;font-family:Times,serif;text-transform:uppercase}body{margin:0;zoom:1}*{box-sizing:content-box}"
 const failures = []
 let renders = 0, worstSpread = 0, worstWhere = ""
+// The round marks are measured in DEVICE pixels, to a fraction of one. The size of a circle is read from the pixels at its edge, whose anti-aliasing is not the same in every
+// renderer: the same drawing measures 19.8-20.0 high in a full Chromium and 19.4-19.6 in the headless shell the CI runs (a circle of 16 css px at 125 % is 20 device px), and a symbol
+// is within 0.21 device px of the centre of its circle in the one and 0.29 in the other. The limits sit above that noise and far below the defect they guard against: a 14px CSS circle was
+// 17.5 device px at 125 % and 21 at 150 % (2.5 and 3 below the 20 and 24 it should be), a symbol up to 0.75 off centre. Every circle is also compared with the others of its scaling.
+const SIZE_TOLERANCE_DP = 1.0
+const CENTRE_TOLERANCE_DP = 0.5
 let panelChecks = 0, panelWorst = 0, panelWorstWhere = ""
 const colourClass = (liq) => (liq === null ? "dash" : liq < 5000 ? "liq n" : liq > 50_000 ? "liq y" : "liq")
 
@@ -252,24 +258,51 @@ const PANEL_BODY = {
   ],
   aiSummary: "A first sentence that gives the verdict. A second one with a detail. A third one to finish.",
 }
-// Where the ink of a mark sits relative to the centre of its own circle (or pill), in CSS px: the pixels that differ from the fill of the element, inside its shape.
-async function inkCentre(page, b64, g, dsf, pad) {
-  return page.evaluate(async ([b64, g, dsf, pad]) => {
+// What the eye sees on one round mark, taken from its screenshot alone, in DEVICE pixels and to a fraction of one: the size of its circle (the first and the last pixel of
+// the middle row and column that are not the panel behind it, plus how much of that pixel the circle covers) and the margins between the ink of the symbol (the pixels that are
+// not the fill of the circle, counted by how much of the symbol's colour they hold) and the edge of the circle on the four sides. The CSS box is not used: a circle snapped to
+// the pixel grid by the browser is exactly what has to show. The panel behind the circle is dithered (a few units of noise), hence the 0.1 threshold on a pixel's coverage.
+async function markGeometry(page, b64, g, dsf, pad) {
+  return page.evaluate(async ([b64, gw, gh, dsf, pad]) => {
     const img = new Image(); img.src = "data:image/png;base64," + b64; await img.decode()
     const c = document.createElement("canvas"); c.width = img.width; c.height = img.height
     const ctx = c.getContext("2d", { willReadFrequently: true }); ctx.drawImage(img, 0, 0)
     const d = ctx.getImageData(0, 0, img.width, img.height).data
-    const px = (x, y) => { const k = (Math.round(y) * img.width + Math.round(x)) * 4; return [d[k], d[k + 1], d[k + 2]] }
-    const cx = (pad + g.w / 2) * dsf, cy = (pad + g.h / 2) * dsf, R = (g.h / 2) * dsf, straight = Math.max(0, (g.w / 2) * dsf - R)
-    const fill = px((pad + 2.2) * dsf, cy)
-    let x0 = 1e9, x1 = -1, y0 = 1e9, y1 = -1
+    const px = (x, y) => { const k = (y * img.width + x) * 4; return [d[k], d[k + 1], d[k + 2]] }
+    const dot = (p, q) => p[0] * q[0] + p[1] * q[1] + p[2] * q[2]
+    const cover = (p, from, to) => { const v = [to[0] - from[0], to[1] - from[1], to[2] - from[2]], n = dot(v, v); return n === 0 ? 0 : Math.max(0, Math.min(1, dot([p[0] - from[0], p[1] - from[1], p[2] - from[2]], v) / n)) }
+    const out = px(1, 1)
+    const my = Math.floor(img.height / 2), mx = Math.floor(img.width / 2)
+    const lo = (pad - 2) * dsf, hiX = (pad + gw + 2) * dsf, hiY = (pad + gh + 2) * dsf // the scans stay within 2 css px of where the shape is: a neighbour cannot be taken for it
+    let cl = -1
+    for (let x = Math.max(0, Math.floor(lo)); x < Math.min(img.width, Math.ceil(hiX)); x++) { const p = px(x, my); if (Math.abs(p[0] - out[0]) + Math.abs(p[1] - out[1]) + Math.abs(p[2] - out[2]) > 9) { cl = x; break } }
+    if (cl < 0) return null
+    const fill = px(Math.min(img.width - 1, cl + Math.round(1.6 * dsf)), my)
+    const edge = (get, n, fromEnd, from, to) => { for (let k = 0; k < n; k++) { const i = fromEnd ? n - 1 - k : k; if (i < from || i > to) continue; const cv = cover(get(i), out, fill); if (cv > 0.1) return fromEnd ? i + cv : i + (1 - cv) } return NaN }
+    const left = edge((i) => px(i, my), img.width, false, lo, hiX), right = edge((i) => px(i, my), img.width, true, lo, hiX)
+    const top = edge((i) => px(mx, i), img.height, false, lo, hiY), bottom = edge((i) => px(mx, i), img.height, true, lo, hiY)
+    if ([left, right, top, bottom].some(Number.isNaN)) return null
+    const cx = (left + right) / 2, cy = (top + bottom) / 2, R = (bottom - top) / 2, straight = Math.max(0, (right - left) / 2 - R)
+    const inside = (x, y) => Math.hypot(Math.max(0, Math.abs(x + 0.5 - cx) - straight), y + 0.5 - cy) <= R - 1.6 // away from the anti-aliased rim
+    let full = fill, far = 0
     for (let y = 0; y < img.height; y++) for (let x = 0; x < img.width; x++) {
-      if (Math.hypot(Math.max(0, Math.abs(x - cx) - straight), y - cy) > R - 1.2 * dsf) continue // inside the shape, away from its anti-aliased edge
-      const p = px(x, y)
-      if (Math.abs(p[0] - fill[0]) + Math.abs(p[1] - fill[1]) + Math.abs(p[2] - fill[2]) > 110) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y }
+      if (!inside(x, y)) continue
+      const p = px(x, y), dd = Math.abs(p[0] - fill[0]) + Math.abs(p[1] - fill[1]) + Math.abs(p[2] - fill[2])
+      if (dd > far) { far = dd; full = p } // the pixel farthest from the fill is the full colour of the symbol
     }
-    return x1 < 0 ? null : { dx: ((x0 + x1 + 1) / 2 - cx) / dsf, dy: ((y0 + y1 + 1) / 2 - cy) / dsf }
-  }, [b64, g, dsf, pad])
+    const rowMax = new Array(img.height).fill(0), colMax = new Array(img.width).fill(0)
+    for (let y = 0; y < img.height; y++) for (let x = 0; x < img.width; x++) {
+      if (!inside(x, y)) continue
+      const cv = cover(px(x, y), fill, full)
+      if (cv > rowMax[y]) rowMax[y] = cv
+      if (cv > colMax[x]) colMax[x] = cv
+    }
+    const first = (arr, fromEnd) => { for (let k = 0; k < arr.length; k++) { const i = fromEnd ? arr.length - 1 - k : k; if (arr[i] > 0.12) return fromEnd ? i + arr[i] : i + (1 - arr[i]) } return NaN }
+    const il = first(colMax, false), ir = first(colMax, true), it = first(rowMax, false), ib = first(rowMax, true)
+    if ([il, ir, it, ib].some(Number.isNaN)) return null
+    const L = il - left, R_ = right - ir, T = it - top, B = bottom - ib
+    return { w: right - left, h: bottom - top, dx: (L - R_) / 2, dy: (T - B) / 2 }
+  }, [b64, g.w, g.h, dsf, pad])
 }
 
 const once = (message) => { if (!failures.includes(message)) failures.push(message) } // (a panel of ten flags would otherwise report the same font ten times)
@@ -305,24 +338,30 @@ async function panelSweep(browser, js, { name, dsf }) {
     await open("cf")
     const marks = await page.evaluate(() => window.__overlay.panelMarks())
     if (marks.length < 12) failures.push(`${name}: only ${marks.length} round marks found in the Critical Flags panel (the check is blind)`)
-    const seen = new Set()
-    const tol = Math.max(tolFor(dsf), dsf < 2 ? 1.1 : 0)
+    const circleHeights = []
+    // Every mark, not one of each kind: two circles of the same kind sitting on different rows are what used to come out at different sizes.
     for (const g of marks) {
       const where = `${name} | ${g.kind} "${g.text}"`
-      if (g.kind === "count") {
-        if (g.text.length === 1 && Math.abs(g.w - g.h) > 0.05) once(`${where}: the circle is ${g.w.toFixed(2)} x ${g.h.toFixed(2)} px, an oval`)
-        if (g.h !== 16) once(`${where}: ${g.h} px high, not 16`)
-      } else if (Math.abs(g.w - 14) > 0.05 || Math.abs(g.h - 14) > 0.05) once(`${where}: ${g.w.toFixed(2)} x ${g.h.toFixed(2)} px, not 14 x 14`)
-      const key = g.kind + g.text + g.w.toFixed(1)
-      if (seen.has(key)) continue
-      seen.add(key)
       const pad = 3
       const shot = (await page.screenshot({ clip: { x: g.x - pad, y: g.y - pad, width: g.w + pad * 2, height: g.h + pad * 2 } })).toString("base64")
-      const ink = await inkCentre(page, shot, g, dsf, pad)
-      if (!ink) { failures.push(`${where}: nothing drawn in the circle`); continue }
-      const limit = g.kind === "count" ? Math.max(tol, 1.0) : tol
-      if (Math.abs(ink.dx) > limit || Math.abs(ink.dy) > limit) failures.push(`${where}: the ink is ${ink.dx.toFixed(2)} px right and ${ink.dy.toFixed(2)} px down of the centre of its circle (limit ${limit})`)
-      const off = Math.max(Math.abs(ink.dx), Math.abs(ink.dy)); if (off > panelWorst) { panelWorst = off; panelWorstWhere = where }
+      const m = await markGeometry(page, shot, g, dsf, pad)
+      if (!m) { failures.push(`${where}: nothing drawn in the circle`); continue }
+      const px = (v) => (v / dsf).toFixed(2)
+      // 1. The circle is the size it was drawn: 16 css px high (16 x dsf device pixels, a whole number at 100 %, 125 %, 150 %, 175 %, 200 %...), and as wide as its box.
+      if (Math.abs(m.h - 16 * dsf) > SIZE_TOLERANCE_DP) once(`${where}: the circle is ${m.h.toFixed(2)} device px high at ${dsf}x, it should be ${16 * dsf}`)
+      if (Math.abs(m.w - g.w * dsf) > SIZE_TOLERANCE_DP) once(`${where}: the circle is ${m.w.toFixed(2)} device px wide at ${dsf}x, it should be ${(g.w * dsf).toFixed(2)}`)
+      // 2. A circle is as wide as it is high (a number of one digit and every mark).
+      if ((g.kind === "mark" || g.text.length === 1) && Math.abs(m.w - m.h) > SIZE_TOLERANCE_DP) once(`${where}: ${m.w.toFixed(2)} x ${m.h.toFixed(2)} device px at ${dsf}x, an oval, not a circle`)
+      // 3. The symbol sits on the centre of its circle: the margin on the left is the margin on the right, the one above is the one below.
+      const off = Math.max(Math.abs(m.dx), Math.abs(m.dy))
+      if (off > CENTRE_TOLERANCE_DP) once(`${where}: the symbol is ${m.dx.toFixed(2)} device px right and ${m.dy.toFixed(2)} down of the centre of its circle at ${dsf}x (${px(m.dx)} / ${px(m.dy)} css px; limit ${CENTRE_TOLERANCE_DP})`)
+      if (off > panelWorst) { panelWorst = off; panelWorstWhere = where }
+      if (g.kind === "mark" || g.text.length === 1) circleHeights.push(m.h)
+    }
+    // 4. Every circle of one scaling is the size of the others (the 17 circles of the panel: numbers of one digit and marks).
+    if (circleHeights.length > 1) {
+      const spread = Math.max(...circleHeights) - Math.min(...circleHeights)
+      if (spread > SIZE_TOLERANCE_DP) once(`${name}: the circles are not all the same size: from ${Math.min(...circleHeights).toFixed(2)} to ${Math.max(...circleHeights).toFixed(2)} device px high at ${dsf}x`)
     }
     panelChecks += marks.length
   } catch (e) {
@@ -366,7 +405,7 @@ await Promise.all(Array.from({ length: POOL }, async () => { while (next < jobs.
 await browser.close()
 
 console.log(`overlay alignment: ${renders} renders in real Chromium, ${((Date.now() - t0) / 1000).toFixed(0)} s; worst spread of the five marks ${worstSpread.toFixed(2)} px (limit ${TOLERANCE_PX}) at ${worstWhere}`)
-console.log(`panels: ${panelChecks} round marks measured, worst offset of a mark from the centre of its circle ${panelWorst.toFixed(2)} px at ${panelWorstWhere}`)
+console.log(`panels: ${panelChecks} round marks measured, worst offset of a symbol from the centre of its circle ${panelWorst.toFixed(2)} device px (limit ${CENTRE_TOLERANCE_DP}) at ${panelWorstWhere}`)
 if (failures.length) {
   console.error(`\nFAIL: ${failures.length} problem(s):`)
   for (const f of failures.slice(0, 40)) console.error("  - " + f)

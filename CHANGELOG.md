@@ -21,8 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   at 150 % screen scaling the letter landed up to one device pixel off the line.
 - The two panels under the overlay card, Critical Flags and AI Summary, are set in Bebas Neue like the rest of the card (the flags, their
   explanations, the section titles and the summary were in IBM Plex Mono, bold or italic). The round marks of the flags are exact circles
-  too: the number of a section was an oval, and the cross, `!`, `i` and tick were letters that came out differently on each computer; they are
-  now drawn, centred in their circle. Same texts, same panels; `npm run overlay:check` measures all of it in a real Chromium on every CI run.
+  too: each one (the number of a section, the cross, `!`, `i` and tick) is one small 16 px drawing, circle and symbol together. It was a
+  14 px CSS circle with a font character on it, which on a screen scaled to 125 % or 150 % came out 17 or 18 device pixels wide from one
+  row to the next, a cross that was not square and a symbol off centre by up to 0.75 device pixel. Now every circle is the same size and
+  every symbol is within a quarter of a device pixel of its centre. Same texts, same panels; `npm run overlay:check` measures every mark, in
+  device pixels, at 100 % to 300 % screen scaling in a real Chromium on every CI run.
 - `docs/cws/permission-justifications.md`: the answers of the "Privacy practices" tab now agree with the privacy policy (identity,
   session token, IP address used for rate limiting, scan history, page content).
 
