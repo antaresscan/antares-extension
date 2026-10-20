@@ -15,7 +15,8 @@
 // It repeats a reduced sweep at the usual screen scalings (100 % to 300 %, a phone, and 8x for hair-line precision) and with a host page that sets aggressive typography
 // (the shadow host resets it with `all: initial`: this proves the reset holds). The sweeps run side by side, in separate pages.
 //
-// The two panels under the card (Critical Flags, AI Summary) are checked the same way, at the usual screen scalings: every text in them is Bebas Neue (weight 400, no italic), the
+// The two panels under the card (Critical Flags, AI Summary) are checked the same way, at the usual screen scalings: the titles in them are Bebas Neue (weight 400, no italic), the sentences
+// (what a flag means, the AI summary, the empty states) are Oswald 300 or 400 in lower case, and both faces are really loaded in the page; the
 // round marks are exact circles (the number of a section: 16 x 16 px, a pill only from two digits; the cross, !, i and tick: 14 x 14 px) and the ink of each one sits on the
 // centre of its circle. They were oval, and drawn by whichever font the page fell back to.
 //
@@ -112,7 +113,7 @@ window.__overlay = {
   }),
   panelText: (id) => [...state.shadow.querySelectorAll("#" + id + " *")]
     .filter((e) => (e.getAttribute("class") || "").indexOf("cf-flag-icon") < 0 && [...e.childNodes].some((n) => n.nodeType === 3 && (n.textContent || "").trim() !== ""))
-    .map((e) => { const cs = getComputedStyle(e); return { cls: e.getAttribute("class") || e.tagName, family: cs.fontFamily, weight: cs.fontWeight, style: cs.fontStyle } }),
+    .map((e) => { const cs = getComputedStyle(e); return { cls: e.getAttribute("class") || e.tagName, family: cs.fontFamily, weight: cs.fontWeight, style: cs.fontStyle, transform: cs.textTransform } }),
 }
 `
 const plugin = {
@@ -323,16 +324,32 @@ async function panelSweep(browser, js, { name, dsf }) {
     await page.waitForTimeout(250)
   }
   try {
-    // 1. every text of both panels is Bebas Neue, weight 400, not italic (Bebas Neue has neither: the browser would fake them)
+    // 1. the titles of both panels are Bebas Neue, weight 400, not italic (Bebas Neue has neither: the browser would fake them); the sentences are Oswald 300 or 400 (the two bundled
+    //    weights), not italic, in lower case (no text-transform), and both faces are really loaded, not a fallback
+    const SENTENCE = /(^|\s)(cf-flag-desc|cf-panel-empty|ai-panel-verdict|ai-panel-line|ai-panel-loading|ai-panel-empty)(\s|$)/
+    let sentences = 0
     for (const [which, id] of [["cf", "ant-critical-flags"], ["ai", "ant-ai-summary"]]) {
       await open(which)
       const texts = await page.evaluate((id) => window.__overlay.panelText(id), id)
       if (texts.length < 3) failures.push(`${name} | ${id}: only ${texts.length} text(s) found in the panel (the check is blind)`)
       for (const t of texts) {
-        if (!/^["']?Bebas Neue/.test(t.family)) once(`${name} | ${id} | .${t.cls}: set in ${t.family}, not Bebas Neue`)
-        if (t.weight !== "400") once(`${name} | ${id} | .${t.cls}: weight ${t.weight}, Bebas Neue has only 400`)
-        if (t.style !== "normal") once(`${name} | ${id} | .${t.cls}: ${t.style}, Bebas Neue has no italic`)
+        if (SENTENCE.test(t.cls)) {
+          sentences++
+          if (!/^["']?Oswald/.test(t.family)) once(`${name} | ${id} | .${t.cls}: set in ${t.family}, not Oswald`)
+          if (t.weight !== "300" && t.weight !== "400") once(`${name} | ${id} | .${t.cls}: weight ${t.weight}, only Oswald 300 and 400 are bundled`)
+          if (t.style !== "normal") once(`${name} | ${id} | .${t.cls}: ${t.style}, the sentences are not italic`)
+          if (t.transform !== "none") once(`${name} | ${id} | .${t.cls}: text-transform ${t.transform}, the sentences keep their lower case`)
+        } else {
+          if (!/^["']?Bebas Neue/.test(t.family)) once(`${name} | ${id} | .${t.cls}: set in ${t.family}, not Bebas Neue`)
+          if (t.weight !== "400") once(`${name} | ${id} | .${t.cls}: weight ${t.weight}, Bebas Neue has only 400`)
+          if (t.style !== "normal") once(`${name} | ${id} | .${t.cls}: ${t.style}, Bebas Neue has no italic`)
+        }
       }
+    }
+    if (sentences < 4) failures.push(`${name}: only ${sentences} sentence(s) found in the two panels (the check is blind)`)
+    const loaded = await page.evaluate(async () => { await document.fonts.ready; return [...document.fonts].filter((f) => f.status === "loaded").map((f) => f.family.replace(/["']/g, "") + " " + f.weight) })
+    for (const face of ["Bebas Neue 400", "Oswald 300", "Oswald 400"]) {
+      if (!loaded.includes(face)) failures.push(`${name}: ${face} is not loaded in the page after the two panels were opened (the panels would draw in a fallback font); loaded: ${loaded.join(", ") || "none"}`)
     }
     // 2. the round marks of the Critical Flags panel: exact circles, ink on their centre
     await open("cf")
@@ -412,4 +429,4 @@ if (failures.length) {
   if (failures.length > 40) console.error(`  ... and ${failures.length - 40} more`)
   process.exit(1)
 }
-console.log("OK: the check marks, the cross, the dashes and the liquidity figure share one line and one font in every verdict, plan, colour and state; the panels are Bebas Neue with round, centred marks.")
+console.log("OK: the check marks, the cross, the dashes and the liquidity figure share one line and one font in every verdict, plan, colour and state; the panels have Bebas Neue titles and lower-case Oswald sentences, with round, centred marks.")

@@ -14,8 +14,8 @@
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap"></noscript>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&family=Oswald:wght@300;400&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&family=Oswald:wght@300;400&display=swap"></noscript>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -808,15 +808,19 @@ footer span{color:var(--c)}
    ║  the whole page, the marketing demo (?demo=1) included: it is drawn   ║
    ║  by this same page, its data is locked in DEMO_DATA, its look is the  ║
    ║  page's. The old rules above stay as the base (layout, colours).      ║
+   ║  SENTENCES IN OSWALD (2026-10-21): Bebas Neue has only capitals,       ║
+   ║  so the flag explanations and the AI verdict (sentences, with lower-   ║
+   ║  case letters) are set in Oswald 300, its closest cousin. The titles,  ║
+   ║  the flag names, the addresses and the figures stay Bebas Neue.        ║
    ╚════════════════════════════════════════════════════════════════════ */
 .flags-head .lbl{font-family:'Bebas Neue',sans-serif;font-size:13px;font-weight:400;letter-spacing:.16em}
 .flags-head .count{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:.08em}
 .flag-label{font-family:'Bebas Neue',sans-serif;font-size:16px;font-weight:400;line-height:1.3;letter-spacing:.06em;word-spacing:.12em}
-.flag-desc{font-family:'Bebas Neue',sans-serif;font-size:14px;font-style:normal;line-height:1.35;letter-spacing:.06em;word-spacing:.12em}
+.flag-desc{font-family:'Oswald','Arial Narrow',sans-serif;font-size:14px;font-weight:300;font-style:normal;line-height:1.5;letter-spacing:.01em;word-spacing:0;color:#8a8a96}
 .ai-head h3{font-family:'Bebas Neue',sans-serif;font-size:14px;font-weight:400;letter-spacing:.18em}
-.ai-body{font-family:'Bebas Neue',sans-serif;font-size:17px;line-height:1.5;letter-spacing:.05em;word-spacing:.1em}
+.ai-body{font-family:'Oswald','Arial Narrow',sans-serif;font-size:16px;font-weight:300;line-height:1.6;letter-spacing:.01em;word-spacing:0}
 .ai-body b{font-weight:400}
-.ai-loading{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:.08em}
+.ai-loading{font-family:'Oswald','Arial Narrow',sans-serif;font-size:14px;font-weight:300;letter-spacing:.02em}
 /* the round marks of the flags are one 16px drawing each (js/round-marks.js): the character stays in the element, hidden, for screen readers */
 .flag-icon{display:block;width:16px;height:16px;border-radius:0;font-size:0;line-height:0}
 .flag-icon svg{display:block;overflow:visible}

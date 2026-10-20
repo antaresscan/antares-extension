@@ -26,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   row to the next, a cross that was not square and a symbol off centre by up to 0.75 device pixel. Now every circle is the same size and
   every symbol is within a quarter of a device pixel of its centre. Same texts, same panels; `npm run overlay:check` measures every mark, in
   device pixels, at 100 % to 300 % screen scaling in a real Chromium on every CI run.
+- The sentences of the two panels (what a flag means, the AI summary, the empty states) and of the token page (`token.html`: the flag explanations and the AI verdict) now
+  have lower-case letters: Bebas Neue only has capitals, so they are set in Oswald (weights 300 and 400, bundled as woff2 in the extension, SIL Open Font License), its closest
+  cousin. The titles (the section headers, the name of each flag, the card) stay Bebas Neue. `npm run overlay:check` checks in a real Chromium that every sentence is Oswald in
+  lower case and every title Bebas Neue, and that both faces are loaded.
 - A fall of 75 % or more from a high 15 to 90 days old no longer makes a DANGER when it is the **only** risky flag and the five checks of the card
   (Sell, Mint, Freeze, LP, Liq) are all green: the token reads CAUTION, with the flag shown as a warning (it is never SAFE while a warning is shown, and
   turns SAFE when the high leaves the 90-day window). A check nobody could read, a pool under $50k or any other flag keeps the DANGER, and a fall from a

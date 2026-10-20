@@ -1,14 +1,16 @@
 /* @vitest-environment happy-dom */
 import { describe, it, expect, beforeEach } from "vitest"
-import { SHADOW_CSS } from "../contents/modules/styles"
+import { SHADOW_CSS, injectFonts } from "../contents/modules/styles"
 import { state } from "../contents/modules/state"
 import { toggleAiSummary } from "../contents/modules/ai-summary"
 import { toggleCriticalFlags } from "../contents/modules/critical-flags"
 import { DIGITS, DIGIT_HEIGHT, drawCount, drawMark, type MarkKey } from "../contents/modules/round-marks"
 
-// The two panels under the card (Critical Flags, AI Summary) read in the card's own voice: Bebas Neue, like the verdict, the pills and the buttons that open them.
-// They were set in IBM Plex Mono (bold labels, italic descriptions), which is the one place of the card that looked like another product. Bebas Neue has a single
-// weight and no italic: asking for 600/700 or `italic` would make the browser fake them, which smears the letters.
+// The two panels under the card (Critical Flags, AI Summary) read in the card's own voice: Bebas Neue for the titles (the section headers and the name of each flag), like the verdict,
+// the pills and the buttons that open them. They were set in IBM Plex Mono (bold labels, italic descriptions), which is the one place of the card that looked like another product.
+// Bebas Neue has capitals only, a single weight and no italic: asking for 600/700 or `italic` would make the browser fake them, which smears the letters, and a sentence in it has no
+// lower-case letters. The SENTENCES (what a flag means, the AI summary, the empty states) are set in Oswald, its closest cousin that has them (the owner's choice, 2026-10-21): the
+// weights 300 and 400 are the two that are bundled, anything else would be faked as well.
 
 const rule = (selector: string): string => {
   const start = SHADOW_CSS.indexOf(`\n${selector} {`)
@@ -16,18 +18,54 @@ const rule = (selector: string): string => {
   return SHADOW_CSS.slice(start, SHADOW_CSS.indexOf("}", start))
 }
 
+const TITLES = [".cf-section-header", ".cf-section-count", ".cf-section-title", ".cf-flag-label"]
+const SENTENCES = [".cf-flag-desc", ".cf-panel-empty", ".ai-panel-verdict", ".ai-panel-line", ".ai-panel-loading", ".ai-panel-empty"]
 const CRITICAL_FLAGS_TEXT = [".cf-section-header", ".cf-section-count", ".cf-section-title", ".cf-flag-label", ".cf-flag-desc", ".cf-panel-empty"]
 const AI_SUMMARY_TEXT = [".ai-panel-verdict", ".ai-panel-line", ".ai-panel-loading", ".ai-panel-empty"]
 // A rule that sets no font of its own inherits the one of the rule it sits in: the count and the title live in the section header.
 const INHERITS_FONT = new Set([".cf-section-count", ".cf-section-title"])
 
-describe("the Critical Flags and AI Summary panels are set in Bebas Neue", () => {
-  it.each([...CRITICAL_FLAGS_TEXT, ...AI_SUMMARY_TEXT])("%s", (selector) => {
+describe("the Critical Flags and AI Summary panels: titles in Bebas Neue, sentences in Oswald", () => {
+  it.each(TITLES)("title %s: Bebas Neue, weight 400, no italic", (selector) => {
     const css = rule(selector)
     if (!INHERITS_FONT.has(selector)) expect(css).toMatch(/font-family:\s*'Bebas Neue'/)
     expect(css).not.toContain("IBM Plex Mono")
+    expect(css).not.toContain("Oswald")
     expect(css).not.toMatch(/font-style:\s*italic/)
     expect(css).not.toMatch(/font-weight:\s*(?:[5-9]\d\d|bold)/)
+  })
+
+  it.each(SENTENCES)("sentence %s: Oswald, weight 300 or 400, no italic, lower case kept", (selector) => {
+    const css = rule(selector)
+    expect(css).toMatch(/font-family:\s*'Oswald',\s*'Arial Narrow',\s*sans-serif/)
+    expect(css).not.toContain("Bebas Neue")
+    expect(css).not.toContain("IBM Plex Mono")
+    expect(css).not.toMatch(/font-style:\s*italic/)
+    expect(css).not.toMatch(/text-transform/) // an uppercase rule would give back the capitals the sentences are in Oswald to avoid
+    const weight = css.match(/font-weight:\s*(\d+)/)?.[1]
+    expect(["300", "400"], `${selector} has a weight that is bundled`).toContain(weight)
+  })
+
+  it("the description of a flag and the lines of the summary are the light weight (300), the first sentence of the summary is 400", () => {
+    expect(rule(".cf-flag-desc")).toMatch(/font-weight:\s*300/)
+    expect(rule(".ai-panel-line")).toMatch(/font-weight:\s*300/)
+    expect(rule(".ai-panel-verdict")).toMatch(/font-weight:\s*400/)
+  })
+
+  it("Oswald 300 and 400 are bundled as woff2 data in the shadow CSS and in the page (a shadow root does not register its own @font-face), next to Bebas Neue", () => {
+    document.getElementById("antares-fonts")?.remove()
+    injectFonts()
+    const page = document.getElementById("antares-fonts")?.textContent ?? ""
+    for (const [where, css] of [["shadow CSS", SHADOW_CSS], ["page", page]] as const) {
+      const faces = [...css.matchAll(/@font-face\s*\{([^}]*)\}/g)].map((m) => m[1])
+      const oswald = faces.filter((f) => /font-family:\s*'Oswald'/.test(f))
+      expect(oswald.map((f) => f.match(/font-weight:\s*(\d+)/)?.[1]).sort(), `${where}: the Oswald weights`).toEqual(["300", "400"])
+      for (const f of oswald) {
+        expect(f, where).toMatch(/src:\s*url\(data:font\/woff2;base64,d09GMg/) // "wOF2": a real woff2 file, not a link (an extension page may not load a remote font)
+        expect(f, where).toMatch(/font-style:\s*normal/)
+      }
+      expect(faces.some((f) => /font-family:\s*'Bebas Neue'/.test(f)), `${where}: Bebas Neue`).toBe(true)
+    }
   })
 
   it("the section count and title inherit Bebas Neue from the header they sit in", () => {

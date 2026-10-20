@@ -25,12 +25,14 @@ const rule = (selector: string): string => {
 };
 
 const TEXT = [
-  ".flags-head .lbl", ".flags-head .count", ".flag-label", ".flag-desc", ".ai-head h3", ".ai-body", ".ai-loading",
+  ".flags-head .lbl", ".flags-head .count", ".flag-label", ".ai-head h3",
   ".iw-tile", ".iw-row", ".iw-flow", ".iw-holder-row",
 ];
+// The sentences (what a flag means, the AI verdict) are Oswald 300: Bebas Neue has capitals only (the owner's choice, 2026-10-21).
+const SENTENCES = [".flag-desc", ".ai-body", ".ai-loading"];
 const WEIGHT_ONLY = [".iw-feed-title", ".iw-name", ".iw-action", ".iw-tile.dev::after", ".iw-row-rank", ".iw-row-action", ".iw-row-usd", ".iw-holder-rank", ".iw-holder-wallet", ".iw-holder-pct", ".iw-holder-state", ".iw-flow-label", ".iw-flow-val", ".iw-flow-state", ".ai-body b"];
 
-describe("the flags, the AI verdict and the Insider Watch tab are set in Bebas Neue", () => {
+describe("the flags and the Insider Watch tab are set in Bebas Neue, the sentences in Oswald", () => {
   it("finds the block (the guard is not blind)", () => {
     expect(BLOCK_START).toBeGreaterThan(-1)
     expect(block.length).toBeGreaterThan(2000)
@@ -42,6 +44,29 @@ describe("the flags, the AI verdict and the Insider Watch tab are set in Bebas N
     expect(css).not.toContain("IBM Plex Mono")
     expect(css).not.toMatch(/font-style:italic/)
     expect(css).not.toMatch(/font-weight:(?:[5-9]00|bold)/)
+  })
+
+  it.each(SENTENCES)("%s: Oswald 300, no italic, no bold, lower case kept", (selector) => {
+    const css = rule(selector)
+    expect(css).toMatch(/font-family:'Oswald','Arial Narrow',sans-serif/)
+    expect(css).toMatch(/font-weight:300/)
+    expect(css).not.toContain("Bebas Neue")
+    expect(css).not.toContain("IBM Plex Mono")
+    expect(css).not.toMatch(/font-style:italic/)
+    expect(css).not.toMatch(/text-transform/)
+  })
+
+  it("the emphasis inside the AI verdict is the next weight of Oswald (400), a real face and not a faked bold", () => {
+    expect(rule(".ai-body b")).toMatch(/font-weight:400/)
+  })
+
+  it("the page asks for Oswald 300 and 400 from the same Google Fonts request as Bebas Neue, in the stylesheet and in its noscript twin (the two weights the rules use)", () => {
+    const links = [...html.matchAll(/https:\/\/fonts\.googleapis\.com\/css2\?[^"']+/g)].map((m) => m[0])
+    expect(links.length).toBe(2)
+    for (const l of links) {
+      expect(l).toContain("family=Bebas+Neue")
+      expect(l).toContain("family=Oswald:wght@300;400")
+    }
   })
 
   it.each(WEIGHT_ONLY)("%s: weight 400 (Bebas Neue has no bold: the browser would fake it)", (selector) => {
