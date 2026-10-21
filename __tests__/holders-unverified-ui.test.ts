@@ -67,7 +67,7 @@ describe("overlay summary — holders unverified", () => {
   it("counts the unverified-holders flag, so a CAUTION verdict is never 'No issues found'", () => {
     const html = buildResult(makeScanData({ flags: [HOLDERS_FLAG] as ScanResponseData["flags"] }), MINT)
 
-    expect(html).toContain("1 flag detected")
+    expect(html).toContain("1 warning \u2014 no critical") // one warning, none critical: it says so (a CAUTION must not read as an alarm)
     expect(html).not.toContain("No issues found")
   })
 
