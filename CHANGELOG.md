@@ -30,6 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   have lower-case letters: Bebas Neue only has capitals, so they are set in Oswald (weights 300 and 400, bundled as woff2 in the extension, SIL Open Font License), its closest
   cousin. The titles (the section headers, the name of each flag, the card) stay Bebas Neue. `npm run overlay:check` checks in a real Chromium that every sentence is Oswald in
   lower case and every title Bebas Neue, and that both faces are loaded.
+- The line under the score on the card now says what the flags are. With no critical flag they are warnings, and it says so: **"4 warnings — no critical"** instead of
+  "4 flags detected", which read as an alarm under a CAUTION. Only critical flags: **"1 critical flag"**, **"3 critical flags"**. A mix keeps the total and the critical count:
+  **"3 flags — 2 critical"**. Nothing else on the card changes (SAFE, "Limited data" and "Risk detected" read as before).
 - A fall of 75 % or more from a high 15 to 90 days old no longer makes a DANGER when it is the **only** risky flag and the five checks of the card
   (Sell, Mint, Freeze, LP, Liq) are all green: the token reads CAUTION, with the flag shown as a warning (it is never SAFE while a warning is shown, and
   turns SAFE when the high leaves the 90-day window). A check nobody could read, a pool under $50k or any other flag keeps the DANGER, and a fall from a

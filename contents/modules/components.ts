@@ -422,6 +422,23 @@ export function buildSkeletonNode(): DocumentFragment {
 // The little dash of a check that is neither passed nor failed (Sell on Solana, a source that did not answer, an issuer's authority): the same under every label.
 const dashNode = (): HTMLElement => el("b", { class: "dash", style: "color:#333" }, "\u2014")
 
+/**
+ * The line under the score bar: what the flags are, in one line.
+ *   SAFE                          "No issues found" is for SAFE only (a verdict that is not SAFE without a flag to count says so, instead of reading "No issues found" next to CAUTION).
+ *   no flag, CAUTION / otherwise  "Limited data" / "Risk detected"
+ *   critical flags only           "1 critical flag", "3 critical flags": a bare "1 critical" is not understood (the owner, 2026-10-21)
+ *   critical flags and warnings   "3 flags \u2014 2 critical"
+ *   warnings only                 "4 warnings \u2014 no critical": "4 flags detected" under a CAUTION read as an alarm, when none of them is critical (the owner's remark, 2026-10-21)
+ * The count is of the warning and critical flags only (flagCount): the info and bonus notes are not in it.
+ */
+export function flagSummaryLine(risk: string, flagCount: number, critCount: number): string {
+  if (risk === "SAFE") return "No issues found"
+  if (flagCount === 0) return risk === "CAUTION" ? "Limited data" : "Risk detected"
+  if (critCount > 0 && critCount === flagCount) return `${critCount} critical flag${critCount > 1 ? "s" : ""}`
+  if (critCount > 0) return `${flagCount} flags \u2014 ${critCount} critical`
+  return `${flagCount} warning${flagCount > 1 ? "s" : ""} \u2014 no critical`
+}
+
 function buildSiBool(siLabel: string, val: unknown, invert = false): HTMLElement {
   if (val == null) {
     return el("div", { class: "si" },
@@ -544,14 +561,7 @@ export function buildResultNode(
   // gap like the two above. determineVerdict already guarantees SAFE
   // means zero warning/critical flags; this just makes that guarantee
   // impossible to violate on the display side too.
-  let summary = ""
-  // "No issues found" is for SAFE only: a verdict that is not SAFE without a flag to count (a source did not answer, so SAFE was not
-  // granted) says so, instead of reading "No issues found" next to CAUTION.
-  // A SAFE held or reached while a source is silent says so: "No issues found" would claim a check that could not be made.
-  if (data.risk === "SAFE") summary = "No issues found"
-  else if (flagCount === 0) summary = data.risk === "CAUTION" ? "Limited data" : "Risk detected"
-  else if (critCount > 0) summary = `${flagCount} flag${flagCount > 1 ? "s" : ""} \u2014 ${critCount} critical`
-  else summary = `${flagCount} flag${flagCount > 1 ? "s" : ""} detected`
+  let summary = flagSummaryLine(data.risk, flagCount, critCount)
 
   if (limited) summary = LIMITED_DATA_SUMMARY
 
